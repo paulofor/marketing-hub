@@ -346,6 +346,39 @@ class FlowControllerTest {
     }
 
     /**
+     * Garante que o coletor legado do GeraSalesPage não envie eventos para o slug incorreto `page`.
+     */
+    @Test
+    void getStandaloneFlowPageRemovesLegacySalesPageCollector() throws Exception {
+        UpsertFlowRequest request = buildRequest();
+        request.setCustomFormHtml("""
+                <!doctype html><html><body>
+                <main>Landing com coletor legado</main>
+                <script data-mh-sales-page-analytics="true">
+                  var slug=(location.pathname.split('/').pop()||'');
+                  var endpoint='/api/flows/'+encodeURIComponent(slug)+'/page-analytics';
+                </script>
+                </body></html>
+                """);
+
+        mockMvc.perform(put("/api/flows/landing-coletor-legado")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        MvcResult result = mockMvc.perform(get("/api/flows/landing-coletor-legado/page"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String body = result.getResponse().getContentAsString();
+        assertThat(body)
+                .contains("const slugValue = \"landing-coletor-legado\"")
+                .contains("data-mh-landing-analytics=\"true\"")
+                .doesNotContain("data-mh-sales-page-analytics")
+                .doesNotContain("location.pathname.split('/').pop()");
+    }
+
+    /**
      * Valida conflito quando a página standalone é solicitada para HTML de iframe.
      */
     @Test

@@ -146,15 +146,28 @@ public class FlowController {
         if (html == null) {
             return null;
         }
-        if (html.toLowerCase(Locale.ROOT).contains("data-mh-landing-analytics")) {
-            return refreshLandingAnalyticsScriptWhenMissingDebug(slug, html);
+        String htmlWithoutLegacyCollector = removeLegacySalesPageAnalyticsScript(html);
+        if (htmlWithoutLegacyCollector.toLowerCase(Locale.ROOT).contains("data-mh-landing-analytics")) {
+            return refreshLandingAnalyticsScriptWhenMissingDebug(slug, htmlWithoutLegacyCollector);
         }
 
         String analyticsScript = buildLandingAnalyticsScript(slug);
-        if (html.toLowerCase(Locale.ROOT).contains("</body>")) {
-            return html.replaceFirst("(?i)</body>", java.util.regex.Matcher.quoteReplacement(analyticsScript + "\n</body>"));
+        if (htmlWithoutLegacyCollector.toLowerCase(Locale.ROOT).contains("</body>")) {
+            return htmlWithoutLegacyCollector.replaceFirst(
+                    "(?i)</body>", java.util.regex.Matcher.quoteReplacement(analyticsScript + "\n</body>"));
         }
-        return html + "\n" + analyticsScript;
+        return htmlWithoutLegacyCollector + "\n" + analyticsScript;
+    }
+
+    /**
+     * Remove o coletor legado embutido no HTML para manter somente o coletor canônico do Lead Portal.
+     */
+    private String removeLegacySalesPageAnalyticsScript(String html) {
+        return java.util.regex.Pattern
+                .compile("<script\\b(?=[^>]*data-mh-sales-page-analytics)[\\s\\S]*?</script>",
+                        java.util.regex.Pattern.CASE_INSENSITIVE)
+                .matcher(html)
+                .replaceAll("");
     }
 
     /**

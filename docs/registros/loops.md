@@ -647,3 +647,9 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Sintoma:** clique abre um shell vazio e o conteúdo comercial aparece vários segundos depois.
 - **Causa-raiz:** a rota pública `/flows/exp-*-gerasalespage-v1` carregava o SPA antes de buscar novamente o HTML da landing no backend.
 - **Prevenção:** o proxy serve a landing GeraSalesPage diretamente, usa cache curto com stale seguro e o deploy valida o HTML instrumentado na rota pública. Web Vitals reais continuam vinculados às sessões humanas.
+
+# LOOP-LANDING-DUPLICATE-ANALYTICS — Coletores concorrentes na landing pública
+
+- **Sintoma:** a mesma landing envia eventos tanto para o slug correto quanto para `/api/flows/page/page-analytics`, duplicando sessões e atrasando requisições de telemetria.
+- **Causa-raiz:** o HTML persistido pelo GeraSalesPage continha um coletor próprio que inferia o slug pelo último segmento da URL, enquanto o Lead Portal injetava um segundo coletor canônico com o slug explícito.
+- **Prevenção:** ao servir a landing standalone, o Lead Portal remove qualquer coletor legado `data-mh-sales-page-analytics` e mantém somente `data-mh-landing-analytics`, com slug recebido pelo controller e teste de contrato contra regressão.

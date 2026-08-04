@@ -1,6 +1,7 @@
 package com.marketinghub.growthoperator.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
 import com.marketinghub.growthoperator.GrowthOperatorExecution;
@@ -30,6 +31,7 @@ public class GrowthOperatorService {
   private static final Logger log = LoggerFactory.getLogger(GrowthOperatorService.class);
   private static final String READ_ONLY = "READ_ONLY_DIAGNOSIS";
   private static final int SESSION_EVENT_LIMIT = 2000;
+  private static final int MEMORY_TIMELINE_LIMIT = 30;
   private final GrowthOperatorExecutionRepository repository;
   private final CommercialPlanService commercialPlanService;
   private final ExperimentFunnelService experimentFunnelService;
@@ -58,7 +60,8 @@ public class GrowthOperatorService {
     execution.setObjective(
         hasText(request.objective()) ? request.objective() : defaultObjective(plan));
     execution.setBlocker(plan.getCurrentBlocker());
-    execution.setEvidenceSnapshot(buildEvidenceSnapshot(plan));
+    execution.setEvidenceSnapshot(
+        buildEvidenceSnapshot(plan, repository.findByCommercialPlanIdOrderByCreatedAtDesc(planId)));
     execution.setCycleNumber(nextCycleNumber(planId));
     execution.setAutomaticCycle(false);
     return toResponse(repository.save(execution));
@@ -133,7 +136,8 @@ public class GrowthOperatorService {
     execution.setAuthorityMode(READ_ONLY);
     execution.setObjective(defaultObjective(plan));
     execution.setBlocker(plan.getCurrentBlocker());
-    execution.setEvidenceSnapshot(buildEvidenceSnapshot(plan, latest.orElse(null)));
+    execution.setEvidenceSnapshot(
+        buildEvidenceSnapshot(plan, repository.findByCommercialPlanIdOrderByCreatedAtDesc(planId)));
     execution.setCycleNumber(nextCycleNumber(planId));
     execution.setAutomaticCycle(true);
     return toResponse(repository.save(execution));
@@ -191,12 +195,12 @@ public class GrowthOperatorService {
 
   /** Congela as evidencias comerciais disponiveis no momento da solicitacao. */
   private String buildEvidenceSnapshot(CommercialPlan plan) {
-    return buildEvidenceSnapshot(plan, null);
+    return buildEvidenceSnapshot(plan, List.of());
   }
 
-  /** Congela o plano e o ultimo aprendizado para impedir ciclos repetitivos sem memoria. */
+  /** Congela o plano e a memoria consolidada para impedir ciclos repetitivos sem aprendizado. */
   private String buildEvidenceSnapshot(
-      CommercialPlan plan, GrowthOperatorExecution previousExecution) {
+      CommercialPlan plan, List<GrowthOperatorExecution> executionHistory) {
     LinkedHashMap<String, Object> snapshot = new LinkedHashMap<>();
     snapshot.put("planId", plan.getId());
     snapshot.put("objective", plan.getCommercialObjective());
@@ -217,12 +221,7 @@ public class GrowthOperatorService {
       snapshot.put(
           "sessionIntelligence", Map.of("available", false, "reason", "PLAN_WITHOUT_EXPERIMENT"));
     }
-    if (previousExecution != null) {
-      snapshot.put("previousCycle", previousExecution.getCycleNumber());
-      snapshot.put("previousDecision", previousExecution.getRecommendedDecision());
-      snapshot.put("previousAction", previousExecution.getRecommendedAction());
-      snapshot.put("previousDailyReport", previousExecution.getDailyReport());
-    }
+    snapshot.put("consolidatedMemory", buildConsolidatedMemory(executionHistory));
     try {
       return objectMapper.writeValueAsString(snapshot);
     } catch (JsonProcessingException ex) {
@@ -230,6 +229,90 @@ public class GrowthOperatorService {
           "Falha no modulo growth-operator ao congelar evidencias do planId={}", plan.getId(), ex);
       throw new IllegalStateException("Falha ao serializar evidencias do planejamento", ex);
     }
+  }
+
+  /** Consolida todo o historico em contagens e preserva uma linha do tempo recente e relevante. */
+  private Map<String, Object> buildConsolidatedMemory(
+      List<GrowthOperatorExecution> executionHistory) {
+    LinkedHashMap<String, Object> memory = new LinkedHashMap<>();
+    memory.put("totalCycles", executionHistory.size());
+    memory.put(
+        "completedCycles",
+        executionHistory.stream()
+            .filter(item -> item.getStatus() == GrowthOperatorExecutionStatus.COMPLETED)
+            .count());
+    memory.put(
+        "failedCycles",
+        executionHistory.stream()
+            .filter(item -> item.getStatus() == GrowthOperatorExecutionStatus.FAILED)
+            .count());
+    memory.put("timelineLimit", MEMORY_TIMELINE_LIMIT);
+    memory.put("timelineTruncated", executionHistory.size() > MEMORY_TIMELINE_LIMIT);
+    memory.put(
+        "timeline",
+        executionHistory.stream().limit(MEMORY_TIMELINE_LIMIT).map(this::toMemoryItem).toList());
+    return memory;
+  }
+
+  /** Resume um ciclo sem afirmar que uma recomendacao foi executada ou gerou venda. */
+  private Map<String, Object> toMemoryItem(GrowthOperatorExecution execution) {
+    LinkedHashMap<String, Object> item = new LinkedHashMap<>();
+    item.put("cycle", execution.getCycleNumber());
+    item.put("status", execution.getStatus());
+    item.put("createdAt", execution.getCreatedAt());
+    item.put("finishedAt", execution.getFinishedAt());
+    item.put("decision", execution.getRecommendedDecision());
+    item.put("recommendedActionNotConfirmedAsExecuted", execution.getRecommendedAction());
+    item.put("conclusion", diagnosisField(execution.getDiagnosisJson(), "rootCause"));
+    item.put("evidence", diagnosisField(execution.getDiagnosisJson(), "evidence"));
+    item.put("dailyReport", execution.getDailyReport());
+    item.put("error", execution.getErrorMessage());
+    item.put("observedPlanMetrics", observedPlanMetrics(execution.getEvidenceSnapshot()));
+    return item;
+  }
+
+  /**
+   * Recupera um campo do diagnostico persistido sem interromper o proximo ciclo por JSON legado.
+   */
+  private Object diagnosisField(String diagnosisJson, String field) {
+    if (!hasText(diagnosisJson)) {
+      return null;
+    }
+    try {
+      JsonNode value = objectMapper.readTree(diagnosisJson).get(field);
+      return value == null || value.isNull()
+          ? null
+          : objectMapper.convertValue(value, Object.class);
+    } catch (JsonProcessingException ex) {
+      log.warn("Diagnostico legado invalido ao consolidar memoria, campo={}", field, ex);
+      return null;
+    }
+  }
+
+  /**
+   * Recupera metricas observadas no ciclo para comparar recomendacoes com resultados posteriores.
+   */
+  private Map<String, Object> observedPlanMetrics(String evidenceSnapshot) {
+    if (!hasText(evidenceSnapshot)) {
+      return Map.of();
+    }
+    try {
+      JsonNode snapshot = objectMapper.readTree(evidenceSnapshot);
+      LinkedHashMap<String, Object> metrics = new LinkedHashMap<>();
+      metrics.put("actualCost", jsonValue(snapshot.get("actualCost")));
+      metrics.put("actualRevenue", jsonValue(snapshot.get("actualRevenue")));
+      metrics.put("blocker", jsonValue(snapshot.get("blocker")));
+      metrics.put("nextAction", jsonValue(snapshot.get("nextAction")));
+      return metrics;
+    } catch (JsonProcessingException ex) {
+      log.warn("Snapshot legado invalido ao consolidar memoria", ex);
+      return Map.of();
+    }
+  }
+
+  /** Converte um valor JSON escalar preservando numero, booleano ou texto. */
+  private Object jsonValue(JsonNode value) {
+    return value == null || value.isNull() ? null : objectMapper.convertValue(value, Object.class);
   }
 
   /** Converte a entidade persistida no contrato publico sem expor mutacoes. */

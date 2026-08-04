@@ -20,7 +20,7 @@ O Operador de Crescimento transforma meta, gargalo e evidencias persistidas do p
 
 Cada execucao deve persistir objetivo, gargalo, snapshot de evidencias, exatamente tres alternativas, causa-raiz, metrica esperada, criterios de continuar/ajustar/parar, decisao, proxima acao, resposta bruta, modelo, custo e falha quando houver.
 
-Cada ciclo tambem persiste numero sequencial, origem manual ou automatica e relatorio diario executivo. O snapshot do ciclo seguinte inclui o aprendizado anterior para evitar repeticao sem evidencia nova. Atividade, recomendacao, impacto estimado e PR nunca contam como venda.
+Cada ciclo tambem persiste numero sequencial, origem manual ou automatica e relatorio diario executivo. O snapshot do ciclo seguinte inclui memoria consolidada do planejamento: contagens de todo o historico e linha do tempo recente com conclusoes, evidencias, recomendacoes, falhas e metricas observadas em cada ciclo. A linha do tempo detalhada pode ser limitada para controlar contexto, mas deve declarar truncamento e manter as contagens integrais. Recomendacao deve ser identificada como nao confirmada ate que evidencia posterior comprove sua execucao e seu resultado. Atividade, recomendacao, impacto estimado e PR nunca contam como venda.
 
 Quando o planejamento estiver associado a um experimento, o snapshot deve incluir a inteligencia
 de sessoes completa disponivel na janela do funil: resumo, jornadas recentes e eventos individuais

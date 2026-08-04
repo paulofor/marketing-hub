@@ -97,6 +97,13 @@ export interface CreateProductDiscoveryCyclePayload {
   objective?: string;
 }
 
+export interface ProductDiscoveryLegacyCleanupResult {
+  archivedCycles: number;
+  archivedOpportunities: number;
+  cycleIds: number[];
+  reason: string;
+}
+
 export const productDiscoveryStatusLabels: Record<
   ProductDiscoveryCycleStatus,
   string
@@ -204,6 +211,32 @@ export function useCreateProductDiscoveryCycle() {
       await queryClient.invalidateQueries({
         queryKey: productDiscoveryKeys.cycle(cycle.id),
       });
+    },
+  });
+}
+
+export function useArchiveArtificialLegacyEvidence() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await fetch(
+        buildApiUrl(
+          "/api/product-discovery/v1/legacy-artificial-evidence/archive",
+        ),
+        { method: "POST" },
+      );
+      return parseJsonResponse<ProductDiscoveryLegacyCleanupResult>(
+        response,
+        "Não foi possível invalidar as evidências artificiais legadas",
+      );
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: productDiscoveryKeys.cycles }),
+        queryClient.invalidateQueries({
+          queryKey: productDiscoveryKeys.maturityRanking,
+        }),
+      ]);
     },
   });
 }

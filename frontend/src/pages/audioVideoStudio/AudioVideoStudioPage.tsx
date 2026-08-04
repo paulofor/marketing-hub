@@ -121,8 +121,7 @@ const premiumProductionStages = [
     targetId: "audio-video-stage-roteiro",
     description:
       "Transformar a oferta em gancho, historia, demonstracao, prova, objecoes e CTA falado ou visual.",
-    output:
-      "Script por blocos de tempo, com funcao comercial de cada trecho.",
+    output: "Script por blocos de tempo, com funcao comercial de cada trecho.",
   },
   {
     icon: Camera,
@@ -141,8 +140,7 @@ const premiumProductionStages = [
     targetId: "audio-video-stage-storyboard",
     description:
       "Quebrar o video em cenas curtas com enquadramento, movimento, acao, emocao e transicao.",
-    output:
-      "Lista de cenas pronta para gerar imagem-base e video por IA.",
+    output: "Lista de cenas pronta para gerar imagem-base e video por IA.",
   },
   {
     icon: Mic2,
@@ -151,8 +149,7 @@ const premiumProductionStages = [
     targetId: "audio-video-stage-audio",
     description:
       "Definir narracao, ritmo, pausas, trilha, efeitos e legibilidade quando a usuaria estiver sem som.",
-    output:
-      "Plano de voz, trilha e legendas alinhado ao consumo mobile.",
+    output: "Plano de voz, trilha e legendas alinhado ao consumo mobile.",
   },
   {
     icon: Wand2,
@@ -181,8 +178,7 @@ const premiumProductionStages = [
     targetId: "audio-video-stage-revisao",
     description:
       "Checar promessa permitida, clareza, continuidade, audio, prova, CTA, HLS e aderencia ao PDE.",
-    output:
-      "Aprovado, bloqueado com causa-raiz ou enviado para nova iteracao.",
+    output: "Aprovado, bloqueado com causa-raiz ou enviado para nova iteracao.",
   },
   {
     icon: BarChart3,
@@ -191,8 +187,7 @@ const premiumProductionStages = [
     targetId: "audio-video-stage-aprendizado",
     description:
       "Medir play, retencao, clique, diagnostico, paywall, checkout e compra para decidir novos cortes.",
-    output:
-      "Aprendizados acionaveis para criativos, funil e oferta.",
+    output: "Aprendizados acionaveis para criativos, funil e oferta.",
   },
 ];
 
@@ -437,11 +432,6 @@ function optionsWithCurrent(
     ...options,
   ];
 }
-
-const studioWorkflowSteps = premiumProductionStages.map((stage) => ({
-  title: stage.section,
-  description: stage.description,
-}));
 
 const currentFlows = [
   "Criativos de experimentos continuam nas telas de experimentos e campanhas.",
@@ -1042,19 +1032,6 @@ export default function AudioVideoStudioPage() {
         </div>
       </section>
 
-      <section className="audio-video-studio-page__workflow">
-        {studioWorkflowSteps.map((step, index) => (
-          <article
-            className="audio-video-studio-page__workflow-step"
-            key={step.title}
-          >
-            <span>{index + 1}</span>
-            <strong>{step.title}</strong>
-            <small>{step.description}</small>
-          </article>
-        ))}
-      </section>
-
       {!isEditingProject ? (
         <section className="audio-video-studio-page__preset-grid">
           {studioPresets.map((preset) => (
@@ -1373,6 +1350,19 @@ export default function AudioVideoStudioPage() {
               </span>
             </div>
           </div>
+          <div className="audio-video-studio-page__draft">
+            <div className="audio-video-studio-page__section-heading">
+              <h2>Rascunho narrativo</h2>
+              <p>
+                Base pronta para transformar em roteiro falado e plano de cenas.
+              </p>
+            </div>
+            <ol>
+              {scriptDraft.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ol>
+          </div>
           <div
             className="audio-video-studio-page__visual-bible"
             id="audio-video-stage-biblia-visual"
@@ -1411,27 +1401,27 @@ export default function AudioVideoStudioPage() {
                   </article>
                 ) : (
                   characterOptions.map((option) => (
-                  <button
-                    className="audio-video-studio-page__character-card"
-                    key={option.key}
-                    type="button"
-                    onClick={() => applyCharacterOption(option)}
-                  >
-                    <img src={option.imageUrl} alt={option.name} />
-                    <span
-                      className={`audio-video-studio-page__asset-status audio-video-studio-page__asset-status--${option.status.toLowerCase()}`}
+                    <button
+                      className="audio-video-studio-page__character-card"
+                      key={option.key}
+                      type="button"
+                      onClick={() => applyCharacterOption(option)}
                     >
-                      {option.status === "Reprovado" ? (
-                        <Ban size={14} aria-hidden="true" />
-                      ) : (
-                        <BadgeCheck size={14} aria-hidden="true" />
-                      )}
-                      {option.status}
-                    </span>
-                    <strong>{option.name}</strong>
-                    <small>{option.description}</small>
-                    <em>{option.reason}</em>
-                  </button>
+                      <img src={option.imageUrl} alt={option.name} />
+                      <span
+                        className={`audio-video-studio-page__asset-status audio-video-studio-page__asset-status--${option.status.toLowerCase()}`}
+                      >
+                        {option.status === "Reprovado" ? (
+                          <Ban size={14} aria-hidden="true" />
+                        ) : (
+                          <BadgeCheck size={14} aria-hidden="true" />
+                        )}
+                        {option.status}
+                      </span>
+                      <strong>{option.name}</strong>
+                      <small>{option.description}</small>
+                      <em>{option.reason}</em>
+                    </button>
                   ))
                 )}
               </div>
@@ -1484,6 +1474,51 @@ export default function AudioVideoStudioPage() {
                 rows={3}
               />
             </label>
+            <section
+              className="audio-video-studio-page__stage-section"
+              id="audio-video-stage-storyboard"
+            >
+              <div className="audio-video-studio-page__section-heading">
+                <h2>4. Storyboard</h2>
+                <p>
+                  Sequencia do blueprint atual para testar retencao, desejo e
+                  acao sem depender de improviso.
+                </p>
+              </div>
+              <div className="audio-video-studio-page__timeline">
+                {selectedTimeline.map((block) => (
+                  <article
+                    className="audio-video-studio-page__timeline-block"
+                    key={block.time}
+                  >
+                    <span>{block.time}</span>
+                    <h3>{block.title}</h3>
+                    <p>{block.objective}</p>
+                  </article>
+                ))}
+              </div>
+              <div className="audio-video-studio-page__columns">
+                <div className="audio-video-studio-page__panel">
+                  <h2>Plano basico de cenas</h2>
+                  <ul>
+                    {selectedScenePrompts.map((prompt) => (
+                      <li key={prompt}>{prompt}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="audio-video-studio-page__panel">
+                  <h2>Checklist de producao</h2>
+                  <ul className="audio-video-studio-page__checklist">
+                    {productionChecklist.map((item) => (
+                      <li key={item}>
+                        <BadgeCheck size={16} aria-hidden="true" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </section>
             <div
               className="audio-video-studio-page__stage-divider"
               id="audio-video-stage-audio"
@@ -1540,21 +1575,21 @@ export default function AudioVideoStudioPage() {
                   </article>
                 ) : (
                   captionPresets.map((preset) => (
-                  <button
-                    className="audio-video-studio-page__caption-card"
-                    key={preset.key}
-                    type="button"
-                    onClick={() => applyCaptionPreset(preset)}
-                  >
-                    <FileText size={18} aria-hidden="true" />
-                    <strong>{preset.label}</strong>
-                    <span>{preset.style}</span>
-                    <div className="audio-video-studio-page__caption-preview">
-                      <PlayCircle size={16} aria-hidden="true" />
-                      <b>7 dias para ajustar sua presenca</b>
-                    </div>
-                    <small>{preset.description}</small>
-                  </button>
+                    <button
+                      className="audio-video-studio-page__caption-card"
+                      key={preset.key}
+                      type="button"
+                      onClick={() => applyCaptionPreset(preset)}
+                    >
+                      <FileText size={18} aria-hidden="true" />
+                      <strong>{preset.label}</strong>
+                      <span>{preset.style}</span>
+                      <div className="audio-video-studio-page__caption-preview">
+                        <PlayCircle size={16} aria-hidden="true" />
+                        <b>7 dias para ajustar sua presenca</b>
+                      </div>
+                      <small>{preset.description}</small>
+                    </button>
                   ))
                 )}
               </div>
@@ -1646,6 +1681,40 @@ export default function AudioVideoStudioPage() {
                 rows={4}
               />
             </label>
+            <section
+              className="audio-video-studio-page__stage-section"
+              id="audio-video-stage-aprendizado"
+            >
+              <div className="audio-video-studio-page__section-heading">
+                <h2>9. Aprendizado e metricas</h2>
+                <p>
+                  O funil mede consumo, cliques, diagnostico, paywall, checkout
+                  e compra para decidir novos cortes e promessas.
+                </p>
+              </div>
+              <div className="audio-video-studio-page__columns">
+                <div className="audio-video-studio-page__panel">
+                  <h2>Experimentos recomendados</h2>
+                  <ol>
+                    <li>
+                      Video educativo com promessa forte para publico frio.
+                    </li>
+                    <li>
+                      Video demonstrativo com prova visual para leads mornos.
+                    </li>
+                    <li>Video de oferta com urgencia leve para remarketing.</li>
+                  </ol>
+                </div>
+                <div className="audio-video-studio-page__panel">
+                  <h2>Recursos atuais conectaveis</h2>
+                  <ul>
+                    <li>Gerador de imagem para referencias e cenas-chave.</li>
+                    <li>Fluxos de videos de produto para assets curtos.</li>
+                    <li>Revisao comercial antes de campanha ou PDE.</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
           </div>
           <button
             className="audio-video-studio-page__primary-action"
@@ -1668,30 +1737,6 @@ export default function AudioVideoStudioPage() {
             <p className="audio-video-studio-page__feedback">{saveFeedback}</p>
           ) : null}
         </form>
-
-        <div className="audio-video-studio-page__draft">
-          <div className="audio-video-studio-page__section-heading">
-            <h2>Rascunho narrativo</h2>
-            <p>
-              Base pronta para transformar em roteiro falado e plano de cenas.
-            </p>
-          </div>
-          <ol>
-            {scriptDraft.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ol>
-          <div className="audio-video-studio-page__audio-card">
-            <Sparkles size={20} aria-hidden="true" />
-            <div>
-              <strong>Pre-producao visual</strong>
-              <span>
-                Primeiro aprove imagens de personagem, ambiente, produto e
-                frames-chave; depois gere cenas com essas referencias.
-              </span>
-            </div>
-          </div>
-        </div>
       </section>
 
       {isEditingProject ? (
@@ -1783,53 +1828,6 @@ export default function AudioVideoStudioPage() {
         </div>
       </section>
 
-      <section
-        className="audio-video-studio-page__section"
-        id="audio-video-stage-storyboard"
-      >
-        <div className="audio-video-studio-page__section-heading">
-          <h2>4. Storyboard</h2>
-          <p>
-            Sequencia do blueprint atual para testar retencao, desejo e acao sem
-            depender de improviso.
-          </p>
-        </div>
-        <div className="audio-video-studio-page__timeline">
-          {selectedTimeline.map((block) => (
-            <article
-              className="audio-video-studio-page__timeline-block"
-              key={block.time}
-            >
-              <span>{block.time}</span>
-              <h3>{block.title}</h3>
-              <p>{block.objective}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="audio-video-studio-page__columns">
-        <div className="audio-video-studio-page__panel">
-          <h2>Plano basico de cenas</h2>
-          <ul>
-            {selectedScenePrompts.map((prompt) => (
-              <li key={prompt}>{prompt}</li>
-            ))}
-          </ul>
-        </div>
-        <div className="audio-video-studio-page__panel">
-          <h2>Checklist de producao</h2>
-          <ul className="audio-video-studio-page__checklist">
-            {productionChecklist.map((item) => (
-              <li key={item}>
-                <BadgeCheck size={16} aria-hidden="true" />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
       <section className="audio-video-studio-page__section">
         <div className="audio-video-studio-page__section-heading">
           <h2>Escopo do estudio</h2>
@@ -1849,39 +1847,6 @@ export default function AudioVideoStudioPage() {
               <p>{pillar.description}</p>
             </article>
           ))}
-        </div>
-      </section>
-
-      <section
-        className="audio-video-studio-page__section"
-        id="audio-video-stage-aprendizado"
-      >
-        <div className="audio-video-studio-page__section-heading">
-          <h2>9. Aprendizado e metricas</h2>
-          <p>
-            O funil mede consumo, cliques, diagnostico, paywall, checkout e
-            compra para decidir novos cortes e novas promessas.
-          </p>
-        </div>
-        <div className="audio-video-studio-page__columns">
-          <div className="audio-video-studio-page__panel">
-            <h2>Experimentos recomendados</h2>
-            <ol>
-              <li>Video educativo com promessa forte para publico frio.</li>
-              <li>Video demonstrativo com prova visual para leads mornos.</li>
-              <li>Video de oferta com urgencia leve para remarketing.</li>
-            </ol>
-          </div>
-          <div className="audio-video-studio-page__panel">
-            <h2>Recursos atuais conectaveis</h2>
-            <ul>
-              <li>Gerador de imagem para referencias visuais e cenas-chave.</li>
-              <li>
-                Fluxos de videos de produto para assets curtos ja existentes.
-              </li>
-              <li>Revisao comercial antes de usar em campanha ou PDE.</li>
-            </ul>
-          </div>
         </div>
       </section>
 

@@ -4,6 +4,7 @@ import com.marketinghub.productdiscovery.v1.service.CreateProductDiscoveryCycleR
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryCycleDetailResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryCycleResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryFailureRequest;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryLegacyCleanupResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMaturityRankingResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryPendingResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryResultRequest;
@@ -56,6 +57,12 @@ public class ProductDiscoveryController {
   @GetMapping("/product-discovery/v1/maturity-ranking")
   public ResponseEntity<ProductDiscoveryMaturityRankingResponse> getMaturityRanking() {
     return ResponseEntity.ok(service.getMaturityRanking());
+  }
+
+  /** Arquiva evidências artificiais legadas sem apagar o histórico auditável. */
+  @PostMapping("/product-discovery/v1/legacy-artificial-evidence/archive")
+  public ResponseEntity<ProductDiscoveryLegacyCleanupResponse> archiveArtificialLegacyEvidence() {
+    return ResponseEntity.ok(service.archiveArtificialLegacyEvidence());
   }
 
   /** Entrega pendências canônicas para o worker de pesquisa. */

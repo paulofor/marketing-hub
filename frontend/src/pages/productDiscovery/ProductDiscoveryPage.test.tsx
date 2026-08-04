@@ -123,4 +123,56 @@ describe("ProductDiscoveryPage", () => {
       );
     });
   });
+
+  it("archives artificial legacy evidence from the administrative screen", async () => {
+    fetchMock.mockImplementation(async (url: string, options?: RequestInit) => {
+      if (
+        url.includes("/legacy-artificial-evidence/archive") &&
+        options?.method === "POST"
+      ) {
+        return {
+          ok: true,
+          json: async () => ({
+            archivedCycles: 13,
+            archivedOpportunities: 13,
+            cycleIds: [1, 8, 9],
+            reason: "Evidências artificiais legadas invalidadas.",
+          }),
+        } as Response;
+      }
+      if (url.includes("/maturity-ranking")) {
+        return {
+          ok: true,
+          json: async () => ({
+            strategyName: "Ranking por maturidade comercial",
+            decisionCriterion: "Evidência real.",
+            recommendedPriority: "Pesquisar.",
+            items: [],
+            recommendedTracks: [],
+          }),
+        } as Response;
+      }
+      return { ok: true, json: async () => [] } as Response;
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <BrowserRouter>
+          <ProductDiscoveryPage />
+        </BrowserRouter>
+      </QueryClientProvider>,
+    );
+
+    await userEvent.click(
+      await screen.findByRole("button", {
+        name: /Invalidar evidências artificiais/i,
+      }),
+    );
+
+    expect(
+      await screen.findByText(/13 ciclos e 13 oportunidades foram arquivados/i),
+    ).toBeTruthy();
+  });
 });

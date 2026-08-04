@@ -58,8 +58,35 @@ paths:
           description: Detalhe do ciclo.
         "404":
           description: Ciclo não encontrado.
+  /api/product-discovery/v1/legacy-artificial-evidence/archive:
+    post:
+      tags:
+        - Product Discovery
+      summary: Arquiva ciclos legados compostos somente por evidências artificiais.
+      operationId: archiveProductDiscoveryArtificialLegacyEvidence
+      responses:
+        "200":
+          description: Resultado auditável da limpeza lógica, sem exclusão do histórico.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDiscoveryLegacyCleanup"
 components:
   schemas:
+    ProductDiscoveryLegacyCleanup:
+      type: object
+      properties:
+        archivedCycles:
+          type: integer
+        archivedOpportunities:
+          type: integer
+        cycleIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        reason:
+          type: string
     ProductDiscoveryMaturityRanking:
       type: object
       properties:

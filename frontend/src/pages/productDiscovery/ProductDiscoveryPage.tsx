@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import {
   productDiscoveryStatusLabels,
+  useArchiveArtificialLegacyEvidence,
   useCreateProductDiscoveryCycle,
   useProductDiscoveryCycles,
   useProductDiscoveryMaturityRanking,
@@ -20,6 +21,7 @@ export default function ProductDiscoveryPage() {
   const cyclesQuery = useProductDiscoveryCycles();
   const maturityRankingQuery = useProductDiscoveryMaturityRanking();
   const createCycle = useCreateProductDiscoveryCycle();
+  const legacyCleanup = useArchiveArtificialLegacyEvidence();
   const [theme, setTheme] = useState("");
   const [targetAudience, setTargetAudience] = useState("");
   const [acquisitionChannel, setAcquisitionChannel] = useState("Meta Ads");
@@ -119,6 +121,40 @@ export default function ProductDiscoveryPage() {
               <strong className="h3 mb-0">{summary.failed}</strong>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="card border-0 shadow-sm">
+        <div className="card-body">
+          <div className="d-flex flex-column flex-lg-row justify-content-between gap-3">
+            <div>
+              <h2 className="h5 mb-1">Confiabilidade das evidências legadas</h2>
+              <p className="text-secondary mb-0">
+                Preserve o histórico, mas retire do ranking ciclos antigos que
+                usaram páginas de busca sem resultados como se fossem evidência.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-outline-danger align-self-start"
+              onClick={() => legacyCleanup.mutate()}
+              disabled={legacyCleanup.isPending}
+            >
+              {legacyCleanup.isPending ? "Invalidando..." : "Invalidar evidências artificiais"}
+            </button>
+          </div>
+          {legacyCleanup.data ? (
+            <div className="alert alert-success mt-3 mb-0" role="status">
+              {legacyCleanup.data.archivedCycles} ciclos e {" "}
+              {legacyCleanup.data.archivedOpportunities} oportunidades foram
+              arquivados sem apagar o histórico.
+            </div>
+          ) : null}
+          {legacyCleanup.isError ? (
+            <div className="alert alert-danger mt-3 mb-0" role="alert">
+              Não foi possível invalidar as evidências artificiais.
+            </div>
+          ) : null}
         </div>
       </section>
 

@@ -557,6 +557,7 @@ export function buildStudioSceneMetadata(
   provider: SalesVideoProviderOption,
   scenePrompt: string,
   sceneIndex: number,
+  sourceImage?: { assetId: number; url: string },
 ) {
   return JSON.stringify({
     commercial_goal: "PDE_MUSA_HERO_VIDEO_SCENE",
@@ -585,6 +586,13 @@ export function buildStudioSceneMetadata(
     provider_strategy: {
       provider_name: provider.providerName,
       expected_clip_duration_seconds: provider.clipDurationSeconds,
+    },
+    image_to_video: {
+      enabled: Boolean(sourceImage),
+      source_image_provider: sourceImage ? "APPROVED_ASSET" : null,
+      source_image_asset_id: sourceImage?.assetId ?? null,
+      source_image_url: sourceImage?.url ?? null,
+      animation_provider: provider.providerName,
     },
   });
 }
@@ -910,7 +918,10 @@ export default function AudioVideoStudioPage() {
   const updateVideoProject = useUpdateVideoProject();
   const [saveFeedback, setSaveFeedback] = useState("");
   const [selectedSceneJobIds, setSelectedSceneJobIds] = useState<number[]>([]);
+  const [sourceImageAssetId, setSourceImageAssetId] = useState("1953");
   const [briefing, setBriefing] = useState<StudioBriefing>(defaultBriefing);
+  const parsedSourceImageAssetId = parsePositiveInteger(sourceImageAssetId);
+  const sourceImageAssetQuery = useAsset(parsedSourceImageAssetId);
 
   const isEditingProject = Boolean(editableProjectId);
   const isSavingProject =
@@ -1117,6 +1128,12 @@ export default function AudioVideoStudioPage() {
       );
       return;
     }
+    if (!parsedSourceImageAssetId || !sourceImageAssetQuery.data?.publicUrl) {
+      setSaveFeedback(
+        "Selecione uma imagem-base valida antes de gerar a cena com Kling ou Runway.",
+      );
+      return;
+    }
     try {
       const job = await requestSceneRender.mutateAsync({
         requestedBy: tenantContext.userEmail,
@@ -1129,6 +1146,10 @@ export default function AudioVideoStudioPage() {
           selectedProvider,
           selectedScenePrompts[sceneIndex],
           sceneIndex,
+          {
+            assetId: parsedSourceImageAssetId,
+            url: sourceImageAssetQuery.data.publicUrl,
+          },
         ),
       });
       setSaveFeedback(
@@ -1968,6 +1989,22 @@ export default function AudioVideoStudioPage() {
                       cena reprovada pode ser refeita sem descartar as demais.
                     </p>
                   </div>
+                  <label>
+                    Imagem-base aprovada para animacao
+                    <input
+                      type="number"
+                      min="1"
+                      value={sourceImageAssetId}
+                      onChange={(event) =>
+                        setSourceImageAssetId(event.target.value)
+                      }
+                    />
+                    <small>
+                      {sourceImageAssetQuery.data?.publicUrl
+                        ? `Asset #${sourceImageAssetQuery.data.id} sera enviado como image_to_video.`
+                        : "Informe o ID de um asset de imagem aprovado no Marketing Hub."}
+                    </small>
+                  </label>
                   <div className="audio-video-studio-page__scene-production-grid">
                     {selectedScenePrompts.slice(0, 4).map((prompt, index) => {
                       const jobs = studioSceneJobs.filter(

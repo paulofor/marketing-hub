@@ -60,6 +60,41 @@ describe("selecao de clipes por cena", () => {
       ).providerName,
     ).toBe("LUMA_RAY_3_2");
   });
+
+  it("vincula a imagem-base aprovada ao contrato da cena", () => {
+    const provider = SALES_VIDEO_PROVIDER_OPTIONS.find(
+      (option) => option.providerName === "KLING_3_0",
+    );
+    expect(provider).toBeTruthy();
+    const metadata = JSON.parse(
+      buildStudioSceneMetadata(
+        {
+          id: 1,
+          campaignKey: "musa-v7",
+          characterBible: "Personagem MUSA aprovada",
+          environmentBible: "Espelho em ambiente claro",
+          objectBible: "Acessorios, tecidos creme e vinho",
+          visualStyleGuide: "Editorial natural",
+          continuityRules: "Preservar personagem e figurino",
+          captionPlan: "Legenda mobile",
+          voiceoverPlan: "Narracao curta",
+          soundtrackPlan: "Trilha discreta",
+          ctaText: "Descubra seu primeiro ajuste MUSA",
+        } as any,
+        provider!,
+        "Cena MECANISMO",
+        2,
+        { assetId: 1953, url: "https://assets.example/musa.png" },
+      ),
+    );
+    expect(metadata.image_to_video).toEqual({
+      enabled: true,
+      source_image_provider: "APPROVED_ASSET",
+      source_image_asset_id: 1953,
+      source_image_url: "https://assets.example/musa.png",
+      animation_provider: "KLING_3_0",
+    });
+  });
 });
 
 function setup() {

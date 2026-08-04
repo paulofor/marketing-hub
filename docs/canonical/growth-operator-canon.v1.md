@@ -9,6 +9,7 @@ O Operador de Crescimento transforma meta, gargalo e evidencias persistidas do p
 - O backend cria a pendencia, congela o contexto e persiste o resultado.
 - O worker consome somente o endpoint `pending/claim` e nunca acessa o banco.
 - O Codex roda com sandbox `read-only`, identidade ChatGPT persistida em volume proprio e repositorio montado sem escrita.
+- Como o repositorio e montado de outro host e pertence a um UID diferente, o comando aceita explicitamente essa arvore com `--skip-git-repo-check`; essa opcao nao amplia permissoes e o sandbox `read-only` permanece obrigatorio.
 - O worker mantem o loop operacional, mas solicita ao backend a criacao de cada novo ciclo; somente o backend decide se a cadencia de 30 minutos venceu.
 - A investigacao pode consultar endpoints GET oficiais do Marketing Hub e documentacao publica na Internet. Metodos HTTP de mutacao ficam proibidos na v1.
 - A v1 nao altera plano, codigo, campanha, preco, orcamento, publicacao, comunicacao ou dados comerciais.

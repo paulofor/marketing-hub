@@ -67,6 +67,7 @@ public class CodexReadOnlyRunner {
     command.add("--search");
     command.add("exec");
     command.add("-");
+    command.add("--skip-git-repo-check");
     command.add("--sandbox");
     command.add("read-only");
     command.add("--cd");

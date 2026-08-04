@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: validar os limites de seguranca do comando Codex. */
 class CodexReadOnlyRunnerTest {
-  /** Confirma sandbox read-only, pesquisa web e repositorio explicitamente delimitado. */
+  /** Confirma sandbox read-only, pesquisa web e montagem externa aceita explicitamente. */
   @Test
   void shouldForceReadOnlyEphemeralExecution() throws Exception {
     WorkerProperties properties = new WorkerProperties();
@@ -20,6 +20,7 @@ class CodexReadOnlyRunnerTest {
 
     assertThat(command).containsSubsequence("--sandbox", "read-only");
     assertThat(command).contains("--search", "--cd", "/workspace/repository");
+    assertThat(command).containsSubsequence("exec", "-", "--skip-git-repo-check");
     assertThat(command).doesNotContain("--dangerously-bypass-approvals-and-sandbox");
   }
 }

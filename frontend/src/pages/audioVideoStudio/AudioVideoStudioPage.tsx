@@ -76,6 +76,16 @@ type StudioBriefing = {
   targetDurationSeconds: string;
   funnelStage: string;
   primaryMetric: string;
+  strategyGroupKey: string;
+  strategyRole: string;
+  commercialHypothesis: string;
+  persuasionFramework: string;
+  scientificBasis: string;
+  measurementPlan: string;
+  resultsSnapshot: string;
+  learningDecision: "COLLECTING" | "CONTINUE" | "ADJUST" | "STOP";
+  confirmedLearning: string;
+  nextVersionRecommendation: string;
   providerPlan: string;
   voiceoverPlan: string;
   soundtrackPlan: string;
@@ -646,6 +656,19 @@ const defaultBriefing: StudioBriefing = {
   targetDurationSeconds: "180",
   funnelStage: "AWARENESS",
   primaryMetric: "DIAGNOSTIC_START",
+  strategyGroupKey: "musa-two-video-funnel-v1",
+  strategyRole: "CAMPAIGN_QUALIFICATION",
+  commercialHypothesis:
+    "Se a campanha mostrar uma dor cotidiana e um microajuste realista, mulheres que se identificam chegarao mais qualificadas ao primeiro ajuste MUSA.",
+  persuasionFramework: "PAS + JTBD + mecanismo + message match",
+  scientificBasis:
+    "Vincular artigos e conceitos aplicados, registrando promessa permitida e limites antes da publicacao.",
+  measurementPlan:
+    "Video 1: retencao 3s, conclusao, clique e sessao humana. Video 2: progresso de reproducao, inicio do primeiro ajuste, diagnostico, checkout e venda atribuida.",
+  resultsSnapshot: "Aguardando eventos reais atribuídos a esta versao.",
+  learningDecision: "COLLECTING",
+  confirmedLearning: "",
+  nextVersionRecommendation: "",
   providerPlan:
     "Comecar com roteiro e storyboard; depois testar narracao, cenas-chave e montagem em jobs auditaveis.",
   voiceoverPlan:
@@ -699,6 +722,20 @@ const musaV7Briefing: StudioBriefing = {
   funnelStage: "AWARENESS_TO_DIAGNOSTIC",
   primaryMetric:
     "CTA_CLICK_TO_DIAGNOSTIC; apoio: VIDEO_PLAY, VIDEO_75, DIAGNOSTIC_COMPLETED, PAYWALL_VIEWED, CHECKOUT_STARTED, PURCHASE",
+  strategyGroupKey: "musa-two-video-funnel-v1",
+  strategyRole: "CAMPAIGN_QUALIFICATION",
+  commercialHypothesis:
+    "O video de campanha identifica a dor e qualifica a chegada; o hero preserva a promessa, explica o mecanismo e aumenta o inicio do primeiro ajuste.",
+  persuasionFramework:
+    "Problem-Agitate-Solve + Jobs to Be Done + Mechanism-first + Message match",
+  scientificBasis:
+    "Conceitos dos artigos MUSA devem sustentar percepcao, coerencia visual e microacoes, sem prometer aprovacao externa ou transformacao psicologica.",
+  measurementPlan:
+    "Campanha: retencao 3s, conclusao, CTR e sessoes humanas. Hero: reproducao por trecho, primeiro ajuste, diagnostico, login, paywall, checkout, compra e reembolso.",
+  resultsSnapshot: "Aguardando publicacao aprovada e eventos reais.",
+  learningDecision: "COLLECTING",
+  confirmedLearning: "",
+  nextVersionRecommendation: "",
   providerPlan:
     "Luma Ray como principal para cenas editoriais e movimento; Kling como alternativa de realismo/custo; HeyGen apenas se a decisao mudar para apresentadora/avatar.",
   voiceoverPlan:
@@ -772,6 +809,20 @@ function buildBriefingFromProject(project: VideoProject): StudioBriefing {
       : defaultBriefing.targetDurationSeconds,
     funnelStage: project.funnelStage || defaultBriefing.funnelStage,
     primaryMetric: project.primaryMetric || defaultBriefing.primaryMetric,
+    strategyGroupKey:
+      project.strategyGroupKey || defaultBriefing.strategyGroupKey,
+    strategyRole: project.strategyRole || defaultBriefing.strategyRole,
+    commercialHypothesis:
+      project.commercialHypothesis || defaultBriefing.commercialHypothesis,
+    persuasionFramework:
+      project.persuasionFramework || defaultBriefing.persuasionFramework,
+    scientificBasis: project.scientificBasis || defaultBriefing.scientificBasis,
+    measurementPlan: project.measurementPlan || defaultBriefing.measurementPlan,
+    resultsSnapshot: project.resultsSnapshot || defaultBriefing.resultsSnapshot,
+    learningDecision:
+      project.learningDecision || defaultBriefing.learningDecision,
+    confirmedLearning: project.confirmedLearning || "",
+    nextVersionRecommendation: project.nextVersionRecommendation || "",
     providerPlan: project.providerPlan || defaultBriefing.providerPlan,
     voiceoverPlan: project.voiceoverPlan || defaultBriefing.voiceoverPlan,
     soundtrackPlan: project.soundtrackPlan || defaultBriefing.soundtrackPlan,
@@ -997,6 +1048,16 @@ export default function AudioVideoStudioPage() {
     storyText: briefing.story,
     funnelStage: briefing.funnelStage || "AWARENESS",
     primaryMetric: briefing.primaryMetric || "DIAGNOSTIC_START",
+    strategyGroupKey: briefing.strategyGroupKey,
+    strategyRole: briefing.strategyRole,
+    commercialHypothesis: briefing.commercialHypothesis,
+    persuasionFramework: briefing.persuasionFramework,
+    scientificBasis: briefing.scientificBasis,
+    measurementPlan: briefing.measurementPlan,
+    resultsSnapshot: briefing.resultsSnapshot,
+    learningDecision: briefing.learningDecision,
+    confirmedLearning: briefing.confirmedLearning,
+    nextVersionRecommendation: briefing.nextVersionRecommendation,
     hookText: `${briefing.audience}, se ${briefing.pain.toLowerCase()}, este video mostra um caminho mais simples.`,
     scriptText: scriptDraft.join("\n\n"),
     scenePlan: selectedScenePrompts.join("\n"),
@@ -1680,6 +1741,103 @@ export default function AudioVideoStudioPage() {
                     ))}
                   </ul>
                 </div>
+              </div>
+              <div className="audio-video-studio-page__panel">
+                <h2>Estrategia e aprendizado do video</h2>
+                <p>
+                  Vincule as duas pecas pelo mesmo grupo: campanha identifica a
+                  dor; hero explica mecanismo e jornada sem quebrar a promessa.
+                </p>
+                <div className="audio-video-studio-page__columns">
+                  <label>
+                    Grupo da estrategia
+                    <input
+                      value={briefing.strategyGroupKey}
+                      onChange={updateBriefing("strategyGroupKey")}
+                    />
+                  </label>
+                  <label>
+                    Funcao da peca
+                    <select
+                      value={briefing.strategyRole}
+                      onChange={updateBriefing("strategyRole")}
+                    >
+                      <option value="CAMPAIGN_QUALIFICATION">
+                        Video 1 - identificacao e qualificacao
+                      </option>
+                      <option value="PDE_HERO_CONVERSION">
+                        Video 2 - hero e conversao
+                      </option>
+                    </select>
+                  </label>
+                </div>
+                <label>
+                  Hipotese comercial
+                  <textarea
+                    rows={3}
+                    value={briefing.commercialHypothesis}
+                    onChange={updateBriefing("commercialHypothesis")}
+                  />
+                </label>
+                <label>
+                  Framework de persuasao
+                  <input
+                    value={briefing.persuasionFramework}
+                    onChange={updateBriefing("persuasionFramework")}
+                  />
+                </label>
+                <label>
+                  Evidencias cientificas e limites da promessa
+                  <textarea
+                    rows={3}
+                    value={briefing.scientificBasis}
+                    onChange={updateBriefing("scientificBasis")}
+                  />
+                </label>
+                <label>
+                  Plano de medicao
+                  <textarea
+                    rows={3}
+                    value={briefing.measurementPlan}
+                    onChange={updateBriefing("measurementPlan")}
+                  />
+                </label>
+                <label>
+                  Resultados reais observados
+                  <textarea
+                    rows={3}
+                    value={briefing.resultsSnapshot}
+                    onChange={updateBriefing("resultsSnapshot")}
+                  />
+                </label>
+                <label>
+                  Decisao
+                  <select
+                    value={briefing.learningDecision}
+                    onChange={updateBriefing("learningDecision")}
+                  >
+                    <option value="COLLECTING">Coletando amostra</option>
+                    <option value="CONTINUE">Continuar</option>
+                    <option value="ADJUST">Ajustar</option>
+                    <option value="STOP">Parar versao</option>
+                  </select>
+                </label>
+                <label>
+                  Aprendizado confirmado
+                  <textarea
+                    rows={3}
+                    value={briefing.confirmedLearning}
+                    onChange={updateBriefing("confirmedLearning")}
+                  />
+                </label>
+                <label>
+                  Proxima versao recomendada
+                  <textarea
+                    rows={3}
+                    value={briefing.nextVersionRecommendation}
+                    onChange={updateBriefing("nextVersionRecommendation")}
+                  />
+                </label>
               </div>
             </section>
             <div

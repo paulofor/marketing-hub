@@ -13,14 +13,22 @@ import com.marketinghub.growthoperator.service.start.StartGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.view.GrowthOperatorExecutionResponse;
 import com.marketinghub.growthoperator.service.view.GrowthOperatorMcpToolResponse;
 import com.marketinghub.planning.CommercialPlan;
+import com.marketinghub.planning.CommercialPlanWeekObjective;
 import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.repository.jpa.growthoperator.GrowthOperatorExecutionRepository;
+import com.marketinghub.repository.jpa.planning.CommercialPlanWeekObjectiveRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
 import com.marketinghub.salesvideo.VideoProject;
+import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -36,6 +44,8 @@ public class GrowthOperatorService {
   private static final String READ_ONLY = "READ_ONLY_DIAGNOSIS";
   private static final int SESSION_EVENT_LIMIT = 2000;
   private static final int MEMORY_TIMELINE_LIMIT = 30;
+  private static final Pattern MONEY_GATE_PATTERN =
+      Pattern.compile("R\\$\\s*([0-9]+(?:[.,][0-9]{1,2})?)", Pattern.CASE_INSENSITIVE);
   private static final List<GrowthOperatorMcpToolResponse> MCP_TOOLS =
       List.of(
           new GrowthOperatorMcpToolResponse(
@@ -76,6 +86,7 @@ public class GrowthOperatorService {
               Map.of()));
   private final GrowthOperatorExecutionRepository repository;
   private final CommercialPlanService commercialPlanService;
+  private final CommercialPlanWeekObjectiveRepository weekObjectiveRepository;
   private final ExperimentFunnelService experimentFunnelService;
   private final VideoProjectRepository videoProjectRepository;
   private final ExperimentVideoPerformanceDashboardService videoPerformanceService;
@@ -84,12 +95,14 @@ public class GrowthOperatorService {
   public GrowthOperatorService(
       GrowthOperatorExecutionRepository repository,
       CommercialPlanService commercialPlanService,
+      CommercialPlanWeekObjectiveRepository weekObjectiveRepository,
       ExperimentFunnelService experimentFunnelService,
       VideoProjectRepository videoProjectRepository,
       ExperimentVideoPerformanceDashboardService videoPerformanceService,
       ObjectMapper objectMapper) {
     this.repository = repository;
     this.commercialPlanService = commercialPlanService;
+    this.weekObjectiveRepository = weekObjectiveRepository;
     this.experimentFunnelService = experimentFunnelService;
     this.videoProjectRepository = videoProjectRepository;
     this.videoPerformanceService = videoPerformanceService;
@@ -102,7 +115,8 @@ public class GrowthOperatorService {
     CommercialPlan plan = commercialPlanService.getPlan(planId);
     GrowthOperatorExecution execution = new GrowthOperatorExecution();
     execution.setCommercialPlan(plan);
-    execution.setWeekNumber(request.weekNumber() == null ? 1 : request.weekNumber());
+    execution.setWeekNumber(
+        request.weekNumber() == null ? resolveCurrentWeekNumber(plan) : request.weekNumber());
     execution.setStatus(GrowthOperatorExecutionStatus.PENDING);
     execution.setAuthorityMode(READ_ONLY);
     execution.setObjective(
@@ -231,7 +245,7 @@ public class GrowthOperatorService {
     }
     GrowthOperatorExecution execution = new GrowthOperatorExecution();
     execution.setCommercialPlan(plan);
-    execution.setWeekNumber(1);
+    execution.setWeekNumber(resolveCurrentWeekNumber(plan));
     execution.setStatus(GrowthOperatorExecutionStatus.PENDING);
     execution.setAuthorityMode(READ_ONLY);
     execution.setObjective(defaultObjective(plan));
@@ -253,8 +267,20 @@ public class GrowthOperatorService {
     execution.setAlternativesJson(request.alternativesJson());
     execution.setDiagnosisJson(request.diagnosisJson());
     execution.setRawModelResponse(request.rawModelResponse());
-    execution.setRecommendedDecision(request.recommendedDecision());
-    execution.setRecommendedAction(request.recommendedAction());
+    CommercialPlan plan = commercialPlanService.getPlan(execution.getCommercialPlan().getId());
+    boolean preventiveGateReached = isPreventiveGateReachedWithoutProgress(plan);
+    execution.setRecommendedDecision(
+        preventiveGateReached
+                && request.recommendedDecision()
+                    == com.marketinghub.growthoperator.GrowthOperatorDecision.CONTINUE
+            ? com.marketinghub.growthoperator.GrowthOperatorDecision.WAIT_FOR_APPROVAL
+            : request.recommendedDecision());
+    execution.setRecommendedAction(
+        preventiveGateReached
+                && request.recommendedDecision()
+                    == com.marketinghub.growthoperator.GrowthOperatorDecision.CONTINUE
+            ? "Gate preventivo atingido sem receita: revisar funil e obter aprovacao humana antes de continuar o gasto."
+            : request.recommendedAction());
     execution.setDailyReport(request.dailyReport());
     execution.setModel(request.model());
     execution.setInputTokens(request.inputTokens());
@@ -313,6 +339,9 @@ public class GrowthOperatorService {
     snapshot.put("actualCost", plan.getActualTotalCost());
     snapshot.put("actualRevenue", plan.getActualRevenue());
     snapshot.put("deadline", plan.getDeadline());
+    int currentWeekNumber = resolveCurrentWeekNumber(plan);
+    snapshot.put("currentWeek", buildCurrentWeekContext(plan, currentWeekNumber));
+    snapshot.put("spendGovernance", buildSpendGovernance(plan));
     if (plan.getExperiment() != null) {
       Long experimentId = plan.getExperiment().getId();
       snapshot.put("experimentId", experimentId);
@@ -330,6 +359,84 @@ public class GrowthOperatorService {
           "Falha no modulo growth-operator ao congelar evidencias do planId={}", plan.getId(), ex);
       throw new IllegalStateException("Falha ao serializar evidencias do planejamento", ex);
     }
+  }
+
+  /** Monta o contexto mensal e semanal com precedencia explicita para a decisao operacional. */
+  private Map<String, Object> buildCurrentWeekContext(CommercialPlan plan, int weekNumber) {
+    List<CommercialPlanWeekObjective> objectives =
+        weekObjectiveRepository.findByPlanIdAndWeekNumberOrderBySequenceOrderAsc(
+            plan.getId(), weekNumber);
+    LinkedHashMap<String, Object> context = new LinkedHashMap<>();
+    context.put("weekNumber", weekNumber);
+    context.put(
+        "objectives",
+        objectives.stream().map(CommercialPlanWeekObjective::getObjectiveText).toList());
+    context.put("objectivesConfigured", !objectives.isEmpty());
+    context.put(
+        "precedenceRule",
+        "A meta semanal vigente governa a proxima decisao; o teto mensal nunca autoriza gasto ate o limite.");
+    return context;
+  }
+
+  /** Explicita os gates de gasto e impede que um limite seja interpretado como meta. */
+  private Map<String, Object> buildSpendGovernance(CommercialPlan plan) {
+    BigDecimal preventiveGate = findLowestMoneyGate(plan.getStopCriteria());
+    LinkedHashMap<String, Object> governance = new LinkedHashMap<>();
+    governance.put("monthlyBudgetCeiling", plan.getMaxBudget());
+    governance.put("preventiveReviewGate", preventiveGate);
+    governance.put("actualCost", plan.getActualTotalCost());
+    governance.put("actualRevenue", plan.getActualRevenue());
+    governance.put(
+        "preventiveGateReachedWithoutRevenue", isPreventiveGateReachedWithoutProgress(plan));
+    governance.put(
+        "rule",
+        "Gate atingido nao autoriza continuar gastando; sem receita exige WAIT_FOR_APPROVAL antes de novo gasto.");
+    return governance;
+  }
+
+  /**
+   * Bloqueia continuidade automatica quando o primeiro gate foi atingido sem receita comprovada.
+   */
+  private boolean isPreventiveGateReachedWithoutProgress(CommercialPlan plan) {
+    BigDecimal gate = findLowestMoneyGate(plan.getStopCriteria());
+    BigDecimal cost = plan.getActualTotalCost();
+    BigDecimal revenue = plan.getActualRevenue();
+    return gate != null
+        && cost != null
+        && cost.compareTo(gate) >= 0
+        && (revenue == null || revenue.signum() <= 0);
+  }
+
+  /** Extrai o primeiro gate monetario efetivo como o menor valor abaixo do teto mensal. */
+  private BigDecimal findLowestMoneyGate(String criteria) {
+    if (!hasText(criteria)) {
+      return null;
+    }
+    Matcher matcher = MONEY_GATE_PATTERN.matcher(criteria);
+    BigDecimal lowest = null;
+    while (matcher.find()) {
+      BigDecimal value = new BigDecimal(matcher.group(1).replace(',', '.'));
+      if (value.signum() > 0 && (lowest == null || value.compareTo(lowest) < 0)) {
+        lowest = value;
+      }
+    }
+    return lowest;
+  }
+
+  /** Resolve a semana comercial atual no mes do planejamento sem fixar sempre a semana um. */
+  private int resolveCurrentWeekNumber(CommercialPlan plan) {
+    LocalDate today = LocalDate.now(java.time.Clock.systemUTC());
+    YearMonth month =
+        plan.getDeadline() == null ? YearMonth.from(today) : YearMonth.from(plan.getDeadline());
+    LocalDate monday = month.atDay(1);
+    while (monday.getDayOfWeek() != DayOfWeek.MONDAY) {
+      monday = monday.plusDays(1);
+    }
+    if (today.isBefore(monday) || !YearMonth.from(today).equals(month)) {
+      return 1;
+    }
+    return Math.max(
+        1, Math.min(5, (int) (java.time.temporal.ChronoUnit.DAYS.between(monday, today) / 7) + 1));
   }
 
   /** Consolida todo o historico em contagens e preserva uma linha do tempo recente e relevante. */

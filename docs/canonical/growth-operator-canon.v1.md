@@ -60,6 +60,13 @@ atribuidos.
 
 Decisoes permitidas: `CONTINUE`, `ADJUST`, `STOP` e `WAIT_FOR_APPROVAL`.
 
+## Metas e gates de gasto
+
+- Cada ciclo recebe separadamente o teto mensal e os objetivos da semana comercial vigente.
+- A semana vigente tem precedencia na decisao operacional; o teto mensal nunca representa autorizacao de gasto.
+- O menor gate monetario do criterio de parada e preventivo. Quando ele for atingido sem receita comprovada, o backend bloqueia `CONTINUE` e registra `WAIT_FOR_APPROVAL`.
+- Objetivo semanal ausente ou contraditorio deve ser tratado como lacuna de planejamento, nunca preenchido por suposicao do modelo.
+
 ## Gates de ampliacao
 
 A autonomia somente pode ser ampliada por nova versao e decisao explicita do usuario depois de pelo menos dez diagnosticos confirmados por eventos posteriores, sem violacao de autoridade. Preco, gasto, campanha, publicacao, comunicacao em massa e PR permanecem sujeitos a aprovacao humana.

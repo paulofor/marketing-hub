@@ -13,12 +13,17 @@ import com.marketinghub.experiment.funnel.ExperimentFunnelService;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDetailedEventDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsEvidenceDto;
 import com.marketinghub.experiment.video.service.ExperimentVideoPerformanceDashboardService;
+import com.marketinghub.growthoperator.GrowthOperatorDecision;
 import com.marketinghub.growthoperator.GrowthOperatorExecution;
 import com.marketinghub.growthoperator.GrowthOperatorExecutionStatus;
+import com.marketinghub.growthoperator.service.result.CompleteGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.start.StartGrowthOperatorRequest;
+import com.marketinghub.growthoperator.service.view.GrowthOperatorExecutionResponse;
 import com.marketinghub.planning.CommercialPlan;
+import com.marketinghub.planning.CommercialPlanWeekObjective;
 import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.repository.jpa.growthoperator.GrowthOperatorExecutionRepository;
+import com.marketinghub.repository.jpa.planning.CommercialPlanWeekObjectiveRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
 import com.marketinghub.salesvideo.VideoProject;
 import com.marketinghub.salesvideo.VideoProjectStatus;
@@ -39,6 +44,7 @@ class GrowthOperatorServiceTest {
         new GrowthOperatorService(
             mock(GrowthOperatorExecutionRepository.class),
             mock(CommercialPlanService.class),
+            mock(CommercialPlanWeekObjectiveRepository.class),
             mock(ExperimentFunnelService.class),
             mock(VideoProjectRepository.class),
             mock(ExperimentVideoPerformanceDashboardService.class),
@@ -85,6 +91,7 @@ class GrowthOperatorServiceTest {
         new GrowthOperatorService(
             repository,
             planService,
+            mock(CommercialPlanWeekObjectiveRepository.class),
             funnelService,
             mock(VideoProjectRepository.class),
             mock(ExperimentVideoPerformanceDashboardService.class),
@@ -144,6 +151,7 @@ class GrowthOperatorServiceTest {
         new GrowthOperatorService(
             repository,
             planService,
+            mock(CommercialPlanWeekObjectiveRepository.class),
             funnelService,
             mock(VideoProjectRepository.class),
             mock(ExperimentVideoPerformanceDashboardService.class),
@@ -183,6 +191,7 @@ class GrowthOperatorServiceTest {
         new GrowthOperatorService(
             repository,
             planService,
+            mock(CommercialPlanWeekObjectiveRepository.class),
             funnelService,
             mock(VideoProjectRepository.class),
             mock(ExperimentVideoPerformanceDashboardService.class),
@@ -232,6 +241,7 @@ class GrowthOperatorServiceTest {
         new GrowthOperatorService(
             repository,
             planService,
+            mock(CommercialPlanWeekObjectiveRepository.class),
             funnelService,
             videoRepository,
             videoPerformanceService,
@@ -245,5 +255,105 @@ class GrowthOperatorServiceTest {
     List<Map<String, Object>> strategies = (List<Map<String, Object>>) result.get("strategies");
     assertThat(strategies.get(0).get("strategyGroupKey")).isEqualTo("musa-two-video-funnel-v1");
     assertThat(strategies.get(0).get("learningDecision")).isEqualTo("COLLECTING");
+  }
+
+  /** Confirma que o snapshot separa teto mensal, semana vigente e primeiro gate preventivo. */
+  @Test
+  void shouldFreezeWeeklyGoalsAndSpendGovernance() throws Exception {
+    GrowthOperatorExecutionRepository repository = mock(GrowthOperatorExecutionRepository.class);
+    CommercialPlanService planService = mock(CommercialPlanService.class);
+    CommercialPlanWeekObjectiveRepository objectiveRepository =
+        mock(CommercialPlanWeekObjectiveRepository.class);
+    CommercialPlan plan =
+        CommercialPlan.builder()
+            .id(2L)
+            .deadline(java.time.LocalDate.of(2026, 8, 31))
+            .maxBudget(new BigDecimal("400"))
+            .actualTotalCost(new BigDecimal("80"))
+            .actualRevenue(BigDecimal.ZERO)
+            .stopCriteria("Revisar em R$ 75; bloquear em R$ 175 sem venda.")
+            .build();
+    when(planService.getPlan(2L)).thenReturn(plan);
+    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
+    when(repository.save(any(GrowthOperatorExecution.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    when(objectiveRepository.findByPlanIdAndWeekNumberOrderBySequenceOrderAsc(2L, 1))
+        .thenReturn(
+            List.of(
+                CommercialPlanWeekObjective.builder()
+                    .objectiveText("Gerar cinco vendas ate 09/08")
+                    .build()));
+    ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+    GrowthOperatorService service =
+        new GrowthOperatorService(
+            repository,
+            planService,
+            objectiveRepository,
+            mock(ExperimentFunnelService.class),
+            mock(VideoProjectRepository.class),
+            mock(ExperimentVideoPerformanceDashboardService.class),
+            objectMapper);
+
+    service.start(2L, new StartGrowthOperatorRequest(1, "Cumprir meta semanal"));
+
+    ArgumentCaptor<GrowthOperatorExecution> captor =
+        ArgumentCaptor.forClass(GrowthOperatorExecution.class);
+    verify(repository).save(captor.capture());
+    JsonNode snapshot = objectMapper.readTree(captor.getValue().getEvidenceSnapshot());
+    assertThat(snapshot.at("/maxBudget").decimalValue()).isEqualByComparingTo("400");
+    assertThat(snapshot.at("/currentWeek/objectives/0").asText())
+        .isEqualTo("Gerar cinco vendas ate 09/08");
+    assertThat(snapshot.at("/spendGovernance/preventiveReviewGate").decimalValue())
+        .isEqualByComparingTo("75");
+    assertThat(snapshot.at("/spendGovernance/preventiveGateReachedWithoutRevenue").asBoolean())
+        .isTrue();
+  }
+
+  /** Confirma que o backend nao aceita continuidade apos o primeiro gate sem receita. */
+  @Test
+  void shouldBlockContinueAtPreventiveGateWithoutRevenue() {
+    GrowthOperatorExecutionRepository repository = mock(GrowthOperatorExecutionRepository.class);
+    CommercialPlanService planService = mock(CommercialPlanService.class);
+    CommercialPlan plan =
+        CommercialPlan.builder()
+            .id(2L)
+            .actualTotalCost(new BigDecimal("80"))
+            .actualRevenue(BigDecimal.ZERO)
+            .stopCriteria("Revisar em R$ 75; bloquear em R$ 175 sem venda.")
+            .build();
+    GrowthOperatorExecution execution = new GrowthOperatorExecution();
+    execution.setCommercialPlan(plan);
+    execution.setAuthorityMode("READ_ONLY_DIAGNOSIS");
+    when(repository.findById(10L)).thenReturn(java.util.Optional.of(execution));
+    when(planService.getPlan(2L)).thenReturn(plan);
+    when(repository.save(any(GrowthOperatorExecution.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    GrowthOperatorService service =
+        new GrowthOperatorService(
+            repository,
+            planService,
+            mock(CommercialPlanWeekObjectiveRepository.class),
+            mock(ExperimentFunnelService.class),
+            mock(VideoProjectRepository.class),
+            mock(ExperimentVideoPerformanceDashboardService.class),
+            new ObjectMapper());
+
+    GrowthOperatorExecutionResponse response =
+        service.complete(
+            10L,
+            new CompleteGrowthOperatorRequest(
+                "[]",
+                "{}",
+                "{}",
+                GrowthOperatorDecision.CONTINUE,
+                "Manter campanha",
+                "relatorio",
+                "gpt-5.6-sol",
+                1L,
+                1L,
+                BigDecimal.ZERO));
+
+    assertThat(response.recommendedDecision()).isEqualTo(GrowthOperatorDecision.WAIT_FOR_APPROVAL);
+    assertThat(response.recommendedAction()).contains("Gate preventivo atingido");
   }
 }

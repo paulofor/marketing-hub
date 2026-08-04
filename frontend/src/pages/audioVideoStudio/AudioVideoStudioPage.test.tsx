@@ -148,4 +148,34 @@ describe("AudioVideoStudioPage", () => {
       "audio-video-studio-page__stage-card--estrategia",
     );
   });
+
+  it("apresenta o conteudo operacional na sequencia canonica das etapas", async () => {
+    setup();
+
+    await screen.findByRole("heading", { name: /1\. estrategia e oferta/i });
+    const stageIds = [
+      "audio-video-stage-estrategia",
+      "audio-video-stage-roteiro",
+      "audio-video-stage-biblia-visual",
+      "audio-video-stage-storyboard",
+      "audio-video-stage-audio",
+      "audio-video-stage-provider",
+      "audio-video-stage-montagem",
+      "audio-video-stage-revisao",
+      "audio-video-stage-aprendizado",
+    ];
+
+    const stages = stageIds.map((id) => document.getElementById(id));
+    expect(stages.every(Boolean)).toBe(true);
+    stages.slice(1).forEach((stage, index) => {
+      const previousStage = stages[index];
+      if (!previousStage || !stage) {
+        throw new Error("Etapa do Estudio ausente no documento");
+      }
+      expect(
+        previousStage.compareDocumentPosition(stage) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+  });
 });

@@ -97,14 +97,14 @@ public class LumaRayVideoProvider implements VideoProvider {
                 .anyMatch(providerName::equals);
     }
 
-    /** Gera cenas Luma de 10s, monta um MP4 final e devolve metadados auditáveis ao backend. */
+    /** Gera uma cena isolada ou o conjunto configurado de cenas Luma e devolve o MP4 auditável. */
     @Override
     public ProviderArtifacts render(SalesVideoJob job,
                                     SalesVideoProfile profile,
                                     ProgressCallback progressCallback) {
         requireApiKey();
         SalesVideoScript script = ensureScript(profile);
-        int sceneCount = Math.max(1, properties.getProviders().getLuma().getSceneCount());
+        int sceneCount = resolveSceneCount(job);
         List<Path> sceneFiles = new ArrayList<>();
         List<Map<String, Object>> sceneMetadata = new ArrayList<>();
         try {
@@ -137,6 +137,16 @@ public class LumaRayVideoProvider implements VideoProvider {
         } finally {
             cleanup(sceneFiles);
         }
+    }
+
+    /** Mantém jobs do Estúdio por cena em uma única geração, sem expandi-los para o vídeo final. */
+    private int resolveSceneCount(SalesVideoJob job) {
+        JsonNode metadata = readMetadata(job);
+        if ("SCENE_BY_SCENE_MONTAGE".equalsIgnoreCase(metadata.path("generation_strategy").asText(""))
+                && metadata.path("scene").isObject()) {
+            return 1;
+        }
+        return Math.max(1, properties.getProviders().getLuma().getSceneCount());
     }
 
     /** Cria uma geração de cena na Luma Agents API. */
@@ -427,7 +437,10 @@ public class LumaRayVideoProvider implements VideoProvider {
                                     int sceneIndex,
                                     int sceneCount) {
         JsonNode metadata = readMetadata(job);
-        JsonNode scenes = metadata.path("assembly_plan").path("scenes");
+        JsonNode scenes = "SCENE_BY_SCENE_MONTAGE".equalsIgnoreCase(
+                        metadata.path("generation_strategy").asText(""))
+                ? metadata.path("scene")
+                : metadata.path("assembly_plan").path("scenes");
         String sceneBrief = sceneBrief(scenes, sceneIndex, sceneCount);
         String visualDirectives = visualProviderDirectives(metadata);
         return """
@@ -463,6 +476,14 @@ public class LumaRayVideoProvider implements VideoProvider {
 
     /** Resume as cenas do plano de montagem em blocos compatíveis com 3 gerações de 10s. */
     private String sceneBrief(JsonNode scenes, int sceneIndex, int sceneCount) {
+        if (sceneCount == 1) {
+            JsonNode isolatedScene = scenes.isMissingNode() ? null : scenes;
+            if (isolatedScene != null && isolatedScene.isObject()) {
+                return "%s - %s".formatted(
+                        isolatedScene.path("role").asText("SCENE"),
+                        isolatedScene.path("prompt").asText(""));
+            }
+        }
         if (!scenes.isArray() || scenes.isEmpty()) {
             return "Dor, result, mechanism and CTA in a concise editorial MUSA sequence.";
         }

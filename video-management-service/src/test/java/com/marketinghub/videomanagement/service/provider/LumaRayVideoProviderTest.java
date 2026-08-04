@@ -98,6 +98,38 @@ class LumaRayVideoProviderTest {
         assertThat(firstDownload.getHeader("Authorization")).isNull();
     }
 
+    /** Deve manter um job do Estúdio como clipe isolado de dez segundos. */
+    @Test
+    void shouldRenderStudioSceneAsSingleLumaClip() throws Exception {
+        server.enqueue(json("{\"id\":\"generation-mechanism\",\"state\":\"queued\"}"));
+        server.enqueue(json("""
+                {
+                  "id": "generation-mechanism",
+                  "state": "completed",
+                  "output": [{"url": "%s/download/mechanism.mp4"}],
+                  "model": "ray-3.2"
+                }
+                """.formatted(server.url("/").toString().replaceAll("/$", ""))));
+        server.enqueue(mp4Response());
+        LumaRayVideoProvider provider = new LumaRayVideoProvider(
+                properties(),
+                new ObjectMapper(),
+                mock(VideoAssetClient.class),
+                WebClient.builder());
+
+        ProviderArtifacts artifacts = provider.render(studioSceneJob(), profile(), (percent, status, message) -> { });
+
+        assertThat(artifacts.providerJobId()).isEqualTo("generation-mechanism");
+        assertThat(artifacts.metadata())
+                .containsEntry("duration_seconds", 10)
+                .containsEntry("scene_count", 1);
+        RecordedRequest create = server.takeRequest();
+        assertThat(create.getBody().readUtf8())
+                .contains("MECANISMO")
+                .contains("celular")
+                .doesNotContain("Dor, result, mechanism and CTA");
+    }
+
     /** Deve falhar cedo quando a chave Luma não estiver configurada. */
     @Test
     void shouldRejectMissingLumaApiKey() throws Exception {
@@ -313,6 +345,47 @@ class LumaRayVideoProviderTest {
                             ]
                           },
                           "visual_provider_directives": "Imagem clara, postura natural e luz constante."
+                        }
+                        """,
+                Instant.now(),
+                Instant.now());
+    }
+
+    /** Cria um job do Estúdio que representa apenas a cena MECANISMO. */
+    private SalesVideoJob studioSceneJob() {
+        return new SalesVideoJob(
+                11L,
+                2L,
+                3L,
+                "tenant-a",
+                SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE,
+                "LUMA_RAY_3_2",
+                null,
+                SalesVideoJobType.RENDER,
+                SalesVideoStatus.VIDEO_REQUESTED,
+                1,
+                null,
+                null,
+                null,
+                0,
+                null,
+                null,
+                null,
+                Instant.now(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                """
+                        {
+                          "generation_strategy": "SCENE_BY_SCENE_MONTAGE",
+                          "scene": {
+                            "order": 3,
+                            "role": "MECANISMO",
+                            "prompt": "A mesma mulher usa o celular e executa um microajuste visível na manga."
+                          }
                         }
                         """,
                 Instant.now(),

@@ -267,6 +267,44 @@ class SalesVideoJobServiceTest {
             org.mockito.Mockito.eq(job), org.mockito.Mockito.any(JobFailureRequest.class));
   }
 
+  /** Aceita clipe isolado quando atende à duração da cena, sem compará-lo ao vídeo final. */
+  @Test
+  void shouldAcceptIsolatedSceneUsingSceneDurationTarget() {
+    SalesVideoProfile profile =
+        SalesVideoProfile.builder()
+            .id(6L)
+            .targetDurationSeconds(30)
+            .status(SalesVideoStatus.VIDEO_REQUESTED)
+            .build();
+    SalesVideoJob job =
+        SalesVideoJob.builder()
+            .id(20501L)
+            .profile(profile)
+            .jobType(SalesVideoJobType.RENDER)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .status(SalesVideoStatus.VIDEO_PROCESSING)
+            .metadataJson(
+                """
+                {
+                  "generation_strategy":"SCENE_BY_SCENE_MONTAGE",
+                  "scene":{"role":"MECANISMO","duration_seconds":10},
+                  "provider_strategy":{"expected_clip_duration_seconds":10}
+                }
+                """)
+            .build();
+    JobCompletionRequest request = new JobCompletionRequest();
+    request.setStatus(SalesVideoStatus.VIDEO_READY);
+    request.setMetadataJson("{\"duration_seconds\":10,\"resolution\":\"720p\"}");
+    request.setMessage("Cena isolada concluída");
+    given(jobRepository.findById(20501L)).willReturn(Optional.of(job));
+    given(jobRepository.save(job)).willReturn(job);
+
+    SalesVideoJobDto result = service.complete(20501L, request);
+
+    assertThat(result.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_READY);
+    assertThat(job.getFailureCode()).isNull();
+  }
+
   /** Aceita render quando a duração auditada atende a tolerância comercial do perfil. */
   @Test
   void shouldAcceptRenderWhenAuditedDurationMatchesCommercialTargetTolerance() {

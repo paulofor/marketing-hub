@@ -191,7 +191,7 @@ public class KlingVideoProvider implements VideoProvider {
         payload.put("negative_prompt", config.getNegativePrompt());
         payload.put("aspect_ratio", config.getAspectRatio());
         payload.put("mode", config.getMode());
-        payload.put("duration", config.getDuration());
+        payload.put("duration", resolveDuration(metadata));
         String sourceImageUrl = resolveSourceImageUrl(metadata);
         if (StringUtils.hasText(sourceImageUrl)) {
             payload.put("image", sourceImageUrl);
@@ -218,9 +218,13 @@ public class KlingVideoProvider implements VideoProvider {
     private String buildPrompt(SalesVideoJob job, SalesVideoProfile profile, SalesVideoScript script) {
         JsonNode metadata = readMetadata(job);
         String visualDirectives = visualProviderDirectives(metadata);
-        String scenes = metadata.path("assembly_plan").path("scenes").isMissingNode()
-                ? "Recognizable pain, plausible mechanism, personal value and CTA."
-                : metadata.path("assembly_plan").path("scenes").toString();
+        String scenes = "SCENE_BY_SCENE_MONTAGE".equalsIgnoreCase(
+                        metadata.path("generation_strategy").asText(""))
+                && metadata.path("scene").isObject()
+                ? metadata.path("scene").toString()
+                : metadata.path("assembly_plan").path("scenes").isMissingNode()
+                        ? "Recognizable pain, plausible mechanism, personal value and CTA."
+                        : metadata.path("assembly_plan").path("scenes").toString();
         return """
                 Vertical 9:16 short-form sales video for Método MUSA - Presença Elegante em 7 Dias.
                 Language: %s.
@@ -288,9 +292,9 @@ public class KlingVideoProvider implements VideoProvider {
         metadata.put("model", properties.getProviders().getKling().getModel());
         metadata.put("aspect_ratio", properties.getProviders().getKling().getAspectRatio());
         metadata.put("mode", properties.getProviders().getKling().getMode());
-        metadata.put("duration_seconds", parseDurationSeconds(properties.getProviders().getKling().getDuration()));
+        metadata.put("duration_seconds", parseDurationSeconds(request.get("duration").toString()));
         metadata.put("modality", isImageToVideoPayload(request) ? "image_to_video" : "text_to_video");
-        metadata.put("cost_usd", estimateCostUsd());
+        metadata.put("cost_usd", estimateCostUsd(request));
         metadata.put("pricing_source", "Kling API pricing varies by model, mode, resolution and duration");
         metadata.put("request", request);
         metadata.put("final_status", objectMapper.convertValue(finalStatus, Map.class));
@@ -300,12 +304,22 @@ public class KlingVideoProvider implements VideoProvider {
     }
 
     /** Calcula custo aproximado conservador para teste Kling standard. */
-    private BigDecimal estimateCostUsd() {
-        int duration = parseDurationSeconds(properties.getProviders().getKling().getDuration());
+    private BigDecimal estimateCostUsd(Map<String, Object> request) {
+        int duration = parseDurationSeconds(String.valueOf(request.get("duration")));
         BigDecimal fiveSecondCost = "pro".equalsIgnoreCase(properties.getProviders().getKling().getMode())
                 ? new BigDecimal("0.33")
                 : new BigDecimal("0.20");
         return fiveSecondCost.multiply(BigDecimal.valueOf(Math.max(1, duration / 5L)));
+    }
+
+    /** Resolve cinco ou dez segundos conforme o contrato auditável da cena solicitado pelo Estúdio. */
+    private String resolveDuration(JsonNode metadata) {
+        int requested = metadata.path("provider_strategy").path("expected_clip_duration_seconds")
+                .asInt(metadata.path("scene").path("duration_seconds").asInt(0));
+        if (requested >= 10) {
+            return "10";
+        }
+        return properties.getProviders().getKling().getDuration();
     }
 
     /** Verifica envelope de sucesso quando a API retorna code/message padronizados. */

@@ -64,6 +64,7 @@ jobs:
           while IFS= read -r file; do
             [[ -z "${file}" ]] && continue
             case "${file}" in
+              .github/workflows/deploy-containers.yml) backend=true; frontend=true; video=true; app_deploy_descriptor=true; video_deploy_descriptor=true ;;
               .dockerignore) backend=true; frontend=true; video=true ;;
               backend/settings.xml) backend=true ;;
               backend/ads-service/*) backend=true ;;

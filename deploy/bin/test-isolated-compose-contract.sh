@@ -26,3 +26,8 @@ grep -q 'docker compose -f docker-compose.mcp.yml up' bin/apply-mcp-only.sh
 # recuperado não termine verde mantendo código antigo no container de vídeo.
 grep -Fq 'deploy/bin/apply-video-only.sh) video=true; video_deploy_descriptor=true ;;' \
   ../.github/workflows/deploy-containers.yml
+
+# Alterar o próprio workflow pode modificar qualquer contrato de build/deploy.
+# Todos os artefatos devem ser reconstruídos para validar a revisão publicada.
+grep -Fq '.github/workflows/deploy-containers.yml) backend=true; frontend=true; video=true; app_deploy_descriptor=true; video_deploy_descriptor=true ;;' \
+  ../.github/workflows/deploy-containers.yml

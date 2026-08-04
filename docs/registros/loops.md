@@ -53,6 +53,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 | `LOOP-LOW-TICKET-SALES-PAGE-BYPASS` | CRÍTICO | Fechado em 2026-07-01 | Low-ticket/GeraSalesPage | campanha bloqueada sem etapa final do pipeline concluída |
 | `LOOP-GERASALESPAGE-VISUAL-TRANSFORMATION` | ALTO | Fechado em 2026-07-07 | GeraSalesPage | prompts v5 + quality review + auditoria bloqueiam pagina sem cenas visuais |
 | `LOOP-DEPLOY-COMPOSE-CROSS-SERVICE-SECRETS` | ALTO | Fechado em 2026-08-04 | Deploy por serviço | descritor Compose isolado por destino + teste sem secrets alheios |
+| `LOOP-DEPLOY-STALE-IMAGE` | ALTO | Fechado em 2026-08-04 | Detecção de mudanças do deploy | alteração de publicador/workflow força rebuild e teste do artefato |
 
 ---
 
@@ -72,6 +73,24 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - **Regra preventiva**:
   - todo deploy isolado deve validar e subir somente o descritor do seu destino;
   - um teste de contrato deve renderizar o Compose isolado sem secrets de outros módulos.
+
+---
+
+## LOOP-DEPLOY-STALE-IMAGE — Workflow verde com imagem antiga
+
+- **Severidade**: ALTO.
+- **Status**: fechado em 2026-08-04.
+- **Sintoma recorrente ou risco observado**:
+  - workflow termina com sucesso, mas pula o build e mantém no container uma imagem anterior;
+  - correções de integração parecem publicadas, embora o serviço continue executando código antigo.
+- **Causa-raiz sistêmica confirmada**:
+  - o detector classificava mudanças no script de publicação ou no próprio workflow sem exigir reconstrução de todos os artefatos afetados.
+- **Correção efetiva**:
+  - mudança no publicador isolado de vídeo força rebuild da imagem de vídeo;
+  - mudança no próprio workflow força reconstrução e deploy dos artefatos governados por ele;
+  - teste de contrato protege as duas classificações.
+- **Regra preventiva**:
+  - sucesso do workflow só comprova publicação quando o job de build e o job de deploy do destino foram executados, não apenas quando o workflow agregado ficou verde.
 
 ---
 

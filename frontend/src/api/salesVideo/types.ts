@@ -172,6 +172,7 @@ export interface RequestVideoRenderPayload {
   providerFamily?: SalesVideoProviderFamily;
   providerName?: string;
   executionMode?: SalesVideoExecutionMode;
+  targetDurationSeconds?: number;
   metadataJson?: string;
 }
 

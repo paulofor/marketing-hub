@@ -595,6 +595,20 @@ function readStudioSceneOrder(metadataJson?: string | null) {
   }
 }
 
+export function selectSingleJobForScene(
+  selectedJobIds: number[],
+  jobId: number,
+  jobIdsFromSameScene: number[],
+) {
+  if (selectedJobIds.includes(jobId)) {
+    return selectedJobIds.filter((id) => id !== jobId);
+  }
+  return [
+    ...selectedJobIds.filter((id) => !jobIdsFromSameScene.includes(id)),
+    jobId,
+  ];
+}
+
 const exampleStory =
   "Uma consultora independente sente que sua presenca digital nao mostra sua autoridade real. Ela tenta postar melhor, ajustar foto, escrever bio e criar conteudo, mas tudo parece solto. Ao entrar no Metodo MUSA, ela recebe um diagnostico guiado por IA que transforma sinais dispersos em uma direcao clara de imagem, conteudo e posicionamento. Em poucos dias, ela entende o que precisa ajustar, passa a se apresentar com mais seguranca e convida outras pessoas para fazerem o mesmo diagnostico.";
 
@@ -781,17 +795,25 @@ function parseOptionalNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-function findProviderFromPlan(providerPlan?: string | null) {
+export function findProviderFromPlan(providerPlan?: string | null) {
   if (!providerPlan) {
     return DEFAULT_SALES_VIDEO_PROVIDER;
   }
-  return (
-    SALES_VIDEO_PROVIDER_OPTIONS.find(
-      (option) =>
-        providerPlan.includes(option.providerName) ||
-        providerPlan.toLowerCase().includes(option.label.toLowerCase()),
-    ) ?? DEFAULT_SALES_VIDEO_PROVIDER
+  const normalizedPlan = providerPlan.toUpperCase();
+  const explicitlySelected = SALES_VIDEO_PROVIDER_OPTIONS.find((option) =>
+    normalizedPlan.includes(
+      `PROVIDER ESCOLHIDO NO ESTUDIO: ${option.label.toUpperCase()} (${option.providerName})`,
+    ),
   );
+  if (explicitlySelected) {
+    return explicitlySelected;
+  }
+  const primaryProvider = SALES_VIDEO_PROVIDER_OPTIONS.find(
+    (option) =>
+      normalizedPlan.includes(`${option.label.toUpperCase()} COMO PRINCIPAL`) ||
+      normalizedPlan.includes(`${option.providerName} COMO PRINCIPAL`),
+  );
+  return primaryProvider ?? DEFAULT_SALES_VIDEO_PROVIDER;
 }
 
 function durationValidationMessage(
@@ -1040,6 +1062,7 @@ export default function AudioVideoStudioPage() {
         providerFamily: selectedProvider.providerFamily,
         providerName: selectedProvider.providerName,
         executionMode: "TEST",
+        targetDurationSeconds: selectedProvider.clipDurationSeconds,
         metadataJson: buildStudioSceneMetadata(
           selectedProject,
           selectedProvider,
@@ -1055,11 +1078,12 @@ export default function AudioVideoStudioPage() {
     }
   };
 
-  const handleToggleSceneApproval = (jobId: number) => {
+  const handleToggleSceneApproval = (jobId: number, sceneOrder: number) => {
+    const jobIdsFromSameScene = studioSceneJobs
+      .filter(({ scene }) => scene?.order === sceneOrder)
+      .map(({ job }) => job.id);
     setSelectedSceneJobIds((current) =>
-      current.includes(jobId)
-        ? current.filter((id) => id !== jobId)
-        : [...current, jobId],
+      selectSingleJobForScene(current, jobId, jobIdsFromSameScene),
     );
   };
 
@@ -1817,7 +1841,7 @@ export default function AudioVideoStudioPage() {
                                 }
                                 checked={selectedSceneJobIds.includes(job.id)}
                                 onChange={() =>
-                                  handleToggleSceneApproval(job.id)
+                                  handleToggleSceneApproval(job.id, index + 1)
                                 }
                               />
                               Job #{job.id} ·{" "}

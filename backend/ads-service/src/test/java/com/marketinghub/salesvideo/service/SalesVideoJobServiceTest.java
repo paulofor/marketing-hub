@@ -446,4 +446,38 @@ class SalesVideoJobServiceTest {
       TenantContextHolder.clear();
     }
   }
+
+  /** Bloqueia quatro variações da mesma cena na montagem narrativa do Estúdio. */
+  @Test
+  void shouldRejectSceneMontageWithoutFourDistinctNarrativeRoles() {
+    SalesVideoProfile profile = SalesVideoProfile.builder().id(6L).tenantId("tenant-a").build();
+    List<SalesVideoJob> sources =
+        java.util.stream.LongStream.rangeClosed(1, 4)
+            .mapToObj(
+                id ->
+                    SalesVideoJob.builder()
+                        .id(id)
+                        .profile(profile)
+                        .tenantId("tenant-a")
+                        .jobType(SalesVideoJobType.RENDER)
+                        .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+                        .providerName("LUMA_RAY_3_2")
+                        .executionMode(SalesVideoExecutionMode.TEST)
+                        .status(SalesVideoStatus.VIDEO_READY)
+                        .streamPlaybackUrl("https://cdn.example.com/scene-" + id + ".mp4")
+                        .metadataJson(
+                            "{\"generation_strategy\":\"SCENE_BY_SCENE_MONTAGE\","
+                                + "\"studio_project_id\":1,\"scene\":{\"order\":1,\"role\":\"DOR\"}}")
+                        .build())
+            .toList();
+    sources.forEach(job -> given(jobRepository.findById(job.getId())).willReturn(Optional.of(job)));
+    RequestSalesVideoMontageRequest request = new RequestSalesVideoMontageRequest();
+    request.setRequestedBy("reviewer@tenant.io");
+    request.setSourceJobIds(sources.stream().map(SalesVideoJob::getId).toList());
+
+    VideoModuleException ex =
+        assertThrows(VideoModuleException.class, () -> service.requestMontage(request));
+
+    assertThat(ex.getMessage()).contains("DOR, RESULTADO, MECANISMO e CTA");
+  }
 }

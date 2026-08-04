@@ -188,7 +188,10 @@ public class SalesVideoProfileService {
                     VideoModuleException.badRequest(
                         VideoModuleErrorCode.SCRIPT_NOT_FOUND,
                         "É necessário ter um script aprovado antes da renderização"));
-    validateProviderDuration(request.getProviderName(), profile.getTargetDurationSeconds());
+    validateProviderDuration(
+        request.getProviderName(),
+        Optional.ofNullable(request.getTargetDurationSeconds())
+            .orElse(profile.getTargetDurationSeconds()));
     SalesVideoExecutionMode executionMode =
         rolloutService.normalizeExecutionMode(request.getExecutionMode());
     if (executionMode == null) {

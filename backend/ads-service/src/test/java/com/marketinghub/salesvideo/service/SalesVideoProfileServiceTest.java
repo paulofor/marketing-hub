@@ -256,6 +256,47 @@ class SalesVideoProfileServiceTest {
     assertThat(ex.getMessage()).contains("Luma Ray 3.2 aceita no máximo 30 segundos");
   }
 
+  /** Valida um clipe curto pela duração solicitada sem confundi-lo com o vídeo final do perfil. */
+  @Test
+  void shouldAcceptShortSceneDurationForLongerProfile() {
+    SalesVideoProfile profile = profileWithDefaults();
+    profile.setTargetDurationSeconds(31);
+    SalesVideoScript script = approvedScript(profile);
+    RequestVideoRenderRequest request = new RequestVideoRenderRequest();
+    request.setRequestedBy("owner@tenant.io");
+    request.setExecutionMode(SalesVideoExecutionMode.TEST);
+    request.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
+    request.setProviderName("LUMA_RAY_3_2");
+    request.setTargetDurationSeconds(10);
+    SalesVideoJob generatedJob =
+        SalesVideoJob.builder()
+            .id(88L)
+            .profile(profile)
+            .script(script)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .providerName("LUMA_RAY_3_2")
+            .executionMode(SalesVideoExecutionMode.TEST)
+            .jobType(SalesVideoJobType.RENDER)
+            .status(SalesVideoStatus.VIDEO_REQUESTED)
+            .build();
+
+    given(profileRepository.findById(profile.getId())).willReturn(Optional.of(profile));
+    given(
+            scriptRepository.findFirstByProfileIdAndStatusOrderByVersionDesc(
+                profile.getId(), SalesVideoScriptStatus.APPROVED))
+        .willReturn(Optional.of(script));
+    given(jobService.createJob(any(), any(), any(), any(), any(), any(), any()))
+        .willReturn(generatedJob);
+    given(jobRepository.save(any(SalesVideoJob.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+    given(profileRepository.save(any(SalesVideoProfile.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+
+    SalesVideoJobDto response = service.requestRender(profile.getId(), request);
+
+    assertThat(response.getId()).isEqualTo(88L);
+  }
+
   @Test
   void shouldClearConsentFieldsWhenConsentBecomesOptional() {
     SalesVideoProfile profile = profileWithDefaults();

@@ -32,6 +32,20 @@ describe("videoProviderCatalog", () => {
     expect(metadata.assembly_plan.required).toBe(true);
     expect(metadata.assembly_plan.minimum_accepted_duration_seconds).toBe(28);
     expect(metadata.assembly_plan.scenes).toHaveLength(4);
+    expect(metadata.visual_provider_directives).toContain(
+      "A full-length mirror may appear only when the scene brief asks for it",
+    );
+    expect(metadata.assembly_plan.scenes[0]).toMatchObject({
+      role: "DOR",
+      location: expect.stringContaining("espelho de corpo inteiro"),
+      action: expect.stringContaining("retira um elemento"),
+    });
+    expect(metadata.assembly_plan.scenes[2].camera).toContain(
+      "nenhum plano deve repetir a caminhada",
+    );
+    expect(metadata.assembly_plan.scenes[3].camera).toContain(
+      "espaço negativo inferior seguro",
+    );
   });
 
   it("usa imagem-base OpenAI por padrao quando o provider Luma suporta o recurso", () => {
@@ -77,15 +91,11 @@ describe("videoProviderCatalog", () => {
 
     expect(metadata.provider_strategy.provider_name).toBe("HEYGEN");
     expect(metadata.provider_strategy.supports_scene_assembly).toBe(false);
-    expect(metadata.heygen_avatar_id).toBe(
-      "281a1e5b526841b0865ea466dfb33ab9",
-    );
+    expect(metadata.heygen_avatar_id).toBe("281a1e5b526841b0865ea466dfb33ab9");
     expect(metadata.heygen_avatar.heygen_avatar_group_id).toBe(
       "3952e73a14d94871b8130274e27287ee",
     );
-    expect(metadata.heygen_voice_id).toBe(
-      "0edbc867be6f48c5be8ff8b0fbca0802",
-    );
+    expect(metadata.heygen_voice_id).toBe("0edbc867be6f48c5be8ff8b0fbca0802");
     expect(metadata.heygen_avatar.heygen_voice_id).toBe(
       "0edbc867be6f48c5be8ff8b0fbca0802",
     );

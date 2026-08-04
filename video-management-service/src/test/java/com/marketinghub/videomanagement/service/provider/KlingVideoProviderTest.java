@@ -165,6 +165,41 @@ class KlingVideoProviderTest {
         assertThat(server.takeRequest().getPath()).isEqualTo("/v1/videos/image2video/kling-image-task-123");
     }
 
+    /** Deve preservar imagem, duração e ação específica quando a cena isolada usa image-to-video. */
+    @Test
+    void shouldRenderIsolatedStudioSceneThroughImageToVideoWithoutLosingSceneContract() throws Exception {
+        server.enqueue(json("""
+                {"code":0,"message":"SUCCEED","data":{"task_id":"kling-studio-image-123","task_status":"submitted"}}
+                """));
+        server.enqueue(json("""
+                {
+                  "code": 0,
+                  "message": "SUCCEED",
+                  "data": {
+                    "task_id": "kling-studio-image-123",
+                    "task_status": "succeed",
+                    "task_result": {"videos": [{"url": "%s/download/kling-studio-image-123.mp4"}]}
+                  }
+                }
+                """.formatted(server.url("/").toString().replaceAll("/$", ""))));
+        server.enqueue(mp4Response());
+        KlingVideoProvider provider = new KlingVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+        ProviderArtifacts artifacts = provider.render(
+                studioSceneJobWithSourceImage(), profile(), (percent, status, message) -> { });
+
+        assertThat(artifacts.metadata())
+                .containsEntry("modality", "image_to_video")
+                .containsEntry("duration_seconds", 10);
+        RecordedRequest createRequest = server.takeRequest();
+        assertThat(createRequest.getPath()).isEqualTo("/v1/videos/image2video");
+        assertThat(createRequest.getBody().readUtf8())
+                .contains("\"duration\":\"10\"")
+                .contains("\"image\":\"https://assets.example/musa-approved.png\"")
+                .contains("microajuste visível na manga")
+                .doesNotContain("Recognizable pain, plausible mechanism, personal value and CTA");
+    }
+
     /** Deve falhar cedo quando a chave Kling não estiver configurada. */
     @Test
     void shouldRejectMissingKlingApiKey() {
@@ -368,6 +403,37 @@ class KlingVideoProviderTest {
                         """,
                 Instant.now(),
                 Instant.now());
+    }
+
+    /** Cria a combinação real do Estúdio: cena MECANISMO isolada com imagem-base aprovada. */
+    private SalesVideoJob studioSceneJobWithSourceImage() {
+        SalesVideoJob base = studioSceneJob();
+        return new SalesVideoJob(
+                base.id(), base.profileId(), base.scriptId(), base.tenantId(), base.providerFamily(),
+                base.providerName(), base.providerJobId(), base.jobType(), base.status(), base.retryAttempt(),
+                base.retryReason(), base.retryOfJobId(), base.retryNotes(), base.progressPercent(),
+                base.failureCode(), base.failureDetail(), base.requestedBy(), base.requestedAt(), base.startedAt(),
+                base.finishedAt(), base.expiresAt(), base.assetId(), base.posterAssetId(), base.vttAssetId(),
+                """
+                        {
+                          "generation_strategy": "SCENE_BY_SCENE_MONTAGE",
+                          "scene": {
+                            "order": 3,
+                            "role": "MECANISMO",
+                            "prompt": "A mesma mulher usa o celular e executa um microajuste visível na manga.",
+                            "duration_seconds": 10
+                          },
+                          "provider_strategy": {"expected_clip_duration_seconds": 10},
+                          "image_to_video": {
+                            "enabled": true,
+                            "source_image_provider": "APPROVED_ASSET",
+                            "source_image_asset_id": 1953,
+                            "source_image_url": "https://assets.example/musa-approved.png",
+                            "animation_provider": "KLING_3_0"
+                          }
+                        }
+                        """,
+                base.createdAt(), base.updatedAt());
     }
 
     /** Cria um perfil MUSA com roteiro aprovado. */

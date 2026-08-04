@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["totals", "sourceCoverage", "divergences", "decision", "dailyReport"],
+  "properties": {
+    "totals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["costBrl", "revenueBrl", "contributionBrl"],
+      "properties": {
+        "costBrl": {"type": "number"},
+        "revenueBrl": {"type": "number"},
+        "contributionBrl": {"type": "number"}
+      }
+    },
+    "sourceCoverage": {"type": "array", "items": {"type": "string"}},
+    "divergences": {"type": "array", "items": {"type": "string"}},
+    "decision": {"type": "string", "enum": ["RECONCILED", "REVIEW_REQUIRED", "BLOCKED_BY_MISSING_SOURCE"]},
+    "dailyReport": {"type": "string", "minLength": 20}
+  }
+}

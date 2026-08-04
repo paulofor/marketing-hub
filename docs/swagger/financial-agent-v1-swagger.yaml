@@ -1,0 +1,34 @@
+openapi: 3.0.3
+info:
+  title: Agente Financeiro v1
+  version: 1.0.0
+paths:
+  /api/financial-agent/v1/commercial-plans/{planId}/executions:
+    get:
+      summary: Lista relatórios financeiros do planejamento
+      parameters:
+        - in: path
+          name: planId
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        '200': {description: Relatórios encontrados}
+    post:
+      summary: Solicita conciliação financeira somente leitura
+      parameters:
+        - in: path
+          name: planId
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        '200': {description: Conciliação criada}
+  /api/financial-agent/v1/internal/commercial-plans/{planId}/intelligence:
+    get:
+      summary: Consulta snapshot financeiro oficial do planejamento
+      parameters:
+        - in: path
+          name: planId
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        '200': {description: Snapshot financeiro e cobertura das fontes}

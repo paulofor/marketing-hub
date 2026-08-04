@@ -1579,3 +1579,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-04-growth-operator-event-driven.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-04-financial-agent-v1.yaml
+      relativeToChangelogFile: true

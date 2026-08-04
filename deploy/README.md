@@ -26,7 +26,7 @@ Antes de publicar ou recriar containers, consulte o inventário central de secre
 | `VIDEO_PROVIDERS_VEO_MODEL` | Modelo VEO usado no render | `veo-3.1-generate-preview` |
 | `VIDEO_PROVIDERS_KLING_ENABLED` | Habilita o adapter direto Kling no módulo de vídeo | `true` |
 | `VIDEO_PROVIDERS_KLING_API_KEY` | Chave Kling usada pelo adapter direto; pode vir de `KLING_API_KEY` | vazio |
-| `VIDEO_PROVIDERS_KLING_MODEL` | Modelo Kling usado no render text-to-video/image-to-video | `kling-v3-0` |
+| `VIDEO_PROVIDERS_KLING_MODEL` | Modelo Kling aceito pela API de render text-to-video/image-to-video | `kling-v2-1-master` |
 | `VIDEO_PROVIDERS_HEYGEN_ENABLED` | Habilita o adapter direto HeyGen no módulo de vídeo | `true` |
 | `VIDEO_PROVIDERS_HEYGEN_API_KEY` | Chave HeyGen usada pelo adapter direto; pode vir de `HEYGEN_API_KEY` | vazio |
 | `VIDEO_PROVIDERS_HEYGEN_AVATAR_ID` | Avatar/apresentadora HeyGen padrão para jobs sem metadata específica | vazio |

@@ -79,14 +79,14 @@ class KlingVideoProviderTest {
         assertThat(artifacts.videoFile().fileName()).isEqualTo("sales-video-1-kling.mp4");
         assertThat(artifacts.metadata())
                 .containsEntry("provider", "KLING_3_0")
-                .containsEntry("model", "kling-v3-0")
+                .containsEntry("model", "kling-v2-1-master")
                 .containsEntry("duration_seconds", 5);
         assertThat(progress.get()).isEqualTo(95);
         RecordedRequest createRequest = server.takeRequest();
         assertThat(createRequest.getPath()).isEqualTo("/v1/videos/text2video");
         assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer kling-test-key");
         assertThat(createRequest.getBody().readUtf8())
-                .contains("\"model_name\":\"kling-v3-0\"")
+                .contains("\"model_name\":\"kling-v2-1-master\"")
                 .contains("\"aspect_ratio\":\"9:16\"")
                 .contains("Método MUSA")
                 .contains("No seductive pose")
@@ -127,7 +127,7 @@ class KlingVideoProviderTest {
         RecordedRequest createRequest = server.takeRequest();
         assertThat(createRequest.getPath()).isEqualTo("/v1/videos/image2video");
         assertThat(createRequest.getBody().readUtf8())
-                .contains("\"model_name\":\"kling-v3-0\"")
+                .contains("\"model_name\":\"kling-v2-1-master\"")
                 .contains("\"image\":\"https://assets.example/musa-approved.png\"");
         assertThat(server.takeRequest().getPath()).isEqualTo("/v1/videos/image2video/kling-image-task-123");
     }

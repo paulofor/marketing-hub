@@ -158,7 +158,7 @@ public class VideoManagementProperties {
          */
         private String apiKeyFile;
 
-        private String model = "kling-v3-0";
+        private String model = "kling-v2-1-master";
         private String createPath = "/v1/videos/text2video";
         private String statusPathTemplate = "/v1/videos/text2video/{taskId}";
         private String imageCreatePath = "/v1/videos/image2video";

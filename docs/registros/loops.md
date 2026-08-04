@@ -642,3 +642,8 @@ Use este checklist quando o problema estiver em algum loop acima:
 - documentos lidos para pesquisar e resolver o problema:
   - AGENTS.md
   - docs/registros/experimentos.md
+# LOOP-LANDING-DYNAMIC-CRITICAL-PATH — Landing comercial dependente de shell React e API lenta
+
+- **Sintoma:** clique abre um shell vazio e o conteúdo comercial aparece vários segundos depois.
+- **Causa-raiz:** a rota pública `/flows/exp-*-gerasalespage-v1` carregava o SPA antes de buscar novamente o HTML da landing no backend.
+- **Prevenção:** o proxy serve a landing GeraSalesPage diretamente, usa cache curto com stale seguro e o deploy valida o HTML instrumentado na rota pública. Web Vitals reais continuam vinculados às sessões humanas.

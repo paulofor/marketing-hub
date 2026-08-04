@@ -33,6 +33,12 @@ de visitante e sessao devem ser pseudonimizados de forma estavel; IP, user-agent
 digitado e identificadores publicos completos nao entram no snapshot. O worker continua sem acesso
 direto ao banco e toda evidencia usada permanece congelada na execucao auditavel.
 
+O agente nao depende das telas para investigar. Ele pode consultar diretamente APIs oficiais GET do
+Marketing Hub. Para aprofundar ou atualizar a leitura durante um ciclo, o backend expoe
+`GET /api/growth-operator/v1/internal/commercial-plans/{planId}/session-intelligence?eventLimit=2000`,
+com o mesmo contrato detalhado, anonimizado e limitado do snapshot. Essa consulta nao autoriza
+acesso direto ao banco nem metodos HTTP de mutacao.
+
 ## Imagem e operacao
 
 - A imagem de producao e criada exclusivamente pelo `Dockerfile` e pelo Compose versionados em `growth-operator-worker`.

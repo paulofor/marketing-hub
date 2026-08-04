@@ -71,4 +71,30 @@ class GrowthOperatorServiceTest {
                 .asText())
         .isEqualTo("session-d4e5f6");
   }
+
+  /** Confirma que o agente pode atualizar a leitura detalhada pela API do planejamento. */
+  @Test
+  void shouldExposeDetailedSessionIntelligenceForDirectApiConsumption() {
+    GrowthOperatorExecutionRepository repository = mock(GrowthOperatorExecutionRepository.class);
+    CommercialPlanService planService = mock(CommercialPlanService.class);
+    ExperimentFunnelService funnelService = mock(ExperimentFunnelService.class);
+    Experiment experiment = new Experiment();
+    experiment.setId(81L);
+    CommercialPlan plan = CommercialPlan.builder().id(2L).experiment(experiment).build();
+    when(planService.getPlan(2L)).thenReturn(plan);
+    when(funnelService.buildDetailedAnalyticsEvidence(81L, 2000))
+        .thenReturn(new ExperimentLandingAnalyticsEvidenceDto(81L, 0, 0, false, null, List.of()));
+    when(funnelService.buildDetailedPdeAnalyticsEvidence(81L))
+        .thenReturn(Map.of("available", false));
+    GrowthOperatorService service =
+        new GrowthOperatorService(
+            repository, planService, funnelService, new ObjectMapper().findAndRegisterModules());
+
+    Map<String, Object> result = service.sessionIntelligence(2L, 5000);
+
+    assertThat(result.get("planId")).isEqualTo(2L);
+    assertThat(result.get("experimentId")).isEqualTo(81L);
+    assertThat(result.get("appliedEventLimit")).isEqualTo(2000);
+    verify(funnelService).buildDetailedAnalyticsEvidence(81L, 2000);
+  }
 }

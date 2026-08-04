@@ -73,6 +73,29 @@ public class GrowthOperatorService {
         .toList();
   }
 
+  /** Consulta as sessoes atuais por API sem expor banco ou dados pessoais ao worker. */
+  @Transactional(readOnly = true)
+  public Map<String, Object> sessionIntelligence(Long planId, int requestedEventLimit) {
+    CommercialPlan plan = commercialPlanService.getPlan(planId);
+    if (plan.getExperiment() == null) {
+      return Map.of("available", false, "reason", "PLAN_WITHOUT_EXPERIMENT", "planId", planId);
+    }
+    int eventLimit = Math.max(1, Math.min(requestedEventLimit, SESSION_EVENT_LIMIT));
+    Long experimentId = plan.getExperiment().getId();
+    LinkedHashMap<String, Object> intelligence = new LinkedHashMap<>();
+    intelligence.put("available", true);
+    intelligence.put("planId", planId);
+    intelligence.put("experimentId", experimentId);
+    intelligence.put("requestedEventLimit", requestedEventLimit);
+    intelligence.put("appliedEventLimit", eventLimit);
+    intelligence.put(
+        "landingAnalytics",
+        experimentFunnelService.buildDetailedAnalyticsEvidence(experimentId, eventLimit));
+    intelligence.put(
+        "pdeAnalytics", experimentFunnelService.buildDetailedPdeAnalyticsEvidence(experimentId));
+    return intelligence;
+  }
+
   /** Reserva a pendencia mais antiga para um unico worker. */
   @Transactional
   public GrowthOperatorExecutionResponse claimPending() {
@@ -189,14 +212,7 @@ public class GrowthOperatorService {
     if (plan.getExperiment() != null) {
       Long experimentId = plan.getExperiment().getId();
       snapshot.put("experimentId", experimentId);
-      snapshot.put(
-          "sessionIntelligence",
-          Map.of(
-              "landingAnalytics",
-              experimentFunnelService.buildDetailedAnalyticsEvidence(
-                  experimentId, SESSION_EVENT_LIMIT),
-              "pdeAnalytics",
-              experimentFunnelService.buildDetailedPdeAnalyticsEvidence(experimentId)));
+      snapshot.put("sessionIntelligence", sessionIntelligence(plan.getId(), SESSION_EVENT_LIMIT));
     } else {
       snapshot.put(
           "sessionIntelligence", Map.of("available", false, "reason", "PLAN_WITHOUT_EXPERIMENT"));

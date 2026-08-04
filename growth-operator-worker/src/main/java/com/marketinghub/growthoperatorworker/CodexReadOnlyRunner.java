@@ -92,6 +92,7 @@ public class CodexReadOnlyRunner {
         .replace("{{OBJECTIVE}}", text(job.objective()))
         .replace("{{BLOCKER}}", text(job.blocker()))
         .replace("{{EVIDENCE_SNAPSHOT}}", text(job.evidenceSnapshot()))
+        .replace("{{PLAN_ID}}", String.valueOf(job.commercialPlanId()))
         .replace("{{MARKETING_HUB_URL}}", text(properties.getMarketingHubUrl()));
   }
 

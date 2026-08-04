@@ -17,7 +17,8 @@ import {
 import "./CommercialPlanningPage.css";
 import GrowthOperatorPanel from "./GrowthOperatorPanel";
 
-const CURRENT_OPERATIONAL_MONTH = "2026-07";
+const CURRENT_OPERATIONAL_MONTH = new Date().toISOString().slice(0, 7);
+const LEGACY_PLAN_REFERENCE_MONTH = "2026-07";
 
 const augustRevenuePlan: SaveCommercialPlanPayload = {
   name: "Planejamento Agosto 2026 - Receita Agenda Cheia",
@@ -201,7 +202,7 @@ function formatDate(value?: string | null) {
 }
 
 function resolvePlanReferenceMonth(plan: CommercialPlan) {
-  return plan.deadline?.slice(0, 7) ?? CURRENT_OPERATIONAL_MONTH;
+  return plan.deadline?.slice(0, 7) ?? LEGACY_PLAN_REFERENCE_MONTH;
 }
 
 function addMonths(referenceMonth: string, months: number) {
@@ -909,7 +910,13 @@ export default function CommercialPlanningPage() {
     (plan) => resolvePlanReferenceMonth(plan) === "2026-08",
   );
   const currentMonthPlan = useMemo<CommercialPlan>(
-    () => plans[0] ?? fallbackMonthPlan(),
+    () =>
+      plans.find(
+        (plan) =>
+          resolvePlanReferenceMonth(plan) === CURRENT_OPERATIONAL_MONTH,
+      ) ??
+      plans[0] ??
+      fallbackMonthPlan(),
     [plans],
   );
   const planReferenceMonth = resolvePlanReferenceMonth(currentMonthPlan);

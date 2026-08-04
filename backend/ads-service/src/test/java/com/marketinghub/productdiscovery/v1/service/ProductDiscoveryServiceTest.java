@@ -11,6 +11,7 @@ import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryCycleRep
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryOpportunityRepository;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -23,6 +24,29 @@ class ProductDiscoveryServiceTest {
   @Mock private ProductDiscoveryCycleRepository cycleRepository;
 
   @Mock private ProductDiscoveryOpportunityRepository opportunityRepository;
+
+  /** Deve concluir sem oportunidade quando a busca real não trouxer evidência suficiente. */
+  @Test
+  void completeWithoutArtificialOpportunityWhenResearchIsEmpty() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(20L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    when(cycleRepository.findById(20L)).thenReturn(Optional.of(cycle));
+    when(cycleRepository.save(cycle)).thenReturn(cycle);
+    when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(20L)).thenReturn(List.of());
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(cycleRepository, opportunityRepository);
+
+    ProductDiscoveryCycleDetailResponse response =
+        service.complete(
+            20L,
+            new ProductDiscoveryResultRequest(
+                "Nenhuma evidência real encontrada; pesquisar mais.", List.of()));
+
+    assertThat(response.cycle().status()).isEqualTo(ProductDiscoveryCycleStatus.COMPLETED);
+    assertThat(response.opportunities()).isEmpty();
+    assertThat(cycle.getDecisionSummary()).contains("pesquisar mais");
+  }
 
   /** Deve manter renda extra como primeira trilha de pesquisa recomendada com travas comerciais. */
   @Test

@@ -50,6 +50,10 @@ local/
 /artifacts/
 /codex-cache/
 
+# Chaves SSH e identidades locais nunca devem ser versionadas
+/.codex-ssh/
+/.codex/ssh/
+
 # Videos e empacotamentos de streaming nao devem ser versionados
 *.mp4
 *.mov

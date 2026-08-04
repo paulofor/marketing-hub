@@ -449,6 +449,28 @@ describe("CommercialPlanningPage", () => {
     ).toBeTruthy();
   });
 
+  it("seleciona o plano do mes operacional em vez do primeiro plano retornado", () => {
+    mockPlans = [
+      {
+        ...defaultPlans[0],
+        name: "Plano de julho",
+        deadline: "2026-07-31",
+      },
+      {
+        ...defaultPlans[1],
+        name: "Plano de agosto",
+        deadline: "2026-08-09",
+        status: "DRAFT",
+        maxBudget: 400,
+      },
+    ];
+
+    renderPage();
+
+    expect(screen.getByRole("heading", { name: "Agosto 2026" })).toBeTruthy();
+    expect(screen.getByText("R$ 400,00")).toBeTruthy();
+  });
+
   it("inicializa semanas fechadas e abre a tabela ordenada por media de tempo", async () => {
     const user = userEvent.setup();
     const { container } = renderPage();

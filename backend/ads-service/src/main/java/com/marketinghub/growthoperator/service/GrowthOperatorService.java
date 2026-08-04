@@ -3,10 +3,13 @@ package com.marketinghub.growthoperator.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
+import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.experiment.video.service.ExperimentVideoPerformanceDashboardService;
 import com.marketinghub.growthoperator.GrowthOperatorExecution;
 import com.marketinghub.growthoperator.GrowthOperatorExecutionStatus;
+import com.marketinghub.growthoperator.service.action.GrowthOperatorExperimentActionRequest;
 import com.marketinghub.growthoperator.service.result.CompleteGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.result.FailGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.start.StartGrowthOperatorRequest;
@@ -83,13 +86,26 @@ public class GrowthOperatorService {
               "Consulta estrategia, custo, progressao e aprendizados dos videos do experimento.",
               "SOMENTE_LEITURA",
               "Estrategia e aprendizado de videos",
-              Map.of()));
+              Map.of()),
+          new GrowthOperatorMcpToolResponse(
+              "solicitar_pausa_experimento",
+              "Solicita pausa preventiva governada pelo backend.",
+              "MUTACAO_GOVERNADA",
+              "Experimentos",
+              Map.of("reason", "Justificativa", "evidence", "Evidencias")),
+          new GrowthOperatorMcpToolResponse(
+              "solicitar_retomada_experimento",
+              "Registra retomada sujeita a aprovacao humana.",
+              "APROVACAO_HUMANA",
+              "Experimentos",
+              Map.of("reason", "Justificativa", "evidence", "Evidencias")));
   private final GrowthOperatorExecutionRepository repository;
   private final CommercialPlanService commercialPlanService;
   private final CommercialPlanWeekObjectiveRepository weekObjectiveRepository;
   private final ExperimentFunnelService experimentFunnelService;
   private final VideoProjectRepository videoProjectRepository;
   private final ExperimentVideoPerformanceDashboardService videoPerformanceService;
+  private final ExperimentService experimentService;
   private final ObjectMapper objectMapper;
 
   public GrowthOperatorService(
@@ -99,6 +115,7 @@ public class GrowthOperatorService {
       ExperimentFunnelService experimentFunnelService,
       VideoProjectRepository videoProjectRepository,
       ExperimentVideoPerformanceDashboardService videoPerformanceService,
+      ExperimentService experimentService,
       ObjectMapper objectMapper) {
     this.repository = repository;
     this.commercialPlanService = commercialPlanService;
@@ -106,7 +123,85 @@ public class GrowthOperatorService {
     this.experimentFunnelService = experimentFunnelService;
     this.videoProjectRepository = videoProjectRepository;
     this.videoPerformanceService = videoPerformanceService;
+    this.experimentService = experimentService;
     this.objectMapper = objectMapper;
+  }
+
+  /** Pausa o experimento somente quando o backend comprova o primeiro gate sem receita. */
+  @Transactional
+  public Map<String, Object> requestPreventivePause(
+      Long planId, GrowthOperatorExperimentActionRequest request) {
+    CommercialPlan plan = commercialPlanService.getPlan(planId);
+    validateActionRequest(request);
+    if (plan.getExperiment() == null) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Planejamento sem experimento.");
+    }
+    if (plan.getExperiment().getStatus() != ExperimentStatus.RUNNING) {
+      return Map.of("executed", false, "reason", "EXPERIMENT_NOT_RUNNING");
+    }
+    if (!isPreventiveGateReachedWithoutProgress(plan)) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Gate preventivo sem receita ainda nao comprovado pelo backend.");
+    }
+    String auditReason =
+        "Operador de Crescimento: "
+            + request.reason().trim()
+            + " | evidencias: "
+            + String.join("; ", request.evidence());
+    experimentService.pauseByGrowthOperator(plan.getExperiment().getId(), auditReason);
+    return Map.of(
+        "executed",
+        true,
+        "experimentId",
+        plan.getExperiment().getId(),
+        "newStatus",
+        ExperimentStatus.PAUSED,
+        "requiresHumanApprovalToResume",
+        true);
+  }
+
+  /** Registra que retomada nunca e executada pelo agente e depende de aprovacao humana. */
+  public Map<String, Object> requestExperimentResume(
+      Long planId, GrowthOperatorExperimentActionRequest request) {
+    CommercialPlan plan = commercialPlanService.getPlan(planId);
+    validateActionRequest(request);
+    if (plan.getExperiment() == null) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Planejamento sem experimento.");
+    }
+    String auditReason =
+        "Operador de Crescimento: "
+            + request.reason().trim()
+            + " | evidencias: "
+            + String.join("; ", request.evidence());
+    experimentService.requestResumeApprovalByGrowthOperator(
+        plan.getExperiment().getId(), auditReason);
+    return Map.of(
+        "executed",
+        false,
+        "experimentId",
+        plan.getExperiment().getId(),
+        "status",
+        "WAITING_HUMAN_APPROVAL",
+        "reason",
+        request.reason().trim(),
+        "evidence",
+        request.evidence());
+  }
+
+  /** Valida justificativa e evidencias minimas antes de aceitar uma acao comercial. */
+  private void validateActionRequest(GrowthOperatorExperimentActionRequest request) {
+    if (request == null || !hasText(request.reason()) || request.reason().trim().length() < 10) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Justificativa insuficiente.");
+    }
+    if (request.evidence() == null || request.evidence().isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Evidencia obrigatoria.");
+    }
+    if (request.evidence().size() > 10
+        || request.evidence().stream().anyMatch(item -> !hasText(item) || item.length() > 300)
+        || request.reason().length() + request.evidence().stream().mapToInt(String::length).sum()
+            > 900) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Evidencias excedem o limite.");
+    }
   }
 
   /** Cria uma pendencia imutavelmente limitada a leitura e diagnostico. */

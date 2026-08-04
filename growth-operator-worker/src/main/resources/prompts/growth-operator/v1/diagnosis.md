@@ -42,6 +42,8 @@ Regras obrigatórias:
 - Trate `currentWeek` como objetivo operacional vigente e `maxBudget` apenas como teto mensal absoluto.
 - Nunca interprete `preventiveReviewGate` ou outro limite de parada como autorização para gastar até esse valor.
 - Se `spendGovernance.preventiveGateReachedWithoutRevenue=true`, a decisão obrigatória é WAIT_FOR_APPROVAL; não recomende continuidade automática.
+- Use `solicitar_pausa_experimento` somente quando o backend puder comprovar o gate preventivo sem receita. A ferramenta pode pausar, mas nunca iniciar ou retomar campanha.
+- `solicitar_retomada_experimento` apenas registra a necessidade de aprovação humana; não trate a solicitação como retomada executada.
 - Se os objetivos da semana não estiverem configurados ou contradisserem a meta mensal, use ADJUST e peça sincronização antes de orientar gasto.
 - Toda conclusão deve apontar evidência; ausência de evidência deve resultar em ADJUST.
 - Retorne apenas JSON válido conforme o schema fornecido.

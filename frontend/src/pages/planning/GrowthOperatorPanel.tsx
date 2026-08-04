@@ -15,6 +15,15 @@ function statusLabel(execution: GrowthOperatorExecution) {
   return labels[execution.status];
 }
 
+function formatReportDateTime(value?: string | null) {
+  if (!value) return "Horário não informado";
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "medium",
+    timeZone: "America/Sao_Paulo",
+  }).format(new Date(value));
+}
+
 function sessionEvidence(snapshot?: string | null) {
   if (!snapshot) return null;
   try {
@@ -22,7 +31,8 @@ function sessionEvidence(snapshot?: string | null) {
     const intelligence = parsed.sessionIntelligence;
     if (!intelligence || intelligence.available === false) return null;
     const landing = intelligence.landingAnalytics ?? intelligence;
-    const pdeJourneys = intelligence.pdeAnalytics?.detailedJourneys?.length ?? 0;
+    const pdeJourneys =
+      intelligence.pdeAnalytics?.detailedJourneys?.length ?? 0;
     return {
       data: intelligence,
       label: `${landing.includedEvents ?? 0} de ${landing.totalEventsAvailable ?? 0} eventos de landing e ${pdeJourneys} jornadas PDE`,
@@ -110,48 +120,55 @@ export default function GrowthOperatorPanel({
         {executions.map((execution) => {
           const evidence = sessionEvidence(execution.evidenceSnapshot);
           return (
-          <article className="border rounded p-3" key={execution.id}>
-            <div className="d-flex justify-content-between gap-3 flex-wrap">
-              <strong>Execução #{execution.id}</strong>
-              <span className="badge text-bg-secondary">
-                {statusLabel(execution)}
-              </span>
-            </div>
-            <p className="mb-1 mt-2">{execution.objective}</p>
-            {execution.recommendedDecision ? (
-              <p className="mb-1">
-                <strong>Decisão:</strong> {execution.recommendedDecision}
-              </p>
-            ) : null}
-            {execution.recommendedAction ? (
-              <p className="mb-0">
-                <strong>Próxima ação recomendada:</strong>{" "}
-                {execution.recommendedAction}
-              </p>
-            ) : null}
-            {evidence ? (
-              <details className="mt-2">
-                <summary>
-                  <strong>Inteligência de sessões:</strong>{" "}
-                  {evidence.label}
-                </summary>
-                <pre className="bg-light border rounded p-2 mt-2 mb-0 small overflow-auto">
-                  {JSON.stringify(evidence.data, null, 2)}
-                </pre>
-              </details>
-            ) : null}
-            {execution.dailyReport ? (
-              <div className="alert alert-light border mt-2 mb-0">
-                <strong>Relatório diário:</strong>
-                <p className="mb-0 mt-1" style={{ whiteSpace: "pre-wrap" }}>
-                  {execution.dailyReport}
-                </p>
+            <article className="border rounded p-3" key={execution.id}>
+              <div className="d-flex justify-content-between gap-3 flex-wrap">
+                <strong>Execução #{execution.id}</strong>
+                <span className="badge text-bg-secondary">
+                  {statusLabel(execution)}
+                </span>
               </div>
-            ) : null}
-            {execution.errorMessage ? (
-              <p className="text-danger mb-0">{execution.errorMessage}</p>
-            ) : null}
-          </article>
+              <p className="mb-1 mt-2">{execution.objective}</p>
+              {execution.recommendedDecision ? (
+                <p className="mb-1">
+                  <strong>Decisão:</strong> {execution.recommendedDecision}
+                </p>
+              ) : null}
+              {execution.recommendedAction ? (
+                <p className="mb-0">
+                  <strong>Próxima ação recomendada:</strong>{" "}
+                  {execution.recommendedAction}
+                </p>
+              ) : null}
+              {evidence ? (
+                <details className="mt-2">
+                  <summary>
+                    <strong>Inteligência de sessões:</strong> {evidence.label}
+                  </summary>
+                  <pre className="bg-light border rounded p-2 mt-2 mb-0 small overflow-auto">
+                    {JSON.stringify(evidence.data, null, 2)}
+                  </pre>
+                </details>
+              ) : null}
+              {execution.dailyReport ? (
+                <div className="alert alert-light border mt-2 mb-0">
+                  <div className="d-flex justify-content-between gap-2 flex-wrap">
+                    <strong>Relatório diário:</strong>
+                    <span className="text-muted small">
+                      Gerado em{" "}
+                      {formatReportDateTime(
+                        execution.finishedAt ?? execution.createdAt,
+                      )}
+                    </span>
+                  </div>
+                  <p className="mb-0 mt-1" style={{ whiteSpace: "pre-wrap" }}>
+                    {execution.dailyReport}
+                  </p>
+                </div>
+              ) : null}
+              {execution.errorMessage ? (
+                <p className="text-danger mb-0">{execution.errorMessage}</p>
+              ) : null}
+            </article>
           );
         })}
       </div>

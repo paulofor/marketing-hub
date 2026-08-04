@@ -26,6 +26,8 @@ export interface GrowthOperatorExecution {
   errorMessage?: string | null;
   model?: string | null;
   estimatedCost?: number | null;
+  startedAt?: string | null;
+  finishedAt?: string | null;
   createdAt: string;
 }
 

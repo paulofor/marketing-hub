@@ -42,11 +42,11 @@ acesso direto ao banco nem metodos HTTP de mutacao.
 ## Imagem e operacao
 
 - A imagem de producao e criada exclusivamente pelo `Dockerfile` e pelo Compose versionados em `growth-operator-worker`.
-- Toda alteracao na `main` deve acionar o workflow dedicado `growth-operator-worker-ci.yml`, que testa, constroi, sincroniza a revisao versionada no VPS, recria o container e confirma que ele ficou em execucao. Assim, o agente analisa sempre a fonte mais recente do Marketing Hub. Atualizacao manual do codigo ou da imagem no VPS nao e um fluxo de publicacao valido.
+- Toda alteracao na `main` deve acionar o workflow dedicado `growth-operator-worker-ci.yml`, que testa, constroi, sincroniza a revisao versionada no VPS, recria o container e confirma que ele ficou em execucao, possui `CODEX_HOME` gravavel pelo usuario do worker e reconhece a identidade ChatGPT. Assim, o agente analisa sempre a fonte mais recente do Marketing Hub. Atualizacao manual do codigo ou da imagem no VPS nao e um fluxo de publicacao valido.
 - O repositorio sincronizado pelo workflow e montado como somente leitura no container, garantindo que o diagnostico use a mesma revisao que acionou o deploy.
 - O endereco do registry/IP entra por `GROWTH_OPERATOR_IMAGE`; nenhuma imagem manual fora do repositorio e aceita.
 - `COMMERCIAL_PLAN_ID` define o plano ativo acompanhado pelo loop e `MARKETING_HUB_URL` define a origem oficial consultada.
-- A credencial Codex/ChatGPT fica no volume `CODEX_HOME`, sem ser gravada na imagem ou no repositorio.
+- A credencial Codex/ChatGPT fica no volume dedicado e persistente `/opt/growth-operator/codex-home`, montado em `CODEX_HOME`, sem ser gravada na imagem ou no repositorio. O workflow nao pode substituir esse volume por um diretorio vazio ou sem permissao do usuario do container.
 
 Decisoes permitidas: `CONTINUE`, `ADJUST`, `STOP` e `WAIT_FOR_APPROVAL`.
 

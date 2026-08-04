@@ -86,6 +86,7 @@ class RunwayVideoProviderTest {
                 .contains("\"ratio\":\"720:1280\"")
                 .contains("\"duration\":10")
                 .contains("\"promptImage\":\"https://assets.example/musa-character.png\"")
+                .contains("REQUIRED SCENE ACTION: remover dois acessorios e escolher a peca-sinal")
                 .contains("Very sharp image, crisp focus and constant soft natural daylight")
                 .contains("Avoid embedded text");
         assertThat(server.takeRequest().getPath()).isEqualTo("/v1/tasks/runway-task-123");
@@ -222,6 +223,10 @@ class RunwayVideoProviderTest {
                 """
                         {
                           "characterImageReferenceUrl": "https://assets.example/musa-character.png",
+                          "scene": {
+                            "role": "MECANISMO",
+                            "prompt": "remover dois acessorios e escolher a peca-sinal"
+                          },
                           "assembly_plan": {
                             "scenes": [
                               {"role":"DOR","title":"Dor cotidiana","message":"Ela se arruma, mas sente que falta presença."},

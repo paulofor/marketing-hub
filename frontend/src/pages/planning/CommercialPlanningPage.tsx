@@ -944,6 +944,16 @@ export default function CommercialPlanningPage() {
     );
   }
 
+  function togglePlanEditing() {
+    setIsEditingPlan((current) => {
+      const opening = !current;
+      if (opening) {
+        setPlanDraft(planToPayload(currentMonthPlan));
+      }
+      return opening;
+    });
+  }
+
   const planWeeksQuery = useCommercialPlanWeeks(
     currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
     selectedReferenceMonth,
@@ -1037,7 +1047,7 @@ export default function CommercialPlanningPage() {
                 <button
                   className="btn btn-outline-primary"
                   type="button"
-                  onClick={() => setIsEditingPlan((current) => !current)}
+                  onClick={togglePlanEditing}
                 >
                   {isEditingPlan ? "Fechar edição" : "Editar plano"}
                 </button>

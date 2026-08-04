@@ -417,6 +417,14 @@ describe("CommercialPlanningPage", () => {
 
   it("permite editar as decisoes comerciais do plano pela tela", async () => {
     const user = userEvent.setup();
+    mockPlans = [
+      {
+        ...defaultPlans[0],
+        stopCriteria: "Gate vigente do plano selecionado",
+        nextAction: "Próxima ação do plano selecionado",
+      },
+      defaultPlans[1],
+    ];
     renderPage();
 
     await user.click(screen.getByRole("button", { name: "Editar plano" }));
@@ -427,7 +435,13 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getByLabelText("Objetivo comercial")).toBeTruthy();
     expect(screen.getByLabelText("Critério de sucesso")).toBeTruthy();
     expect(screen.getByLabelText("Critério de parada")).toBeTruthy();
+    expect(screen.getByLabelText("Critério de parada")).toHaveValue(
+      "Gate vigente do plano selecionado",
+    );
     expect(screen.getByLabelText("Próxima ação")).toBeTruthy();
+    expect(screen.getByLabelText("Próxima ação")).toHaveValue(
+      "Próxima ação do plano selecionado",
+    );
     expect(screen.getByLabelText("Gargalo atual")).toBeTruthy();
     expect(screen.getByLabelText("Causa-raiz")).toBeTruthy();
     expect(

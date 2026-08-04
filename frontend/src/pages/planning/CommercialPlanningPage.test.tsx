@@ -249,6 +249,8 @@ vi.mock("../../api/planning/useGrowthOperator", () => ({
     data: [],
     isError: false,
   }),
+  useGrowthOperatorTasks: () => ({ data: [], isError: false }),
+  useResolveGrowthOperatorTask: () => ({ mutate: vi.fn(), isPending: false }),
   useStartGrowthOperator: () => ({
     mutate: vi.fn(),
     isPending: false,

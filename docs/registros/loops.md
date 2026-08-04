@@ -653,3 +653,9 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Sintoma:** a mesma landing envia eventos tanto para o slug correto quanto para `/api/flows/page/page-analytics`, duplicando sessões e atrasando requisições de telemetria.
 - **Causa-raiz:** o HTML persistido pelo GeraSalesPage continha um coletor próprio que inferia o slug pelo último segmento da URL, enquanto o Lead Portal injetava um segundo coletor canônico com o slug explícito.
 - **Prevenção:** ao servir a landing standalone, o Lead Portal remove qualquer coletor legado `data-mh-sales-page-analytics` e mantém somente `data-mh-landing-analytics`, com slug recebido pelo controller e teste de contrato contra regressão.
+
+# LOOP-GROWTH-OPERATOR-REPEATED-DIAGNOSIS — Ciclos sem evidência nova
+
+- **Sintoma:** o Operador consome IA a cada 30 minutos e repete a mesma conclusão sem mudança de sessão, custo, venda, vídeo, falha ou prazo.
+- **Causa-raiz:** o backend usava apenas cadência temporal; a memória do próprio ciclo também crescia e poderia aparentar mudança.
+- **Prevenção:** criar ciclo automático somente quando mudar o fingerprint das evidências operacionais, excluindo a memória acumulada, e persistir as ferramentas MCP realmente usadas na conclusão.

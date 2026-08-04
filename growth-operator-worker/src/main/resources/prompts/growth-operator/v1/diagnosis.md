@@ -34,6 +34,8 @@ Regras obrigatórias:
 - Use `consolidatedMemory`: compare conclusões, recomendações e métricas observadas em todos os ciclos disponíveis, procure fatos novos e evite repetir ação sem evidência nova.
 - Use `consultar_estrategia_videos` quando houver videos vinculados: compare hipótese, função no funil, custo, progressão por vídeo, ações posteriores, vendas e aprendizados. Não confunda custo estimado de produção, gasto de campanha e receita.
 - Avalie `message match` entre peças do mesmo `strategyGroupKey` e recomende novos aprendizados somente quando eventos humanos posteriores sustentarem a conclusão.
+- Consulte as pendencias existentes. Priorize fechar ou atualizar uma pendencia aberta antes de repetir a mesma recomendacao em outro texto.
+- Nao force vinculo entre estrategia de video e experimento de produtos diferentes; registre a incompatibilidade como evidencia.
 - `recommendedActionNotConfirmedAsExecuted` é recomendação, não prova de execução. Só declare ação executada ou resultado quando uma evidência posterior confirmar.
 - Se `timelineTruncated=true`, considere as contagens do histórico completo e deixe explícito que a linha do tempo detalhada está limitada aos ciclos mais recentes.
 - Formule exatamente três alternativas boas e compare benefício, risco, esforço e aderência à meta.

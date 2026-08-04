@@ -12,6 +12,7 @@ const tools = [
   tool('consultar_campanhas', 'Consulta as campanhas Meta do experimento vinculado ao planejamento.', {}),
   tool('consultar_memoria', 'Consulta o historico auditavel dos ciclos do Operador.', {}),
   tool('consultar_estrategia_videos', 'Consulta estrategia, custos, progressao e aprendizados dos videos.', {}),
+  tool('consultar_pendencias', 'Consulta acoes abertas e resultados comprovados do planejamento.', {}),
   tool('solicitar_pausa_experimento', 'Solicita pausa preventiva governada pelo backend.', actionSchema(), ['reason', 'evidence']),
   tool('solicitar_retomada_experimento', 'Solicita retomada sujeita a aprovacao humana.', actionSchema(), ['reason', 'evidence'])
 ];
@@ -23,6 +24,7 @@ const routes = {
   consultar_campanhas: () => experimentRoute('facebook-campaigns'),
   consultar_memoria: () => `/api/growth-operator/v1/commercial-plans/${planId}/executions`,
   consultar_estrategia_videos: () => `/api/growth-operator/v1/internal/commercial-plans/${planId}/video-strategy-intelligence`,
+  consultar_pendencias: () => `/api/growth-operator/v1/commercial-plans/${planId}/tasks`,
   solicitar_pausa_experimento: () => `/api/growth-operator/v1/internal/commercial-plans/${planId}/experiment/pause`,
   solicitar_retomada_experimento: () => `/api/growth-operator/v1/internal/commercial-plans/${planId}/experiment/resume-request`
 };

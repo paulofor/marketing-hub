@@ -9,20 +9,28 @@ import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.experiment.video.service.ExperimentVideoPerformanceDashboardService;
 import com.marketinghub.growthoperator.GrowthOperatorExecution;
 import com.marketinghub.growthoperator.GrowthOperatorExecutionStatus;
+import com.marketinghub.growthoperator.GrowthOperatorTask;
+import com.marketinghub.growthoperator.GrowthOperatorTaskStatus;
 import com.marketinghub.growthoperator.service.action.GrowthOperatorExperimentActionRequest;
+import com.marketinghub.growthoperator.service.action.ResolveGrowthOperatorTaskRequest;
 import com.marketinghub.growthoperator.service.result.CompleteGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.result.FailGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.start.StartGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.view.GrowthOperatorExecutionResponse;
 import com.marketinghub.growthoperator.service.view.GrowthOperatorMcpToolResponse;
+import com.marketinghub.growthoperator.service.view.GrowthOperatorTaskResponse;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.CommercialPlanWeekObjective;
 import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.repository.jpa.growthoperator.GrowthOperatorExecutionRepository;
+import com.marketinghub.repository.jpa.growthoperator.GrowthOperatorTaskRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanWeekObjectiveRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
 import com.marketinghub.salesvideo.VideoProject;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -88,6 +96,12 @@ public class GrowthOperatorService {
               "Estrategia e aprendizado de videos",
               Map.of()),
           new GrowthOperatorMcpToolResponse(
+              "consultar_pendencias",
+              "Consulta acoes abertas e resultados comprovados do planejamento.",
+              "SOMENTE_LEITURA",
+              "Pendencias do Operador",
+              Map.of()),
+          new GrowthOperatorMcpToolResponse(
               "solicitar_pausa_experimento",
               "Solicita pausa preventiva governada pelo backend.",
               "MUTACAO_GOVERNADA",
@@ -100,6 +114,7 @@ public class GrowthOperatorService {
               "Experimentos",
               Map.of("reason", "Justificativa", "evidence", "Evidencias")));
   private final GrowthOperatorExecutionRepository repository;
+  private final GrowthOperatorTaskRepository taskRepository;
   private final CommercialPlanService commercialPlanService;
   private final CommercialPlanWeekObjectiveRepository weekObjectiveRepository;
   private final ExperimentFunnelService experimentFunnelService;
@@ -110,6 +125,7 @@ public class GrowthOperatorService {
 
   public GrowthOperatorService(
       GrowthOperatorExecutionRepository repository,
+      GrowthOperatorTaskRepository taskRepository,
       CommercialPlanService commercialPlanService,
       CommercialPlanWeekObjectiveRepository weekObjectiveRepository,
       ExperimentFunnelService experimentFunnelService,
@@ -118,6 +134,7 @@ public class GrowthOperatorService {
       ExperimentService experimentService,
       ObjectMapper objectMapper) {
     this.repository = repository;
+    this.taskRepository = taskRepository;
     this.commercialPlanService = commercialPlanService;
     this.weekObjectiveRepository = weekObjectiveRepository;
     this.experimentFunnelService = experimentFunnelService;
@@ -219,6 +236,7 @@ public class GrowthOperatorService {
     execution.setBlocker(plan.getCurrentBlocker());
     execution.setEvidenceSnapshot(
         buildEvidenceSnapshot(plan, repository.findByCommercialPlanIdOrderByCreatedAtDesc(planId)));
+    execution.setEvidenceFingerprint(buildEvidenceFingerprint(execution.getEvidenceSnapshot()));
     execution.setCycleNumber(nextCycleNumber(planId));
     execution.setAutomaticCycle(false);
     return toResponse(repository.save(execution));
@@ -236,6 +254,36 @@ public class GrowthOperatorService {
   /** Lista o catalogo MCP efetivamente autorizado para diagnosticos do Operador. */
   public List<GrowthOperatorMcpToolResponse> listMcpTools() {
     return MCP_TOOLS;
+  }
+
+  /** Lista as pendencias e seus resultados comprovados para tela e memoria do agente. */
+  @Transactional(readOnly = true)
+  public List<GrowthOperatorTaskResponse> listTasks(Long planId) {
+    commercialPlanService.getPlan(planId);
+    return taskRepository.findByCommercialPlanIdOrderByCreatedAtDesc(planId).stream()
+        .map(this::toTaskResponse)
+        .toList();
+  }
+
+  /** Conclui uma pendencia somente quando existe evidencia humana persistivel. */
+  @Transactional
+  public GrowthOperatorTaskResponse resolveTask(
+      Long planId, Long taskId, ResolveGrowthOperatorTaskRequest request) {
+    GrowthOperatorTask task =
+        taskRepository
+            .findById(taskId)
+            .filter(item -> item.getCommercialPlan().getId().equals(planId))
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(HttpStatus.NOT_FOUND, "Pendencia nao encontrada."));
+    if (request == null || !hasText(request.evidence()) || request.evidence().length() < 10) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Evidencia de conclusao insuficiente.");
+    }
+    task.setStatus(GrowthOperatorTaskStatus.COMPLETED);
+    task.setResolutionEvidence(request.evidence().trim());
+    task.setResolvedAt(Instant.now());
+    return toTaskResponse(taskRepository.save(task));
   }
 
   /** Consulta as sessoes atuais por API sem expor banco ou dados pessoais ao worker. */
@@ -326,7 +374,7 @@ public class GrowthOperatorService {
     return toResponse(repository.save(execution));
   }
 
-  /** Cria o proximo ciclo automatico somente quando o backend considera a cadencia vencida. */
+  /** Cria ciclo automatico somente quando ha mudanca comercial relevante nas evidencias. */
   @Transactional
   public GrowthOperatorExecutionResponse ensureAutomaticCycle(Long planId) {
     CommercialPlan plan = commercialPlanService.getPlan(planId);
@@ -338,6 +386,12 @@ public class GrowthOperatorService {
             || latest.get().getCreatedAt().isAfter(cutoff))) {
       return toResponse(latest.get());
     }
+    String evidenceSnapshot =
+        buildEvidenceSnapshot(plan, repository.findByCommercialPlanIdOrderByCreatedAtDesc(planId));
+    String evidenceFingerprint = buildEvidenceFingerprint(evidenceSnapshot);
+    if (latest.isPresent() && evidenceFingerprint.equals(latest.get().getEvidenceFingerprint())) {
+      return toResponse(latest.get());
+    }
     GrowthOperatorExecution execution = new GrowthOperatorExecution();
     execution.setCommercialPlan(plan);
     execution.setWeekNumber(resolveCurrentWeekNumber(plan));
@@ -345,8 +399,8 @@ public class GrowthOperatorService {
     execution.setAuthorityMode(READ_ONLY);
     execution.setObjective(defaultObjective(plan));
     execution.setBlocker(plan.getCurrentBlocker());
-    execution.setEvidenceSnapshot(
-        buildEvidenceSnapshot(plan, repository.findByCommercialPlanIdOrderByCreatedAtDesc(planId)));
+    execution.setEvidenceSnapshot(evidenceSnapshot);
+    execution.setEvidenceFingerprint(evidenceFingerprint);
     execution.setCycleNumber(nextCycleNumber(planId));
     execution.setAutomaticCycle(true);
     return toResponse(repository.save(execution));
@@ -362,6 +416,7 @@ public class GrowthOperatorService {
     execution.setAlternativesJson(request.alternativesJson());
     execution.setDiagnosisJson(request.diagnosisJson());
     execution.setRawModelResponse(request.rawModelResponse());
+    execution.setToolUsageJson(request.toolUsageJson());
     CommercialPlan plan = commercialPlanService.getPlan(execution.getCommercialPlan().getId());
     boolean preventiveGateReached = isPreventiveGateReachedWithoutProgress(plan);
     execution.setRecommendedDecision(
@@ -383,7 +438,31 @@ public class GrowthOperatorService {
     execution.setEstimatedCost(request.estimatedCost());
     execution.setStatus(GrowthOperatorExecutionStatus.COMPLETED);
     execution.setFinishedAt(Instant.now());
-    return toResponse(repository.save(execution));
+    GrowthOperatorExecution saved = repository.save(execution);
+    createTaskIfAbsent(saved, execution.getRecommendedAction());
+    return toResponse(saved);
+  }
+
+  /** Transforma uma recomendacao nova em pendencia sem duplicar a mesma acao aberta. */
+  private void createTaskIfAbsent(GrowthOperatorExecution execution, String action) {
+    if (!hasText(action)) {
+      return;
+    }
+    String actionKey = sha256(action.trim().toLowerCase(java.util.Locale.ROOT));
+    Long planId = execution.getCommercialPlan().getId();
+    if (taskRepository
+        .findFirstByCommercialPlanIdAndActionKeyAndStatus(
+            planId, actionKey, GrowthOperatorTaskStatus.OPEN)
+        .isPresent()) {
+      return;
+    }
+    GrowthOperatorTask task = new GrowthOperatorTask();
+    task.setCommercialPlan(execution.getCommercialPlan());
+    task.setSourceExecution(execution);
+    task.setActionKey(actionKey);
+    task.setActionText(action.trim());
+    task.setStatus(GrowthOperatorTaskStatus.OPEN);
+    taskRepository.save(task);
   }
 
   /** Registra uma falha tecnica com contexto para nova investigacao. */
@@ -447,6 +526,7 @@ public class GrowthOperatorService {
           "sessionIntelligence", Map.of("available", false, "reason", "PLAN_WITHOUT_EXPERIMENT"));
     }
     snapshot.put("consolidatedMemory", buildConsolidatedMemory(executionHistory));
+    snapshot.put("operatorTasks", listTasks(plan.getId()));
     try {
       return objectMapper.writeValueAsString(snapshot);
     } catch (JsonProcessingException ex) {
@@ -454,6 +534,46 @@ public class GrowthOperatorService {
           "Falha no modulo growth-operator ao congelar evidencias do planId={}", plan.getId(), ex);
       throw new IllegalStateException("Falha ao serializar evidencias do planejamento", ex);
     }
+  }
+
+  /**
+   * Calcula a identidade das evidencias operacionais sem incluir a memoria que cresce a cada ciclo.
+   */
+  private String buildEvidenceFingerprint(String evidenceSnapshot) {
+    try {
+      JsonNode operationalEvidence = objectMapper.readTree(evidenceSnapshot);
+      if (operationalEvidence.isObject()) {
+        ((com.fasterxml.jackson.databind.node.ObjectNode) operationalEvidence)
+            .remove("consolidatedMemory");
+      }
+      return sha256(objectMapper.writeValueAsString(operationalEvidence));
+    } catch (JsonProcessingException ex) {
+      throw new IllegalStateException("Falha ao identificar mudancas das evidencias", ex);
+    }
+  }
+
+  /** Gera uma chave SHA-256 estavel para deduplicacao e deteccao de mudancas. */
+  private String sha256(String value) {
+    try {
+      byte[] digest =
+          MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
+      return java.util.HexFormat.of().formatHex(digest);
+    } catch (NoSuchAlgorithmException ex) {
+      throw new IllegalStateException("SHA-256 indisponivel", ex);
+    }
+  }
+
+  /** Converte uma pendencia persistida no contrato publico. */
+  private GrowthOperatorTaskResponse toTaskResponse(GrowthOperatorTask task) {
+    return new GrowthOperatorTaskResponse(
+        task.getId(),
+        task.getCommercialPlan().getId(),
+        task.getSourceExecution().getId(),
+        task.getActionText(),
+        task.getStatus(),
+        task.getResolutionEvidence(),
+        task.getResolvedAt(),
+        task.getCreatedAt());
   }
 
   /** Monta o contexto mensal e semanal com precedencia explicita para a decisao operacional. */
@@ -467,6 +587,22 @@ public class GrowthOperatorService {
         "objectives",
         objectives.stream().map(CommercialPlanWeekObjective::getObjectiveText).toList());
     context.put("objectivesConfigured", !objectives.isEmpty());
+    boolean planEndsInCurrentWeek =
+        plan.getDeadline() != null
+            && !plan.getDeadline().isBefore(LocalDate.now(java.time.Clock.systemUTC()))
+            && !plan.getDeadline().isAfter(
+                LocalDate.now(java.time.Clock.systemUTC())
+                    .with(java.time.temporal.TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY)));
+    context.put(
+        "effectiveObjectives",
+        objectives.isEmpty() && planEndsInCurrentWeek
+            ? List.of(text(plan.getCommercialObjective()))
+            : objectives.stream().map(CommercialPlanWeekObjective::getObjectiveText).toList());
+    context.put(
+        "objectiveSource",
+        objectives.isEmpty() && planEndsInCurrentWeek
+            ? "PLAN_DEADLINE_IN_CURRENT_WEEK"
+            : "STRUCTURED_WEEK_OBJECTIVES");
     context.put(
         "precedenceRule",
         "A meta semanal vigente governa a proxima decisao; o teto mensal nunca autoriza gasto ate o limite.");
@@ -629,8 +765,10 @@ public class GrowthOperatorService {
         execution.getObjective(),
         execution.getBlocker(),
         execution.getEvidenceSnapshot(),
+        execution.getEvidenceFingerprint(),
         execution.getAlternativesJson(),
         execution.getDiagnosisJson(),
+        execution.getToolUsageJson(),
         execution.getRecommendedDecision(),
         execution.getRecommendedAction(),
         execution.getDailyReport(),

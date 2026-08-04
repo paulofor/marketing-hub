@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-04-growth-operator-event-driven
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE growth_operator_execution
+                ADD COLUMN evidence_fingerprint VARCHAR(64) NULL AFTER evidence_snapshot,
+                ADD COLUMN tool_usage_json LONGTEXT NULL AFTER raw_model_response,
+                ADD INDEX idx_growth_operator_plan_fingerprint
+                  (commercial_plan_id, evidence_fingerprint);
+
+              CREATE TABLE growth_operator_task (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                commercial_plan_id BIGINT NOT NULL,
+                source_execution_id BIGINT NOT NULL,
+                action_key VARCHAR(64) NOT NULL,
+                action_text TEXT NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                resolution_evidence TEXT NULL,
+                resolved_at DATETIME NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                CONSTRAINT fk_growth_operator_task_plan
+                  FOREIGN KEY (commercial_plan_id) REFERENCES commercial_plan(id),
+                CONSTRAINT fk_growth_operator_task_execution
+                  FOREIGN KEY (source_execution_id) REFERENCES growth_operator_execution(id),
+                INDEX idx_growth_operator_task_plan_status (commercial_plan_id, status),
+                INDEX idx_growth_operator_task_dedupe (commercial_plan_id, action_key, status)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

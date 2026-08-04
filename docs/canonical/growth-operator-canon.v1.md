@@ -10,7 +10,7 @@ O Operador de Crescimento transforma meta, gargalo e evidencias persistidas do p
 - O worker consome somente o endpoint `pending/claim` e nunca acessa o banco.
 - O Codex roda com sandbox `read-only`, identidade ChatGPT persistida em volume proprio e repositorio montado sem escrita.
 - Como o repositorio e montado de outro host e pertence a um UID diferente, o comando aceita explicitamente essa arvore com `--skip-git-repo-check`; essa opcao nao amplia permissoes e o sandbox `read-only` permanece obrigatorio.
-- O worker mantem o loop operacional, mas solicita ao backend a criacao de cada novo ciclo; somente o backend decide se a cadencia de 30 minutos venceu.
+- O worker mantem o polling operacional, mas o backend so cria novo ciclo quando o fingerprint das evidencias muda. A passagem de 30 minutos, isoladamente, nunca justifica novo consumo de IA.
 - A investigacao consulta APIs oficiais e documentacao publica. A unica mutacao autonoma permitida e solicitar pausa preventiva; o backend valida gates deterministas, registra auditoria e aciona o worker da Meta. Retomada apenas registra pedido para aprovacao humana.
 - A v1 nao altera plano, codigo, campanha, preco, orcamento, publicacao, comunicacao ou dados comerciais.
 - Toda recomendacao que exija mutacao deve retornar `WAIT_FOR_APPROVAL`.
@@ -19,6 +19,8 @@ O Operador de Crescimento transforma meta, gargalo e evidencias persistidas do p
 ## Contrato do diagnostico
 
 Cada execucao deve persistir objetivo, gargalo, snapshot de evidencias, exatamente tres alternativas, causa-raiz, metrica esperada, criterios de continuar/ajustar/parar, decisao, proxima acao, resposta bruta, modelo, custo e falha quando houver.
+
+O fingerprint exclui a memoria acumulada e inclui apenas evidencias operacionais atuais. Assim, o proprio relatorio anterior nao cria artificialmente uma mudanca. Cada execucao tambem persiste as chamadas MCP realmente observadas, permitindo auditar quais ferramentas fundamentaram a conclusao.
 
 Cada ciclo tambem persiste numero sequencial, origem manual ou automatica e relatorio diario executivo. O snapshot do ciclo seguinte inclui memoria consolidada do planejamento: contagens de todo o historico e linha do tempo recente com conclusoes, evidencias, recomendacoes, falhas e metricas observadas em cada ciclo. A linha do tempo detalhada pode ser limitada para controlar contexto, mas deve declarar truncamento e manter as contagens integrais. Recomendacao deve ser identificada como nao confirmada ate que evidencia posterior comprove sua execucao e seu resultado. Atividade, recomendacao, impacto estimado e PR nunca contam como venda.
 
@@ -50,6 +52,8 @@ aprendizados. O Operador deve comparar pecas do mesmo `strategyGroupKey`, distin
 producao de gasto de campanha e somente confirmar aprendizado quando houver eventos humanos
 atribuidos.
 
+Estrategias de outro produto ou experimento nunca devem ser vinculadas automaticamente apenas por compartilharem tema, personagem ou grupo narrativo. Ausencia de estrategia compativel e uma lacuna valida; vinculo incorreto e contaminacao de evidencia.
+
 ## Imagem e operacao
 
 - A imagem de producao e criada exclusivamente pelo `Dockerfile` e pelo Compose versionados em `growth-operator-worker`.
@@ -69,6 +73,7 @@ Decisoes permitidas: `CONTINUE`, `ADJUST`, `STOP` e `WAIT_FOR_APPROVAL`.
 - A semana vigente tem precedencia na decisao operacional; o teto mensal nunca representa autorizacao de gasto.
 - O menor gate monetario do criterio de parada e preventivo. Quando ele for atingido sem receita comprovada, o backend bloqueia `CONTINUE` e registra `WAIT_FOR_APPROVAL`.
 - Objetivo semanal ausente ou contraditorio deve ser tratado como lacuna de planejamento, nunca preenchido por suposicao do modelo.
+- Quando o prazo do proprio plano termina na semana vigente, o objetivo comercial persistido no plano e uma meta semanal efetiva e deve ser enviado com a origem `PLAN_DEADLINE_IN_CURRENT_WEEK`; isso nao cria nem inventa outra meta.
 
 ## Gates de ampliacao
 

@@ -2,11 +2,13 @@ package com.marketinghub.growthoperator.controller;
 
 import com.marketinghub.growthoperator.service.GrowthOperatorService;
 import com.marketinghub.growthoperator.service.action.GrowthOperatorExperimentActionRequest;
+import com.marketinghub.growthoperator.service.action.ResolveGrowthOperatorTaskRequest;
 import com.marketinghub.growthoperator.service.result.CompleteGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.result.FailGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.start.StartGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.view.GrowthOperatorExecutionResponse;
 import com.marketinghub.growthoperator.service.view.GrowthOperatorMcpToolResponse;
+import com.marketinghub.growthoperator.service.view.GrowthOperatorTaskResponse;
 import java.util.List;
 import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,6 +40,21 @@ public class GrowthOperatorController {
   @GetMapping("/commercial-plans/{planId}/executions")
   public List<GrowthOperatorExecutionResponse> list(@PathVariable Long planId) {
     return service.list(planId);
+  }
+
+  /** Lista pendencias abertas e concluidas do planejamento. */
+  @GetMapping("/commercial-plans/{planId}/tasks")
+  public List<GrowthOperatorTaskResponse> listTasks(@PathVariable Long planId) {
+    return service.listTasks(planId);
+  }
+
+  /** Registra a evidencia humana que conclui uma pendencia. */
+  @PostMapping("/commercial-plans/{planId}/tasks/{taskId}/resolve")
+  public GrowthOperatorTaskResponse resolveTask(
+      @PathVariable Long planId,
+      @PathVariable Long taskId,
+      @RequestBody ResolveGrowthOperatorTaskRequest request) {
+    return service.resolveTask(planId, taskId, request);
   }
 
   /** Lista as ferramentas MCP que o Operador pode consultar. */

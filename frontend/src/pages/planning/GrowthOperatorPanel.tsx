@@ -3,6 +3,8 @@ import {
   GrowthOperatorExecution,
   useGrowthOperatorExecutions,
   useGrowthOperatorMcpTools,
+  useGrowthOperatorTasks,
+  useResolveGrowthOperatorTask,
   useStartGrowthOperator,
 } from "../../api/planning/useGrowthOperator";
 
@@ -43,6 +45,15 @@ function sessionEvidence(snapshot?: string | null) {
   }
 }
 
+function toolUsage(value?: string | null) {
+  if (!value) return [];
+  try {
+    return JSON.parse(value) as Array<{ tool: string; status: number }>;
+  } catch {
+    return [];
+  }
+}
+
 export default function GrowthOperatorPanel({
   planId,
   defaultObjective,
@@ -51,8 +62,11 @@ export default function GrowthOperatorPanel({
   defaultObjective?: string | null;
 }) {
   const [objective, setObjective] = useState(defaultObjective ?? "");
+  const [taskEvidence, setTaskEvidence] = useState<Record<number, string>>({});
   const executionsQuery = useGrowthOperatorExecutions(planId);
   const toolsQuery = useGrowthOperatorMcpTools();
+  const tasksQuery = useGrowthOperatorTasks(planId);
+  const resolveTask = useResolveGrowthOperatorTask(planId);
   const start = useStartGrowthOperator(planId);
   const executions = executionsQuery.data ?? [];
 
@@ -85,8 +99,9 @@ export default function GrowthOperatorPanel({
             </span>
           </summary>
           <p className="text-muted small mt-2 mb-2">
-            Catálogo autorizado para investigação direta do Marketing Hub. Todas
-            as ferramentas são somente leitura e auditáveis.
+            Catálogo autorizado para investigação direta do Marketing Hub. As
+            consultas são somente leitura; ações comerciais permanecem
+            governadas e auditáveis.
           </p>
           {toolsQuery.isError ? (
             <div className="alert alert-warning py-2 mb-0">
@@ -98,8 +113,14 @@ export default function GrowthOperatorPanel({
                 <div className="border rounded p-2" key={tool.name}>
                   <div className="d-flex justify-content-between gap-2 flex-wrap">
                     <code>{tool.name}</code>
-                    <span className="badge text-bg-success">
-                      Somente leitura
+                    <span
+                      className={`badge ${tool.accessMode === "SOMENTE_LEITURA" ? "text-bg-success" : "text-bg-warning"}`}
+                    >
+                      {tool.accessMode === "SOMENTE_LEITURA"
+                        ? "Somente leitura"
+                        : tool.accessMode === "MUTACAO_GOVERNADA"
+                          ? "Mutação governada"
+                          : "Aprovação humana"}
                     </span>
                   </div>
                   <p className="mb-1 mt-1">{tool.description}</p>
@@ -118,6 +139,80 @@ export default function GrowthOperatorPanel({
             </div>
           )}
         </details>
+
+        <section
+          className="border rounded p-3"
+          data-testid="growth-operator-tasks"
+        >
+          <div className="d-flex justify-content-between gap-2 flex-wrap">
+            <strong>Pendências acompanhadas</strong>
+            <span className="badge text-bg-warning">
+              {
+                (tasksQuery.data ?? []).filter((task) => task.status === "OPEN")
+                  .length
+              }{" "}
+              abertas
+            </span>
+          </div>
+          <p className="text-muted small mb-2 mt-1">
+            Recomendações permanecem abertas até uma evidência comprovar
+            execução e resultado.
+          </p>
+          {(tasksQuery.data ?? []).length === 0 ? (
+            <span className="text-muted small">
+              Nenhuma pendência registrada.
+            </span>
+          ) : (
+            <div className="d-grid gap-2">
+              {(tasksQuery.data ?? []).map((task) => (
+                <div className="border rounded p-2" key={task.id}>
+                  <span
+                    className={`badge ${task.status === "OPEN" ? "text-bg-warning" : "text-bg-success"}`}
+                  >
+                    {task.status === "OPEN" ? "Aberta" : "Concluída"}
+                  </span>{" "}
+                  {task.actionText}
+                  {task.resolutionEvidence ? (
+                    <div className="small text-muted mt-1">
+                      Evidência: {task.resolutionEvidence}
+                    </div>
+                  ) : null}
+                  {task.status === "OPEN" ? (
+                    <div className="input-group input-group-sm mt-2">
+                      <input
+                        className="form-control"
+                        aria-label={`Evidência da pendência ${task.id}`}
+                        placeholder="Evidência do resultado obtido"
+                        value={taskEvidence[task.id] ?? ""}
+                        onChange={(event) =>
+                          setTaskEvidence((current) => ({
+                            ...current,
+                            [task.id]: event.target.value,
+                          }))
+                        }
+                      />
+                      <button
+                        className="btn btn-outline-success"
+                        type="button"
+                        disabled={
+                          (taskEvidence[task.id] ?? "").trim().length < 10
+                        }
+                        onClick={() =>
+                          resolveTask.mutate({
+                            taskId: task.id,
+                            evidence: taskEvidence[task.id],
+                          })
+                        }
+                      >
+                        Comprovar conclusão
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
 
         <div>
           <label className="form-label" htmlFor="growth-operator-objective">
@@ -166,6 +261,7 @@ export default function GrowthOperatorPanel({
 
         {executions.map((execution) => {
           const evidence = sessionEvidence(execution.evidenceSnapshot);
+          const usedTools = toolUsage(execution.toolUsageJson);
           return (
             <article className="border rounded p-3" key={execution.id}>
               <div className="d-flex justify-content-between gap-3 flex-wrap">
@@ -184,6 +280,12 @@ export default function GrowthOperatorPanel({
                 <p className="mb-0">
                   <strong>Próxima ação recomendada:</strong>{" "}
                   {execution.recommendedAction}
+                </p>
+              ) : null}
+              {usedTools.length > 0 ? (
+                <p className="mb-1 small text-muted">
+                  <strong>Ferramentas consultadas:</strong>{" "}
+                  {[...new Set(usedTools.map((call) => call.tool))].join(", ")}
                 </p>
               ) : null}
               {evidence ? (

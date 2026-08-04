@@ -8,6 +8,7 @@ public record CompleteGrowthOperatorRequest(
     String alternativesJson,
     String diagnosisJson,
     String rawModelResponse,
+    String toolUsageJson,
     GrowthOperatorDecision recommendedDecision,
     String recommendedAction,
     String dailyReport,

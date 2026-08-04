@@ -1576,3 +1576,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-03-growth-operator-continuous-loop.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-04-growth-operator-event-driven.yaml
+      relativeToChangelogFile: true

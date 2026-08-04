@@ -2,7 +2,9 @@ package com.marketinghub.growthoperator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -43,6 +45,7 @@ class GrowthOperatorServiceTest {
     GrowthOperatorService service =
         new GrowthOperatorService(
             mock(GrowthOperatorExecutionRepository.class),
+            mock(com.marketinghub.repository.jpa.growthoperator.GrowthOperatorTaskRepository.class),
             mock(CommercialPlanService.class),
             mock(CommercialPlanWeekObjectiveRepository.class),
             mock(ExperimentFunnelService.class),
@@ -62,9 +65,53 @@ class GrowthOperatorServiceTest {
             "consultar_campanhas",
             "consultar_memoria",
             "consultar_estrategia_videos",
+            "consultar_pendencias",
             "solicitar_pausa_experimento",
             "solicitar_retomada_experimento");
     assertThat(tools.subList(0, 6)).allMatch(tool -> "SOMENTE_LEITURA".equals(tool.accessMode()));
+  }
+
+  /** Impede novo consumo automatico quando nenhuma evidencia operacional mudou. */
+  @Test
+  void shouldReuseLatestAutomaticCycleWhenEvidenceDidNotChange() {
+    GrowthOperatorExecutionRepository repository = mock(GrowthOperatorExecutionRepository.class);
+    var taskRepository =
+        mock(com.marketinghub.repository.jpa.growthoperator.GrowthOperatorTaskRepository.class);
+    CommercialPlanService planService = mock(CommercialPlanService.class);
+    CommercialPlan plan = CommercialPlan.builder().id(2L).commercialObjective("Vender").build();
+    when(planService.getPlan(2L)).thenReturn(plan);
+    when(repository.findFirstByCommercialPlanIdOrderByCreatedAtDesc(2L))
+        .thenReturn(java.util.Optional.empty());
+    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
+    when(repository.save(any(GrowthOperatorExecution.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    GrowthOperatorService service =
+        new GrowthOperatorService(
+            repository,
+            taskRepository,
+            planService,
+            mock(CommercialPlanWeekObjectiveRepository.class),
+            mock(ExperimentFunnelService.class),
+            mock(VideoProjectRepository.class),
+            mock(ExperimentVideoPerformanceDashboardService.class),
+            mock(com.marketinghub.experiment.service.ExperimentService.class),
+            new ObjectMapper().findAndRegisterModules());
+
+    service.ensureAutomaticCycle(2L);
+    ArgumentCaptor<GrowthOperatorExecution> captor =
+        ArgumentCaptor.forClass(GrowthOperatorExecution.class);
+    verify(repository).save(captor.capture());
+    GrowthOperatorExecution latest = captor.getValue();
+    latest.setCreatedAt(Instant.now().minusSeconds(3600));
+    when(repository.findFirstByCommercialPlanIdOrderByCreatedAtDesc(2L))
+        .thenReturn(java.util.Optional.of(latest));
+    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of(latest));
+    clearInvocations(repository);
+
+    GrowthOperatorExecutionResponse response = service.ensureAutomaticCycle(2L);
+
+    assertThat(response.evidenceFingerprint()).isEqualTo(latest.getEvidenceFingerprint());
+    verify(repository, never()).save(any(GrowthOperatorExecution.class));
   }
 
   /** Confirma que o novo ciclo recebe conclusoes e resultados observados de todo o historico. */
@@ -93,6 +140,7 @@ class GrowthOperatorServiceTest {
     GrowthOperatorService service =
         new GrowthOperatorService(
             repository,
+            mock(com.marketinghub.repository.jpa.growthoperator.GrowthOperatorTaskRepository.class),
             planService,
             mock(CommercialPlanWeekObjectiveRepository.class),
             funnelService,
@@ -154,6 +202,7 @@ class GrowthOperatorServiceTest {
     GrowthOperatorService service =
         new GrowthOperatorService(
             repository,
+            mock(com.marketinghub.repository.jpa.growthoperator.GrowthOperatorTaskRepository.class),
             planService,
             mock(CommercialPlanWeekObjectiveRepository.class),
             funnelService,
@@ -195,6 +244,7 @@ class GrowthOperatorServiceTest {
     GrowthOperatorService service =
         new GrowthOperatorService(
             repository,
+            mock(com.marketinghub.repository.jpa.growthoperator.GrowthOperatorTaskRepository.class),
             planService,
             mock(CommercialPlanWeekObjectiveRepository.class),
             funnelService,
@@ -246,6 +296,7 @@ class GrowthOperatorServiceTest {
     GrowthOperatorService service =
         new GrowthOperatorService(
             repository,
+            mock(com.marketinghub.repository.jpa.growthoperator.GrowthOperatorTaskRepository.class),
             planService,
             mock(CommercialPlanWeekObjectiveRepository.class),
             funnelService,
@@ -294,6 +345,7 @@ class GrowthOperatorServiceTest {
     GrowthOperatorService service =
         new GrowthOperatorService(
             repository,
+            mock(com.marketinghub.repository.jpa.growthoperator.GrowthOperatorTaskRepository.class),
             planService,
             objectiveRepository,
             mock(ExperimentFunnelService.class),
@@ -339,6 +391,7 @@ class GrowthOperatorServiceTest {
     GrowthOperatorService service =
         new GrowthOperatorService(
             repository,
+            mock(com.marketinghub.repository.jpa.growthoperator.GrowthOperatorTaskRepository.class),
             planService,
             mock(CommercialPlanWeekObjectiveRepository.class),
             mock(ExperimentFunnelService.class),
@@ -354,6 +407,7 @@ class GrowthOperatorServiceTest {
                 "[]",
                 "{}",
                 "{}",
+                "[]",
                 GrowthOperatorDecision.CONTINUE,
                 "Manter campanha",
                 "relatorio",
@@ -387,6 +441,7 @@ class GrowthOperatorServiceTest {
     GrowthOperatorService service =
         new GrowthOperatorService(
             mock(GrowthOperatorExecutionRepository.class),
+            mock(com.marketinghub.repository.jpa.growthoperator.GrowthOperatorTaskRepository.class),
             planService,
             mock(CommercialPlanWeekObjectiveRepository.class),
             mock(ExperimentFunnelService.class),
@@ -423,6 +478,7 @@ class GrowthOperatorServiceTest {
     GrowthOperatorService service =
         new GrowthOperatorService(
             mock(GrowthOperatorExecutionRepository.class),
+            mock(com.marketinghub.repository.jpa.growthoperator.GrowthOperatorTaskRepository.class),
             planService,
             mock(CommercialPlanWeekObjectiveRepository.class),
             mock(ExperimentFunnelService.class),

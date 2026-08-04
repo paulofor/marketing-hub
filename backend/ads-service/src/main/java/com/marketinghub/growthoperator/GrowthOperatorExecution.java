@@ -52,6 +52,9 @@ public class GrowthOperatorExecution {
   @Column(name = "evidence_snapshot", columnDefinition = "LONGTEXT")
   private String evidenceSnapshot;
 
+  @Column(name = "evidence_fingerprint", length = 64)
+  private String evidenceFingerprint;
+
   @Column(name = "alternatives_json", columnDefinition = "LONGTEXT")
   private String alternativesJson;
 
@@ -60,6 +63,9 @@ public class GrowthOperatorExecution {
 
   @Column(name = "raw_model_response", columnDefinition = "LONGTEXT")
   private String rawModelResponse;
+
+  @Column(name = "tool_usage_json", columnDefinition = "LONGTEXT")
+  private String toolUsageJson;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "recommended_decision")

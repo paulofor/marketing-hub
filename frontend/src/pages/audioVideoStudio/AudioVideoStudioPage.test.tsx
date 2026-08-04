@@ -1,10 +1,13 @@
 import { render, screen, waitFor, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import axios from "axios";
-import AudioVideoStudioPage from "./AudioVideoStudioPage";
+import AudioVideoStudioPage, {
+  buildStudioSceneMetadata,
+} from "./AudioVideoStudioPage";
+import { SALES_VIDEO_PROVIDER_OPTIONS } from "../../api/salesVideo/videoProviderCatalog";
 
 vi.mock("axios");
 
@@ -48,6 +51,24 @@ function setup() {
     <QueryClientProvider client={client}>
       <MemoryRouter>
         <AudioVideoStudioPage />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+function setupProject() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={["/audio-video-studio/projects/1"]}>
+        <Routes>
+          <Route
+            path="/audio-video-studio/projects/:projectId"
+            element={<AudioVideoStudioPage />}
+          />
+        </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -177,5 +198,78 @@ describe("AudioVideoStudioPage", () => {
           Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy();
     });
+  });
+
+  it("permite gerar e montar o projeto por quatro cenas independentes", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/studio/catalog") {
+        return Promise.resolve({ data: studioCatalog });
+      }
+      if (url === "/api/sales-videos/projects/1") {
+        return Promise.resolve({
+          data: {
+            id: 1,
+            productId: 4,
+            salesVideoProfileId: 55,
+            campaignKey: "musa-pde-entry-v7-espelho-antes-de-sair",
+            videoCategory: "COMMERCIAL_SHORT",
+            contextType: "PDE",
+            productionMode: "CINEMATIC_SCENE_BLUEPRINT",
+            targetChannel: "PDE_HERO_DIAGNOSTIC",
+            format: "VERTICAL_9_16",
+            title: "MUSA v7 - O espelho antes de sair",
+            storyText: "Historia MUSA",
+            hookText: "Gancho MUSA",
+            scriptText: "Roteiro MUSA",
+            scenePlan: "Quatro cenas",
+            visualReferences: "Microajustes visiveis",
+            characterBible: "Mesma mulher adulta",
+            environmentBible: "Apartamento claro",
+            objectBible: "Espelho e celular",
+            visualStyleGuide: "Editorial acessivel",
+            imageGenerationPlan: "Frames aprovados",
+            continuityRules: "Preservar personagem",
+            voiceoverPlan: "Voz feminina",
+            soundtrackPlan: "Trilha discreta",
+            captionPlan: "Legenda mobile",
+            ctaText: "Ver meu plano MUSA",
+            funnelStage: "AWARENESS_TO_DIAGNOSTIC",
+            primaryMetric: "CTA_CLICK_TO_DIAGNOSTIC",
+            targetDurationSeconds: 30,
+            providerPlan: "Luma Ray 3.2 (LUMA_RAY_3_2)",
+            status: "READY_FOR_REVIEW",
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    setupProject();
+
+    expect(
+      await screen.findAllByRole("button", { name: "Gerar clipe" }),
+    ).toHaveLength(4);
+    const provider = SALES_VIDEO_PROVIDER_OPTIONS.find(
+      (option) => option.providerName === "LUMA_RAY_3_2",
+    );
+    expect(provider).toBeTruthy();
+    const metadata = JSON.parse(
+      buildStudioSceneMetadata(
+        {
+          id: 1,
+          campaignKey: "musa-pde-entry-v7-espelho-antes-de-sair",
+        } as any,
+        provider!,
+        "Cena do espelho",
+        0,
+      ),
+    );
+    expect(metadata.studio_project_id).toBe(1);
+    expect(metadata.scene).toEqual(
+      expect.objectContaining({ order: 1, role: "DOR" }),
+    );
+    expect(
+      screen.getByRole("button", { name: /montar quatro clipes aprovados/i }),
+    ).toBeDisabled();
   });
 });

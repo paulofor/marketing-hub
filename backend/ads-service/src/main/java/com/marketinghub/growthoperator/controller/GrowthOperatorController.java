@@ -5,6 +5,7 @@ import com.marketinghub.growthoperator.service.result.CompleteGrowthOperatorRequ
 import com.marketinghub.growthoperator.service.result.FailGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.start.StartGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.view.GrowthOperatorExecutionResponse;
+import com.marketinghub.growthoperator.service.view.GrowthOperatorMcpToolResponse;
 import java.util.List;
 import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,6 +37,12 @@ public class GrowthOperatorController {
   @GetMapping("/commercial-plans/{planId}/executions")
   public List<GrowthOperatorExecutionResponse> list(@PathVariable Long planId) {
     return service.list(planId);
+  }
+
+  /** Lista as ferramentas MCP que o Operador pode consultar. */
+  @GetMapping("/mcp-tools")
+  public List<GrowthOperatorMcpToolResponse> listMcpTools() {
+    return service.listMcpTools();
   }
 
   /** Entrega inteligencia detalhada e anonimizada de sessoes para consulta direta do agente. */

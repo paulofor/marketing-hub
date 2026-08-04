@@ -10,6 +10,7 @@ import com.marketinghub.growthoperator.service.result.CompleteGrowthOperatorRequ
 import com.marketinghub.growthoperator.service.result.FailGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.start.StartGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.view.GrowthOperatorExecutionResponse;
+import com.marketinghub.growthoperator.service.view.GrowthOperatorMcpToolResponse;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.repository.jpa.growthoperator.GrowthOperatorExecutionRepository;
@@ -32,6 +33,38 @@ public class GrowthOperatorService {
   private static final String READ_ONLY = "READ_ONLY_DIAGNOSIS";
   private static final int SESSION_EVENT_LIMIT = 2000;
   private static final int MEMORY_TIMELINE_LIMIT = 30;
+  private static final List<GrowthOperatorMcpToolResponse> MCP_TOOLS =
+      List.of(
+          new GrowthOperatorMcpToolResponse(
+              "consultar_planejamento",
+              "Consulta o planejamento comercial e suas metas atuais.",
+              "SOMENTE_LEITURA",
+              "Planejamento Comercial",
+              Map.of()),
+          new GrowthOperatorMcpToolResponse(
+              "consultar_funil",
+              "Consulta o funil consolidado do experimento vinculado ao planejamento.",
+              "SOMENTE_LEITURA",
+              "Experimentos",
+              Map.of()),
+          new GrowthOperatorMcpToolResponse(
+              "consultar_sessoes",
+              "Consulta jornadas e eventos anonimizados do planejamento.",
+              "SOMENTE_LEITURA",
+              "Inteligencia de sessoes",
+              Map.of("eventLimit", "Inteiro entre 1 e 2000; padrao 2000")),
+          new GrowthOperatorMcpToolResponse(
+              "consultar_campanhas",
+              "Consulta as campanhas Meta do experimento vinculado ao planejamento.",
+              "SOMENTE_LEITURA",
+              "Campanhas Meta",
+              Map.of()),
+          new GrowthOperatorMcpToolResponse(
+              "consultar_memoria",
+              "Consulta o historico auditavel dos ciclos do Operador.",
+              "SOMENTE_LEITURA",
+              "Memoria do Operador",
+              Map.of()));
   private final GrowthOperatorExecutionRepository repository;
   private final CommercialPlanService commercialPlanService;
   private final ExperimentFunnelService experimentFunnelService;
@@ -74,6 +107,11 @@ public class GrowthOperatorService {
     return repository.findByCommercialPlanIdOrderByCreatedAtDesc(planId).stream()
         .map(this::toResponse)
         .toList();
+  }
+
+  /** Lista o catalogo MCP efetivamente autorizado para diagnosticos do Operador. */
+  public List<GrowthOperatorMcpToolResponse> listMcpTools() {
+    return MCP_TOOLS;
   }
 
   /** Consulta as sessoes atuais por API sem expor banco ou dados pessoais ao worker. */

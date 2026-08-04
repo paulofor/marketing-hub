@@ -163,6 +163,9 @@ describe("audio video studio navigation", () => {
     expect(
       document.getElementById("audio-video-stage-revisao")?.tagName,
     ).not.toBe("LABEL");
+    expect(
+      document.querySelectorAll(".audio-video-studio-page__stage-heading"),
+    ).toHaveLength(9);
     expect(screen.getByText(/plano basico de cenas/i)).toBeTruthy();
     expect(screen.getByText(/checklist de producao/i)).toBeTruthy();
     expect(screen.getByText(/o que continua onde esta/i)).toBeTruthy();

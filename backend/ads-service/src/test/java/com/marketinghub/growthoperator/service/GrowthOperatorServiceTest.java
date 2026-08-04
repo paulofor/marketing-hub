@@ -27,6 +27,29 @@ import org.mockito.ArgumentCaptor;
 /** Responsabilidade: validar o contexto auditável entregue ao Operador de Crescimento. */
 class GrowthOperatorServiceTest {
 
+  /** Confirma que o catalogo publico reflete todas as ferramentas MCP autorizadas. */
+  @Test
+  void shouldExposeAllReadOnlyMcpTools() {
+    GrowthOperatorService service =
+        new GrowthOperatorService(
+            mock(GrowthOperatorExecutionRepository.class),
+            mock(CommercialPlanService.class),
+            mock(ExperimentFunnelService.class),
+            new ObjectMapper());
+
+    var tools = service.listMcpTools();
+
+    assertThat(tools)
+        .extracting(tool -> tool.name())
+        .containsExactly(
+            "consultar_planejamento",
+            "consultar_funil",
+            "consultar_sessoes",
+            "consultar_campanhas",
+            "consultar_memoria");
+    assertThat(tools).allMatch(tool -> "SOMENTE_LEITURA".equals(tool.accessMode()));
+  }
+
   /** Confirma que o novo ciclo recebe conclusoes e resultados observados de todo o historico. */
   @Test
   void shouldFreezeConsolidatedPlanningMemory() throws Exception {

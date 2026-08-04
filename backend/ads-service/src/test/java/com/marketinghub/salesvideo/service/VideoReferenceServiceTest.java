@@ -148,7 +148,8 @@ class VideoReferenceServiceTest {
             .build();
     reference.setId(44L);
     given(repository.findById(44L)).willReturn(java.util.Optional.of(reference));
-    given(repository.save(any(VideoReference.class))).willAnswer(invocation -> invocation.getArgument(0));
+    given(repository.save(any(VideoReference.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
 
     VideoReferenceDto result =
         service.analyzeReference(

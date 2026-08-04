@@ -77,7 +77,8 @@ public class VideoProjectService {
             .ctaText(trimToNull(request.ctaText()))
             .targetDurationSeconds(
                 validatedTargetDurationSeconds(
-                    validatedVideoCategory(request.videoCategory()), request.targetDurationSeconds()))
+                    validatedVideoCategory(request.videoCategory()),
+                    request.targetDurationSeconds()))
             .providerPlan(trimToNull(request.providerPlan()))
             .editingNotes(trimToNull(request.editingNotes()))
             .qualityGate(trimToNull(request.qualityGate()))
@@ -175,7 +176,8 @@ public class VideoProjectService {
 
   /** Valida a categoria comercial do vídeo e preserva compatibilidade com projetos antigos. */
   private static String validatedVideoCategory(String videoCategory) {
-    String normalized = Objects.requireNonNullElse(trimToNull(videoCategory), VIDEO_CATEGORY_LONG_FORM);
+    String normalized =
+        Objects.requireNonNullElse(trimToNull(videoCategory), VIDEO_CATEGORY_LONG_FORM);
     if (VIDEO_CATEGORY_COMMERCIAL_SHORT.equals(normalized)
         || VIDEO_CATEGORY_LONG_FORM.equals(normalized)
         || VIDEO_CATEGORY_INSTITUTIONAL_CONTENT.equals(normalized)) {
@@ -207,8 +209,7 @@ public class VideoProjectService {
     }
     if (targetDurationSeconds < MINIMUM_LONG_FORM_DURATION_SECONDS) {
       throw VideoModuleException.badRequest(
-          VideoModuleErrorCode.BAD_REQUEST,
-          "Vídeo longo ou VSL deve ter 180 segundos ou mais");
+          VideoModuleErrorCode.BAD_REQUEST, "Vídeo longo ou VSL deve ter 180 segundos ou mais");
     }
     return targetDurationSeconds;
   }

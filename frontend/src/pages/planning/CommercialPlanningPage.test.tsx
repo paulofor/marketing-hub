@@ -240,6 +240,19 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
   };
 });
 
+vi.mock("../../api/planning/useGrowthOperator", () => ({
+  useGrowthOperatorExecutions: () => ({
+    data: [],
+    isError: false,
+  }),
+  useStartGrowthOperator: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isError: false,
+    isSuccess: false,
+  }),
+}));
+
 function renderPage() {
   return render(
     <MemoryRouter>

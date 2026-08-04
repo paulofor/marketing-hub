@@ -87,8 +87,7 @@ class ExperimentRepositoryTest {
                 .niche(niche)
                 .hypothesisRef(hypothesis)
                 .journeyTemplate(template)
-                .followUpActionUrl(
-                    "https://oportunidadebrasil.shop/flows/exp-81-gerasalespage-v1")
+                .followUpActionUrl("https://oportunidadebrasil.shop/flows/exp-81-gerasalespage-v1")
                 .build());
 
     entityManager.flush();

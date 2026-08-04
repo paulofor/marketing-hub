@@ -9,27 +9,43 @@ import {
   useMoisCollectedReferenceLineage,
   useMoisCollectedReferences,
 } from "../../api/mois/useMoisCollection";
+import {
+  useCreateMoisMetaAdInvestigation,
+  useMoisMetaAdInvestigations,
+} from "../../api/mois/useMoisMetaAdInvestigations";
 
 const WORKSPACE_ID = "workspace-001";
-const SOURCE_OPTIONS = ["CLICKBANK", "JVZOO", "HOTMART", "META_AD_LIBRARY"];
+const SOURCE_OPTIONS = [
+  { value: "CLICKBANK", available: false },
+  { value: "HOTMART", available: true },
+  { value: "JVZOO", available: false },
+  { value: "META_AD_LIBRARY", available: false },
+];
 
 export default function MoisAutoCollectionPage() {
-  const [selectedSources, setSelectedSources] = useState<string[]>(["CLICKBANK"]);
+  const [selectedSources, setSelectedSources] = useState<string[]>(["HOTMART"]);
   const [niche, setNiche] = useState("nutricao");
   const [marketTheme, setMarketTheme] = useState("perda de gordura");
-  const [timeWindow, setTimeWindow] = useState<"LAST_7_DAYS" | "LAST_30_DAYS">("LAST_7_DAYS");
+  const [timeWindow, setTimeWindow] = useState<"LAST_7_DAYS" | "LAST_30_DAYS">(
+    "LAST_7_DAYS",
+  );
   const [minSuccessScore, setMinSuccessScore] = useState(60);
   const [activeJobId, setActiveJobId] = useState("");
+  const [metaSearchTerms, setMetaSearchTerms] = useState("");
 
   const [sourceFilter, setSourceFilter] = useState("");
   const [confidenceFilter, setConfidenceFilter] = useState("");
-  const [selectedLineageReferenceId, setSelectedLineageReferenceId] = useState("");
+  const [selectedLineageReferenceId, setSelectedLineageReferenceId] =
+    useState("");
 
   const createJob = useCreateMoisCollectionJob();
   const favoriteMutation = useFavoriteMoisCollectedReference();
   const discardMutation = useDiscardMoisCollectedReference();
   const importMutation = useImportMoisCollectedReference();
-  const importAndExtractMutation = useImportAndStartExtractionMoisCollectedReference();
+  const importAndExtractMutation =
+    useImportAndStartExtractionMoisCollectedReference();
+  const metaInvestigations = useMoisMetaAdInvestigations(WORKSPACE_ID);
+  const createMetaInvestigation = useCreateMoisMetaAdInvestigation();
 
   const filters = useMemo(
     () => ({
@@ -42,10 +58,17 @@ export default function MoisAutoCollectionPage() {
   );
 
   const referencesQuery = useMoisCollectedReferences(activeJobId, filters);
-  const lineageQuery = useMoisCollectedReferenceLineage(activeJobId, selectedLineageReferenceId);
+  const lineageQuery = useMoisCollectedReferenceLineage(
+    activeJobId,
+    selectedLineageReferenceId,
+  );
 
   function toggleSource(source: string) {
-    setSelectedSources((prev) => (prev.includes(source) ? prev.filter((item) => item !== source) : [...prev, source]));
+    setSelectedSources((prev) =>
+      prev.includes(source)
+        ? prev.filter((item) => item !== source)
+        : [...prev, source],
+    );
   }
 
   async function handleCreateJob(event: FormEvent<HTMLFormElement>) {
@@ -69,7 +92,8 @@ export default function MoisAutoCollectionPage() {
         <div>
           <h1 className="h3 mb-1">MOIS · Coleta automática</h1>
           <p className="text-secondary mb-0">
-            Inicie coletas por janela temporal e aplique ações rápidas em referências com maior sinal de sucesso.
+            Inicie coletas por janela temporal e aplique ações rápidas em
+            referências com maior sinal de sucesso.
           </p>
         </div>
         <Link className="btn btn-outline-secondary" to="/mois">
@@ -112,7 +136,11 @@ export default function MoisAutoCollectionPage() {
               id="mois-auto-window"
               className="form-select"
               value={timeWindow}
-              onChange={(event) => setTimeWindow(event.target.value as "LAST_7_DAYS" | "LAST_30_DAYS")}
+              onChange={(event) =>
+                setTimeWindow(
+                  event.target.value as "LAST_7_DAYS" | "LAST_30_DAYS",
+                )
+              }
               required
             >
               <option value="LAST_7_DAYS">Últimos 7 dias</option>
@@ -130,7 +158,9 @@ export default function MoisAutoCollectionPage() {
               max={100}
               className="form-control"
               value={minSuccessScore}
-              onChange={(event) => setMinSuccessScore(Number(event.target.value))}
+              onChange={(event) =>
+                setMinSuccessScore(Number(event.target.value))
+              }
               required
             />
           </div>
@@ -139,14 +169,18 @@ export default function MoisAutoCollectionPage() {
             <label className="form-label d-block">Fontes *</label>
             <div className="d-flex flex-wrap gap-2">
               {SOURCE_OPTIONS.map((source) => (
-                <label key={source} className="btn btn-outline-primary btn-sm">
+                <label
+                  key={source.value}
+                  className={`btn btn-outline-primary btn-sm ${source.available ? "" : "disabled"}`}
+                >
                   <input
                     type="checkbox"
                     className="form-check-input me-2"
-                    checked={selectedSources.includes(source)}
-                    onChange={() => toggleSource(source)}
+                    checked={selectedSources.includes(source.value)}
+                    disabled={!source.available}
+                    onChange={() => toggleSource(source.value)}
                   />
-                  {source}
+                  {source.value} {!source.available ? "· em implantação" : ""}
                 </label>
               ))}
             </div>
@@ -175,18 +209,26 @@ export default function MoisAutoCollectionPage() {
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h2 className="h5 mb-0">Resultados da coleta</h2>
-            {activeJobId ? <span className="badge text-bg-light">Job {activeJobId}</span> : null}
+            {activeJobId ? (
+              <span className="badge text-bg-light">Job {activeJobId}</span>
+            ) : null}
           </div>
 
           <div className="row g-2 mb-3">
             <div className="col-md-4">
-              <select className="form-select" value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)}>
+              <select
+                className="form-select"
+                value={sourceFilter}
+                onChange={(event) => setSourceFilter(event.target.value)}
+              >
                 <option value="">Todas as fontes</option>
-                {SOURCE_OPTIONS.map((source) => (
-                  <option key={source} value={source}>
-                    {source}
-                  </option>
-                ))}
+                {SOURCE_OPTIONS.filter((source) => source.available).map(
+                  (source) => (
+                    <option key={source.value} value={source.value}>
+                      {source.value}
+                    </option>
+                  ),
+                )}
               </select>
             </div>
             <div className="col-md-4">
@@ -203,11 +245,23 @@ export default function MoisAutoCollectionPage() {
             </div>
           </div>
 
-          {!activeJobId ? <p className="text-secondary mb-0">Crie um job para visualizar resultados.</p> : null}
-          {referencesQuery.isLoading ? <p className="text-secondary mb-0">Carregando resultados...</p> : null}
-          {referencesQuery.isError ? <p className="text-danger mb-0">Falha ao carregar resultados da coleta.</p> : null}
+          {!activeJobId ? (
+            <p className="text-secondary mb-0">
+              Crie um job para visualizar resultados.
+            </p>
+          ) : null}
+          {referencesQuery.isLoading ? (
+            <p className="text-secondary mb-0">Carregando resultados...</p>
+          ) : null}
+          {referencesQuery.isError ? (
+            <p className="text-danger mb-0">
+              Falha ao carregar resultados da coleta.
+            </p>
+          ) : null}
           {referencesQuery.data && referencesQuery.data.length === 0 ? (
-            <p className="text-secondary mb-0">Nenhuma referência encontrada com os filtros atuais.</p>
+            <p className="text-secondary mb-0">
+              Nenhuma referência encontrada com os filtros atuais.
+            </p>
           ) : null}
 
           {referencesQuery.data && referencesQuery.data.length > 0 ? (
@@ -227,7 +281,10 @@ export default function MoisAutoCollectionPage() {
                 <tbody>
                   {referencesQuery.data.map((item) => {
                     const isActing =
-                      favoriteMutation.isPending || discardMutation.isPending || importMutation.isPending || importAndExtractMutation.isPending;
+                      favoriteMutation.isPending ||
+                      discardMutation.isPending ||
+                      importMutation.isPending ||
+                      importAndExtractMutation.isPending;
                     return (
                       <tr key={item.referenceId}>
                         <td>
@@ -240,41 +297,77 @@ export default function MoisAutoCollectionPage() {
                           <div className="small text-break">{item.url}</div>
                         </td>
                         <td>
-                          <span className="badge text-bg-light">{item.status}</span>
+                          <span className="badge text-bg-light">
+                            {item.status}
+                          </span>
                         </td>
                         <td>{item.successScore}</td>
                         <td>{item.source}</td>
-                        <td>{new Date(item.collectedAt).toLocaleString("pt-BR")}</td>
+                        <td>
+                          {new Date(item.collectedAt).toLocaleString("pt-BR")}
+                        </td>
                         <td className="d-flex gap-2">
                           <button
                             type="button"
                             className="btn btn-outline-primary btn-sm"
                             disabled={isActing || item.status === "DISCARDED"}
-                            onClick={() => favoriteMutation.mutate({ jobId: item.jobId, referenceId: item.referenceId })}
+                            onClick={() =>
+                              favoriteMutation.mutate({
+                                jobId: item.jobId,
+                                referenceId: item.referenceId,
+                              })
+                            }
                           >
-                            {favoriteMutation.isPending ? <span className="spinner-border spinner-border-sm" /> : "Favoritar"}
+                            {favoriteMutation.isPending ? (
+                              <span className="spinner-border spinner-border-sm" />
+                            ) : (
+                              "Favoritar"
+                            )}
                           </button>
                           <button
                             type="button"
                             className="btn btn-outline-danger btn-sm"
                             disabled={isActing || item.status === "DISCARDED"}
-                            onClick={() => discardMutation.mutate({ jobId: item.jobId, referenceId: item.referenceId })}
+                            onClick={() =>
+                              discardMutation.mutate({
+                                jobId: item.jobId,
+                                referenceId: item.referenceId,
+                              })
+                            }
                           >
-                            {discardMutation.isPending ? <span className="spinner-border spinner-border-sm" /> : "Descartar"}
+                            {discardMutation.isPending ? (
+                              <span className="spinner-border spinner-border-sm" />
+                            ) : (
+                              "Descartar"
+                            )}
                           </button>
                           <button
                             type="button"
                             className="btn btn-success btn-sm"
                             disabled={isActing || item.status === "IMPORTED"}
-                            onClick={() => importMutation.mutate({ jobId: item.jobId, referenceId: item.referenceId })}
+                            onClick={() =>
+                              importMutation.mutate({
+                                jobId: item.jobId,
+                                referenceId: item.referenceId,
+                              })
+                            }
                           >
-                            {importMutation.isPending ? <span className="spinner-border spinner-border-sm" /> : "Importar"}
+                            {importMutation.isPending ? (
+                              <span className="spinner-border spinner-border-sm" />
+                            ) : (
+                              "Importar"
+                            )}
                           </button>
                           <button
                             type="button"
                             className="btn btn-primary btn-sm"
                             disabled={isActing || item.status === "IMPORTED"}
-                            onClick={() => importAndExtractMutation.mutate({ jobId: item.jobId, referenceId: item.referenceId })}
+                            onClick={() =>
+                              importAndExtractMutation.mutate({
+                                jobId: item.jobId,
+                                referenceId: item.referenceId,
+                              })
+                            }
                           >
                             {importAndExtractMutation.isPending ? (
                               <span className="spinner-border spinner-border-sm" />
@@ -285,7 +378,9 @@ export default function MoisAutoCollectionPage() {
                           <button
                             type="button"
                             className="btn btn-outline-secondary btn-sm"
-                            onClick={() => setSelectedLineageReferenceId(item.referenceId)}
+                            onClick={() =>
+                              setSelectedLineageReferenceId(item.referenceId)
+                            }
                           >
                             Ver lineage
                           </button>
@@ -301,18 +396,125 @@ export default function MoisAutoCollectionPage() {
           {selectedLineageReferenceId ? (
             <div className="border rounded p-3 mt-3">
               <h3 className="h6 mb-2">Lineage da referência</h3>
-              {lineageQuery.isLoading ? <p className="text-secondary mb-0">Carregando lineage...</p> : null}
-              {lineageQuery.isError ? <p className="text-danger mb-0">Não foi possível carregar o lineage.</p> : null}
+              {lineageQuery.isLoading ? (
+                <p className="text-secondary mb-0">Carregando lineage...</p>
+              ) : null}
+              {lineageQuery.isError ? (
+                <p className="text-danger mb-0">
+                  Não foi possível carregar o lineage.
+                </p>
+              ) : null}
               {lineageQuery.data ? (
                 <ul className="mb-0">
                   <li>Fonte original: {lineageQuery.data.sourceUrl}</li>
-                  <li>Referência importada: {lineageQuery.data.importedReferenceId ?? "—"}</li>
-                  <li>Extração iniciada: {lineageQuery.data.extractionId ?? "—"}</li>
-                  <li>Blocos de biblioteca: {lineageQuery.data.generatedLibraryBlockIds.join(", ") || "—"}</li>
+                  <li>
+                    Referência importada:{" "}
+                    {lineageQuery.data.importedReferenceId ?? "—"}
+                  </li>
+                  <li>
+                    Extração iniciada: {lineageQuery.data.extractionId ?? "—"}
+                  </li>
+                  <li>
+                    Blocos de biblioteca:{" "}
+                    {lineageQuery.data.generatedLibraryBlockIds.join(", ") ||
+                      "—"}
+                  </li>
                 </ul>
               ) : null}
             </div>
           ) : null}
+        </div>
+      </article>
+
+      <article className="card shadow-sm">
+        <div className="card-body d-flex flex-column gap-3">
+          <div>
+            <h2 className="h5 mb-1">
+              Investigador da Biblioteca de Anúncios Meta
+            </h2>
+            <p className="text-secondary mb-0">
+              Coleta pela API oficial e só libera modelagem após longevidade e
+              sinais comerciais comprovados.
+            </p>
+          </div>
+          <form
+            className="row g-2"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              await createMetaInvestigation.mutateAsync({
+                workspaceId: WORKSPACE_ID,
+                searchTerms: metaSearchTerms,
+                countryCode: "BR",
+              });
+              setMetaSearchTerms("");
+            }}
+          >
+            <div className="col-md-9">
+              <input
+                className="form-control"
+                value={metaSearchTerms}
+                onChange={(event) => setMetaSearchTerms(event.target.value)}
+                placeholder="Produto, dor ou promessa a investigar"
+                required
+              />
+            </div>
+            <div className="col-md-3 d-grid">
+              <button
+                className="btn btn-primary"
+                disabled={createMetaInvestigation.isPending}
+              >
+                {createMetaInvestigation.isPending
+                  ? "Criando..."
+                  : "Investigar na Meta"}
+              </button>
+            </div>
+          </form>
+          {metaInvestigations.isError ? (
+            <p className="text-danger mb-0">
+              Falha ao carregar investigações Meta.
+            </p>
+          ) : null}
+          {(metaInvestigations.data ?? []).map((investigation) => (
+            <div key={investigation.id} className="border rounded p-3">
+              <div className="d-flex flex-wrap justify-content-between gap-2">
+                <strong>{investigation.searchTerms}</strong>
+                <span
+                  className={`badge ${investigation.gateDecision === "MODELAR" ? "text-bg-success" : investigation.gateDecision === "DESCARTAR" ? "text-bg-danger" : "text-bg-warning"}`}
+                >
+                  {investigation.gateDecision}
+                </span>
+              </div>
+              <div className="small text-secondary mb-2">
+                {investigation.status} · {investigation.adsObserved} observações
+                nesta execução
+              </div>
+              <div className="row g-3">
+                <div className="col-md-6">
+                  <div className="fw-semibold small">Evidências</div>
+                  <ul className="small mb-0">
+                    {investigation.evidences.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="col-md-6">
+                  <div className="fw-semibold small">Lacunas</div>
+                  <ul className="small mb-0">
+                    {investigation.gaps.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+              {investigation.gateDecision === "MODELAR" ? (
+                <div className="alert alert-success mt-3 mb-0 small">
+                  <strong>Ficha ética:</strong>{" "}
+                  {investigation.ethicalModeling.pain}. Não copiar{" "}
+                  {investigation.ethicalModeling.prohibitedCopies.join(", ")}.
+                </div>
+              ) : null}
+            </div>
+          ))}
         </div>
       </article>
     </section>

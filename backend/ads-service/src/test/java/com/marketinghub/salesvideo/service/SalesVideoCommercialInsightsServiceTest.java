@@ -204,7 +204,9 @@ class SalesVideoCommercialInsightsServiceTest {
     assertThat(response.getProviderScores().get(0).getRecommendation()).isEqualTo("priorizar");
   }
 
-  /** Deve reduzir a pontuação sem bloquear provider quando ainda precisamos acumular aprendizado. */
+  /**
+   * Deve reduzir a pontuação sem bloquear provider quando ainda precisamos acumular aprendizado.
+   */
   @Test
   void shouldPenalizeRejectedProviderAssets() {
     SalesVideoProfile profile = profile();

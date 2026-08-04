@@ -1,5 +1,19 @@
 # Registro de Planejamento Comercial
 
+## 2026-08-03 - Operador continuo baseado no AIH6
+
+- Decisao: usar `/exemplos/aih6` como referencia operacional para manter o Codex ChatGPT trabalhando em loop sobre a meta semanal.
+- Foi feito: o worker passou a solicitar ciclos recorrentes ao backend, pesquisar documentacao publica, consultar o Marketing Hub somente por leitura, carregar o aprendizado do ciclo anterior e persistir relatorio diario em cada execucao.
+- Governanca: o backend continua decidindo a cadencia e o avanco; gasto, preco, campanha, publicacao, comunicacao em massa, escrita no repositorio e PR continuam bloqueados sem aprovacao humana.
+- Imagem: Dockerfile e Compose versionados aceitam o destino do registry/IP por `GROWTH_OPERATOR_IMAGE`, sem producao manual fora do fluxo do repositorio.
+
+## 2026-08-03 - Operador de Crescimento v1 em sandbox
+
+- Solicitacao: integrar ao planejamento semanal um operador Codex autonomo em modo somente leitura e diagnostico.
+- Foi feito: criado backend auditavel de execucoes, worker separado com `codex exec` efemero em sandbox `read-only`, prompt/schema versionados e painel no planejamento para solicitar e acompanhar diagnosticos.
+- Gate: o resultado apenas recomenda; nenhuma mudanca comercial ou de codigo e aplicada automaticamente e toda mutacao exige aprovacao.
+- Impacto esperado: reduzir o tempo entre identificar o gargalo semanal e obter uma proxima acao sustentada por evidencias.
+
 ## 2026-08-03 - Edicao das decisoes comerciais pela tela
 
 - Solicitacao: alinhar o planejamento da primeira semana de agosto a meta operacional de cinco vendas e priorizar a validacao da instrumentacao.

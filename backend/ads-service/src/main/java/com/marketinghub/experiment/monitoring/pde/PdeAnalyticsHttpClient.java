@@ -87,10 +87,7 @@ public class PdeAnalyticsHttpClient implements PdeAnalyticsClient {
 
   /** Cria um client dedicado para a origem pública monitorada. */
   private RestClient monitoredClient(String baseUrl) {
-    return RestClient.builder()
-        .baseUrl(baseUrl)
-        .requestFactory(requestFactory)
-        .build();
+    return RestClient.builder().baseUrl(baseUrl).requestFactory(requestFactory).build();
   }
 
   /**
@@ -110,8 +107,7 @@ public class PdeAnalyticsHttpClient implements PdeAnalyticsClient {
           .get()
           .uri(
               uriBuilder -> {
-                var builder =
-                    uriBuilder.path("/api/pde/access/analytics/{productSlug}/summary");
+                var builder = uriBuilder.path("/api/pde/access/analytics/{productSlug}/summary");
                 if (experienceVersion != null && !experienceVersion.isBlank()) {
                   builder.queryParam("experienceVersion", experienceVersion.trim());
                 }

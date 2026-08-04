@@ -210,19 +210,19 @@ public class OpsMonitorService {
   public List<ModuleAvailabilityHistoryResponse> listAvailabilityHistory(String moduleCode) {
     List<ModuleAvailabilityHistoryResponse> consolidatedHistory =
         availabilityDailyRepository
-        .findTop30ByModuleCodeOrderByAvailabilityDateDesc(moduleCode)
-        .stream()
-        .map(
-            day ->
-                new ModuleAvailabilityHistoryResponse(
-                    day.getAvailabilityDate(),
-                    day.getTotalChecks(),
-                    day.getSuccessfulChecks(),
-                    day.getFailedChecks(),
-                    day.getAvailabilityPercentage(),
-                    day.getOfflineSeconds(),
-                    day.getDegradedSeconds()))
-        .toList();
+            .findTop30ByModuleCodeOrderByAvailabilityDateDesc(moduleCode)
+            .stream()
+            .map(
+                day ->
+                    new ModuleAvailabilityHistoryResponse(
+                        day.getAvailabilityDate(),
+                        day.getTotalChecks(),
+                        day.getSuccessfulChecks(),
+                        day.getFailedChecks(),
+                        day.getAvailabilityPercentage(),
+                        day.getOfflineSeconds(),
+                        day.getDegradedSeconds()))
+            .toList();
     if (!consolidatedHistory.isEmpty()) {
       return consolidatedHistory;
     }
@@ -367,11 +367,13 @@ public class OpsMonitorService {
         .forEach(
             check -> {
               LocalDate date = LocalDate.ofInstant(check.getCheckedAt(), ZoneOffset.UTC);
-              byDate.computeIfAbsent(date, ignored -> new AvailabilityAccumulator())
+              byDate
+                  .computeIfAbsent(date, ignored -> new AvailabilityAccumulator())
                   .register(check.getStatus());
             });
     return byDate.entrySet().stream()
-        .sorted(Map.Entry.<LocalDate, AvailabilityAccumulator>comparingByKey(Comparator.reverseOrder()))
+        .sorted(
+            Map.Entry.<LocalDate, AvailabilityAccumulator>comparingByKey(Comparator.reverseOrder()))
         .limit(30)
         .map(entry -> entry.getValue().toResponse(entry.getKey()))
         .toList();
@@ -454,7 +456,9 @@ public class OpsMonitorService {
       OpsMonitoredModule module, OpsModuleHealthCheck check) {
     Instant now = Instant.now();
     Long ageSeconds =
-        check.getCheckedAt() == null ? null : Duration.between(check.getCheckedAt(), now).toSeconds();
+        check.getCheckedAt() == null
+            ? null
+            : Duration.between(check.getCheckedAt(), now).toSeconds();
     boolean heartbeatStale =
         ageSeconds != null
             && module.getOfflineThresholdSeconds() != null
@@ -625,7 +629,9 @@ public class OpsMonitorService {
   }
 }
 
-/** Acumula heartbeats por dia para gerar histórico operacional quando não há resumo materializado. */
+/**
+ * Acumula heartbeats por dia para gerar histórico operacional quando não há resumo materializado.
+ */
 class AvailabilityAccumulator {
   private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
   private int totalChecks;
@@ -653,13 +659,7 @@ class AvailabilityAccumulator {
                 .multiply(ONE_HUNDRED)
                 .divide(BigDecimal.valueOf(totalChecks), 2, RoundingMode.HALF_UP);
     return new ModuleAvailabilityHistoryResponse(
-        date,
-        totalChecks,
-        successfulChecks,
-        failedChecks,
-        availabilityPercentage,
-        0L,
-        0L);
+        date, totalChecks, successfulChecks, failedChecks, availabilityPercentage, 0L, 0L);
   }
 }
 

@@ -568,7 +568,8 @@ public class ProductService {
     }
     return repository.findAll().stream()
         .filter(
-            product -> extractExperimentIds(product.getAssociatedExperiments()).contains(experimentId))
+            product ->
+                extractExperimentIds(product.getAssociatedExperiments()).contains(experimentId))
         .findFirst()
         .orElseThrow(
             () ->

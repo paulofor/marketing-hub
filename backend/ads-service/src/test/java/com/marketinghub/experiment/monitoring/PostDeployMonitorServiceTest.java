@@ -30,9 +30,9 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 /** Testa a decisão pós-deploy cruzando Meta Ads, PDE e logs. */
 @ExtendWith(MockitoExtension.class)
@@ -554,12 +554,19 @@ class PostDeployMonitorServiceTest {
     assertThat(response.pde().events().get("VIDEO_COMPLETED")).isZero();
     assertThat(response.pde().experienceVersions()).hasSize(1);
     assertThat(response.pde().experienceVersions().getFirst().sessions()).isEqualTo(1);
-    assertThat(response.pde().trafficSources()).extracting("utmCampaign").containsExactly("120250742286340326");
-    assertThat(response.pde().trafficQualityBreakdown()).extracting("trafficQuality").contains("HUMAN");
-    assertThat(response.pde().deviceBreakdown()).extracting("deviceType").contains("mobile", "desktop");
+    assertThat(response.pde().trafficSources())
+        .extracting("utmCampaign")
+        .containsExactly("120250742286340326");
+    assertThat(response.pde().trafficQualityBreakdown())
+        .extracting("trafficQuality")
+        .contains("HUMAN");
+    assertThat(response.pde().deviceBreakdown())
+        .extracting("deviceType")
+        .contains("mobile", "desktop");
     assertThat(response.pde().screenSizeBreakdown()).extracting("screenSize").contains("360x690");
     assertThat(response.pde().recentJourneys()).extracting("sessionId").contains("session-current");
-    assertThat(response.pde().measurementRecommendation()).contains("histórico de outras campanhas fica fora");
+    assertThat(response.pde().measurementRecommendation())
+        .contains("histórico de outras campanhas fica fora");
   }
 
   /** Cria slot produtivo com domínio normalizado para permitir URLs paralelas de hipótese PDE. */

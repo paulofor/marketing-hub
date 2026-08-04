@@ -1,0 +1,71 @@
+openapi: 3.0.3
+info:
+  title: Operador de Crescimento v1
+  version: 1.0.0
+  description: Diagnosticos Codex auditaveis e estritamente somente leitura vinculados ao planejamento comercial.
+paths:
+  /api/growth-operator/v1/commercial-plans/{planId}/executions:
+    get:
+      summary: Lista diagnosticos de um planejamento.
+      parameters:
+        - in: path
+          name: planId
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        "200": {description: Historico retornado.}
+    post:
+      summary: Solicita diagnostico somente leitura.
+      parameters:
+        - in: path
+          name: planId
+          required: true
+          schema: {type: integer, format: int64}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [weekNumber, objective]
+              properties:
+                weekNumber: {type: integer}
+                objective: {type: string}
+      responses:
+        "200": {description: Pendencia criada.}
+  /api/growth-operator/v1/internal/executions/pending/claim:
+    post:
+      summary: Reserva a proxima pendencia para o worker.
+      responses:
+        "200": {description: Pendencia reservada.}
+        "404": {description: Fila vazia.}
+  /api/growth-operator/v1/internal/commercial-plans/{planId}/executions/ensure:
+    post:
+      summary: Delega ao backend a decisao de criar o proximo ciclo automatico.
+      parameters:
+        - in: path
+          name: planId
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        "200": {description: Ciclo atual ou novo ciclo criado conforme a cadencia.}
+  /api/growth-operator/v1/internal/executions/{id}/complete:
+    post:
+      summary: Registra diagnostico, evidencias e recomendacao sem aplica-la.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        "200": {description: Diagnostico registrado.}
+  /api/growth-operator/v1/internal/executions/{id}/fail:
+    post:
+      summary: Registra falha tecnica da execucao.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        "200": {description: Falha registrada.}

@@ -99,18 +99,20 @@ public class LeadPortalPaymentsClient {
 
   /** Ativa um checkout temporário por meio do serviço oficial de pagamentos. */
   public TemporaryCheckoutResponse activateTemporaryCheckout(TemporaryCheckoutRequest request) {
-    return exchangeTemporary(HttpMethod.POST, "/api/v1/payments/temporary", request, request.productKey());
+    return exchangeTemporary(
+        HttpMethod.POST, "/api/v1/payments/temporary", request, request.productKey());
   }
 
   /** Consulta a fonte de verdade do checkout temporário. */
   public TemporaryCheckoutResponse getTemporaryCheckout(String productKey) {
-    return exchangeTemporary(HttpMethod.GET, "/api/v1/payments/temporary/" + productKey, null, productKey);
+    return exchangeTemporary(
+        HttpMethod.GET, "/api/v1/payments/temporary/" + productKey, null, productKey);
   }
 
   /** Restaura imediatamente o checkout comercial do produto. */
   public TemporaryCheckoutResponse restoreTemporaryCheckout(String productKey) {
-    return exchangeTemporary(HttpMethod.POST,
-        "/api/v1/payments/temporary/" + productKey + "/restore", null, productKey);
+    return exchangeTemporary(
+        HttpMethod.POST, "/api/v1/payments/temporary/" + productKey + "/restore", null, productKey);
   }
 
   private TemporaryCheckoutResponse exchangeTemporary(
@@ -120,19 +122,32 @@ public class LeadPortalPaymentsClient {
     }
     var uri = UriComponentsBuilder.fromHttpUrl(properties.getBaseUrl()).path(path).build().toUri();
     try {
-      ResponseEntity<TemporaryCheckoutResponse> response = restTemplate.exchange(
-          uri, method, new HttpEntity<>(request, buildHeaders()), TemporaryCheckoutResponse.class);
+      ResponseEntity<TemporaryCheckoutResponse> response =
+          restTemplate.exchange(
+              uri,
+              method,
+              new HttpEntity<>(request, buildHeaders()),
+              TemporaryCheckoutResponse.class);
       if (response.getBody() == null) {
         throw new IllegalStateException("Serviço de pagamentos não retornou o checkout temporário");
       }
       return response.getBody();
     } catch (RestClientResponseException ex) {
-      log.error("Falha HTTP na operação de checkout temporário. productKey={}, method={}, endpoint={}, body={}",
-          productKey, method, uri, ex.getResponseBodyAsString(), ex);
+      log.error(
+          "Falha HTTP na operação de checkout temporário. productKey={}, method={}, endpoint={}, body={}",
+          productKey,
+          method,
+          uri,
+          ex.getResponseBodyAsString(),
+          ex);
       throw new IllegalStateException("Falha ao administrar checkout temporário", ex);
     } catch (RestClientException ex) {
-      log.error("Falha de comunicação no checkout temporário. productKey={}, method={}, endpoint={}",
-          productKey, method, uri, ex);
+      log.error(
+          "Falha de comunicação no checkout temporário. productKey={}, method={}, endpoint={}",
+          productKey,
+          method,
+          uri,
+          ex);
       throw new IllegalStateException("Serviço de pagamentos indisponível", ex);
     }
   }

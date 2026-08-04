@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-03-mois-meta-ad-investigation-v1.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-03-social-growth-plan.yaml
       relativeToChangelogFile: true
   - include:
@@ -1562,4 +1565,11 @@ databaseChangeLog:
 
   - include:
       file: changesets/2026-08-03-gera-sales-page-generic-templates-v10.yaml
+      relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-08-03-growth-operator-v1.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-03-growth-operator-continuous-loop.yaml
       relativeToChangelogFile: true

@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useMoisCollectedReferences, useMoisCollectionJobs } from "../../api/mois/useMoisCollection";
+import {
+  useMoisCollectedReferences,
+  useMoisCollectionJobs,
+} from "../../api/mois/useMoisCollection";
 
 const WORKSPACE_ID = "workspace-001";
 
@@ -37,7 +40,10 @@ export default function MoisAutomaticCollectionsPage() {
       <header className="d-flex justify-content-between align-items-center">
         <div>
           <h1 className="h3 mb-1">MOIS · Coletas automáticas</h1>
-          <p className="text-secondary mb-0">Visualize todas as coletas automáticas e suas URLs sem criar novo job manual.</p>
+          <p className="text-secondary mb-0">
+            Visualize todas as coletas automáticas e suas URLs sem criar novo
+            job manual.
+          </p>
         </div>
         <Link className="btn btn-outline-secondary" to="/mois">
           Voltar ao workspace
@@ -48,13 +54,27 @@ export default function MoisAutomaticCollectionsPage() {
         <div className="card-body">
           <div className="d-flex align-items-center justify-content-between mb-3">
             <h2 className="h5 mb-0">Jobs automáticos ({jobs.length})</h2>
-            {latestJobId ? <span className="badge text-bg-light">Último job: {latestJobId}</span> : null}
+            {latestJobId ? (
+              <span className="badge text-bg-light">
+                Último job: {latestJobId}
+              </span>
+            ) : null}
           </div>
 
-          {jobsQuery.isLoading ? <p className="text-secondary mb-0">Carregando jobs automáticos...</p> : null}
-          {jobsQuery.isError ? <p className="text-danger mb-0">Não foi possível carregar os jobs automáticos.</p> : null}
+          {jobsQuery.isLoading ? (
+            <p className="text-secondary mb-0">
+              Carregando jobs automáticos...
+            </p>
+          ) : null}
+          {jobsQuery.isError ? (
+            <p className="text-danger mb-0">
+              Não foi possível carregar os jobs automáticos.
+            </p>
+          ) : null}
           {!jobsQuery.isLoading && !jobsQuery.isError && jobs.length === 0 ? (
-            <p className="text-secondary mb-0">Nenhuma coleta automática encontrada para o workspace.</p>
+            <p className="text-secondary mb-0">
+              Nenhuma coleta automática encontrada para o workspace.
+            </p>
           ) : null}
 
           {jobs.length > 0 ? (
@@ -75,12 +95,17 @@ export default function MoisAutomaticCollectionsPage() {
                   {jobs.map((job) => (
                     <tr key={job.jobId}>
                       <td>
-                        <Link to={`/mois/automatic-collections/${job.jobId}`} className="fw-semibold text-decoration-none">
+                        <Link
+                          to={`/mois/automatic-collections/${job.jobId}`}
+                          className="fw-semibold text-decoration-none"
+                        >
                           {job.jobId}
                         </Link>
                       </td>
                       <td>
-                        <span className="badge text-bg-light">{job.status}</span>
+                        <span className="badge text-bg-light">
+                          {job.status}
+                        </span>
                       </td>
                       <td>{job.niche}</td>
                       <td>{job.marketTheme || "—"}</td>
@@ -104,12 +129,22 @@ export default function MoisAutomaticCollectionsPage() {
 
           <div className="row g-2 mb-3">
             <div className="col-md-4">
-              <select className="form-select" value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)}>
+              <select
+                className="form-select"
+                value={sourceFilter}
+                onChange={(event) => setSourceFilter(event.target.value)}
+              >
                 <option value="">Todas as fontes</option>
                 <option value="HOTMART">HOTMART</option>
-                <option value="CLICKBANK">CLICKBANK</option>
-                <option value="JVZOO">JVZOO</option>
-                <option value="META_AD_LIBRARY">META_AD_LIBRARY</option>
+                <option value="CLICKBANK" disabled>
+                  CLICKBANK · em implantação
+                </option>
+                <option value="JVZOO" disabled>
+                  JVZOO · em implantação
+                </option>
+                <option value="META_AD_LIBRARY" disabled>
+                  META_AD_LIBRARY · use o investigador dedicado
+                </option>
               </select>
             </div>
             <div className="col-md-4">
@@ -131,17 +166,34 @@ export default function MoisAutomaticCollectionsPage() {
                 max={100}
                 className="form-control"
                 value={minSuccessScore}
-                onChange={(event) => setMinSuccessScore(Number(event.target.value))}
+                onChange={(event) =>
+                  setMinSuccessScore(Number(event.target.value))
+                }
                 placeholder="Score mínimo"
               />
             </div>
           </div>
 
-          {!latestJobId ? <p className="text-secondary mb-0">Sem job disponível para carregar URLs.</p> : null}
-          {referencesQuery.isLoading ? <p className="text-secondary mb-0">Carregando URLs...</p> : null}
-          {referencesQuery.isError ? <p className="text-danger mb-0">Não foi possível carregar URLs coletadas.</p> : null}
-          {references.length === 0 && !referencesQuery.isLoading && !referencesQuery.isError && latestJobId ? (
-            <p className="text-secondary mb-0">Nenhuma URL encontrada para os filtros atuais.</p>
+          {!latestJobId ? (
+            <p className="text-secondary mb-0">
+              Sem job disponível para carregar URLs.
+            </p>
+          ) : null}
+          {referencesQuery.isLoading ? (
+            <p className="text-secondary mb-0">Carregando URLs...</p>
+          ) : null}
+          {referencesQuery.isError ? (
+            <p className="text-danger mb-0">
+              Não foi possível carregar URLs coletadas.
+            </p>
+          ) : null}
+          {references.length === 0 &&
+          !referencesQuery.isLoading &&
+          !referencesQuery.isError &&
+          latestJobId ? (
+            <p className="text-secondary mb-0">
+              Nenhuma URL encontrada para os filtros atuais.
+            </p>
           ) : null}
 
           {references.length > 0 ? (
@@ -163,7 +215,12 @@ export default function MoisAutomaticCollectionsPage() {
                       <td>{item.title}</td>
                       <td>{item.source}</td>
                       <td>
-                        <a href={item.url} target="_blank" rel="noreferrer" className="small text-break d-inline-block">
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="small text-break d-inline-block"
+                        >
                           {item.url}
                         </a>
                       </td>

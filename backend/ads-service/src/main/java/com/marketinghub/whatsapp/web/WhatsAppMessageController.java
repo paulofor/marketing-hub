@@ -48,8 +48,8 @@ public class WhatsAppMessageController {
         StringUtils.hasText(contactNumber)
             ? messageRepository.findByContactNumberAndDirection(contactNumber, direction, pageable)
             : direction == null
-            ? messageRepository.findAllByOrderByCreatedAtDesc(pageable)
-            : messageRepository.findByDirectionOrderByCreatedAtDesc(direction, pageable);
+                ? messageRepository.findAllByOrderByCreatedAtDesc(pageable)
+                : messageRepository.findByDirectionOrderByCreatedAtDesc(direction, pageable);
     return result.map(messageMapper::toDto);
   }
 

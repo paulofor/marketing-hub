@@ -95,6 +95,39 @@ class KlingVideoProviderTest {
         assertThat(server.takeRequest().getPath()).isEqualTo("/download/kling-task-123.mp4");
     }
 
+    /** Deve pedir dez segundos e usar somente a cena MECANISMO quando o Estúdio solicita clipe isolado. */
+    @Test
+    void shouldRenderTenSecondIsolatedStudioScene() throws Exception {
+        server.enqueue(json("""
+                {"code":0,"message":"SUCCEED","data":{"task_id":"kling-scene-123","task_status":"submitted"}}
+                """));
+        server.enqueue(json("""
+                {
+                  "code": 0,
+                  "message": "SUCCEED",
+                  "data": {
+                    "task_id": "kling-scene-123",
+                    "task_status": "succeed",
+                    "task_result": {"videos": [{"url": "%s/download/kling-scene-123.mp4"}]}
+                  }
+                }
+                """.formatted(server.url("/").toString().replaceAll("/$", ""))));
+        server.enqueue(mp4Response());
+        KlingVideoProvider provider = new KlingVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+        ProviderArtifacts artifacts = provider.render(studioSceneJob(), profile(), (percent, status, message) -> { });
+
+        assertThat(artifacts.metadata())
+                .containsEntry("duration_seconds", 10)
+                .containsEntry("cost_usd", new java.math.BigDecimal("0.40"));
+        RecordedRequest createRequest = server.takeRequest();
+        assertThat(createRequest.getBody().readUtf8())
+                .contains("\"duration\":\"10\"")
+                .contains("MECANISMO")
+                .contains("microajuste visível")
+                .doesNotContain("Recognizable pain, plausible mechanism, personal value and CTA");
+    }
+
     /** Deve usar image-to-video quando o job traz imagem aprovada estruturada. */
     @Test
     void shouldRenderKlingJobThroughImageToVideoApiWhenSourceImageExists() throws Exception {
@@ -248,6 +281,50 @@ class KlingVideoProviderTest {
                         """,
                 Instant.now(),
                 Instant.now());
+    }
+
+    /** Cria um job Kling que representa somente a cena MECANISMO de dez segundos. */
+    private SalesVideoJob studioSceneJob() {
+        SalesVideoJob base = job();
+        return new SalesVideoJob(
+                base.id(),
+                base.profileId(),
+                base.scriptId(),
+                base.tenantId(),
+                base.providerFamily(),
+                base.providerName(),
+                base.providerJobId(),
+                base.jobType(),
+                base.status(),
+                base.retryAttempt(),
+                base.retryReason(),
+                base.retryOfJobId(),
+                base.retryNotes(),
+                base.progressPercent(),
+                base.failureCode(),
+                base.failureDetail(),
+                base.requestedBy(),
+                base.requestedAt(),
+                base.startedAt(),
+                base.finishedAt(),
+                base.expiresAt(),
+                base.assetId(),
+                base.posterAssetId(),
+                base.vttAssetId(),
+                """
+                        {
+                          "generation_strategy": "SCENE_BY_SCENE_MONTAGE",
+                          "scene": {
+                            "order": 3,
+                            "role": "MECANISMO",
+                            "prompt": "A mesma mulher usa o celular e executa um microajuste visível na manga.",
+                            "duration_seconds": 10
+                          },
+                          "provider_strategy": {"expected_clip_duration_seconds": 10}
+                        }
+                        """,
+                base.createdAt(),
+                base.updatedAt());
     }
 
     /** Cria um job Kling com URL de imagem aprovada para animação image-to-video. */

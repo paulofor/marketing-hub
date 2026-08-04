@@ -684,14 +684,13 @@ public class SalesVideoJobService {
     return job.getProfile() != null ? job.getProfile().getTargetDurationSeconds() : null;
   }
 
-  /** Valida se o render atingiu duração comercial mínima para o perfil. */
+  /** Valida se o render atingiu a duração mínima da cena isolada ou do perfil comercial. */
   private DurationValidation validateRenderDuration(SalesVideoJob job, Integer durationSeconds) {
     if (job.getJobType() != SalesVideoJobType.RENDER
         && job.getJobType() != SalesVideoJobType.RETRY) {
       return DurationValidation.validResult();
     }
-    Integer targetDuration =
-        job.getProfile() != null ? job.getProfile().getTargetDurationSeconds() : null;
+    Integer targetDuration = resolveRenderTargetDuration(job);
     if (targetDuration == null
         || targetDuration <= 0
         || durationSeconds == null
@@ -710,6 +709,30 @@ public class SalesVideoJobService {
             + "s para perfil alvo de "
             + targetDuration
             + "s. Gere uma sequência de clipes ou novo render antes de publicar.");
+  }
+
+  /** Usa o contrato da cena isolada antes da duração do vídeo final definida no perfil. */
+  private Integer resolveRenderTargetDuration(SalesVideoJob job) {
+    if (StringUtils.hasText(job.getMetadataJson())) {
+      try {
+        JsonNode metadata = objectMapper.readTree(job.getMetadataJson());
+        if ("SCENE_BY_SCENE_MONTAGE"
+                .equalsIgnoreCase(metadata.path("generation_strategy").asText(""))
+            && metadata.path("scene").isObject()) {
+          int duration =
+              metadata
+                  .path("provider_strategy")
+                  .path("expected_clip_duration_seconds")
+                  .asInt(metadata.path("scene").path("duration_seconds").asInt(0));
+          if (duration > 0) {
+            return duration;
+          }
+        }
+      } catch (JsonProcessingException ignored) {
+        // O metadata inválido será tratado pelos validadores próprios do contrato do job.
+      }
+    }
+    return job.getProfile() != null ? job.getProfile().getTargetDurationSeconds() : null;
   }
 
   /** Calcula a menor duracao aceita com tolerancia para arredondamentos do provider. */

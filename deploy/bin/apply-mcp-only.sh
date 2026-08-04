@@ -43,13 +43,13 @@ run_mcp_compose() {
   MCP_SERVER_IMAGE="${MCP_IMAGE}" \
   MCP_SERVER_IMAGE_TAG="${IMAGE_TAG}" \
   MCP_NGINX_CONF="${nginx_conf}" \
-  docker compose up -d --no-deps mcp-server mcp-nginx
+  docker compose -f docker-compose.mcp.yml up -d --no-deps mcp-server mcp-nginx
 }
 
 pull_mcp_compose_image() {
   MCP_SERVER_IMAGE="${MCP_IMAGE}" \
   MCP_SERVER_IMAGE_TAG="${IMAGE_TAG}" \
-  docker compose pull mcp-server || true
+  docker compose -f docker-compose.mcp.yml pull mcp-server || true
 }
 
 login_registry_if_configured() {
@@ -117,7 +117,7 @@ issue_certificate_if_needed() {
     MCP_SERVER_IMAGE="${MCP_IMAGE}" \
     MCP_SERVER_IMAGE_TAG="${IMAGE_TAG}" \
     MCP_NGINX_CONF=default.conf \
-    docker compose up -d --force-recreate --no-deps mcp-nginx
+    docker compose -f docker-compose.mcp.yml up -d --force-recreate --no-deps mcp-nginx
   else
     echo "[apply-mcp-only.sh] Aviso: emissão finalizada sem certificado detectado. Mantendo HTTP." >&2
   fi

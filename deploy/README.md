@@ -2,6 +2,11 @@
 
 O diretório `deploy/` contém os artefatos de deploy. Atualmente os deploys estão separados: backend/frontend em `191.252.181.168` e video-management em `177.153.62.107`.
 
+Os deploys isolados usam descritores próprios: `docker-compose.video.yml` e
+`docker-compose.mcp.yml`. Isso impede que o Compose interpole secrets obrigatórios
+de serviços alheios ao destino. O `LEAD_PORTAL_PAYMENTS_AUTH_TOKEN` continua
+obrigatório no stack principal, mas nunca deve ser exigido para publicar vídeo ou MCP.
+
 Antes de publicar ou recriar containers, consulte o inventário central de secrets em `docs/operations/secrets-inventory.md`. Variável sensível obrigatória vazia deve bloquear o deploy, mesmo quando o health HTTP responder.
 
 ## Passos recomendados
@@ -167,13 +172,13 @@ Quando for necessário atualizar **somente** o serviço `video-management` no ho
    ```
 2. Copie apenas o tar e os arquivos de deploy para o servidor:
    ```bash
-   scp /tmp/video-management-image.tar deploy/bin/apply-video-only.sh deploy/docker-compose.yml <usuario>@177.153.62.107:/tmp/
+   scp /tmp/video-management-image.tar deploy/bin/apply-video-only.sh deploy/docker-compose.video.yml <usuario>@177.153.62.107:/tmp/
    ```
 3. No servidor, mova os arquivos para o diretório de deploy e rode o apply específico:
    ```bash
    ssh <usuario>@177.153.62.107
    sudo mkdir -p /opt/marketinghub/containers
-   sudo mv /tmp/docker-compose.yml /opt/marketinghub/containers/docker-compose.yml
+   sudo mv /tmp/docker-compose.video.yml /opt/marketinghub/containers/docker-compose.video.yml
    sudo mv /tmp/apply-video-only.sh /opt/marketinghub/containers/apply-video-only.sh
    sudo chmod +x /opt/marketinghub/containers/apply-video-only.sh
    VIDEO_BACKEND_BASE_URL=http://191.252.181.168 sudo /opt/marketinghub/containers/apply-video-only.sh

@@ -92,6 +92,32 @@ class RunwayVideoProviderTest {
         assertThat(server.takeRequest().getPath()).isEqualTo("/download/runway-task-123.mp4");
     }
 
+    /** Deve usar text-to-video e respeitar o limite oficial quando a cena não possui imagem-base. */
+    @Test
+    void shouldRenderTextToVideoWithPromptLimitedToOneThousandUtf16Units() throws Exception {
+        server.enqueue(json("""
+                {"id":"runway-text-task"}
+                """));
+        server.enqueue(json("""
+                {
+                  "id": "runway-text-task",
+                  "status": "SUCCEEDED",
+                  "output": ["%s/download/runway-text-task.mp4"]
+                }
+                """.formatted(server.url("/").toString().replaceAll("/$", ""))));
+        server.enqueue(mp4Response());
+        RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+        provider.render(jobWithoutReferenceImage(), profile(), (percent, status, message) -> { });
+
+        RecordedRequest createRequest = server.takeRequest();
+        assertThat(createRequest.getPath()).isEqualTo("/v1/text_to_video");
+        String requestBody = createRequest.getBody().readUtf8();
+        String prompt = new ObjectMapper().readTree(requestBody).path("promptText").asText();
+        assertThat(prompt.length()).isLessThanOrEqualTo(1000);
+        assertThat(requestBody).doesNotContain("promptImage");
+    }
+
     /** Deve falhar cedo quando a chave Runway não estiver configurada. */
     @Test
     void shouldRejectMissingRunwayApiKey() {
@@ -208,6 +234,19 @@ class RunwayVideoProviderTest {
                         """,
                 Instant.now(),
                 Instant.now());
+    }
+
+    /** Cria uma cena Runway sem imagem-base para validar a modalidade text-to-video. */
+    private SalesVideoJob jobWithoutReferenceImage() {
+        SalesVideoJob base = job();
+        return new SalesVideoJob(
+                base.id(), base.profileId(), base.scriptId(), base.tenantId(), base.providerFamily(),
+                base.providerName(), base.providerJobId(), base.jobType(), base.status(), base.retryAttempt(),
+                base.retryReason(), base.retryOfJobId(), base.retryNotes(), base.progressPercent(),
+                base.failureCode(), base.failureDetail(), base.requestedBy(), base.requestedAt(), base.startedAt(),
+                base.finishedAt(), base.expiresAt(), base.assetId(), base.posterAssetId(), base.vttAssetId(),
+                "{\"generation_strategy\":\"SCENE_BY_SCENE_MONTAGE\",\"scene\":{\"role\":\"MECANISMO\"}}",
+                base.createdAt(), base.updatedAt());
     }
 
     /** Cria um perfil com roteiro aprovado para o Runway. */

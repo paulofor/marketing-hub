@@ -110,7 +110,9 @@ public class RunwayVideoProvider implements VideoProvider {
 
     /** Cria a tarefa image-to-video ou text-to-video na Runway. */
     private String submitRender(SalesVideoJob job, Map<String, Object> payload) {
-        String path = properties.getProviders().getRunway().getCreatePath();
+        String path = payload.containsKey("promptImage")
+                ? properties.getProviders().getRunway().getCreatePath()
+                : properties.getProviders().getRunway().getTextCreatePath();
         log.info("Chamando Runway para criar vídeo; jobId={} url={} request={}", job.id(), resolveBaseUrl() + path, payload);
         JsonNode response;
         try {
@@ -171,7 +173,7 @@ public class RunwayVideoProvider implements VideoProvider {
         JsonNode metadata = readMetadata(job);
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", config.getModel());
-        payload.put("promptText", buildPrompt(job, profile, script, metadata));
+        payload.put("promptText", limitPrompt(buildPrompt(job, profile, script, metadata), 1000));
         payload.put("ratio", config.getRatio());
         payload.put("duration", config.getDurationSeconds());
         String promptImage = firstText(metadata,
@@ -183,6 +185,18 @@ public class RunwayVideoProvider implements VideoProvider {
             payload.put("promptImage", promptImage);
         }
         return payload;
+    }
+
+    /** Limita o prompt ao contrato oficial da Runway sem cortar um par substituto UTF-16. */
+    private String limitPrompt(String prompt, int maximumUtf16Units) {
+        if (prompt.length() <= maximumUtf16Units) {
+            return prompt;
+        }
+        int end = maximumUtf16Units;
+        if (Character.isHighSurrogate(prompt.charAt(end - 1))) {
+            end--;
+        }
+        return prompt.substring(0, end).stripTrailing();
     }
 
     /** Monta prompt comercial genérico a partir do roteiro aprovado e metadados do job. */

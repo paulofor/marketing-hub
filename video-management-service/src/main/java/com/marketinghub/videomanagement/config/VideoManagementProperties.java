@@ -205,6 +205,7 @@ public class VideoManagementProperties {
         private String apiVersion = "2024-11-06";
         private String model = "gen4.5";
         private String createPath = "/v1/image_to_video";
+        private String textCreatePath = "/v1/text_to_video";
         private String statusPathTemplate = "/v1/tasks/{taskId}";
         private String ratio = "720:1280";
         private int durationSeconds = 10;

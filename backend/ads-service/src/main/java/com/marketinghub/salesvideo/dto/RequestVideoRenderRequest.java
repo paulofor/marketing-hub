@@ -3,6 +3,7 @@ package com.marketinghub.salesvideo.dto;
 import com.marketinghub.salesvideo.SalesVideoExecutionMode;
 import com.marketinghub.salesvideo.SalesVideoProviderFamily;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 /** Solicitação para criar um job de renderização. */
@@ -13,5 +14,6 @@ public class RequestVideoRenderRequest {
   private SalesVideoProviderFamily providerFamily;
   private String providerName;
   private SalesVideoExecutionMode executionMode;
+  @Positive private Integer targetDurationSeconds;
   private String metadataJson;
 }

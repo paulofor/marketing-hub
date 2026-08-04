@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import axios from "axios";
 import AudioVideoStudioPage, {
   buildStudioSceneMetadata,
+  findProviderFromPlan,
+  selectSingleJobForScene,
 } from "./AudioVideoStudioPage";
 import { SALES_VIDEO_PROVIDER_OPTIONS } from "../../api/salesVideo/videoProviderCatalog";
 
@@ -42,6 +44,23 @@ const studioCatalog = {
     },
   ],
 };
+
+describe("selecao de clipes por cena", () => {
+  it("mantem somente uma variacao aprovada por funcao narrativa", () => {
+    expect(selectSingleJobForScene([101, 201], 102, [101, 102])).toEqual([
+      201, 102,
+    ]);
+    expect(selectSingleJobForScene([102, 201], 102, [101, 102])).toEqual([201]);
+  });
+
+  it("prioriza o provider principal e ignora o provider citado como reprovado", () => {
+    expect(
+      findProviderFromPlan(
+        "Luma Ray como principal para cenas editoriais. HeyGen reprovado e nao deve ser reutilizado.",
+      ).providerName,
+    ).toBe("LUMA_RAY_3_2");
+  });
+});
 
 function setup() {
   const client = new QueryClient({

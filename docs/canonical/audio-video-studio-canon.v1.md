@@ -180,6 +180,10 @@ Para vídeos montados por cenas, cada item do plano deve declarar localização,
 
 Quando a estratégia exigir montagem narrativa, o Estúdio deve criar um job independente por cena, vinculando projeto, ordem e função comercial no metadata auditável. O operador deve revisar e selecionar exatamente um clipe pronto por função antes de solicitar a montagem. Uma cena reprovada deve poder ser regenerada isoladamente, e a montagem não pode avançar com cenas ausentes ou ainda em processamento. A publicação continua bloqueada até a revisão humana do vídeo final.
 
+A duração validada pelo provider deve ser a do clipe isolado solicitado, e não a duração total planejada para o vídeo montado. O backend deve rejeitar montagens do Estúdio que não contenham exatamente uma cena de cada função `DOR`, `RESULTADO`, `MECANISMO` e `CTA`, todas vinculadas ao mesmo projeto; a tela deve substituir a variação selecionada quando outra opção da mesma cena for aprovada.
+
+A seleção automática do provider deve interpretar somente uma escolha explícita da tela ou a marcação textual `como principal`. A simples presença do nome de um provider no plano não constitui seleção, pois ele pode estar documentado como alternativa ou reprovado; nesse caso, o Estúdio deve manter o provider padrão aprovado e nunca iniciar geração com a opção proibida.
+
 ## HLS para PDEs
 
 Quando um projeto do Estudio de Audio e Video gerar material para PDE, a entrega publicavel deve incluir HLS (`.m3u8`) gerenciado pelo Marketing Hub. O arquivo MP4 pode ser preservado como master/origem, mas a URL usada pelo PDE deve ser a playlist HLS registrada no ativo comercial ou no job correspondente.

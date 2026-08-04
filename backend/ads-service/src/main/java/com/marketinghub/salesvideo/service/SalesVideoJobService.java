@@ -380,6 +380,7 @@ public class SalesVideoJobService {
     List<Long> sourceJobIds = normalizeSourceJobIds(request.getSourceJobIds());
     List<SalesVideoJob> sourceJobs = sourceJobIds.stream().map(this::loadJob).toList();
     sourceJobs.forEach(this::ensureReadySourceForMontage);
+    validateSceneBySceneMontage(sourceJobs);
     SalesVideoJob firstSource = sourceJobs.get(0);
     String requestedBy = TenantContextHolder.resolveUserEmail(request.getRequestedBy());
     SalesVideoJob montageJob =
@@ -529,6 +530,58 @@ public class SalesVideoJobService {
               + sourceJob.getId());
     }
     resolveSourceVideoUrl(sourceJob, null);
+  }
+
+  /** Exige uma cena aprovada de cada papel narrativo quando a montagem pertence ao Estúdio. */
+  private void validateSceneBySceneMontage(List<SalesVideoJob> sourceJobs) {
+    List<JsonNode> sceneMetadata =
+        sourceJobs.stream()
+            .map(this::readSceneMetadata)
+            .filter(node -> !node.isMissingNode())
+            .toList();
+    if (sceneMetadata.isEmpty()) {
+      return;
+    }
+    if (sceneMetadata.size() != sourceJobs.size() || sourceJobs.size() != 4) {
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST,
+          "A montagem por cenas exige exatamente quatro clipes do mesmo projeto.");
+    }
+    Set<String> projectIds =
+        sceneMetadata.stream()
+            .map(node -> node.path("studio_project_id").asText())
+            .collect(java.util.stream.Collectors.toSet());
+    Set<Integer> orders =
+        sceneMetadata.stream()
+            .map(node -> node.path("scene").path("order").asInt())
+            .collect(java.util.stream.Collectors.toSet());
+    Set<String> roles =
+        sceneMetadata.stream()
+            .map(node -> node.path("scene").path("role").asText())
+            .collect(java.util.stream.Collectors.toSet());
+    if (projectIds.size() != 1
+        || projectIds.contains("")
+        || !orders.equals(Set.of(1, 2, 3, 4))
+        || !roles.equals(Set.of("DOR", "RESULTADO", "MECANISMO", "CTA"))) {
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST,
+          "Selecione um clipe de DOR, RESULTADO, MECANISMO e CTA do mesmo projeto.");
+    }
+  }
+
+  /** Lê metadados de cena sem impedir montagens legadas que não usam o Estúdio. */
+  private JsonNode readSceneMetadata(SalesVideoJob sourceJob) {
+    if (!StringUtils.hasText(sourceJob.getMetadataJson())) {
+      return com.fasterxml.jackson.databind.node.MissingNode.getInstance();
+    }
+    try {
+      JsonNode metadata = objectMapper.readTree(sourceJob.getMetadataJson());
+      return "SCENE_BY_SCENE_MONTAGE".equals(metadata.path("generation_strategy").asText())
+          ? metadata
+          : com.fasterxml.jackson.databind.node.MissingNode.getInstance();
+    } catch (JsonProcessingException ex) {
+      return com.fasterxml.jackson.databind.node.MissingNode.getInstance();
+    }
   }
 
   /** Monta o metadata operacional consumido pelo provider local de montagem. */

@@ -621,6 +621,10 @@ components:
           type: string
           description: Provider concreto solicitado. Para hero PDE, usar preferencialmente `LUMA_RAY_3_2`; `KLING_3_0` como alternativa de teste; `VEO` apenas para teaser/cenas curtas.
         executionMode: { $ref: '#/components/schemas/SalesVideoExecutionMode' }
+        targetDurationSeconds:
+          type: integer
+          minimum: 1
+          description: Duração do clipe solicitado. Quando omitida, aplica-se a duração total do perfil; em montagem por cenas, deve refletir a duração da cena isolada.
         metadataJson:
           type: string
           description: Plano comercial/operacional do render. Para hero PDE deve registrar estratégia de provider, montagem Dor -> Resultado -> Mecanismo -> CTA, duração mínima aceita e exigência de `streamPlaybackUrl` HLS.
@@ -653,7 +657,7 @@ components:
           items:
             type: integer
             format: int64
-          description: Jobs `VIDEO_READY` que serão baixados e unidos na ordem informada.
+          description: Jobs `VIDEO_READY` que serão baixados e unidos na ordem informada. Para montagem narrativa do Estúdio, exige exatamente um clipe de DOR, RESULTADO, MECANISMO e CTA do mesmo projeto.
 
     JobHeartbeatRequest:
       type: object

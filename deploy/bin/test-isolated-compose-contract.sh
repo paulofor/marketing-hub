@@ -21,3 +21,8 @@ fi
 
 grep -q 'docker compose -f docker-compose.video.yml up' bin/apply-video-only.sh
 grep -q 'docker compose -f docker-compose.mcp.yml up' bin/apply-mcp-only.sh
+
+# Alterar o publicador isolado exige reconstruir a imagem para que um deploy
+# recuperado não termine verde mantendo código antigo no container de vídeo.
+grep -Fq 'deploy/bin/apply-video-only.sh) video=true; video_deploy_descriptor=true ;;' \
+  ../.github/workflows/deploy-containers.yml

@@ -72,7 +72,7 @@ jobs:
           set -euo pipefail
           ssh "${VPS_USER}@${VPS_IP}" "\
             cd '${REPOSITORY_DIR}/growth-operator-worker' \
-            && CODEX_HOME=/root/.codex \
+            && CODEX_HOME=/opt/growth-operator/codex-home \
                BACKEND_URL=http://191.252.181.168 \
                MARKETING_HUB_URL=http://191.252.181.168 \
                MARKETING_HUB_REPOSITORY_HOST='${REPOSITORY_DIR}' \
@@ -82,7 +82,10 @@ jobs:
                docker compose up -d --build --remove-orphans \
             && for attempt in \$(seq 1 12); do \
                  status=\$(docker inspect --format '{{.State.Status}}' growth-operator-worker-growth-operator-worker-1 2>/dev/null || true); \
-                 [ \"\${status}\" = running ] && exit 0; \
+                 [ \"\${status}\" = running ] \
+                   && docker exec growth-operator-worker-growth-operator-worker-1 \
+                        sh -lc 'test -w /home/operator/.codex && codex login status' \
+                   && exit 0; \
                  sleep 5; \
                done; \
             docker compose logs --tail=150 growth-operator-worker; \

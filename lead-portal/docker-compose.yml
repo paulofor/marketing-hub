@@ -1,5 +1,6 @@
 services:
   backend:
+    container_name: lead-portal-backend
     build:
       context: ./backend
     image: lead-portal-backend
@@ -38,6 +39,7 @@ services:
           - lead-backend
 
   frontend:
+    container_name: lead-portal-frontend
     build:
       context: ./frontend
       args:
@@ -60,6 +62,7 @@ services:
           - lead-frontend
 
   proxy:
+    container_name: lead-portal-proxy
     image: nginx:1.25-alpine
     depends_on:
       backend:

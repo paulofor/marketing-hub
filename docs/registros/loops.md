@@ -46,6 +46,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 | `LOOP-GL-AUTOMATION-CHAIN` | ALTO | Recorrente | Encadeamento automático de etapas | orquestração no backend após callback de sucesso |
 | `LOOP-QUALITY-REVIEW-VISION` | ALTO | Parcialmente estabilizado | Quality Review visual | screenshot renderizado mobile-first + auditoria por hash |
 | `LOOP-LANDING-ANALYTICS-FUNNEL` | CRÍTICO | Recorrente | Analytics, funil e submissão | contrato Lead Portal → backend → evento bruto + evento normalizado + UI |
+| `LOOP-LEAD-PORTAL-STALE-FRONTEND` | CRÍTICO | Prevenido | Deploy do Lead Portal | upstream canônico + asset do HTML validado após deploy |
 | `LOOP-PIPELINE-ADMIN-CONTRACT` | MÉDIO | Estabilizado com risco | Tela `/pipelines` e contrato persistente | registry oficial + sincronizador + definição/configuração separadas |
 | `LOOP-HYPOTHESIS-PIPELINE` | ALTO | Em formação | Pipeline Dor → Resultado → Mecanismo → Prova → Oferta | etapas completas + pré-requisitos + finalização separada + lease |
 | `LOOP-ARTIFACT-CONTAMINATION` | ALTO | Estabilizado com risco | Metadado técnico em artefato final | separação auditoria vs artefato publicável + whitelist de DTO final |

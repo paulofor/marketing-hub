@@ -11,4 +11,28 @@ public record ExperimentLandingAnalyticsDetailedEventDto(
     String eventType,
     String sectionId,
     Instant occurredAt,
-    Map<String, String> attributes) {}
+    String trafficQuality,
+    String trafficQualityReason,
+    Map<String, String> attributes) {
+
+  /** Mantém compatibilidade com produtores anteriores que ainda não classificavam o tráfego. */
+  public ExperimentLandingAnalyticsDetailedEventDto(
+      Long eventId,
+      String anonymousVisitorId,
+      String anonymousSessionId,
+      String eventType,
+      String sectionId,
+      Instant occurredAt,
+      Map<String, String> attributes) {
+    this(
+        eventId,
+        anonymousVisitorId,
+        anonymousSessionId,
+        eventType,
+        sectionId,
+        occurredAt,
+        "UNKNOWN",
+        "LEGACY_UNCLASSIFIED",
+        attributes);
+  }
+}

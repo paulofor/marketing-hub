@@ -378,6 +378,9 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - invalidar também a query da aba Analytics no frontend após zerar contagens;
   - enviar `deviceType`, sistema operacional e tamanho de tela pelo script público para apoiar decisão de layout/mobile;
   - serializar horários de analytics vindos de `DATETIME` com offset operacional explícito, evitando que a UI interprete horário de Brasília como UTC.
+  - classificar verificações internas e navegadores automatizados por sessão, preservando-os para auditoria e excluindo-os de audiência, abandono e desempenho comerciais;
+  - deduplicar marcos de página, vídeo, CTA e formulário por sessão na consolidação, sem apagar os eventos brutos;
+  - usar `Instant` como contrato temporal único entre eventos detalhados, sessões e visitantes.
 - **Contratos sensíveis**:
   - `experiment_funnel_event`;
   - `experiment_landing_analytics_event`;
@@ -394,6 +397,8 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - teste: reset apaga normalizados antes dos brutos;
   - teste: submissão pública soma `ENVIO_FORM` sem duplicar;
   - teste: jornada recente serializa `DATETIME` operacional com offset de Brasília.
+  - teste: monitor interno permanece auditável, mas não altera sessões humanas nem tempo de carregamento;
+  - teste: marco repetido na mesma sessão conta uma única vez no resumo comercial.
 - **Regra preventiva**:
   - todo novo evento de landing só está pronto quando aparecer na UI que o usuário usa para decisão.
 

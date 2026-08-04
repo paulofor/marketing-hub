@@ -689,6 +689,68 @@ class ExperimentFunnelServiceRenderCompleteTest {
     assertEquals("danger", summary.loadMetrics().diagnosisSeverity());
   }
 
+  /**
+   * Valida que monitores internos permanecem auditáveis sem contaminar audiência, desempenho ou
+   * marcos comerciais.
+   */
+  @Test
+  void summarizeLandingAnalyticsSeparatesAutomationAndDeduplicatesMilestones() {
+    Experiment experiment = Experiment.builder().id(81L).build();
+    when(experimentRepository.findById(81L)).thenReturn(Optional.of(experiment));
+    when(eventRepository.findLandingAnalyticsEvents(
+            eq(81L),
+            eq(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE),
+            eq(null),
+            any(Pageable.class)))
+        .thenReturn(
+            List.of(
+                landingEvent(
+                    1L,
+                    "eventId=h1;eventType=page_view;visitorId=visitor-1;sessionId=human-1;pageUrl=https://example.test/flows/agenda;deviceType=mobile;screenWidth=390;screenHeight=844",
+                    Instant.parse("2026-08-04T02:57:00Z")),
+                landingEvent(
+                    2L,
+                    "eventId=h2;eventType=page_view;visitorId=visitor-1;sessionId=human-1;pageUrl=https://example.test/flows/agenda;deviceType=mobile;screenWidth=390;screenHeight=844",
+                    Instant.parse("2026-08-04T02:57:01Z")),
+                landingEvent(
+                    3L,
+                    "eventId=h3;eventType=page_load_metric;visitorId=visitor-1;sessionId=human-1;pageUrl=https://example.test/flows/agenda;loadDurationMs=1800",
+                    Instant.parse("2026-08-04T02:57:02Z")),
+                landingEvent(
+                    4L,
+                    "eventId=a1;eventType=page_view;sessionId=monitor-1;pageUrl=https://example.test/api/flows/agenda/page;deviceType=desktop;screenWidth=1600;screenHeight=1200",
+                    Instant.parse("2026-08-04T02:58:00Z")),
+                landingEvent(
+                    5L,
+                    "eventId=a2;eventType=page_load_metric;sessionId=monitor-1;pageUrl=https://example.test/api/flows/agenda/page;deviceType=desktop;screenWidth=1600;screenHeight=1200;loadDurationMs=19000",
+                    Instant.parse("2026-08-04T02:58:01Z")),
+                landingEvent(
+                    6L,
+                    "eventId=a3;eventType=page_view;sessionId=monitor-2;pageUrl=https://example.test/api/flows/agenda/page;deviceType=desktop;screenWidth=1600;screenHeight=1200",
+                    Instant.parse("2026-08-04T02:59:00Z")),
+                landingEvent(
+                    7L,
+                    "eventId=a4;eventType=page_view;sessionId=monitor-3;pageUrl=https://example.test/api/flows/agenda/page;deviceType=desktop;screenWidth=1600;screenHeight=1200",
+                    Instant.parse("2026-08-04T03:00:00Z"))));
+
+    var summary = service.summarizeLandingAnalytics(81L);
+
+    assertEquals(1, summary.totalSessions());
+    assertEquals(1, summary.pageViews());
+    assertEquals(2, summary.totalEvents());
+    assertEquals(1, summary.trafficQuality().humanSessions());
+    assertEquals(3, summary.trafficQuality().automatedSessions());
+    assertEquals(1, summary.loadMetrics().events());
+    assertEquals(1800, summary.loadMetrics().averageLoadDurationMs());
+    assertEquals(Instant.parse("2026-08-04T02:57:02Z"), summary.lastEventAt());
+    assertEquals(4, summary.sessions().size());
+    assertEquals(
+        3,
+        summary.sessions().stream()
+            .filter(session -> "AUTOMATED".equals(session.trafficQuality()))
+            .count());
+  }
+
   /** Valida que visitantes com sessões diferentes são marcados como recorrentes prováveis. */
   @Test
   void summarizeLandingAnalyticsVisitorsMarksVisitorWithMultipleSessionsAsRecurrent() {

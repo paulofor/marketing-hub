@@ -21,6 +21,9 @@ class CodexReadOnlyRunnerTest {
     assertThat(command).containsSubsequence("--sandbox", "read-only");
     assertThat(command).contains("--search", "--cd", "/workspace/repository");
     assertThat(command).containsSubsequence("exec", "-", "--skip-git-repo-check");
+    assertThat(command)
+        .contains("mcp_servers.marketing_hub_readonly.command=\"node\"")
+        .anyMatch(value -> value.startsWith("mcp_servers.marketing_hub_readonly.args="));
     assertThat(command).doesNotContain("--dangerously-bypass-approvals-and-sandbox");
   }
 }

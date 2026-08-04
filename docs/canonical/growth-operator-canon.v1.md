@@ -20,7 +20,7 @@ O Operador de Crescimento transforma meta, gargalo e evidencias persistidas do p
 
 Cada execucao deve persistir objetivo, gargalo, snapshot de evidencias, exatamente tres alternativas, causa-raiz, metrica esperada, criterios de continuar/ajustar/parar, decisao, proxima acao, resposta bruta, modelo, custo e falha quando houver.
 
-Cada ciclo tambem persiste numero sequencial, origem manual ou automatica e relatorio diario executivo. O snapshot do ciclo seguinte inclui o aprendizado anterior para evitar repeticao sem evidencia nova. Atividade, recomendacao, impacto estimado e PR nunca contam como venda.
+Cada ciclo tambem persiste numero sequencial, origem manual ou automatica e relatorio diario executivo. O snapshot do ciclo seguinte inclui memoria consolidada do planejamento: contagens de todo o historico e linha do tempo recente com conclusoes, evidencias, recomendacoes, falhas e metricas observadas em cada ciclo. A linha do tempo detalhada pode ser limitada para controlar contexto, mas deve declarar truncamento e manter as contagens integrais. Recomendacao deve ser identificada como nao confirmada ate que evidencia posterior comprove sua execucao e seu resultado. Atividade, recomendacao, impacto estimado e PR nunca contam como venda.
 
 Quando o planejamento estiver associado a um experimento, o snapshot deve incluir a inteligencia
 de sessoes completa disponivel na janela do funil: resumo, jornadas recentes e eventos individuais
@@ -33,8 +33,12 @@ de visitante e sessao devem ser pseudonimizados de forma estavel; IP, user-agent
 digitado e identificadores publicos completos nao entram no snapshot. O worker continua sem acesso
 direto ao banco e toda evidencia usada permanece congelada na execucao auditavel.
 
-O agente nao depende das telas para investigar. Ele pode consultar diretamente APIs oficiais GET do
-Marketing Hub. Para aprofundar ou atualizar a leitura durante um ciclo, o backend expoe
+O agente nao depende das telas para investigar. Um servidor MCP local, dedicado ao Operador e
+vinculado ao planejamento do job, apresenta ferramentas tipadas somente leitura para consultar
+planejamento, funil, sessoes, campanhas Meta e memoria historica. O catalogo nao expoe ferramenta
+generica HTTP, banco ou metodos mutaveis. Cada resposta inclui ferramenta, planejamento, rota de
+origem e horario da consulta para a evidencia permanecer auditavel no resultado do modelo. Para
+aprofundar ou atualizar a leitura durante um ciclo, o backend expoe
 `GET /api/growth-operator/v1/internal/commercial-plans/{planId}/session-intelligence?eventLimit=2000`,
 com o mesmo contrato detalhado, anonimizado e limitado do snapshot. Essa consulta nao autoriza
 acesso direto ao banco nem metodos HTTP de mutacao.

@@ -27,9 +27,15 @@ public class CodexReadOnlyRunner {
   /** Executa um diagnostico efemero sem permitir escrita no repositorio. */
   public Map<String, Object> run(GrowthOperatorJob job) throws IOException, InterruptedException {
     Path output = Files.createTempFile("growth-operator-", ".json");
+    Path mcpServer = materializeMcpServer();
     try {
-      List<String> command = buildCommand(output);
-      Process process = new ProcessBuilder(command).redirectErrorStream(true).start();
+      List<String> command = buildCommand(output, mcpServer);
+      ProcessBuilder processBuilder = new ProcessBuilder(command).redirectErrorStream(true);
+      processBuilder
+          .environment()
+          .put("MCP_COMMERCIAL_PLAN_ID", String.valueOf(job.commercialPlanId()));
+      processBuilder.environment().put("MCP_MARKETING_HUB_URL", properties.getMarketingHubUrl());
+      Process process = processBuilder.start();
       process.getOutputStream().write(buildPrompt(job).getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
       String processLog =
@@ -57,11 +63,17 @@ public class CodexReadOnlyRunner {
       return payload;
     } finally {
       Files.deleteIfExists(output);
+      Files.deleteIfExists(mcpServer);
     }
   }
 
   /** Monta o comando com sandbox read-only, sessao efemera e schema versionado. */
   List<String> buildCommand(Path output) throws IOException {
+    return buildCommand(output, materializeMcpServer());
+  }
+
+  /** Monta o comando apontando para um servidor MCP local explicitamente informado. */
+  List<String> buildCommand(Path output, Path mcpServer) throws IOException {
     List<String> command = new ArrayList<>();
     command.add(properties.getCodexCommand());
     command.add("--search");
@@ -78,11 +90,23 @@ public class CodexReadOnlyRunner {
     command.add(output.toString());
     command.add("--color");
     command.add("never");
+    command.add("--config");
+    command.add("mcp_servers.marketing_hub_readonly.command=\"node\"");
+    command.add("--config");
+    command.add("mcp_servers.marketing_hub_readonly.args=[\"" + mcpServer.toAbsolutePath() + "\"]");
     if (hasText(properties.getModel())) {
       command.add("--model");
       command.add(properties.getModel());
     }
     return command;
+  }
+
+  /** Materializa o catalogo MCP somente leitura em diretorio temporario gravavel. */
+  private Path materializeMcpServer() throws IOException {
+    Path server = Files.createTempFile("marketing-hub-readonly-mcp-", ".mjs");
+    Files.writeString(server, readResource("mcp/marketing-hub-readonly.mjs"));
+    server.toFile().deleteOnExit();
+    return server;
   }
 
   /** Resolve o prompt versionado com o contexto congelado pelo backend. */

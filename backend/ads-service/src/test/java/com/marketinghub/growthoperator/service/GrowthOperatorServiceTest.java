@@ -6,12 +6,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDetailedEventDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsEvidenceDto;
 import com.marketinghub.growthoperator.GrowthOperatorExecution;
+import com.marketinghub.growthoperator.GrowthOperatorExecutionStatus;
 import com.marketinghub.growthoperator.service.start.StartGrowthOperatorRequest;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.service.CommercialPlanService;
@@ -24,6 +26,54 @@ import org.mockito.ArgumentCaptor;
 
 /** Responsabilidade: validar o contexto auditável entregue ao Operador de Crescimento. */
 class GrowthOperatorServiceTest {
+
+  /** Confirma que o novo ciclo recebe conclusoes e resultados observados de todo o historico. */
+  @Test
+  void shouldFreezeConsolidatedPlanningMemory() throws Exception {
+    GrowthOperatorExecutionRepository repository = mock(GrowthOperatorExecutionRepository.class);
+    CommercialPlanService planService = mock(CommercialPlanService.class);
+    ExperimentFunnelService funnelService = mock(ExperimentFunnelService.class);
+    CommercialPlan plan = CommercialPlan.builder().id(2L).build();
+    GrowthOperatorExecution completed = new GrowthOperatorExecution();
+    completed.setCycleNumber(3);
+    completed.setStatus(GrowthOperatorExecutionStatus.COMPLETED);
+    completed.setRecommendedAction("Validar CTA em uma sessao humana");
+    completed.setDiagnosisJson(
+        "{\"rootCause\":\"amostra humana insuficiente\",\"evidence\":[\"1 sessao humana\"]}");
+    completed.setDailyReport("Relatorio executivo do ciclo tres.");
+    completed.setEvidenceSnapshot(
+        "{\"actualCost\":12.13,\"actualRevenue\":0,\"blocker\":\"INSTRUMENTACAO\"}");
+    completed.setCreatedAt(Instant.parse("2026-08-04T10:00:00Z"));
+    completed.setFinishedAt(Instant.parse("2026-08-04T10:02:00Z"));
+    when(planService.getPlan(2L)).thenReturn(plan);
+    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of(completed));
+    when(repository.save(any(GrowthOperatorExecution.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+    GrowthOperatorService service =
+        new GrowthOperatorService(repository, planService, funnelService, objectMapper);
+
+    service.start(2L, new StartGrowthOperatorRequest(1, "Reavaliar o gargalo"));
+
+    ArgumentCaptor<GrowthOperatorExecution> captor =
+        ArgumentCaptor.forClass(GrowthOperatorExecution.class);
+    verify(repository).save(captor.capture());
+    JsonNode snapshot = objectMapper.readTree(captor.getValue().getEvidenceSnapshot());
+    assertThat(snapshot.at("/consolidatedMemory/totalCycles").asInt()).isEqualTo(1);
+    assertThat(snapshot.at("/consolidatedMemory/completedCycles").asInt()).isEqualTo(1);
+    assertThat(snapshot.at("/consolidatedMemory/timeline/0/conclusion").asText())
+        .isEqualTo("amostra humana insuficiente");
+    assertThat(
+            snapshot
+                .at("/consolidatedMemory/timeline/0/recommendedActionNotConfirmedAsExecuted")
+                .asText())
+        .isEqualTo("Validar CTA em uma sessao humana");
+    assertThat(
+            snapshot
+                .at("/consolidatedMemory/timeline/0/observedPlanMetrics/actualCost")
+                .decimalValue())
+        .isEqualByComparingTo("12.13");
+  }
 
   /** Confirma que eventos detalhados de sessão entram no snapshot do ciclo. */
   @Test

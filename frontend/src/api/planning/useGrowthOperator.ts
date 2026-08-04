@@ -15,6 +15,7 @@ export interface GrowthOperatorExecution {
   authorityMode: "READ_ONLY_DIAGNOSIS";
   objective: string;
   blocker?: string | null;
+  evidenceSnapshot?: string | null;
   alternativesJson?: string | null;
   diagnosisJson?: string | null;
   recommendedDecision?: GrowthOperatorDecision | null;

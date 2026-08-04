@@ -2,6 +2,7 @@ package com.marketinghub.growthoperator.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.experiment.funnel.ExperimentFunnelService;
 import com.marketinghub.growthoperator.GrowthOperatorExecution;
 import com.marketinghub.growthoperator.GrowthOperatorExecutionStatus;
 import com.marketinghub.growthoperator.service.result.CompleteGrowthOperatorRequest;
@@ -14,6 +15,7 @@ import com.marketinghub.repository.jpa.growthoperator.GrowthOperatorExecutionRep
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -27,16 +29,20 @@ import org.springframework.web.server.ResponseStatusException;
 public class GrowthOperatorService {
   private static final Logger log = LoggerFactory.getLogger(GrowthOperatorService.class);
   private static final String READ_ONLY = "READ_ONLY_DIAGNOSIS";
+  private static final int SESSION_EVENT_LIMIT = 2000;
   private final GrowthOperatorExecutionRepository repository;
   private final CommercialPlanService commercialPlanService;
+  private final ExperimentFunnelService experimentFunnelService;
   private final ObjectMapper objectMapper;
 
   public GrowthOperatorService(
       GrowthOperatorExecutionRepository repository,
       CommercialPlanService commercialPlanService,
+      ExperimentFunnelService experimentFunnelService,
       ObjectMapper objectMapper) {
     this.repository = repository;
     this.commercialPlanService = commercialPlanService;
+    this.experimentFunnelService = experimentFunnelService;
     this.objectMapper = objectMapper;
   }
 
@@ -180,6 +186,21 @@ public class GrowthOperatorService {
     snapshot.put("actualCost", plan.getActualTotalCost());
     snapshot.put("actualRevenue", plan.getActualRevenue());
     snapshot.put("deadline", plan.getDeadline());
+    if (plan.getExperiment() != null) {
+      Long experimentId = plan.getExperiment().getId();
+      snapshot.put("experimentId", experimentId);
+      snapshot.put(
+          "sessionIntelligence",
+          Map.of(
+              "landingAnalytics",
+              experimentFunnelService.buildDetailedAnalyticsEvidence(
+                  experimentId, SESSION_EVENT_LIMIT),
+              "pdeAnalytics",
+              experimentFunnelService.buildDetailedPdeAnalyticsEvidence(experimentId)));
+    } else {
+      snapshot.put(
+          "sessionIntelligence", Map.of("available", false, "reason", "PLAN_WITHOUT_EXPERIMENT"));
+    }
     if (previousExecution != null) {
       snapshot.put("previousCycle", previousExecution.getCycleNumber());
       snapshot.put("previousDecision", previousExecution.getRecommendedDecision());

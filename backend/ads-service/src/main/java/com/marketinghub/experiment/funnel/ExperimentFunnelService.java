@@ -6,8 +6,10 @@ import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
 import com.marketinghub.experiment.funnel.dto.ExperimentPdeCockpitDiagnosticsDto;
 import com.marketinghub.experiment.funnel.dto.PdeExperienceVersionDiagnosticDto;
 import com.marketinghub.experiment.funnel.dto.RegisterExperimentFunnelEventRequest;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDetailedEventDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDeviceDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsEvidenceDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsLoadMetricDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsOperatingSystemDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsScreenSizeDto;
@@ -29,6 +31,9 @@ import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRe
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
@@ -287,6 +292,210 @@ public class ExperimentFunnelService {
         loadMetrics,
         visitors,
         sessionDtos);
+  }
+
+  /** Entrega ao Operador resumo, jornadas e eventos detalhados anonimizados do experimento. */
+  public ExperimentLandingAnalyticsEvidenceDto buildDetailedAnalyticsEvidence(
+      Long experimentId, int requestedLimit) {
+    Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
+    Instant baseline = resolveBaseline(experiment);
+    int limit = Math.max(1, Math.min(requestedLimit, 2000));
+    var events =
+        eventRepository.findLandingAnalyticsEvents(
+            experimentId,
+            ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE,
+            baseline,
+            PageRequest.of(0, limit));
+    long total =
+        eventRepository.countLandingAnalyticsEvents(
+            experimentId, ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE, baseline);
+    List<ExperimentLandingAnalyticsDetailedEventDto> detailedEvents =
+        events.stream()
+            .sorted(
+                Comparator.comparing(
+                        ExperimentFunnelEventRepository.LandingAnalyticsEventProjection
+                            ::getOccurredAt)
+                    .thenComparing(
+                        ExperimentFunnelEventRepository.LandingAnalyticsEventProjection::getId))
+            .map(
+                event -> {
+                  Map<String, String> attributes =
+                      new LinkedHashMap<>(parseDelimitedPayload(event.getPayload()));
+                  String visitorId = attributes.remove("visitorId");
+                  String sessionId = attributes.remove("sessionId");
+                  attributes.remove("clientIp");
+                  attributes.remove("userAgent");
+                  attributes.remove("eventId");
+                  return new ExperimentLandingAnalyticsDetailedEventDto(
+                      event.getId(),
+                      anonymousIdentifier("visitor", visitorId),
+                      anonymousIdentifier("session", sessionId),
+                      attributes.remove("eventType"),
+                      attributes.remove("sectionId"),
+                      event.getOccurredAt(),
+                      attributes);
+                })
+            .toList();
+    return new ExperimentLandingAnalyticsEvidenceDto(
+        experimentId,
+        total,
+        detailedEvents.size(),
+        total > detailedEvents.size(),
+        sanitizeAnalyticsSummary(summarizeLandingAnalytics(experimentId)),
+        detailedEvents);
+  }
+
+  /** Entrega jornadas PDE detalhadas e anonimizadas quando o experimento usa essa experiência. */
+  public Map<String, Object> buildDetailedPdeAnalyticsEvidence(Long experimentId) {
+    Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
+    if (!isPdeMembershipSubscriptionFunnel(experiment)) {
+      return Map.of("available", false, "reason", "NOT_PDE_EXPERIENCE");
+    }
+    try {
+      PdeAnalyticsSummary summary = fetchPdeSummaryForExperiment(experiment);
+      LinkedHashMap<String, Object> evidence = new LinkedHashMap<>();
+      evidence.put("available", true);
+      evidence.put("productSlug", summary.productSlug());
+      evidence.put("experienceVersion", summary.currentExperienceVersion());
+      evidence.put("totalEvents", summary.totalEvents());
+      evidence.put("rawTotalEvents", summary.rawTotalEvents());
+      evidence.put("humanSessions", summary.humanSessions());
+      evidence.put("botSuspectedSessions", summary.botSuspectedSessions());
+      evidence.put("platformCrawlerSessions", summary.platformCrawlerSessions());
+      evidence.put("internalQaSessions", summary.internalQaSessions());
+      evidence.put("unknownSessions", summary.unknownSessions());
+      evidence.put("eventMetrics", summary.events());
+      evidence.put("experienceVersions", summary.experienceVersions());
+      evidence.put("trafficSources", summary.trafficSources());
+      evidence.put("trafficQuality", summary.trafficQualityBreakdown());
+      evidence.put("devices", summary.deviceBreakdown());
+      evidence.put("screenSizes", summary.screenSizeBreakdown());
+      evidence.put(
+          "detailedJourneys",
+          summary.recentJourneys().stream().map(this::sanitizePdeJourney).toList());
+      return evidence;
+    } catch (Exception ex) {
+      log.error(
+          "Falha no modulo growth-operator ao coletar jornadas PDE; experimentId={}",
+          experimentId,
+          ex);
+      return Map.of(
+          "available",
+          false,
+          "reason",
+          "PDE_ANALYTICS_ERROR",
+          "errorType",
+          ex.getClass().getSimpleName());
+    }
+  }
+
+  /** Remove IP, user-agent e identificadores completos de uma jornada PDE detalhada. */
+  private Map<String, Object> sanitizePdeJourney(PdeAnalyticsSummary.PdeSessionJourney journey) {
+    LinkedHashMap<String, Object> safe = new LinkedHashMap<>();
+    safe.put("anonymousVisitorId", anonymousIdentifier("visitor", journey.visitorId()));
+    safe.put("anonymousSessionId", anonymousIdentifier("session", journey.sessionId()));
+    safe.put("trafficQuality", journey.trafficQuality());
+    safe.put("trafficQualityReason", journey.trafficQualityReason());
+    safe.put("trafficProvider", journey.trafficProvider());
+    safe.put("firstEventAt", journey.firstEventAt());
+    safe.put("lastEventAt", journey.lastEventAt());
+    safe.put("totalVisibleMs", journey.totalVisibleMs());
+    safe.put("maxScrollDepthPercent", journey.maxScrollDepthPercent());
+    safe.put("screenNames", journey.screenNames());
+    safe.put("sectionIds", journey.sectionIds());
+    safe.put("fieldFocused", journey.fieldFocused());
+    safe.put("fieldInputStarted", journey.fieldInputStarted());
+    safe.put("fieldFilled", journey.fieldFilled());
+    safe.put("ctaClicked", journey.ctaClicked());
+    safe.put("loginStarted", journey.loginStarted());
+    safe.put("loginCompleted", journey.loginCompleted());
+    safe.put("paywallViewed", journey.paywallViewed());
+    safe.put("checkoutStarted", journey.checkoutStarted());
+    safe.put("subscriptionApproved", journey.subscriptionApproved());
+    safe.put("abandonmentPoint", journey.abandonmentPoint());
+    safe.put("lastEventType", journey.lastEventType());
+    safe.put("lastActionName", journey.lastActionName());
+    return safe;
+  }
+
+  /** Remove identificadores e user-agent bruto das jornadas agregadas entregues ao agente. */
+  private ExperimentLandingAnalyticsDto sanitizeAnalyticsSummary(
+      ExperimentLandingAnalyticsDto summary) {
+    List<ExperimentLandingAnalyticsSessionDto> sessions =
+        summary.sessions().stream()
+            .map(
+                session ->
+                    new ExperimentLandingAnalyticsSessionDto(
+                        anonymousIdentifier("session", session.sessionId()),
+                        session.eventCount(),
+                        session.pageViews(),
+                        session.sectionViewEvents(),
+                        session.totalVisibleMs(),
+                        session.firstEventAt(),
+                        session.lastEventAt(),
+                        session.lastPageUrl(),
+                        null,
+                        session.deviceType(),
+                        session.deviceLabel(),
+                        session.operatingSystem(),
+                        session.operatingSystemLabel(),
+                        session.screenWidth(),
+                        session.screenHeight(),
+                        session.screenSizeLabel(),
+                        session.topSections()))
+            .toList();
+    var visitors = summary.visitors();
+    var safeVisitors =
+        new ExperimentLandingAnalyticsVisitorsDto(
+            visitors.probableVisitors(),
+            visitors.recurrentVisitors(),
+            visitors.singleVisitVisitors(),
+            visitors.visitors().stream()
+                .map(
+                    visitor ->
+                        new ExperimentLandingAnalyticsVisitorDto(
+                            anonymousIdentifier("visitor", visitor.visitorId()),
+                            visitor.totalSessions(),
+                            visitor.validPageViews(),
+                            visitor.firstAccessAt(),
+                            visitor.lastAccessAt(),
+                            visitor.intervalSeconds(),
+                            visitor.distinctPages(),
+                            null,
+                            visitor.deviceType(),
+                            visitor.deviceLabel(),
+                            visitor.recurrent()))
+                .toList());
+    return new ExperimentLandingAnalyticsDto(
+        summary.totalEvents(),
+        summary.totalSessions(),
+        summary.pageViews(),
+        summary.sectionViewEvents(),
+        summary.totalVisibleMs(),
+        summary.averageVisibleMsPerSession(),
+        summary.lastEventAt(),
+        summary.deviceBreakdown(),
+        summary.mobileOperatingSystemBreakdown(),
+        summary.screenSizeBreakdown(),
+        summary.loadMetrics(),
+        safeVisitors,
+        sessions);
+  }
+
+  /** Gera pseudônimo estável por experimento sem expor identificadores first-party. */
+  private String anonymousIdentifier(String prefix, String value) {
+    if (value == null || value.isBlank()) {
+      return "sem-" + prefix;
+    }
+    try {
+      byte[] digest =
+          MessageDigest.getInstance("SHA-256")
+              .digest((prefix + ":" + value.trim()).getBytes(StandardCharsets.UTF_8));
+      return prefix + "-" + java.util.HexFormat.of().formatHex(digest, 0, 6);
+    } catch (NoSuchAlgorithmException ex) {
+      log.error("Falha ao anonimizar identificador de analytics; tipo={}", prefix, ex);
+      throw new IllegalStateException("SHA-256 indisponível para anonimização", ex);
+    }
   }
 
   /**

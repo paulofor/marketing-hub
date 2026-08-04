@@ -15,6 +15,23 @@ function statusLabel(execution: GrowthOperatorExecution) {
   return labels[execution.status];
 }
 
+function sessionEvidence(snapshot?: string | null) {
+  if (!snapshot) return null;
+  try {
+    const parsed = JSON.parse(snapshot);
+    const intelligence = parsed.sessionIntelligence;
+    if (!intelligence || intelligence.available === false) return null;
+    const landing = intelligence.landingAnalytics ?? intelligence;
+    const pdeJourneys = intelligence.pdeAnalytics?.detailedJourneys?.length ?? 0;
+    return {
+      data: intelligence,
+      label: `${landing.includedEvents ?? 0} de ${landing.totalEventsAvailable ?? 0} eventos de landing e ${pdeJourneys} jornadas PDE`,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function GrowthOperatorPanel({
   planId,
   defaultObjective,
@@ -90,7 +107,9 @@ export default function GrowthOperatorPanel({
           </div>
         ) : null}
 
-        {executions.map((execution) => (
+        {executions.map((execution) => {
+          const evidence = sessionEvidence(execution.evidenceSnapshot);
+          return (
           <article className="border rounded p-3" key={execution.id}>
             <div className="d-flex justify-content-between gap-3 flex-wrap">
               <strong>Execução #{execution.id}</strong>
@@ -110,6 +129,17 @@ export default function GrowthOperatorPanel({
                 {execution.recommendedAction}
               </p>
             ) : null}
+            {evidence ? (
+              <details className="mt-2">
+                <summary>
+                  <strong>Inteligência de sessões:</strong>{" "}
+                  {evidence.label}
+                </summary>
+                <pre className="bg-light border rounded p-2 mt-2 mb-0 small overflow-auto">
+                  {JSON.stringify(evidence.data, null, 2)}
+                </pre>
+              </details>
+            ) : null}
             {execution.dailyReport ? (
               <div className="alert alert-light border mt-2 mb-0">
                 <strong>Relatório diário:</strong>
@@ -122,7 +152,8 @@ export default function GrowthOperatorPanel({
               <p className="text-danger mb-0">{execution.errorMessage}</p>
             ) : null}
           </article>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

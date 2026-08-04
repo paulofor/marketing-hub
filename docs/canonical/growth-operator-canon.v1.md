@@ -22,6 +22,17 @@ Cada execucao deve persistir objetivo, gargalo, snapshot de evidencias, exatamen
 
 Cada ciclo tambem persiste numero sequencial, origem manual ou automatica e relatorio diario executivo. O snapshot do ciclo seguinte inclui o aprendizado anterior para evitar repeticao sem evidencia nova. Atividade, recomendacao, impacto estimado e PR nunca contam como venda.
 
+Quando o planejamento estiver associado a um experimento, o snapshot deve incluir a inteligencia
+de sessoes completa disponivel na janela do funil: resumo, jornadas recentes e eventos individuais
+em ordem temporal, incluindo secao, duracao, video, CTA, desempenho, dispositivo, origem e versao.
+O snapshot separa `landingAnalytics` de `pdeAnalytics`, para que paginas GeraSalesPage e
+experiencias PDE/MUSA sejam analisadas sem mistura de fontes ou versoes.
+O contrato inclui ate 2.000 eventos por ciclo e declara `totalEventsAvailable`, `includedEvents` e
+`truncated`, para o agente nunca confundir limite de contexto com ausencia de dados. Identificadores
+de visitante e sessao devem ser pseudonimizados de forma estavel; IP, user-agent bruto, conteudo
+digitado e identificadores publicos completos nao entram no snapshot. O worker continua sem acesso
+direto ao banco e toda evidencia usada permanece congelada na execucao auditavel.
+
 ## Imagem e operacao
 
 - A imagem de producao e criada exclusivamente pelo `Dockerfile` e pelo Compose versionados em `growth-operator-worker`.

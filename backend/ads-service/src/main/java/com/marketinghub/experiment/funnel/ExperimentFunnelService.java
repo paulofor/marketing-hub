@@ -6,13 +6,16 @@ import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
 import com.marketinghub.experiment.funnel.dto.ExperimentPdeCockpitDiagnosticsDto;
 import com.marketinghub.experiment.funnel.dto.PdeExperienceVersionDiagnosticDto;
 import com.marketinghub.experiment.funnel.dto.RegisterExperimentFunnelEventRequest;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDetailedEventDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDeviceDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsEvidenceDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsLoadMetricDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsOperatingSystemDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsScreenSizeDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsSectionDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsSessionDto;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsTrafficQualityDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsVisitorDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsVisitorsDto;
 import com.marketinghub.experiment.monitoring.pde.PdeAnalyticsClient;
@@ -29,6 +32,9 @@ import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRe
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
@@ -41,7 +47,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -213,11 +221,6 @@ public class ExperimentFunnelService {
     Instant baseline = resolveBaseline(experiment);
     List<LandingAnalyticsEventRow> rows = fetchLandingAnalyticsEvents(experimentId, baseline);
     Map<String, LandingAnalyticsSessionAccumulator> sessions = new LinkedHashMap<>();
-    long pageViews = 0;
-    long sectionViewEvents = 0;
-    long totalVisibleMs = 0;
-    Instant lastEventAt = null;
-
     for (LandingAnalyticsEventRow row : rows) {
       Map<String, String> payload = parseDelimitedPayload(row.payload());
       String sessionId = firstNonBlank(payload.get("sessionId"), "sem-sessao");
@@ -230,6 +233,7 @@ public class ExperimentFunnelService {
       Integer screenWidth = parsePositiveInteger(payload.get("screenWidth"));
       Integer screenHeight = parsePositiveInteger(payload.get("screenHeight"));
       long elapsedMs = parseLong(payload.get("elapsedMs"));
+      TrafficDiagnosis traffic = classifyLandingTraffic(payload, payload.get("visitorId"));
 
       LandingAnalyticsSessionAccumulator session =
           sessions.computeIfAbsent(sessionId, LandingAnalyticsSessionAccumulator::new);
@@ -243,17 +247,29 @@ public class ExperimentFunnelService {
           deviceType,
           operatingSystem,
           screenWidth,
-          screenHeight);
-
-      if ("page_view".equalsIgnoreCase(eventType)) {
-        pageViews++;
-      }
-      if ("section_view_time".equalsIgnoreCase(eventType)) {
-        sectionViewEvents++;
-        totalVisibleMs += elapsedMs;
-      }
-      lastEventAt = max(lastEventAt, row.occurredAt());
+          screenHeight,
+          traffic);
     }
+
+    Map<String, LandingAnalyticsSessionAccumulator> humanSessions =
+        sessions.entrySet().stream()
+            .filter(entry -> entry.getValue().isHuman())
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    Map.Entry::getValue,
+                    (left, right) -> left,
+                    LinkedHashMap::new));
+    long pageViews = humanSessions.values().stream().mapToLong(s -> s.pageViews).sum();
+    long sectionViewEvents =
+        humanSessions.values().stream().mapToLong(s -> s.sectionViewEvents).sum();
+    long totalVisibleMs = humanSessions.values().stream().mapToLong(s -> s.totalVisibleMs).sum();
+    Instant lastEventAt =
+        humanSessions.values().stream()
+            .map(LandingAnalyticsSessionAccumulator::lastEventAt)
+            .filter(Objects::nonNull)
+            .max(Instant::compareTo)
+            .orElse(null);
 
     List<ExperimentLandingAnalyticsSessionDto> sessionDtos =
         sessions.values().stream()
@@ -264,18 +280,19 @@ public class ExperimentFunnelService {
             .limit(50)
             .map(LandingAnalyticsSessionAccumulator::toDto)
             .toList();
-    long averageVisibleMsPerSession = sessions.isEmpty() ? 0 : totalVisibleMs / sessions.size();
-    List<ExperimentLandingAnalyticsDeviceDto> deviceBreakdown = buildDeviceBreakdown(sessions);
+    long averageVisibleMsPerSession =
+        humanSessions.isEmpty() ? 0 : totalVisibleMs / humanSessions.size();
+    List<ExperimentLandingAnalyticsDeviceDto> deviceBreakdown = buildDeviceBreakdown(humanSessions);
     List<ExperimentLandingAnalyticsOperatingSystemDto> mobileOperatingSystemBreakdown =
-        buildMobileOperatingSystemBreakdown(sessions);
+        buildMobileOperatingSystemBreakdown(humanSessions);
     List<ExperimentLandingAnalyticsScreenSizeDto> screenSizeBreakdown =
-        buildScreenSizeBreakdown(sessions);
-    ExperimentLandingAnalyticsLoadMetricDto loadMetrics = buildLoadMetrics(rows, sessions);
+        buildScreenSizeBreakdown(humanSessions);
+    ExperimentLandingAnalyticsLoadMetricDto loadMetrics = buildLoadMetrics(rows, humanSessions);
     ExperimentLandingAnalyticsVisitorsDto visitors =
         summarizeLandingAnalyticsVisitors(experiment, baseline);
     return new ExperimentLandingAnalyticsDto(
-        rows.size(),
-        sessions.size(),
+        humanSessions.values().stream().mapToLong(s -> s.eventCount).sum(),
+        humanSessions.size(),
         pageViews,
         sectionViewEvents,
         totalVisibleMs,
@@ -286,7 +303,225 @@ public class ExperimentFunnelService {
         screenSizeBreakdown,
         loadMetrics,
         visitors,
+        new ExperimentLandingAnalyticsTrafficQualityDto(
+            humanSessions.size(),
+            sessions.values().stream()
+                .filter(s -> s.trafficQuality == TrafficQuality.AUTOMATED)
+                .count(),
+            sessions.values().stream()
+                .filter(s -> s.trafficQuality == TrafficQuality.UNKNOWN)
+                .count()),
         sessionDtos);
+  }
+
+  /** Entrega ao Operador resumo, jornadas e eventos detalhados anonimizados do experimento. */
+  public ExperimentLandingAnalyticsEvidenceDto buildDetailedAnalyticsEvidence(
+      Long experimentId, int requestedLimit) {
+    Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
+    Instant baseline = resolveBaseline(experiment);
+    int limit = Math.max(1, Math.min(requestedLimit, 2000));
+    var events =
+        eventRepository.findLandingAnalyticsEvents(
+            experimentId,
+            ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE,
+            baseline,
+            PageRequest.of(0, limit));
+    long total =
+        eventRepository.countLandingAnalyticsEvents(
+            experimentId, ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE, baseline);
+    List<ExperimentLandingAnalyticsDetailedEventDto> detailedEvents =
+        events.stream()
+            .sorted(
+                Comparator.comparing(
+                        ExperimentFunnelEventRepository.LandingAnalyticsEventProjection
+                            ::getOccurredAt)
+                    .thenComparing(
+                        ExperimentFunnelEventRepository.LandingAnalyticsEventProjection::getId))
+            .map(
+                event -> {
+                  Map<String, String> attributes =
+                      new LinkedHashMap<>(parseDelimitedPayload(event.getPayload()));
+                  String visitorId = attributes.remove("visitorId");
+                  String sessionId = attributes.remove("sessionId");
+                  TrafficDiagnosis traffic = classifyLandingTraffic(attributes, visitorId);
+                  attributes.remove("clientIp");
+                  attributes.remove("userAgent");
+                  attributes.remove("eventId");
+                  return new ExperimentLandingAnalyticsDetailedEventDto(
+                      event.getId(),
+                      anonymousIdentifier("visitor", visitorId),
+                      anonymousIdentifier("session", sessionId),
+                      attributes.remove("eventType"),
+                      attributes.remove("sectionId"),
+                      event.getOccurredAt(),
+                      traffic.quality().name(),
+                      traffic.reason(),
+                      attributes);
+                })
+            .toList();
+    return new ExperimentLandingAnalyticsEvidenceDto(
+        experimentId,
+        total,
+        detailedEvents.size(),
+        total > detailedEvents.size(),
+        sanitizeAnalyticsSummary(summarizeLandingAnalytics(experimentId)),
+        detailedEvents);
+  }
+
+  /** Entrega jornadas PDE detalhadas e anonimizadas quando o experimento usa essa experiência. */
+  public Map<String, Object> buildDetailedPdeAnalyticsEvidence(Long experimentId) {
+    Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
+    if (!isPdeMembershipSubscriptionFunnel(experiment)) {
+      return Map.of("available", false, "reason", "NOT_PDE_EXPERIENCE");
+    }
+    try {
+      PdeAnalyticsSummary summary = fetchPdeSummaryForExperiment(experiment);
+      LinkedHashMap<String, Object> evidence = new LinkedHashMap<>();
+      evidence.put("available", true);
+      evidence.put("productSlug", summary.productSlug());
+      evidence.put("experienceVersion", summary.currentExperienceVersion());
+      evidence.put("totalEvents", summary.totalEvents());
+      evidence.put("rawTotalEvents", summary.rawTotalEvents());
+      evidence.put("humanSessions", summary.humanSessions());
+      evidence.put("botSuspectedSessions", summary.botSuspectedSessions());
+      evidence.put("platformCrawlerSessions", summary.platformCrawlerSessions());
+      evidence.put("internalQaSessions", summary.internalQaSessions());
+      evidence.put("unknownSessions", summary.unknownSessions());
+      evidence.put("eventMetrics", summary.events());
+      evidence.put("experienceVersions", summary.experienceVersions());
+      evidence.put("trafficSources", summary.trafficSources());
+      evidence.put("trafficQuality", summary.trafficQualityBreakdown());
+      evidence.put("devices", summary.deviceBreakdown());
+      evidence.put("screenSizes", summary.screenSizeBreakdown());
+      evidence.put(
+          "detailedJourneys",
+          summary.recentJourneys().stream().map(this::sanitizePdeJourney).toList());
+      return evidence;
+    } catch (Exception ex) {
+      log.error(
+          "Falha no modulo growth-operator ao coletar jornadas PDE; experimentId={}",
+          experimentId,
+          ex);
+      return Map.of(
+          "available",
+          false,
+          "reason",
+          "PDE_ANALYTICS_ERROR",
+          "errorType",
+          ex.getClass().getSimpleName());
+    }
+  }
+
+  /** Remove IP, user-agent e identificadores completos de uma jornada PDE detalhada. */
+  private Map<String, Object> sanitizePdeJourney(PdeAnalyticsSummary.PdeSessionJourney journey) {
+    LinkedHashMap<String, Object> safe = new LinkedHashMap<>();
+    safe.put("anonymousVisitorId", anonymousIdentifier("visitor", journey.visitorId()));
+    safe.put("anonymousSessionId", anonymousIdentifier("session", journey.sessionId()));
+    safe.put("trafficQuality", journey.trafficQuality());
+    safe.put("trafficQualityReason", journey.trafficQualityReason());
+    safe.put("trafficProvider", journey.trafficProvider());
+    safe.put("firstEventAt", journey.firstEventAt());
+    safe.put("lastEventAt", journey.lastEventAt());
+    safe.put("totalVisibleMs", journey.totalVisibleMs());
+    safe.put("maxScrollDepthPercent", journey.maxScrollDepthPercent());
+    safe.put("screenNames", journey.screenNames());
+    safe.put("sectionIds", journey.sectionIds());
+    safe.put("fieldFocused", journey.fieldFocused());
+    safe.put("fieldInputStarted", journey.fieldInputStarted());
+    safe.put("fieldFilled", journey.fieldFilled());
+    safe.put("ctaClicked", journey.ctaClicked());
+    safe.put("loginStarted", journey.loginStarted());
+    safe.put("loginCompleted", journey.loginCompleted());
+    safe.put("paywallViewed", journey.paywallViewed());
+    safe.put("checkoutStarted", journey.checkoutStarted());
+    safe.put("subscriptionApproved", journey.subscriptionApproved());
+    safe.put("abandonmentPoint", journey.abandonmentPoint());
+    safe.put("lastEventType", journey.lastEventType());
+    safe.put("lastActionName", journey.lastActionName());
+    return safe;
+  }
+
+  /** Remove identificadores e user-agent bruto das jornadas agregadas entregues ao agente. */
+  private ExperimentLandingAnalyticsDto sanitizeAnalyticsSummary(
+      ExperimentLandingAnalyticsDto summary) {
+    List<ExperimentLandingAnalyticsSessionDto> sessions =
+        summary.sessions().stream()
+            .map(
+                session ->
+                    new ExperimentLandingAnalyticsSessionDto(
+                        anonymousIdentifier("session", session.sessionId()),
+                        session.eventCount(),
+                        session.pageViews(),
+                        session.sectionViewEvents(),
+                        session.totalVisibleMs(),
+                        session.firstEventAt(),
+                        session.lastEventAt(),
+                        session.lastPageUrl(),
+                        null,
+                        session.deviceType(),
+                        session.deviceLabel(),
+                        session.operatingSystem(),
+                        session.operatingSystemLabel(),
+                        session.screenWidth(),
+                        session.screenHeight(),
+                        session.screenSizeLabel(),
+                        session.trafficQuality(),
+                        session.trafficQualityReason(),
+                        session.topSections()))
+            .toList();
+    var visitors = summary.visitors();
+    var safeVisitors =
+        new ExperimentLandingAnalyticsVisitorsDto(
+            visitors.probableVisitors(),
+            visitors.recurrentVisitors(),
+            visitors.singleVisitVisitors(),
+            visitors.visitors().stream()
+                .map(
+                    visitor ->
+                        new ExperimentLandingAnalyticsVisitorDto(
+                            anonymousIdentifier("visitor", visitor.visitorId()),
+                            visitor.totalSessions(),
+                            visitor.validPageViews(),
+                            visitor.firstAccessAt(),
+                            visitor.lastAccessAt(),
+                            visitor.intervalSeconds(),
+                            visitor.distinctPages(),
+                            null,
+                            visitor.deviceType(),
+                            visitor.deviceLabel(),
+                            visitor.recurrent()))
+                .toList());
+    return new ExperimentLandingAnalyticsDto(
+        summary.totalEvents(),
+        summary.totalSessions(),
+        summary.pageViews(),
+        summary.sectionViewEvents(),
+        summary.totalVisibleMs(),
+        summary.averageVisibleMsPerSession(),
+        summary.lastEventAt(),
+        summary.deviceBreakdown(),
+        summary.mobileOperatingSystemBreakdown(),
+        summary.screenSizeBreakdown(),
+        summary.loadMetrics(),
+        safeVisitors,
+        summary.trafficQuality(),
+        sessions);
+  }
+
+  /** Gera pseudônimo estável por experimento sem expor identificadores first-party. */
+  private String anonymousIdentifier(String prefix, String value) {
+    if (value == null || value.isBlank()) {
+      return "sem-" + prefix;
+    }
+    try {
+      byte[] digest =
+          MessageDigest.getInstance("SHA-256")
+              .digest((prefix + ":" + value.trim()).getBytes(StandardCharsets.UTF_8));
+      return prefix + "-" + java.util.HexFormat.of().formatHex(digest, 0, 6);
+    } catch (NoSuchAlgorithmException ex) {
+      log.error("Falha ao anonimizar identificador de analytics; tipo={}", prefix, ex);
+      throw new IllegalStateException("SHA-256 indisponível para anonimização", ex);
+    }
   }
 
   /**
@@ -2042,6 +2277,10 @@ public class ExperimentFunnelService {
       if (!"page_load_metric".equalsIgnoreCase(eventType)) {
         continue;
       }
+      String sessionId = firstNonBlank(payload.get("sessionId"), "sem-sessao");
+      if (!sessions.containsKey(sessionId)) {
+        continue;
+      }
       addPositive(loadDurations, parseLong(payload.get("loadDurationMs")));
       addPositive(domContentLoadedDurations, parseLong(payload.get("domContentLoadedMs")));
       addPositive(firstContentfulPaintDurations, parseLong(payload.get("firstContentfulPaintMs")));
@@ -2365,6 +2604,52 @@ public class ExperimentFunnelService {
   /** Linha mínima de evento de analytics retornada da tabela de eventos do funil. */
   private record LandingAnalyticsEventRow(long id, String payload, Instant occurredAt) {}
 
+  /** Qualidade operacional usada para separar audiência comercial de verificações técnicas. */
+  private enum TrafficQuality {
+    HUMAN,
+    AUTOMATED,
+    UNKNOWN
+  }
+
+  /** Resultado explicável da classificação de tráfego da landing. */
+  private record TrafficDiagnosis(TrafficQuality quality, String reason) {}
+
+  /**
+   * Classifica verificações técnicas por sinais combinados, preservando como humana a sessão que
+   * não possui evidência suficiente de automação.
+   */
+  private static TrafficDiagnosis classifyLandingTraffic(
+      Map<String, String> payload, String visitorId) {
+    String pageUrl = firstNonBlankStatic(payload.get("pageUrl"), "").toLowerCase();
+    String userAgent = firstNonBlankStatic(payload.get("userAgent"), "").toLowerCase();
+    String width = firstNonBlankStatic(payload.get("screenWidth"), "");
+    String height = firstNonBlankStatic(payload.get("screenHeight"), "");
+    boolean missingVisitor = visitorId == null || visitorId.isBlank();
+    boolean internalRenderUrl = pageUrl.contains("/api/flows/") && pageUrl.contains("/page");
+    boolean knownAutomationAgent =
+        userAgent.contains("headlesschrome")
+            || userAgent.contains("playwright")
+            || userAgent.contains("puppeteer")
+            || userAgent.contains("bot")
+            || userAgent.contains("crawler");
+    boolean canonicalMonitorViewport = "1600".equals(width) && "1200".equals(height);
+    if (knownAutomationAgent) {
+      return new TrafficDiagnosis(TrafficQuality.AUTOMATED, "AUTOMATION_USER_AGENT");
+    }
+    if (missingVisitor && internalRenderUrl && canonicalMonitorViewport) {
+      return new TrafficDiagnosis(TrafficQuality.AUTOMATED, "INTERNAL_RENDER_MONITOR");
+    }
+    if (missingVisitor && internalRenderUrl) {
+      return new TrafficDiagnosis(TrafficQuality.AUTOMATED, "INTERNAL_RENDER_URL");
+    }
+    return new TrafficDiagnosis(TrafficQuality.HUMAN, "NO_AUTOMATION_SIGNAL");
+  }
+
+  /** Retorna texto preenchido sem depender de uma instância do serviço. */
+  private static String firstNonBlankStatic(String value, String fallback) {
+    return value == null || value.isBlank() ? fallback : value.trim();
+  }
+
   /** Acumula os eventos de analytics de uma sessão pública da landing. */
   private static final class LandingAnalyticsSessionAccumulator {
     private final String sessionId;
@@ -2380,6 +2665,9 @@ public class ExperimentFunnelService {
     private String operatingSystem = "other";
     private Integer screenWidth;
     private Integer screenHeight;
+    private TrafficQuality trafficQuality = TrafficQuality.HUMAN;
+    private String trafficQualityReason = "NO_AUTOMATION_SIGNAL";
+    private final Set<String> recordedMilestones = new java.util.HashSet<>();
     private final Map<String, SectionAccumulator> sections = new LinkedHashMap<>();
 
     /** Cria acumulador de sessão para o identificador normalizado recebido da landing. */
@@ -2398,8 +2686,18 @@ public class ExperimentFunnelService {
         String deviceType,
         String operatingSystem,
         Integer screenWidth,
-        Integer screenHeight) {
+        Integer screenHeight,
+        TrafficDiagnosis traffic) {
+      String normalizedEventType = eventType == null ? "" : eventType.trim().toLowerCase();
+      if (isDeduplicatedMilestone(normalizedEventType)
+          && !recordedMilestones.add(normalizedEventType)) {
+        return;
+      }
       eventCount++;
+      if (traffic != null && traffic.quality() == TrafficQuality.AUTOMATED) {
+        trafficQuality = traffic.quality();
+        trafficQualityReason = traffic.reason();
+      }
       if (firstEventAt == null || (occurredAt != null && occurredAt.isBefore(firstEventAt))) {
         firstEventAt = occurredAt;
       }
@@ -2434,6 +2732,31 @@ public class ExperimentFunnelService {
             sectionId == null || sectionId.isBlank() ? "sem-secao" : sectionId.trim();
         sections.computeIfAbsent(normalizedSection, SectionAccumulator::new).record(elapsedMs);
       }
+    }
+
+    /** Deduplica marcos de conversão e mídia por sessão sem remover eventos brutos da auditoria. */
+    private boolean isDeduplicatedMilestone(String eventType) {
+      return "page_view".equals(eventType)
+          || "video_complete".equals(eventType)
+          || "video_completed".equals(eventType)
+          || "checkout_click".equals(eventType)
+          || "form_start".equals(eventType)
+          || "form_submit".equals(eventType);
+    }
+
+    /** Informa se a sessão pode compor métricas comerciais e de desempenho. */
+    private boolean isHuman() {
+      return trafficQuality == TrafficQuality.HUMAN;
+    }
+
+    /** Retorna a classificação da sessão para auditoria e consumo pelo Operador. */
+    private String trafficQuality() {
+      return trafficQuality.name();
+    }
+
+    /** Retorna o motivo explicável da classificação de tráfego. */
+    private String trafficQualityReason() {
+      return trafficQualityReason;
     }
 
     /** Retorna o horário do último evento para ordenação das sessões mais recentes. */
@@ -2513,6 +2836,8 @@ public class ExperimentFunnelService {
           screenWidth,
           screenHeight,
           screenSizeLabel(),
+          trafficQuality(),
+          trafficQualityReason(),
           topSections);
     }
   }

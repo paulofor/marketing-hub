@@ -54,6 +54,20 @@ public interface ExperimentFunnelEventRepository
       @Param("baseline") Instant baseline,
       Pageable pageable);
 
+  /** Conta os eventos detalhados disponíveis no mesmo escopo temporal do analytics. */
+  @Query(
+      """
+            select count(e.id)
+            from ExperimentFunnelEvent e
+            where e.experiment.id = :experimentId
+              and e.source = :source
+              and (:baseline is null or e.occurredAt > :baseline)
+            """)
+  long countLandingAnalyticsEvents(
+      @Param("experimentId") Long experimentId,
+      @Param("source") String source,
+      @Param("baseline") Instant baseline);
+
   /**
    * Apaga fisicamente os eventos de analytics da landing para remover sessões de teste do banco.
    */

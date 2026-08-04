@@ -21,4 +21,6 @@ public record ExperimentLandingAnalyticsSessionDto(
     Integer screenWidth,
     Integer screenHeight,
     String screenSizeLabel,
+    String trafficQuality,
+    String trafficQualityReason,
     List<ExperimentLandingAnalyticsSectionDto> topSections) {}

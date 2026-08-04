@@ -2,6 +2,7 @@ package com.marketinghub.growthoperator.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.experiment.funnel.ExperimentFunnelService;
 import com.marketinghub.growthoperator.GrowthOperatorExecution;
 import com.marketinghub.growthoperator.GrowthOperatorExecutionStatus;
 import com.marketinghub.growthoperator.service.result.CompleteGrowthOperatorRequest;
@@ -14,6 +15,7 @@ import com.marketinghub.repository.jpa.growthoperator.GrowthOperatorExecutionRep
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -27,16 +29,20 @@ import org.springframework.web.server.ResponseStatusException;
 public class GrowthOperatorService {
   private static final Logger log = LoggerFactory.getLogger(GrowthOperatorService.class);
   private static final String READ_ONLY = "READ_ONLY_DIAGNOSIS";
+  private static final int SESSION_EVENT_LIMIT = 2000;
   private final GrowthOperatorExecutionRepository repository;
   private final CommercialPlanService commercialPlanService;
+  private final ExperimentFunnelService experimentFunnelService;
   private final ObjectMapper objectMapper;
 
   public GrowthOperatorService(
       GrowthOperatorExecutionRepository repository,
       CommercialPlanService commercialPlanService,
+      ExperimentFunnelService experimentFunnelService,
       ObjectMapper objectMapper) {
     this.repository = repository;
     this.commercialPlanService = commercialPlanService;
+    this.experimentFunnelService = experimentFunnelService;
     this.objectMapper = objectMapper;
   }
 
@@ -65,6 +71,29 @@ public class GrowthOperatorService {
     return repository.findByCommercialPlanIdOrderByCreatedAtDesc(planId).stream()
         .map(this::toResponse)
         .toList();
+  }
+
+  /** Consulta as sessoes atuais por API sem expor banco ou dados pessoais ao worker. */
+  @Transactional(readOnly = true)
+  public Map<String, Object> sessionIntelligence(Long planId, int requestedEventLimit) {
+    CommercialPlan plan = commercialPlanService.getPlan(planId);
+    if (plan.getExperiment() == null) {
+      return Map.of("available", false, "reason", "PLAN_WITHOUT_EXPERIMENT", "planId", planId);
+    }
+    int eventLimit = Math.max(1, Math.min(requestedEventLimit, SESSION_EVENT_LIMIT));
+    Long experimentId = plan.getExperiment().getId();
+    LinkedHashMap<String, Object> intelligence = new LinkedHashMap<>();
+    intelligence.put("available", true);
+    intelligence.put("planId", planId);
+    intelligence.put("experimentId", experimentId);
+    intelligence.put("requestedEventLimit", requestedEventLimit);
+    intelligence.put("appliedEventLimit", eventLimit);
+    intelligence.put(
+        "landingAnalytics",
+        experimentFunnelService.buildDetailedAnalyticsEvidence(experimentId, eventLimit));
+    intelligence.put(
+        "pdeAnalytics", experimentFunnelService.buildDetailedPdeAnalyticsEvidence(experimentId));
+    return intelligence;
   }
 
   /** Reserva a pendencia mais antiga para um unico worker. */
@@ -180,6 +209,14 @@ public class GrowthOperatorService {
     snapshot.put("actualCost", plan.getActualTotalCost());
     snapshot.put("actualRevenue", plan.getActualRevenue());
     snapshot.put("deadline", plan.getDeadline());
+    if (plan.getExperiment() != null) {
+      Long experimentId = plan.getExperiment().getId();
+      snapshot.put("experimentId", experimentId);
+      snapshot.put("sessionIntelligence", sessionIntelligence(plan.getId(), SESSION_EVENT_LIMIT));
+    } else {
+      snapshot.put(
+          "sessionIntelligence", Map.of("available", false, "reason", "PLAN_WITHOUT_EXPERIMENT"));
+    }
     if (previousExecution != null) {
       snapshot.put("previousCycle", previousExecution.getCycleNumber());
       snapshot.put("previousDecision", previousExecution.getRecommendedDecision());

@@ -6,11 +6,13 @@ import com.marketinghub.growthoperator.service.result.FailGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.start.StartGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.view.GrowthOperatorExecutionResponse;
 import java.util.List;
+import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Responsabilidade: expor o contrato unico do Operador de Crescimento v1. */
@@ -34,6 +36,13 @@ public class GrowthOperatorController {
   @GetMapping("/commercial-plans/{planId}/executions")
   public List<GrowthOperatorExecutionResponse> list(@PathVariable Long planId) {
     return service.list(planId);
+  }
+
+  /** Entrega inteligencia detalhada e anonimizada de sessoes para consulta direta do agente. */
+  @GetMapping("/internal/commercial-plans/{planId}/session-intelligence")
+  public Map<String, Object> sessionIntelligence(
+      @PathVariable Long planId, @RequestParam(defaultValue = "2000") int eventLimit) {
+    return service.sessionIntelligence(planId, eventLimit);
   }
 
   /** Reserva a proxima pendencia para o worker executor. */

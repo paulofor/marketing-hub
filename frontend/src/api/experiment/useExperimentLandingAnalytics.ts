@@ -47,7 +47,15 @@ export interface ExperimentLandingAnalyticsSession {
   screenWidth?: number | null;
   screenHeight?: number | null;
   screenSizeLabel?: string | null;
+  trafficQuality?: "HUMAN" | "AUTOMATED" | "UNKNOWN" | string | null;
+  trafficQualityReason?: string | null;
   topSections: ExperimentLandingAnalyticsSection[];
+}
+
+export interface ExperimentLandingAnalyticsTrafficQuality {
+  humanSessions: number;
+  automatedSessions: number;
+  unknownSessions: number;
 }
 
 export interface ExperimentLandingAnalyticsVisitor {
@@ -102,6 +110,7 @@ export interface ExperimentLandingAnalytics {
   screenSizeBreakdown: ExperimentLandingAnalyticsScreenSize[];
   loadMetrics?: ExperimentLandingAnalyticsLoadMetrics | null;
   visitors?: ExperimentLandingAnalyticsVisitors | null;
+  trafficQuality?: ExperimentLandingAnalyticsTrafficQuality | null;
   sessions: ExperimentLandingAnalyticsSession[];
 }
 

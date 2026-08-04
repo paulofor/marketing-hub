@@ -287,7 +287,9 @@ export default function ExperimentLandingAnalyticsTab({
                   <div className="col-6 col-lg-4">
                     <div className="border rounded-3 p-3 h-100">
                       <Eye size={18} className="text-primary mb-2" />
-                      <div className="fw-semibold">{videoAnalytics.exposed}</div>
+                      <div className="fw-semibold">
+                        {videoAnalytics.exposed}
+                      </div>
                       <div className="text-muted small">expostos</div>
                     </div>
                   </div>
@@ -349,7 +351,8 @@ export default function ExperimentLandingAnalyticsTab({
                     {videoAnalytics.errors} erros
                   </span>
                 </div>
-                {videoAnalytics.plays === 0 && videoAnalytics.progress25 === 0 ? (
+                {videoAnalytics.plays === 0 &&
+                videoAnalytics.progress25 === 0 ? (
                   <p className="text-muted small mt-3 mb-0">
                     Nenhum evento de vídeo capturado para esta versão ainda.
                   </p>
@@ -635,6 +638,9 @@ export default function ExperimentLandingAnalyticsTab({
   }
 
   const sessions = data?.sessions ?? [];
+  const commercialSessions = sessions.filter(
+    (session) => session.trafficQuality !== "AUTOMATED",
+  );
   const deviceBreakdown = data?.deviceBreakdown ?? [];
   const mobileOperatingSystemBreakdown =
     data?.mobileOperatingSystemBreakdown ?? [];
@@ -644,7 +650,7 @@ export default function ExperimentLandingAnalyticsTab({
     string,
     { sessions: number; visibleMs: number; events: number }
   >();
-  for (const session of sessions) {
+  for (const session of commercialSessions) {
     const countedSections = new Set<string>();
     for (const section of session.topSections) {
       const current = sectionStats.get(section.sectionId) ?? {
@@ -746,6 +752,16 @@ export default function ExperimentLandingAnalyticsTab({
           );
         })}
       </div>
+
+      {data?.trafficQuality?.automatedSessions ? (
+        <div className="alert alert-info mb-0" role="status">
+          <strong>Tráfego técnico separado:</strong>{" "}
+          {data.trafficQuality.humanSessions} sessão(ões) humana(s) e{" "}
+          {data.trafficQuality.automatedSessions} verificação(ões)
+          automatizada(s). As automações permanecem abaixo para auditoria, mas
+          não alteram conversão, engajamento nem carregamento.
+        </div>
+      ) : null}
 
       {loadMetrics ? (
         <div
@@ -1073,6 +1089,18 @@ export default function ExperimentLandingAnalyticsTab({
                         <div className="text-muted small">
                           {session.eventCount} eventos
                         </div>
+                        <span
+                          className={`badge ${
+                            session.trafficQuality === "AUTOMATED"
+                              ? "text-bg-secondary"
+                              : "text-bg-success"
+                          }`}
+                          title={session.trafficQualityReason ?? undefined}
+                        >
+                          {session.trafficQuality === "AUTOMATED"
+                            ? "Automação"
+                            : "Humana"}
+                        </span>
                         <div className="text-muted small">
                           {session.deviceLabel ?? "Computador"}
                         </div>

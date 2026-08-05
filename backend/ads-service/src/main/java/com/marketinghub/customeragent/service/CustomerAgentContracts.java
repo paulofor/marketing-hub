@@ -49,6 +49,9 @@ public final class CustomerAgentContracts {
   public record CompleteEvaluationRequest(
       String assessment, String hypothesisJson, String rawModelResponse, String model) {}
 
+  /** Falha técnica terminal reportada pelo worker. */
+  public record FailExecutionRequest(String error) {}
+
   /** Resultado humano observado posteriormente por uma fonte real. */
   public record RecordHumanResultRequest(String humanResultJson) {}
 

@@ -62,6 +62,13 @@ public class CustomerAgentController {
     return service.complete(id, request);
   }
 
+  /** Recebe falha terminal de uma avaliação reservada. */
+  @PostMapping("/internal/evaluations/{id}/fail")
+  public EvaluationResponse failEvaluation(
+      @PathVariable Long id, @RequestBody FailExecutionRequest request) {
+    return service.failEvaluation(id, request);
+  }
+
   /** Registra resultado humano posterior por fluxo oficial. */
   @PostMapping("/evaluations/{id}/human-result")
   public EvaluationResponse humanResult(
@@ -93,6 +100,13 @@ public class CustomerAgentController {
   public DigitalObservationResponse completeObservation(
       @PathVariable Long id, @RequestBody CompleteDigitalObservationRequest request) {
     return service.completeObservation(id, request);
+  }
+
+  /** Recebe falha terminal de uma observação reservada. */
+  @PostMapping("/internal/digital-observations/{id}/fail")
+  public DigitalObservationResponse failObservation(
+      @PathVariable Long id, @RequestBody FailExecutionRequest request) {
+    return service.failObservation(id, request);
   }
 
   /** Registra confirmacao humana posterior por fonte oficial. */

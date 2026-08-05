@@ -89,6 +89,16 @@ public class CustomerAgentService {
     return observationResponse(observations.save(value));
   }
 
+  /** Encerra uma observação com falha técnica auditável. */
+  @Transactional
+  public DigitalObservationResponse failObservation(Long id, FailExecutionRequest request) {
+    CustomerDigitalObservation value = findRunningObservation(id);
+    value.setStatus("FAILED");
+    value.setRawModelResponse(request == null ? "Falha não informada." : request.error());
+    value.setFinishedAt(Instant.now());
+    return observationResponse(observations.save(value));
+  }
+
   /** Registra confirmacao humana posterior sem alterar a observacao original. */
   @Transactional
   public DigitalObservationResponse recordObservationHumanConfirmation(
@@ -202,6 +212,16 @@ public class CustomerAgentService {
   @Transactional(readOnly = true)
   public List<EvaluationResponse> listEvaluations() {
     return evaluations.findAll().stream().map(this::evaluationResponse).toList();
+  }
+
+  /** Encerra uma avaliação com falha técnica sem fabricar resultado simulado. */
+  @Transactional
+  public EvaluationResponse failEvaluation(Long id, FailExecutionRequest request) {
+    CustomerAgentEvaluation value = findRunning(id);
+    value.setStatus("FAILED");
+    value.setRawModelResponse(request == null ? "Falha não informada." : request.error());
+    value.setFinishedAt(Instant.now());
+    return evaluationResponse(evaluations.save(value));
   }
 
   /** Busca a persona solicitada. */

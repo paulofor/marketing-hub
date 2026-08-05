@@ -52,6 +52,7 @@ public class CustomerAgentScheduler {
           template
               .replace("{{PERSONA_JSON}}", String.valueOf(job.get("persona")))
               .replace("{{ASSET_REFERENCE}}", String.valueOf(job.get("assetReference")));
+      Path output = Files.createTempFile("customer-agent-evaluation-", ".json");
       Process process =
           new ProcessBuilder(
                   "codex",
@@ -63,12 +64,14 @@ public class CustomerAgentScheduler {
                   "--skip-git-repo-check",
                   prompt)
               .redirectErrorStream(true)
+              .redirectOutput(output.toFile())
               .start();
       if (!process.waitFor(10, TimeUnit.MINUTES)) {
         process.destroyForcibly();
         throw new IllegalStateException("Timeout do Codex.");
       }
-      String raw = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+      String raw = Files.readString(output, StandardCharsets.UTF_8);
+      Files.deleteIfExists(output);
       if (process.exitValue() != 0) throw new IllegalStateException("Codex falhou: " + raw);
       backend
           .post()
@@ -87,7 +90,22 @@ public class CustomerAgentScheduler {
           .toBodilessEntity();
     } catch (Exception ex) {
       log.error("Falha no modulo customer-agent ao avaliar ativo, evaluationId={}", id, ex);
+      reportFailure("evaluations", id, ex);
       throw new IllegalStateException("Falha ao avaliar ativo no Agente Cliente id=" + id, ex);
+    }
+  }
+
+  /** Registra no backend a falha terminal para não deixar a avaliação presa em execução. */
+  private void reportFailure(String resource, long id, Exception ex) {
+    try {
+      backend
+          .post()
+          .uri("/api/customer-agent/v1/internal/{resource}/{id}/fail", resource, id)
+          .body(Map.of("error", String.valueOf(ex.getMessage())))
+          .retrieve()
+          .toBodilessEntity();
+    } catch (Exception callbackEx) {
+      log.error("Falha ao registrar erro do customer-agent, evaluationId={}", id, callbackEx);
     }
   }
 }

@@ -147,6 +147,7 @@ describe("AudioVideoStudioPage", () => {
         title: "MUSA v7 - O espelho antes de sair",
       },
     });
+    (axios.patch as any).mockResolvedValue({ data: {} });
   });
 
   it("preenche e salva o blueprint cinematografico da MUSA v7", async () => {
@@ -255,6 +256,7 @@ describe("AudioVideoStudioPage", () => {
   });
 
   it("permite gerar e montar o projeto por quatro cenas independentes", async () => {
+    const user = userEvent.setup();
     (axios.get as any).mockImplementation((url: string) => {
       if (url === "/api/sales-videos/studio/catalog") {
         return Promise.resolve({ data: studioCatalog });
@@ -275,7 +277,12 @@ describe("AudioVideoStudioPage", () => {
             storyText: "Historia MUSA",
             hookText: "Gancho MUSA",
             scriptText: "Roteiro MUSA",
-            scenePlan: "Quatro cenas",
+            scenePlan: [
+              "Cena DOR persistida",
+              "Cena RESULTADO persistida",
+              "Cena MECANISMO com uma unica microacao",
+              "Cena CTA persistida",
+            ].join("\n"),
             visualReferences: "Microajustes visiveis",
             characterBible: "Mesma mulher adulta",
             environmentBible: "Apartamento claro",
@@ -304,10 +311,28 @@ describe("AudioVideoStudioPage", () => {
       await screen.findAllByRole("button", { name: "Gerar clipe" }),
     ).toHaveLength(4);
     expect(
-      screen.getAllByText(
-        /0-2,5s, as maos afastam dois acessorios e deixam somente um/i,
-      ),
+      screen.getByDisplayValue(/Cena MECANISMO com uma unica microacao/i),
+    ).toBeTruthy();
+    expect(
+      screen.getAllByText(/Cena MECANISMO com uma unica microacao/i),
     ).toHaveLength(2);
+    const scenePlan = screen.getByLabelText(/Plano basico de cenas/i);
+    await user.clear(scenePlan);
+    await user.type(
+      scenePlan,
+      "Dor unica\nResultado unico\nAcessorio unico\nCTA unico",
+    );
+    await user.click(
+      screen.getByRole("button", { name: /salvar continuidade/i }),
+    );
+    await waitFor(() =>
+      expect(axios.patch).toHaveBeenCalledWith(
+        "/api/sales-videos/projects/1",
+        expect.objectContaining({
+          scenePlan: "Dor unica\nResultado unico\nAcessorio unico\nCTA unico",
+        }),
+      ),
+    );
     const provider = SALES_VIDEO_PROVIDER_OPTIONS.find(
       (option) => option.providerName === "LUMA_RAY_3_2",
     );

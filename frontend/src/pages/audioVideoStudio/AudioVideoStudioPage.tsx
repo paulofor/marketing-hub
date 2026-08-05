@@ -73,6 +73,7 @@ type StudioBriefing = {
   visualStyleGuide: string;
   imageGenerationPlan: string;
   continuityRules: string;
+  scenePlan: string;
   targetDurationSeconds: string;
   funnelStage: string;
   primaryMetric: string;
@@ -661,6 +662,7 @@ const defaultBriefing: StudioBriefing = {
     "Solicitar ao modelo de imagem OpenAI primeiro as imagens mestre de personagem, ambiente, produto e frames-chave; aprovar antes de pedir video.",
   continuityRules:
     "Manter rosto, cabelo, figurino, acessorios, escala, temperatura de cor, posicao de objetos fixos e arquitetura do ambiente em todas as cenas.",
+  scenePlan: defaultScenePrompts.join("\n"),
   targetDurationSeconds: "180",
   funnelStage: "AWARENESS",
   primaryMetric: "DIAGNOSTIC_START",
@@ -726,6 +728,7 @@ const musaV7Briefing: StudioBriefing = {
     "Gerar ou selecionar primeiro imagem mestre da personagem e frames-chave de espelho, caminhada, detalhes de mecanismo e gesto no celular. Aprovar antes de pedir cenas Luma/Kling.",
   continuityRules:
     "Manter a mesma personagem, cabelo, roupa base, temperatura de luz, estilo de ambiente e nivel de elegancia. O video deve funcionar sem audio, com legendas adicionadas na montagem final.",
+  scenePlan: musaV7ScenePrompts.join("\n"),
   targetDurationSeconds: "30",
   funnelStage: "AWARENESS_TO_DIAGNOSTIC",
   primaryMetric:
@@ -812,6 +815,7 @@ function buildBriefingFromProject(project: VideoProject): StudioBriefing {
     imageGenerationPlan:
       project.imageGenerationPlan || defaultBriefing.imageGenerationPlan,
     continuityRules: project.continuityRules || defaultBriefing.continuityRules,
+    scenePlan: project.scenePlan || defaultBriefing.scenePlan,
     targetDurationSeconds: project.targetDurationSeconds
       ? String(project.targetDurationSeconds)
       : defaultBriefing.targetDurationSeconds,
@@ -953,10 +957,10 @@ export default function AudioVideoStudioPage() {
     targetDurationSeconds && targetDurationSeconds <= 60
       ? heroScriptBlocks
       : longFormScriptBlocks;
-  const selectedScenePrompts =
-    briefing.campaignKey === musaV7Briefing.campaignKey
-      ? musaV7ScenePrompts
-      : defaultScenePrompts;
+  const selectedScenePrompts = briefing.scenePlan
+    .split("\n")
+    .map((prompt) => prompt.trim())
+    .filter(Boolean);
   const selectedCategory =
     videoCategoryOptions.find(
       (option) => option.value === briefing.videoCategory,
@@ -1071,7 +1075,7 @@ export default function AudioVideoStudioPage() {
     nextVersionRecommendation: briefing.nextVersionRecommendation,
     hookText: `${briefing.audience}, se ${briefing.pain.toLowerCase()}, este video mostra um caminho mais simples.`,
     scriptText: scriptDraft.join("\n\n"),
-    scenePlan: selectedScenePrompts.join("\n"),
+    scenePlan: briefing.scenePlan,
     visualReferences: briefing.proof,
     characterBible: briefing.characterBible,
     environmentBible: briefing.environmentBible,
@@ -1744,12 +1748,14 @@ export default function AudioVideoStudioPage() {
               </div>
               <div className="audio-video-studio-page__columns">
                 <div className="audio-video-studio-page__panel">
-                  <h2>Plano basico de cenas</h2>
-                  <ul>
-                    {selectedScenePrompts.map((prompt) => (
-                      <li key={prompt}>{prompt}</li>
-                    ))}
-                  </ul>
+                  <label>
+                    Plano basico de cenas
+                    <textarea
+                      value={briefing.scenePlan}
+                      onChange={updateBriefing("scenePlan")}
+                      rows={8}
+                    />
+                  </label>
                 </div>
                 <div className="audio-video-studio-page__panel">
                   <h2>Checklist de producao</h2>

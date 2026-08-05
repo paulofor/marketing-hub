@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-05-customer-agent-hybrid-memory-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE customer_agent_memory_evidence (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                persona_id BIGINT NOT NULL,
+                observation_id BIGINT NULL,
+                memory_layer VARCHAR(40) NOT NULL,
+                source_url TEXT NULL,
+                object_key VARCHAR(700) NOT NULL,
+                content_type VARCHAR(255) NOT NULL,
+                size_bytes BIGINT NOT NULL,
+                sha256 VARCHAR(64) NOT NULL,
+                retention_until DATETIME NOT NULL,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_customer_memory_evidence_dedup (persona_id, memory_layer, sha256),
+                INDEX idx_customer_memory_evidence_retention (retention_until),
+                CONSTRAINT fk_customer_memory_evidence_persona FOREIGN KEY (persona_id) REFERENCES customer_persona(id),
+                CONSTRAINT fk_customer_memory_evidence_observation FOREIGN KEY (observation_id) REFERENCES customer_digital_observation(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

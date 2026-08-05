@@ -2,18 +2,27 @@ package com.marketinghub.customeragent.controller;
 
 import static com.marketinghub.customeragent.service.CustomerAgentContracts.*;
 
+import com.marketinghub.customeragent.memory.CustomerAgentMemoryEvidenceService;
+import com.marketinghub.customeragent.memory.CustomerAgentMemoryEvidenceService.EvidenceResponse;
 import com.marketinghub.customeragent.service.CustomerAgentService;
 import java.util.List;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 /** Responsabilidade: expor Biblioteca de Personas e Agente Cliente v1. */
 @RestController
 @RequestMapping("/api/customer-agent/v1")
 public class CustomerAgentController {
   private final CustomerAgentService service;
+  private final CustomerAgentMemoryEvidenceService memoryEvidenceService;
 
-  public CustomerAgentController(CustomerAgentService service) {
+  /** Inicializa os contratos do Agente Cliente e seu armazenamento de evidencias. */
+  public CustomerAgentController(
+      CustomerAgentService service, CustomerAgentMemoryEvidenceService memoryEvidenceService) {
     this.service = service;
+    this.memoryEvidenceService = memoryEvidenceService;
   }
 
   /** Cadastra uma persona baseada em evidencias. */
@@ -91,5 +100,34 @@ public class CustomerAgentController {
   public DigitalObservationResponse confirmObservation(
       @PathVariable Long id, @RequestBody RecordObservationHumanConfirmationRequest request) {
     return service.recordObservationHumanConfirmation(id, request);
+  }
+
+  /** Armazena evidencia pesada no S3 e sua procedencia canônica no MySQL. */
+  @PostMapping(
+      value = "/personas/{personaId}/memory-evidence",
+      consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public EvidenceResponse uploadMemoryEvidence(
+      @PathVariable Long personaId,
+      @RequestParam(required = false) Long observationId,
+      @RequestParam String memoryLayer,
+      @RequestParam(required = false) String sourceUrl,
+      @RequestPart MultipartFile file)
+      throws java.io.IOException {
+    return memoryEvidenceService.store(personaId, observationId, memoryLayer, sourceUrl, file);
+  }
+
+  /** Lista metadados auditaveis das evidencias da persona. */
+  @GetMapping("/personas/{personaId}/memory-evidence")
+  public List<EvidenceResponse> listMemoryEvidence(@PathVariable Long personaId) {
+    return memoryEvidenceService.list(personaId);
+  }
+
+  /** Entrega evidencia privada por rota governada do backend. */
+  @GetMapping("/memory-evidence/{id}/content")
+  public ResponseEntity<byte[]> readMemoryEvidence(@PathVariable Long id) {
+    var content = memoryEvidenceService.read(id);
+    return ResponseEntity.ok()
+        .contentType(MediaType.parseMediaType(content.contentType()))
+        .body(content.bytes());
   }
 }

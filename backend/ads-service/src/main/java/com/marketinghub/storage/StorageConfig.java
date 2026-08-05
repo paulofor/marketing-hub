@@ -3,6 +3,7 @@ package com.marketinghub.storage;
 import java.net.URI;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -11,10 +12,13 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.S3Configuration;
 
+/** Responsabilidade: configurar o cliente S3 compativel usado pelo storage historico do Lead Portal. */
 @Configuration
 public class StorageConfig {
 
+  /** Mantem o cliente historico do Lead Portal como padrao para consumidores compartilhados. */
   @Bean
+  @Primary
   public S3Client leadPortalS3Client(StorageProperties properties) {
     S3Configuration s3Configuration =
         S3Configuration.builder().pathStyleAccessEnabled(true).build();
@@ -39,6 +43,7 @@ public class StorageConfig {
     return builder.build();
   }
 
+  /** Detecta configuracao textual ausente. */
   private boolean isBlank(String value) {
     return value == null || value.isBlank();
   }

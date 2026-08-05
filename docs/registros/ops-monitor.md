@@ -125,6 +125,13 @@
 - Correção aplicada: o MCP passou a aceitar filtros estruturados `httpStatus`, `endpoint` e `requestId`; o backend passou a registrar erro 500 não tratado com esses campos e retornar `requestId` no corpo da resposta.
 - Prevenção de recorrência: testes de contrato cobrem o filtro estruturado do MCP e a resposta 500 rastreável do backend.
 
+## 2026-08-05 — MCP direcionado ao log do backend principal
+
+- Problema observado: a tool `java_module_logs` com `module=backend` lia o endpoint do AI Worker em `191.252.210.83:4567`, portanto não capturava as exceções HTTP 500 do backend do Marketing Hub.
+- Causa-raiz confirmada: o default de `MCP_LOG_BACKEND_PATH` foi igualado ao destino do AI Worker no `application.yml` e no Compose, apesar de o backend operar em `191.252.181.168` e expor seu próprio fluxo de log.
+- Correção aplicada: o alias `backend` passou a apontar para `http://191.252.181.168/ops-mh-observability-v2/backend-log-stream-x9k`, mantendo o alias `ai-worker` independente.
+- Prevenção de recorrência: a configuração, o Compose e a documentação passam a declarar destinos distintos; o endpoint do backend foi validado com HTTP 200 antes da alteração.
+
 ## 2026-07-29 — AI Worker temporariamente no host 210.83
 
 - Decisão operacional: publicar temporariamente o `ai-worker` em `191.252.210.83` para reduzir dependência do host `191.252.120.96`, que apresentou instabilidade durante a retomada dos workers.

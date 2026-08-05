@@ -56,7 +56,7 @@ mvn -s settings.xml spring-boot:run
 
 O tool `java_module_logs` lê logs do Spring Boot a partir de arquivo local **ou URL HTTP/HTTPS** configurada em:
 
-- `MCP_LOG_BACKEND_PATH` (default `http://191.252.210.83:4567/worker-observability/logfile`);
+- `MCP_LOG_BACKEND_PATH` (default `http://191.252.181.168/ops-mh-observability-v2/backend-log-stream-x9k`);
 - `MCP_LOG_AI_WORKER_PATH` (default `http://191.252.210.83:4567/worker-observability/logfile`);
 - `MCP_LOG_LEAD_PORTAL_PATH` (default `https://oportunidadebrasil.shop/api/ops-lp-observability-v2/logfile`);
 - `MCP_LOG_FACEBOOK_ADS_PATH` (default `http://191.252.210.83:8082/public/runtime-logs/tail?lines=300`);

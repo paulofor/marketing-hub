@@ -1,0 +1,40 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "BucketMetadata",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetBucketLocation",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::marketing-hub-customer-agent-memory-948388760606",
+        "arn:aws:s3:::marketing-hub-experiment-strategist-memory-948388760606"
+      ],
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": [
+            "customer-agent-memory/v1",
+            "customer-agent-memory/v1/*",
+            "experiment-strategist-memory/v1",
+            "experiment-strategist-memory/v1/*"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "MemoryObjects",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::marketing-hub-customer-agent-memory-948388760606/customer-agent-memory/v1/*",
+        "arn:aws:s3:::marketing-hub-experiment-strategist-memory-948388760606/experiment-strategist-memory/v1/*"
+      ]
+    }
+  ]
+}

@@ -27,6 +27,8 @@ Antes de publicar ou recriar containers, consulte o inventário central de secre
 | `VIDEO_BACKEND_BASE_URL` | URL utilizada pelo módulo de vídeo para conversar com o backend | `http://backend:8000` |
 | `CUSTOMER_AGENT_MEMORY_BUCKET` | Bucket AWS S3 privado das evidências do Agente Cliente | obrigatório para memória pesada |
 | `CUSTOMER_AGENT_MEMORY_REGION` | Região AWS do bucket de memória | `us-east-1` |
+| `EXPERIMENT_STRATEGIST_MEMORY_BUCKET` | Bucket AWS S3 privado dos artefatos anonimizados do Estrategista | obrigatório para memória documental |
+| `EXPERIMENT_STRATEGIST_MEMORY_REGION` | Região AWS do bucket do Estrategista | `us-east-1` |
 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | Credencial IAM mínima do backend para o prefixo da memória | sem padrão; manter somente no `.env` protegido |
 | `VIDEO_JOBS_POLLING_ENABLED` | Ativa o polling automático no módulo de vídeo | `true` |
 | `VIDEO_PROVIDERS_VEO_ENABLED` | Habilita o adapter direto VEO/Gemini no módulo de vídeo | `true` |

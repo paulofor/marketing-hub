@@ -232,7 +232,7 @@ export default function GrowthOperatorPanel({
             type="button"
             className="btn btn-outline-primary"
             disabled={start.isPending || objective.trim().length === 0}
-            onClick={() => start.mutate({ weekNumber: 1, objective })}
+            onClick={() => start.mutate({ objective })}
           >
             {start.isPending ? (
               <>

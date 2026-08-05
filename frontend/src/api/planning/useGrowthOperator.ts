@@ -118,7 +118,10 @@ export function useGrowthOperatorExecutions(planId?: number | null) {
 export function useStartGrowthOperator(planId?: number | null) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { weekNumber: number; objective: string }) => {
+    mutationFn: async (payload: {
+      weekNumber?: number;
+      objective: string;
+    }) => {
       if (!planId) throw new Error("Planejamento não informado.");
       const { data } = await axios.post<GrowthOperatorExecution>(
         `/api/growth-operator/v1/commercial-plans/${planId}/executions`,

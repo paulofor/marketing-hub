@@ -39,6 +39,23 @@ import org.mockito.ArgumentCaptor;
 /** Responsabilidade: validar o contexto auditável entregue ao Operador de Crescimento. */
 class GrowthOperatorServiceTest {
 
+  /** Simula a persistencia e a releitura usadas para fixar a versao do agente na execucao. */
+  private void mockVersionedSave(GrowthOperatorExecutionRepository repository) {
+    GrowthOperatorExecution[] saved = new GrowthOperatorExecution[1];
+    when(repository.save(any(GrowthOperatorExecution.class)))
+        .thenAnswer(
+            invocation -> {
+              GrowthOperatorExecution execution = invocation.getArgument(0);
+              if (execution.getId() == null) {
+                execution.setId(100L);
+              }
+              saved[0] = execution;
+              return execution;
+            });
+    when(repository.findById(any()))
+        .thenAnswer(invocation -> java.util.Optional.ofNullable(saved[0]));
+  }
+
   /** Confirma que o catalogo publico reflete todas as ferramentas MCP autorizadas. */
   @Test
   void shouldExposeAllReadOnlyMcpTools() {
@@ -83,8 +100,7 @@ class GrowthOperatorServiceTest {
     when(repository.findFirstByCommercialPlanIdOrderByCreatedAtDesc(2L))
         .thenReturn(java.util.Optional.empty());
     when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
-    when(repository.save(any(GrowthOperatorExecution.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
+    mockVersionedSave(repository);
     GrowthOperatorService service =
         new GrowthOperatorService(
             repository,
@@ -134,8 +150,7 @@ class GrowthOperatorServiceTest {
     completed.setFinishedAt(Instant.parse("2026-08-04T10:02:00Z"));
     when(planService.getPlan(2L)).thenReturn(plan);
     when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of(completed));
-    when(repository.save(any(GrowthOperatorExecution.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
+    mockVersionedSave(repository);
     ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
     GrowthOperatorService service =
         new GrowthOperatorService(
@@ -182,8 +197,7 @@ class GrowthOperatorServiceTest {
     CommercialPlan plan = CommercialPlan.builder().id(2L).experiment(experiment).build();
     when(planService.getPlan(2L)).thenReturn(plan);
     when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
-    when(repository.save(any(GrowthOperatorExecution.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
+    mockVersionedSave(repository);
     var event =
         new ExperimentLandingAnalyticsDetailedEventDto(
             10L,
@@ -333,8 +347,7 @@ class GrowthOperatorServiceTest {
             .build();
     when(planService.getPlan(2L)).thenReturn(plan);
     when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
-    when(repository.save(any(GrowthOperatorExecution.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
+    mockVersionedSave(repository);
     when(objectiveRepository.findByPlanIdAndWeekNumberOrderBySequenceOrderAsc(2L, 1))
         .thenReturn(
             List.of(

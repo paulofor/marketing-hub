@@ -2,6 +2,7 @@ package com.marketinghub.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -73,6 +74,24 @@ class ApiExceptionHandlerTest {
         .containsEntry("status", HttpStatus.BAD_REQUEST.value())
         .containsEntry("message", "Requisição inválida.")
         .containsEntry("path", "/api/angles");
+  }
+
+  /** Verifica que entidade ausente retorna HTTP 404 em vez de falso erro interno. */
+  @Test
+  void shouldReturnNotFoundWhenEntityDoesNotExist() {
+    MockHttpServletRequest request = new MockHttpServletRequest();
+    request.setMethod("GET");
+    request.setRequestURI("/api/experiments/82");
+
+    var response =
+        handler.handleNotFoundException(
+            new EntityNotFoundException("Experimento não encontrado: 82"), request);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    assertThat(response.getBody())
+        .containsEntry("status", HttpStatus.NOT_FOUND.value())
+        .containsEntry("message", "Recurso não encontrado.")
+        .containsEntry("path", "/api/experiments/82");
   }
 
   /** Verifica que erro inesperado continua retornando HTTP 500 com requestId rastreável. */

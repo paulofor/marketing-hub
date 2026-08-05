@@ -2,6 +2,7 @@ package com.marketinghub.web;
 
 import com.marketinghub.salesvideo.exception.VideoModuleException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
@@ -22,6 +23,7 @@ import org.springframework.web.context.request.async.AsyncRequestNotUsableExcept
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
@@ -52,6 +54,19 @@ public class ApiExceptionHandler {
         request.getQueryString(),
         exception.getReason());
     return buildResponse(exception.getStatusCode(), exception.getReason(), request, null);
+  }
+
+  /** Converte entidades e rotas inexistentes em HTTP 404 sem sinalizar queda do backend. */
+  @ExceptionHandler({EntityNotFoundException.class, NoResourceFoundException.class})
+  public ResponseEntity<Map<String, Object>> handleNotFoundException(
+      Exception exception, HttpServletRequest request) {
+    LOGGER.warn(
+        "Recurso não encontrado. method={}, uri={}, query={}, reason={}",
+        request.getMethod(),
+        request.getRequestURI(),
+        request.getQueryString(),
+        exception.getMessage());
+    return buildResponse(HttpStatus.NOT_FOUND, "Recurso não encontrado.", request, null);
   }
 
   /** Converte falhas de upload multipart em mensagem segura para o usuário. */

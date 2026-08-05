@@ -531,8 +531,11 @@ public class ExperimentService {
     return create(request.getMarketNicheId(), request);
   }
 
+  /** Busca um experimento e sinaliza explicitamente quando o identificador não existe. */
   public Experiment get(Long id) {
-    return repository.findById(id).orElseThrow();
+    return repository
+        .findById(id)
+        .orElseThrow(() -> new EntityNotFoundException("Experimento não encontrado: " + id));
   }
 
   public Iterable<Experiment> list() {

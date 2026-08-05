@@ -26,6 +26,18 @@ type DigitalObservation = {
   createdAt: string;
 };
 
+type CustomerEvaluation = {
+  id: number;
+  persona: Persona;
+  assetType: string;
+  assetReference: string;
+  status: string;
+  simulatedAssessment?: string;
+  hypothesisJson?: string;
+  humanResultJson?: string;
+  createdAt: string;
+};
+
 type MemoryEvidence = {
   id: number;
   personaId: number;
@@ -47,6 +59,9 @@ export default function PersonaLibraryPage() {
   const [observationPersonaId, setObservationPersonaId] = useState("");
   const [observationObjective, setObservationObjective] = useState("");
   const [observationSources, setObservationSources] = useState("");
+  const [evaluationPersonaId, setEvaluationPersonaId] = useState("");
+  const [evaluationAssetType, setEvaluationAssetType] = useState("PAGE");
+  const [evaluationAssetReference, setEvaluationAssetReference] = useState("");
   const [evidencePersonaId, setEvidencePersonaId] = useState("");
   const [memoryLayer, setMemoryLayer] = useState("EXTERNAL_OBSERVATION");
   const [memorySourceUrl, setMemorySourceUrl] = useState("");
@@ -83,6 +98,29 @@ export default function PersonaLibraryPage() {
           "/api/customer-agent/v1/digital-observations",
         )
       ).data,
+  });
+  const evaluations = useQuery({
+    queryKey: ["customer-agent-evaluations"],
+    queryFn: async () =>
+      (
+        await axios.get<CustomerEvaluation[]>(
+          "/api/customer-agent/v1/evaluations",
+        )
+      ).data,
+  });
+  const createEvaluation = useMutation({
+    mutationFn: async () =>
+      axios.post("/api/customer-agent/v1/evaluations", {
+        personaId: Number(evaluationPersonaId),
+        assetType: evaluationAssetType,
+        assetReference: evaluationAssetReference,
+      }),
+    onSuccess: async () => {
+      setEvaluationAssetReference("");
+      await client.invalidateQueries({
+        queryKey: ["customer-agent-evaluations"],
+      });
+    },
   });
   const createObservation = useMutation({
     mutationFn: async () =>
@@ -225,6 +263,94 @@ export default function PersonaLibraryPage() {
             </div>
           </article>
         ))}
+      </section>
+      <section className="card card-body mt-4">
+        <h2 className="h5">Avaliação do Agente Cliente</h2>
+        <p className="text-muted">
+          Solicite uma leitura simulada de uma oferta, página ou vídeo. O
+          resultado permanece separado dos dados humanos reais.
+        </p>
+        <div className="row g-3">
+          <div className="col-md-4">
+            <label className="form-label">Persona</label>
+            <select
+              className="form-select"
+              value={evaluationPersonaId}
+              onChange={(event) => setEvaluationPersonaId(event.target.value)}
+            >
+              <option value="">Selecione</option>
+              {personas.data?.map((persona) => (
+                <option key={persona.id} value={persona.id}>
+                  {persona.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="col-md-3">
+            <label className="form-label">Tipo de ativo</label>
+            <select
+              className="form-select"
+              value={evaluationAssetType}
+              onChange={(event) => setEvaluationAssetType(event.target.value)}
+            >
+              <option value="PAGE">Página</option>
+              <option value="VIDEO">Vídeo</option>
+              <option value="OFFER">Oferta</option>
+            </select>
+          </div>
+          <div className="col-md-5">
+            <label className="form-label">Referência pública do ativo</label>
+            <input
+              className="form-control"
+              value={evaluationAssetReference}
+              onChange={(event) =>
+                setEvaluationAssetReference(event.target.value)
+              }
+              placeholder="URL pública ou identificador auditável"
+            />
+          </div>
+        </div>
+        <button
+          className="btn btn-primary align-self-start mt-3"
+          disabled={
+            createEvaluation.isPending ||
+            !evaluationPersonaId ||
+            !evaluationAssetReference.trim()
+          }
+          onClick={() => createEvaluation.mutate()}
+          type="button"
+        >
+          Solicitar avaliação
+        </button>
+        <div className="row g-3 mt-1">
+          {evaluations.data?.map((evaluation) => (
+            <article className="col-md-6" key={evaluation.id}>
+              <div className="border rounded p-3 h-100">
+                <div className="d-flex justify-content-between gap-2">
+                  <strong>{evaluation.persona.name}</strong>
+                  <span className="badge text-bg-secondary">
+                    {evaluation.status}
+                  </span>
+                </div>
+                <div className="small text-muted mt-1">
+                  {evaluation.assetType}: {evaluation.assetReference}
+                </div>
+                {evaluation.simulatedAssessment && (
+                  <p className="mt-2 mb-1">{evaluation.simulatedAssessment}</p>
+                )}
+                {evaluation.humanResultJson ? (
+                  <div className="alert alert-success py-2 mt-2 mb-0">
+                    Resultado humano registrado separadamente.
+                  </div>
+                ) : (
+                  <div className="alert alert-warning py-2 mt-2 mb-0">
+                    Avaliação simulada; ainda sem confirmação humana.
+                  </div>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
       <section className="card card-body mt-4">
         <h2 className="h5">Experiência Digital Observacional</h2>

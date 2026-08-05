@@ -64,6 +64,7 @@ public class CustomerDigitalObservationScheduler {
               .replace("{{OBJECTIVE}}", String.valueOf(job.get("objective")))
               .replace(
                   "{{AUTHORIZED_SOURCES_JSON}}", String.valueOf(job.get("authorizedSourcesJson")));
+      Path output = Files.createTempFile("customer-agent-observation-", ".json");
       Process process =
           new ProcessBuilder(
                   "codex",
@@ -77,12 +78,14 @@ public class CustomerDigitalObservationScheduler {
                   "/app/prompts/customer-agent/v1/digital-observation-schema.json",
                   prompt)
               .redirectErrorStream(true)
+              .redirectOutput(output.toFile())
               .start();
       if (!process.waitFor(10, TimeUnit.MINUTES)) {
         process.destroyForcibly();
         throw new IllegalStateException("Timeout da experiencia digital.");
       }
-      String raw = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+      String raw = Files.readString(output, StandardCharsets.UTF_8);
+      Files.deleteIfExists(output);
       if (process.exitValue() != 0) throw new IllegalStateException("Codex falhou: " + raw);
       Map<String, Object> result = mapper.readValue(raw, new TypeReference<>() {});
       backend
@@ -101,7 +104,22 @@ public class CustomerDigitalObservationScheduler {
           .toBodilessEntity();
     } catch (Exception ex) {
       log.error("Falha no customer-agent ao observar experiencia digital, observationId={}", id, ex);
+      reportFailure(id, ex);
       throw new IllegalStateException("Falha na experiencia digital id=" + id, ex);
+    }
+  }
+
+  /** Registra a falha terminal para liberar a fila e preservar a auditoria. */
+  private void reportFailure(long id, Exception ex) {
+    try {
+      backend
+          .post()
+          .uri("/api/customer-agent/v1/internal/digital-observations/{id}/fail", id)
+          .body(Map.of("error", String.valueOf(ex.getMessage())))
+          .retrieve()
+          .toBodilessEntity();
+    } catch (Exception callbackEx) {
+      log.error("Falha ao registrar erro da observacao, observationId={}", id, callbackEx);
     }
   }
 }

@@ -71,6 +71,23 @@ Credenciais AWS nunca ficam no repositório. O backend usa IAM ou a cadeia padr�
 ambiente. Busca vetorial não integra a primeira versão e não poderá se tornar fonte de verdade em
 uma evolução futura.
 
+## Vetor motivacional auditável
+
+Cada experiência observacional concluída registra no MySQL um vetor separado da evidência pesada
+mantida no S3. O vetor usa direção `AWAY_FROM_PAIN`, `TOWARD_PLEASURE` ou `MIXED`; intensidade de
+dor e prazer; pesos de medo, frustração, esforço, alívio, desejo, confiança e pertencimento; força
+da evidência; confiança da classificação; fonte e justificativa. Todos os pesos usam escala inteira
+de zero a cinco.
+
+Vetores calculados pelo agente são `SIMULATED_HYPOTHESIS`. Somente resultado humano recebido pelo
+endpoint oficial cria `HUMAN_CONFIRMED`. Os registros são append-only: confirmação humana não
+sobrescreve, promove ou apaga a hipótese simulada. Não há backfill automático das memórias antigas,
+pois ausência de evidência não pode virar peso zero nem inferência retroativa.
+
+O S3 continua armazenando o artefato original sem scores mutáveis. O MySQL permanece como fonte de
+verdade da classificação, procedência e recalibração. A qualidade é medida pela correspondência
+posterior entre pesos simulados e comportamento humano real, nunca pela intensidade estimada.
+
 O bucket dedicado é provisionado pelo template versionado
 `infra/aws/customer-agent-memory-bucket.yaml`. O deploy deve informar
 `CUSTOMER_AGENT_MEMORY_BUCKET` e `CUSTOMER_AGENT_MEMORY_REGION`; permissões IAM mínimas devem ficar

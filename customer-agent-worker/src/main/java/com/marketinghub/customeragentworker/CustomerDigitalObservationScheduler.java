@@ -115,6 +115,7 @@ public class CustomerDigitalObservationScheduler {
                       mapper.writeValueAsString(result.get("simulatedReaction")),
                   "commercialHypothesisJson",
                       mapper.writeValueAsString(result.get("commercialHypothesis")),
+                  "motivationalVector", result.get("motivationalVector"),
                   "rawModelResponse", raw,
                   "model", model))
           .retrieve()

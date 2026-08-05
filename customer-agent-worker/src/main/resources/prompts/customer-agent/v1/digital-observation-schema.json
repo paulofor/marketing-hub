@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
-  "required": ["observation", "simulatedReaction", "commercialHypothesis"],
+  "required": ["observation", "simulatedReaction", "commercialHypothesis", "motivationalVector"],
   "properties": {
     "observation": {
       "type": "object",
@@ -13,6 +13,27 @@
       }
     },
     "simulatedReaction": { "type": "object" },
-    "commercialHypothesis": { "type": "object" }
+    "commercialHypothesis": { "type": "object" },
+    "motivationalVector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["motivationalDirection", "painIntensity", "pleasureIntensity", "fearWeight", "frustrationWeight", "effortWeight", "reliefWeight", "desireWeight", "trustWeight", "belongingWeight", "evidenceStrength", "confidenceScore", "sourceReference", "rationale"],
+      "properties": {
+        "motivationalDirection": { "type": "string", "enum": ["AWAY_FROM_PAIN", "TOWARD_PLEASURE", "MIXED"] },
+        "painIntensity": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "pleasureIntensity": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "fearWeight": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "frustrationWeight": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "effortWeight": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "reliefWeight": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "desireWeight": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "trustWeight": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "belongingWeight": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "evidenceStrength": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "confidenceScore": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "sourceReference": { "type": "string", "minLength": 1 },
+        "rationale": { "type": "string", "minLength": 1 }
+      }
+    }
   }
 }

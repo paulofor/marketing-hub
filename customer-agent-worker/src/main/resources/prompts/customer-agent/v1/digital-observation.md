@@ -19,6 +19,8 @@ Regras obrigatórias:
 - priorize experiência mobile, clareza, confiança, esforço, objeções e continuidade entre anúncio, vídeo, oferta e página.
 - use os fatos do navegador como única evidência técnica; não alegue reprodução, áudio, CTA ou responsividade que não estejam nesses fatos;
 - inclua em `observation.sources` somente URLs efetivamente observadas e em `observation.facts` os status, viewport, reprodução, formulários e CTAs relevantes.
+- registre o vetor motivacional como hipótese simulada: direção, pesos de 0 a 5, força da evidência, confiança e justificativa ligada a uma fonte observada;
+- dor e prazer podem coexistir; não transforme intensidade estimada em confirmação humana.
 
-Produza JSON válido conforme o schema, com `observation`, `simulatedReaction` e
-`commercialHypothesis` em campos separados.
+Produza JSON válido conforme o schema, com `observation`, `simulatedReaction`,
+`commercialHypothesis` e `motivationalVector` em campos separados.

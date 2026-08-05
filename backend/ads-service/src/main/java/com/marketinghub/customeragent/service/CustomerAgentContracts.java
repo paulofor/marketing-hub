@@ -81,10 +81,51 @@ public final class CustomerAgentContracts {
       String simulatedReactionJson,
       String commercialHypothesisJson,
       String rawModelResponse,
-      String model) {}
+      String model,
+      MotivationalVectorRequest motivationalVector) {}
 
   /** Confirmacao humana posterior, proveniente de fonte oficial. */
-  public record RecordObservationHumanConfirmationRequest(String humanConfirmationJson) {}
+  public record RecordObservationHumanConfirmationRequest(
+      String humanConfirmationJson, MotivationalVectorRequest motivationalVector) {}
+
+  /** Pesos motivacionais de zero a cinco ligados a uma justificativa verificavel. */
+  public record MotivationalVectorRequest(
+      String motivationalDirection,
+      Integer painIntensity,
+      Integer pleasureIntensity,
+      Integer fearWeight,
+      Integer frustrationWeight,
+      Integer effortWeight,
+      Integer reliefWeight,
+      Integer desireWeight,
+      Integer trustWeight,
+      Integer belongingWeight,
+      Integer evidenceStrength,
+      Integer confidenceScore,
+      String sourceReference,
+      String rationale) {}
+
+  /** Representacao publica de um vetor sem promover simulacao a aprendizado confirmado. */
+  public record MotivationalVectorResponse(
+      Long id,
+      Long personaId,
+      Long observationId,
+      String originType,
+      String motivationalDirection,
+      Integer painIntensity,
+      Integer pleasureIntensity,
+      Integer fearWeight,
+      Integer frustrationWeight,
+      Integer effortWeight,
+      Integer reliefWeight,
+      Integer desireWeight,
+      Integer trustWeight,
+      Integer belongingWeight,
+      Integer evidenceStrength,
+      Integer confidenceScore,
+      String sourceReference,
+      String rationale,
+      Instant createdAt) {}
 
   /** Representacao auditavel de uma experiencia digital observacional. */
   public record DigitalObservationResponse(

@@ -3,6 +3,16 @@ info:
   title: Customer Agent Hybrid Memory API
   version: v1
 paths:
+  /api/customer-agent/v1/personas/{personaId}/memory-motivations:
+    get:
+      summary: Lista o histórico append-only dos vetores motivacionais da persona
+      parameters:
+        - in: path
+          name: personaId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200': { description: Hipóteses simuladas e confirmações humanas com origem separada }
   /api/customer-agent/v1/personas/{personaId}/memory-evidence:
     get:
       summary: Lista metadados das evidências privadas de uma persona
@@ -46,3 +56,23 @@ paths:
           schema: { type: integer, format: int64 }
       responses:
         '200': { description: Conteúdo original da evidência }
+components:
+  schemas:
+    MotivationalVector:
+      type: object
+      required: [motivationalDirection, painIntensity, pleasureIntensity, fearWeight, frustrationWeight, effortWeight, reliefWeight, desireWeight, trustWeight, belongingWeight, evidenceStrength, confidenceScore, sourceReference, rationale]
+      properties:
+        motivationalDirection: { type: string, enum: [AWAY_FROM_PAIN, TOWARD_PLEASURE, MIXED] }
+        painIntensity: { type: integer, minimum: 0, maximum: 5 }
+        pleasureIntensity: { type: integer, minimum: 0, maximum: 5 }
+        fearWeight: { type: integer, minimum: 0, maximum: 5 }
+        frustrationWeight: { type: integer, minimum: 0, maximum: 5 }
+        effortWeight: { type: integer, minimum: 0, maximum: 5 }
+        reliefWeight: { type: integer, minimum: 0, maximum: 5 }
+        desireWeight: { type: integer, minimum: 0, maximum: 5 }
+        trustWeight: { type: integer, minimum: 0, maximum: 5 }
+        belongingWeight: { type: integer, minimum: 0, maximum: 5 }
+        evidenceStrength: { type: integer, minimum: 0, maximum: 5 }
+        confidenceScore: { type: integer, minimum: 0, maximum: 5 }
+        sourceReference: { type: string }
+        rationale: { type: string }

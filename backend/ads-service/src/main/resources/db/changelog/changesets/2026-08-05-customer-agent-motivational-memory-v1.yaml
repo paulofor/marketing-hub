@@ -1,0 +1,40 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-05-customer-agent-motivational-memory-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE customer_agent_memory_motivation (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                persona_id BIGINT NOT NULL,
+                observation_id BIGINT NOT NULL,
+                origin_type VARCHAR(30) NOT NULL,
+                motivational_direction VARCHAR(30) NOT NULL,
+                pain_intensity TINYINT UNSIGNED NOT NULL,
+                pleasure_intensity TINYINT UNSIGNED NOT NULL,
+                fear_weight TINYINT UNSIGNED NOT NULL,
+                frustration_weight TINYINT UNSIGNED NOT NULL,
+                effort_weight TINYINT UNSIGNED NOT NULL,
+                relief_weight TINYINT UNSIGNED NOT NULL,
+                desire_weight TINYINT UNSIGNED NOT NULL,
+                trust_weight TINYINT UNSIGNED NOT NULL,
+                belonging_weight TINYINT UNSIGNED NOT NULL,
+                evidence_strength TINYINT UNSIGNED NOT NULL,
+                confidence_score TINYINT UNSIGNED NOT NULL,
+                source_reference TEXT NOT NULL,
+                rationale TEXT NOT NULL,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                INDEX idx_customer_memory_motivation_persona_created (persona_id, created_at),
+                INDEX idx_customer_memory_motivation_observation (observation_id),
+                CONSTRAINT fk_customer_memory_motivation_persona FOREIGN KEY (persona_id) REFERENCES customer_persona(id),
+                CONSTRAINT fk_customer_memory_motivation_observation FOREIGN KEY (observation_id) REFERENCES customer_digital_observation(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

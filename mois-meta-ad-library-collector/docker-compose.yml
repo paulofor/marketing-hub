@@ -1,8 +1,10 @@
 services:
   mois-meta-ad-library-collector:
     build: .
+    image: marketinghub/mois-meta-ad-library-collector:0.1.0-snapshot
+    restart: unless-stopped
     environment:
       BACKEND_URL: ${BACKEND_URL:-http://host.docker.internal}
-      META_AD_LIBRARY_ACCESS_TOKEN: ${META_AD_LIBRARY_ACCESS_TOKEN:-}
+      META_AD_LIBRARY_ACCESS_TOKEN: ${META_AD_LIBRARY_ACCESS_TOKEN:?META_AD_LIBRARY_ACCESS_TOKEN is required}
     ports:
       - "8104:8104"

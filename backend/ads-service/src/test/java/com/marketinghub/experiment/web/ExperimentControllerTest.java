@@ -172,6 +172,7 @@ class ExperimentControllerTest {
                 .niche(nicheRepo.findById(nicheId).orElseThrow())
                 .title("Amostra")
                 .description("Entrega da amostra")
+                .prompt("Fixture auditável")
                 .build());
     var deliverablePackage =
         deliverablePackageRepository.save(
@@ -179,6 +180,7 @@ class ExperimentControllerTest {
                 .hypothesis(hyp)
                 .name("Pacote")
                 .description("Pacote de oferta")
+                .prompt("Fixture auditável")
                 .deliverables(new java.util.LinkedHashSet<>(java.util.List.of(deliverable)))
                 .build());
     hyp.setOfferPackage(deliverablePackage);
@@ -352,12 +354,14 @@ class ExperimentControllerTest {
                 .niche(nicheRepo.findById(nicheId).orElseThrow())
                 .title("Amostra")
                 .description("Entrega da amostra")
+                .prompt("Fixture auditável")
                 .build());
     var deliverablePackage =
         deliverablePackageRepository.save(
             com.marketinghub.deliverable.DeliverablePackage.builder()
                 .hypothesis(hyp)
                 .name("Pacote AI")
+                .prompt("Fixture auditável")
                 .deliverables(new java.util.LinkedHashSet<>(java.util.List.of(deliverable)))
                 .build());
     hyp.setOfferPackage(deliverablePackage);
@@ -452,12 +456,14 @@ class ExperimentControllerTest {
                 .niche(nicheRepo.findById(nicheId).orElseThrow())
                 .title("Amostra")
                 .description("Entrega da amostra")
+                .prompt("Fixture auditável")
                 .build());
     var deliverablePackage =
         deliverablePackageRepository.save(
             com.marketinghub.deliverable.DeliverablePackage.builder()
                 .hypothesis(hyp)
                 .name("Pacote amostra")
+                .prompt("Fixture auditável")
                 .deliverables(new java.util.LinkedHashSet<>(java.util.List.of(deliverable)))
                 .build());
     hyp.setOfferPackage(deliverablePackage);
@@ -490,6 +496,20 @@ class ExperimentControllerTest {
     assertThat(variant.getProductAiSubtype()).isEqualTo(ProductAiSubtype.AI_VISUAL_PREVIEW);
     assertThat(variant.getPrice()).isEqualByComparingTo("9.90");
     assertThat(variant.getOfferPackage()).isNotNull();
+    var persistedVariantPackage =
+        deliverablePackageRepository
+            .findByHypothesisIdOrderByCreatedAtDesc(variant.getId())
+            .stream()
+            .findFirst()
+            .orElseThrow();
+    assertThat(persistedVariantPackage.getPrompt())
+        .contains("Origem: preparo sistêmico de Produto IA", "nenhuma IA foi chamada");
+    assertThat(deliverableRepository.findAll())
+        .filteredOn(item -> item.getTitle().equals("Prévia visual personalizada"))
+        .allSatisfy(
+            item ->
+                assertThat(item.getPrompt())
+                    .contains("Origem: preparo sistêmico de Produto IA", "nenhuma IA foi chamada"));
   }
 
   /**
@@ -521,12 +541,14 @@ class ExperimentControllerTest {
                 .niche(nicheRepo.findById(nicheId).orElseThrow())
                 .title("Amostra")
                 .description("Entrega da amostra")
+                .prompt("Fixture auditável")
                 .build());
     var deliverablePackage =
         deliverablePackageRepository.save(
             com.marketinghub.deliverable.DeliverablePackage.builder()
                 .hypothesis(hyp)
                 .name("Pacote AI")
+                .prompt("Fixture auditável")
                 .deliverables(new java.util.LinkedHashSet<>(java.util.List.of(deliverable)))
                 .build());
     hyp.setOfferPackage(deliverablePackage);

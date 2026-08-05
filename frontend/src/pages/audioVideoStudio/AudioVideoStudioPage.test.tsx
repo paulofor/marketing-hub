@@ -314,11 +314,15 @@ describe("AudioVideoStudioPage", () => {
     setupProject();
 
     expect(
-      await screen.findAllByRole("button", { name: "Gerar clipe" }),
-    ).toHaveLength(4);
-    expect(
-      screen.getByDisplayValue(/Cena MECANISMO com uma unica microacao/i),
+      await screen.findByDisplayValue(
+        /Cena MECANISMO com uma unica microacao/i,
+      ),
     ).toBeTruthy();
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("button", { name: "Gerar clipe" }),
+      ).toHaveLength(4),
+    );
     expect(
       screen.getAllByText(/Cena MECANISMO com uma unica microacao/i),
     ).toHaveLength(2);
@@ -365,7 +369,7 @@ describe("AudioVideoStudioPage", () => {
       expect.objectContaining({ order: 1, role: "DOR" }),
     );
     expect(
-      screen.getByRole("button", { name: /montar quatro clipes aprovados/i }),
+      screen.getByRole("button", { name: /montar planos aprovados/i }),
     ).toBeDisabled();
   });
 });

@@ -485,7 +485,7 @@ class SalesVideoJobServiceTest {
     }
   }
 
-  /** Bloqueia quatro variações da mesma cena na montagem narrativa do Estúdio. */
+  /** Bloqueia variações repetidas da mesma cena na montagem narrativa do Estúdio. */
   @Test
   void shouldRejectSceneMontageWithoutFourDistinctNarrativeRoles() {
     SalesVideoProfile profile = SalesVideoProfile.builder().id(6L).tenantId("tenant-a").build();
@@ -516,6 +516,6 @@ class SalesVideoJobServiceTest {
     VideoModuleException ex =
         assertThrows(VideoModuleException.class, () -> service.requestMontage(request));
 
-    assertThat(ex.getMessage()).contains("DOR, RESULTADO, MECANISMO e CTA");
+    assertThat(ex.getMessage()).contains("planos consecutivos do mesmo projeto");
   }
 }

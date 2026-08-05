@@ -552,6 +552,15 @@ const musaV7ScenePrompts = [
 ];
 
 const musaV7SceneRoles = ["DOR", "RESULTADO", "MECANISMO", "CTA"];
+const MAX_CINEMATIC_SCENES = 12;
+
+export function resolveStudioSceneRole(sceneIndex: number, sceneCount: number) {
+  if (sceneIndex === 0) return "DOR";
+  if (sceneIndex === sceneCount - 1) return "CTA";
+  if (sceneIndex === sceneCount - 2) return "PROVA";
+  if (sceneIndex === 1) return "RESULTADO";
+  return "MECANISMO";
+}
 
 export function buildStudioSceneMetadata(
   project: VideoProject,
@@ -559,6 +568,7 @@ export function buildStudioSceneMetadata(
   scenePrompt: string,
   sceneIndex: number,
   sourceImage?: { assetId: number; url: string },
+  sceneCount = 4,
 ) {
   return JSON.stringify({
     commercial_goal: "PDE_MUSA_HERO_VIDEO_SCENE",
@@ -567,7 +577,7 @@ export function buildStudioSceneMetadata(
     campaign_key: project.campaignKey,
     scene: {
       order: sceneIndex + 1,
-      role: musaV7SceneRoles[sceneIndex] ?? `CENA_${sceneIndex + 1}`,
+      role: resolveStudioSceneRole(sceneIndex, sceneCount),
       prompt: scenePrompt,
       duration_seconds: provider.clipDurationSeconds,
     },
@@ -964,7 +974,7 @@ export default function AudioVideoStudioPage() {
       : longFormScriptBlocks;
   const selectedScenePrompts = briefing.scenePlan
     .split("\n")
-    .slice(0, 4)
+    .slice(0, MAX_CINEMATIC_SCENES)
     .map((prompt) => prompt.trim());
   const selectedCategory =
     videoCategoryOptions.find(
@@ -1013,7 +1023,10 @@ export default function AudioVideoStudioPage() {
         prompts.push("");
       }
       prompts[sceneIndex] = prompt.replace(/\s*\n+\s*/g, " ");
-      return { ...current, scenePlan: prompts.slice(0, 4).join("\n") };
+      return {
+        ...current,
+        scenePlan: prompts.slice(0, MAX_CINEMATIC_SCENES).join("\n"),
+      };
     });
   };
 
@@ -1177,6 +1190,7 @@ export default function AudioVideoStudioPage() {
             assetId: parsedSourceImageAssetId,
             url: sourceImageAssetQuery.data.publicUrl,
           },
+          selectedScenePrompts.length,
         ),
       });
       setSaveFeedback(
@@ -1197,9 +1211,9 @@ export default function AudioVideoStudioPage() {
   };
 
   const handleRequestSceneMontage = async () => {
-    if (selectedSceneJobIds.length !== 4) {
+    if (selectedSceneJobIds.length !== selectedScenePrompts.length) {
       setSaveFeedback(
-        "Aprove exatamente um clipe pronto para cada uma das quatro cenas.",
+        "Aprove exatamente um clipe pronto para cada plano do storyboard.",
       );
       return;
     }
@@ -1209,7 +1223,7 @@ export default function AudioVideoStudioPage() {
         sourceJobIds: selectedSceneJobIds,
       });
       setSaveFeedback(
-        `Montagem das quatro cenas solicitada no job #${job.id}.`,
+        `Montagem dos ${selectedScenePrompts.length} planos solicitada no job #${job.id}.`,
       );
     } catch {
       setSaveFeedback(
@@ -1779,9 +1793,13 @@ export default function AudioVideoStudioPage() {
                       deve acontecer. A imagem-base aprovada define o primeiro
                       quadro e a continuidade visual.
                     </small>
-                    {musaV7SceneRoles.map((role, index) => (
-                      <label key={role}>
-                        Cena {index + 1} · {role}
+                    {selectedScenePrompts.map((_, index) => (
+                      <label key={`studio-scene-${index + 1}`}>
+                        Cena {index + 1} ·{" "}
+                        {resolveStudioSceneRole(
+                          index,
+                          selectedScenePrompts.length,
+                        )}
                         <textarea
                           value={selectedScenePrompts[index] ?? ""}
                           onChange={(event) =>
@@ -2025,7 +2043,7 @@ export default function AudioVideoStudioPage() {
               {isEditingProject && selectedProject ? (
                 <div className="audio-video-studio-page__scene-production">
                   <div className="audio-video-studio-page__section-heading">
-                    <h3>Geracao por quatro cenas</h3>
+                    <h3>Geracao plano a plano</h3>
                     <p>
                       Gere e revise cada funcao narrativa separadamente. Uma
                       cena reprovada pode ser refeita sem descartar as demais.
@@ -2048,14 +2066,18 @@ export default function AudioVideoStudioPage() {
                     </small>
                   </label>
                   <div className="audio-video-studio-page__scene-production-grid">
-                    {selectedScenePrompts.slice(0, 4).map((prompt, index) => {
+                    {selectedScenePrompts.map((prompt, index) => {
                       const jobs = studioSceneJobs.filter(
                         ({ scene }) => scene?.order === index + 1,
                       );
                       return (
                         <article key={prompt}>
                           <span>
-                            Cena {index + 1} · {musaV7SceneRoles[index]}
+                            Cena {index + 1} ·{" "}
+                            {resolveStudioSceneRole(
+                              index,
+                              selectedScenePrompts.length,
+                            )}
                           </span>
                           <p>{prompt}</p>
                           <button
@@ -2118,12 +2140,13 @@ export default function AudioVideoStudioPage() {
                 className="audio-video-studio-page__primary-action"
                 type="button"
                 disabled={
-                  requestMontage.isPending || selectedSceneJobIds.length !== 4
+                  requestMontage.isPending ||
+                  selectedSceneJobIds.length !== selectedScenePrompts.length
                 }
                 onClick={handleRequestSceneMontage}
               >
                 <Scissors size={18} aria-hidden="true" />
-                Montar quatro clipes aprovados
+                Montar planos aprovados
               </button>
             ) : null}
             <div

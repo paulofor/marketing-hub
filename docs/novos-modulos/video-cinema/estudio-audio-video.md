@@ -98,3 +98,32 @@ A primeira entrega deve criar:
 3. Conectar cada etapa a jobs auditaveis no backend.
 4. Expor status, custos, artefatos e revisoes na tela.
 5. Permitir reaproveitar ativos vindos de produtos, experimentos, PDEs e biblioteca de midia.
+
+## Aprendizado da referencia Tik Tok Flavio — 2026-08-05
+
+O MP4 de referencia possui 131,4 segundos e 39 mudancas visuais fortes detectadas,
+equivalentes a aproximadamente um novo plano a cada 3,4 segundos. A continuidade
+percebida nao vem de um clipe longo: vem da repeticao coerente de personagem,
+objeto central, paleta, direcao de movimento e progressao narrativa entre muitos
+planos curtos.
+
+### Causa-raiz da diferenca de qualidade
+
+O Estudio limitava todo projeto a quatro cenas, mesmo quando o roteiro persistido
+possuia seis ou mais planos. Cada clipe era gerado isoladamente e a montagem apenas
+os concatenava. Isso produzia poucos enquadramentos longos e transferia para um
+prompt textual uma continuidade que precisa ser resolvida no storyboard e nas
+referencias visuais.
+
+### Regra operacional adotada
+
+- permitir de 2 a 12 planos consecutivos por montagem cinematografica;
+- manter DOR no primeiro plano e CTA no ultimo, com RESULTADO, MECANISMO e PROVA
+  distribuídos no desenvolvimento;
+- gerar e aprovar cada plano separadamente, preservando a possibilidade de refazer
+  somente o trecho inconsistente;
+- usar 6 a 10 planos para criativos de 25 a 40 segundos, buscando ritmo medio de
+  2,5 a 4 segundos por plano;
+- a proxima evolucao deve extrair o quadro final aprovado de um plano para usa-lo
+  como ponte visual do plano seguinte e adicionar narracao, trilha e legendas como
+  camadas continuas na pos-producao.

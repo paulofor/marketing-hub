@@ -37,6 +37,7 @@ import org.springframework.util.StringUtils;
 public class SalesVideoJobService {
   private static final int MAX_PAGE_SIZE = 200;
   private static final int MAX_MONTAGE_DURATION_SECONDS = 600;
+  private static final int MAX_CINEMATIC_SCENES = 12;
   private static final String SHORT_DURATION_FAILURE_CODE = "RENDER_DURATION_SHORT";
 
   private final SalesVideoJobRepository jobRepository;
@@ -532,7 +533,7 @@ public class SalesVideoJobService {
     resolveSourceVideoUrl(sourceJob, null);
   }
 
-  /** Exige uma cena aprovada de cada papel narrativo quando a montagem pertence ao Estúdio. */
+  /** Exige planos consecutivos do mesmo projeto quando a montagem pertence ao Estúdio. */
   private void validateSceneBySceneMontage(List<SalesVideoJob> sourceJobs) {
     List<JsonNode> sceneMetadata =
         sourceJobs.stream()
@@ -542,10 +543,10 @@ public class SalesVideoJobService {
     if (sceneMetadata.isEmpty()) {
       return;
     }
-    if (sceneMetadata.size() != sourceJobs.size() || sourceJobs.size() != 4) {
+    if (sceneMetadata.size() != sourceJobs.size() || sourceJobs.size() > MAX_CINEMATIC_SCENES) {
       throw VideoModuleException.badRequest(
           VideoModuleErrorCode.BAD_REQUEST,
-          "A montagem por cenas exige exatamente quatro clipes do mesmo projeto.");
+          "A montagem cinematográfica exige entre dois e doze planos do mesmo projeto.");
     }
     Set<String> projectIds =
         sceneMetadata.stream()
@@ -555,17 +556,25 @@ public class SalesVideoJobService {
         sceneMetadata.stream()
             .map(node -> node.path("scene").path("order").asInt())
             .collect(java.util.stream.Collectors.toSet());
-    Set<String> roles =
-        sceneMetadata.stream()
-            .map(node -> node.path("scene").path("role").asText())
+    Set<Integer> expectedOrders =
+        java.util.stream.IntStream.rangeClosed(1, sourceJobs.size())
+            .boxed()
             .collect(java.util.stream.Collectors.toSet());
-    if (projectIds.size() != 1
-        || projectIds.contains("")
-        || !orders.equals(Set.of(1, 2, 3, 4))
-        || !roles.equals(Set.of("DOR", "RESULTADO", "MECANISMO", "CTA"))) {
+    if (projectIds.size() != 1 || projectIds.contains("") || !orders.equals(expectedOrders)) {
       throw VideoModuleException.badRequest(
           VideoModuleErrorCode.BAD_REQUEST,
-          "Selecione um clipe de DOR, RESULTADO, MECANISMO e CTA do mesmo projeto.");
+          "Selecione planos consecutivos do mesmo projeto, começando em DOR e terminando em CTA.");
+    }
+    Map<Integer, String> rolesByOrder =
+        sceneMetadata.stream()
+            .collect(
+                java.util.stream.Collectors.toMap(
+                    node -> node.path("scene").path("order").asInt(),
+                    node -> node.path("scene").path("role").asText()));
+    if (!"DOR".equals(rolesByOrder.get(1)) || !"CTA".equals(rolesByOrder.get(sourceJobs.size()))) {
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST,
+          "Selecione planos consecutivos do mesmo projeto, começando em DOR e terminando em CTA.");
     }
   }
 

@@ -1,0 +1,12 @@
+services:
+  mois-meta-ad-library-collector:
+    image: ${MOIS_META_AD_LIBRARY_COLLECTOR_IMAGE}
+    build: null
+    container_name: mois-meta-ad-library-collector
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8104/actuator/health/readiness | grep -q UP"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s

@@ -55,6 +55,7 @@ public class DeliverablePackage {
 
   @Lob
   @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  @Column(nullable = false)
   private String prompt;
 
   @Builder.Default

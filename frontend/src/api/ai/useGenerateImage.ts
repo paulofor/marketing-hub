@@ -34,6 +34,9 @@ export type GeneratedImageFailure = {
 };
 
 type ImageGenerationPayload = {
+  productId: number;
+  commercialPlanId: number;
+  experimentId?: number;
   prompt: string;
 };
 

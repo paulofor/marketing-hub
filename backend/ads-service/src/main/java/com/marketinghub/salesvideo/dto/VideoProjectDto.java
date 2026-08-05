@@ -8,6 +8,7 @@ public record VideoProjectDto(
     Long id,
     String tenantId,
     Long productId,
+    Long commercialPlanId,
     Long experimentId,
     Long salesVideoProfileId,
     String campaignKey,

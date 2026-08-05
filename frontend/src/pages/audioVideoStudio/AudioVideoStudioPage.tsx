@@ -52,6 +52,7 @@ import "./AudioVideoStudioPage.css";
 
 type StudioBriefing = {
   productId: string;
+  commercialPlanId: string;
   campaignKey: string;
   videoCategory: string;
   contextType: string;
@@ -659,6 +660,7 @@ const exampleStory =
 
 const defaultBriefing: StudioBriefing = {
   productId: "",
+  commercialPlanId: "",
   campaignKey: "musa-video-manifesto-presenca-digital",
   videoCategory: "LONG_FORM",
   contextType: "PDE",
@@ -722,6 +724,7 @@ const defaultBriefing: StudioBriefing = {
 
 const musaV7Briefing: StudioBriefing = {
   productId: "4",
+  commercialPlanId: "",
   campaignKey: "musa-pde-entry-v7-espelho-antes-de-sair",
   videoCategory: "COMMERCIAL_SHORT",
   contextType: "PDE",
@@ -810,6 +813,7 @@ const studioPresets: StudioPreset[] = [
 function buildBriefingFromProject(project: VideoProject): StudioBriefing {
   return {
     productId: project.productId ? String(project.productId) : "",
+    commercialPlanId: project.commercialPlanId ? String(project.commercialPlanId) : "",
     campaignKey: project.campaignKey || "",
     videoCategory: project.videoCategory || defaultBriefing.videoCategory,
     contextType: project.contextType || defaultBriefing.contextType,
@@ -1093,8 +1097,8 @@ export default function AudioVideoStudioPage() {
   };
 
   const buildProjectPayload = (): VideoProjectPayload => ({
-    productId:
-      parseOptionalNumber(briefing.productId) ?? selectedProject?.productId,
+    productId: parseOptionalNumber(briefing.productId)!,
+    commercialPlanId: parseOptionalNumber(briefing.commercialPlanId)!,
     experimentId: selectedProject?.experimentId,
     salesVideoProfileId: selectedProject?.salesVideoProfileId,
     campaignKey:
@@ -1146,6 +1150,10 @@ export default function AudioVideoStudioPage() {
 
   const handleSaveProject = async () => {
     setSaveFeedback("");
+    if (!parseOptionalNumber(briefing.productId) || !parseOptionalNumber(briefing.commercialPlanId)) {
+      setSaveFeedback("Selecione produto e plano comercial antes de criar o projeto.");
+      return;
+    }
     if (durationIssue) {
       setSaveFeedback(durationIssue);
       return;
@@ -1431,10 +1439,19 @@ export default function AudioVideoStudioPage() {
           </div>
           <div className="audio-video-studio-page__briefing-grid">
             <label>
-              ID do produto
+              ID do produto *
               <input
                 value={briefing.productId}
                 onChange={updateBriefing("productId")}
+                required
+              />
+            </label>
+            <label>
+              ID do plano comercial *
+              <input
+                value={briefing.commercialPlanId}
+                onChange={updateBriefing("commercialPlanId")}
+                required
               />
             </label>
             <label>
@@ -2256,7 +2273,9 @@ export default function AudioVideoStudioPage() {
             disabled={
               isSavingProject ||
               selectedProjectQuery.isLoading ||
-              Boolean(durationIssue)
+              Boolean(durationIssue) ||
+              !parseOptionalNumber(briefing.productId) ||
+              !parseOptionalNumber(briefing.commercialPlanId)
             }
           >
             <Save size={18} aria-hidden="true" />

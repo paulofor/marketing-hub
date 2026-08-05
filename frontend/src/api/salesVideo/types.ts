@@ -381,6 +381,7 @@ export interface VideoProject {
   id: number;
   tenantId?: string | null;
   productId?: number | null;
+  commercialPlanId?: number | null;
   experimentId?: number | null;
   salesVideoProfileId?: number | null;
   campaignKey?: string | null;
@@ -431,6 +432,7 @@ export interface VideoProject {
 
 export interface VideoProjectPayload {
   productId?: number | null;
+  commercialPlanId?: number | null;
   experimentId?: number | null;
   salesVideoProfileId?: number | null;
   campaignKey?: string;

@@ -30,6 +30,15 @@ public class ImageGenerationRequest {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @Column(name = "product_id", nullable = false)
+  private Long productId;
+
+  @Column(name = "commercial_plan_id", nullable = false)
+  private Long commercialPlanId;
+
+  @Column(name = "experiment_id")
+  private Long experimentId;
+
   @Column(name = "job_id", nullable = false, length = 96, unique = true)
   private String jobId;
 

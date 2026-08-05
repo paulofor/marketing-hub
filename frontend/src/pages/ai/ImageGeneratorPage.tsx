@@ -7,6 +7,8 @@ import type {
   GeneratedImageVariant,
 } from "../../api/ai/useGenerateImage";
 import { useGenerateImage } from "../../api/ai/useGenerateImage";
+import { useProducts } from "../../api/product/useProducts";
+import { useCommercialPlans } from "../../api/planning/useCommercialPlans";
 
 const EXAMPLE_PROMPT =
   "Mulher brasileira elegante, 35 anos, olhando para o espelho antes de sair, ambiente claro, estética premium, fotografia realista para anúncio de produto digital de presença pessoal.";
@@ -60,6 +62,11 @@ export default function ImageGeneratorPage() {
   useBreadcrumbs([{ label: "Gerador de Imagens" }]);
 
   const [prompt, setPrompt] = useState("");
+  const [productId, setProductId] = useState("");
+  const [commercialPlanId, setCommercialPlanId] = useState("");
+  const [experimentId, setExperimentId] = useState("");
+  const productsQuery = useProducts();
+  const plansQuery = useCommercialPlans();
   const generation = useGenerateImage();
   const result = generation.data;
   const generatedImages = useMemo(() => result?.images ?? [], [result]);
@@ -68,10 +75,15 @@ export default function ImageGeneratorPage() {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalizedPrompt = prompt.trim();
-    if (!normalizedPrompt || generation.isPending) {
+    if (!normalizedPrompt || !productId || !commercialPlanId || generation.isPending) {
       return;
     }
-    generation.mutate({ prompt: normalizedPrompt });
+    generation.mutate({
+      productId: Number(productId),
+      commercialPlanId: Number(commercialPlanId),
+      experimentId: experimentId ? Number(experimentId) : undefined,
+      prompt: normalizedPrompt,
+    });
   }
 
   return (
@@ -88,11 +100,76 @@ export default function ImageGeneratorPage() {
             <div className="card-body">
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
+                  <label className="form-label fw-semibold" htmlFor="image-generator-product">
+                    Produto <span className="text-danger">*</span>
+                  </label>
+                  <select
+                    id="image-generator-product"
+                    className="form-select"
+                    value={productId}
+                    onChange={(event) => setProductId(event.target.value)}
+                    disabled={generation.isPending || productsQuery.isLoading}
+                    required
+                  >
+                    <option value="">Selecione o produto</option>
+                    {(productsQuery.data ?? []).map((product) => (
+                      <option key={product.id} value={product.id}>
+                        {product.name ?? `Produto ${product.id}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label fw-semibold" htmlFor="image-generator-plan">
+                    Plano comercial <span className="text-danger">*</span>
+                  </label>
+                  <select
+                    id="image-generator-plan"
+                    className="form-select"
+                    value={commercialPlanId}
+                    onChange={(event) => {
+                      setCommercialPlanId(event.target.value);
+                      setExperimentId("");
+                    }}
+                    disabled={generation.isPending || plansQuery.isLoading}
+                    required
+                  >
+                    <option value="">Selecione o plano</option>
+                    {(plansQuery.data ?? []).map((plan) => (
+                      <option key={plan.id} value={plan.id}>{plan.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label fw-semibold" htmlFor="image-generator-experiment">
+                    Experimento (opcional)
+                  </label>
+                  <select
+                    id="image-generator-experiment"
+                    className="form-select"
+                    value={experimentId}
+                    onChange={(event) => setExperimentId(event.target.value)}
+                    disabled={generation.isPending || !commercialPlanId}
+                  >
+                    <option value="">Sem experimento</option>
+                    {(plansQuery.data ?? [])
+                      .filter((plan) => String(plan.id) === commercialPlanId && plan.experimentId)
+                      .map((plan) => (
+                        <option key={plan.experimentId} value={plan.experimentId ?? ""}>
+                          {plan.experimentName ?? `Experimento ${plan.experimentId}`}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div className="mb-3">
                   <label
                     className="form-label fw-semibold"
                     htmlFor="image-generator-prompt"
                   >
-                    Prompt da imagem
+                    Prompt da imagem <span className="text-danger">*</span>
                   </label>
                   <textarea
                     id="image-generator-prompt"
@@ -120,6 +197,7 @@ export default function ImageGeneratorPage() {
                     className="btn btn-primary"
                     disabled={
                       generation.isPending || prompt.trim().length === 0
+                      || !productId || !commercialPlanId
                     }
                   >
                     {generation.isPending ? (

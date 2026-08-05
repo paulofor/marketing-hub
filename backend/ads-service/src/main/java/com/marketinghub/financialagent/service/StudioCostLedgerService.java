@@ -1,0 +1,103 @@
+package com.marketinghub.financialagent.service;
+
+import com.marketinghub.financialagent.StudioCostLedgerEntry;
+import com.marketinghub.repository.jpa.financialagent.StudioCostLedgerEntryRepository;
+import java.math.BigDecimal;
+import java.time.Instant;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/** Responsabilidade: manter uma entrada idempotente de custo para cada tentativa do Estúdio. */
+@Service
+public class StudioCostLedgerService {
+  private final StudioCostLedgerEntryRepository repository;
+
+  /** Inicializa o serviço com a fonte canônica do ledger. */
+  public StudioCostLedgerService(StudioCostLedgerEntryRepository repository) {
+    this.repository = repository;
+  }
+
+  /** Registra ou atualiza uma tentativa de imagem sem inventar custo não informado. */
+  @Transactional
+  public void recordImage(
+      String jobId,
+      Long productId,
+      Long commercialPlanId,
+      Long experimentId,
+      String model,
+      String status,
+      Instant startedAt,
+      Instant finishedAt) {
+    StudioCostLedgerEntry entry =
+        repository
+            .findBySourceTypeAndSourceId("IMAGE_GENERATION_REQUEST", jobId)
+            .orElseGet(StudioCostLedgerEntry::new);
+    entry.setCommercialPlanId(commercialPlanId);
+    entry.setProductId(productId);
+    entry.setExperimentId(experimentId);
+    entry.setAssetType("IMAGE");
+    entry.setSourceType("IMAGE_GENERATION_REQUEST");
+    entry.setSourceId(jobId);
+    entry.setProvider("OPENAI");
+    entry.setModel(model);
+    entry.setStatus(status);
+    entry.setCurrency("USD");
+    entry.setCostEvidence("PROVIDER_COST_NOT_REPORTED");
+    entry.setStartedAt(startedAt);
+    entry.setFinishedAt(finishedAt);
+    repository.save(entry);
+  }
+
+  /** Registra ou atualiza uma tentativa de vídeo atribuída ao projeto comercial do Estúdio. */
+  @Transactional
+  public void recordVideo(
+      Long jobId,
+      Long productId,
+      Long commercialPlanId,
+      Long experimentId,
+      String provider,
+      String model,
+      String status,
+      BigDecimal costUsd,
+      boolean providerReported,
+      Instant startedAt,
+      Instant finishedAt) {
+    StudioCostLedgerEntry entry =
+        repository
+            .findBySourceTypeAndSourceId("SALES_VIDEO_JOB", String.valueOf(jobId))
+            .orElseGet(StudioCostLedgerEntry::new);
+    entry.setCommercialPlanId(commercialPlanId);
+    entry.setProductId(productId);
+    entry.setExperimentId(experimentId);
+    entry.setAssetType("VIDEO");
+    entry.setSourceType("SALES_VIDEO_JOB");
+    entry.setSourceId(String.valueOf(jobId));
+    entry.setProvider(provider == null ? "UNKNOWN" : provider);
+    entry.setModel(model);
+    entry.setStatus(status);
+    entry.setProviderCostUsd(providerReported ? costUsd : null);
+    entry.setEstimatedCostUsd(providerReported ? null : costUsd);
+    entry.setCurrency("USD");
+    entry.setCostEvidence(providerReported ? "PROVIDER_REPORTED" : "PROVIDER_RATE_CARD_ESTIMATE");
+    entry.setStartedAt(startedAt);
+    entry.setFinishedAt(finishedAt);
+    repository.save(entry);
+  }
+
+  /** Soma o custo conhecido do Estúdio no plano, sem converter moeda implicitamente. */
+  @Transactional(readOnly = true)
+  public BigDecimal totalKnownCostUsd(Long planId) {
+    return repository.totalCostUsdByPlanId(planId);
+  }
+
+  /** Mede a cobertura de custo reportado ou estimado das tentativas do plano. */
+  @Transactional(readOnly = true)
+  public String coverage(Long planId) {
+    var entries = repository.findByCommercialPlanIdOrderByCreatedAtAsc(planId);
+    long known =
+        entries.stream()
+            .filter(e -> e.getProviderCostUsd() != null || e.getEstimatedCostUsd() != null)
+            .count();
+    return known + "/" + entries.size() + "_ATTEMPTS_WITH_KNOWN_COST";
+  }
+}

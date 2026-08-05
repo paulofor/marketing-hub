@@ -11,10 +11,15 @@ O Agente Financeiro reconcilia diariamente custos e receitas do Marketing Hub po
 - A v1 não movimenta dinheiro, compra créditos, altera preço, orçamento, campanha, publicação ou status comercial.
 - Reembolsos e infraestrutura ausentes devem aparecer como lacuna de fonte, nunca como zero confirmado.
 - Projeções, impactos estimados, pedidos, checkouts e PRs nunca contam como receita.
+- Toda nova geração manual de imagem ou projeto de vídeo do Estúdio exige produto e plano comercial; experimento é opcional e deve pertencer ao plano quando informado.
+- Cada tentativa do Estúdio deve possuir entrada idempotente no ledger com tipo de ativo, origem, produto, plano, experimento, provedor, modelo, status, horários e evidência de custo.
+- Custo ausente do provedor deve permanecer ausente e reduzir a cobertura; nunca pode ser convertido em custo zero confirmado.
 
 ## Relatório
 
 Cada execução persiste o snapshot recebido, totais reconciliados, cobertura das fontes, divergências, decisão, resposta bruta, modelo, custo da execução, falha e relatório diário com data e hora.
+
+O snapshot expõe separadamente o custo conhecido do Estúdio em USD e a razão de tentativas com custo conhecido, sem conversão cambial implícita.
 
 Decisões permitidas: `RECONCILED`, `REVIEW_REQUIRED` e `BLOCKED_BY_MISSING_SOURCE`.
 

@@ -2,13 +2,17 @@ package com.marketinghub.imagegenerator.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.financialagent.service.StudioCostLedgerService;
 import com.marketinghub.imagegenerator.ImageGenerationRequest;
 import com.marketinghub.imagegenerator.dto.ImageGeneratorRequest;
 import com.marketinghub.imagegenerator.dto.ImageGeneratorResponse;
 import com.marketinghub.imagegenerator.dto.ImageGeneratorResponse.ImageGeneratorFailure;
 import com.marketinghub.imagegenerator.dto.ImageGeneratorResponse.ImageGeneratorResult;
 import com.marketinghub.openai.OpenAiProperties;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.imagegenerator.ImageGenerationRequestRepository;
+import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -43,6 +47,10 @@ public class ImageGeneratorService {
   private final OpenAiProperties openAiProperties;
   private final ImageGenerationRequestRepository repository;
   private final ImageDerivativeService derivativeService;
+  private final ProductRepository productRepository;
+  private final CommercialPlanRepository commercialPlanRepository;
+  private final ExperimentRepository experimentRepository;
+  private final StudioCostLedgerService costLedgerService;
   private final ObjectMapper objectMapper;
   private final String model;
   private final String comparisonImageModel;
@@ -53,6 +61,10 @@ public class ImageGeneratorService {
       OpenAiProperties openAiProperties,
       ImageGenerationRequestRepository repository,
       ImageDerivativeService derivativeService,
+      ProductRepository productRepository,
+      CommercialPlanRepository commercialPlanRepository,
+      ExperimentRepository experimentRepository,
+      StudioCostLedgerService costLedgerService,
       ObjectMapper objectMapper,
       @Value("${image-generator.openai.model:gpt-5.6}") String model,
       @Value("${image-generator.openai.comparison-image-model:gpt-image-2}")
@@ -61,9 +73,36 @@ public class ImageGeneratorService {
     this.openAiProperties = openAiProperties;
     this.repository = repository;
     this.derivativeService = derivativeService;
+    this.productRepository = productRepository;
+    this.commercialPlanRepository = commercialPlanRepository;
+    this.experimentRepository = experimentRepository;
+    this.costLedgerService = costLedgerService;
     this.objectMapper = objectMapper;
     this.model = model;
     this.comparisonImageModel = comparisonImageModel;
+  }
+
+  /** Inicializa a unidade de geração para testes puros de payload e extração. */
+  ImageGeneratorService(
+      WebClient openAiWebClient,
+      OpenAiProperties openAiProperties,
+      ImageGenerationRequestRepository repository,
+      ImageDerivativeService derivativeService,
+      ObjectMapper objectMapper,
+      String model,
+      String comparisonImageModel) {
+    this(
+        openAiWebClient,
+        openAiProperties,
+        repository,
+        derivativeService,
+        null,
+        null,
+        null,
+        null,
+        objectMapper,
+        model,
+        comparisonImageModel);
   }
 
   /**
@@ -75,17 +114,17 @@ public class ImageGeneratorService {
       throw new ResponseStatusException(
           HttpStatus.SERVICE_UNAVAILABLE, "OpenAI não está configurada no backend.");
     }
+    validateCommercialContext(request);
 
     String batchJobId = "img-batch-" + UUID.randomUUID();
     String finalPrompt = buildPrompt(request.prompt());
     CompletableFuture<ImageGeneratorResult> defaultModelGeneration =
-        CompletableFuture.supplyAsync(
-            () -> generateSingleImage(request.prompt(), finalPrompt, model, null));
+        CompletableFuture.supplyAsync(() -> generateSingleImage(request, finalPrompt, model, null));
     CompletableFuture<ImageGeneratorResult> comparisonModelGeneration =
         CompletableFuture.supplyAsync(
             () ->
                 generateSingleImage(
-                    request.prompt(), finalPrompt, comparisonImageModel, comparisonImageModel));
+                    request, finalPrompt, comparisonImageModel, comparisonImageModel));
 
     ImageGenerationBatchResult batchResult =
         collectGenerationResults(
@@ -142,7 +181,10 @@ public class ImageGeneratorService {
 
   /** Gera uma variação individual da imagem e registra auditoria da chamada OpenAI. */
   private ImageGeneratorResult generateSingleImage(
-      String userPrompt, String finalPrompt, String outputModel, String imageToolModel) {
+      ImageGeneratorRequest request,
+      String finalPrompt,
+      String outputModel,
+      String imageToolModel) {
     String jobId = "img-" + UUID.randomUUID();
     Instant startedAt = Instant.now();
     Map<String, Object> requestBody = buildRequestBody(finalPrompt, imageToolModel);
@@ -150,14 +192,26 @@ public class ImageGeneratorService {
         repository.save(
             ImageGenerationRequest.builder()
                 .jobId(jobId)
+                .productId(request.productId())
+                .commercialPlanId(request.commercialPlanId())
+                .experimentId(request.experimentId())
                 .status("RUNNING")
                 .model(outputModel)
                 .serviceTier(SERVICE_TIER)
                 .outputFormat(OUTPUT_FORMAT)
-                .prompt(userPrompt)
+                .prompt(request.prompt())
                 .openAiRequestBody(writeJson(requestBody))
                 .startedAt(startedAt)
                 .build());
+    costLedgerService.recordImage(
+        jobId,
+        request.productId(),
+        request.commercialPlanId(),
+        request.experimentId(),
+        outputModel,
+        "RUNNING",
+        startedAt,
+        null);
 
     try {
       JsonNode responseBody =
@@ -179,6 +233,15 @@ public class ImageGeneratorService {
               : null);
       audit.setFinishedAt(Instant.now());
       repository.save(audit);
+      costLedgerService.recordImage(
+          jobId,
+          request.productId(),
+          request.commercialPlanId(),
+          request.experimentId(),
+          outputModel,
+          "COMPLETED",
+          startedAt,
+          audit.getFinishedAt());
 
       return new ImageGeneratorResult(
           jobId,
@@ -194,11 +257,48 @@ public class ImageGeneratorService {
       audit.setErrorMessage(errorMessage);
       audit.setFinishedAt(Instant.now());
       repository.save(audit);
+      costLedgerService.recordImage(
+          jobId,
+          request.productId(),
+          request.commercialPlanId(),
+          request.experimentId(),
+          outputModel,
+          "FAILED",
+          startedAt,
+          audit.getFinishedAt());
       log.error(
           "Falha ao gerar imagem por IA. modulo=image-generator operacao=generate jobId={}",
           jobId,
           ex);
       throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, errorMessage, ex);
+    }
+  }
+
+  /** Valida os vínculos comerciais antes de consumir crédito do provedor. */
+  private void validateCommercialContext(ImageGeneratorRequest request) {
+    if (request.productId() == null || request.commercialPlanId() == null) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Produto e plano comercial são obrigatórios para gerar ativos.");
+    }
+    if (!productRepository.existsById(request.productId())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Produto não encontrado.");
+    }
+    var plan =
+        commercialPlanRepository
+            .findById(request.commercialPlanId())
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Plano comercial não encontrado."));
+    if (request.experimentId() != null
+        && !experimentRepository.existsById(request.experimentId())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Experimento não encontrado.");
+    }
+    if (plan.getExperiment() != null
+        && request.experimentId() != null
+        && !plan.getExperiment().getId().equals(request.experimentId())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "O experimento não pertence ao plano comercial selecionado.");
     }
   }
 

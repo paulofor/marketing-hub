@@ -46,6 +46,7 @@ class VideoProjectServiceTest {
     CreateVideoProjectRequest request =
         new CreateVideoProjectRequest(
             4L,
+            99L,
             66L,
             12L,
             "musa-organico-001",
@@ -127,6 +128,7 @@ class VideoProjectServiceTest {
     UpdateVideoProjectRequest request =
         new UpdateVideoProjectRequest(
             4L,
+            99L,
             null,
             null,
             "musa-campanha",
@@ -188,6 +190,7 @@ class VideoProjectServiceTest {
     CreateVideoProjectRequest request =
         new CreateVideoProjectRequest(
             4L,
+            99L,
             66L,
             12L,
             "musa-organico-001",
@@ -264,6 +267,7 @@ class VideoProjectServiceTest {
     UpdateVideoProjectRequest request =
         new UpdateVideoProjectRequest(
             4L,
+            99L,
             null,
             null,
             "musa-campanha",
@@ -319,6 +323,7 @@ class VideoProjectServiceTest {
     CreateVideoProjectRequest request =
         new CreateVideoProjectRequest(
             4L,
+            99L,
             66L,
             12L,
             "musa-organico-001",

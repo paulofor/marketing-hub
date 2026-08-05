@@ -31,4 +31,4 @@ paths:
           required: true
           schema: {type: integer, format: int64}
       responses:
-        '200': {description: Snapshot financeiro e cobertura das fontes}
+        '200': {description: Snapshot financeiro, ledger do Estúdio e cobertura das fontes}

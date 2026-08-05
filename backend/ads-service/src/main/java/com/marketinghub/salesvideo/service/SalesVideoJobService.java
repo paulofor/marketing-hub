@@ -4,12 +4,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.financialagent.service.StudioCostLedgerService;
 import com.marketinghub.media.Asset;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobEventRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoProfileRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoScriptRepository;
+import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
 import com.marketinghub.salesvideo.*;
 import com.marketinghub.salesvideo.dto.*;
 import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
@@ -27,6 +29,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -53,8 +56,11 @@ public class SalesVideoJobService {
   private final SalesVideoCompletedRenderAssetSync completedRenderAssetSync;
   private final SalesVideoJobCostMetadataService jobCostMetadataService;
   private final ObjectMapper objectMapper;
+  private final VideoProjectRepository videoProjectRepository;
+  private final StudioCostLedgerService studioCostLedgerService;
 
   /** Cria o serviço com repositórios, política de reprocessamento e porta de sincronizacao. */
+  @Autowired
   public SalesVideoJobService(
       SalesVideoJobRepository jobRepository,
       SalesVideoJobEventRepository eventRepository,
@@ -64,6 +70,8 @@ public class SalesVideoJobService {
       SalesVideoReprocessPolicy reprocessPolicy,
       SalesVideoCompletedRenderAssetSync completedRenderAssetSync,
       SalesVideoJobCostMetadataService jobCostMetadataService,
+      VideoProjectRepository videoProjectRepository,
+      StudioCostLedgerService studioCostLedgerService,
       ObjectMapper objectMapper) {
     this.jobRepository = jobRepository;
     this.eventRepository = eventRepository;
@@ -73,7 +81,34 @@ public class SalesVideoJobService {
     this.reprocessPolicy = reprocessPolicy;
     this.completedRenderAssetSync = completedRenderAssetSync;
     this.jobCostMetadataService = jobCostMetadataService;
+    this.videoProjectRepository = videoProjectRepository;
+    this.studioCostLedgerService = studioCostLedgerService;
     this.objectMapper = objectMapper;
+  }
+
+  /** Inicializa testes legados que não exercitam o ledger comercial do Estúdio. */
+  SalesVideoJobService(
+      SalesVideoJobRepository jobRepository,
+      SalesVideoJobEventRepository eventRepository,
+      SalesVideoProfileRepository profileRepository,
+      SalesVideoScriptRepository scriptRepository,
+      AssetRepository assetRepository,
+      SalesVideoReprocessPolicy reprocessPolicy,
+      SalesVideoCompletedRenderAssetSync completedRenderAssetSync,
+      SalesVideoJobCostMetadataService jobCostMetadataService,
+      ObjectMapper objectMapper) {
+    this(
+        jobRepository,
+        eventRepository,
+        profileRepository,
+        scriptRepository,
+        assetRepository,
+        reprocessPolicy,
+        completedRenderAssetSync,
+        jobCostMetadataService,
+        null,
+        null,
+        objectMapper);
   }
 
   @Transactional
@@ -178,6 +213,49 @@ public class SalesVideoJobService {
     return toDto(job);
   }
 
+  /** Sincroniza custo de vídeo quando o job pertence a um projeto comercial auditável. */
+  private void syncStudioCostLedger(
+      SalesVideoJob job, BigDecimal costUsd, boolean providerReported) {
+    if (videoProjectRepository == null || studioCostLedgerService == null) {
+      return;
+    }
+    Long projectId = readStudioProjectId(job.getMetadataJson());
+    if (projectId == null) {
+      return;
+    }
+    videoProjectRepository
+        .findById(projectId)
+        .filter(project -> project.getProductId() != null && project.getCommercialPlanId() != null)
+        .ifPresent(
+            project ->
+                studioCostLedgerService.recordVideo(
+                    job.getId(),
+                    project.getProductId(),
+                    project.getCommercialPlanId(),
+                    project.getExperimentId(),
+                    job.getProviderName(),
+                    job.getProviderName(),
+                    job.getStatus().name(),
+                    costUsd,
+                    providerReported,
+                    job.getStartedAt(),
+                    job.getFinishedAt()));
+  }
+
+  /** Extrai o projeto do Estúdio preservado no contrato do job. */
+  private Long readStudioProjectId(String metadataJson) {
+    if (!StringUtils.hasText(metadataJson)) {
+      return null;
+    }
+    try {
+      JsonNode value = objectMapper.readTree(metadataJson).path("studio_project_id");
+      return value.canConvertToLong() && value.asLong() > 0 ? value.asLong() : null;
+    } catch (JsonProcessingException ex) {
+      log.error("Falha ao ler projeto do Estúdio para ledger; metadata={}", metadataJson, ex);
+      return null;
+    }
+  }
+
   @Transactional
   public SalesVideoJobDto heartbeat(Long jobId, JobHeartbeatRequest request) {
     SalesVideoJob job = loadJob(jobId);
@@ -250,6 +328,7 @@ public class SalesVideoJobService {
       job.setScript(persistedScript);
     }
     jobRepository.save(job);
+    syncStudioCostLedger(job, resolvedCostUsd, explicitCostUsd != null);
     syncExperimentVideoAsset(job, request, durationSeconds);
     syncFailedExperimentVideoAsset(job, completionFailureRequest(request));
     maybeUpdateProfileStatus(job, finalStatus);

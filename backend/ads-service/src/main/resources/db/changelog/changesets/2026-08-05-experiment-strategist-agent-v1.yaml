@@ -1,0 +1,67 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-05-experiment-strategist-agent-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE experiment_strategist_execution (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                commercial_plan_id BIGINT NOT NULL,
+                agent_version_id BIGINT NULL,
+                status VARCHAR(30) NOT NULL,
+                authority_mode VARCHAR(40) NOT NULL,
+                research_question TEXT NOT NULL,
+                evidence_snapshot LONGTEXT NOT NULL,
+                alternatives_json LONGTEXT NULL,
+                recommendation_json LONGTEXT NULL,
+                public_sources_json LONGTEXT NULL,
+                raw_model_response LONGTEXT NULL,
+                model_name VARCHAR(255) NULL,
+                estimated_cost DECIMAL(12,4) NULL,
+                error_message TEXT NULL,
+                started_at DATETIME NULL,
+                finished_at DATETIME NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                INDEX idx_experiment_strategist_pending (status, created_at),
+                INDEX idx_experiment_strategist_plan (commercial_plan_id, created_at),
+                CONSTRAINT fk_experiment_strategist_plan FOREIGN KEY (commercial_plan_id) REFERENCES commercial_plan(id),
+                CONSTRAINT fk_experiment_strategist_agent_version FOREIGN KEY (agent_version_id) REFERENCES agent_version(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              INSERT INTO agent (
+                theme_id, name, agent_key, status, current_version, execution_mode,
+                description, owner_name, business_objective, success_metrics, model_name,
+                trigger_policy, authority_policy, prompt_contract_path, schema_contract_path
+              )
+              SELECT at.id, 'Estrategista de Experimentos', 'experiment-strategist', 'TEST', 1, 'ON_DEMAND',
+                'Pesquisa referencias publicas e propoe experimentos rastreaveis a partir de sessoes, funil e aprendizados.',
+                'Marketing Hub', 'Transformar gargalos comprovados em experimentos comerciais mensuraveis.',
+                'Propostas que viram experimentos validos e geram progressao posterior comprovada.', 'gpt-5.6-sol',
+                'Solicitacao humana ou novo sinal relevante de sessao, funil ou aprendizado.',
+                'Somente leitura e recomendacao; nao altera preco, campanha, pagina, orcamento, publicacao ou comunicacao.',
+                'experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v1/research.md',
+                'experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v1/research-schema.json'
+              FROM agent_theme at
+              WHERE at.name = 'Operacoes Autonomas'
+                AND NOT EXISTS (SELECT 1 FROM agent WHERE agent_key = 'experiment-strategist');
+
+              INSERT INTO agent_version (agent_id, version_number, contract_snapshot, created_at)
+              SELECT a.id, 1,
+                CONCAT('{"agentKey":"experiment-strategist","version":1,"status":"TEST","model":"gpt-5.6-sol","authority":"READ_ONLY_RESEARCH","prompt":"', a.prompt_contract_path, '","schema":"', a.schema_contract_path, '"}'),
+                UTC_TIMESTAMP()
+              FROM agent a
+              WHERE a.agent_key = 'experiment-strategist'
+                AND NOT EXISTS (
+                  SELECT 1 FROM agent_version av
+                  WHERE av.agent_id = a.id AND av.version_number = 1
+                );

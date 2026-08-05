@@ -20,17 +20,22 @@ const SIMPLE_FORM_DEFAULTS = {
   workQuestionTitle: "Trabalha em alguma academia ou studio? Qual nome?",
   optionsQuestionTitle: "Tipo de aulas que presta",
   optionsQuestionValues: "Musculação\nYoga\nPilates",
-  otherOptionsTitle: "Se nenhuma opção anterior representar seu cenário, descreva aqui",
+  otherOptionsTitle:
+    "Se nenhuma opção anterior representar seu cenário, descreva aqui",
   headerTitle: "Transforme o seu treino com acompanhamento personalizado",
-  headerSubtitle: "Responda em menos de 2 minutos e receba recomendações sob medida.",
-  headerPromise: "Plano prático para destravar resultados nas próximas semanas.",
+  headerSubtitle:
+    "Responda em menos de 2 minutos e receba recomendações sob medida.",
+  headerPromise:
+    "Plano prático para destravar resultados nas próximas semanas.",
   realExamplesTitle: "Veja exemplos do estilo visual que você pode receber",
   realExamplesSubtitle:
     "Um material mais profissional ajuda seu perfil a chamar mais atenção, transmitir mais confiança e valorizar melhor o seu serviço logo no primeiro olhar.",
   realExampleCard1Title: "Mais energia no dia a dia",
-  realExampleCard1Subtitle: "Rotina simples para sair do sedentarismo em 30 dias.",
+  realExampleCard1Subtitle:
+    "Rotina simples para sair do sedentarismo em 30 dias.",
   realExampleCard2Title: "Treino sem dor",
-  realExampleCard2Subtitle: "Ajustes de técnica e progressão para treinar com segurança.",
+  realExampleCard2Subtitle:
+    "Ajustes de técnica e progressão para treinar com segurança.",
   realExampleCard3Title: "Resultado sustentável",
   realExampleCard3Subtitle:
     "Estratégia para manter constância mesmo com agenda corrida.",
@@ -39,6 +44,28 @@ const SIMPLE_FORM_DEFAULTS = {
   bulletItem2: "Plano com foco no seu objetivo",
   bulletItem3: "Acompanhamento e ajustes semanais",
 };
+
+const PREMIUM_SAMPLE_DEFAULTS = {
+  flowName: "Experimente 3 artes premium para manicure",
+  slug: "amostra-premium-agenda-cheia",
+  description:
+    "Experiência gratuita e limitada para gerar três artes personalizadas e medir avanço até a oferta completa.",
+  headerTitle: "Veja seu estúdio em 3 artes premium",
+  headerSubtitle:
+    "Informe o nome do estúdio, escolha um estilo e receba sua amostra personalizada por e-mail.",
+  headerPromise:
+    "Uma prévia fácil para você avaliar a qualidade antes de comprar o kit completo.",
+  optionsQuestionTitle: "Qual estilo combina mais com o seu estúdio?",
+  optionsQuestionValues:
+    "Elegante e minimalista\nDelicado e feminino\nModerno e marcante",
+  bulletSectionTitle: "O que você recebe gratuitamente",
+  bulletItem1: "3 artes personalizadas com o nome do seu estúdio",
+  bulletItem2: "Prévia imediata da experiência",
+  bulletItem3:
+    "Entrega por e-mail e acesso à oferta completa somente se fizer sentido",
+};
+
+export type SimpleFormTemplate = "STANDARD" | "PREMIUM_SAMPLE";
 
 const ASSET_UPLOAD_URL = buildApiUrl("/api/assets");
 
@@ -56,7 +83,9 @@ type FeedbackState = {
 
 const ASSET_URL_VALUE_PATTERN = /^(?:https?:\/\/|\/|uploads\/|api\/uploads\/)/i;
 
-function readQuestionAssetValue(question?: LeadPortalFlow["questions"][number]): string {
+function readQuestionAssetValue(
+  question?: LeadPortalFlow["questions"][number],
+): string {
   if (!question) {
     return "";
   }
@@ -94,12 +123,10 @@ export default function SimpleLeadPortalFormCard({
   const [isVisible, setIsVisible] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [selectedStyleId, setSelectedStyleId] = useState<number | null>(null);
-  const [newFlowName, setNewFlowName] = useState(
-    SIMPLE_FORM_DEFAULTS.flowName,
-  );
-  const [newFlowSlug, setNewFlowSlug] = useState(
-    SIMPLE_FORM_DEFAULTS.slug,
-  );
+  const [formTemplate, setFormTemplate] =
+    useState<SimpleFormTemplate>("STANDARD");
+  const [newFlowName, setNewFlowName] = useState(SIMPLE_FORM_DEFAULTS.flowName);
+  const [newFlowSlug, setNewFlowSlug] = useState(SIMPLE_FORM_DEFAULTS.slug);
   const [newFlowDescription, setNewFlowDescription] = useState(
     SIMPLE_FORM_DEFAULTS.description,
   );
@@ -168,11 +195,12 @@ export default function SimpleLeadPortalFormCard({
   const [card3OverlayText, setCard3OverlayText] = useState("");
   const [customFormHtml, setCustomFormHtml] = useState("");
   const [isCopyingCustomHtml, setIsCopyingCustomHtml] = useState(false);
-  const [uploadingCardImage, setUploadingCardImage] = useState<1 | 2 | 3 | null>(
-    null,
-  );
+  const [uploadingCardImage, setUploadingCardImage] = useState<
+    1 | 2 | 3 | null
+  >(null);
 
   const resetFormState = useCallback(() => {
+    setFormTemplate("STANDARD");
     setNewFlowName(SIMPLE_FORM_DEFAULTS.flowName);
     setNewFlowSlug(SIMPLE_FORM_DEFAULTS.slug);
     setNewFlowDescription(SIMPLE_FORM_DEFAULTS.description);
@@ -218,11 +246,15 @@ export default function SimpleLeadPortalFormCard({
     const questionMap = new Map(
       flow.questions.map((question) => [question.dataKey, question]),
     );
+    setFormTemplate(
+      questionMap.has("estilo_visual") ? "PREMIUM_SAMPLE" : "STANDARD",
+    );
     const readValue = (key: string, fallback: string) => {
       const value = questionMap.get(key)?.title?.trim();
       return value && value.length > 0 ? value : fallback;
     };
-    const readOptional = (key: string) => questionMap.get(key)?.title?.trim() ?? "";
+    const readOptional = (key: string) =>
+      questionMap.get(key)?.title?.trim() ?? "";
     const readAssetValue = (key: string) =>
       readQuestionAssetValue(questionMap.get(key));
 
@@ -241,13 +273,20 @@ export default function SimpleLeadPortalFormCard({
     setOtherOptionsTitle(
       readValue("outras_opcoes", SIMPLE_FORM_DEFAULTS.otherOptionsTitle),
     );
-    setHeaderTitle(readValue("cabecalho_titulo", SIMPLE_FORM_DEFAULTS.headerTitle));
+    setHeaderTitle(
+      readValue("cabecalho_titulo", SIMPLE_FORM_DEFAULTS.headerTitle),
+    );
     setHeaderSubtitle(
       readValue("cabecalho_subtitulo", SIMPLE_FORM_DEFAULTS.headerSubtitle),
     );
-    setHeaderPromise(readValue("cabecalho_promessa", SIMPLE_FORM_DEFAULTS.headerPromise));
+    setHeaderPromise(
+      readValue("cabecalho_promessa", SIMPLE_FORM_DEFAULTS.headerPromise),
+    );
     setRealExamplesTitle(
-      readValue("exemplos_reais_titulo", SIMPLE_FORM_DEFAULTS.realExamplesTitle),
+      readValue(
+        "exemplos_reais_titulo",
+        SIMPLE_FORM_DEFAULTS.realExamplesTitle,
+      ),
     );
     setRealExamplesSubtitle(
       readValue(
@@ -294,9 +333,15 @@ export default function SimpleLeadPortalFormCard({
     setBulletSectionTitle(
       readValue("bullets_titulo", SIMPLE_FORM_DEFAULTS.bulletSectionTitle),
     );
-    setBulletItem1(readValue("bullet_item_1", SIMPLE_FORM_DEFAULTS.bulletItem1));
-    setBulletItem2(readValue("bullet_item_2", SIMPLE_FORM_DEFAULTS.bulletItem2));
-    setBulletItem3(readValue("bullet_item_3", SIMPLE_FORM_DEFAULTS.bulletItem3));
+    setBulletItem1(
+      readValue("bullet_item_1", SIMPLE_FORM_DEFAULTS.bulletItem1),
+    );
+    setBulletItem2(
+      readValue("bullet_item_2", SIMPLE_FORM_DEFAULTS.bulletItem2),
+    );
+    setBulletItem3(
+      readValue("bullet_item_3", SIMPLE_FORM_DEFAULTS.bulletItem3),
+    );
     setCard1ImageUrl(readAssetValue("exemplo_real_card_1_imagem_url"));
     setCard2ImageUrl(readAssetValue("exemplo_real_card_2_imagem_url"));
     setCard3ImageUrl(readAssetValue("exemplo_real_card_3_imagem_url"));
@@ -371,6 +416,7 @@ export default function SimpleLeadPortalFormCard({
   const manualQuestions = useMemo(
     () =>
       createSimpleFormTemplateQuestions({
+        formTemplate,
         workQuestionTitle,
         optionsQuestionTitle,
         optionsQuestionValues,
@@ -398,6 +444,7 @@ export default function SimpleLeadPortalFormCard({
         card3OverlayText,
       }),
     [
+      formTemplate,
       workQuestionTitle,
       optionsQuestionTitle,
       optionsQuestionValues,
@@ -447,6 +494,27 @@ export default function SimpleLeadPortalFormCard({
     setIsVisible((value) => !value);
   };
 
+  const applyPremiumSampleTemplate = () => {
+    setFormTemplate("PREMIUM_SAMPLE");
+    setNewFlowName(PREMIUM_SAMPLE_DEFAULTS.flowName);
+    setNewFlowSlug(PREMIUM_SAMPLE_DEFAULTS.slug);
+    setNewFlowDescription(PREMIUM_SAMPLE_DEFAULTS.description);
+    setHeaderTitle(PREMIUM_SAMPLE_DEFAULTS.headerTitle);
+    setHeaderSubtitle(PREMIUM_SAMPLE_DEFAULTS.headerSubtitle);
+    setHeaderPromise(PREMIUM_SAMPLE_DEFAULTS.headerPromise);
+    setOptionsQuestionTitle(PREMIUM_SAMPLE_DEFAULTS.optionsQuestionTitle);
+    setOptionsQuestionValues(PREMIUM_SAMPLE_DEFAULTS.optionsQuestionValues);
+    setBulletSectionTitle(PREMIUM_SAMPLE_DEFAULTS.bulletSectionTitle);
+    setBulletItem1(PREMIUM_SAMPLE_DEFAULTS.bulletItem1);
+    setBulletItem2(PREMIUM_SAMPLE_DEFAULTS.bulletItem2);
+    setBulletItem3(PREMIUM_SAMPLE_DEFAULTS.bulletItem3);
+    setFeedback({
+      variant: "success",
+      message:
+        "Modelo de amostra aplicado: nome do estúdio, e-mail e escolha de estilo.",
+    });
+  };
+
   const handleSaveSimpleFlow = async () => {
     console.info(`${logPrefix} Save requested`, {
       isEditing,
@@ -458,7 +526,9 @@ export default function SimpleLeadPortalFormCard({
     });
 
     if (isSaving) {
-      console.info(`${logPrefix} Save aborted because a save is already pending`);
+      console.info(
+        `${logPrefix} Save aborted because a save is already pending`,
+      );
       return;
     }
     if (!marketNicheId) {
@@ -471,9 +541,9 @@ export default function SimpleLeadPortalFormCard({
     }
 
     if (
-      !workQuestionTitle.trim() ||
+      (formTemplate === "STANDARD" && !workQuestionTitle.trim()) ||
       !optionsQuestionTitle.trim() ||
-      !otherOptionsTitle.trim() ||
+      (formTemplate === "STANDARD" && !otherOptionsTitle.trim()) ||
       !headerTitle.trim() ||
       !headerSubtitle.trim() ||
       !headerPromise.trim() ||
@@ -532,14 +602,16 @@ export default function SimpleLeadPortalFormCard({
       name: newFlowName,
       slug: newFlowSlug,
       description: newFlowDescription?.trim() || undefined,
-      customFormHtml: customFormHtml.trim().length > 0 ? customFormHtml : undefined,
+      customFormHtml:
+        customFormHtml.trim().length > 0 ? customFormHtml : undefined,
       model: "manual",
       marketNicheId,
       simpleFormStyleId: selectedStyleId ?? undefined,
       questions: manualQuestions.map((question) => ({
         ...question,
         options:
-          question.type === "SINGLE_CHOICE" || question.type === "MULTIPLE_CHOICE"
+          question.type === "SINGLE_CHOICE" ||
+          question.type === "MULTIPLE_CHOICE"
             ? (question.options ?? [])
             : undefined,
       })),
@@ -581,12 +653,12 @@ export default function SimpleLeadPortalFormCard({
     } catch (error) {
       console.error(`${logPrefix} Failed to save flow`, error);
       const message = axios.isAxiosError(error)
-        ? error.response?.data?.message ?? "Não foi possível salvar o fluxo simples."
+        ? (error.response?.data?.message ??
+          "Não foi possível salvar o fluxo simples.")
         : "Não foi possível salvar o fluxo simples.";
       setFeedback({ variant: "error", message });
     }
   };
-
 
   const readImageDimensions = (
     file: File,
@@ -706,7 +778,9 @@ export default function SimpleLeadPortalFormCard({
         <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
           <div>
             <h5 className="mb-1">
-              {isEditing ? "Editar formulário simples" : "Criar formulário simples (sem imagem)"}
+              {isEditing
+                ? "Editar formulário simples"
+                : "Criar formulário simples (sem imagem)"}
             </h5>
             <p className="text-muted small mb-0">
               Monte um fluxo manual para o portal com perguntas diretas, como
@@ -714,8 +788,8 @@ export default function SimpleLeadPortalFormCard({
             </p>
             {isEditing && editingFlow ? (
               <p className="text-warning small mb-0">
-                Editando o formulário <strong>{editingFlow.name}</strong>. Salve as alterações
-                ou cancele para voltar ao modo de criação.
+                Editando o formulário <strong>{editingFlow.name}</strong>. Salve
+                as alterações ou cancele para voltar ao modo de criação.
               </p>
             ) : null}
           </div>
@@ -726,7 +800,10 @@ export default function SimpleLeadPortalFormCard({
             disabled={
               isSaving ||
               isLoadingStyles ||
-              (!isEditing && (!marketNicheId || !simpleFormStyles || simpleFormStyles.length === 0))
+              (!isEditing &&
+                (!marketNicheId ||
+                  !simpleFormStyles ||
+                  simpleFormStyles.length === 0))
             }
           >
             {isEditing
@@ -746,6 +823,31 @@ export default function SimpleLeadPortalFormCard({
         {isVisible && (marketNicheId || isEditing) ? (
           <div className="d-flex flex-column gap-3">
             <div className="row g-3">
+              <div className="col-12">
+                <label className="form-label">Modelo do formulário *</label>
+                <div className="d-flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className={`btn btn-sm ${formTemplate === "PREMIUM_SAMPLE" ? "btn-primary" : "btn-outline-primary"}`}
+                    onClick={applyPremiumSampleTemplate}
+                    disabled={isSaving}
+                  >
+                    Amostra personalizada de 3 artes
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn btn-sm ${formTemplate === "STANDARD" ? "btn-secondary" : "btn-outline-secondary"}`}
+                    onClick={() => setFormTemplate("STANDARD")}
+                    disabled={isSaving}
+                  >
+                    Formulário padrão
+                  </button>
+                </div>
+                <p className="form-text mb-0">
+                  O modelo de amostra reduz o formulário a nome do estúdio,
+                  e-mail e estilo visual.
+                </p>
+              </div>
               <div className="col-md-6">
                 <label className="form-label">Nome do fluxo *</label>
                 <input
@@ -816,10 +918,13 @@ export default function SimpleLeadPortalFormCard({
             <div className="border rounded-3 p-3 bg-body-tertiary">
               <div className="d-flex flex-column gap-2">
                 <div>
-                  <h6 className="mb-1">HTML personalizado da página (opcional)</h6>
+                  <h6 className="mb-1">
+                    HTML personalizado da página (opcional)
+                  </h6>
                   <p className="text-muted small mb-0">
-                    Cole um layout completo para substituir toda a página pública. O conteúdo será exibido em um iframe dedicado e não receberá a
-                    formatação padrão do fluxo simples.
+                    Cole um layout completo para substituir toda a página
+                    pública. O conteúdo será exibido em um iframe dedicado e não
+                    receberá a formatação padrão do fluxo simples.
                   </p>
                 </div>
                 <textarea
@@ -853,29 +958,40 @@ export default function SimpleLeadPortalFormCard({
                   <p className="mb-1">Observações importantes:</p>
                   <ul className="ps-3 mb-1">
                     <li>
-                      O HTML é renderizado em um iframe próprio, sem o cabeçalho ou as seções padrão do fluxo simples.
+                      O HTML é renderizado em um iframe próprio, sem o cabeçalho
+                      ou as seções padrão do fluxo simples.
                     </li>
                     <li>
-                      Não injetamos mais o formulário automático. Inclua o seu próprio <code>&lt;form&gt;</code> enviando um POST multipart para <code>{`{{url}}`}</code>, com lógica de envio assíncrona (validar, desabilitar botão durante o envio e tratar feedback de sucesso/erro).
+                      Não injetamos mais o formulário automático. Inclua o seu
+                      próprio <code>&lt;form&gt;</code> enviando um POST
+                      multipart para <code>{`{{url}}`}</code>, com lógica de
+                      envio assíncrona (validar, desabilitar botão durante o
+                      envio e tratar feedback de sucesso/erro).
                     </li>
                     <li>
-                      O campo <code>email</code> deve estar sempre presente e obrigatório no formulário, pois toda comunicação com o lead ocorre por e-mail.
+                      O campo <code>email</code> deve estar sempre presente e
+                      obrigatório no formulário, pois toda comunicação com o
+                      lead ocorre por e-mail.
                     </li>
                     <li>
-                      Variáveis disponíveis: <code>{`{{imagem1}}`}</code>, <code>{`{{imagem2}}`}</code>, <code>{`{{imagem3}}`}</code> e <code>{`{{url}}`}</code> (endpoint de submissão).
+                      Variáveis disponíveis: <code>{`{{imagem1}}`}</code>,{" "}
+                      <code>{`{{imagem2}}`}</code>, <code>{`{{imagem3}}`}</code>{" "}
+                      e <code>{`{{url}}`}</code> (endpoint de submissão).
                     </li>
                     <li>
-                      As imagens usam os mesmos arquivos configurados nos subcards deste formulário.
+                      As imagens usam os mesmos arquivos configurados nos
+                      subcards deste formulário.
                     </li>
                   </ul>
                   <p className="mb-0">
-                    O evento de renderização do experimento continua sendo disparado automaticamente pelo portal.
+                    O evento de renderização do experimento continua sendo
+                    disparado automaticamente pelo portal.
                   </p>
                 </div>
               </div>
             </div>
 
-            {!isEditingCustomHtmlFlow ? (
+            {!isEditingCustomHtmlFlow && formTemplate === "STANDARD" ? (
               <div className="border rounded p-3 bg-light">
                 <h6 className="mb-3">Template padrão do formulário</h6>
                 <div className="row g-3">
@@ -966,7 +1082,9 @@ export default function SimpleLeadPortalFormCard({
                     type="text"
                     className="form-control"
                     value={card1OverlayText}
-                    onChange={(event) => setCard1OverlayText(event.target.value)}
+                    onChange={(event) =>
+                      setCard1OverlayText(event.target.value)
+                    }
                   />
                 </div>
                 <div className="col-md-6">
@@ -997,7 +1115,9 @@ export default function SimpleLeadPortalFormCard({
                     type="text"
                     className="form-control"
                     value={card2OverlayText}
-                    onChange={(event) => setCard2OverlayText(event.target.value)}
+                    onChange={(event) =>
+                      setCard2OverlayText(event.target.value)
+                    }
                   />
                 </div>
                 <div className="col-md-6">
@@ -1028,7 +1148,9 @@ export default function SimpleLeadPortalFormCard({
                     type="text"
                     className="form-control"
                     value={card3OverlayText}
-                    onChange={(event) => setCard3OverlayText(event.target.value)}
+                    onChange={(event) =>
+                      setCard3OverlayText(event.target.value)
+                    }
                   />
                 </div>
               </div>
@@ -1048,163 +1170,173 @@ export default function SimpleLeadPortalFormCard({
               <div className="border rounded p-3 bg-light">
                 <h6 className="mb-3">Textos variáveis da landing</h6>
                 <div className="row g-3">
-                <div className="col-12">
-                  <label className="form-label">Cabeçalho - título *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={headerTitle}
-                    onChange={(event) => setHeaderTitle(event.target.value)}
-                  />
-                </div>
-                <div className="col-12">
-                  <label className="form-label">Cabeçalho - subtítulo *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={headerSubtitle}
-                    onChange={(event) => setHeaderSubtitle(event.target.value)}
-                  />
-                </div>
-                <div className="col-12">
-                  <label className="form-label">Cabeçalho - promessa *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={headerPromise}
-                    onChange={(event) => setHeaderPromise(event.target.value)}
-                  />
-                </div>
-                <div className="col-12">
-                  <label className="form-label">
-                    Exemplos reais - título *
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={realExamplesTitle}
-                    onChange={(event) =>
-                      setRealExamplesTitle(event.target.value)
-                    }
-                  />
-                </div>
-                <div className="col-12">
-                  <label className="form-label">
-                    Exemplos reais - subtítulo *
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={realExamplesSubtitle}
-                    onChange={(event) =>
-                      setRealExamplesSubtitle(event.target.value)
-                    }
-                  />
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label">Subcard 1 - título *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={realExampleCard1Title}
-                    onChange={(event) =>
-                      setRealExampleCard1Title(event.target.value)
-                    }
-                  />
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label">Subcard 1 - subtítulo *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={realExampleCard1Subtitle}
-                    onChange={(event) =>
-                      setRealExampleCard1Subtitle(event.target.value)
-                    }
-                  />
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label">Subcard 2 - título *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={realExampleCard2Title}
-                    onChange={(event) =>
-                      setRealExampleCard2Title(event.target.value)
-                    }
-                  />
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label">Subcard 2 - subtítulo *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={realExampleCard2Subtitle}
-                    onChange={(event) =>
-                      setRealExampleCard2Subtitle(event.target.value)
-                    }
-                  />
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label">Subcard 3 - título *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={realExampleCard3Title}
-                    onChange={(event) =>
-                      setRealExampleCard3Title(event.target.value)
-                    }
-                  />
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label">Subcard 3 - subtítulo *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={realExampleCard3Subtitle}
-                    onChange={(event) =>
-                      setRealExampleCard3Subtitle(event.target.value)
-                    }
-                  />
-                </div>
-                <div className="col-12">
-                  <label className="form-label">Bullets - título *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={bulletSectionTitle}
-                    onChange={(event) =>
-                      setBulletSectionTitle(event.target.value)
-                    }
-                  />
-                </div>
-                <div className="col-md-4">
-                  <label className="form-label">Bullet 1 *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={bulletItem1}
-                    onChange={(event) => setBulletItem1(event.target.value)}
-                  />
-                </div>
-                <div className="col-md-4">
-                  <label className="form-label">Bullet 2 *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={bulletItem2}
-                    onChange={(event) => setBulletItem2(event.target.value)}
-                  />
-                </div>
-                <div className="col-md-4">
-                  <label className="form-label">Bullet 3 *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={bulletItem3}
-                    onChange={(event) => setBulletItem3(event.target.value)}
-                  />
-                </div>
+                  <div className="col-12">
+                    <label className="form-label">Cabeçalho - título *</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={headerTitle}
+                      onChange={(event) => setHeaderTitle(event.target.value)}
+                    />
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label">
+                      Cabeçalho - subtítulo *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={headerSubtitle}
+                      onChange={(event) =>
+                        setHeaderSubtitle(event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label">Cabeçalho - promessa *</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={headerPromise}
+                      onChange={(event) => setHeaderPromise(event.target.value)}
+                    />
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label">
+                      Exemplos reais - título *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={realExamplesTitle}
+                      onChange={(event) =>
+                        setRealExamplesTitle(event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label">
+                      Exemplos reais - subtítulo *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={realExamplesSubtitle}
+                      onChange={(event) =>
+                        setRealExamplesSubtitle(event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">Subcard 1 - título *</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={realExampleCard1Title}
+                      onChange={(event) =>
+                        setRealExampleCard1Title(event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">
+                      Subcard 1 - subtítulo *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={realExampleCard1Subtitle}
+                      onChange={(event) =>
+                        setRealExampleCard1Subtitle(event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">Subcard 2 - título *</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={realExampleCard2Title}
+                      onChange={(event) =>
+                        setRealExampleCard2Title(event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">
+                      Subcard 2 - subtítulo *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={realExampleCard2Subtitle}
+                      onChange={(event) =>
+                        setRealExampleCard2Subtitle(event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">Subcard 3 - título *</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={realExampleCard3Title}
+                      onChange={(event) =>
+                        setRealExampleCard3Title(event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label">
+                      Subcard 3 - subtítulo *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={realExampleCard3Subtitle}
+                      onChange={(event) =>
+                        setRealExampleCard3Subtitle(event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label">Bullets - título *</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={bulletSectionTitle}
+                      onChange={(event) =>
+                        setBulletSectionTitle(event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="col-md-4">
+                    <label className="form-label">Bullet 1 *</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={bulletItem1}
+                      onChange={(event) => setBulletItem1(event.target.value)}
+                    />
+                  </div>
+                  <div className="col-md-4">
+                    <label className="form-label">Bullet 2 *</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={bulletItem2}
+                      onChange={(event) => setBulletItem2(event.target.value)}
+                    />
+                  </div>
+                  <div className="col-md-4">
+                    <label className="form-label">Bullet 3 *</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={bulletItem3}
+                      onChange={(event) => setBulletItem3(event.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
             ) : null}
@@ -1248,7 +1380,8 @@ export default function SimpleLeadPortalFormCard({
   );
 }
 
-interface SimpleFlowTemplateConfig {
+export interface SimpleFlowTemplateConfig {
+  formTemplate: SimpleFormTemplate;
   workQuestionTitle: string;
   optionsQuestionTitle: string;
   optionsQuestionValues: string;
@@ -1276,7 +1409,8 @@ interface SimpleFlowTemplateConfig {
   card3OverlayText: string;
 }
 
-function createSimpleFormTemplateQuestions({
+export function createSimpleFormTemplateQuestions({
+  formTemplate,
   workQuestionTitle,
   optionsQuestionTitle,
   optionsQuestionValues,
@@ -1308,7 +1442,7 @@ function createSimpleFormTemplateQuestions({
     .map((option) => option.trim())
     .filter(Boolean);
 
-  return [
+  const presentationQuestions: CreateLeadPortalFlowQuestionRequest[] = [
     {
       title:
         headerTitle.trim() ||
@@ -1335,7 +1469,8 @@ function createSimpleFormTemplateQuestions({
     },
     {
       title:
-        realExamplesTitle.trim() || "Veja exemplos do estilo visual que você pode receber",
+        realExamplesTitle.trim() ||
+        "Veja exemplos do estilo visual que você pode receber",
       dataKey: "exemplos_reais_titulo",
       type: "TEXT",
       required: false,
@@ -1462,6 +1597,46 @@ function createSimpleFormTemplateQuestions({
       type: "TEXT",
       required: false,
     },
+  ];
+
+  if (formTemplate === "PREMIUM_SAMPLE") {
+    return [
+      ...presentationQuestions,
+      {
+        title: "Nome do estúdio",
+        dataKey: "nome",
+        type: "TEXT",
+        required: true,
+        placeholder: "Ex.: Studio Bella Nails",
+      },
+      {
+        title: "E-mail para receber suas 3 artes",
+        dataKey: "email",
+        type: "EMAIL",
+        required: true,
+        placeholder: "voce@email.com",
+      },
+      {
+        title:
+          optionsQuestionTitle.trim() ||
+          "Qual estilo combina mais com o seu estúdio?",
+        dataKey: "estilo_visual",
+        type: "SINGLE_CHOICE",
+        required: true,
+        options:
+          parsedOptions.length > 0
+            ? parsedOptions
+            : [
+                "Elegante e minimalista",
+                "Delicado e feminino",
+                "Moderno e marcante",
+              ],
+      },
+    ];
+  }
+
+  return [
+    ...presentationQuestions,
     {
       title: "Nome",
       dataKey: "nome",

@@ -34,6 +34,7 @@ public class AgentMaturityService {
       case "growth-operator" -> growth(agent);
       case "financial-agent" -> financial(agent);
       case "customer-agent" -> customer(agent);
+      case "experiment-strategist" -> strategist(agent);
       default -> empty(agent);
     };
   }
@@ -69,6 +70,11 @@ public class AgentMaturityService {
             "SELECT COUNT(*) FROM customer_agent_evaluation WHERE status IN ('PENDING','RUNNING')",
             Long.class);
     return dto(agent, execution, open, confirmed, confirmed);
+  }
+
+  /** Consolida pesquisas concluídas sem contar recomendações como resultado comercial. */
+  private AgentMaturityDto strategist(Agent agent) {
+    return dto(agent, aggregate("experiment_strategist_execution"), 0, 0, 0);
   }
 
   /** Calcula os indicadores comuns sem promover hipótese a resultado confirmado. */

@@ -22,9 +22,11 @@ fi
 workflow="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.github/workflows/customer-agent-worker-ci.yml"
 grep -Fq 'Validate bundled Chromium as runtime user' "${workflow}"
 grep -Fq 'await chromium.launch' "${workflow}"
+grep -Fq 'channel: "chromium"' "${workflow}"
 
 observer="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/src/main/resources/browser/mobile-observation.mjs"
 grep -Fq 'const isDirectVideo' "${observer}"
+grep -Fq 'channel: "chromium"' "${observer}"
 grep -Fq 'video.src = source' "${observer}"
 grep -Fq 'loadedmetadata' "${observer}"
 

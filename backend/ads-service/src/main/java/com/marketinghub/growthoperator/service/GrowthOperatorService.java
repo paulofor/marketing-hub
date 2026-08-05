@@ -458,6 +458,12 @@ public class GrowthOperatorService {
     String actionKey = sha256(action.trim().toLowerCase(java.util.Locale.ROOT));
     Long planId = execution.getCommercialPlan().getId();
     if (taskRepository
+        .findFirstByCommercialPlanIdAndStatusOrderByCreatedAtAsc(
+            planId, GrowthOperatorTaskStatus.OPEN)
+        .isPresent()) {
+      return;
+    }
+    if (taskRepository
         .findFirstByCommercialPlanIdAndActionKeyAndStatus(
             planId, actionKey, GrowthOperatorTaskStatus.OPEN)
         .isPresent()) {
@@ -551,7 +557,7 @@ public class GrowthOperatorService {
       JsonNode operationalEvidence = objectMapper.readTree(evidenceSnapshot);
       if (operationalEvidence.isObject()) {
         ((com.fasterxml.jackson.databind.node.ObjectNode) operationalEvidence)
-            .remove("consolidatedMemory");
+            .remove(java.util.List.of("consolidatedMemory", "operatorTasks"));
       }
       return sha256(objectMapper.writeValueAsString(operationalEvidence));
     } catch (JsonProcessingException ex) {

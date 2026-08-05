@@ -130,6 +130,55 @@ class GrowthOperatorServiceTest {
     verify(repository, never()).save(any(GrowthOperatorExecution.class));
   }
 
+  /** Impede que a propria criacao de pendencia dispare outro ciclo sem evidencia comercial nova. */
+  @Test
+  void shouldIgnoreOperatorTasksWhenDetectingCommercialEvidenceChanges() {
+    GrowthOperatorExecutionRepository repository = mock(GrowthOperatorExecutionRepository.class);
+    var taskRepository =
+        mock(com.marketinghub.repository.jpa.growthoperator.GrowthOperatorTaskRepository.class);
+    CommercialPlanService planService = mock(CommercialPlanService.class);
+    CommercialPlan plan = CommercialPlan.builder().id(2L).commercialObjective("Vender").build();
+    when(planService.getPlan(2L)).thenReturn(plan);
+    when(repository.findFirstByCommercialPlanIdOrderByCreatedAtDesc(2L))
+        .thenReturn(java.util.Optional.empty());
+    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
+    when(taskRepository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
+    mockVersionedSave(repository);
+    GrowthOperatorService service =
+        new GrowthOperatorService(
+            repository,
+            taskRepository,
+            planService,
+            mock(CommercialPlanWeekObjectiveRepository.class),
+            mock(ExperimentFunnelService.class),
+            mock(VideoProjectRepository.class),
+            mock(ExperimentVideoPerformanceDashboardService.class),
+            mock(com.marketinghub.experiment.service.ExperimentService.class),
+            new ObjectMapper().findAndRegisterModules());
+
+    service.ensureAutomaticCycle(2L);
+    ArgumentCaptor<GrowthOperatorExecution> captor =
+        ArgumentCaptor.forClass(GrowthOperatorExecution.class);
+    verify(repository).save(captor.capture());
+    GrowthOperatorExecution latest = captor.getValue();
+    latest.setCreatedAt(Instant.now().minusSeconds(3600));
+    when(repository.findFirstByCommercialPlanIdOrderByCreatedAtDesc(2L))
+        .thenReturn(java.util.Optional.of(latest));
+    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of(latest));
+    var openTask = mock(com.marketinghub.growthoperator.GrowthOperatorTask.class);
+    when(openTask.getId()).thenReturn(1L);
+    when(openTask.getCommercialPlan()).thenReturn(plan);
+    when(openTask.getSourceExecution()).thenReturn(latest);
+    when(openTask.getActionText()).thenReturn("Auditar funil");
+    when(openTask.getStatus()).thenReturn(com.marketinghub.growthoperator.GrowthOperatorTaskStatus.OPEN);
+    when(taskRepository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of(openTask));
+    clearInvocations(repository);
+
+    service.ensureAutomaticCycle(2L);
+
+    verify(repository, never()).save(any(GrowthOperatorExecution.class));
+  }
+
   /** Confirma que o novo ciclo recebe conclusoes e resultados observados de todo o historico. */
   @Test
   void shouldFreezeConsolidatedPlanningMemory() throws Exception {

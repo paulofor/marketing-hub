@@ -67,4 +67,36 @@ public final class CustomerAgentContracts {
       Instant startedAt,
       Instant finishedAt,
       Instant createdAt) {}
+
+  /** Solicita uma navegacao observacional limitada a fontes publicas autorizadas. */
+  public record StartDigitalObservationRequest(
+      Long personaId, String objective, String authorizedSourcesJson, String deviceProfile) {}
+
+  /** Resultado do worker separado em observacao, simulacao e hipotese. */
+  public record CompleteDigitalObservationRequest(
+      String observationJson,
+      String simulatedReactionJson,
+      String commercialHypothesisJson,
+      String rawModelResponse,
+      String model) {}
+
+  /** Confirmacao humana posterior, proveniente de fonte oficial. */
+  public record RecordObservationHumanConfirmationRequest(String humanConfirmationJson) {}
+
+  /** Representacao auditavel de uma experiencia digital observacional. */
+  public record DigitalObservationResponse(
+      Long id,
+      PersonaResponse persona,
+      String objective,
+      String authorizedSourcesJson,
+      String status,
+      String deviceProfile,
+      String observationJson,
+      String simulatedReactionJson,
+      String commercialHypothesisJson,
+      String humanConfirmationJson,
+      String model,
+      Instant startedAt,
+      Instant finishedAt,
+      Instant createdAt) {}
 }

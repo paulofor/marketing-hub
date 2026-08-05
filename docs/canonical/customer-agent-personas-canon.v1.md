@@ -27,3 +27,16 @@ O Agente Cliente opera em sandbox somente leitura. Ele pode retornar `APROVAR_TE
 
 A maturidade é medida pela correspondência posterior entre objeções previstas e comportamento
 humano observado, nunca pela quantidade ou eloquência dos relatórios.
+
+## Experiência Digital Observacional
+
+Cada navegação deve nascer de uma persona, um objetivo e uma lista explícita de fontes públicas
+autorizadas. O worker opera em sandbox somente leitura, com perfil mobile, sem login, formulário,
+compra, publicação ou coleta de dados pessoais. Timelines pessoais irrestritas são proibidas;
+feeds devem ser pesquisas públicas governadas por tema.
+
+A memória mantém quatro camadas imutavelmente separadas: `observation_json` registra fatos e URLs;
+`simulated_reaction_json` registra a reação hipotética da persona;
+`commercial_hypothesis_json` registra o teste sugerido; e `human_confirmation_json` recebe apenas
+dados humanos oficiais posteriores. Nenhuma das três primeiras camadas eleva confiança ou valida
+demanda por si mesma.

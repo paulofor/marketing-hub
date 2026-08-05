@@ -3,8 +3,10 @@ package com.marketinghub.customeragent.service;
 import static com.marketinghub.customeragent.service.CustomerAgentContracts.*;
 
 import com.marketinghub.customeragent.CustomerAgentEvaluation;
+import com.marketinghub.customeragent.CustomerDigitalObservation;
 import com.marketinghub.customeragent.CustomerPersona;
 import com.marketinghub.repository.jpa.customeragent.CustomerAgentEvaluationRepository;
+import com.marketinghub.repository.jpa.customeragent.CustomerDigitalObservationRepository;
 import com.marketinghub.repository.jpa.customeragent.CustomerPersonaRepository;
 import java.time.Instant;
 import java.util.List;
@@ -19,11 +21,92 @@ import org.springframework.web.server.ResponseStatusException;
 public class CustomerAgentService {
   private final CustomerPersonaRepository personas;
   private final CustomerAgentEvaluationRepository evaluations;
+  private final CustomerDigitalObservationRepository observations;
 
   public CustomerAgentService(
-      CustomerPersonaRepository personas, CustomerAgentEvaluationRepository evaluations) {
+      CustomerPersonaRepository personas,
+      CustomerAgentEvaluationRepository evaluations,
+      CustomerDigitalObservationRepository observations) {
     this.personas = personas;
     this.evaluations = evaluations;
+    this.observations = observations;
+  }
+
+  /** Agenda uma experiencia mobile limitada a fontes publicas explicitamente autorizadas. */
+  @Transactional
+  public DigitalObservationResponse startObservation(StartDigitalObservationRequest request) {
+    if (request == null || blank(request.objective()) || blank(request.authorizedSourcesJson())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Observacao exige objetivo e fontes autorizadas.");
+    }
+    String sources = request.authorizedSourcesJson().trim();
+    if (!sources.startsWith("[")
+        || sources.contains("localhost")
+        || sources.contains("127.0.0.1")) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Fontes devem ser uma lista publica governada.");
+    }
+    CustomerDigitalObservation value = new CustomerDigitalObservation();
+    value.setPersona(findPersona(request.personaId()));
+    value.setObjective(request.objective());
+    value.setAuthorizedSourcesJson(sources);
+    value.setDeviceProfile(blank(request.deviceProfile()) ? "MOBILE" : request.deviceProfile());
+    value.setStatus("PENDING");
+    return observationResponse(observations.save(value));
+  }
+
+  /** Reserva a proxima experiencia digital para o worker observacional. */
+  @Transactional
+  public DigitalObservationResponse claimPendingObservation() {
+    List<CustomerDigitalObservation> pending =
+        observations.findByStatusOrderByCreatedAtAsc("PENDING", PageRequest.of(0, 1));
+    if (pending.isEmpty())
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Nenhuma observacao pendente.");
+    CustomerDigitalObservation value = pending.getFirst();
+    value.setStatus("RUNNING");
+    value.setStartedAt(Instant.now());
+    return observationResponse(observations.save(value));
+  }
+
+  /** Persiste as quatro camadas sem promover hipotese a aprendizado humano. */
+  @Transactional
+  public DigitalObservationResponse completeObservation(
+      Long id, CompleteDigitalObservationRequest request) {
+    CustomerDigitalObservation value = findRunningObservation(id);
+    if (request == null
+        || blank(request.observationJson())
+        || blank(request.simulatedReactionJson())
+        || blank(request.commercialHypothesisJson())) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Observacao incompleta.");
+    }
+    value.setObservationJson(request.observationJson());
+    value.setSimulatedReactionJson(request.simulatedReactionJson());
+    value.setCommercialHypothesisJson(request.commercialHypothesisJson());
+    value.setRawModelResponse(request.rawModelResponse());
+    value.setModelName(request.model());
+    value.setStatus("COMPLETED");
+    value.setFinishedAt(Instant.now());
+    return observationResponse(observations.save(value));
+  }
+
+  /** Registra confirmacao humana posterior sem alterar a observacao original. */
+  @Transactional
+  public DigitalObservationResponse recordObservationHumanConfirmation(
+      Long id, RecordObservationHumanConfirmationRequest request) {
+    CustomerDigitalObservation value =
+        observations
+            .findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    if (request == null || blank(request.humanConfirmationJson()))
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Confirmacao humana vazia.");
+    value.setHumanConfirmationJson(request.humanConfirmationJson());
+    return observationResponse(observations.save(value));
+  }
+
+  /** Lista a memoria observacional sem fundir suas camadas. */
+  @Transactional(readOnly = true)
+  public List<DigitalObservationResponse> listObservations() {
+    return observations.findAll().stream().map(this::observationResponse).toList();
   }
 
   /** Cadastra uma persona como hipotese auditavel sustentada por ao menos uma evidencia. */
@@ -128,6 +211,17 @@ public class CustomerAgentService {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
   }
 
+  /** Busca uma observacao legitimamente reservada pelo worker. */
+  private CustomerDigitalObservation findRunningObservation(Long id) {
+    CustomerDigitalObservation value =
+        observations
+            .findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    if (!"RUNNING".equals(value.getStatus()))
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Observacao fora de execucao.");
+    return value;
+  }
+
   /** Busca avaliacao legitimamente em execucao. */
   private CustomerAgentEvaluation findRunning(Long id) {
     CustomerAgentEvaluation value =
@@ -192,5 +286,24 @@ public class CustomerAgentService {
         e.getStartedAt(),
         e.getFinishedAt(),
         e.getCreatedAt());
+  }
+
+  /** Converte a memoria observacional preservando todas as fronteiras de confianca. */
+  private DigitalObservationResponse observationResponse(CustomerDigitalObservation value) {
+    return new DigitalObservationResponse(
+        value.getId(),
+        personaResponse(value.getPersona()),
+        value.getObjective(),
+        value.getAuthorizedSourcesJson(),
+        value.getStatus(),
+        value.getDeviceProfile(),
+        value.getObservationJson(),
+        value.getSimulatedReactionJson(),
+        value.getCommercialHypothesisJson(),
+        value.getHumanConfirmationJson(),
+        value.getModelName(),
+        value.getStartedAt(),
+        value.getFinishedAt(),
+        value.getCreatedAt());
   }
 }

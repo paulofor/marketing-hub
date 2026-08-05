@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["observation", "simulatedReaction", "commercialHypothesis"],
+  "properties": {
+    "observation": {
+      "type": "object",
+      "required": ["sources", "facts"],
+      "properties": {
+        "sources": { "type": "array", "items": { "type": "string" } },
+        "facts": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "simulatedReaction": { "type": "object" },
+    "commercialHypothesis": { "type": "object" }
+  }
+}

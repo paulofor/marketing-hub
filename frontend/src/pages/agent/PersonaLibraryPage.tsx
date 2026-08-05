@@ -13,12 +13,28 @@ type Persona = {
   evidenceJson: string;
 };
 
+type DigitalObservation = {
+  id: number;
+  persona: Persona;
+  objective: string;
+  authorizedSourcesJson: string;
+  status: string;
+  observationJson?: string;
+  simulatedReactionJson?: string;
+  commercialHypothesisJson?: string;
+  humanConfirmationJson?: string;
+  createdAt: string;
+};
+
 export default function PersonaLibraryPage() {
   const client = useQueryClient();
   const [name, setName] = useState("");
   const [pain, setPain] = useState("");
   const [progress, setProgress] = useState("");
   const [evidence, setEvidence] = useState("");
+  const [observationPersonaId, setObservationPersonaId] = useState("");
+  const [observationObjective, setObservationObjective] = useState("");
+  const [observationSources, setObservationSources] = useState("");
   const personas = useQuery({
     queryKey: ["customer-personas"],
     queryFn: async () => (await axios.get<Persona[]>("/api/customer-agent/v1/personas")).data,
@@ -37,6 +53,31 @@ export default function PersonaLibraryPage() {
     onSuccess: async () => {
       setName(""); setPain(""); setProgress(""); setEvidence("");
       await client.invalidateQueries({ queryKey: ["customer-personas"] });
+    },
+  });
+  const observations = useQuery({
+    queryKey: ["customer-digital-observations"],
+    queryFn: async () =>
+      (await axios.get<DigitalObservation[]>("/api/customer-agent/v1/digital-observations"))
+        .data,
+  });
+  const createObservation = useMutation({
+    mutationFn: async () =>
+      axios.post("/api/customer-agent/v1/digital-observations", {
+        personaId: Number(observationPersonaId),
+        objective: observationObjective,
+        authorizedSourcesJson: JSON.stringify(
+          observationSources
+            .split("\n")
+            .map((source) => source.trim())
+            .filter(Boolean),
+        ),
+        deviceProfile: "MOBILE",
+      }),
+    onSuccess: async () => {
+      setObservationObjective("");
+      setObservationSources("");
+      await client.invalidateQueries({ queryKey: ["customer-digital-observations"] });
     },
   });
   const submit = (event: FormEvent) => { event.preventDefault(); create.mutate(); };
@@ -65,6 +106,63 @@ export default function PersonaLibraryPage() {
             <p><strong>Dor:</strong> {persona.pain}</p><p><strong>Progresso:</strong> {persona.desiredProgress}</p>
           </div></div></article>
         ))}
+      </section>
+      <section className="card card-body mt-4">
+        <h2 className="h5">Experiência Digital Observacional</h2>
+        <p className="text-muted">
+          Navegação mobile somente leitura em páginas e feeds públicos autorizados. Observações e
+          reações simuladas não validam comportamento humano.
+        </p>
+        <form
+          className="row g-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            createObservation.mutate();
+          }}
+        >
+          <div className="col-md-4">
+            <label className="form-label">Persona</label>
+            <select
+              className="form-select"
+              required
+              value={observationPersonaId}
+              onChange={(event) => setObservationPersonaId(event.target.value)}
+            >
+              <option value="">Selecione</option>
+              {personas.data?.map((persona) => (
+                <option key={persona.id} value={persona.id}>{persona.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="col-md-8">
+            <label className="form-label">Objetivo da navegação</label>
+            <input className="form-control" required value={observationObjective} onChange={(event) => setObservationObjective(event.target.value)} placeholder="Ex.: avaliar identificação, confiança e esforço na jornada MUSA" />
+          </div>
+          <div className="col-12">
+            <label className="form-label">URLs públicas autorizadas (uma por linha)</label>
+            <textarea className="form-control" rows={4} required value={observationSources} onChange={(event) => setObservationSources(event.target.value)} placeholder="https://..." />
+          </div>
+          <div className="col-12">
+            <button className="btn btn-primary" disabled={createObservation.isPending}>
+              Agendar experiência mobile
+            </button>
+          </div>
+        </form>
+        <div className="mt-4">
+          {observations.data?.map((observation) => (
+            <details className="border rounded p-3 mb-2" key={observation.id}>
+              <summary>
+                {observation.persona.name} — {observation.status} — {new Date(observation.createdAt).toLocaleString("pt-BR")}
+              </summary>
+              <p className="mt-3"><strong>Objetivo:</strong> {observation.objective}</p>
+              <p><strong>Fontes:</strong> {observation.authorizedSourcesJson}</p>
+              {observation.observationJson && <p><strong>Observação externa:</strong> {observation.observationJson}</p>}
+              {observation.simulatedReactionJson && <p><strong>Reação simulada:</strong> {observation.simulatedReactionJson}</p>}
+              {observation.commercialHypothesisJson && <p><strong>Hipótese comercial:</strong> {observation.commercialHypothesisJson}</p>}
+              <p><strong>Confirmação humana:</strong> {observation.humanConfirmationJson ?? "Ainda não confirmada"}</p>
+            </details>
+          ))}
+        </div>
       </section>
     </main>
   );

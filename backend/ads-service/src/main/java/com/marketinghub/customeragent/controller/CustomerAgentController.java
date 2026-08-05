@@ -59,4 +59,37 @@ public class CustomerAgentController {
       @PathVariable Long id, @RequestBody RecordHumanResultRequest request) {
     return service.recordHumanResult(id, request);
   }
+
+  /** Solicita uma experiencia digital observacional para uma persona. */
+  @PostMapping("/digital-observations")
+  public DigitalObservationResponse startObservation(
+      @RequestBody StartDigitalObservationRequest request) {
+    return service.startObservation(request);
+  }
+
+  /** Lista a memoria digital observacional auditavel. */
+  @GetMapping("/digital-observations")
+  public List<DigitalObservationResponse> listObservations() {
+    return service.listObservations();
+  }
+
+  /** Reserva uma experiencia digital pendente para o worker. */
+  @PostMapping("/internal/digital-observations/pending/claim")
+  public DigitalObservationResponse claimObservation() {
+    return service.claimPendingObservation();
+  }
+
+  /** Recebe observacao, reacao simulada e hipotese em camadas separadas. */
+  @PostMapping("/internal/digital-observations/{id}/complete")
+  public DigitalObservationResponse completeObservation(
+      @PathVariable Long id, @RequestBody CompleteDigitalObservationRequest request) {
+    return service.completeObservation(id, request);
+  }
+
+  /** Registra confirmacao humana posterior por fonte oficial. */
+  @PostMapping("/digital-observations/{id}/human-confirmation")
+  public DigitalObservationResponse confirmObservation(
+      @PathVariable Long id, @RequestBody RecordObservationHumanConfirmationRequest request) {
+    return service.recordObservationHumanConfirmation(id, request);
+  }
 }

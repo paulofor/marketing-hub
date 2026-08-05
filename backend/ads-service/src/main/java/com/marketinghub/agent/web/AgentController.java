@@ -1,8 +1,10 @@
 package com.marketinghub.agent.web;
 
 import com.marketinghub.agent.dto.AgentDto;
+import com.marketinghub.agent.dto.AgentMaturityDto;
 import com.marketinghub.agent.dto.SaveAgentRequest;
 import com.marketinghub.agent.mapper.AgentMapper;
+import com.marketinghub.agent.service.AgentMaturityService;
 import com.marketinghub.agent.service.AgentService;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,11 +22,14 @@ public class AgentController {
 
   private final AgentService service;
   private final AgentMapper mapper;
+  private final AgentMaturityService maturityService;
 
   /** Configura o servico e o conversor usados pelos endpoints. */
-  public AgentController(AgentService service, AgentMapper mapper) {
+  public AgentController(
+      AgentService service, AgentMapper mapper, AgentMaturityService maturityService) {
     this.service = service;
     this.mapper = mapper;
+    this.maturityService = maturityService;
   }
 
   /** Cria um agente e sua primeira versao de contrato. */
@@ -49,5 +54,11 @@ public class AgentController {
   @GetMapping("/{id}")
   public AgentDto get(@PathVariable Long id) {
     return mapper.toDto(service.get(id));
+  }
+
+  /** Consolida maturidade, pendências e resultados comprovados dos agentes. */
+  @GetMapping("/maturity")
+  public List<AgentMaturityDto> maturity() {
+    return maturityService.list();
   }
 }

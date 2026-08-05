@@ -73,6 +73,7 @@ type StudioBriefing = {
   visualStyleGuide: string;
   imageGenerationPlan: string;
   continuityRules: string;
+  scenePlan: string;
   targetDurationSeconds: string;
   funnelStage: string;
   primaryMetric: string;
@@ -661,6 +662,7 @@ const defaultBriefing: StudioBriefing = {
     "Solicitar ao modelo de imagem OpenAI primeiro as imagens mestre de personagem, ambiente, produto e frames-chave; aprovar antes de pedir video.",
   continuityRules:
     "Manter rosto, cabelo, figurino, acessorios, escala, temperatura de cor, posicao de objetos fixos e arquitetura do ambiente em todas as cenas.",
+  scenePlan: defaultScenePrompts.join("\n"),
   targetDurationSeconds: "180",
   funnelStage: "AWARENESS",
   primaryMetric: "DIAGNOSTIC_START",
@@ -726,6 +728,7 @@ const musaV7Briefing: StudioBriefing = {
     "Gerar ou selecionar primeiro imagem mestre da personagem e frames-chave de espelho, caminhada, detalhes de mecanismo e gesto no celular. Aprovar antes de pedir cenas Luma/Kling.",
   continuityRules:
     "Manter a mesma personagem, cabelo, roupa base, temperatura de luz, estilo de ambiente e nivel de elegancia. O video deve funcionar sem audio, com legendas adicionadas na montagem final.",
+  scenePlan: musaV7ScenePrompts.join("\n"),
   targetDurationSeconds: "30",
   funnelStage: "AWARENESS_TO_DIAGNOSTIC",
   primaryMetric:
@@ -812,6 +815,7 @@ function buildBriefingFromProject(project: VideoProject): StudioBriefing {
     imageGenerationPlan:
       project.imageGenerationPlan || defaultBriefing.imageGenerationPlan,
     continuityRules: project.continuityRules || defaultBriefing.continuityRules,
+    scenePlan: project.scenePlan || defaultBriefing.scenePlan,
     targetDurationSeconds: project.targetDurationSeconds
       ? String(project.targetDurationSeconds)
       : defaultBriefing.targetDurationSeconds,
@@ -920,6 +924,9 @@ export default function AudioVideoStudioPage() {
   const [selectedSceneJobIds, setSelectedSceneJobIds] = useState<number[]>([]);
   const [sourceImageAssetId, setSourceImageAssetId] = useState("1953");
   const [briefing, setBriefing] = useState<StudioBriefing>(defaultBriefing);
+  const [persistedScenePlan, setPersistedScenePlan] = useState(
+    defaultBriefing.scenePlan,
+  );
   const parsedSourceImageAssetId = parsePositiveInteger(sourceImageAssetId);
   const sourceImageAssetQuery = useAsset(parsedSourceImageAssetId);
 
@@ -932,7 +939,9 @@ export default function AudioVideoStudioPage() {
 
   useEffect(() => {
     if (selectedProject) {
-      setBriefing(buildBriefingFromProject(selectedProject));
+      const projectBriefing = buildBriefingFromProject(selectedProject);
+      setBriefing(projectBriefing);
+      setPersistedScenePlan(projectBriefing.scenePlan);
       setSaveFeedback("");
     }
   }, [selectedProject]);
@@ -953,10 +962,10 @@ export default function AudioVideoStudioPage() {
     targetDurationSeconds && targetDurationSeconds <= 60
       ? heroScriptBlocks
       : longFormScriptBlocks;
-  const selectedScenePrompts =
-    briefing.campaignKey === musaV7Briefing.campaignKey
-      ? musaV7ScenePrompts
-      : defaultScenePrompts;
+  const selectedScenePrompts = briefing.scenePlan
+    .split("\n")
+    .slice(0, 4)
+    .map((prompt) => prompt.trim());
   const selectedCategory =
     videoCategoryOptions.find(
       (option) => option.value === briefing.videoCategory,
@@ -996,6 +1005,17 @@ export default function AudioVideoStudioPage() {
     ) => {
       setBriefing((current) => ({ ...current, [field]: event.target.value }));
     };
+
+  const updateScenePrompt = (sceneIndex: number, prompt: string) => {
+    setBriefing((current) => {
+      const prompts = current.scenePlan.split("\n");
+      while (prompts.length < 4) {
+        prompts.push("");
+      }
+      prompts[sceneIndex] = prompt.replace(/\s*\n+\s*/g, " ");
+      return { ...current, scenePlan: prompts.slice(0, 4).join("\n") };
+    });
+  };
 
   const applyPreset = (preset: StudioPreset) => {
     setBriefing(preset.briefing);
@@ -1071,7 +1091,7 @@ export default function AudioVideoStudioPage() {
     nextVersionRecommendation: briefing.nextVersionRecommendation,
     hookText: `${briefing.audience}, se ${briefing.pain.toLowerCase()}, este video mostra um caminho mais simples.`,
     scriptText: scriptDraft.join("\n\n"),
-    scenePlan: selectedScenePrompts.join("\n"),
+    scenePlan: briefing.scenePlan,
     visualReferences: briefing.proof,
     characterBible: briefing.characterBible,
     environmentBible: briefing.environmentBible,
@@ -1107,6 +1127,7 @@ export default function AudioVideoStudioPage() {
         setSaveFeedback(
           `Projeto atualizado: #${project.id} - ${project.title}`,
         );
+        setPersistedScenePlan(project.scenePlan ?? briefing.scenePlan);
         return;
       }
 
@@ -1125,6 +1146,12 @@ export default function AudioVideoStudioPage() {
     if (!selectedProject || !linkedProfileId) {
       setSaveFeedback(
         "Vincule um perfil de video ao projeto antes de gerar cenas.",
+      );
+      return;
+    }
+    if (briefing.scenePlan.trim() !== persistedScenePlan.trim()) {
+      setSaveFeedback(
+        "Salve os prompts das cenas antes de gerar. O render pago deve usar a versao persistida e auditavel no Marketing Hub.",
       );
       return;
     }
@@ -1744,12 +1771,27 @@ export default function AudioVideoStudioPage() {
               </div>
               <div className="audio-video-studio-page__columns">
                 <div className="audio-video-studio-page__panel">
-                  <h2>Plano basico de cenas</h2>
-                  <ul>
-                    {selectedScenePrompts.map((prompt) => (
-                      <li key={prompt}>{prompt}</li>
+                  <fieldset>
+                    <legend>Prompts editaveis e persistidos por cena</legend>
+                    <small>
+                      Cada prompt e salvo no projeto antes do render. Descreva
+                      uma unica conclusao visual; movimento, camera e o que nao
+                      deve acontecer. A imagem-base aprovada define o primeiro
+                      quadro e a continuidade visual.
+                    </small>
+                    {musaV7SceneRoles.map((role, index) => (
+                      <label key={role}>
+                        Cena {index + 1} · {role}
+                        <textarea
+                          value={selectedScenePrompts[index] ?? ""}
+                          onChange={(event) =>
+                            updateScenePrompt(index, event.target.value)
+                          }
+                          rows={4}
+                        />
+                      </label>
                     ))}
-                  </ul>
+                  </fieldset>
                 </div>
                 <div className="audio-video-studio-page__panel">
                   <h2>Checklist de producao</h2>

@@ -151,7 +151,13 @@ class MicroserviceDiscoveryServiceTest {
 
     List<DeploymentWorkflowInventoryDto> deployments = service.discoverDeploymentsFromWorkflows();
 
-    assertEquals(7, deployments.size());
+    assertEquals(8, deployments.size());
+    assertTrue(
+        deployments.stream()
+            .anyMatch(
+                dto ->
+                    dto.workflowFile()
+                        .equals(".github/workflows/mois-meta-ad-library-collector-ci.yml")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.181.168")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("177.153.62.107")));
     assertTrue(deployments.stream().anyMatch(dto -> dto.deployHost().equals("191.252.120.96")));

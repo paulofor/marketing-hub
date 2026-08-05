@@ -6,6 +6,7 @@ import com.marketinghub.salesvideo.SalesVideoProviderFamily;
 import com.marketinghub.salesvideo.SalesVideoRetryReason;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import java.time.Instant;
+import java.util.List;
 import lombok.Data;
 
 /** DTO com resumo de um job do pipeline de vídeos. */
@@ -39,6 +40,8 @@ public class SalesVideoJobDto {
   private Long vttAssetId;
   private String metadataJson;
   private String auditSnapshotJson;
+  private String commercialReadinessStatus;
+  private List<String> commercialReadinessBlockers;
   private Instant createdAt;
   private Instant updatedAt;
 }

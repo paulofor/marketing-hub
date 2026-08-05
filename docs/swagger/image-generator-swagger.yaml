@@ -1,0 +1,24 @@
+openapi: 3.0.3
+info:
+  title: Gerador de Imagens do Estúdio
+  version: 1.1.0
+paths:
+  /api/image-generator/generations:
+    post:
+      summary: Gera imagens com atribuição financeira obrigatória
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [productId, commercialPlanId, prompt]
+              properties:
+                productId: {type: integer, format: int64}
+                commercialPlanId: {type: integer, format: int64}
+                experimentId: {type: integer, format: int64, nullable: true}
+                prompt: {type: string, maxLength: 4000}
+      responses:
+        '200': {description: Lote comparativo gerado e auditado no ledger}
+        '400': {description: Contexto comercial ausente ou inconsistente}
+        '502': {description: Provedor não concluiu nenhuma imagem}

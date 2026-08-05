@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import axios from "axios";
 import AudioVideoStudioPage, {
   buildStudioSceneMetadata,
+  readStudioSceneOrder,
   findProviderFromPlan,
   selectSingleJobForScene,
 } from "./AudioVideoStudioPage";
@@ -374,6 +375,23 @@ describe("AudioVideoStudioPage", () => {
     expect(metadata.scene).toEqual(
       expect.objectContaining({ order: 1, role: "DOR" }),
     );
+    expect(
+      readStudioSceneOrder(
+        '{"provider":"KLING_3_0"}',
+        JSON.stringify({
+          renderMetadataJson: JSON.stringify({
+            studio_project_id: 1,
+            campaign_key: "musa-pde-entry-v7-espelho-antes-de-sair",
+            scene: { order: 3, role: "MECANISMO" },
+          }),
+        }),
+      ),
+    ).toEqual({
+      projectId: 1,
+      campaignKey: "musa-pde-entry-v7-espelho-antes-de-sair",
+      order: 3,
+      role: "MECANISMO",
+    });
     expect(
       screen.getByRole("button", { name: /montar planos aprovados/i }),
     ).toBeDisabled();

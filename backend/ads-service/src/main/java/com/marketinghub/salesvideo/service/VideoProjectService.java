@@ -48,6 +48,7 @@ public class VideoProjectService {
         VideoProject.builder()
             .tenantId(tenantId)
             .productId(request.productId())
+            .commercialPlanId(request.commercialPlanId())
             .experimentId(request.experimentId())
             .salesVideoProfileId(request.salesVideoProfileId())
             .campaignKey(trimToNull(request.campaignKey()))
@@ -110,6 +111,7 @@ public class VideoProjectService {
   public VideoProjectDto updateProject(Long projectId, UpdateVideoProjectRequest request) {
     VideoProject project = loadProject(projectId);
     project.setProductId(request.productId());
+    project.setCommercialPlanId(request.commercialPlanId());
     project.setExperimentId(request.experimentId());
     project.setSalesVideoProfileId(request.salesVideoProfileId());
     project.setCampaignKey(trimToNull(request.campaignKey()));
@@ -318,6 +320,7 @@ public class VideoProjectService {
         project.getId(),
         project.getTenantId(),
         project.getProductId(),
+        project.getCommercialPlanId(),
         project.getExperimentId(),
         project.getSalesVideoProfileId(),
         project.getCampaignKey(),

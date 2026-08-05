@@ -1,0 +1,59 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-05-studio-financial-ledger-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE image_generation_request
+                ADD COLUMN product_id BIGINT NULL,
+                ADD COLUMN commercial_plan_id BIGINT NULL,
+                ADD COLUMN experiment_id BIGINT NULL,
+                ADD CONSTRAINT fk_image_generation_product FOREIGN KEY (product_id) REFERENCES product(id),
+                ADD CONSTRAINT fk_image_generation_plan FOREIGN KEY (commercial_plan_id) REFERENCES commercial_plan(id),
+                ADD CONSTRAINT fk_image_generation_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id);
+
+              CREATE INDEX idx_image_generation_commercial_context
+                ON image_generation_request (commercial_plan_id, product_id, experiment_id, created_at);
+
+              ALTER TABLE video_project
+                ADD COLUMN commercial_plan_id BIGINT NULL,
+                ADD CONSTRAINT fk_video_project_commercial_plan FOREIGN KEY (commercial_plan_id) REFERENCES commercial_plan(id);
+
+              CREATE INDEX idx_video_project_commercial_plan
+                ON video_project (commercial_plan_id, updated_at);
+
+              CREATE TABLE studio_cost_ledger_entry (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                commercial_plan_id BIGINT NOT NULL,
+                product_id BIGINT NOT NULL,
+                experiment_id BIGINT NULL,
+                asset_type VARCHAR(32) NOT NULL,
+                source_type VARCHAR(64) NOT NULL,
+                source_id VARCHAR(96) NOT NULL,
+                provider VARCHAR(64) NOT NULL,
+                model VARCHAR(128) NULL,
+                status VARCHAR(32) NOT NULL,
+                estimated_cost_usd DECIMAL(14,6) NULL,
+                provider_cost_usd DECIMAL(14,6) NULL,
+                currency VARCHAR(3) NOT NULL DEFAULT 'USD',
+                cost_evidence VARCHAR(64) NOT NULL,
+                started_at DATETIME(6) NULL,
+                finished_at DATETIME(6) NULL,
+                created_at DATETIME(6) NOT NULL,
+                updated_at DATETIME(6) NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_studio_cost_source (source_type, source_id),
+                INDEX idx_studio_cost_plan (commercial_plan_id, status, created_at),
+                INDEX idx_studio_cost_product (product_id, asset_type, created_at),
+                CONSTRAINT fk_studio_cost_plan FOREIGN KEY (commercial_plan_id) REFERENCES commercial_plan(id),
+                CONSTRAINT fk_studio_cost_product FOREIGN KEY (product_id) REFERENCES product(id),
+                CONSTRAINT fk_studio_cost_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id)
+              );

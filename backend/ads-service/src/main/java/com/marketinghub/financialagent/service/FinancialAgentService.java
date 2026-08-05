@@ -27,14 +27,17 @@ public class FinancialAgentService {
   private final FinancialAgentExecutionRepository repository;
   private final CommercialPlanService commercialPlanService;
   private final ObjectMapper objectMapper;
+  private final StudioCostLedgerService studioCostLedgerService;
 
   public FinancialAgentService(
       FinancialAgentExecutionRepository repository,
       CommercialPlanService commercialPlanService,
-      ObjectMapper objectMapper) {
+      ObjectMapper objectMapper,
+      StudioCostLedgerService studioCostLedgerService) {
     this.repository = repository;
     this.commercialPlanService = commercialPlanService;
     this.objectMapper = objectMapper;
+    this.studioCostLedgerService = studioCostLedgerService;
   }
 
   /** Cria uma conciliacao manual com snapshot imutavel das fontes atuais. */
@@ -146,6 +149,8 @@ public class FinancialAgentService {
     snapshot.put("otherAttributedCostBrl", other);
     snapshot.put("totalCostBrl", total);
     snapshot.put("approvedRevenueBrl", revenue);
+    snapshot.put("studioKnownCostUsd", studioCostLedgerService.totalKnownCostUsd(plan.getId()));
+    snapshot.put("studioCostCoverage", studioCostLedgerService.coverage(plan.getId()));
     snapshot.put("contributionBeforeRefundsBrl", revenue.subtract(total));
     snapshot.put("refundsBrl", null);
     snapshot.put(
@@ -154,7 +159,7 @@ public class FinancialAgentService {
         "sourceCoverage",
         Map.of(
             "campaigns", "CONSOLIDATED_IN_COMMERCIAL_PLAN",
-            "aiAndVideoProviders", "CONSOLIDATED_IN_COMMERCIAL_PLAN",
+            "aiAndVideoProviders", "STUDIO_LEDGER_WITH_EXPLICIT_COVERAGE",
             "approvedSales", "CONSOLIDATED_IN_COMMERCIAL_PLAN",
             "refunds", "NOT_YET_AVAILABLE_AS_SEPARATE_SOURCE",
             "infrastructure", "NOT_YET_ATTRIBUTED_BY_PLAN"));

@@ -35,6 +35,9 @@ public class VideoProject {
   @Column(name = "product_id")
   private Long productId;
 
+  @Column(name = "commercial_plan_id")
+  private Long commercialPlanId;
+
   @Column(name = "experiment_id")
   private Long experimentId;
 

@@ -1550,13 +1550,20 @@ function describePostProductionStatus(
     };
   }
   if (postProductionJob.status === "VIDEO_READY") {
+    const commerciallyReady =
+      postProductionJob.commercialReadinessStatus === "READY";
     return {
-      tone: postProductionJob.streamPlaybackUrl?.trim() ? "ready" : "warning",
-      title: `Pós-produção pronta no job #${postProductionJob.id}`,
-      message: postProductionJob.streamPlaybackUrl?.trim()
-        ? "HLS publicável disponível. Próximo passo: revisar no mobile e vincular ao contrato da versão."
-        : "O job finalizou, mas ainda não trouxe stream HLS. Use o asset como fallback só para revisão.",
-      details,
+      tone: commerciallyReady ? "ready" : "blocked",
+      title: commerciallyReady
+        ? `Gate comercial aprovado no job #${postProductionJob.id}`
+        : `Gate comercial bloqueado no job #${postProductionJob.id}`,
+      message: commerciallyReady
+        ? "Montagem, áudio pt-BR, legendas mobile, CTA, HLS e revisão humana estão completos."
+        : "O vídeo existe tecnicamente, mas ainda não pode ser tratado como peça publicável.",
+      details: [
+        ...details,
+        ...(postProductionJob.commercialReadinessBlockers ?? []),
+      ],
     };
   }
   return {

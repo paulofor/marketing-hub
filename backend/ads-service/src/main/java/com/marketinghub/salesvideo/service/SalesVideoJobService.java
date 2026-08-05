@@ -4,12 +4,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.financialagent.service.StudioCostLedgerService;
 import com.marketinghub.media.Asset;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobEventRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoProfileRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoScriptRepository;
+import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
 import com.marketinghub.salesvideo.*;
 import com.marketinghub.salesvideo.dto.*;
 import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
@@ -27,6 +29,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -53,8 +56,11 @@ public class SalesVideoJobService {
   private final SalesVideoCompletedRenderAssetSync completedRenderAssetSync;
   private final SalesVideoJobCostMetadataService jobCostMetadataService;
   private final ObjectMapper objectMapper;
+  private final VideoProjectRepository videoProjectRepository;
+  private final StudioCostLedgerService studioCostLedgerService;
 
   /** Cria o serviço com repositórios, política de reprocessamento e porta de sincronizacao. */
+  @Autowired
   public SalesVideoJobService(
       SalesVideoJobRepository jobRepository,
       SalesVideoJobEventRepository eventRepository,
@@ -64,6 +70,8 @@ public class SalesVideoJobService {
       SalesVideoReprocessPolicy reprocessPolicy,
       SalesVideoCompletedRenderAssetSync completedRenderAssetSync,
       SalesVideoJobCostMetadataService jobCostMetadataService,
+      VideoProjectRepository videoProjectRepository,
+      StudioCostLedgerService studioCostLedgerService,
       ObjectMapper objectMapper) {
     this.jobRepository = jobRepository;
     this.eventRepository = eventRepository;
@@ -73,7 +81,34 @@ public class SalesVideoJobService {
     this.reprocessPolicy = reprocessPolicy;
     this.completedRenderAssetSync = completedRenderAssetSync;
     this.jobCostMetadataService = jobCostMetadataService;
+    this.videoProjectRepository = videoProjectRepository;
+    this.studioCostLedgerService = studioCostLedgerService;
     this.objectMapper = objectMapper;
+  }
+
+  /** Inicializa testes legados que não exercitam o ledger comercial do Estúdio. */
+  SalesVideoJobService(
+      SalesVideoJobRepository jobRepository,
+      SalesVideoJobEventRepository eventRepository,
+      SalesVideoProfileRepository profileRepository,
+      SalesVideoScriptRepository scriptRepository,
+      AssetRepository assetRepository,
+      SalesVideoReprocessPolicy reprocessPolicy,
+      SalesVideoCompletedRenderAssetSync completedRenderAssetSync,
+      SalesVideoJobCostMetadataService jobCostMetadataService,
+      ObjectMapper objectMapper) {
+    this(
+        jobRepository,
+        eventRepository,
+        profileRepository,
+        scriptRepository,
+        assetRepository,
+        reprocessPolicy,
+        completedRenderAssetSync,
+        jobCostMetadataService,
+        null,
+        null,
+        objectMapper);
   }
 
   @Transactional
@@ -178,6 +213,49 @@ public class SalesVideoJobService {
     return toDto(job);
   }
 
+  /** Sincroniza custo de vídeo quando o job pertence a um projeto comercial auditável. */
+  private void syncStudioCostLedger(
+      SalesVideoJob job, BigDecimal costUsd, boolean providerReported) {
+    if (videoProjectRepository == null || studioCostLedgerService == null) {
+      return;
+    }
+    Long projectId = readStudioProjectId(job.getMetadataJson());
+    if (projectId == null) {
+      return;
+    }
+    videoProjectRepository
+        .findById(projectId)
+        .filter(project -> project.getProductId() != null && project.getCommercialPlanId() != null)
+        .ifPresent(
+            project ->
+                studioCostLedgerService.recordVideo(
+                    job.getId(),
+                    project.getProductId(),
+                    project.getCommercialPlanId(),
+                    project.getExperimentId(),
+                    job.getProviderName(),
+                    job.getProviderName(),
+                    job.getStatus().name(),
+                    costUsd,
+                    providerReported,
+                    job.getStartedAt(),
+                    job.getFinishedAt()));
+  }
+
+  /** Extrai o projeto do Estúdio preservado no contrato do job. */
+  private Long readStudioProjectId(String metadataJson) {
+    if (!StringUtils.hasText(metadataJson)) {
+      return null;
+    }
+    try {
+      JsonNode value = objectMapper.readTree(metadataJson).path("studio_project_id");
+      return value.canConvertToLong() && value.asLong() > 0 ? value.asLong() : null;
+    } catch (JsonProcessingException ex) {
+      log.error("Falha ao ler projeto do Estúdio para ledger; metadata={}", metadataJson, ex);
+      return null;
+    }
+  }
+
   @Transactional
   public SalesVideoJobDto heartbeat(Long jobId, JobHeartbeatRequest request) {
     SalesVideoJob job = loadJob(jobId);
@@ -229,11 +307,13 @@ public class SalesVideoJobService {
       job.setFailureDetail(durationValidation.message());
     }
     BigDecimal explicitCostUsd = request.getCostUsd();
+    String completionMetadataJson =
+        mergeRequestedAndCompletionMetadata(requestedJobMetadata, request.getMetadataJson());
     BigDecimal resolvedCostUsd =
-        jobCostMetadataService.resolveCostUsd(job, request.getMetadataJson(), explicitCostUsd);
+        jobCostMetadataService.resolveCostUsd(job, completionMetadataJson, explicitCostUsd);
     request.setCostUsd(resolvedCostUsd);
     String enrichedMetadataJson =
-        jobCostMetadataService.enrichMetadataJson(job, request.getMetadataJson(), explicitCostUsd);
+        jobCostMetadataService.enrichMetadataJson(job, completionMetadataJson, explicitCostUsd);
     job.setStatus(finalStatus);
     job.setFinishedAt(Instant.now());
     job.setProviderJobId(request.getProviderJobId());
@@ -248,6 +328,7 @@ public class SalesVideoJobService {
       job.setScript(persistedScript);
     }
     jobRepository.save(job);
+    syncStudioCostLedger(job, resolvedCostUsd, explicitCostUsd != null);
     syncExperimentVideoAsset(job, request, durationSeconds);
     syncFailedExperimentVideoAsset(job, completionFailureRequest(request));
     maybeUpdateProfileStatus(job, finalStatus);
@@ -260,6 +341,46 @@ public class SalesVideoJobService {
         completionDetails(request, durationValidation));
     enqueuePremiumFinalization(job, requestedJobMetadata);
     return toDto(job);
+  }
+
+  /** Preserva o contrato comercial solicitado e acrescenta o resultado técnico do provider. */
+  private String mergeRequestedAndCompletionMetadata(
+      String requestedMetadataJson, String completionMetadataJson) {
+    if (!StringUtils.hasText(requestedMetadataJson)) {
+      return completionMetadataJson;
+    }
+    if (!StringUtils.hasText(completionMetadataJson)) {
+      return requestedMetadataJson;
+    }
+    try {
+      JsonNode requested = objectMapper.readTree(requestedMetadataJson);
+      JsonNode completion = objectMapper.readTree(completionMetadataJson);
+      if (!requested.isObject() || !completion.isObject()) {
+        return completionMetadataJson;
+      }
+      ObjectNode merged = ((ObjectNode) requested).deepCopy();
+      completion.fields().forEachRemaining(entry -> merged.set(entry.getKey(), entry.getValue()));
+      List.of(
+              "commercial_goal",
+              "generation_strategy",
+              "studio_project_id",
+              "campaign_key",
+              "scene",
+              "continuity",
+              "post_production",
+              "provider_strategy",
+              "image_to_video")
+          .forEach(
+              field -> {
+                if (requested.has(field)) {
+                  merged.set(field, requested.get(field));
+                }
+              });
+      return objectMapper.writeValueAsString(merged);
+    } catch (JsonProcessingException ex) {
+      log.error("Falha ao combinar metadados solicitados e concluídos do job de vídeo.", ex);
+      return completionMetadataJson;
+    }
   }
 
   /** Enfileira a finalização premium após a montagem cinematográfica concluir com sucesso. */
@@ -501,8 +622,71 @@ public class SalesVideoJobService {
 
   /** Converte job para DTO incluindo custo real ou estimado para a tela. */
   private SalesVideoJobDto toDto(SalesVideoJob job) {
-    return jobCostMetadataService.enrichDto(SalesVideoMapper.toDto(job), job);
+    SalesVideoJobDto dto = jobCostMetadataService.enrichDto(SalesVideoMapper.toDto(job), job);
+    CommercialReadiness readiness = assessCommercialReadiness(job);
+    dto.setCommercialReadinessStatus(readiness.status());
+    dto.setCommercialReadinessBlockers(readiness.blockers());
+    return dto;
   }
+
+  /** Avalia no backend se o job representa uma peça comercial final e auditável. */
+  private CommercialReadiness assessCommercialReadiness(SalesVideoJob job) {
+    List<String> blockers = new java.util.ArrayList<>();
+    if (job.getStatus() != SalesVideoStatus.VIDEO_READY) {
+      blockers.add("A renderização final ainda não foi concluída.");
+    }
+    if (!"MUSA_POST_PRODUCTION".equalsIgnoreCase(job.getProviderName())) {
+      blockers.add("O ativo ainda é um clipe bruto ou uma montagem sem pós-produção final.");
+    }
+    if (!StringUtils.hasText(job.getStreamPlaybackUrl())
+        || !job.getStreamPlaybackUrl().contains(".m3u8")) {
+      blockers.add("A playlist HLS publicável não foi registrada.");
+    }
+    JsonNode metadata = readJobMetadata(job);
+    if (!metadata.path("audio").path("voice_over").asBoolean(false)
+        || !"pt-BR".equalsIgnoreCase(metadata.path("audio").path("language").asText())) {
+      blockers.add("A narração em português do Brasil não foi incorporada.");
+    }
+    if (!metadata.path("captions").path("burned_in").asBoolean(false)
+        || !metadata.path("captions").path("vtt_asset").asBoolean(false)
+        || job.getVttAsset() == null) {
+      blockers.add("As legendas mobile queimadas e o arquivo VTT não estão completos.");
+    }
+    if (!hasCommercialCta(job, metadata)) {
+      blockers.add("O CTA final não possui evidência persistida no roteiro ou na pós-produção.");
+    }
+    SalesVideoJob sourceJob = job.getRetryOfJob();
+    if (sourceJob == null || !"MUSA_VIDEO_MONTAGE".equalsIgnoreCase(sourceJob.getProviderName())) {
+      blockers.add("A peça não deriva de uma montagem narrativa auditável.");
+    }
+    if (job.getProfile() == null || job.getProfile().getHumanReviewApprovedAt() == null) {
+      blockers.add("A revisão humana final ainda não foi aprovada.");
+    }
+    return new CommercialReadiness(blockers.isEmpty() ? "READY" : "BLOCKED", List.copyOf(blockers));
+  }
+
+  /** Lê os metadados persistidos sem transformar JSON inválido em aprovação comercial. */
+  private JsonNode readJobMetadata(SalesVideoJob job) {
+    if (!StringUtils.hasText(job.getMetadataJson())) {
+      return com.fasterxml.jackson.databind.node.MissingNode.getInstance();
+    }
+    try {
+      return objectMapper.readTree(job.getMetadataJson());
+    } catch (JsonProcessingException ex) {
+      log.warn("Metadata inválido bloqueou gate comercial; jobId={}", job.getId(), ex);
+      return com.fasterxml.jackson.databind.node.MissingNode.getInstance();
+    }
+  }
+
+  /** Confirma CTA funcional no roteiro aprovado ou no contrato final persistido. */
+  private boolean hasCommercialCta(SalesVideoJob job, JsonNode metadata) {
+    return (job.getScript() != null && StringUtils.hasText(job.getScript().getCtaText()))
+        || StringUtils.hasText(metadata.path("ctaText").asText())
+        || StringUtils.hasText(metadata.path("cta_text").asText());
+  }
+
+  /** Representa a decisão derivada do gate comercial e suas causas objetivas. */
+  private record CommercialReadiness(String status, List<String> blockers) {}
 
   private SalesVideoScript maybePersistScriptResult(
       SalesVideoJob job, GeneratedScriptResultPayload payload) {
@@ -662,10 +846,12 @@ public class SalesVideoJobService {
                 java.util.stream.Collectors.toMap(
                     node -> node.path("scene").path("order").asInt(),
                     node -> node.path("scene").path("role").asText()));
-    if (!"DOR".equals(rolesByOrder.get(1)) || !"CTA".equals(rolesByOrder.get(sourceJobs.size()))) {
+    Map<Integer, String> requiredRolesByOrder =
+        Map.of(1, "DOR", 2, "RESULTADO", 3, "MECANISMO", 4, "CTA");
+    if (!rolesByOrder.equals(requiredRolesByOrder)) {
       throw VideoModuleException.badRequest(
           VideoModuleErrorCode.BAD_REQUEST,
-          "Selecione planos consecutivos do mesmo projeto, começando em DOR e terminando em CTA.");
+          "A montagem comercial exige exatamente DOR, RESULTADO, MECANISMO e CTA, nesta sequência narrativa.");
     }
   }
 

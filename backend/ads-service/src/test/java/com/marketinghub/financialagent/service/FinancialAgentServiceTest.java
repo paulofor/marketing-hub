@@ -38,8 +38,11 @@ class FinancialAgentServiceTest {
               return execution;
             });
     ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    StudioCostLedgerService studioCostLedgerService = mock(StudioCostLedgerService.class);
+    when(studioCostLedgerService.totalKnownCostUsd(2L)).thenReturn(BigDecimal.ZERO);
+    when(studioCostLedgerService.coverage(2L)).thenReturn("0/0_ATTEMPTS_WITH_KNOWN_COST");
     FinancialAgentService service =
-        new FinancialAgentService(repository, planService, objectMapper);
+        new FinancialAgentService(repository, planService, objectMapper, studioCostLedgerService);
 
     FinancialAgentExecutionResponse response = service.start(2L);
     var snapshot = objectMapper.readTree(response.financialSnapshot());

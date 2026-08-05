@@ -5,7 +5,7 @@
 Manter os seguintes endpoints como defaults de origem de logs no módulo `mcp-server`:
 
 - Worker AI: `http://191.252.120.96:4567/worker-observability/logfile`
-- Backend: `http://191.252.120.96:4567/worker-observability/logfile`
+- Backend: `http://191.252.181.168/ops-mh-observability-v2/backend-log-stream-x9k`
 - Email Service: `http://191.252.120.96:8086/ops-email-gateway-7xk9/email-service-audit-log`
 - Facebook Ads Worker: `http://191.252.120.96:8082/public/runtime-logs/tail?lines=300`
 - Lead Portal: `http://191.252.120.96:8082/public/runtime-logs/tail?lines=300`

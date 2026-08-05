@@ -23,7 +23,8 @@ Antes de publicar ou recriar containers, consulte o inventário central de secre
 | Variável | Descrição | Padrão |
 |----------|-----------|--------|
 | `VIDEO_MGMT_IMAGE` | Nome da imagem do módulo de vídeo | `marketinghub-video-management` |
-| `VIDEO_TAR` | Caminho do tar usado no carregamento automático | `/tmp/video-management-image.tar` |
+| `VIDEO_TAR` | Caminho opcional de um tar para recuperação manual | `/tmp/video-management-image.tar` |
+| `VIDEO_PULL` | Baixa do registry a imagem exata indicada por `VIDEO_IMAGE:IMAGE_TAG` | `false` |
 | `VIDEO_BACKEND_BASE_URL` | URL utilizada pelo módulo de vídeo para conversar com o backend | `http://backend:8000` |
 | `CUSTOMER_AGENT_MEMORY_BUCKET` | Bucket AWS S3 privado das evidências do Agente Cliente | obrigatório para memória pesada |
 | `CUSTOMER_AGENT_MEMORY_REGION` | Região AWS do bucket de memória | `us-east-1` |
@@ -170,26 +171,30 @@ Quando for necessário atualizar **somente** o serviço `video-management` no ho
 
 > Neste cenário, o `video-management` deve apontar para o backend remoto em `http://191.252.181.168` (porta pública `80`).
 
-1. Gere a imagem do módulo de vídeo e exporte para tar:
+1. Publique a imagem no GHCR com uma tag imutável:
    ```bash
-   docker build -f video-management-service/Dockerfile -t marketinghub-video-management:latest .
-   docker save marketinghub-video-management:latest -o /tmp/video-management-image.tar
+   IMAGE_TAG=<sha-do-commit>
+   VIDEO_IMAGE=ghcr.io/<organizacao>/marketinghub-video-management
+   docker build -f video-management-service/Dockerfile -t "${VIDEO_IMAGE}:${IMAGE_TAG}" .
+   docker push "${VIDEO_IMAGE}:${IMAGE_TAG}"
    ```
-2. Copie apenas o tar e os arquivos de deploy para o servidor:
+2. Sincronize apenas os descritores de deploy com o servidor:
    ```bash
-   scp /tmp/video-management-image.tar deploy/bin/apply-video-only.sh deploy/docker-compose.video.yml <usuario>@177.153.62.107:/tmp/
+   rsync -az deploy/ <usuario>@177.153.62.107:/opt/marketinghub/containers/
    ```
-3. No servidor, mova os arquivos para o diretório de deploy e rode o apply específico:
+3. No servidor, autentique-se no GHCR e rode o apply específico com a mesma tag:
    ```bash
    ssh <usuario>@177.153.62.107
-   sudo mkdir -p /opt/marketinghub/containers
-   sudo mv /tmp/docker-compose.video.yml /opt/marketinghub/containers/docker-compose.video.yml
-   sudo mv /tmp/apply-video-only.sh /opt/marketinghub/containers/apply-video-only.sh
-   sudo chmod +x /opt/marketinghub/containers/apply-video-only.sh
-   VIDEO_BACKEND_BASE_URL=http://191.252.181.168 sudo /opt/marketinghub/containers/apply-video-only.sh
+   docker login ghcr.io
+   VIDEO_IMAGE=ghcr.io/<organizacao>/marketinghub-video-management \
+   IMAGE_TAG=<sha-do-commit> \
+   VIDEO_PULL=true \
+   VIDEO_BACKEND_BASE_URL=http://191.252.181.168 \
+   sudo -E /opt/marketinghub/containers/bin/apply-video-only.sh
+   docker logout ghcr.io
    ```
 
-Esse fluxo atualiza só o container `marketinghub-video-management`, preservando `backend` e `frontend` em execução.
+O workflow oficial automatiza esse fluxo, usa cache de camadas do registry e remove a credencial temporária após o pull. O deploy atualiza só o container `marketinghub-video-management`, preservando `backend` e `frontend` em execução. O tar permanece disponível apenas como recuperação manual.
 
 ## Deploy apenas do módulo OPRM
 

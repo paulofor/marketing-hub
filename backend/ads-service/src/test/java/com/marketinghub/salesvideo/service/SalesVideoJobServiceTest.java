@@ -20,6 +20,7 @@ import com.marketinghub.salesvideo.SalesVideoJobType;
 import com.marketinghub.salesvideo.SalesVideoProfile;
 import com.marketinghub.salesvideo.SalesVideoProviderFamily;
 import com.marketinghub.salesvideo.SalesVideoRetryReason;
+import com.marketinghub.salesvideo.SalesVideoScript;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.dto.JobCompletionRequest;
 import com.marketinghub.salesvideo.dto.JobFailureRequest;
@@ -99,6 +100,71 @@ class SalesVideoJobServiceTest {
 
     assertThat(result).hasSize(1).first().extracting(SalesVideoJobDto::getId).isEqualTo(55L);
     assertThat(result.get(0).getStatus()).isEqualTo(SalesVideoStatus.VIDEO_REQUESTED);
+  }
+
+  /** Bloqueia clipe bruto silencioso mesmo quando o provider concluiu o render. */
+  @Test
+  void shouldExposeCommercialBlockersForRawReadyClip() {
+    long profileId = 10L;
+    SalesVideoProfile profile = SalesVideoProfile.builder().id(profileId).build();
+    given(profileRepository.findById(profileId)).willReturn(Optional.of(profile));
+    SalesVideoJob job =
+        SalesVideoJob.builder()
+            .id(20519L)
+            .profile(profile)
+            .jobType(SalesVideoJobType.RENDER)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .providerName("KLING_3_0")
+            .status(SalesVideoStatus.VIDEO_READY)
+            .streamPlaybackUrl("https://cdn.example.com/scene.mp4")
+            .build();
+    given(jobRepository.findByProfileIdOrderByRequestedAtDesc(profileId)).willReturn(List.of(job));
+
+    SalesVideoJobDto result = service.listJobsByProfile(profileId).get(0);
+
+    assertThat(result.getCommercialReadinessStatus()).isEqualTo("BLOCKED");
+    assertThat(result.getCommercialReadinessBlockers())
+        .contains(
+            "O ativo ainda é um clipe bruto ou uma montagem sem pós-produção final.",
+            "A narração em português do Brasil não foi incorporada.",
+            "A peça não deriva de uma montagem narrativa auditável.");
+  }
+
+  /** Aprova somente a peça final com montagem, áudio, legenda, CTA, HLS e revisão humana. */
+  @Test
+  void shouldApproveCommerciallyCompletePostProduction() {
+    long profileId = 10L;
+    SalesVideoProfile profile =
+        SalesVideoProfile.builder()
+            .id(profileId)
+            .humanReviewApprovedAt(Instant.parse("2026-08-05T12:00:00Z"))
+            .build();
+    given(profileRepository.findById(profileId)).willReturn(Optional.of(profile));
+    SalesVideoScript script = SalesVideoScript.builder().ctaText("Ver meu plano MUSA").build();
+    SalesVideoJob montage =
+        SalesVideoJob.builder().id(20520L).providerName("MUSA_VIDEO_MONTAGE").build();
+    SalesVideoJob job =
+        SalesVideoJob.builder()
+            .id(20521L)
+            .profile(profile)
+            .script(script)
+            .retryOfJob(montage)
+            .jobType(SalesVideoJobType.POST_PRODUCTION)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .providerName("MUSA_POST_PRODUCTION")
+            .status(SalesVideoStatus.VIDEO_READY)
+            .streamPlaybackUrl("https://cdn.example.com/musa-v7.m3u8")
+            .vttAsset(Asset.builder().id(902L).build())
+            .metadataJson(
+                "{\"audio\":{\"voice_over\":true,\"language\":\"pt-BR\"},"
+                    + "\"captions\":{\"burned_in\":true,\"vtt_asset\":true}}")
+            .build();
+    given(jobRepository.findByProfileIdOrderByRequestedAtDesc(profileId)).willReturn(List.of(job));
+
+    SalesVideoJobDto result = service.listJobsByProfile(profileId).get(0);
+
+    assertThat(result.getCommercialReadinessStatus()).isEqualTo("READY");
+    assertThat(result.getCommercialReadinessBlockers()).isEmpty();
   }
 
   /** Garante que a tela de produto lista todos os jobs do produto no tenant atual. */
@@ -295,7 +361,8 @@ class SalesVideoJobServiceTest {
             .build();
     JobCompletionRequest request = new JobCompletionRequest();
     request.setStatus(SalesVideoStatus.VIDEO_READY);
-    request.setMetadataJson("{\"duration_seconds\":10,\"resolution\":\"720p\"}");
+    request.setMetadataJson(
+        "{\"duration_seconds\":10,\"resolution\":\"720p\",\"scene\":{\"role\":\"PROVIDER_RESULT\"}}");
     request.setMessage("Cena isolada concluída");
     given(jobRepository.findById(20501L)).willReturn(Optional.of(job));
     given(jobRepository.save(job)).willReturn(job);
@@ -304,6 +371,11 @@ class SalesVideoJobServiceTest {
 
     assertThat(result.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_READY);
     assertThat(job.getFailureCode()).isNull();
+    assertThat(result.getMetadataJson())
+        .contains("\"generation_strategy\":\"SCENE_BY_SCENE_MONTAGE\"")
+        .contains("\"role\":\"MECANISMO\"")
+        .contains("\"duration_seconds\":10")
+        .contains("\"resolution\":\"720p\"");
   }
 
   /** Aceita render quando a duração auditada atende a tolerância comercial do perfil. */

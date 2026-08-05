@@ -32,6 +32,7 @@ Antes de implementar uma correção em tema com histórico de loop:
 - **Causa-raiz confirmada**: geração de cenas podia depender de prompt fixo ou imagem inicial genérica, em vez do storyboard persistido e da saída aprovada do plano anterior.
 - **Correção efetiva**: storyboard editável e salvo é a única fonte do prompt; cada plano persiste seu quadro final e o plano seguinte usa esse asset como ponte auditável; montagem e pós-produção permanecem etapas separadas e encadeadas pelo backend.
 - **Prevenção**: testes devem impedir geração com prompt não salvo, plano intermediário sem predecessor aprovado, substituição do quadro-ponte por imagem genérica e montagem sem todas as funções narrativas.
+- **Correção complementar em 2026-08-05**: a conclusão do provider passou a combinar o resultado técnico com os metadados comerciais originais, preservando projeto, versão, ordem e papel narrativo. A tela usa o snapshot de auditoria como recuperação somente-leitura para jobs históricos concluídos antes dessa correção.
 
 ## Como ler este documento
 

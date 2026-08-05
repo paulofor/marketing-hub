@@ -603,9 +603,10 @@ public class GrowthOperatorService {
     boolean planEndsInCurrentWeek =
         plan.getDeadline() != null
             && !plan.getDeadline().isBefore(LocalDate.now(java.time.Clock.systemUTC()))
-            && !plan.getDeadline().isAfter(
-                LocalDate.now(java.time.Clock.systemUTC())
-                    .with(java.time.temporal.TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY)));
+            && !plan.getDeadline()
+                .isAfter(
+                    LocalDate.now(java.time.Clock.systemUTC())
+                        .with(java.time.temporal.TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY)));
     context.put(
         "effectiveObjectives",
         objectives.isEmpty() && planEndsInCurrentWeek

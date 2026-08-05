@@ -170,8 +170,10 @@ class GrowthOperatorServiceTest {
     when(openTask.getCommercialPlan()).thenReturn(plan);
     when(openTask.getSourceExecution()).thenReturn(latest);
     when(openTask.getActionText()).thenReturn("Auditar funil");
-    when(openTask.getStatus()).thenReturn(com.marketinghub.growthoperator.GrowthOperatorTaskStatus.OPEN);
-    when(taskRepository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of(openTask));
+    when(openTask.getStatus())
+        .thenReturn(com.marketinghub.growthoperator.GrowthOperatorTaskStatus.OPEN);
+    when(taskRepository.findByCommercialPlanIdOrderByCreatedAtDesc(2L))
+        .thenReturn(List.of(openTask));
     clearInvocations(repository);
 
     service.ensureAutomaticCycle(2L);

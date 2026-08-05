@@ -206,4 +206,6 @@ Quando um projeto do Estudio de Audio e Video gerar material para PDE, a entrega
 
 A tela do Marketing Hub deve permitir identificar se o video possui HLS pronto para PDE. Video sem HLS nao deve ser tratado como pronto para publicacao em PDE, mesmo que possua MP4 aprovado.
 
+O gate comercial final deve ser calculado no backend a partir de evidencias persistidas. Uma peca so pode aparecer como `READY` quando derivar de montagem narrativa auditavel com exatamente `DOR`, `RESULTADO`, `MECANISMO` e `CTA`, estiver finalizada com narracao pt-BR, legenda queimada legivel em mobile e VTT, preservar CTA funcional, possuir HLS `.m3u8` e tiver revisao humana final registrada. `VIDEO_READY` isoladamente significa apenas conclusao tecnica e nunca autoriza publicacao comercial.
+
 Quando existir uma playlist HLS ja publicada fora do fluxo completo de render, ela deve ser cadastrada ou corrigida no ativo comercial do Marketing Hub antes de ser usada por PDE. O operador deve conseguir salvar a URL `.m3u8` no Hub, associada ao experimento/projeto/job, para preservar governanca de custo, revisao, aprovacao e rastreabilidade.

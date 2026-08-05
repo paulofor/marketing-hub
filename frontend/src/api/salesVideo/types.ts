@@ -77,6 +77,8 @@ export interface SalesVideoJob {
   vttAssetId?: number | null;
   metadataJson?: string | null;
   auditSnapshotJson?: string | null;
+  commercialReadinessStatus?: "READY" | "BLOCKED" | null;
+  commercialReadinessBlockers?: string[];
   createdAt?: string | null;
   updatedAt?: string | null;
 }
@@ -381,6 +383,7 @@ export interface VideoProject {
   id: number;
   tenantId?: string | null;
   productId?: number | null;
+  commercialPlanId?: number | null;
   experimentId?: number | null;
   salesVideoProfileId?: number | null;
   campaignKey?: string | null;
@@ -431,6 +434,7 @@ export interface VideoProject {
 
 export interface VideoProjectPayload {
   productId?: number | null;
+  commercialPlanId?: number | null;
   experimentId?: number | null;
   salesVideoProfileId?: number | null;
   campaignKey?: string;

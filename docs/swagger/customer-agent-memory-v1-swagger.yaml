@@ -1,0 +1,48 @@
+openapi: 3.0.3
+info:
+  title: Customer Agent Hybrid Memory API
+  version: v1
+paths:
+  /api/customer-agent/v1/personas/{personaId}/memory-evidence:
+    get:
+      summary: Lista metadados das evidências privadas de uma persona
+      parameters:
+        - in: path
+          name: personaId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200': { description: Evidências auditáveis }
+    post:
+      summary: Preserva evidência pesada no S3 e procedência no MySQL
+      parameters:
+        - in: path
+          name: personaId
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [memoryLayer, file]
+              properties:
+                observationId: { type: integer, format: int64 }
+                memoryLayer:
+                  type: string
+                  enum: [EXTERNAL_OBSERVATION, SIMULATED_INTERPRETATION, COMMERCIAL_HYPOTHESIS, HUMAN_RESULT, CONFIRMED_LEARNING]
+                sourceUrl: { type: string, format: uri }
+                file: { type: string, format: binary }
+      responses:
+        '200': { description: Evidência criada ou deduplicada }
+  /api/customer-agent/v1/memory-evidence/{id}/content:
+    get:
+      summary: Recupera conteúdo privado pelo backend
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200': { description: Conteúdo original da evidência }

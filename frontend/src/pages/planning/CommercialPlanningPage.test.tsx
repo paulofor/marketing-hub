@@ -249,11 +249,22 @@ vi.mock("../../api/planning/useGrowthOperator", () => ({
     data: [],
     isError: false,
   }),
+  useGrowthOperatorTasks: () => ({ data: [], isError: false }),
+  useResolveGrowthOperatorTask: () => ({ mutate: vi.fn(), isPending: false }),
   useStartGrowthOperator: () => ({
     mutate: vi.fn(),
     isPending: false,
     isError: false,
     isSuccess: false,
+  }),
+}));
+
+vi.mock("../../api/planning/useFinancialAgent", () => ({
+  useFinancialAgentExecutions: () => ({ data: [], isError: false }),
+  useStartFinancialAgent: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isError: false,
   }),
 }));
 
@@ -609,7 +620,7 @@ describe("CommercialPlanningPage", () => {
 
     expect(screen.getByText("Ferramentas disponíveis via MCP")).toBeTruthy();
     expect(
-      screen.getByText(/Todas as ferramentas são somente leitura e auditáveis/),
+      screen.getByText(/Catálogo autorizado para investigação direta/),
     ).toBeTruthy();
   });
 

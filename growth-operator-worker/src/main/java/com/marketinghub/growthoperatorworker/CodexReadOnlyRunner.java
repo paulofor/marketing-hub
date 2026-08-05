@@ -52,6 +52,7 @@ public class CodexReadOnlyRunner {
       payload.put("alternativesJson", objectMapper.writeValueAsString(result.get("alternatives")));
       payload.put("diagnosisJson", objectMapper.writeValueAsString(result.get("diagnosis")));
       payload.put("rawModelResponse", rawResponse);
+      payload.put("toolUsageJson", extractToolUsage(processLog));
       payload.put("recommendedDecision", result.get("decision").asText());
       payload.put("recommendedAction", result.get("recommendedAction").asText());
       payload.put("dailyReport", result.get("dailyReport").asText());
@@ -65,6 +66,25 @@ public class CodexReadOnlyRunner {
       Files.deleteIfExists(output);
       Files.deleteIfExists(mcpServer);
     }
+  }
+
+  /** Extrai das linhas de auditoria MCP quais ferramentas fundamentaram a execucao. */
+  private String extractToolUsage(String processLog) throws IOException {
+    List<JsonNode> calls = new ArrayList<>();
+    for (String line : processLog.lines().toList()) {
+      if (!line.startsWith("{") || !line.contains("\"tool\"")) {
+        continue;
+      }
+      try {
+        JsonNode candidate = objectMapper.readTree(line);
+        if (candidate.hasNonNull("tool") && candidate.hasNonNull("status")) {
+          calls.add(candidate);
+        }
+      } catch (com.fasterxml.jackson.core.JsonProcessingException ignored) {
+        // Linhas normais do Codex nao fazem parte da auditoria estruturada do MCP.
+      }
+    }
+    return objectMapper.writeValueAsString(calls);
   }
 
   /** Monta o comando com sandbox read-only, sessao efemera e schema versionado. */

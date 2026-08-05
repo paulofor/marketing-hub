@@ -16,8 +16,10 @@ export interface GrowthOperatorExecution {
   objective: string;
   blocker?: string | null;
   evidenceSnapshot?: string | null;
+  evidenceFingerprint?: string | null;
   alternativesJson?: string | null;
   diagnosisJson?: string | null;
+  toolUsageJson?: string | null;
   recommendedDecision?: GrowthOperatorDecision | null;
   recommendedAction?: string | null;
   dailyReport?: string | null;
@@ -34,9 +36,56 @@ export interface GrowthOperatorExecution {
 export interface GrowthOperatorMcpTool {
   name: string;
   description: string;
-  accessMode: "SOMENTE_LEITURA";
+  accessMode: "SOMENTE_LEITURA" | "MUTACAO_GOVERNADA" | "APROVACAO_HUMANA";
   dataSource: string;
   parameters: Record<string, string>;
+}
+
+export interface GrowthOperatorTask {
+  id: number;
+  planId: number;
+  sourceExecutionId: number;
+  actionText: string;
+  status: "OPEN" | "COMPLETED" | "CANCELLED";
+  resolutionEvidence?: string | null;
+  resolvedAt?: string | null;
+  createdAt: string;
+}
+
+export function useGrowthOperatorTasks(planId?: number | null) {
+  return useQuery({
+    queryKey: ["growth-operator-tasks", planId],
+    enabled: Boolean(planId),
+    queryFn: async () => {
+      const { data } = await axios.get<GrowthOperatorTask[]>(
+        `/api/growth-operator/v1/commercial-plans/${planId}/tasks`,
+      );
+      return data;
+    },
+  });
+}
+
+export function useResolveGrowthOperatorTask(planId?: number | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      taskId,
+      evidence,
+    }: {
+      taskId: number;
+      evidence: string;
+    }) => {
+      const { data } = await axios.post<GrowthOperatorTask>(
+        `/api/growth-operator/v1/commercial-plans/${planId}/tasks/${taskId}/resolve`,
+        { evidence },
+      );
+      return data;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["growth-operator-tasks", planId],
+      }),
+  });
 }
 
 export function useGrowthOperatorMcpTools() {
@@ -69,7 +118,10 @@ export function useGrowthOperatorExecutions(planId?: number | null) {
 export function useStartGrowthOperator(planId?: number | null) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { weekNumber: number; objective: string }) => {
+    mutationFn: async (payload: {
+      weekNumber?: number;
+      objective: string;
+    }) => {
       if (!planId) throw new Error("Planejamento não informado.");
       const { data } = await axios.post<GrowthOperatorExecution>(
         `/api/growth-operator/v1/commercial-plans/${planId}/executions`,

@@ -16,6 +16,7 @@ import {
 } from "../../api/planning/useCommercialPlans";
 import "./CommercialPlanningPage.css";
 import GrowthOperatorPanel from "./GrowthOperatorPanel";
+import FinancialAgentPanel from "./FinancialAgentPanel";
 
 const CURRENT_OPERATIONAL_MONTH = new Date().toISOString().slice(0, 7);
 const LEGACY_PLAN_REFERENCE_MONTH = "2026-07";
@@ -1297,6 +1298,7 @@ export default function CommercialPlanningPage() {
             planId={currentMonthPlan.id}
             defaultObjective={currentMonthPlan.nextAction}
           />
+          <FinancialAgentPanel planId={currentMonthPlan.id} />
         </div>
       </section>
 

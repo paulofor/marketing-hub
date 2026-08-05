@@ -1,0 +1,88 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-04-agent-governance-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent
+                ADD COLUMN agent_key VARCHAR(100) NULL AFTER name,
+                ADD COLUMN status VARCHAR(30) NOT NULL DEFAULT 'DRAFT' AFTER agent_key,
+                ADD COLUMN current_version INT NOT NULL DEFAULT 1 AFTER status,
+                ADD COLUMN owner_name VARCHAR(255) NULL AFTER description,
+                ADD COLUMN business_objective TEXT NULL AFTER owner_name,
+                ADD COLUMN success_metrics TEXT NULL AFTER business_objective,
+                ADD COLUMN model_name VARCHAR(255) NULL AFTER success_metrics,
+                ADD COLUMN trigger_policy TEXT NULL AFTER model_name,
+                ADD COLUMN authority_policy LONGTEXT NULL AFTER trigger_policy,
+                ADD COLUMN prompt_contract_path VARCHAR(255) NULL AFTER authority_policy,
+                ADD COLUMN schema_contract_path VARCHAR(255) NULL AFTER prompt_contract_path,
+                ADD UNIQUE INDEX uq_agent_key (agent_key);
+
+              CREATE TABLE agent_version (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                agent_id BIGINT NOT NULL,
+                version_number INT NOT NULL,
+                contract_snapshot LONGTEXT NOT NULL,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                CONSTRAINT fk_agent_version_agent
+                  FOREIGN KEY (agent_id) REFERENCES agent(id),
+                UNIQUE INDEX uq_agent_version (agent_id, version_number)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              ALTER TABLE growth_operator_execution
+                ADD COLUMN agent_version_id BIGINT NULL AFTER commercial_plan_id,
+                ADD CONSTRAINT fk_growth_operator_agent_version
+                  FOREIGN KEY (agent_version_id) REFERENCES agent_version(id),
+                ADD INDEX idx_growth_operator_agent_version (agent_version_id);
+
+              INSERT INTO agent_theme (name, description)
+              SELECT 'Operacoes Autonomas', 'Agentes governados por metas, evidencias e limites de autoridade.'
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM agent_theme WHERE name = 'Operacoes Autonomas'
+              );
+
+              INSERT INTO agent (
+                theme_id, name, agent_key, status, current_version, execution_mode,
+                description, owner_name, business_objective, success_metrics, model_name,
+                trigger_policy, authority_policy, prompt_contract_path, schema_contract_path
+              )
+              SELECT
+                at.id, 'Operador de Crescimento', 'growth-operator', 'ACTIVE', 1, 'EVENT_DRIVEN',
+                'Monitora metas comerciais, investiga gargalos e acompanha pendencias ate evidencia de resultado.',
+                'Marketing Hub', 'Cumprir metas comerciais sem ultrapassar orcamento ou autoridade.',
+                'Pendencias resolvidas com resultado comprovado; vendas e receita confirmadas.',
+                'gpt-5.6-sol',
+                'Nova evidencia de sessao, custo, venda, video, tarefa, falha ou vencimento.',
+                'Leitura e diagnostico autonomos; pausa apenas por gate deterministico; retomada, gasto, preco, publicacao e PR exigem aprovacao humana.',
+                'growth-operator-worker/src/main/resources/prompts/growth-operator/v1/diagnosis.md',
+                'growth-operator-worker/src/main/resources/prompts/growth-operator/v1/diagnosis-schema.json'
+              FROM agent_theme at
+              WHERE at.name = 'Operacoes Autonomas'
+                AND NOT EXISTS (SELECT 1 FROM agent WHERE agent_key = 'growth-operator');
+
+              INSERT INTO agent_version (agent_id, version_number, contract_snapshot, created_at)
+              SELECT a.id, 1,
+                CONCAT('{"agentKey":"growth-operator","version":1,"status":"ACTIVE","model":"gpt-5.6-sol","prompt":"', a.prompt_contract_path, '","schema":"', a.schema_contract_path, '"}'),
+                UTC_TIMESTAMP()
+              FROM agent a
+              WHERE a.agent_key = 'growth-operator'
+                AND NOT EXISTS (
+                  SELECT 1 FROM agent_version av
+                  WHERE av.agent_id = a.id AND av.version_number = 1
+                );
+
+              UPDATE growth_operator_execution goe
+              JOIN agent a ON a.agent_key = 'growth-operator'
+              JOIN agent_version av ON av.agent_id = a.id AND av.version_number = a.current_version
+              SET goe.agent_version_id = av.id
+              WHERE goe.agent_version_id IS NULL;

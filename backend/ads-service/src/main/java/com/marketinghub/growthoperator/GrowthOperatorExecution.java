@@ -1,5 +1,6 @@
 package com.marketinghub.growthoperator;
 
+import com.marketinghub.agent.AgentVersion;
 import com.marketinghub.planning.CommercialPlan;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -33,6 +34,10 @@ public class GrowthOperatorExecution {
   @JoinColumn(name = "commercial_plan_id", nullable = false)
   private CommercialPlan commercialPlan;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "agent_version_id")
+  private AgentVersion agentVersion;
+
   @Column(name = "week_number", nullable = false)
   private Integer weekNumber;
 
@@ -52,6 +57,9 @@ public class GrowthOperatorExecution {
   @Column(name = "evidence_snapshot", columnDefinition = "LONGTEXT")
   private String evidenceSnapshot;
 
+  @Column(name = "evidence_fingerprint", length = 64)
+  private String evidenceFingerprint;
+
   @Column(name = "alternatives_json", columnDefinition = "LONGTEXT")
   private String alternativesJson;
 
@@ -60,6 +68,9 @@ public class GrowthOperatorExecution {
 
   @Column(name = "raw_model_response", columnDefinition = "LONGTEXT")
   private String rawModelResponse;
+
+  @Column(name = "tool_usage_json", columnDefinition = "LONGTEXT")
+  private String toolUsageJson;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "recommended_decision")

@@ -25,6 +25,9 @@ Antes de publicar ou recriar containers, consulte o inventário central de secre
 | `VIDEO_MGMT_IMAGE` | Nome da imagem do módulo de vídeo | `marketinghub-video-management` |
 | `VIDEO_TAR` | Caminho do tar usado no carregamento automático | `/tmp/video-management-image.tar` |
 | `VIDEO_BACKEND_BASE_URL` | URL utilizada pelo módulo de vídeo para conversar com o backend | `http://backend:8000` |
+| `CUSTOMER_AGENT_MEMORY_BUCKET` | Bucket AWS S3 privado das evidências do Agente Cliente | obrigatório para memória pesada |
+| `CUSTOMER_AGENT_MEMORY_REGION` | Região AWS do bucket de memória | `us-east-1` |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | Credencial IAM mínima do backend para o prefixo da memória | sem padrão; manter somente no `.env` protegido |
 | `VIDEO_JOBS_POLLING_ENABLED` | Ativa o polling automático no módulo de vídeo | `true` |
 | `VIDEO_PROVIDERS_VEO_ENABLED` | Habilita o adapter direto VEO/Gemini no módulo de vídeo | `true` |
 | `VIDEO_PROVIDERS_VEO_API_KEY` | Chave Gemini usada pelo adapter VEO; pode vir de `GEMINI_API_KEY` | vazio |

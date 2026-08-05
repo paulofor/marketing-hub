@@ -45,6 +45,39 @@ paths:
       responses:
         "200": {description: Pendencia reservada.}
         "404": {description: Fila vazia.}
+  /api/growth-operator/v1/commercial-plans/{planId}/tasks:
+    get:
+      summary: Lista pendencias abertas e resultados comprovados do planejamento.
+      parameters:
+        - in: path
+          name: planId
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        "200": {description: Pendencias auditaveis retornadas.}
+  /api/growth-operator/v1/commercial-plans/{planId}/tasks/{taskId}/resolve:
+    post:
+      summary: Conclui uma pendencia com evidencia humana.
+      parameters:
+        - in: path
+          name: planId
+          required: true
+          schema: {type: integer, format: int64}
+        - in: path
+          name: taskId
+          required: true
+          schema: {type: integer, format: int64}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [evidence]
+              properties:
+                evidence: {type: string, minLength: 10}
+      responses:
+        "200": {description: Pendencia concluida com evidencia.}
   /api/growth-operator/v1/internal/commercial-plans/{planId}/executions/ensure:
     post:
       summary: Delega ao backend a decisao de criar o proximo ciclo automatico.
@@ -54,7 +87,7 @@ paths:
           required: true
           schema: {type: integer, format: int64}
       responses:
-        "200": {description: Ciclo atual ou novo ciclo criado conforme a cadencia.}
+        "200": {description: Ciclo atual ou novo ciclo criado quando as evidencias mudam.}
   /api/growth-operator/v1/internal/commercial-plans/{planId}/session-intelligence:
     get:
       summary: Entrega sessoes, jornadas e eventos detalhados anonimizados ao agente.

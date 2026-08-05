@@ -8,6 +8,8 @@ import { AgentPayload } from "../../api/agent/types";
 
 const emptyPayload: AgentPayload = {
   name: "",
+  agentKey: "",
+  status: "DRAFT",
   description: "",
   executionMode: "",
   themeId: 0,

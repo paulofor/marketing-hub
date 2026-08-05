@@ -17,6 +17,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+/** Responsabilidade: representar o cadastro operacional e a governanca atual de um agente. */
 public class Agent {
 
   @Id
@@ -29,6 +30,41 @@ public class Agent {
 
   @Column(nullable = false)
   private String name;
+
+  @Column(name = "agent_key", unique = true, length = 100)
+  private String agentKey;
+
+  @Column(name = "status", nullable = false, length = 30)
+  @Builder.Default
+  private String status = "DRAFT";
+
+  @Column(name = "current_version", nullable = false)
+  @Builder.Default
+  private Integer currentVersion = 1;
+
+  @Column(name = "owner_name")
+  private String ownerName;
+
+  @Column(name = "business_objective", columnDefinition = "TEXT")
+  private String businessObjective;
+
+  @Column(name = "success_metrics", columnDefinition = "TEXT")
+  private String successMetrics;
+
+  @Column(name = "model_name")
+  private String modelName;
+
+  @Column(name = "trigger_policy", columnDefinition = "TEXT")
+  private String triggerPolicy;
+
+  @Column(name = "authority_policy", columnDefinition = "LONGTEXT")
+  private String authorityPolicy;
+
+  @Column(name = "prompt_contract_path")
+  private String promptContractPath;
+
+  @Column(name = "schema_contract_path")
+  private String schemaContractPath;
 
   @Column(name = "execution_mode", nullable = false, length = 50)
   private String executionMode;

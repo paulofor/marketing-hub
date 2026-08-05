@@ -20,6 +20,17 @@ export interface AgentItem {
 export interface Agent {
   id: number;
   name: string;
+  agentKey?: string;
+  status: string;
+  currentVersion: number;
+  ownerName?: string;
+  businessObjective?: string;
+  successMetrics?: string;
+  modelName?: string;
+  triggerPolicy?: string;
+  authorityPolicy?: string;
+  promptContractPath?: string;
+  schemaContractPath?: string;
   executionMode: string;
   description?: string;
   themeId: number;
@@ -33,6 +44,16 @@ export interface Agent {
 
 export interface AgentPayload {
   name: string;
+  agentKey?: string;
+  status: string;
+  ownerName?: string;
+  businessObjective?: string;
+  successMetrics?: string;
+  modelName?: string;
+  triggerPolicy?: string;
+  authorityPolicy?: string;
+  promptContractPath?: string;
+  schemaContractPath?: string;
   executionMode: string;
   description?: string;
   themeId: number;

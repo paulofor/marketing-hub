@@ -14,12 +14,25 @@ import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 @Component
+/** Responsabilidade: converter entidades de agentes e temas em contratos da API. */
 public class AgentMapper {
 
+  /** Converte um agente completo para o contrato de leitura. */
   public AgentDto toDto(Agent agent) {
     AgentDto dto = new AgentDto();
     dto.setId(agent.getId());
     dto.setName(agent.getName());
+    dto.setAgentKey(agent.getAgentKey());
+    dto.setStatus(agent.getStatus());
+    dto.setCurrentVersion(agent.getCurrentVersion());
+    dto.setOwnerName(agent.getOwnerName());
+    dto.setBusinessObjective(agent.getBusinessObjective());
+    dto.setSuccessMetrics(agent.getSuccessMetrics());
+    dto.setModelName(agent.getModelName());
+    dto.setTriggerPolicy(agent.getTriggerPolicy());
+    dto.setAuthorityPolicy(agent.getAuthorityPolicy());
+    dto.setPromptContractPath(agent.getPromptContractPath());
+    dto.setSchemaContractPath(agent.getSchemaContractPath());
     dto.setExecutionMode(agent.getExecutionMode());
     dto.setDescription(agent.getDescription());
     dto.setThemeId(Optional.ofNullable(agent.getTheme()).map(AgentTheme::getId).orElse(null));
@@ -32,6 +45,7 @@ public class AgentMapper {
     return dto;
   }
 
+  /** Converte um tema para o contrato de leitura. */
   public AgentThemeDto toDto(AgentTheme theme) {
     AgentThemeDto dto = new AgentThemeDto();
     dto.setId(theme.getId());
@@ -40,6 +54,7 @@ public class AgentMapper {
     return dto;
   }
 
+  /** Converte entradas persistidas para itens do contrato. */
   private List<AgentItemDto> mapInputs(List<AgentInput> inputs) {
     return inputs == null
         ? List.of()
@@ -58,6 +73,7 @@ public class AgentMapper {
             .toList();
   }
 
+  /** Converte saidas persistidas para itens do contrato. */
   private List<AgentItemDto> mapOutputs(List<AgentOutput> outputs) {
     return outputs == null
         ? List.of()
@@ -76,6 +92,7 @@ public class AgentMapper {
             .toList();
   }
 
+  /** Converte ferramentas persistidas para itens do contrato. */
   private List<AgentItemDto> mapInternalFunctions(List<AgentInternalFunction> functions) {
     return functions == null
         ? List.of()

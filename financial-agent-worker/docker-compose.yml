@@ -1,0 +1,12 @@
+services:
+  financial-agent-worker:
+    build: .
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: ${BACKEND_URL:-http://backend:8000}
+      CODEX_MODEL: ${CODEX_MODEL:-gpt-5.6-sol}
+      COMMERCIAL_PLAN_ID: ${COMMERCIAL_PLAN_ID:-2}
+      MARKETING_HUB_REPOSITORY: /workspace/marketing-hub
+    volumes:
+      - ${MARKETING_HUB_REPOSITORY_PATH:-..}:/workspace/marketing-hub:ro
+      - ${FINANCIAL_AGENT_CODEX_HOME:-/opt/growth-operator/codex-home}:/home/financial-agent/.codex

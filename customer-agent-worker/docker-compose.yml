@@ -1,0 +1,13 @@
+services:
+  customer-agent-worker:
+    build: .
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: ${BACKEND_URL:-http://host.docker.internal}
+      CUSTOMER_AGENT_MODEL: ${CUSTOMER_AGENT_MODEL:-gpt-5.6-sol}
+      CUSTOMER_AGENT_POLL_MS: ${CUSTOMER_AGENT_POLL_MS:-60000}
+    volumes:
+      - ${CODEX_HOME_PATH:-/opt/customer-agent/codex-home}:/home/operator/.codex
+      - ${MARKETING_HUB_REPOSITORY:-..}:/workspace:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

@@ -160,53 +160,35 @@ public class ProductAiPersonalizedSampleFunnelService {
   private List<QuestionSpec> buildGenericQuestionSpecs() {
     return List.of(
         new QuestionSpec(
-            "Qual é o seu nome?",
-            "nome",
-            LeadPortalQuestionType.TEXT,
-            true,
-            "Usado para personalizar a entrega visual."),
-        new QuestionSpec(
             "Qual é o seu e-mail?",
             "email",
             LeadPortalQuestionType.EMAIL,
             true,
             "Canal para enviar a amostra e continuar o relacionamento."),
         new QuestionSpec(
-            "Qual é o seu WhatsApp?",
-            "whatsapp",
-            LeadPortalQuestionType.PHONE,
-            true,
-            "Canal operacional para entrega e suporte."),
-        new QuestionSpec(
-            "Qual negócio, projeto ou situação você quer melhorar?",
+            "Qual é o nome do seu negócio ou perfil e o que você publica hoje?",
             "negocio_projeto",
             LeadPortalQuestionType.TEXTAREA,
             true,
-            "Contexto principal que aparecerá na amostra."),
+            "Contexto principal para personalizar o post."),
         new QuestionSpec(
-            "Como está a situação hoje?",
+            "Qual serviço você quer divulgar e qual dificuldade enfrenta para atrair clientes?",
             "contexto_atual",
             LeadPortalQuestionType.TEXTAREA,
             true,
-            "Ajuda a IA a entender o ponto de partida."),
+            "Define a oferta e a dor que o post precisa comunicar."),
         new QuestionSpec(
-            "Que resultado visual você quer enxergar na amostra?",
+            "Qual ação você quer que a cliente tome ao ver o post?",
             "objetivo_visual",
             LeadPortalQuestionType.TEXTAREA,
             true,
-            "Define o depois desejado pelo lead."),
+            "Exemplo: pedir horários disponíveis pelo WhatsApp."),
         new QuestionSpec(
-            "Quais detalhes precisam aparecer para parecer feito para você?",
+            "Quais detalhes, cores e informações precisam aparecer?",
             "dados_personalizacao",
             LeadPortalQuestionType.TEXTAREA,
             true,
-            "Inclua nomes, cores, ambiente, produto, público ou referências próprias."),
-        new QuestionSpec(
-            "Existe algum estilo visual que você prefere?",
-            "preferencias_visuais",
-            LeadPortalQuestionType.TEXTAREA,
-            false,
-            "Exemplos: moderno, simples, premium, feminino, técnico, colorido."));
+            "Inclua WhatsApp, cidade, estilo e qualquer informação que deva estar no post ou na legenda."));
   }
 
   /** Monta o formulário especializado do piloto DecoraIA Express por foto de ambiente. */

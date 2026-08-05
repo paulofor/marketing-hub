@@ -3,6 +3,7 @@ package com.marketinghub.salesvideo.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.media.Asset;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobEventRepository;
@@ -24,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -35,6 +38,7 @@ import org.springframework.util.StringUtils;
 /** Contém as regras de negócio relativas aos jobs do módulo de vídeo. */
 @Component
 public class SalesVideoJobService {
+  private static final Logger log = LoggerFactory.getLogger(SalesVideoJobService.class);
   private static final int MAX_PAGE_SIZE = 200;
   private static final int MAX_MONTAGE_DURATION_SECONDS = 600;
   private static final int MAX_CINEMATIC_SCENES = 12;
@@ -209,10 +213,11 @@ public class SalesVideoJobService {
     return toDto(job);
   }
 
-  /** Finaliza um job e bloqueia renders que nao atendem a duracao comercial minima. */
+  /** Finaliza o job, aplica gates de duração e encadeia a pós-produção cinematográfica. */
   @Transactional
   public SalesVideoJobDto complete(Long jobId, JobCompletionRequest request) {
     SalesVideoJob job = loadJob(jobId);
+    String requestedJobMetadata = job.getMetadataJson();
     SalesVideoStatus previous = job.getStatus();
     SalesVideoStatus finalStatus =
         Optional.ofNullable(request.getStatus()).orElse(defaultCompletionStatus(job.getJobType()));
@@ -253,7 +258,37 @@ public class SalesVideoJobService {
         finalStatus,
         completionMessage(request, durationValidation),
         completionDetails(request, durationValidation));
+    enqueuePremiumFinalization(job, requestedJobMetadata);
     return toDto(job);
+  }
+
+  /** Enfileira a finalização premium após a montagem cinematográfica concluir com sucesso. */
+  private void enqueuePremiumFinalization(SalesVideoJob job, String requestedJobMetadata) {
+    if (job.getStatus() != SalesVideoStatus.VIDEO_READY
+        || !"MUSA_VIDEO_MONTAGE".equalsIgnoreCase(job.getProviderName())
+        || !StringUtils.hasText(requestedJobMetadata)) {
+      return;
+    }
+    try {
+      JsonNode metadata = objectMapper.readTree(requestedJobMetadata);
+      JsonNode finalization = metadata.path("premiumFinalization");
+      if (!finalization.path("enabled").asBoolean(false)) {
+        return;
+      }
+      String captionText = finalization.path("captionText").asText("").trim();
+      if (!StringUtils.hasText(captionText)) {
+        return;
+      }
+      RequestSalesVideoPostProductionRequest request = new RequestSalesVideoPostProductionRequest();
+      request.setRequestedBy(job.getRequestedBy());
+      request.setVoiceOverScript(finalization.path("voiceOverScript").asText(null));
+      request.setCaptionText(captionText);
+      requestPostProduction(job.getId(), request);
+    } catch (JsonProcessingException ex) {
+      log.error("Falha ao interpretar finalização premium da montagem; jobId={}", job.getId(), ex);
+      // O contrato da montagem já foi validado antes do processamento; metadata legado não bloqueia
+      // o job concluído.
+    }
   }
 
   @Transactional
@@ -379,7 +414,8 @@ public class SalesVideoJobService {
   @Transactional
   public SalesVideoJobDto requestMontage(RequestSalesVideoMontageRequest request) {
     List<Long> sourceJobIds = normalizeSourceJobIds(request.getSourceJobIds());
-    List<SalesVideoJob> sourceJobs = sourceJobIds.stream().map(this::loadJob).toList();
+    List<SalesVideoJob> sourceJobs =
+        orderCinematicSources(sourceJobIds.stream().map(this::loadJob).toList());
     sourceJobs.forEach(this::ensureReadySourceForMontage);
     validateSceneBySceneMontage(sourceJobs);
     SalesVideoJob firstSource = sourceJobs.get(0);
@@ -406,6 +442,61 @@ public class SalesVideoJobService {
         "Montagem solicitada com " + sourceJobs.size() + " clipes",
         montageJob.getMetadataJson());
     return toDto(montageJob);
+  }
+
+  /** Ordena planos cinematográficos pelo storyboard sem confiar na ordem de seleção da tela. */
+  private List<SalesVideoJob> orderCinematicSources(List<SalesVideoJob> sourceJobs) {
+    if (sourceJobs.stream().allMatch(job -> !readSceneMetadata(job).isMissingNode())) {
+      return sourceJobs.stream()
+          .sorted(
+              java.util.Comparator.comparingInt(
+                  job -> readSceneMetadata(job).path("scene").path("order").asInt()))
+          .toList();
+    }
+    return sourceJobs;
+  }
+
+  /** Vincula o quadro final auditado do plano anterior como imagem inicial do próximo plano. */
+  @Transactional(readOnly = true)
+  public String enrichContinuityBridge(
+      String metadataJson, Long continuitySourceJobId, Long expectedProfileId) {
+    if (continuitySourceJobId == null) {
+      return metadataJson;
+    }
+    SalesVideoJob sourceJob = loadJob(continuitySourceJobId);
+    if (sourceJob.getStatus() != SalesVideoStatus.VIDEO_READY
+        || sourceJob.getProfile() == null
+        || !sourceJob.getProfile().getId().equals(expectedProfileId)
+        || sourceJob.getPosterAsset() == null
+        || !StringUtils.hasText(sourceJob.getPosterAsset().getUrl())) {
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST,
+          "O plano anterior precisa estar pronto e possuir quadro final auditado para continuidade.");
+    }
+    try {
+      ObjectNode metadata =
+          StringUtils.hasText(metadataJson)
+              ? (ObjectNode) objectMapper.readTree(metadataJson)
+              : objectMapper.createObjectNode();
+      ObjectNode imageToVideo = metadata.withObject("/image_to_video");
+      imageToVideo.put("enabled", true);
+      imageToVideo.put("source_image_provider", "PREVIOUS_SCENE_FINAL_FRAME");
+      imageToVideo.put("source_image_asset_id", sourceJob.getPosterAsset().getId());
+      imageToVideo.put("source_image_url", sourceJob.getPosterAsset().getUrl());
+      ObjectNode bridge = metadata.withObject("/continuity_bridge");
+      bridge.put("source_job_id", sourceJob.getId());
+      bridge.put("source_poster_asset_id", sourceJob.getPosterAsset().getId());
+      bridge.put("strategy", "LAST_FRAME_TO_FIRST_FRAME");
+      return objectMapper.writeValueAsString(metadata);
+    } catch (JsonProcessingException | ClassCastException ex) {
+      log.error(
+          "Falha ao montar ponte de continuidade; sourceJobId={} profileId={}",
+          continuitySourceJobId,
+          expectedProfileId,
+          ex);
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST, "Metadata de continuidade inválida.");
+    }
   }
 
   /** Converte job para DTO incluindo custo real ou estimado para a tela. */
@@ -612,6 +703,40 @@ public class SalesVideoJobService {
     Map<String, Object> metadata = new LinkedHashMap<>();
     metadata.put("sourceJobIds", sourceJobs.stream().map(SalesVideoJob::getId).toList());
     metadata.put("sourceVideos", sources);
+    JsonNode firstSceneMetadata = readSceneMetadata(sourceJobs.get(0));
+    if (!firstSceneMetadata.isMissingNode()) {
+      JsonNode postProduction = firstSceneMetadata.path("post_production");
+      Map<String, Object> premiumFinalization = new LinkedHashMap<>();
+      premiumFinalization.put("enabled", true);
+      premiumFinalization.put(
+          "voiceOverScript",
+          sourceJobs.get(0).getScript() != null
+              ? sourceJobs.get(0).getScript().getScriptText()
+              : null);
+      premiumFinalization.put("captionText", postProduction.path("caption_plan").asText(""));
+      premiumFinalization.put("soundtrackPlan", postProduction.path("soundtrack_plan").asText(""));
+      premiumFinalization.put("ctaText", postProduction.path("cta_text").asText(""));
+      metadata.put("premiumFinalization", premiumFinalization);
+      metadata.put("transitionStyle", "MOTION_MATCH_CROSSFADE");
+      if (sourceJobs.size() >= 6
+          && sourceJobs.get(0).getProfile() != null
+          && sourceJobs.get(0).getProfile().getTargetDurationSeconds() != null) {
+        metadata.put(
+            "targetShotSeconds",
+            Math.min(
+                4.0,
+                (double) sourceJobs.get(0).getProfile().getTargetDurationSeconds()
+                    / sourceJobs.size()));
+      }
+      metadata.put(
+          "qualityGate",
+          Map.of(
+              "minimumScenes", sourceJobs.size(),
+              "maximumAverageShotSeconds", 4.0,
+              "requiresAudio", true,
+              "requiresCaptions", true,
+              "requiresCta", true));
+    }
     metadata.put("maxDurationSeconds", MAX_MONTAGE_DURATION_SECONDS);
     metadata.put(
         "commercialIntent",

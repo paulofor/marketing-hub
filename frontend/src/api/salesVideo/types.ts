@@ -173,6 +173,7 @@ export interface RequestVideoRenderPayload {
   providerName?: string;
   executionMode?: SalesVideoExecutionMode;
   targetDurationSeconds?: number;
+  continuitySourceJobId?: number;
   metadataJson?: string;
 }
 

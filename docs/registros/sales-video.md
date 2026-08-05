@@ -165,3 +165,10 @@
 - contrato oficial: `PATCH /api/sales-videos/reference-videos/{referenceId}/analysis`.
 - impacto comercial: vídeos vencedores de TikTok/Reels/YouTube deixam de ficar apenas “na fila” e viram aprendizado persistido para novos roteiros, criativos, provas e CTAs.
 - prevenção: o relatório continua vindo do backend em `analysis_notes`, preservando a tela como verdade do sistema e evitando análise solta apenas no navegador.
+
+## 2026-08-05 — Ponte de continuidade e montagem premium
+
+- Problema observado: planos curtos eram gerados com a mesma imagem-base e apenas concatenados, produzindo repetição, saltos de identidade e vídeo final sem acabamento contínuo.
+- Causa-raiz tratada: a continuidade dependia de texto no prompt; o fluxo não materializava o último quadro aprovado como entrada obrigatória do plano seguinte e não encadeava a pós-produção após a montagem.
+- Correção preparada: cada render passa a persistir seu quadro final; a geração sequencial usa esse asset como imagem inicial do próximo plano; a montagem aplica microtransições, mede ritmo e bloqueia média acima de quatro segundos em sequências com seis ou mais planos; o backend enfileira voz e legenda após a montagem cinematográfica.
+- Prevenção: a tela bloqueia geração intermediária sem plano anterior aprovado, o contrato registra origem da ponte e testes protegem a montagem e a continuidade sem substituir o storyboard persistido.

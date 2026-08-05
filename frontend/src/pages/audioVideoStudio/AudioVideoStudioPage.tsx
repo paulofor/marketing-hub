@@ -538,20 +538,24 @@ const productionChecklist = [
 const defaultScenePrompts = [
   "Cena de abertura com rosto, movimento ou demonstracao visual imediata.",
   "Cena de contraste mostrando a dor antes da solucao.",
-  "Cena do mecanismo com objeto, tela ou metafora visual simples.",
-  "Cena de prova com resultado, depoimento, dado ou transformacao.",
+  "Cena curta mostrando o primeiro sinal do resultado desejado.",
+  "Cena do mecanismo com uma unica microacao visual simples.",
+  "Cena de demonstracao do segundo passo do mecanismo.",
+  "Cena de prova com resultado, depoimento ou dado verificavel.",
   "Cena da oferta com entregaveis e ganho percebido.",
   "Cena final com CTA, URL, produto ou proximo passo.",
 ];
 
 const musaV7ScenePrompts = [
-  "Cena 1 (6-8s): mulher urbana brasileira diante do espelho, pronta para sair, ajustando manga, cabelo ou acessorio, com duvida discreta e luz natural suave.",
-  "Cena 2 (6-8s): a mesma mulher caminha em ambiente urbano claro, com roupa simples, melhor acabamento e postura mais segura, comunicando intencao sem ostentacao.",
-  "Cena 3 MECANISMO (10s), montagem com quatro planos distintos e em ordem: 0-2,5s, as maos afastam dois acessorios e deixam somente um, removendo ruido visual; 2,5-5s, a mulher coloca esse unico acessorio como peca-sinal; 5-7,5s, compara junto ao rosto dois tecidos, creme e vinho, e escolhe o vinho; 7,5-10s, dobra a manga com acabamento limpo e alinha os ombros diante do espelho. Usar cortes secos entre as quatro microacoes, sem rasgar tecido, sem dobrar roupas sobre mesa, sem caminhada e sem repetir o mesmo gesto.",
-  "Cena 4 (6-8s): mulher segura o celular, inicia o diagnostico sem mostrar UI legivel e termina olhando no espelho com sorriso discreto e postura mais segura.",
+  "Cena 1 (3-4s): mulher urbana brasileira diante do espelho, pronta para sair, percebe ruido visual e demonstra duvida discreta sob luz natural suave.",
+  "Cena 2 (3-4s): quadro aproximado das maos removendo dois acessorios e mantendo somente uma peca-sinal, sem repetir gesto.",
+  "Cena 3 (3-4s): a mesma mulher compara junto ao rosto tecidos creme e vinho e escolhe o vinho com decisao clara.",
+  "Cena 4 (3-4s): diante do mesmo espelho, ela dobra a manga com acabamento limpo e alinha os ombros.",
+  "Cena 5 (3-4s): detalhe da peca-sinal aplicada ao figurino preservado, com camera acompanhando o movimento da mao.",
+  "Cena 6 (3-4s): a mesma mulher caminha em ambiente urbano claro, postura segura e elegancia acessivel sem ostentacao.",
+  "Cena 7 (3-4s): ela confere no espelho o resultado coerente, com sorriso discreto e composicao antes/depois compreensivel.",
+  "Cena 8 (3-4s): mulher segura o celular, inicia o diagnostico sem UI legivel e encerra com gesto claro de proximo passo.",
 ];
-
-const musaV7SceneRoles = ["DOR", "RESULTADO", "MECANISMO", "CTA"];
 const MAX_CINEMATIC_SCENES = 12;
 
 export function resolveStudioSceneRole(sceneIndex: number, sceneCount: number) {
@@ -1162,6 +1166,21 @@ export default function AudioVideoStudioPage() {
       );
       return;
     }
+    const previousSceneJobId =
+      sceneIndex === 0
+        ? undefined
+        : selectedSceneJobIds.find((jobId) =>
+            studioSceneJobs.some(
+              ({ job, scene }) =>
+                job.id === jobId && scene?.order === sceneIndex,
+            ),
+          );
+    if (sceneIndex > 0 && !previousSceneJobId) {
+      setSaveFeedback(
+        `Aprove um clipe pronto da cena ${sceneIndex} antes de gerar a cena ${sceneIndex + 1}. O quadro final aprovado sera usado como ponte visual.`,
+      );
+      return;
+    }
     if (briefing.scenePlan.trim() !== persistedScenePlan.trim()) {
       setSaveFeedback(
         "Salve os prompts das cenas antes de gerar. O render pago deve usar a versao persistida e auditavel no Marketing Hub.",
@@ -1181,6 +1200,7 @@ export default function AudioVideoStudioPage() {
         providerName: selectedProvider.providerName,
         executionMode: "TEST",
         targetDurationSeconds: selectedProvider.clipDurationSeconds,
+        continuitySourceJobId: previousSceneJobId,
         metadataJson: buildStudioSceneMetadata(
           selectedProject,
           selectedProvider,
@@ -1217,10 +1237,17 @@ export default function AudioVideoStudioPage() {
       );
       return;
     }
+    const orderedSceneJobIds = studioSceneJobs
+      .filter(({ job }) => selectedSceneJobIds.includes(job.id))
+      .sort(
+        (first, second) =>
+          (first.scene?.order ?? 0) - (second.scene?.order ?? 0),
+      )
+      .map(({ job }) => job.id);
     try {
       const job = await requestMontage.mutateAsync({
         requestedBy: tenantContext.userEmail,
-        sourceJobIds: selectedSceneJobIds,
+        sourceJobIds: orderedSceneJobIds,
       });
       setSaveFeedback(
         `Montagem dos ${selectedScenePrompts.length} planos solicitada no job #${job.id}.`,
@@ -2089,7 +2116,9 @@ export default function AudioVideoStudioPage() {
                             <Wand2 size={16} aria-hidden="true" />
                             {jobs.length
                               ? "Gerar nova variacao"
-                              : "Gerar clipe"}
+                              : index === 0
+                                ? "Gerar clipe"
+                                : "Gerar com quadro-ponte"}
                           </button>
                           {jobs.map(({ job }) => (
                             <label key={job.id}>

@@ -15,5 +15,6 @@ public class RequestVideoRenderRequest {
   private String providerName;
   private SalesVideoExecutionMode executionMode;
   @Positive private Integer targetDurationSeconds;
+  @Positive private Long continuitySourceJobId;
   private String metadataJson;
 }

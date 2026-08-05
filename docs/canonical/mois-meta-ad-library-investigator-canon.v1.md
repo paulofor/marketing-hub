@@ -4,14 +4,21 @@
 
 Encontrar padrões comerciais já expostos ao mercado sem afirmar venda, sucesso ou validação a partir de sinais artificiais. O módulo modela princípios e estruturas; nunca copia marca, texto, personagem, mídia ou criativo.
 
-## Fonte e coleta
+## Fonte e coleta supervisionada
 
-- A coleta automatizada usa exclusivamente a API oficial da Biblioteca de Anúncios da Meta e uma credencial autorizada.
-- Ausência de credencial, acesso ou resultado deve permanecer falha ou lacuna; nunca pode gerar anúncio, URL, métrica ou evidência de fallback.
-- A rotina fica no módulo executor `mois-meta-ad-library-collector`; o backend publica pendências, persiste observações e decide o gate.
-- Cada payload bruto recebido deve ser persistido e correlacionado à investigação.
+- Para anúncios comerciais no Brasil, o fluxo canônico é supervisionado pela tela do MOIS e não depende de `ads_archive`.
+- A pessoa abre a Biblioteca pública, seleciona um anúncio e cadastra ID, anunciante, URL pública, texto visível e sinais comerciais verificáveis.
+- O backend valida, normaliza, deduplica, persiste observações e decide o gate. A tela nunca publica campanha ou consome orçamento.
+- O antigo `mois-meta-ad-library-collector` permanece apenas como histórico técnico e não deve ser implantado nem receber credencial enquanto a cobertura comercial oficial for insuficiente.
+- Cada cadastro bruto recebido deve ser persistido e correlacionado à investigação.
 - O mesmo anúncio observado novamente na mesma investigação não aumenta sua contagem temporal.
-- Investigações concluídas com sucesso voltam à fila no dia seguinte; cada execução recebe `collector_run_id` próprio para construir histórico sem inflar retries.
+- Cada observação supervisionada recebe identificador próprio para construir histórico sem inflar retries.
+
+## Assistência por agente
+
+- Um agente pode analisar e estruturar apenas evidências que o usuário cadastrou explicitamente no Marketing Hub.
+- O agente não pode autenticar-se como usuário, raspar a interface da Meta, contornar limitação regional, CAPTCHA, rate limit ou controle de acesso.
+- Toda extração assistida deve preservar a fonte, separar fato observado de inferência e exigir revisão humana antes de `MODELAR`.
 
 ## Diagnósticos separados
 
@@ -31,4 +38,4 @@ Toda decisão deve expor evidências e lacunas. O score mínimo de uma consulta 
 
 ## Fontes na tela
 
-Fontes sem coletor real devem aparecer desabilitadas e identificadas como `em implantação`. A investigação Meta usa seu fluxo dedicado e não o coletor genérico legado.
+Fontes sem coletor real devem aparecer desabilitadas e identificadas como `em implantação`. O Radar Meta comercial usa cadastro supervisionado dedicado e não o coletor genérico legado.

@@ -2,6 +2,7 @@ package com.marketinghub.mois.metaads.v1.service;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +63,20 @@ public final class MoisMetaAdDtos {
   /** Confirma a persistência do lote e devolve o gate recalculado. */
   public record ObservationBatchResponse(
       long investigationId, int accepted, String gateDecision, List<String> gaps) {}
+
+  /** Recebe uma evidência comercial observada por uma pessoa na Biblioteca pública. */
+  public record SupervisedObservationRequest(
+      @NotBlank String adReference,
+      @NotBlank String advertiserName,
+      @NotBlank @Pattern(regexp = "https://(www\\.)?facebook\\.com/ads/library/.*")
+          String adLibraryUrl,
+      @NotBlank String adText,
+      String formatType,
+      String mediaUrl,
+      String destinationUrl,
+      boolean pageActive,
+      boolean commercialSignal,
+      Instant observedAt) {}
 
   /** Recebe a conclusão técnica do coletor sem mascarar falhas. */
   public record CompleteInvestigationRequest(boolean success, String errorMessage) {}

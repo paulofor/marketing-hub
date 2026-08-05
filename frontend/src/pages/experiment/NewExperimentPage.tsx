@@ -458,7 +458,8 @@ export default function NewExperimentPage() {
         imageModelId: form.imageModelId ? Number(form.imageModelId) : undefined,
         imageModelQualityId: undefined,
         promiseGenerationRequestIds: promiseRequestIds,
-        imagesPerPackage: 20,
+        imagesPerPackage:
+          productAiSubtypeForSubmit === "AI_PERSONALIZED_SAMPLE" ? 1 : 20,
         openImagesPerPackage: undefined,
         compressedImagesPerPackage: undefined,
       });

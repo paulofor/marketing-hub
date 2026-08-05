@@ -12,6 +12,7 @@ import {
 import {
   useCreateMoisMetaAdInvestigation,
   useMoisMetaAdInvestigations,
+  useRegisterSupervisedMetaAdObservation,
 } from "../../api/mois/useMoisMetaAdInvestigations";
 
 const WORKSPACE_ID = "workspace-001";
@@ -32,6 +33,15 @@ export default function MoisAutoCollectionPage() {
   const [minSuccessScore, setMinSuccessScore] = useState(60);
   const [activeJobId, setActiveJobId] = useState("");
   const [metaSearchTerms, setMetaSearchTerms] = useState("");
+  const [selectedMetaInvestigationId, setSelectedMetaInvestigationId] =
+    useState(0);
+  const [metaAdReference, setMetaAdReference] = useState("");
+  const [metaAdvertiserName, setMetaAdvertiserName] = useState("");
+  const [metaLibraryUrl, setMetaLibraryUrl] = useState("");
+  const [metaAdText, setMetaAdText] = useState("");
+  const [metaDestinationUrl, setMetaDestinationUrl] = useState("");
+  const [metaPageActive, setMetaPageActive] = useState(false);
+  const [metaCommercialSignal, setMetaCommercialSignal] = useState(false);
 
   const [sourceFilter, setSourceFilter] = useState("");
   const [confidenceFilter, setConfidenceFilter] = useState("");
@@ -46,6 +56,7 @@ export default function MoisAutoCollectionPage() {
     useImportAndStartExtractionMoisCollectedReference();
   const metaInvestigations = useMoisMetaAdInvestigations(WORKSPACE_ID);
   const createMetaInvestigation = useCreateMoisMetaAdInvestigation();
+  const registerMetaObservation = useRegisterSupervisedMetaAdObservation();
 
   const filters = useMemo(
     () => ({
@@ -430,11 +441,11 @@ export default function MoisAutoCollectionPage() {
         <div className="card-body d-flex flex-column gap-3">
           <div>
             <h2 className="h5 mb-1">
-              Investigador da Biblioteca de Anúncios Meta
+              Radar supervisionado de anúncios comerciais
             </h2>
             <p className="text-secondary mb-0">
-              Coleta pela API oficial e só libera modelagem após longevidade e
-              sinais comerciais comprovados.
+              Cadastre evidências vistas na Biblioteca pública. O MOIS cria o
+              histórico e só libera modelagem após sinais comprovados.
             </p>
           </div>
           <form
@@ -465,10 +476,178 @@ export default function MoisAutoCollectionPage() {
               >
                 {createMetaInvestigation.isPending
                   ? "Criando..."
-                  : "Investigar na Meta"}
+                  : "Criar acompanhamento"}
               </button>
             </div>
           </form>
+          {(metaInvestigations.data ?? []).length > 0 ? (
+            <form
+              className="border rounded p-3 row g-3"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                await registerMetaObservation.mutateAsync({
+                  investigationId: selectedMetaInvestigationId,
+                  observation: {
+                    adReference: metaAdReference,
+                    advertiserName: metaAdvertiserName,
+                    adLibraryUrl: metaLibraryUrl,
+                    adText: metaAdText,
+                    destinationUrl: metaDestinationUrl || undefined,
+                    pageActive: metaPageActive,
+                    commercialSignal: metaCommercialSignal,
+                  },
+                });
+                setMetaAdReference("");
+                setMetaAdvertiserName("");
+                setMetaLibraryUrl("");
+                setMetaAdText("");
+                setMetaDestinationUrl("");
+                setMetaPageActive(false);
+                setMetaCommercialSignal(false);
+              }}
+            >
+              <div className="col-12">
+                <h3 className="h6 mb-1">Registrar observação real</h3>
+                <p className="small text-secondary mb-0">
+                  Abra o anúncio na Meta e transcreva apenas o que estiver
+                  visível. Uma nova observação do mesmo ID atualiza a
+                  longevidade sem duplicar o ativo.
+                </p>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label" htmlFor="meta-investigation">
+                  Acompanhamento *
+                </label>
+                <select
+                  id="meta-investigation"
+                  className="form-select"
+                  value={selectedMetaInvestigationId}
+                  onChange={(event) =>
+                    setSelectedMetaInvestigationId(Number(event.target.value))
+                  }
+                  required
+                >
+                  <option value={0} disabled>
+                    Selecione
+                  </option>
+                  {(metaInvestigations.data ?? []).map((item) => (
+                    <option key={item.id} value={item.id}>
+                      #{item.id} · {item.searchTerms}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label" htmlFor="meta-ad-reference">
+                  ID do anúncio *
+                </label>
+                <input
+                  id="meta-ad-reference"
+                  className="form-control"
+                  value={metaAdReference}
+                  onChange={(event) => setMetaAdReference(event.target.value)}
+                  required
+                />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label" htmlFor="meta-advertiser">
+                  Anunciante *
+                </label>
+                <input
+                  id="meta-advertiser"
+                  className="form-control"
+                  value={metaAdvertiserName}
+                  onChange={(event) =>
+                    setMetaAdvertiserName(event.target.value)
+                  }
+                  required
+                />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label" htmlFor="meta-library-url">
+                  URL da Biblioteca *
+                </label>
+                <input
+                  id="meta-library-url"
+                  type="url"
+                  className="form-control"
+                  value={metaLibraryUrl}
+                  onChange={(event) => setMetaLibraryUrl(event.target.value)}
+                  placeholder="https://www.facebook.com/ads/library/..."
+                  required
+                />
+              </div>
+              <div className="col-12">
+                <label className="form-label" htmlFor="meta-ad-text">
+                  Texto principal visível *
+                </label>
+                <textarea
+                  id="meta-ad-text"
+                  className="form-control"
+                  rows={3}
+                  value={metaAdText}
+                  onChange={(event) => setMetaAdText(event.target.value)}
+                  required
+                />
+              </div>
+              <div className="col-12">
+                <label className="form-label" htmlFor="meta-destination-url">
+                  Página de destino
+                </label>
+                <input
+                  id="meta-destination-url"
+                  type="url"
+                  className="form-control"
+                  value={metaDestinationUrl}
+                  onChange={(event) =>
+                    setMetaDestinationUrl(event.target.value)
+                  }
+                />
+              </div>
+              <div className="col-md-6 form-check ms-2">
+                <input
+                  id="meta-page-active"
+                  type="checkbox"
+                  className="form-check-input"
+                  checked={metaPageActive}
+                  onChange={(event) => setMetaPageActive(event.target.checked)}
+                />
+                <label className="form-check-label" htmlFor="meta-page-active">
+                  Página abriu e está ativa
+                </label>
+              </div>
+              <div className="col-md-5 form-check ms-2">
+                <input
+                  id="meta-commercial-signal"
+                  type="checkbox"
+                  className="form-check-input"
+                  checked={metaCommercialSignal}
+                  onChange={(event) =>
+                    setMetaCommercialSignal(event.target.checked)
+                  }
+                />
+                <label
+                  className="form-check-label"
+                  htmlFor="meta-commercial-signal"
+                >
+                  Há preço, oferta ou checkout verificável
+                </label>
+              </div>
+              <div className="col-12 d-flex justify-content-end">
+                <button
+                  className="btn btn-primary"
+                  disabled={
+                    registerMetaObservation.isPending ||
+                    selectedMetaInvestigationId === 0
+                  }
+                >
+                  {registerMetaObservation.isPending
+                    ? "Registrando..."
+                    : "Registrar observação"}
+                </button>
+              </div>
+            </form>
+          ) : null}
           {metaInvestigations.isError ? (
             <p className="text-danger mb-0">
               Falha ao carregar investigações Meta.

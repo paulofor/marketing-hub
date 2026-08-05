@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-05-mois-meta-supervised-radar
+      author: codex
+      preConditions:
+        onFail: HALT
+        dbms:
+          type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE mois_meta_ad_investigation
+              SET status = 'ACTIVE_SUPERVISED',
+                  error_message = NULL,
+                  started_at = NULL,
+                  finished_at = NULL,
+                  next_run_at = NULL,
+                  updated_at = NOW()
+              WHERE status IN ('PENDING', 'RUNNING', 'FAILED', 'COMPLETED');

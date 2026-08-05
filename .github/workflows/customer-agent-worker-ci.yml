@@ -39,6 +39,11 @@ jobs:
         run: bash customer-agent-worker/test-dockerfile-contract.sh
       - name: Validate container build
         run: docker build -t marketing-hub/customer-agent-worker:${{ github.sha }} customer-agent-worker
+      - name: Validate bundled Chromium as runtime user
+        run: |
+          docker run --rm --entrypoint node marketing-hub/customer-agent-worker:${{ github.sha }} \
+            --input-type=module -e \
+            'import { chromium } from "playwright-core"; const browser = await chromium.launch({headless: true, args: ["--no-sandbox"]}); console.log(await browser.version()); await browser.close();'
 
   deploy:
     name: Deploy worker

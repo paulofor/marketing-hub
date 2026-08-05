@@ -7,7 +7,7 @@ services:
       CUSTOMER_AGENT_MODEL: ${CUSTOMER_AGENT_MODEL:-gpt-5.6-sol}
       CUSTOMER_AGENT_POLL_MS: ${CUSTOMER_AGENT_POLL_MS:-60000}
       CUSTOMER_AGENT_OBSERVATION_POLL_MS: ${CUSTOMER_AGENT_OBSERVATION_POLL_MS:-60000}
-      CHROMIUM_BIN: /usr/bin/chromium
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     volumes:
       - ${CODEX_HOME_PATH:-/opt/growth-operator/codex-home}:/home/operator/.codex
       - ${MARKETING_HUB_REPOSITORY:-..}:/workspace:ro

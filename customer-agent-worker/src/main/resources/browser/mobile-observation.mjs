@@ -5,7 +5,7 @@ import path from "node:path";
 const [inputPath, outputPath, evidenceDirectory] = process.argv.slice(2);
 const input = JSON.parse(await fs.readFile(inputPath, "utf8"));
 const browser = await chromium.launch({
-  executablePath: process.env.CHROMIUM_BIN || "/usr/bin/chromium",
+  ...(process.env.CHROMIUM_BIN ? { executablePath: process.env.CHROMIUM_BIN } : {}),
   headless: true,
   args: ["--no-sandbox", "--disable-dev-shm-usage"],
 });

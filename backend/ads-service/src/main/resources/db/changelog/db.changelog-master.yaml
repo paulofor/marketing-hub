@@ -1600,3 +1600,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-05-experiment-strategist-agent-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-05-experiment-strategist-hybrid-memory-v1.yaml
+      relativeToChangelogFile: true

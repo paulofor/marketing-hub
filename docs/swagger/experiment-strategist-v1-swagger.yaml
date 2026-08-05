@@ -1,0 +1,75 @@
+openapi: 3.0.3
+info:
+  title: Estrategista de Experimentos v1
+  version: 1.1.0
+paths:
+  /api/experiment-strategist/v1/commercial-plans/{planId}/research-context:
+    get:
+      summary: Consolida funil, aprendizados e memoria comportamental vigente.
+      parameters:
+        - in: path
+          name: planId
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        '200': {description: Contexto somente leitura}
+  /api/experiment-strategist/v1/memory:
+    post:
+      summary: Registra hipotese ou aprendizado comportamental auditavel.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateMemoryRequest'}
+      responses:
+        '200': {description: Memoria registrada}
+        '400': {description: Contrato invalido ou confirmacao sem resultado posterior}
+  /api/experiment-strategist/v1/commercial-plans/{planId}/memory:
+    get:
+      summary: Lista memorias vigentes do planejamento.
+      parameters:
+        - in: path
+          name: planId
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        '200': {description: Memorias vigentes}
+  /api/experiment-strategist/v1/memory/{memoryId}/artifacts:
+    post:
+      summary: Anonimiza e armazena artefato textual no S3 privado.
+      parameters:
+        - in: path
+          name: memoryId
+          required: true
+          schema: {type: integer, format: int64}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ArtifactRequest'}
+      responses:
+        '200': {description: Metadados seguros do artefato}
+        '503': {description: Bucket nao configurado}
+components:
+  schemas:
+    CreateMemoryRequest:
+      type: object
+      required: [commercialPlanId, behavioralMechanism, statement, evidenceLevel, confidence, validationStatus]
+      properties:
+        commercialPlanId: {type: integer, format: int64}
+        executionId: {type: integer, format: int64}
+        behavioralMechanism: {type: string}
+        statement: {type: string}
+        evidenceLevel: {type: string}
+        confidence: {type: string}
+        validationStatus: {type: string}
+        sourceReferences: {type: array, items: {type: object}}
+        observedOutcome: {type: string}
+        validityDays: {type: integer, minimum: 1}
+    ArtifactRequest:
+      type: object
+      required: [artifactType, content]
+      properties:
+        artifactType: {type: string}
+        sourceUrl: {type: string}
+        content: {type: string, description: Texto anonimizado pelo backend antes do S3}

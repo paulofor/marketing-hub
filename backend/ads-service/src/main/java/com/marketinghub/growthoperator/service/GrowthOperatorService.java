@@ -239,7 +239,7 @@ public class GrowthOperatorService {
     execution.setEvidenceFingerprint(buildEvidenceFingerprint(execution.getEvidenceSnapshot()));
     execution.setCycleNumber(nextCycleNumber(planId));
     execution.setAutomaticCycle(false);
-    return toResponse(repository.save(execution));
+    return toResponse(saveWithCurrentAgentVersion(execution));
   }
 
   /** Lista o historico de diagnosticos de um planejamento. */
@@ -371,7 +371,14 @@ public class GrowthOperatorService {
                         HttpStatus.NOT_FOUND, "Nenhum diagnostico pendente."));
     execution.setStatus(GrowthOperatorExecutionStatus.RUNNING);
     execution.setStartedAt(Instant.now());
-    return toResponse(repository.save(execution));
+    return toResponse(saveWithCurrentAgentVersion(execution));
+  }
+
+  /** Salva a execucao e fixa a versao exata do contrato que a governou. */
+  private GrowthOperatorExecution saveWithCurrentAgentVersion(GrowthOperatorExecution execution) {
+    GrowthOperatorExecution saved = repository.save(execution);
+    repository.attachCurrentAgentVersion(saved.getId());
+    return repository.findById(saved.getId()).orElseThrow();
   }
 
   /** Cria ciclo automatico somente quando ha mudanca comercial relevante nas evidencias. */
@@ -403,7 +410,7 @@ public class GrowthOperatorService {
     execution.setEvidenceFingerprint(evidenceFingerprint);
     execution.setCycleNumber(nextCycleNumber(planId));
     execution.setAutomaticCycle(true);
-    return toResponse(repository.save(execution));
+    return toResponse(saveWithCurrentAgentVersion(execution));
   }
 
   /** Registra somente o diagnostico, sem executar nem persistir a acao recomendada no plano. */

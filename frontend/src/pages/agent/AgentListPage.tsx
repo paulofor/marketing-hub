@@ -12,8 +12,8 @@ export default function AgentListPage() {
       <PageTitle>Agentes</PageTitle>
       <div className="d-flex justify-content-between align-items-start mb-3">
         <p className="mb-0 text-body-secondary">
-          Cadastre agentes, suas entradas, saídas e funções internas seguindo o
-          fluxo do diagrama (SignalMiner, TriageCardBuilder, ProductAnalyst, etc).
+          Governe agentes, versões, objetivos, ferramentas e limites de
+          autoridade.
         </p>
         <div className="d-flex gap-2">
           <Link className="btn btn-outline-secondary btn-sm" to="/agent-themes">
@@ -35,6 +35,7 @@ export default function AgentListPage() {
                 <th>Agente</th>
                 <th>Tema</th>
                 <th>Modo</th>
+                <th>Status / versão</th>
                 <th>Entradas</th>
                 <th>Saídas</th>
                 <th>Funções internas</th>
@@ -52,7 +53,17 @@ export default function AgentListPage() {
                   </td>
                   <td>{agent.themeName || "-"}</td>
                   <td>
-                    <span className="badge text-bg-light">{agent.executionMode}</span>
+                    <span className="badge text-bg-light">
+                      {agent.executionMode}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="badge text-bg-primary">
+                      {agent.status}
+                    </span>
+                    <div className="small text-body-secondary mt-1">
+                      v{agent.currentVersion}
+                    </div>
                   </td>
                   <td>{agent.inputs?.length ?? 0}</td>
                   <td>{agent.outputs?.length ?? 0}</td>
@@ -69,7 +80,7 @@ export default function AgentListPage() {
               ))}
               {agents.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center text-body-secondary">
+                  <td colSpan={8} className="text-center text-body-secondary">
                     Nenhum agente cadastrado ainda.
                   </td>
                 </tr>

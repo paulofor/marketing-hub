@@ -1,5 +1,6 @@
 package com.marketinghub.growthoperator;
 
+import com.marketinghub.agent.AgentVersion;
 import com.marketinghub.planning.CommercialPlan;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -32,6 +33,10 @@ public class GrowthOperatorExecution {
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "commercial_plan_id", nullable = false)
   private CommercialPlan commercialPlan;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "agent_version_id")
+  private AgentVersion agentVersion;
 
   @Column(name = "week_number", nullable = false)
   private Integer weekNumber;

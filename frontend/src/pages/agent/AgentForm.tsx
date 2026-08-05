@@ -81,7 +81,10 @@ export default function AgentForm({
 
   const addItem = (section: SectionKey) => {
     setForm((current) => {
-      const list = [...(current[section] ?? []), { name: "", type: "", description: "" }];
+      const list = [
+        ...(current[section] ?? []),
+        { name: "", type: "", description: "" },
+      ];
       return {
         ...current,
         [section]: normalizeItems(list),
@@ -171,7 +174,9 @@ export default function AgentForm({
                       />
                     </div>
                   </div>
-                  <label className="form-label small mb-1">Descrição / formato</label>
+                  <label className="form-label small mb-1">
+                    Descrição / formato
+                  </label>
                   <textarea
                     className="form-control"
                     rows={3}
@@ -214,6 +219,109 @@ export default function AgentForm({
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             placeholder="Ex: SignalMiner Standard"
+          />
+        </div>
+        <div className="col-md-4">
+          <label className="form-label">Chave canônica</label>
+          <input
+            className="form-control"
+            value={form.agentKey ?? ""}
+            onChange={(e) => setForm({ ...form, agentKey: e.target.value })}
+            placeholder="growth-operator"
+          />
+        </div>
+        <div className="col-md-4">
+          <label className="form-label">Status</label>
+          <select
+            className="form-select"
+            value={form.status}
+            onChange={(e) => setForm({ ...form, status: e.target.value })}
+          >
+            {["DRAFT", "TEST", "ACTIVE", "PAUSED", "BLOCKED"].map((status) => (
+              <option key={status}>{status}</option>
+            ))}
+          </select>
+        </div>
+        <div className="col-md-4">
+          <label className="form-label">Responsável</label>
+          <input
+            className="form-control"
+            value={form.ownerName ?? ""}
+            onChange={(e) => setForm({ ...form, ownerName: e.target.value })}
+          />
+        </div>
+        <div className="col-md-6">
+          <label className="form-label">Objetivo de negócio</label>
+          <textarea
+            className="form-control"
+            rows={3}
+            value={form.businessObjective ?? ""}
+            onChange={(e) =>
+              setForm({ ...form, businessObjective: e.target.value })
+            }
+          />
+        </div>
+        <div className="col-md-6">
+          <label className="form-label">Métricas de sucesso</label>
+          <textarea
+            className="form-control"
+            rows={3}
+            value={form.successMetrics ?? ""}
+            onChange={(e) =>
+              setForm({ ...form, successMetrics: e.target.value })
+            }
+          />
+        </div>
+        <div className="col-md-4">
+          <label className="form-label">Modelo</label>
+          <input
+            className="form-control"
+            value={form.modelName ?? ""}
+            onChange={(e) => setForm({ ...form, modelName: e.target.value })}
+            placeholder="gpt-5.6-sol"
+          />
+        </div>
+        <div className="col-md-8">
+          <label className="form-label">Gatilhos de execução</label>
+          <input
+            className="form-control"
+            value={form.triggerPolicy ?? ""}
+            onChange={(e) =>
+              setForm({ ...form, triggerPolicy: e.target.value })
+            }
+          />
+        </div>
+        <div className="col-12">
+          <label className="form-label">
+            Política de autoridade e aprovações
+          </label>
+          <textarea
+            className="form-control"
+            rows={3}
+            value={form.authorityPolicy ?? ""}
+            onChange={(e) =>
+              setForm({ ...form, authorityPolicy: e.target.value })
+            }
+          />
+        </div>
+        <div className="col-md-6">
+          <label className="form-label">Contrato do prompt</label>
+          <input
+            className="form-control"
+            value={form.promptContractPath ?? ""}
+            onChange={(e) =>
+              setForm({ ...form, promptContractPath: e.target.value })
+            }
+          />
+        </div>
+        <div className="col-md-6">
+          <label className="form-label">Contrato do schema</label>
+          <input
+            className="form-control"
+            value={form.schemaContractPath ?? ""}
+            onChange={(e) =>
+              setForm({ ...form, schemaContractPath: e.target.value })
+            }
           />
         </div>
         <div className="col-md-6">
@@ -290,7 +398,11 @@ export default function AgentForm({
       )}
 
       <div className="d-flex gap-2">
-        <button className="btn btn-primary" type="submit" disabled={!canSubmit || isSubmitting}>
+        <button
+          className="btn btn-primary"
+          type="submit"
+          disabled={!canSubmit || isSubmitting}
+        >
           {isSubmitting && (
             <span
               className="spinner-border spinner-border-sm me-2"
@@ -301,7 +413,8 @@ export default function AgentForm({
           {isSubmitting ? "Salvando..." : submitLabel}
         </button>
         <p className="mb-0 text-body-secondary small align-self-center">
-          Itens são salvos na ordem exibida para facilitar o desenho do fluxo do agente.
+          Itens são salvos na ordem exibida para facilitar o desenho do fluxo do
+          agente.
         </p>
       </div>
     </form>

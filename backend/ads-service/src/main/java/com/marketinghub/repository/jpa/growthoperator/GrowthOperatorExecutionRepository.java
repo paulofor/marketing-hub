@@ -8,6 +8,9 @@ import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: persistir execucoes auditaveis do Operador de Crescimento. */
 public interface GrowthOperatorExecutionRepository
@@ -25,4 +28,15 @@ public interface GrowthOperatorExecutionRepository
 
   /** Busca o ciclo mais recente de um planejamento. */
   Optional<GrowthOperatorExecution> findFirstByCommercialPlanIdOrderByCreatedAtDesc(Long planId);
+
+  /** Vincula a execucao a versao ativa do cadastro canonico do Operador. */
+  @Modifying(flushAutomatically = true, clearAutomatically = true)
+  @Query(
+      value =
+          "UPDATE growth_operator_execution goe "
+              + "JOIN agent a ON a.agent_key = 'growth-operator' "
+              + "JOIN agent_version av ON av.agent_id = a.id AND av.version_number = a.current_version "
+              + "SET goe.agent_version_id = av.id WHERE goe.id = :executionId",
+      nativeQuery = true)
+  void attachCurrentAgentVersion(@Param("executionId") Long executionId);
 }

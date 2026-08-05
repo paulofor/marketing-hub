@@ -35,6 +35,8 @@ jobs:
       - name: Run unit tests
         working-directory: customer-agent-worker
         run: mvn -B test
+      - name: Validate container user contract
+        run: bash customer-agent-worker/test-dockerfile-contract.sh
       - name: Validate container build
         run: docker build -t marketing-hub/customer-agent-worker:${{ github.sha }} customer-agent-worker
 

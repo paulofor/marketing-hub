@@ -659,3 +659,9 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Sintoma:** o Operador consome IA a cada 30 minutos e repete a mesma conclusão sem mudança de sessão, custo, venda, vídeo, falha ou prazo.
 - **Causa-raiz:** o backend usava apenas cadência temporal; a memória do próprio ciclo também crescia e poderia aparentar mudança.
 - **Prevenção:** criar ciclo automático somente quando mudar o fingerprint das evidências operacionais, excluindo a memória acumulada, e persistir as ferramentas MCP realmente usadas na conclusão.
+
+# LOOP-AGENT-IMAGE-OPERATOR-GROUP — Imagem de agente recria grupo da imagem-base
+
+- **Sintoma:** testes do worker passam, mas o build Docker falha com `groupadd: group 'operator' already exists` e impede o deploy do agente.
+- **Causa-raiz:** o Dockerfile assumia que usuário e grupo `operator` não existiam, embora a instalação do Codex ou a imagem-base já pudesse fornecer o grupo.
+- **Prevenção:** reutilizar usuário/grupo existentes e criá-los somente quando ausentes; todo workflow de agente deve executar teste de contrato e construir a imagem antes do deploy.

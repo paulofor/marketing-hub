@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-05-financial-agent-governance-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO agent (
+                theme_id, name, agent_key, status, current_version, execution_mode,
+                description, owner_name, business_objective, success_metrics, model_name,
+                trigger_policy, authority_policy, prompt_contract_path, schema_contract_path
+              )
+              SELECT at.id, 'Agente Financeiro', 'financial-agent', 'ACTIVE', 1, 'DAILY',
+                'Reconcilia custos e receitas sem movimentar dinheiro ou alterar operacoes comerciais.',
+                'Marketing Hub', 'Proteger margem, caixa e limites financeiros com dados auditaveis.',
+                'Custos e receitas conciliados; divergencias detectadas no mesmo dia; nenhum gasto acima dos gates.',
+                'gpt-5.6-sol', 'Execucao diaria e mudanca material em custo, receita ou reembolso.',
+                'Somente leitura e diagnostico; nao compra creditos, movimenta dinheiro, altera preco, orcamento ou campanha.',
+                'financial-agent-worker/src/main/resources/prompts/financial-agent/v1/report.md',
+                'financial-agent-worker/src/main/resources/prompts/financial-agent/v1/report-schema.json'
+              FROM agent_theme at
+              WHERE at.name = 'Operacoes Autonomas'
+                AND NOT EXISTS (SELECT 1 FROM agent WHERE agent_key = 'financial-agent');
+
+              INSERT INTO agent_version (agent_id, version_number, contract_snapshot, created_at)
+              SELECT a.id, 1,
+                CONCAT('{"agentKey":"financial-agent","version":1,"status":"ACTIVE","model":"gpt-5.6-sol","prompt":"', a.prompt_contract_path, '","schema":"', a.schema_contract_path, '"}'),
+                UTC_TIMESTAMP()
+              FROM agent a
+              WHERE a.agent_key = 'financial-agent'
+                AND NOT EXISTS (
+                  SELECT 1 FROM agent_version av
+                  WHERE av.agent_id = a.id AND av.version_number = 1
+                );

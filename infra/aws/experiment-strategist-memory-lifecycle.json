@@ -1,0 +1,17 @@
+{
+  "Rules": [
+    {
+      "ID": "ExpirarMemoriasOperacionais",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "experiment-strategist-memory/v1/"
+      },
+      "Expiration": {
+        "Days": 365
+      },
+      "NoncurrentVersionExpiration": {
+        "NoncurrentDays": 30
+      }
+    }
+  ]
+}

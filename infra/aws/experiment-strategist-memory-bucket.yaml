@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Bucket privado para artefatos anonimizados da memoria do Estrategista de Experimentos
+Parameters:
+  BucketName:
+    Type: String
+  RetentionDays:
+    Type: Number
+    Default: 365
+Resources:
+  ExperimentStrategistMemoryBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpirarMemoriasOperacionais
+            Status: Enabled
+            Prefix: experiment-strategist-memory/v1/
+            ExpirationInDays: !Ref RetentionDays
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+  ExperimentStrategistMemoryBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ExperimentStrategistMemoryBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: NegarTransporteInseguro
+            Effect: Deny
+            Principal: '*'
+            Action: s3:*
+            Resource:
+              - !Sub '${ExperimentStrategistMemoryBucket.Arn}'
+              - !Sub '${ExperimentStrategistMemoryBucket.Arn}/*'
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+Outputs:
+  BucketName:
+    Value: !Ref ExperimentStrategistMemoryBucket

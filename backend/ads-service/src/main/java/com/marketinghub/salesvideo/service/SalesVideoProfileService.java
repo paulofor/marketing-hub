@@ -173,9 +173,7 @@ public class SalesVideoProfileService {
     return SalesVideoMapper.toDto(saved);
   }
 
-  /**
-   * Solicita o render do roteiro aprovado e preserva os metadados operacionais enviados ao worker.
-   */
+  /** Solicita o render e incorpora o quadro final aprovado do plano anterior quando informado. */
   @Transactional
   public SalesVideoJobDto requestRender(Long profileId, RequestVideoRenderRequest request) {
     SalesVideoProfile profile = loadProfile(profileId);
@@ -215,7 +213,9 @@ public class SalesVideoProfileService {
             request.getProviderName(),
             requestedBy,
             executionMode);
-    job.setMetadataJson(request.getMetadataJson());
+    job.setMetadataJson(
+        jobService.enrichContinuityBridge(
+            request.getMetadataJson(), request.getContinuitySourceJobId(), profileId));
     job.setAuditSnapshotJson(buildAuditSnapshot(profile, script, job, requestedBy));
     jobRepository.save(job);
     profile.setStatus(SalesVideoStatus.VIDEO_REQUESTED);

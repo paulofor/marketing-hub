@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.media.Asset;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobEventRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
@@ -517,5 +518,36 @@ class SalesVideoJobServiceTest {
         assertThrows(VideoModuleException.class, () -> service.requestMontage(request));
 
     assertThat(ex.getMessage()).contains("planos consecutivos do mesmo projeto");
+  }
+
+  /** Usa o quadro final persistido do plano anterior como abertura auditável do próximo. */
+  @Test
+  void shouldEnrichNextSceneWithPreviousFinalFrame() {
+    TenantContextHolder.set(new TenantContext("tenant-a", "editor@tenant.io", false));
+    SalesVideoProfile profile = SalesVideoProfile.builder().id(6L).tenantId("tenant-a").build();
+    Asset continuityFrame =
+        Asset.builder().id(901L).url("https://cdn.example.com/scene-1-final-frame.png").build();
+    SalesVideoJob source =
+        SalesVideoJob.builder()
+            .id(501L)
+            .profile(profile)
+            .tenantId("tenant-a")
+            .status(SalesVideoStatus.VIDEO_READY)
+            .posterAsset(continuityFrame)
+            .build();
+    given(jobRepository.findById(501L)).willReturn(Optional.of(source));
+
+    try {
+      String enriched =
+          service.enrichContinuityBridge("{\"image_to_video\":{\"enabled\":true}}", 501L, 6L);
+
+      assertThat(enriched)
+          .contains("PREVIOUS_SCENE_FINAL_FRAME")
+          .contains("scene-1-final-frame.png")
+          .contains("LAST_FRAME_TO_FIRST_FRAME")
+          .contains("\"source_job_id\":501");
+    } finally {
+      TenantContextHolder.clear();
+    }
   }
 }

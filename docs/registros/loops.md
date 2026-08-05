@@ -25,6 +25,14 @@ Antes de implementar uma correção em tema com histórico de loop:
 5. Atualizar cânone, Swagger, tela ou Worker AI quando o contrato entre módulos mudar.
 6. Registrar no documento de tema correspondente o que foi feito e, quando necessário, atualizar este arquivo.
 
+## LOOP-VIDEO-SCENE-PROMPT-PERSISTENCE — Estúdio substituindo decisão visual salva
+
+- **Severidade**: ALTO.
+- **Status**: fechado em 2026-08-05.
+- **Causa-raiz confirmada**: geração de cenas podia depender de prompt fixo ou imagem inicial genérica, em vez do storyboard persistido e da saída aprovada do plano anterior.
+- **Correção efetiva**: storyboard editável e salvo é a única fonte do prompt; cada plano persiste seu quadro final e o plano seguinte usa esse asset como ponte auditável; montagem e pós-produção permanecem etapas separadas e encadeadas pelo backend.
+- **Prevenção**: testes devem impedir geração com prompt não salvo, plano intermediário sem predecessor aprovado, substituição do quadro-ponte por imagem genérica e montagem sem todas as funções narrativas.
+
 ## Como ler este documento
 
 Cada loop possui dois tipos de informação:

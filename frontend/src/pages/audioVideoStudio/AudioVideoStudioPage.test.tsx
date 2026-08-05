@@ -203,8 +203,11 @@ describe("AudioVideoStudioPage", () => {
       );
     });
     expect((axios.post as any).mock.calls[0][1].scenePlan).toContain(
-      "Cena 1 (6-8s)",
+      "Cena 1 (3-4s)",
     );
+    expect(
+      (axios.post as any).mock.calls[0][1].scenePlan.split("\n"),
+    ).toHaveLength(8);
     expect((axios.post as any).mock.calls[0][1].characterBible).toContain(
       "Personagem aprovada",
     );
@@ -321,8 +324,11 @@ describe("AudioVideoStudioPage", () => {
     await waitFor(() =>
       expect(
         screen.getAllByRole("button", { name: "Gerar clipe" }),
-      ).toHaveLength(4),
+      ).toHaveLength(1),
     );
+    expect(
+      screen.getAllByRole("button", { name: "Gerar com quadro-ponte" }),
+    ).toHaveLength(3);
     expect(
       screen.getAllByText(/Cena MECANISMO com uma unica microacao/i),
     ).toHaveLength(2);

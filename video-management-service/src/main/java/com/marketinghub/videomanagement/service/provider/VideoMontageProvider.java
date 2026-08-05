@@ -39,6 +39,7 @@ public class VideoMontageProvider implements VideoProvider {
     private static final int MAX_VIDEO_DOWNLOAD_BYTES = 150 * 1024 * 1024;
     private static final double MAX_MONTAGE_DURATION_SECONDS = 600.0;
     private static final String PROVIDER_NAME = "MUSA_VIDEO_MONTAGE";
+    private static final double TRANSITION_SECONDS = 0.18;
     private static final Logger log = LoggerFactory.getLogger(VideoMontageProvider.class);
 
     private final VideoManagementProperties properties;
@@ -75,6 +76,7 @@ public class VideoMontageProvider implements VideoProvider {
                                     ProgressCallback progressCallback) {
         JsonNode metadata = readMetadata(job);
         List<SourceVideo> sources = readSources(metadata);
+        double targetShotSeconds = metadata.path("targetShotSeconds").asDouble(0);
         List<Path> temporaryFiles = new ArrayList<>();
         try {
             progressCallback.onProgress(10, SalesVideoStatus.VIDEO_PROCESSING,
@@ -89,18 +91,17 @@ public class VideoMontageProvider implements VideoProvider {
                 int progress = 20 + Math.min(40, (index + 1) * 40 / sources.size());
                 progressCallback.onProgress(progress, SalesVideoStatus.VIDEO_PROCESSING,
                         "Normalizando clipe " + (index + 1) + " de " + sources.size());
-                normalizeClip(source, normalized);
+                normalizeClip(source, normalized, targetShotSeconds);
                 normalizedClips.add(normalized);
             }
-            Path concatList = Files.createTempFile("sales-video-" + job.id() + "-concat", ".txt");
             Path output = Files.createTempFile("sales-video-" + job.id() + "-montage", ".mp4");
-            temporaryFiles.add(concatList);
             temporaryFiles.add(output);
-            Files.writeString(concatList, concatFile(normalizedClips), StandardCharsets.UTF_8);
-            progressCallback.onProgress(75, SalesVideoStatus.VIDEO_PROCESSING, "Unindo clipes aprovados");
-            concatClips(concatList, output);
+            progressCallback.onProgress(75, SalesVideoStatus.VIDEO_PROCESSING,
+                    "Aplicando cortes e pontes visuais entre os planos aprovados");
+            List<Double> clipDurations = normalizedClips.stream().map(this::probeDurationSeconds).toList();
+            composeCinematicSequence(normalizedClips, clipDurations, output);
             double durationSeconds = probeDurationSeconds(output);
-            validateMontageDuration(durationSeconds);
+            validateMontageQuality(sources.size(), durationSeconds);
             ProviderFile video = new ProviderFile(
                     "sales-video-" + job.id() + "-musa-montage.mp4",
                     VIDEO_MP4,
@@ -137,34 +138,51 @@ public class VideoMontageProvider implements VideoProvider {
         return source;
     }
 
-    /** Normaliza o clipe para vertical 9:16 com codec estável antes da concatenação. */
-    private void normalizeClip(Path source, Path output) {
+    /** Normaliza e corta o clipe no ritmo alvo antes da composição cinematográfica. */
+    private void normalizeClip(Path source, Path output, double targetShotSeconds) {
         VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
-        runProcess(List.of(
-                config.getFfmpegPath(),
-                "-y",
-                "-i", source.toAbsolutePath().toString(),
+        List<String> command = new ArrayList<>(List.of(
+                config.getFfmpegPath(), "-y", "-i", source.toAbsolutePath().toString()));
+        if (targetShotSeconds > 0) {
+            command.addAll(List.of("-t", String.format(Locale.ROOT, "%.3f", targetShotSeconds)));
+        }
+        command.addAll(List.of(
                 "-vf", "scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,fps=30,setsar=1",
-                "-an",
-                "-c:v", "libx264",
-                "-pix_fmt", "yuv420p",
-                "-r", "30",
-                output.toAbsolutePath().toString()),
+                "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30",
+                output.toAbsolutePath().toString()));
+        runProcess(command,
                 "ffmpeg falhou ao normalizar clipe para montagem");
     }
 
-    /** Concatena os clipes normalizados em um MP4 único. */
-    private void concatClips(Path concatList, Path output) {
+    /** Compõe os clipes com microtransições para suavizar cortes sem esconder mudanças de plano. */
+    private void composeCinematicSequence(List<Path> clips, List<Double> durations, Path output) {
         VideoManagementProperties.PostProduction config = properties.getProviders().getPostProduction();
-        runProcess(List.of(
-                config.getFfmpegPath(),
-                "-y",
-                "-f", "concat",
-                "-safe", "0",
-                "-i", concatList.toAbsolutePath().toString(),
-                "-c", "copy",
-                output.toAbsolutePath().toString()),
-                "ffmpeg falhou ao concatenar clipes da montagem");
+        List<String> command = new ArrayList<>();
+        command.add(config.getFfmpegPath());
+        command.add("-y");
+        clips.forEach(clip -> {
+            command.add("-i");
+            command.add(clip.toAbsolutePath().toString());
+        });
+        StringBuilder filter = new StringBuilder();
+        double accumulatedDuration = durations.getFirst();
+        for (int index = 1; index < clips.size(); index++) {
+            String previous = index == 1 ? "[0:v]" : "[v" + (index - 1) + "]";
+            double offset = Math.max(0.01, accumulatedDuration - TRANSITION_SECONDS);
+            filter.append(previous).append("[").append(index).append(":v]")
+                    .append("xfade=transition=fade:duration=")
+                    .append(TRANSITION_SECONDS)
+                    .append(":offset=").append(String.format(Locale.ROOT, "%.3f", offset))
+                    .append("[v").append(index).append("];");
+            accumulatedDuration += durations.get(index) - TRANSITION_SECONDS;
+        }
+        filter.setLength(filter.length() - 1);
+        command.addAll(List.of(
+                "-filter_complex", filter.toString(),
+                "-map", "[v" + (clips.size() - 1) + "]",
+                "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30",
+                "-movflags", "+faststart", output.toAbsolutePath().toString()));
+        runProcess(command, "ffmpeg falhou ao compor a montagem cinematográfica");
     }
 
     /** Mede a duração real do MP4 final usando ffprobe antes de liberar o job. */
@@ -186,8 +204,8 @@ public class VideoMontageProvider implements VideoProvider {
         }
     }
 
-    /** Bloqueia montagens que excedem o limite comercial atual de dez minutos. */
-    private void validateMontageDuration(double durationSeconds) {
+    /** Bloqueia montagens sem ritmo mínimo ou fora do limite operacional. */
+    private void validateMontageQuality(int sceneCount, double durationSeconds) {
         if (!Double.isFinite(durationSeconds) || durationSeconds <= 0) {
             throw new VideoProviderException("VIDEO_MONTAGE_FAILED",
                     "Duração final da montagem não pôde ser auditada");
@@ -195,6 +213,12 @@ public class VideoMontageProvider implements VideoProvider {
         if (durationSeconds > MAX_MONTAGE_DURATION_SECONDS) {
             throw new VideoProviderException("VIDEO_MONTAGE_DURATION_EXCEEDED",
                     "Montagem excede o limite atual de 10 minutos: %.2fs".formatted(durationSeconds));
+        }
+        double averageShotSeconds = durationSeconds / sceneCount;
+        if (sceneCount >= 6 && averageShotSeconds > 4.0) {
+            throw new VideoProviderException("VIDEO_MONTAGE_RHYTHM_REJECTED",
+                    "Ritmo reprovado: média de %.2fs por plano; máximo premium de 4s"
+                            .formatted(averageShotSeconds));
         }
     }
 
@@ -268,17 +292,6 @@ public class VideoMontageProvider implements VideoProvider {
         return properties.getBackendBaseUrl().resolve(sourceVideoUrl);
     }
 
-    /** Gera arquivo de concatenação compatível com o demuxer do ffmpeg. */
-    private String concatFile(List<Path> clips) {
-        StringBuilder builder = new StringBuilder();
-        for (Path clip : clips) {
-            builder.append("file '")
-                    .append(clip.toAbsolutePath().toString().replace("'", "'\\''"))
-                    .append("'\n");
-        }
-        return builder.toString();
-    }
-
     /** Consolida metadados de saída da montagem. */
     private Map<String, Object> resultMetadata(
             SalesVideoJob job, List<SourceVideo> sources, double durationSeconds) {
@@ -289,6 +302,13 @@ public class VideoMontageProvider implements VideoProvider {
         metadata.put("source_count", sources.size());
         metadata.put("resolution", "720x1280");
         metadata.put("duration_seconds", Math.round(durationSeconds));
+        metadata.put("average_shot_seconds", Math.round(durationSeconds * 100.0 / sources.size()) / 100.0);
+        metadata.put("transition_style", "MOTION_MATCH_CROSSFADE");
+        metadata.put("transition_seconds", TRANSITION_SECONDS);
+        metadata.put("quality_gate", Map.of(
+                "rhythm", sources.size() < 6 || durationSeconds / sources.size() <= 4.0 ? "APPROVED" : "REJECTED",
+                "scene_count", sources.size(),
+                "mobile_resolution", "APPROVED"));
         metadata.put("max_duration_seconds", (int) MAX_MONTAGE_DURATION_SECONDS);
         metadata.put("audio", Map.of("preserved", false, "reason", "montagem preparada para voz off final"));
         metadata.put("finished_at", Instant.now().toString());

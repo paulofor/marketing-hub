@@ -88,6 +88,7 @@ import PromptAttributesPage from "./pages/prompt/PromptAttributesPage";
 import NewPromptEntityPage from "./pages/prompt/NewPromptEntityPage";
 import PromptEntityDescriptionPage from "./pages/prompt/PromptEntityDescriptionPage";
 import AgentListPage from "./pages/agent/AgentListPage";
+import PersonaLibraryPage from "./pages/agent/PersonaLibraryPage";
 import NewAgentPage from "./pages/agent/NewAgentPage";
 import EditAgentPage from "./pages/agent/EditAgentPage";
 import AgentThemePage from "./pages/agent/AgentThemePage";
@@ -390,6 +391,7 @@ export default function App() {
                 element={<EditOpenAiModelPage />}
               />
               <Route path="/agents" element={<AgentListPage />} />
+              <Route path="/agents/personas" element={<PersonaLibraryPage />} />
               <Route path="/agents/new" element={<NewAgentPage />} />
               <Route path="/agents/:id/edit" element={<EditAgentPage />} />
               <Route path="/agent-themes" element={<AgentThemePage />} />

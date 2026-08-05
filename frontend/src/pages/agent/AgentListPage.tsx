@@ -19,9 +19,10 @@ export default function AgentListPage() {
           <Link className="btn btn-outline-secondary btn-sm" to="/agent-themes">
             Temas
           </Link>
-          <Link className="btn btn-primary" to="/agents/new">
-            Novo agente
-          </Link>
+          <div className="d-flex gap-2">
+            <Link className="btn btn-outline-primary" to="/agents/personas">Biblioteca de Personas</Link>
+            <Link className="btn btn-primary" to="/agents/new">Novo agente</Link>
+          </div>
         </div>
       </div>
 

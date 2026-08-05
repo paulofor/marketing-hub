@@ -1585,3 +1585,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-04-agent-governance-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-05-customer-agent-personas-v1.yaml
+      relativeToChangelogFile: true

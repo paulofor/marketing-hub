@@ -7,7 +7,7 @@ const input = JSON.parse(await fs.readFile(inputPath, "utf8"));
 const browser = await chromium.launch({
   ...(process.env.CHROMIUM_BIN
     ? { executablePath: process.env.CHROMIUM_BIN }
-    : {}),
+    : { channel: "chromium" }),
   headless: true,
   args: ["--no-sandbox", "--disable-dev-shm-usage"],
 });
@@ -121,8 +121,8 @@ try {
               duration: Number.isFinite(video.duration) ? video.duration : null,
               hasAudio: Boolean(
                 video.mozHasAudio ||
-                video.webkitAudioDecodedByteCount > 0 ||
-                video.audioTracks?.length,
+                  video.webkitAudioDecodedByteCount > 0 ||
+                  video.audioTracks?.length,
               ),
             };
           } catch (error) {

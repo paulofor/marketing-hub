@@ -12,7 +12,9 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.S3Configuration;
 
-/** Responsabilidade: configurar o cliente S3 compativel usado pelo storage historico do Lead Portal. */
+/**
+ * Responsabilidade: configurar o cliente S3 compativel usado pelo storage historico do Lead Portal.
+ */
 @Configuration
 public class StorageConfig {
 

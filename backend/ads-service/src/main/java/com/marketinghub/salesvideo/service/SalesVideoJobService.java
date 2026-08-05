@@ -229,11 +229,13 @@ public class SalesVideoJobService {
       job.setFailureDetail(durationValidation.message());
     }
     BigDecimal explicitCostUsd = request.getCostUsd();
+    String completionMetadataJson =
+        mergeRequestedAndCompletionMetadata(requestedJobMetadata, request.getMetadataJson());
     BigDecimal resolvedCostUsd =
-        jobCostMetadataService.resolveCostUsd(job, request.getMetadataJson(), explicitCostUsd);
+        jobCostMetadataService.resolveCostUsd(job, completionMetadataJson, explicitCostUsd);
     request.setCostUsd(resolvedCostUsd);
     String enrichedMetadataJson =
-        jobCostMetadataService.enrichMetadataJson(job, request.getMetadataJson(), explicitCostUsd);
+        jobCostMetadataService.enrichMetadataJson(job, completionMetadataJson, explicitCostUsd);
     job.setStatus(finalStatus);
     job.setFinishedAt(Instant.now());
     job.setProviderJobId(request.getProviderJobId());
@@ -260,6 +262,46 @@ public class SalesVideoJobService {
         completionDetails(request, durationValidation));
     enqueuePremiumFinalization(job, requestedJobMetadata);
     return toDto(job);
+  }
+
+  /** Preserva o contrato comercial solicitado e acrescenta o resultado técnico do provider. */
+  private String mergeRequestedAndCompletionMetadata(
+      String requestedMetadataJson, String completionMetadataJson) {
+    if (!StringUtils.hasText(requestedMetadataJson)) {
+      return completionMetadataJson;
+    }
+    if (!StringUtils.hasText(completionMetadataJson)) {
+      return requestedMetadataJson;
+    }
+    try {
+      JsonNode requested = objectMapper.readTree(requestedMetadataJson);
+      JsonNode completion = objectMapper.readTree(completionMetadataJson);
+      if (!requested.isObject() || !completion.isObject()) {
+        return completionMetadataJson;
+      }
+      ObjectNode merged = ((ObjectNode) requested).deepCopy();
+      completion.fields().forEachRemaining(entry -> merged.set(entry.getKey(), entry.getValue()));
+      List.of(
+              "commercial_goal",
+              "generation_strategy",
+              "studio_project_id",
+              "campaign_key",
+              "scene",
+              "continuity",
+              "post_production",
+              "provider_strategy",
+              "image_to_video")
+          .forEach(
+              field -> {
+                if (requested.has(field)) {
+                  merged.set(field, requested.get(field));
+                }
+              });
+      return objectMapper.writeValueAsString(merged);
+    } catch (JsonProcessingException ex) {
+      log.error("Falha ao combinar metadados solicitados e concluídos do job de vídeo.", ex);
+      return completionMetadataJson;
+    }
   }
 
   /** Enfileira a finalização premium após a montagem cinematográfica concluir com sucesso. */

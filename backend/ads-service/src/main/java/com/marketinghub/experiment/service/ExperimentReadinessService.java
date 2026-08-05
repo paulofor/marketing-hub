@@ -55,7 +55,8 @@ public class ExperimentReadinessService {
   private static final Set<TargetingElementType> PUBLISHABLE_TARGETING_TYPE_SET =
       Set.copyOf(PUBLISHABLE_TARGETING_TYPES);
   private static final Set<String> PRODUCT_AI_PERSONALIZED_SAMPLE_REQUIRED_KEYS =
-      Set.of("email", "negocio_projeto", "contexto_atual", "objetivo_visual", "dados_personalizacao");
+      Set.of(
+          "email", "negocio_projeto", "contexto_atual", "objetivo_visual", "dados_personalizacao");
 
   private final GeraLandingStageExecutionRepository geraLandingStageExecutionRepository;
   private final ExperimentVideoAssetService experimentVideoAssetService;

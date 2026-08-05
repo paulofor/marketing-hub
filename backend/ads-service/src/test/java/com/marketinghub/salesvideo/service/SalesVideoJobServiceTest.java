@@ -295,7 +295,8 @@ class SalesVideoJobServiceTest {
             .build();
     JobCompletionRequest request = new JobCompletionRequest();
     request.setStatus(SalesVideoStatus.VIDEO_READY);
-    request.setMetadataJson("{\"duration_seconds\":10,\"resolution\":\"720p\"}");
+    request.setMetadataJson(
+        "{\"duration_seconds\":10,\"resolution\":\"720p\",\"scene\":{\"role\":\"PROVIDER_RESULT\"}}");
     request.setMessage("Cena isolada concluída");
     given(jobRepository.findById(20501L)).willReturn(Optional.of(job));
     given(jobRepository.save(job)).willReturn(job);
@@ -304,6 +305,11 @@ class SalesVideoJobServiceTest {
 
     assertThat(result.getStatus()).isEqualTo(SalesVideoStatus.VIDEO_READY);
     assertThat(job.getFailureCode()).isNull();
+    assertThat(result.getMetadataJson())
+        .contains("\"generation_strategy\":\"SCENE_BY_SCENE_MONTAGE\"")
+        .contains("\"role\":\"MECANISMO\"")
+        .contains("\"duration_seconds\":10")
+        .contains("\"resolution\":\"720p\"");
   }
 
   /** Aceita render quando a duração auditada atende a tolerância comercial do perfil. */

@@ -612,16 +612,28 @@ export function buildStudioSceneMetadata(
   });
 }
 
-function readStudioSceneOrder(metadataJson?: string | null) {
-  if (!metadataJson) return undefined;
+export function readStudioSceneOrder(
+  metadataJson?: string | null,
+  auditSnapshotJson?: string | null,
+) {
   try {
-    const metadata = JSON.parse(metadataJson) as {
+    const audit = auditSnapshotJson
+      ? (JSON.parse(auditSnapshotJson) as { renderMetadataJson?: string })
+      : undefined;
+    const effectiveMetadataJson = metadataJson?.includes('"studio_project_id"')
+      ? metadataJson
+      : audit?.renderMetadataJson;
+    if (!effectiveMetadataJson) return undefined;
+    const metadata = JSON.parse(effectiveMetadataJson) as {
       studio_project_id?: number;
-      scene?: { order?: number };
+      campaign_key?: string;
+      scene?: { order?: number; role?: string };
     };
     return {
       projectId: metadata.studio_project_id,
+      campaignKey: metadata.campaign_key,
       order: metadata.scene?.order,
+      role: metadata.scene?.role,
     };
   } catch {
     return undefined;
@@ -998,7 +1010,10 @@ export default function AudioVideoStudioPage() {
   const studioSceneJobs = useMemo(
     () =>
       (linkedJobsQuery.data ?? [])
-        .map((job) => ({ job, scene: readStudioSceneOrder(job.metadataJson) }))
+        .map((job) => ({
+          job,
+          scene: readStudioSceneOrder(job.metadataJson, job.auditSnapshotJson),
+        }))
         .filter(
           ({ scene }) =>
             scene?.projectId === selectedProject?.id && Boolean(scene?.order),

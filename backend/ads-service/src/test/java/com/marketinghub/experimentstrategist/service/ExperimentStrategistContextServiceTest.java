@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experimentstrategist.memory.ExperimentStrategistMemoryService;
 import com.marketinghub.growthoperator.service.GrowthOperatorService;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.service.CommercialPlanService;
@@ -23,6 +24,8 @@ class ExperimentStrategistContextServiceTest {
     CommercialPlanService plans = mock(CommercialPlanService.class);
     GrowthOperatorService growth = mock(GrowthOperatorService.class);
     JdbcTemplate jdbc = mock(JdbcTemplate.class);
+    ExperimentStrategistMemoryService memory = mock(ExperimentStrategistMemoryService.class);
+    when(memory.activeForPlan(1L)).thenReturn(java.util.List.of());
     Experiment experiment = new Experiment();
     experiment.setId(81L);
     CommercialPlan plan = new CommercialPlan();
@@ -38,7 +41,7 @@ class ExperimentStrategistContextServiceTest {
         .thenReturn(List.of(Map.of("summary", "Visitante analisou e saiu.")));
 
     Map<String, Object> result =
-        new ExperimentStrategistContextService(plans, growth, jdbc).researchContext(1L);
+        new ExperimentStrategistContextService(plans, growth, jdbc, memory).researchContext(1L);
 
     assertThat(result.get("authorityMode")).isEqualTo("READ_ONLY_RESEARCH");
     assertThat(result.get("sessionsAndFunnel")).isEqualTo(Map.of("available", true));

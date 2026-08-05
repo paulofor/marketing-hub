@@ -1,0 +1,51 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-05-experiment-strategist-hybrid-memory-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE experiment_strategist_memory (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                commercial_plan_id BIGINT NOT NULL,
+                execution_id BIGINT NULL,
+                behavioral_mechanism VARCHAR(60) NOT NULL,
+                statement TEXT NOT NULL,
+                evidence_level VARCHAR(30) NOT NULL,
+                confidence VARCHAR(20) NOT NULL,
+                validation_status VARCHAR(30) NOT NULL,
+                source_references_json LONGTEXT NOT NULL,
+                observed_outcome TEXT NULL,
+                valid_until DATETIME NOT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                INDEX idx_strategist_memory_context (commercial_plan_id, validation_status, valid_until),
+                CONSTRAINT fk_strategist_memory_plan FOREIGN KEY (commercial_plan_id) REFERENCES commercial_plan(id),
+                CONSTRAINT fk_strategist_memory_execution FOREIGN KEY (execution_id) REFERENCES experiment_strategist_execution(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              CREATE TABLE experiment_strategist_memory_artifact (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                memory_id BIGINT NOT NULL,
+                artifact_type VARCHAR(40) NOT NULL,
+                source_url TEXT NULL,
+                object_key VARCHAR(700) NOT NULL,
+                content_type VARCHAR(255) NOT NULL,
+                size_bytes BIGINT NOT NULL,
+                sha256 VARCHAR(64) NOT NULL,
+                anonymization_version VARCHAR(30) NOT NULL,
+                retention_until DATETIME NOT NULL,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_strategist_memory_artifact_dedup (memory_id, sha256),
+                INDEX idx_strategist_memory_artifact_retention (retention_until),
+                CONSTRAINT fk_strategist_memory_artifact_memory FOREIGN KEY (memory_id) REFERENCES experiment_strategist_memory(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

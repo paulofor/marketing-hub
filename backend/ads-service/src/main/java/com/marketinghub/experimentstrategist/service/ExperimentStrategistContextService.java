@@ -1,5 +1,6 @@
 package com.marketinghub.experimentstrategist.service;
 
+import com.marketinghub.experimentstrategist.memory.ExperimentStrategistMemoryService;
 import com.marketinghub.growthoperator.service.GrowthOperatorService;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.service.CommercialPlanService;
@@ -18,15 +19,18 @@ public class ExperimentStrategistContextService {
   private final CommercialPlanService commercialPlanService;
   private final GrowthOperatorService growthOperatorService;
   private final JdbcTemplate jdbc;
+  private final ExperimentStrategistMemoryService memoryService;
 
   /** Configura as fontes canônicas usadas na pesquisa estratégica. */
   public ExperimentStrategistContextService(
       CommercialPlanService commercialPlanService,
       GrowthOperatorService growthOperatorService,
-      JdbcTemplate jdbc) {
+      JdbcTemplate jdbc,
+      ExperimentStrategistMemoryService memoryService) {
     this.commercialPlanService = commercialPlanService;
     this.growthOperatorService = growthOperatorService;
     this.jdbc = jdbc;
+    this.memoryService = memoryService;
   }
 
   /** Entrega planejamento, sessões, funil, vídeos e aprendizados sem permitir mutações. */
@@ -39,6 +43,8 @@ public class ExperimentStrategistContextService {
     context.put("sessionsAndFunnel", growthOperatorService.sessionIntelligence(planId, 2000));
     context.put("videoStrategy", growthOperatorService.videoStrategyIntelligence(planId));
     context.put("learnings", learnings(plan));
+    context.put("behavioralMemory", memoryService.activeForPlan(planId));
+    context.put("behavioralScienceLibrary", "classpath:behavioral-science/v1/library.md");
     context.put(
         "publicResearchContract",
         Map.of(

@@ -111,6 +111,12 @@ A biblia visual deve conter, no minimo:
 
 O backend deve bloquear status de construcao ou liberacao de video quando qualquer bloco estiver ausente. A tela deve coletar esses dados como etapa de pre-producao premium, mas nao deve ser a unica barreira de qualidade.
 
+## Prompt operacional e imagem inicial por cena
+
+O prompt comercial de cada cena deve ser editavel no Marketing Hub e persistido no projeto antes de qualquer geracao paga. O repositorio preserva templates, regras de seguranca e contratos dos providers; o banco preserva a versao operacional escolhida para o projeto. O Estudio deve bloquear o render quando houver alteracao de prompt ainda nao salva, garantindo que auditoria, job e resultado apontem para a mesma instrucao.
+
+Cada clipe deve perseguir uma unica conclusao visual. Para cenas com personagem, figurino, produto ou ambiente recorrente, o fluxo deve priorizar `image_to_video` com uma imagem inicial aprovada e registrar no job o asset efetivamente enviado. A imagem fixa governa identidade, enquadramento e composicao inicial; o prompt governa principalmente movimento, camera, microacao e restricoes. Texto, legenda e CTA continuam pertencendo a pos-producao deterministica.
+
 ## Primeiro escopo
 
 A primeira versao deve ser um cockpit de construcao no frontend, deixando clara a fronteira entre:

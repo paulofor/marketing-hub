@@ -924,6 +924,9 @@ export default function AudioVideoStudioPage() {
   const [selectedSceneJobIds, setSelectedSceneJobIds] = useState<number[]>([]);
   const [sourceImageAssetId, setSourceImageAssetId] = useState("1953");
   const [briefing, setBriefing] = useState<StudioBriefing>(defaultBriefing);
+  const [persistedScenePlan, setPersistedScenePlan] = useState(
+    defaultBriefing.scenePlan,
+  );
   const parsedSourceImageAssetId = parsePositiveInteger(sourceImageAssetId);
   const sourceImageAssetQuery = useAsset(parsedSourceImageAssetId);
 
@@ -936,7 +939,9 @@ export default function AudioVideoStudioPage() {
 
   useEffect(() => {
     if (selectedProject) {
-      setBriefing(buildBriefingFromProject(selectedProject));
+      const projectBriefing = buildBriefingFromProject(selectedProject);
+      setBriefing(projectBriefing);
+      setPersistedScenePlan(projectBriefing.scenePlan);
       setSaveFeedback("");
     }
   }, [selectedProject]);
@@ -959,8 +964,8 @@ export default function AudioVideoStudioPage() {
       : longFormScriptBlocks;
   const selectedScenePrompts = briefing.scenePlan
     .split("\n")
-    .map((prompt) => prompt.trim())
-    .filter(Boolean);
+    .slice(0, 4)
+    .map((prompt) => prompt.trim());
   const selectedCategory =
     videoCategoryOptions.find(
       (option) => option.value === briefing.videoCategory,
@@ -1000,6 +1005,17 @@ export default function AudioVideoStudioPage() {
     ) => {
       setBriefing((current) => ({ ...current, [field]: event.target.value }));
     };
+
+  const updateScenePrompt = (sceneIndex: number, prompt: string) => {
+    setBriefing((current) => {
+      const prompts = current.scenePlan.split("\n");
+      while (prompts.length < 4) {
+        prompts.push("");
+      }
+      prompts[sceneIndex] = prompt.replace(/\s*\n+\s*/g, " ");
+      return { ...current, scenePlan: prompts.slice(0, 4).join("\n") };
+    });
+  };
 
   const applyPreset = (preset: StudioPreset) => {
     setBriefing(preset.briefing);
@@ -1111,6 +1127,7 @@ export default function AudioVideoStudioPage() {
         setSaveFeedback(
           `Projeto atualizado: #${project.id} - ${project.title}`,
         );
+        setPersistedScenePlan(project.scenePlan ?? briefing.scenePlan);
         return;
       }
 
@@ -1129,6 +1146,12 @@ export default function AudioVideoStudioPage() {
     if (!selectedProject || !linkedProfileId) {
       setSaveFeedback(
         "Vincule um perfil de video ao projeto antes de gerar cenas.",
+      );
+      return;
+    }
+    if (briefing.scenePlan.trim() !== persistedScenePlan.trim()) {
+      setSaveFeedback(
+        "Salve os prompts das cenas antes de gerar. O render pago deve usar a versao persistida e auditavel no Marketing Hub.",
       );
       return;
     }
@@ -1748,14 +1771,27 @@ export default function AudioVideoStudioPage() {
               </div>
               <div className="audio-video-studio-page__columns">
                 <div className="audio-video-studio-page__panel">
-                  <label>
-                    Plano basico de cenas
-                    <textarea
-                      value={briefing.scenePlan}
-                      onChange={updateBriefing("scenePlan")}
-                      rows={8}
-                    />
-                  </label>
+                  <fieldset>
+                    <legend>Prompts editaveis e persistidos por cena</legend>
+                    <small>
+                      Cada prompt e salvo no projeto antes do render. Descreva
+                      uma unica conclusao visual; movimento, camera e o que nao
+                      deve acontecer. A imagem-base aprovada define o primeiro
+                      quadro e a continuidade visual.
+                    </small>
+                    {musaV7SceneRoles.map((role, index) => (
+                      <label key={role}>
+                        Cena {index + 1} · {role}
+                        <textarea
+                          value={selectedScenePrompts[index] ?? ""}
+                          onChange={(event) =>
+                            updateScenePrompt(index, event.target.value)
+                          }
+                          rows={4}
+                        />
+                      </label>
+                    ))}
+                  </fieldset>
                 </div>
                 <div className="audio-video-studio-page__panel">
                   <h2>Checklist de producao</h2>

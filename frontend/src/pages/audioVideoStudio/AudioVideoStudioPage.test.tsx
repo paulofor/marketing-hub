@@ -1,4 +1,10 @@
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import {
+  render,
+  screen,
+  waitFor,
+  cleanup,
+  fireEvent,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -316,12 +322,18 @@ describe("AudioVideoStudioPage", () => {
     expect(
       screen.getAllByText(/Cena MECANISMO com uma unica microacao/i),
     ).toHaveLength(2);
-    const scenePlan = screen.getByLabelText(/Plano basico de cenas/i);
-    await user.clear(scenePlan);
-    await user.type(
-      scenePlan,
-      "Dor unica\nResultado unico\nAcessorio unico\nCTA unico",
-    );
+    const scenePrompts = screen.getAllByLabelText(/Cena \d+ ·/i);
+    const updatedPrompts = [
+      "Dor unica",
+      "Resultado unico",
+      "Acessorio unico",
+      "CTA unico",
+    ];
+    for (const [index, scenePrompt] of scenePrompts.entries()) {
+      fireEvent.change(scenePrompt, {
+        target: { value: updatedPrompts[index] },
+      });
+    }
     await user.click(
       screen.getByRole("button", { name: /salvar continuidade/i }),
     );

@@ -73,18 +73,6 @@ hosts:
     notes: "Host ainda aparece como proxy público Clube MUSA no inventário versionado; histórico recente aponta migração operacional para 191.252.102.54."
 
 deployments:
-  - workflowFile: ".github/workflows/mois-meta-ad-library-collector-ci.yml"
-    workflowName: "CI - MOIS Meta Ad Library Collector"
-    jobName: "deploy"
-    deployHost: "177.153.62.107"
-    deployUser: "root"
-    remotePath: "/opt/marketinghub/mois-meta-ad-library-collector"
-    secretReferences:
-      - "META_AD_LIBRARY_ACCESS_TOKEN"
-      - "VPS_SSH_CHAVE"
-      - "VPS_SSH_KEY"
-      - "SSH_PRIVATE_KEY"
-    triggerMode: "automatico"
   - workflowFile: ".github/workflows/deploy-containers.yml"
     workflowName: "Deploy Containers"
     jobName: "deploy-app"

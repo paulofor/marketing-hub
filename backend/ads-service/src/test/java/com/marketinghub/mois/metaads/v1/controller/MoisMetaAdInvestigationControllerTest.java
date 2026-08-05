@@ -31,7 +31,7 @@ class MoisMetaAdInvestigationControllerTest {
                 "workspace-001",
                 "agenda cheia",
                 "BR",
-                "PENDING",
+                "ACTIVE_SUPERVISED",
                 "INVESTIGAR",
                 List.of(),
                 List.of("Aguardar observações reais"),
@@ -53,5 +53,61 @@ class MoisMetaAdInvestigationControllerTest {
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.gateDecision").value("INVESTIGAR"))
         .andExpect(jsonPath("$.adsObserved").value(0));
+  }
+
+  /** Aceita pela rota administrativa somente URLs da Biblioteca pública da Meta. */
+  @Test
+  void shouldAcceptSupervisedCommercialObservation() throws Exception {
+    MoisMetaAdInvestigationService service =
+        org.mockito.Mockito.mock(MoisMetaAdInvestigationService.class);
+    when(service.ingestSupervised(any(Long.class), any()))
+        .thenReturn(
+            new MoisMetaAdDtos.ObservationBatchResponse(
+                81L, 1, "INVESTIGAR", List.of("Reobservar o anúncio")));
+    MockMvc mvc =
+        MockMvcBuilders.standaloneSetup(new MoisMetaAdInvestigationController(service)).build();
+
+    mvc.perform(
+            post("/api/v1/mois/meta-ad-investigations/81/observations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "adReference":"123456",
+                      "advertiserName":"Marca exemplo",
+                      "adLibraryUrl":"https://www.facebook.com/ads/library/?id=123456",
+                      "adText":"Promessa observada sem copiar o criativo",
+                      "pageActive":true,
+                      "commercialSignal":true
+                    }
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.accepted").value(1))
+        .andExpect(jsonPath("$.gateDecision").value("INVESTIGAR"));
+  }
+
+  /** Rejeita URLs externas para impedir que o formulário vire um coletor genérico. */
+  @Test
+  void shouldRejectObservationOutsideMetaLibrary() throws Exception {
+    MoisMetaAdInvestigationService service =
+        org.mockito.Mockito.mock(MoisMetaAdInvestigationService.class);
+    MockMvc mvc =
+        MockMvcBuilders.standaloneSetup(new MoisMetaAdInvestigationController(service)).build();
+
+    mvc.perform(
+            post("/api/v1/mois/meta-ad-investigations/81/observations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "adReference":"123456",
+                      "advertiserName":"Marca exemplo",
+                      "adLibraryUrl":"https://example.com/anuncio",
+                      "adText":"Texto observado",
+                      "pageActive":false,
+                      "commercialSignal":false
+                    }
+                    """))
+        .andExpect(status().isBadRequest());
   }
 }

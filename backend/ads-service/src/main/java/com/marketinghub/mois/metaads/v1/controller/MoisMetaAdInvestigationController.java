@@ -46,6 +46,14 @@ public class MoisMetaAdInvestigationController {
             () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "investigação não encontrada"));
   }
 
+  /** Registra pela tela uma observação comercial feita sob supervisão humana. */
+  @PostMapping("/v1/mois/meta-ad-investigations/{id}/observations")
+  public MoisMetaAdDtos.ObservationBatchResponse ingestSupervised(
+      @PathVariable long id,
+      @Valid @RequestBody MoisMetaAdDtos.SupervisedObservationRequest request) {
+    return service.ingestSupervised(id, request);
+  }
+
   /** Reserva uma pendência para o coletor oficial da Meta. */
   @GetMapping("/internal/mois/meta-ad-library/v1/investigations/pending")
   public MoisMetaAdDtos.PendingInvestigationResponse pending() {

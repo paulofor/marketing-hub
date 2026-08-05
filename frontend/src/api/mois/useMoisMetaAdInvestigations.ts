@@ -59,3 +59,38 @@ export function useCreateMoisMetaAdInvestigation() {
       }),
   });
 }
+
+export interface SupervisedMetaAdObservation {
+  adReference: string;
+  advertiserName: string;
+  adLibraryUrl: string;
+  adText: string;
+  formatType?: string;
+  mediaUrl?: string;
+  destinationUrl?: string;
+  pageActive: boolean;
+  commercialSignal: boolean;
+}
+
+export function useRegisterSupervisedMetaAdObservation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      investigationId,
+      observation,
+    }: {
+      investigationId: number;
+      observation: SupervisedMetaAdObservation;
+    }) => {
+      await axios.post(
+        `/api/v1/mois/meta-ad-investigations/${investigationId}/observations`,
+        observation,
+      );
+      return investigationId;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["mois", "meta-ad-investigations"],
+      }),
+  });
+}

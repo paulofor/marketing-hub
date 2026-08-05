@@ -35,7 +35,7 @@ public class MoisMetaAdInvestigationService {
   private final JdbcTemplate jdbcTemplate;
   private final ObjectMapper objectMapper;
 
-  /** Cria uma execução pendente para consumo exclusivo do coletor Meta. */
+  /** Cria um acompanhamento supervisionado sem depender da API restrita da Meta. */
   public MoisMetaAdDtos.InvestigationResponse create(
       MoisMetaAdDtos.CreateInvestigationRequest request) {
     Instant now = Instant.now();
@@ -48,14 +48,18 @@ public class MoisMetaAdInvestigationService {
                   INSERT INTO mois_meta_ad_investigation
                     (workspace_id, search_terms, country_code, status, gate_decision, evidence_json,
                      gaps_json, ethical_modeling_json, created_at, updated_at)
-                  VALUES (?, ?, ?, 'PENDING', 'INVESTIGAR', '[]', ?, ?, ?, ?)
+                  VALUES (?, ?, ?, 'ACTIVE_SUPERVISED', 'INVESTIGAR', '[]', ?, ?, ?, ?)
                   """,
                   java.sql.Statement.RETURN_GENERATED_KEYS);
           statement.setString(1, request.workspaceId());
           statement.setString(2, request.searchTerms());
           statement.setString(3, normalizedCountry(request.countryCode()));
           statement.setString(
-              4, json(List.of("Aguardando duas observações reais em dias distintos")));
+              4,
+              json(
+                  List.of(
+                      "Cadastrar anúncios comerciais observados na Biblioteca pública",
+                      "Reobservar o mesmo anúncio em datas distintas para comprovar longevidade")));
           statement.setString(5, json(MoisMetaAdDtos.EthicalModelingCard.empty()));
           statement.setTimestamp(6, Timestamp.from(now));
           statement.setTimestamp(7, Timestamp.from(now));
@@ -177,6 +181,35 @@ public class MoisMetaAdInvestigationService {
     persistGate(investigationId, gate);
     return new MoisMetaAdDtos.ObservationBatchResponse(
         investigationId, accepted, gate.decision(), gate.gaps());
+  }
+
+  /** Normaliza e persiste uma observação cadastrada pela tela administrativa. */
+  public MoisMetaAdDtos.ObservationBatchResponse ingestSupervised(
+      long investigationId, MoisMetaAdDtos.SupervisedObservationRequest request) {
+    Instant observedAt = request.observedAt() == null ? Instant.now() : request.observedAt();
+    MoisMetaAdDtos.MetaAdObservation observation =
+        new MoisMetaAdDtos.MetaAdObservation(
+            request.adReference().trim(),
+            null,
+            request.advertiserName().trim(),
+            "ACTIVE",
+            request.formatType() == null || request.formatType().isBlank()
+                ? List.of()
+                : List.of(request.formatType().trim()),
+            List.of(request.adText().trim()),
+            request.mediaUrl() == null || request.mediaUrl().isBlank()
+                ? List.of()
+                : List.of(request.mediaUrl().trim()),
+            blankToNull(request.destinationUrl()),
+            request.adLibraryUrl().trim(),
+            request.pageActive(),
+            request.commercialSignal(),
+            json(request));
+    String collectorRunId = "supervised-" + observedAt.toString().replace(":", "").replace(".", "");
+    return ingest(
+        investigationId,
+        new MoisMetaAdDtos.ObservationBatchRequest(
+            collectorRunId, List.of(observation), observedAt));
   }
 
   /** Impede que retry do mesmo lote infle artificialmente a contagem temporal. */
@@ -337,6 +370,11 @@ public class MoisMetaAdInvestigationService {
   /** Normaliza o país para o padrão usado pela API da Meta. */
   private String normalizedCountry(String country) {
     return country == null || country.isBlank() ? "BR" : country.trim().toUpperCase();
+  }
+
+  /** Converte texto opcional vazio em nulo para preservar a ausência de evidência. */
+  private String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value.trim();
   }
 
   /** Converte valores agregados SQL em inteiros seguros. */

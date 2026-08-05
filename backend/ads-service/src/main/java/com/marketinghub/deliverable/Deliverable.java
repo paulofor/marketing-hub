@@ -41,6 +41,7 @@ public class Deliverable {
 
   @Lob
   @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  @Column(nullable = false)
   private String prompt;
 
   @CreationTimestamp private Instant createdAt;

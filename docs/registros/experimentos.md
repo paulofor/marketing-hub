@@ -6502,3 +6502,9 @@
 - Eventos, origens, layouts e jornadas usados na leitura do experimento deixam de misturar slots diferentes do MUSA.
 - A jornada passou a coletar, após a missão, percepção de utilidade, facilidade e aplicabilidade, além de registrar a conclusão dos sete dias.
 - A mudança não altera preço, campanha, promessa nem publicação; ela prepara uma leitura confiável antes de novas decisões comerciais.
+# Preparo de variante Produto IA preserva contrato de auditoria (2026-08-05)
+
+- Contexto: ao preparar uma hipótese existente como `AI_PERSONALIZED_SAMPLE` pela tela de novo experimento, o endpoint `/api/product-ai/hypotheses/{hypothesisId}/experiment-preparation` respondia HTTP 500.
+- Causa-raiz confirmada: o schema MySQL 5.7 exige `prompt NOT NULL` em `deliverable` e `deliverable_package`, mas o preparo determinístico criava ambos sem preencher o campo; as entidades JPA também não declaravam a nulabilidade canônica e os testes não reproduziam a restrição real.
+- Correção: o preparo agora persiste uma descrição auditável de sua origem determinística nos dois registros, sem alegar chamada de IA, e os mapeamentos JPA passam a declarar `prompt` como obrigatório.
+- Prevenção: o teste de integração valida que pacote e entregável preparados possuem a origem auditável, impedindo novo desvio entre JPA, teste e schema real.

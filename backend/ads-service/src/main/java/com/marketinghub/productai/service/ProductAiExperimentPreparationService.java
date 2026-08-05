@@ -279,6 +279,7 @@ public class ProductAiExperimentPreparationService {
                 .title(deliverableTitle(subtype))
                 .description(buildDeliveryDescription(hypothesis, subtype))
                 .content(buildDeliveryContent(hypothesis, subtype))
+                .prompt(buildPreparationAuditPrompt(hypothesis, subtype))
                 .build());
     if (hypothesis.getOfferPackage() != null) {
       DeliverablePackage existingPackage = hypothesis.getOfferPackage();
@@ -294,6 +295,7 @@ public class ProductAiExperimentPreparationService {
                 .hypothesis(hypothesis)
                 .name(packageName(subtype))
                 .description(packageDescription(subtype))
+                .prompt(buildPreparationAuditPrompt(hypothesis, subtype))
                 .deliverables(new LinkedHashSet<>(List.of(deliverable)))
                 .build());
     return offerPackage;
@@ -364,6 +366,16 @@ public class ProductAiExperimentPreparationService {
         "Entrega: "
             + deliverableTitle(subtype)
             + " gerada por IA para tangibilizar a transformação prometida.");
+  }
+
+  /** Registra a origem determinística do pacote criado pelo preparo, sem simular geração por IA. */
+  private String buildPreparationAuditPrompt(Hypothesis hypothesis, ProductAiSubtype subtype) {
+    return String.join(
+        "\n",
+        "Origem: preparo sistêmico de Produto IA",
+        "Hipótese: " + compact(hypothesis.getTitle()),
+        "Subtipo: " + subtype.name(),
+        "Regra: pacote mínimo determinístico criado antes do experimento; nenhuma IA foi chamada.");
   }
 
   /** Compara textos normalizados para localizar variante já existente da mesma base comercial. */

@@ -37,6 +37,13 @@ autorizadas. O worker opera em sandbox somente leitura, com perfil mobile, sem l
 compra, publicação ou coleta de dados pessoais. Timelines pessoais irrestritas são proibidas;
 feeds devem ser pesquisas públicas governadas por tema.
 
+Antes da interpretação por IA, o worker deve abrir cada URL autorizada em Chromium com emulação
+mobile, bloquear destinos fora dos hosts autorizados, registrar status, URL final, viewport,
+títulos, CTAs, formulários e reprodução de vídeo, e capturar screenshot. Esses fatos determinísticos
+são a única base técnica do parecer. Screenshots são enviados ao armazenamento governado como
+`EXTERNAL_OBSERVATION`, vinculados à persona e à execução; falha na captura ou persistência bloqueia
+a conclusão, sem fabricar uma avaliação.
+
 A memória mantém quatro camadas imutavelmente separadas: `observation_json` registra fatos e URLs;
 `simulated_reaction_json` registra a reação hipotética da persona;
 `commercial_hypothesis_json` registra o teste sugerido; e `human_confirmation_json` recebe apenas

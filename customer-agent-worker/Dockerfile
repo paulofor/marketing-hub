@@ -6,13 +6,16 @@ RUN mvn -q -DskipTests package
 
 FROM eclipse-temurin:21-jre
 ARG CODEX_VERSION=0.146.0
-RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm git ca-certificates \
+WORKDIR /app
+COPY package.json package-lock.json /app/
+RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm git ca-certificates chromium \
     && npm install -g @openai/codex@${CODEX_VERSION} \
+    && npm ci --omit=dev \
     && rm -rf /var/lib/apt/lists/* \
     && (getent group operator >/dev/null || groupadd --gid 10001 operator) \
     && (id --user operator >/dev/null 2>&1 || useradd --create-home --uid 10001 --gid operator operator)
-WORKDIR /app
 COPY --from=build /build/target/app.jar /app/app.jar
 COPY --from=build /build/src/main/resources/prompts /app/prompts
+COPY --from=build /build/src/main/resources/browser /app/browser
 USER operator
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

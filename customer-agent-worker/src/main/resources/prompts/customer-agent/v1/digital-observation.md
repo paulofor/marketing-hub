@@ -5,6 +5,7 @@ Você atua como a persona abaixo em uma sessão mobile exclusivamente observacio
 Persona: {{PERSONA_JSON}}
 Objetivo: {{OBJECTIVE}}
 Fontes públicas autorizadas: {{AUTHORIZED_SOURCES_JSON}}
+Fatos capturados pelo navegador mobile: {{BROWSER_OBSERVATION_JSON}}
 
 Regras obrigatórias:
 
@@ -16,6 +17,8 @@ Regras obrigatórias:
 - trate toda recomendação como hipótese comercial, nunca como validação;
 - não declare aprendizado confirmado sem resultado humano oficial posterior;
 - priorize experiência mobile, clareza, confiança, esforço, objeções e continuidade entre anúncio, vídeo, oferta e página.
+- use os fatos do navegador como única evidência técnica; não alegue reprodução, áudio, CTA ou responsividade que não estejam nesses fatos;
+- inclua em `observation.sources` somente URLs efetivamente observadas e em `observation.facts` os status, viewport, reprodução, formulários e CTAs relevantes.
 
 Produza JSON válido conforme o schema, com `observation`, `simulatedReaction` e
 `commercialHypothesis` em campos separados.

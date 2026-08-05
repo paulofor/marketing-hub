@@ -10,8 +10,11 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
@@ -23,12 +26,16 @@ public class CustomerDigitalObservationScheduler {
   private final RestClient backend;
   private final String model;
   private final ObjectMapper mapper = new ObjectMapper();
+  private final BrowserObservationRunner browserObservationRunner;
 
+  /** Inicializa o consumo da fila observacional e as integrações controladas da execução. */
   public CustomerDigitalObservationScheduler(
       @Value("${BACKEND_URL:http://localhost:8080}") String backendUrl,
-      @Value("${CUSTOMER_AGENT_MODEL:gpt-5.6-sol}") String model) {
+      @Value("${CUSTOMER_AGENT_MODEL:gpt-5.6-sol}") String model,
+      BrowserObservationRunner browserObservationRunner) {
     this.backend = RestClient.builder().baseUrl(backendUrl).build();
     this.model = model;
+    this.browserObservationRunner = browserObservationRunner;
   }
 
   /** Consulta uma observacao pendente sem criar navegacao quando a fila estiver vazia. */
@@ -53,7 +60,12 @@ public class CustomerDigitalObservationScheduler {
   /** Executa o Codex em sandbox e persiste separadamente as camadas da experiencia. */
   private void observe(Map<?, ?> job) {
     long id = ((Number) job.get("id")).longValue();
+    Path workDirectory = null;
     try {
+      workDirectory = Files.createTempDirectory("customer-agent-observation-" + id + "-");
+      var browserObservation =
+          browserObservationRunner.observe(
+              String.valueOf(job.get("authorizedSourcesJson")), workDirectory);
       String template =
           Files.readString(
               Path.of("/app/prompts/customer-agent/v1/digital-observation.md"),
@@ -63,8 +75,11 @@ public class CustomerDigitalObservationScheduler {
               .replace("{{PERSONA_JSON}}", String.valueOf(job.get("persona")))
               .replace("{{OBJECTIVE}}", String.valueOf(job.get("objective")))
               .replace(
-                  "{{AUTHORIZED_SOURCES_JSON}}", String.valueOf(job.get("authorizedSourcesJson")));
-      Path output = Files.createTempFile("customer-agent-observation-", ".json");
+                  "{{AUTHORIZED_SOURCES_JSON}}", String.valueOf(job.get("authorizedSourcesJson")))
+              .replace(
+                  "{{BROWSER_OBSERVATION_JSON}}",
+                  mapper.writeValueAsString(browserObservation.facts()));
+      Path output = workDirectory.resolve("model-output.json");
       Process process =
           new ProcessBuilder(
                   "codex",
@@ -88,6 +103,8 @@ public class CustomerDigitalObservationScheduler {
       Files.deleteIfExists(output);
       if (process.exitValue() != 0) throw new IllegalStateException("Codex falhou: " + raw);
       Map<String, Object> result = mapper.readValue(raw, new TypeReference<>() {});
+      long personaId = ((Number) ((Map<?, ?>) job.get("persona")).get("id")).longValue();
+      uploadScreenshots(personaId, id, browserObservation);
       backend
           .post()
           .uri("/api/customer-agent/v1/internal/digital-observations/{id}/complete", id)
@@ -103,9 +120,68 @@ public class CustomerDigitalObservationScheduler {
           .retrieve()
           .toBodilessEntity();
     } catch (Exception ex) {
-      log.error("Falha no customer-agent ao observar experiencia digital, observationId={}", id, ex);
+      log.error(
+          "Falha no customer-agent ao observar experiencia digital, observationId={}", id, ex);
       reportFailure(id, ex);
       throw new IllegalStateException("Falha na experiencia digital id=" + id, ex);
+    } finally {
+      deleteWorkDirectory(workDirectory, id);
+    }
+  }
+
+  /** Envia screenshots ao armazenamento governado, vinculados à persona e observação. */
+  private void uploadScreenshots(
+      long personaId, long observationId, BrowserObservationRunner.BrowserObservation observation) {
+    for (int index = 0; index < observation.screenshots().size(); index++) {
+      Path screenshot = observation.screenshots().get(index);
+      var body = new LinkedMultiValueMap<String, Object>();
+      body.add("observationId", observationId);
+      body.add("memoryLayer", "EXTERNAL_OBSERVATION");
+      body.add("sourceUrl", sourceUrl(observation.facts(), index));
+      body.add("file", new FileSystemResource(screenshot));
+      backend
+          .post()
+          .uri("/api/customer-agent/v1/personas/{personaId}/memory-evidence", personaId)
+          .contentType(MediaType.MULTIPART_FORM_DATA)
+          .body(body)
+          .retrieve()
+          .toBodilessEntity();
+    }
+  }
+
+  /** Recupera a URL observada associada à posição do screenshot. */
+  private String sourceUrl(Map<String, Object> facts, int index) {
+    Object pages = facts.get("pages");
+    if (pages instanceof java.util.List<?> list && index < list.size()) {
+      Object page = list.get(index);
+      if (page instanceof Map<?, ?> values) return String.valueOf(values.get("finalUrl"));
+    }
+    return null;
+  }
+
+  /** Remove os arquivos temporários após sucesso ou falha sem ocultar o erro principal. */
+  private void deleteWorkDirectory(Path directory, long observationId) {
+    if (directory == null) return;
+    try (var paths = Files.walk(directory)) {
+      paths
+          .sorted(java.util.Comparator.reverseOrder())
+          .forEach(
+              path -> {
+                try {
+                  Files.deleteIfExists(path);
+                } catch (Exception ex) {
+                  log.warn(
+                      "Falha ao remover artefato temporário da observação, observationId={}, path={}",
+                      observationId,
+                      path,
+                      ex);
+                }
+              });
+    } catch (Exception ex) {
+      log.warn(
+          "Falha ao limpar diretório temporário da observação, observationId={}",
+          observationId,
+          ex);
     }
   }
 

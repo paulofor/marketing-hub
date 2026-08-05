@@ -23,6 +23,11 @@ workflow="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.github/workflows/cus
 grep -Fq 'Validate bundled Chromium as runtime user' "${workflow}"
 grep -Fq 'await chromium.launch' "${workflow}"
 
+observer="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/src/main/resources/browser/mobile-observation.mjs"
+grep -Fq 'const isDirectVideo' "${observer}"
+grep -Fq 'video.src = source' "${observer}"
+grep -Fq 'loadedmetadata' "${observer}"
+
 if grep -Eq '&& groupadd --gid 10001 operator' "${dockerfile}"; then
   echo "[ARQUITETURA] O Dockerfile não pode recriar incondicionalmente o grupo operator." >&2
   exit 1

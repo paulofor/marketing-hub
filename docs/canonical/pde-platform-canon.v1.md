@@ -8,6 +8,22 @@ Ela deve entregar produtos digitais como experiência guiada, não como pacote d
 
 Toda publicação comercial de PDE deve seguir tambem o protocolo canônico geral em `docs/canonical/protocolo-publicacao-comercial-pde-canon.v1.md`. Esse protocolo vale para qualquer produto PDE, nao apenas para o Metodo MUSA, e define os gates de linguagem publica, validacao mobile/desktop, eventos, metricas limpas e bloqueio antes de trafego ou `RUNNING`.
 
+### Experimento Pausa de Transição v1
+
+Decisão canônica de 2026-08-05: o mecanismo “Pausa de Transição” entra no motor PDE como hipótese experimental separada, sem ser apresentado como auto-hipnose, terapia ou tratamento.
+
+- produto: `pausa-de-transicao`;
+- versão: `pausa-de-transicao-v1`;
+- variante A: relaxamento breve voluntário, visualização do primeiro passo e ação mínima;
+- variante B: instrução objetiva para escolher e executar o primeiro passo;
+- consentimento, ciência dos limites e participação voluntária são obrigatórios antes da atribuição A/B;
+- a atribuição deve permanecer estável durante a sessão e os resultados devem ser identificados por versão e variante;
+- medir início da tarefa em até dez minutos, primeiro passo concluído, mudança no esforço percebido e taxa de interrupção por segurança;
+- ansiedade, dissociação, tontura, desconforto ou perda de autonomia exigem interrupção imediata e evento auditável;
+- a experiência não pode ser usada durante direção ou operação de máquinas, com menores, em contexto clínico ou como promessa garantida;
+- eventos simulados não confirmam eficácia; somente comportamento e relato humano consentidos alimentam a decisão;
+- não liberar mídia paga, oferta ou escala antes de amostra voluntária supervisionada e revisão dos eventos de segurança.
+
 ## Decisão arquitetural
 
 O padrão obrigatório é:

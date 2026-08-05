@@ -22,14 +22,18 @@ public class CustomerAgentService {
   private final CustomerPersonaRepository personas;
   private final CustomerAgentEvaluationRepository evaluations;
   private final CustomerDigitalObservationRepository observations;
+  private final CustomerAgentMotivationService motivations;
 
+  /** Inicializa a governanca de personas, observacoes e memoria motivacional. */
   public CustomerAgentService(
       CustomerPersonaRepository personas,
       CustomerAgentEvaluationRepository evaluations,
-      CustomerDigitalObservationRepository observations) {
+      CustomerDigitalObservationRepository observations,
+      CustomerAgentMotivationService motivations) {
     this.personas = personas;
     this.evaluations = evaluations;
     this.observations = observations;
+    this.motivations = motivations;
   }
 
   /** Agenda uma experiencia mobile limitada a fontes publicas explicitamente autorizadas. */
@@ -86,7 +90,9 @@ public class CustomerAgentService {
     value.setModelName(request.model());
     value.setStatus("COMPLETED");
     value.setFinishedAt(Instant.now());
-    return observationResponse(observations.save(value));
+    CustomerDigitalObservation completed = observations.save(value);
+    motivations.recordSimulated(completed, request.motivationalVector());
+    return observationResponse(completed);
   }
 
   /** Encerra uma observação com falha técnica auditável. */
@@ -110,7 +116,9 @@ public class CustomerAgentService {
     if (request == null || blank(request.humanConfirmationJson()))
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Confirmacao humana vazia.");
     value.setHumanConfirmationJson(request.humanConfirmationJson());
-    return observationResponse(observations.save(value));
+    CustomerDigitalObservation confirmed = observations.save(value);
+    motivations.recordHumanConfirmed(confirmed, request.motivationalVector());
+    return observationResponse(confirmed);
   }
 
   /** Lista a memoria observacional sem fundir suas camadas. */

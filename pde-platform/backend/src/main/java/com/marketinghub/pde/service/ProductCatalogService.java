@@ -39,7 +39,8 @@ public class ProductCatalogService {
             "v10.clubemusa.com.br", MUSA_V7_EXPERIENCE_VERSION);
 
     private final Map<String, ProductExperienceResponse> products = Map.of(
-            "metodo-musa-7-dias", createMusaProduct());
+            "metodo-musa-7-dias", createMusaProduct(),
+            "pausa-de-transicao", createTransitionPauseProduct());
     private final RestClient.Builder restClientBuilder;
     private final List<String> marketingHubBaseUrls;
     private final String experienceVersionOverride;
@@ -362,6 +363,34 @@ public class ProductCatalogService {
                 null,
                 createMusaScientificEvidencePack(),
                 "Ao concluir os 7 dias, você pode continuar no Clube MUSA com novos desafios mensais de presença, estilo e autocuidado acessível.");
+    }
+
+    /** Cria o contrato mínimo do experimento Pausa de Transição sem oferta ou campanha publicada. */
+    private static ProductExperienceResponse createTransitionPauseProduct() {
+        return new ProductExperienceResponse(
+                "pausa-de-transicao",
+                "pausa-de-transicao-v1",
+                "transition-pause-experiment",
+                "transition-pause-validation-v1",
+                "Pausa de Transição",
+                "Experimentar uma pausa voluntária antes do primeiro passo de uma tarefa cotidiana.",
+                "Adultos voluntários testando tarefas cotidianas não clínicas.",
+                "Experimento gratuito e supervisionado",
+                new ThemeDto("#315b55", "#d1a45f", "#f7f3eb", ""),
+                new DiagnosticDto("Antes de começar", "Registre esforço percebido e escolha uma tarefa cotidiana.", List.of()),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                null,
+                new ScientificEvidencePackDto(
+                        "transition-pause-hypothesis-v1",
+                        List.of("relaxamento breve", "visualização do primeiro passo", "ação mínima voluntária"),
+                        List.of("tarefas cotidianas não clínicas"),
+                        List.of("pode ajudar", "experimente se desejar", "pare se houver desconforto"),
+                        List.of("auto-hipnose comprovada", "tratamento", "resultado garantido"),
+                        List.of()),
+                "Não há oferta comercial nesta fase experimental.");
     }
 
     /** Cria o fallback local da v7 científica quando o Marketing Hub estiver indisponível. */

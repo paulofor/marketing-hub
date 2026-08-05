@@ -3055,3 +3055,49 @@ h3 {
     width: 100%;
   }
 }
+/* Experimento isolado da Pausa de Transição, sem herdar linguagem comercial da MUSA. */
+.transition-pause-shell {
+  width: min(680px, calc(100% - 32px));
+  margin: 40px auto;
+  padding: clamp(24px, 5vw, 48px);
+  border-radius: 28px;
+  background: #f7f3eb;
+  color: #173b37;
+  box-shadow: 0 18px 60px rgba(23, 59, 55, 0.14);
+}
+
+.transition-pause-shell label,
+.transition-pause-shell textarea,
+.transition-pause-shell input[type='range'] {
+  display: block;
+  width: 100%;
+  margin: 16px 0;
+}
+
+.transition-pause-shell textarea {
+  min-height: 96px;
+  padding: 12px;
+}
+
+.transition-pause-shell label input[type='checkbox'] {
+  width: auto;
+  margin-right: 8px;
+}
+
+.transition-kicker {
+  color: #7a5b27;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.transition-timer {
+  font-size: clamp(40px, 10vw, 72px);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.transition-safety {
+  padding: 12px;
+  border-left: 4px solid #d1a45f;
+}

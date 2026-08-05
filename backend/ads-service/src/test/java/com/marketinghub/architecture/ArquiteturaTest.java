@@ -918,7 +918,8 @@ class ArquiteturaTest {
           .should(onlyDependOnAllowedSalesVideoServiceMarketingHubClasses())
           .because(
               "[ARQUITETURA] [BACKEND][SalesVideo] services devem acessar somente domínio do"
-                  + " módulo, DTOs, serviços internos e repositories canônicos externos");
+                  + " módulo, DTOs, serviços internos, repositories canônicos externos e o ledger"
+                  + " financeiro do Estúdio");
 
   @ArchTest
   static final ArchRule salesVideoDtosShouldOnlyDependOnSalesVideoContracts =
@@ -3911,7 +3912,9 @@ class ArquiteturaTest {
                           || targetPackage.equals("com.marketinghub.experiment")
                           || targetPackage.startsWith("com.marketinghub.repository.jpa.experiment")
                           || targetPackage.equals("com.marketinghub.product")
-                          || targetPackage.startsWith("com.marketinghub.repository.jpa.product");
+                          || targetPackage.startsWith("com.marketinghub.repository.jpa.product")
+                          || targetName.equals(
+                              "com.marketinghub.financialagent.service.StudioCostLedgerService");
                   if (!valid) {
                     String message =
                         "[ARQUITETURA] [BACKEND][SalesVideo] classe-origem="
@@ -3922,7 +3925,8 @@ class ArquiteturaTest {
                             + targetName
                             + ") | regra: salesvideo.service só pode acessar domínio/DTOs/services"
                             + " internos, repositories externos canônicos de SalesVideo e contratos"
-                            + " auxiliares aprovados de mídia, storage, experiment e product.";
+                            + " auxiliares aprovados de mídia, storage, experiment, product e do"
+                            + " ledger financeiro do Estúdio.";
                     events.add(SimpleConditionEvent.violated(item, message));
                   }
                 });

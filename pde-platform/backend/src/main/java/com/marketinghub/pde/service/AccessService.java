@@ -925,7 +925,14 @@ public class AccessService {
                 "JOURNEY_COMPLETED",
                 "MISSION_INTERACTION_SAVED",
                 "AI_GUIDANCE_REQUESTED",
-                "MATERIAL_OPEN");
+                "MATERIAL_OPEN",
+                "EXPERIMENT_CONSENT_RECORDED",
+                "EXPERIMENT_SESSION_STARTED",
+                "TRANSITION_PAUSE_EXPERIENCE_COMPLETED",
+                "TRANSITION_PAUSE_TASK_STARTED",
+                "TRANSITION_PAUSE_FIRST_STEP_COMPLETED",
+                "TRANSITION_PAUSE_EXPERIENCE_EXITED",
+                "TRANSITION_PAUSE_SAFETY_STOPPED");
         if (!allowed.contains(normalized)) {
             throw new IllegalArgumentException("Evento PDE não suportado: " + eventType);
         }

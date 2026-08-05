@@ -37,6 +37,13 @@ autorizadas. O worker opera em sandbox somente leitura, com perfil mobile, sem l
 compra, publicação ou coleta de dados pessoais. Timelines pessoais irrestritas são proibidas;
 feeds devem ser pesquisas públicas governadas por tema.
 
+Antes da interpretação por IA, o worker deve abrir cada URL autorizada em Chromium com emulação
+mobile, bloquear destinos fora dos hosts autorizados, registrar status, URL final, viewport,
+títulos, CTAs, formulários e reprodução de vídeo, e capturar screenshot. Esses fatos determinísticos
+são a única base técnica do parecer. Screenshots são enviados ao armazenamento governado como
+`EXTERNAL_OBSERVATION`, vinculados à persona e à execução; falha na captura ou persistência bloqueia
+a conclusão, sem fabricar uma avaliação.
+
 A memória mantém quatro camadas imutavelmente separadas: `observation_json` registra fatos e URLs;
 `simulated_reaction_json` registra a reação hipotética da persona;
 `commercial_hypothesis_json` registra o teste sugerido; e `human_confirmation_json` recebe apenas
@@ -63,6 +70,23 @@ canônicos continuam auditáveis e qualquer índice semântico futuro deve ser d
 Credenciais AWS nunca ficam no repositório. O backend usa IAM ou a cadeia padrão de credenciais do
 ambiente. Busca vetorial não integra a primeira versão e não poderá se tornar fonte de verdade em
 uma evolução futura.
+
+## Vetor motivacional auditável
+
+Cada experiência observacional concluída registra no MySQL um vetor separado da evidência pesada
+mantida no S3. O vetor usa direção `AWAY_FROM_PAIN`, `TOWARD_PLEASURE` ou `MIXED`; intensidade de
+dor e prazer; pesos de medo, frustração, esforço, alívio, desejo, confiança e pertencimento; força
+da evidência; confiança da classificação; fonte e justificativa. Todos os pesos usam escala inteira
+de zero a cinco.
+
+Vetores calculados pelo agente são `SIMULATED_HYPOTHESIS`. Somente resultado humano recebido pelo
+endpoint oficial cria `HUMAN_CONFIRMED`. Os registros são append-only: confirmação humana não
+sobrescreve, promove ou apaga a hipótese simulada. Não há backfill automático das memórias antigas,
+pois ausência de evidência não pode virar peso zero nem inferência retroativa.
+
+O S3 continua armazenando o artefato original sem scores mutáveis. O MySQL permanece como fonte de
+verdade da classificação, procedência e recalibração. A qualidade é medida pela correspondência
+posterior entre pesos simulados e comportamento humano real, nunca pela intensidade estimada.
 
 O bucket dedicado é provisionado pelo template versionado
 `infra/aws/customer-agent-memory-bucket.yaml`. O deploy deve informar

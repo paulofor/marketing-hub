@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
@@ -56,6 +57,7 @@ public class ImageGeneratorService {
   private final String comparisonImageModel;
 
   /** Inicializa o serviço com cliente OpenAI autenticado e repositório de auditoria. */
+  @Autowired
   public ImageGeneratorService(
       @Qualifier("openAiWebClient") WebClient openAiWebClient,
       OpenAiProperties openAiProperties,

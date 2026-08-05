@@ -622,8 +622,71 @@ public class SalesVideoJobService {
 
   /** Converte job para DTO incluindo custo real ou estimado para a tela. */
   private SalesVideoJobDto toDto(SalesVideoJob job) {
-    return jobCostMetadataService.enrichDto(SalesVideoMapper.toDto(job), job);
+    SalesVideoJobDto dto = jobCostMetadataService.enrichDto(SalesVideoMapper.toDto(job), job);
+    CommercialReadiness readiness = assessCommercialReadiness(job);
+    dto.setCommercialReadinessStatus(readiness.status());
+    dto.setCommercialReadinessBlockers(readiness.blockers());
+    return dto;
   }
+
+  /** Avalia no backend se o job representa uma peça comercial final e auditável. */
+  private CommercialReadiness assessCommercialReadiness(SalesVideoJob job) {
+    List<String> blockers = new java.util.ArrayList<>();
+    if (job.getStatus() != SalesVideoStatus.VIDEO_READY) {
+      blockers.add("A renderização final ainda não foi concluída.");
+    }
+    if (!"MUSA_POST_PRODUCTION".equalsIgnoreCase(job.getProviderName())) {
+      blockers.add("O ativo ainda é um clipe bruto ou uma montagem sem pós-produção final.");
+    }
+    if (!StringUtils.hasText(job.getStreamPlaybackUrl())
+        || !job.getStreamPlaybackUrl().contains(".m3u8")) {
+      blockers.add("A playlist HLS publicável não foi registrada.");
+    }
+    JsonNode metadata = readJobMetadata(job);
+    if (!metadata.path("audio").path("voice_over").asBoolean(false)
+        || !"pt-BR".equalsIgnoreCase(metadata.path("audio").path("language").asText())) {
+      blockers.add("A narração em português do Brasil não foi incorporada.");
+    }
+    if (!metadata.path("captions").path("burned_in").asBoolean(false)
+        || !metadata.path("captions").path("vtt_asset").asBoolean(false)
+        || job.getVttAsset() == null) {
+      blockers.add("As legendas mobile queimadas e o arquivo VTT não estão completos.");
+    }
+    if (!hasCommercialCta(job, metadata)) {
+      blockers.add("O CTA final não possui evidência persistida no roteiro ou na pós-produção.");
+    }
+    SalesVideoJob sourceJob = job.getRetryOfJob();
+    if (sourceJob == null || !"MUSA_VIDEO_MONTAGE".equalsIgnoreCase(sourceJob.getProviderName())) {
+      blockers.add("A peça não deriva de uma montagem narrativa auditável.");
+    }
+    if (job.getProfile() == null || job.getProfile().getHumanReviewApprovedAt() == null) {
+      blockers.add("A revisão humana final ainda não foi aprovada.");
+    }
+    return new CommercialReadiness(blockers.isEmpty() ? "READY" : "BLOCKED", List.copyOf(blockers));
+  }
+
+  /** Lê os metadados persistidos sem transformar JSON inválido em aprovação comercial. */
+  private JsonNode readJobMetadata(SalesVideoJob job) {
+    if (!StringUtils.hasText(job.getMetadataJson())) {
+      return com.fasterxml.jackson.databind.node.MissingNode.getInstance();
+    }
+    try {
+      return objectMapper.readTree(job.getMetadataJson());
+    } catch (JsonProcessingException ex) {
+      log.warn("Metadata inválido bloqueou gate comercial; jobId={}", job.getId(), ex);
+      return com.fasterxml.jackson.databind.node.MissingNode.getInstance();
+    }
+  }
+
+  /** Confirma CTA funcional no roteiro aprovado ou no contrato final persistido. */
+  private boolean hasCommercialCta(SalesVideoJob job, JsonNode metadata) {
+    return (job.getScript() != null && StringUtils.hasText(job.getScript().getCtaText()))
+        || StringUtils.hasText(metadata.path("ctaText").asText())
+        || StringUtils.hasText(metadata.path("cta_text").asText());
+  }
+
+  /** Representa a decisão derivada do gate comercial e suas causas objetivas. */
+  private record CommercialReadiness(String status, List<String> blockers) {}
 
   private SalesVideoScript maybePersistScriptResult(
       SalesVideoJob job, GeneratedScriptResultPayload payload) {
@@ -783,10 +846,12 @@ public class SalesVideoJobService {
                 java.util.stream.Collectors.toMap(
                     node -> node.path("scene").path("order").asInt(),
                     node -> node.path("scene").path("role").asText()));
-    if (!"DOR".equals(rolesByOrder.get(1)) || !"CTA".equals(rolesByOrder.get(sourceJobs.size()))) {
+    Map<Integer, String> requiredRolesByOrder =
+        Map.of(1, "DOR", 2, "RESULTADO", 3, "MECANISMO", 4, "CTA");
+    if (!rolesByOrder.equals(requiredRolesByOrder)) {
       throw VideoModuleException.badRequest(
           VideoModuleErrorCode.BAD_REQUEST,
-          "Selecione planos consecutivos do mesmo projeto, começando em DOR e terminando em CTA.");
+          "A montagem comercial exige exatamente DOR, RESULTADO, MECANISMO e CTA, nesta sequência narrativa.");
     }
   }
 

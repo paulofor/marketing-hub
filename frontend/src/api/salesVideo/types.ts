@@ -77,6 +77,8 @@ export interface SalesVideoJob {
   vttAssetId?: number | null;
   metadataJson?: string | null;
   auditSnapshotJson?: string | null;
+  commercialReadinessStatus?: "READY" | "BLOCKED" | null;
+  commercialReadinessBlockers?: string[];
   createdAt?: string | null;
   updatedAt?: string | null;
 }

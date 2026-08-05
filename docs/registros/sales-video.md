@@ -172,3 +172,9 @@
 - Causa-raiz tratada: a continuidade dependia de texto no prompt; o fluxo não materializava o último quadro aprovado como entrada obrigatória do plano seguinte e não encadeava a pós-produção após a montagem.
 - Correção preparada: cada render passa a persistir seu quadro final; a geração sequencial usa esse asset como imagem inicial do próximo plano; a montagem aplica microtransições, mede ritmo e bloqueia média acima de quatro segundos em sequências com seis ou mais planos; o backend enfileira voz e legenda após a montagem cinematográfica.
 - Prevenção: a tela bloqueia geração intermediária sem plano anterior aprovado, o contrato registra origem da ponte e testes protegem a montagem e a continuidade sem substituir o storyboard persistido.
+## 2026-08-05 — Gate comercial determinístico para a MUSA v7
+
+- Problema observado: o job `20519` estava tecnicamente pronto, mas era um único clipe silencioso e podia ser interpretado como vídeo publicável.
+- Causa-raiz tratada: `VIDEO_READY` representava conclusão técnica e a tela não recebia uma decisão canônica do backend sobre montagem, áudio pt-BR, legendas, CTA, HLS e revisão humana.
+- Correção preparada: o backend passa a expor gate `READY/BLOCKED` com causas objetivas; a montagem narrativa exige exatamente `DOR`, `RESULTADO`, `MECANISMO` e `CTA`; a tela bloqueia visualmente a publicação enquanto faltar qualquer evidência.
+- Critério comercial: só vincular a MUSA v7 ao PDE após gate aprovado e reprodução humana validada em desktop e mobile.

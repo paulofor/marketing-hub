@@ -41,4 +41,15 @@ class ModuleLogDefaultsContractTest {
         assertTrue(compose.contains("MCP_LOG_AI_WORKER_PATH:-" + AI_WORKER_LOG_URL));
         assertFalse(compose.contains("MCP_LOG_BACKEND_PATH:-" + AI_WORKER_LOG_URL));
     }
+
+    /**
+     * Garante que o descritor efetivamente publicado fixe o endpoint canônico do backend.
+     */
+    @Test
+    void shouldPublishCanonicalBackendLogEndpointInDeploymentCompose() throws IOException {
+        String compose = Files.readString(Path.of("../deploy/docker-compose.mcp.yml"));
+
+        assertTrue(compose.contains("MCP_LOG_BACKEND_PATH:-" + BACKEND_LOG_URL));
+        assertFalse(compose.contains("MCP_LOG_BACKEND_PATH:-" + AI_WORKER_LOG_URL));
+    }
 }

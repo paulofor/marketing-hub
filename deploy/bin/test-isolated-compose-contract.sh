@@ -9,6 +9,9 @@ unset LEAD_PORTAL_PAYMENTS_AUTH_TOKEN
 docker compose -f docker-compose.video.yml config --quiet
 MYSQL_PASS=contract-test docker compose -f docker-compose.mcp.yml config --quiet
 
+grep -Fq 'MCP_LOG_BACKEND_PATH: ${MCP_LOG_BACKEND_PATH:-http://191.252.181.168/ops-mh-observability-v2/backend-log-stream-x9k}' \
+  docker-compose.mcp.yml
+
 if grep -q 'docker compose up' bin/apply-video-only.sh; then
   echo "[CONTRATO] apply-video-only.sh deve informar explicitamente docker-compose.video.yml." >&2
   exit 1

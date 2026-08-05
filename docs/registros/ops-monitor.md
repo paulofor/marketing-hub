@@ -150,3 +150,10 @@
   incluindo `191.252.102.54`. A correção evita depender de logs locais do host do MCP,
   bloqueia nomes de container/comandos arbitrários e permite diagnosticar ciclos de
   reinicialização do Nginx pela causa registrada pelo próprio container.
+
+## 2026-08-05 — Destino canônico dos logs do backend no deploy do MCP
+
+- Problema observado: o código do MCP já distinguia backend e AI Worker, mas o descritor isolado usado no deploy não fixava `MCP_LOG_BACKEND_PATH`; o runtime publicado continuava apontando o alias `backend` para o logfile do AI Worker.
+- Causa-raiz tratada: divergência entre a configuração da imagem e o contrato efetivamente aplicado pelo Compose de produção.
+- Ajuste: `deploy/docker-compose.mcp.yml` passa a declarar explicitamente `http://191.252.181.168/ops-mh-observability-v2/backend-log-stream-x9k` para o backend.
+- Prevenção: testes de contrato no módulo e no descritor de deploy impedem que o alias `backend` volte ao endpoint do AI Worker.

@@ -20,6 +20,16 @@ if grep -q 'docker compose up' bin/apply-mcp-only.sh; then
 fi
 
 grep -q 'docker compose -f docker-compose.video.yml up' bin/apply-video-only.sh
+
+grep -q 'docker pull "${VIDEO_IMAGE}:${IMAGE_TAG}"' bin/apply-video-only.sh
+
+if grep -q 'video-management-image.tar.*VIDEO_VPS_IP\|scp.*video-management-image.tar' ../.github/workflows/deploy-containers.yml; then
+  echo "[CONTRATO] deploy de vídeo não deve transferir a imagem completa por SCP." >&2
+  exit 1
+fi
+
+grep -q 'docker/build-push-action@v6' ../.github/workflows/deploy-containers.yml
+grep -q 'cache-to: type=registry' ../.github/workflows/deploy-containers.yml
 grep -q 'docker compose -f docker-compose.mcp.yml up' bin/apply-mcp-only.sh
 
 # Alterar o publicador isolado exige reconstruir a imagem para que um deploy

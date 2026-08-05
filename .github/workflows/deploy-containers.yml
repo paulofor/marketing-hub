@@ -15,7 +15,7 @@ env:
   DEPLOY_DIR: /opt/marketinghub/containers
   BACKEND_IMAGE: marketinghub-backend
   FRONTEND_IMAGE: marketinghub-frontend
-  VIDEO_IMAGE: marketinghub-video-management
+  VIDEO_IMAGE: ghcr.io/${{ github.repository_owner }}/marketinghub-video-management
 
 permissions:
   contents: read
@@ -272,6 +272,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: detect-changes
     if: needs.detect-changes.outputs.video == 'true'
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
 
@@ -289,17 +292,27 @@ jobs:
         working-directory: video-management-service
         run: mvn -B test
 
-      - name: Build Docker image
-        run: docker build -f video-management-service/Dockerfile -t ${VIDEO_IMAGE}:${{ github.sha }} .
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Save image as artifact
-        run: docker save ${VIDEO_IMAGE}:${{ github.sha }} -o video-management-image.tar
-
-      - uses: actions/upload-artifact@v4
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          name: video-management-image
-          path: video-management-image.tar
-          retention-days: 1
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: video-management-service/Dockerfile
+          push: true
+          tags: |
+            ${{ env.VIDEO_IMAGE }}:${{ github.sha }}
+            ${{ env.VIDEO_IMAGE }}:latest
+          cache-from: type=registry,ref=${{ env.VIDEO_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.VIDEO_IMAGE }}:buildcache,mode=max
 
   deploy-app:
     name: Deploy backend + frontend
@@ -436,13 +449,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download video-management image artifact
-        if: needs.detect-changes.outputs.video == 'true'
-        uses: actions/download-artifact@v4
-        with:
-          name: video-management-image
-          path: artifacts
-
       - name: Add SSH key
         uses: webfactory/ssh-agent@v0.7.0
         with:
@@ -481,29 +487,14 @@ jobs:
           retry ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} "mkdir -p ${DEPLOY_DIR}"
           retry rsync -az --delete --exclude '.env' --exclude 'volumes/' --filter='P .env' --filter='P volumes/' -e "ssh ${SSH_OPTS}" deploy/ ${VPS_USER}@${VIDEO_VPS_IP}:${DEPLOY_DIR}/
 
-      - name: Upload image to VIDEO VPS
+      - name: Log VIDEO VPS in to GitHub Container Registry
         if: needs.detect-changes.outputs.video == 'true'
         env:
           SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          retry() {
-            local attempt=1
-            until "$@"; do
-              if [ "${attempt}" -ge 3 ]; then
-                return 1
-              fi
-              sleep $((attempt * 10))
-              attempt=$((attempt + 1))
-            done
-          }
-
-          retry scp ${SSH_OPTS} artifacts/video-management-image.tar ${VPS_USER}@${VIDEO_VPS_IP}:/tmp/video-management-image-${{ github.sha }}.tar
-
-      - name: Remove unchanged VIDEO image artifact
-        if: needs.detect-changes.outputs.video != 'true'
-        env:
-          SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
-        run: ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} "rm -f /tmp/video-management-image.tar"
+          printf '%s' "${GHCR_TOKEN}" | ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} \
+            "docker login ghcr.io --username '${{ github.actor }}' --password-stdin"
 
       - name: Apply video-management stack
         env:
@@ -523,4 +514,10 @@ jobs:
 
           retry ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} "chmod +x ${DEPLOY_DIR}/bin/apply-video-only.sh"
           retry timeout 30m ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} \
-            "IMAGE_TAG=${GIT_SHA} VIDEO_TAR=/tmp/video-management-image-${GIT_SHA}.tar VIDEO_IMAGE=${VIDEO_IMAGE} VIDEO_BACKEND_BASE_URL=http://${APP_VPS_IP} DEPLOY_DIR=${DEPLOY_DIR} /bin/bash ${DEPLOY_DIR}/bin/apply-video-only.sh"
+            "IMAGE_TAG=${GIT_SHA} VIDEO_PULL=${{ needs.detect-changes.outputs.video }} VIDEO_IMAGE=${VIDEO_IMAGE} VIDEO_BACKEND_BASE_URL=http://${APP_VPS_IP} DEPLOY_DIR=${DEPLOY_DIR} /bin/bash ${DEPLOY_DIR}/bin/apply-video-only.sh"
+
+      - name: Remove temporary GitHub Container Registry credentials
+        if: always() && needs.detect-changes.outputs.video == 'true'
+        env:
+          SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
+        run: ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} "docker logout ghcr.io >/dev/null 2>&1 || true"

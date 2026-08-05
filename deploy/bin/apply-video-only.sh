@@ -5,6 +5,7 @@ DEPLOY_DIR=${DEPLOY_DIR:-/opt/marketinghub/containers}
 VIDEO_TAR=${VIDEO_TAR:-/tmp/video-management-image.tar}
 VIDEO_IMAGE=${VIDEO_IMAGE:-marketinghub-video-management}
 IMAGE_TAG=${IMAGE_TAG:-latest}
+VIDEO_PULL=${VIDEO_PULL:-false}
 VIDEO_BACKEND_BASE_URL=${VIDEO_BACKEND_BASE_URL:-http://191.252.181.168}
 IMAGE_TAR_LOADED=false
 
@@ -16,9 +17,14 @@ if [[ -f "${VIDEO_TAR}" ]]; then
   IMAGE_TAR_LOADED=true
 fi
 
+if [[ "${VIDEO_PULL}" == "true" ]]; then
+  docker pull "${VIDEO_IMAGE}:${IMAGE_TAG}"
+fi
+
 if [[ "${IMAGE_TAG}" != "latest" ]]; then
   if docker image inspect "${VIDEO_IMAGE}:${IMAGE_TAG}" >/dev/null 2>&1; then
-    docker tag "${VIDEO_IMAGE}:${IMAGE_TAG}" "${VIDEO_IMAGE}:latest"
+    VIDEO_MGMT_IMAGE="${VIDEO_IMAGE}"
+    VIDEO_MGMT_IMAGE_TAG="${IMAGE_TAG}"
   elif [[ "${IMAGE_TAR_LOADED}" == "true" ]]; then
     echo "[apply-video-only.sh] Erro: imagem esperada ${VIDEO_IMAGE}:${IMAGE_TAG} não encontrada após docker load; abortando para evitar deploy com imagem antiga." >&2
     exit 1
@@ -27,8 +33,8 @@ if [[ "${IMAGE_TAG}" != "latest" ]]; then
   fi
 fi
 
-VIDEO_MGMT_IMAGE="${VIDEO_IMAGE}"
-VIDEO_MGMT_IMAGE_TAG="latest"
+VIDEO_MGMT_IMAGE="${VIDEO_MGMT_IMAGE:-${VIDEO_IMAGE}}"
+VIDEO_MGMT_IMAGE_TAG="${VIDEO_MGMT_IMAGE_TAG:-latest}"
 
 if ! docker image inspect "${VIDEO_MGMT_IMAGE}:${VIDEO_MGMT_IMAGE_TAG}" >/dev/null 2>&1; then
   current_image="$(docker inspect marketinghub-video-management --format '{{.Config.Image}}' 2>/dev/null || true)"

@@ -1,0 +1,11 @@
+{
+  "Rules": [
+    {
+      "ID": "ExpirarMemoriasOperacionais",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "customer-agent-memory/v1/" },
+      "Expiration": { "Days": 365 },
+      "NoncurrentVersionExpiration": { "NoncurrentDays": 30 }
+    }
+  ]
+}

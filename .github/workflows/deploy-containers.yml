@@ -412,15 +412,21 @@ jobs:
         env:
           GIT_SHA: ${{ github.sha }}
           LEAD_PORTAL_PAYMENTS_AUTH_TOKEN: ${{ secrets.LEAD_PORTAL_PAYMENTS_AUTH_TOKEN }}
+          CUSTOMER_AGENT_MEMORY_AWS_ACCESS_KEY_ID: ${{ secrets.CUSTOMER_AGENT_MEMORY_AWS_ACCESS_KEY_ID }}
+          CUSTOMER_AGENT_MEMORY_AWS_SECRET_ACCESS_KEY: ${{ secrets.CUSTOMER_AGENT_MEMORY_AWS_SECRET_ACCESS_KEY }}
           SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
         run: |
           if [ "${#LEAD_PORTAL_PAYMENTS_AUTH_TOKEN}" -lt 32 ]; then
             echo "Erro: LEAD_PORTAL_PAYMENTS_AUTH_TOKEN ausente ou menor que 32 caracteres no ambiente production." >&2
             exit 1
           fi
+          if [ -z "${CUSTOMER_AGENT_MEMORY_AWS_ACCESS_KEY_ID}" ] || [ -z "${CUSTOMER_AGENT_MEMORY_AWS_SECRET_ACCESS_KEY}" ]; then
+            echo "Erro: credencial AWS da memória do Agente Cliente ausente no ambiente production." >&2
+            exit 1
+          fi
           ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} "chmod +x ${DEPLOY_DIR}/bin/apply.sh"
           timeout -k 30s 18m ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} \
-            "IMAGE_TAG=${GIT_SHA} BACKEND_TAR=/tmp/backend-image-${GIT_SHA}.tar FRONTEND_TAR=/tmp/frontend-image-${GIT_SHA}.tar VIDEO_TAR=/tmp/video-management-image-${GIT_SHA}.tar BACKEND_IMAGE=${BACKEND_IMAGE} FRONTEND_IMAGE=${FRONTEND_IMAGE} LEAD_PORTAL_PAYMENTS_AUTH_TOKEN='${LEAD_PORTAL_PAYMENTS_AUTH_TOKEN}' DEPLOY_DIR=${DEPLOY_DIR} /bin/bash ${DEPLOY_DIR}/bin/apply.sh"
+            "IMAGE_TAG=${GIT_SHA} BACKEND_TAR=/tmp/backend-image-${GIT_SHA}.tar FRONTEND_TAR=/tmp/frontend-image-${GIT_SHA}.tar VIDEO_TAR=/tmp/video-management-image-${GIT_SHA}.tar BACKEND_IMAGE=${BACKEND_IMAGE} FRONTEND_IMAGE=${FRONTEND_IMAGE} LEAD_PORTAL_PAYMENTS_AUTH_TOKEN='${LEAD_PORTAL_PAYMENTS_AUTH_TOKEN}' CUSTOMER_AGENT_MEMORY_BUCKET=marketing-hub-customer-agent-memory-948388760606 CUSTOMER_AGENT_MEMORY_REGION=us-east-1 AWS_ACCESS_KEY_ID='${CUSTOMER_AGENT_MEMORY_AWS_ACCESS_KEY_ID}' AWS_SECRET_ACCESS_KEY='${CUSTOMER_AGENT_MEMORY_AWS_SECRET_ACCESS_KEY}' DEPLOY_DIR=${DEPLOY_DIR} /bin/bash ${DEPLOY_DIR}/bin/apply.sh"
 
   deploy-video-management:
     name: Deploy video management

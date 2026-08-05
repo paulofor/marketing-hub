@@ -23,6 +23,8 @@ outro.
 O Agente Cliente opera em sandbox somente leitura. Ele pode retornar `APROVAR_TESTE`, `AJUSTAR` ou
 `REPROVAR`, mas não altera ativos, preços, campanhas, publicações, personas ou resultados humanos.
 
+O worker possui CI/CD dedicado, identidade Codex persistente e validação de autenticação após cada deploy. Evidências pesadas usam bucket S3 privado, criptografado, versionado e com retenção definida; MySQL continua sendo a fonte de verdade.
+
 ## Métrica de qualidade
 
 A maturidade é medida pela correspondência posterior entre objeções previstas e comportamento

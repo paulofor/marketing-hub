@@ -384,9 +384,7 @@ class ExperimentReadinessServiceTest {
     experiment.setProductAiSubtype(ProductAiSubtype.AI_PERSONALIZED_SAMPLE);
     experiment.setLeadPortalFlow(
         productAiFlow(
-            "nome",
             "email",
-            "whatsapp",
             "negocio_projeto",
             "contexto_atual",
             "objetivo_visual",

@@ -2,7 +2,26 @@ import { describe, expect, it } from "vitest";
 import {
   buildExperimentTestUrl,
   buildPdeInternalPreviewUrl,
+  canAccessExperimentConstruction,
 } from "./ExperimentDetailPage";
+
+describe("canAccessExperimentConstruction", () => {
+  it("exibe a construção para experimento manual", () => {
+    expect(canAccessExperimentConstruction("MANUAL_FLOW", null)).toBe(true);
+  });
+
+  it("exibe a construção para microamostra criada pelo fluxo normal", () => {
+    expect(
+      canAccessExperimentConstruction("SYSTEM_FLOW", "AI_PERSONALIZED_SAMPLE"),
+    ).toBe(true);
+  });
+
+  it("mantém a construção oculta para outros experimentos automáticos", () => {
+    expect(
+      canAccessExperimentConstruction("SYSTEM_FLOW", "AI_VISUAL_ASSET_PACK"),
+    ).toBe(false);
+  });
+});
 
 describe("buildExperimentTestUrl", () => {
   it("adiciona o parametro de teste em URL sem query string", () => {

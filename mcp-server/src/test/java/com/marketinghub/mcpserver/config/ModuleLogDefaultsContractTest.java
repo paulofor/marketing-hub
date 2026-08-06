@@ -19,6 +19,8 @@ class ModuleLogDefaultsContractTest {
             "http://191.252.210.83:4567/worker-observability/logfile";
     private static final String CUSTOMER_AGENT_WORKER_LOG_URL =
             "http://163.245.202.80:8099/ops-customer-agent-observability-v1/customer-agent-worker-log";
+    private static final String FINANCIAL_AGENT_WORKER_LOG_URL =
+            "http://163.245.202.80:8095/ops-financial-agent-observability-v1/financial-agent-worker-log";
 
     /**
      * Garante que a configuração Spring não direcione o alias backend ao log do AI Worker.
@@ -67,5 +69,19 @@ class ModuleLogDefaultsContractTest {
         assertTrue(configuration.contains("MCP_LOG_CUSTOMER_AGENT_WORKER_PATH:" + CUSTOMER_AGENT_WORKER_LOG_URL));
         assertTrue(localCompose.contains("MCP_LOG_CUSTOMER_AGENT_WORKER_PATH:-" + CUSTOMER_AGENT_WORKER_LOG_URL));
         assertTrue(deploymentCompose.contains("MCP_LOG_CUSTOMER_AGENT_WORKER_PATH:-" + CUSTOMER_AGENT_WORKER_LOG_URL));
+    }
+
+    /**
+     * Garante que aplicação e descritores de deploy publiquem o destino do Agente Financeiro.
+     */
+    @Test
+    void shouldPublishFinancialAgentWorkerLogEndpoint() throws IOException {
+        String configuration = Files.readString(Path.of("src/main/resources/application.yml"));
+        String localCompose = Files.readString(Path.of("docker-compose.yml"));
+        String deploymentCompose = Files.readString(Path.of("../deploy/docker-compose.mcp.yml"));
+
+        assertTrue(configuration.contains("MCP_LOG_FINANCIAL_AGENT_WORKER_PATH:" + FINANCIAL_AGENT_WORKER_LOG_URL));
+        assertTrue(localCompose.contains("MCP_LOG_FINANCIAL_AGENT_WORKER_PATH:-" + FINANCIAL_AGENT_WORKER_LOG_URL));
+        assertTrue(deploymentCompose.contains("MCP_LOG_FINANCIAL_AGENT_WORKER_PATH:-" + FINANCIAL_AGENT_WORKER_LOG_URL));
     }
 }

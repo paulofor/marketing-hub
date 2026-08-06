@@ -37,7 +37,7 @@ class MetaToolsServiceTest {
         McpProperties properties = new McpProperties(
                 "marketing-hub-mcp",
                 "1.0.0",
-                new McpProperties.Logs("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", 45, 3, 400, 500, 262144),
+                new McpProperties.Logs("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", 45, 3, 400, 500, 262144),
                 new McpProperties.ChatLogs(true, List.of("marketinghub-fashion-chat"), "docker", 500, 20),
                 new McpProperties.DockerOps(true, List.of("marketinghub-backend"), "docker", 500, 30, false),
                 new McpProperties.BuildInfo(true, List.of("pde-platform-backend"),

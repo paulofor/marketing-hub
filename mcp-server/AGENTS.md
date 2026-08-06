@@ -19,6 +19,7 @@ Manter os seguintes endpoints como defaults de origem de logs no módulo `mcp-se
 - PDE Platform Backend: `http://163.245.200.7:8096/actuator/logfile`
 - Video Management Service: `http://177.153.62.107:8095/actuator/logfile`
 - Customer Agent Worker: `http://163.245.202.80:8099/ops-customer-agent-observability-v1/customer-agent-worker-log`
+- Financial Agent Worker: `http://163.245.202.80:8095/ops-financial-agent-observability-v1/financial-agent-worker-log`
 
 Sempre que houver alteração desses endpoints, atualizar em conjunto:
 

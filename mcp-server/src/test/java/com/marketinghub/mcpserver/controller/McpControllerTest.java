@@ -75,6 +75,8 @@ class McpControllerTest {
                 () -> TEST_LOG_DIR.resolve("video-management-service.log").toString());
         registry.add("mcp.logs.customer-agent-worker-path",
                 () -> TEST_LOG_DIR.resolve("customer-agent-worker.log").toString());
+        registry.add("mcp.logs.financial-agent-worker-path",
+                () -> TEST_LOG_DIR.resolve("financial-agent-worker.log").toString());
         registry.add("mcp.logs.max-lines", () -> "500");
         registry.add("mcp.chat-logs.enabled", () -> "true");
         registry.add("mcp.chat-logs.allowed-containers", () -> "marketinghub-fashion-chat,product-discovery-worker");
@@ -175,6 +177,9 @@ class McpControllerTest {
                 StandardCharsets.UTF_8);
         Files.writeString(TEST_LOG_DIR.resolve("customer-agent-worker.log"),
                 "observationId=42 codec=h264 callback=received\nobservationId=43 codex=timeout\n",
+                StandardCharsets.UTF_8);
+        Files.writeString(TEST_LOG_DIR.resolve("financial-agent-worker.log"),
+                "jobId=91 decision=BLOCKED_BY_MISSING_SOURCE\njobId=92 reconciliation=completed\n",
                 StandardCharsets.UTF_8);
         Path fakeDocker = TEST_LOG_DIR.resolve("docker-fake.sh");
         Files.writeString(fakeDocker,
@@ -528,6 +533,24 @@ class McpControllerTest {
     }
 
     /**
+     * Garante que o MCP exponha logs correlacionáveis do executor do Agente Financeiro.
+     */
+    @Test
+    void shouldReadFinancialAgentWorkerLogs() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":26,"method":"tools/call","params":{"name":"java_module_logs","arguments":{"module":"financial-agent-worker","lines":1,"contains":"reconciliation"}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.module").value("financial-agent-worker"))
+                .andExpect(jsonPath("$.result.structuredContent.path")
+                        .value(TEST_LOG_DIR.resolve("financial-agent-worker.log").toString()))
+                .andExpect(jsonPath("$.result.structuredContent.lines[0]")
+                        .value("jobId=92 reconciliation=completed"));
+    }
+
+    /**
      * Garante que a tool java_module_logs rejeita módulos fora da lista permitida.
      */
     @Test
@@ -540,7 +563,7 @@ class McpControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error.code").value(-32602))
                 .andExpect(jsonPath("$.error.message")
-                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, pde-platform-backend, video-management-service, customer-agent-worker"));
+                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, pde-platform-backend, video-management-service, customer-agent-worker, financial-agent-worker"));
     }
 
     /**

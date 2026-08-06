@@ -3,6 +3,17 @@ server:
 spring:
   application:
     name: financial-agent-worker
+management:
+  endpoints:
+    web:
+      base-path: /ops-financial-agent-observability-v1
+      exposure:
+        include: health,logfile
+      path-mapping:
+        logfile: financial-agent-worker-log
+logging:
+  file:
+    name: ${LOG_FILE_NAME:/tmp/financial-agent-worker.log}
 financial-agent:
   backend-url: ${BACKEND_URL:http://backend:8000}
   repository-path: ${MARKETING_HUB_REPOSITORY:/workspace/marketing-hub}

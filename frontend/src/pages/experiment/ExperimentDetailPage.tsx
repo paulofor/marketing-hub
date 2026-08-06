@@ -79,6 +79,16 @@ const experimentDetailTabs = [
   { value: "publico", label: "Público" },
 ] as const;
 
+export function canAccessExperimentConstruction(
+  creationSource?: string | null,
+  productAiSubtype?: string | null,
+) {
+  return (
+    creationSource === "MANUAL_FLOW" ||
+    productAiSubtype === "AI_PERSONALIZED_SAMPLE"
+  );
+}
+
 function parseCostValue(value?: number | string | null) {
   if (value == null) return null;
   if (typeof value === "number") return Number.isFinite(value) ? value : null;
@@ -1657,9 +1667,13 @@ export default function ExperimentDetailPage() {
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
   const alterationLocked = isExperimentAlterationLocked(data);
-  const isManualExperiment = data.creationSource === "MANUAL_FLOW";
+  const canAccessConstruction = canAccessExperimentConstruction(
+    data.creationSource,
+    data.productAiSubtype,
+  );
   const visibleExperimentDetailTabs = experimentDetailTabs.filter(
-    (item) => !("manualOnly" in item) || !item.manualOnly || isManualExperiment,
+    (item) =>
+      !("manualOnly" in item) || !item.manualOnly || canAccessConstruction,
   );
   const selectedTab = visibleExperimentDetailTabs.some(
     (item) => item.value === tab,

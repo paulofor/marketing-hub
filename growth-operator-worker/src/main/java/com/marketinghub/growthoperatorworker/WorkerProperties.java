@@ -1,5 +1,6 @@
 package com.marketinghub.growthoperatorworker;
 
+import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,7 @@ public class WorkerProperties {
   private String model;
   private String marketingHubUrl;
   private Long commercialPlanId;
+  private Duration codexTimeout = Duration.ofMinutes(40);
 
   /** Retorna a URL do backend. */
   public String getBackendUrl() {
@@ -72,5 +74,15 @@ public class WorkerProperties {
   /** Configura o planejamento semanal acompanhado continuamente. */
   public void setCommercialPlanId(Long commercialPlanId) {
     this.commercialPlanId = commercialPlanId;
+  }
+
+  /** Retorna o tempo máximo permitido para uma execução do Codex. */
+  public Duration getCodexTimeout() {
+    return codexTimeout;
+  }
+
+  /** Configura o tempo máximo permitido para uma execução do Codex. */
+  public void setCodexTimeout(Duration codexTimeout) {
+    this.codexTimeout = codexTimeout;
   }
 }

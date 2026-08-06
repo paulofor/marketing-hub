@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
@@ -27,10 +28,14 @@ public class CodexReadOnlyRunner {
   /** Executa um diagnostico efemero sem permitir escrita no repositorio. */
   public Map<String, Object> run(GrowthOperatorJob job) throws IOException, InterruptedException {
     Path output = Files.createTempFile("growth-operator-", ".json");
+    Path processOutput = Files.createTempFile("growth-operator-process-", ".log");
     Path mcpServer = materializeMcpServer();
     try {
       List<String> command = buildCommand(output, mcpServer);
-      ProcessBuilder processBuilder = new ProcessBuilder(command).redirectErrorStream(true);
+      ProcessBuilder processBuilder =
+          new ProcessBuilder(command)
+              .redirectErrorStream(true)
+              .redirectOutput(processOutput.toFile());
       processBuilder
           .environment()
           .put("MCP_COMMERCIAL_PLAN_ID", String.valueOf(job.commercialPlanId()));
@@ -38,9 +43,16 @@ public class CodexReadOnlyRunner {
       Process process = processBuilder.start();
       process.getOutputStream().write(buildPrompt(job).getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
-      String processLog =
-          new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-      int exitCode = process.waitFor();
+      if (!process.waitFor(properties.getCodexTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
+        process.destroyForcibly();
+        process.waitFor(10, TimeUnit.SECONDS);
+        throw new IllegalStateException(
+            "Timeout do Codex do Operador após "
+                + properties.getCodexTimeout().toMinutes()
+                + " minutos.");
+      }
+      String processLog = Files.readString(processOutput, StandardCharsets.UTF_8);
+      int exitCode = process.exitValue();
       if (exitCode != 0) {
         throw new IllegalStateException(
             "Codex encerrou com codigo " + exitCode + ": " + processLog);
@@ -64,6 +76,7 @@ public class CodexReadOnlyRunner {
       return payload;
     } finally {
       Files.deleteIfExists(output);
+      Files.deleteIfExists(processOutput);
       Files.deleteIfExists(mcpServer);
     }
   }

@@ -112,3 +112,5 @@ restritas a `s3:PutObject` e `s3:GetObject` no prefixo `customer-agent-memory/v1
 # Observabilidade operacional do worker
 
 O `customer-agent-worker` deve persistir seus logs em arquivo e expor somente a leitura pelo endpoint operacional versionado `/ops-customer-agent-observability-v1/customer-agent-worker-log`. O MCP deve disponibilizar essa origem no módulo `customer-agent-worker` da ferramenta `java_module_logs`, permitindo correlacionar observações, execução do Codex, codecs do navegador e callbacks sem depender apenas do erro resumido persistido no backend.
+
+Toda execução do Codex no Agente Cliente deve usar limite operacional padrão de 40 minutos, configurável por ambiente, e persistir a causa completa quando esse limite for excedido.

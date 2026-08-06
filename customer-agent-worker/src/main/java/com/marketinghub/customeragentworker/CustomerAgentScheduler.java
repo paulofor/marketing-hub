@@ -27,7 +27,7 @@ public class CustomerAgentScheduler {
   public CustomerAgentScheduler(
       @Value("${BACKEND_URL:http://localhost:8080}") String backendUrl,
       @Value("${CUSTOMER_AGENT_MODEL:gpt-5.6-sol}") String model,
-      @Value("${CUSTOMER_AGENT_EVALUATION_TIMEOUT_MINUTES:20}") long executionTimeoutMinutes) {
+      @Value("${CUSTOMER_AGENT_EVALUATION_TIMEOUT_MINUTES:40}") long executionTimeoutMinutes) {
     this.backend = RestClient.builder().baseUrl(backendUrl).build();
     this.model = model;
     this.executionTimeoutMinutes = executionTimeoutMinutes;

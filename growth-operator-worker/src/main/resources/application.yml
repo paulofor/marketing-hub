@@ -10,3 +10,4 @@ growth-operator:
   model: ${CODEX_MODEL:}
   marketing-hub-url: ${MARKETING_HUB_URL:http://backend:8000}
   commercial-plan-id: ${COMMERCIAL_PLAN_ID:}
+  codex-timeout: ${GROWTH_OPERATOR_CODEX_TIMEOUT:PT40M}

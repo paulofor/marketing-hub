@@ -15,6 +15,8 @@ COMPOSE_RECREATE_TIMEOUT=${COMPOSE_RECREATE_TIMEOUT:-8m}
 DIAGNOSTIC_COMMAND_TIMEOUT=${DIAGNOSTIC_COMMAND_TIMEOUT:-20s}
 BACKEND_HEALTH_URL=${BACKEND_HEALTH_URL:-http://localhost:8000/ops-mh-observability-v2/health}
 FRONTEND_HEALTH_URL=${FRONTEND_HEALTH_URL:-http://localhost:5173/healthz}
+BACKEND_HEALTH_ATTEMPTS=${BACKEND_HEALTH_ATTEMPTS:-60}
+BACKEND_HEALTH_INTERVAL=${BACKEND_HEALTH_INTERVAL:-10}
 PAYMENTS_AUTH_TOKEN_VALUE=${LEAD_PORTAL_PAYMENTS_AUTH_TOKEN:-}
 
 if [[ ${#PAYMENTS_AUTH_TOKEN_VALUE} -lt 32 ]]; then
@@ -61,7 +63,7 @@ dump_app_diagnostics() {
   timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" df -h "${DEPLOY_DIR}" /tmp || true
 
   log "Diagnóstico docker compose ps"
-  timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" docker compose ps backend frontend || true
+  timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" docker compose ps backend backend-log-reader frontend || true
 
   log "Diagnóstico docker inspect backend"
   timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" docker inspect marketinghub-backend \
@@ -171,6 +173,38 @@ tag_image_if_exists() {
   fi
 }
 
+preserve_current_image() {
+  local image="$1"
+  local rollback_image="$2"
+
+  if docker image inspect "${image}" >/dev/null 2>&1; then
+    log "Preservando ${image} como ${rollback_image} para rollback"
+    docker tag "${image}" "${rollback_image}"
+  fi
+}
+
+rollback_app_stack() {
+  local rollback_backend="${BACKEND_IMAGE}:rollback"
+  local rollback_frontend="${FRONTEND_IMAGE}:rollback"
+
+  log "Nova versão não ficou saudável; restaurando imagens anteriores"
+  tag_image_if_exists "${rollback_backend}" "${BACKEND_IMAGE}:latest"
+  tag_image_if_exists "${rollback_frontend}" "${FRONTEND_IMAGE}:latest"
+
+  run_with_timeout_and_diagnostics \
+    "rollback backend, leitor independente de logs e frontend" \
+    "${COMPOSE_RECREATE_TIMEOUT}" \
+    env BACKEND_IMAGE_TAG=latest FRONTEND_IMAGE_TAG=latest VIDEO_MGMT_IMAGE_TAG=latest \
+    docker compose up -d --force-recreate --remove-orphans backend backend-log-reader frontend
+
+  if ! wait_http "backend restaurado" "${BACKEND_HEALTH_URL}" "${BACKEND_HEALTH_ATTEMPTS}" "${BACKEND_HEALTH_INTERVAL}"; then
+    log "Erro crítico: rollback executado, mas o backend anterior também não ficou saudável."
+    return 1
+  fi
+
+  log "Rollback concluído; versão anterior voltou a responder."
+}
+
 cleanup_previous_tags() {
   local repository="$1"
   local keep_tag="$2"
@@ -207,6 +241,9 @@ remove_conflicting_container() {
   docker rm -f "${container_id}" >/dev/null
 }
 
+preserve_current_image "${BACKEND_IMAGE}:latest" "${BACKEND_IMAGE}:rollback"
+preserve_current_image "${FRONTEND_IMAGE}:latest" "${FRONTEND_IMAGE}:rollback"
+
 if [[ "${IMAGE_TAG}" != "latest" ]]; then
   tag_image_if_exists "${BACKEND_IMAGE}:${IMAGE_TAG}" "${BACKEND_IMAGE}:latest"
   tag_image_if_exists "${FRONTEND_IMAGE}:${IMAGE_TAG}" "${FRONTEND_IMAGE}:latest"
@@ -214,15 +251,22 @@ if [[ "${IMAGE_TAG}" != "latest" ]]; then
 fi
 
 remove_conflicting_container "backend" "marketinghub-backend"
+remove_conflicting_container "backend-log-reader" "marketinghub-backend-log-reader"
 remove_conflicting_container "frontend" "marketinghub-frontend"
 
-run_with_timeout_and_diagnostics \
-  "recriar somente backend/frontend" \
+if ! run_with_timeout_and_diagnostics \
+  "recriar backend, leitor independente de logs e frontend" \
   "${COMPOSE_RECREATE_TIMEOUT}" \
   env BACKEND_IMAGE_TAG=latest FRONTEND_IMAGE_TAG=latest VIDEO_MGMT_IMAGE_TAG=latest \
-  docker compose up -d --force-recreate --remove-orphans backend frontend
+  docker compose up -d --force-recreate --remove-orphans backend backend-log-reader frontend; then
+  rollback_app_stack || true
+  exit 1
+fi
 
-wait_http "backend" "${BACKEND_HEALTH_URL}"
+if ! wait_http "backend" "${BACKEND_HEALTH_URL}" "${BACKEND_HEALTH_ATTEMPTS}" "${BACKEND_HEALTH_INTERVAL}"; then
+  rollback_app_stack || true
+  exit 1
+fi
 wait_http "frontend" "${FRONTEND_HEALTH_URL}" 12 5
 
 backend_token_length="$(docker inspect marketinghub-backend --format '{{range .Config.Env}}{{println .}}{{end}}' \

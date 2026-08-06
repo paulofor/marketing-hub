@@ -89,7 +89,18 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 | `LOOP-CUSTOMER-AGENT-OBSERVABILITY` | ALTO | Fechado em 2026-08-06 | Agente Cliente | logfile canônico do worker + alias MCP + teste ponta a ponta |
 | `LOOP-CUSTOMER-AGENT-EVALUATION-TIMEOUT` | ALTO | Fechado em 2026-08-06 | Agente Cliente | timeout adequado + erro persistido e integralmente visível no frontend + retry controlado |
 | `LOOP-FINANCIAL-AGENT-OBSERVABILITY` | ALTO | Fechado em 2026-08-06 | Agente Financeiro | logfile canônico do worker + alias MCP + teste ponta a ponta |
+| `LOOP-BACKEND-LOGS-DEPENDENT-ON-BACKEND` | ALTO | Fechado em 2026-08-06 | Backend / MCP | leitor independente no volume persistente + erro de rede explícito |
 | `LOOP-STUDIO-COST-ATTRIBUTION` | CRÍTICO | Fechado em 2026-08-06 | Estúdio / Agente Financeiro | ledger em todo estado terminal + custos sem plano visíveis e bloqueantes |
+
+---
+
+## LOOP-BACKEND-LOGS-DEPENDENT-ON-BACKEND — Falha de bootstrap elimina o próprio diagnóstico
+
+- **Severidade**: ALTO.
+- **Status**: fechado em 2026-08-06.
+- **Causa-raiz confirmada**: a tool `java_module_logs` lia o logfile por uma rota do próprio backend; quando o bootstrap falhava, a rota também desaparecia e uma `ConnectException` sem mensagem era exposta como `Failed to read log stream URL: null`.
+- **Correção efetiva**: o volume persistente do logfile passou a ser servido por um leitor Nginx independente do processo Java, e o MCP passou a descrever a classe da falha e todas as tentativas quando a exceção de rede não possui mensagem.
+- **Prevenção**: teste de contrato fixa a origem independente, teste unitário impede mensagem nula e o deploy recria o leitor junto da pilha sem depender da saúde do backend.
 
 ---
 
@@ -756,3 +767,4 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Sintoma:** imagens são transferidas corretamente, mas o workflow termina com código `124` enquanto o Compose começa a recriar backend e frontend, deixando o backend indisponível.
 - **Causa-raiz:** um limite externo único de 18 minutos concorria com os limites internos da carga de imagens, recriação e saúde; o tempo consumido por uma fase retirava a janela necessária das seguintes.
 - **Prevenção:** carga de cada imagem e recriação mantêm limites próprios e diagnósticos; o limite externo cobre o ciclo completo sem interromper prematuramente; uma etapa final independente exige container backend em execução e endpoint canônico saudável, exibindo estado, reinícios e logs em caso de falha.
+- **Correção complementar em 2026-08-06:** após um deploy consumir quase toda a janela operacional e o Spring iniciar tarde sem alcançar o health check, o publicador passou a reservar até dez minutos exclusivamente para a saúde do backend, preservar as imagens `latest` anteriores antes da troca e restaurá-las automaticamente se a nova versão ou sua saúde falhar. Um teste de contrato impede remover a janela independente, a preservação ou a validação do rollback.

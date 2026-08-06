@@ -16,6 +16,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Valida a leitura resiliente de logs dos módulos Java pelo servidor MCP.
@@ -120,6 +122,27 @@ class ModuleLogServiceTest {
 
         assertEquals(1, result.get("returnedLines"));
         assertEquals(List.of("2026-07-26T04:05:48Z ERROR video failed"), result.get("lines"));
+    }
+
+    /**
+     * Garante diagnóstico explícito quando a conexão falha com exceção sem mensagem.
+     */
+    @Test
+    void shouldDescribeConnectionFailureWithoutNullMessage() throws Exception {
+        server = HttpServer.create(new InetSocketAddress(0), 0);
+        int unavailablePort = server.getAddress().getPort();
+        server.stop(0);
+        server = null;
+        ModuleLogService service = new ModuleLogService(buildProperties(
+                "http://127.0.0.1:" + unavailablePort + "/logs"));
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> service.readModuleLogs("backend", 10, null, null, null, null, null));
+
+        assertTrue(error.getMessage().contains("ConnectException")
+                || error.getMessage().contains("HttpTimeoutException"));
+        assertTrue(error.getMessage().contains("attempt 3 io-error"));
+        assertTrue(!error.getMessage().contains("URL: null"));
     }
 
     /**

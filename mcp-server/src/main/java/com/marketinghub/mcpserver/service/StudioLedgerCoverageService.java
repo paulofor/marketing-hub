@@ -3,6 +3,8 @@ package com.marketinghub.mcpserver.service;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import javax.sql.DataSource;
+import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +22,7 @@ public class StudioLedgerCoverageService {
 
     /** Consolida tentativas, ausências e qualidade de custo por tipo de origem e provedor. */
     public Map<String, Object> diagnose() {
-        List<Map<String, Object>> coverage = jdbcTemplate.queryForList("""
+        String coverageSql = """
                 SELECT source_type,
                        asset_type,
                        provider,
@@ -35,8 +37,8 @@ public class StudioLedgerCoverageService {
                        SUM(COALESCE(provider_cost_usd, estimated_cost_usd, 0)) AS known_cost_usd
                 FROM (
                     SELECT 'SALES_VIDEO_JOB' AS source_type,
-                           j.job_type AS asset_type,
-                           COALESCE(NULLIF(j.provider_name, ''), j.provider_family, 'UNKNOWN') AS provider,
+                           CONVERT(j.job_type USING utf8mb4) COLLATE utf8mb4_unicode_ci AS asset_type,
+                           CONVERT(COALESCE(NULLIF(j.provider_name, ''), j.provider_family, 'UNKNOWN') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS provider,
                            ledger.id AS ledger_id,
                            ledger.provider_cost_usd,
                            ledger.estimated_cost_usd,
@@ -44,11 +46,11 @@ public class StudioLedgerCoverageService {
                     FROM sales_video_job j
                     LEFT JOIN studio_cost_ledger_entry ledger
                       ON ledger.source_type = 'SALES_VIDEO_JOB'
-                     AND ledger.source_id = CONCAT('', j.id)
+                     AND ledger.source_id = CONVERT(j.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
                     UNION ALL
                     SELECT 'MEDIA_ASSET',
-                           a.type,
-                           COALESCE(a.provider, 'UNKNOWN'),
+                           CONVERT(a.type USING utf8mb4) COLLATE utf8mb4_unicode_ci,
+                           CONVERT(COALESCE(a.provider, 'UNKNOWN') USING utf8mb4) COLLATE utf8mb4_unicode_ci,
                            ledger.id,
                            ledger.provider_cost_usd,
                            ledger.estimated_cost_usd,
@@ -56,13 +58,13 @@ public class StudioLedgerCoverageService {
                     FROM asset a
                     LEFT JOIN studio_cost_ledger_entry ledger
                       ON ledger.source_type = 'MEDIA_ASSET'
-                     AND ledger.source_id = CONCAT('', a.id)
+                     AND ledger.source_id = CONVERT(a.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
                     WHERE a.type IN ('AUDIO', 'VIDEO')
                       AND a.provider IN ('SYNTHESIA', 'HEYGEN', 'ELEVENLABS', 'RUNWAY')
                     UNION ALL
                     SELECT 'IMAGE_GENERATION_REQUEST',
-                           'IMAGE',
-                           'OPENAI',
+                           CONVERT('IMAGE' USING utf8mb4) COLLATE utf8mb4_unicode_ci,
+                           CONVERT('OPENAI' USING utf8mb4) COLLATE utf8mb4_unicode_ci,
                            ledger.id,
                            ledger.provider_cost_usd,
                            ledger.estimated_cost_usd,
@@ -70,11 +72,24 @@ public class StudioLedgerCoverageService {
                     FROM image_generation_request request
                     LEFT JOIN studio_cost_ledger_entry ledger
                       ON ledger.source_type = 'IMAGE_GENERATION_REQUEST'
-                     AND ledger.source_id = request.job_id
+                     AND ledger.source_id = CONVERT(request.job_id USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 ) attempts
                 GROUP BY source_type, asset_type, provider
                 ORDER BY missing_entries DESC, unknown_cost_entries DESC, source_type, asset_type, provider
-                """);
+                """;
+        if (!usesMySql()) {
+            coverageSql = coverageSql
+                    .replace("CONVERT(j.job_type USING utf8mb4) COLLATE utf8mb4_unicode_ci", "j.job_type")
+                    .replace("CONVERT(COALESCE(NULLIF(j.provider_name, ''), j.provider_family, 'UNKNOWN') USING utf8mb4) COLLATE utf8mb4_unicode_ci", "COALESCE(NULLIF(j.provider_name, ''), j.provider_family, 'UNKNOWN')")
+                    .replace("CONVERT(a.type USING utf8mb4) COLLATE utf8mb4_unicode_ci", "a.type")
+                    .replace("CONVERT(COALESCE(a.provider, 'UNKNOWN') USING utf8mb4) COLLATE utf8mb4_unicode_ci", "COALESCE(a.provider, 'UNKNOWN')")
+                    .replace("CONVERT('IMAGE' USING utf8mb4) COLLATE utf8mb4_unicode_ci", "'IMAGE'")
+                    .replace("CONVERT('OPENAI' USING utf8mb4) COLLATE utf8mb4_unicode_ci", "'OPENAI'")
+                    .replace("CONVERT(j.id USING utf8mb4) COLLATE utf8mb4_unicode_ci", "CONCAT('', j.id)")
+                    .replace("CONVERT(a.id USING utf8mb4) COLLATE utf8mb4_unicode_ci", "CONCAT('', a.id)")
+                    .replace("CONVERT(request.job_id USING utf8mb4) COLLATE utf8mb4_unicode_ci", "request.job_id");
+        }
+        List<Map<String, Object>> coverage = jdbcTemplate.queryForList(coverageSql);
 
         long attempts = sum(coverage, "ATTEMPTS");
         long ledgerEntries = sum(coverage, "LEDGER_ENTRIES");
@@ -92,6 +107,19 @@ public class StudioLedgerCoverageService {
         result.put("groups", coverage);
         result.put("interpretation", "Custos ausentes ou desconhecidos nunca representam custo zero confirmado.");
         return result;
+    }
+
+    /** Identifica o dialeto para aplicar a normalização de collations exigida pelo MySQL. */
+    private boolean usesMySql() {
+        DataSource dataSource = jdbcTemplate.getDataSource();
+        if (dataSource == null) {
+            return true;
+        }
+        try (var connection = dataSource.getConnection()) {
+            return connection.getMetaData().getDatabaseProductName().toLowerCase().contains("mysql");
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Não foi possível identificar o banco do diagnóstico do ledger", ex);
+        }
     }
 
     /** Soma uma métrica numérica retornada pelos agrupamentos do diagnóstico. */

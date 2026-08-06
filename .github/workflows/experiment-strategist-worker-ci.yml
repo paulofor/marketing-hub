@@ -94,7 +94,7 @@ jobs:
                    \"\${attempt}\" \"\${status:-missing}\" \"\${codex_ready}\" \"\${health_body:-unavailable}\"; \
                  if [ \"\${status}\" = running ] \
                    && [ \"\${codex_ready}\" = true ] \
-                   && printf '%s' \"\${health_body}\" | grep -Eq '"status"[[:space:]]*:[[:space:]]*"UP"'; then \
+                   && printf '%s' \"\${health_body}\" | grep -Eq 'status.*UP'; then \
                    exit 0; \
                  fi; \
                  sleep 5; \

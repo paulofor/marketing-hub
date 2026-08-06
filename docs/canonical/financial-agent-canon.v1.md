@@ -24,6 +24,8 @@ O snapshot expõe separadamente o custo conhecido do Estúdio em USD e a razão 
 
 O snapshot também expõe custo e cobertura do Estúdio sem atribuição comercial. Esses valores não devem ser somados automaticamente ao planejamento em análise, pois isso contaminaria outro produto; devem aparecer como divergência bloqueante até que produto, plano e experimento corretos sejam vinculados.
 
+O snapshot deve consolidar por provedor a quantidade de tentativas, cobertura de custo, assets revisados, assets aprovados, pendências, taxa de aprovação comercial e custo conhecido por asset aprovado. A taxa usa apenas revisões concluídas (`APPROVED` ou `REJECTED`) como denominador. O custo por aprovado soma o consumo conhecido do provedor e nunca deve ser apresentado como custo total confiável quando houver tentativas sem custo. O agente pode recomendar onde avaliar uma recarga, mas deve bloquear a comparação quando faltarem custos ou revisões comerciais e nunca pode comprar créditos.
+
 Cobertura `NO_ATTEMPTS_RECORDED` não representa custo zero confirmado: significa que nenhuma tentativa do Estúdio foi auditada para o plano e deve bloquear a reconciliação. Cobertura `PARTIAL` também bloqueia a conclusão e informa explicitamente quantas tentativas permanecem sem custo. Somente `COMPLETE`, com ao menos uma tentativa, permite declarar o ledger do Estúdio coberto.
 
 Decisões permitidas: `RECONCILED`, `REVIEW_REQUIRED` e `BLOCKED_BY_MISSING_SOURCE`.

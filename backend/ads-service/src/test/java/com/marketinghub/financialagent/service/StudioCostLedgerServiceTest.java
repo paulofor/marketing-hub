@@ -7,8 +7,10 @@ import static org.mockito.Mockito.when;
 
 import com.marketinghub.financialagent.StudioCostLedgerEntry;
 import com.marketinghub.repository.jpa.financialagent.StudioCostLedgerEntryRepository;
+import com.marketinghub.repository.jpa.financialagent.StudioProviderEfficiencyProjection;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -86,5 +88,28 @@ class StudioCostLedgerServiceTest {
     assertThat(service.totalUnassignedCostUsd()).isEqualByComparingTo("1.20");
     assertThat(service.unassignedCoverage().get("status")).isEqualTo("PARTIAL");
     assertThat(service.unassignedCoverage().get("totalAttempts")).isEqualTo(2);
+  }
+
+  /** Confirma que custo-beneficio usa somente aprovacoes comerciais e explicita lacunas. */
+  @Test
+  void deveCalcularEficienciaPorProvedorSemInventarCobertura() {
+    StudioProviderEfficiencyProjection projection = mock(StudioProviderEfficiencyProjection.class);
+    when(projection.getProvider()).thenReturn("RUNWAY");
+    when(projection.getTotalAttempts()).thenReturn(10L);
+    when(projection.getKnownCostAttempts()).thenReturn(9L);
+    when(projection.getKnownCostUsd()).thenReturn(new BigDecimal("9.60"));
+    when(projection.getReviewedAssets()).thenReturn(8L);
+    when(projection.getApprovedAssets()).thenReturn(6L);
+    when(projection.getPendingReviewAssets()).thenReturn(1L);
+    StudioCostLedgerEntryRepository repository = mock(StudioCostLedgerEntryRepository.class);
+    when(repository.providerEfficiencyByPlanId(2L)).thenReturn(List.of(projection));
+
+    Map<String, Object> efficiency =
+        new StudioCostLedgerService(repository).providerEfficiency(2L).getFirst();
+
+    assertThat(efficiency.get("commercialApprovalRatePercent")).isEqualTo(new BigDecimal("75.00"));
+    assertThat(efficiency.get("knownCostPerApprovedAssetUsd"))
+        .isEqualTo(new BigDecimal("1.600000"));
+    assertThat(efficiency.get("decisionCoverage")).isEqualTo("INCOMPLETE_COSTS");
   }
 }

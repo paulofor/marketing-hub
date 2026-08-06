@@ -151,6 +151,8 @@ public class FinancialAgentService {
     snapshot.put("approvedRevenueBrl", revenue);
     snapshot.put("studioKnownCostUsd", studioCostLedgerService.totalKnownCostUsd(plan.getId()));
     snapshot.put("studioCostCoverage", studioCostLedgerService.coverage(plan.getId()));
+    snapshot.put(
+        "studioProviderEfficiency", studioCostLedgerService.providerEfficiency(plan.getId()));
     snapshot.put("studioUnassignedKnownCostUsd", studioCostLedgerService.totalUnassignedCostUsd());
     snapshot.put("studioUnassignedCostCoverage", studioCostLedgerService.unassignedCoverage());
     snapshot.put(

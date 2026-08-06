@@ -14,3 +14,6 @@ Regras obrigatórias de cobertura do Estúdio:
 - Se `studioUnassignedCostCoverage.totalAttempts` for maior que zero, liste a atribuição ausente como divergência e use `BLOCKED_BY_MISSING_SOURCE`; não some esse valor ao plano atual nem o esconda.
 - `studioUnassignedKnownCostUsd` representa consumo conhecido do Estúdio ainda sem plano comercial, não custo atribuído ao planejamento analisado.
 - Não some USD aos totais em BRL sem uma taxa cambial auditável presente no snapshot.
+- Use `studioProviderEfficiency` para comparar provedores por custo conhecido por asset aprovado e taxa de aprovação comercial.
+- Não recomende recarga quando `decisionCoverage` não for `READY_FOR_COMPARISON`, quando houver custo desconhecido ou quando não houver revisão comercial suficiente.
+- Uma recomendação de provedor é orientação somente leitura; nunca representa autorização para comprar créditos.

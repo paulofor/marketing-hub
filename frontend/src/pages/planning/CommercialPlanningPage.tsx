@@ -21,6 +21,28 @@ import FinancialAgentPanel from "./FinancialAgentPanel";
 const CURRENT_OPERATIONAL_MONTH = new Date().toISOString().slice(0, 7);
 const LEGACY_PLAN_REFERENCE_MONTH = "2026-07";
 
+const emptyCommercialPlan: SaveCommercialPlanPayload = {
+  name: "",
+  status: "DRAFT",
+  commercialObjective: "",
+  targetAudience: "",
+  mainPain: "",
+  mainOffer: "",
+  mainChannel: "",
+  mainMetric: "",
+  successCriteria: "",
+  stopCriteria: "",
+  deadline: "",
+  maxBudget: null,
+  targetRevenue: null,
+  operationalRevenueTarget: null,
+  experimentsToCreate: 1,
+  experimentsToPublish: 0,
+  nextAction: "",
+  currentBlocker: "",
+  rootCause: "",
+};
+
 const augustRevenuePlan: SaveCommercialPlanPayload = {
   name: "Planejamento Agosto 2026 - Receita Agenda Cheia",
   status: "IN_PROGRESS",
@@ -910,15 +932,19 @@ export default function CommercialPlanningPage() {
   const hasAugustPlan = plans.some(
     (plan) => resolvePlanReferenceMonth(plan) === "2026-08",
   );
+  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
+  const [isCreatingPlan, setIsCreatingPlan] = useState(false);
+  const [newPlanDraft, setNewPlanDraft] =
+    useState<SaveCommercialPlanPayload>(emptyCommercialPlan);
   const currentMonthPlan = useMemo<CommercialPlan>(
     () =>
+      plans.find((plan) => plan.id === selectedPlanId) ??
       plans.find(
-        (plan) =>
-          resolvePlanReferenceMonth(plan) === CURRENT_OPERATIONAL_MONTH,
+        (plan) => resolvePlanReferenceMonth(plan) === CURRENT_OPERATIONAL_MONTH,
       ) ??
       plans[0] ??
       fallbackMonthPlan(),
-    [plans],
+    [plans, selectedPlanId],
   );
   const planReferenceMonth = resolvePlanReferenceMonth(currentMonthPlan);
   const [selectedReferenceMonth, setSelectedReferenceMonth] =
@@ -942,6 +968,23 @@ export default function CommercialPlanningPage() {
     value: SaveCommercialPlanPayload[K],
   ) {
     setPlanDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  function updateNewPlanDraft<K extends keyof SaveCommercialPlanPayload>(
+    field: K,
+    value: SaveCommercialPlanPayload[K],
+  ) {
+    setNewPlanDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  function submitNewPlan() {
+    createPlan.mutate(newPlanDraft, {
+      onSuccess: (createdPlan) => {
+        setSelectedPlanId(createdPlan.id);
+        setNewPlanDraft(emptyCommercialPlan);
+        setIsCreatingPlan(false);
+      },
+    });
   }
 
   function savePlan() {
@@ -1000,19 +1043,214 @@ export default function CommercialPlanningPage() {
         <div>
           <PageTitle>Planejamento</PageTitle>
         </div>
-        {!hasAugustPlan ? (
+        <div className="d-flex flex-wrap gap-2 align-self-start">
           <button
-            className="btn btn-primary align-self-start"
+            className="btn btn-outline-primary"
             type="button"
-            disabled={createPlan.isPending}
-            onClick={() => createPlan.mutate(augustRevenuePlan)}
+            onClick={() => setIsCreatingPlan((current) => !current)}
           >
-            {createPlan.isPending
-              ? "Criando plano de agosto..."
-              : "Criar plano de agosto"}
+            {isCreatingPlan ? "Fechar novo plano" : "Novo plano comercial"}
           </button>
-        ) : null}
+          {!hasAugustPlan ? (
+            <button
+              className="btn btn-primary"
+              type="button"
+              disabled={createPlan.isPending}
+              onClick={() => createPlan.mutate(augustRevenuePlan)}
+            >
+              {createPlan.isPending
+                ? "Criando plano de agosto..."
+                : "Criar plano de agosto"}
+            </button>
+          ) : null}
+        </div>
       </header>
+
+      {plans.length > 0 ? (
+        <div className="card">
+          <div className="card-body">
+            <label className="form-label" htmlFor="commercial-plan-selector">
+              Plano comercial em análise
+            </label>
+            <select
+              id="commercial-plan-selector"
+              className="form-select"
+              value={currentMonthPlan.id}
+              onChange={(event) =>
+                setSelectedPlanId(Number(event.target.value))
+              }
+            >
+              {plans.map((plan) => (
+                <option key={plan.id} value={plan.id}>
+                  {plan.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      ) : null}
+
+      {isCreatingPlan ? (
+        <section
+          className="card border-primary"
+          aria-label="Novo plano comercial"
+        >
+          <div className="card-body d-flex flex-column gap-3">
+            <div>
+              <h2 className="h5 mb-1">Novo plano comercial</h2>
+              <p className="text-body-secondary mb-0">
+                Defina o teto e os gates antes de atribuir gerações do Estúdio.
+              </p>
+            </div>
+            <div className="row g-3">
+              <div className="col-lg-8">
+                <label className="form-label" htmlFor="new-plan-name">
+                  Nome *
+                </label>
+                <input
+                  id="new-plan-name"
+                  className="form-control"
+                  required
+                  value={newPlanDraft.name}
+                  onChange={(event) =>
+                    updateNewPlanDraft("name", event.target.value)
+                  }
+                />
+              </div>
+              <div className="col-lg-4">
+                <label className="form-label" htmlFor="new-plan-status">
+                  Status
+                </label>
+                <select
+                  id="new-plan-status"
+                  className="form-select"
+                  value={newPlanDraft.status}
+                  onChange={(event) =>
+                    updateNewPlanDraft(
+                      "status",
+                      event.target.value as CommercialPlanStatus,
+                    )
+                  }
+                >
+                  {Object.entries(statusLabel).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-md-4">
+                <label className="form-label" htmlFor="new-plan-deadline">
+                  Prazo *
+                </label>
+                <input
+                  id="new-plan-deadline"
+                  className="form-control"
+                  type="date"
+                  required
+                  value={newPlanDraft.deadline}
+                  onChange={(event) =>
+                    updateNewPlanDraft("deadline", event.target.value)
+                  }
+                />
+              </div>
+              <div className="col-md-4">
+                <label className="form-label" htmlFor="new-plan-budget">
+                  Teto de produção (R$) *
+                </label>
+                <input
+                  id="new-plan-budget"
+                  className="form-control"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
+                  value={newPlanDraft.maxBudget ?? ""}
+                  onChange={(event) =>
+                    updateNewPlanDraft(
+                      "maxBudget",
+                      event.target.value === ""
+                        ? null
+                        : Number(event.target.value),
+                    )
+                  }
+                />
+              </div>
+              <div className="col-md-4">
+                <label className="form-label" htmlFor="new-plan-revenue">
+                  Meta de receita (R$)
+                </label>
+                <input
+                  id="new-plan-revenue"
+                  className="form-control"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={newPlanDraft.targetRevenue ?? ""}
+                  onChange={(event) =>
+                    updateNewPlanDraft(
+                      "targetRevenue",
+                      event.target.value === ""
+                        ? null
+                        : Number(event.target.value),
+                    )
+                  }
+                />
+              </div>
+            </div>
+            {(
+              [
+                ["commercialObjective", "Objetivo comercial"],
+                ["targetAudience", "Público-alvo"],
+                ["mainPain", "Dor principal"],
+                ["mainOffer", "Oferta principal"],
+                ["mainChannel", "Canal principal"],
+                ["mainMetric", "Métrica principal"],
+                ["successCriteria", "Critério de sucesso"],
+                ["stopCriteria", "Critério de parada"],
+                ["nextAction", "Próxima ação"],
+                ["currentBlocker", "Gargalo atual"],
+                ["rootCause", "Causa-raiz"],
+              ] as const
+            ).map(([field, label]) => (
+              <div key={field}>
+                <label className="form-label" htmlFor={`new-plan-${field}`}>
+                  {label}
+                </label>
+                <textarea
+                  id={`new-plan-${field}`}
+                  className="form-control"
+                  rows={2}
+                  value={newPlanDraft[field] ?? ""}
+                  onChange={(event) =>
+                    updateNewPlanDraft(field, event.target.value)
+                  }
+                />
+              </div>
+            ))}
+            <div className="d-flex align-items-center gap-3">
+              <button
+                className="btn btn-primary"
+                type="button"
+                disabled={
+                  createPlan.isPending ||
+                  !newPlanDraft.name.trim() ||
+                  !newPlanDraft.deadline ||
+                  newPlanDraft.maxBudget == null
+                }
+                onClick={submitNewPlan}
+              >
+                {createPlan.isPending ? "Criando..." : "Criar plano comercial"}
+              </button>
+              {createPlan.isError ? (
+                <span className="text-danger">
+                  Não foi possível criar o plano comercial.
+                </span>
+              ) : null}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {createPlan.isError ? (
         <div className="alert alert-danger mb-0" role="alert">

@@ -163,6 +163,7 @@ let mockWeeks: unknown[] = [
     ],
   },
 ];
+const createPlanMutate = vi.fn();
 
 vi.mock("../../api/planning/useCommercialPlans", async () => {
   const actual = await vi.importActual<
@@ -226,7 +227,7 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
       isSuccess: false,
     }),
     useCreateCommercialPlan: () => ({
-      mutate: vi.fn(),
+      mutate: createPlanMutate,
       isPending: false,
       isError: false,
       isSuccess: false,
@@ -277,6 +278,7 @@ function renderPage() {
 }
 
 afterEach(() => {
+  createPlanMutate.mockReset();
   mockPlans = defaultPlans;
   lastReferenceMonth = null;
   mockWeeks = [
@@ -480,6 +482,71 @@ describe("CommercialPlanningPage", () => {
 
     expect(screen.getByRole("heading", { name: "Agosto 2026" })).toBeTruthy();
     expect(screen.getByText("R$ 400,00")).toBeTruthy();
+  });
+
+  it("permite preparar um plano comercial dedicado com teto de producao", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(
+      screen.getByRole("button", { name: "Novo plano comercial" }),
+    );
+
+    await user.type(
+      screen.getByLabelText("Nome *"),
+      "MUSA v7 - produção supervisionada",
+    );
+    await user.type(screen.getByLabelText("Prazo *"), "2026-08-31");
+    await user.type(screen.getByLabelText("Teto de produção (R$) *"), "100");
+    await user.type(
+      screen.getByLabelText("Objetivo comercial"),
+      "Concluir MECANISMO e CTA sem gerar cenas já aprovadas.",
+    );
+    await user.type(
+      screen.getByLabelText("Critério de parada"),
+      "Parar ao atingir o teto ou quebrar continuidade visual.",
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Criar plano comercial" }),
+    );
+
+    expect(createPlanMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "MUSA v7 - produção supervisionada",
+        maxBudget: 100,
+        commercialObjective:
+          "Concluir MECANISMO e CTA sem gerar cenas já aprovadas.",
+        stopCriteria: "Parar ao atingir o teto ou quebrar continuidade visual.",
+      }),
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
+  });
+
+  it("permite alternar entre planos comerciais sem misturar atribuicao", async () => {
+    const user = userEvent.setup();
+    mockPlans = [
+      { ...defaultPlans[0], name: "Agenda Cheia", deadline: "2026-08-09" },
+      {
+        ...defaultPlans[1],
+        id: 9,
+        name: "MUSA v7",
+        deadline: "2026-08-31",
+        status: "DRAFT",
+        maxBudget: 100,
+      },
+    ];
+    renderPage();
+
+    await user.selectOptions(
+      screen.getByLabelText("Plano comercial em análise"),
+      "9",
+    );
+
+    expect(screen.getByLabelText("Plano comercial em análise")).toHaveValue(
+      "9",
+    );
+    expect(screen.getByText("R$ 100,00")).toBeTruthy();
   });
 
   it("inicializa semanas fechadas e abre a tabela ordenada por media de tempo", async () => {

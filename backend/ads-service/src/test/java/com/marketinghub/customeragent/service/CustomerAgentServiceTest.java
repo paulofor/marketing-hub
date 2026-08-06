@@ -90,9 +90,53 @@ class CustomerAgentServiceTest {
             () ->
                 service.start(
                     new CustomerAgentContracts.StartEvaluationRequest(
-                        4L, "OFFER", "a".repeat(256))))
+                        4L, "OFFER", "a".repeat(256), "BEHAVIORAL_V1")))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("255 caracteres");
+  }
+
+  /** Mantém o baseline como padrão para consumidores antigos do contrato. */
+  @Test
+  void shouldDefaultMissingSimulationVersionToBaseline() {
+    CustomerPersonaRepository personas = mock(CustomerPersonaRepository.class);
+    CustomerAgentEvaluationRepository evaluations = mock(CustomerAgentEvaluationRepository.class);
+    CustomerPersona persona = new CustomerPersona();
+    persona.setId(4L);
+    persona.setName("Nail designer");
+    when(personas.findById(4L)).thenReturn(Optional.of(persona));
+    when(evaluations.save(any(CustomerAgentEvaluation.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    var service =
+        new CustomerAgentService(
+            personas,
+            evaluations,
+            mock(CustomerDigitalObservationRepository.class),
+            mock(CustomerAgentMotivationService.class));
+
+    var response =
+        service.start(
+            new CustomerAgentContracts.StartEvaluationRequest(4L, "PAGE", "https://x.test", null));
+
+    assertThat(response.simulationVersion()).isEqualTo("BASELINE_V1");
+  }
+
+  /** Bloqueia versões desconhecidas para preservar comparação entre contratos estáveis. */
+  @Test
+  void shouldRejectUnknownSimulationVersion() {
+    var service =
+        new CustomerAgentService(
+            mock(CustomerPersonaRepository.class),
+            mock(CustomerAgentEvaluationRepository.class),
+            mock(CustomerDigitalObservationRepository.class),
+            mock(CustomerAgentMotivationService.class));
+
+    assertThatThrownBy(
+            () ->
+                service.start(
+                    new CustomerAgentContracts.StartEvaluationRequest(
+                        4L, "PAGE", "https://x.test", "BEHAVIORAL_V2")))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("não suportada");
   }
 
   /** Confirma que reservas abandonadas são encerradas antes de consultar nova pendência. */

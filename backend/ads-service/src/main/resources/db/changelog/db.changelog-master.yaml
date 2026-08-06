@@ -1622,5 +1622,8 @@ databaseChangeLog:
       file: changesets/2026-08-06-customer-agent-evaluation-retry-v1.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-08-06-customer-agent-behavioral-simulator-v1.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-06-codex-agent-execution-telemetry-v1.yaml
       relativeToChangelogFile: true

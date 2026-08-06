@@ -21,6 +21,8 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class CustomerAgentService {
   private static final int ASSET_REFERENCE_MAX_LENGTH = 255;
+  private static final String BASELINE_V1 = "BASELINE_V1";
+  private static final String BEHAVIORAL_V1 = "BEHAVIORAL_V1";
   private static final long OBSERVATION_LEASE_MINUTES = 15;
   private static final int MAX_EXPIRED_OBSERVATIONS_PER_CLAIM = 20;
   private final CustomerPersonaRepository personas;
@@ -193,10 +195,12 @@ public class CustomerAgentService {
           HttpStatus.BAD_REQUEST,
           "Referencia do ativo deve ter no maximo " + ASSET_REFERENCE_MAX_LENGTH + " caracteres.");
     }
+    String simulationVersion = normalizeSimulationVersion(request.simulationVersion());
     CustomerAgentEvaluation evaluation = new CustomerAgentEvaluation();
     evaluation.setPersona(findPersona(request.personaId()));
     evaluation.setAssetType(request.assetType());
     evaluation.setAssetReference(request.assetReference());
+    evaluation.setSimulationVersion(simulationVersion);
     evaluation.setStatus("PENDING");
     return evaluationResponse(evaluations.save(evaluation));
   }
@@ -223,6 +227,8 @@ public class CustomerAgentService {
     }
     evaluation.setSimulatedAssessment(request.assessment());
     evaluation.setHypothesisJson(request.hypothesisJson());
+    evaluation.setBaselineResultJson(request.baselineResultJson());
+    evaluation.setBehavioralResultJson(request.behavioralResultJson());
     evaluation.setRawModelResponse(request.rawModelResponse());
     evaluation.setLastError(null);
     evaluation.setModelName(request.model());
@@ -315,6 +321,14 @@ public class CustomerAgentService {
     return "PARCIALMENTE_VALIDADA".equals(value) ? value : "HIPOTESE";
   }
 
+  /** Aceita somente versões implementadas e mantém o comportamento anterior como padrão. */
+  private String normalizeSimulationVersion(String value) {
+    if (blank(value)) return BASELINE_V1;
+    if (BASELINE_V1.equals(value) || BEHAVIORAL_V1.equals(value)) return value;
+    throw new ResponseStatusException(
+        HttpStatus.BAD_REQUEST, "Versão de simulação não suportada: " + value);
+  }
+
   /** Exige texto nos campos estruturantes. */
   private String required(String value) {
     if (blank(value))
@@ -355,9 +369,12 @@ public class CustomerAgentService {
         personaResponse(e.getPersona()),
         e.getAssetType(),
         e.getAssetReference(),
+        e.getSimulationVersion(),
         e.getStatus(),
         e.getSimulatedAssessment(),
         e.getHypothesisJson(),
+        e.getBaselineResultJson(),
+        e.getBehavioralResultJson(),
         e.getHumanResultJson(),
         e.getLastError(),
         e.getRetryCount(),

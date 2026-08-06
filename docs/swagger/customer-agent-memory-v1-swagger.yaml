@@ -3,6 +3,27 @@ info:
   title: Customer Agent Hybrid Memory API
   version: v1
 paths:
+  /api/customer-agent/v1/evaluations:
+    post:
+      summary: Agenda avaliação baseline ou comparação comportamental v1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartEvaluation'
+      responses:
+        '200': { description: Avaliação persistida e pendente }
+    get:
+      summary: Lista avaliações com baseline e resultado comportamental separados
+      responses:
+        '200': { description: Histórico auditável das avaliações }
+  /api/customer-agent/v1/internal/evaluations/pending/claim:
+    post:
+      summary: Reserva a próxima avaliação para o customer-agent-worker
+      responses:
+        '200': { description: Avaliação reservada }
+        '404': { description: Nenhuma avaliação pendente }
   /api/customer-agent/v1/personas/{personaId}/memory-motivations:
     get:
       summary: Lista o histórico append-only dos vetores motivacionais da persona
@@ -58,6 +79,17 @@ paths:
         '200': { description: Conteúdo original da evidência }
 components:
   schemas:
+    StartEvaluation:
+      type: object
+      required: [personaId, assetType, assetReference]
+      properties:
+        personaId: { type: integer, format: int64 }
+        assetType: { type: string, enum: [PAGE, VIDEO, OFFER] }
+        assetReference: { type: string, maxLength: 255 }
+        simulationVersion:
+          type: string
+          enum: [BASELINE_V1, BEHAVIORAL_V1]
+          default: BASELINE_V1
     MotivationalVector:
       type: object
       required: [motivationalDirection, painIntensity, pleasureIntensity, fearWeight, frustrationWeight, effortWeight, reliefWeight, desireWeight, trustWeight, belongingWeight, evidenceStrength, confidenceScore, sourceReference, rationale]

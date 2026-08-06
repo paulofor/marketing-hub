@@ -23,6 +23,8 @@ outro.
 O Agente Cliente opera em sandbox somente leitura. Ele pode retornar `APROVAR_TESTE`, `AJUSTAR` ou
 `REPROVAR`, mas não altera ativos, preços, campanhas, publicações, personas ou resultados humanos.
 
+Na avaliação comercial, o worker deve disponibilizar busca pública e Chromium/Playwright versionados na imagem. A pesquisa verifica linguagem, dores, desejos, objeções, alternativas concorrentes e sinais sociais/econômicos recentes, sempre sem login ou interação que altere estado. Fontes consultadas ficam na resposta bruta auditável com URL, título, data, método e aprendizado. Sinais públicos de redes sociais são hipóteses exploratórias, não validação humana, demanda confirmada ou venda.
+
 O worker possui CI/CD dedicado, identidade Codex persistente e validação de autenticação após cada deploy. Evidências pesadas usam bucket S3 privado, criptografado, versionado e com retenção definida; MySQL continua sendo a fonte de verdade.
 
 Avaliações que terminam em `FAILED` devem preservar a causa técnica em `last_error` e podem ser

@@ -33,6 +33,12 @@ Cada execução deve diferenciar fato, inferência e hipótese; apresentar exata
 
 Recomendação e experimento criado não contam como resultado. O Índice de Maturidade só deve reconhecer resultado quando existir consequência humana ou comercial posterior auditável. A autonomia permanece bloqueada até dez decisões consecutivas confirmadas sem violação de autoridade.
 
+## Pesquisa externa orientada a vendas
+
+O worker deve oferecer busca pública e Chromium/Playwright versionados em sua imagem de produção. A pesquisa parte sempre do gargalo e cruza evidência interna com sinais externos sobre linguagem e dor do público, demanda, concorrência, ofertas, canais, tendências sociais/econômicas, capacidade de entrega, margem e risco. Para novos nichos, deve comparar demanda observável, urgência, disposição de pagar, saturação, facilidade de acesso ao público e aderência operacional.
+
+Cada fonte registra URL, título, data, tipo, método de coleta e aprendizado. Páginas decisivas devem ser confirmadas com Playwright. Snippets, anúncios ativos, seguidores, visualizações, comentários e tendências são proxies exploratórios e nunca comprovam vendas. Recomendações de nicho, produto ou oferta exigem ao menos duas classes independentes de evidência; sem isso, o parecer deve declarar evidência insuficiente.
+
 ## Fluxo operacional
 
 O usuário solicita a pesquisa no painel do planejamento comercial. O backend congela o contexto e persiste a execução como `PENDING`. O `experiment-strategist-worker` reserva uma execução pelo endpoint interno canônico, pesquisa em sandbox somente leitura e devolve o parecer estruturado ou a causa completa da falha.

@@ -3,6 +3,7 @@ package com.marketinghub.experimentstrategistworker;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
@@ -22,5 +23,25 @@ class CodexStrategistRunnerTest {
     assertThat(command).contains("--search", "--sandbox", "read-only", "--output-schema");
     assertThat(command).doesNotContain("danger-full-access");
     assertThat(properties.getCodexTimeout().toMinutes()).isEqualTo(40);
+  }
+
+  /** Confirma que navegador, pesquisa externa e procedência entram no artefato versionado. */
+  @Test
+  void packagesAuditableBrowserResearch() throws Exception {
+    String dockerfile = Files.readString(Path.of("Dockerfile"));
+    String prompt =
+        Files.readString(
+            Path.of("src/main/resources/prompts/experiment-strategist/v1/research.md"));
+    String schema =
+        Files.readString(
+            Path.of("src/main/resources/prompts/experiment-strategist/v1/research-schema.json"));
+
+    assertThat(dockerfile)
+        .contains("npx playwright-core install --with-deps chromium")
+        .contains("COPY --from=build /build/src/main/resources/browser /app/browser");
+    assertThat(prompt)
+        .contains("node /app/browser/public-research.mjs")
+        .contains("duas classes independentes de evidência");
+    assertThat(schema).contains("collectionMethod", "sourceType");
   }
 }

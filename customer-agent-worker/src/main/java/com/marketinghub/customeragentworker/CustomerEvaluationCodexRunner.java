@@ -90,6 +90,7 @@ public class CustomerEvaluationCodexRunner {
         new ArrayList<>(
             List.of(
                 executable,
+                "--search",
                 "exec",
                 "-",
                 "--skip-git-repo-check",
@@ -110,7 +111,7 @@ public class CustomerEvaluationCodexRunner {
     return command;
   }
 
-  /** Resolve o prompt versionado usando somente o contexto congelado pelo backend. */
+  /** Resolve o prompt versionado usando o contexto congelado e pesquisa pública auditável. */
   private String buildPrompt(Map<?, ?> job) throws IOException {
     return read("prompts/customer-agent/v1/evaluation.md")
         .replace("{{PERSONA_JSON}}", String.valueOf(job.get("persona")))
@@ -136,7 +137,9 @@ public class CustomerEvaluationCodexRunner {
     if (!result.hasNonNull("decision")
         || !result.hasNonNull("assessment")
         || !result.has("hypotheses")
-        || !result.get("hypotheses").isArray()) {
+        || !result.get("hypotheses").isArray()
+        || !result.has("sources")
+        || !result.get("sources").isArray()) {
       throw new IllegalArgumentException("Resposta fora do contrato do Agente Cliente v1.");
     }
   }

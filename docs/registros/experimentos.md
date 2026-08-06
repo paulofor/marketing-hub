@@ -6518,3 +6518,12 @@
 - Agente Cliente: referências maiores que 255 caracteres agora são bloqueadas pelo frontend e pelo
   backend com erro de contrato, evitando o truncamento MySQL 1406 observado na solicitação da oferta
   de microamostra para nail designers.
+
+# 2026-08-06 — contrato estratégico do experimento no Agente Operador
+
+- causa-raiz: o snapshot auditável do Operador continha a meta do planejamento e o identificador do
+  experimento, mas não congelava a intenção estratégica própria do teste;
+- correção: o backend passa a incluir `experimentStrategicContract` com objetivo, hipótese,
+  métrica/meta e critérios de decisão, além dos parâmetros quantitativos disponíveis;
+- prevenção: o prompt obriga comparar eventos reais com o contrato e retornar `ADJUST` quando o
+  objetivo ou a métrica estiverem incompletos, sem criar uma segunda fonte de verdade no plano.

@@ -35,7 +35,7 @@ Recomendação e experimento criado não contam como resultado. O Índice de Mat
 
 ## Pesquisa externa orientada a vendas
 
-O worker deve oferecer busca pública e Chromium/Playwright versionados em sua imagem de produção. A pesquisa parte sempre do gargalo e cruza evidência interna com sinais externos sobre linguagem e dor do público, demanda, concorrência, ofertas, canais, tendências sociais/econômicas, capacidade de entrega, margem e risco. Para novos nichos, deve comparar demanda observável, urgência, disposição de pagar, saturação, facilidade de acesso ao público e aderência operacional.
+O worker deve oferecer busca pública e Chromium/Playwright versionados em sua imagem de produção. A imagem deve fixar uma distribuição Linux suportada pela versão instalada do Playwright, com teste de contrato protegendo a base escolhida e build obrigatório do container no CI. A pesquisa parte sempre do gargalo e cruza evidência interna com sinais externos sobre linguagem e dor do público, demanda, concorrência, ofertas, canais, tendências sociais/econômicas, capacidade de entrega, margem e risco. Para novos nichos, deve comparar demanda observável, urgência, disposição de pagar, saturação, facilidade de acesso ao público e aderência operacional.
 
 Cada fonte registra URL, título, data, tipo, método de coleta e aprendizado. Páginas decisivas devem ser confirmadas com Playwright. Snippets, anúncios ativos, seguidores, visualizações, comentários e tendências são proxies exploratórios e nunca comprovam vendas. Recomendações de nicho, produto ou oferta exigem ao menos duas classes independentes de evidência; sem isso, o parecer deve declarar evidência insuficiente.
 

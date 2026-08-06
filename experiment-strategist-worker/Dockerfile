@@ -4,7 +4,7 @@ COPY pom.xml .
 COPY src src
 RUN mvn -q -DskipTests package
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre-noble
 ARG CODEX_VERSION=0.146.0
 WORKDIR /app
 COPY package.json package-lock.json /app/

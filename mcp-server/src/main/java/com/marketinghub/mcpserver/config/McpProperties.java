@@ -49,6 +49,7 @@ public record McpProperties(
             @NotBlank String videoManagementServicePath,
             @NotBlank String customerAgentWorkerPath,
             @NotBlank String financialAgentWorkerPath,
+            @NotBlank String experimentStrategistWorkerPath,
             @Positive int fetchTimeoutSeconds,
             @Positive int fetchAttempts,
             @Positive int fetchRetryDelayMillis,

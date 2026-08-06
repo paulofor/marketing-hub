@@ -26,7 +26,7 @@ public class CodexObservationAnalyzer {
       @Value(
               "${CUSTOMER_AGENT_OBSERVATION_SCHEMA:/app/prompts/customer-agent/v1/digital-observation-schema.json}")
           String schemaPath,
-      @Value("${CUSTOMER_AGENT_MODEL_TIMEOUT:PT4M}") Duration timeout) {
+      @Value("${CUSTOMER_AGENT_MODEL_TIMEOUT:PT40M}") Duration timeout) {
     this.executable = executable;
     this.model = model;
     this.schemaPath = schemaPath;

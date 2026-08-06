@@ -44,7 +44,8 @@ public class McpController {
     private static final List<String> JAVA_LOG_MODULES = List.of("backend", "ai-worker", "lead-portal", "facebook-ads",
             "email-service", "lead-portal-payment", "mds", "mois", "mois-sales-library-worker",
             "mois-hotmart", "clickbank-coletor-mois", "oprm-coletor-receita", "ops-monitor-worker",
-            "pde-platform-backend", "video-management-service", "customer-agent-worker", "financial-agent-worker");
+            "pde-platform-backend", "video-management-service", "customer-agent-worker", "financial-agent-worker",
+            "experiment-strategist-worker");
 
     private final McpProperties properties;
     private final DatabaseDiagnosticsService databaseDiagnosticsService;
@@ -208,7 +209,7 @@ public class McpController {
                     ),
                     Map.of(
                             "name", "java_module_logs",
-                            "description", "Retorna as últimas linhas de logs do Spring Boot dos módulos Java (backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, pde-platform-backend, video-management-service, customer-agent-worker, financial-agent-worker).",
+                            "description", "Retorna as últimas linhas de logs do Spring Boot dos módulos Java, incluindo experiment-strategist-worker.",
                             "inputSchema", Map.of(
                                     "type", "object",
                                     "properties", Map.of(

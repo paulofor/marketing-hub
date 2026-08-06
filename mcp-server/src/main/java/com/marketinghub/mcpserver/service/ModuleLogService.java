@@ -404,6 +404,7 @@ public class ModuleLogService {
             case "video-management-service" -> properties.logs().videoManagementServicePath();
             case "customer-agent-worker" -> properties.logs().customerAgentWorkerPath();
             case "financial-agent-worker" -> properties.logs().financialAgentWorkerPath();
+            case "experiment-strategist-worker" -> properties.logs().experimentStrategistWorkerPath();
             default -> throw new IllegalArgumentException("Unknown module: " + module);
         };
     }
@@ -420,11 +421,12 @@ public class ModuleLogService {
             case "backend", "ai-worker", "lead-portal", "facebook-ads", "email-service", "lead-portal-payment",
                     "mds", "mois", "mois-sales-library-worker", "mois-hotmart", "clickbank-coletor-mois",
                     "oprm-coletor-receita", "ops-monitor-worker", "pde-platform-backend",
-                    "video-management-service", "customer-agent-worker", "financial-agent-worker" -> normalized;
+                    "video-management-service", "customer-agent-worker", "financial-agent-worker",
+                    "experiment-strategist-worker" -> normalized;
             default -> throw new IllegalArgumentException("module must be one of: backend, ai-worker, lead-portal, "
                     + "facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, "
                     + "mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, "
-                    + "pde-platform-backend, video-management-service, customer-agent-worker, financial-agent-worker");
+                    + "pde-platform-backend, video-management-service, customer-agent-worker, financial-agent-worker, experiment-strategist-worker");
         };
     }
 

@@ -58,6 +58,7 @@ mcp:
     video-management-service-path: ${MCP_LOG_VIDEO_MANAGEMENT_SERVICE_PATH:http://177.153.62.107:8095/actuator/logfile}
     customer-agent-worker-path: ${MCP_LOG_CUSTOMER_AGENT_WORKER_PATH:http://163.245.202.80:8099/ops-customer-agent-observability-v1/customer-agent-worker-log}
     financial-agent-worker-path: ${MCP_LOG_FINANCIAL_AGENT_WORKER_PATH:http://163.245.202.80:8095/ops-financial-agent-observability-v1/financial-agent-worker-log}
+    experiment-strategist-worker-path: ${MCP_LOG_EXPERIMENT_STRATEGIST_WORKER_PATH:http://163.245.202.80:8096/ops-experiment-strategist-observability-v1/experiment-strategist-worker-log}
     fetch-timeout-seconds: ${MCP_LOG_FETCH_TIMEOUT_SECONDS:45}
     fetch-attempts: ${MCP_LOG_FETCH_ATTEMPTS:3}
     fetch-retry-delay-millis: ${MCP_LOG_FETCH_RETRY_DELAY_MILLIS:400}

@@ -54,6 +54,12 @@ public class CustomerAgentController {
     return service.listEvaluations();
   }
 
+  /** Reprocessa uma avaliação que terminou com falha técnica. */
+  @PostMapping("/evaluations/{id}/retry")
+  public EvaluationResponse retry(@PathVariable Long id) {
+    return service.retryEvaluation(id);
+  }
+
   /** Reserva a proxima avaliacao para o worker. */
   @PostMapping("/internal/evaluations/pending/claim")
   public EvaluationResponse claim() {

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Path;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 
@@ -26,6 +27,14 @@ class CodexReadOnlyRunnerTest {
         .contains("mcp_servers.marketing_hub_readonly.command=\"node\"")
         .anyMatch(value -> value.startsWith("mcp_servers.marketing_hub_readonly.args="));
     assertThat(command).doesNotContain("--dangerously-bypass-approvals-and-sandbox");
+  }
+
+  /** Confirma o limite operacional padrão de quarenta minutos. */
+  @Test
+  void shouldLimitCodexExecutionToFortyMinutes() {
+    WorkerProperties properties = new WorkerProperties();
+
+    assertThat(properties.getCodexTimeout()).isEqualTo(Duration.ofMinutes(40));
   }
 
   /** Confirma que o prompt exige comparar eventos com o contrato estrategico do experimento. */

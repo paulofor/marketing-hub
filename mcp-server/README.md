@@ -73,6 +73,7 @@ O tool `java_module_logs` lê logs do Spring Boot a partir de arquivo local **ou
 - `MCP_LOG_VIDEO_MANAGEMENT_SERVICE_PATH` (default `http://177.153.62.107:8095/actuator/logfile`);
 - `MCP_LOG_CUSTOMER_AGENT_WORKER_PATH` (default `http://163.245.202.80:8099/ops-customer-agent-observability-v1/customer-agent-worker-log`);
 - `MCP_LOG_FINANCIAL_AGENT_WORKER_PATH` (default `http://163.245.202.80:8095/ops-financial-agent-observability-v1/financial-agent-worker-log`);
+- `MCP_LOG_EXPERIMENT_STRATEGIST_WORKER_PATH` (default `http://163.245.202.80:8096/ops-experiment-strategist-observability-v1/experiment-strategist-worker-log`);
 - `MCP_LOG_FETCH_TIMEOUT_SECONDS` (default `45`);
 - `MCP_LOG_FETCH_ATTEMPTS` (default `3`), número de tentativas para leitura HTTP de logs;
 - `MCP_LOG_FETCH_RETRY_DELAY_MILLIS` (default `400`), intervalo entre tentativas de leitura HTTP;

@@ -16,6 +16,7 @@ import {
 } from "../../api/planning/useCommercialPlans";
 import "./CommercialPlanningPage.css";
 import GrowthOperatorPanel from "./GrowthOperatorPanel";
+import ExperimentStrategistPanel from "./ExperimentStrategistPanel";
 import FinancialAgentPanel from "./FinancialAgentPanel";
 
 const CURRENT_OPERATIONAL_MONTH = new Date().toISOString().slice(0, 7);
@@ -1535,6 +1536,10 @@ export default function CommercialPlanningPage() {
           <GrowthOperatorPanel
             planId={currentMonthPlan.id}
             defaultObjective={currentMonthPlan.nextAction}
+          />
+          <ExperimentStrategistPanel
+            planId={currentMonthPlan.id}
+            defaultQuestion={currentMonthPlan.currentBlocker}
           />
           <FinancialAgentPanel planId={currentMonthPlan.id} />
         </div>

@@ -12,6 +12,7 @@ services:
       MARKETING_HUB_URL: ${MARKETING_HUB_URL:-http://backend:8000}
       COMMERCIAL_PLAN_ID: ${COMMERCIAL_PLAN_ID:-1}
       CODEX_MODEL: ${CODEX_MODEL:-gpt-5.6-sol}
+      GROWTH_OPERATOR_CODEX_TIMEOUT: ${GROWTH_OPERATOR_CODEX_TIMEOUT:-PT40M}
     volumes:
       - ${MARKETING_HUB_REPOSITORY_HOST:-..}:/workspace/marketing-hub:ro
       - ${CODEX_HOME}:/home/operator/.codex

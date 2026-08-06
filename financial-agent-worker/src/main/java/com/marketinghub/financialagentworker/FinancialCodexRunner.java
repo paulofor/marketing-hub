@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
@@ -27,15 +28,26 @@ public class FinancialCodexRunner {
   /** Executa uma conciliacao efemera sem permitir mutacoes financeiras ou no repositorio. */
   public Map<String, Object> run(FinancialAgentJob job) throws IOException, InterruptedException {
     Path output = Files.createTempFile("financial-agent-", ".json");
+    Path processOutput = Files.createTempFile("financial-agent-process-", ".log");
     Path schema = materialize("prompts/financial-agent/v1/report-schema.json", ".json");
     try {
       Process process =
-          new ProcessBuilder(buildCommand(output, schema)).redirectErrorStream(true).start();
+          new ProcessBuilder(buildCommand(output, schema))
+              .redirectErrorStream(true)
+              .redirectOutput(processOutput.toFile())
+              .start();
       process.getOutputStream().write(buildPrompt(job).getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
-      String processLog =
-          new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-      int exitCode = process.waitFor();
+      if (!process.waitFor(properties.getCodexTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
+        process.destroyForcibly();
+        process.waitFor(10, TimeUnit.SECONDS);
+        throw new IllegalStateException(
+            "Timeout do Codex financeiro após "
+                + properties.getCodexTimeout().toMinutes()
+                + " minutos.");
+      }
+      String processLog = Files.readString(processOutput, StandardCharsets.UTF_8);
+      int exitCode = process.exitValue();
       if (exitCode != 0) throw new IllegalStateException("Codex financeiro falhou: " + processLog);
       String raw = Files.readString(output);
       JsonNode result = objectMapper.readTree(raw);
@@ -49,6 +61,7 @@ public class FinancialCodexRunner {
       return payload;
     } finally {
       Files.deleteIfExists(output);
+      Files.deleteIfExists(processOutput);
       Files.deleteIfExists(schema);
     }
   }

@@ -1,5 +1,6 @@
 package com.marketinghub.financialagentworker;
 
+import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +13,7 @@ public class FinancialAgentProperties {
   private String codexCommand;
   private String model;
   private Long commercialPlanId;
+  private Duration codexTimeout = Duration.ofMinutes(40);
 
   /** Retorna a URL oficial do backend. */
   public String getBackendUrl() {
@@ -61,5 +63,15 @@ public class FinancialAgentProperties {
   /** Configura o planejamento acompanhado diariamente. */
   public void setCommercialPlanId(Long commercialPlanId) {
     this.commercialPlanId = commercialPlanId;
+  }
+
+  /** Retorna o tempo máximo permitido para uma execução do Codex. */
+  public Duration getCodexTimeout() {
+    return codexTimeout;
+  }
+
+  /** Configura o tempo máximo permitido para uma execução do Codex. */
+  public void setCodexTimeout(Duration codexTimeout) {
+    this.codexTimeout = codexTimeout;
   }
 }

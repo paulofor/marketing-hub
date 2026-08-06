@@ -72,6 +72,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 | `LOOP-DEPLOY-COMPOSE-CROSS-SERVICE-SECRETS` | ALTO | Fechado em 2026-08-04 | Deploy por serviço | descritor Compose isolado por destino + teste sem secrets alheios |
 | `LOOP-DEPLOY-STALE-IMAGE` | ALTO | Fechado em 2026-08-04 | Detecção de mudanças do deploy | alteração de publicador/workflow força rebuild e teste do artefato |
 | `LOOP-CUSTOMER-AGENT-OBSERVABILITY` | ALTO | Fechado em 2026-08-06 | Agente Cliente | logfile canônico do worker + alias MCP + teste ponta a ponta |
+| `LOOP-CUSTOMER-AGENT-EVALUATION-TIMEOUT` | ALTO | Fechado em 2026-08-06 | Agente Cliente | timeout adequado + erro persistido e integralmente visível no frontend + retry controlado |
 | `LOOP-FINANCIAL-AGENT-OBSERVABILITY` | ALTO | Fechado em 2026-08-06 | Agente Financeiro | logfile canônico do worker + alias MCP + teste ponta a ponta |
 | `LOOP-STUDIO-COST-ATTRIBUTION` | CRÍTICO | Fechado em 2026-08-06 | Estúdio / Agente Financeiro | ledger em todo estado terminal + custos sem plano visíveis e bloqueantes |
 
@@ -94,6 +95,14 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - **Causa-raiz confirmada**: o `customer-agent-worker` não gravava logs em arquivo nem publicava uma rota de leitura, enquanto o MCP não reconhecia o módulo; falhas de Codex, codec, navegador e callback ficavam reduzidas ao erro persistido no backend.
 - **Correção efetiva**: o worker publica logfile operacional versionado e o MCP o consulta pelo alias `customer-agent-worker`, com destino fixado nos descritores de deploy.
 - **Prevenção**: testes de contrato devem validar a rota, a porta, o destino produtivo e a leitura filtrada pela tool `java_module_logs`.
+
+## LOOP-CUSTOMER-AGENT-EVALUATION-TIMEOUT — Avaliação falha sem reprocessamento
+
+- **Severidade**: ALTO.
+- **Status**: fechado em 2026-08-06.
+- **Causa-raiz confirmada**: a avaliação #1 atingiu o limite fixo de dez minutos do processo Codex; o backend não possuía comando de retry e o callback preservava somente a mensagem superficial da exceção.
+- **Correção efetiva**: limite padrão elevado para vinte minutos, causa completa persistida e retry explícito restrito a `FAILED`, preservando o mesmo ID e contando as novas tentativas.
+- **Prevenção**: testes devem bloquear retry fora de `FAILED`, comprovar incremento da tentativa e garantir que o worker envie stack trace e cadeia de causas com tamanho limitado.
 
 ---
 

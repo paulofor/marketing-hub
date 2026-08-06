@@ -35,6 +35,8 @@ type CustomerEvaluation = {
   simulatedAssessment?: string;
   hypothesisJson?: string;
   humanResultJson?: string;
+  lastError?: string;
+  retryCount: number;
   createdAt: string;
 };
 
@@ -49,6 +51,26 @@ type MemoryEvidence = {
   retentionUntil: string;
   createdAt: string;
 };
+
+/** Exibe um resumo da falha e preserva o diagnóstico técnico completo sob demanda. */
+export function EvaluationFailureDetails({ error }: { error: string }) {
+  const summary = error.split("\n")[0];
+
+  return (
+    <div className="alert alert-danger py-2 mt-2 mb-0" role="alert">
+      <strong>Falha técnica:</strong> {summary}
+      <details className="mt-2">
+        <summary className="fw-semibold">Ver detalhes técnicos</summary>
+        <pre
+          className="small bg-body-tertiary border rounded p-2 mt-2 mb-0"
+          style={{ overflowWrap: "anywhere", whiteSpace: "pre-wrap" }}
+        >
+          {error}
+        </pre>
+      </details>
+    </div>
+  );
+}
 
 export default function PersonaLibraryPage() {
   const client = useQueryClient();
@@ -117,6 +139,15 @@ export default function PersonaLibraryPage() {
       }),
     onSuccess: async () => {
       setEvaluationAssetReference("");
+      await client.invalidateQueries({
+        queryKey: ["customer-agent-evaluations"],
+      });
+    },
+  });
+  const retryEvaluation = useMutation({
+    mutationFn: async (id: number) =>
+      axios.post(`/api/customer-agent/v1/evaluations/${id}/retry`),
+    onSuccess: async () => {
       await client.invalidateQueries({
         queryKey: ["customer-agent-evaluations"],
       });
@@ -341,6 +372,24 @@ export default function PersonaLibraryPage() {
                 </div>
                 {evaluation.simulatedAssessment && (
                   <p className="mt-2 mb-1">{evaluation.simulatedAssessment}</p>
+                )}
+                {evaluation.status === "FAILED" && evaluation.lastError && (
+                  <EvaluationFailureDetails error={evaluation.lastError} />
+                )}
+                {evaluation.status === "FAILED" && (
+                  <button
+                    className="btn btn-outline-primary btn-sm mt-2"
+                    disabled={retryEvaluation.isPending}
+                    onClick={() => retryEvaluation.mutate(evaluation.id)}
+                    type="button"
+                  >
+                    Reprocessar avaliação
+                  </button>
+                )}
+                {evaluation.retryCount > 0 && (
+                  <div className="small text-muted mt-2">
+                    Reprocessamentos: {evaluation.retryCount}
+                  </div>
                 )}
                 {evaluation.humanResultJson ? (
                   <div className="alert alert-success py-2 mt-2 mb-0">

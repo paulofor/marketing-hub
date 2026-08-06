@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class ModuleLogDefaultsContractTest {
     private static final String BACKEND_LOG_URL =
-            "http://191.252.181.168/ops-mh-observability-v2/backend-log-stream-x9k";
+            "http://191.252.181.168:8099/ops-mh-observability-v2/backend-log-stream-x9k";
     private static final String AI_WORKER_LOG_URL =
             "http://191.252.210.83:4567/worker-observability/logfile";
     private static final String CUSTOMER_AGENT_WORKER_LOG_URL =
@@ -55,6 +55,21 @@ class ModuleLogDefaultsContractTest {
 
         assertTrue(compose.contains("MCP_LOG_BACKEND_PATH:-" + BACKEND_LOG_URL));
         assertFalse(compose.contains("MCP_LOG_BACKEND_PATH:-" + AI_WORKER_LOG_URL));
+    }
+
+    /**
+     * Garante que os logs do backend continuem legíveis quando o processo Java estiver indisponível.
+     */
+    @Test
+    void shouldKeepBackendLogReaderIndependentFromBackendRuntime() throws IOException {
+        String appCompose = Files.readString(Path.of("../deploy/docker-compose.yml"));
+        String nginxConfiguration = Files.readString(Path.of("../deploy/nginx/backend-logs/default.conf"));
+        String applyScript = Files.readString(Path.of("../deploy/bin/apply.sh"));
+
+        assertTrue(appCompose.contains("backend-log-reader:"));
+        assertTrue(appCompose.contains("./volumes/backend/logs:/var/log/marketinghub/backend:ro"));
+        assertTrue(nginxConfiguration.contains("alias /var/log/marketinghub/backend/marketinghub-backend.log;"));
+        assertTrue(applyScript.contains("backend backend-log-reader frontend"));
     }
 
     /**

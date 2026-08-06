@@ -144,8 +144,19 @@ public class ModuleLogService {
         } catch (IOException | InterruptedException ex) {
             if (ex instanceof InterruptedException) Thread.currentThread().interrupt();
             logger.error("mcp-server readLogsFromUrl failed to read log stream url={} attempts={}", configuredUrl, errors, ex);
-            throw new IllegalArgumentException("Failed to read log stream URL: " + ex.getMessage());
+            throw new IllegalArgumentException("Failed to read log stream URL: " + describeFailure(ex)
+                    + " | attempts: " + String.join(" | ", errors));
         }
+    }
+
+    /**
+     * Descreve falhas de integração mesmo quando a exceção de rede não possui mensagem.
+     */
+    private String describeFailure(Exception ex) {
+        if (StringUtils.hasText(ex.getMessage())) {
+            return ex.getMessage();
+        }
+        return ex.getClass().getSimpleName();
     }
 
     /**

@@ -89,7 +89,18 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 | `LOOP-CUSTOMER-AGENT-OBSERVABILITY` | ALTO | Fechado em 2026-08-06 | Agente Cliente | logfile canônico do worker + alias MCP + teste ponta a ponta |
 | `LOOP-CUSTOMER-AGENT-EVALUATION-TIMEOUT` | ALTO | Fechado em 2026-08-06 | Agente Cliente | timeout adequado + erro persistido e integralmente visível no frontend + retry controlado |
 | `LOOP-FINANCIAL-AGENT-OBSERVABILITY` | ALTO | Fechado em 2026-08-06 | Agente Financeiro | logfile canônico do worker + alias MCP + teste ponta a ponta |
+| `LOOP-BACKEND-LOGS-DEPENDENT-ON-BACKEND` | ALTO | Fechado em 2026-08-06 | Backend / MCP | leitor independente no volume persistente + erro de rede explícito |
 | `LOOP-STUDIO-COST-ATTRIBUTION` | CRÍTICO | Fechado em 2026-08-06 | Estúdio / Agente Financeiro | ledger em todo estado terminal + custos sem plano visíveis e bloqueantes |
+
+---
+
+## LOOP-BACKEND-LOGS-DEPENDENT-ON-BACKEND — Falha de bootstrap elimina o próprio diagnóstico
+
+- **Severidade**: ALTO.
+- **Status**: fechado em 2026-08-06.
+- **Causa-raiz confirmada**: a tool `java_module_logs` lia o logfile por uma rota do próprio backend; quando o bootstrap falhava, a rota também desaparecia e uma `ConnectException` sem mensagem era exposta como `Failed to read log stream URL: null`.
+- **Correção efetiva**: o volume persistente do logfile passou a ser servido por um leitor Nginx independente do processo Java, e o MCP passou a descrever a classe da falha e todas as tentativas quando a exceção de rede não possui mensagem.
+- **Prevenção**: teste de contrato fixa a origem independente, teste unitário impede mensagem nula e o deploy recria o leitor junto da pilha sem depender da saúde do backend.
 
 ---
 

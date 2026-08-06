@@ -63,7 +63,7 @@ dump_app_diagnostics() {
   timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" df -h "${DEPLOY_DIR}" /tmp || true
 
   log "Diagnóstico docker compose ps"
-  timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" docker compose ps backend frontend || true
+  timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" docker compose ps backend backend-log-reader frontend || true
 
   log "Diagnóstico docker inspect backend"
   timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" docker inspect marketinghub-backend \
@@ -192,10 +192,10 @@ rollback_app_stack() {
   tag_image_if_exists "${rollback_frontend}" "${FRONTEND_IMAGE}:latest"
 
   run_with_timeout_and_diagnostics \
-    "rollback backend/frontend" \
+    "rollback backend, leitor independente de logs e frontend" \
     "${COMPOSE_RECREATE_TIMEOUT}" \
     env BACKEND_IMAGE_TAG=latest FRONTEND_IMAGE_TAG=latest VIDEO_MGMT_IMAGE_TAG=latest \
-    docker compose up -d --force-recreate --remove-orphans backend frontend
+    docker compose up -d --force-recreate --remove-orphans backend backend-log-reader frontend
 
   if ! wait_http "backend restaurado" "${BACKEND_HEALTH_URL}" "${BACKEND_HEALTH_ATTEMPTS}" "${BACKEND_HEALTH_INTERVAL}"; then
     log "Erro crítico: rollback executado, mas o backend anterior também não ficou saudável."
@@ -251,13 +251,14 @@ if [[ "${IMAGE_TAG}" != "latest" ]]; then
 fi
 
 remove_conflicting_container "backend" "marketinghub-backend"
+remove_conflicting_container "backend-log-reader" "marketinghub-backend-log-reader"
 remove_conflicting_container "frontend" "marketinghub-frontend"
 
 if ! run_with_timeout_and_diagnostics \
-  "recriar somente backend/frontend" \
+  "recriar backend, leitor independente de logs e frontend" \
   "${COMPOSE_RECREATE_TIMEOUT}" \
   env BACKEND_IMAGE_TAG=latest FRONTEND_IMAGE_TAG=latest VIDEO_MGMT_IMAGE_TAG=latest \
-  docker compose up -d --force-recreate --remove-orphans backend frontend; then
+  docker compose up -d --force-recreate --remove-orphans backend backend-log-reader frontend; then
   rollback_app_stack || true
   exit 1
 fi

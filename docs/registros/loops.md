@@ -73,6 +73,17 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 | `LOOP-DEPLOY-STALE-IMAGE` | ALTO | Fechado em 2026-08-04 | Detecção de mudanças do deploy | alteração de publicador/workflow força rebuild e teste do artefato |
 | `LOOP-CUSTOMER-AGENT-OBSERVABILITY` | ALTO | Fechado em 2026-08-06 | Agente Cliente | logfile canônico do worker + alias MCP + teste ponta a ponta |
 | `LOOP-FINANCIAL-AGENT-OBSERVABILITY` | ALTO | Fechado em 2026-08-06 | Agente Financeiro | logfile canônico do worker + alias MCP + teste ponta a ponta |
+| `LOOP-STUDIO-COST-ATTRIBUTION` | CRÍTICO | Fechado em 2026-08-06 | Estúdio / Agente Financeiro | ledger em todo estado terminal + custos sem plano visíveis e bloqueantes |
+
+---
+
+## LOOP-STUDIO-COST-ATTRIBUTION — Consumo de vídeo invisível na conciliação
+
+- **Severidade**: CRÍTICO.
+- **Status**: fechado em 2026-08-06.
+- **Causa-raiz confirmada**: o ledger só era sincronizado no sucesso e descartava jobs cujo projeto não possuía plano comercial; o MUSA v7 era legado sem plano, deixando inclusive renders concluídos fora da conciliação. A revisão ampliada também encontrou chamadas legadas de ElevenLabs, HeyGen e Synthesia sem ledger e estimativas desconhecidas convertidas em zero.
+- **Correção efetiva**: abrir o ledger antes da chamada externa, atualizar a mesma tentativa em qualquer estado, registrar áudio e vídeo legados com produto obrigatório, aceitar atribuição nula de plano para histórico e manter tarifa desconhecida como nula. Custos sem plano ficam visíveis e bloqueantes, sem contaminar outro planejamento.
+- **Prevenção**: testes devem provar que toda tentativa nasce no ledger antes do consumo, que sucesso, falha e expiração atualizam sem duplicar, que áudio é contado separadamente, que custo desconhecido nunca vira zero e que custos sem plano aparecem ao Agente Financeiro até atribuição correta.
 
 ---
 

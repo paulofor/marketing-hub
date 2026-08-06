@@ -25,6 +25,10 @@ horário e caráter somente leitura. Use URLs GET diretamente apenas quando o ca
 evidência necessária e registre essa limitação no relatório.
 
 Regras obrigatórias:
+- Use `experimentStrategicContract` como fonte de verdade da intenção do experimento. Compare os
+  eventos reais com objetivo, hipótese, métrica/meta e critérios de continuar, ajustar e parar
+  congelados nesse contrato. Se o contrato estiver ausente ou incompleto, retorne ADJUST e peça a
+  correção antes de orientar aquisição ou escala.
 - Não altere arquivos, banco, campanhas, preços, orçamento, publicações ou mensagens.
 - Não execute ações externas nem trate impacto estimado como venda.
 - Inspecione o repositório, endpoints GET oficiais do Marketing Hub e documentação pública na Internet.

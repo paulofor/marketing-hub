@@ -20,6 +20,14 @@ O Operador de Crescimento transforma meta, gargalo e evidencias persistidas do p
 
 Cada execucao deve persistir objetivo, gargalo, snapshot de evidencias, exatamente tres alternativas, causa-raiz, metrica esperada, criterios de continuar/ajustar/parar, decisao, proxima acao, resposta bruta, modelo, custo e falha quando houver.
 
+Quando houver experimento vinculado, o backend deve congelar no snapshot o
+`experimentStrategicContract`, cuja fonte de verdade e o proprio experimento. O contrato inclui o
+objetivo comercial com hipotese, metrica esperada e criterios de continuar, ajustar e parar, alem
+da funcao operacional, variavel primaria, metrica/meta, amostra, baseline, conversao-alvo, MDE,
+orcamento e prazo quando informados. O Operador compara eventos reais com esse contrato e deve
+retornar `ADJUST` quando objetivo ou metrica estiverem incompletos, sem duplicar manualmente essas
+regras no planejamento.
+
 O fingerprint exclui a memoria acumulada e inclui apenas evidencias operacionais atuais. Assim, o proprio relatorio anterior nao cria artificialmente uma mudanca. Cada execucao tambem persiste as chamadas MCP realmente observadas, permitindo auditar quais ferramentas fundamentaram a conclusao.
 
 Cada ciclo tambem persiste numero sequencial, origem manual ou automatica e relatorio diario executivo. O snapshot do ciclo seguinte inclui memoria consolidada do planejamento: contagens de todo o historico e linha do tempo recente com conclusoes, evidencias, recomendacoes, falhas e metricas observadas em cada ciclo. A linha do tempo detalhada pode ser limitada para controlar contexto, mas deve declarar truncamento e manter as contagens integrais. Recomendacao deve ser identificada como nao confirmada ate que evidencia posterior comprove sua execucao e seu resultado. Atividade, recomendacao, impacto estimado e PR nunca contam como venda.

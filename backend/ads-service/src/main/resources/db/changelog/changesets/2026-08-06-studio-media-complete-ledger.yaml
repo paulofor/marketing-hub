@@ -1,0 +1,61 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-06-studio-media-complete-ledger
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE studio_cost_ledger_entry
+                MODIFY product_id BIGINT NULL;
+
+              INSERT INTO studio_cost_ledger_entry (
+                commercial_plan_id,
+                product_id,
+                experiment_id,
+                asset_type,
+                source_type,
+                source_id,
+                provider,
+                model,
+                status,
+                estimated_cost_usd,
+                provider_cost_usd,
+                currency,
+                cost_evidence,
+                started_at,
+                finished_at,
+                created_at,
+                updated_at
+              )
+              SELECT
+                NULL,
+                NULL,
+                NULL,
+                a.type,
+                'MEDIA_ASSET',
+                CAST(a.id AS CHAR),
+                COALESCE(a.provider, 'UNKNOWN'),
+                a.model,
+                a.status,
+                NULL,
+                NULL,
+                'USD',
+                'PROVIDER_COST_NOT_REPORTED',
+                a.created_at,
+                CASE WHEN a.status IN ('READY', 'FAILED') THEN a.updated_at ELSE NULL END,
+                a.created_at,
+                a.updated_at
+              FROM asset a
+              LEFT JOIN studio_cost_ledger_entry ledger
+                ON ledger.source_type = 'MEDIA_ASSET'
+               AND ledger.source_id COLLATE utf8mb4_unicode_ci = CAST(a.id AS CHAR) COLLATE utf8mb4_unicode_ci
+              WHERE a.type IN ('AUDIO', 'VIDEO')
+                AND a.provider IN ('SYNTHESIA', 'HEYGEN', 'ELEVENLABS', 'RUNWAY')
+                AND ledger.id IS NULL;

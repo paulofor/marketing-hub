@@ -50,6 +50,16 @@ class FinancialAgentServiceTest {
                 "unknownCostAttempts", 0,
                 "imageAttempts", 0,
                 "videoAttempts", 0));
+    when(studioCostLedgerService.totalUnassignedCostUsd()).thenReturn(new BigDecimal("4.80"));
+    when(studioCostLedgerService.unassignedCoverage())
+        .thenReturn(
+            Map.of(
+                "status", "PARTIAL",
+                "knownCostAttempts", 4,
+                "totalAttempts", 12,
+                "unknownCostAttempts", 8,
+                "imageAttempts", 0,
+                "videoAttempts", 12));
     FinancialAgentService service =
         new FinancialAgentService(repository, planService, objectMapper, studioCostLedgerService);
 
@@ -64,6 +74,9 @@ class FinancialAgentServiceTest {
         .isEqualTo("NOT_YET_AVAILABLE_AS_SEPARATE_SOURCE");
     assertThat(snapshot.at("/studioCostCoverage/status").asText())
         .isEqualTo("NO_ATTEMPTS_RECORDED");
+    assertThat(snapshot.get("studioUnassignedKnownCostUsd").decimalValue())
+        .isEqualByComparingTo("4.80");
+    assertThat(snapshot.at("/studioUnassignedCostCoverage/totalAttempts").asInt()).isEqualTo(12);
     assertThat(snapshot.get("studioCostInterpretation").asText())
         .contains("nao comprova custo real zero");
   }

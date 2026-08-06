@@ -30,6 +30,7 @@ public class CreateExperimentRequest {
   private ExperimentStage stage;
   private String primaryVariable;
   private String primaryMetric;
+  private String commercialObjective;
 
   @JsonProperty("kpiTarget")
   @JsonAlias("kpiTargetCpl")

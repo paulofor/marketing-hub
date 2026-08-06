@@ -1,0 +1,86 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-06-studio-unassigned-cost-ledger
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE studio_cost_ledger_entry
+                MODIFY commercial_plan_id BIGINT NULL;
+
+              INSERT INTO studio_cost_ledger_entry (
+                commercial_plan_id,
+                product_id,
+                experiment_id,
+                asset_type,
+                source_type,
+                source_id,
+                provider,
+                model,
+                status,
+                estimated_cost_usd,
+                provider_cost_usd,
+                currency,
+                cost_evidence,
+                started_at,
+                finished_at,
+                created_at,
+                updated_at
+              )
+              SELECT
+                vp.commercial_plan_id,
+                vp.product_id,
+                vp.experiment_id,
+                'VIDEO',
+                'SALES_VIDEO_JOB',
+                CAST(j.id AS CHAR),
+                COALESCE(j.provider_name, 'UNKNOWN'),
+                COALESCE(
+                  JSON_UNQUOTE(JSON_EXTRACT(j.metadata_json, '$.model')),
+                  j.provider_name
+                ),
+                j.status,
+                CASE
+                  WHEN JSON_UNQUOTE(JSON_EXTRACT(j.metadata_json, '$.cost_estimation.source')) = 'PROVIDER_RATE_CARD_ESTIMATE'
+                    THEN CAST(JSON_UNQUOTE(JSON_EXTRACT(j.metadata_json, '$.cost_usd')) AS DECIMAL(14,6))
+                  ELSE NULL
+                END,
+                CASE
+                  WHEN JSON_UNQUOTE(JSON_EXTRACT(j.metadata_json, '$.cost_estimation.source')) = 'PROVIDER_REPORTED'
+                    THEN CAST(JSON_UNQUOTE(JSON_EXTRACT(j.metadata_json, '$.cost_usd')) AS DECIMAL(14,6))
+                  ELSE NULL
+                END,
+                'USD',
+                CASE
+                  WHEN JSON_UNQUOTE(JSON_EXTRACT(j.metadata_json, '$.cost_estimation.source')) = 'PROVIDER_REPORTED'
+                    THEN 'PROVIDER_REPORTED'
+                  WHEN JSON_UNQUOTE(JSON_EXTRACT(j.metadata_json, '$.cost_estimation.source')) = 'PROVIDER_RATE_CARD_ESTIMATE'
+                    THEN 'PROVIDER_RATE_CARD_ESTIMATE'
+                  ELSE 'PROVIDER_COST_NOT_REPORTED'
+                END,
+                j.started_at,
+                j.finished_at,
+                j.created_at,
+                j.updated_at
+              FROM sales_video_job j
+              JOIN video_project vp
+                ON vp.id = COALESCE(
+                  CAST(JSON_UNQUOTE(JSON_EXTRACT(j.metadata_json, '$.studio_project_id')) AS UNSIGNED),
+                  (
+                    SELECT MAX(profile_project.id)
+                    FROM video_project profile_project
+                    WHERE profile_project.sales_video_profile_id = j.profile_id
+                  )
+                )
+              LEFT JOIN studio_cost_ledger_entry ledger
+                ON ledger.source_type = 'SALES_VIDEO_JOB'
+               AND ledger.source_id COLLATE utf8mb4_unicode_ci = CAST(j.id AS CHAR) COLLATE utf8mb4_unicode_ci
+              WHERE vp.product_id IS NOT NULL
+                AND ledger.id IS NULL;

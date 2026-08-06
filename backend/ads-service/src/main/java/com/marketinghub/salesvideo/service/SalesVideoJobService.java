@@ -135,6 +135,7 @@ public class SalesVideoJobService {
             .requestedAt(Instant.now())
             .build();
     SalesVideoJob saved = jobRepository.save(job);
+    syncStudioCostLedger(saved, null, false);
     registerEvent(saved, SalesVideoJobEventType.CREATED, null, initialStatus, "Job criado", null);
     maybeUpdateProfileStatus(saved, initialStatus);
     return saved;
@@ -220,26 +221,46 @@ public class SalesVideoJobService {
       return;
     }
     Long projectId = readStudioProjectId(job.getMetadataJson());
-    if (projectId == null) {
+    Optional<VideoProject> project =
+        projectId != null
+            ? videoProjectRepository.findById(projectId)
+            : job.getProfile() == null || job.getProfile().getId() == null
+                ? Optional.empty()
+                : videoProjectRepository.findFirstBySalesVideoProfileIdOrderByUpdatedAtDesc(
+                    job.getProfile().getId());
+    Long productId = project.map(VideoProject::getProductId).orElseGet(() -> profileProductId(job));
+    if (productId == null) {
+      log.error("Job do Estúdio sem produto para atribuição financeira; jobId={}", job.getId());
       return;
     }
-    videoProjectRepository
-        .findById(projectId)
-        .filter(project -> project.getProductId() != null && project.getCommercialPlanId() != null)
-        .ifPresent(
-            project ->
-                studioCostLedgerService.recordVideo(
-                    job.getId(),
-                    project.getProductId(),
-                    project.getCommercialPlanId(),
-                    project.getExperimentId(),
-                    job.getProviderName(),
-                    job.getProviderName(),
-                    job.getStatus().name(),
-                    costUsd,
-                    providerReported,
-                    job.getStartedAt(),
-                    job.getFinishedAt()));
+    studioCostLedgerService.recordVideo(
+        job.getId(),
+        productId,
+        project.map(VideoProject::getCommercialPlanId).orElse(null),
+        project.map(VideoProject::getExperimentId).orElse(null),
+        studioAssetType(job),
+        job.getProviderName(),
+        job.getProviderName(),
+        job.getStatus().name(),
+        costUsd,
+        providerReported,
+        job.getStartedAt() != null ? job.getStartedAt() : job.getRequestedAt(),
+        job.getFinishedAt());
+  }
+
+  /** Recupera o produto diretamente do perfil quando o projeto ainda não foi vinculado. */
+  private Long profileProductId(SalesVideoJob job) {
+    return job.getProfile() != null && job.getProfile().getProduct() != null
+        ? job.getProfile().getProduct().getId()
+        : null;
+  }
+
+  /** Distingue voz/finalização de montagem e demais tentativas de vídeo no relatório financeiro. */
+  private String studioAssetType(SalesVideoJob job) {
+    return job.getJobType() == SalesVideoJobType.POST_PRODUCTION
+            && (job.getProviderName() == null || !job.getProviderName().contains("MONTAGE"))
+        ? "AUDIO"
+        : "VIDEO";
   }
 
   /** Extrai o projeto do Estúdio preservado no contrato do job. */
@@ -412,6 +433,7 @@ public class SalesVideoJobService {
     }
   }
 
+  /** Registra a falha terminal e preserva a tentativa no ledger financeiro do Estúdio. */
   @Transactional
   public SalesVideoJobDto fail(Long jobId, JobFailureRequest request) {
     SalesVideoJob job = loadJob(jobId);
@@ -426,6 +448,7 @@ public class SalesVideoJobService {
     job.setFailureDetail(request.getFailureDetail());
     job.setFinishedAt(Instant.now());
     jobRepository.save(job);
+    syncStudioCostLedger(job, null, false);
     syncFailedExperimentVideoAsset(job, request);
     maybeUpdateProfileStatus(job, newStatus);
     registerEvent(
@@ -438,6 +461,7 @@ public class SalesVideoJobService {
     return toDto(job);
   }
 
+  /** Expira o job e preserva a tentativa no ledger financeiro do Estúdio. */
   @Transactional
   public SalesVideoJobDto expire(Long jobId, JobExpirationRequest request) {
     SalesVideoJob job = loadJob(jobId);
@@ -448,6 +472,7 @@ public class SalesVideoJobService {
     job.setStatus(SalesVideoStatus.VIDEO_FAILED);
     job.setFinishedAt(Instant.now());
     jobRepository.save(job);
+    syncStudioCostLedger(job, null, false);
     maybeUpdateProfileStatus(job, SalesVideoStatus.VIDEO_FAILED);
     registerEvent(
         job,
@@ -521,6 +546,7 @@ public class SalesVideoJobService {
     postProductionJob.setAuditSnapshotJson(
         buildPostProductionAuditSnapshot(sourceJob, postProductionJob, requestedBy));
     jobRepository.save(postProductionJob);
+    syncStudioCostLedger(postProductionJob, null, false);
     registerEvent(
         sourceJob,
         SalesVideoJobEventType.RETRIED,
@@ -555,6 +581,7 @@ public class SalesVideoJobService {
     montageJob.setMetadataJson(buildMontageMetadata(sourceJobs));
     montageJob.setAuditSnapshotJson(buildMontageAuditSnapshot(sourceJobs, montageJob, requestedBy));
     jobRepository.save(montageJob);
+    syncStudioCostLedger(montageJob, null, false);
     registerEvent(
         montageJob,
         SalesVideoJobEventType.PROGRESS,

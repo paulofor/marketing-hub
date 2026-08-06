@@ -162,7 +162,11 @@ class ExperimentServiceTest {
     req.setInstagramAccountId(createInstagramAccount().getId());
     req.setLeadPortalFlowId(createLeadPortalFlow(niche));
     req.setFollowUpActionUrl("https://destino.com");
+    req.setCommercialObjective(
+        "Validar se a amostra gera briefings e conduz ao checkout do produto completo.");
     Experiment exp = service.create(req);
+    assertThat(exp.getCommercialObjective())
+        .isEqualTo("Validar se a amostra gera briefings e conduz ao checkout do produto completo.");
     exp.setAdCopy(
         "{\"adCopy\":{\"primaryTextVariants\":[{\"label\":\"dor\",\"primaryText\":\"Texto\",\"headline\":\"Headline\",\"description\":\"Descrição\",\"ctaText\":\"Saiba"
             + " mais\"}]}}");

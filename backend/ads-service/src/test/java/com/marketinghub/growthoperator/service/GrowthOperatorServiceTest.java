@@ -56,6 +56,66 @@ class GrowthOperatorServiceTest {
         .thenAnswer(invocation -> java.util.Optional.ofNullable(saved[0]));
   }
 
+  /** Confirma que o Operador recebe o contrato estrategico congelado do experimento. */
+  @Test
+  void shouldFreezeExperimentStrategicContractInEvidenceSnapshot() throws Exception {
+    GrowthOperatorExecutionRepository repository = mock(GrowthOperatorExecutionRepository.class);
+    CommercialPlanService planService = mock(CommercialPlanService.class);
+    Experiment experiment =
+        Experiment.builder()
+            .id(82L)
+            .name("Microamostra Nail Design")
+            .commercialObjective(
+                "Validar a microamostra. Continuar com 10% de briefings; ajustar sem solicitacoes; parar sem instrumentacao.")
+            .hypothesis("A amostra personalizada reduz o risco percebido.")
+            .primaryVariable("Microamostra gratuita")
+            .primaryMetric("briefing_conversion_rate")
+            .targetCvr(new BigDecimal("10.00"))
+            .sampleSize(100)
+            .build();
+    CommercialPlan plan =
+        CommercialPlan.builder()
+            .id(2L)
+            .commercialObjective("Gerar cinco vendas")
+            .experiment(experiment)
+            .build();
+    when(planService.getPlan(2L)).thenReturn(plan);
+    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
+    mockVersionedSave(repository);
+    ExperimentFunnelService funnelService = mock(ExperimentFunnelService.class);
+    when(funnelService.buildDetailedAnalyticsEvidence(82L, 2000))
+        .thenReturn(mock(ExperimentLandingAnalyticsEvidenceDto.class));
+    GrowthOperatorService service =
+        new GrowthOperatorService(
+            repository,
+            mock(com.marketinghub.repository.jpa.growthoperator.GrowthOperatorTaskRepository.class),
+            planService,
+            mock(CommercialPlanWeekObjectiveRepository.class),
+            funnelService,
+            mock(VideoProjectRepository.class),
+            mock(ExperimentVideoPerformanceDashboardService.class),
+            mock(com.marketinghub.experiment.service.ExperimentService.class),
+            new ObjectMapper().findAndRegisterModules());
+
+    service.start(2L, new StartGrowthOperatorRequest(1, null));
+
+    ArgumentCaptor<GrowthOperatorExecution> captor =
+        ArgumentCaptor.forClass(GrowthOperatorExecution.class);
+    verify(repository).save(captor.capture());
+    JsonNode contract =
+        new ObjectMapper()
+            .findAndRegisterModules()
+            .readTree(captor.getValue().getEvidenceSnapshot())
+            .path("experimentStrategicContract");
+    assertThat(contract.path("source").asText()).isEqualTo("EXPERIMENT");
+    assertThat(contract.path("experimentId").asLong()).isEqualTo(82L);
+    assertThat(contract.path("objectiveHypothesisMetricsAndDecisionCriteria").asText())
+        .contains("Continuar com 10%", "ajustar", "parar");
+    assertThat(contract.path("primaryMetric").asText()).isEqualTo("briefing_conversion_rate");
+    assertThat(contract.path("targetConversionRate").decimalValue()).isEqualByComparingTo("10.00");
+    assertThat(contract.path("complete").asBoolean()).isTrue();
+  }
+
   /** Confirma que o catalogo publico reflete todas as ferramentas MCP autorizadas. */
   @Test
   void shouldExposeAllReadOnlyMcpTools() {

@@ -3,6 +3,7 @@ package com.marketinghub.growthoperator.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
 import com.marketinghub.experiment.service.ExperimentService;
@@ -532,6 +533,8 @@ public class GrowthOperatorService {
     if (plan.getExperiment() != null) {
       Long experimentId = plan.getExperiment().getId();
       snapshot.put("experimentId", experimentId);
+      snapshot.put(
+          "experimentStrategicContract", buildExperimentStrategicContract(plan.getExperiment()));
       snapshot.put("sessionIntelligence", sessionIntelligence(plan.getId(), SESSION_EVENT_LIMIT));
       snapshot.put("videoStrategyIntelligence", videoStrategyIntelligence(plan.getId()));
     } else {
@@ -547,6 +550,33 @@ public class GrowthOperatorService {
           "Falha no modulo growth-operator ao congelar evidencias do planId={}", plan.getId(), ex);
       throw new IllegalStateException("Falha ao serializar evidencias do planejamento", ex);
     }
+  }
+
+  /** Congela o contrato estrategico canonico do experimento para orientar e auditar a decisao. */
+  private Map<String, Object> buildExperimentStrategicContract(Experiment experiment) {
+    LinkedHashMap<String, Object> contract = new LinkedHashMap<>();
+    contract.put("source", "EXPERIMENT");
+    contract.put("experimentId", experiment.getId());
+    contract.put("name", experiment.getName());
+    contract.put("status", experiment.getStatus());
+    contract.put(
+        "objectiveHypothesisMetricsAndDecisionCriteria", experiment.getCommercialObjective());
+    contract.put("currentOperationalFunction", experiment.getCurrentOperationalFunction());
+    contract.put("hypothesis", experiment.getHypothesis());
+    contract.put("primaryVariable", experiment.getPrimaryVariable());
+    contract.put("primaryMetric", experiment.getPrimaryMetric());
+    contract.put("kpiTarget", experiment.getKpiTargetCpl());
+    contract.put("sampleSize", experiment.getSampleSize());
+    contract.put("baselineConversionRate", experiment.getBaselineCvr());
+    contract.put("targetConversionRate", experiment.getTargetCvr());
+    contract.put("minimumDetectableEffectPercent", experiment.getMdePercent());
+    contract.put("dailyBudget", experiment.getDailyBudget());
+    contract.put("startDate", experiment.getStartDate());
+    contract.put("endDate", experiment.getEndDate());
+    contract.put(
+        "complete",
+        hasText(experiment.getCommercialObjective()) && hasText(experiment.getPrimaryMetric()));
+    return contract;
   }
 
   /**

@@ -17,8 +17,6 @@ import org.springframework.util.StringUtils;
 /** Mantem metadados de custo estimado dos jobs de vídeo para auditoria comercial. */
 @Component
 public class SalesVideoJobCostMetadataService {
-  private static final BigDecimal ZERO_COST = new BigDecimal("0.0000");
-
   private final ObjectMapper objectMapper;
   private final SalesVideoProductionCostCalculator costCalculator;
 
@@ -50,12 +48,17 @@ public class SalesVideoJobCostMetadataService {
     if (costUsd == null) {
       costUsd = estimateCost(job, metadata);
     }
-    metadata.put("cost_usd", costUsd);
-    metadata.put("costUsd", costUsd);
+    if (costUsd != null) {
+      metadata.put("cost_usd", costUsd);
+      metadata.put("costUsd", costUsd);
+    }
     ObjectNode estimation = metadata.putObject("cost_estimation");
     estimation.put("estimated", explicitCostUsd == null);
     estimation.put(
-        "source", explicitCostUsd == null ? "PROVIDER_RATE_CARD_ESTIMATE" : "PROVIDER_REPORTED");
+        "source",
+        costUsd == null
+            ? "PROVIDER_COST_NOT_REPORTED"
+            : explicitCostUsd == null ? "PROVIDER_RATE_CARD_ESTIMATE" : "PROVIDER_REPORTED");
     estimation.put("provider_name", job != null ? job.getProviderName() : null);
     estimation.put(
         "job_type", job != null && job.getJobType() != null ? job.getJobType().name() : null);
@@ -79,8 +82,7 @@ public class SalesVideoJobCostMetadataService {
   }
 
   /**
-   * Estima custo pelo provider, duração e resolução; usa zero auditado quando não há tarifa
-   * aplicável.
+   * Estima custo pelo provider, duração e resolução sem transformar tarifa ausente em custo zero.
    */
   private BigDecimal estimateCost(SalesVideoJob job, ObjectNode metadata) {
     Integer durationSeconds = resolveDurationSeconds(job, metadata);
@@ -91,7 +93,7 @@ public class SalesVideoJobCostMetadataService {
             resolveModel(job, metadata),
             durationSeconds,
             resolution);
-    return estimated != null ? estimated : ZERO_COST;
+    return estimated;
   }
 
   /** Resolve modelo a partir do metadata ou do provider do job. */

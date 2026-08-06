@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ClassPathResource;
 
 /** Responsabilidade: validar os limites de seguranca do comando Codex. */
 class CodexReadOnlyRunnerTest {
@@ -25,5 +26,22 @@ class CodexReadOnlyRunnerTest {
         .contains("mcp_servers.marketing_hub_readonly.command=\"node\"")
         .anyMatch(value -> value.startsWith("mcp_servers.marketing_hub_readonly.args="));
     assertThat(command).doesNotContain("--dangerously-bypass-approvals-and-sandbox");
+  }
+
+  /** Confirma que o prompt exige comparar eventos com o contrato estrategico do experimento. */
+  @Test
+  void shouldRequireExperimentStrategicContractInDiagnosisPrompt() throws Exception {
+    String prompt =
+        new String(
+            new ClassPathResource("prompts/growth-operator/v1/diagnosis.md")
+                .getInputStream()
+                .readAllBytes(),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+    assertThat(prompt)
+        .contains(
+            "experimentStrategicContract",
+            "objetivo, hipótese, métrica/meta e critérios de continuar, ajustar e parar",
+            "retorne ADJUST");
   }
 }

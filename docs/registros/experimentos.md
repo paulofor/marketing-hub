@@ -6508,3 +6508,22 @@
 - Causa-raiz confirmada: o schema MySQL 5.7 exige `prompt NOT NULL` em `deliverable` e `deliverable_package`, mas o preparo determinístico criava ambos sem preencher o campo; as entidades JPA também não declaravam a nulabilidade canônica e os testes não reproduziam a restrição real.
 - Correção: o preparo agora persiste uma descrição auditável de sua origem determinística nos dois registros, sem alegar chamada de IA, e os mapeamentos JPA passam a declarar `prompt` como obrigatório.
 - Prevenção: o teste de integração valida que pacote e entregável preparados possuem a origem auditável, impedindo novo desvio entre JPA, teste e schema real.
+# 2026-08-06 — objetivo comercial na criação e avaliação prévia da microamostra
+
+- decisão: todo experimento novo deve registrar no próprio formulário o objetivo comercial, a
+  métrica esperada e os critérios de continuar, ajustar ou parar;
+- causa-raiz: a coluna `commercial_objective` e o endpoint de posicionamento já existiam no backend,
+  mas a criação pelo frontend não coletava nem persistia o campo;
+- prevenção: criação envia o objetivo ao backend e teste comprova a persistência;
+- Agente Cliente: referências maiores que 255 caracteres agora são bloqueadas pelo frontend e pelo
+  backend com erro de contrato, evitando o truncamento MySQL 1406 observado na solicitação da oferta
+  de microamostra para nail designers.
+
+# 2026-08-06 — contrato estratégico do experimento no Agente Operador
+
+- causa-raiz: o snapshot auditável do Operador continha a meta do planejamento e o identificador do
+  experimento, mas não congelava a intenção estratégica própria do teste;
+- correção: o backend passa a incluir `experimentStrategicContract` com objetivo, hipótese,
+  métrica/meta e critérios de decisão, além dos parâmetros quantitativos disponíveis;
+- prevenção: o prompt obriga comparar eventos reais com o contrato e retornar `ADJUST` quando o
+  objetivo ou a métrica estiverem incompletos, sem criar uma segunda fonte de verdade no plano.

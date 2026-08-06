@@ -457,6 +457,7 @@ public class ExperimentService {
             .stage(request.getStage() != null ? request.getStage() : ExperimentStage.AD)
             .primaryVariable(normalizedPrimaryVariable)
             .primaryMetric(normalizedPrimaryMetric)
+            .commercialObjective(normalizeLongText(request.getCommercialObjective()))
             .creativesToGenerate(request.getCreativesToGenerate())
             .instantFormsToGenerate(request.getInstantFormsToGenerate())
             .emailsToGenerate(request.getEmailsToGenerate())

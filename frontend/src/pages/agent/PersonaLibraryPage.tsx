@@ -52,6 +52,26 @@ type MemoryEvidence = {
   createdAt: string;
 };
 
+/** Exibe um resumo da falha e preserva o diagnóstico técnico completo sob demanda. */
+export function EvaluationFailureDetails({ error }: { error: string }) {
+  const summary = error.split("\n")[0];
+
+  return (
+    <div className="alert alert-danger py-2 mt-2 mb-0" role="alert">
+      <strong>Falha técnica:</strong> {summary}
+      <details className="mt-2">
+        <summary className="fw-semibold">Ver detalhes técnicos</summary>
+        <pre
+          className="small bg-body-tertiary border rounded p-2 mt-2 mb-0"
+          style={{ overflowWrap: "anywhere", whiteSpace: "pre-wrap" }}
+        >
+          {error}
+        </pre>
+      </details>
+    </div>
+  );
+}
+
 export default function PersonaLibraryPage() {
   const client = useQueryClient();
   const [name, setName] = useState("");
@@ -354,10 +374,7 @@ export default function PersonaLibraryPage() {
                   <p className="mt-2 mb-1">{evaluation.simulatedAssessment}</p>
                 )}
                 {evaluation.status === "FAILED" && evaluation.lastError && (
-                  <div className="alert alert-danger py-2 mt-2 mb-0">
-                    <strong>Falha técnica:</strong>{" "}
-                    {evaluation.lastError.split("\n")[0]}
-                  </div>
+                  <EvaluationFailureDetails error={evaluation.lastError} />
                 )}
                 {evaluation.status === "FAILED" && (
                   <button

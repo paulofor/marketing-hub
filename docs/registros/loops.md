@@ -72,7 +72,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 | `LOOP-DEPLOY-COMPOSE-CROSS-SERVICE-SECRETS` | ALTO | Fechado em 2026-08-04 | Deploy por serviço | descritor Compose isolado por destino + teste sem secrets alheios |
 | `LOOP-DEPLOY-STALE-IMAGE` | ALTO | Fechado em 2026-08-04 | Detecção de mudanças do deploy | alteração de publicador/workflow força rebuild e teste do artefato |
 | `LOOP-CUSTOMER-AGENT-OBSERVABILITY` | ALTO | Fechado em 2026-08-06 | Agente Cliente | logfile canônico do worker + alias MCP + teste ponta a ponta |
-| `LOOP-CUSTOMER-AGENT-EVALUATION-TIMEOUT` | ALTO | Fechado em 2026-08-06 | Agente Cliente | timeout adequado + erro persistido + retry controlado |
+| `LOOP-CUSTOMER-AGENT-EVALUATION-TIMEOUT` | ALTO | Fechado em 2026-08-06 | Agente Cliente | timeout adequado + erro persistido e integralmente visível no frontend + retry controlado |
 | `LOOP-FINANCIAL-AGENT-OBSERVABILITY` | ALTO | Fechado em 2026-08-06 | Agente Financeiro | logfile canônico do worker + alias MCP + teste ponta a ponta |
 | `LOOP-STUDIO-COST-ATTRIBUTION` | CRÍTICO | Fechado em 2026-08-06 | Estúdio / Agente Financeiro | ledger em todo estado terminal + custos sem plano visíveis e bloqueantes |
 

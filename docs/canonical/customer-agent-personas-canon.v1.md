@@ -30,6 +30,9 @@ reabertas pelo comando explícito de retry, mantendo o mesmo identificador e inc
 `retry_count`. O retry nunca é permitido para avaliações pendentes, em execução ou concluídas. O
 worker deve persistir mensagem, cadeia de causas e stack trace limitado, e seu limite padrão de
 execução é vinte minutos para evitar o encerramento prematuro observado em avaliações válidas.
+O frontend deve apresentar a mensagem principal diretamente e disponibilizar, sob expansão
+explícita, todo o conteúdo persistido em `last_error`; truncar a visualização à primeira linha é
+proibido porque volta a tornar o diagnóstico dependente dos logs do worker.
 
 ## Métrica de qualidade
 

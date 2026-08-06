@@ -71,7 +71,7 @@ jobs:
         run: |
           set -euo pipefail
           ssh "${VPS_USER}@${VPS_IP}" "\
-            export EXPERIMENT_STRATEGIST_CODEX_HOME=/opt/experiment-strategist/codex-home \
+            export EXPERIMENT_STRATEGIST_CODEX_HOME=/opt/growth-operator/codex-home \
             && cd '${REPOSITORY_DIR}/experiment-strategist-worker' \
             && BACKEND_URL=http://191.252.181.168 \
                MARKETING_HUB_REPOSITORY_HOST='${REPOSITORY_DIR}' \
@@ -86,6 +86,7 @@ jobs:
                    && exit 0; \
                  sleep 5; \
                done; \
+            printf '%s\n' 'Falha: container nao ficou pronto com CODEX_HOME gravavel e sessao Codex autenticada.'; \
             docker compose logs --tail=150 experiment-strategist-worker; \
             exit 1"
 

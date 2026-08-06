@@ -723,3 +723,9 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Sintoma:** observações permanecem indefinidamente em `RUNNING` após interrupção do worker; outras terminam por timeout sem gerar parecer ou memória.
 - **Causa-raiz:** a reserva não tinha expiração; o schema Structured Outputs era inválido em objetos internos; e o Codex herdava configuração/sessão, recebia instrução para navegar novamente e misturava a saída final com logs do processo.
 - **Prevenção:** lease backend de quinze minutos com encerramento auditável, schema estrito coberto por execução real, Codex efêmero sem ferramentas ou configuração herdada, fatos do Chromium como única entrada, JSON final em arquivo dedicado e timeout de quatro minutos coberto por teste.
+
+# LOOP-AGENT-CODEX-HOME-UNAUTHENTICATED — Worker inicia sem sessão Codex
+
+- **Sintoma:** build e inicialização Spring passam, mas o deploy expira ao executar `codex login status`.
+- **Causa-raiz:** o Compose monta um diretório novo e vazio como `CODEX_HOME`, confundindo volume gravável com volume autenticado.
+- **Prevenção:** agentes com o mesmo UID usam o volume persistente autenticado `/opt/growth-operator/codex-home`; o workflow valida escrita e identidade Codex e informa explicitamente qual contrato de prontidão falhou.

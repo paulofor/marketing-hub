@@ -41,6 +41,8 @@ O frontend exibe status, pergunta, exatamente três alternativas, recomendação
 
 O timeout padrão do Codex é de 40 minutos. O worker processa no máximo uma pesquisa por ciclo e nunca avança experimento, publica ativo ou executa a recomendação.
 
+A autenticação Codex usa o volume persistente e previamente autenticado `/opt/growth-operator/codex-home`, compartilhado em modo operacional pelos agentes executados com o mesmo UID. O deploy deve validar que o volume está gravável pelo usuário do container e que `codex login status` reconhece a sessão. Criar um diretório exclusivo vazio não configura autenticação e deve bloquear o deploy com diagnóstico explícito.
+
 ## Endpoints operacionais
 
 - `POST /api/experiment-strategist/v1/commercial-plans/{planId}/executions`: solicita pesquisa;

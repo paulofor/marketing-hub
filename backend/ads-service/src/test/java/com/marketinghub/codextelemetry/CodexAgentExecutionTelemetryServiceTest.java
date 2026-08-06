@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.marketinghub.repository.jpa.codextelemetry.CodexAgentExecutionTelemetryRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -12,11 +13,13 @@ class CodexAgentExecutionTelemetryServiceTest {
   /** Preserva tokens nulos e mantém contadores monotônicos entre heartbeats. */
   @Test
   void shouldKeepTelemetryMonotonicWithoutInventingTokens() {
-    CodexAgentExecutionTelemetryRepository repository = mock(CodexAgentExecutionTelemetryRepository.class);
+    CodexAgentExecutionTelemetryRepository repository =
+        mock(CodexAgentExecutionTelemetryRepository.class);
     when(repository.findByAgentTypeAndExecutionId("CUSTOMER_AGENT", 1L))
         .thenReturn(Optional.empty());
     when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-    CodexAgentExecutionTelemetryService service = new CodexAgentExecutionTelemetryService(repository);
+    CodexAgentExecutionTelemetryService service =
+        new CodexAgentExecutionTelemetryService(repository);
 
     var response =
         service.heartbeat(

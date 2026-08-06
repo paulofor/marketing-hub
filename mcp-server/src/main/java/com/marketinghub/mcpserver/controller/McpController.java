@@ -11,6 +11,7 @@ import com.marketinghub.mcpserver.service.PdeDatabaseDiagnosticsService;
 import com.marketinghub.mcpserver.service.ProductDiscoveryWorkerHealthService;
 import com.marketinghub.mcpserver.service.RuntimeBuildInfoService;
 import com.marketinghub.mcpserver.service.SensitiveDataSanitizer;
+import com.marketinghub.mcpserver.service.StudioLedgerCoverageService;
 import com.marketinghub.mcpserver.service.VpsHostInventoryService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -59,6 +60,7 @@ public class McpController {
     private final MetaDiagnosticsService metaDiagnosticsService;
     private final GithubActionsService githubActionsService;
     private final SensitiveDataSanitizer sensitiveDataSanitizer;
+    private final StudioLedgerCoverageService studioLedgerCoverageService;
 
     /**
      * Inicializa o controller com os serviços responsáveis pelas ferramentas MCP.
@@ -74,7 +76,8 @@ public class McpController {
                          ProductDiscoveryWorkerHealthService productDiscoveryWorkerHealthService,
                          MetaDiagnosticsService metaDiagnosticsService,
                          GithubActionsService githubActionsService,
-                         SensitiveDataSanitizer sensitiveDataSanitizer) {
+                         SensitiveDataSanitizer sensitiveDataSanitizer,
+                         StudioLedgerCoverageService studioLedgerCoverageService) {
         this.properties = properties;
         this.databaseDiagnosticsService = databaseDiagnosticsService;
         this.pdeDatabaseDiagnosticsService = pdeDatabaseDiagnosticsService;
@@ -87,6 +90,7 @@ public class McpController {
         this.metaDiagnosticsService = metaDiagnosticsService;
         this.githubActionsService = githubActionsService;
         this.sensitiveDataSanitizer = sensitiveDataSanitizer;
+        this.studioLedgerCoverageService = studioLedgerCoverageService;
     }
 
     /**
@@ -163,6 +167,14 @@ public class McpController {
                                             "limit", Map.of("type", "integer", "minimum", 1, "maximum", MAX_QUERY_LIMIT,
                                                     "description", "Limite de linhas quando a query não tiver LIMIT. Padrão: 100.")),
                                     "required", List.of("query"),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
+                            "name", "studio_ledger_coverage",
+                            "description", "Compara tentativas do Estúdio com o ledger financeiro por origem, tipo e provedor, destacando ausências, custos desconhecidos e falta de atribuição.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(),
                                     "additionalProperties", false)
                     ),
                     Map.of(
@@ -428,6 +440,8 @@ public class McpController {
                         "Database tables");
                 case "db_read_table" -> callReadTable(id, arguments);
                 case "db_query" -> callQueryTool(id, arguments);
+                case "studio_ledger_coverage" -> successToolResult(id, studioLedgerCoverageService.diagnose(),
+                        "Studio ledger coverage diagnosed");
                 case "pde_db_health" -> successToolResult(id, pdeDatabaseDiagnosticsService.checkConnection(),
                         "PDE database connectivity status");
                 case "pde_db_list_tables" -> successToolResult(id, pdeDatabaseDiagnosticsService.listTables(),

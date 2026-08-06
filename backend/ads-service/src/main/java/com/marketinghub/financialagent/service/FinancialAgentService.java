@@ -151,6 +151,9 @@ public class FinancialAgentService {
     snapshot.put("approvedRevenueBrl", revenue);
     snapshot.put("studioKnownCostUsd", studioCostLedgerService.totalKnownCostUsd(plan.getId()));
     snapshot.put("studioCostCoverage", studioCostLedgerService.coverage(plan.getId()));
+    snapshot.put(
+        "studioCostInterpretation",
+        "Custo conhecido igual a zero nao comprova custo real zero quando a cobertura estiver vazia ou parcial.");
     snapshot.put("contributionBeforeRefundsBrl", revenue.subtract(total));
     snapshot.put("refundsBrl", null);
     snapshot.put(
@@ -159,7 +162,7 @@ public class FinancialAgentService {
         "sourceCoverage",
         Map.of(
             "campaigns", "CONSOLIDATED_IN_COMMERCIAL_PLAN",
-            "aiAndVideoProviders", "STUDIO_LEDGER_WITH_EXPLICIT_COVERAGE",
+            "aiAndVideoProviders", "STUDIO_LEDGER_REQUIRES_NON_EMPTY_COMPLETE_COVERAGE",
             "approvedSales", "CONSOLIDATED_IN_COMMERCIAL_PLAN",
             "refunds", "NOT_YET_AVAILABLE_AS_SEPARATE_SOURCE",
             "infrastructure", "NOT_YET_ATTRIBUTED_BY_PLAN"));

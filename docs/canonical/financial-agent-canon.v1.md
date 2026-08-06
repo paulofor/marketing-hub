@@ -21,6 +21,8 @@ Cada execução persiste o snapshot recebido, totais reconciliados, cobertura da
 
 O snapshot expõe separadamente o custo conhecido do Estúdio em USD e a razão de tentativas com custo conhecido, sem conversão cambial implícita.
 
+Cobertura `NO_ATTEMPTS_RECORDED` não representa custo zero confirmado: significa que nenhuma tentativa do Estúdio foi auditada para o plano e deve bloquear a reconciliação. Cobertura `PARTIAL` também bloqueia a conclusão e informa explicitamente quantas tentativas permanecem sem custo. Somente `COMPLETE`, com ao menos uma tentativa, permite declarar o ledger do Estúdio coberto.
+
 Decisões permitidas: `RECONCILED`, `REVIEW_REQUIRED` e `BLOCKED_BY_MISSING_SOURCE`.
 
 ## Operação

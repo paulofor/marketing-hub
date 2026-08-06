@@ -15,6 +15,13 @@
 - Prevenção: telemetria canônica com heartbeat de 15 segundos, PID, processo vivo, linhas/eventos, bytes de saída, tokens quando informados e detecção de atraso após dois minutos.
 - Contrato: `docs/canonical/codex-agent-execution-telemetry-canon.v1.md` e tool MCP `codex_agent_execution_telemetry`.
 
+## LOOP-CUSTOMER-AGENT-UNSTRUCTURED-EXECUTION — Avaliação sem parecer final
+
+- Sintoma: processo permanece vivo até o timeout, com saída mínima de diagnóstico e sem parecer persistível.
+- Causa-raiz: a avaliação passava o prompt como argumento e misturava stdout operacional com a resposta funcional, apesar de existir schema versionado não aplicado ao comando.
+- Prevenção: entrada por stdin, `--output-schema`, resposta final em `--output-last-message`, validação JSON antes do callback e teste de contrato do comando.
+- Contrato: `docs/canonical/customer-agent-personas-canon.v1.md`.
+
 ## LOOP-PDE-EVIDENCIA-VAZIA — Descoberta PDE
 
 - Sintoma: pesquisa real sem resultados termina em HTTP 400 no callback `complete` e o ciclo aparece como falha.

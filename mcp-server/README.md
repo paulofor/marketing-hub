@@ -23,6 +23,7 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 - `pde_db_query`: executa SQL de leitura (`SELECT`/`WITH`) no schema efetivo do PDE.
 - `java_module_logs`: retorna logs do Spring Boot com filtros opcionais por texto/intervalo e paginação (`lines`, `contains`, `from`, `to`, `offset`, `cursor`) para os módulos Java (`backend`, `ai-worker`, `lead-portal`, `facebook-ads`, `email-service`, `lead-portal-payment`, `mds`, `mois`, `mois-sales-library-worker`, `mois-hotmart`, `clickbank-coletor-mois`, `oprm-coletor-receita`, `ops-monitor-worker`, `pde-platform-backend`, `video-management-service`, `customer-agent-worker`, `financial-agent-worker`).
 - `studio_ledger_coverage`: compara todas as tentativas conhecidas de vídeo, áudio e imagem do Estúdio com o ledger financeiro, agrupadas por origem, tipo e provedor; evidencia entradas ausentes, custos desconhecidos e custos sem plano, sem interpretá-los como zero.
+- `codex_agent_execution_telemetry`: consulta heartbeat, processo ativo, eventos, bytes de saída e tokens realmente informados de uma execução dos agentes Cliente, Financeiro, Operador ou Estrategista.
 - `meta_docs_get`: busca páginas de documentação da Meta em hosts aprovados.
 - `meta_graph_get`: executa leitura (`GET`) da Graph API com token configurado no MCP.
 - `meta_graph_debug_token`: executa `debug_token` para validar tokens.

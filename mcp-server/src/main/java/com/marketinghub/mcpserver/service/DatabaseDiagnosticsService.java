@@ -98,6 +98,31 @@ public class DatabaseDiagnosticsService {
     }
 
     /**
+     * Consulta a telemetria persistida de uma execução Codex sem acessar logs do worker.
+     */
+    public Map<String, Object> codexAgentTelemetry(String agentType, long executionId) {
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                """
+                        SELECT agent_type, execution_id, status, process_id, process_alive,
+                               event_count, output_bytes, input_tokens, output_tokens,
+                               last_event_type, last_activity_at, started_at, finished_at,
+                               CASE WHEN status = 'RUNNING'
+                                     AND last_activity_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 2 MINUTE)
+                                    THEN 1 ELSE 0 END AS stale
+                        FROM codex_agent_execution_telemetry
+                        WHERE agent_type = ? AND execution_id = ?
+                        """,
+                agentType,
+                executionId);
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("agentType", agentType);
+        response.put("executionId", executionId);
+        response.put("found", !rows.isEmpty());
+        response.put("telemetry", rows.isEmpty() ? null : rows.get(0));
+        return response;
+    }
+
+    /**
      * Valida o nome de tabela para impedir injeção em leitura dinâmica.
      */
     private void validateTableName(String tableName) {

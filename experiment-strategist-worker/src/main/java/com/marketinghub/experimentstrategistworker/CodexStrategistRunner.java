@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
@@ -19,11 +20,20 @@ import org.springframework.stereotype.Component;
 public class CodexStrategistRunner {
   private final WorkerProperties properties;
   private final ObjectMapper json;
+  private final CodexTelemetryReporter telemetry;
 
   /** Configura o executor e o parser JSON. */
-  public CodexStrategistRunner(WorkerProperties properties, ObjectMapper json) {
+  @Autowired
+  public CodexStrategistRunner(
+      WorkerProperties properties, ObjectMapper json, CodexTelemetryReporter telemetry) {
     this.properties = properties;
     this.json = json;
+    this.telemetry = telemetry;
+  }
+
+  /** Mantém construção direta dos testes de comando. */
+  public CodexStrategistRunner(WorkerProperties properties, ObjectMapper json) {
+    this(properties, json, null);
   }
 
   /** Executa a pesquisa efemera e devolve o parecer auditavel. */
@@ -39,28 +49,35 @@ public class CodexStrategistRunner {
               .start();
       process.getOutputStream().write(prompt(job).getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
-      if (!process.waitFor(properties.getCodexTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
-        process.destroyForcibly();
-        throw new IllegalStateException(
-            "Timeout do Codex do Estrategista apos "
-                + properties.getCodexTimeout().toMinutes()
-                + " minutos.");
+      CodexTelemetryReporter.Session session =
+          telemetry == null ? null : telemetry.monitor(job.id(), process, log);
+      try {
+        if (!process.waitFor(properties.getCodexTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
+          process.destroyForcibly();
+          throw new IllegalStateException(
+              "Timeout do Codex do Estrategista apos "
+                  + properties.getCodexTimeout().toMinutes()
+                  + " minutos.");
+        }
+        if (process.exitValue() != 0)
+          throw new IllegalStateException(
+              "Codex encerrou com codigo " + process.exitValue() + ": " + Files.readString(log));
+        String raw = Files.readString(output);
+        JsonNode result = json.readTree(raw);
+        validate(result);
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("alternativesJson", json.writeValueAsString(result.get("alternatives")));
+        payload.put("recommendationJson", json.writeValueAsString(result.get("recommendation")));
+        payload.put("publicSourcesJson", json.writeValueAsString(result.get("sources")));
+        payload.put("rawModelResponse", raw);
+        payload.put(
+            "modelName", hasText(properties.getModel()) ? properties.getModel() : "codex-default");
+        payload.put("estimatedCost", null);
+        if (session != null) session.success();
+        return payload;
+      } finally {
+        if (session != null) session.close();
       }
-      if (process.exitValue() != 0)
-        throw new IllegalStateException(
-            "Codex encerrou com codigo " + process.exitValue() + ": " + Files.readString(log));
-      String raw = Files.readString(output);
-      JsonNode result = json.readTree(raw);
-      validate(result);
-      Map<String, Object> payload = new LinkedHashMap<>();
-      payload.put("alternativesJson", json.writeValueAsString(result.get("alternatives")));
-      payload.put("recommendationJson", json.writeValueAsString(result.get("recommendation")));
-      payload.put("publicSourcesJson", json.writeValueAsString(result.get("sources")));
-      payload.put("rawModelResponse", raw);
-      payload.put(
-          "modelName", hasText(properties.getModel()) ? properties.getModel() : "codex-default");
-      payload.put("estimatedCost", null);
-      return payload;
     } finally {
       Files.deleteIfExists(output);
       Files.deleteIfExists(log);

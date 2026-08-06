@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import CodexExecutionTelemetry from "../../components/CodexExecutionTelemetry";
 
 type Persona = {
   id: number;
@@ -370,6 +371,10 @@ export default function PersonaLibraryPage() {
                 <div className="small text-muted mt-1">
                   {evaluation.assetType}: {evaluation.assetReference}
                 </div>
+                <CodexExecutionTelemetry
+                  agentType="CUSTOMER_AGENT"
+                  executionId={evaluation.id}
+                />
                 {evaluation.simulatedAssessment && (
                   <p className="mt-2 mb-1">{evaluation.simulatedAssessment}</p>
                 )}

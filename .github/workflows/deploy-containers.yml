@@ -318,7 +318,7 @@ jobs:
     name: Deploy backend + frontend
     runs-on: ubuntu-latest
     environment: production
-    timeout-minutes: 35
+    timeout-minutes: 55
     needs: [detect-changes, backend-image, frontend-image]
     if: always() && needs.detect-changes.outputs.app_deploy == 'true' && needs.backend-image.result != 'failure' && needs.backend-image.result != 'cancelled' && needs.frontend-image.result != 'failure' && needs.frontend-image.result != 'cancelled'
     steps:
@@ -421,7 +421,7 @@ jobs:
             ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} "rm -f ${files_to_remove[*]}"
           fi
 
-      - name: Apply backend/frontend stack
+      - name: Load images and apply backend/frontend stack
         env:
           GIT_SHA: ${{ github.sha }}
           LEAD_PORTAL_PAYMENTS_AUTH_TOKEN: ${{ secrets.LEAD_PORTAL_PAYMENTS_AUTH_TOKEN }}
@@ -438,8 +438,37 @@ jobs:
             exit 1
           fi
           ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} "chmod +x ${DEPLOY_DIR}/bin/apply.sh"
-          timeout -k 30s 18m ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} \
-            "IMAGE_TAG=${GIT_SHA} BACKEND_TAR=/tmp/backend-image-${GIT_SHA}.tar FRONTEND_TAR=/tmp/frontend-image-${GIT_SHA}.tar VIDEO_TAR=/tmp/video-management-image-${GIT_SHA}.tar BACKEND_IMAGE=${BACKEND_IMAGE} FRONTEND_IMAGE=${FRONTEND_IMAGE} LEAD_PORTAL_PAYMENTS_AUTH_TOKEN='${LEAD_PORTAL_PAYMENTS_AUTH_TOKEN}' CUSTOMER_AGENT_MEMORY_BUCKET=marketing-hub-customer-agent-memory-948388760606 CUSTOMER_AGENT_MEMORY_REGION=us-east-1 EXPERIMENT_STRATEGIST_MEMORY_BUCKET=marketing-hub-experiment-strategist-memory-948388760606 EXPERIMENT_STRATEGIST_MEMORY_REGION=us-east-1 AWS_ACCESS_KEY_ID='${CUSTOMER_AGENT_MEMORY_AWS_ACCESS_KEY_ID}' AWS_SECRET_ACCESS_KEY='${CUSTOMER_AGENT_MEMORY_AWS_SECRET_ACCESS_KEY}' DEPLOY_DIR=${DEPLOY_DIR} /bin/bash ${DEPLOY_DIR}/bin/apply.sh"
+          timeout -k 30s 40m ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} \
+            "IMAGE_LOAD_TIMEOUT=15m COMPOSE_RECREATE_TIMEOUT=10m IMAGE_TAG=${GIT_SHA} BACKEND_TAR=/tmp/backend-image-${GIT_SHA}.tar FRONTEND_TAR=/tmp/frontend-image-${GIT_SHA}.tar VIDEO_TAR=/tmp/video-management-image-${GIT_SHA}.tar BACKEND_IMAGE=${BACKEND_IMAGE} FRONTEND_IMAGE=${FRONTEND_IMAGE} LEAD_PORTAL_PAYMENTS_AUTH_TOKEN='${LEAD_PORTAL_PAYMENTS_AUTH_TOKEN}' CUSTOMER_AGENT_MEMORY_BUCKET=marketing-hub-customer-agent-memory-948388760606 CUSTOMER_AGENT_MEMORY_REGION=us-east-1 EXPERIMENT_STRATEGIST_MEMORY_BUCKET=marketing-hub-experiment-strategist-memory-948388760606 EXPERIMENT_STRATEGIST_MEMORY_REGION=us-east-1 AWS_ACCESS_KEY_ID='${CUSTOMER_AGENT_MEMORY_AWS_ACCESS_KEY_ID}' AWS_SECRET_ACCESS_KEY='${CUSTOMER_AGENT_MEMORY_AWS_SECRET_ACCESS_KEY}' DEPLOY_DIR=${DEPLOY_DIR} /bin/bash ${DEPLOY_DIR}/bin/apply.sh"
+
+      - name: Require healthy backend after deployment
+        env:
+          SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
+        run: |
+          ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} "DEPLOY_DIR=${DEPLOY_DIR} /bin/bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd "${DEPLOY_DIR}"
+
+          for attempt in $(seq 1 36); do
+            container_status="$(docker inspect marketinghub-backend --format '{{.State.Status}}' 2>/dev/null || true)"
+            restart_count="$(docker inspect marketinghub-backend --format '{{.RestartCount}}' 2>/dev/null || echo 0)"
+
+            if [[ "${container_status}" == "running" ]] \
+              && curl -fsS --max-time 5 http://localhost:8000/ops-mh-observability-v2/health >/dev/null; then
+              echo "Backend saudável após o deploy (reinícios=${restart_count})."
+              exit 0
+            fi
+
+            echo "Aguardando backend saudável (${attempt}/36, status=${container_status:-ausente}, reinícios=${restart_count})."
+            sleep 10
+          done
+
+          docker compose ps backend frontend >&2 || true
+          docker inspect marketinghub-backend \
+            --format 'status={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}} reinicios={{.RestartCount}}' >&2 || true
+          docker logs --tail 200 marketinghub-backend >&2 || true
+          exit 1
+          REMOTE
 
   deploy-video-management:
     name: Deploy video management

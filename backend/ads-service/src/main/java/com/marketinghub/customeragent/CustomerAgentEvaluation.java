@@ -25,6 +25,9 @@ public class CustomerAgentEvaluation {
   @Column(name = "asset_reference", nullable = false)
   private String assetReference;
 
+  @Column(name = "simulation_version", nullable = false)
+  private String simulationVersion = "BASELINE_V1";
+
   @Column(name = "status", nullable = false)
   private String status;
 
@@ -33,6 +36,12 @@ public class CustomerAgentEvaluation {
 
   @Column(name = "hypothesis_json", columnDefinition = "LONGTEXT")
   private String hypothesisJson;
+
+  @Column(name = "baseline_result_json", columnDefinition = "LONGTEXT")
+  private String baselineResultJson;
+
+  @Column(name = "behavioral_result_json", columnDefinition = "LONGTEXT")
+  private String behavioralResultJson;
 
   @Column(name = "human_result_json", columnDefinition = "LONGTEXT")
   private String humanResultJson;

@@ -32,9 +32,12 @@ type CustomerEvaluation = {
   persona: Persona;
   assetType: string;
   assetReference: string;
+  simulationVersion: "BASELINE_V1" | "BEHAVIORAL_V1";
   status: string;
   simulatedAssessment?: string;
   hypothesisJson?: string;
+  baselineResultJson?: string;
+  behavioralResultJson?: string;
   humanResultJson?: string;
   lastError?: string;
   retryCount: number;
@@ -85,6 +88,9 @@ export default function PersonaLibraryPage() {
   const [evaluationPersonaId, setEvaluationPersonaId] = useState("");
   const [evaluationAssetType, setEvaluationAssetType] = useState("PAGE");
   const [evaluationAssetReference, setEvaluationAssetReference] = useState("");
+  const [simulationVersion, setSimulationVersion] = useState<
+    "BASELINE_V1" | "BEHAVIORAL_V1"
+  >("BEHAVIORAL_V1");
   const [evidencePersonaId, setEvidencePersonaId] = useState("");
   const [memoryLayer, setMemoryLayer] = useState("EXTERNAL_OBSERVATION");
   const [memorySourceUrl, setMemorySourceUrl] = useState("");
@@ -137,6 +143,7 @@ export default function PersonaLibraryPage() {
         personaId: Number(evaluationPersonaId),
         assetType: evaluationAssetType,
         assetReference: evaluationAssetReference,
+        simulationVersion,
       }),
     onSuccess: async () => {
       setEvaluationAssetReference("");
@@ -330,7 +337,25 @@ export default function PersonaLibraryPage() {
               <option value="OFFER">Oferta</option>
             </select>
           </div>
-          <div className="col-md-5">
+          <div className="col-md-3">
+            <label className="form-label">Modo da simulação</label>
+            <select
+              className="form-select"
+              value={simulationVersion}
+              onChange={(event) =>
+                setSimulationVersion(
+                  event.target.value as "BASELINE_V1" | "BEHAVIORAL_V1",
+                )
+              }
+            >
+              <option value="BEHAVIORAL_V1">Comportamental v1</option>
+              <option value="BASELINE_V1">Baseline atual</option>
+            </select>
+            <div className="form-text">
+              O modo comportamental executa e compara os dois modelos.
+            </div>
+          </div>
+          <div className="col-md-2">
             <label className="form-label">Referência pública do ativo</label>
             <input
               className="form-control"
@@ -371,12 +396,37 @@ export default function PersonaLibraryPage() {
                 <div className="small text-muted mt-1">
                   {evaluation.assetType}: {evaluation.assetReference}
                 </div>
+                <div className="small text-muted">
+                  {evaluation.simulationVersion === "BEHAVIORAL_V1"
+                    ? "Comportamental v1 comparado ao baseline"
+                    : "Baseline v1"}
+                </div>
                 <CodexExecutionTelemetry
                   agentType="CUSTOMER_AGENT"
                   executionId={evaluation.id}
                 />
                 {evaluation.simulatedAssessment && (
                   <p className="mt-2 mb-1">{evaluation.simulatedAssessment}</p>
+                )}
+                {evaluation.behavioralResultJson && (
+                  <details className="mt-2">
+                    <summary className="fw-semibold">
+                      Ver simulação e comparação completas
+                    </summary>
+                    <pre
+                      className="small bg-body-tertiary border rounded p-2 mt-2"
+                      style={{
+                        overflowWrap: "anywhere",
+                        whiteSpace: "pre-wrap",
+                      }}
+                    >
+                      {JSON.stringify(
+                        JSON.parse(evaluation.behavioralResultJson),
+                        null,
+                        2,
+                      )}
+                    </pre>
+                  </details>
                 )}
                 {evaluation.status === "FAILED" && evaluation.lastError && (
                   <EvaluationFailureDetails error={evaluation.lastError} />

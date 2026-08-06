@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-06-customer-agent-behavioral-simulator-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE customer_agent_evaluation
+                ADD COLUMN simulation_version VARCHAR(40) NOT NULL DEFAULT 'BASELINE_V1' AFTER asset_reference,
+                ADD COLUMN baseline_result_json LONGTEXT NULL AFTER hypothesis_json,
+                ADD COLUMN behavioral_result_json LONGTEXT NULL AFTER baseline_result_json;
+

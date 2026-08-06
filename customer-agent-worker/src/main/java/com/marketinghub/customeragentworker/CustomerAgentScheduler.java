@@ -42,7 +42,7 @@ public class CustomerAgentScheduler {
     }
   }
 
-  /** Monta o prompt versionado e persiste somente a avaliacao simulada. */
+  /** Executa a versão solicitada e persiste baseline e simulação comportamental separados. */
   private void evaluate(Map<?, ?> job) {
     long id = ((Number) job.get("id")).longValue();
     try {

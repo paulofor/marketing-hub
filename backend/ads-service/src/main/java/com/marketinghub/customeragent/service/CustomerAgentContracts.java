@@ -43,11 +43,17 @@ public final class CustomerAgentContracts {
       Instant updatedAt) {}
 
   /** Solicitacao de avaliacao simulada de um ativo. */
-  public record StartEvaluationRequest(Long personaId, String assetType, String assetReference) {}
+  public record StartEvaluationRequest(
+      Long personaId, String assetType, String assetReference, String simulationVersion) {}
 
   /** Resultado devolvido pelo worker sem qualquer dado humano inferido. */
   public record CompleteEvaluationRequest(
-      String assessment, String hypothesisJson, String rawModelResponse, String model) {}
+      String assessment,
+      String hypothesisJson,
+      String rawModelResponse,
+      String model,
+      String baselineResultJson,
+      String behavioralResultJson) {}
 
   /** Falha técnica terminal reportada pelo worker. */
   public record FailExecutionRequest(String error) {}
@@ -62,9 +68,12 @@ public final class CustomerAgentContracts {
       PersonaResponse persona,
       String assetType,
       String assetReference,
+      String simulationVersion,
       String status,
       String simulatedAssessment,
       String hypothesisJson,
+      String baselineResultJson,
+      String behavioralResultJson,
       String humanResultJson,
       String lastError,
       Integer retryCount,

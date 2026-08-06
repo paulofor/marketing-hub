@@ -41,6 +41,28 @@ proibido porque volta a tornar o diagnóstico dependente dos logs do worker.
 A maturidade é medida pela correspondência posterior entre objeções previstas e comportamento
 humano observado, nunca pela quantidade ou eloquência dos relatórios.
 
+## Simulador comportamental v1
+
+Cada avaliação declara `BASELINE_V1` ou `BEHAVIORAL_V1`. A ausência de versão preserva
+`BASELINE_V1` para compatibilidade. O modo comportamental sempre executa primeiro o baseline com a
+mesma persona e ativo; em seguida produz uma segunda avaliação separada, sem sobrescrever ou
+reinterpretar o resultado original.
+
+O `BEHAVIORAL_V1` deve modelar estado anterior à exposição, memória contextual limitada às
+evidências fornecidas, objetivos concorrentes, atenção limitada, transições mentais progressivas,
+memória seletiva e uma distribuição de ações cuja soma seja exatamente 100. Ele deve permitir
+abandono antes da oferta e nunca converter probabilidade simulada em taxa real.
+
+Baseline e resultado comportamental ficam persistidos separadamente e vinculados à mesma
+avaliação. A comparação registra acordos, divergências e hipótese de ganho preditivo. Nenhuma versão
+pode declarar superioridade sem comparação posterior contra eventos humanos oficiais do mesmo tipo
+de ativo, persona e etapa da jornada.
+
+A validação comparativa usa três decisões: continuar quando o modo comportamental ordenar variantes
+ou localizar abandono melhor que o baseline; ajustar quando o ganho for parcial; interromper quando
+apenas aumentar a elaboração narrativa sem reduzir erro preditivo. Campanhas, preço, publicação e
+resultados humanos permanecem fora da autoridade do simulador.
+
 ## Experiência Digital Observacional
 
 Cada navegação deve nascer de uma persona, um objetivo e uma lista explícita de fontes públicas

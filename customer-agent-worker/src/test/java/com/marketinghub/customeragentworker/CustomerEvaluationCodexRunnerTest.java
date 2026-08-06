@@ -1,6 +1,7 @@
 package com.marketinghub.customeragentworker;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Files;
@@ -46,5 +47,51 @@ class CustomerEvaluationCodexRunnerTest {
         .contains("padrões sociais/econômicos")
         .contains("nunca como prova de venda");
     assertThat(schema).contains("sources", "collectionMethod", "learning");
+  }
+
+  /** Protege os componentes comportamentais e a comparação explícita com o baseline. */
+  @Test
+  void shouldVersionBehavioralSimulationAndRequireProbabilityDistribution() throws Exception {
+    String prompt =
+        Files.readString(
+            Path.of("src/main/resources/prompts/customer-agent/behavioral-v1/evaluation.md"));
+    String schema =
+        Files.readString(
+            Path.of(
+                "src/main/resources/prompts/customer-agent/behavioral-v1/evaluation-schema.json"));
+
+    assertThat(prompt)
+        .contains("estado anterior à exposição")
+        .contains("Consuma o ativo progressivamente")
+        .contains("BASELINE_V1_JSON");
+    assertThat(schema)
+        .contains("initialState")
+        .contains("actionProbabilities")
+        .contains("memoryRecall")
+        .contains("baselineComparison");
+  }
+
+  /**
+   * Rejeita uma distribuição probabilística que aparenta precisão sem fechar o universo de ações.
+   */
+  @Test
+  void shouldRejectBehavioralProbabilitiesThatDoNotSumOneHundred() throws Exception {
+    ObjectMapper mapper = new ObjectMapper();
+    CustomerEvaluationCodexRunner runner =
+        new CustomerEvaluationCodexRunner("codex", "gpt-test", 40, "/workspace", mapper, null);
+    var result =
+        mapper.readTree(
+            """
+            {
+              "decision":"AJUSTAR","assessment":"teste","hypotheses":[],"sources":[],
+              "initialState":{},"mentalTransitions":[],"memoryRecall":{},
+              "baselineComparison":{},
+              "actionProbabilities":{"ignore":20,"explore":20,"startAction":20,"abandon":20,"checkout":20,"purchase":20}
+            }
+            """);
+
+    assertThatThrownBy(() -> runner.validateBehavioral(result))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("soma recebida=120");
   }
 }

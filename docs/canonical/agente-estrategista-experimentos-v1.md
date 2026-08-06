@@ -43,7 +43,7 @@ Cada fonte registra URL, título, data, tipo, método de coleta e aprendizado. P
 
 O usuário solicita a pesquisa no painel do planejamento comercial. O backend congela o contexto e persiste a execução como `PENDING`. O `experiment-strategist-worker` reserva uma execução pelo endpoint interno canônico, pesquisa em sandbox somente leitura e devolve o parecer estruturado ou a causa completa da falha.
 
-O schema enviado ao Structured Outputs deve declarar `type` em todas as propriedades, inclusive quando também usar `const`. O deploy só considera o worker pronto quando, além do container e da autenticação Codex, o endpoint operacional publicado na porta 8096 responder `UP`; esse endpoint é a origem canônica dos logs consultados pelo MCP.
+O schema enviado ao Structured Outputs deve declarar `type` em todas as propriedades, inclusive quando também usar `const`. O deploy só considera o worker pronto quando, além do container e da autenticação Codex, o endpoint operacional publicado na porta 8096 responder `UP`; esse endpoint é a origem canônica dos logs consultados pelo MCP. A verificação de prontidão deve medir e registrar esses três requisitos separadamente em cada tentativa, tolerar espaços válidos no JSON do Actuator e oferecer uma janela mínima de dois minutos antes de declarar falha.
 
 O frontend exibe status, pergunta, exatamente três alternativas, recomendação, hipótese, métrica, critérios de continuar, ajustar e parar, fontes públicas e diagnóstico técnico quando houver falha. O histórico não depende dos logs do worker.
 

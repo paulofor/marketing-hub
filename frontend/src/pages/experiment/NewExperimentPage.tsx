@@ -61,6 +61,7 @@ type FormState = {
   stage: string;
   primaryVariable: string;
   primaryMetric: string;
+  commercialObjective: string;
   singlePain: string;
   freeReward: string;
   funnelPromise: string;
@@ -102,6 +103,7 @@ export default function NewExperimentPage() {
     stage: "AD",
     primaryVariable: "",
     primaryMetric: "",
+    commercialObjective: "",
     singlePain: "",
     freeReward: "",
     funnelPromise: "",
@@ -400,6 +402,10 @@ export default function NewExperimentPage() {
         alert("Informe o CTA principal");
         return;
       }
+      if (!form.commercialObjective.trim()) {
+        alert("Informe o objetivo comercial do experimento");
+        return;
+      }
       const parsedDailyBudget = Number(form.dailyBudget);
       if (
         !form.dailyBudget ||
@@ -434,6 +440,7 @@ export default function NewExperimentPage() {
             ? productAiSubtypeForSubmit
             : undefined,
         campaignObjective,
+        commercialObjective: form.commercialObjective.trim(),
         kpiTarget: Number(form.kpiTarget),
         metricPresetId: form.metricPresetId || undefined,
         sampleSize: form.sampleSize ? Number(form.sampleSize) : undefined,
@@ -493,6 +500,7 @@ export default function NewExperimentPage() {
         stage: "AD",
         primaryVariable: "",
         primaryMetric: "",
+        commercialObjective: "",
         singlePain: "",
         freeReward: "",
         funnelPromise: "",
@@ -716,6 +724,34 @@ export default function NewExperimentPage() {
       <div className="alert alert-info py-2 mb-3">
         O nome do experimento será gerado automaticamente pelo backend com o
         código da hipótese e a próxima numeração.
+      </div>
+      <div className="card border-primary mb-3">
+        <div className="card-body">
+          <label
+            className="form-label fw-semibold"
+            htmlFor="commercialObjective"
+          >
+            Objetivo comercial do experimento
+          </label>
+          <textarea
+            id="commercialObjective"
+            className="form-control"
+            required
+            rows={4}
+            value={form.commercialObjective}
+            onChange={(event) =>
+              setForm((prev) => ({
+                ...prev,
+                commercialObjective: event.target.value,
+              }))
+            }
+            placeholder="Ex.: validar se a microamostra personalizada gera briefings e conduz nail designers ao checkout do kit completo. Continuar com 10% ou mais de briefings; ajustar se houver visitas sem solicitações; parar se a instrumentação falhar."
+          />
+          <div className="form-text">
+            Registre a hipótese de negócio, a métrica esperada e os critérios de
+            continuar, ajustar ou parar.
+          </div>
+        </div>
       </div>
       <div className="card border-primary mb-3">
         <div className="card-body">

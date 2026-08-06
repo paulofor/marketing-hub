@@ -302,12 +302,16 @@ export default function PersonaLibraryPage() {
             <label className="form-label">Referência pública do ativo</label>
             <input
               className="form-control"
+              maxLength={255}
               value={evaluationAssetReference}
               onChange={(event) =>
                 setEvaluationAssetReference(event.target.value)
               }
               placeholder="URL pública ou identificador auditável"
             />
+            <div className="form-text">
+              Até 255 caracteres. Use uma referência curta e auditável do ativo.
+            </div>
           </div>
         </div>
         <button

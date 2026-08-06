@@ -23,6 +23,7 @@ export interface CreateExperiment {
   stage: ExperimentStage;
   primaryVariable?: string;
   primaryMetric?: string;
+  commercialObjective?: string;
   kpiTarget: number;
   metricPresetId?: string;
   sampleSize?: number;

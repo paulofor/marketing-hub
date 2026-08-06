@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: governar personas e avaliacoes simuladas sem fabricar validacao humana. */
 @Service
 public class CustomerAgentService {
+  private static final int ASSET_REFERENCE_MAX_LENGTH = 255;
   private static final long OBSERVATION_LEASE_MINUTES = 15;
   private static final int MAX_EXPIRED_OBSERVATIONS_PER_CLAIM = 20;
   private final CustomerPersonaRepository personas;
@@ -186,6 +187,11 @@ public class CustomerAgentService {
     if (request == null || blank(request.assetType()) || blank(request.assetReference())) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "Ativo da avaliacao e obrigatorio.");
+    }
+    if (request.assetReference().length() > ASSET_REFERENCE_MAX_LENGTH) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Referencia do ativo deve ter no maximo " + ASSET_REFERENCE_MAX_LENGTH + " caracteres.");
     }
     CustomerAgentEvaluation evaluation = new CustomerAgentEvaluation();
     evaluation.setPersona(findPersona(request.personaId()));

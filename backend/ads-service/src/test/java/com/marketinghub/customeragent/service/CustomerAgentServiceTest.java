@@ -21,6 +21,25 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: validar a governança operacional das filas do Agente Cliente. */
 class CustomerAgentServiceTest {
 
+  /** Impede que uma referência maior que a coluna canônica vire erro 500 do MySQL. */
+  @Test
+  void shouldRejectAssetReferenceLongerThanDatabaseContract() {
+    var service =
+        new CustomerAgentService(
+            mock(CustomerPersonaRepository.class),
+            mock(CustomerAgentEvaluationRepository.class),
+            mock(CustomerDigitalObservationRepository.class),
+            mock(CustomerAgentMotivationService.class));
+
+    assertThatThrownBy(
+            () ->
+                service.start(
+                    new CustomerAgentContracts.StartEvaluationRequest(
+                        4L, "OFFER", "a".repeat(256))))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("255 caracteres");
+  }
+
   /** Confirma que reservas abandonadas são encerradas antes de consultar nova pendência. */
   @Test
   void shouldExpireAbandonedObservationsBeforeClaiming() {

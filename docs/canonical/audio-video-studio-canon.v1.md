@@ -87,7 +87,11 @@ O backend principal do Marketing Hub deve ser responsavel por:
 - callbacks de progresso, sucesso, falha, expiracao e registro de artefatos;
 - relatorio operacional e comercial para a tela.
 
-Todo callback terminal de job do Estudio, incluindo sucesso, falha e expiracao, deve criar ou atualizar uma entrada idempotente no ledger financeiro. Custo desconhecido permanece nulo e reduz a cobertura; projeto legado sem plano permanece visivel como custo sem atribuicao, nunca e descartado nem atribuido silenciosamente a outro produto.
+Toda tentativa do Estudio deve abrir uma entrada idempotente no ledger financeiro **antes da primeira chamada externa paga**. Progresso, sucesso, falha e expiracao atualizam essa mesma entrada; ausencia de callback nunca pode apagar o consumo. Isso vale para roteiro, storyboard, render de cena, voz, trilha, montagem, pos-producao, imagem auxiliar e rotas legadas de audio ou video enquanto elas existirem.
+
+Cada entrada deve preservar produto, plano e experimento quando conhecidos, tipo de ativo, etapa/origem, provedor, modelo, status e horarios. O fluxo canonico do Estudio exige produto para iniciar consumo novo. Rotas legadas de midia sem esse contexto ainda devem registrar a tentativa como nao atribuida e bloquear a reconciliacao, nunca descartar o custo nem transferi-lo para outro planejamento.
+
+Custo reportado pelo provedor prevalece; estimativa so pode usar tabela versionada e deve ser identificada como estimativa. Quando nao existir preco confiavel, o custo permanece nulo e reduz a cobertura. Nunca registrar zero apenas porque o provider nao retornou valor. Cada retry e nova chamada externa e uma tentativa financeira independente; atualizacoes de status da mesma tentativa nao podem duplicar custo.
 
 O backend principal **nao deve** implementar integracao direta com providers de video, clientes
 HTTP/SDKs de renderizacao, adaptadores Luma, Kling, HeyGen, Runway, Veo ou qualquer executor de

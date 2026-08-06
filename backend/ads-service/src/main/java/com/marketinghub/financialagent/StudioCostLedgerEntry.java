@@ -28,7 +28,7 @@ public class StudioCostLedgerEntry {
   @Column(name = "commercial_plan_id")
   private Long commercialPlanId;
 
-  @Column(name = "product_id", nullable = false)
+  @Column(name = "product_id")
   private Long productId;
 
   @Column(name = "experiment_id")

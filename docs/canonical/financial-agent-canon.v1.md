@@ -13,6 +13,7 @@ O Agente Financeiro reconcilia diariamente custos e receitas do Marketing Hub po
 - Projeções, impactos estimados, pedidos, checkouts e PRs nunca contam como receita.
 - Toda nova geração manual de imagem ou projeto de vídeo do Estúdio exige produto e plano comercial; experimento é opcional e deve pertencer ao plano quando informado. Tentativas legadas ou excepcionalmente sem plano nunca podem desaparecer: entram no ledger como custo sem atribuição e bloqueiam a conclusão até a regularização.
 - Cada tentativa do Estúdio deve possuir entrada idempotente no ledger com tipo de ativo, origem, produto, plano, experimento, provedor, modelo, status, horários e evidência de custo.
+- A entrada nasce antes do consumo externo e é atualizada pela mesma chave de origem durante processamento, sucesso, falha ou expiração. Áudio, vídeo, imagem, montagem, pós-produção e cada retry pago contam como tentativas independentes.
 - Custo ausente do provedor deve permanecer ausente e reduzir a cobertura; nunca pode ser convertido em custo zero confirmado.
 
 ## Relatório

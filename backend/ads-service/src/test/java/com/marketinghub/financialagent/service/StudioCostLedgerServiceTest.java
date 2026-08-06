@@ -2,6 +2,7 @@ package com.marketinghub.financialagent.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.financialagent.StudioCostLedgerEntry;
@@ -9,6 +10,7 @@ import com.marketinghub.repository.jpa.financialagent.StudioCostLedgerEntryRepos
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 /** Responsabilidade: proteger a interpretacao da cobertura financeira das tentativas do Estudio. */
 class StudioCostLedgerServiceTest {
@@ -43,6 +45,27 @@ class StudioCostLedgerServiceTest {
     assertThat(coverage.get("unknownCostAttempts")).isEqualTo(1L);
     assertThat(coverage.get("imageAttempts")).isEqualTo(1L);
     assertThat(coverage.get("videoAttempts")).isEqualTo(1L);
+    assertThat(coverage.get("audioAttempts")).isEqualTo(0L);
+  }
+
+  /** Confirma que áudio entra no ledger antes de existir custo ou resposta do provedor. */
+  @Test
+  void deveRegistrarTentativaDeAudioSemInventarCustoZero() {
+    StudioCostLedgerEntryRepository repository = mock(StudioCostLedgerEntryRepository.class);
+    when(repository.findBySourceTypeAndSourceId("MEDIA_ASSET", "91"))
+        .thenReturn(java.util.Optional.empty());
+    var service = new StudioCostLedgerService(repository);
+
+    service.recordMedia(
+        91L, 4L, 2L, 81L, "AUDIO", "ELEVENLABS", null, "PENDING", null, false, null, null);
+
+    ArgumentCaptor<StudioCostLedgerEntry> captor =
+        ArgumentCaptor.forClass(StudioCostLedgerEntry.class);
+    verify(repository).save(captor.capture());
+    assertThat(captor.getValue().getAssetType()).isEqualTo("AUDIO");
+    assertThat(captor.getValue().getProviderCostUsd()).isNull();
+    assertThat(captor.getValue().getEstimatedCostUsd()).isNull();
+    assertThat(captor.getValue().getCostEvidence()).isEqualTo("PROVIDER_COST_NOT_REPORTED");
   }
 
   /** Confirma que custos sem plano permanecem visíveis sem contaminar outro planejamento. */

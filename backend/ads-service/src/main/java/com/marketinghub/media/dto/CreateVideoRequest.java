@@ -3,7 +3,7 @@ package com.marketinghub.media.dto;
 import com.marketinghub.media.MediaProvider;
 import lombok.Data;
 
-/** Request body for creating a video asset. */
+/** Responsabilidade: transportar a solicitação e a atribuição comercial de uma geração de vídeo. */
 @Data
 public class CreateVideoRequest {
   private MediaProvider provider;
@@ -11,4 +11,7 @@ public class CreateVideoRequest {
   private String voice;
   private String script;
   private Long campaignId;
+  private Long productId;
+  private Long commercialPlanId;
+  private Long experimentId;
 }

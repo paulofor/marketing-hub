@@ -103,6 +103,9 @@ jobs:
             echo "video_deploy=${video_deploy}"
           } >> "${GITHUB_OUTPUT}"
 
+      - name: Validate transactional app deploy contract
+        run: bash scripts/test-deploy-transactional-contract.sh
+
   sync-app-deploy-descriptors:
     name: Sync app deployment descriptors
     runs-on: ubuntu-latest

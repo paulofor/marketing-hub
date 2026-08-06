@@ -44,4 +44,24 @@ class CodexStrategistRunnerTest {
         .contains("duas classes independentes de evidência");
     assertThat(schema).contains("collectionMethod", "sourceType");
   }
+
+  /** Confirma que constantes booleanas mantêm o tipo exigido pelo Structured Outputs. */
+  @Test
+  void declaresTypeForBooleanConstantInStrictSchema() throws Exception {
+    var schema =
+        new ObjectMapper()
+            .readTree(
+                Path.of("src/main/resources/prompts/experiment-strategist/v1/research-schema.json")
+                    .toFile());
+
+    var approval =
+        schema
+            .path("properties")
+            .path("recommendation")
+            .path("properties")
+            .path("requiresHumanApproval");
+
+    assertThat(approval.path("type").asText()).isEqualTo("boolean");
+    assertThat(approval.path("const").asBoolean()).isTrue();
+  }
 }

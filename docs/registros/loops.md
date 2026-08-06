@@ -347,6 +347,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - teste de frontend somente para aquilo que o backend também consegue extrair.
 - **Regra preventiva**:
   - todo ajuste em prompt deve responder: o schema aceita, a OpenAI aceita, o backend consome, a UI interpreta e o relatório consegue auditar?
+  - propriedades que usam `const` também devem declarar `type`; o contrato do Estrategista possui teste específico para impedir nova rejeição `invalid_json_schema`.
 
 ## LOOP-GL-ARCHITECTURE-STAGES — Arquitetura por etapas do GeraLanding
 

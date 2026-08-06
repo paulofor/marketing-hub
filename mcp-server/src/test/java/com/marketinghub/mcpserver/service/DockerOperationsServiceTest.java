@@ -144,6 +144,7 @@ class DockerOperationsServiceTest {
                 "/tmp/ops-monitor-worker.log",
                 "/tmp/pde-platform-backend.log",
                 "/tmp/video-management-service.log",
+                "/tmp/customer-agent-worker.log",
                 2,
                 3,
                 1,

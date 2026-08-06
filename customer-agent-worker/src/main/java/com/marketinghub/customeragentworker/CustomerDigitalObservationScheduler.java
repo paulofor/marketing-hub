@@ -6,7 +6,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,15 +26,18 @@ public class CustomerDigitalObservationScheduler {
   private final String model;
   private final ObjectMapper mapper = new ObjectMapper();
   private final BrowserObservationRunner browserObservationRunner;
+  private final CodexObservationAnalyzer observationAnalyzer;
 
   /** Inicializa o consumo da fila observacional e as integrações controladas da execução. */
   public CustomerDigitalObservationScheduler(
       @Value("${BACKEND_URL:http://localhost:8080}") String backendUrl,
       @Value("${CUSTOMER_AGENT_MODEL:gpt-5.6-sol}") String model,
-      BrowserObservationRunner browserObservationRunner) {
+      BrowserObservationRunner browserObservationRunner,
+      CodexObservationAnalyzer observationAnalyzer) {
     this.backend = RestClient.builder().baseUrl(backendUrl).build();
     this.model = model;
     this.browserObservationRunner = browserObservationRunner;
+    this.observationAnalyzer = observationAnalyzer;
   }
 
   /** Consulta uma observacao pendente sem criar navegacao quando a fila estiver vazia. */
@@ -79,29 +81,7 @@ public class CustomerDigitalObservationScheduler {
               .replace(
                   "{{BROWSER_OBSERVATION_JSON}}",
                   mapper.writeValueAsString(browserObservation.facts()));
-      Path output = workDirectory.resolve("model-output.json");
-      Process process =
-          new ProcessBuilder(
-                  "codex",
-                  "exec",
-                  "--sandbox",
-                  "read-only",
-                  "--model",
-                  model,
-                  "--skip-git-repo-check",
-                  "--output-schema",
-                  "/app/prompts/customer-agent/v1/digital-observation-schema.json",
-                  prompt)
-              .redirectErrorStream(true)
-              .redirectOutput(output.toFile())
-              .start();
-      if (!process.waitFor(10, TimeUnit.MINUTES)) {
-        process.destroyForcibly();
-        throw new IllegalStateException("Timeout da experiencia digital.");
-      }
-      String raw = Files.readString(output, StandardCharsets.UTF_8);
-      Files.deleteIfExists(output);
-      if (process.exitValue() != 0) throw new IllegalStateException("Codex falhou: " + raw);
+      String raw = observationAnalyzer.analyze(prompt, workDirectory);
       Map<String, Object> result = mapper.readValue(raw, new TypeReference<>() {});
       long personaId = ((Number) ((Map<?, ?>) job.get("persona")).get("id")).longValue();
       uploadScreenshots(personaId, id, browserObservation);

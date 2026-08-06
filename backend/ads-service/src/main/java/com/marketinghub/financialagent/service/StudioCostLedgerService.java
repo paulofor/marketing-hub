@@ -4,6 +4,8 @@ import com.marketinghub.financialagent.StudioCostLedgerEntry;
 import com.marketinghub.repository.jpa.financialagent.StudioCostLedgerEntryRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -90,14 +92,27 @@ public class StudioCostLedgerService {
     return repository.totalCostUsdByPlanId(planId);
   }
 
-  /** Mede a cobertura de custo reportado ou estimado das tentativas do plano. */
+  /** Mede a cobertura sem confundir ausencia de tentativas com custo comprovadamente zero. */
   @Transactional(readOnly = true)
-  public String coverage(Long planId) {
+  public Map<String, Object> coverage(Long planId) {
     var entries = repository.findByCommercialPlanIdOrderByCreatedAtAsc(planId);
     long known =
         entries.stream()
             .filter(e -> e.getProviderCostUsd() != null || e.getEstimatedCostUsd() != null)
             .count();
-    return known + "/" + entries.size() + "_ATTEMPTS_WITH_KNOWN_COST";
+    long images = entries.stream().filter(e -> "IMAGE".equals(e.getAssetType())).count();
+    long videos = entries.stream().filter(e -> "VIDEO".equals(e.getAssetType())).count();
+    String status =
+        entries.isEmpty()
+            ? "NO_ATTEMPTS_RECORDED"
+            : known == entries.size() ? "COMPLETE" : "PARTIAL";
+    LinkedHashMap<String, Object> coverage = new LinkedHashMap<>();
+    coverage.put("status", status);
+    coverage.put("knownCostAttempts", known);
+    coverage.put("totalAttempts", entries.size());
+    coverage.put("unknownCostAttempts", entries.size() - known);
+    coverage.put("imageAttempts", images);
+    coverage.put("videoAttempts", videos);
+    return coverage;
   }
 }

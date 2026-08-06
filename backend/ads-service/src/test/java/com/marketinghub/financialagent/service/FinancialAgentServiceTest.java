@@ -13,6 +13,7 @@ import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.repository.jpa.financialagent.FinancialAgentExecutionRepository;
 import java.math.BigDecimal;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: proteger a conciliacao honesta das fontes financeiras do planejamento. */
@@ -40,7 +41,15 @@ class FinancialAgentServiceTest {
     ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
     StudioCostLedgerService studioCostLedgerService = mock(StudioCostLedgerService.class);
     when(studioCostLedgerService.totalKnownCostUsd(2L)).thenReturn(BigDecimal.ZERO);
-    when(studioCostLedgerService.coverage(2L)).thenReturn("0/0_ATTEMPTS_WITH_KNOWN_COST");
+    when(studioCostLedgerService.coverage(2L))
+        .thenReturn(
+            Map.of(
+                "status", "NO_ATTEMPTS_RECORDED",
+                "knownCostAttempts", 0,
+                "totalAttempts", 0,
+                "unknownCostAttempts", 0,
+                "imageAttempts", 0,
+                "videoAttempts", 0));
     FinancialAgentService service =
         new FinancialAgentService(repository, planService, objectMapper, studioCostLedgerService);
 
@@ -53,5 +62,9 @@ class FinancialAgentServiceTest {
     assertThat(snapshot.get("refundsBrl").isNull()).isTrue();
     assertThat(snapshot.at("/sourceCoverage/refunds").asText())
         .isEqualTo("NOT_YET_AVAILABLE_AS_SEPARATE_SOURCE");
+    assertThat(snapshot.at("/studioCostCoverage/status").asText())
+        .isEqualTo("NO_ATTEMPTS_RECORDED");
+    assertThat(snapshot.get("studioCostInterpretation").asText())
+        .contains("nao comprova custo real zero");
   }
 }

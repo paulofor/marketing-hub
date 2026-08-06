@@ -9,6 +9,7 @@ import com.marketinghub.repository.jpa.customeragent.CustomerAgentEvaluationRepo
 import com.marketinghub.repository.jpa.customeragent.CustomerDigitalObservationRepository;
 import com.marketinghub.repository.jpa.customeragent.CustomerPersonaRepository;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,8 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: governar personas e avaliacoes simuladas sem fabricar validacao humana. */
 @Service
 public class CustomerAgentService {
+  private static final long OBSERVATION_LEASE_MINUTES = 15;
+  private static final int MAX_EXPIRED_OBSERVATIONS_PER_CLAIM = 20;
   private final CustomerPersonaRepository personas;
   private final CustomerAgentEvaluationRepository evaluations;
   private final CustomerDigitalObservationRepository observations;
@@ -62,6 +65,7 @@ public class CustomerAgentService {
   /** Reserva a proxima experiencia digital para o worker observacional. */
   @Transactional
   public DigitalObservationResponse claimPendingObservation() {
+    expireAbandonedObservations();
     List<CustomerDigitalObservation> pending =
         observations.findByStatusOrderByCreatedAtAsc("PENDING", PageRequest.of(0, 1));
     if (pending.isEmpty())
@@ -70,6 +74,23 @@ public class CustomerAgentService {
     value.setStatus("RUNNING");
     value.setStartedAt(Instant.now());
     return observationResponse(observations.save(value));
+  }
+
+  /** Encerra reservas expiradas para que falhas de processo não permaneçam como execução ativa. */
+  private void expireAbandonedObservations() {
+    Instant threshold = Instant.now().minus(OBSERVATION_LEASE_MINUTES, ChronoUnit.MINUTES);
+    List<CustomerDigitalObservation> abandoned =
+        observations.findByStatusAndStartedAtBeforeOrderByStartedAtAsc(
+            "RUNNING", threshold, PageRequest.of(0, MAX_EXPIRED_OBSERVATIONS_PER_CLAIM));
+    Instant finishedAt = Instant.now();
+    abandoned.forEach(
+        observation -> {
+          observation.setStatus("FAILED");
+          observation.setFinishedAt(finishedAt);
+          observation.setRawModelResponse(
+              "Execução encerrada automaticamente: lease observacional expirado sem callback.");
+        });
+    if (!abandoned.isEmpty()) observations.saveAll(abandoned);
   }
 
   /** Persiste as quatro camadas sem promover hipotese a aprendizado humano. */

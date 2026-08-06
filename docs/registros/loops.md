@@ -71,6 +71,17 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 | `LOOP-VIDEO-SCENE-PROMPT-PERSISTENCE` | ALTO | Fechado em 2026-08-05 | Estudio de Audio e Video | storyboard editavel + persistencia unica + teste impede prompt fixo de substituir cena salva |
 | `LOOP-DEPLOY-COMPOSE-CROSS-SERVICE-SECRETS` | ALTO | Fechado em 2026-08-04 | Deploy por serviço | descritor Compose isolado por destino + teste sem secrets alheios |
 | `LOOP-DEPLOY-STALE-IMAGE` | ALTO | Fechado em 2026-08-04 | Detecção de mudanças do deploy | alteração de publicador/workflow força rebuild e teste do artefato |
+| `LOOP-CUSTOMER-AGENT-OBSERVABILITY` | ALTO | Fechado em 2026-08-06 | Agente Cliente | logfile canônico do worker + alias MCP + teste ponta a ponta |
+
+---
+
+## LOOP-CUSTOMER-AGENT-OBSERVABILITY — Observação presa sem diagnóstico completo
+
+- **Severidade**: ALTO.
+- **Status**: fechado em 2026-08-06.
+- **Causa-raiz confirmada**: o `customer-agent-worker` não gravava logs em arquivo nem publicava uma rota de leitura, enquanto o MCP não reconhecia o módulo; falhas de Codex, codec, navegador e callback ficavam reduzidas ao erro persistido no backend.
+- **Correção efetiva**: o worker publica logfile operacional versionado e o MCP o consulta pelo alias `customer-agent-worker`, com destino fixado nos descritores de deploy.
+- **Prevenção**: testes de contrato devem validar a rota, a porta, o destino produtivo e a leitura filtrada pela tool `java_module_logs`.
 
 ---
 
@@ -675,3 +686,9 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Sintoma:** testes do worker passam, mas o build Docker falha com `groupadd: group 'operator' already exists` e impede o deploy do agente.
 - **Causa-raiz:** o Dockerfile assumia que usuário e grupo `operator` não existiam, embora a instalação do Codex ou a imagem-base já pudesse fornecer o grupo.
 - **Prevenção:** reutilizar usuário/grupo existentes e criá-los somente quando ausentes; todo workflow de agente deve executar teste de contrato e construir a imagem antes do deploy.
+
+# LOOP-CUSTOMER-AGENT-OBSERVATION-ORPHAN — Observação mobile presa em RUNNING
+
+- **Sintoma:** observações permanecem indefinidamente em `RUNNING` após interrupção do worker; outras terminam por timeout sem gerar parecer ou memória.
+- **Causa-raiz:** a reserva não tinha expiração; o schema Structured Outputs era inválido em objetos internos; e o Codex herdava configuração/sessão, recebia instrução para navegar novamente e misturava a saída final com logs do processo.
+- **Prevenção:** lease backend de quinze minutos com encerramento auditável, schema estrito coberto por execução real, Codex efêmero sem ferramentas ou configuração herdada, fatos do Chromium como única entrada, JSON final em arquivo dedicado e timeout de quatro minutos coberto por teste.

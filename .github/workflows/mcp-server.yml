@@ -98,8 +98,16 @@ jobs:
     env:
       GHCR_USERNAME: ${{ secrets.GHCR_USERNAME != '' && secrets.GHCR_USERNAME || github.repository_owner }}
       GHCR_TOKEN: ${{ secrets.GHCR_TOKEN != '' && secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
+      MCP_GITHUB_TOKEN: ${{ secrets.MCP_GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Validate MCP GitHub credential
+        run: |
+          if [[ -z "${MCP_GITHUB_TOKEN}" ]]; then
+            echo "[CONTRATO] O secret MCP_GITHUB_TOKEN é obrigatório para as tools GitHub do MCP." >&2
+            exit 1
+          fi
 
       - name: Add SSH key
         uses: webfactory/ssh-agent@v0.7.0
@@ -123,4 +131,4 @@ jobs:
         run: |
           ssh ${VPS_USER}@${MCP_VPS_IP} "chmod +x ${DEPLOY_DIR}/bin/apply-mcp-only.sh"
           ssh ${VPS_USER}@${MCP_VPS_IP} \
-            "GHCR_USERNAME='${GHCR_USERNAME}' GHCR_TOKEN='${GHCR_TOKEN}' MCP_IMAGE='${MCP_REGISTRY_IMAGE}' IMAGE_TAG='${MCP_IMAGE_TAG}' DEPLOY_DIR='${DEPLOY_DIR}' EMAIL='${MCP_CERTBOT_EMAIL}' /bin/bash ${DEPLOY_DIR}/bin/apply-mcp-only.sh"
+            "GHCR_USERNAME='${GHCR_USERNAME}' GHCR_TOKEN='${GHCR_TOKEN}' MCP_GITHUB_TOKEN='${MCP_GITHUB_TOKEN}' MCP_IMAGE='${MCP_REGISTRY_IMAGE}' IMAGE_TAG='${MCP_IMAGE_TAG}' DEPLOY_DIR='${DEPLOY_DIR}' EMAIL='${MCP_CERTBOT_EMAIL}' /bin/bash ${DEPLOY_DIR}/bin/apply-mcp-only.sh"

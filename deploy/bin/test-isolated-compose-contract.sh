@@ -7,7 +7,13 @@ cd "${DEPLOY_DIR}"
 unset LEAD_PORTAL_PAYMENTS_AUTH_TOKEN
 
 docker compose -f docker-compose.video.yml config --quiet
-MYSQL_PASS=contract-test docker compose -f docker-compose.mcp.yml config --quiet
+MYSQL_PASS=contract-test MCP_GITHUB_TOKEN=contract-test docker compose -f docker-compose.mcp.yml config --quiet
+
+grep -Fq 'MCP_GITHUB_ENABLED: ${MCP_GITHUB_ENABLED:-true}' docker-compose.mcp.yml
+grep -Fq 'MCP_GITHUB_OWNER: ${MCP_GITHUB_OWNER:-paulofor}' docker-compose.mcp.yml
+grep -Fq 'MCP_GITHUB_REPO: ${MCP_GITHUB_REPO:-ai-hub}' docker-compose.mcp.yml
+grep -Fq 'MCP_GITHUB_TOKEN: ${MCP_GITHUB_TOKEN:?MCP_GITHUB_TOKEN is required}' docker-compose.mcp.yml
+grep -Fq 'MCP_GITHUB_TOKEN: ${{ secrets.MCP_GITHUB_TOKEN }}' ../.github/workflows/mcp-server.yml
 
 grep -Fq 'MCP_LOG_BACKEND_PATH: ${MCP_LOG_BACKEND_PATH:-http://191.252.181.168/ops-mh-observability-v2/backend-log-stream-x9k}' \
   docker-compose.mcp.yml

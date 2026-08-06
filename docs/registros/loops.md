@@ -73,6 +73,17 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 | `LOOP-DEPLOY-STALE-IMAGE` | ALTO | Fechado em 2026-08-04 | Detecção de mudanças do deploy | alteração de publicador/workflow força rebuild e teste do artefato |
 | `LOOP-CUSTOMER-AGENT-OBSERVABILITY` | ALTO | Fechado em 2026-08-06 | Agente Cliente | logfile canônico do worker + alias MCP + teste ponta a ponta |
 | `LOOP-FINANCIAL-AGENT-OBSERVABILITY` | ALTO | Fechado em 2026-08-06 | Agente Financeiro | logfile canônico do worker + alias MCP + teste ponta a ponta |
+| `LOOP-STUDIO-COST-ATTRIBUTION` | CRÍTICO | Fechado em 2026-08-06 | Estúdio / Agente Financeiro | ledger em todo estado terminal + custos sem plano visíveis e bloqueantes |
+
+---
+
+## LOOP-STUDIO-COST-ATTRIBUTION — Consumo de vídeo invisível na conciliação
+
+- **Severidade**: CRÍTICO.
+- **Status**: fechado em 2026-08-06.
+- **Causa-raiz confirmada**: o ledger só era sincronizado no sucesso e descartava jobs cujo projeto não possuía plano comercial; o MUSA v7 era legado sem plano, deixando inclusive renders concluídos fora da conciliação.
+- **Correção efetiva**: registrar sucesso, falha e expiração de forma idempotente; aceitar provisoriamente atribuição nula para histórico legado; expor custo e cobertura sem plano no snapshot como divergência bloqueante, sem contaminar outro planejamento.
+- **Prevenção**: teste de contrato deve provar que job terminal com projeto e produto sempre entra no ledger e que custos sem plano aparecem ao Agente Financeiro até serem atribuídos corretamente.
 
 ---
 

@@ -44,4 +44,24 @@ class StudioCostLedgerServiceTest {
     assertThat(coverage.get("imageAttempts")).isEqualTo(1L);
     assertThat(coverage.get("videoAttempts")).isEqualTo(1L);
   }
+
+  /** Confirma que custos sem plano permanecem visíveis sem contaminar outro planejamento. */
+  @Test
+  void deveExporCustosSemAtribuicaoComercial() {
+    StudioCostLedgerEntry video = new StudioCostLedgerEntry();
+    video.setAssetType("VIDEO");
+    video.setProviderCostUsd(new BigDecimal("1.20"));
+    StudioCostLedgerEntry unknown = new StudioCostLedgerEntry();
+    unknown.setAssetType("VIDEO");
+    StudioCostLedgerEntryRepository repository = mock(StudioCostLedgerEntryRepository.class);
+    when(repository.totalUnassignedCostUsd()).thenReturn(new BigDecimal("1.20"));
+    when(repository.findByCommercialPlanIdIsNullOrderByCreatedAtAsc())
+        .thenReturn(List.of(video, unknown));
+
+    var service = new StudioCostLedgerService(repository);
+
+    assertThat(service.totalUnassignedCostUsd()).isEqualByComparingTo("1.20");
+    assertThat(service.unassignedCoverage().get("status")).isEqualTo("PARTIAL");
+    assertThat(service.unassignedCoverage().get("totalAttempts")).isEqualTo(2);
+  }
 }

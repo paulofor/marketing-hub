@@ -11,4 +11,6 @@ Regras obrigatórias de cobertura do Estúdio:
 - Se `studioCostCoverage.status` for `NO_ATTEMPTS_RECORDED`, informe que nenhuma tentativa foi auditada e use `BLOCKED_BY_MISSING_SOURCE`.
 - Se for `PARTIAL`, informe quantas tentativas estão sem custo e use `BLOCKED_BY_MISSING_SOURCE`.
 - Só descreva o ledger do Estúdio como completo quando o status for `COMPLETE` e houver ao menos uma tentativa.
+- Se `studioUnassignedCostCoverage.totalAttempts` for maior que zero, liste a atribuição ausente como divergência e use `BLOCKED_BY_MISSING_SOURCE`; não some esse valor ao plano atual nem o esconda.
+- `studioUnassignedKnownCostUsd` representa consumo conhecido do Estúdio ainda sem plano comercial, não custo atribuído ao planejamento analisado.
 - Não some USD aos totais em BRL sem uma taxa cambial auditável presente no snapshot.

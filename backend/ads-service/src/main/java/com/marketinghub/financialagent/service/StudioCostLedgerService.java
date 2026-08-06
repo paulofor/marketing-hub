@@ -80,7 +80,10 @@ public class StudioCostLedgerService {
     entry.setProviderCostUsd(providerReported ? costUsd : null);
     entry.setEstimatedCostUsd(providerReported ? null : costUsd);
     entry.setCurrency("USD");
-    entry.setCostEvidence(providerReported ? "PROVIDER_REPORTED" : "PROVIDER_RATE_CARD_ESTIMATE");
+    entry.setCostEvidence(
+        costUsd == null
+            ? "PROVIDER_COST_NOT_REPORTED"
+            : providerReported ? "PROVIDER_REPORTED" : "PROVIDER_RATE_CARD_ESTIMATE");
     entry.setStartedAt(startedAt);
     entry.setFinishedAt(finishedAt);
     repository.save(entry);
@@ -95,7 +98,23 @@ public class StudioCostLedgerService {
   /** Mede a cobertura sem confundir ausencia de tentativas com custo comprovadamente zero. */
   @Transactional(readOnly = true)
   public Map<String, Object> coverage(Long planId) {
-    var entries = repository.findByCommercialPlanIdOrderByCreatedAtAsc(planId);
+    return coverageOf(repository.findByCommercialPlanIdOrderByCreatedAtAsc(planId));
+  }
+
+  /** Soma custos conhecidos ainda sem plano para impedir que consumo real fique invisível. */
+  @Transactional(readOnly = true)
+  public BigDecimal totalUnassignedCostUsd() {
+    return repository.totalUnassignedCostUsd();
+  }
+
+  /** Mede a cobertura das tentativas que ainda exigem atribuição comercial. */
+  @Transactional(readOnly = true)
+  public Map<String, Object> unassignedCoverage() {
+    return coverageOf(repository.findByCommercialPlanIdIsNullOrderByCreatedAtAsc());
+  }
+
+  /** Consolida cobertura para uma coleção de entradas do ledger. */
+  private Map<String, Object> coverageOf(java.util.List<StudioCostLedgerEntry> entries) {
     long known =
         entries.stream()
             .filter(e -> e.getProviderCostUsd() != null || e.getEstimatedCostUsd() != null)

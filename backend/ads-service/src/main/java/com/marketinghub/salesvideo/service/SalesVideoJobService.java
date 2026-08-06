@@ -220,19 +220,22 @@ public class SalesVideoJobService {
       return;
     }
     Long projectId = readStudioProjectId(job.getMetadataJson());
-    if (projectId == null) {
-      return;
-    }
-    videoProjectRepository
-        .findById(projectId)
-        .filter(project -> project.getProductId() != null && project.getCommercialPlanId() != null)
+    Optional<VideoProject> project =
+        projectId != null
+            ? videoProjectRepository.findById(projectId)
+            : job.getProfile() == null || job.getProfile().getId() == null
+                ? Optional.empty()
+                : videoProjectRepository.findFirstBySalesVideoProfileIdOrderByUpdatedAtDesc(
+                    job.getProfile().getId());
+    project
+        .filter(videoProject -> videoProject.getProductId() != null)
         .ifPresent(
-            project ->
+            videoProject ->
                 studioCostLedgerService.recordVideo(
                     job.getId(),
-                    project.getProductId(),
-                    project.getCommercialPlanId(),
-                    project.getExperimentId(),
+                    videoProject.getProductId(),
+                    videoProject.getCommercialPlanId(),
+                    videoProject.getExperimentId(),
                     job.getProviderName(),
                     job.getProviderName(),
                     job.getStatus().name(),
@@ -412,6 +415,7 @@ public class SalesVideoJobService {
     }
   }
 
+  /** Registra a falha terminal e preserva a tentativa no ledger financeiro do Estúdio. */
   @Transactional
   public SalesVideoJobDto fail(Long jobId, JobFailureRequest request) {
     SalesVideoJob job = loadJob(jobId);
@@ -426,6 +430,7 @@ public class SalesVideoJobService {
     job.setFailureDetail(request.getFailureDetail());
     job.setFinishedAt(Instant.now());
     jobRepository.save(job);
+    syncStudioCostLedger(job, null, false);
     syncFailedExperimentVideoAsset(job, request);
     maybeUpdateProfileStatus(job, newStatus);
     registerEvent(
@@ -438,6 +443,7 @@ public class SalesVideoJobService {
     return toDto(job);
   }
 
+  /** Expira o job e preserva a tentativa no ledger financeiro do Estúdio. */
   @Transactional
   public SalesVideoJobDto expire(Long jobId, JobExpirationRequest request) {
     SalesVideoJob job = loadJob(jobId);
@@ -448,6 +454,7 @@ public class SalesVideoJobService {
     job.setStatus(SalesVideoStatus.VIDEO_FAILED);
     job.setFinishedAt(Instant.now());
     jobRepository.save(job);
+    syncStudioCostLedger(job, null, false);
     maybeUpdateProfileStatus(job, SalesVideoStatus.VIDEO_FAILED);
     registerEvent(
         job,

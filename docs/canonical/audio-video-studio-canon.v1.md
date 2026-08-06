@@ -87,6 +87,8 @@ O backend principal do Marketing Hub deve ser responsavel por:
 - callbacks de progresso, sucesso, falha, expiracao e registro de artefatos;
 - relatorio operacional e comercial para a tela.
 
+Todo callback terminal de job do Estudio, incluindo sucesso, falha e expiracao, deve criar ou atualizar uma entrada idempotente no ledger financeiro. Custo desconhecido permanece nulo e reduz a cobertura; projeto legado sem plano permanece visivel como custo sem atribuicao, nunca e descartado nem atribuido silenciosamente a outro produto.
+
 O backend principal **nao deve** implementar integracao direta com providers de video, clientes
 HTTP/SDKs de renderizacao, adaptadores Luma, Kling, HeyGen, Runway, Veo ou qualquer executor de
 provider. Essas responsabilidades pertencem ao modulo executor de video, atualmente tratado como

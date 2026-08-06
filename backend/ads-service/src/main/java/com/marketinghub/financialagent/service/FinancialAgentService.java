@@ -151,9 +151,11 @@ public class FinancialAgentService {
     snapshot.put("approvedRevenueBrl", revenue);
     snapshot.put("studioKnownCostUsd", studioCostLedgerService.totalKnownCostUsd(plan.getId()));
     snapshot.put("studioCostCoverage", studioCostLedgerService.coverage(plan.getId()));
+    snapshot.put("studioUnassignedKnownCostUsd", studioCostLedgerService.totalUnassignedCostUsd());
+    snapshot.put("studioUnassignedCostCoverage", studioCostLedgerService.unassignedCoverage());
     snapshot.put(
         "studioCostInterpretation",
-        "Custo conhecido igual a zero nao comprova custo real zero quando a cobertura estiver vazia ou parcial.");
+        "Custo conhecido igual a zero nao comprova custo real zero quando a cobertura estiver vazia ou parcial. Tentativas sem plano ficam separadas e bloqueiam conclusao ate serem atribuidas.");
     snapshot.put("contributionBeforeRefundsBrl", revenue.subtract(total));
     snapshot.put("refundsBrl", null);
     snapshot.put(

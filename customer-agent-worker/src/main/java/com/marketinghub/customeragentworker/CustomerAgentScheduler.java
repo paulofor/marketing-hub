@@ -2,11 +2,7 @@ package com.marketinghub.customeragentworker;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,20 +16,14 @@ import org.springframework.web.client.RestClientResponseException;
 public class CustomerAgentScheduler {
   private static final Logger log = LoggerFactory.getLogger(CustomerAgentScheduler.class);
   private final RestClient backend;
-  private final String model;
-  private final long executionTimeoutMinutes;
-  private final CodexTelemetryReporter telemetry;
+  private final CustomerEvaluationCodexRunner codexRunner;
 
-  /** Inicializa o cliente do backend, o modelo e o limite operacional da avaliação. */
+  /** Inicializa o cliente do backend e o executor estruturado da avaliação. */
   public CustomerAgentScheduler(
       @Value("${BACKEND_URL:http://localhost:8080}") String backendUrl,
-      @Value("${CUSTOMER_AGENT_MODEL:gpt-5.6-sol}") String model,
-      @Value("${CUSTOMER_AGENT_EVALUATION_TIMEOUT_MINUTES:40}") long executionTimeoutMinutes,
-      CodexTelemetryReporter telemetry) {
+      CustomerEvaluationCodexRunner codexRunner) {
     this.backend = RestClient.builder().baseUrl(backendUrl).build();
-    this.model = model;
-    this.executionTimeoutMinutes = executionTimeoutMinutes;
-    this.telemetry = telemetry;
+    this.codexRunner = codexRunner;
   }
 
   /** Consulta uma pendencia e executa o Codex sem permitir mutacoes. */
@@ -56,52 +46,13 @@ public class CustomerAgentScheduler {
   private void evaluate(Map<?, ?> job) {
     long id = ((Number) job.get("id")).longValue();
     try {
-      String template = Files.readString(Path.of("/app/prompts/customer-agent/v1/evaluation.md"));
-      String prompt =
-          template
-              .replace("{{PERSONA_JSON}}", String.valueOf(job.get("persona")))
-              .replace("{{ASSET_REFERENCE}}", String.valueOf(job.get("assetReference")));
-      Path output = Files.createTempFile("customer-agent-evaluation-", ".json");
-      Process process =
-          new ProcessBuilder(
-                  "codex",
-                  "exec",
-                  "--sandbox",
-                  "read-only",
-                  "--model",
-                  model,
-                  "--skip-git-repo-check",
-                  prompt)
-              .redirectErrorStream(true)
-              .redirectOutput(output.toFile())
-              .start();
-      try (CodexTelemetryReporter.Session telemetrySession =
-          telemetry.monitor(id, process, output)) {
-        if (!process.waitFor(executionTimeoutMinutes, TimeUnit.MINUTES)) {
-          process.destroyForcibly();
-          throw new IllegalStateException(
-              "Timeout do Codex após " + executionTimeoutMinutes + " minutos.");
-        }
-        String raw = Files.readString(output, StandardCharsets.UTF_8);
-        Files.deleteIfExists(output);
-        if (process.exitValue() != 0) throw new IllegalStateException("Codex falhou: " + raw);
-        backend
-            .post()
-            .uri("/api/customer-agent/v1/internal/evaluations/{id}/complete", id)
-            .body(
-                Map.of(
-                    "assessment",
-                    raw,
-                    "hypothesisJson",
-                    raw,
-                    "rawModelResponse",
-                    raw,
-                    "model",
-                    model))
-            .retrieve()
-            .toBodilessEntity();
-        telemetrySession.success();
-      }
+      Map<String, String> result = codexRunner.run(id, job);
+      backend
+          .post()
+          .uri("/api/customer-agent/v1/internal/evaluations/{id}/complete", id)
+          .body(result)
+          .retrieve()
+          .toBodilessEntity();
     } catch (Exception ex) {
       log.error("Falha no modulo customer-agent ao avaliar ativo, evaluationId={}", id, ex);
       reportFailure("evaluations", id, ex);

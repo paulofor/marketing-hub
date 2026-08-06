@@ -86,10 +86,12 @@ jobs:
                  [ \"\${status}\" = running ] \
                    && docker exec experiment-strategist-worker-experiment-strategist-worker-1 \
                         sh -lc 'test -w /home/strategist/.codex && codex login status' \
+                   && curl -fsS http://127.0.0.1:8096/ops-experiment-strategist-observability-v1/health \
+                        | grep -q '"status":"UP"' \
                    && exit 0; \
                  sleep 5; \
                done; \
-            printf '%s\n' 'Falha: container nao ficou pronto com CODEX_HOME gravavel e sessao Codex autenticada.'; \
+            printf '%s\n' 'Falha: container nao ficou pronto com CODEX_HOME, sessao Codex e health operacional validos.'; \
             docker compose logs --tail=150 experiment-strategist-worker; \
             exit 1"
 

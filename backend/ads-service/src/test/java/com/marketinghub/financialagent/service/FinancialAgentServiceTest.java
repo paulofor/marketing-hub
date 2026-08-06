@@ -13,6 +13,7 @@ import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.repository.jpa.financialagent.FinancialAgentExecutionRepository;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -60,6 +61,20 @@ class FinancialAgentServiceTest {
                 "unknownCostAttempts", 8,
                 "imageAttempts", 0,
                 "videoAttempts", 12));
+    when(studioCostLedgerService.providerEfficiency(2L))
+        .thenReturn(
+            List.of(
+                Map.of(
+                    "provider",
+                    "RUNWAY",
+                    "approvedAssets",
+                    2,
+                    "commercialApprovalRatePercent",
+                    new BigDecimal("50.00"),
+                    "knownCostPerApprovedAssetUsd",
+                    new BigDecimal("1.20"),
+                    "decisionCoverage",
+                    "READY_FOR_COMPARISON")));
     FinancialAgentService service =
         new FinancialAgentService(repository, planService, objectMapper, studioCostLedgerService);
 
@@ -79,5 +94,7 @@ class FinancialAgentServiceTest {
     assertThat(snapshot.at("/studioUnassignedCostCoverage/totalAttempts").asInt()).isEqualTo(12);
     assertThat(snapshot.get("studioCostInterpretation").asText())
         .contains("nao comprova custo real zero");
+    assertThat(snapshot.at("/studioProviderEfficiency/0/provider").asText()).isEqualTo("RUNWAY");
+    assertThat(snapshot.at("/studioProviderEfficiency/0/approvedAssets").asInt()).isEqualTo(2);
   }
 }

@@ -2,9 +2,12 @@ package com.marketinghub.financialagent.service;
 
 import com.marketinghub.financialagent.StudioCostLedgerEntry;
 import com.marketinghub.repository.jpa.financialagent.StudioCostLedgerEntryRepository;
+import com.marketinghub.repository.jpa.financialagent.StudioProviderEfficiencyProjection;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -165,6 +168,55 @@ public class StudioCostLedgerService {
   @Transactional(readOnly = true)
   public Map<String, Object> unassignedCoverage() {
     return coverageOf(repository.findByCommercialPlanIdIsNullOrderByCreatedAtAsc());
+  }
+
+  /** Consolida eficiencia financeira e aprovacao comercial por provedor do plano. */
+  @Transactional(readOnly = true)
+  public List<Map<String, Object>> providerEfficiency(Long planId) {
+    return repository.providerEfficiencyByPlanId(planId).stream()
+        .map(this::providerEfficiencyOf)
+        .toList();
+  }
+
+  /** Calcula indicadores sem inventar custo ou taxa quando falta denominador confiavel. */
+  private Map<String, Object> providerEfficiencyOf(StudioProviderEfficiencyProjection row) {
+    long attempts = value(row.getTotalAttempts());
+    long knownCostAttempts = value(row.getKnownCostAttempts());
+    long reviewedAssets = value(row.getReviewedAssets());
+    long approvedAssets = value(row.getApprovedAssets());
+    BigDecimal knownCost = row.getKnownCostUsd() == null ? BigDecimal.ZERO : row.getKnownCostUsd();
+    LinkedHashMap<String, Object> result = new LinkedHashMap<>();
+    result.put("provider", row.getProvider());
+    result.put("totalAttempts", attempts);
+    result.put("knownCostAttempts", knownCostAttempts);
+    result.put("unknownCostAttempts", attempts - knownCostAttempts);
+    result.put("knownCostUsd", knownCost);
+    result.put("reviewedAssets", reviewedAssets);
+    result.put("approvedAssets", approvedAssets);
+    result.put("pendingReviewAssets", value(row.getPendingReviewAssets()));
+    result.put(
+        "commercialApprovalRatePercent",
+        reviewedAssets == 0
+            ? null
+            : BigDecimal.valueOf(approvedAssets)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(BigDecimal.valueOf(reviewedAssets), 2, RoundingMode.HALF_UP));
+    result.put(
+        "knownCostPerApprovedAssetUsd",
+        approvedAssets == 0
+            ? null
+            : knownCost.divide(BigDecimal.valueOf(approvedAssets), 6, RoundingMode.HALF_UP));
+    result.put(
+        "decisionCoverage",
+        attempts == 0 || knownCostAttempts < attempts
+            ? "INCOMPLETE_COSTS"
+            : reviewedAssets == 0 ? "NO_COMMERCIAL_REVIEWS" : "READY_FOR_COMPARISON");
+    return result;
+  }
+
+  /** Converte agregados nulos do banco em contagens vazias. */
+  private long value(Long value) {
+    return value == null ? 0L : value;
   }
 
   /** Consolida cobertura para uma coleção de entradas do ledger. */

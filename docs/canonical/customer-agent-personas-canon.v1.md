@@ -23,13 +23,15 @@ outro.
 O Agente Cliente opera em sandbox somente leitura. Ele pode retornar `APROVAR_TESTE`, `AJUSTAR` ou
 `REPROVAR`, mas não altera ativos, preços, campanhas, publicações, personas ou resultados humanos.
 
+Na avaliação comercial, o worker deve disponibilizar busca pública e Chromium/Playwright versionados na imagem. A pesquisa verifica linguagem, dores, desejos, objeções, alternativas concorrentes e sinais sociais/econômicos recentes, sempre sem login ou interação que altere estado. Fontes consultadas ficam na resposta bruta auditável com URL, título, data, método e aprendizado. Sinais públicos de redes sociais são hipóteses exploratórias, não validação humana, demanda confirmada ou venda.
+
 O worker possui CI/CD dedicado, identidade Codex persistente e validação de autenticação após cada deploy. Evidências pesadas usam bucket S3 privado, criptografado, versionado e com retenção definida; MySQL continua sendo a fonte de verdade.
 
 Avaliações que terminam em `FAILED` devem preservar a causa técnica em `last_error` e podem ser
 reabertas pelo comando explícito de retry, mantendo o mesmo identificador e incrementando
 `retry_count`. O retry nunca é permitido para avaliações pendentes, em execução ou concluídas. O
 worker deve persistir mensagem, cadeia de causas e stack trace limitado, e seu limite padrão de
-execução é vinte minutos para evitar o encerramento prematuro observado em avaliações válidas.
+execução é quarenta minutos para evitar o encerramento prematuro observado em avaliações válidas.
 O frontend deve apresentar a mensagem principal diretamente e disponibilizar, sob expansão
 explícita, todo o conteúdo persistido em `last_error`; truncar a visualização à primeira linha é
 proibido porque volta a tornar o diagnóstico dependente dos logs do worker.
@@ -114,3 +116,9 @@ restritas a `s3:PutObject` e `s3:GetObject` no prefixo `customer-agent-memory/v1
 O `customer-agent-worker` deve persistir seus logs em arquivo e expor somente a leitura pelo endpoint operacional versionado `/ops-customer-agent-observability-v1/customer-agent-worker-log`. O MCP deve disponibilizar essa origem no módulo `customer-agent-worker` da ferramenta `java_module_logs`, permitindo correlacionar observações, execução do Codex, codecs do navegador e callbacks sem depender apenas do erro resumido persistido no backend.
 
 Toda execução do Codex no Agente Cliente deve usar limite operacional padrão de 40 minutos, configurável por ambiente, e persistir a causa completa quando esse limite for excedido.
+
+Avaliações devem enviar o prompt versionado pela entrada padrão do processo e usar o schema JSON
+versionado com `--output-schema`. A resposta funcional deve ser lida exclusivamente do arquivo
+indicado por `--output-last-message`, validada antes do callback e persistida separadamente do log
+operacional. Saída parcial do processo, mensagens de progresso e diagnóstico nunca podem ser
+tratados como parecer concluído.

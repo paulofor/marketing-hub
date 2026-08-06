@@ -3,6 +3,7 @@ import {
   useFinancialAgentExecutions,
   useStartFinancialAgent,
 } from "../../api/planning/useFinancialAgent";
+import CodexExecutionTelemetry from "../../components/CodexExecutionTelemetry";
 
 function formatDate(value?: string | null) {
   if (!value) return "Horário não informado";
@@ -70,6 +71,10 @@ export default function FinancialAgentPanel({ planId }: { planId: number }) {
                   {execution.status}
                 </span>
               </div>
+              <CodexExecutionTelemetry
+                agentType="FINANCIAL_AGENT"
+                executionId={execution.id}
+              />
               {values ? (
                 <div className="row g-2 mt-1 small">
                   <div className="col-md-3">

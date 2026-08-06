@@ -178,6 +178,17 @@ public class McpController {
                                     "additionalProperties", false)
                     ),
                     Map.of(
+                            "name", "codex_agent_execution_telemetry",
+                            "description", "Consulta heartbeat, processo, atividade, eventos e tokens disponíveis de uma execução dos agentes Codex.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "agentType", Map.of("type", "string", "enum", List.of("CUSTOMER_AGENT", "FINANCIAL_AGENT", "GROWTH_OPERATOR", "EXPERIMENT_STRATEGIST")),
+                                            "executionId", Map.of("type", "integer", "minimum", 1)),
+                                    "required", List.of("agentType", "executionId"),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
                             "name", "pde_db_health",
                             "description", "Valida conectividade com o schema efetivo do PDE em produção e retorna o alvo JDBC sanitizado para auditoria de host/schema.",
                             "inputSchema", Map.of(
@@ -442,6 +453,10 @@ public class McpController {
                 case "db_query" -> callQueryTool(id, arguments);
                 case "studio_ledger_coverage" -> successToolResult(id, studioLedgerCoverageService.diagnose(),
                         "Studio ledger coverage diagnosed");
+                case "codex_agent_execution_telemetry" -> successToolResult(id,
+                        databaseDiagnosticsService.codexAgentTelemetry(
+                                requiredString(arguments, "agentType"), requiredLong(arguments, "executionId")),
+                        "Codex agent execution telemetry");
                 case "pde_db_health" -> successToolResult(id, pdeDatabaseDiagnosticsService.checkConnection(),
                         "PDE database connectivity status");
                 case "pde_db_list_tables" -> successToolResult(id, pdeDatabaseDiagnosticsService.listTables(),
@@ -1040,6 +1055,31 @@ public class McpController {
         } catch (NumberFormatException ex) {
             logger.warn("MCP intArgument inválido: name={} value={}", name, value, ex);
             throw new IllegalArgumentException(name + " must be an integer");
+        }
+    }
+
+    /**
+     * Exige argumento textual não vazio.
+     */
+    private String requiredString(Map<String, Object> arguments, String name) {
+        String value = stringArgument(arguments, name);
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(name + " is required");
+        }
+        return value.trim();
+    }
+
+    /**
+     * Exige identificador numérico positivo.
+     */
+    private long requiredLong(Map<String, Object> arguments, String name) {
+        Object value = arguments.get(name);
+        try {
+            long parsed = value instanceof Number number ? number.longValue() : Long.parseLong(String.valueOf(value));
+            if (parsed < 1) throw new IllegalArgumentException(name + " must be positive");
+            return parsed;
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException(name + " must be an integer", ex);
         }
     }
 

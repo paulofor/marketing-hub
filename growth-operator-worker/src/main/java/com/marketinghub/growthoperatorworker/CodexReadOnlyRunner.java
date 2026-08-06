@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
@@ -19,10 +20,20 @@ import org.springframework.stereotype.Component;
 public class CodexReadOnlyRunner {
   private final WorkerProperties properties;
   private final ObjectMapper objectMapper;
+  private final CodexTelemetryReporter telemetry;
 
-  public CodexReadOnlyRunner(WorkerProperties properties, ObjectMapper objectMapper) {
+  /** Configura o executor com telemetria auditável. */
+  @Autowired
+  public CodexReadOnlyRunner(
+      WorkerProperties properties, ObjectMapper objectMapper, CodexTelemetryReporter telemetry) {
     this.properties = properties;
     this.objectMapper = objectMapper;
+    this.telemetry = telemetry;
+  }
+
+  /** Mantém construção direta dos testes de comando. */
+  public CodexReadOnlyRunner(WorkerProperties properties, ObjectMapper objectMapper) {
+    this(properties, objectMapper, null);
   }
 
   /** Executa um diagnostico efemero sem permitir escrita no repositorio. */
@@ -43,37 +54,45 @@ public class CodexReadOnlyRunner {
       Process process = processBuilder.start();
       process.getOutputStream().write(buildPrompt(job).getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
-      if (!process.waitFor(properties.getCodexTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
-        process.destroyForcibly();
-        process.waitFor(10, TimeUnit.SECONDS);
-        throw new IllegalStateException(
-            "Timeout do Codex do Operador após "
-                + properties.getCodexTimeout().toMinutes()
-                + " minutos.");
+      CodexTelemetryReporter.Session session =
+          telemetry == null ? null : telemetry.monitor(job.id(), process, processOutput);
+      try {
+        if (!process.waitFor(properties.getCodexTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
+          process.destroyForcibly();
+          process.waitFor(10, TimeUnit.SECONDS);
+          throw new IllegalStateException(
+              "Timeout do Codex do Operador após "
+                  + properties.getCodexTimeout().toMinutes()
+                  + " minutos.");
+        }
+        String processLog = Files.readString(processOutput, StandardCharsets.UTF_8);
+        int exitCode = process.exitValue();
+        if (exitCode != 0) {
+          throw new IllegalStateException(
+              "Codex encerrou com codigo " + exitCode + ": " + processLog);
+        }
+        String rawResponse = Files.readString(output);
+        JsonNode result = objectMapper.readTree(rawResponse);
+        validateResult(result);
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put(
+            "alternativesJson", objectMapper.writeValueAsString(result.get("alternatives")));
+        payload.put("diagnosisJson", objectMapper.writeValueAsString(result.get("diagnosis")));
+        payload.put("rawModelResponse", rawResponse);
+        payload.put("toolUsageJson", extractToolUsage(processLog));
+        payload.put("recommendedDecision", result.get("decision").asText());
+        payload.put("recommendedAction", result.get("recommendedAction").asText());
+        payload.put("dailyReport", result.get("dailyReport").asText());
+        payload.put(
+            "model", hasText(properties.getModel()) ? properties.getModel() : "codex-default");
+        payload.put("inputTokens", null);
+        payload.put("outputTokens", null);
+        payload.put("estimatedCost", null);
+        if (session != null) session.success();
+        return payload;
+      } finally {
+        if (session != null) session.close();
       }
-      String processLog = Files.readString(processOutput, StandardCharsets.UTF_8);
-      int exitCode = process.exitValue();
-      if (exitCode != 0) {
-        throw new IllegalStateException(
-            "Codex encerrou com codigo " + exitCode + ": " + processLog);
-      }
-      String rawResponse = Files.readString(output);
-      JsonNode result = objectMapper.readTree(rawResponse);
-      validateResult(result);
-      Map<String, Object> payload = new LinkedHashMap<>();
-      payload.put("alternativesJson", objectMapper.writeValueAsString(result.get("alternatives")));
-      payload.put("diagnosisJson", objectMapper.writeValueAsString(result.get("diagnosis")));
-      payload.put("rawModelResponse", rawResponse);
-      payload.put("toolUsageJson", extractToolUsage(processLog));
-      payload.put("recommendedDecision", result.get("decision").asText());
-      payload.put("recommendedAction", result.get("recommendedAction").asText());
-      payload.put("dailyReport", result.get("dailyReport").asText());
-      payload.put(
-          "model", hasText(properties.getModel()) ? properties.getModel() : "codex-default");
-      payload.put("inputTokens", null);
-      payload.put("outputTokens", null);
-      payload.put("estimatedCost", null);
-      return payload;
     } finally {
       Files.deleteIfExists(output);
       Files.deleteIfExists(processOutput);

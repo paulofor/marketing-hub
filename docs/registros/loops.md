@@ -8,6 +8,13 @@
 >
 > Uso obrigatório recomendado: antes de corrigir problema em GeraLanding, Facebook Ads, Lead Portal, OpenAI/schema, pipelines administrativos ou pipeline de hipótese, verificar se a solicitação reabre algum loop listado aqui.
 
+## LOOP-AGENT-RUNNING-WITHOUT-PROGRESS — Agentes Codex
+
+- Sintoma: execução permanece `RUNNING`, mas não é possível comprovar se o processo Codex está vivo ou avançando.
+- Causa-raiz: o job registrava apenas início, fim e timeout; a atividade intermediária existia somente no processo local do worker.
+- Prevenção: telemetria canônica com heartbeat de 15 segundos, PID, processo vivo, linhas/eventos, bytes de saída, tokens quando informados e detecção de atraso após dois minutos.
+- Contrato: `docs/canonical/codex-agent-execution-telemetry-canon.v1.md` e tool MCP `codex_agent_execution_telemetry`.
+
 ## LOOP-PDE-EVIDENCIA-VAZIA — Descoberta PDE
 
 - Sintoma: pesquisa real sem resultados termina em HTTP 400 no callback `complete` e o ciclo aparece como falha.

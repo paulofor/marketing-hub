@@ -22,15 +22,18 @@ public class CustomerAgentScheduler {
   private final RestClient backend;
   private final String model;
   private final long executionTimeoutMinutes;
+  private final CodexTelemetryReporter telemetry;
 
   /** Inicializa o cliente do backend, o modelo e o limite operacional da avaliação. */
   public CustomerAgentScheduler(
       @Value("${BACKEND_URL:http://localhost:8080}") String backendUrl,
       @Value("${CUSTOMER_AGENT_MODEL:gpt-5.6-sol}") String model,
-      @Value("${CUSTOMER_AGENT_EVALUATION_TIMEOUT_MINUTES:40}") long executionTimeoutMinutes) {
+      @Value("${CUSTOMER_AGENT_EVALUATION_TIMEOUT_MINUTES:40}") long executionTimeoutMinutes,
+      CodexTelemetryReporter telemetry) {
     this.backend = RestClient.builder().baseUrl(backendUrl).build();
     this.model = model;
     this.executionTimeoutMinutes = executionTimeoutMinutes;
+    this.telemetry = telemetry;
   }
 
   /** Consulta uma pendencia e executa o Codex sem permitir mutacoes. */
@@ -72,29 +75,33 @@ public class CustomerAgentScheduler {
               .redirectErrorStream(true)
               .redirectOutput(output.toFile())
               .start();
-      if (!process.waitFor(executionTimeoutMinutes, TimeUnit.MINUTES)) {
-        process.destroyForcibly();
-        throw new IllegalStateException(
-            "Timeout do Codex após " + executionTimeoutMinutes + " minutos.");
+      try (CodexTelemetryReporter.Session telemetrySession =
+          telemetry.monitor(id, process, output)) {
+        if (!process.waitFor(executionTimeoutMinutes, TimeUnit.MINUTES)) {
+          process.destroyForcibly();
+          throw new IllegalStateException(
+              "Timeout do Codex após " + executionTimeoutMinutes + " minutos.");
+        }
+        String raw = Files.readString(output, StandardCharsets.UTF_8);
+        Files.deleteIfExists(output);
+        if (process.exitValue() != 0) throw new IllegalStateException("Codex falhou: " + raw);
+        backend
+            .post()
+            .uri("/api/customer-agent/v1/internal/evaluations/{id}/complete", id)
+            .body(
+                Map.of(
+                    "assessment",
+                    raw,
+                    "hypothesisJson",
+                    raw,
+                    "rawModelResponse",
+                    raw,
+                    "model",
+                    model))
+            .retrieve()
+            .toBodilessEntity();
+        telemetrySession.success();
       }
-      String raw = Files.readString(output, StandardCharsets.UTF_8);
-      Files.deleteIfExists(output);
-      if (process.exitValue() != 0) throw new IllegalStateException("Codex falhou: " + raw);
-      backend
-          .post()
-          .uri("/api/customer-agent/v1/internal/evaluations/{id}/complete", id)
-          .body(
-              Map.of(
-                  "assessment",
-                  raw,
-                  "hypothesisJson",
-                  raw,
-                  "rawModelResponse",
-                  raw,
-                  "model",
-                  model))
-          .retrieve()
-          .toBodilessEntity();
     } catch (Exception ex) {
       log.error("Falha no modulo customer-agent ao avaliar ativo, evaluationId={}", id, ex);
       reportFailure("evaluations", id, ex);

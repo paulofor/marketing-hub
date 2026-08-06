@@ -7,6 +7,7 @@ import {
   useResolveGrowthOperatorTask,
   useStartGrowthOperator,
 } from "../../api/planning/useGrowthOperator";
+import CodexExecutionTelemetry from "../../components/CodexExecutionTelemetry";
 
 function statusLabel(execution: GrowthOperatorExecution) {
   const labels = {
@@ -270,6 +271,10 @@ export default function GrowthOperatorPanel({
                   {statusLabel(execution)}
                 </span>
               </div>
+              <CodexExecutionTelemetry
+                agentType="GROWTH_OPERATOR"
+                executionId={execution.id}
+              />
               <p className="mb-1 mt-2">{execution.objective}</p>
               {execution.recommendedDecision ? (
                 <p className="mb-1">

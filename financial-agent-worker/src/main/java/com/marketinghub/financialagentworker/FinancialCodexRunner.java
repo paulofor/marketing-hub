@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
@@ -19,10 +20,22 @@ import org.springframework.stereotype.Component;
 public class FinancialCodexRunner {
   private final FinancialAgentProperties properties;
   private final ObjectMapper objectMapper;
+  private final CodexTelemetryReporter telemetry;
 
-  public FinancialCodexRunner(FinancialAgentProperties properties, ObjectMapper objectMapper) {
+  /** Configura o executor com telemetria auditável. */
+  @Autowired
+  public FinancialCodexRunner(
+      FinancialAgentProperties properties,
+      ObjectMapper objectMapper,
+      CodexTelemetryReporter telemetry) {
     this.properties = properties;
     this.objectMapper = objectMapper;
+    this.telemetry = telemetry;
+  }
+
+  /** Mantém a construção direta usada por testes de contrato do comando. */
+  public FinancialCodexRunner(FinancialAgentProperties properties, ObjectMapper objectMapper) {
+    this(properties, objectMapper, null);
   }
 
   /** Executa uma conciliacao efemera sem permitir mutacoes financeiras ou no repositorio. */
@@ -38,27 +51,35 @@ public class FinancialCodexRunner {
               .start();
       process.getOutputStream().write(buildPrompt(job).getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
-      if (!process.waitFor(properties.getCodexTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
-        process.destroyForcibly();
-        process.waitFor(10, TimeUnit.SECONDS);
-        throw new IllegalStateException(
-            "Timeout do Codex financeiro após "
-                + properties.getCodexTimeout().toMinutes()
-                + " minutos.");
+      CodexTelemetryReporter.Session session =
+          telemetry == null ? null : telemetry.monitor(job.id(), process, processOutput);
+      try {
+        if (!process.waitFor(properties.getCodexTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
+          process.destroyForcibly();
+          process.waitFor(10, TimeUnit.SECONDS);
+          throw new IllegalStateException(
+              "Timeout do Codex financeiro após "
+                  + properties.getCodexTimeout().toMinutes()
+                  + " minutos.");
+        }
+        String processLog = Files.readString(processOutput, StandardCharsets.UTF_8);
+        int exitCode = process.exitValue();
+        if (exitCode != 0)
+          throw new IllegalStateException("Codex financeiro falhou: " + processLog);
+        String raw = Files.readString(output);
+        JsonNode result = objectMapper.readTree(raw);
+        validate(result);
+        LinkedHashMap<String, Object> payload = new LinkedHashMap<>();
+        payload.put("reconciliationJson", objectMapper.writeValueAsString(result));
+        payload.put("dailyReport", result.get("dailyReport").asText());
+        payload.put("rawModelResponse", raw);
+        payload.put("model", properties.getModel());
+        payload.put("estimatedCost", null);
+        if (session != null) session.success();
+        return payload;
+      } finally {
+        if (session != null) session.close();
       }
-      String processLog = Files.readString(processOutput, StandardCharsets.UTF_8);
-      int exitCode = process.exitValue();
-      if (exitCode != 0) throw new IllegalStateException("Codex financeiro falhou: " + processLog);
-      String raw = Files.readString(output);
-      JsonNode result = objectMapper.readTree(raw);
-      validate(result);
-      LinkedHashMap<String, Object> payload = new LinkedHashMap<>();
-      payload.put("reconciliationJson", objectMapper.writeValueAsString(result));
-      payload.put("dailyReport", result.get("dailyReport").asText());
-      payload.put("rawModelResponse", raw);
-      payload.put("model", properties.getModel());
-      payload.put("estimatedCost", null);
-      return payload;
     } finally {
       Files.deleteIfExists(output);
       Files.deleteIfExists(processOutput);

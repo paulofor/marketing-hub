@@ -1,5 +1,6 @@
 package com.marketinghub.codextelemetry;
 
+import com.marketinghub.repository.jpa.codextelemetry.CodexAgentExecutionTelemetryRepository;
 import java.time.Duration;
 import java.time.Instant;
 import org.springframework.stereotype.Service;

@@ -1,5 +1,6 @@
-package com.marketinghub.codextelemetry;
+package com.marketinghub.repository.jpa.codextelemetry;
 
+import com.marketinghub.codextelemetry.CodexAgentExecutionTelemetry;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 

@@ -37,6 +37,7 @@ class CodexStrategistRunnerTest {
             Path.of("src/main/resources/prompts/experiment-strategist/v1/research-schema.json"));
 
     assertThat(dockerfile)
+        .contains("FROM eclipse-temurin:21-jre-noble")
         .contains("npx playwright-core install --with-deps chromium")
         .contains("COPY --from=build /build/src/main/resources/browser /app/browser");
     assertThat(prompt)

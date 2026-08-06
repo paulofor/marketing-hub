@@ -32,3 +32,19 @@ O modo inicial é `READ_ONLY_RESEARCH`. O agente não cria ou altera campanha, p
 Cada execução deve diferenciar fato, inferência e hipótese; apresentar exatamente três alternativas; comparar benefício, risco, esforço e aderência; escolher uma; e definir métrica principal e critérios de continuar, ajustar e parar.
 
 Recomendação e experimento criado não contam como resultado. O Índice de Maturidade só deve reconhecer resultado quando existir consequência humana ou comercial posterior auditável. A autonomia permanece bloqueada até dez decisões consecutivas confirmadas sem violação de autoridade.
+
+## Fluxo operacional
+
+O usuário solicita a pesquisa no painel do planejamento comercial. O backend congela o contexto e persiste a execução como `PENDING`. O `experiment-strategist-worker` reserva uma execução pelo endpoint interno canônico, pesquisa em sandbox somente leitura e devolve o parecer estruturado ou a causa completa da falha.
+
+O frontend exibe status, pergunta, exatamente três alternativas, recomendação, hipótese, métrica, critérios de continuar, ajustar e parar, fontes públicas e diagnóstico técnico quando houver falha. O histórico não depende dos logs do worker.
+
+O timeout padrão do Codex é de 40 minutos. O worker processa no máximo uma pesquisa por ciclo e nunca avança experimento, publica ativo ou executa a recomendação.
+
+## Endpoints operacionais
+
+- `POST /api/experiment-strategist/v1/commercial-plans/{planId}/executions`: solicita pesquisa;
+- `GET /api/experiment-strategist/v1/commercial-plans/{planId}/executions`: lista histórico e pareceres;
+- `POST /api/experiment-strategist/v1/internal/executions/pending/claim`: reserva uma pendência;
+- `POST /api/experiment-strategist/v1/internal/executions/{id}/complete`: recebe o parecer;
+- `POST /api/experiment-strategist/v1/internal/executions/{id}/fail`: recebe a falha detalhada.

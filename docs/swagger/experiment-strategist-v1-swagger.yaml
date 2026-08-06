@@ -1,8 +1,35 @@
 openapi: 3.0.3
 info:
   title: Estrategista de Experimentos v1
-  version: 1.1.0
+  version: 1.2.0
 paths:
+  /api/experiment-strategist/v1/commercial-plans/{planId}/executions:
+    post:
+      summary: Solicita uma pesquisa estrategica somente leitura.
+      responses:
+        '200': {description: Pesquisa colocada na fila}
+        '400': {description: Pergunta de pesquisa ausente}
+    get:
+      summary: Lista pesquisas, pareceres, fontes e falhas do planejamento.
+      responses:
+        '200': {description: Historico auditavel}
+  /api/experiment-strategist/v1/internal/executions/pending/claim:
+    post:
+      summary: Reserva a pesquisa pendente mais antiga para o worker.
+      responses:
+        '200': {description: Pesquisa reservada}
+        '404': {description: Fila vazia}
+  /api/experiment-strategist/v1/internal/executions/{id}/complete:
+    post:
+      summary: Persiste o parecer estruturado sem aplicar a recomendacao.
+      responses:
+        '200': {description: Parecer persistido}
+        '409': {description: Execucao fora do estado RUNNING}
+  /api/experiment-strategist/v1/internal/executions/{id}/fail:
+    post:
+      summary: Persiste a causa detalhada da falha do worker.
+      responses:
+        '200': {description: Falha persistida}
   /api/experiment-strategist/v1/commercial-plans/{planId}/research-context:
     get:
       summary: Consolida funil, aprendizados e memoria comportamental vigente.

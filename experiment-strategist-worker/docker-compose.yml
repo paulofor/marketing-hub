@@ -1,0 +1,22 @@
+services:
+  experiment-strategist-worker:
+    image: ${EXPERIMENT_STRATEGIST_IMAGE:-marketing-hub/experiment-strategist-worker:local}
+    restart: unless-stopped
+    build:
+      context: .
+      args:
+        CODEX_VERSION: "0.146.0"
+    environment:
+      BACKEND_URL: ${BACKEND_URL:-http://backend:8000}
+      MARKETING_HUB_REPOSITORY: /workspace/marketing-hub
+      CODEX_MODEL: ${CODEX_MODEL:-gpt-5.6-sol}
+      EXPERIMENT_STRATEGIST_CODEX_TIMEOUT: ${EXPERIMENT_STRATEGIST_CODEX_TIMEOUT:-PT40M}
+      LOG_FILE_NAME: /tmp/experiment-strategist-worker.log
+    volumes:
+      - ${MARKETING_HUB_REPOSITORY_HOST:-..}:/workspace/marketing-hub:ro
+      - ${CODEX_HOME}:/home/strategist/.codex
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true

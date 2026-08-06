@@ -1,0 +1,23 @@
+server:
+  port: 8096
+management:
+  endpoints:
+    web:
+      base-path: /ops-experiment-strategist-observability-v1
+      exposure:
+        include: health,logfile
+  endpoint:
+    logfile:
+      external-file: ${LOG_FILE_NAME:/tmp/experiment-strategist-worker.log}
+spring:
+  application:
+    name: experiment-strategist-worker
+logging:
+  file:
+    name: ${LOG_FILE_NAME:/tmp/experiment-strategist-worker.log}
+experiment-strategist:
+  backend-url: ${BACKEND_URL:http://backend:8000}
+  repository-path: ${MARKETING_HUB_REPOSITORY:/workspace/marketing-hub}
+  codex-command: ${CODEX_COMMAND:codex}
+  model: ${CODEX_MODEL:}
+  codex-timeout: ${EXPERIMENT_STRATEGIST_CODEX_TIMEOUT:PT40M}

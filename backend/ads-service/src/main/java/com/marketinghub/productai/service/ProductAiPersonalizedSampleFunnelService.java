@@ -6,11 +6,11 @@ import com.marketinghub.leadportal.LeadPortalFlowQuestion;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
+import com.marketinghub.productai.PersonalizedSampleFunnelTemplate;
 import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.productai.dto.PersonalizedSampleFunnelDto;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
-import java.text.Normalizer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -48,7 +48,8 @@ public class ProductAiPersonalizedSampleFunnelService {
 
   /** Cria ou normaliza o funil canônico de coleta de dados para o experimento Produto IA. */
   @Transactional
-  public PersonalizedSampleFunnelDto createOrUpdate(Long experimentId) {
+  public PersonalizedSampleFunnelDto createOrUpdate(
+      Long experimentId, PersonalizedSampleFunnelTemplate requestedTemplate) {
     Experiment experiment =
         experimentRepository
             .findById(experimentId)
@@ -59,13 +60,15 @@ public class ProductAiPersonalizedSampleFunnelService {
     LeadPortalFlow flow = resolveFlow(experiment);
     flow.setName("Produto IA - amostra personalizada - exp " + experiment.getId());
     flow.setSlug(resolveSlug(flow, experiment.getId()));
-    flow.setDescription(buildDescription(experiment));
+    PersonalizedSampleFunnelTemplate template =
+        requestedTemplate == null ? PersonalizedSampleFunnelTemplate.GENERIC : requestedTemplate;
+    flow.setDescription(buildDescription(experiment, template));
     flow.setMarketNiche(experiment.getNiche());
     flow.setExperiment(experiment);
     flow.setSchemaFirst(true);
     flow.setModel("AI_PERSONALIZED_SAMPLE_FUNNEL");
     flow.getQuestions().clear();
-    flow.getQuestions().addAll(buildQuestions(flow, experiment));
+    flow.getQuestions().addAll(buildQuestions(flow, template));
     flow.setApproved(true);
     if (flow.getApprovedAt() == null) {
       flow.setApprovedAt(Instant.now());
@@ -119,7 +122,8 @@ public class ProductAiPersonalizedSampleFunnelService {
   }
 
   /** Descreve a finalidade comercial do funil para auditoria operacional. */
-  private String buildDescription(Experiment experiment) {
+  private String buildDescription(
+      Experiment experiment, PersonalizedSampleFunnelTemplate template) {
     String promise =
         StringUtils.hasText(experiment.getFunnelPromise())
             ? experiment.getFunnelPromise()
@@ -128,15 +132,20 @@ public class ProductAiPersonalizedSampleFunnelService {
       promise = "gerar uma amostra visual personalizada antes da compra";
     }
     return "Funil canônico para coletar dados do lead e permitir geração de amostra personalizada: "
-        + promise.trim();
+        + promise.trim()
+        + ". Template: "
+        + template.name();
   }
 
   /** Monta as perguntas mínimas necessárias para gerar algo exclusivo para o lead. */
-  private List<LeadPortalFlowQuestion> buildQuestions(LeadPortalFlow flow, Experiment experiment) {
+  private List<LeadPortalFlowQuestion> buildQuestions(
+      LeadPortalFlow flow, PersonalizedSampleFunnelTemplate template) {
     List<QuestionSpec> specs =
-        isDecorationByPhotoExperiment(experiment)
-            ? buildDecorationByPhotoQuestionSpecs()
-            : buildGenericQuestionSpecs();
+        switch (template) {
+          case SOCIAL_MEDIA_MICRO_SAMPLE -> buildSocialMediaMicroSampleQuestionSpecs();
+          case DECORATION_BY_PHOTO -> buildDecorationByPhotoQuestionSpecs();
+          case GENERIC -> buildGenericQuestionSpecs();
+        };
     List<LeadPortalFlowQuestion> questions = new ArrayList<>();
     for (int index = 0; index < specs.size(); index++) {
       QuestionSpec spec = specs.get(index);
@@ -150,7 +159,7 @@ public class ProductAiPersonalizedSampleFunnelService {
               .description(spec.description())
               .placeholder(spec.description())
               .position(index)
-              .options(new ArrayList<>())
+              .options(new ArrayList<>(spec.options()))
               .build());
     }
     return questions;
@@ -164,31 +173,76 @@ public class ProductAiPersonalizedSampleFunnelService {
             "email",
             LeadPortalQuestionType.EMAIL,
             true,
-            "Canal para enviar a amostra e continuar o relacionamento."),
+            "Canal para enviar a amostra e continuar o relacionamento.",
+            List.of()),
         new QuestionSpec(
             "Qual é o nome do seu negócio ou perfil e o que você publica hoje?",
             "negocio_projeto",
             LeadPortalQuestionType.TEXTAREA,
             true,
-            "Contexto principal para personalizar o post."),
+            "Contexto principal para personalizar o post.",
+            List.of()),
         new QuestionSpec(
             "Qual serviço você quer divulgar e qual dificuldade enfrenta para atrair clientes?",
             "contexto_atual",
             LeadPortalQuestionType.TEXTAREA,
             true,
-            "Define a oferta e a dor que o post precisa comunicar."),
+            "Define a oferta e a dor que o post precisa comunicar.",
+            List.of()),
         new QuestionSpec(
             "Qual ação você quer que a cliente tome ao ver o post?",
             "objetivo_visual",
             LeadPortalQuestionType.TEXTAREA,
             true,
-            "Exemplo: pedir horários disponíveis pelo WhatsApp."),
+            "Exemplo: pedir horários disponíveis pelo WhatsApp.",
+            List.of()),
         new QuestionSpec(
             "Quais detalhes, cores e informações precisam aparecer?",
             "dados_personalizacao",
             LeadPortalQuestionType.TEXTAREA,
             true,
-            "Inclua WhatsApp, cidade, estilo e qualquer informação que deva estar no post ou na legenda."));
+            "Inclua WhatsApp, cidade, estilo e qualquer informação que deva estar no post ou na legenda.",
+            List.of()));
+  }
+
+  /** Monta o template de três decisões comerciais para post e story personalizados. */
+  private List<QuestionSpec> buildSocialMediaMicroSampleQuestionSpecs() {
+    return List.of(
+        new QuestionSpec(
+            "Qual é o seu nome profissional?",
+            "nome_profissional",
+            LeadPortalQuestionType.TEXT,
+            true,
+            "O nome que deve aparecer no post e no story.",
+            List.of()),
+        new QuestionSpec(
+            "Qual serviço você quer divulgar?",
+            "servico_divulgado",
+            LeadPortalQuestionType.TEXT,
+            true,
+            "Exemplo: alongamento em gel, banho de gel ou manutenção.",
+            List.of()),
+        new QuestionSpec(
+            "Qual estilo combina mais com o seu trabalho?",
+            "estilo_visual",
+            LeadPortalQuestionType.SINGLE_CHOICE,
+            true,
+            "Escolha uma identidade para a sua amostra.",
+            List.of("Elegante e minimalista", "Delicada e romântica", "Marcante e moderna")),
+        new QuestionSpec(
+            "Qual é o seu e-mail?",
+            "email",
+            LeadPortalQuestionType.EMAIL,
+            true,
+            "Usaremos apenas para entregar a amostra e acompanhar sua solicitação.",
+            List.of()),
+        new QuestionSpec(
+            "Envie uma foto de referência, se quiser.",
+            "foto_referencia",
+            LeadPortalQuestionType.IMAGE_UPLOAD,
+            false,
+            "Opcional. A amostra também pode ser criada sem foto.",
+            List.of()));
   }
 
   /** Monta o formulário especializado do piloto DecoraIA Express por foto de ambiente. */
@@ -199,97 +253,71 @@ public class ProductAiPersonalizedSampleFunnelService {
             "nome",
             LeadPortalQuestionType.TEXT,
             true,
-            "Usado para personalizar a entrega visual."),
+            "Usado para personalizar a entrega visual.",
+            List.of()),
         new QuestionSpec(
             "Qual é o seu e-mail?",
             "email",
             LeadPortalQuestionType.EMAIL,
             true,
-            "Canal para enviar a amostra e continuar o relacionamento."),
+            "Canal para enviar a amostra e continuar o relacionamento.",
+            List.of()),
         new QuestionSpec(
             "Qual é o seu WhatsApp?",
             "whatsapp",
             LeadPortalQuestionType.PHONE,
             true,
-            "Canal operacional para entrega e suporte."),
+            "Canal operacional para entrega e suporte.",
+            List.of()),
         new QuestionSpec(
             "Envie uma foto do ambiente que você quer melhorar.",
             "foto_ambiente",
             LeadPortalQuestionType.IMAGE_UPLOAD,
             true,
-            "A foto é o insumo principal para o diagnóstico visual personalizado."),
+            "A foto é o insumo principal para o diagnóstico visual personalizado.",
+            List.of()),
         new QuestionSpec(
             "Qual ambiente você quer transformar?",
             "ambiente_a_transformar",
             LeadPortalQuestionType.TEXT,
             true,
-            "Exemplos: sala, quarto, home office, cozinha, varanda ou loja."),
+            "Exemplos: sala, quarto, home office, cozinha, varanda ou loja.",
+            List.of()),
         new QuestionSpec(
             "O que mais incomoda nesse ambiente?",
             "incomodo_principal",
             LeadPortalQuestionType.TEXTAREA,
             true,
-            "Ajuda a IA a priorizar a dor visual e funcional do lead."),
+            "Ajuda a IA a priorizar a dor visual e funcional do lead.",
+            List.of()),
         new QuestionSpec(
             "Que resultado visual você quer enxergar?",
             "objetivo_visual",
             LeadPortalQuestionType.TEXTAREA,
             true,
-            "Exemplos: mais bonito, funcional, aconchegante, moderno ou organizado."),
+            "Exemplos: mais bonito, funcional, aconchegante, moderno ou organizado.",
+            List.of()),
         new QuestionSpec(
             "Quanto você pretende gastar aproximadamente?",
             "orcamento_aproximado",
             LeadPortalQuestionType.TEXT,
             true,
-            "Permite sugerir melhorias compatíveis com o orçamento declarado."),
+            "Permite sugerir melhorias compatíveis com o orçamento declarado.",
+            List.of()),
         new QuestionSpec(
             "Quais detalhes precisam ser considerados?",
             "dados_personalizacao",
             LeadPortalQuestionType.TEXTAREA,
             true,
-            "Inclua medidas aproximadas, móveis que devem ficar, restrições e preferências."),
+            "Inclua medidas aproximadas, móveis que devem ficar, restrições e preferências.",
+            List.of()),
         new QuestionSpec(
             "Existe algum estilo de decoração que você prefere?",
             "preferencias_visuais",
             LeadPortalQuestionType.TEXTAREA,
             false,
-            "Exemplos: moderno, minimalista, rústico, industrial, escandinavo ou colorido."));
-  }
-
-  /** Identifica quando o Produto IA é o piloto de decoração por foto. */
-  private boolean isDecorationByPhotoExperiment(Experiment experiment) {
-    String text =
-        normalize(
-            String.join(
-                " ",
-                nullToBlank(experiment.getName()),
-                nullToBlank(experiment.getHypothesis()),
-                nullToBlank(experiment.getFunnelPromise()),
-                experiment.getNiche() == null ? "" : nullToBlank(experiment.getNiche().getName()),
-                experiment.getNiche() == null
-                    ? ""
-                    : nullToBlank(experiment.getNiche().getDescription())));
-    boolean hasEnvironmentContext =
-        text.contains("ambiente")
-            || text.contains("sala")
-            || text.contains("quarto")
-            || text.contains("home office");
-    boolean hasVisualPhotoContext = text.contains("foto") || text.contains("visual");
-    return text.contains("decoraia")
-        || text.contains("decoracao")
-        || text.contains("decorar")
-        || (hasEnvironmentContext && hasVisualPhotoContext);
-  }
-
-  /** Normaliza texto comercial para detecção simples de variações com acento. */
-  private String normalize(String value) {
-    String normalized = Normalizer.normalize(value, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
-    return normalized.toLowerCase(Locale.ROOT);
-  }
-
-  /** Evita nulos na composição do contexto comercial usado pela detecção. */
-  private String nullToBlank(String value) {
-    return value == null ? "" : value;
+            "Exemplos: moderno, minimalista, rústico, industrial, escandinavo ou colorido.",
+            List.of()));
   }
 
   /** Publica o fluxo no Lead Portal sem esconder falhas de integração. */
@@ -325,5 +353,6 @@ public class ProductAiPersonalizedSampleFunnelService {
       String dataKey,
       LeadPortalQuestionType type,
       boolean required,
-      String description) {}
+      String description,
+      List<String> options) {}
 }

@@ -2626,6 +2626,7 @@ export default function ExperimentDetailPage() {
           <Tabs.Content value="construction" asChild>
             <ExperimentConstructionTab
               experimentId={expId}
+              productAiSubtype={data?.productAiSubtype}
               onSelectTab={setTab}
             />
           </Tabs.Content>
@@ -3689,7 +3690,6 @@ export default function ExperimentDetailPage() {
                   </div>
                 </div>
               </div>
-
             </div>
           </Tabs.Content>
           <Tabs.Content value="content-structure" asChild>

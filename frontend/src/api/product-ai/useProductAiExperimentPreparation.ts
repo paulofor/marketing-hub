@@ -68,3 +68,33 @@ export function usePrepareProductAiHypothesis() {
     },
   });
 }
+
+export type PersonalizedSampleFunnelTemplate =
+  "GENERIC" | "SOCIAL_MEDIA_MICRO_SAMPLE" | "DECORATION_BY_PHOTO";
+
+export interface PersonalizedSampleFunnel {
+  experimentId: number;
+  leadPortalFlowId: number;
+  leadPortalFlowSlug: string;
+  approved: boolean;
+  approvedAt?: string | null;
+  dataKeys: string[];
+}
+
+export function useCreatePersonalizedSampleFunnel() {
+  return useMutation({
+    mutationFn: async ({
+      experimentId,
+      template,
+    }: {
+      experimentId: string;
+      template: PersonalizedSampleFunnelTemplate;
+    }) => {
+      const { data } = await axios.post<PersonalizedSampleFunnel>(
+        `/api/product-ai/experiments/${experimentId}/personalized-sample-funnel`,
+        { template },
+      );
+      return data;
+    },
+  });
+}

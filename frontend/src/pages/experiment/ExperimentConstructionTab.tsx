@@ -1,8 +1,16 @@
 import { CheckCircle2 } from "lucide-react";
+import { useState } from "react";
 import { useExperimentConstruction } from "../../api/experiment/useExperimentConstruction";
+import {
+  type PersonalizedSampleFunnel,
+  type PersonalizedSampleFunnelTemplate,
+  useCreatePersonalizedSampleFunnel,
+} from "../../api/product-ai/useProductAiExperimentPreparation";
+import type { ProductAiSubtype } from "../../api/experiment/useExperiments";
 
 interface ExperimentConstructionTabProps {
   experimentId?: string;
+  productAiSubtype?: ProductAiSubtype | null;
   onSelectTab?: (tab: string) => void;
 }
 
@@ -18,9 +26,22 @@ function formatConstructionValue(value: string) {
 
 export default function ExperimentConstructionTab({
   experimentId,
+  productAiSubtype,
   onSelectTab,
 }: ExperimentConstructionTabProps) {
   const { data, isLoading, error } = useExperimentConstruction(experimentId);
+  const createFunnel = useCreatePersonalizedSampleFunnel();
+  const [template, setTemplate] = useState<PersonalizedSampleFunnelTemplate>(
+    "SOCIAL_MEDIA_MICRO_SAMPLE",
+  );
+  const [createdFunnel, setCreatedFunnel] =
+    useState<PersonalizedSampleFunnel | null>(null);
+
+  const handleCreateFunnel = async () => {
+    if (!experimentId) return;
+    const result = await createFunnel.mutateAsync({ experimentId, template });
+    setCreatedFunnel(result);
+  };
 
   if (isLoading) {
     return (
@@ -42,6 +63,65 @@ export default function ExperimentConstructionTab({
 
   return (
     <div className="d-flex flex-column gap-3">
+      {productAiSubtype === "AI_PERSONALIZED_SAMPLE" ? (
+        <div className="card border-primary-subtle">
+          <div className="card-body">
+            <h5 className="card-title">Funil reutilizável de microamostra</h5>
+            <p className="text-muted small">
+              Escolha explicitamente o modelo de coleta. O mesmo contrato pode
+              ser usado por outros experimentos sem duplicar páginas ou regras
+              de tracking.
+            </p>
+            <div className="d-flex flex-column flex-md-row gap-2 align-items-md-end">
+              <label className="flex-grow-1">
+                <span className="form-label">Template do funil</span>
+                <select
+                  className="form-select"
+                  value={template}
+                  onChange={(event) =>
+                    setTemplate(
+                      event.target.value as PersonalizedSampleFunnelTemplate,
+                    )
+                  }
+                >
+                  <option value="SOCIAL_MEDIA_MICRO_SAMPLE">
+                    Microamostra social — 3 decisões + contato
+                  </option>
+                  <option value="GENERIC">
+                    Amostra personalizada genérica
+                  </option>
+                  <option value="DECORATION_BY_PHOTO">
+                    Decoração por foto
+                  </option>
+                </select>
+              </label>
+              <button
+                className="btn btn-primary"
+                type="button"
+                disabled={createFunnel.isPending}
+                onClick={handleCreateFunnel}
+              >
+                {createFunnel.isPending
+                  ? "Preparando..."
+                  : "Criar ou atualizar funil"}
+              </button>
+            </div>
+            {createFunnel.isError ? (
+              <div className="alert alert-danger mt-3 mb-0">
+                Não foi possível preparar o funil. Revise o experimento e tente
+                novamente.
+              </div>
+            ) : null}
+            {createdFunnel ? (
+              <div className="alert alert-success mt-3 mb-0">
+                Funil aprovado e publicado:{" "}
+                <strong>{createdFunnel.leadPortalFlowSlug}</strong>. Campos:{" "}
+                {createdFunnel.dataKeys.join(", ")}.
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
       <div className="border rounded-3 p-3 bg-light">
         <div className="d-flex flex-wrap justify-content-between gap-2">
           <div>

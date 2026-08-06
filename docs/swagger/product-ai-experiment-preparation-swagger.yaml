@@ -4,6 +4,36 @@ info:
   version: 1.0.0
   description: Contrato para validar se uma hipótese Produto IA pode virar experimento rastreável.
 paths:
+  /api/product-ai/experiments/{experimentId}/personalized-sample-funnel:
+    post:
+      summary: Cria ou atualiza o funil reutilizável de amostra personalizada
+      description: Publica no Lead Portal um fluxo configurado por template explícito e o vincula ao experimento Produto IA.
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePersonalizedSampleFunnelRequest'
+      responses:
+        '200':
+          description: Funil persistido, aprovado e publicado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalizedSampleFunnel'
+        '400':
+          description: Experimento incompatível ou sem nicho.
+        '404':
+          description: Experimento não encontrado.
+        '502':
+          description: Publicação no Lead Portal falhou.
   /api/product-ai/experiment-preparations/{hypothesisId}:
     get:
       summary: Consulta preparo sistêmico de Produto IA
@@ -76,6 +106,34 @@ paths:
           description: Hipótese não encontrada.
 components:
   schemas:
+    CreatePersonalizedSampleFunnelRequest:
+      type: object
+      properties:
+        template:
+          type: string
+          enum: [GENERIC, SOCIAL_MEDIA_MICRO_SAMPLE, DECORATION_BY_PHOTO]
+          default: GENERIC
+    PersonalizedSampleFunnel:
+      type: object
+      required: [experimentId, leadPortalFlowId, leadPortalFlowSlug, approved, dataKeys]
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+        leadPortalFlowId:
+          type: integer
+          format: int64
+        leadPortalFlowSlug:
+          type: string
+        approved:
+          type: boolean
+        approvedAt:
+          type: string
+          format: date-time
+        dataKeys:
+          type: array
+          items:
+            type: string
     ProductAiHypothesisPreparationRequest:
       type: object
       properties:

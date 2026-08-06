@@ -43,6 +43,15 @@ A interface deve informar que o identificador será automático e não deve exig
 1. O usuário entra no detalhe do experimento.
 2. A execução acontece por etapas guiadas, com geração e validação progressiva dos artefatos.
 
+### 3.2.1 Funil reutilizável de amostra personalizada
+
+Experimentos `AI_PERSONALIZED_SAMPLE` devem criar o fluxo público pela aba Construção, escolhendo
+um template explícito. O template define o contrato de coleta e pode ser reutilizado por produtos
+do mesmo mecanismo, sem inferência pelo nome do experimento e sem duplicação de página. O template
+`SOCIAL_MEDIA_MICRO_SAMPLE` coleta três decisões comerciais (nome profissional, serviço e estilo),
+além do contato necessário para entrega e de foto opcional. Visualização, início e conclusão do
+formulário continuam sendo encaminhados pelo Lead Portal ao funil canônico do backend.
+
 ## 4. Pipeline de experimento (núcleo inicial)
 
 A sequência canônica de seções do pipeline inclui:

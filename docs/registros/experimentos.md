@@ -6527,3 +6527,9 @@
   métrica/meta e critérios de decisão, além dos parâmetros quantitativos disponíveis;
 - prevenção: o prompt obriga comparar eventos reais com o contrato e retornar `ADJUST` quando o
   objetivo ou a métrica estiverem incompletos, sem criar uma segunda fonte de verdade no plano.
+# 2026-08-06 — criação idempotente do funil de microamostra
+
+- Sintoma confirmado no experimento 84: repetir `Criar ou atualizar funil` no fluxo 57 tentava inserir novamente a chave `nome_profissional` antes de remover a pergunta anterior, violando a unicidade `(flow_id, data_key)`.
+- Causa-raiz: o serviço substituía toda a coleção JPA com `orphanRemoval`; a ordenação do flush do Hibernate não garantia os deletes antes dos inserts.
+- Correção: as perguntas passam a ser reconciliadas por `dataKey`, preservando entidades e IDs existentes, atualizando o contrato vigente, criando somente chaves ausentes e removendo somente chaves obsoletas.
+- Prevenção: teste unitário cobre reexecução sobre fluxo persistido e exige chaves únicas, ordem canônica e preservação do ID da pergunta existente.

@@ -14,8 +14,10 @@ import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,8 +69,7 @@ public class ProductAiPersonalizedSampleFunnelService {
     flow.setExperiment(experiment);
     flow.setSchemaFirst(true);
     flow.setModel("AI_PERSONALIZED_SAMPLE_FUNNEL");
-    flow.getQuestions().clear();
-    flow.getQuestions().addAll(buildQuestions(flow, template));
+    reconcileQuestions(flow, template);
     flow.setApproved(true);
     if (flow.getApprovedAt() == null) {
       flow.setApprovedAt(Instant.now());
@@ -137,32 +138,49 @@ public class ProductAiPersonalizedSampleFunnelService {
         + template.name();
   }
 
-  /** Monta as perguntas mínimas necessárias para gerar algo exclusivo para o lead. */
-  private List<LeadPortalFlowQuestion> buildQuestions(
-      LeadPortalFlow flow, PersonalizedSampleFunnelTemplate template) {
+  /**
+   * Reconcilia as perguntas pela chave canônica, preservando IDs e respostas históricas em novas
+   * execuções do mesmo comando.
+   */
+  private void reconcileQuestions(LeadPortalFlow flow, PersonalizedSampleFunnelTemplate template) {
     List<QuestionSpec> specs =
         switch (template) {
           case SOCIAL_MEDIA_MICRO_SAMPLE -> buildSocialMediaMicroSampleQuestionSpecs();
           case DECORATION_BY_PHOTO -> buildDecorationByPhotoQuestionSpecs();
           case GENERIC -> buildGenericQuestionSpecs();
         };
-    List<LeadPortalFlowQuestion> questions = new ArrayList<>();
+    Map<String, LeadPortalFlowQuestion> existingByDataKey = new LinkedHashMap<>();
+    for (LeadPortalFlowQuestion question : flow.getQuestions()) {
+      existingByDataKey.putIfAbsent(question.getDataKey(), question);
+    }
+    List<LeadPortalFlowQuestion> reconciled = new ArrayList<>();
     for (int index = 0; index < specs.size(); index++) {
       QuestionSpec spec = specs.get(index);
-      questions.add(
-          LeadPortalFlowQuestion.builder()
-              .flow(flow)
-              .title(spec.title())
-              .dataKey(spec.dataKey())
-              .type(spec.type())
-              .required(spec.required())
-              .description(spec.description())
-              .placeholder(spec.description())
-              .position(index)
-              .options(new ArrayList<>(spec.options()))
-              .build());
+      LeadPortalFlowQuestion question = existingByDataKey.get(spec.dataKey());
+      if (question == null) {
+        question = LeadPortalFlowQuestion.builder().flow(flow).dataKey(spec.dataKey()).build();
+      }
+      applyQuestionSpec(question, flow, spec, index);
+      reconciled.add(question);
     }
-    return questions;
+    flow.getQuestions().removeIf(question -> !reconciled.contains(question));
+    flow.getQuestions().clear();
+    flow.getQuestions().addAll(reconciled);
+  }
+
+  /** Atualiza uma pergunta existente ou nova com o contrato atual do template. */
+  private void applyQuestionSpec(
+      LeadPortalFlowQuestion question, LeadPortalFlow flow, QuestionSpec spec, int position) {
+    question.setFlow(flow);
+    question.setTitle(spec.title());
+    question.setDataKey(spec.dataKey());
+    question.setType(spec.type());
+    question.setRequired(spec.required());
+    question.setDescription(spec.description());
+    question.setPlaceholder(spec.description());
+    question.setPosition(position);
+    question.getOptions().clear();
+    question.getOptions().addAll(spec.options());
   }
 
   /** Monta o formulário padrão para Produto IA com amostra personalizada. */

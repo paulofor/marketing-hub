@@ -34,6 +34,8 @@ O módulo executor é `financial-agent-worker`. Prompt e schema ficam versionado
 
 O worker deve persistir logs em arquivo e publicar somente a leitura pelo endpoint operacional versionado `/ops-financial-agent-observability-v1/financial-agent-worker-log`. O MCP deve disponibilizar essa origem no módulo `financial-agent-worker` da ferramenta `java_module_logs`, permitindo correlacionar reserva, conciliação, decisão, Codex e callbacks sem depender apenas do resumo persistido no backend.
 
+O MCP deve expor o diagnóstico somente leitura `studio_ledger_coverage`, comparando as fontes canônicas de tentativas com o ledger por origem, tipo de ativo e provedor. O resultado deve destacar tentativas sem ledger, custo desconhecido e atribuição comercial ausente; nenhuma dessas lacunas pode ser apresentada como custo zero.
+
 Toda execução do Codex no Agente Financeiro deve usar limite operacional padrão de 40 minutos, configurável por ambiente, encerrando e registrando como falha qualquer processo que ultrapasse esse prazo.
 
 O agente deve permanecer cadastrado no catálogo canônico com a chave `financial-agent`, contrato versionado, modelo ativo e autoridade somente leitura.
@@ -41,3 +43,8 @@ O agente deve permanecer cadastrado no catálogo canônico com a chave `financia
 ## Evolução
 
 A autonomia somente poderá ser ampliada após pelo menos 30 dias de conciliações confirmadas, sem bloqueios indevidos ou divergências relevantes. Compras, transferências, mudanças de preço e aumento de orçamento continuam exigindo aprovação humana.
+# Ordem das migrações do ledger do Estúdio
+
+O changelog mestre deve criar `studio_cost_ledger_entry`, permitir `commercial_plan_id` nulo e somente depois executar o backfill completo de mídias. Essa ordem é parte do contrato financeiro: consumos sem atribuição precisam ser preservados como pendentes, nunca descartados nem atribuídos artificialmente a outro plano.
+
+O validador `scripts/validate-liquibase-mysql57.sh` deve bloquear ausência, duplicidade ou inversão desses três includes.

@@ -85,6 +85,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - **Causa-raiz confirmada**: o ledger só era sincronizado no sucesso e descartava jobs cujo projeto não possuía plano comercial; o MUSA v7 era legado sem plano, deixando inclusive renders concluídos fora da conciliação. A revisão ampliada também encontrou chamadas legadas de ElevenLabs, HeyGen e Synthesia sem ledger e estimativas desconhecidas convertidas em zero.
 - **Correção efetiva**: abrir o ledger antes da chamada externa, atualizar a mesma tentativa em qualquer estado, registrar áudio e vídeo legados com produto obrigatório, aceitar atribuição nula de plano para histórico e manter tarifa desconhecida como nula. Custos sem plano ficam visíveis e bloqueantes, sem contaminar outro planejamento.
 - **Prevenção**: testes devem provar que toda tentativa nasce no ledger antes do consumo, que sucesso, falha e expiração atualizam sem duplicar, que áudio é contado separadamente, que custo desconhecido nunca vira zero e que custos sem plano aparecem ao Agente Financeiro até atribuição correta.
+- **Diagnóstico operacional**: a tool MCP `studio_ledger_coverage` compara jobs e ativos do Estúdio com o ledger por origem, tipo e provedor, tornando ausências, custos desconhecidos e falta de atribuição comprováveis sem SQL manual.
 
 ---
 

@@ -124,6 +124,21 @@ class McpControllerTest {
      */
     @BeforeEach
     void setupDatabase() throws Exception {
+        jdbcTemplate.execute("DROP TABLE IF EXISTS studio_cost_ledger_entry");
+        jdbcTemplate.execute("DROP TABLE IF EXISTS sales_video_job");
+        jdbcTemplate.execute("DROP TABLE IF EXISTS asset");
+        jdbcTemplate.execute("DROP TABLE IF EXISTS image_generation_request");
+        jdbcTemplate.execute("CREATE TABLE studio_cost_ledger_entry (id BIGINT PRIMARY KEY, source_type VARCHAR(64), source_id VARCHAR(96), provider_cost_usd DECIMAL(14,6), estimated_cost_usd DECIMAL(14,6), commercial_plan_id BIGINT)");
+        jdbcTemplate.execute("CREATE TABLE sales_video_job (id BIGINT PRIMARY KEY, job_type VARCHAR(32), provider_name VARCHAR(64), provider_family VARCHAR(32))");
+        jdbcTemplate.execute("CREATE TABLE asset (id BIGINT PRIMARY KEY, type VARCHAR(32), provider VARCHAR(64))");
+        jdbcTemplate.execute("CREATE TABLE image_generation_request (id BIGINT PRIMARY KEY, job_id VARCHAR(96))");
+        jdbcTemplate.update("INSERT INTO sales_video_job VALUES (1, 'SCENE_RENDER', 'KLING', 'VIDEO')");
+        jdbcTemplate.update("INSERT INTO sales_video_job VALUES (2, 'SCENE_RENDER', 'KLING', 'VIDEO')");
+        jdbcTemplate.update("INSERT INTO studio_cost_ledger_entry VALUES (1, 'SALES_VIDEO_JOB', '1', 2.50, NULL, NULL)");
+        jdbcTemplate.update("INSERT INTO asset VALUES (10, 'AUDIO', 'ELEVENLABS')");
+        jdbcTemplate.update("INSERT INTO studio_cost_ledger_entry VALUES (2, 'MEDIA_ASSET', '10', NULL, NULL, 7)");
+        jdbcTemplate.update("INSERT INTO image_generation_request VALUES (20, 'image-job-20')");
+        jdbcTemplate.update("INSERT INTO studio_cost_ledger_entry VALUES (3, 'IMAGE_GENERATION_REQUEST', 'image-job-20', 0.10, NULL, 7)");
         jdbcTemplate.execute("DROP TABLE IF EXISTS leads");
         jdbcTemplate.execute("CREATE TABLE leads (id BIGINT PRIMARY KEY, name VARCHAR(100), email VARCHAR(150))");
         jdbcTemplate.update("INSERT INTO leads (id, name, email) VALUES (?,?,?)", 1L, "Ana", "ana@example.com");
@@ -228,6 +243,23 @@ class McpControllerTest {
         fakeSsh.toFile().setExecutable(true);
     }
 
+    /** Garante que o diagnóstico evidencia tentativas ausentes e custos desconhecidos. */
+    @Test
+    void diagnosesStudioLedgerCoverageBySourceTypeAndProvider() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":82,"method":"tools/call","params":{"name":"studio_ledger_coverage","arguments":{}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.status").value("MISSING_LEDGER_ENTRIES"))
+                .andExpect(jsonPath("$.result.structuredContent.attempts").value(4))
+                .andExpect(jsonPath("$.result.structuredContent.ledgerEntries").value(3))
+                .andExpect(jsonPath("$.result.structuredContent.missingEntries").value(1))
+                .andExpect(jsonPath("$.result.structuredContent.unknownCostEntries").value(1))
+                .andExpect(jsonPath("$.result.structuredContent.unassignedEntries").value(1));
+    }
+
     /**
      * Garante que o método initialize responde sem autenticação.
      */
@@ -293,8 +325,8 @@ class McpControllerTest {
                                 {"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"db_list_tables","arguments":{}}}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.structuredContent.tableCount").value(2))
-                .andExpect(jsonPath("$.result.structuredContent.tables[0]").value("LEADS"));
+                .andExpect(jsonPath("$.result.structuredContent.tableCount").value(6))
+                .andExpect(jsonPath("$.result.structuredContent.tables[2]").value("LEADS"));
     }
 
     /**

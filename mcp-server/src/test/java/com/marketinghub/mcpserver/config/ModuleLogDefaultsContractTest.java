@@ -17,6 +17,8 @@ class ModuleLogDefaultsContractTest {
             "http://191.252.181.168/ops-mh-observability-v2/backend-log-stream-x9k";
     private static final String AI_WORKER_LOG_URL =
             "http://191.252.210.83:4567/worker-observability/logfile";
+    private static final String CUSTOMER_AGENT_WORKER_LOG_URL =
+            "http://163.245.202.80:8099/ops-customer-agent-observability-v1/customer-agent-worker-log";
 
     /**
      * Garante que a configuração Spring não direcione o alias backend ao log do AI Worker.
@@ -51,5 +53,19 @@ class ModuleLogDefaultsContractTest {
 
         assertTrue(compose.contains("MCP_LOG_BACKEND_PATH:-" + BACKEND_LOG_URL));
         assertFalse(compose.contains("MCP_LOG_BACKEND_PATH:-" + AI_WORKER_LOG_URL));
+    }
+
+    /**
+     * Garante que aplicação e descritores de deploy publiquem o destino do Agente Cliente.
+     */
+    @Test
+    void shouldPublishCustomerAgentWorkerLogEndpoint() throws IOException {
+        String configuration = Files.readString(Path.of("src/main/resources/application.yml"));
+        String localCompose = Files.readString(Path.of("docker-compose.yml"));
+        String deploymentCompose = Files.readString(Path.of("../deploy/docker-compose.mcp.yml"));
+
+        assertTrue(configuration.contains("MCP_LOG_CUSTOMER_AGENT_WORKER_PATH:" + CUSTOMER_AGENT_WORKER_LOG_URL));
+        assertTrue(localCompose.contains("MCP_LOG_CUSTOMER_AGENT_WORKER_PATH:-" + CUSTOMER_AGENT_WORKER_LOG_URL));
+        assertTrue(deploymentCompose.contains("MCP_LOG_CUSTOMER_AGENT_WORKER_PATH:-" + CUSTOMER_AGENT_WORKER_LOG_URL));
     }
 }

@@ -1,3 +1,19 @@
 spring:
   application:
     name: customer-agent-worker
+
+server:
+  port: ${SERVER_PORT:8099}
+
+management:
+  endpoints:
+    web:
+      base-path: /ops-customer-agent-observability-v1
+      exposure:
+        include: health,logfile
+      path-mapping:
+        logfile: customer-agent-worker-log
+
+logging:
+  file:
+    name: ${LOG_FILE_NAME:/tmp/customer-agent-worker.log}

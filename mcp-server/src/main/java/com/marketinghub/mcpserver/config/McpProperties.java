@@ -47,6 +47,7 @@ public record McpProperties(
             @NotBlank String opsMonitorWorkerPath,
             @NotBlank String pdePlatformBackendPath,
             @NotBlank String videoManagementServicePath,
+            @NotBlank String customerAgentWorkerPath,
             @Positive int fetchTimeoutSeconds,
             @Positive int fetchAttempts,
             @Positive int fetchRetryDelayMillis,

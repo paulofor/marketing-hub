@@ -8,6 +8,9 @@ services:
       CUSTOMER_AGENT_POLL_MS: ${CUSTOMER_AGENT_POLL_MS:-60000}
       CUSTOMER_AGENT_OBSERVATION_POLL_MS: ${CUSTOMER_AGENT_OBSERVATION_POLL_MS:-60000}
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      LOG_FILE_NAME: /tmp/customer-agent-worker.log
+    ports:
+      - "${CUSTOMER_AGENT_WORKER_PORT:-8099}:8099"
     volumes:
       - ${CODEX_HOME_PATH:-/opt/growth-operator/codex-home}:/home/operator/.codex
       - ${MARKETING_HUB_REPOSITORY:-..}:/workspace:ro

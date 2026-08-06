@@ -93,3 +93,6 @@ O bucket dedicado é provisionado pelo template versionado
 `CUSTOMER_AGENT_MEMORY_BUCKET` e `CUSTOMER_AGENT_MEMORY_REGION`; permissões IAM mínimas devem ficar
 restritas a `s3:PutObject` e `s3:GetObject` no prefixo `customer-agent-memory/v1/*` e
 `s3:ListBucket` condicionado ao mesmo prefixo.
+# Observabilidade operacional do worker
+
+O `customer-agent-worker` deve persistir seus logs em arquivo e expor somente a leitura pelo endpoint operacional versionado `/ops-customer-agent-observability-v1/customer-agent-worker-log`. O MCP deve disponibilizar essa origem no módulo `customer-agent-worker` da ferramenta `java_module_logs`, permitindo correlacionar observações, execução do Codex, codecs do navegador e callbacks sem depender apenas do erro resumido persistido no backend.

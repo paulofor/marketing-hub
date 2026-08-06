@@ -71,6 +71,17 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 | `LOOP-VIDEO-SCENE-PROMPT-PERSISTENCE` | ALTO | Fechado em 2026-08-05 | Estudio de Audio e Video | storyboard editavel + persistencia unica + teste impede prompt fixo de substituir cena salva |
 | `LOOP-DEPLOY-COMPOSE-CROSS-SERVICE-SECRETS` | ALTO | Fechado em 2026-08-04 | Deploy por serviço | descritor Compose isolado por destino + teste sem secrets alheios |
 | `LOOP-DEPLOY-STALE-IMAGE` | ALTO | Fechado em 2026-08-04 | Detecção de mudanças do deploy | alteração de publicador/workflow força rebuild e teste do artefato |
+| `LOOP-CUSTOMER-AGENT-OBSERVABILITY` | ALTO | Fechado em 2026-08-06 | Agente Cliente | logfile canônico do worker + alias MCP + teste ponta a ponta |
+
+---
+
+## LOOP-CUSTOMER-AGENT-OBSERVABILITY — Observação presa sem diagnóstico completo
+
+- **Severidade**: ALTO.
+- **Status**: fechado em 2026-08-06.
+- **Causa-raiz confirmada**: o `customer-agent-worker` não gravava logs em arquivo nem publicava uma rota de leitura, enquanto o MCP não reconhecia o módulo; falhas de Codex, codec, navegador e callback ficavam reduzidas ao erro persistido no backend.
+- **Correção efetiva**: o worker publica logfile operacional versionado e o MCP o consulta pelo alias `customer-agent-worker`, com destino fixado nos descritores de deploy.
+- **Prevenção**: testes de contrato devem validar a rota, a porta, o destino produtivo e a leitura filtrada pela tool `java_module_logs`.
 
 ---
 

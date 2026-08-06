@@ -20,6 +20,7 @@ services:
       MCP_LOG_LEAD_PORTAL_PATH: ${MCP_LOG_LEAD_PORTAL_PATH:-https://oportunidadebrasil.shop/api/ops-lp-observability-v2/logfile}
       MCP_LOG_FACEBOOK_ADS_PATH: ${MCP_LOG_FACEBOOK_ADS_PATH:-http://191.252.210.83:8082/public/runtime-logs/tail?lines=300}
       MCP_LOG_CUSTOMER_AGENT_WORKER_PATH: ${MCP_LOG_CUSTOMER_AGENT_WORKER_PATH:-http://163.245.202.80:8099/ops-customer-agent-observability-v1/customer-agent-worker-log}
+      MCP_LOG_FINANCIAL_AGENT_WORKER_PATH: ${MCP_LOG_FINANCIAL_AGENT_WORKER_PATH:-http://163.245.202.80:8095/ops-financial-agent-observability-v1/financial-agent-worker-log}
       MCP_LOG_PDE_PLATFORM_BACKEND_PATH: ${MCP_LOG_PDE_PLATFORM_BACKEND_PATH:-http://163.245.200.7:8096/actuator/logfile}
       MCP_CHAT_LOG_ALLOWED_CONTAINERS: ${MCP_CHAT_LOG_ALLOWED_CONTAINERS:-marketinghub-fashion-chat,product-discovery-worker}
       MCP_DOCKER_OPS_ENABLED: ${MCP_DOCKER_OPS_ENABLED:-true}

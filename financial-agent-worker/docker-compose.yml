@@ -7,6 +7,9 @@ services:
       CODEX_MODEL: ${CODEX_MODEL:-gpt-5.6-sol}
       COMMERCIAL_PLAN_ID: ${COMMERCIAL_PLAN_ID:-2}
       MARKETING_HUB_REPOSITORY: /workspace/marketing-hub
+      LOG_FILE_NAME: /tmp/financial-agent-worker.log
+    ports:
+      - "${FINANCIAL_AGENT_WORKER_PORT:-8095}:8095"
     volumes:
       - ${MARKETING_HUB_REPOSITORY_PATH:-..}:/workspace/marketing-hub:ro
       - ${FINANCIAL_AGENT_CODEX_HOME:-/opt/growth-operator/codex-home}:/home/financial-agent/.codex

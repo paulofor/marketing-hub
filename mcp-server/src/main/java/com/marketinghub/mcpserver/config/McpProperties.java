@@ -48,6 +48,7 @@ public record McpProperties(
             @NotBlank String pdePlatformBackendPath,
             @NotBlank String videoManagementServicePath,
             @NotBlank String customerAgentWorkerPath,
+            @NotBlank String financialAgentWorkerPath,
             @Positive int fetchTimeoutSeconds,
             @Positive int fetchAttempts,
             @Positive int fetchRetryDelayMillis,

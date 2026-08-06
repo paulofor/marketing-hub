@@ -29,6 +29,8 @@ Decisões permitidas: `RECONCILED`, `REVIEW_REQUIRED` e `BLOCKED_BY_MISSING_SOUR
 
 O módulo executor é `financial-agent-worker`. Prompt e schema ficam versionados em `src/main/resources/prompts/financial-agent/v1`. A imagem de produção deve ser construída exclusivamente pelo Dockerfile e Compose do repositório. O workflow dedicado testa, reconstrói, reinicia e valida o login do Codex no VPS. O backend permanece fonte de verdade e o worker não acessa o banco.
 
+O worker deve persistir logs em arquivo e publicar somente a leitura pelo endpoint operacional versionado `/ops-financial-agent-observability-v1/financial-agent-worker-log`. O MCP deve disponibilizar essa origem no módulo `financial-agent-worker` da ferramenta `java_module_logs`, permitindo correlacionar reserva, conciliação, decisão, Codex e callbacks sem depender apenas do resumo persistido no backend.
+
 O agente deve permanecer cadastrado no catálogo canônico com a chave `financial-agent`, contrato versionado, modelo ativo e autoridade somente leitura.
 
 ## Evolução

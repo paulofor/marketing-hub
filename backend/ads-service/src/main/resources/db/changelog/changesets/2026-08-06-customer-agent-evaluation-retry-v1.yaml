@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-06-customer-agent-evaluation-retry-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE customer_agent_evaluation
+                ADD COLUMN last_error LONGTEXT NULL AFTER raw_model_response,
+                ADD COLUMN retry_count INT NOT NULL DEFAULT 0 AFTER last_error;
+
+              UPDATE customer_agent_evaluation
+              SET last_error = raw_model_response
+              WHERE status = 'FAILED'
+                AND raw_model_response IS NOT NULL;

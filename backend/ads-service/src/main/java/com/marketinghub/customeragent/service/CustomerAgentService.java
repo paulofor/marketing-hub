@@ -224,6 +224,7 @@ public class CustomerAgentService {
     evaluation.setSimulatedAssessment(request.assessment());
     evaluation.setHypothesisJson(request.hypothesisJson());
     evaluation.setRawModelResponse(request.rawModelResponse());
+    evaluation.setLastError(null);
     evaluation.setModelName(request.model());
     evaluation.setStatus("COMPLETED");
     evaluation.setFinishedAt(Instant.now());
@@ -254,8 +255,29 @@ public class CustomerAgentService {
   public EvaluationResponse failEvaluation(Long id, FailExecutionRequest request) {
     CustomerAgentEvaluation value = findRunning(id);
     value.setStatus("FAILED");
-    value.setRawModelResponse(request == null ? "Falha não informada." : request.error());
+    String error =
+        request == null || blank(request.error()) ? "Falha não informada." : request.error();
+    value.setLastError(error);
+    value.setRawModelResponse(error);
     value.setFinishedAt(Instant.now());
+    return evaluationResponse(evaluations.save(value));
+  }
+
+  /** Reabre somente uma avaliação falha, preservando sua identidade e a última causa técnica. */
+  @Transactional
+  public EvaluationResponse retryEvaluation(Long id) {
+    CustomerAgentEvaluation value =
+        evaluations
+            .findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    if (!"FAILED".equals(value.getStatus())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Somente avaliações com falha podem ser reprocessadas.");
+    }
+    value.setStatus("PENDING");
+    value.setStartedAt(null);
+    value.setFinishedAt(null);
+    value.setRetryCount((value.getRetryCount() == null ? 0 : value.getRetryCount()) + 1);
     return evaluationResponse(evaluations.save(value));
   }
 
@@ -337,6 +359,8 @@ public class CustomerAgentService {
         e.getSimulatedAssessment(),
         e.getHypothesisJson(),
         e.getHumanResultJson(),
+        e.getLastError(),
+        e.getRetryCount(),
         e.getModelName(),
         e.getStartedAt(),
         e.getFinishedAt(),

@@ -40,6 +40,12 @@ public class CustomerAgentEvaluation {
   @Column(name = "raw_model_response", columnDefinition = "LONGTEXT")
   private String rawModelResponse;
 
+  @Column(name = "last_error", columnDefinition = "LONGTEXT")
+  private String lastError;
+
+  @Column(name = "retry_count", nullable = false)
+  private Integer retryCount = 0;
+
   @Column(name = "model_name")
   private String modelName;
 

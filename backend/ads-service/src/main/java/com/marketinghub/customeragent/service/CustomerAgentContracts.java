@@ -66,6 +66,8 @@ public final class CustomerAgentContracts {
       String simulatedAssessment,
       String hypothesisJson,
       String humanResultJson,
+      String lastError,
+      Integer retryCount,
       String model,
       Instant startedAt,
       Instant finishedAt,

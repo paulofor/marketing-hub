@@ -1,5 +1,7 @@
 package com.marketinghub.customeragentworker;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,12 +21,16 @@ public class CustomerAgentScheduler {
   private static final Logger log = LoggerFactory.getLogger(CustomerAgentScheduler.class);
   private final RestClient backend;
   private final String model;
+  private final long executionTimeoutMinutes;
 
+  /** Inicializa o cliente do backend, o modelo e o limite operacional da avaliação. */
   public CustomerAgentScheduler(
       @Value("${BACKEND_URL:http://localhost:8080}") String backendUrl,
-      @Value("${CUSTOMER_AGENT_MODEL:gpt-5.6-sol}") String model) {
+      @Value("${CUSTOMER_AGENT_MODEL:gpt-5.6-sol}") String model,
+      @Value("${CUSTOMER_AGENT_EVALUATION_TIMEOUT_MINUTES:20}") long executionTimeoutMinutes) {
     this.backend = RestClient.builder().baseUrl(backendUrl).build();
     this.model = model;
+    this.executionTimeoutMinutes = executionTimeoutMinutes;
   }
 
   /** Consulta uma pendencia e executa o Codex sem permitir mutacoes. */
@@ -66,9 +72,10 @@ public class CustomerAgentScheduler {
               .redirectErrorStream(true)
               .redirectOutput(output.toFile())
               .start();
-      if (!process.waitFor(10, TimeUnit.MINUTES)) {
+      if (!process.waitFor(executionTimeoutMinutes, TimeUnit.MINUTES)) {
         process.destroyForcibly();
-        throw new IllegalStateException("Timeout do Codex.");
+        throw new IllegalStateException(
+            "Timeout do Codex após " + executionTimeoutMinutes + " minutos.");
       }
       String raw = Files.readString(output, StandardCharsets.UTF_8);
       Files.deleteIfExists(output);
@@ -101,11 +108,19 @@ public class CustomerAgentScheduler {
       backend
           .post()
           .uri("/api/customer-agent/v1/internal/{resource}/{id}/fail", resource, id)
-          .body(Map.of("error", String.valueOf(ex.getMessage())))
+          .body(Map.of("error", detailedError(ex)))
           .retrieve()
           .toBodilessEntity();
     } catch (Exception callbackEx) {
       log.error("Falha ao registrar erro do customer-agent, evaluationId={}", id, callbackEx);
     }
+  }
+
+  /** Serializa mensagem, causas e stack trace para diagnóstico persistido no backend. */
+  static String detailedError(Exception ex) {
+    StringWriter detail = new StringWriter();
+    ex.printStackTrace(new PrintWriter(detail));
+    String value = detail.toString();
+    return value.length() <= 16000 ? value : value.substring(0, 16000);
   }
 }

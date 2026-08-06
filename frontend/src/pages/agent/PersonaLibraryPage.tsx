@@ -35,6 +35,8 @@ type CustomerEvaluation = {
   simulatedAssessment?: string;
   hypothesisJson?: string;
   humanResultJson?: string;
+  lastError?: string;
+  retryCount: number;
   createdAt: string;
 };
 
@@ -117,6 +119,15 @@ export default function PersonaLibraryPage() {
       }),
     onSuccess: async () => {
       setEvaluationAssetReference("");
+      await client.invalidateQueries({
+        queryKey: ["customer-agent-evaluations"],
+      });
+    },
+  });
+  const retryEvaluation = useMutation({
+    mutationFn: async (id: number) =>
+      axios.post(`/api/customer-agent/v1/evaluations/${id}/retry`),
+    onSuccess: async () => {
       await client.invalidateQueries({
         queryKey: ["customer-agent-evaluations"],
       });
@@ -341,6 +352,27 @@ export default function PersonaLibraryPage() {
                 </div>
                 {evaluation.simulatedAssessment && (
                   <p className="mt-2 mb-1">{evaluation.simulatedAssessment}</p>
+                )}
+                {evaluation.status === "FAILED" && evaluation.lastError && (
+                  <div className="alert alert-danger py-2 mt-2 mb-0">
+                    <strong>Falha técnica:</strong>{" "}
+                    {evaluation.lastError.split("\n")[0]}
+                  </div>
+                )}
+                {evaluation.status === "FAILED" && (
+                  <button
+                    className="btn btn-outline-primary btn-sm mt-2"
+                    disabled={retryEvaluation.isPending}
+                    onClick={() => retryEvaluation.mutate(evaluation.id)}
+                    type="button"
+                  >
+                    Reprocessar avaliação
+                  </button>
+                )}
+                {evaluation.retryCount > 0 && (
+                  <div className="small text-muted mt-2">
+                    Reprocessamentos: {evaluation.retryCount}
+                  </div>
                 )}
                 {evaluation.humanResultJson ? (
                   <div className="alert alert-success py-2 mt-2 mb-0">

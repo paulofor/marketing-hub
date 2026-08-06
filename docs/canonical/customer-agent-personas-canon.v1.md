@@ -25,6 +25,12 @@ O Agente Cliente opera em sandbox somente leitura. Ele pode retornar `APROVAR_TE
 
 O worker possui CI/CD dedicado, identidade Codex persistente e validação de autenticação após cada deploy. Evidências pesadas usam bucket S3 privado, criptografado, versionado e com retenção definida; MySQL continua sendo a fonte de verdade.
 
+Avaliações que terminam em `FAILED` devem preservar a causa técnica em `last_error` e podem ser
+reabertas pelo comando explícito de retry, mantendo o mesmo identificador e incrementando
+`retry_count`. O retry nunca é permitido para avaliações pendentes, em execução ou concluídas. O
+worker deve persistir mensagem, cadeia de causas e stack trace limitado, e seu limite padrão de
+execução é vinte minutos para evitar o encerramento prematuro observado em avaliações válidas.
+
 ## Métrica de qualidade
 
 A maturidade é medida pela correspondência posterior entre objeções previstas e comportamento

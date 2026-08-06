@@ -6,14 +6,34 @@
   "properties": {
     "observation": {
       "type": "object",
+      "additionalProperties": false,
       "required": ["sources", "facts"],
       "properties": {
         "sources": { "type": "array", "items": { "type": "string" } },
         "facts": { "type": "array", "items": { "type": "string" } }
       }
     },
-    "simulatedReaction": { "type": "object" },
-    "commercialHypothesis": { "type": "object" },
+    "simulatedReaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary", "frictions", "trustSignals", "abandonmentRisk"],
+      "properties": {
+        "summary": { "type": "string", "minLength": 1 },
+        "frictions": { "type": "array", "items": { "type": "string" } },
+        "trustSignals": { "type": "array", "items": { "type": "string" } },
+        "abandonmentRisk": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] }
+      }
+    },
+    "commercialHypothesis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verdict", "priorityImprovement", "rationale"],
+      "properties": {
+        "verdict": { "type": "string", "enum": ["APROVAR_TESTE", "AJUSTAR", "REPROVAR"] },
+        "priorityImprovement": { "type": "string", "minLength": 1 },
+        "rationale": { "type": "string", "minLength": 1 }
+      }
+    },
     "motivationalVector": {
       "type": "object",
       "additionalProperties": false,

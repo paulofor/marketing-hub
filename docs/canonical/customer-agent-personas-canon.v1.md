@@ -44,6 +44,13 @@ são a única base técnica do parecer. Screenshots são enviados ao armazenamen
 `EXTERNAL_OBSERVATION`, vinculados à persona e à execução; falha na captura ou persistência bloqueia
 a conclusão, sem fabricar uma avaliação.
 
+A interpretação recebe somente os fatos já capturados e não pode navegar nem chamar ferramentas.
+Sua execução usa sessão efêmera, schema versionado, saída final separada dos logs e limite de quatro
+minutos. A reserva de uma observação vale por quinze minutos; ao consultar a fila, o backend encerra
+como `FAILED` qualquer `RUNNING` mais antigo sem callback, preservando a causa auditável e impedindo
+execuções indefinidamente presas. Uma reserva expirada nunca é reaberta automaticamente, evitando
+processamento concorrente e memórias duplicadas.
+
 A memória mantém quatro camadas imutavelmente separadas: `observation_json` registra fatos e URLs;
 `simulated_reaction_json` registra a reação hipotética da persona;
 `commercial_hypothesis_json` registra o teste sugerido; e `human_confirmation_json` recebe apenas

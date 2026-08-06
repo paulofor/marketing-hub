@@ -1,9 +1,12 @@
 package com.marketinghub.productai.web;
 
+import com.marketinghub.productai.dto.CreatePersonalizedSampleFunnelRequest;
+import com.marketinghub.productai.dto.PersonalizedSampleFunnelDto;
 import com.marketinghub.productai.dto.PersonalizedSamplePreparationDto;
 import com.marketinghub.productai.dto.ProductAiExperimentPreparationDto;
 import com.marketinghub.productai.dto.ProductAiHypothesisPreparationRequest;
 import com.marketinghub.productai.service.ProductAiExperimentPreparationService;
+import com.marketinghub.productai.service.ProductAiPersonalizedSampleFunnelService;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,10 +23,23 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/product-ai")
 public class ProductAiExperimentPreparationController {
   private final ProductAiExperimentPreparationService service;
+  private final ProductAiPersonalizedSampleFunnelService personalizedSampleFunnelService;
 
   /** Inicializa o controller com o serviço de preparo de Produto IA. */
-  public ProductAiExperimentPreparationController(ProductAiExperimentPreparationService service) {
+  public ProductAiExperimentPreparationController(
+      ProductAiExperimentPreparationService service,
+      ProductAiPersonalizedSampleFunnelService personalizedSampleFunnelService) {
     this.service = service;
+    this.personalizedSampleFunnelService = personalizedSampleFunnelService;
+  }
+
+  /** Cria ou atualiza pelo frontend o funil reutilizável de amostra do experimento. */
+  @PostMapping("/experiments/{experimentId}/personalized-sample-funnel")
+  public PersonalizedSampleFunnelDto createPersonalizedSampleFunnel(
+      @PathVariable Long experimentId,
+      @RequestBody(required = false) CreatePersonalizedSampleFunnelRequest request) {
+    return personalizedSampleFunnelService.createOrUpdate(
+        experimentId, request == null ? null : request.template());
   }
 
   /** Retorna bloqueios e rascunho canônico para a hipótese informada. */

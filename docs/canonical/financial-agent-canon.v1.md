@@ -43,3 +43,8 @@ O agente deve permanecer cadastrado no catálogo canônico com a chave `financia
 ## Evolução
 
 A autonomia somente poderá ser ampliada após pelo menos 30 dias de conciliações confirmadas, sem bloqueios indevidos ou divergências relevantes. Compras, transferências, mudanças de preço e aumento de orçamento continuam exigindo aprovação humana.
+# Ordem das migrações do ledger do Estúdio
+
+O changelog mestre deve criar `studio_cost_ledger_entry`, permitir `commercial_plan_id` nulo e somente depois executar o backfill completo de mídias. Essa ordem é parte do contrato financeiro: consumos sem atribuição precisam ser preservados como pendentes, nunca descartados nem atribuídos artificialmente a outro plano.
+
+O validador `scripts/validate-liquibase-mysql57.sh` deve bloquear ausência, duplicidade ou inversão desses três includes.

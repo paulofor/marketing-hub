@@ -224,12 +224,13 @@ export default function FlowPage() {
     );
   }
 
-  const defaultHeader = SIMPLE_FORM_CONTENT.header;
-  const defaultProof = SIMPLE_FORM_CONTENT.proof;
-  const defaultBullets = SIMPLE_FORM_CONTENT.bullets;
+  const contentProfile = resolveSimpleFormContent(flow);
+  const defaultHeader = contentProfile.header;
+  const defaultProof = contentProfile.proof;
+  const defaultBullets = contentProfile.bullets;
 
   const heroContent = {
-    title: metadata.hero.title ?? flow.name,
+    title: metadata.hero.title ?? defaultHeader.title ?? flow.name,
     subtitle: metadata.hero.subtitle ?? defaultHeader.subtitle,
     promise: metadata.hero.promise ?? defaultHeader.promiseText,
   };
@@ -244,7 +245,10 @@ export default function FlowPage() {
     })),
   };
 
-  const [featuredProofCard, ...proofCardsWithoutFeatured] = proofContent.cards;
+  const [featuredProofCard] = proofContent.cards;
+  const proofCardsWithoutFeatured = featuredProofCard?.imageUrl
+    ? proofContent.cards.slice(1)
+    : proofContent.cards;
 
   const bulletsContent = {
     title: metadata.bullets.title ?? defaultBullets.title,
@@ -258,8 +262,18 @@ export default function FlowPage() {
           <>
             <section className="flow-hero">
               <div className="flow-hero-copy">
+                {contentProfile.eyebrow ? (
+                  <span className="flow-eyebrow">{contentProfile.eyebrow}</span>
+                ) : null}
                 <h1>{heroContent.title}</h1>
                 <p className="flow-subtitle">{heroContent.subtitle}</p>
+                {contentProfile.trustBadges.length > 0 ? (
+                  <div className="flow-trust-badges" aria-label="Condições da oferta">
+                    {contentProfile.trustBadges.map((badge) => (
+                      <span key={badge}>{badge}</span>
+                    ))}
+                  </div>
+                ) : null}
                 <div className={`flow-proof-cta ${featuredProofCard?.imageUrl ? "flow-proof-cta--with-image" : ""}`}>
                   {featuredProofCard?.imageUrl ? (
                     <img
@@ -270,13 +284,15 @@ export default function FlowPage() {
                     />
                   ) : null}
                   <span className="flow-proof-cta__text">
-                    <strong>Gostou do estilo?</strong> Preencha o formulário abaixo para receber uma versão
-                    personalizada para você.
+                    <strong>{contentProfile.proofCtaTitle}</strong> {contentProfile.proofCtaText}
                   </span>
                 </div>
                 <div className="flow-promise-box">
                   {heroContent.promise}
                 </div>
+                <a className="flow-primary-cta" href="#flow-form">
+                  {contentProfile.ctaLabel}
+                </a>
               </div>
             </section>
 
@@ -293,12 +309,13 @@ export default function FlowPage() {
                     return (
                       <article key={post.title} className="flow-proof-card">
                         <div
-                          className={`flow-proof-image ${post.imageUrl ? "flow-proof-image--media" : ""}`}
+                          className={`flow-proof-image ${post.imageUrl ? "flow-proof-image--media" : ""} ${post.mockupType ? "flow-proof-image--mockup" : ""}`}
                           style={mediaStyle}
                         >
                           {post.imageUrl ? (
                             <img src={post.imageUrl} alt={post.title} className="flow-proof-image__media" loading="lazy" />
                           ) : null}
+                          {post.mockupType ? <SocialSampleMockup variant={post.mockupType} /> : null}
                           {post.overlayText ? (
                             <span className="flow-proof-image__overlay">{post.overlayText}</span>
                           ) : null}
@@ -330,6 +347,9 @@ export default function FlowPage() {
           campaignCode={campaignCode}
           onStarted={handleFormStarted}
           onSubmitted={handleSubmissionComplete}
+          submitLabel={contentProfile.ctaLabel}
+          successTitle={contentProfile.successTitle}
+          successMessage={contentProfile.successMessage}
         />
       </div>
     </div>
@@ -1311,7 +1331,15 @@ function escapeHtml(value: string) {
 }
 
 const SIMPLE_FORM_CONTENT = {
+  eyebrow: null,
+  trustBadges: [] as string[],
+  ctaLabel: "Enviar respostas",
+  proofCtaTitle: "Gostou do estilo?",
+  proofCtaText: "Preencha o formulário abaixo para receber uma versão personalizada para você.",
+  successTitle: "Respostas enviadas!",
+  successMessage: null,
   header: {
+    title: null,
     subtitle: "Transforme ideias em posts prontos para publicar em poucos minutos.",
     promiseText:
       "você recebe uma linha editorial visual clara, com linguagem alinhada ao seu público e foco em gerar mais conversas no direct.",
@@ -1350,6 +1378,61 @@ const SIMPLE_FORM_CONTENT = {
     ],
   },
 } as const;
+
+const SOCIAL_MEDIA_MICRO_SAMPLE_CONTENT = {
+  eyebrow: "Microamostra gratuita para nail designers",
+  trustBadges: ["3 perguntas", "Até 24 horas", "Sem cartão"],
+  ctaLabel: "Quero minha amostra grátis",
+  proofCtaTitle: "Feito para o seu negócio.",
+  proofCtaText: "Você informa nome, serviço e estilo; nós preparamos o conteúdo pronto para postar.",
+  successTitle: "Sua amostra já está na fila!",
+  successMessage:
+    "Recebemos suas respostas. Agora vamos preparar 1 post + 1 story personalizados e enviar para o e-mail informado em até 24 horas.",
+  header: {
+    title: "Seu conteúdo para atrair clientes, pronto para postar.",
+    subtitle: "Você cuida das unhas. A gente prepara o conteúdo.",
+    promiseText:
+      "Responda 3 perguntas e receba 1 post + 1 story com seu nome, serviço e estilo, prontos para publicar.",
+  },
+  proof: {
+    kicker: "Veja o que você recebe",
+    title: "Conteúdo com a sua cara, não mais um modelo genérico",
+    subtitle:
+      "A amostra mostra como seu nome e seu serviço podem aparecer de forma profissional no feed e nos stories.",
+    cards: [
+      {
+        title: "Seu post personalizado",
+        description: "Nome profissional, serviço em destaque e chamada clara para agendamento.",
+        background: "linear-gradient(145deg, #fff7ed 0%, #fce7f3 52%, #f5d0fe 100%)",
+        mockupType: "post" as const,
+      },
+      {
+        title: "Seu story pronto para publicar",
+        description: "Formato vertical, leitura rápida e CTA para direct ou WhatsApp.",
+        background: "linear-gradient(145deg, #3b173c 0%, #831843 52%, #be185d 100%)",
+        mockupType: "story" as const,
+      },
+    ],
+  },
+  bullets: {
+    title: "Simples do começo ao fim",
+    items: [
+      "Sem aulas, ferramentas complicadas ou horas tentando montar uma arte.",
+      "Você escolhe o estilo e recebe arquivos pensados para o seu serviço.",
+      "A amostra é gratuita, não pede cartão e não garante novos agendamentos.",
+    ],
+  },
+};
+
+function resolveSimpleFormContent(flow: LeadPortalFlow) {
+  const keys = new Set(flow.questions.map((question) => question.dataKey));
+  const isSocialMediaMicroSample =
+    keys.has("nome_profissional") &&
+    keys.has("servico_divulgado") &&
+    keys.has("estilo_visual") &&
+    keys.has("email");
+  return isSocialMediaMicroSample ? SOCIAL_MEDIA_MICRO_SAMPLE_CONTENT : SIMPLE_FORM_CONTENT;
+}
 
 function buildStyleVariables(definition: LeadPortalSimpleFormStyleDefinition | null) {
   const vars: Record<string, string> = {};
@@ -1422,6 +1505,20 @@ interface ProofCard {
   background?: string | null;
   imageUrl?: string | null;
   overlayText?: string | null;
+  mockupType?: "post" | "story" | null;
+}
+
+function SocialSampleMockup({ variant }: { variant: "post" | "story" }) {
+  return (
+    <div className={`social-sample-mockup social-sample-mockup--${variant}`} aria-hidden="true">
+      <span className="social-sample-mockup__brand">Studio Bella</span>
+      <div className="social-sample-mockup__nail" />
+      <p>{variant === "post" ? "Alongamento em gel" : "Seu horário merece unhas incríveis"}</p>
+      <span className="social-sample-mockup__action">
+        {variant === "post" ? "Agende pelo WhatsApp" : "Chame no direct"}
+      </span>
+    </div>
+  );
 }
 
 function extractSimpleFormMetadata(questions: FlowQuestion[]): SimpleFormMetadata {

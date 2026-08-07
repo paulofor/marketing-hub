@@ -90,7 +90,6 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
             left join fetch e.leadPortalFlow flow
             where e.status = :status
               and e.platform = :platform
-              and e.creativeApproved = true
               and ig is not null
               and exists (
                     select 1 from TargetingElement te
@@ -168,7 +167,6 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
             join fetch e.hypothesisRef h
             where e.platform = :platform
               and e.status in :statuses
-              and e.creativeApproved = true
               and exists (
                     select 1 from TargetingElement te
                     where te.niche = e.niche

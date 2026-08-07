@@ -3,6 +3,8 @@ package com.marketinghub.productai.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -16,6 +18,7 @@ import com.marketinghub.productai.PersonalizedSampleFunnelTemplate;
 import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
+import java.util.ArrayList;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -104,7 +107,9 @@ class ProductAiPersonalizedSampleFunnelServiceTest {
             .type(LeadPortalQuestionType.TEXT)
             .position(4)
             .build();
-    existingFlow.getQuestions().add(existingName);
+    var managedQuestions = spy(new ArrayList<LeadPortalFlowQuestion>());
+    managedQuestions.add(existingName);
+    existingFlow.setQuestions(managedQuestions);
     experiment.setLeadPortalFlow(existingFlow);
 
     var result =
@@ -117,5 +122,6 @@ class ProductAiPersonalizedSampleFunnelServiceTest {
     assertThat(existingFlow.getQuestions().get(0)).isSameAs(existingName);
     assertThat(existingName.getId()).isEqualTo(101L);
     assertThat(existingName.getTitle()).isEqualTo("Qual é o seu nome profissional?");
+    verify(managedQuestions, never()).clear();
   }
 }

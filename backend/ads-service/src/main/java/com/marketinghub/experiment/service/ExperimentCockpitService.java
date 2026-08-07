@@ -35,6 +35,7 @@ import org.springframework.util.StringUtils;
 public class ExperimentCockpitService {
 
   private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
+  private static final long MINIMUM_IMPRESSIONS_TO_JUDGE_AD = 200L;
 
   private final ExperimentRepository experimentRepository;
   private final ExperimentReadinessService readinessService;
@@ -294,7 +295,8 @@ public class ExperimentCockpitService {
           "Pode haver quebra pós-clique, carregamento ruim ou tracking ausente.",
           "Validar URL, pixel, analytics, carregamento mobile e redirecionamento.");
     }
-    if (scoreboard.impressions() != null && scoreboard.impressions() > 0) {
+    if (scoreboard.impressions() != null
+        && scoreboard.impressions() >= MINIMUM_IMPRESSIONS_TO_JUDGE_AD) {
       return bottleneck(
           "ANUNCIO_SEM_CLIQUE",
           "Anúncio expôs, mas não trouxe clique",
@@ -302,6 +304,15 @@ public class ExperimentCockpitService {
           "A campanha teve impressões sem clique suficiente para iniciar o funil.",
           "A dor, promessa, criativo ou público ainda não compraram atenção.",
           "Trocar ângulo criativo, visual e segmentação antes de mexer na página.");
+    }
+    if (scoreboard.impressions() != null && scoreboard.impressions() > 0) {
+      return bottleneck(
+          "AMOSTRA_INSUFICIENTE_ANUNCIO",
+          "Anúncio ainda sem amostra suficiente",
+          "secondary",
+          "A campanha começou a gerar impressões, mas ainda não atingiu 200 exposições para avaliar ausência de cliques.",
+          "Evita trocar um criativo por variação aleatória de uma amostra pequena.",
+          "Manter o criativo atual e coletar dados até 200 impressões, preservando o limite financeiro do experimento.");
     }
     return bottleneck(
         "SEM_DADOS",
@@ -429,6 +440,18 @@ public class ExperimentCockpitService {
                   "Revisar público",
                   "Valide se a segmentação conversa com a dor prioritária.",
                   experimentRoute + "/adset-workflow"));
+      case "AMOSTRA_INSUFICIENTE_ANUNCIO" ->
+          List.of(
+              action(
+                  "CONTINUAR_COLETA",
+                  "Continuar coleta sem alterações",
+                  "A amostra ainda não sustenta trocar criativo ou público.",
+                  experimentRoute),
+              action(
+                  "ACOMPANHAR_ENTREGA",
+                  "Acompanhar entrega",
+                  "Reavalie o anúncio ao atingir 200 impressões ou se surgir bloqueio técnico ou financeiro.",
+                  experimentRoute + "/facebook-api-logs"));
       case "EXECUCAO_INVALIDA", "FALHA_TECNICA_FUNIL", "CLIQUE_SEM_PAGINA" ->
           List.of(
               action(

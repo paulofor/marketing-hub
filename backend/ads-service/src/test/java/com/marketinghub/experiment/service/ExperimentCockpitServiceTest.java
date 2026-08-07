@@ -129,6 +129,74 @@ class ExperimentCockpitServiceTest {
     assertEquals("REFORCAR_CTA_POS_VIDEO", cockpit.nextActions().get(0).code());
   }
 
+  /** Garante que poucas impressões sem clique não recomendam troca prematura de criativo. */
+  @Test
+  void getCockpitKeepsCurrentCreativeWhenAdSampleIsInsufficient() {
+    prepareRealExperimentWithAdMetrics(85L, 12L, 0L);
+
+    var cockpit = service.getCockpit(85L);
+
+    assertEquals("AMOSTRA_INSUFICIENTE_ANUNCIO", cockpit.bottleneck().code());
+    assertEquals("CONTINUAR_COLETA", cockpit.nextActions().get(0).code());
+  }
+
+  /** Garante que a recomendação prudente permanece até a impressão anterior ao piso definido. */
+  @Test
+  void getCockpitKeepsCurrentCreativeImmediatelyBeforeMinimumSample() {
+    prepareRealExperimentWithAdMetrics(86L, 199L, 0L);
+
+    var cockpit = service.getCockpit(86L);
+
+    assertEquals("AMOSTRA_INSUFICIENTE_ANUNCIO", cockpit.bottleneck().code());
+    assertEquals("CONTINUAR_COLETA", cockpit.nextActions().get(0).code());
+  }
+
+  /** Garante que 200 impressões sem clique liberam a revisão de criativo e público. */
+  @Test
+  void getCockpitRecommendsCreativeReviewAtMinimumSample() {
+    prepareRealExperimentWithAdMetrics(87L, 200L, 0L);
+
+    var cockpit = service.getCockpit(87L);
+
+    assertEquals("ANUNCIO_SEM_CLIQUE", cockpit.bottleneck().code());
+    assertEquals("TROCAR_CRIATIVO", cockpit.nextActions().get(0).code());
+  }
+
+  /** Prepara um experimento real saudável, sem eventos de funil e com métricas de anúncio. */
+  private void prepareRealExperimentWithAdMetrics(
+      Long experimentId, Long impressions, Long clicks) {
+    Experiment experiment =
+        Experiment.builder()
+            .id(experimentId)
+            .name("Teste de amostra do anúncio")
+            .experimentType(ExperimentType.NICHE_TEST)
+            .campaignMetric(
+                ExperimentCampaignMetric.builder().impressions(impressions).clicks(clicks).build())
+            .build();
+    when(experimentRepository.findById(experimentId)).thenReturn(Optional.of(experiment));
+    when(readinessService.summarize(experimentId))
+        .thenReturn(
+            new ExperimentReadinessSummaryDto(
+                false, 0, false, 0, false, false, 0, 0, List.of(), List.of()));
+    when(diagnosticsService.diagnose(experimentId))
+        .thenReturn(
+            new ExperimentDiagnosticsDto(
+                ExperimentDiagnosticsSeverity.INFO,
+                "Pronto",
+                "Sem bloqueio operacional.",
+                null,
+                List.of(),
+                null));
+    when(funnelService.summarizeLandingAnalytics(experimentId))
+        .thenReturn(
+            new ExperimentLandingAnalyticsDto(
+                0, 0, 0, 0, 0, 0, null, List.of(), List.of(), List.of(), null, null, List.of()));
+    when(funnelService.summarize(experimentId)).thenReturn(List.of());
+    when(funnelDiagnosticService.diagnose(experimentId))
+        .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(), null));
+    when(funnelService.approvedRevenue(experimentId)).thenReturn(BigDecimal.ZERO);
+  }
+
   /** Cria uma etapa mínima do funil para o teste do cockpit. */
   private ExperimentFunnelStageDto stage(ExperimentFunnelStage stage, long totalCount) {
     ExperimentFunnelStageDto dto = new ExperimentFunnelStageDto();

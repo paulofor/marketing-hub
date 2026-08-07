@@ -384,6 +384,11 @@ function isExperimentAlterationLocked(experiment: {
   );
 }
 
+export function canManageGeraSalesPage(experimentId?: number | string | null) {
+  const normalizedId = Number(experimentId);
+  return Number.isInteger(normalizedId) && normalizedId > 0;
+}
+
 export default function ExperimentDetailPage() {
   const { id } = useParams();
   const expId = id as string;
@@ -2255,7 +2260,7 @@ export default function ExperimentDetailPage() {
           </div>
         </div>
       ) : null}
-      {false ? (
+      {canManageGeraSalesPage(data?.id) ? (
         <div className="card border-0 shadow-sm rounded-3 mt-3">
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">

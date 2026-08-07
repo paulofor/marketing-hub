@@ -6547,3 +6547,10 @@
 - causa-raiz: a etapa `Publish stack` interpolava todo o script remoto dentro de uma única string delimitada por aspas duplas e continha novas aspas duplas não escapadas nas validações de asset/MIME;
 - correção: a publicação passa a enviar um script remoto por heredoc literal e recebe os valores operacionais como argumentos posicionais, preservando corretamente aspas e expansões no host de destino;
 - prevenção: `actionlint`, validação `bash -n` do bloco e o contrato de cache/MIME do Lead Portal devem passar antes de novo disparo manual; o pós-deploy continua exigindo JavaScript real com `application/javascript`.
+
+## 2026-08-07 — Reconciliação do proxy no deploy do Lead Portal
+
+- evidência operacional: o workflow manual do commit `6948309` baixou as imagens e recriou backend e frontend, mas falhou ao iniciar o proxy com `Bind for 0.0.0.0:80 failed: port is already allocated`;
+- causa-raiz: uma instância legada do proxy do próprio Lead Portal permanecia vinculada às portas públicas, enquanto o Compose tentava criar uma segunda instância e depois ainda forçava outra recriação do mesmo serviço;
+- correção: o deploy remove exclusivamente os nomes conhecidos do proxy do Lead Portal antes de subir a pilha canônica uma única vez;
+- prevenção: o teste de contrato exige a reconciliação explícita dos proxies legados e proíbe a segunda chamada `up -d --force-recreate proxy`.

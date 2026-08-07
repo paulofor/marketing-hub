@@ -6533,3 +6533,10 @@
 - Causa-raiz: o serviço substituía toda a coleção JPA com `orphanRemoval`; a ordenação do flush do Hibernate não garantia os deletes antes dos inserts.
 - Correção: as perguntas passam a ser reconciliadas por `dataKey`, preservando entidades e IDs existentes, atualizando o contrato vigente, criando somente chaves ausentes e removendo somente chaves obsoletas.
 - Prevenção: teste unitário cobre reexecução sobre fluxo persistido e exige chaves únicas, ordem canônica e preservação do ID da pergunta existente.
+
+## 2026-08-07 — Reconciliação idempotente do funil de microamostra sem reinserção JPA
+
+- evidência em produção: repetir pela tela o comando do funil do experimento 84 retornava HTTP 500 com `Duplicate entry '57-nome_profissional' for key 'uq_lead_portal_question_key'`, embora o banco mantivesse uma única pergunta por `data_key`.
+- causa-raiz: a reconciliação reaproveitava a entidade existente, mas limpava e readicionava toda a coleção JPA com `orphanRemoval`; o Hibernate tentava inserir novamente a chave canônica antes de concluir a remoção anterior.
+- correção: a coleção gerenciada deixa de ser limpa; perguntas obsoletas são removidas seletivamente, perguntas existentes são atualizadas no lugar e apenas chaves ausentes são adicionadas.
+- prevenção: teste de contrato impede que a reconciliação idempotente volte a executar `clear()` na coleção gerenciada.

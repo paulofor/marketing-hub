@@ -12,7 +12,6 @@ import com.marketinghub.productai.dto.PersonalizedSampleFunnelDto;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -153,19 +152,19 @@ public class ProductAiPersonalizedSampleFunnelService {
     for (LeadPortalFlowQuestion question : flow.getQuestions()) {
       existingByDataKey.putIfAbsent(question.getDataKey(), question);
     }
-    List<LeadPortalFlowQuestion> reconciled = new ArrayList<>();
+    Map<String, QuestionSpec> specsByDataKey = new LinkedHashMap<>();
+    specs.forEach(spec -> specsByDataKey.put(spec.dataKey(), spec));
+    flow.getQuestions().removeIf(question -> !specsByDataKey.containsKey(question.getDataKey()));
     for (int index = 0; index < specs.size(); index++) {
       QuestionSpec spec = specs.get(index);
       LeadPortalFlowQuestion question = existingByDataKey.get(spec.dataKey());
       if (question == null) {
         question = LeadPortalFlowQuestion.builder().flow(flow).dataKey(spec.dataKey()).build();
+        flow.getQuestions().add(question);
       }
       applyQuestionSpec(question, flow, spec, index);
-      reconciled.add(question);
     }
-    flow.getQuestions().removeIf(question -> !reconciled.contains(question));
-    flow.getQuestions().clear();
-    flow.getQuestions().addAll(reconciled);
+    flow.getQuestions().sort(Comparator.comparingInt(LeadPortalFlowQuestion::getPosition));
   }
 
   /** Atualiza uma pergunta existente ou nova com o contrato atual do template. */

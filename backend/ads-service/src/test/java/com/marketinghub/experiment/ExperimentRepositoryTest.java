@@ -246,8 +246,8 @@ class ExperimentRepositoryTest {
   }
 
   /**
-   * Verifica se as consultas aceitam público Meta publicável em INTEREST, sem exigir JOB_TITLE
-   * isolado.
+   * Verifica se as consultas aceitam público Meta publicável em INTEREST sem exigir JOB_TITLE nem o
+   * sinalizador legado de aprovação criativa no contrato enxuto de segmentação.
    */
   @Test
   void readyQueriesAcceptExperimentWithOnlyApprovedInterest() {
@@ -270,7 +270,7 @@ class ExperimentRepositoryTest {
                 .journeyTemplate(template)
                 .platform(ExperimentPlatform.FACEBOOK)
                 .status(ExperimentStatus.PLANNED)
-                .creativeApproved(true)
+                .creativeApproved(false)
                 .instagramAccount(instagram)
                 .build());
 

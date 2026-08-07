@@ -834,3 +834,10 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Sintoma:** o workflow do MCP falha antes do build na validação do deploy isolado, embora a configuração e os testes do módulo estejam corretos.
 - **Causa-raiz:** a URL canônica do leitor independente de logs passou a usar a porta `8099`, mas o teste shell do deploy continuou exigindo implicitamente a porta `80`.
 - **Prevenção:** manter o contrato do deploy alinhado ao mesmo endpoint explícito usado pelo Compose, pela aplicação, pelo README e pelos testes Java; toda mudança futura da URL deve atualizar e executar essas validações em conjunto.
+
+# LOOP-2026-08-07 — Prontidão aprovada, mas pacote de público retornava 404
+
+- **Sintoma:** o experimento comercial aparecia sem bloqueios na prontidão, porém o Facebook Ads Worker interrompia a publicação por ausência de pacote de segmentação aprovado.
+- **Causa-raiz:** a consulta do pacote ainda exigia o sinalizador legado `experiment.creative_approved`, enquanto a prontidão e a publicação de mídia usam os criativos `READY` como fonte canônica.
+- **Correção sistêmica:** remover a dependência do sinalizador legado da consulta de público e preservar os gates canônicos independentes de criativo e segmentação.
+- **Prevenção:** teste de repositório comprova que um público Meta aprovado continua disponível quando o sinalizador legado está falso.

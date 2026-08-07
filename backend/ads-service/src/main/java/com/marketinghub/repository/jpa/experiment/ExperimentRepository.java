@@ -198,7 +198,6 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
             join fetch e.hypothesisRef h
             where e.id = :experimentId
               and e.platform = :platform
-              and e.creativeApproved = true
               and exists (
                     select 1 from TargetingElement te
                     where te.niche = e.niche

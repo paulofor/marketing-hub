@@ -788,3 +788,9 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Sintoma:** pacote de amostra entra em `PROCESSING` e é marcado como falho poucos minutos depois com a mensagem de que permaneceu 30 minutos sem retorno.
 - **Causa-raiz:** `updated_at` é `DATETIME` preenchido com `CURRENT_TIMESTAMP` na sessão MySQL UTC-3, mas o watchdog comparava esse valor sem fuso com `UTC_TIMESTAMP()`, tornando todo pacote três horas mais antigo no instante da comparação.
 - **Prevenção:** cálculos de expiração sobre `DATETIME` gravado pelo banco devem usar `CURRENT_TIMESTAMP()` da mesma sessão. Teste de contrato do watchdog exige esse relógio e impede o retorno de `UTC_TIMESTAMP()` nessa consulta.
+
+### LOOP-LEAD-PORTAL-MICROAMOSTRA-SEM-IMAGENS-LIVRES
+
+- **Sintoma:** o funil promete uma microamostra gratuita, mas o pacote é concluído com `free_images = 0`, impedindo que as saídas geradas sejam tratadas como a entrega gratuita contratada.
+- **Causa-raiz:** o montador de prompt atribuía zero imagens gratuitas a todo formulário simples, sem considerar o modelo canônico `AI_PERSONALIZED_SAMPLE_FUNNEL`.
+- **Prevenção:** fluxos desse modelo liberam como gratuitas todas as saídas planejadas; teste de contrato exige que a quantidade gratuita seja igual ao lote configurado, sem ampliar a regra para formulários pagos.

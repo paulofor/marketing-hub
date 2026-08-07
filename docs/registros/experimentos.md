@@ -6540,3 +6540,10 @@
 - causa-raiz: a reconciliação reaproveitava a entidade existente, mas limpava e readicionava toda a coleção JPA com `orphanRemoval`; o Hibernate tentava inserir novamente a chave canônica antes de concluir a remoção anterior.
 - correção: a coleção gerenciada deixa de ser limpa; perguntas obsoletas são removidas seletivamente, perguntas existentes são atualizadas no lugar e apenas chaves ausentes são adicionadas.
 - prevenção: teste de contrato impede que a reconciliação idempotente volte a executar `clear()` na coleção gerenciada.
+
+## 2026-08-07 — Publicação do Lead Portal sem quoting frágil no shell remoto
+
+- evidência operacional: o workflow manual `CI – Lead Portal` construiu e publicou as imagens do commit do PR 4757, mas o job `deploy` falhou antes do `docker compose` com `syntax error near unexpected token '('`;
+- causa-raiz: a etapa `Publish stack` interpolava todo o script remoto dentro de uma única string delimitada por aspas duplas e continha novas aspas duplas não escapadas nas validações de asset/MIME;
+- correção: a publicação passa a enviar um script remoto por heredoc literal e recebe os valores operacionais como argumentos posicionais, preservando corretamente aspas e expansões no host de destino;
+- prevenção: `actionlint`, validação `bash -n` do bloco e o contrato de cache/MIME do Lead Portal devem passar antes de novo disparo manual; o pós-deploy continua exigindo JavaScript real com `application/javascript`.

@@ -185,23 +185,46 @@ jobs:
             lead-portal/ "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}"
       - name: Publish stack
         run: |
-          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
-            && cd ${REMOTE_PATH} \
-            && if [ -n '${GHCR_TOKEN}' ]; then echo '${GHCR_TOKEN}' | docker login ${IMAGE_REGISTRY} -u '${GHCR_USERNAME}' --password-stdin; fi \
-            && export LEAD_PORTAL_BACKEND_IMAGE='${IMAGE_NAMESPACE}/lead-portal-backend:${IMAGE_TAG}' \
-            && export LEAD_PORTAL_FRONTEND_IMAGE='${IMAGE_NAMESPACE}/lead-portal-frontend:${IMAGE_TAG}' \
-            && (docker network inspect public-net >/dev/null 2>&1 || docker network create public-net) \
-            && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
-            && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d \
-            && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --force-recreate proxy \
-            && index_html="\$(docker exec lead-portal-frontend cat /usr/share/nginx/html/index.html)" \
-            && asset_path="\$(printf '%s' "\$index_html" | sed -n 's/.*src="\([^\"]*\.js\)".*/\1/p' | head -n 1)" \
-            && test -n "\$asset_path" \
-            && docker exec lead-portal-frontend test -f "/usr/share/nginx/html\${asset_path}" \
-            && test "\$(curl -fsS -o /dev/null -w '%{http_code}:%{content_type}' "https://oportunidadebrasil.shop\${asset_path}")" = '200:application/javascript' \
-            && for probe in 1 2 3 4 5; do curl -fsS "https://oportunidadebrasil.shop/flows/exp-81-gerasalespage-v1?deploy-probe=${GITHUB_SHA}-\$probe" | grep -F 'data-mh-landing-analytics' >/dev/null; done \
-            && test "\$(curl -fsS -o /dev/null -w '%{http_code}' 'https://oportunidadebrasil.shop/flows/exp-81-gerasalespage-v1?deploy-health=1')" = '200' \
-            && docker image prune -af"
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" bash -s -- \
+            "${REMOTE_PATH}" \
+            "${GHCR_TOKEN}" \
+            "${IMAGE_REGISTRY}" \
+            "${GHCR_USERNAME}" \
+            "${IMAGE_NAMESPACE}" \
+            "${IMAGE_TAG}" \
+            "${GITHUB_SHA}" <<'REMOTE_PUBLISH'
+          set -euo pipefail
+
+          remote_path="$1"
+          ghcr_token="$2"
+          image_registry="$3"
+          ghcr_username="$4"
+          image_namespace="$5"
+          image_tag="$6"
+          github_sha="$7"
+
+          cd "$remote_path"
+          if [ -n "$ghcr_token" ]; then
+            printf '%s' "$ghcr_token" | docker login "$image_registry" -u "$ghcr_username" --password-stdin
+          fi
+          export LEAD_PORTAL_BACKEND_IMAGE="${image_namespace}/lead-portal-backend:${image_tag}"
+          export LEAD_PORTAL_FRONTEND_IMAGE="${image_namespace}/lead-portal-frontend:${image_tag}"
+          docker network inspect public-net >/dev/null 2>&1 || docker network create public-net
+          docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull
+          docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d
+          docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --force-recreate proxy
+
+          index_html="$(docker exec lead-portal-frontend cat /usr/share/nginx/html/index.html)"
+          asset_path="$(printf '%s' "$index_html" | sed -n 's/.*src="\([^\"]*\.js\)".*/\1/p' | head -n 1)"
+          test -n "$asset_path"
+          docker exec lead-portal-frontend test -f "/usr/share/nginx/html${asset_path}"
+          test "$(curl -fsS -o /dev/null -w '%{http_code}:%{content_type}' "https://oportunidadebrasil.shop${asset_path}")" = '200:application/javascript'
+          for probe in 1 2 3 4 5; do
+            curl -fsS "https://oportunidadebrasil.shop/flows/exp-81-gerasalespage-v1?deploy-probe=${github_sha}-${probe}" | grep -F 'data-mh-landing-analytics' >/dev/null
+          done
+          test "$(curl -fsS -o /dev/null -w '%{http_code}' 'https://oportunidadebrasil.shop/flows/exp-81-gerasalespage-v1?deploy-health=1')" = '200'
+          docker image prune -af
+          REMOTE_PUBLISH
       - name: Clean build artifacts from repository
         if: always()
         run: |

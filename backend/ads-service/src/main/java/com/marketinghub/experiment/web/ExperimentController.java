@@ -30,6 +30,7 @@ import com.marketinghub.experiment.service.construction.ExperimentConstructionDt
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsRequest;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsResponse;
 import com.marketinghub.experiment.service.generatepromise.latestdraft.ExperimentPromiseOptionsDraftResponse;
+import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
 import java.util.stream.StreamSupport;
 import org.springframework.http.ContentDisposition;
@@ -100,6 +101,16 @@ public class ExperimentController {
   @PostMapping("/{id}/duplicate")
   public ExperimentDto duplicate(@PathVariable Long id) {
     return mapper.toDto(service.duplicate(id));
+  }
+
+  /** Cria um experimento comercial limpo a partir de uma homologação fake aprovada. */
+  @Operation(
+      summary = "Criar experimento comercial a partir de homologação fake",
+      description =
+          "Preserva o contrato comercial validado e reinicia métricas, custos, publicações e vínculos operacionais.")
+  @PostMapping("/{id}/commercialize")
+  public ExperimentDto commercialize(@PathVariable Long id) {
+    return mapper.toDto(service.commercialize(id));
   }
 
   /** Busca os detalhes de um experimento pelo identificador. */

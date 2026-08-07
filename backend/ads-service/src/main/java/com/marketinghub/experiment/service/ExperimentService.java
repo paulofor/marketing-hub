@@ -23,6 +23,7 @@ import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.productai.service.ProductAiExperimentPreparationService;
 import com.marketinghub.repository.jpa.ads.FacebookInstantFormRepository;
 import com.marketinghub.repository.jpa.ads.FacebookPageRepository;
@@ -631,6 +632,66 @@ public class ExperimentService {
             .followUpActionUrl(original.getFollowUpActionUrl())
             .build();
     return repository.save(copy);
+  }
+
+  /**
+   * Deriva de uma homologação fake um experimento comercial de captação, sem reaproveitar métricas,
+   * custos, publicações ou identificadores operacionais do teste.
+   */
+  @Transactional
+  public Experiment commercialize(Long id) {
+    Experiment original = repository.findById(id).orElseThrow();
+    if (original.getExperimentType() != ExperimentType.FAKE_EXPERIMENT) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "only fake experiments can originate a commercial experiment");
+    }
+    if (original.getHypothesisRef() == null || original.getNiche() == null) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "fake experiment requires niche and hypothesis");
+    }
+    String automaticName =
+        buildAutomaticExperimentName(original.getNiche(), original.getHypothesisRef());
+    Experiment commercial =
+        Experiment.builder()
+            .niche(original.getNiche())
+            .name(automaticName)
+            .creationSource(ExperimentCreationSource.SYSTEM_FLOW)
+            .hypothesis(original.getHypothesis())
+            .singlePain(original.getSinglePain())
+            .freeReward(original.getFreeReward())
+            .funnelPromise(original.getFunnelPromise())
+            .primaryCta(original.getPrimaryCta())
+            .commercialObjective(original.getCommercialObjective())
+            .experimentType(ExperimentType.NICHE_TEST)
+            .productAiSubtype(ProductAiSubtype.AI_PERSONALIZED_SAMPLE)
+            .campaignObjective(ExperimentCampaignObjective.LEADS)
+            .hypothesisRef(original.getHypothesisRef())
+            .kpiTargetCpl(original.getKpiTargetCpl())
+            .metricPreset(original.getMetricPreset())
+            .stopLossCpl(original.getStopLossCpl())
+            .sampleSize(original.getSampleSize())
+            .baselineCvr(original.getBaselineCvr())
+            .targetCvr(original.getTargetCvr())
+            .mdePercent(original.getMdePercent())
+            .dailyBudget(original.getDailyBudget())
+            .unitPrice(original.getUnitPrice())
+            .status(ExperimentStatus.PLANNED)
+            .platform(original.getPlatform())
+            .stage(ExperimentStage.AD)
+            .primaryVariable(original.getPrimaryVariable())
+            .primaryMetric(original.getPrimaryMetric())
+            .imagesPerPackage(original.getImagesPerPackage())
+            .openImagesPerPackage(original.getOpenImagesPerPackage())
+            .compressedImagesPerPackage(original.getCompressedImagesPerPackage())
+            .facebookPage(original.getFacebookPage())
+            .instagramAccount(original.getInstagramAccount())
+            .journeyTemplate(original.getJourneyTemplate())
+            .leadPortalFlowModel(original.getLeadPortalFlowModel())
+            .schemaFirstLeadPortalEnabled(original.isSchemaFirstLeadPortalEnabled())
+            .imageGenerationModel(original.getImageGenerationModel())
+            .imageGenerationQuality(original.getImageGenerationQuality())
+            .build();
+    return repository.save(commercial);
   }
 
   /** Atualiza o status do experimento validando pré-condições comerciais da transição. */

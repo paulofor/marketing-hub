@@ -571,6 +571,12 @@ A interface de Experimentos deve manter abas/visões que permitam acompanhar, de
 7. Na aba Público, salvar ao menos 1 item escolhido, aprovado e identificável pela Meta em qualquer categoria suportada: interesse, cargo ou comportamento. Qualquer uma dessas categorias basta para liberar campanha; cargo não é requisito isolado.
 8. Validar custos/telemetria da geração no experimento.
 
+### 12.1 Derivação comercial após homologação fake
+
+Quando uma experiência validada em `FAKE_EXPERIMENT` for usada como base para aquisição real, o novo experimento deve ser criado pela ação administrativa canônica de derivação comercial. A derivação preserva somente contrato da oferta e configurações reutilizáveis. É obrigatório iniciar sem sessões, eventos, leads, custos, datas, URL publicada, fluxo público, artefatos, campanha ou métricas da homologação. A origem permanece fake e não pode ser promovida nem reclassificada como experimento real.
+
+Para uma microamostra personalizada, a derivação cria um `NICHE_TEST` com objetivo `LEADS` e mecanismo `AI_PERSONALIZED_SAMPLE`. A nova aquisição continua bloqueada até possuir instrumentação, funil, criativos, público e página próprios e receber autorização explícita de mídia.
+
 ## 13. Fonte de verdade técnica (código)
 
 - Ordem/seções do pipeline no backend: `ExperimentPipelineSection`.

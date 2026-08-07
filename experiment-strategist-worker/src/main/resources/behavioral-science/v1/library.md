@@ -24,6 +24,21 @@ Esta biblioteca ajuda a formular hipóteses testáveis. Ela não autoriza diagn�
 6. Contradições reduzem confiança e devem permanecer visíveis na memória.
 7. Conteúdo vencido não entra no contexto de novas pesquisas.
 
+## Jornada observável até a compra
+
+Use a sequência `UNFAMILIAR → RELEVANT → COMPREHENSIBLE → PLAUSIBLE → PERSONALLY_VALUABLE → DESIRABLE → PURCHASABLE` para localizar o bloqueio da comunicação. Não atribua um estado mental sem comportamento ou linguagem que o sustente.
+
+Ao pesquisar clientes e concorrentes, procure:
+
+- situações e frases literais que tornam a dor reconhecível;
+- esforço que o cliente ainda precisa realizar depois de aceitar a oferta;
+- mecanismo simples que torne o benefício plausível;
+- entrega ou microexperiência que materialize valor pessoal;
+- prova e redução de risco antes do próximo passo;
+- identidade e futuro desejado descritos com sobriedade.
+
+A oportunidade mais forte costuma estar no trabalho que as ofertas atuais deixam para o cliente: assistir, aprender, escolher, adaptar, produzir, configurar ou assumir risco. Reduzir esse trabalho só é vantagem quando a entrega do Marketing Hub realmente o remove.
+
 ## Referências-base
 
 A execução deve consultar e registrar a fonte primária ou revisão científica usada. A biblioteca não substitui pesquisa atualizada. Priorizar literatura revisada por pares, órgãos públicos, universidades e documentação primária sobre comportamento do produto.

@@ -1850,6 +1850,9 @@ public class ExperimentFunnelService {
 
   /** Extrai o token de versão da URL pública quando o slot ainda não existe no cadastro. */
   private Optional<String> resolveVersionTokenFromUrl(String followUpActionUrl) {
+    if (followUpActionUrl == null || followUpActionUrl.isBlank()) {
+      return Optional.empty();
+    }
     Matcher matcher = MUSA_VERSIONED_HOST_PATTERN.matcher(followUpActionUrl.trim());
     if (!matcher.matches()) {
       return Optional.empty();

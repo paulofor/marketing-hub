@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Estrategista de Experimentos v1
-  version: 1.2.0
+  version: 1.3.0
 paths:
   /api/experiment-strategist/v1/commercial-plans/{planId}/executions:
     post:
@@ -21,7 +21,7 @@ paths:
         '404': {description: Fila vazia}
   /api/experiment-strategist/v1/internal/executions/{id}/complete:
     post:
-      summary: Persiste o parecer estruturado sem aplicar a recomendacao.
+      summary: Persiste diagnóstico, inteligência de mercado, três alternativas, posicionamento, fontes e recomendação sem executá-la.
       responses:
         '200': {description: Parecer persistido}
         '409': {description: Execucao fora do estado RUNNING}

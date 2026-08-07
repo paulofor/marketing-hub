@@ -741,6 +741,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Sintoma:** clique abre um shell vazio e o conteúdo comercial aparece vários segundos depois.
 - **Causa-raiz:** a rota pública `/flows/exp-*-gerasalespage-v1` carregava o SPA antes de buscar novamente o HTML da landing no backend.
 - **Prevenção:** o proxy serve a landing GeraSalesPage diretamente, usa cache curto com stale seguro e o deploy valida o HTML instrumentado na rota pública. Web Vitals reais continuam vinculados às sessões humanas.
+- Em 2026-08-07, o funil administrativo foi protegido para que experimentos `FAKE_EXPERIMENT` sem URL comercial não sejam interpretados como PDE. A detecção de versão agora trata URL nula ou vazia como ausência de versão, e um teste de contrato impede novo HTTP 500 ao homologar ofertas isoladas.
 
 # LOOP-LANDING-DUPLICATE-ANALYTICS — Coletores concorrentes na landing pública
 

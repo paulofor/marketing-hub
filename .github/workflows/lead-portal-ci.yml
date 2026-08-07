@@ -69,6 +69,12 @@ jobs:
       image-tag: ${{ steps.image_tag.outputs.value }}
     steps:
       - uses: actions/checkout@v4
+      - name: Validate image pipeline production contract
+        run: |
+          docker compose \
+            -f lead-portal/docker-compose.yml \
+            -f lead-portal/docker-compose.deploy.yml \
+            config | grep -F 'LEAD_PORTAL_IMAGE_PIPELINE_ENABLED: "true"' >/dev/null
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Log in to GitHub Container Registry

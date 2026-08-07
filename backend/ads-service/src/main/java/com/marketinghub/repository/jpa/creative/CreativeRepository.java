@@ -24,7 +24,7 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
              where c.experiment.id = :experimentId
                and c.status = :status
                and (
-                    (upper(coalesce(c.format, 'IMAGE')) = 'IMAGE' and c.imageUrl is not null and trim(c.imageUrl) <> '')
+                    (upper(coalesce(c.format, 'IMAGE')) <> 'VIDEO' and c.imageUrl is not null and trim(c.imageUrl) <> '')
                  or (upper(c.format) = 'VIDEO' and (
                         (c.videoId is not null and trim(c.videoId) <> '')
                      or (c.videoUrl is not null and trim(c.videoUrl) <> '')
@@ -42,7 +42,7 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
              where c.experiment.id = :experimentId
                and c.status = :status
                and (
-                    (upper(coalesce(c.format, 'IMAGE')) = 'IMAGE' and c.imageUrl is not null and trim(c.imageUrl) <> '')
+                    (upper(coalesce(c.format, 'IMAGE')) <> 'VIDEO' and c.imageUrl is not null and trim(c.imageUrl) <> '')
                  or (upper(c.format) = 'VIDEO' and (
                         (c.videoId is not null and trim(c.videoId) <> '')
                      or (c.videoUrl is not null and trim(c.videoUrl) <> '')
@@ -107,7 +107,7 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
              where c.experiment.id = :experimentId
                and c.status = :status
                and (
-                    (upper(coalesce(c.format, 'IMAGE')) = 'IMAGE' and c.imageUrl is not null and trim(c.imageUrl) <> '')
+                    (upper(coalesce(c.format, 'IMAGE')) <> 'VIDEO' and c.imageUrl is not null and trim(c.imageUrl) <> '')
                  or (upper(c.format) = 'VIDEO' and (
                         (c.videoId is not null and trim(c.videoId) <> '')
                      or (c.videoUrl is not null and trim(c.videoUrl) <> '')
@@ -125,7 +125,7 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
              where c.experiment.id = :experimentId
                and c.status = :status
                and (
-                    (upper(coalesce(c.format, 'IMAGE')) = 'IMAGE' and c.imageUrl is not null and trim(c.imageUrl) <> '')
+                    (upper(coalesce(c.format, 'IMAGE')) <> 'VIDEO' and c.imageUrl is not null and trim(c.imageUrl) <> '')
                  or (upper(c.format) = 'VIDEO' and (
                         (c.videoId is not null and trim(c.videoId) <> '')
                      or (c.videoUrl is not null and trim(c.videoUrl) <> '')

@@ -2,6 +2,7 @@ package com.marketinghub.leadportal.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalSimpleFormStyle;
@@ -143,6 +144,32 @@ class LeadPortalFlowPublicationRequestTest {
     assertThat(payload.customFormHtml()).contains("fbq('init', '1234567890')");
     assertThat(payload.customFormHtml()).contains("fbevents.js");
     assertThat(payload.legacyPreviewHtml()).contains("tr?id=1234567890&ev=PageView&noscript=1");
+  }
+
+  @Test
+  void fromInjectsNichePixelInsideManagedJsonWithoutCorruptingItsContract() throws Exception {
+    MarketNiche niche = MarketNiche.builder().facebookPixelId("1234567890").build();
+    String managedTemplate =
+        """
+        {"htmlDocument":"<!doctype html><html><head></head><body><form></form></body></html>","formSpec":{"formId":"sample-form"}}
+        """
+            .trim();
+    LeadPortalFlow flow =
+        LeadPortalFlow.builder()
+            .slug("product-ai-exp-85-personalized-sample")
+            .name("Flow")
+            .approved(true)
+            .experiment(Experiment.builder().id(85L).build())
+            .marketNiche(niche)
+            .customFormHtml(managedTemplate)
+            .questions(List.of())
+            .build();
+
+    LeadPortalFlowPublicationRequest payload = LeadPortalFlowPublicationRequest.from(flow);
+    var parsed = new ObjectMapper().readTree(payload.customFormHtml());
+
+    assertThat(parsed.path("htmlDocument").asText()).contains("fbq('init', '1234567890')");
+    assertThat(parsed.path("formSpec").path("formId").asText()).isEqualTo("sample-form");
   }
 
   @Test

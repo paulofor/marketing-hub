@@ -420,6 +420,7 @@ export default function ExperimentDetailPage() {
   const [openAuditStageJobId, setOpenAuditStageJobId] = useState<string | null>(
     null,
   );
+  const [isStartingSalesPage, setIsStartingSalesPage] = useState(false);
   const [copiedCardKey, setCopiedCardKey] = useState<string | null>(null);
   const [copyingCardKey, setCopyingCardKey] = useState<string | null>(null);
   const [downloadingCardKey, setDownloadingCardKey] = useState<string | null>(
@@ -687,6 +688,31 @@ export default function ExperimentDetailPage() {
           "Não foi possível liberar o experimento para o Facebook.")
         : "Não foi possível liberar o experimento para o Facebook.";
       toast.error(message);
+    }
+  };
+
+  const handleStartSalesPage = async (rebuild: boolean) => {
+    try {
+      setIsStartingSalesPage(true);
+      const action = rebuild ? "rebuild" : "start";
+      const { data: startResponse } = await axios.post<{
+        jobid: string;
+        stageCode: string;
+        status: string;
+      }>(`/api/experiments/${expId}/gerasalespage/v1/${action}`);
+      toast.success(
+        `GeraSalesPage iniciado na etapa ${startResponse.stageCode}. Código: ${startResponse.jobid}.`,
+      );
+      await geraSalesPagePublications.refetch();
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? (error.response?.data?.message ??
+          error.response?.data?.detail ??
+          "Não foi possível iniciar o GeraSalesPage.")
+        : "Não foi possível iniciar o GeraSalesPage.";
+      toast.error(message);
+    } finally {
+      setIsStartingSalesPage(false);
     }
   };
 
@@ -2160,7 +2186,7 @@ export default function ExperimentDetailPage() {
           ) : null}
         </div>
       ) : null}
-      {false ? (
+      {isLowTicketProduct ? (
         <div className="card border-0 shadow-sm rounded-3 mt-3">
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
@@ -2242,11 +2268,29 @@ export default function ExperimentDetailPage() {
                   modelo e request usados em cada etapa.
                 </p>
               </div>
-              <span className="badge text-bg-light border text-body">
-                {geraSalesPagePublications.isLoading
-                  ? "Carregando"
-                  : `${salesPagePublications.length} versão(ões)`}
-              </span>
+              <div className="d-flex align-items-center gap-2 flex-wrap">
+                <span className="badge text-bg-light border text-body">
+                  {geraSalesPagePublications.isLoading
+                    ? "Carregando"
+                    : `${salesPagePublications.length} versão(ões)`}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  disabled={
+                    isStartingSalesPage || geraSalesPagePublications.isLoading
+                  }
+                  onClick={() =>
+                    void handleStartSalesPage(salesPagePublications.length > 0)
+                  }
+                >
+                  {isStartingSalesPage
+                    ? "Solicitando..."
+                    : salesPagePublications.length > 0
+                      ? "Refazer página"
+                      : "Criar página"}
+                </button>
+              </div>
             </div>
             {geraSalesPagePublications.isLoading ? (
               <div className="text-muted small mt-3">

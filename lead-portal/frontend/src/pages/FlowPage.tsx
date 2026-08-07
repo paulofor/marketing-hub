@@ -27,6 +27,7 @@ import type {
 } from "../types";
 
 const INTERNAL_TEST_STORAGE_KEY = "mh_internal_test";
+const activeCustomTemplateBridges = new WeakMap<Document, () => void>();
 
 export default function FlowPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -537,6 +538,11 @@ function StandaloneCustomFlowTemplate({
   const requiresManagedRuntime = Boolean(formSpec);
 
   useEffect(() => {
+    document.body.classList.add("flow-standalone-active");
+    return () => document.body.classList.remove("flow-standalone-active");
+  }, []);
+
+  useEffect(() => {
     if (!parsedDocument || typeof document === "undefined") {
       return;
     }
@@ -688,6 +694,8 @@ function attachCustomTemplateBridgeToDocument(
   options: CustomTemplateBridgeOptions,
   context?: CustomTemplateBridgeContext,
 ) {
+  activeCustomTemplateBridges.get(doc)?.();
+
   if (options.formSpec) {
     renderManagedTemplateForm(doc, options.formSpec);
   }
@@ -800,6 +808,7 @@ function attachCustomTemplateBridgeToDocument(
         options.formSpec?.successState?.title ?? "Tudo certo!",
         options.formSpec?.successState?.message ?? "Recebemos seus dados com sucesso.",
       );
+      options.onSubmitted?.(response);
       target.dispatchEvent(
         new CustomEvent("leadportal:submission-success", { bubbles: true }),
       );
@@ -814,7 +823,6 @@ function attachCustomTemplateBridgeToDocument(
           },
         }),
       );
-      options.onSubmitted?.(response);
     } catch (error) {
       console.error("Falha ao enviar formulário do template", error);
       writeManagedTemplateFeedback(
@@ -842,13 +850,18 @@ function attachCustomTemplateBridgeToDocument(
   doc.addEventListener("submit", handleFormSubmit, true);
   const detachVideoAnalytics = attachVideoAnalyticsToDocument(doc, options);
 
-  return () => {
+  const cleanup = () => {
     doc.removeEventListener("click", handleAnchorClick, true);
     doc.removeEventListener("input", handleFormStart, true);
     doc.removeEventListener("change", handleFormStart, true);
     doc.removeEventListener("submit", handleFormSubmit, true);
     detachVideoAnalytics();
+    if (activeCustomTemplateBridges.get(doc) === cleanup) {
+      activeCustomTemplateBridges.delete(doc);
+    }
   };
+  activeCustomTemplateBridges.set(doc, cleanup);
+  return cleanup;
 }
 
 function attachVideoAnalyticsToDocument(doc: Document, options: Pick<CustomTemplateBridgeOptions, "flowSlug" | "rootElement">) {

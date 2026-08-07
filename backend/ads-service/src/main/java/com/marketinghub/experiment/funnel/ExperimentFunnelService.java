@@ -384,7 +384,6 @@ public class ExperimentFunnelService {
                        SUM(CASE WHEN p.zip_generated_at IS NOT NULL THEN 1 ELSE 0 END) AS packagesWithZip,
                        SUM(CASE WHEN p.notified_at IS NOT NULL THEN 1 ELSE 0 END) AS deliveredEmails,
                        SUM(CASE WHEN p.email_opened_at IS NOT NULL THEN 1 ELSE 0 END) AS openedEmails,
-                       COALESCE(SUM(p.image_total_price_usd), 0) AS generationCostUsd,
                        MAX(p.updated_at) AS lastPackageUpdateAt
                 FROM flow_submission_image_package p
                 JOIN flow_submissions s ON s.id = p.submission_id
@@ -398,6 +397,8 @@ public class ExperimentFunnelService {
     evidence.put("available", true);
     evidence.put("experimentId", experimentId);
     evidence.putAll(metrics);
+    evidence.put("generationCostAvailable", false);
+    evidence.put("generationCostUnavailableReason", "PACKAGE_COST_FIELDS_NOT_CANONICAL");
     evidence.put("scope", "TECHNICAL_AUDIT_NOT_HUMAN_SALES");
     return evidence;
   }

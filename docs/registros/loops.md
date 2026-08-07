@@ -19,7 +19,8 @@
 
 - Sintoma: o pacote era gerado, entregue e aberto, mas o Operador afirmava que essas etapas não estavam comprovadas.
 - Causa-raiz: a evidência congelada continha apenas eventos da landing e não incluía o estado persistido dos pacotes de imagem.
-- Prevenção: a inteligência de sessão também expõe pacotes solicitados/concluídos, imagens planejadas/geradas, ZIP, envio, abertura e custo de geração, sempre marcados como auditoria técnica quando o experimento é fake.
+- Prevenção: a inteligência de sessão também expõe pacotes solicitados/concluídos, imagens planejadas/geradas, ZIP, envio e abertura, sempre marcados como auditoria técnica quando o experimento é fake.
+- Proteção financeira: enquanto os campos legados de custo do pacote não forem canônicos, o Operador recebe `generationCostAvailable=false` em vez de interpretar o preço comercial de R$ 67 como custo em USD.
 
 ## LOOP-AGENT-RUNNING-WITHOUT-PROGRESS — Agentes Codex
 

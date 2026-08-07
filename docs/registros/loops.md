@@ -814,3 +814,9 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Sintoma:** o funil promete uma microamostra gratuita, mas o pacote é concluído com `free_images = 0`, impedindo que as saídas geradas sejam tratadas como a entrega gratuita contratada.
 - **Causa-raiz:** o montador de prompt atribuía zero imagens gratuitas a todo formulário simples, sem considerar o modelo canônico `AI_PERSONALIZED_SAMPLE_FUNNEL`.
 - **Prevenção:** fluxos desse modelo liberam como gratuitas todas as saídas planejadas; teste de contrato exige que a quantidade gratuita seja igual ao lote configurado, sem ampliar a regra para formulários pagos.
+
+### LOOP-LEAD-PORTAL-FORMULARIO-INVALIDO-ENVIADO
+
+- **Sintoma:** ao tocar no CTA com campos obrigatórios vazios, a página exibe erro genérico de envio e registra uma exceção técnica, em vez de orientar o preenchimento do primeiro campo inválido.
+- **Causa-raiz:** o runtime gerenciado interceptava o evento `submit` e montava o contrato antes de executar a validação HTML do formulário; templates ou scripts que disparassem o evento diretamente contornavam a barreira nativa do navegador.
+- **Prevenção:** o runtime executa `checkValidity()` e `reportValidity()` antes de marcar o formulário como em submissão ou chamar a API; o contrato do frontend exige que essa validação permaneça antes do início da submissão.

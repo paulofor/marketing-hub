@@ -4,6 +4,7 @@ set -eu
 frontend_config="lead-portal/frontend/nginx.conf"
 proxy_config="lead-portal/nginx.conf"
 workflow=".github/workflows/lead-portal-ci.yml"
+flow_page="lead-portal/frontend/src/pages/FlowPage.tsx"
 
 grep -F 'location = /index.html {' "$frontend_config" >/dev/null
 grep -F 'Cache-Control "no-store, no-cache, must-revalidate"' "$frontend_config" >/dev/null
@@ -16,6 +17,15 @@ grep -F 'docker ps --filter publish=443 -q' "$workflow" >/dev/null
 grep -F 'com.docker.compose.project.working_dir' "$workflow" >/dev/null
 grep -F 'A porta pública está ocupada por container fora do escopo do Lead Portal' "$workflow" >/dev/null
 grep -F 'docker rm -f lead-portal-proxy lead-portal-proxy-1 lead-portal_proxy_1' "$workflow" >/dev/null
+grep -F 'if (!target.checkValidity()) {' "$flow_page" >/dev/null
+grep -F 'target.reportValidity();' "$flow_page" >/dev/null
+
+validation_line="$(grep -n -F 'if (!target.checkValidity()) {' "$flow_page" | head -1 | cut -d: -f1)"
+submitting_line="$(grep -n -F 'target.dataset.leadPortalSubmitting = "true";' "$flow_page" | head -1 | cut -d: -f1)"
+if [ "$validation_line" -ge "$submitting_line" ]; then
+  echo "[ARQUITETURA] formulário público deve validar os campos antes de iniciar a submissão" >&2
+  exit 1
+fi
 
 if grep -F 'up -d --force-recreate proxy' "$workflow" >/dev/null; then
   echo "[ARQUITETURA] deploy do Lead Portal não pode recriar um segundo proxy após subir a pilha" >&2

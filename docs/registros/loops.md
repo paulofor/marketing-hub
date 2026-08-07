@@ -821,3 +821,9 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o runtime gerenciado interceptava o evento `submit` e montava o contrato antes de executar a validação HTML do formulário; templates ou scripts que disparassem o evento diretamente contornavam a barreira nativa do navegador.
 - **Prevenção:** o runtime executa `checkValidity()` e `reportValidity()` antes de marcar o formulário como em submissão ou chamar a API; o contrato do frontend exige que essa validação permaneça antes do início da submissão.
 - **Correção complementar em 2026-08-07:** a homologação produtiva revelou que bridges antigas do mesmo documento podiam permanecer concorrendo pelo evento, consumir a resposta `201` com callback desmontado e impedir a confirmação visual. O runtime agora mantém uma única bridge ativa por documento, entrega o sucesso ao React antes de eventos auxiliares e aplica a contenção horizontal no `body` durante páginas standalone. O contrato do frontend protege a exclusividade da bridge e a ativação da contenção.
+# LOOP-2026-08-07 — Homologação `mh_test=1` classificada como tráfego humano
+
+- **Sintoma:** sessões mobile e envios técnicos do experimento comercial apareciam nos eventos do funil após testes com `mh_test=1`.
+- **Causa-raiz:** o HTML legado ainda emitia analytics e o classificador dependia do user-agent de automação; a emulação mobile do Playwright usa user-agent normal. A submissão também não propagava um marcador técnico.
+- **Correção sistêmica:** classificar `mh_test=1` como automação, marcar submissões com `__mh_internal_test__`, excluí-las das métricas comerciais e impedir que acionem standby.
+- **Prevenção:** testes de contrato para URL de homologação e submissão técnica, mantendo os eventos auditáveis sem tratá-los como comportamento humano.

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -76,6 +77,22 @@ class ExperimentFunnelServiceSubmissionTest {
     verify(standbyService).standbyOnFirstValidFormSubmission(experiment);
   }
 
+  /** Mantém submissão de homologação auditável sem colocar o experimento comercial em standby. */
+  @Test
+  void registerFormSubmissionDoesNotChangeCommercialStateForInternalTest() {
+    Experiment experiment = Experiment.builder().id(85L).build();
+    when(experimentRepository.findFirstByLeadPortalFlowSlug("flow-slug"))
+        .thenReturn(Optional.of(experiment));
+    RegisterLeadPortalSubmissionRequest request =
+        new RegisterLeadPortalSubmissionRequest(
+            "submission-test", Instant.parse("2026-08-07T19:28:00Z"), "__mh_internal_test__");
+
+    service.registerFormSubmission("flow-slug", request);
+
+    verify(eventRepository).save(any(ExperimentFunnelEvent.class));
+    verify(standbyService, never()).standbyOnFirstValidFormSubmission(experiment);
+  }
+
   /** Valida que o resumo automático contabiliza eventos públicos de submissão gravados no funil. */
   @Test
   void summarizeCountsPublicSubmissionEventsAsFormSubmissions() {
@@ -105,6 +122,7 @@ class ExperimentFunnelServiceSubmissionTest {
                     FROM flow_submissions fs
                     JOIN lead_portal_flow f ON f.slug = fs.flow_slug
                     WHERE %s
+                      AND (fs.campaign_code IS NULL OR fs.campaign_code <> '__mh_internal_test__')
                     UNION ALL
                     SELECT CAST(SUBSTRING(efe.payload, CHAR_LENGTH('submissionId=') + 1) AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS canonical_submission_id,
                            efe.lead_id,
@@ -114,6 +132,7 @@ class ExperimentFunnelServiceSubmissionTest {
                       AND efe.stage = 'ENVIO_FORM'
                       AND efe.source = ?
                       AND efe.payload LIKE 'submissionId=%%'
+                      AND (efe.campaign_code IS NULL OR efe.campaign_code <> '__mh_internal_test__')
                 ) submissions
                 WHERE canonical_submission_id IS NOT NULL
                   AND canonical_submission_id <> ''

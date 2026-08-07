@@ -68,6 +68,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Slf4j
 public class ExperimentFunnelService {
+  private static final String INTERNAL_TEST_CAMPAIGN_CODE = "__mh_internal_test__";
 
   private final ExperimentRepository experimentRepository;
   private final ExperimentFunnelEventRepository eventRepository;
@@ -747,7 +748,9 @@ public class ExperimentFunnelService {
             .occurredAt(occurredAt)
             .build();
     eventRepository.save(event);
-    standbyService.standbyOnFirstValidFormSubmission(experiment);
+    if (!isInternalTestCampaign(request.campaignCode())) {
+      standbyService.standbyOnFirstValidFormSubmission(experiment);
+    }
     return true;
   }
 
@@ -1224,6 +1227,7 @@ public class ExperimentFunnelService {
                             FROM experiment_landing_analytics_event
                             WHERE experiment_id = ?
                               AND LOWER(event_type) = 'page_view'
+                              AND LOWER(COALESCE(page_url, '')) NOT LIKE '%%mh_test=1%%'
                               AND (? IS NULL OR occurred_at > ?)
                         ) normalized_page_views
                         CROSS JOIN (
@@ -1260,6 +1264,7 @@ public class ExperimentFunnelService {
                         WHERE experiment_id = ?
                           AND stage = 'VIDEO_VISTO_PARCIAL'
                           AND source = ?
+                          AND LOWER(COALESCE(payload, '')) NOT LIKE '%%mh_test=1%%'
                           AND (? IS NULL OR occurred_at > ?)
                         """,
             experimentId,
@@ -1283,6 +1288,7 @@ public class ExperimentFunnelService {
                         WHERE experiment_id = ?
                           AND stage = 'VIDEO_VISTO_COMPLETO'
                           AND source = ?
+                          AND LOWER(COALESCE(payload, '')) NOT LIKE '%%mh_test=1%%'
                           AND (? IS NULL OR occurred_at > ?)
                         """,
             experimentId,
@@ -1312,6 +1318,7 @@ public class ExperimentFunnelService {
                             FROM flow_submissions fs
                             JOIN lead_portal_flow f ON f.slug = fs.flow_slug
                             WHERE %s
+                              AND (fs.campaign_code IS NULL OR fs.campaign_code <> '__mh_internal_test__')
                             UNION ALL
                             SELECT CAST(SUBSTRING(efe.payload, CHAR_LENGTH('submissionId=') + 1) AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci AS canonical_submission_id,
                                    efe.lead_id,
@@ -1321,6 +1328,7 @@ public class ExperimentFunnelService {
                               AND efe.stage = 'ENVIO_FORM'
                               AND efe.source = ?
                               AND efe.payload LIKE 'submissionId=%%'
+                              AND (efe.campaign_code IS NULL OR efe.campaign_code <> '__mh_internal_test__')
                         ) submissions
                         WHERE canonical_submission_id IS NOT NULL
                           AND canonical_submission_id <> ''
@@ -1348,6 +1356,7 @@ public class ExperimentFunnelService {
                         JOIN flow_submissions s ON s.id = p.submission_id
                         JOIN lead_portal_flow f ON f.slug = s.flow_slug
                         WHERE %s
+                          AND (s.campaign_code IS NULL OR s.campaign_code <> '__mh_internal_test__')
                           AND p.email_opened_at IS NOT NULL
                           AND (? IS NULL OR p.email_opened_at > ?)
                         """
@@ -1372,6 +1381,7 @@ public class ExperimentFunnelService {
                             JOIN flow_submissions s ON s.id = p.submission_id
                             JOIN lead_portal_flow f ON f.slug = s.flow_slug
                             WHERE %s
+                              AND (s.campaign_code IS NULL OR s.campaign_code <> '__mh_internal_test__')
                               AND p.checkout_accessed_at IS NOT NULL
                             UNION ALL
                             SELECT efe.occurred_at AS event_at
@@ -1380,6 +1390,7 @@ public class ExperimentFunnelService {
                               AND efe.stage = 'ACESSO_CHECKOUT'
                               AND efe.source = ?
                               AND efe.payload LIKE '%%eventType=checkout_click%%'
+                              AND LOWER(COALESCE(efe.payload, '')) NOT LIKE '%%mh_test=1%%'
                         ) checkout_access
                         WHERE (? IS NULL OR event_at > ?)
                         """
@@ -1404,6 +1415,7 @@ public class ExperimentFunnelService {
                         JOIN flow_submissions s ON s.id = p.submission_id
                         JOIN lead_portal_flow f ON f.slug = s.flow_slug
                         WHERE %s
+                          AND (s.campaign_code IS NULL OR s.campaign_code <> '__mh_internal_test__')
                           AND (p.payment_approved_at IS NOT NULL OR p.mp_status = 'approved')
                           AND (? IS NULL OR COALESCE(p.payment_approved_at, p.updated_at) > ?)
                         """
@@ -1427,6 +1439,7 @@ public class ExperimentFunnelService {
                         JOIN lead_portal_flow f ON f.slug = s.flow_slug
                         LEFT JOIN email_log el ON el.request_id = d.email_request_id
                         WHERE %s
+                          AND (s.campaign_code IS NULL OR s.campaign_code <> '__mh_internal_test__')
                           AND d.email_request_id IS NOT NULL
                           AND el.opened_at IS NOT NULL
                           AND (? IS NULL OR el.opened_at > ?)
@@ -1450,6 +1463,7 @@ public class ExperimentFunnelService {
                         JOIN flow_submissions s ON s.id = p.submission_id
                         JOIN lead_portal_flow f ON f.slug = s.flow_slug
                         WHERE %s
+                          AND (s.campaign_code IS NULL OR s.campaign_code <> '__mh_internal_test__')
                           AND p.payment_purchase_id IS NOT NULL
                           AND p.images_viewed_at IS NOT NULL
                           AND (? IS NULL OR p.images_viewed_at > ?)
@@ -2692,6 +2706,7 @@ public class ExperimentFunnelService {
     String height = firstNonBlankStatic(payload.get("screenHeight"), "");
     boolean missingVisitor = visitorId == null || visitorId.isBlank();
     boolean internalRenderUrl = pageUrl.contains("/api/flows/") && pageUrl.contains("/page");
+    boolean internalTestUrl = pageUrl.contains("mh_test=1");
     boolean knownAutomationAgent =
         userAgent.contains("headlesschrome")
             || userAgent.contains("playwright")
@@ -2701,6 +2716,9 @@ public class ExperimentFunnelService {
     boolean canonicalMonitorViewport = "1600".equals(width) && "1200".equals(height);
     if (fakeExperiment) {
       return new TrafficDiagnosis(TrafficQuality.AUTOMATED, "FAKE_EXPERIMENT");
+    }
+    if (internalTestUrl) {
+      return new TrafficDiagnosis(TrafficQuality.AUTOMATED, "INTERNAL_TEST_URL");
     }
     if (knownAutomationAgent) {
       return new TrafficDiagnosis(TrafficQuality.AUTOMATED, "AUTOMATION_USER_AGENT");
@@ -2712,6 +2730,11 @@ public class ExperimentFunnelService {
       return new TrafficDiagnosis(TrafficQuality.AUTOMATED, "INTERNAL_RENDER_URL");
     }
     return new TrafficDiagnosis(TrafficQuality.HUMAN, "NO_AUTOMATION_SIGNAL");
+  }
+
+  /** Identifica submissões técnicas marcadas pelo modo de homologação do Lead Portal. */
+  private boolean isInternalTestCampaign(String campaignCode) {
+    return INTERNAL_TEST_CAMPAIGN_CODE.equals(normalizeCampaignCode(campaignCode));
   }
 
   /** Retorna texto preenchido sem depender de uma instância do serviço. */

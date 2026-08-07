@@ -786,6 +786,37 @@ form.flow-form {
   margin: 0.25rem 0 0.5rem;
 }
 
+.flow-trust-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 1rem 0 0.25rem;
+}
+
+.flow-trust-badges span {
+  padding: 0.42rem 0.7rem;
+  border: 1px solid rgba(190, 24, 93, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  color: #831843;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.flow-primary-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1.15rem;
+  padding: 0.9rem 1.3rem;
+  border-radius: var(--flow-button-radius, 999px);
+  background: var(--flow-button-background, linear-gradient(135deg, #be185d, #7e22ce));
+  box-shadow: var(--flow-button-shadow, 0 15px 30px rgba(190, 24, 93, 0.25));
+  color: var(--flow-button-text, #fff);
+  font-weight: 800;
+  text-decoration: none;
+}
+
 .flow-promise-box {
   margin-top: 1rem;
   background: rgba(15, 23, 42, 0.06);
@@ -964,6 +995,69 @@ form.flow-form {
   background-color: #050914;
 }
 
+.flow-proof-image--mockup {
+  min-height: 380px;
+  padding: clamp(1rem, 4vw, 2rem);
+  align-items: center;
+}
+
+.social-sample-mockup {
+  width: min(100%, 290px);
+  min-height: 330px;
+  border: 8px solid rgba(255, 255, 255, 0.92);
+  border-radius: 26px;
+  box-shadow: 0 24px 55px rgba(80, 7, 36, 0.24);
+  background: linear-gradient(165deg, #fffaf5, #fdf2f8);
+  color: #500724;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.3rem;
+  text-align: center;
+  transform: rotate(-2deg);
+}
+
+.social-sample-mockup--story {
+  width: min(78%, 230px);
+  min-height: 370px;
+  border-radius: 30px;
+  transform: rotate(2deg);
+  background: linear-gradient(165deg, #fff1f2, #f5d0fe);
+}
+
+.social-sample-mockup__brand {
+  font-family: Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.social-sample-mockup__nail {
+  width: 116px;
+  height: 145px;
+  border-radius: 58% 58% 34% 34%;
+  background: linear-gradient(155deg, #fdf2f8 5%, #f9a8d4 50%, #be185d 100%);
+  box-shadow: inset -12px -16px 24px rgba(80, 7, 36, 0.2), 0 15px 30px rgba(190, 24, 93, 0.2);
+  transform: rotate(12deg);
+}
+
+.social-sample-mockup p {
+  margin: 0.6rem 0;
+  font-family: Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.social-sample-mockup__action {
+  border-radius: 999px;
+  padding: 0.55rem 0.85rem;
+  background: #831843;
+  color: #fff;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
 .flow-proof-image__media {
   width: 100%;
   height: 100%;
@@ -1022,6 +1116,10 @@ form.flow-form {
   position: relative;
   z-index: 2;
   line-height: 1.45;
+  font-size: 0.94rem;
+}
+
+.flow-proof-cta--with-image .flow-proof-cta__text {
   margin: 0 0 0.9rem;
   width: min(92%, 520px);
   padding: 0.65rem 0.85rem;
@@ -1029,7 +1127,6 @@ form.flow-form {
   background: rgba(15, 23, 42, 0.52);
   border: 1px solid rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(3px);
-  font-size: 0.94rem;
 }
 
 .flow-proof-image__overlay {
@@ -1079,6 +1176,11 @@ form.flow-form {
   .flow-proof-cta__text {
     width: 100%;
     font-size: 0.9rem;
+  }
+
+  .flow-primary-cta,
+  .submit-button {
+    width: 100%;
   }
 }
 

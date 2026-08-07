@@ -4,10 +4,12 @@ import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-/** Individual question that composes a lead portal flow. */
+/** Responsabilidade: representar uma pergunta individual do fluxo do Lead Portal. */
 @Entity
 @Table(name = "lead_portal_flow_question")
 @Data
@@ -55,5 +57,6 @@ public class LeadPortalFlowQuestion {
   @OrderColumn(name = "option_order")
   @Column(name = "option_value", columnDefinition = "LONGTEXT")
   @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Fetch(FetchMode.SUBSELECT)
   private List<String> options = new ArrayList<>();
 }

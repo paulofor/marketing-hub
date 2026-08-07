@@ -15,6 +15,9 @@ interface FlowFormProps {
   campaignCode?: string | null;
   onStarted?: () => void;
   onSubmitted?: (result: FlowSubmissionResponse) => void;
+  submitLabel?: string;
+  successTitle?: string | null;
+  successMessage?: string | null;
 }
 
 export default function FlowForm({
@@ -22,6 +25,9 @@ export default function FlowForm({
   campaignCode,
   onStarted,
   onSubmitted,
+  submitLabel = "Enviar respostas",
+  successTitle,
+  successMessage,
 }: FlowFormProps) {
   const {
     questions: displayQuestions,
@@ -219,12 +225,14 @@ export default function FlowForm({
       <SubmissionSuccessCard
         name={submissionResult.name}
         email={submissionResult.email}
+        title={successTitle}
+        message={successMessage}
       />
     );
   }
 
   return (
-    <form className="flow-form" onSubmit={handleSubmit} noValidate>
+    <form id="flow-form" className="flow-form" onSubmit={handleSubmit} noValidate>
       {submitError ? <div className="error-banner">{submitError}</div> : null}
 
       <div className="flow-form-card">
@@ -244,7 +252,7 @@ export default function FlowForm({
         </ol>
 
         <button type="submit" className="submit-button" disabled={isSubmitting}>
-          {isSubmitting ? "Enviando respostas..." : "Enviar respostas"}
+          {isSubmitting ? "Preparando seu pedido..." : submitLabel}
         </button>
       </div>
     </form>

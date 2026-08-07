@@ -2,8 +2,19 @@ import { describe, expect, it } from "vitest";
 import {
   buildExperimentTestUrl,
   buildPdeInternalPreviewUrl,
+  canManageGeraSalesPage,
   canAccessExperimentConstruction,
 } from "./ExperimentDetailPage";
+
+describe("canManageGeraSalesPage", () => {
+  it("exibe criação e auditoria para experimento persistido", () => {
+    expect(canManageGeraSalesPage(84)).toBe(true);
+  });
+
+  it("não exibe comandos sem experimento persistido", () => {
+    expect(canManageGeraSalesPage(null)).toBe(false);
+  });
+});
 
 describe("canAccessExperimentConstruction", () => {
   it("exibe a construção para experimento manual", () => {

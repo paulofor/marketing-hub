@@ -6548,6 +6548,7 @@
 ## 2026-08-07 — Pipeline de imagem desativado na microamostra gratuita
 
 - Evidência em produção: a submissão de homologação do experimento 84 retornou HTTP 201 e registrou `ENVIO_FORM`, mas o Lead Portal informou `Image pipeline disabled` e não criou o pacote que gera e entrega o post e o story prometidos.
+- Em 2026-08-07, após ativar o pipeline, a homologação criou o pacote 146 e o AI Worker iniciou a geração, mas o watchdog o marcou como falho em poucos minutos alegando 30 minutos em `PROCESSING`. O MySQL confirmou sessão UTC-3 enquanto a consulta comparava o `DATETIME updated_at`, gravado com `CURRENT_TIMESTAMP`, contra `UTC_TIMESTAMP()`. A consulta passou a usar `CURRENT_TIMESTAMP()` e ganhou teste de contrato para impedir expiração antecipada por diferença de fuso.
 - Causa-raiz: a capacidade já existia no serviço, porém `lead-portal.image-pipeline.enabled` permanecia no valor padrão `false` porque o Compose de produção não declarava `LEAD_PORTAL_IMAGE_PIPELINE_ENABLED`.
 - Correção: o Compose oficial ativa explicitamente o pipeline de imagem. A liberação comercial continua condicionada à criação do pacote, processamento pelo worker, e-mail de entrega e isolamento das métricas do experimento fake.
 - causa-raiz: a reconciliação reaproveitava a entidade existente, mas limpava e readicionava toda a coleção JPA com `orphanRemoval`; o Hibernate tentava inserir novamente a chave canônica antes de concluir a remoção anterior.

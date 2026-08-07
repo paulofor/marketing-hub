@@ -72,6 +72,12 @@ class LeadPortalImagePackageRecoverySchedulerTest {
 
     scheduler.recoverStuckPackages();
 
+    verify(jdbcTemplate)
+        .query(
+            contains("CURRENT_TIMESTAMP()"),
+            ArgumentMatchers.<RowMapper<Long>>any(),
+            eq(1800L),
+            eq(10));
     verify(workerService).retry(eq(109L), contains("Reaberto automaticamente"));
     verify(workerService, never()).markFailed(anyLong(), anyString());
   }

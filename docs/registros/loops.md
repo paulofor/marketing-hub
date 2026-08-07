@@ -782,3 +782,9 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** um limite externo único de 18 minutos concorria com os limites internos da carga de imagens, recriação e saúde; o tempo consumido por uma fase retirava a janela necessária das seguintes.
 - **Prevenção:** carga de cada imagem e recriação mantêm limites próprios e diagnósticos; o limite externo cobre o ciclo completo sem interromper prematuramente; uma etapa final independente exige container backend em execução e endpoint canônico saudável, exibindo estado, reinícios e logs em caso de falha.
 - **Correção complementar em 2026-08-06:** após um deploy consumir quase toda a janela operacional e o Spring iniciar tarde sem alcançar o health check, o publicador passou a reservar até dez minutos exclusivamente para a saúde do backend, preservar as imagens `latest` anteriores antes da troca e restaurá-las automaticamente se a nova versão ou sua saúde falhar. Um teste de contrato impede remover a janela independente, a preservação ou a validação do rollback.
+
+# LOOP-LEAD-PORTAL-PROCESSING-TIMEZONE — Pacote falha antes do timeout real
+
+- **Sintoma:** pacote de amostra entra em `PROCESSING` e é marcado como falho poucos minutos depois com a mensagem de que permaneceu 30 minutos sem retorno.
+- **Causa-raiz:** `updated_at` é `DATETIME` preenchido com `CURRENT_TIMESTAMP` na sessão MySQL UTC-3, mas o watchdog comparava esse valor sem fuso com `UTC_TIMESTAMP()`, tornando todo pacote três horas mais antigo no instante da comparação.
+- **Prevenção:** cálculos de expiração sobre `DATETIME` gravado pelo banco devem usar `CURRENT_TIMESTAMP()` da mesma sessão. Teste de contrato do watchdog exige esse relógio e impede o retorno de `UTC_TIMESTAMP()` nessa consulta.

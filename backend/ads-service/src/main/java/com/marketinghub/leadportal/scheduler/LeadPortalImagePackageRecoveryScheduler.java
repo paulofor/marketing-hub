@@ -78,7 +78,7 @@ public class LeadPortalImagePackageRecoveryScheduler {
                 SELECT id
                 FROM flow_submission_image_package
                 WHERE status = 'PROCESSING'
-                  AND updated_at < TIMESTAMPADD(SECOND, -?, UTC_TIMESTAMP())
+                  AND updated_at < TIMESTAMPADD(SECOND, -?, CURRENT_TIMESTAMP())
                 ORDER BY updated_at ASC
                 LIMIT ?
                 """;

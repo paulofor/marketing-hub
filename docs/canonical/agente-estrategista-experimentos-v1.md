@@ -31,6 +31,10 @@ O modo inicial é `READ_ONLY_RESEARCH`. O agente não cria ou altera campanha, p
 
 Cada execução deve diferenciar fato, inferência e hipótese; apresentar exatamente três alternativas; comparar benefício, risco, esforço e aderência; escolher uma; e definir métrica principal e critérios de continuar, ajustar e parar.
 
+Antes de propor as alternativas, o agente deve construir inteligência de mercado auditável: linguagem literal de clientes, mapa de concorrentes com promessa, mecanismo, entrega, preço visível, CTA, canal, prova e esforço residual, além da lacuna competitiva. O insight deve seguir a estrutura “o mercado oferece X, mas o cliente ainda precisa fazer Y; oportunidade de reduzir Y por meio de Z”.
+
+Cada alternativa deve declarar comprador, promessa verificável, mecanismo, entrega, canal, estágio mental atendido e pelo menos duas evidências de sustentação. A recomendação deve incluir posicionamento concreto, risco de expectativa e regra para atualizar a memória como confirmação, contradição ou resultado inconclusivo.
+
 Recomendação e experimento criado não contam como resultado. O Índice de Maturidade só deve reconhecer resultado quando existir consequência humana ou comercial posterior auditável. A autonomia permanece bloqueada até dez decisões consecutivas confirmadas sem violação de autoridade.
 
 ## Pesquisa externa orientada a vendas
@@ -38,6 +42,10 @@ Recomendação e experimento criado não contam como resultado. O Índice de Mat
 O worker deve oferecer busca pública e Chromium/Playwright versionados em sua imagem de produção. A imagem deve fixar uma distribuição Linux suportada pela versão instalada do Playwright, com teste de contrato protegendo a base escolhida e build obrigatório do container no CI. A pesquisa parte sempre do gargalo e cruza evidência interna com sinais externos sobre linguagem e dor do público, demanda, concorrência, ofertas, canais, tendências sociais/econômicas, capacidade de entrega, margem e risco. Para novos nichos, deve comparar demanda observável, urgência, disposição de pagar, saturação, facilidade de acesso ao público e aderência operacional.
 
 Cada fonte registra URL, título, data, tipo, método de coleta e aprendizado. Páginas decisivas devem ser confirmadas com Playwright. Snippets, anúncios ativos, seguidores, visualizações, comentários e tendências são proxies exploratórios e nunca comprovam vendas. Recomendações de nicho, produto ou oferta exigem ao menos duas classes independentes de evidência; sem isso, o parecer deve declarar evidência insuficiente.
+
+A pesquisa de clientes deve usar linguagem pública literal de avaliações, comentários, fóruns, comunidades ou páginas acessíveis sem login, preservando URL e contexto. Fala do concorrente não pode ser apresentada como voz do cliente. O agente não copia criativos nem identidade: modela mecanismos comerciais e lacunas de esforço, demora, risco e complexidade.
+
+O mapa psicológico de `docs/neuron`, consolidado em `docs/canonical/psicologia-aplicada-ofertas-canon.v1.md`, orienta a jornada `UNFAMILIAR → RELEVANT → COMPREHENSIBLE → PLAUSIBLE → PERSONALLY_VALUABLE → DESIRABLE → PURCHASABLE`. Estado mental, emoção e identidade permanecem hipóteses até consequência humana posterior auditável.
 
 ## Fluxo operacional
 

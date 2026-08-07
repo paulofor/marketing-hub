@@ -42,8 +42,13 @@ class CodexStrategistRunnerTest {
         .contains("COPY --from=build /build/src/main/resources/browser /app/browser");
     assertThat(prompt)
         .contains("node /app/browser/public-research.mjs")
-        .contains("duas classes independentes de evidência");
-    assertThat(schema).contains("collectionMethod", "sourceType");
+        .contains("duas classes independentes de evidência")
+        .contains("mapa comparativo dos concorrentes")
+        .contains("linguagem literal pública de clientes")
+        .contains("o mercado oferece X, mas o cliente ainda precisa fazer Y");
+    assertThat(schema)
+        .contains("marketIntelligence", "customerLanguage", "competitors", "customerEffort")
+        .contains("evidenceClass", "statementType", "positioning", "memoryOutcome");
   }
 
   /** Confirma que constantes booleanas mantêm o tipo exigido pelo Structured Outputs. */

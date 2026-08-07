@@ -67,7 +67,13 @@ public class CodexStrategistRunner {
         validate(result);
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("alternativesJson", json.writeValueAsString(result.get("alternatives")));
-        payload.put("recommendationJson", json.writeValueAsString(result.get("recommendation")));
+        payload.put(
+            "recommendationJson",
+            json.writeValueAsString(
+                Map.of(
+                    "diagnosis", result.get("diagnosis"),
+                    "marketIntelligence", result.get("marketIntelligence"),
+                    "recommendation", result.get("recommendation"))));
         payload.put("publicSourcesJson", json.writeValueAsString(result.get("sources")));
         payload.put("rawModelResponse", raw);
         payload.put(
@@ -119,12 +125,13 @@ public class CodexStrategistRunner {
         .replace("{{RESEARCH_QUESTION}}", text(job.researchQuestion()));
   }
 
-  /** Rejeita parecer sem exatamente tres caminhos ou sem fontes e recomendacao. */
+  /** Rejeita parecer sem inteligência de mercado, três caminhos, fontes ou recomendação. */
   private void validate(JsonNode result) {
     if (!result.has("alternatives")
         || result.get("alternatives").size() != 3
         || !result.has("sources")
-        || result.get("sources").isEmpty()
+        || result.get("sources").size() < 2
+        || !result.hasNonNull("marketIntelligence")
         || !result.hasNonNull("recommendation")
         || !result.hasNonNull("diagnosis"))
       throw new IllegalArgumentException("Resposta Codex fora do contrato estrategico v1.");

@@ -756,6 +756,32 @@ class ExperimentFunnelServiceRenderCompleteTest {
             .count());
   }
 
+  /** Garante que homologações fake permaneçam auditáveis sem virar tráfego humano. */
+  @Test
+  void summarizeLandingAnalyticsClassifiesFakeExperimentAsAutomated() {
+    Experiment experiment =
+        Experiment.builder().id(84L).experimentType(ExperimentType.FAKE_EXPERIMENT).build();
+    when(experimentRepository.findById(84L)).thenReturn(Optional.of(experiment));
+    when(eventRepository.findLandingAnalyticsEvents(
+            eq(84L),
+            eq(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE),
+            eq(null),
+            any(Pageable.class)))
+        .thenReturn(
+            List.of(
+                landingEvent(
+                    1L,
+                    "eventId=f1;eventType=form_start;visitorId=visitor-test;sessionId=session-test;pageUrl=https://example.test/flows/fake;deviceType=mobile",
+                    Instant.parse("2026-08-07T06:00:00Z"))));
+
+    var summary = service.summarizeLandingAnalytics(84L);
+
+    assertEquals(0, summary.totalSessions());
+    assertEquals(0, summary.trafficQuality().humanSessions());
+    assertEquals(1, summary.trafficQuality().automatedSessions());
+    assertEquals("FAKE_EXPERIMENT", summary.sessions().getFirst().trafficQualityReason());
+  }
+
   /** Valida que visitantes com sessões diferentes são marcados como recorrentes prováveis. */
   @Test
   void summarizeLandingAnalyticsVisitorsMarksVisitorWithMultipleSessionsAsRecurrent() {

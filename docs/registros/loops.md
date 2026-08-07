@@ -8,6 +8,13 @@
 >
 > Uso obrigatório recomendado: antes de corrigir problema em GeraLanding, Facebook Ads, Lead Portal, OpenAI/schema, pipelines administrativos ou pipeline de hipótese, verificar se a solicitação reabre algum loop listado aqui.
 
+## LOOP-EXPERIMENTO-FAKE-CONTABILIZADO-COMO-HUMANO — Métricas de homologação
+
+- Sintoma: sessões de homologação do experimento fake apareciam como humanas para o Operador de Crescimento.
+- Causa-raiz: a classificação dependia apenas de URL, viewport e user-agent, sem considerar o tipo canônico `FAKE_EXPERIMENT`.
+- Prevenção: toda sessão vinculada a experimento fake é classificada como automação, preservando os eventos para auditoria técnica sem contaminá-los como evidência comercial.
+- Contrato: teste garante zero sessões humanas no analytics de experimento fake.
+
 ## LOOP-AGENT-RUNNING-WITHOUT-PROGRESS — Agentes Codex
 
 - Sintoma: execução permanece `RUNNING`, mas não é possível comprovar se o processo Codex está vivo ou avançando.

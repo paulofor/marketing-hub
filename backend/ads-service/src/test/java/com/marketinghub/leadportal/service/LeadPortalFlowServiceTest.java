@@ -126,4 +126,15 @@ class LeadPortalFlowServiceTest {
     verify(questionRepository).findWithOptionsByFlowIds(List.of(1L));
     verify(repository, never()).findAllByMarketNicheIdOrderByCreatedAtDesc(anyLong());
   }
+
+  @Test
+  void listApprovedLoadsQuestionOptionsBeforeReturningFlows() {
+    LeadPortalFlow approvedFlow = LeadPortalFlow.builder().id(7L).approved(true).build();
+    when(repository.findAllByApprovedTrue()).thenReturn(List.of(approvedFlow));
+
+    List<LeadPortalFlow> result = service.listApproved();
+
+    assertThat(result).containsExactly(approvedFlow);
+    verify(questionRepository).findWithOptionsByFlowIds(List.of(7L));
+  }
 }

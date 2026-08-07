@@ -38,7 +38,9 @@ import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1167,6 +1169,7 @@ public class ExperimentFunnelService {
       Long experimentId,
       Instant baseline,
       Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages) {
+    LocalDateTime sqlBaseline = toUtcDatabaseDateTime(baseline);
     mergeMetric(
         stages,
         ExperimentFunnelStage.VISUALIZACAO_ANUNCIO,
@@ -1180,8 +1183,8 @@ public class ExperimentFunnelService {
                           AND (? IS NULL OR updated_at > ?)
                         """,
             experimentId,
-            baseline,
-            baseline),
+            sqlBaseline,
+            sqlBaseline),
         "Impressões vindas do Facebook Ads (experiment_campaign_metric)");
 
     mergeMetric(
@@ -1197,8 +1200,8 @@ public class ExperimentFunnelService {
                           AND (? IS NULL OR updated_at > ?)
                         """,
             experimentId,
-            baseline,
-            baseline),
+            sqlBaseline,
+            sqlBaseline),
         "Cliques do anúncio para o formulário (experiment_campaign_metric)");
 
     mergeMetric(
@@ -1234,12 +1237,12 @@ public class ExperimentFunnelService {
                         ) render_complete
                         """,
             experimentId,
-            baseline,
-            baseline,
+            sqlBaseline,
+            sqlBaseline,
             experimentId,
             ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE,
-            baseline,
-            baseline),
+            sqlBaseline,
+            sqlBaseline),
         "Visualizações canônicas por page_view normalizado com fallback legado de render-complete");
 
     mergeMetric(
@@ -1261,8 +1264,8 @@ public class ExperimentFunnelService {
                         """,
             experimentId,
             ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE,
-            baseline,
-            baseline),
+            sqlBaseline,
+            sqlBaseline),
         "Vídeos vistos parcialmente no PDE ou página publicada (video_progress)");
 
     mergeMetric(
@@ -1284,8 +1287,8 @@ public class ExperimentFunnelService {
                         """,
             experimentId,
             ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE,
-            baseline,
-            baseline),
+            sqlBaseline,
+            sqlBaseline),
         "Vídeos vistos até o fim no PDE ou página publicada (video_complete)");
 
     mergeMetric(
@@ -1329,8 +1332,8 @@ public class ExperimentFunnelService {
             experimentId,
             experimentId,
             ExperimentFunnelEventRepository.SUBMISSION_SOURCE,
-            baseline,
-            baseline),
+            sqlBaseline,
+            sqlBaseline),
         "Envios do formulário (lead_portal_submission + flow_submissions + experiment_funnel_event)");
 
     mergeMetric(
@@ -1351,8 +1354,8 @@ public class ExperimentFunnelService {
                 .formatted(FLOW_SCOPE_CONDITION),
             experimentId,
             experimentId,
-            baseline,
-            baseline),
+            sqlBaseline,
+            sqlBaseline),
         "Aberturas de e-mail de amostra (flow_submission_image_package.email_opened_at)");
 
     mergeMetric(
@@ -1385,8 +1388,8 @@ public class ExperimentFunnelService {
             experimentId,
             experimentId,
             ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE,
-            baseline,
-            baseline),
+            sqlBaseline,
+            sqlBaseline),
         "Acessos ao checkout registrados via tracking público e clique real no checkout (checkout_click)");
 
     mergeMetric(
@@ -1407,8 +1410,8 @@ public class ExperimentFunnelService {
                 .formatted(FLOW_SCOPE_CONDITION),
             experimentId,
             experimentId,
-            baseline,
-            baseline),
+            sqlBaseline,
+            sqlBaseline),
         "Pagamentos aprovados (lead_portal_purchase)");
 
     mergeMetric(
@@ -1431,8 +1434,8 @@ public class ExperimentFunnelService {
                 .formatted(FLOW_SCOPE_CONDITION),
             experimentId,
             experimentId,
-            baseline,
-            baseline),
+            sqlBaseline,
+            sqlBaseline),
         "Abertura do e-mail de entrega (lead_portal_premium_delivery -> email_log)");
 
     mergeMetric(
@@ -1454,8 +1457,8 @@ public class ExperimentFunnelService {
                 .formatted(FLOW_SCOPE_CONDITION),
             experimentId,
             experimentId,
-            baseline,
-            baseline),
+            sqlBaseline,
+            sqlBaseline),
         "Downloads/visualizações do material pago (flow_submission_image_package.images_viewed_at)");
   }
 
@@ -2175,6 +2178,11 @@ public class ExperimentFunnelService {
       return null;
     }
     return max(experiment.getFacebookReleaseRequestedAt(), experiment.getFunnelResetAt());
+  }
+
+  /** Converte o marco UTC para o DATETIME canônico usado nas consultas JDBC do funil. */
+  static LocalDateTime toUtcDatabaseDateTime(Instant baseline) {
+    return baseline == null ? null : LocalDateTime.ofInstant(baseline, ZoneOffset.UTC);
   }
 
   /** Normaliza o código de campanha para o tamanho aceito pelo banco. */

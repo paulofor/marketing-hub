@@ -1248,7 +1248,29 @@ form.flow-form {
 
 .flow-standalone-content {
   width: 100%;
+  max-width: 100vw;
   min-height: 100vh;
+  overflow-x: clip;
+  overflow-wrap: anywhere;
+}
+
+.flow-standalone-content *,
+.flow-standalone-content *::before,
+.flow-standalone-content *::after {
+  min-width: 0;
+}
+
+.flow-standalone-content img,
+.flow-standalone-content svg,
+.flow-standalone-content video,
+.flow-standalone-content canvas,
+.flow-standalone-content iframe {
+  max-width: 100%;
+}
+
+.flow-custom-feedback--standalone {
+  min-height: 100vh;
+  align-items: center;
 }
 
 .flow-standalone-container--empty {

@@ -778,6 +778,10 @@ function attachCustomTemplateBridgeToDocument(
     }
     event.preventDefault();
     event.stopImmediatePropagation();
+    if (!target.checkValidity()) {
+      target.reportValidity();
+      return;
+    }
     if (target.dataset.leadPortalSubmitting === "true") {
       return;
     }

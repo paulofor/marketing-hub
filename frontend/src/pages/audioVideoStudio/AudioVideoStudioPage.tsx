@@ -562,7 +562,6 @@ const MAX_CINEMATIC_SCENES = 12;
 export function resolveStudioSceneRole(sceneIndex: number, sceneCount: number) {
   if (sceneIndex === 0) return "DOR";
   if (sceneIndex === sceneCount - 1) return "CTA";
-  if (sceneIndex === sceneCount - 2) return "PROVA";
   if (sceneIndex === 1) return "RESULTADO";
   return "MECANISMO";
 }

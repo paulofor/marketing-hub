@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.experiment.Experiment;
@@ -1496,6 +1497,20 @@ class ExperimentFunnelServiceRenderCompleteTest {
 
     assertEquals(0, pdeEntry.getTotalCount());
     assertEquals(0, videoComplete.getTotalCount());
+  }
+
+  /** Valida que experimento fake sem URL comercial continua expondo o funil sem erro. */
+  @Test
+  void summarizeFakeExperimentWithoutFollowUpUrlDoesNotTreatItAsPde() {
+    Experiment experiment =
+        Experiment.builder().id(84L).experimentType(ExperimentType.FAKE_EXPERIMENT).build();
+    when(experimentRepository.findById(84L)).thenReturn(Optional.of(experiment));
+    when(eventRepository.aggregateManualByExperiment(84L, null)).thenReturn(List.of());
+
+    var summary = service.summarize(84L);
+
+    assertEquals(ExperimentFunnelStage.values().length, summary.size());
+    verifyNoInteractions(pdeAnalyticsClient);
   }
 
   /** Valida que experimento fake conta apenas tráfego PDE com UTM canônica do próprio ID. */

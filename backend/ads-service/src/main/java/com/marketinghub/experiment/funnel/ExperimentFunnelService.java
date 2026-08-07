@@ -218,6 +218,7 @@ public class ExperimentFunnelService {
   /** Consolida sessões e eventos de analytics da landing publicados no experimento. */
   public ExperimentLandingAnalyticsDto summarizeLandingAnalytics(Long experimentId) {
     Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
+    boolean fakeExperiment = isFakeExperiment(experiment);
     Instant baseline = resolveBaseline(experiment);
     List<LandingAnalyticsEventRow> rows = fetchLandingAnalyticsEvents(experimentId, baseline);
     Map<String, LandingAnalyticsSessionAccumulator> sessions = new LinkedHashMap<>();
@@ -233,7 +234,8 @@ public class ExperimentFunnelService {
       Integer screenWidth = parsePositiveInteger(payload.get("screenWidth"));
       Integer screenHeight = parsePositiveInteger(payload.get("screenHeight"));
       long elapsedMs = parseLong(payload.get("elapsedMs"));
-      TrafficDiagnosis traffic = classifyLandingTraffic(payload, payload.get("visitorId"));
+      TrafficDiagnosis traffic =
+          classifyLandingTraffic(payload, payload.get("visitorId"), fakeExperiment);
 
       LandingAnalyticsSessionAccumulator session =
           sessions.computeIfAbsent(sessionId, LandingAnalyticsSessionAccumulator::new);
@@ -318,6 +320,7 @@ public class ExperimentFunnelService {
   public ExperimentLandingAnalyticsEvidenceDto buildDetailedAnalyticsEvidence(
       Long experimentId, int requestedLimit) {
     Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
+    boolean fakeExperiment = isFakeExperiment(experiment);
     Instant baseline = resolveBaseline(experiment);
     int limit = Math.max(1, Math.min(requestedLimit, 2000));
     var events =
@@ -343,7 +346,8 @@ public class ExperimentFunnelService {
                       new LinkedHashMap<>(parseDelimitedPayload(event.getPayload()));
                   String visitorId = attributes.remove("visitorId");
                   String sessionId = attributes.remove("sessionId");
-                  TrafficDiagnosis traffic = classifyLandingTraffic(attributes, visitorId);
+                  TrafficDiagnosis traffic =
+                      classifyLandingTraffic(attributes, visitorId, fakeExperiment);
                   attributes.remove("clientIp");
                   attributes.remove("userAgent");
                   attributes.remove("eventId");
@@ -2642,7 +2646,7 @@ public class ExperimentFunnelService {
    * não possui evidência suficiente de automação.
    */
   private static TrafficDiagnosis classifyLandingTraffic(
-      Map<String, String> payload, String visitorId) {
+      Map<String, String> payload, String visitorId, boolean fakeExperiment) {
     String pageUrl = firstNonBlankStatic(payload.get("pageUrl"), "").toLowerCase();
     String userAgent = firstNonBlankStatic(payload.get("userAgent"), "").toLowerCase();
     String width = firstNonBlankStatic(payload.get("screenWidth"), "");
@@ -2656,6 +2660,9 @@ public class ExperimentFunnelService {
             || userAgent.contains("bot")
             || userAgent.contains("crawler");
     boolean canonicalMonitorViewport = "1600".equals(width) && "1200".equals(height);
+    if (fakeExperiment) {
+      return new TrafficDiagnosis(TrafficQuality.AUTOMATED, "FAKE_EXPERIMENT");
+    }
     if (knownAutomationAgent) {
       return new TrafficDiagnosis(TrafficQuality.AUTOMATED, "AUTOMATION_USER_AGENT");
     }

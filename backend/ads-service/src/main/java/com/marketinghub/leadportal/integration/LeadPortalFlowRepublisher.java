@@ -19,7 +19,9 @@ public class LeadPortalFlowRepublisher {
   private final LeadPortalFlowPublisher publisher;
   private final LeadPortalIntegrationProperties properties;
 
-  /** Configura o republicador com a leitura canônica, o publicador e as propriedades da integração. */
+  /**
+   * Configura o republicador com a leitura canônica, o publicador e as propriedades da integração.
+   */
   public LeadPortalFlowRepublisher(
       LeadPortalFlowService flowService,
       LeadPortalFlowPublisher publisher,

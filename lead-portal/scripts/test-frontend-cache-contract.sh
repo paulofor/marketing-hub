@@ -11,7 +11,11 @@ grep -F 'location /assets/ {' "$frontend_config" >/dev/null
 grep -F 'try_files $uri =404;' "$frontend_config" >/dev/null
 grep -F 'set $lead_portal_frontend_upstream http://lead-portal-frontend:80;' "$proxy_config" >/dev/null
 grep -F "200:application/javascript" "$workflow" >/dev/null
-grep -F 'docker rm -f lead-portal-proxy lead-portal-proxy-1' "$workflow" >/dev/null
+grep -F 'docker ps --filter publish=80 -q' "$workflow" >/dev/null
+grep -F 'docker ps --filter publish=443 -q' "$workflow" >/dev/null
+grep -F 'com.docker.compose.project.working_dir' "$workflow" >/dev/null
+grep -F 'A porta pública está ocupada por container fora do escopo do Lead Portal' "$workflow" >/dev/null
+grep -F 'docker rm -f lead-portal-proxy lead-portal-proxy-1 lead-portal_proxy_1' "$workflow" >/dev/null
 
 if grep -F 'up -d --force-recreate proxy' "$workflow" >/dev/null; then
   echo "[ARQUITETURA] deploy do Lead Portal não pode recriar um segundo proxy após subir a pilha" >&2

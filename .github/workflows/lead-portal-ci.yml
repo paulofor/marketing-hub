@@ -211,7 +211,25 @@ jobs:
           export LEAD_PORTAL_FRONTEND_IMAGE="${image_namespace}/lead-portal-frontend:${image_tag}"
           docker network inspect public-net >/dev/null 2>&1 || docker network create public-net
           docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull
-          docker rm -f lead-portal-proxy lead-portal-proxy-1 >/dev/null 2>&1 || true
+          port_owner_ids="$({
+            docker ps --filter publish=80 -q
+            docker ps --filter publish=443 -q
+          } | sort -u)"
+          for container_id in $port_owner_ids; do
+            container_name="$(docker inspect --format '{{.Name}}' "$container_id" | sed 's#^/##')"
+            compose_service="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.service"}}' "$container_id")"
+            compose_workdir="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project.working_dir"}}' "$container_id")"
+            case "$container_name:$compose_service:$compose_workdir" in
+              lead-portal*:proxy:*|*:proxy:"$remote_path")
+                docker rm -f "$container_id"
+                ;;
+              *)
+                echo "A porta pública está ocupada por container fora do escopo do Lead Portal: $container_name" >&2
+                exit 1
+                ;;
+            esac
+          done
+          docker rm -f lead-portal-proxy lead-portal-proxy-1 lead-portal_proxy_1 >/dev/null 2>&1 || true
           docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d
 
           index_html="$(docker exec lead-portal-frontend cat /usr/share/nginx/html/index.html)"

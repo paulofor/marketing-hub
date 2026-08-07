@@ -1,4 +1,11 @@
-import { AlertTriangle, BadgeCheck, RefreshCw, ShieldCheck, Video } from "lucide-react";
+import {
+  AlertTriangle,
+  BadgeCheck,
+  ExternalLink,
+  RefreshCw,
+  ShieldCheck,
+  Video,
+} from "lucide-react";
 import { useMemo } from "react";
 import { useSalesVideoProviderScores } from "../../api/salesVideo/useSalesVideoProviderScores";
 import {
@@ -165,6 +172,17 @@ export default function VideoProviderManagementPage() {
                 label="Imagem base"
               />
             </div>
+            {option.creditsUrl ? (
+              <a
+                className="btn btn-outline-primary video-provider-page__credits-link"
+                href={option.creditsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Comprar créditos
+                <ExternalLink size={15} aria-hidden="true" />
+              </a>
+            ) : null}
           </article>
         ))}
       </section>

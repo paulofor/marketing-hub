@@ -11,6 +11,7 @@ export type SalesVideoProviderOption = {
   supportsHeroVideo: boolean;
   supportsSceneAssembly: boolean;
   supportsOpenAiReferenceImage: boolean;
+  creditsUrl?: string;
 };
 
 export type SalesVideoRenderMetadataOptions = {
@@ -72,6 +73,7 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
     supportsHeroVideo: false,
     supportsSceneAssembly: true,
     supportsOpenAiReferenceImage: false,
+    creditsUrl: "https://dev.runwayml.com/",
   },
   {
     key: "veo-teaser",

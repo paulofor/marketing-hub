@@ -233,6 +233,14 @@
   background: #f0fdfa;
 }
 
+.video-provider-page__credits-link {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+}
+
 @media (max-width: 860px) {
   .video-provider-page__header {
     flex-direction: column;

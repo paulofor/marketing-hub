@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalFlowQuestion;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
@@ -40,13 +41,17 @@ class ProductAiPersonalizedSampleFunnelServiceTest {
   void setUp() {
     service =
         new ProductAiPersonalizedSampleFunnelService(
-            experimentRepository, flowRepository, publisher);
+            experimentRepository,
+            flowRepository,
+            publisher,
+            "https://oportunidadebrasil.shop/");
     MarketNiche niche = MarketNiche.builder().name("Nail Design").build();
     experiment =
         Experiment.builder()
             .id(1L)
             .name("Agenda Cheia")
             .niche(niche)
+            .experimentType(ExperimentType.NICHE_TEST)
             .productAiSubtype(ProductAiSubtype.AI_PERSONALIZED_SAMPLE)
             .build();
     when(experimentRepository.findById(1L)).thenReturn(Optional.of(experiment));
@@ -75,7 +80,19 @@ class ProductAiPersonalizedSampleFunnelServiceTest {
     assertThat(experiment.getLeadPortalFlow().getQuestions().get(2).getOptions())
         .containsExactly("Elegante e minimalista", "Delicada e romântica", "Marcante e moderna");
     assertThat(experiment.getLeadPortalFlow().getQuestions().get(4).isRequired()).isFalse();
+    assertThat(experiment.getFollowUpActionUrl())
+        .isEqualTo("https://oportunidadebrasil.shop/flows/product-ai-exp-1-personalized-sample");
     verify(publisher).publish(experiment.getLeadPortalFlow());
+  }
+
+  /** Garante que homologações fake não recebam destino comercial ao preparar o funil. */
+  @Test
+  void keepsFakeExperimentWithoutCommercialDestination() {
+    experiment.setExperimentType(ExperimentType.FAKE_EXPERIMENT);
+
+    service.createOrUpdate(1L, PersonalizedSampleFunnelTemplate.SOCIAL_MEDIA_MICRO_SAMPLE);
+
+    assertThat(experiment.getFollowUpActionUrl()).isNull();
   }
 
   /** Garante que a escolha do template substitui a antiga inferência pelo nome do produto. */

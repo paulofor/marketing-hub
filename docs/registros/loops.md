@@ -94,6 +94,16 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 
 ---
 
+## LOOP-LEAD-PORTAL-STALE-FRONTEND — HTML carregado com bundle inexistente
+
+- **Severidade**: CRÍTICO.
+- **Status**: fechado com teste de contrato em 2026-08-07.
+- **Causa-raiz confirmada**: o HTML podia referenciar um bundle ausente no frontend atendido pelo proxy; a rota de SPA devolvia HTML para o caminho JavaScript e o navegador recusava o arquivo pelo MIME incorreto.
+- **Correção efetiva**: usar o container canônico do frontend, impedir fallback de `/assets/` para `index.html`, desabilitar cache do HTML e validar após o deploy que o bundle referenciado existe e responde `200:application/javascript`.
+- **Prevenção**: o CI executa `lead-portal/scripts/test-frontend-cache-contract.sh` para impedir regressão da configuração, além da sonda pública pós-deploy.
+
+---
+
 ## LOOP-BACKEND-LOGS-DEPENDENT-ON-BACKEND — Falha de bootstrap elimina o próprio diagnóstico
 
 - **Severidade**: ALTO.

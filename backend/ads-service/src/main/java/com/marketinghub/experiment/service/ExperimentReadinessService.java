@@ -54,9 +54,27 @@ public class ExperimentReadinessService {
           TargetingElementType.BEHAVIOR);
   private static final Set<TargetingElementType> PUBLISHABLE_TARGETING_TYPE_SET =
       Set.copyOf(PUBLISHABLE_TARGETING_TYPES);
-  private static final Set<String> PRODUCT_AI_PERSONALIZED_SAMPLE_REQUIRED_KEYS =
+  private static final Set<String> PRODUCT_AI_GENERIC_SAMPLE_REQUIRED_KEYS =
       Set.of(
           "email", "negocio_projeto", "contexto_atual", "objetivo_visual", "dados_personalizacao");
+  private static final Set<String> PRODUCT_AI_SOCIAL_MEDIA_SAMPLE_REQUIRED_KEYS =
+      Set.of("email", "nome_profissional", "servico_divulgado", "estilo_visual");
+  private static final Set<String> PRODUCT_AI_DECORATION_SAMPLE_REQUIRED_KEYS =
+      Set.of(
+          "email",
+          "nome",
+          "whatsapp",
+          "foto_ambiente",
+          "ambiente_a_transformar",
+          "incomodo_principal",
+          "objetivo_visual",
+          "orcamento_aproximado",
+          "dados_personalizacao");
+  private static final List<Set<String>> PRODUCT_AI_PERSONALIZED_SAMPLE_CONTRACTS =
+      List.of(
+          PRODUCT_AI_GENERIC_SAMPLE_REQUIRED_KEYS,
+          PRODUCT_AI_SOCIAL_MEDIA_SAMPLE_REQUIRED_KEYS,
+          PRODUCT_AI_DECORATION_SAMPLE_REQUIRED_KEYS);
 
   private final GeraLandingStageExecutionRepository geraLandingStageExecutionRepository;
   private final ExperimentVideoAssetService experimentVideoAssetService;
@@ -507,7 +525,7 @@ public class ExperimentReadinessService {
         && experiment.getProductAiSubtype() == ProductAiSubtype.AI_PERSONALIZED_SAMPLE;
   }
 
-  /** Verifica se o funil de personalização está aprovado e possui os campos mínimos de coleta. */
+  /** Verifica se o funil aprovado atende integralmente a um contrato canônico de personalização. */
   private boolean hasProductAiPersonalizationFunnel(Experiment experiment) {
     if (experiment == null
         || experiment.getLeadPortalFlow() == null
@@ -522,7 +540,7 @@ public class ExperimentReadinessService {
                         ? ""
                         : question.getDataKey().toLowerCase(Locale.ROOT))
             .collect(java.util.stream.Collectors.toSet());
-    return keys.containsAll(PRODUCT_AI_PERSONALIZED_SAMPLE_REQUIRED_KEYS);
+    return PRODUCT_AI_PERSONALIZED_SAMPLE_CONTRACTS.stream().anyMatch(keys::containsAll);
   }
 
   /** Verifica se algum vídeo obrigatório do experimento ainda impede liberação comercial. */

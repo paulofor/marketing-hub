@@ -1,6 +1,7 @@
 package com.marketinghub.productai.service;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalFlowQuestion;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
@@ -20,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,15 +38,18 @@ public class ProductAiPersonalizedSampleFunnelService {
   private final ExperimentRepository experimentRepository;
   private final LeadPortalFlowRepository leadPortalFlowRepository;
   private final LeadPortalFlowPublisher leadPortalFlowPublisher;
+  private final String leadPortalBaseUrl;
 
   /** Inicializa o serviço com repositórios e publicador do Lead Portal. */
   public ProductAiPersonalizedSampleFunnelService(
       ExperimentRepository experimentRepository,
       LeadPortalFlowRepository leadPortalFlowRepository,
-      LeadPortalFlowPublisher leadPortalFlowPublisher) {
+      LeadPortalFlowPublisher leadPortalFlowPublisher,
+      @Value("${integrations.lead-portal.base-url:}") String leadPortalBaseUrl) {
     this.experimentRepository = experimentRepository;
     this.leadPortalFlowRepository = leadPortalFlowRepository;
     this.leadPortalFlowPublisher = leadPortalFlowPublisher;
+    this.leadPortalBaseUrl = leadPortalBaseUrl;
   }
 
   /** Cria ou normaliza o funil canônico de coleta de dados para o experimento Produto IA. */
@@ -76,9 +81,21 @@ public class ProductAiPersonalizedSampleFunnelService {
 
     LeadPortalFlow saved = leadPortalFlowRepository.save(flow);
     experiment.setLeadPortalFlow(saved);
+    applyCommercialDestination(experiment, saved);
     experimentRepository.save(experiment);
     publish(saved);
     return toDto(saved, experiment.getId());
+  }
+
+  /** Define o funil publicado como destino inicial apenas para experimentos comerciais. */
+  private void applyCommercialDestination(Experiment experiment, LeadPortalFlow flow) {
+    if (experiment.getExperimentType() == ExperimentType.FAKE_EXPERIMENT
+        || !StringUtils.hasText(leadPortalBaseUrl)
+        || !StringUtils.hasText(flow.getSlug())) {
+      return;
+    }
+    String normalizedBaseUrl = leadPortalBaseUrl.trim().replaceAll("/+$", "");
+    experiment.setFollowUpActionUrl(normalizedBaseUrl + "/flows/" + flow.getSlug());
   }
 
   /** Bloqueia criação do funil quando o experimento não é o MVP de Produto IA personalizado. */

@@ -98,9 +98,9 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 
 - **Severidade**: CRÍTICO.
 - **Status**: fechado com teste de contrato em 2026-08-07.
-- **Causa-raiz confirmada**: o HTML podia referenciar um bundle ausente no frontend atendido pelo proxy; a rota de SPA devolvia HTML para o caminho JavaScript e o navegador recusava o arquivo pelo MIME incorreto.
-- **Correção efetiva**: usar o container canônico do frontend, impedir fallback de `/assets/` para `index.html`, desabilitar cache do HTML e validar após o deploy que o bundle referenciado existe e responde `200:application/javascript`.
-- **Prevenção**: o CI executa `lead-portal/scripts/test-frontend-cache-contract.sh` para impedir regressão da configuração, além da sonda pública pós-deploy.
+- **Causa-raiz confirmada**: o HTML podia referenciar um bundle ausente no frontend atendido pelo proxy; a rota de SPA devolvia HTML para o caminho JavaScript e o navegador recusava o arquivo pelo MIME incorreto. Na publicação, proxies legados do mesmo projeto também podiam continuar donos das portas 80/443 quando o nome do container não coincidia com uma lista fixa.
+- **Correção efetiva**: usar o container canônico do frontend, impedir fallback de `/assets/` para `index.html`, desabilitar cache do HTML e validar após o deploy que o bundle referenciado existe e responde `200:application/javascript`. O deploy reconcilia o proprietário real das portas públicas por labels do Compose e remove somente containers pertencentes ao Lead Portal.
+- **Prevenção**: o CI executa `lead-portal/scripts/test-frontend-cache-contract.sh` para impedir regressão da configuração e da reconciliação de portas, além da sonda pública pós-deploy. Se o proprietário das portas não pertencer ao projeto, o deploy interrompe com diagnóstico em vez de remover serviço alheio.
 
 ---
 

@@ -13,6 +13,7 @@ import com.marketinghub.leadportal.dto.UpdateLeadPortalFlowRequest;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowQuestionRepository;
 import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
 import com.marketinghub.repository.jpa.leadportal.LeadPortalSimpleFormStyleRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
@@ -31,6 +32,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class LeadPortalFlowServiceTest {
 
   @Mock private LeadPortalFlowRepository repository;
+
+  @Mock private LeadPortalFlowQuestionRepository questionRepository;
 
   @Mock private LeadPortalFlowPublisher flowPublisher;
 
@@ -120,6 +123,7 @@ class LeadPortalFlowServiceTest {
 
     assertThat(result).isSameAs(expected);
     verify(repository).findAllByExperimentIdOrderByCreatedAtDesc(10L);
+    verify(questionRepository).findWithOptionsByFlowIds(List.of(1L));
     verify(repository, never()).findAllByMarketNicheIdOrderByCreatedAtDesc(anyLong());
   }
 }

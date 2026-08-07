@@ -13,6 +13,7 @@ import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowQuestionRepository;
 import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
 import com.marketinghub.repository.jpa.leadportal.LeadPortalSimpleFormStyleRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
@@ -28,7 +29,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
-/** Handles validation and persistence of {@link LeadPortalFlow} records. */
+/** Responsabilidade: validar, persistir e disponibilizar fluxos do Lead Portal. */
 @Service
 public class LeadPortalFlowService {
   private static final Logger log = LoggerFactory.getLogger(LeadPortalFlowService.class);
@@ -36,6 +37,7 @@ public class LeadPortalFlowService {
   private static final Pattern DATA_KEY_PATTERN = Pattern.compile("^[A-Za-z][A-Za-z0-9_-]*$");
 
   private final LeadPortalFlowRepository repository;
+  private final LeadPortalFlowQuestionRepository questionRepository;
   private final LeadPortalFlowPublisher flowPublisher;
   private final ExperimentRepository experimentRepository;
   private final MarketNicheRepository marketNicheRepository;
@@ -43,45 +45,62 @@ public class LeadPortalFlowService {
 
   public LeadPortalFlowService(
       LeadPortalFlowRepository repository,
+      LeadPortalFlowQuestionRepository questionRepository,
       LeadPortalFlowPublisher flowPublisher,
       ExperimentRepository experimentRepository,
       MarketNicheRepository marketNicheRepository,
       LeadPortalSimpleFormStyleRepository simpleFormStyleRepository) {
     this.repository = repository;
+    this.questionRepository = questionRepository;
     this.flowPublisher = flowPublisher;
     this.experimentRepository = experimentRepository;
     this.marketNicheRepository = marketNicheRepository;
     this.simpleFormStyleRepository = simpleFormStyleRepository;
   }
 
+  /** Lista todos os fluxos com as opções das perguntas prontas para serialização. */
+  @Transactional(readOnly = true)
   public List<LeadPortalFlow> listAll() {
-    return repository.findAllByOrderByNameAsc();
+    return hydrateQuestionOptions(repository.findAllByOrderByNameAsc());
   }
 
+  /** Lista os fluxos do experimento com as opções das perguntas inicializadas. */
+  @Transactional(readOnly = true)
   public List<LeadPortalFlow> listByExperiment(Long experimentId) {
     if (experimentId == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "experimentId is required");
     }
     attachExperiment(experimentId);
-    return repository.findAllByExperimentIdOrderByCreatedAtDesc(experimentId);
+    return hydrateQuestionOptions(
+        repository.findAllByExperimentIdOrderByCreatedAtDesc(experimentId));
   }
 
+  /** Lista os fluxos do nicho com as opções das perguntas inicializadas. */
+  @Transactional(readOnly = true)
   public List<LeadPortalFlow> listByMarketNiche(Long marketNicheId) {
     if (marketNicheId == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "marketNicheId is required");
     }
-    return repository.findAllByMarketNicheIdOrderByCreatedAtDesc(marketNicheId);
+    return hydrateQuestionOptions(
+        repository.findAllByMarketNicheIdOrderByCreatedAtDesc(marketNicheId));
   }
 
+  /** Obtém um fluxo com suas perguntas e opções disponíveis fora da sessão JPA. */
+  @Transactional(readOnly = true)
   public LeadPortalFlow get(Long id) {
-    return repository
-        .findById(id)
-        .orElseThrow(
-            () ->
-                new ResponseStatusException(
-                    HttpStatus.NOT_FOUND, "Lead portal flow not found: " + id));
+    LeadPortalFlow flow =
+        repository
+            .findById(id)
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Lead portal flow not found: " + id));
+    hydrateQuestionOptions(List.of(flow));
+    return flow;
   }
 
+  /** Obtém um fluxo público aprovado com perguntas e opções prontas para publicação. */
+  @Transactional(readOnly = true)
   public LeadPortalFlow getApprovedBySlug(String slug) {
     String normalizedSlug = normalizeSlug(slug);
     LeadPortalFlow flow =
@@ -95,7 +114,18 @@ public class LeadPortalFlowService {
       throw new ResponseStatusException(
           HttpStatus.NOT_FOUND, "Lead portal flow not found: " + normalizedSlug);
     }
+    hydrateQuestionOptions(List.of(flow));
     return flow;
+  }
+
+  /** Carrega as opções em consulta separada para evitar produto cartesiano e sessão tardia. */
+  private List<LeadPortalFlow> hydrateQuestionOptions(List<LeadPortalFlow> flows) {
+    List<Long> flowIds =
+        flows.stream().map(LeadPortalFlow::getId).filter(Objects::nonNull).toList();
+    if (!flowIds.isEmpty()) {
+      questionRepository.findWithOptionsByFlowIds(flowIds);
+    }
+    return flows;
   }
 
   @Transactional

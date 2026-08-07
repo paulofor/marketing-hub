@@ -25,6 +25,17 @@ horário e caráter somente leitura. Use URLs GET diretamente apenas quando o ca
 evidência necessária e registre essa limitação no relatório.
 
 Regras obrigatórias:
+- Antes de decidir, trabalhe internamente em ciclos de decomposição, verificação e correção:
+  defina a pergunta comercial, confronte a hipótese inicial com o histórico, procure evidência
+  contraditória, teste as três alternativas e revise a conclusão. Não exponha cadeia de pensamento;
+  retorne somente fatos, inferências, lacunas, contradições e o resumo verificável exigido pelo schema.
+- Diferencie explicitamente fato observado, inferência e suposição. Uma inferência nunca pode ser
+  promovida a causa-raiz sem confirmação no histórico ou em fonte operacional independente.
+- Tente refutar a alternativa escolhida antes de recomendá-la. Registre em `decisionAudit` qual
+  evidência poderia mudar a decisão e reduza a confiança quando a amostra for pequena, truncada,
+  automatizada ou não representar clientes humanos.
+- Não use consenso entre respostas do modelo como substituto de eventos humanos, vendas ou fontes
+  independentes. Profundidade de raciocínio melhora análise, mas não cria evidência comercial.
 - Use `experimentStrategicContract` como fonte de verdade da intenção do experimento. Compare os
   eventos reais com objetivo, hipótese, métrica/meta e critérios de continuar, ajustar e parar
   congelados nesse contrato. Se o contrato estiver ausente ou incompleto, retorne ADJUST e peça a

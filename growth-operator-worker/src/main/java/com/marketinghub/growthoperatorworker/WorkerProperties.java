@@ -12,6 +12,7 @@ public class WorkerProperties {
   private String repositoryPath;
   private String codexCommand;
   private String model;
+  private String reasoningEffort = "high";
   private String marketingHubUrl;
   private Long commercialPlanId;
   private Duration codexTimeout = Duration.ofMinutes(40);
@@ -54,6 +55,16 @@ public class WorkerProperties {
   /** Configura o modelo opcional. */
   public void setModel(String model) {
     this.model = model;
+  }
+
+  /** Retorna o esforço de raciocínio aplicado ao diagnóstico. */
+  public String getReasoningEffort() {
+    return reasoningEffort;
+  }
+
+  /** Configura o esforço de raciocínio aplicado ao diagnóstico. */
+  public void setReasoningEffort(String reasoningEffort) {
+    this.reasoningEffort = reasoningEffort;
   }
 
   /** Retorna a URL publica usada pelo Codex para consultar o Marketing Hub. */

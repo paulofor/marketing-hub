@@ -17,11 +17,24 @@
     },
     "diagnosis": {
       "type": "object", "additionalProperties": false,
-      "required": ["rootCause", "evidence", "expectedMetric", "continueCriteria", "adjustCriteria", "stopCriteria"],
+      "required": ["rootCause", "evidence", "expectedMetric", "continueCriteria", "adjustCriteria", "stopCriteria", "decisionAudit"],
       "properties": {
         "rootCause": {"type": "string"}, "evidence": {"type": "array", "items": {"type": "string"}},
         "expectedMetric": {"type": "string"}, "continueCriteria": {"type": "string"},
-        "adjustCriteria": {"type": "string"}, "stopCriteria": {"type": "string"}
+        "adjustCriteria": {"type": "string"}, "stopCriteria": {"type": "string"},
+        "decisionAudit": {
+          "type": "object", "additionalProperties": false,
+          "required": ["observedFacts", "inferences", "contradictoryEvidence", "evidenceGaps", "changeDecisionIf", "confidence", "verificationSummary"],
+          "properties": {
+            "observedFacts": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+            "inferences": {"type": "array", "items": {"type": "string"}},
+            "contradictoryEvidence": {"type": "array", "items": {"type": "string"}},
+            "evidenceGaps": {"type": "array", "items": {"type": "string"}},
+            "changeDecisionIf": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+            "confidence": {"type": "string", "enum": ["LOW", "MEDIUM", "HIGH"]},
+            "verificationSummary": {"type": "string", "minLength": 20}
+          }
+        }
       }
     },
     "decision": {"type": "string", "enum": ["CONTINUE", "ADJUST", "STOP", "WAIT_FOR_APPROVAL"]},

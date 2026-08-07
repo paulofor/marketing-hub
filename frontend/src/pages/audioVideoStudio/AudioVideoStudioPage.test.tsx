@@ -14,6 +14,7 @@ import AudioVideoStudioPage, {
   buildStudioSceneMetadata,
   readStudioSceneOrder,
   findProviderFromPlan,
+  resolveStudioSceneRole,
   selectSingleJobForScene,
 } from "./AudioVideoStudioPage";
 import { SALES_VIDEO_PROVIDER_OPTIONS } from "../../api/salesVideo/videoProviderCatalog";
@@ -140,6 +141,14 @@ afterEach(() => {
 });
 
 describe("AudioVideoStudioPage", () => {
+  it("classifica os quatro planos conforme o contrato comercial da montagem", () => {
+    expect(
+      Array.from({ length: 4 }, (_, index) =>
+        resolveStudioSceneRole(index, 4),
+      ),
+    ).toEqual(["DOR", "RESULTADO", "MECANISMO", "CTA"]);
+  });
+
   beforeEach(() => {
     vi.resetAllMocks();
     (axios.get as any).mockImplementation((url: string) => {

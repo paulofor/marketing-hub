@@ -22,6 +22,7 @@ import org.springframework.util.StringUtils;
 @Service
 public class FlowImagePromptService {
 
+    private static final String PERSONALIZED_SAMPLE_FUNNEL_MODEL = "AI_PERSONALIZED_SAMPLE_FUNNEL";
     private static final int DEFAULT_BATCH_SIZE = 6;
     private static final String DEFAULT_IMAGE_MODEL = "gpt-image-1";
     private static final int DEFAULT_REFERENCE_IMAGE_FREE_IMAGES = 1;
@@ -98,6 +99,7 @@ public class FlowImagePromptService {
         return Optional.of(new FlowImagePrompt(prompt, model, batchSize, DEFAULT_REFERENCE_IMAGE_FREE_IMAGES));
     }
 
+    /** Monta o prompt do formulário simples e libera o lote quando o fluxo é uma amostra gratuita. */
     private FlowImagePrompt buildSimpleFormPrompt(Flow flow, SimpleImageBriefing briefing) {
         int batchSize = resolveBatchSize(flow.imageBatchSize());
         String template = StringUtils.hasText(flow.imagePromptTemplate()) ? flow.imagePromptTemplate() : DEFAULT_TEMPLATE;
@@ -109,7 +111,8 @@ public class FlowImagePromptService {
             prompt = buildFallbackPrompt(briefing, batchSize);
         }
         String model = StringUtils.hasText(flow.imagePromptModel()) ? flow.imagePromptModel() : DEFAULT_IMAGE_MODEL;
-        return new FlowImagePrompt(prompt, model, batchSize, 0);
+        int freeImages = PERSONALIZED_SAMPLE_FUNNEL_MODEL.equals(flow.model()) ? batchSize : 0;
+        return new FlowImagePrompt(prompt, model, batchSize, freeImages);
     }
 
     private boolean hasReferenceImage(FlowSubmission submission) {

@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+/** Valida a montagem dos prompts e a política de imagens gratuitas dos fluxos públicos. */
 class FlowImagePromptServiceTest {
 
     private final FlowImagePromptService service =
@@ -144,6 +145,44 @@ class FlowImagePromptServiceTest {
         assertTrue(prompt.prompt().contains("Carla"));
         assertTrue(prompt.prompt().contains("@personalcarla"));
         assertTrue(prompt.prompt().contains("Funcional"));
+    }
+
+    /** Garante que a microamostra personalizada entregue gratuitamente todas as saídas prometidas. */
+    @Test
+    void shouldReleaseAllImagesForPersonalizedSampleFunnel() {
+        Flow flow = new Flow(
+                "product-ai-exp-84-personalized-sample",
+                "Microamostra personalizada",
+                null,
+                null,
+                "AI_PERSONALIZED_SAMPLE_FUNNEL",
+                null,
+                "gpt-image-1.5",
+                null,
+                2,
+                List.of(),
+                null, null, null, null);
+
+        FlowSubmission submission = new FlowSubmission(
+                UUID.randomUUID(),
+                flow.slug(),
+                "Studio Premium",
+                "teste@sandbox.local",
+                Map.of(
+                        "nome_profissional", "Studio Premium",
+                        "servico_divulgado", "Alongamento em gel",
+                        "estilo_visual", "Elegante e minimalista"),
+                null,
+                null,
+                null,
+                null,
+                Instant.now(),
+                null);
+
+        FlowImagePrompt prompt = service.buildPrompt(flow, submission).orElseThrow();
+
+        assertEquals(Integer.valueOf(2), prompt.plannedOutputs());
+        assertEquals(Integer.valueOf(2), prompt.freeImages());
     }
 
     @Test

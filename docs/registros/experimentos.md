@@ -6544,6 +6544,12 @@
 - Causa-raiz: o republicador acessava diretamente o repository. Depois que perguntas e opções foram separadas em duas consultas, a coleção lazy de opções precisava ser inicializada pelo service dentro da transação, mas esse caminho era ignorado no bootstrap.
 - Correção: o republicador passou a consumir `LeadPortalFlowService.listApproved()`, que carrega perguntas e opções antes da publicação, preservando uma pergunta de estilo com três opções sem manter a sessão aberta na integração HTTP.
 - Prevenção: testes validam a hidratação dos fluxos aprovados e obrigam o republicador a usar a leitura canônica. A homologação do experimento 84 permanece bloqueada até esta correção ser publicada e o ciclo completo de submissão, entrega e métricas ser repetido.
+
+## 2026-08-07 — Pipeline de imagem desativado na microamostra gratuita
+
+- Evidência em produção: a submissão de homologação do experimento 84 retornou HTTP 201 e registrou `ENVIO_FORM`, mas o Lead Portal informou `Image pipeline disabled` e não criou o pacote que gera e entrega o post e o story prometidos.
+- Causa-raiz: a capacidade já existia no serviço, porém `lead-portal.image-pipeline.enabled` permanecia no valor padrão `false` porque o Compose de produção não declarava `LEAD_PORTAL_IMAGE_PIPELINE_ENABLED`.
+- Correção: o Compose oficial ativa explicitamente o pipeline de imagem. A liberação comercial continua condicionada à criação do pacote, processamento pelo worker, e-mail de entrega e isolamento das métricas do experimento fake.
 - causa-raiz: a reconciliação reaproveitava a entidade existente, mas limpava e readicionava toda a coleção JPA com `orphanRemoval`; o Hibernate tentava inserir novamente a chave canônica antes de concluir a remoção anterior.
 - correção: a coleção gerenciada deixa de ser limpa; perguntas obsoletas são removidas seletivamente, perguntas existentes são atualizadas no lugar e apenas chaves ausentes são adicionadas.
 - prevenção: teste de contrato impede que a reconciliação idempotente volte a executar `clear()` na coleção gerenciada.

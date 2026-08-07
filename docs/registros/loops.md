@@ -15,6 +15,12 @@
 - Prevenção: toda sessão vinculada a experimento fake é classificada como automação, preservando os eventos para auditoria técnica sem contaminá-los como evidência comercial.
 - Contrato: teste garante zero sessões humanas no analytics de experimento fake.
 
+## LOOP-OPERADOR-SEM-EVIDENCIA-DE-ENTREGA-DA-MICROAMOSTRA — Inteligência incompleta
+
+- Sintoma: o pacote era gerado, entregue e aberto, mas o Operador afirmava que essas etapas não estavam comprovadas.
+- Causa-raiz: a evidência congelada continha apenas eventos da landing e não incluía o estado persistido dos pacotes de imagem.
+- Prevenção: a inteligência de sessão também expõe pacotes solicitados/concluídos, imagens planejadas/geradas, ZIP, envio, abertura e custo de geração, sempre marcados como auditoria técnica quando o experimento é fake.
+
 ## LOOP-AGENT-RUNNING-WITHOUT-PROGRESS — Agentes Codex
 
 - Sintoma: execução permanece `RUNNING`, mas não é possível comprovar se o processo Codex está vivo ou avançando.

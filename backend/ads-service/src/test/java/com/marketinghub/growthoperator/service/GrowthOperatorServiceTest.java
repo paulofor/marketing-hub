@@ -364,6 +364,8 @@ class GrowthOperatorServiceTest {
     when(planService.getPlan(2L)).thenReturn(plan);
     when(funnelService.buildDetailedAnalyticsEvidence(81L, 2000))
         .thenReturn(new ExperimentLandingAnalyticsEvidenceDto(81L, 0, 0, false, null, List.of()));
+    when(funnelService.buildPersonalizedSampleDeliveryEvidence(81L))
+        .thenReturn(Map.of("deliveredEmails", 1L, "openedEmails", 1L));
     when(funnelService.buildDetailedPdeAnalyticsEvidence(81L))
         .thenReturn(Map.of("available", false));
     GrowthOperatorService service =
@@ -383,7 +385,10 @@ class GrowthOperatorServiceTest {
     assertThat(result.get("planId")).isEqualTo(2L);
     assertThat(result.get("experimentId")).isEqualTo(81L);
     assertThat(result.get("appliedEventLimit")).isEqualTo(2000);
+    assertThat(result.get("personalizedSampleDelivery"))
+        .isEqualTo(Map.of("deliveredEmails", 1L, "openedEmails", 1L));
     verify(funnelService).buildDetailedAnalyticsEvidence(81L, 2000);
+    verify(funnelService).buildPersonalizedSampleDeliveryEvidence(81L);
   }
 
   /** Confirma que o agente recebe estrategia e custos sem depender da tela do Estudio. */

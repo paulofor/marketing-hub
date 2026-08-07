@@ -372,6 +372,36 @@ public class ExperimentFunnelService {
         detailedEvents);
   }
 
+  /** Consolida geração, entrega e abertura das microamostras para decisões do Operador. */
+  public Map<String, Object> buildPersonalizedSampleDeliveryEvidence(Long experimentId) {
+    Map<String, Object> metrics =
+        jdbcTemplate.queryForMap(
+            """
+                SELECT COUNT(*) AS requestedPackages,
+                       SUM(CASE WHEN p.status = 'COMPLETED' THEN 1 ELSE 0 END) AS completedPackages,
+                       COALESCE(SUM(p.planned_outputs), 0) AS plannedImages,
+                       COALESCE(SUM((SELECT COUNT(*) FROM flow_submission_image_item i WHERE i.package_id = p.id)), 0) AS generatedImages,
+                       SUM(CASE WHEN p.zip_generated_at IS NOT NULL THEN 1 ELSE 0 END) AS packagesWithZip,
+                       SUM(CASE WHEN p.notified_at IS NOT NULL THEN 1 ELSE 0 END) AS deliveredEmails,
+                       SUM(CASE WHEN p.email_opened_at IS NOT NULL THEN 1 ELSE 0 END) AS openedEmails,
+                       COALESCE(SUM(p.image_total_price_usd), 0) AS generationCostUsd,
+                       MAX(p.updated_at) AS lastPackageUpdateAt
+                FROM flow_submission_image_package p
+                JOIN flow_submissions s ON s.id = p.submission_id
+                JOIN lead_portal_flow f ON f.slug = s.flow_slug
+                WHERE %s
+                """
+                .formatted(FLOW_SCOPE_CONDITION),
+            experimentId,
+            experimentId);
+    LinkedHashMap<String, Object> evidence = new LinkedHashMap<>();
+    evidence.put("available", true);
+    evidence.put("experimentId", experimentId);
+    evidence.putAll(metrics);
+    evidence.put("scope", "TECHNICAL_AUDIT_NOT_HUMAN_SALES");
+    return evidence;
+  }
+
   /** Entrega jornadas PDE detalhadas e anonimizadas quando o experimento usa essa experiência. */
   public Map<String, Object> buildDetailedPdeAnalyticsEvidence(Long experimentId) {
     Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();

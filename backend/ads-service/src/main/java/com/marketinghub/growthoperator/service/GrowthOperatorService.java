@@ -306,6 +306,9 @@ public class GrowthOperatorService {
         "landingAnalytics",
         experimentFunnelService.buildDetailedAnalyticsEvidence(experimentId, eventLimit));
     intelligence.put(
+        "personalizedSampleDelivery",
+        experimentFunnelService.buildPersonalizedSampleDeliveryEvidence(experimentId));
+    intelligence.put(
         "pdeAnalytics", experimentFunnelService.buildDetailedPdeAnalyticsEvidence(experimentId));
     return intelligence;
   }

@@ -426,6 +426,8 @@ export default function ExperimentDetailPage() {
     null,
   );
   const [isStartingSalesPage, setIsStartingSalesPage] = useState(false);
+  const [isCreatingCommercialExperiment, setIsCreatingCommercialExperiment] =
+    useState(false);
   const [copiedCardKey, setCopiedCardKey] = useState<string | null>(null);
   const [copyingCardKey, setCopyingCardKey] = useState<string | null>(null);
   const [downloadingCardKey, setDownloadingCardKey] = useState<string | null>(
@@ -1877,6 +1879,27 @@ export default function ExperimentDetailPage() {
       : data.campaignObjective === "SALES"
         ? "Vendas"
         : data.campaignObjective || "—";
+  const handleCreateCommercialExperiment = async () => {
+    if (
+      !window.confirm(
+        "Criar um experimento comercial limpo com a oferta validada nesta homologação? Métricas, leads, custos e artefatos não serão copiados.",
+      )
+    ) {
+      return;
+    }
+    setIsCreatingCommercialExperiment(true);
+    try {
+      const response = await axios.post<{ id: number }>(
+        `/api/experiments/${expId}/commercialize`,
+      );
+      toast.success("Experimento comercial criado sem dados de homologação.");
+      navigate(`/experiments/${response.data.id}`);
+    } catch {
+      toast.error("Não foi possível criar o experimento comercial.");
+    } finally {
+      setIsCreatingCommercialExperiment(false);
+    }
+  };
   const lowTicketSalePreparationChecklist = [
     {
       id: "commercial-offer",
@@ -1981,6 +2004,18 @@ export default function ExperimentDetailPage() {
           <p className="text-muted mb-0">{data.hypothesis}</p>
         </div>
         <div className="d-flex align-items-center">
+          {data.experimentType === "FAKE_EXPERIMENT" ? (
+            <button
+              type="button"
+              className="btn btn-primary me-2"
+              onClick={handleCreateCommercialExperiment}
+              disabled={isCreatingCommercialExperiment}
+            >
+              {isCreatingCommercialExperiment
+                ? "Criando experimento..."
+                : "Criar experimento comercial"}
+            </button>
+          ) : null}
           {alterationLocked ? (
             <span
               className="btn btn-outline-secondary disabled me-2"

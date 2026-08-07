@@ -1400,6 +1400,72 @@ class ExperimentServiceTest {
         .doesNotContain(experiment.getId());
   }
 
+  /** Garante que a derivação comercial preserva a oferta sem reutilizar dados operacionais. */
+  @Test
+  void commercializeFakeExperimentCreatesCleanPersonalizedSample() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Niche Commercialize").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("ACOM").build());
+    var hypothesis =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("HCOM")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .productAiSubtype(
+                    com.marketinghub.productai.ProductAiSubtype.AI_PERSONALIZED_SAMPLE)
+                .kpiTargetCpl(BigDecimal.ONE)
+                .build());
+    JourneyTemplate journeyTemplate = createJourneyTemplate();
+    var original =
+        experimentRepository.save(
+            Experiment.builder()
+                .niche(niche)
+                .name("Homologação")
+                .hypothesisRef(hypothesis)
+                .hypothesis("Agenda Cheia")
+                .singlePain("Receio de arte genérica")
+                .freeReward("1 post + 1 story")
+                .funnelPromise("Responda 3 perguntas e receba em 24 horas")
+                .primaryCta("Quero minha amostra")
+                .commercialObjective("Validar o briefing e o checkout")
+                .experimentType(ExperimentType.FAKE_EXPERIMENT)
+                .campaignObjective(ExperimentCampaignObjective.TRAFFIC)
+                .status(ExperimentStatus.PLANNED)
+                .platform(ExperimentPlatform.FACEBOOK)
+                .stage(ExperimentStage.AD)
+                .unitPrice(new BigDecimal("67"))
+                .dailyBudget(new BigDecimal("20"))
+                .cost(new BigDecimal("12"))
+                .totalCost(new BigDecimal("12"))
+                .expense(new BigDecimal("8"))
+                .journeyTemplate(journeyTemplate)
+                .leadPortalFlow(
+                    leadPortalFlowRepository.findById(createLeadPortalFlow(niche)).orElseThrow())
+                .followUpActionUrl("https://homologacao.invalid")
+                .build());
+
+    Experiment commercial = service.commercialize(original.getId());
+
+    assertThat(commercial.getExperimentType()).isEqualTo(ExperimentType.NICHE_TEST);
+    assertThat(commercial.getProductAiSubtype())
+        .isEqualTo(com.marketinghub.productai.ProductAiSubtype.AI_PERSONALIZED_SAMPLE);
+    assertThat(commercial.getCampaignObjective()).isEqualTo(ExperimentCampaignObjective.LEADS);
+    assertThat(commercial.getSinglePain()).isEqualTo(original.getSinglePain());
+    assertThat(commercial.getUnitPrice()).isEqualByComparingTo("67");
+    assertThat(commercial.getCost()).isNull();
+    assertThat(commercial.getTotalCost()).isNull();
+    assertThat(commercial.getExpense()).isNull();
+    assertThat(commercial.getLeadPortalFlow()).isNull();
+    assertThat(commercial.getFollowUpActionUrl()).isNull();
+    assertThat(commercial.getId()).isNotEqualTo(original.getId());
+  }
+
   /** Garante que experimento PDE só libera campanha com slot produtivo aprovado no Hub. */
   @Test
   void releaseForFacebookRejectsPdeWithoutApprovedProductionSlot() {

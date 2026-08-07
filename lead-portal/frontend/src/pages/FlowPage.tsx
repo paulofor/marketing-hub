@@ -185,6 +185,19 @@ export default function FlowPage() {
   if (hasCustomTemplate && customTemplateHtml) {
     const templateVariables = customTemplateVariables ?? new Map<string, string>();
     if (shouldRenderStandaloneTemplate) {
+      if (hasSubmitted) {
+        const successState = customTemplateFormSpec?.successState;
+        return (
+          <div className="flow-custom-feedback flow-custom-feedback--standalone">
+            <SubmissionSuccessCard
+              name={submissionResult?.name}
+              email={submissionResult?.email}
+              title={successState?.title}
+              message={successState?.message}
+            />
+          </div>
+        );
+      }
       return (
         <StandaloneCustomFlowTemplate
           html={customTemplateHtml}

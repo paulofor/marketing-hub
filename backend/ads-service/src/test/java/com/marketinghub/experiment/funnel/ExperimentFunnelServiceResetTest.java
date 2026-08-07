@@ -11,6 +11,7 @@ import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,5 +62,15 @@ class ExperimentFunnelServiceResetTest {
     inOrder.verify(experimentRepository).save(experiment);
     assertNotNull(experiment.getFunnelResetAt());
     assertEquals(experiment.getFunnelResetAt(), resetAt);
+  }
+
+  /** Garante que o marco do reset seja comparado ao DATETIME do banco sem deslocamento de fuso. */
+  @Test
+  void convertsResetInstantToUtcDatabaseDateTime() {
+    Instant resetAt = Instant.parse("2026-08-07T16:55:40.604464Z");
+
+    LocalDateTime databaseBaseline = ExperimentFunnelService.toUtcDatabaseDateTime(resetAt);
+
+    assertEquals(LocalDateTime.parse("2026-08-07T16:55:40.604464"), databaseBaseline);
   }
 }

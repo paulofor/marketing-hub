@@ -1,5 +1,17 @@
-import { AlertTriangle, BadgeCheck, RefreshCw, ShieldCheck, Video } from "lucide-react";
-import { useMemo } from "react";
+import {
+  AlertTriangle,
+  BadgeCheck,
+  CreditCard,
+  ExternalLink,
+  RefreshCw,
+  ShieldCheck,
+  Video,
+} from "lucide-react";
+import { FormEvent, useMemo, useState } from "react";
+import {
+  useProviderCreditPurchases,
+  useRegisterProviderCreditPurchase,
+} from "../../api/planning/useProviderCreditPurchases";
 import { useSalesVideoProviderScores } from "../../api/salesVideo/useSalesVideoProviderScores";
 import {
   SALES_VIDEO_PROVIDER_OPTIONS,
@@ -29,6 +41,7 @@ const RECOMMENDATION_LABELS: Record<string, string> = {
 
 export default function VideoProviderManagementPage() {
   const providerScoresQuery = useSalesVideoProviderScores();
+  const [purchaseProvider, setPurchaseProvider] = useState<SalesVideoProviderOption>();
 
   const rows = useMemo<ProviderRow[]>(() => {
     const scoresByProvider = new Map(
@@ -165,8 +178,128 @@ export default function VideoProviderManagementPage() {
                 label="Imagem base"
               />
             </div>
+            {option.creditsUrl ? (
+              <div className="video-provider-page__credit-actions">
+                <a
+                  className="btn btn-outline-primary video-provider-page__credits-link"
+                  href={option.creditsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Comprar créditos
+                  <ExternalLink size={15} aria-hidden="true" />
+                </a>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  aria-label={`Registrar compra ${option.label}`}
+                  onClick={() => setPurchaseProvider(option)}
+                >
+                  <CreditCard size={15} aria-hidden="true" />
+                  Registrar compra
+                </button>
+              </div>
+            ) : null}
           </article>
         ))}
+      </section>
+      {purchaseProvider ? (
+        <CreditPurchaseDialog
+          provider={purchaseProvider}
+          onClose={() => setPurchaseProvider(undefined)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function CreditPurchaseDialog({
+  provider,
+  onClose,
+}: {
+  provider: SalesVideoProviderOption;
+  onClose: () => void;
+}) {
+  const purchasesQuery = useProviderCreditPurchases(provider.providerName);
+  const registerPurchase = useRegisterProviderCreditPurchase(provider.providerName);
+  const [purchasedAt, setPurchasedAt] = useState("");
+  const [amount, setAmount] = useState("");
+  const [currency, setCurrency] = useState("USD");
+  const [creditsPurchased, setCreditsPurchased] = useState("");
+  const [evidenceReference, setEvidenceReference] = useState("");
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    registerPurchase.mutate({
+      purchasedAt: new Date(purchasedAt).toISOString(),
+      amount: Number(amount),
+      currency,
+      creditsPurchased: Number(creditsPurchased),
+      evidenceReference: evidenceReference.trim() || null,
+    });
+  };
+
+  return (
+    <div className="video-provider-page__dialog-backdrop" role="presentation">
+      <section
+        className="video-provider-page__dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="credit-purchase-title"
+      >
+        <div className="video-provider-page__dialog-header">
+          <div>
+            <h2 id="credit-purchase-title">Registrar créditos — {provider.label}</h2>
+            <p>Registra a saída de caixa sem duplicar o custo consumido pelos renders.</p>
+          </div>
+          <button type="button" className="btn-close" aria-label="Fechar" onClick={onClose} />
+        </div>
+        <form onSubmit={submit}>
+          <div className="row g-3">
+            <div className="col-md-6">
+              <label className="form-label" htmlFor="credit-purchased-at">Data e hora *</label>
+              <input id="credit-purchased-at" className="form-control" type="datetime-local" required value={purchasedAt} onChange={(event) => setPurchasedAt(event.target.value)} />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label" htmlFor="credit-amount">Valor *</label>
+              <input id="credit-amount" className="form-control" type="number" min="0.01" step="0.01" required value={amount} onChange={(event) => setAmount(event.target.value)} />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label" htmlFor="credit-currency">Moeda *</label>
+              <select id="credit-currency" className="form-select" required value={currency} onChange={(event) => setCurrency(event.target.value)}>
+                <option value="USD">USD</option>
+                <option value="BRL">BRL</option>
+              </select>
+            </div>
+            <div className="col-md-6">
+              <label className="form-label" htmlFor="credit-quantity">Créditos adquiridos *</label>
+              <input id="credit-quantity" className="form-control" type="number" min="1" step="1" required value={creditsPurchased} onChange={(event) => setCreditsPurchased(event.target.value)} />
+            </div>
+            <div className="col-md-6">
+              <label className="form-label" htmlFor="credit-evidence">Referência do comprovante</label>
+              <input id="credit-evidence" className="form-control" maxLength={500} placeholder="Número da fatura ou URL" value={evidenceReference} onChange={(event) => setEvidenceReference(event.target.value)} />
+            </div>
+          </div>
+          {registerPurchase.isError ? <div className="alert alert-danger mt-3">Não foi possível registrar a compra.</div> : null}
+          {registerPurchase.isSuccess ? <div className="alert alert-success mt-3">Compra registrada no Financeiro.</div> : null}
+          <div className="video-provider-page__dialog-actions">
+            <button type="button" className="btn btn-outline-secondary" onClick={onClose}>Cancelar</button>
+            <button type="submit" className="btn btn-primary" disabled={registerPurchase.isPending}>
+              {registerPurchase.isPending ? <span className="spinner-border spinner-border-sm" aria-hidden="true" /> : null}
+              Salvar no Financeiro
+            </button>
+          </div>
+        </form>
+        <div className="video-provider-page__purchase-history">
+          <h3>Histórico</h3>
+          {purchasesQuery.isLoading ? <p>Carregando...</p> : null}
+          {purchasesQuery.data?.length === 0 ? <p>Nenhuma compra registrada.</p> : null}
+          {purchasesQuery.data?.map((purchase) => (
+            <p key={purchase.id}>
+              <strong>{purchase.currency} {purchase.amount.toFixed(2)}</strong> — {purchase.creditsPurchased.toLocaleString("pt-BR")} créditos em {new Date(purchase.purchasedAt).toLocaleString("pt-BR")}
+            </p>
+          ))}
+        </div>
       </section>
     </div>
   );

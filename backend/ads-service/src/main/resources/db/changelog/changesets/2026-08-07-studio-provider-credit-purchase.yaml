@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-07-studio-provider-credit-purchase
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE studio_provider_credit_purchase (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                provider VARCHAR(64) NOT NULL,
+                purchased_at DATETIME(6) NOT NULL,
+                amount DECIMAL(14,6) NOT NULL,
+                currency VARCHAR(3) NOT NULL,
+                credits_purchased INT NOT NULL,
+                evidence_reference VARCHAR(500) NULL,
+                created_at DATETIME(6) NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_studio_provider_credit_purchase
+                  (provider, purchased_at, amount, currency, credits_purchased),
+                INDEX idx_studio_provider_credit_purchase_provider
+                  (provider, purchased_at)
+              );

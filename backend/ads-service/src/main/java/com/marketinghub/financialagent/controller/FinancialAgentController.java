@@ -4,6 +4,10 @@ import com.marketinghub.financialagent.service.CompleteFinancialAgentRequest;
 import com.marketinghub.financialagent.service.FailFinancialAgentRequest;
 import com.marketinghub.financialagent.service.FinancialAgentExecutionResponse;
 import com.marketinghub.financialagent.service.FinancialAgentService;
+import com.marketinghub.financialagent.service.ProviderCreditPurchaseService;
+import com.marketinghub.financialagent.service.registerProviderCreditPurchase.ProviderCreditPurchaseResponse;
+import com.marketinghub.financialagent.service.registerProviderCreditPurchase.RegisterProviderCreditPurchaseRequest;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,9 +22,28 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/financial-agent/v1")
 public class FinancialAgentController {
   private final FinancialAgentService service;
+  private final ProviderCreditPurchaseService providerCreditPurchaseService;
 
-  public FinancialAgentController(FinancialAgentService service) {
+  /** Inicializa o controller com conciliação e recargas de provedores. */
+  public FinancialAgentController(
+      FinancialAgentService service, ProviderCreditPurchaseService providerCreditPurchaseService) {
     this.service = service;
+    this.providerCreditPurchaseService = providerCreditPurchaseService;
+  }
+
+  /** Registra uma compra pré-paga sem tratá-la como custo já consumido. */
+  @PostMapping("/providers/{provider}/credit-purchases")
+  public ProviderCreditPurchaseResponse registerProviderCreditPurchase(
+      @PathVariable String provider,
+      @Valid @RequestBody RegisterProviderCreditPurchaseRequest request) {
+    return providerCreditPurchaseService.register(provider, request);
+  }
+
+  /** Lista as recargas auditáveis do provedor. */
+  @GetMapping("/providers/{provider}/credit-purchases")
+  public List<ProviderCreditPurchaseResponse> listProviderCreditPurchases(
+      @PathVariable String provider) {
+    return providerCreditPurchaseService.list(provider);
   }
 
   /** Solicita uma nova conciliacao financeira somente leitura. */

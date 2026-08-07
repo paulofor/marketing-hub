@@ -110,6 +110,12 @@ describe("videoProviderCatalog", () => {
     expect(provider?.supportsHeroVideo).toBe(false);
   });
 
+  it("direciona a compra de creditos da Runway ao portal da API", () => {
+    expect(findSalesVideoProviderOption("RUNWAY")?.creditsUrl).toBe(
+      "https://dev.runwayml.com/",
+    );
+  });
+
   it("inclui Runway como provider direto limitado a 10 segundos", () => {
     const provider = findSalesVideoProviderOption("RUNWAY");
 

@@ -233,6 +233,14 @@
   background: #f0fdfa;
 }
 
+.video-provider-page__credits-link {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+}
+
 @media (max-width: 860px) {
   .video-provider-page__header {
     flex-direction: column;
@@ -248,4 +256,56 @@
   .video-provider-page__grid {
     grid-template-columns: 1fr;
   }
+}
+.video-provider-page__credit-actions,
+.video-provider-page__dialog-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.video-provider-page__dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.video-provider-page__dialog {
+  width: min(760px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  background: var(--bs-body-bg, #fff);
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.3);
+}
+
+.video-provider-page__dialog-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.video-provider-page__dialog-header h2 {
+  margin: 0;
+}
+
+.video-provider-page__dialog-actions {
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+
+.video-provider-page__purchase-history {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--bs-border-color, #dee2e6);
+  padding-top: 1rem;
+}
+
+.video-provider-page__purchase-history h3 {
+  font-size: 1rem;
 }

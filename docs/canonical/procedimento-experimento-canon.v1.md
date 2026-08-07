@@ -147,6 +147,7 @@ Campanhas pagas não devem depender de regra operacional por tipo de experimento
 Regra canônica:
 - considerar a regra para toda campanha vinculada a experimento em `RUNNING`, independentemente de `experiment_type`, objetivo, oferta ou destino;
 - parar campanha com menos de `100` impressões após `48h` de criação, por falha de entrega mínima;
+- o cockpit não deve recomendar troca de criativo ou público por ausência de clique antes de `200` impressões; entre `1` e `199` impressões sem clique, deve classificar a leitura como amostra insuficiente e orientar a continuidade da coleta sem alterações, respeitando os limites financeiros e bloqueios técnicos;
 - parar campanha quando o gasto sincronizado atingir `R$ 25,00` e não houver nenhum resultado primário: `ENVIO_FORM`, `ABERTURA_EMAIL_AMOSTRA` ou `COMPRA`;
 - parar campanha quando qualquer etapa prioritária do funil ficar `STATISTICALLY_FAILED`;
 - registrar `experiment.status = INVALIDATED` e solicitar pausa das campanhas vinculadas via `facebook_ads_campaign.stop_requested_at`;

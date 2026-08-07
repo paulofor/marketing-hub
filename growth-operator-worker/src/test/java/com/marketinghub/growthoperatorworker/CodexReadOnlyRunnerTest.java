@@ -26,6 +26,7 @@ class CodexReadOnlyRunnerTest {
     assertThat(command)
         .contains("mcp_servers.marketing_hub_readonly.command=\"node\"")
         .anyMatch(value -> value.startsWith("mcp_servers.marketing_hub_readonly.args="));
+    assertThat(command).contains("model_reasoning_effort=\"high\"");
     assertThat(command).doesNotContain("--dangerously-bypass-approvals-and-sandbox");
   }
 
@@ -52,5 +53,37 @@ class CodexReadOnlyRunnerTest {
             "experimentStrategicContract",
             "objetivo, hipótese, métrica/meta e critérios de continuar, ajustar e parar",
             "retorne ADJUST");
+  }
+
+  /** Confirma que o diagnóstico exige autocorreção sem expor cadeia de pensamento privada. */
+  @Test
+  void shouldRequireAuditableReasoningProtocol() throws Exception {
+    String prompt =
+        new String(
+            new ClassPathResource("prompts/growth-operator/v1/diagnosis.md")
+                .getInputStream()
+                .readAllBytes(),
+            java.nio.charset.StandardCharsets.UTF_8);
+    String schema =
+        new String(
+            new ClassPathResource("prompts/growth-operator/v1/diagnosis-schema.json")
+                .getInputStream()
+                .readAllBytes(),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+    assertThat(prompt)
+        .contains(
+            "decomposição, verificação e correção",
+            "procure evidência",
+            "contraditória, teste as três alternativas",
+            "Não exponha cadeia de pensamento",
+            "Tente refutar a alternativa escolhida");
+    assertThat(schema)
+        .contains(
+            "decisionAudit",
+            "observedFacts",
+            "contradictoryEvidence",
+            "changeDecisionIf",
+            "confidence");
   }
 }

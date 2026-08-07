@@ -20,6 +20,13 @@ O Operador de Crescimento transforma meta, gargalo e evidencias persistidas do p
 
 Cada execucao deve persistir objetivo, gargalo, snapshot de evidencias, exatamente tres alternativas, causa-raiz, metrica esperada, criterios de continuar/ajustar/parar, decisao, proxima acao, resposta bruta, modelo, custo e falha quando houver.
 
+O raciocinio aprofundado segue um protocolo interno de decomposicao, verificacao e correcao. O
+Operador deve confrontar a hipotese inicial com o historico, procurar evidencia contraditoria,
+tentar refutar a alternativa escolhida e declarar fatos observados, inferencias, lacunas, condicoes
+que mudariam a decisao e confianca. A cadeia de pensamento privada nao deve ser persistida nem
+exibida; persiste-se apenas o resumo verificavel em `decisionAudit`. Mais tempo de raciocinio ou
+consenso entre respostas do modelo nunca substitui evento humano, fonte independente ou venda.
+
 Quando houver experimento vinculado, o backend deve congelar no snapshot o
 `experimentStrategicContract`, cuja fonte de verdade e o proprio experimento. O contrato inclui o
 objetivo comercial com hipotese, metrica esperada e criterios de continuar, ajustar e parar, alem

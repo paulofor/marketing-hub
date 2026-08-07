@@ -146,6 +146,10 @@ public class CodexReadOnlyRunner {
     command.add("mcp_servers.marketing_hub_readonly.command=\"node\"");
     command.add("--config");
     command.add("mcp_servers.marketing_hub_readonly.args=[\"" + mcpServer.toAbsolutePath() + "\"]");
+    if (hasText(properties.getReasoningEffort())) {
+      command.add("--config");
+      command.add("model_reasoning_effort=\"" + properties.getReasoningEffort() + "\"");
+    }
     if (hasText(properties.getModel())) {
       command.add("--model");
       command.add(properties.getModel());
@@ -192,6 +196,7 @@ public class CodexReadOnlyRunner {
     if (!result.has("alternatives")
         || result.get("alternatives").size() != 3
         || !result.hasNonNull("diagnosis")
+        || !result.get("diagnosis").hasNonNull("decisionAudit")
         || !result.hasNonNull("decision")
         || !result.hasNonNull("recommendedAction")
         || !result.hasNonNull("dailyReport")) {

@@ -1627,3 +1627,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-06-codex-agent-execution-telemetry-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-07-studio-provider-credit-purchase.yaml
+      relativeToChangelogFile: true

@@ -3,6 +3,33 @@ info:
   title: Agente Financeiro v1
   version: 1.0.0
 paths:
+  /api/financial-agent/v1/providers/{provider}/credit-purchases:
+    parameters:
+      - in: path
+        name: provider
+        required: true
+        schema: {type: string}
+    get:
+      summary: Lista recargas de créditos do provedor
+      responses:
+        '200': {description: Histórico de recargas}
+    post:
+      summary: Registra recarga pré-paga sem contabilizá-la como consumo de render
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [purchasedAt, amount, currency, creditsPurchased]
+              properties:
+                purchasedAt: {type: string, format: date-time}
+                amount: {type: number, minimum: 0.000001}
+                currency: {type: string, minLength: 3, maxLength: 3}
+                creditsPurchased: {type: integer, minimum: 1}
+                evidenceReference: {type: string, maxLength: 500, nullable: true}
+      responses:
+        '200': {description: Recarga registrada de forma idempotente}
   /api/financial-agent/v1/commercial-plans/{planId}/executions:
     get:
       summary: Lista relatórios financeiros do planejamento

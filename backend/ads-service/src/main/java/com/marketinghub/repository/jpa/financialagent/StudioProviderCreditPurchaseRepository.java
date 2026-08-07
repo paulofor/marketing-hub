@@ -1,0 +1,24 @@
+package com.marketinghub.repository.jpa.financialagent;
+
+import com.marketinghub.financialagent.StudioProviderCreditPurchase;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+/** Responsabilidade: persistir e consultar recargas de créditos dos provedores do Estúdio. */
+public interface StudioProviderCreditPurchaseRepository
+    extends JpaRepository<StudioProviderCreditPurchase, Long> {
+  /** Lista as recargas mais recentes do provedor. */
+  List<StudioProviderCreditPurchase> findByProviderOrderByPurchasedAtDesc(String provider);
+
+  /** Localiza um lançamento equivalente para impedir duplicidade em reenvios. */
+  Optional<StudioProviderCreditPurchase>
+      findByProviderAndPurchasedAtAndAmountAndCurrencyAndCreditsPurchased(
+          String provider,
+          Instant purchasedAt,
+          BigDecimal amount,
+          String currency,
+          Integer creditsPurchased);
+}

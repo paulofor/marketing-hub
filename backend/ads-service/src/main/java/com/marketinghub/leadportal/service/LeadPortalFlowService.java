@@ -64,6 +64,12 @@ public class LeadPortalFlowService {
     return hydrateQuestionOptions(repository.findAllByOrderByNameAsc());
   }
 
+  /** Lista os fluxos aprovados com perguntas e opções prontas para republicação. */
+  @Transactional(readOnly = true)
+  public List<LeadPortalFlow> listApproved() {
+    return hydrateQuestionOptions(repository.findAllByApprovedTrue());
+  }
+
   /** Lista os fluxos do experimento com as opções das perguntas inicializadas. */
   @Transactional(readOnly = true)
   public List<LeadPortalFlow> listByExperiment(Long experimentId) {

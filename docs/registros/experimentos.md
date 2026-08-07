@@ -6537,6 +6537,13 @@
 ## 2026-08-07 — Reconciliação idempotente do funil de microamostra sem reinserção JPA
 
 - evidência em produção: repetir pela tela o comando do funil do experimento 84 retornava HTTP 500 com `Duplicate entry '57-nome_profissional' for key 'uq_lead_portal_question_key'`, embora o banco mantivesse uma única pergunta por `data_key`.
+
+## 2026-08-07 — Republicação segura do funil após correção de cardinalidade
+
+- Evidência em produção: o build `a8280604967e` iniciou, tentou republicar 44 fluxos aprovados e encerrou durante o `ApplicationReadyEvent`; o painel administrativo ficou indisponível e o portal conservou a versão anterior do experimento 84 com a pergunta `estilo_visual` triplicada.
+- Causa-raiz: o republicador acessava diretamente o repository. Depois que perguntas e opções foram separadas em duas consultas, a coleção lazy de opções precisava ser inicializada pelo service dentro da transação, mas esse caminho era ignorado no bootstrap.
+- Correção: o republicador passou a consumir `LeadPortalFlowService.listApproved()`, que carrega perguntas e opções antes da publicação, preservando uma pergunta de estilo com três opções sem manter a sessão aberta na integração HTTP.
+- Prevenção: testes validam a hidratação dos fluxos aprovados e obrigam o republicador a usar a leitura canônica. A homologação do experimento 84 permanece bloqueada até esta correção ser publicada e o ciclo completo de submissão, entrega e métricas ser repetido.
 - causa-raiz: a reconciliação reaproveitava a entidade existente, mas limpava e readicionava toda a coleção JPA com `orphanRemoval`; o Hibernate tentava inserir novamente a chave canônica antes de concluir a remoção anterior.
 - correção: a coleção gerenciada deixa de ser limpa; perguntas obsoletas são removidas seletivamente, perguntas existentes são atualizadas no lugar e apenas chaves ausentes são adicionadas.
 - prevenção: teste de contrato impede que a reconciliação idempotente volte a executar `clear()` na coleção gerenciada.

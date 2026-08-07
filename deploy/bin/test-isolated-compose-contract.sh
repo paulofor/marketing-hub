@@ -15,7 +15,7 @@ grep -Fq 'MCP_GITHUB_REPO: ${MCP_GITHUB_REPO:-ai-hub}' docker-compose.mcp.yml
 grep -Fq 'MCP_GITHUB_TOKEN: ${MCP_GITHUB_TOKEN:?MCP_GITHUB_TOKEN is required}' docker-compose.mcp.yml
 grep -Fq 'MCP_GITHUB_TOKEN: ${{ secrets.MCP_GITHUB_TOKEN }}' ../.github/workflows/mcp-server.yml
 
-grep -Fq 'MCP_LOG_BACKEND_PATH: ${MCP_LOG_BACKEND_PATH:-http://191.252.181.168/ops-mh-observability-v2/backend-log-stream-x9k}' \
+grep -Fq 'MCP_LOG_BACKEND_PATH: ${MCP_LOG_BACKEND_PATH:-http://191.252.181.168:8099/ops-mh-observability-v2/backend-log-stream-x9k}' \
   docker-compose.mcp.yml
 
 if grep -q 'docker compose up' bin/apply-video-only.sh; then

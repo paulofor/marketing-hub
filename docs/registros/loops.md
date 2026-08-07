@@ -828,3 +828,9 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o HTML legado ainda emitia analytics e o classificador dependia do user-agent de automação; a emulação mobile do Playwright usa user-agent normal. A submissão também não propagava um marcador técnico.
 - **Correção sistêmica:** classificar `mh_test=1` como automação, marcar submissões com `__mh_internal_test__`, excluí-las das métricas comerciais e impedir que acionem standby.
 - **Prevenção:** testes de contrato para URL de homologação e submissão técnica, mantendo os eventos auditáveis sem tratá-los como comportamento humano.
+
+# LOOP-MCP-LOG-BACKEND-CONTRACT-DRIFT — Contrato de deploy diverge da porta canônica
+
+- **Sintoma:** o workflow do MCP falha antes do build na validação do deploy isolado, embora a configuração e os testes do módulo estejam corretos.
+- **Causa-raiz:** a URL canônica do leitor independente de logs passou a usar a porta `8099`, mas o teste shell do deploy continuou exigindo implicitamente a porta `80`.
+- **Prevenção:** manter o contrato do deploy alinhado ao mesmo endpoint explícito usado pelo Compose, pela aplicação, pelo README e pelos testes Java; toda mudança futura da URL deve atualizar e executar essas validações em conjunto.

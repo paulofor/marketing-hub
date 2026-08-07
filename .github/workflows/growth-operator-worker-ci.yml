@@ -3,6 +3,9 @@ name: Growth Operator Worker CI/CD
 on:
   push:
     branches: [main]
+    paths:
+      - growth-operator-worker/**
+      - .github/workflows/growth-operator-worker-ci.yml
   workflow_dispatch:
 
 concurrency:

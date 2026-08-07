@@ -3,6 +3,9 @@ name: Experiment Strategist Worker CI/CD
 on:
   push:
     branches: [main]
+    paths:
+      - experiment-strategist-worker/**
+      - .github/workflows/experiment-strategist-worker-ci.yml
   workflow_dispatch:
 
 concurrency:

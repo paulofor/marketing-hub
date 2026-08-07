@@ -221,6 +221,15 @@ class McpControllerTest {
         Files.writeString(fakeSsh,
                 "#!/usr/bin/env sh\n"
                         + "case \"$*\" in\n"
+                        + "  *\"lead-portal-backend lead-portal-frontend lead-portal-proxy\"*)\n"
+                        + "    echo '__MCP_CONTAINER__'\n"
+                        + "    echo 'lead-portal-backend'\n"
+                        + "    echo '__MCP_STATUS__'\n"
+                        + "    echo 'running|false|0|0|healthy|ghcr.io/acme/lead-portal-backend:sha'\n"
+                        + "    echo '__MCP_LOGS__'\n"
+                        + "    echo '2026-08-07T20:00:00Z LeadPortalApplication started'\n"
+                        + "    exit 0\n"
+                        + "    ;;\n"
                         + "  *\"docker logs\"*)\n"
                         + "    echo '__MCP_CONTAINER__'\n"
                         + "    echo 'lead-portal-payments-service-proxy-1'\n"
@@ -764,6 +773,23 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.result.structuredContent.returnedLines").value(1))
                 .andExpect(jsonPath("$.result.structuredContent.lines[0]")
                         .value("2026-08-03T10:00:00Z nginx certificate missing"));
+    }
+
+    /**
+     * Garante que estado e logs da stack do Lead Portal ficam disponíveis por alvo fixo.
+     */
+    @Test
+    void shouldReadLeadPortalStackStatusAndLogs() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":32,"method":"tools/call","params":{"name":"vps_docker_logs","arguments":{"host":"191.252.120.96","target":"lead-portal-stack","lines":100}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.host").value("191.252.120.96"))
+                .andExpect(jsonPath("$.result.structuredContent.target").value("lead-portal-stack"))
+                .andExpect(jsonPath("$.result.structuredContent.lines[0]").value("__MCP_CONTAINER__"))
+                .andExpect(jsonPath("$.result.structuredContent.lines[1]").value("lead-portal-backend"));
     }
 
 

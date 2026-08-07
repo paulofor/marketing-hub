@@ -20,8 +20,10 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class VpsHostInventoryService {
     private static final Logger logger = LoggerFactory.getLogger(VpsHostInventoryService.class);
+    private static final String LEAD_PORTAL_STACK = "lead-portal-stack";
     private static final String LEAD_PORTAL_PAYMENTS_PROXY = "lead-portal-payments-proxy";
-    private static final List<String> ALLOWED_DOCKER_LOG_TARGETS = List.of(LEAD_PORTAL_PAYMENTS_PROXY);
+    private static final List<String> ALLOWED_DOCKER_LOG_TARGETS =
+            List.of(LEAD_PORTAL_STACK, LEAD_PORTAL_PAYMENTS_PROXY);
 
     private final McpProperties properties;
 
@@ -144,11 +146,12 @@ public class VpsHostInventoryService {
     }
 
     /**
-     * Executa uma leitura remota fixa para o proxy de pagamentos permitido.
+     * Executa uma leitura remota fixa para o alvo operacional permitido.
      */
     private List<String> executeSshDockerLogs(String host, String target, int lines) {
         String destination = properties.vpsHostInventory().user() + "@" + host;
         String script = switch (target) {
+            case LEAD_PORTAL_STACK -> leadPortalStackLogsScript(lines);
             case LEAD_PORTAL_PAYMENTS_PROXY -> leadPortalPaymentsProxyLogsScript(lines);
             default -> throw new IllegalArgumentException("unsupported docker log target: " + target);
         };
@@ -164,6 +167,26 @@ public class VpsHostInventoryService {
                 script
         );
         return executeCommand(command, "ssh docker logs", host);
+    }
+
+    /**
+     * Retorna estado e logs dos três containers canônicos do Lead Portal sem aceitar nomes livres.
+     */
+    private String leadPortalStackLogsScript(int lines) {
+        return """
+                for container in lead-portal-backend lead-portal-frontend lead-portal-proxy; do
+                  printf '__MCP_CONTAINER__\\n%s\\n' "$container"
+                  if ! docker inspect "$container" >/dev/null 2>&1; then
+                    printf '__MCP_STATUS__\\nnot_found|false|0||||\\n'
+                    printf '__MCP_LOGS__\\ncontainer not found\\n'
+                    continue
+                  fi
+                  printf '__MCP_STATUS__\\n'
+                  docker inspect --format '{{.State.Status}}|{{.State.Restarting}}|{{.RestartCount}}|{{.State.ExitCode}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}|{{.Config.Image}}' "$container"
+                  printf '__MCP_LOGS__\\n'
+                  docker logs --timestamps --tail __MCP_LINES__ "$container" 2>&1
+                done
+                """.replace("__MCP_LINES__", Integer.toString(lines));
     }
 
     /**

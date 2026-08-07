@@ -39,6 +39,10 @@ Quando precisar descobrir CPU, memória, disco, portas ou containers dos VPS, pr
 
 Não criar shell genérico no MCP para esse caso. A consulta deve usar host em allowlist e comando remoto fixo. A chave privada SSH do MCP deve ficar somente no host do MCP, fora do Git, montada no container em `/opt/marketinghub/mcp/ssh/id_ed25519`.
 
+Para o Lead Portal público, usar `vps_docker_logs` com host `191.252.120.96` e alvo fixo
+`lead-portal-stack`; esse contrato retorna estado e logs dos containers canônicos backend,
+frontend e proxy sem aceitar nomes ou comandos arbitrários.
+
 ## RUNTIME_BUILD_INFO_MCP
 
 Quando precisar confirmar qual versão/commit de um módulo está rodando em produção, procure primeiro a tool MCP `runtime_build_info`.

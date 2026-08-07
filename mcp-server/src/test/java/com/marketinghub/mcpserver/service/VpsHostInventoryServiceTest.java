@@ -82,6 +82,24 @@ class VpsHostInventoryServiceTest {
     }
 
     /**
+     * Garante que a tool retorna estado e logs dos containers canônicos do Lead Portal.
+     */
+    @Test
+    void shouldReadLeadPortalStackStatusAndLogs() throws Exception {
+        VpsHostInventoryService service = new VpsHostInventoryService(buildProperties(fakeSshCommand(), true));
+
+        Map<String, Object> result = service.readDockerLogs(
+                "191.252.120.96", "lead-portal-stack", 50, null);
+
+        assertEquals("lead-portal-stack", result.get("target"));
+        @SuppressWarnings("unchecked")
+        List<String> lines = (List<String>) result.get("lines");
+        assertEquals(true, lines.contains("lead-portal-backend"));
+        assertEquals(true, lines.contains("running|false|0|0|healthy|ghcr.io/acme/lead-portal-backend:sha"));
+        assertEquals(true, lines.contains("2026-08-07T20:00:00Z LeadPortalApplication started"));
+    }
+
+    /**
      * Garante que nomes arbitrários de container não podem alcançar o SSH remoto.
      */
     @Test
@@ -91,7 +109,8 @@ class VpsHostInventoryServiceTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> service.readDockerLogs("191.252.210.83", "mysql", 50, null));
 
-        assertEquals("target must be one of: lead-portal-payments-proxy", exception.getMessage());
+        assertEquals("target must be one of: lead-portal-stack, lead-portal-payments-proxy",
+                exception.getMessage());
     }
 
     /**
@@ -102,6 +121,15 @@ class VpsHostInventoryServiceTest {
         Files.writeString(script, """
                 #!/usr/bin/env sh
                 case "$*" in
+                  *"lead-portal-backend lead-portal-frontend lead-portal-proxy"*)
+                    echo "__MCP_CONTAINER__"
+                    echo "lead-portal-backend"
+                    echo "__MCP_STATUS__"
+                    echo "running|false|0|0|healthy|ghcr.io/acme/lead-portal-backend:sha"
+                    echo "__MCP_LOGS__"
+                    echo "2026-08-07T20:00:00Z LeadPortalApplication started"
+                    exit 0
+                    ;;
                   *"docker logs"*)
                     echo "__MCP_CONTAINER__"
                     echo "lead-portal-payments-service-proxy-1"

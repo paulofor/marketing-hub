@@ -174,7 +174,9 @@ Para ativar em produção:
 4. Ative `MCP_VPS_HOST_INVENTORY_ENABLED=true` no `.env` do host do MCP.
 
 Com o inventário ativo, a tool `vps_docker_logs` também permite consultar o status e a
-cauda dos logs do alvo remoto `lead-portal-payments-proxy`. A chamada exige um host da
+cauda dos logs dos alvos remotos `lead-portal-stack` e `lead-portal-payments-proxy`. O
+primeiro retorna, em uma única chamada, o estado e os logs recentes dos containers
+`lead-portal-backend`, `lead-portal-frontend` e `lead-portal-proxy`. A chamada exige um host da
 allowlist, aceita no máximo o limite global de linhas Docker e não recebe nomes de
 container nem comandos livres. Exemplo de argumentos:
 
@@ -184,6 +186,16 @@ container nem comandos livres. Exemplo de argumentos:
   "target": "lead-portal-payments-proxy",
   "lines": 200,
   "contains": "nginx"
+}
+```
+
+Para diagnosticar o Lead Portal público:
+
+```json
+{
+  "host": "191.252.120.96",
+  "target": "lead-portal-stack",
+  "lines": 200
 }
 ```
 5. Reinicie o container do MCP pelo fluxo versionado de deploy.

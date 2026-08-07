@@ -28,6 +28,7 @@ function resolveApiBaseUrl(): string {
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();
+const INTERNAL_TEST_CAMPAIGN_CODE = "__mh_internal_test__";
 
 function buildUrl(path: string): string {
   const base = API_BASE_URL;
@@ -136,7 +137,10 @@ export async function submitFlowSubmission(
   image?: File | null
 ): Promise<FlowSubmissionResponse> {
   const formData = new FormData();
-  const trimmedCampaignCode = payload.campaignCode?.trim();
+  const testMode = new URLSearchParams(window.location.search).get("mh_test") === "1";
+  const trimmedCampaignCode = testMode
+    ? INTERNAL_TEST_CAMPAIGN_CODE
+    : payload.campaignCode?.trim();
   const payloadForRequest = {
     ...payload,
     campaignCode: trimmedCampaignCode && trimmedCampaignCode.length > 0 ? trimmedCampaignCode : undefined

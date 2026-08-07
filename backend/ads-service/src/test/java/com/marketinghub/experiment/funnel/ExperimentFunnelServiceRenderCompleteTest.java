@@ -782,6 +782,31 @@ class ExperimentFunnelServiceRenderCompleteTest {
     assertEquals("FAKE_EXPERIMENT", summary.sessions().getFirst().trafficQualityReason());
   }
 
+  /** Garante que homologação marcada na URL nunca seja contabilizada como sessão humana. */
+  @Test
+  void summarizeLandingAnalyticsClassifiesInternalTestUrlAsAutomated() {
+    Experiment experiment = Experiment.builder().id(85L).build();
+    when(experimentRepository.findById(85L)).thenReturn(Optional.of(experiment));
+    when(eventRepository.findLandingAnalyticsEvents(
+            eq(85L),
+            eq(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE),
+            eq(null),
+            any(Pageable.class)))
+        .thenReturn(
+            List.of(
+                landingEvent(
+                    1L,
+                    "eventId=t1;eventType=page_view;visitorId=visitor-test;sessionId=session-test;pageUrl=https://example.test/flows/comercial?mh_test=1;userAgent=Mobile Safari;deviceType=mobile",
+                    Instant.parse("2026-08-07T19:28:00Z"))));
+
+    var summary = service.summarizeLandingAnalytics(85L);
+
+    assertEquals(0, summary.totalSessions());
+    assertEquals(0, summary.trafficQuality().humanSessions());
+    assertEquals(1, summary.trafficQuality().automatedSessions());
+    assertEquals("INTERNAL_TEST_URL", summary.sessions().getFirst().trafficQualityReason());
+  }
+
   /** Valida que visitantes com sessões diferentes são marcados como recorrentes prováveis. */
   @Test
   void summarizeLandingAnalyticsVisitorsMarksVisitorWithMultipleSessionsAsRecurrent() {
@@ -938,6 +963,7 @@ class ExperimentFunnelServiceRenderCompleteTest {
                     FROM experiment_landing_analytics_event
                     WHERE experiment_id = ?
                       AND LOWER(event_type) = 'page_view'
+                      AND LOWER(COALESCE(page_url, '')) NOT LIKE '%%mh_test=1%%'
                       AND (? IS NULL OR occurred_at > ?)
                 ) normalized_page_views
                 CROSS JOIN (
@@ -991,6 +1017,7 @@ class ExperimentFunnelServiceRenderCompleteTest {
                     FROM experiment_landing_analytics_event
                     WHERE experiment_id = ?
                       AND LOWER(event_type) = 'page_view'
+                      AND LOWER(COALESCE(page_url, '')) NOT LIKE '%%mh_test=1%%'
                       AND (? IS NULL OR occurred_at > ?)
                 ) normalized_page_views
                 CROSS JOIN (

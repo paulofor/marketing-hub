@@ -319,7 +319,7 @@ public class McpController {
                     ),
                     Map.of(
                             "name", "vps_docker_logs",
-                            "description", "Retorna status e logs Docker de proxies remotos permitidos em VPS da allowlist, sem executar comandos arbitrários.",
+                            "description", "Retorna status e logs Docker de alvos remotos permitidos, incluindo a stack do Lead Portal, sem executar comandos arbitrários.",
                             "inputSchema", Map.of(
                                     "type", "object",
                                     "properties", Map.of(
@@ -328,7 +328,7 @@ public class McpController {
                                                     "description", "IP/host do VPS permitido."),
                                             "target", Map.of("type", "string",
                                                     "enum", vpsHostInventoryService.allowedDockerLogTargets(),
-                                                    "description", "Proxy remoto permitido para consulta."),
+                                                    "description", "Alvo remoto permitido para consulta."),
                                             "lines", Map.of("type", "integer", "minimum", 1,
                                                     "maximum", dockerOperationsService.maxLines(),
                                                     "description", "Quantidade de linhas recentes. Padrão: 200."),

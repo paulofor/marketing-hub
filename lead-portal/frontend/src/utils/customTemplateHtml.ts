@@ -50,6 +50,12 @@ export function normalizeCustomTemplatePayload(raw?: string | null): CustomTempl
   if (!trimmed) {
     return undefined;
   }
+  if (looksLikeJsonCandidate(trimmed)) {
+    const jsonPayload = extractFromJson(trimmed);
+    if (jsonPayload) {
+      return jsonPayload;
+    }
+  }
   if (looksLikeHtml(trimmed)) {
     return { html: normalizeLegacyAnalyticsEndpoints(trimmed) };
   }

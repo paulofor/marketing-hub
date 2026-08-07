@@ -2,6 +2,7 @@ package com.marketinghub.leadportal.integration;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalFlowQuestion;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
@@ -12,9 +13,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 
-/** Payload sent to the public lead portal when a flow becomes available. */
+/** Responsabilidade: montar o contrato publicado no Lead Portal quando um funil fica disponível. */
 public record LeadPortalFlowPublicationRequest(
     String slug,
     String name,
@@ -36,6 +39,7 @@ public record LeadPortalFlowPublicationRequest(
     java.time.Instant facebookPixelCreatedAt) {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final Logger log = LoggerFactory.getLogger(LeadPortalFlowPublicationRequest.class);
   private static final Pattern IMAGE_SRC_PATTERN =
       Pattern.compile("<img[^>]+src=[\"']([^\"']+)[\"']", Pattern.CASE_INSENSITIVE);
   private static final Pattern PIXEL_MARKER_PATTERN =
@@ -104,6 +108,37 @@ public record LeadPortalFlowPublicationRequest(
     if (PIXEL_MARKER_PATTERN.matcher(customFormHtml).find()) {
       return customFormHtml;
     }
+    String trimmedHtml = customFormHtml.trim();
+    if (trimmedHtml.startsWith("{") || trimmedHtml.startsWith("[")) {
+      return injectFacebookPixelIntoJsonTemplate(flow, customFormHtml, facebookPixelId);
+    }
+    return injectFacebookPixelIntoHtml(customFormHtml, facebookPixelId);
+  }
+
+  /** Injeta o pixel dentro de htmlDocument sem invalidar o wrapper JSON do template gerenciado. */
+  private static String injectFacebookPixelIntoJsonTemplate(
+      LeadPortalFlow flow, String customFormHtml, String facebookPixelId) {
+    try {
+      JsonNode root = MAPPER.readTree(customFormHtml);
+      if (!(root instanceof ObjectNode objectNode) || !root.path("htmlDocument").isTextual()) {
+        return customFormHtml;
+      }
+      objectNode.put(
+          "htmlDocument",
+          injectFacebookPixelIntoHtml(root.path("htmlDocument").asText(), facebookPixelId));
+      return MAPPER.writeValueAsString(objectNode);
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao injetar pixel no template JSON do Lead Portal. flowId={}, slug={}",
+          flow != null ? flow.getId() : null,
+          flow != null ? flow.getSlug() : null,
+          ex);
+      return customFormHtml;
+    }
+  }
+
+  /** Injeta o snippet do pixel em um documento HTML puro. */
+  private static String injectFacebookPixelIntoHtml(String customFormHtml, String facebookPixelId) {
     String pixelSnippet = buildPixelSnippet(facebookPixelId);
     if (containsIgnoreCase(customFormHtml, "</head>")) {
       return replaceFirstIgnoreCase(customFormHtml, "</head>", pixelSnippet + "\n</head>");

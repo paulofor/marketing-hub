@@ -409,6 +409,42 @@ class ExperimentReadinessServiceTest {
     assertThat(service.isReadyForCampaign(experiment)).isTrue();
   }
 
+  /** Garante que a microamostra social curta atende a prontidão sem campos do template genérico. */
+  @Test
+  void shouldAllowPersonalizedSampleProductAiWithSocialMediaMicroSampleContract() {
+    Experiment experiment = buildExperiment(58L, 30L);
+    experiment.setProductAiSubtype(ProductAiSubtype.AI_PERSONALIZED_SAMPLE);
+    experiment.setLeadPortalFlow(
+        productAiFlow("nome_profissional", "servico_divulgado", "estilo_visual", "email"));
+    experiment.setFollowUpActionUrl(
+        "https://oportunidadebrasil.shop/flows/product-ai-exp-58-personalized-sample");
+
+    when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(58L, CreativeStatus.READY))
+        .thenReturn(true);
+    mockPublishableSelection(58L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+    assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
+    assertThat(service.isReadyForCampaign(experiment)).isTrue();
+  }
+
+  /** Garante que a regra por template não libera uma microamostra social incompleta. */
+  @Test
+  void shouldBlockPersonalizedSampleProductAiWithIncompleteSocialMediaContract() {
+    Experiment experiment = buildExperiment(59L, 30L);
+    experiment.setProductAiSubtype(ProductAiSubtype.AI_PERSONALIZED_SAMPLE);
+    experiment.setLeadPortalFlow(productAiFlow("nome_profissional", "servico_divulgado", "email"));
+    experiment.setFollowUpActionUrl(
+        "https://oportunidadebrasil.shop/flows/product-ai-exp-59-personalized-sample");
+
+    when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(59L, CreativeStatus.READY))
+        .thenReturn(true);
+    mockPublishableSelection(59L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+    assertThat(service.computeMissingConfiguration(experiment))
+        .containsExactly("productAiPersonalizedSampleFunnel");
+    assertThat(service.isReadyForCampaign(experiment)).isFalse();
+  }
+
   @Test
   void shouldAllowLowTicketCampaignOnlyAfterGeraSalesPagePublicationPackage() {
     Experiment experiment = buildExperiment(53L, 63L);

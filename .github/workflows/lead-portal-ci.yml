@@ -48,6 +48,9 @@ jobs:
         run: npm run lint
       - name: Build
         run: npm run build
+      - name: Validate frontend cache and MIME contract
+        working-directory: .
+        run: lead-portal/scripts/test-frontend-cache-contract.sh
 
   docker:
     runs-on: ubuntu-latest

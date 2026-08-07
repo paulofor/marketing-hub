@@ -427,6 +427,59 @@ class ExperimentReadinessServiceTest {
     assertThat(service.isReadyForCampaign(experiment)).isTrue();
   }
 
+  /** Garante que a microamostra auditada pelo GeraSalesPage não exige o GeraLanding paralelo. */
+  @Test
+  void shouldSummarizePersonalizedSampleWithAuditedGeraSalesPage() {
+    Long experimentId = 70L;
+    Experiment experiment = buildExperiment(experimentId, 30L);
+    experiment.setProductAiSubtype(ProductAiSubtype.AI_PERSONALIZED_SAMPLE);
+    experiment.setLeadPortalFlow(
+        productAiFlow("nome_profissional", "servico_divulgado", "estilo_visual", "email"));
+    experiment.getLeadPortalFlow().setSlug("product-ai-exp-70-personalized-sample");
+    experiment.setFollowUpActionUrl(
+        "https://oportunidadebrasil.shop/flows/product-ai-exp-70-personalized-sample");
+
+    when(experimentService.get(experimentId)).thenReturn(experiment);
+    when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(1L);
+    mockPublishableSelection(
+        experimentId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+    mockCompletedGeraSalesPagePublication(experimentId);
+    mockSalesPageAudit(
+        experimentId, experiment.getFollowUpActionUrl(), null, trackedSalesPageHtml());
+
+    ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
+
+    assertThat(summary.issues()).isEmpty();
+    assertThat(summary.hasGeraLandingPipeline()).isFalse();
+  }
+
+  /** Garante que a microamostra sem publicação auditada não seja declarada pronta. */
+  @Test
+  void shouldBlockPersonalizedSampleWithoutAuditedGeraSalesPage() {
+    Long experimentId = 71L;
+    Experiment experiment = buildExperiment(experimentId, 30L);
+    experiment.setProductAiSubtype(ProductAiSubtype.AI_PERSONALIZED_SAMPLE);
+    experiment.setLeadPortalFlow(
+        productAiFlow("nome_profissional", "servico_divulgado", "estilo_visual", "email"));
+    experiment.setFollowUpActionUrl(
+        "https://oportunidadebrasil.shop/flows/product-ai-exp-71-personalized-sample");
+
+    when(experimentService.get(experimentId)).thenReturn(experiment);
+    when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(1L);
+    mockPublishableSelection(
+        experimentId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+    ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
+
+    assertThat(summary.issues())
+        .extracting(ExperimentReadinessIssueDto::type)
+        .containsExactly(ExperimentReadinessIssueType.GERA_SALES_PAGE);
+  }
+
   /** Garante que a regra por template não libera uma microamostra social incompleta. */
   @Test
   void shouldBlockPersonalizedSampleProductAiWithIncompleteSocialMediaContract() {

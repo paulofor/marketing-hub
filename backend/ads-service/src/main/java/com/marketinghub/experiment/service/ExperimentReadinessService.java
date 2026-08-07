@@ -128,6 +128,7 @@ public class ExperimentReadinessService {
         campaignDestinationPolicy.hasPdeMembershipDestination(experiment);
     boolean hasGeraSalesPagePipeline =
         campaignDestinationPolicy.hasCompletedGeraSalesPagePipeline(experimentId);
+    boolean personalizedSampleProductAi = isPersonalizedSampleProductAi(experiment);
     boolean hasRequiredVideoBlockingRelease = hasRequiredVideoBlockingRelease(experiment);
     boolean requiresSalesPageAbTest =
         campaignDestinationPolicy.requiresSalesPageBeforePurchase(experiment);
@@ -213,6 +214,16 @@ public class ExperimentReadinessService {
               "Execute ou refaça o GeraSalesPage v1 e use a página de venda gerada pelo pipeline.",
               List.of()));
     }
+    if (personalizedSampleProductAi
+        && (!hasGeraSalesPagePipeline || salesPagePublication.isEmpty())) {
+      issues.add(
+          new ExperimentReadinessIssueDto(
+              ExperimentReadinessIssueType.GERA_SALES_PAGE,
+              "Página da amostra não foi auditada pelo pipeline",
+              "A campanha de amostra personalizada só pode ser liberada quando o GeraSalesPage v1 concluir e auditar a página dentro do funil aprovado.",
+              "Execute ou refaça o GeraSalesPage v1 e confirme a publicação auditada antes de liberar tráfego.",
+              List.of()));
+    }
     if (purchaseIntent
         && hasCommercialContract
         && salesPagePublication.isPresent()
@@ -258,7 +269,10 @@ public class ExperimentReadinessService {
               List.of()));
     }
 
-    if (!purchaseIntent && !pdeMembershipFunnel && !hasGeraLandingPipeline) {
+    if (!purchaseIntent
+        && !pdeMembershipFunnel
+        && !personalizedSampleProductAi
+        && !hasGeraLandingPipeline) {
       issues.add(
           new ExperimentReadinessIssueDto(
               ExperimentReadinessIssueType.GERA_LANDING,

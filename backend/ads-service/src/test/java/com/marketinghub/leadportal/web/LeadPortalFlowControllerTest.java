@@ -22,6 +22,7 @@ import com.marketinghub.leadportal.LeadPortalQuestionType;
 import com.marketinghub.leadportal.dto.CreateLeadPortalFlowRequest;
 import com.marketinghub.leadportal.dto.LeadPortalFlowQuestionRequest;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
+import com.marketinghub.leadportal.service.LeadPortalFlowService;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
@@ -57,6 +58,7 @@ class LeadPortalFlowControllerTest {
   @Autowired MockMvc mockMvc;
   @Autowired ObjectMapper mapper;
   @Autowired LeadPortalFlowRepository repository;
+  @Autowired LeadPortalFlowService service;
   @Autowired ExperimentRepository experimentRepository;
   @Autowired MarketNicheRepository marketNicheRepository;
   @Autowired HypothesisRepository hypothesisRepository;
@@ -141,7 +143,7 @@ class LeadPortalFlowControllerTest {
         .andExpect(jsonPath("$.questions[0].description").value(longText))
         .andExpect(jsonPath("$.questions[0].placeholder").value(longText));
 
-    LeadPortalFlow saved = repository.findBySlug("fluxo-longo").orElseThrow();
+    LeadPortalFlow saved = service.get(repository.findBySlug("fluxo-longo").orElseThrow().getId());
     assertThat(saved.getQuestions().get(0).getOptions()).containsExactly(longText);
   }
 
@@ -307,6 +309,41 @@ class LeadPortalFlowControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.length()").value(1))
         .andExpect(jsonPath("$[0].slug").value("fluxo-a"));
+  }
+
+  /** Garante que a leitura mantém uma pergunta e todas as opções após encerrar a sessão JPA. */
+  @Test
+  void listByExperimentReturnsQuestionOptionsWithoutDuplicatingQuestion() throws Exception {
+    Experiment experiment = createExperiment();
+    CreateLeadPortalFlowRequest request = new CreateLeadPortalFlowRequest();
+    request.setName("Fluxo com opções");
+    request.setSlug("fluxo-com-opcoes");
+    request.setMarketNicheId(experiment.getNiche().getId());
+    request.setExperimentId(experiment.getId());
+    request.setQuestions(
+        List.of(
+            buildQuestion(
+                "Qual estilo combina com você?",
+                "estilo_visual",
+                LeadPortalQuestionType.SINGLE_CHOICE,
+                true,
+                List.of("Elegante", "Delicado", "Ousado"))));
+
+    mockMvc.perform(
+        post("/api/lead-portal-flows")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(mapper.writeValueAsString(request)));
+
+    mockMvc
+        .perform(
+            get("/api/lead-portal-flows").param("experimentId", String.valueOf(experiment.getId())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].questions.length()").value(1))
+        .andExpect(jsonPath("$[0].questions[0].dataKey").value("estilo_visual"))
+        .andExpect(jsonPath("$[0].questions[0].options.length()").value(3))
+        .andExpect(jsonPath("$[0].questions[0].options[0]").value("Elegante"))
+        .andExpect(jsonPath("$[0].questions[0].options[1]").value("Delicado"))
+        .andExpect(jsonPath("$[0].questions[0].options[2]").value("Ousado"));
   }
 
   private Experiment createExperiment() {

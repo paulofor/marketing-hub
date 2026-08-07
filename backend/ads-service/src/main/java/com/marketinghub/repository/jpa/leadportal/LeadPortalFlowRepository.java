@@ -8,6 +8,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 /** Responsabilidade: acessar os fluxos do Lead Portal com associações de leitura seguras. */
 public interface LeadPortalFlowRepository extends JpaRepository<LeadPortalFlow, Long> {
+  /** Busca um fluxo com suas perguntas, mantendo as opções para uma consulta separada. */
+  @Override
+  @EntityGraph(attributePaths = {"questions", "experiment", "marketNiche", "simpleFormStyle"})
+  Optional<LeadPortalFlow> findById(Long id);
+
   /** Lista todos os fluxos sem multiplicar perguntas pelas opções carregadas. */
   @Override
   @EntityGraph(attributePaths = {"questions", "experiment", "marketNiche", "simpleFormStyle"})

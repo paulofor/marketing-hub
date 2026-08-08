@@ -37,6 +37,12 @@ O prompt e o schema canônicos são:
 
 A qualidade de um agente é medida por pendências resolvidas e resultados posteriores comprovados,
 não por quantidade de ciclos, relatórios, estimativas ou recomendações.
+
+## Coordenação entre agentes
+
+Quando Estrategista, Operador de Crescimento e Especialista em Aprovação de Anúncios participarem
+do mesmo experimento, a coordenação deve seguir `orquestrador-agentes-canon.v1.md`. O Orquestrador
+é determinístico, persiste evidências e nunca amplia a autoridade individual dos agentes.
 # Painel de maturidade e ciclo compartilhado
 
 O Cadastro de Agentes deve consolidar execuções, pendências e resultados confirmados dos executores Operador, Financeiro e Cliente sem criar uma fila paralela. Cada executor permanece responsável por sua execução; o backend normaliza os indicadores. Simulação, hipótese, relatório ou impacto estimado nunca contam como resultado confirmado. A maturidade deve priorizar taxa de conclusão, pendências encerradas com evidência posterior e dez resultados confirmados antes de qualquer ampliação de autonomia.

@@ -4,6 +4,7 @@ import com.marketinghub.experimentstrategist.ExperimentStrategistExecution;
 import com.marketinghub.experimentstrategist.ExperimentStrategistExecutionStatus;
 import jakarta.persistence.LockModeType;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -15,6 +16,10 @@ public interface ExperimentStrategistExecutionRepository
     extends JpaRepository<ExperimentStrategistExecution, Long> {
   /** Lista as pesquisas recentes de um planejamento. */
   List<ExperimentStrategistExecution> findByCommercialPlanIdOrderByCreatedAtDesc(Long planId);
+
+  /** Busca o parecer mais recente do planejamento para coordenacao entre agentes. */
+  Optional<ExperimentStrategistExecution> findFirstByCommercialPlanIdOrderByCreatedAtDesc(
+      Long planId);
 
   /** Reserva a pesquisa pendente mais antiga com bloqueio transacional. */
   @Lock(LockModeType.PESSIMISTIC_WRITE)

@@ -14,6 +14,9 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
   /** Lista os criativos vinculados ao experimento informado. */
   List<Creative> findByExperimentId(Long experimentId);
 
+  /** Busca o criativo mais recente do experimento para o gate coordenado. */
+  Optional<Creative> findFirstByExperimentIdOrderByIdDesc(Long experimentId);
+
   /** Verifica se existe criativo do experimento no status informado. */
   boolean existsByExperimentIdAndStatus(Long experimentId, CreativeStatus status);
 

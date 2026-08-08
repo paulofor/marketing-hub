@@ -1,0 +1,34 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-08-experiment-history-event
+      author: codex
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - createTable:
+            tableName: experiment_history_event
+            columns:
+              - column: { name: id, type: bigint, autoIncrement: true, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: experiment_id, type: bigint, constraints: { nullable: false } }
+              - column: { name: category, type: varchar(32), constraints: { nullable: false } }
+              - column: { name: title, type: varchar(191), constraints: { nullable: false } }
+              - column: { name: description, type: longtext, constraints: { nullable: false } }
+              - column: { name: evidence_json, type: longtext }
+              - column: { name: source, type: varchar(191), constraints: { nullable: false } }
+              - column: { name: occurred_at, type: datetime, constraints: { nullable: false } }
+              - column: { name: created_at, type: datetime, constraints: { nullable: false } }
+        - addForeignKeyConstraint:
+            baseTableName: experiment_history_event
+            baseColumnNames: experiment_id
+            constraintName: fk_experiment_history_event_experiment
+            referencedTableName: experiment
+            referencedColumnNames: id
+        - createIndex:
+            tableName: experiment_history_event
+            indexName: idx_experiment_history_event_experiment_occurred
+            columns:
+              - column: { name: experiment_id }
+              - column: { name: occurred_at }
+      rollback:
+        - dropTable: { tableName: experiment_history_event }

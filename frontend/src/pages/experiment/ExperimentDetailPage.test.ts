@@ -4,6 +4,7 @@ import {
   buildPdeInternalPreviewUrl,
   canManageGeraSalesPage,
   canAccessExperimentConstruction,
+  resolveGeraSalesPageCommand,
 } from "./ExperimentDetailPage";
 
 describe("canManageGeraSalesPage", () => {
@@ -13,6 +14,12 @@ describe("canManageGeraSalesPage", () => {
 
   it("não exibe comandos sem experimento persistido", () => {
     expect(canManageGeraSalesPage(null)).toBe(false);
+  });
+});
+
+describe("resolveGeraSalesPageCommand", () => {
+  it("sempre inicia uma rodada auditavel nova, mesmo sem publicação anterior", () => {
+    expect(resolveGeraSalesPageCommand()).toBe("rebuild");
   });
 });
 

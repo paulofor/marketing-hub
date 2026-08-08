@@ -41,6 +41,21 @@ public class Hypothesis {
   @JoinColumn(name = "product_id")
   private Product product;
 
+  /** Hipótese imediatamente anterior preservada como origem desta versão. */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "source_hypothesis_id")
+  private Hypothesis sourceHypothesis;
+
+  /** Primeira hipótese da linhagem, usada para ordenar e auditar todas as versões. */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "root_hypothesis_id")
+  private Hypothesis rootHypothesis;
+
+  /** Número sequencial imutável dentro da linhagem comercial. */
+  @Builder.Default
+  @Column(name = "version_number", nullable = false)
+  private Integer versionNumber = 1;
+
   @Column(nullable = false)
   private String title;
 

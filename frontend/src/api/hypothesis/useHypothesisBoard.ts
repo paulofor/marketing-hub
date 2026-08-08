@@ -8,6 +8,9 @@ export interface Hypothesis {
   marketNicheId: number;
   productId?: number | null;
   productName?: string | null;
+  sourceHypothesisId?: string | null;
+  rootHypothesisId?: string | null;
+  versionNumber?: number;
   title: string;
   promise?: string;
   problem?: string;

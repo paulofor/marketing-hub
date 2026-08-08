@@ -16,6 +16,9 @@ public class HypothesisDto {
   private Long marketNicheId;
   private Long productId;
   private String productName;
+  private UUID sourceHypothesisId;
+  private UUID rootHypothesisId;
+  private Integer versionNumber;
   private String title;
   private Long premiseAngleId;
   private String promise;

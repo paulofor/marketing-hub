@@ -39,6 +39,8 @@ O usuário não deve escolher manualmente nome de hipótese nem nome de experime
 
 Decisão canônica de 2026-08-08: toda nova hipótese comercial deve pertencer explicitamente a um único produto. A tela de criação de experimento deve listar somente hipóteses do produto selecionado e permitir criar uma hipótese já vinculada a esse produto. O backend deve rejeitar criação de hipótese sem produto, produto de outro nicho, geração de oferta com hipótese de outro produto e criação de experimento com essa divergência. Hipóteses legadas sem vínculo permanecem apenas para auditoria e não podem originar novos experimentos.
 
+Decisão canônica de 2026-08-08: correções comerciais de uma hipótese devem criar uma nova versão pela tela, nunca sobrescrever a hipótese histórica. A nova versão deve registrar origem, raiz e número sequencial da linhagem; preservar produto, nicho e framework; permitir revisar problema, persona, promessa, mecanismo, entrega, regra de sucesso, tipo e preço; e iniciar em `BACKLOG`. Versionar hipótese não cria experimento, não publica ativos, não ativa mídia e não autoriza gasto.
+
 A interface deve informar que o identificador será automático e não deve exigir campo de nome para fechar hipótese ou criar experimento. O nome do experimento deve carregar o código da hipótese para manter rastreabilidade direta entre hipótese e teste.
 
 ### 3.2 Execução no detalhe do experimento

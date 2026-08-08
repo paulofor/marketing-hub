@@ -65,10 +65,7 @@ function HypothesisSectionCard({ section }: { section: DetailSection }) {
       </div>
       <div className="hypothesis-detail__collapses">
         {rows.map((row) => (
-          <details
-            key={row.label}
-            className="hypothesis-detail__collapse"
-          >
+          <details key={row.label} className="hypothesis-detail__collapse">
             <summary>
               <span>{row.label}</span>
               <span className="hypothesis-detail__collapse-action">Ver</span>
@@ -252,6 +249,12 @@ export default function HypothesisDetailPage() {
         <PageTitle icon={hypothesisIcon}>{data.title}</PageTitle>
         <div className="d-flex gap-2">
           <Link
+            className="btn btn-outline-primary"
+            to={`/niches/${nicheId}/hypotheses/${hypothesisId}/versions/new`}
+          >
+            Criar nova versão
+          </Link>
+          <Link
             className="btn btn-primary"
             to={`/experiments/new?nicheId=${nicheId}&hypothesisId=${hypothesisId}`}
           >
@@ -304,6 +307,13 @@ export default function HypothesisDetailPage() {
           </div>
         </div>
       </section>
+
+      {(data.sourceHypothesisId || (data.versionNumber ?? 1) > 1) && (
+        <div className="alert alert-secondary">
+          Versão {data.versionNumber ?? 1} da linhagem. A hipótese anterior foi
+          preservada para auditoria.
+        </div>
+      )}
 
       <section className="hypothesis-detail__ai-audit">
         <div className="hypothesis-detail__ai-audit-header">

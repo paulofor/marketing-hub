@@ -14,6 +14,8 @@ public interface HypothesisMapper {
   @Mapping(target = "marketNicheId", source = "marketNiche.id")
   @Mapping(target = "productId", source = "product.id")
   @Mapping(target = "productName", source = "product.name")
+  @Mapping(target = "sourceHypothesisId", source = "sourceHypothesis.id")
+  @Mapping(target = "rootHypothesisId", source = "rootHypothesis.id")
   @Mapping(target = "premiseAngleId", source = "premiseAngle.id")
   @Mapping(target = "offerPackageId", source = "offerPackage.id")
   @Mapping(target = "offerPackageName", source = "offerPackage.name")

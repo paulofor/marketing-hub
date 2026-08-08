@@ -191,4 +191,65 @@ class HypothesisServiceTest {
         .extracting(PromptAttributeDescription::getId)
         .contains(desc.getId());
   }
+
+  @Test
+  void createVersionPreservesSourceAndCommercialContext() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    CreateHypothesisRequest req = new CreateHypothesisRequest();
+    req.setMarketNicheId(niche.getId());
+    req.setProblem("Faltas na agenda");
+    req.setPersona("Nail designer");
+    req.setEntrega("Mensagens de confirmação");
+    req.setOfferType("TRIPWIRE");
+    req.setPrice(new java.math.BigDecimal("27.00"));
+    bindProduct(req, niche);
+    Hypothesis source = service.create(req);
+
+    var versionRequest =
+        new com.marketinghub.hypothesis.dto.CreateHypothesisVersionRequest(
+            "Perfil sem identidade visual",
+            "Nail designer autônoma",
+            "Um perfil à altura do seu talento",
+            "Kit visual personalizado",
+            "Prévia visual antes da compra",
+            "Posts personalizados, imagens e legendas",
+            "Briefing concluído por visitante",
+            "TRIPWIRE",
+            new java.math.BigDecimal("67.00"));
+
+    Hypothesis version = service.createVersion(source.getId(), versionRequest);
+
+    assertThat(version.getId()).isNotEqualTo(source.getId());
+    assertThat(version.getSourceHypothesis().getId()).isEqualTo(source.getId());
+    assertThat(version.getRootHypothesis().getId()).isEqualTo(source.getId());
+    assertThat(version.getVersionNumber()).isEqualTo(2);
+    assertThat(version.getProduct().getId()).isEqualTo(source.getProduct().getId());
+    assertThat(version.getMarketNiche().getId()).isEqualTo(niche.getId());
+    assertThat(version.getEntrega()).contains("Posts personalizados");
+    assertThat(version.getPrice()).isEqualByComparingTo("67.00");
+    assertThat(version.getStatus()).isEqualTo(HypothesisStatus.BACKLOG);
+    assertThat(source.getEntrega()).isEqualTo("Mensagens de confirmação");
+    assertThat(source.getPrice()).isEqualByComparingTo("27.00");
+
+    Hypothesis third = service.createVersion(version.getId(), versionRequest);
+    assertThat(third.getSourceHypothesis().getId()).isEqualTo(version.getId());
+    assertThat(third.getRootHypothesis().getId()).isEqualTo(source.getId());
+    assertThat(third.getVersionNumber()).isEqualTo(3);
+  }
+
+  @Test
+  void rejectVersionWithoutPositivePrice() {
+    CreateHypothesisRequest req = new CreateHypothesisRequest();
+    req.setProblem("Problema");
+    req.setPersona("Persona");
+    bindProduct(req, null);
+    Hypothesis source = service.create(req);
+    var invalid =
+        new com.marketinghub.hypothesis.dto.CreateHypothesisVersionRequest(
+            "Problema", "Persona", null, null, null, "Entrega", null, "TRIPWIRE", null);
+
+    assertThatThrownBy(() -> service.createVersion(source.getId(), invalid))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("price must be positive");
+  }
 }

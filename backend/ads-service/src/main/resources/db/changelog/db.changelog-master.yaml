@@ -1660,3 +1660,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-08-experiment-product-desire-territory.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-08-hypothesis-versioning.yaml
+      relativeToChangelogFile: true

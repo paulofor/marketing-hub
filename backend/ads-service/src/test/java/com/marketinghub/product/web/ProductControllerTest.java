@@ -137,7 +137,11 @@ class ProductControllerTest {
                     null,
                     null,
                     "Pode ser reaproveitado em novos experimentos.",
-                    Instant.parse("2026-07-28T12:00:00Z"))));
+                    Instant.parse("2026-07-28T12:00:00Z"),
+                    null,
+                    null,
+                    null,
+                    null)));
 
     when(service.getAdLibrary(1L)).thenReturn(response);
 
@@ -181,7 +185,11 @@ class ProductControllerTest {
                     null,
                     null,
                     "Pode ser reaproveitado em novos experimentos.",
-                    Instant.parse("2026-07-29T12:00:00Z"))));
+                    Instant.parse("2026-07-29T12:00:00Z"),
+                    "APPROVED",
+                    "{\"summary\":\"Peça clara\"}",
+                    "gpt-test",
+                    Instant.parse("2026-07-29T11:00:00Z"))));
 
     when(service.getExperimentAdsInUse(76L)).thenReturn(response);
 
@@ -192,7 +200,8 @@ class ProductControllerTest {
         .andExpect(jsonPath("$.productSlug").value("metodo-musa-7-dias"))
         .andExpect(jsonPath("$.ads[0].creativeId").value(253L))
         .andExpect(jsonPath("$.ads[0].experimentId").value(76L))
-        .andExpect(jsonPath("$.ads[0].status").value("READY"));
+        .andExpect(jsonPath("$.ads[0].status").value("READY"))
+        .andExpect(jsonPath("$.ads[0].agentReviewStatus").value("APPROVED"));
   }
 
   /** Deve expor o resumo financeiro do produto no contrato canônico. */

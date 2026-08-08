@@ -18,6 +18,10 @@ export interface Creative {
   instagramUserId?: string;
   imagePrompt?: string;
   imageIntermediatePrompt?: string;
+  agentReviewStatus?: "PENDING" | "PROCESSING" | "APPROVED" | "ADJUST" | "REJECTED" | "FAILED" | null;
+  agentReviewJson?: string | null;
+  agentReviewModel?: string | null;
+  agentReviewedAt?: string | null;
 }
 
 interface ExperimentProductAd {
@@ -33,6 +37,10 @@ interface ExperimentProductAd {
   description?: string | null;
   cta?: string | null;
   destinationUrl?: string | null;
+  agentReviewStatus?: Creative["agentReviewStatus"];
+  agentReviewJson?: string | null;
+  agentReviewModel?: string | null;
+  agentReviewedAt?: string | null;
 }
 
 interface ExperimentProductAdsResponse {
@@ -53,6 +61,10 @@ function mapProductAdToCreative(ad: ExperimentProductAd): Creative {
     description: ad.description ?? undefined,
     cta: ad.cta ?? undefined,
     destinationUrl: ad.destinationUrl ?? undefined,
+    agentReviewStatus: ad.agentReviewStatus ?? null,
+    agentReviewJson: ad.agentReviewJson ?? null,
+    agentReviewModel: ad.agentReviewModel ?? null,
+    agentReviewedAt: ad.agentReviewedAt ?? null,
   };
 }
 

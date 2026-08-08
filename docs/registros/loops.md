@@ -778,6 +778,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Sintoma:** a mesma landing envia eventos tanto para o slug correto quanto para `/api/flows/page/page-analytics`, duplicando sessões e atrasando requisições de telemetria.
 - **Causa-raiz:** o HTML persistido pelo GeraSalesPage continha um coletor próprio que inferia o slug pelo último segmento da URL, enquanto o Lead Portal injetava um segundo coletor canônico com o slug explícito.
 - **Prevenção:** ao servir a landing standalone, o Lead Portal remove qualquer coletor legado `data-mh-sales-page-analytics` e mantém somente `data-mh-landing-analytics`, com slug recebido pelo controller e teste de contrato contra regressão.
+- Em 2026-08-08, a homologação do experimento #88 encontrou nova duplicidade: o coletor canônico da landing e a ponte React do formulário gerenciado registravam `form_start`/`form_submit` para a mesma interação. A ponte agora detecta `data-mh-landing-analytics` e delega esses eventos exclusivamente ao coletor canônico.
 
 # LOOP-GROWTH-OPERATOR-REPEATED-DIAGNOSIS — Ciclos sem evidência nova
 

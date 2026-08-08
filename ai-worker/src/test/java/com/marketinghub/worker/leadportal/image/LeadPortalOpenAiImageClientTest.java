@@ -67,6 +67,28 @@ class LeadPortalOpenAiImageClientTest {
         assertThat(result.content()).isNotEmpty();
     }
 
+    /** Confirma que espaços na configuração não reintroduzem parâmetro incompatível. */
+    @Test
+    void omitsResponseFormatForGptImageModelWithConfigurationWhitespace() throws Exception {
+        AtomicReference<Map<String, Object>> capturedPayload = new AtomicReference<>();
+        AtomicBoolean downloaded = new AtomicBoolean(false);
+        String downloadUrl = "https://example.com/generated.png";
+        ExchangeFunction exchange = new StubExchangeFunction(
+                capturedPayload, "{\"data\":[{\"url\":\"" + downloadUrl + "\"}]}", downloadUrl,
+                samplePng(), downloaded);
+        WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
+        LeadPortalOpenAiImageClient client = new LeadPortalOpenAiImageClient(
+                builder, new CreativeImageOptimizer(900_000, 1024), "key", "http://openai", "gpt-image-1",
+                Duration.ofMillis(500), Duration.ofMinutes(5));
+        ImageGenerationPlan plan = new ImageGenerationPlan(
+                1L, 1L, " gpt-image-1 ", "standard", ImageOrientation.SQUARE, 1024, 1024, "1024x1024", null);
+
+        client.generateFromPrompt("prompt", plan);
+
+        assertThat(capturedPayload.get()).doesNotContainKey("response_format");
+        assertThat(downloaded.get()).isTrue();
+    }
+
     @Test
     void includesResponseFormatForNonGptModels() throws Exception {
         AtomicReference<Map<String, Object>> capturedPayload = new AtomicReference<>();

@@ -37,6 +37,7 @@ O GeraSalesPage v1 é um pipeline independente para gerar página de vendas dire
 - A troca futura de prompt, schema ou modelo não pode sobrescrever a auditoria das páginas já publicadas; o frontend deve conseguir consultar as versões publicadas e seus prompts/schemas originais por experimento.
 - Cada etapa do GeraSalesPage v1 enfileirada para um experimento deve registrar o template de prompt/schema usado em `experiment_ai_prompt_schema_usage`, com contexto `GERA_SALES_PAGE_V1`, para que o experimento preserve a associação completa entre oferta, página, modelo, prompt e schema.
 - Para `AI_PERSONALIZED_SAMPLE`, o payload de `pending` deve declarar `productAiSubtype` e `salesPageDestination=LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL`; nesse caso a etapa final publica a pagina dentro do funil Lead Portal, injeta formulario gerenciado e remove qualquer `iframe` que aponte para Lead Portal, flow ou a propria pagina antes de auditar/publicar.
+- A implementação pode usar internamente um formulário gerenciado, mas a página pública deve descrevê-lo apenas como `formulário` ou como a etapa de `responder algumas informações`. Termos de implementação como `formulário gerenciado`, `contrato`, `runtime`, `embed`, `placeholder`, `endpoint`, `pipeline` e `stage` devem ser bloqueados antes da publicação.
 
 ## Sugestões incorporadas
 

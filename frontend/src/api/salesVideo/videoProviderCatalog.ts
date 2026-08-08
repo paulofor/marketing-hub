@@ -76,6 +76,20 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
     creditsUrl: "https://dev.runwayml.com/",
   },
   {
+    key: "runway-seedance-2-5",
+    label: "Seedance 2.5 via Runway",
+    providerName: "RUNWAY_SEEDANCE_2_5",
+    providerFamily: "EXTERNAL_VIDEO_MODULE",
+    recommendedUse:
+      "Cenas comerciais com áudio opcional e maior flexibilidade de duração; validar custo e consistência antes de escalar.",
+    clipDurationSeconds: 10,
+    maxDirectDurationSeconds: 30,
+    supportsHeroVideo: true,
+    supportsSceneAssembly: true,
+    supportsOpenAiReferenceImage: false,
+    creditsUrl: "https://dev.runwayml.com/",
+  },
+  {
     key: "veo-teaser",
     label: "Veo",
     providerName: "VEO",

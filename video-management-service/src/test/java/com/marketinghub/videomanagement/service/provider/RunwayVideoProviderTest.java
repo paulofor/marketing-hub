@@ -119,6 +119,25 @@ class RunwayVideoProviderTest {
         assertThat(requestBody).doesNotContain("promptImage");
     }
 
+    /** Deve rotear Seedance 2.5 pelo mesmo adapter e pela mesma chave da Runway. */
+    @Test
+    void shouldRenderSeedance25WithRunwayCredentials() throws Exception {
+        server.enqueue(json("""
+                {"id":"seedance-task"}
+                """));
+        server.enqueue(json("""
+                {"id":"seedance-task","status":"SUCCEEDED","output":["%s/download/seedance.mp4"]}
+                """.formatted(server.url("/").toString().replaceAll("/$", ""))));
+        server.enqueue(mp4Response());
+        RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+        provider.render(job("RUNWAY_SEEDANCE_2_5"), profile(), (percent, status, message) -> { });
+
+        RecordedRequest request = server.takeRequest();
+        assertThat(request.getHeader("Authorization")).isEqualTo("Bearer runway-test-key");
+        assertThat(request.getBody().readUtf8()).contains("\"model\":\"seedance2_5\"");
+    }
+
     /** Deve falhar cedo quando a chave Runway não estiver configurada. */
     @Test
     void shouldRejectMissingRunwayApiKey() {

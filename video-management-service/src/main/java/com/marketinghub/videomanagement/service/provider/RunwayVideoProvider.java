@@ -172,7 +172,7 @@ public class RunwayVideoProvider implements VideoProvider {
         VideoManagementProperties.Runway config = properties.getProviders().getRunway();
         JsonNode metadata = readMetadata(job);
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("model", config.getModel());
+        payload.put("model", resolveModel(job, config));
         payload.put("promptText", limitPrompt(buildPrompt(job, profile, script, metadata), 1000));
         payload.put("ratio", config.getRatio());
         payload.put("duration", config.getDurationSeconds());
@@ -185,6 +185,15 @@ public class RunwayVideoProvider implements VideoProvider {
             payload.put("promptImage", promptImage);
         }
         return payload;
+    }
+
+    /** Resolve o modelo pelo contrato do job, mantendo Gen-4.5 como padrão da Runway. */
+    private String resolveModel(SalesVideoJob job, VideoManagementProperties.Runway config) {
+        String providerName = normalize(job.providerName());
+        if (providerName.equals("RUNWAY_SEEDANCE_2_5")) {
+            return "seedance2_5";
+        }
+        return config.getModel();
     }
 
     /** Limita o prompt ao contrato oficial da Runway sem cortar um par substituto UTF-16. */

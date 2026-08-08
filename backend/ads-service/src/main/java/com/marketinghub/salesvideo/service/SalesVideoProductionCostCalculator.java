@@ -20,6 +20,8 @@ public class SalesVideoProductionCostCalculator {
   private static final BigDecimal KLING_30_STANDARD_720 = new BigDecimal("0.1120");
   private static final BigDecimal KLING_30_PRO_1080 = new BigDecimal("0.1400");
   private static final BigDecimal RUNWAY_GEN45 = new BigDecimal("0.1200");
+  private static final BigDecimal RUNWAY_SEEDANCE_25_480 = new BigDecimal("0.2000");
+  private static final BigDecimal RUNWAY_SEEDANCE_25_720 = new BigDecimal("0.3000");
   private static final BigDecimal HEYGEN_AVATAR_IV_PHOTO_PER_SECOND = new BigDecimal("0.0500");
   private static final BigDecimal VEO_31_STANDARD_720_1080 = new BigDecimal("0.40");
   private static final BigDecimal VEO_31_STANDARD_4K = new BigDecimal("0.60");
@@ -57,6 +59,9 @@ public class SalesVideoProductionCostCalculator {
     String normalizedProvider = normalize(providerName);
     if (isKling(normalizedProvider, normalizedModel)) {
       return is1080p(resolution) ? KLING_30_PRO_1080 : KLING_30_STANDARD_720;
+    }
+    if (isSeedance25(normalizedProvider, normalizedModel)) {
+      return is480p(resolution) ? RUNWAY_SEEDANCE_25_480 : RUNWAY_SEEDANCE_25_720;
     }
     if (isRunway(normalizedProvider, normalizedModel)) {
       return RUNWAY_GEN45;
@@ -168,6 +173,11 @@ public class SalesVideoProductionCostCalculator {
     return normalize(resolution).contains("360");
   }
 
+  /** Verifica se a resolução solicitada é 480p. */
+  private boolean is480p(String resolution) {
+    return normalize(resolution).contains("480");
+  }
+
   /** Verifica se a resolução solicitada é 4k. */
   private boolean is4k(String resolution) {
     String normalized = normalize(resolution);
@@ -202,6 +212,14 @@ public class SalesVideoProductionCostCalculator {
         || contains(normalizedProvider, "runaway")
         || contains(normalizedModel, "gen4.5")
         || contains(normalizedModel, "gen-4.5");
+  }
+
+  /** Identifica o Seedance 2.5 disponibilizado pelo contrato da Runway. */
+  private boolean isSeedance25(String normalizedProvider, String normalizedModel) {
+    return contains(normalizedProvider, "seedance-2-5")
+        || contains(normalizedProvider, "seedance2-5")
+        || contains(normalizedModel, "seedance2-5")
+        || contains(normalizedModel, "seedance-2-5");
   }
 
   /** Identifica modelos ou providers HeyGen. */

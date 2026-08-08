@@ -13,7 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
+/** Responsabilidade: resolver o modelo, a qualidade e o tamanho usados em cada geração de imagem. */
 @Service
 public class ImageGenerationPlanService {
 
@@ -21,10 +23,12 @@ public class ImageGenerationPlanService {
 
     private final ImageGenerationCatalogService catalogService;
 
+    /** Inicializa o planejador com o catálogo canônico de modelos de imagem. */
     public ImageGenerationPlanService(ImageGenerationCatalogService catalogService) {
         this.catalogService = catalogService;
     }
 
+    /** Resolve o plano respeitando primeiro os identificadores e o modelo já persistidos no pacote. */
     public ImageGenerationPlan resolvePlan(LeadPortalImagePackageClient.ImagePackage imagePackage, ImageOrientation orientation) {
         Long requestedModelId = imagePackage.imageModelId();
         Long requestedQualityId = imagePackage.imageModelQualityId();
@@ -40,6 +44,13 @@ public class ImageGenerationPlanService {
         }
         if (model == null && requestedModelId != null) {
             model = catalogService.findModel(requestedModelId).orElse(null);
+        }
+        if (model == null && StringUtils.hasText(imagePackage.model())) {
+            String persistedModel = imagePackage.model().strip();
+            model = catalogService.getCatalog().stream()
+                    .filter(candidate -> persistedModel.equalsIgnoreCase(candidate.apiModel()))
+                    .findFirst()
+                    .orElse(null);
         }
         if (quality == null && model != null) {
             quality = selectQualityForModel(model, requestedQualityId);
@@ -76,6 +87,7 @@ public class ImageGenerationPlanService {
                 unitPrice);
     }
 
+    /** Seleciona a qualidade solicitada, a padrão ou a primeira disponível para o modelo. */
     private ImageGenerationQualityDto selectQualityForModel(ImageGenerationModelDto model, Long preferredQualityId) {
         if (CollectionUtils.isEmpty(model.qualities())) {
             return null;
@@ -94,6 +106,7 @@ public class ImageGenerationPlanService {
                 .orElse(model.qualities().get(0));
     }
 
+    /** Seleciona o preço e o tamanho compatíveis com a orientação solicitada. */
     private ImageGenerationPriceDto selectPrice(ImageGenerationQualityDto quality, ImageOrientation orientation) {
         if (quality.prices() == null || quality.prices().isEmpty()) {
             return null;
@@ -115,6 +128,7 @@ public class ImageGenerationPlanService {
                 .orElse(null);
     }
 
+    /** Detecta a orientação da imagem base ou assume formato quadrado quando ela não existe. */
     public ImageOrientation detectOrientation(byte[] imageBytes) {
         if (imageBytes == null || imageBytes.length == 0) {
             return ImageOrientation.SQUARE;

@@ -8,6 +8,7 @@ import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,13 @@ class FacebookCampaignStopServiceTest {
     assertThat(campaign.getStatus()).isEqualTo(FacebookAdStatus.PAUSED);
     assertThat(campaign.getStopCompletedAt()).isNotNull();
     assertThat(campaign.getStopLastError()).isNull();
+  }
+
+  @Test
+  void exposesPendingCampaignsToFacebookWorker() {
+    when(campaignRepository.findPendingStopRequests()).thenReturn(List.of(campaign));
+
+    assertThat(service.listPendingStopRequests()).containsExactly(campaign);
   }
 
   @Test

@@ -123,6 +123,37 @@ class ExperimentFacebookCampaignServiceTest {
   }
 
   @Test
+  void acceptsPersistedApprovedTargetingWithoutPlaybookLink() {
+    FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+    campaign.setId("C85");
+    campaign.setName("Campanha manicure");
+    campaign.setObjective("OUTCOME_LEADS");
+    campaign.setStatus(FacebookAdStatus.ACTIVE);
+
+    FacebookAdsAdSet adSet = new FacebookAdsAdSet();
+    adSet.setId("AS85");
+    adSet.setName("Manicure & Pedicure");
+    adSet.setStatus(FacebookAdStatus.ACTIVE);
+    adSet.setCampaign(campaign);
+    adSet.setTargetingJson(
+        "{\"flexible_spec\":[{\"interests\":[{\"id\":\"152448484812877\",\"name\":\"Manicure & Pedicure\"}]}],\"geo_locations\":{\"countries\":[\"BR\"]}}");
+
+    FacebookAdsAd ad = new FacebookAdsAd();
+    ad.setId("AD85");
+    ad.setName("Criativo manicure");
+    ad.setStatus(FacebookAdStatus.ACTIVE);
+    ad.setAdSet(adSet);
+    adSet.setAds(new ArrayList<>(List.of(ad)));
+
+    when(campaignRepository.findDetailedByExperimentId(85L)).thenReturn(List.of(campaign));
+    when(adSetRepository.findDetailedByCampaignIds(List.of("C85"))).thenReturn(List.of(adSet));
+
+    ExperimentFacebookAdSetDto dto = service.listByExperiment(85L).get(0).adSets().get(0);
+
+    assertTrue(dto.issues().isEmpty());
+  }
+
+  @Test
   void returnsEmptyListWhenExperimentIdIsNull() {
     List<ExperimentFacebookCampaignDto> dtos = service.listByExperiment(null);
     assertTrue(dtos.isEmpty());

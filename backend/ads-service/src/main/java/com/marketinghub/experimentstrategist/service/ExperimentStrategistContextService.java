@@ -4,6 +4,9 @@ import com.marketinghub.experimentstrategist.memory.ExperimentStrategistMemorySe
 import com.marketinghub.growthoperator.service.GrowthOperatorService;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.service.CommercialPlanService;
+import com.marketinghub.product.Product;
+import com.marketinghub.product.service.ProductService;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,17 +23,20 @@ public class ExperimentStrategistContextService {
   private final GrowthOperatorService growthOperatorService;
   private final JdbcTemplate jdbc;
   private final ExperimentStrategistMemoryService memoryService;
+  private final ProductService productService;
 
   /** Configura as fontes canônicas usadas na pesquisa estratégica. */
   public ExperimentStrategistContextService(
       CommercialPlanService commercialPlanService,
       GrowthOperatorService growthOperatorService,
       JdbcTemplate jdbc,
-      ExperimentStrategistMemoryService memoryService) {
+      ExperimentStrategistMemoryService memoryService,
+      ProductService productService) {
     this.commercialPlanService = commercialPlanService;
     this.growthOperatorService = growthOperatorService;
     this.jdbc = jdbc;
     this.memoryService = memoryService;
+    this.productService = productService;
   }
 
   /** Entrega planejamento, sessões, funil, vídeos e aprendizados sem permitir mutações. */
@@ -43,6 +49,7 @@ public class ExperimentStrategistContextService {
     context.put("sessionsAndFunnel", growthOperatorService.sessionIntelligence(planId, 2000));
     context.put("videoStrategy", growthOperatorService.videoStrategyIntelligence(planId));
     context.put("learnings", learnings(plan));
+    context.put("productPortfolio", productPortfolio());
     context.put("behavioralMemory", memoryService.activeForPlan(planId));
     context.put("behavioralScienceLibrary", "classpath:behavioral-science/v1/library.md");
     context.put(
@@ -58,6 +65,29 @@ public class ExperimentStrategistContextService {
         "prohibitedActions",
         List.of("PRICE", "CAMPAIGN", "BUDGET", "PUBLICATION", "MASS_COMMUNICATION"));
     return context;
+  }
+
+  /** Consolida formatos e resultados comparáveis sem escolher vencedor no backend. */
+  private List<Object> productPortfolio() {
+    List<Object> portfolio = new ArrayList<>();
+    productService.listProducts().forEach(product -> portfolio.add(productPortfolioItem(product)));
+    return portfolio;
+  }
+
+  /** Expõe a definição comercial e o histórico auditável de um produto. */
+  private Map<String, Object> productPortfolioItem(Product product) {
+    LinkedHashMap<String, Object> item = new LinkedHashMap<>();
+    item.put("productId", product.getId());
+    item.put("productName", product.getName());
+    item.put("productFormat", product.getProductFormat());
+    item.put("deliveryMode", product.getDeliveryMode());
+    item.put("revenueModel", product.getRevenueModel());
+    item.put("valueUnit", product.getValueUnit());
+    item.put("valueEvidenceMetric", product.getValueEvidenceMetric());
+    item.put("validationDefinitionVersion", product.getValidationDefinitionVersion());
+    item.put("validationDefinitionJson", product.getValidationDefinitionJson());
+    item.put("experimentComparison", productService.getExperimentComparison(product.getId()));
+    return item;
   }
 
   /** Resume apenas os dados comerciais necessários para desenhar um experimento. */

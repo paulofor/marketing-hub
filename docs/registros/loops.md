@@ -281,6 +281,8 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - exigir `facebookPixelId` para `LOW_TICKET_PRODUCT + SALES` antes de entrar na fila e publicar o ad set com `optimization_goal=OFFSITE_CONVERSIONS`, `promoted_object.pixel_id` e `custom_event_type=PURCHASE`.
   - adicionar `facebook_ads_campaign.publication_key` com unicidade para novas publicações, impedindo que retry/concorrência grave duas campanhas novas para o mesmo experimento no backend.
   - validar antes de `/campaigns` e `/adcreatives` que a Page selecionada no experimento está conectada ao `instagram_user_id` usado pelo criativo, bloqueando pares incompatíveis com `CAMPAIGN_PAGE_INSTAGRAM_CONNECTION_BLOCKED`.
+  - em 2026-08-08, a leitura operacional de pausas passou a consultar diretamente os campos canônicos `stop_requested_at`/`stop_completed_at`, evitando que uma solicitação persistida ficasse invisível ao Facebook Ads Worker; o diagnóstico da tela também passou a reconhecer o snapshot profissional de targeting enviado à Meta quando a publicação usa o pacote manual aprovado, sem exigir vínculo opcional com um playbook de ad set.
+  - em 2026-08-08, criativos novos passaram a exigir revisão multimodal auditável antes da aprovação humana, impedindo que peças incompletas ou sem CTA cheguem à fila de publicação apenas por mudança manual de status.
 - **Módulos envolvidos**:
   - `backend/ads-service`;
   - `facebook-ads-worker`;

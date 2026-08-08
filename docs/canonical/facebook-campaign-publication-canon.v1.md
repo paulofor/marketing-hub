@@ -20,6 +20,7 @@
 > - formaliza que solicitações de targeting por IA devem usar GPT-5.5 em modo Flex e gerar seeds orientados à taxonomia Meta Ads, mantendo a validação oficial de existência no Facebook Ads Worker
 > - formaliza que criativo de imagem só pode ser tratado como aprovado/publicável quando possuir `image_url` real
 > - formaliza que o repositório/worker de anúncios não decide direcionamento de versão; a versão de destino é decisão do experimento
+> - torna obrigatório o gate multimodal auditável do Agente Especialista em Aprovação de Anúncios antes da aprovação humana e publicação
 
 Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fonte de verdade para prontidão, liberação e telemetria de campanhas de experimento no Facebook Ads Worker.
 
@@ -104,6 +105,9 @@ Regra de destino versionado: o repositório de anúncios e o `facebook-ads-worke
 Implementação: `ExperimentReadinessService` (backend) expõe os mesmos critérios usados pelo cartão **Campanha de Facebook Ads** e pelo `facebook-ads-worker`. **Todos os itens abaixo precisam estar resolvidos** para que o worker gere conjuntos de anúncios.
 
 1. **Criativos aprovados**
+   - Todo criativo novo deve passar pelo Agente Especialista em Aprovação de Anúncios. O backend mantém o gate fechado enquanto a decisão não for `APPROVED`; decisões `ADJUST`, `REJECTED`, `FAILED`, pendentes ou em processamento nunca podem ser convertidas em `READY` nem publicadas.
+   - O agente avalia a mídia real junto de copy, oferta, público e destino, com scores separados de atenção, clareza, desejo, credibilidade e ação. Request, response bruto, modelo, decisão, problemas e recomendações devem permanecer persistidos e auditáveis.
+   - A aprovação do agente não substitui a aprovação humana: ela apenas habilita a decisão humana final. Alterar mídia, copy, CTA ou destino invalida o parecer anterior e abre nova revisão.
    - `experiment.creative_approved = true` e pelo menos um registro em `creative` do experimento com `status = 'READY'` e asset visual publicável.
    - Para criativos de formato `IMAGE`, `READY` só é válido quando `creative.image_url` estiver preenchido com uma URL real. Criativo `IMAGE` sem `image_url` deve permanecer bloqueado, não pode contar na prontidão e não pode aparecer como aprovado publicável na UI.
    - O botão **Gerar anúncios do pipeline** pode produzir até 3 anúncios (texto + prompt) via Worker AI (`gpt-image-2`). Eles entram como `DRAFT` e precisam ser aprovados antes da liberação.

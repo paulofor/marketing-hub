@@ -79,6 +79,31 @@ public class Creative {
   @Column(name = "reviewed_at")
   private Instant reviewedAt;
 
+  /** Estado da avaliação multimodal obrigatória anterior à aprovação humana. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "agent_review_status", length = 24)
+  private CreativeAgentReviewStatus agentReviewStatus;
+
+  /** Notas e parecer funcional produzidos pelo agente especialista. */
+  @Column(name = "agent_review_json", columnDefinition = "LONGTEXT")
+  private String agentReviewJson;
+
+  /** Request bruto enviado ao modelo para auditoria. */
+  @Column(name = "agent_review_request_json", columnDefinition = "LONGTEXT")
+  private String agentReviewRequestJson;
+
+  /** Response bruto recebido do modelo para auditoria. */
+  @Column(name = "agent_review_response_json", columnDefinition = "LONGTEXT")
+  private String agentReviewResponseJson;
+
+  /** Modelo multimodal usado na avaliação. */
+  @Column(name = "agent_review_model", length = 100)
+  private String agentReviewModel;
+
+  /** Momento de conclusão da avaliação do agente. */
+  @Column(name = "agent_reviewed_at")
+  private Instant agentReviewedAt;
+
   @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(
       name = "creative_angle",

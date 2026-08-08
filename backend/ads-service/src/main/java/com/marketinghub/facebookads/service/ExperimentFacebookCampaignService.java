@@ -1,5 +1,8 @@
 package com.marketinghub.facebookads.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.funnel.ExperimentFunnelAttributionService;
 import com.marketinghub.experiment.funnel.ExperimentFunnelStage;
 import com.marketinghub.facebookads.FacebookAdsAd;
@@ -25,13 +28,19 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+/** Consolida campanhas Meta de um experimento e diagnostica inconsistências auditáveis. */
 @Service
 public class ExperimentFacebookCampaignService {
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ExperimentFacebookCampaignService.class);
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private final FacebookAdsCampaignRepository campaignRepository;
   private final FacebookAdsAdSetRepository adSetRepository;
   private final FacebookAdsAdRepository adRepository;
@@ -190,10 +199,14 @@ public class ExperimentFacebookCampaignService {
         .collect(Collectors.toList());
   }
 
+  /**
+   * Converte o conjunto publicado e distingue targeting persistido de vínculo opcional de playbook.
+   */
   private ExperimentFacebookAdSetDto toAdSetDto(
       FacebookAdsAdSet adSet, Map<String, EnumMap<ExperimentFunnelStage, Long>> attribution) {
     List<String> issues = new ArrayList<>();
-    if (adSet.getExperimentAdSet() == null) {
+    if (adSet.getExperimentAdSet() == null
+        && !hasPersistedProfessionalTargeting(adSet.getTargetingJson())) {
       issues.add("Conjunto não está vinculado à segmentação aprovada do experimento.");
     }
     List<ExperimentFacebookAdDto> ads = mapAds(adSet.getAds(), attribution);
@@ -210,6 +223,44 @@ public class ExperimentFacebookCampaignService {
         experimentAdSetId,
         ads,
         issues);
+  }
+
+  /** Confirma se o snapshot enviado à Meta contém ao menos um filtro profissional auditável. */
+  private boolean hasPersistedProfessionalTargeting(String targetingJson) {
+    if (!StringUtils.hasText(targetingJson)) {
+      return false;
+    }
+    try {
+      JsonNode targeting = OBJECT_MAPPER.readTree(targetingJson);
+      if (hasEntries(targeting, "interests")
+          || hasEntries(targeting, "work_positions")
+          || hasEntries(targeting, "behaviors")
+          || hasEntries(targeting, "custom_audiences")) {
+        return true;
+      }
+      JsonNode flexibleSpec = targeting.path("flexible_spec");
+      if (!flexibleSpec.isArray()) {
+        return false;
+      }
+      for (JsonNode spec : flexibleSpec) {
+        if (hasEntries(spec, "interests")
+            || hasEntries(spec, "work_positions")
+            || hasEntries(spec, "behaviors")
+            || hasEntries(spec, "custom_audiences")) {
+          return true;
+        }
+      }
+      return false;
+    } catch (JsonProcessingException ex) {
+      LOGGER.warn("Falha ao interpretar targeting persistido de conjunto Meta", ex);
+      return false;
+    }
+  }
+
+  /** Verifica se um campo de targeting possui pelo menos uma opção persistida. */
+  private boolean hasEntries(JsonNode targeting, String field) {
+    JsonNode entries = targeting.path(field);
+    return entries.isArray() && !entries.isEmpty();
   }
 
   private List<ExperimentFacebookAdDto> mapAds(

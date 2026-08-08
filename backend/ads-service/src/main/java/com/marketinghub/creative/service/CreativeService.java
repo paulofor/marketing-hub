@@ -7,6 +7,8 @@ import com.marketinghub.cost.CostAttributionService;
 import com.marketinghub.creative.*;
 import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
+import com.marketinghub.creative.dto.CreativeAgentReviewPendingDto;
+import com.marketinghub.creative.dto.CreativeAgentReviewResultRequest;
 import com.marketinghub.creative.dto.CreativeVideoReviewDto;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.video.ExperimentVideoAsset;
@@ -95,7 +97,11 @@ public class CreativeService {
               .destinationUrl(request.getDestinationUrl())
               .leadGenFormId(request.getLeadGenFormId())
               .instagramUserId(request.getInstagramUserId())
-              .status(request.getStatus())
+              .status(
+                  request.getStatus() == CreativeStatus.REJECTED
+                      ? CreativeStatus.REJECTED
+                      : CreativeStatus.DRAFT)
+              .agentReviewStatus(CreativeAgentReviewStatus.PENDING)
               .rejectionReason(null)
               .build();
       Creative saved = repository.save(creative);
@@ -123,6 +129,7 @@ public class CreativeService {
   public Creative update(Long id, CreateCreativeRequest request) {
     Creative creative = repository.findByIdWithExperiment(id).orElseThrow();
     validateReadyCreativeHasImage(request);
+    validateAgentReviewGate(creative, request.getStatus());
     creative.setFormat(request.getFormat());
     creative.setHeadline(request.getHeadline());
     creative.setPrimaryText(request.getPrimaryText());
@@ -136,6 +143,14 @@ public class CreativeService {
     creative.setLeadGenFormId(request.getLeadGenFormId());
     creative.setInstagramUserId(request.getInstagramUserId());
     creative.setStatus(request.getStatus());
+    creative.setAgentReviewStatus(CreativeAgentReviewStatus.PENDING);
+    creative.setAgentReviewJson(null);
+    creative.setAgentReviewRequestJson(null);
+    creative.setAgentReviewResponseJson(null);
+    creative.setAgentReviewedAt(null);
+    if (request.getStatus() == CreativeStatus.READY) {
+      creative.setStatus(CreativeStatus.DRAFT);
+    }
     creative.setRejectionReason(null);
     Creative saved = repository.save(creative);
     refreshExperimentApproval(saved.getExperiment());
@@ -195,6 +210,7 @@ public class CreativeService {
       }
       Creative creative = repository.findByIdWithExperiment(id).orElseThrow();
       validateReadyCreativeHasMedia(creative, status);
+      validateAgentReviewGate(creative, status);
       String normalizedRejectionReason = normalizeRejectionReason(status, rejectionReason);
       creative.setStatus(status);
       creative.setRejectionReason(normalizedRejectionReason);
@@ -213,6 +229,119 @@ public class CreativeService {
           ex.getMessage(),
           ex);
       throw ex;
+    }
+  }
+
+  /** Lista e assume anúncios pendentes para impedir processamento concorrente pelo agente. */
+  @Transactional
+  public List<CreativeAgentReviewPendingDto> claimAgentReviewQueue(int limit) {
+    return repository.findAgentReviewQueue(CreativeAgentReviewStatus.PENDING).stream()
+        .limit(Math.max(1, limit))
+        .map(
+            creative -> {
+              creative.setAgentReviewStatus(CreativeAgentReviewStatus.PROCESSING);
+              repository.save(creative);
+              Experiment experiment = creative.getExperiment();
+              Hypothesis hypothesis = experiment.getHypothesisRef();
+              MarketNiche niche =
+                  hypothesis != null && hypothesis.getMarketNiche() != null
+                      ? hypothesis.getMarketNiche()
+                      : experiment.getNiche();
+              String mediaUrl =
+                  "VIDEO".equalsIgnoreCase(creative.getFormat())
+                      ? creative.getVideoUrl()
+                      : creative.getImageUrl();
+              return new CreativeAgentReviewPendingDto(
+                  creative.getId(),
+                  experiment.getId(),
+                  experiment.getName(),
+                  niche != null ? niche.getName() : null,
+                  hypothesis != null ? hypothesis.getTitle() : experiment.getHypothesis(),
+                  creative.getFormat(),
+                  creative.getHeadline(),
+                  creative.getPrimaryText(),
+                  creative.getDescription(),
+                  creative.getCta(),
+                  creative.getDestinationUrl(),
+                  mediaUrl);
+            })
+        .toList();
+  }
+
+  /** Persiste o parecer auditável do agente e mantém o anúncio bloqueado quando não aprovado. */
+  @Transactional
+  public Creative applyAgentReview(Long id, CreativeAgentReviewResultRequest request) {
+    Creative creative = repository.findByIdWithExperiment(id).orElseThrow();
+    CreativeAgentReviewStatus decision = Objects.requireNonNull(request.decision());
+    if (decision != CreativeAgentReviewStatus.APPROVED
+        && decision != CreativeAgentReviewStatus.ADJUST
+        && decision != CreativeAgentReviewStatus.REJECTED
+        && decision != CreativeAgentReviewStatus.FAILED) {
+      throw new IllegalArgumentException("Decisão final inválida para revisão do agente.");
+    }
+    validateScore(request.attentionScore());
+    validateScore(request.clarityScore());
+    validateScore(request.desireScore());
+    validateScore(request.credibilityScore());
+    validateScore(request.actionScore());
+    creative.setAgentReviewStatus(decision);
+    creative.setAgentReviewJson(toAgentReviewJson(request));
+    creative.setAgentReviewRequestJson(request.requestJson());
+    creative.setAgentReviewResponseJson(request.responseJson());
+    creative.setAgentReviewModel(request.model());
+    creative.setAgentReviewedAt(Instant.now());
+    if (decision != CreativeAgentReviewStatus.APPROVED
+        && creative.getStatus() == CreativeStatus.READY) {
+      creative.setStatus(CreativeStatus.DRAFT);
+      creative.setReviewedAt(null);
+    }
+    Creative saved = repository.save(creative);
+    refreshExperimentApproval(saved.getExperiment());
+    return saved;
+  }
+
+  /** Bloqueia aprovação humana enquanto o agente não aprovar o anúncio. */
+  private void validateAgentReviewGate(Creative creative, CreativeStatus status) {
+    if (status == CreativeStatus.READY
+        && creative.getAgentReviewStatus() != null
+        && creative.getAgentReviewStatus() != CreativeAgentReviewStatus.APPROVED) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "Aprovação bloqueada: o Agente Especialista em Anúncios ainda não aprovou o criativo.");
+    }
+  }
+
+  /** Valida que cada dimensão do parecer usa a escala auditável de zero a cem. */
+  private void validateScore(Integer score) {
+    if (score != null && (score < 0 || score > 100)) {
+      throw new IllegalArgumentException("Score do agente deve estar entre 0 e 100.");
+    }
+  }
+
+  /** Serializa o parecer funcional sem misturá-lo ao request e response brutos. */
+  private String toAgentReviewJson(CreativeAgentReviewResultRequest request) {
+    try {
+      return objectMapper.writeValueAsString(
+          Map.ofEntries(
+              Map.entry("decision", request.decision()),
+              Map.entry("attentionScore", Objects.requireNonNullElse(request.attentionScore(), 0)),
+              Map.entry("clarityScore", Objects.requireNonNullElse(request.clarityScore(), 0)),
+              Map.entry("desireScore", Objects.requireNonNullElse(request.desireScore(), 0)),
+              Map.entry(
+                  "credibilityScore", Objects.requireNonNullElse(request.credibilityScore(), 0)),
+              Map.entry("actionScore", Objects.requireNonNullElse(request.actionScore(), 0)),
+              Map.entry("summary", Objects.requireNonNullElse(request.summary(), "")),
+              Map.entry("issues", Objects.requireNonNullElse(request.issuesJson(), "[]")),
+              Map.entry(
+                  "recommendations",
+                  Objects.requireNonNullElse(request.recommendationsJson(), "[]")),
+              Map.entry("inputTokens", Objects.requireNonNullElse(request.inputTokens(), 0)),
+              Map.entry("outputTokens", Objects.requireNonNullElse(request.outputTokens(), 0)),
+              Map.entry("costUsd", Objects.requireNonNullElse(request.costUsd(), BigDecimal.ZERO)),
+              Map.entry("error", Objects.requireNonNullElse(request.error(), ""))));
+    } catch (JsonProcessingException ex) {
+      log.error("Falha ao serializar parecer do agente. creativeId desconhecido", ex);
+      throw new IllegalStateException("Parecer do agente inválido", ex);
     }
   }
 

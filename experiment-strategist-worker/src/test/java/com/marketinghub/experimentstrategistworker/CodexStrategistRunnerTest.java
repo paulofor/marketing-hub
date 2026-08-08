@@ -48,7 +48,14 @@ class CodexStrategistRunnerTest {
         .contains("o mercado oferece X, mas o cliente ainda precisa fazer Y");
     assertThat(schema)
         .contains("marketIntelligence", "customerLanguage", "competitors", "customerEffort")
-        .contains("evidenceClass", "statementType", "positioning", "memoryOutcome");
+        .contains(
+            "evidenceClass",
+            "statementType",
+            "portfolioAssessment",
+            "winnerProductId",
+            "operatorBoundary",
+            "positioning",
+            "memoryOutcome");
   }
 
   /** Confirma que constantes booleanas mantêm o tipo exigido pelo Structured Outputs. */
@@ -69,5 +76,32 @@ class CodexStrategistRunnerTest {
 
     assertThat(approval.path("type").asText()).isEqualTo("boolean");
     assertThat(approval.path("const").asBoolean()).isTrue();
+  }
+
+  /** Impede declarar vencedor sem venda e entrega e preserva a fronteira com o Operador. */
+  @Test
+  void requiresAuditablePortfolioAssessment() throws Exception {
+    String prompt =
+        Files.readString(
+            Path.of("src/main/resources/prompts/experiment-strategist/v1/research.md"));
+    var schema =
+        new ObjectMapper()
+            .readTree(
+                Path.of("src/main/resources/prompts/experiment-strategist/v1/research-schema.json")
+                    .toFile());
+
+    assertThat(prompt)
+        .contains("Sem venda aprovada e entrega satisfatória")
+        .contains("não inicie, pause, avance ou encerre experimento");
+    assertThat(schema.path("required")).anyMatch(value -> value.asText().equals("portfolioAssessment"));
+    assertThat(
+            schema
+                .path("properties")
+                .path("portfolioAssessment")
+                .path("properties")
+                .path("operatorBoundary")
+                .path("const")
+                .asText())
+        .isEqualTo("STRATEGIST_RECOMMENDS_OPERATOR_EXECUTES");
   }
 }

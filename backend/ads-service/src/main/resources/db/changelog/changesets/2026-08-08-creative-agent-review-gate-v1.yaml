@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-08-creative-agent-review-gate-v1
+      author: marketinghub
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'creative' AND COLUMN_NAME = 'agent_review_status'
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE creative
+                ADD COLUMN agent_review_status VARCHAR(24) NULL AFTER reviewed_at,
+                ADD COLUMN agent_review_json LONGTEXT NULL AFTER agent_review_status,
+                ADD COLUMN agent_review_request_json LONGTEXT NULL AFTER agent_review_json,
+                ADD COLUMN agent_review_response_json LONGTEXT NULL AFTER agent_review_request_json,
+                ADD COLUMN agent_review_model VARCHAR(100) NULL AFTER agent_review_response_json,
+                ADD COLUMN agent_reviewed_at DATETIME NULL AFTER agent_review_model;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE creative
+                DROP COLUMN agent_reviewed_at,
+                DROP COLUMN agent_review_model,
+                DROP COLUMN agent_review_response_json,
+                DROP COLUMN agent_review_request_json,
+                DROP COLUMN agent_review_json,
+                DROP COLUMN agent_review_status;

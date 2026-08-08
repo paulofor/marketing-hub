@@ -9,10 +9,12 @@ import static org.mockito.Mockito.when;
 import com.marketinghub.FixtureUtils;
 import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.creative.Creative;
+import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.CreativeVideoReviewSourceType;
 import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
+import com.marketinghub.creative.dto.CreativeAgentReviewResultRequest;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.video.ExperimentVideoAsset;
 import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
@@ -148,8 +150,10 @@ class CreativeServiceTest {
     approveRequest.setHeadline("Headline");
     approveRequest.setPrimaryText("Primary");
     approveRequest.setImageUrl("/img.png");
-    approveRequest.setStatus(CreativeStatus.READY);
+    approveRequest.setStatus(CreativeStatus.DRAFT);
     service.update(creative.getId(), approveRequest);
+    approveByAgent(creative.getId());
+    service.updateStatus(creative.getId(), CreativeStatus.READY);
 
     Experiment afterApproval = experimentRepository.findById(exp.getId()).orElseThrow();
     assertThat(afterApproval.isCreativeApproved()).isTrue();
@@ -169,6 +173,7 @@ class CreativeServiceTest {
     createRequest.setStatus(CreativeStatus.DRAFT);
     Creative creative = service.create(exp.getId(), createRequest);
 
+    approveByAgent(creative.getId());
     service.updateStatus(creative.getId(), CreativeStatus.READY);
 
     Experiment afterApproval = experimentRepository.findById(exp.getId()).orElseThrow();
@@ -337,8 +342,10 @@ class CreativeServiceTest {
     createRequest.setHeadline("Headline");
     createRequest.setPrimaryText("Primary");
     createRequest.setImageUrl("/img.png");
-    createRequest.setStatus(CreativeStatus.READY);
+    createRequest.setStatus(CreativeStatus.DRAFT);
     Creative creative = service.create(exp.getId(), createRequest);
+    approveByAgent(creative.getId());
+    service.updateStatus(creative.getId(), CreativeStatus.READY);
 
     Experiment afterApproval = experimentRepository.findById(exp.getId()).orElseThrow();
     assertThat(afterApproval.isCreativeApproved()).isTrue();
@@ -347,5 +354,49 @@ class CreativeServiceTest {
 
     Experiment afterDelete = experimentRepository.findById(exp.getId()).orElseThrow();
     assertThat(afterDelete.isCreativeApproved()).isFalse();
+  }
+
+  /** Garante que nenhuma aprovação humana contorne o parecer multimodal obrigatório. */
+  @Test
+  void blocksHumanApprovalUntilAgentApproves() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment exp = fixtures.createAndSaveExperiment(niche);
+    CreateCreativeRequest request = new CreateCreativeRequest();
+    request.setFormat("IMAGE");
+    request.setImageUrl("https://cdn.test/ad.png");
+    request.setStatus(CreativeStatus.DRAFT);
+    Creative creative = service.create(exp.getId(), request);
+
+    assertThat(creative.getAgentReviewStatus()).isEqualTo(CreativeAgentReviewStatus.PENDING);
+    assertThatThrownBy(() -> service.updateStatus(creative.getId(), CreativeStatus.READY))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("Agente Especialista");
+
+    approveByAgent(creative.getId());
+    Creative approved = service.updateStatus(creative.getId(), CreativeStatus.READY);
+    assertThat(approved.getStatus()).isEqualTo(CreativeStatus.READY);
+  }
+
+  /** Registra um parecer multimodal aprovado para cenários que exercitam a aprovação humana. */
+  private void approveByAgent(Long creativeId) {
+    service.applyAgentReview(
+        creativeId,
+        new CreativeAgentReviewResultRequest(
+            CreativeAgentReviewStatus.APPROVED,
+            80,
+            80,
+            80,
+            80,
+            80,
+            "Peça pronta para revisão humana.",
+            "[]",
+            "[]",
+            "gpt-test",
+            "{}",
+            "{}",
+            10,
+            10,
+            java.math.BigDecimal.ZERO,
+            null));
   }
 }

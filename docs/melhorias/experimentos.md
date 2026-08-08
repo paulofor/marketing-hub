@@ -1,5 +1,9 @@
 # Melhorias de experimentos
 
+## 2026-08-08 — Histórico factual auditável
+
+Todo experimento deve preservar ocorrências, incidentes, decisões, correções e aprendizados em uma linha do tempo própria. Cada registro mantém descrição factual, origem, data e evidência JSON opcional. O histórico não substitui métricas nem aprendizado automatizado: ele preserva o que ocorreu para impedir perda de contexto e permitir que agentes futuros distingam evidência, decisão e interpretação.
+
 ## Referência de análise
 
 Este documento consolida aprendizados e decisões de melhoria para experimentos de marketing digital do Marketing Hub.

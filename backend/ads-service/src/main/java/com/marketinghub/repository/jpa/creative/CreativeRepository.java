@@ -1,6 +1,7 @@
 package com.marketinghub.repository.jpa.creative;
 
 import com.marketinghub.creative.Creative;
+import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.creative.CreativeStatus;
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +24,7 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
               from Creative c
              where c.experiment.id = :experimentId
                and c.status = :status
+               and (c.agentReviewStatus = com.marketinghub.creative.CreativeAgentReviewStatus.APPROVED or c.agentReviewStatus is null)
                and (
                     (upper(coalesce(c.format, 'IMAGE')) <> 'VIDEO' and c.imageUrl is not null and trim(c.imageUrl) <> '')
                  or (upper(c.format) = 'VIDEO' and (
@@ -41,6 +43,7 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
               from Creative c
              where c.experiment.id = :experimentId
                and c.status = :status
+               and (c.agentReviewStatus = com.marketinghub.creative.CreativeAgentReviewStatus.APPROVED or c.agentReviewStatus is null)
                and (
                     (upper(coalesce(c.format, 'IMAGE')) <> 'VIDEO' and c.imageUrl is not null and trim(c.imageUrl) <> '')
                  or (upper(c.format) = 'VIDEO' and (
@@ -55,6 +58,18 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
   /** Busca um criativo carregando também o experimento vinculado. */
   @Query("select c from Creative c join fetch c.experiment where c.id = :id")
   Optional<Creative> findByIdWithExperiment(@Param("id") Long id);
+
+  /** Lista anúncios novos que aguardam o gate multimodal do agente especialista. */
+  @Query(
+      """
+            select c from Creative c
+              join fetch c.experiment e
+              left join fetch e.hypothesisRef h
+              left join fetch e.niche n
+             where c.agentReviewStatus = :status
+             order by c.id
+            """)
+  List<Creative> findAgentReviewQueue(@Param("status") CreativeAgentReviewStatus status);
 
   /** Lista criativos de vídeo com o contexto comercial necessário para revisão. */
   @Query(
@@ -106,6 +121,7 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
               from Creative c
              where c.experiment.id = :experimentId
                and c.status = :status
+               and (c.agentReviewStatus = com.marketinghub.creative.CreativeAgentReviewStatus.APPROVED or c.agentReviewStatus is null)
                and (
                     (upper(coalesce(c.format, 'IMAGE')) <> 'VIDEO' and c.imageUrl is not null and trim(c.imageUrl) <> '')
                  or (upper(c.format) = 'VIDEO' and (
@@ -124,6 +140,7 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
               from Creative c
              where c.experiment.id = :experimentId
                and c.status = :status
+               and (c.agentReviewStatus = com.marketinghub.creative.CreativeAgentReviewStatus.APPROVED or c.agentReviewStatus is null)
                and (
                     (upper(coalesce(c.format, 'IMAGE')) <> 'VIDEO' and c.imageUrl is not null and trim(c.imageUrl) <> '')
                  or (upper(c.format) = 'VIDEO' and (

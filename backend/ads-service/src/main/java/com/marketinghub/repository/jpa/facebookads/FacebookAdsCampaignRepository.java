@@ -78,11 +78,14 @@ public interface FacebookAdsCampaignRepository extends JpaRepository<FacebookAds
 
   /** Lista campanhas com solicitações de parada pendentes para o worker Facebook. */
   @Query(
-      """
-            select distinct c from FacebookAdsCampaign c
-            left join fetch c.experiment e
-            where c.stopRequestedAt is not null
-              and c.stopCompletedAt is null
-            """)
+      value =
+          """
+          SELECT c.*
+          FROM facebook_ads_campaign c
+          WHERE c.stop_requested_at IS NOT NULL
+            AND c.stop_completed_at IS NULL
+          ORDER BY c.stop_requested_at ASC
+          """,
+      nativeQuery = true)
   List<FacebookAdsCampaign> findPendingStopRequests();
 }

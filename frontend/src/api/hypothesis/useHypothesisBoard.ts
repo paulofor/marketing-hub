@@ -6,6 +6,8 @@ import type { ProductAiSubtype } from "../experiment/useExperiments";
 export interface Hypothesis {
   id: string;
   marketNicheId: number;
+  productId?: number | null;
+  productName?: string | null;
   title: string;
   promise?: string;
   problem?: string;

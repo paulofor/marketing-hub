@@ -7,6 +7,7 @@ import type { ProductAiSubtype } from "../experiment/useExperiments";
 
 export interface CreateHypothesis {
   marketNicheId: number;
+  productId: number;
   title: string;
   problem: string;
   premiseAngleId?: number;

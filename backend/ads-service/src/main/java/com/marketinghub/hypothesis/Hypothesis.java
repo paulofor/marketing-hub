@@ -4,6 +4,7 @@ import com.marketinghub.ads.FacebookInstantForm;
 import com.marketinghub.creative.label.Angle;
 import com.marketinghub.deliverable.DeliverablePackage;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.product.Product;
 import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.prompt.PromptAttributeDescription;
 import com.marketinghub.targeting.TargetingElement;
@@ -34,6 +35,11 @@ public class Hypothesis {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "market_niche_id")
   private MarketNiche marketNiche;
+
+  /** Produto comercial exclusivo ao qual esta hipótese pertence. */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "product_id")
+  private Product product;
 
   @Column(nullable = false)
   private String title;

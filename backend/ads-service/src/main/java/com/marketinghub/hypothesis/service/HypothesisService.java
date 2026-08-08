@@ -9,11 +9,13 @@ import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.hypothesis.dto.UpdateHypothesisRequest;
 import com.marketinghub.hypothesis.framework.HypothesisFrameworkMapperSupport;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.product.Product;
 import com.marketinghub.prompt.PromptAttributeDescription;
 import com.marketinghub.repository.jpa.creative.label.AngleRepository;
 import com.marketinghub.repository.jpa.deliverable.DeliverablePackageRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.repository.jpa.prompt.PromptAttributeDescriptionRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
@@ -42,6 +44,7 @@ public class HypothesisService {
   private final CurrencyConversionService currencyConversionService;
   private final CostAttributionService costAttributionService;
   private final DeliverablePackageRepository deliverablePackageRepository;
+  private final ProductRepository productRepository;
 
   public HypothesisService(
       HypothesisRepository repository,
@@ -52,7 +55,8 @@ public class HypothesisService {
       HypothesisFrameworkMapperSupport frameworkMapperSupport,
       CurrencyConversionService currencyConversionService,
       CostAttributionService costAttributionService,
-      DeliverablePackageRepository deliverablePackageRepository) {
+      DeliverablePackageRepository deliverablePackageRepository,
+      ProductRepository productRepository) {
     this.repository = repository;
     this.nicheRepository = nicheRepository;
     this.angleRepository = angleRepository;
@@ -62,6 +66,7 @@ public class HypothesisService {
     this.currencyConversionService = currencyConversionService;
     this.costAttributionService = costAttributionService;
     this.deliverablePackageRepository = deliverablePackageRepository;
+    this.productRepository = productRepository;
   }
 
   private MarketNiche attachNiche(Long id) {
@@ -82,12 +87,32 @@ public class HypothesisService {
 
   /** Valida os campos comerciais obrigatórios para criar uma hipótese. */
   private void validate(CreateHypothesisRequest req) {
+    if (req.getProductId() == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "productId required");
+    }
     if (req.getProblem() == null || req.getProblem().isBlank()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "problem required");
     }
     if (req.getPersona() == null || req.getPersona().isBlank()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "persona required");
     }
+  }
+
+  /** Localiza o produto e impede a criação de hipótese fora do nicho comercial selecionado. */
+  private Product resolveProduct(Long productId, MarketNiche niche) {
+    Product product =
+        productRepository
+            .findById(productId)
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado"));
+    Long nicheId = niche == null ? null : niche.getId();
+    Long productNicheId =
+        product.getMarketNiche() == null ? null : product.getMarketNiche().getId();
+    if (!java.util.Objects.equals(productNicheId, nicheId)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "O produto deve pertencer ao mesmo nicho da hipótese");
+    }
+    return product;
   }
 
   /** Monta o título automático da hipótese com sigla do nicho e numeração sequencial. */
@@ -181,10 +206,12 @@ public class HypothesisService {
   public Hypothesis create(CreateHypothesisRequest req) {
     validate(req);
     MarketNiche niche = attachNiche(req.getMarketNicheId());
+    Product product = resolveProduct(req.getProductId(), niche);
     String automaticTitle = buildAutomaticHypothesisTitle(niche);
     Hypothesis h =
         Hypothesis.builder()
             .marketNiche(niche)
+            .product(product)
             .title(automaticTitle)
             .premiseAngle(attachAngle(req.getPremiseAngleId()))
             .promise(req.getPromise())

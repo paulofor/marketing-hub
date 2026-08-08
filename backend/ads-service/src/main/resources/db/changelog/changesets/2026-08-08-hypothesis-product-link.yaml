@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-08-hypothesis-product-link
+      author: marketinghub
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE hypothesis
+                ADD COLUMN product_id BIGINT NULL AFTER market_niche_id,
+                ADD CONSTRAINT fk_hypothesis_product
+                  FOREIGN KEY (product_id) REFERENCES product(id);
+              CREATE INDEX idx_hypothesis_product_status
+                ON hypothesis(product_id, status);

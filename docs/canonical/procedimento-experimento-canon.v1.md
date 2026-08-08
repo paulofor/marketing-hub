@@ -37,6 +37,8 @@ O usuário não deve escolher manualmente nome de hipótese nem nome de experime
 - sequência numérica por hipótese para experimento no formato `<CODIGO-HIPOTESE>-E001`, `<CODIGO-HIPOTESE>-E002`, ...;
 - quando não houver nicho associado, usar a sigla operacional `GER` como fallback.
 
+Decisão canônica de 2026-08-08: toda nova hipótese comercial deve pertencer explicitamente a um único produto. A tela de criação de experimento deve listar somente hipóteses do produto selecionado e permitir criar uma hipótese já vinculada a esse produto. O backend deve rejeitar criação de hipótese sem produto, produto de outro nicho, geração de oferta com hipótese de outro produto e criação de experimento com essa divergência. Hipóteses legadas sem vínculo permanecem apenas para auditoria e não podem originar novos experimentos.
+
 A interface deve informar que o identificador será automático e não deve exigir campo de nome para fechar hipótese ou criar experimento. O nome do experimento deve carregar o código da hipótese para manter rastreabilidade direta entre hipótese e teste.
 
 ### 3.2 Execução no detalhe do experimento

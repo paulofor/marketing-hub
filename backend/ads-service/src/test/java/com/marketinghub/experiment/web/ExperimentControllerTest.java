@@ -215,6 +215,8 @@ class ExperimentControllerTest {
     var instagramAccount = fixtures.createAndSaveInstagramAccount();
     CreateExperimentRequest req = new CreateExperimentRequest();
     applyStageDefaults(req);
+    hyp.setProduct(productRepository.getReferenceById(req.getProductId()));
+    hypothesisRepository.save(hyp);
     req.setName("Exp1");
     req.setHypothesisId(hyp.getId());
     req.setHypothesis("H1");

@@ -35,6 +35,18 @@ class HypothesisServiceTest {
   @Autowired PromptEntityRepository entityRepository;
   @Autowired PromptAttributeRepository attributeRepository;
   @Autowired PromptAttributeDescriptionRepository descriptionRepository;
+  @Autowired com.marketinghub.repository.jpa.product.ProductRepository productRepository;
+
+  /** Vincula ao pedido um produto de teste pertencente ao nicho informado. */
+  private void bindProduct(CreateHypothesisRequest req, MarketNiche niche) {
+    var product =
+        productRepository.save(
+            com.marketinghub.product.Product.builder()
+                .name("Produto " + java.util.UUID.randomUUID())
+                .marketNiche(niche)
+                .build());
+    req.setProductId(product.getId());
+  }
 
   @Test
   void createValidHypothesis() {
@@ -42,6 +54,7 @@ class HypothesisServiceTest {
     req.setTitle("Teste ignorado");
     req.setProblem("Problema");
     req.setPersona("Persona");
+    bindProduct(req, null);
     Hypothesis h = service.create(req);
     assertThat(h.getId()).isNotNull();
     assertThat(h.getStatus()).isEqualTo(HypothesisStatus.BACKLOG);
@@ -56,6 +69,7 @@ class HypothesisServiceTest {
     req.setTitle("Sem ângulo");
     req.setProblem("Problema");
     req.setPersona("Persona");
+    bindProduct(req, null);
     Hypothesis h = service.create(req);
     assertThat(h.getPremiseAngle()).isNull();
   }
@@ -65,6 +79,7 @@ class HypothesisServiceTest {
     CreateHypothesisRequest req = new CreateHypothesisRequest();
     req.setTitle("Ok");
     req.setProblem("   ");
+    bindProduct(req, null);
     assertThatThrownBy(() -> service.create(req))
         .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
   }
@@ -75,8 +90,35 @@ class HypothesisServiceTest {
     req.setTitle("Ok");
     req.setProblem("Problema");
     req.setPersona("   ");
+    bindProduct(req, null);
     assertThatThrownBy(() -> service.create(req))
         .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
+  }
+
+  @Test
+  void rejectHypothesisWithoutProduct() {
+    CreateHypothesisRequest req = new CreateHypothesisRequest();
+    req.setProblem("Problema");
+    req.setPersona("Persona");
+
+    assertThatThrownBy(() -> service.create(req))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("productId required");
+  }
+
+  @Test
+  void rejectProductFromAnotherNiche() {
+    MarketNiche hypothesisNiche = fixtures.createAndSaveNiche();
+    MarketNiche productNiche = fixtures.createAndSaveNiche();
+    CreateHypothesisRequest req = new CreateHypothesisRequest();
+    req.setMarketNicheId(hypothesisNiche.getId());
+    req.setProblem("Problema");
+    req.setPersona("Persona");
+    bindProduct(req, productNiche);
+
+    assertThatThrownBy(() -> service.create(req))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("mesmo nicho");
   }
 
   @Test
@@ -88,6 +130,7 @@ class HypothesisServiceTest {
     req.setTitle("H1");
     req.setProblem("Problema");
     req.setPersona("Persona");
+    bindProduct(req, niche);
 
     Hypothesis h1 = service.create(req);
     Hypothesis h2 = service.create(req);
@@ -109,6 +152,7 @@ class HypothesisServiceTest {
     req.setTitle("H1");
     req.setProblem("Problema");
     req.setPersona("Persona");
+    bindProduct(req, niche);
 
     Hypothesis h = service.create(req);
 
@@ -140,6 +184,7 @@ class HypothesisServiceTest {
     req.setTitle("Teste ignorado");
     req.setProblem("Problema");
     req.setPersona("Persona");
+    bindProduct(req, null);
     req.setPromptAttributeDescriptionIds(java.util.List.of(desc.getId()));
     Hypothesis h = service.create(req);
     assertThat(h.getPromptAttributeDescriptions())

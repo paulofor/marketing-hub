@@ -12,6 +12,7 @@ import { useImageGenerationModels } from "../../api/ai/useImageGenerationModels"
 import { useNiches } from "../../api/niche/useNiches";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
+import { useCreateHypothesis } from "../../api/hypothesis/useCreateHypothesis";
 import { useProducts } from "../../api/product/useProducts";
 import {
   usePrepareProductAiHypothesis,
@@ -38,6 +39,15 @@ export function productsEligibleForNiche(
       !nicheId ||
       product.marketNicheId == null ||
       product.marketNicheId === Number(nicheId),
+  );
+}
+
+export function hypothesesEligibleForProduct(
+  hypotheses: import("../../api/hypothesis/useHypothesisBoard").Hypothesis[],
+  productId: string,
+) {
+  return hypotheses.filter(
+    (hypothesis) => hypothesis.productId === Number(productId),
   );
 }
 
@@ -89,6 +99,7 @@ export default function NewExperimentPage() {
   const nicheIdParam = params.get("nicheId") ?? "";
   const hypothesisIdParam = params.get("hypothesisId") ?? "";
   const create = useCreateExperiment();
+  const createHypothesis = useCreateHypothesis();
   const prepareProductAiHypothesis = usePrepareProductAiHypothesis();
   const generatePromiseOptions = useGeneratePromiseOptions();
   const dismissPromiseOptionsRequest = useDismissPromiseOptionsRequest();
@@ -129,6 +140,15 @@ export default function NewExperimentPage() {
     primaryCta: "",
   });
   const [autoSampleSize, setAutoSampleSize] = useState(true);
+  const [showHypothesisCreation, setShowHypothesisCreation] = useState(false);
+  const [newHypothesis, setNewHypothesis] = useState({
+    problem: "",
+    persona: "",
+    promise: "",
+    mechanism: "",
+    entrega: "",
+    successRule: "",
+  });
   const [promiseOptions, setPromiseOptions] = useState<PromiseOption[]>([]);
   const [selectedProductOffer, setSelectedProductOffer] = useState("");
   const [promiseRequestId, setPromiseRequestId] = useState<
@@ -145,6 +165,10 @@ export default function NewExperimentPage() {
   const productsForSelectedNiche = productsEligibleForNiche(
     products ?? [],
     form.nicheId,
+  );
+  const hypothesesForSelectedProduct = hypothesesEligibleForProduct(
+    hypotheses ?? [],
+    form.productId,
   );
   const { data: imageModels } = useImageGenerationModels();
   const { data: journeyTemplates, isLoading: isLoadingJourneyTemplates } =
@@ -567,6 +591,36 @@ export default function NewExperimentPage() {
     }
   };
 
+  const createProductHypothesis = async () => {
+    if (!form.nicheId || !form.productId) {
+      alert("Selecione o nicho e o produto antes de criar a hipótese.");
+      return;
+    }
+    if (!newHypothesis.problem.trim() || !newHypothesis.persona.trim()) {
+      alert("Informe o problema e a persona da hipótese.");
+      return;
+    }
+    const created = await createHypothesis.mutateAsync({
+      marketNicheId: Number(form.nicheId),
+      productId: Number(form.productId),
+      title: "Identificador automático",
+      problem: newHypothesis.problem.trim(),
+      persona: newHypothesis.persona.trim(),
+      promise: newHypothesis.promise.trim() || undefined,
+      mechanism: newHypothesis.mechanism.trim() || undefined,
+      uniqueMechanism: newHypothesis.mechanism.trim() || undefined,
+      entrega: newHypothesis.entrega.trim() || undefined,
+      successRule: newHypothesis.successRule.trim() || undefined,
+      price: selectedProduct?.currentPriceBrl,
+    });
+    setForm((current) => ({
+      ...current,
+      hypothesisId: created.id,
+      hypothesis: created.title,
+    }));
+    setShowHypothesisCreation(false);
+  };
+
   return (
     <div>
       <PageTitle icon={experimentIcon}>
@@ -663,6 +717,8 @@ export default function NewExperimentPage() {
                 ...current,
                 productId: event.target.value,
                 desireTerritoryCode: "",
+                hypothesisId: "",
+                hypothesis: "",
               }))
             }
           >
@@ -744,23 +800,77 @@ export default function NewExperimentPage() {
             }
           >
             <option value="">Selecione Hipótese</option>
-            {Array.isArray(hypotheses) && hypotheses.length > 0 ? (
-              hypotheses.map((h) => (
+            {hypothesesForSelectedProduct.length > 0 ? (
+              hypothesesForSelectedProduct.map((h) => (
                 <option key={h.id} value={h.id}>
                   {h.title}
                 </option>
               ))
             ) : (
-              <option value="">Não há hipóteses para este nicho</option>
+              <option value="">Não há hipóteses para este produto</option>
             )}
           </select>
-          {Array.isArray(hypotheses) && hypotheses.length === 0 && (
-            <button
-              type="button"
-              className="btn btn-link mb-2"
-              onClick={() => (window.location.href = "/hypotheses?open=new")}
+          {form.productId && hypothesesForSelectedProduct.length === 0 && (
+            <div className="alert alert-warning py-2" role="alert">
+              Este produto ainda não possui hipótese própria.
+            </div>
+          )}
+          <button
+            type="button"
+            className="btn btn-outline-primary mb-2"
+            disabled={!form.productId}
+            onClick={() => setShowHypothesisCreation((current) => !current)}
+          >
+            {showHypothesisCreation
+              ? "Cancelar nova hipótese"
+              : "Criar hipótese para este produto"}
+          </button>
+          {showHypothesisCreation && (
+            <div
+              className="card card-body mb-3"
+              aria-label="Nova hipótese do produto"
             >
-              Criar nova hipótese
+              <p className="small text-muted">
+                O identificador será automático e a hipótese ficará vinculada a{" "}
+                {selectedProduct?.name}.
+              </p>
+              {(
+                [
+                  ["problem", "Problema principal"],
+                  ["persona", "Persona"],
+                  ["promise", "Promessa"],
+                  ["mechanism", "Mecanismo"],
+                  ["entrega", "Entrega"],
+                  ["successRule", "Regra de sucesso"],
+                ] as const
+              ).map(([field, label]) => (
+                <label className="form-label" key={field}>
+                  {label}
+                  <textarea
+                    className="form-control"
+                    value={newHypothesis[field]}
+                    onChange={(event) =>
+                      setNewHypothesis((current) => ({
+                        ...current,
+                        [field]: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+              ))}
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={createHypothesis.isPending}
+                onClick={createProductHypothesis}
+              >
+                Salvar hipótese do produto
+              </button>
+            </div>
+          )}
+          {!form.productId && (
+            <button type="button" className="btn btn-link mb-2" disabled>
+              Selecione um produto para criar a hipótese
             </button>
           )}
         </>

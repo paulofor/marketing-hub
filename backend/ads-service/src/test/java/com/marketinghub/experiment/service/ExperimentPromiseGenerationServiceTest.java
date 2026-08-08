@@ -98,7 +98,7 @@ class ExperimentPromiseGenerationServiceTest {
             .build();
     when(nicheRepository.findById(7L)).thenReturn(Optional.of(niche));
     when(hypothesisRepository.findById(hypothesisId)).thenReturn(Optional.of(hypothesis));
-    mockAgendaCheiaProduct();
+    hypothesis.setProduct(mockAgendaCheiaProduct());
     when(requestRepository.save(any()))
         .thenAnswer(
             invocation -> {
@@ -155,7 +155,7 @@ class ExperimentPromiseGenerationServiceTest {
             .build();
     when(nicheRepository.findById(8L)).thenReturn(Optional.of(niche));
     when(hypothesisRepository.findById(hypothesisId)).thenReturn(Optional.of(hypothesis));
-    mockAgendaCheiaProduct();
+    hypothesis.setProduct(mockAgendaCheiaProduct());
     when(requestRepository.save(any()))
         .thenAnswer(
             invocation -> {
@@ -229,7 +229,7 @@ class ExperimentPromiseGenerationServiceTest {
   }
 
   /** Prepara um produto com território real para os testes de geração contextual. */
-  private void mockAgendaCheiaProduct() {
+  private Product mockAgendaCheiaProduct() {
     Product product =
         Product.builder()
             .id(1L)
@@ -238,6 +238,7 @@ class ExperimentPromiseGenerationServiceTest {
                 "{\"territories\":[{\"code\":\"PROFESSIONAL_PRIDE\",\"name\":\"Orgulho profissional\"}]}")
             .build();
     when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+    return product;
   }
 
   /** Deve retornar o status persistido para a tela acompanhar a solicitação até a conclusão. */

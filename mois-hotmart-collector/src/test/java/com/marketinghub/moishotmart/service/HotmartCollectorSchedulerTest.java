@@ -12,28 +12,28 @@ import org.springframework.scheduling.annotation.Scheduled;
 class HotmartCollectorSchedulerTest {
 
     /**
-     * Garante que o ciclo 1 esteja agendado para 14:45 de 15 de junho de 2026 no fuso de São Paulo.
+     * Garante que o ciclo 1 esteja agendado diariamente para 05:00 no fuso de São Paulo.
      */
     @Test
-    void shouldScheduleFirstCycleAtFourteenFortyFiveOnJuneFifteenth() throws NoSuchMethodException {
+    void shouldScheduleFirstCycleDaily() throws NoSuchMethodException {
         Method method = HotmartCollectorScheduler.class
-                .getDeclaredMethod("collectFirstCycleAtFourteenFortyFiveOnJuneFifteenth2026");
+                .getDeclaredMethod("collectFirstCycleDaily");
         Scheduled scheduled = method.getAnnotation(Scheduled.class);
 
-        assertEquals("0 45 14 15 6 *", scheduled.cron());
+        assertEquals("0 0 5 * * *", scheduled.cron());
         assertEquals("America/Sao_Paulo", scheduled.zone());
     }
 
     /**
-     * Garante que o ciclo 2 esteja agendado para 13:15 de 16 de junho de 2026 no fuso de São Paulo.
+     * Garante que o ciclo 2 esteja agendado diariamente para 06:00 no fuso de São Paulo.
      */
     @Test
-    void shouldScheduleSecondCycleAtThirteenFifteenOnJuneSixteenth() throws NoSuchMethodException {
+    void shouldScheduleSecondCycleDaily() throws NoSuchMethodException {
         Method method = HotmartCollectorScheduler.class
-                .getDeclaredMethod("collectSecondCycleAtThirteenFifteenOnJuneSixteenth2026");
+                .getDeclaredMethod("collectSecondCycleDaily");
         Scheduled scheduled = method.getAnnotation(Scheduled.class);
 
-        assertEquals("0 15 13 16 6 *", scheduled.cron());
+        assertEquals("0 0 6 * * *", scheduled.cron());
         assertEquals("America/Sao_Paulo", scheduled.zone());
     }
 }

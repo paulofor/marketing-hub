@@ -83,6 +83,7 @@ const NAV_SECTIONS: NavSection[] = [
         label: "Descoberta PDE",
         icon: Search,
       },
+      { to: "/market-radar", label: "Radar de oportunidades", icon: Search },
       { to: "/products", label: "Produtos", icon: Package },
       { to: "/niches", label: "Nichos", icon: nicheIcon },
       { to: "/hypotheses", label: "Hipóteses", icon: hypothesisIcon },

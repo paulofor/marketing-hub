@@ -2,8 +2,6 @@ package com.marketinghub.moishotmart.service;
 
 import com.marketinghub.moishotmart.dto.HotmartDtos.HotmartCollectionRequest;
 import com.marketinghub.moishotmart.dto.HotmartDtos.HotmartCollectionResponse;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,8 +15,6 @@ import org.springframework.stereotype.Component;
 public class HotmartCollectorScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(HotmartCollectorScheduler.class);
-
-    private static final ZoneId SAO_PAULO_ZONE = ZoneId.of("America/Sao_Paulo");
 
     private final HotmartCollectorService collectorService;
     private final boolean enabled;
@@ -41,24 +37,17 @@ public class HotmartCollectorScheduler {
     }
 
     /**
-     * Executa o ciclo 1 de listagem de produtos uma única vez às 14:45 em 15 de junho de 2026, no horário de São Paulo.
+     * Executa diariamente o ciclo 1 de listagem de produtos às 05:00 no horário de São Paulo.
      */
-    @Scheduled(cron = "0 45 14 15 6 *", zone = "America/Sao_Paulo")
-    public void collectFirstCycleAtFourteenFortyFiveOnJuneFifteenth2026() {
+    @Scheduled(cron = "0 0 5 * * *", zone = "America/Sao_Paulo")
+    public void collectFirstCycleDaily() {
         if (!enabled) {
             log.info("Hotmart scheduler desabilitado por configuração.");
             return;
         }
-        int currentYear = ZonedDateTime.now(SAO_PAULO_ZONE).getYear();
-        if (currentYear != 2026) {
-            log.info(
-                    "Hotmart scheduler ciclo 1 ignorado porque o agendamento solicitado é exclusivo de 2026. anoAtual={}",
-                    currentYear);
-            return;
-        }
         HotmartCollectionRequest request = new HotmartCollectionRequest(source, maxProducts);
         HotmartCollectionResponse response = collectorService.collectFirstCycle(request);
-        log.info("Hotmart scheduler executado hora=14:45 dia=15/06 ano=2026 "
+        log.info("Hotmart scheduler diário executado hora=05:00 "
                         + "timezone=America/Sao_Paulo ciclo={} status={} produtos={} mensagem={}",
                 "CICLO_1_LISTAGEM",
                 response.status(),
@@ -67,24 +56,17 @@ public class HotmartCollectorScheduler {
     }
 
     /**
-     * Executa o ciclo 2 de enriquecimento de detalhes uma única vez às 13:15 em 16 de junho de 2026, no horário de São Paulo.
+     * Executa diariamente o ciclo 2 de enriquecimento às 06:00 no horário de São Paulo.
      */
-    @Scheduled(cron = "0 15 13 16 6 *", zone = "America/Sao_Paulo")
-    public void collectSecondCycleAtThirteenFifteenOnJuneSixteenth2026() {
+    @Scheduled(cron = "0 0 6 * * *", zone = "America/Sao_Paulo")
+    public void collectSecondCycleDaily() {
         if (!enabled) {
             log.info("Hotmart scheduler desabilitado por configuração.");
             return;
         }
-        int currentYear = ZonedDateTime.now(SAO_PAULO_ZONE).getYear();
-        if (currentYear != 2026) {
-            log.info(
-                    "Hotmart scheduler ciclo 2 ignorado porque o agendamento solicitado é exclusivo de 2026. anoAtual={}",
-                    currentYear);
-            return;
-        }
         HotmartCollectionRequest request = new HotmartCollectionRequest(source, maxProducts);
         HotmartCollectionResponse response = collectorService.collectSecondCycleFromBackend(request);
-        log.info("Hotmart scheduler executado hora=13:15 dia=16/06 ano=2026 "
+        log.info("Hotmart scheduler diário executado hora=06:00 "
                         + "timezone=America/Sao_Paulo ciclo={} status={} produtos={} mensagem={}",
                 "CICLO_2_DETALHES",
                 response.status(),

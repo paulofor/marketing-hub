@@ -193,9 +193,9 @@ Em resumo: o erro normalmente não está na UI; ele nasce na qualidade do campo 
 
 Agendamento operacional vigente no `mois-hotmart-collector`:
 
-- **Ciclo 1 (listagem):** próxima execução pontual única em **14 de junho de 2026 às 22:00**, no fuso `America/Sao_Paulo`, após a falha anterior por JWT expirado/inválido.
-- **Ciclo 2 (detalhes):** próxima execução pontual única em **16 de junho de 2026 às 04:10**, no fuso `America/Sao_Paulo`, conforme scheduler vigente do coletor.
-- O cron do ciclo 1 fica hardcoded no `HotmartCollectorScheduler` para manter rastreabilidade operacional do horário combinado e possui guarda de ano para não repetir após 2026.
+- **Ciclo 1 (listagem):** execução diária às **05:00**, no fuso `America/Sao_Paulo`.
+- **Ciclo 2 (detalhes):** execução diária às **06:00**, no fuso `America/Sao_Paulo`, após a listagem.
+- Os crons ficam versionados diretamente no `HotmartCollectorScheduler`; credencial ausente ou inválida deve gerar estado auditável sem ser interpretada como ausência de demanda.
 
 Sequência operacional consolidada:
 

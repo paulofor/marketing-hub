@@ -1,6 +1,7 @@
 package com.marketinghub.planning.service;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.planning.CommercialPlan;
@@ -157,6 +158,42 @@ public class CommercialPlanService {
                     new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Plano comercial nao encontrado: " + id));
     return syncExecution(plan);
+  }
+
+  /** Vincula o plano ao unico experimento em execucao que pertence ao mesmo contexto comercial. */
+  @Transactional
+  public CommercialPlan synchronizeRunningExperiment(Long id) {
+    CommercialPlan plan = getPlan(id);
+    if (plan.getExperiment() != null
+        && plan.getExperiment().getStatus() == ExperimentStatus.RUNNING) {
+      return plan;
+    }
+    List<Experiment> compatible =
+        experimentRepository.findByStatus(ExperimentStatus.RUNNING).stream()
+            .filter(experiment -> belongsToPlan(plan, experiment))
+            .toList();
+    if (compatible.isEmpty()) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Nenhum experimento RUNNING compativel com o planejamento.");
+    }
+    if (compatible.size() > 1) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "Mais de um experimento RUNNING compativel; vinculo automatico bloqueado.");
+    }
+    plan.setExperiment(compatible.get(0));
+    return planRepository.save(plan);
+  }
+
+  /** Confirma compatibilidade pela hipotese canonica ou, na ausencia dela, pelo nicho do plano. */
+  private boolean belongsToPlan(CommercialPlan plan, Experiment experiment) {
+    if (plan.getHypothesis() != null) {
+      return experiment.getHypothesisRef() != null
+          && plan.getHypothesis().getId().equals(experiment.getHypothesisRef().getId());
+    }
+    return plan.getNiche() != null
+        && experiment.getNiche() != null
+        && plan.getNiche().getId().equals(experiment.getNiche().getId());
   }
 
   /** Lista marcos de um plano na ordem comercial. */

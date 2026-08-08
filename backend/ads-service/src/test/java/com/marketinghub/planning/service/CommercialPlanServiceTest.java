@@ -6,6 +6,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.CommercialPlanRecommendation;
 import com.marketinghub.planning.CommercialPlanSimulation;
@@ -22,6 +25,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -138,5 +142,64 @@ class CommercialPlanServiceTest {
     assertThat(simulation.getRecommendation()).isEqualTo(CommercialPlanRecommendation.CORRECT);
     assertThat(simulation.getBestNextAction()).contains("Completar objetivo");
     verify(planRepository, times(2)).save(plan);
+  }
+
+  /** Atualiza o plano quando existe um unico experimento ativo da mesma hipotese. */
+  @Test
+  void synchronizeRunningExperimentLinksUniqueCompatibleExperiment() {
+    Hypothesis hypothesis =
+        Hypothesis.builder().id(UUID.randomUUID()).title("Agenda cheia").build();
+    Experiment oldExperiment =
+        Experiment.builder()
+            .id(84L)
+            .hypothesisRef(hypothesis)
+            .status(ExperimentStatus.PLANNED)
+            .build();
+    Experiment runningExperiment =
+        Experiment.builder()
+            .id(85L)
+            .hypothesisRef(hypothesis)
+            .status(ExperimentStatus.RUNNING)
+            .build();
+    CommercialPlan plan =
+        CommercialPlan.builder().id(2L).hypothesis(hypothesis).experiment(oldExperiment).build();
+    when(planRepository.findById(2L)).thenReturn(Optional.of(plan));
+    when(milestoneRepository.findByPlanIdOrderBySequenceOrderAsc(2L)).thenReturn(List.of());
+    when(experimentRepository.findByStatus(ExperimentStatus.RUNNING))
+        .thenReturn(List.of(runningExperiment));
+    when(planRepository.save(any(CommercialPlan.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    CommercialPlan synchronizedPlan = service.synchronizeRunningExperiment(2L);
+
+    assertThat(synchronizedPlan.getExperiment().getId()).isEqualTo(85L);
+  }
+
+  /** Bloqueia selecao automatica quando mais de um experimento ativo pertence ao plano. */
+  @Test
+  void synchronizeRunningExperimentRejectsAmbiguousCandidates() {
+    Hypothesis hypothesis =
+        Hypothesis.builder().id(UUID.randomUUID()).title("Agenda cheia").build();
+    CommercialPlan plan = CommercialPlan.builder().id(2L).hypothesis(hypothesis).build();
+    when(planRepository.findById(2L)).thenReturn(Optional.of(plan));
+    when(milestoneRepository.findByPlanIdOrderBySequenceOrderAsc(2L)).thenReturn(List.of());
+    when(experimentRepository.findByStatus(ExperimentStatus.RUNNING))
+        .thenReturn(
+            List.of(
+                Experiment.builder()
+                    .id(85L)
+                    .hypothesisRef(hypothesis)
+                    .status(ExperimentStatus.RUNNING)
+                    .build(),
+                Experiment.builder()
+                    .id(86L)
+                    .hypothesisRef(hypothesis)
+                    .status(ExperimentStatus.RUNNING)
+                    .build()));
+
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> service.synchronizeRunningExperiment(2L))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("Mais de um experimento RUNNING compativel");
   }
 }

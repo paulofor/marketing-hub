@@ -54,6 +54,10 @@ do território e um snapshot JSON do território vigente. A geração de oferta 
 produto e território e é proibida de inferir, substituir ou renomear o produto. Alterações futuras
 no mapa não podem reescrever o snapshot histórico do experimento.
 
+Produto, hipótese e experimento devem pertencer ao mesmo nicho quando o produto possuir nicho
+estratégico cadastrado. A tela deve filtrar produtos pelo nicho selecionado e o backend deve rejeitar
+qualquer divergência tanto na geração das opções quanto na criação do experimento.
+
 O mapa inicial do Agenda Cheia Nail Design contém três hipóteses, ainda sem vencedor:
 
 - orgulho profissional: perfil à altura do talento;

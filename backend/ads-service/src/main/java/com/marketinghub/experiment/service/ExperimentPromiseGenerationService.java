@@ -88,6 +88,7 @@ public class ExperimentPromiseGenerationService {
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nicho não encontrado"));
     Hypothesis hypothesis = resolveHypothesis(request.hypothesisId());
     Product product = resolveProduct(request.productId());
+    validateCommercialContext(niche, hypothesis, product);
     JsonNode territory = resolveTerritory(product, request.desireTerritoryCode());
     String prompt =
         buildPrompt(
@@ -261,6 +262,21 @@ public class ExperimentPromiseGenerationService {
         .findById(productId)
         .orElseThrow(
             () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado"));
+  }
+
+  /** Impede que produto ou hipótese de outro nicho contaminem a oferta gerada. */
+  private void validateCommercialContext(
+      MarketNiche niche, Hypothesis hypothesis, Product product) {
+    if (hypothesis.getMarketNiche() != null
+        && !hypothesis.getMarketNiche().getId().equals(niche.getId())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "A hipótese selecionada não pertence ao nicho informado");
+    }
+    if (product.getMarketNiche() != null
+        && !product.getMarketNiche().getId().equals(niche.getId())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "O produto selecionado não pertence ao nicho informado");
+    }
   }
 
   /** Localiza e valida o território dentro do Mapa de Desejo do produto selecionado. */

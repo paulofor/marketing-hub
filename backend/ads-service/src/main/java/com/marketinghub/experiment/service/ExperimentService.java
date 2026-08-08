@@ -350,8 +350,9 @@ public class ExperimentService {
     return acronym.toString();
   }
 
-  /** Cria e persiste um novo experimento com o contrato comercial inicial. */
-  private com.marketinghub.product.Product resolveExperimentProduct(Long productId) {
+  /** Localiza o produto e impede mistura entre nichos no contrato do experimento. */
+  private com.marketinghub.product.Product resolveExperimentProduct(
+      Long productId, MarketNiche niche) {
     if (productId == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "productId required");
     }
@@ -359,6 +360,11 @@ public class ExperimentService {
         entityManager.find(com.marketinghub.product.Product.class, productId);
     if (product == null) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado");
+    }
+    if (product.getMarketNiche() != null
+        && !product.getMarketNiche().getId().equals(niche.getId())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "O produto selecionado não pertence ao nicho do experimento");
     }
     return product;
   }
@@ -399,7 +405,8 @@ public class ExperimentService {
   @Transactional
   public Experiment create(Long nicheId, CreateExperimentRequest request) {
     MarketNiche niche = attachNiche(nicheId);
-    com.marketinghub.product.Product product = resolveExperimentProduct(request.getProductId());
+    com.marketinghub.product.Product product =
+        resolveExperimentProduct(request.getProductId(), niche);
     String territorySnapshot =
         resolveDesireTerritorySnapshot(product, request.getDesireTerritoryCode());
     if (request.getHypothesisId() == null) {

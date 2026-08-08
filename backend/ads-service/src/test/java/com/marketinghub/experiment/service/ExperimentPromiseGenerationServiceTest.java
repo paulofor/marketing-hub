@@ -192,6 +192,42 @@ class ExperimentPromiseGenerationServiceTest {
         .doesNotContain("Tipo de experimento: Teste de nicho com isca digital");
   }
 
+  /** Deve bloquear produto de outro nicho antes de criar uma oferta comercial contaminada. */
+  @Test
+  void shouldRejectProductFromAnotherNiche() {
+    UUID hypothesisId = UUID.randomUUID();
+    MarketNiche selectedNiche = MarketNiche.builder().id(8L).name("Nail design").build();
+    Hypothesis hypothesis =
+        Hypothesis.builder().id(hypothesisId).marketNiche(selectedNiche).title("Agenda").build();
+    Product foreignProduct =
+        Product.builder()
+            .id(2L)
+            .name("Produto de outro nicho")
+            .marketNiche(MarketNiche.builder().id(9L).name("Moda").build())
+            .desireAssociationMapJson("{\"territories\":[{\"code\":\"PROFESSIONAL_PRIDE\"}]}")
+            .build();
+    when(nicheRepository.findById(8L)).thenReturn(Optional.of(selectedNiche));
+    when(hypothesisRepository.findById(hypothesisId)).thenReturn(Optional.of(hypothesis));
+    when(productRepository.findById(2L)).thenReturn(Optional.of(foreignProduct));
+
+    assertThatThrownBy(
+            () ->
+                service.generate(
+                    new GenerateExperimentPromiseOptionsRequest(
+                        8L,
+                        hypothesisId,
+                        2L,
+                        "PROFESSIONAL_PRIDE",
+                        ExperimentType.LOW_TICKET_PRODUCT,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null)))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("produto selecionado não pertence ao nicho");
+  }
+
   /** Prepara um produto com território real para os testes de geração contextual. */
   private void mockAgendaCheiaProduct() {
     Product product =

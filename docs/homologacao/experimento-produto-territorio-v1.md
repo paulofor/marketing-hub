@@ -9,8 +9,8 @@
 
 | Área | Caminho feliz | Validação/falha | Evidência esperada |
 |---|---|---|---|
-| Tela | selecionar produto e orgulho profissional | bloquear produto sem mapa e envio sem território | payload contém os dois identificadores |
-| Oferta IA | gerar opções do Agenda Cheia | rejeitar produto/território divergente | prompt fixa nome e território |
+| Tela | selecionar produto e orgulho profissional | ocultar produto de outro nicho; bloquear produto sem mapa e envio sem território | payload contém os dois identificadores |
+| Oferta IA | gerar opções do Agenda Cheia | rejeitar nicho, produto ou território divergente | prompt fixa nome e território |
 | Persistência | criar em `PLANNED` | rejeitar território fora do mapa | produto, código e snapshot persistidos |
 | Observabilidade | erro informa contexto sem segredo | JSON inválido bloqueia | log correlaciona produto e território |
 | Métricas | cadastro não cria venda | nenhum gasto/publicação | funil permanece zerado |

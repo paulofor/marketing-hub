@@ -27,6 +27,19 @@ import type {
   ExperimentType,
   ProductAiSubtype,
 } from "../../api/experiment/useExperiments";
+import type { Product } from "../../api/product/useProducts";
+
+export function productsEligibleForNiche(
+  products: Product[],
+  nicheId: string,
+): Product[] {
+  return products.filter(
+    (product) =>
+      !nicheId ||
+      product.marketNicheId == null ||
+      product.marketNicheId === Number(nicheId),
+  );
+}
 
 const productAiSubtypeLabels: Record<ProductAiSubtype, string> = {
   AI_VISUAL_PREVIEW: "Prévia visual IA",
@@ -129,6 +142,10 @@ export default function NewExperimentPage() {
     form.hypothesisId,
   );
   const selectedNiche = niches?.find((n) => n.id === Number(form.nicheId));
+  const productsForSelectedNiche = productsEligibleForNiche(
+    products ?? [],
+    form.nicheId,
+  );
   const { data: imageModels } = useImageGenerationModels();
   const { data: journeyTemplates, isLoading: isLoadingJourneyTemplates } =
     useJourneyTemplates({ size: 200 });
@@ -650,7 +667,7 @@ export default function NewExperimentPage() {
             }
           >
             <option value="">Selecione o produto</option>
-            {(products ?? []).map((product) => (
+            {productsForSelectedNiche.map((product) => (
               <option key={product.id} value={product.id}>
                 {product.name}
               </option>
@@ -697,6 +714,8 @@ export default function NewExperimentPage() {
             setForm({
               ...form,
               nicheId: e.target.value,
+              productId: "",
+              desireTerritoryCode: "",
               hypothesisId: "",
               hypothesis: "",
             })

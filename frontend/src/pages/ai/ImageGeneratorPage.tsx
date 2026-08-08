@@ -8,6 +8,10 @@ import type {
 } from "../../api/ai/useGenerateImage";
 import { useGenerateImage } from "../../api/ai/useGenerateImage";
 import { usePromoteGeneratedImage } from "../../api/ai/usePromoteGeneratedImage";
+import {
+  useRecentImageGenerations,
+  useRecoverImageGeneration,
+} from "../../api/ai/useRecentImageGenerations";
 import { useProducts } from "../../api/product/useProducts";
 import { useCommercialPlans } from "../../api/planning/useCommercialPlans";
 
@@ -75,8 +79,27 @@ export default function ImageGeneratorPage() {
   const productsQuery = useProducts();
   const plansQuery = useCommercialPlans();
   const generation = useGenerateImage();
+  const recentContext = {
+    productId: productId ? Number(productId) : undefined,
+    commercialPlanId: commercialPlanId
+      ? Number(commercialPlanId)
+      : undefined,
+    experimentId: experimentId ? Number(experimentId) : undefined,
+  };
+  const recentGenerations = useRecentImageGenerations(recentContext);
+  const recovery = useRecoverImageGeneration();
   const promotion = usePromoteGeneratedImage();
-  const result = generation.data;
+  const recoveredResult = recovery.data
+    ? {
+        jobId:
+          recentGenerations.data?.find(
+            (item) => item.jobId === recovery.data?.jobId,
+          )?.batchJobId ?? recovery.data.jobId,
+        images: [recovery.data],
+        failures: [],
+      }
+    : undefined;
+  const result = recoveredResult ?? generation.data;
   const generatedImages = useMemo(() => result?.images ?? [], [result]);
   const generationFailures = useMemo(() => result?.failures ?? [], [result]);
   const selectedImage = generatedImages.find(
@@ -112,12 +135,19 @@ export default function ImageGeneratorPage() {
     ) {
       return;
     }
+    recovery.reset();
     generation.mutate({
       productId: Number(productId),
       commercialPlanId: Number(commercialPlanId),
       experimentId: experimentId ? Number(experimentId) : undefined,
       prompt: normalizedPrompt,
     });
+  }
+
+  function recoverGeneration(jobId: string, persistedPrompt: string) {
+    setPrompt(persistedPrompt);
+    setSelectedJobId("");
+    recovery.mutate({ ...recentContext, jobId });
   }
 
   return (
@@ -278,6 +308,51 @@ export default function ImageGeneratorPage() {
                   </button>
                 </div>
               </form>
+
+              {productId && commercialPlanId ? (
+                <div className="border-top mt-4 pt-3">
+                  <h2 className="h6">Gerações recentes</h2>
+                  <p className="text-body-secondary small">
+                    Recupere uma imagem concluída sem gerar novamente nem criar
+                    novo custo.
+                  </p>
+                  {recentGenerations.isLoading ? (
+                    <div className="text-body-secondary small">Carregando...</div>
+                  ) : recentGenerations.isError ? (
+                    <div className="alert alert-warning py-2">
+                      Não foi possível carregar as gerações recentes.
+                    </div>
+                  ) : (recentGenerations.data ?? []).length === 0 ? (
+                    <div className="text-body-secondary small">
+                      Nenhuma geração concluída neste contexto.
+                    </div>
+                  ) : (
+                    <div className="list-group">
+                      {(recentGenerations.data ?? []).map((item) => (
+                        <button
+                          type="button"
+                          className="list-group-item list-group-item-action"
+                          key={item.jobId}
+                          disabled={recovery.isPending}
+                          onClick={() =>
+                            recoverGeneration(item.jobId, item.prompt)
+                          }
+                        >
+                          <span className="fw-semibold">{item.model}</span>
+                          <span className="d-block text-body-secondary small">
+                            Lote {item.batchJobId} · {item.jobId}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {recovery.isError ? (
+                    <div className="alert alert-danger mt-2" role="alert">
+                      {errorMessage(recovery.error)}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

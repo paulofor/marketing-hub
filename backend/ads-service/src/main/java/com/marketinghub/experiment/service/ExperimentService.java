@@ -1,5 +1,7 @@
 package com.marketinghub.experiment.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.FacebookInstantForm;
 import com.marketinghub.ads.FacebookPage;
@@ -54,6 +56,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,6 +67,7 @@ import org.springframework.web.server.ResponseStatusException;
 /** Orquestra as regras de negócio dos experimentos. */
 @Service
 public class ExperimentService {
+  private static final Logger log = LoggerFactory.getLogger(ExperimentService.class);
   private final ExperimentRepository repository;
   private final ExperimentStatusChangeRepository statusChangeRepository;
   private final ExperimentPromiseGenerationRequestRepository promiseGenerationRequestRepository;
@@ -345,10 +350,65 @@ public class ExperimentService {
     return acronym.toString();
   }
 
+  /** Localiza o produto e impede mistura entre nichos no contrato do experimento. */
+  private com.marketinghub.product.Product resolveExperimentProduct(
+      Long productId, MarketNiche niche) {
+    if (productId == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "productId required");
+    }
+    com.marketinghub.product.Product product =
+        entityManager.find(com.marketinghub.product.Product.class, productId);
+    if (product == null) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado");
+    }
+    if (product.getMarketNiche() != null
+        && !product.getMarketNiche().getId().equals(niche.getId())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "O produto selecionado não pertence ao nicho do experimento");
+    }
+    return product;
+  }
+
+  /** Valida o território no mapa atual e devolve um snapshot imutável para o experimento. */
+  private String resolveDesireTerritorySnapshot(
+      com.marketinghub.product.Product product, String territoryCode) {
+    if (!StringUtils.hasText(territoryCode)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Selecione um território do Mapa de Desejo");
+    }
+    if (!StringUtils.hasText(product.getDesireAssociationMapJson())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "O produto selecionado não possui Mapa de Desejo");
+    }
+    try {
+      JsonNode territories =
+          objectMapper.readTree(product.getDesireAssociationMapJson()).path("territories");
+      for (JsonNode territory : territories) {
+        if (territoryCode.trim().equals(territory.path("code").asText())) {
+          return objectMapper.writeValueAsString(territory);
+        }
+      }
+    } catch (JsonProcessingException ex) {
+      log.error(
+          "Falha ao validar Mapa de Desejo na criação do experimento. productId={}, territoryCode={}",
+          product.getId(),
+          territoryCode,
+          ex);
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Mapa de Desejo do produto inválido", ex);
+    }
+    throw new ResponseStatusException(
+        HttpStatus.BAD_REQUEST, "Território não pertence ao produto selecionado");
+  }
+
   /** Cria e persiste um novo experimento com o contrato comercial inicial. */
   @Transactional
   public Experiment create(Long nicheId, CreateExperimentRequest request) {
     MarketNiche niche = attachNiche(nicheId);
+    com.marketinghub.product.Product product =
+        resolveExperimentProduct(request.getProductId(), niche);
+    String territorySnapshot =
+        resolveDesireTerritorySnapshot(product, request.getDesireTerritoryCode());
     if (request.getHypothesisId() == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "hypothesisId required");
     }
@@ -421,6 +481,9 @@ public class ExperimentService {
     Experiment exp =
         Experiment.builder()
             .niche(niche)
+            .product(product)
+            .desireTerritoryCode(request.getDesireTerritoryCode().trim())
+            .desireTerritorySnapshotJson(territorySnapshot)
             .name(automaticName)
             .creationSource(
                 request.getCreationSource() != null
@@ -579,6 +642,9 @@ public class ExperimentService {
     Experiment copy =
         Experiment.builder()
             .niche(original.getNiche())
+            .product(original.getProduct())
+            .desireTerritoryCode(original.getDesireTerritoryCode())
+            .desireTerritorySnapshotJson(original.getDesireTerritorySnapshotJson())
             .name(original.getName() + " copy")
             .creationSource(original.getCreationSource())
             .hypothesis(original.getHypothesis())

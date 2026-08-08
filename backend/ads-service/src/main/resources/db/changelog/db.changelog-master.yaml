@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-08-image-generation-history.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-08-creative-versioning.yaml
       relativeToChangelogFile: true
   - include:
@@ -1650,4 +1653,7 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changesets/2026-08-08-mois-creative-intelligence-brief.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-08-experiment-product-desire-territory.yaml
       relativeToChangelogFile: true

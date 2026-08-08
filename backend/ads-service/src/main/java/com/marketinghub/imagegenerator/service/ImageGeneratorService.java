@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.financialagent.service.StudioCostLedgerService;
 import com.marketinghub.imagegenerator.ImageGenerationRequest;
+import com.marketinghub.imagegenerator.dto.ImageGenerationHistoryItem;
 import com.marketinghub.imagegenerator.dto.ImageGeneratorRequest;
 import com.marketinghub.imagegenerator.dto.ImageGeneratorResponse;
 import com.marketinghub.imagegenerator.dto.ImageGeneratorResponse.ImageGeneratorFailure;
@@ -28,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -121,12 +123,13 @@ public class ImageGeneratorService {
     String batchJobId = "img-batch-" + UUID.randomUUID();
     String finalPrompt = buildPrompt(request.prompt());
     CompletableFuture<ImageGeneratorResult> defaultModelGeneration =
-        CompletableFuture.supplyAsync(() -> generateSingleImage(request, finalPrompt, model, null));
+        CompletableFuture.supplyAsync(
+            () -> generateSingleImage(request, batchJobId, finalPrompt, model, null));
     CompletableFuture<ImageGeneratorResult> comparisonModelGeneration =
         CompletableFuture.supplyAsync(
             () ->
                 generateSingleImage(
-                    request, finalPrompt, comparisonImageModel, comparisonImageModel));
+                    request, batchJobId, finalPrompt, comparisonImageModel, comparisonImageModel));
 
     ImageGenerationBatchResult batchResult =
         collectGenerationResults(
@@ -184,6 +187,7 @@ public class ImageGeneratorService {
   /** Gera uma variação individual da imagem e registra auditoria da chamada OpenAI. */
   private ImageGeneratorResult generateSingleImage(
       ImageGeneratorRequest request,
+      String batchJobId,
       String finalPrompt,
       String outputModel,
       String imageToolModel) {
@@ -194,6 +198,7 @@ public class ImageGeneratorService {
         repository.save(
             ImageGenerationRequest.builder()
                 .jobId(jobId)
+                .batchJobId(batchJobId)
                 .productId(request.productId())
                 .commercialPlanId(request.commercialPlanId())
                 .experimentId(request.experimentId())
@@ -273,6 +278,59 @@ public class ImageGeneratorService {
           jobId,
           ex);
       throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, errorMessage, ex);
+    }
+  }
+
+  /** Lista metadados recentes, segregados pelo contexto comercial, sem retornar imagem base64. */
+  public List<ImageGenerationHistoryItem> listRecent(
+      Long productId, Long commercialPlanId, Long experimentId) {
+    validateCommercialContext(
+        new ImageGeneratorRequest(productId, commercialPlanId, experimentId, "recuperação"));
+    return repository
+        .findRecentCompleted(productId, commercialPlanId, experimentId, PageRequest.of(0, 20))
+        .stream()
+        .map(
+            item ->
+                new ImageGenerationHistoryItem(
+                    item.getJobId(),
+                    item.getBatchJobId() == null ? item.getJobId() : item.getBatchJobId(),
+                    item.getModel(),
+                    item.getServiceTier(),
+                    item.getOutputFormat(),
+                    item.getPrompt(),
+                    item.getFinishedAt()))
+        .toList();
+  }
+
+  /** Recupera uma imagem concluída e recria seus derivados somente após a seleção do usuário. */
+  public ImageGeneratorResult getGeneratedImage(
+      Long productId, Long commercialPlanId, Long experimentId, String jobId) {
+    validateCommercialContext(
+        new ImageGeneratorRequest(productId, commercialPlanId, experimentId, "recuperação"));
+    ImageGenerationRequest audit =
+        repository
+            .findCompletedByContextAndJobId(productId, commercialPlanId, experimentId, jobId)
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Geração concluída não encontrada neste contexto."));
+    try {
+      String imageBase64 = extractImageBase64(objectMapper.readTree(audit.getOpenAiResponseBody()));
+      return new ImageGeneratorResult(
+          audit.getJobId(),
+          audit.getModel(),
+          audit.getServiceTier(),
+          audit.getOutputFormat(),
+          imageBase64,
+          derivativeService.createVariants(audit.getOutputFormat(), imageBase64),
+          audit.getFinishedAt());
+    } catch (IOException | RuntimeException ex) {
+      log.error(
+          "Falha ao recuperar imagem persistida. modulo=image-generator operacao=getGeneratedImage jobId={}",
+          jobId,
+          ex);
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY, "O asset persistido não pôde ser recuperado.", ex);
     }
   }
 

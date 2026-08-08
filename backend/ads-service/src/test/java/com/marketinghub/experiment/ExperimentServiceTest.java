@@ -22,6 +22,7 @@ import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
 import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
@@ -34,9 +35,12 @@ import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecut
 import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -78,6 +82,25 @@ class ExperimentServiceTest {
   @Autowired ExperimentFunnelEventRepository experimentFunnelEventRepository;
   @Autowired ExperimentLandingAnalyticsEventRepository experimentLandingAnalyticsEventRepository;
   @Autowired PdeProductionSlotRepository pdeProductionSlotRepository;
+  @Autowired ProductRepository productRepository;
+
+  private Long testProductId;
+
+  /** Cria um produto comercial válido e isolado para cada cenário de criação. */
+  @BeforeEach
+  void createTestProduct() {
+    testProductId =
+        productRepository
+            .save(
+                Product.builder()
+                    .slug("produto-teste-" + UUID.randomUUID())
+                    .name("Produto de teste")
+                    .desireAssociationMapVersion("v1")
+                    .desireAssociationMapJson(
+                        "{\"territories\":[{\"code\":\"TEST_TERRITORY\",\"name\":\"Território de teste\"}]}")
+                    .build())
+            .getId();
+  }
 
   private InstagramAccount createInstagramAccount() {
     return instagramAccountRepository.save(
@@ -231,6 +254,8 @@ class ExperimentServiceTest {
   }
 
   private void applyStageDefaults(CreateExperimentRequest request) {
+    request.setProductId(testProductId);
+    request.setDesireTerritoryCode("TEST_TERRITORY");
     request.setStage(ExperimentStage.AD);
     request.setPrimaryVariable("Ângulo de dor");
     request.setPrimaryMetric("CTR de link (%)");
@@ -240,6 +265,33 @@ class ExperimentServiceTest {
     request.setStage(ExperimentStage.AD);
     request.setPrimaryVariable("Ângulo de dor");
     request.setPrimaryMetric("CTR de link (%)");
+  }
+
+  /** Bloqueia a criação quando o produto pertence a outro nicho comercial. */
+  @Test
+  void createRejectsProductFromAnotherNiche() {
+    MarketNiche experimentNiche =
+        nicheRepository.save(MarketNiche.builder().name("Nail design").build());
+    MarketNiche foreignNiche =
+        nicheRepository.save(MarketNiche.builder().name("Moda feminina").build());
+    Product foreignProduct =
+        productRepository.save(
+            Product.builder()
+                .slug("produto-fora-do-nicho-" + UUID.randomUUID())
+                .name("Produto de outro nicho")
+                .marketNiche(foreignNiche)
+                .desireAssociationMapVersion("v1")
+                .desireAssociationMapJson("{\"territories\":[{\"code\":\"PROFESSIONAL_PRIDE\"}]}")
+                .build());
+    CreateExperimentRequest request = new CreateExperimentRequest();
+    applyStageDefaults(request);
+    request.setMarketNicheId(experimentNiche.getId());
+    request.setProductId(foreignProduct.getId());
+    request.setDesireTerritoryCode("PROFESSIONAL_PRIDE");
+
+    assertThatThrownBy(() -> service.create(request))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("produto selecionado não pertence ao nicho");
   }
 
   @Test

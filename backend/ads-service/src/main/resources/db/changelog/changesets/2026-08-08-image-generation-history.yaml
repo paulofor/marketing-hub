@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-08-image-generation-history
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE image_generation_request
+                ADD COLUMN batch_job_id VARCHAR(96) NULL AFTER job_id;
+              CREATE INDEX idx_image_generation_context_recent
+                ON image_generation_request (product_id, commercial_plan_id, experiment_id, status, created_at);

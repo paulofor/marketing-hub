@@ -9,6 +9,7 @@ import com.marketinghub.imagegeneration.ImageGenerationQuality;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.product.Product;
 import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.sampleemail.SampleEmail;
 import jakarta.persistence.*;
@@ -36,6 +37,20 @@ public class Experiment {
   @ManyToOne(optional = false, fetch = FetchType.LAZY)
   @JoinColumn(name = "niche_id", nullable = false)
   private MarketNiche niche;
+
+  /** Produto comercial que delimita oferta, criativos e leitura de resultado do experimento. */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "product_id")
+  private Product product;
+
+  /** Código estável do território do Mapa de Desejo escolhido para o teste. */
+  @Column(name = "desire_territory_code", length = 64)
+  private String desireTerritoryCode;
+
+  /** Snapshot do território escolhido para preservar a auditoria mesmo após evolução do produto. */
+  @Lob
+  @Column(name = "desire_territory_snapshot_json", columnDefinition = "LONGTEXT")
+  private String desireTerritorySnapshotJson;
 
   @Column(nullable = false)
   private String name;

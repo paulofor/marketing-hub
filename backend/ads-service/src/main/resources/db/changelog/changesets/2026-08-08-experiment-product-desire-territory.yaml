@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-08-experiment-product-desire-territory
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment
+                ADD COLUMN product_id BIGINT NULL,
+                ADD COLUMN desire_territory_code VARCHAR(64) NULL,
+                ADD COLUMN desire_territory_snapshot_json LONGTEXT NULL,
+                ADD INDEX idx_experiment_product_id (product_id),
+                ADD CONSTRAINT fk_experiment_product
+                  FOREIGN KEY (product_id) REFERENCES product(id);

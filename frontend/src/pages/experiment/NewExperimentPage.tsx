@@ -12,6 +12,7 @@ import { useImageGenerationModels } from "../../api/ai/useImageGenerationModels"
 import { useNiches } from "../../api/niche/useNiches";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
+import { useProducts } from "../../api/product/useProducts";
 import {
   usePrepareProductAiHypothesis,
   useProductAiExperimentPreparation,
@@ -26,6 +27,19 @@ import type {
   ExperimentType,
   ProductAiSubtype,
 } from "../../api/experiment/useExperiments";
+import type { Product } from "../../api/product/useProducts";
+
+export function productsEligibleForNiche(
+  products: Product[],
+  nicheId: string,
+): Product[] {
+  return products.filter(
+    (product) =>
+      !nicheId ||
+      product.marketNicheId == null ||
+      product.marketNicheId === Number(nicheId),
+  );
+}
 
 const productAiSubtypeLabels: Record<ProductAiSubtype, string> = {
   AI_VISUAL_PREVIEW: "Prévia visual IA",
@@ -37,6 +51,8 @@ const productAiSubtypeLabels: Record<ProductAiSubtype, string> = {
 };
 
 type FormState = {
+  productId: string;
+  desireTerritoryCode: string;
   experimentType: ExperimentType;
   productAiSubtype: ProductAiSubtype | "";
   nicheId: string;
@@ -78,7 +94,10 @@ export default function NewExperimentPage() {
   const dismissPromiseOptionsRequest = useDismissPromiseOptionsRequest();
   const latestPromiseOptionsDraft = useLatestPromiseOptionsDraft();
   const { data: niches } = useNiches();
+  const { data: products } = useProducts();
   const [form, setForm] = useState<FormState>({
+    productId: "",
+    desireTerritoryCode: "",
     experimentType: "LOW_TICKET_PRODUCT",
     productAiSubtype: "AI_PERSONALIZED_SAMPLE",
     nicheId: nicheIdParam,
@@ -123,6 +142,10 @@ export default function NewExperimentPage() {
     form.hypothesisId,
   );
   const selectedNiche = niches?.find((n) => n.id === Number(form.nicheId));
+  const productsForSelectedNiche = productsEligibleForNiche(
+    products ?? [],
+    form.nicheId,
+  );
   const { data: imageModels } = useImageGenerationModels();
   const { data: journeyTemplates, isLoading: isLoadingJourneyTemplates } =
     useJourneyTemplates({ size: 200 });
@@ -137,7 +160,25 @@ export default function NewExperimentPage() {
   const showNicheSelect = nicheIdParam === "";
   const showHypSelect = hypothesisIdParam === "";
   const workerRequests = { instantForms: 0, emails: 0 };
-  const canGeneratePromiseOptions = Boolean(form.nicheId && form.hypothesisId);
+  const selectedProduct = products?.find(
+    (product) => product.id === Number(form.productId),
+  );
+  const desireTerritories = (() => {
+    try {
+      const parsed = JSON.parse(
+        selectedProduct?.desireAssociationMapJson ?? "{}",
+      );
+      return Array.isArray(parsed.territories) ? parsed.territories : [];
+    } catch {
+      return [];
+    }
+  })() as Array<{ code: string; name: string; idea?: string }>;
+  const canGeneratePromiseOptions = Boolean(
+    form.nicheId &&
+    form.hypothesisId &&
+    form.productId &&
+    form.desireTerritoryCode,
+  );
   const promiseOptionsRequest = usePromiseOptionsRequest(promiseRequestId);
   const promiseRequestStatus = promiseOptionsRequest.data?.status;
   const isWaitingPromiseOptions = Boolean(
@@ -279,6 +320,8 @@ export default function NewExperimentPage() {
     const response = await generatePromiseOptions.mutateAsync({
       nicheId: Number(form.nicheId),
       hypothesisId: form.hypothesisId,
+      productId: Number(form.productId),
+      desireTerritoryCode: form.desireTerritoryCode,
       experimentType: form.experimentType,
     });
     setPromiseRequestId(response.requestId);
@@ -406,6 +449,10 @@ export default function NewExperimentPage() {
         alert("Informe o objetivo comercial do experimento");
         return;
       }
+      if (!form.productId || !form.desireTerritoryCode) {
+        alert("Selecione o produto e o território do Mapa de Desejo");
+        return;
+      }
       const parsedDailyBudget = Number(form.dailyBudget);
       if (
         !form.dailyBudget ||
@@ -426,6 +473,8 @@ export default function NewExperimentPage() {
       }
       await create.mutateAsync({
         nicheId: Number(form.nicheId),
+        productId: Number(form.productId),
+        desireTerritoryCode: form.desireTerritoryCode,
         hypothesisId: hypothesisIdForSubmit || undefined,
         name: "",
         hypothesis: form.hypothesis,
@@ -476,6 +525,8 @@ export default function NewExperimentPage() {
         });
       }
       setForm({
+        productId: "",
+        desireTerritoryCode: "",
         experimentType: "LOW_TICKET_PRODUCT",
         productAiSubtype: "AI_PERSONALIZED_SAMPLE",
         nicheId: nicheIdParam,
@@ -598,6 +649,63 @@ export default function NewExperimentPage() {
           </select>
         </>
       )}
+      <div className="card border-primary mb-3">
+        <div className="card-body">
+          <label className="form-label fw-semibold" htmlFor="productId">
+            Produto do experimento
+          </label>
+          <select
+            id="productId"
+            className="form-select mb-3"
+            value={form.productId}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                productId: event.target.value,
+                desireTerritoryCode: "",
+              }))
+            }
+          >
+            <option value="">Selecione o produto</option>
+            {productsForSelectedNiche.map((product) => (
+              <option key={product.id} value={product.id}>
+                {product.name}
+              </option>
+            ))}
+          </select>
+          <label
+            className="form-label fw-semibold"
+            htmlFor="desireTerritoryCode"
+          >
+            Território do Mapa de Desejo
+          </label>
+          <select
+            id="desireTerritoryCode"
+            className="form-select"
+            value={form.desireTerritoryCode}
+            disabled={!form.productId || desireTerritories.length === 0}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                desireTerritoryCode: event.target.value,
+              }))
+            }
+          >
+            <option value="">Selecione o território</option>
+            {desireTerritories.map((territory) => (
+              <option key={territory.code} value={territory.code}>
+                {territory.name}
+              </option>
+            ))}
+          </select>
+          {form.productId && desireTerritories.length === 0 && (
+            <div className="alert alert-warning py-2 mt-2 mb-0" role="alert">
+              Este produto ainda não possui territórios válidos no Mapa de
+              Desejo.
+            </div>
+          )}
+        </div>
+      </div>
       {showNicheSelect && (
         <select
           className="form-select mb-2"
@@ -606,6 +714,8 @@ export default function NewExperimentPage() {
             setForm({
               ...form,
               nicheId: e.target.value,
+              productId: "",
+              desireTerritoryCode: "",
               hypothesisId: "",
               hypothesis: "",
             })

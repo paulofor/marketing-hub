@@ -16,6 +16,8 @@ import lombok.Data;
 @Data
 public class CreateExperimentRequest {
   private Long marketNicheId;
+  private Long productId;
+  private String desireTerritoryCode;
   private java.util.UUID hypothesisId;
   private String name;
   private ExperimentCreationSource creationSource;

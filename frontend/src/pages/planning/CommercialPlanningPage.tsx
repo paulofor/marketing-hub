@@ -39,6 +39,10 @@ const emptyCommercialPlan: SaveCommercialPlanPayload = {
   operationalRevenueTarget: null,
   experimentsToCreate: 1,
   experimentsToPublish: 0,
+  productsToValidate: 1,
+  productTypesToExplore: 1,
+  approachesToTest: 2,
+  customerConversationsTarget: 5,
   nextAction: "",
   currentBlocker: "",
   rootCause: "",
@@ -72,6 +76,10 @@ const augustRevenuePlan: SaveCommercialPlanPayload = {
   operationalRevenueTarget: 335,
   experimentsToCreate: 1,
   experimentsToPublish: 1,
+  productsToValidate: 1,
+  productTypesToExplore: 1,
+  approachesToTest: 2,
+  customerConversationsTarget: 5,
   nextAction:
     "Acompanhar diariamente o experimento 81 a R$ 25 por dia, proteger a primeira venda e corrigir somente o ponto comprovado de abandono.",
   currentBlocker:
@@ -110,6 +118,10 @@ const julyPlanningForm: SaveCommercialPlanPayload = {
   operationalRevenueTarget: 81,
   experimentsToCreate: 2,
   experimentsToPublish: 3,
+  productsToValidate: 1,
+  productTypesToExplore: 1,
+  approachesToTest: 2,
+  customerConversationsTarget: 5,
   nextAction:
     "Preparar produto compravel, pagina curta com checkout na primeira dobra e 3 criativos: dor, prova visual do kit e oferta direta.",
   currentBlocker:
@@ -152,6 +164,10 @@ function planToPayload(plan: CommercialPlan): SaveCommercialPlanPayload {
     operationalRevenueTarget: plan.operationalRevenueTarget,
     experimentsToCreate: plan.experimentsToCreate,
     experimentsToPublish: plan.experimentsToPublish,
+    productsToValidate: plan.productsToValidate,
+    productTypesToExplore: plan.productTypesToExplore,
+    approachesToTest: plan.approachesToTest,
+    customerConversationsTarget: plan.customerConversationsTarget,
     nextAction: plan.nextAction ?? undefined,
     currentBlocker: plan.currentBlocker ?? undefined,
     rootCause: plan.rootCause ?? undefined,
@@ -495,14 +511,14 @@ function MonthlyMetricCard({
   label: string;
   target: string;
   actual: string;
-  percentage: number;
+  percentage?: number;
   tone?: "primary" | "success" | "warning" | "info";
 }) {
   return (
     <div className="commercial-planning-month-metric">
       <div className="d-flex justify-content-between align-items-start gap-2">
         <span className="commercial-planning-month-metric-label">{label}</span>
-        <span className={`badge text-bg-${tone}`}>{percentage}%</span>
+        <span className={`badge text-bg-${tone}`}>{percentage ?? 0}%</span>
       </div>
       <div className="commercial-planning-month-metric-values">
         <strong>{target}</strong>
@@ -513,7 +529,7 @@ function MonthlyMetricCard({
         <span>Execução</span>
       </div>
       <div className="commercial-planning-month-progress" aria-hidden="true">
-        <span style={{ width: `${percentage}%` }} />
+        <span style={{ width: `${percentage ?? 0}%` }} />
       </div>
     </div>
   );
@@ -1388,6 +1404,46 @@ export default function CommercialPlanningPage() {
                     />
                   </div>
                 </div>
+                <div
+                  className="row g-3"
+                  aria-label="Metas numéricas comerciais"
+                >
+                  {(
+                    [
+                      ["productsToValidate", "Produtos a validar"],
+                      ["productTypesToExplore", "Tipos de PDE a explorar"],
+                      ["approachesToTest", "Abordagens a testar"],
+                      ["experimentsToCreate", "Experimentos a criar"],
+                      ["experimentsToPublish", "Experimentos a publicar"],
+                      ["customerConversationsTarget", "Conversas com clientes"],
+                    ] as const
+                  ).map(([field, label]) => (
+                    <div className="col-md-4" key={field}>
+                      <label
+                        className="form-label"
+                        htmlFor={`planning-${field}`}
+                      >
+                        {label}
+                      </label>
+                      <input
+                        id={`planning-${field}`}
+                        className="form-control"
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={planDraft[field] ?? ""}
+                        onChange={(event) =>
+                          updatePlanDraft(
+                            field,
+                            event.target.value === ""
+                              ? null
+                              : Number(event.target.value),
+                          )
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
                 <label className="form-label mb-0" htmlFor="planning-objective">
                   Objetivo comercial
                 </label>
@@ -1529,6 +1585,28 @@ export default function CommercialPlanningPage() {
                 currentMonthPlan.actualExperimentsPublished,
               )}
               percentage={publishedExperimentsProgress}
+            />
+            <MonthlyMetricCard
+              label="Produtos a validar"
+              target={formatNumber(currentMonthPlan.productsToValidate)}
+              actual="Medir por evidência"
+            />
+            <MonthlyMetricCard
+              label="Tipos de PDE a explorar"
+              target={formatNumber(currentMonthPlan.productTypesToExplore)}
+              actual="Medir por evidência"
+            />
+            <MonthlyMetricCard
+              label="Abordagens a testar"
+              target={formatNumber(currentMonthPlan.approachesToTest)}
+              actual="Medir por evidência"
+            />
+            <MonthlyMetricCard
+              label="Conversas com clientes"
+              target={formatNumber(
+                currentMonthPlan.customerConversationsTarget,
+              )}
+              actual="Medir por evidência"
             />
           </div>
 

@@ -21,6 +21,10 @@ export interface CommercialPlanMilestone {
   targetRevenue?: number | null;
   experimentsToCreate?: number | null;
   experimentsToPublish?: number | null;
+  productsToValidate?: number | null;
+  productTypesToExplore?: number | null;
+  approachesToTest?: number | null;
+  customerConversationsTarget?: number | null;
   actualCampaignCost?: number | null;
   actualAiCost?: number | null;
   actualTotalCost?: number | null;
@@ -77,6 +81,10 @@ export interface CommercialPlan {
   operationalRevenueTarget?: number | null;
   experimentsToCreate?: number | null;
   experimentsToPublish?: number | null;
+  productsToValidate?: number | null;
+  productTypesToExplore?: number | null;
+  approachesToTest?: number | null;
+  customerConversationsTarget?: number | null;
   actualCampaignCost?: number | null;
   actualAiCost?: number | null;
   actualTotalCost?: number | null;
@@ -179,6 +187,10 @@ export interface SaveCommercialPlanPayload {
   operationalRevenueTarget?: number | null;
   experimentsToCreate?: number | null;
   experimentsToPublish?: number | null;
+  productsToValidate?: number | null;
+  productTypesToExplore?: number | null;
+  approachesToTest?: number | null;
+  customerConversationsTarget?: number | null;
   nextAction?: string;
   currentBlocker?: string;
   rootCause?: string;

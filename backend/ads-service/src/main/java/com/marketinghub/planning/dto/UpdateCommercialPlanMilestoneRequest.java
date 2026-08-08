@@ -12,6 +12,10 @@ public record UpdateCommercialPlanMilestoneRequest(
     BigDecimal targetRevenue,
     Integer experimentsToCreate,
     Integer experimentsToPublish,
+    Integer productsToValidate,
+    Integer productTypesToExplore,
+    Integer approachesToTest,
+    Integer customerConversationsTarget,
     String evidenceSource,
     String blocker,
     String recommendedNextAction) {}

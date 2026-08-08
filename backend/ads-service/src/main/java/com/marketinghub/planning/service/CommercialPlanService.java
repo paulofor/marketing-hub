@@ -97,6 +97,10 @@ public class CommercialPlanService {
             .operationalRevenueTarget(request.operationalRevenueTarget())
             .experimentsToCreate(request.experimentsToCreate())
             .experimentsToPublish(request.experimentsToPublish())
+            .productsToValidate(request.productsToValidate())
+            .productTypesToExplore(request.productTypesToExplore())
+            .approachesToTest(request.approachesToTest())
+            .customerConversationsTarget(request.customerConversationsTarget())
             .nextAction(request.nextAction())
             .currentBlocker(request.currentBlocker())
             .rootCause(request.rootCause())
@@ -131,6 +135,10 @@ public class CommercialPlanService {
     plan.setOperationalRevenueTarget(request.operationalRevenueTarget());
     plan.setExperimentsToCreate(request.experimentsToCreate());
     plan.setExperimentsToPublish(request.experimentsToPublish());
+    plan.setProductsToValidate(request.productsToValidate());
+    plan.setProductTypesToExplore(request.productTypesToExplore());
+    plan.setApproachesToTest(request.approachesToTest());
+    plan.setCustomerConversationsTarget(request.customerConversationsTarget());
     plan.setNextAction(request.nextAction());
     plan.setCurrentBlocker(request.currentBlocker());
     plan.setRootCause(request.rootCause());
@@ -242,6 +250,10 @@ public class CommercialPlanService {
     milestone.setTargetRevenue(request.targetRevenue());
     milestone.setExperimentsToCreate(request.experimentsToCreate());
     milestone.setExperimentsToPublish(request.experimentsToPublish());
+    milestone.setProductsToValidate(request.productsToValidate());
+    milestone.setProductTypesToExplore(request.productTypesToExplore());
+    milestone.setApproachesToTest(request.approachesToTest());
+    milestone.setCustomerConversationsTarget(request.customerConversationsTarget());
     milestone.setEvidenceSource(request.evidenceSource());
     milestone.setBlocker(request.blocker());
     milestone.setRecommendedNextAction(request.recommendedNextAction());

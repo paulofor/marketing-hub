@@ -823,6 +823,13 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o montador de prompt atribuía zero imagens gratuitas a todo formulário simples, sem considerar o modelo canônico `AI_PERSONALIZED_SAMPLE_FUNNEL`.
 - **Prevenção:** fluxos desse modelo liberam como gratuitas todas as saídas planejadas; teste de contrato exige que a quantidade gratuita seja igual ao lote configurado, sem ampliar a regra para formulários pagos.
 
+### LOOP-LEAD-PORTAL-MODELO-PERSISTIDO-IGNORADO
+
+- **Sintoma:** a microamostra registra `gpt-image-1`, mas o worker chama outro modelo e recebe `Unknown parameter: response_format` em todas as tentativas.
+- **Causa-raiz:** pacotes legados sem `image_model_id` ignoravam o campo textual `model` já persistido e escolhiam o primeiro modelo do catálogo, cuja ordem não representa preferência operacional.
+- **Correção sistêmica:** o planejador agora resolve primeiro IDs explícitos, depois o modelo persistido por `apiModel` e somente então usa o fallback do catálogo.
+- **Prevenção:** teste de contrato mantém `gpt-image-1` mesmo quando `dall-e-2` aparece primeiro no catálogo e o pacote não possui IDs novos.
+
 ### LOOP-LEAD-PORTAL-FORMULARIO-INVALIDO-ENVIADO
 
 - **Sintoma:** ao tocar no CTA com campos obrigatórios vazios, a página exibe erro genérico de envio e registra uma exceção técnica, em vez de orientar o preenchimento do primeiro campo inválido.

@@ -115,6 +115,18 @@ public class CommercialPlan {
   @Column(name = "experiments_to_publish")
   private Integer experimentsToPublish;
 
+  @Column(name = "products_to_validate")
+  private Integer productsToValidate;
+
+  @Column(name = "product_types_to_explore")
+  private Integer productTypesToExplore;
+
+  @Column(name = "approaches_to_test")
+  private Integer approachesToTest;
+
+  @Column(name = "customer_conversations_target")
+  private Integer customerConversationsTarget;
+
   @Column(name = "actual_campaign_cost", precision = 12, scale = 2)
   private BigDecimal actualCampaignCost;
 

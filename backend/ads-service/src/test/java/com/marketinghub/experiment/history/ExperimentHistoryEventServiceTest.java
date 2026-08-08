@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.history.ExperimentHistoryEventContracts.CreateRequest;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.history.ExperimentHistoryEventRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;

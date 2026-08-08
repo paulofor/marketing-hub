@@ -5,6 +5,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.history.ExperimentHistoryEventContracts.CreateRequest;
 import com.marketinghub.experiment.history.ExperimentHistoryEventContracts.Response;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.history.ExperimentHistoryEventRepository;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

@@ -187,6 +187,33 @@ class CreativeControllerTest {
 
     mockMvc
         .perform(
+            post("/api/internal/creatives/" + created.getId() + "/agent-review/result")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "decision":"APPROVED",
+                      "attentionScore":80,
+                      "clarityScore":80,
+                      "desireScore":80,
+                      "credibilityScore":80,
+                      "actionScore":80,
+                      "summary":"Peça pronta para revisão humana.",
+                      "issuesJson":"[]",
+                      "recommendationsJson":"[]",
+                      "model":"gpt-test",
+                      "requestJson":"{}",
+                      "responseJson":"{}",
+                      "inputTokens":10,
+                      "outputTokens":10,
+                      "costUsd":0
+                    }
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.agentReviewStatus").value("APPROVED"));
+
+    mockMvc
+        .perform(
             patch("/api/creatives/" + created.getId() + "/status")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"READY\"}"))

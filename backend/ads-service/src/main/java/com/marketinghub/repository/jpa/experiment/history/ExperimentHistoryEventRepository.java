@@ -1,5 +1,6 @@
-package com.marketinghub.experiment.history;
+package com.marketinghub.repository.jpa.experiment.history;
 
+import com.marketinghub.experiment.history.ExperimentHistoryEvent;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 

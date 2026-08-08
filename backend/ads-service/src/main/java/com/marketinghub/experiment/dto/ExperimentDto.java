@@ -21,6 +21,10 @@ import lombok.Data;
 public class ExperimentDto {
   private Long id;
   private Long nicheId;
+  private Long productId;
+  private String productName;
+  private String desireTerritoryCode;
+  private String desireTerritorySnapshotJson;
   private java.util.UUID hypothesisId;
   private String name;
   private ExperimentCreationSource creationSource;

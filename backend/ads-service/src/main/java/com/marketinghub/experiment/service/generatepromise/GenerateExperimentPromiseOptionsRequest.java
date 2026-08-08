@@ -10,6 +10,8 @@ import java.util.UUID;
 public record GenerateExperimentPromiseOptionsRequest(
     Long nicheId,
     UUID hypothesisId,
+    Long productId,
+    String desireTerritoryCode,
     ExperimentType experimentType,
     String hypothesis,
     String currentSinglePain,

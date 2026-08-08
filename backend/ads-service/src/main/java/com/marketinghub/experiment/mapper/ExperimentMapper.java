@@ -19,6 +19,8 @@ import org.mapstruct.MappingTarget;
 @Mapper(componentModel = "spring", uses = FacebookInstantFormMapper.class)
 public interface ExperimentMapper {
   @org.mapstruct.Mapping(target = "nicheId", source = "niche.id")
+  @org.mapstruct.Mapping(target = "productId", source = "product.id")
+  @org.mapstruct.Mapping(target = "productName", source = "product.name")
   @org.mapstruct.Mapping(target = "hypothesisId", source = "hypothesisRef.id")
   @org.mapstruct.Mapping(target = "metricPresetId", source = "metricPreset.id")
   @org.mapstruct.Mapping(target = "journeyTemplateId", source = "journeyTemplate.id")

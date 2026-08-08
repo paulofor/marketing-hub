@@ -48,6 +48,12 @@ Preço, orçamento, publicação e comunicação em massa permanecem sujeitos ao
 humano. Um criativo deve testar somente um território, mantendo público, oferta, preço, canal e CTA
 constantes sempre que o desenho experimental permitir.
 
+Todo experimento novo deve selecionar explicitamente um produto e exatamente um território do
+Mapa de Desejo desse produto. O backend deve validar a associação, persistir `product_id`, o código
+do território e um snapshot JSON do território vigente. A geração de oferta deve receber o mesmo
+produto e território e é proibida de inferir, substituir ou renomear o produto. Alterações futuras
+no mapa não podem reescrever o snapshot histórico do experimento.
+
 O mapa inicial do Agenda Cheia Nail Design contém três hipóteses, ainda sem vencedor:
 
 - orgulho profissional: perfil à altura do talento;

@@ -15,10 +15,12 @@ import com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequestSta
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsRequest;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentPromiseGenerationRequestRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,6 +42,7 @@ class ExperimentPromiseGenerationServiceTest {
   @Mock private HypothesisRepository hypothesisRepository;
   @Mock private ExperimentPromiseGenerationRequestRepository requestRepository;
   @Mock private ExperimentRepository experimentRepository;
+  @Mock private ProductRepository productRepository;
   @Mock private CostAttributionService costAttributionService;
   @Spy private ObjectMapper objectMapper = new ObjectMapper();
   @InjectMocks private ExperimentPromiseGenerationService service;
@@ -51,7 +54,7 @@ class ExperimentPromiseGenerationServiceTest {
             () ->
                 service.generate(
                     new GenerateExperimentPromiseOptionsRequest(
-                        null, null, null, null, null, null, null, null)))
+                        null, null, null, null, null, null, null, null, null, null)))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("Selecione um nicho");
   }
@@ -63,7 +66,7 @@ class ExperimentPromiseGenerationServiceTest {
             () ->
                 service.generate(
                     new GenerateExperimentPromiseOptionsRequest(
-                        7L, null, null, null, null, null, null, null)))
+                        7L, null, null, null, null, null, null, null, null, null)))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("Selecione uma hipótese");
   }
@@ -95,6 +98,7 @@ class ExperimentPromiseGenerationServiceTest {
             .build();
     when(nicheRepository.findById(7L)).thenReturn(Optional.of(niche));
     when(hypothesisRepository.findById(hypothesisId)).thenReturn(Optional.of(hypothesis));
+    mockAgendaCheiaProduct();
     when(requestRepository.save(any()))
         .thenAnswer(
             invocation -> {
@@ -108,6 +112,8 @@ class ExperimentPromiseGenerationServiceTest {
             new GenerateExperimentPromiseOptionsRequest(
                 7L,
                 hypothesisId,
+                1L,
+                "PROFESSIONAL_PRIDE",
                 null,
                 "dor digitada",
                 "recompensa digitada",
@@ -149,6 +155,7 @@ class ExperimentPromiseGenerationServiceTest {
             .build();
     when(nicheRepository.findById(8L)).thenReturn(Optional.of(niche));
     when(hypothesisRepository.findById(hypothesisId)).thenReturn(Optional.of(hypothesis));
+    mockAgendaCheiaProduct();
     when(requestRepository.save(any()))
         .thenAnswer(
             invocation -> {
@@ -159,7 +166,16 @@ class ExperimentPromiseGenerationServiceTest {
 
     service.generate(
         new GenerateExperimentPromiseOptionsRequest(
-            8L, hypothesisId, ExperimentType.LOW_TICKET_PRODUCT, null, null, null, null, null));
+            8L,
+            hypothesisId,
+            1L,
+            "PROFESSIONAL_PRIDE",
+            ExperimentType.LOW_TICKET_PRODUCT,
+            null,
+            null,
+            null,
+            null,
+            null));
 
     ArgumentCaptor<ExperimentPromiseGenerationRequest> requestCaptor =
         ArgumentCaptor.forClass(ExperimentPromiseGenerationRequest.class);
@@ -174,6 +190,18 @@ class ExperimentPromiseGenerationServiceTest {
             "page_view, checkout_click, purchase",
             "nao trate como teste de nicho")
         .doesNotContain("Tipo de experimento: Teste de nicho com isca digital");
+  }
+
+  /** Prepara um produto com território real para os testes de geração contextual. */
+  private void mockAgendaCheiaProduct() {
+    Product product =
+        Product.builder()
+            .id(1L)
+            .name("Agenda Cheia Nail Design")
+            .desireAssociationMapJson(
+                "{\"territories\":[{\"code\":\"PROFESSIONAL_PRIDE\",\"name\":\"Orgulho profissional\"}]}")
+            .build();
+    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
   }
 
   /** Deve retornar o status persistido para a tela acompanhar a solicitação até a conclusão. */

@@ -10,6 +10,8 @@ import type {
 
 export interface CreateExperiment {
   nicheId: number;
+  productId: number;
+  desireTerritoryCode: string;
   hypothesisId?: string;
   name?: string;
   hypothesis: string;

@@ -14,10 +14,12 @@ import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPro
 import com.marketinghub.experiment.service.generatepromise.latestdraft.ExperimentPromiseOptionsDraftResponse;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentPromiseGenerationRequestRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -45,6 +47,7 @@ public class ExperimentPromiseGenerationService {
   private final HypothesisRepository hypothesisRepository;
   private final ExperimentPromiseGenerationRequestRepository requestRepository;
   private final ExperimentRepository experimentRepository;
+  private final ProductRepository productRepository;
   private final ObjectMapper objectMapper;
   private final CostAttributionService costAttributionService;
 
@@ -54,12 +57,14 @@ public class ExperimentPromiseGenerationService {
       HypothesisRepository hypothesisRepository,
       ExperimentPromiseGenerationRequestRepository requestRepository,
       ExperimentRepository experimentRepository,
+      ProductRepository productRepository,
       ObjectMapper objectMapper,
       CostAttributionService costAttributionService) {
     this.nicheRepository = nicheRepository;
     this.hypothesisRepository = hypothesisRepository;
     this.requestRepository = requestRepository;
     this.experimentRepository = experimentRepository;
+    this.productRepository = productRepository;
     this.objectMapper = objectMapper;
     this.costAttributionService = costAttributionService;
   }
@@ -82,7 +87,11 @@ public class ExperimentPromiseGenerationService {
             .orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nicho não encontrado"));
     Hypothesis hypothesis = resolveHypothesis(request.hypothesisId());
-    String prompt = buildPrompt(niche, hypothesis, resolveExperimentType(request.experimentType()));
+    Product product = resolveProduct(request.productId());
+    JsonNode territory = resolveTerritory(product, request.desireTerritoryCode());
+    String prompt =
+        buildPrompt(
+            niche, hypothesis, product, territory, resolveExperimentType(request.experimentType()));
     ExperimentPromiseGenerationRequest entity =
         ExperimentPromiseGenerationRequest.builder()
             .niche(niche)
@@ -243,15 +252,61 @@ public class ExperimentPromiseGenerationService {
             () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Hipótese não encontrada"));
   }
 
+  /** Localiza o produto explicitamente selecionado para impedir inferência de oferta divergente. */
+  private Product resolveProduct(Long productId) {
+    if (productId == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecione um produto");
+    }
+    return productRepository
+        .findById(productId)
+        .orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado"));
+  }
+
+  /** Localiza e valida o território dentro do Mapa de Desejo do produto selecionado. */
+  private JsonNode resolveTerritory(Product product, String territoryCode) {
+    if (!StringUtils.hasText(territoryCode)
+        || !StringUtils.hasText(product.getDesireAssociationMapJson())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Selecione um território válido do Mapa de Desejo");
+    }
+    try {
+      for (JsonNode territory :
+          objectMapper.readTree(product.getDesireAssociationMapJson()).path("territories")) {
+        if (territoryCode.trim().equals(territory.path("code").asText())) {
+          return territory;
+        }
+      }
+    } catch (JsonProcessingException ex) {
+      log.error(
+          "Falha ao ler Mapa de Desejo para gerar oferta. productId={}, territoryCode={}",
+          product.getId(),
+          territoryCode,
+          ex);
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mapa de Desejo inválido", ex);
+    }
+    throw new ResponseStatusException(
+        HttpStatus.BAD_REQUEST, "Território não pertence ao produto selecionado");
+  }
+
   /**
    * Monta um contexto comercial enxuto para evitar prompts grandes demais na geração de promessa.
    */
   private String buildPrompt(
-      MarketNiche niche, Hypothesis hypothesis, ExperimentType experimentType) {
+      MarketNiche niche,
+      Hypothesis hypothesis,
+      Product product,
+      JsonNode territory,
+      ExperimentType experimentType) {
     StringBuilder sb = new StringBuilder();
     sb.append(
         "Contexto enxuto para gerar exatamente 3 opções diferentes de contrato de entrada comercial para um novo experimento.\n");
     appendExperimentTypeGuidance(sb, experimentType);
+    sb.append("\nProduto obrigatório: ").append(product.getName()).append(".\n");
+    sb.append("Território obrigatório do Mapa de Desejo: ")
+        .append(territory.toString())
+        .append(".\n");
+    sb.append("Não invente, substitua ou renomeie o produto selecionado.\n");
     appendCompactNicheDetails(sb, niche);
     appendCompactHypothesisDetails(sb, hypothesis);
     sb.append("\nRegras da resposta:\n");

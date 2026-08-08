@@ -15,6 +15,8 @@ export interface PromiseOption {
 interface GeneratePromiseOptionsPayload {
   nicheId: number;
   hypothesisId: string;
+  productId: number;
+  desireTerritoryCode: string;
   experimentType?: ExperimentType;
   currentSinglePain?: string;
   currentFreeReward?: string;

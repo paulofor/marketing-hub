@@ -225,6 +225,25 @@ const statusLabel = (status: string) => {
   }
 };
 
+const agentReviewLabel = (status?: Creative["agentReviewStatus"]) => {
+  switch (status) {
+    case "APPROVED": return "Agente: aprovado";
+    case "ADJUST": return "Agente: ajustar";
+    case "REJECTED": return "Agente: reprovado";
+    case "FAILED": return "Agente: falha técnica";
+    case "PROCESSING": return "Agente: analisando";
+    case "PENDING": return "Agente: aguardando análise";
+    default: return "Agente: legado sem análise";
+  }
+};
+
+const agentReviewClass = (status?: Creative["agentReviewStatus"]) =>
+  status === "APPROVED"
+    ? "text-bg-success"
+    : status === "REJECTED" || status === "FAILED"
+      ? "text-bg-danger"
+      : "text-bg-warning";
+
 export default function CriativosTab({
   experimentId,
   alterationLocked = false,
@@ -623,6 +642,9 @@ export default function CriativosTab({
                 {c.format}
               </span>
             )}
+            <span className={`badge rounded-pill ${agentReviewClass(c.agentReviewStatus)}`}>
+              {agentReviewLabel(c.agentReviewStatus)}
+            </span>
           </div>
           <h3 className="creative-card-headline">
             {c.headline || "Sem headline"}

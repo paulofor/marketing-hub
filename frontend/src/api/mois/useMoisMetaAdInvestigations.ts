@@ -21,9 +21,37 @@ export interface MetaAdInvestigation {
   evidences: string[];
   gaps: string[];
   ethicalModeling: EthicalModelingCard;
+  creativeBrief: {
+    status: "UNAVAILABLE" | "READY_FOR_AD_SPECIALIST";
+    title: string;
+    originalHook: string;
+    visualDirection: string;
+    offerAngle: string;
+    callToAction: string;
+    sourceEvidences: string[];
+    confidence: "INSUFFICIENT" | "MEDIUM" | "HIGH";
+    requiresAdSpecialistApproval: boolean;
+    generatedAt?: string;
+  };
   adsObserved: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export function useGenerateMoisCreativeBrief() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (investigationId: number) => {
+      const { data } = await axios.post<MetaAdInvestigation>(
+        `/api/v1/mois/meta-ad-investigations/${investigationId}/creative-brief`,
+      );
+      return data;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["mois", "meta-ad-investigations"],
+      }),
+  });
 }
 
 export function useMoisMetaAdInvestigations(workspaceId: string) {

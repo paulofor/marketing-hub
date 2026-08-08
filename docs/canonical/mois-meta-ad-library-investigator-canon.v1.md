@@ -36,6 +36,15 @@ Tempo declarado pela plataforma ou presença em uma única consulta não comprov
 
 Toda decisão deve expor evidências e lacunas. O score mínimo de uma consulta é somente filtro e nunca pode elevar a nota calculada.
 
+## Inteligência criativa e briefings
+
+- Somente uma investigação em `MODELAR` pode gerar briefing.
+- O briefing deve citar as evidências persistidas, declarar confiança e criar gancho, direção visual, ângulo e CTA originais.
+- Longevidade é sinal de mercado, nunca prova de venda ou autorização para chamar um anúncio de vencedor.
+- É proibido copiar marca, texto, personagem, mídia ou composição identificável da fonte.
+- Todo briefing fica em `READY_FOR_AD_SPECIALIST` e precisa passar pelo Agente Especialista em Aprovação de Anúncios e pela aprovação humana antes de qualquer publicação.
+- Resultado próprio do Marketing Hub — CTR, checkout, venda, margem e satisfação — é a única confirmação comercial do padrão modelado.
+
 ## Fontes na tela
 
 Fontes sem coletor real devem aparecer desabilitadas e identificadas como `em implantação`. O Radar Meta comercial usa cadastro supervisionado dedicado e não o coletor genérico legado.

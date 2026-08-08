@@ -99,12 +99,49 @@ public class MoisMetaAdInvestigationService {
                     stringList(rs.getString("evidence_json")),
                     stringList(rs.getString("gaps_json")),
                     modelingCard(rs.getString("ethical_modeling_json")),
+                    creativeBrief(rs.getString("creative_briefing_json")),
                     rs.getInt("ads_observed"),
                     rs.getTimestamp("created_at").toInstant(),
                     rs.getTimestamp("updated_at").toInstant()),
             id)
         .stream()
         .findFirst();
+  }
+
+  /** Gera um briefing original somente depois que as evidências permitem modelagem ética. */
+  public MoisMetaAdDtos.InvestigationResponse generateCreativeBrief(long id) {
+    MoisMetaAdDtos.InvestigationResponse investigation = required(id);
+    if (!"MODELAR".equals(investigation.gateDecision())) {
+      throw new IllegalStateException(
+          "Briefing bloqueado: a investigação ainda não possui evidência suficiente para MODELAR");
+    }
+    MoisMetaAdDtos.EthicalModelingCard card = investigation.ethicalModeling();
+    Instant generatedAt = Instant.now();
+    MoisMetaAdDtos.CreativeIntelligenceBrief brief =
+        new MoisMetaAdDtos.CreativeIntelligenceBrief(
+            "READY_FOR_AD_SPECIALIST",
+            "Conceito original para " + investigation.searchTerms(),
+            "Mostre a dor de "
+                + card.pain()
+                + " e abra uma possibilidade concreta sem repetir a redação observada.",
+            "Crie uma cena própria que materialize "
+                + firstOrFallback(card.patterns(), "a transformação")
+                + ", com marca, personagem e composição inéditos.",
+            "Apresente "
+                + card.offerStructure()
+                + " por um ângulo original de "
+                + firstOrFallback(card.angles(), "demonstração"),
+            "Convide a pessoa a conhecer a solução com uma ação específica e coerente com a oferta.",
+            investigation.evidences(),
+            "MEDIUM",
+            true,
+            generatedAt);
+    jdbcTemplate.update(
+        "UPDATE mois_meta_ad_investigation SET creative_briefing_json = ?, updated_at = ? WHERE id = ?",
+        json(brief),
+        Timestamp.from(generatedAt),
+        id);
+    return required(id);
   }
 
   /** Reserva a execução pendente mais antiga sem expor endpoints administrativos ao coletor. */
@@ -412,6 +449,23 @@ public class MoisMetaAdInvestigationService {
       log.error("Falha ao ler ficha ética da investigação Meta", ex);
       throw new IllegalStateException("Falha ao ler ficha ética Meta", ex);
     }
+  }
+
+  /** Desserializa o briefing criativo sem fabricar conteúdo quando ele ainda não existe. */
+  private MoisMetaAdDtos.CreativeIntelligenceBrief creativeBrief(String value) {
+    try {
+      return value == null
+          ? MoisMetaAdDtos.CreativeIntelligenceBrief.unavailable()
+          : objectMapper.readValue(value, MoisMetaAdDtos.CreativeIntelligenceBrief.class);
+    } catch (JsonProcessingException ex) {
+      log.error("Falha ao ler briefing da inteligência criativa Meta", ex);
+      throw new IllegalStateException("Falha ao ler briefing da inteligência criativa Meta", ex);
+    }
+  }
+
+  /** Seleciona um padrão comprovado ou mantém uma formulação neutra. */
+  private String firstOrFallback(List<String> values, String fallback) {
+    return values == null || values.isEmpty() ? fallback : values.getFirst();
   }
 
   /** Agrupa a decisão calculada e sua justificativa auditável. */

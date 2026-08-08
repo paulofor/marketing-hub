@@ -28,9 +28,30 @@ public final class MoisMetaAdDtos {
       List<String> evidences,
       List<String> gaps,
       EthicalModelingCard ethicalModeling,
+      CreativeIntelligenceBrief creativeBrief,
       int adsObserved,
       Instant createdAt,
       Instant updatedAt) {}
+
+  /** Expõe um briefing original derivado somente de padrões comprovados e rastreáveis. */
+  public record CreativeIntelligenceBrief(
+      String status,
+      String title,
+      String originalHook,
+      String visualDirection,
+      String offerAngle,
+      String callToAction,
+      List<String> sourceEvidences,
+      String confidence,
+      boolean requiresAdSpecialistApproval,
+      Instant generatedAt) {
+
+    /** Representa a ausência de briefing enquanto o gate comercial não foi atendido. */
+    public static CreativeIntelligenceBrief unavailable() {
+      return new CreativeIntelligenceBrief(
+          "UNAVAILABLE", "", "", "", "", "", List.of(), "INSUFFICIENT", true, null);
+    }
+  }
 
   /** Lista investigações para a tela administrativa. */
   public record InvestigationListResponse(List<InvestigationResponse> items) {}

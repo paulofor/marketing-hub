@@ -54,6 +54,16 @@ public class MoisMetaAdInvestigationController {
     return service.ingestSupervised(id, request);
   }
 
+  /** Gera um briefing original rastreável para avaliação posterior pelo Aprovador. */
+  @PostMapping("/v1/mois/meta-ad-investigations/{id}/creative-brief")
+  public MoisMetaAdDtos.InvestigationResponse generateCreativeBrief(@PathVariable long id) {
+    try {
+      return service.generateCreativeBrief(id);
+    } catch (IllegalStateException ex) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, ex.getMessage(), ex);
+    }
+  }
+
   /** Reserva uma pendência para o coletor oficial da Meta. */
   @GetMapping("/internal/mois/meta-ad-library/v1/investigations/pending")
   public MoisMetaAdDtos.PendingInvestigationResponse pending() {

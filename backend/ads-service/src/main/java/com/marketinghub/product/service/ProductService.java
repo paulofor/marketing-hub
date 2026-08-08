@@ -500,7 +500,11 @@ public class ProductService {
                c.image_url AS image_url,
                c.video_url AS video_url,
                c.video_id AS video_id,
-               c.reviewed_at AS reviewed_at
+               c.reviewed_at AS reviewed_at,
+               c.agent_review_status AS agent_review_status,
+               c.agent_review_json AS agent_review_json,
+               c.agent_review_model AS agent_review_model,
+               c.agent_reviewed_at AS agent_reviewed_at
         FROM creative c
         JOIN experiment e ON e.id = c.experiment_id
         """
@@ -532,6 +536,12 @@ public class ProductService {
                     recommendAdReuse(rs.getString("creative_status"), rs.getString("format")),
                     rs.getTimestamp("reviewed_at") != null
                         ? rs.getTimestamp("reviewed_at").toInstant()
+                        : null,
+                    rs.getString("agent_review_status"),
+                    rs.getString("agent_review_json"),
+                    rs.getString("agent_review_model"),
+                    rs.getTimestamp("agent_reviewed_at") != null
+                        ? rs.getTimestamp("agent_reviewed_at").toInstant()
                         : null),
             scope.params().toArray());
     return new ProductAdLibraryResponse(
@@ -608,7 +618,11 @@ public class ProductService {
                c.image_url AS image_url,
                c.video_url AS video_url,
                c.video_id AS video_id,
-               c.reviewed_at AS reviewed_at
+               c.reviewed_at AS reviewed_at,
+               c.agent_review_status AS agent_review_status,
+               c.agent_review_json AS agent_review_json,
+               c.agent_review_model AS agent_review_model,
+               c.agent_reviewed_at AS agent_reviewed_at
         FROM creative c
         JOIN experiment e ON e.id = c.experiment_id
         WHERE c.experiment_id = ?
@@ -696,7 +710,13 @@ public class ProductService {
         rs.getString("video_url"),
         rs.getString("video_id"),
         recommendAdReuse(rs.getString("creative_status"), rs.getString("format")),
-        rs.getTimestamp("reviewed_at") != null ? rs.getTimestamp("reviewed_at").toInstant() : null);
+        rs.getTimestamp("reviewed_at") != null ? rs.getTimestamp("reviewed_at").toInstant() : null,
+        rs.getString("agent_review_status"),
+        rs.getString("agent_review_json"),
+        rs.getString("agent_review_model"),
+        rs.getTimestamp("agent_reviewed_at") != null
+            ? rs.getTimestamp("agent_reviewed_at").toInstant()
+            : null);
   }
 
   /** Escopo SQL seguro para consultar experimentos relacionados ao produto. */

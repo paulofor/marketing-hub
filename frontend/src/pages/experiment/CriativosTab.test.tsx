@@ -27,6 +27,15 @@ describe("CriativosTab", () => {
               primaryText: "P1",
               imageUrl: "img.jpg",
               status: "READY",
+              agentReviewStatus: "APPROVED",
+            },
+            {
+              id: 43,
+              headline: "H2",
+              primaryText: "P2",
+              imageUrl: "img-2.jpg",
+              status: "DRAFT",
+              agentReviewStatus: "REJECTED",
             },
           ],
         });
@@ -42,7 +51,9 @@ describe("CriativosTab", () => {
         <CriativosTab experimentId="1" />
       </QueryClientProvider>,
     );
-    (await screen.findByLabelText("Preview")).click();
+    expect(await screen.findByText("Agente: aprovado")).toBeInTheDocument();
+    expect(await screen.findByText("Agente: reprovado")).toBeInTheDocument();
+    (await screen.findAllByLabelText("Preview"))[0].click();
     await screen.findByText("Patrocinado");
   });
 

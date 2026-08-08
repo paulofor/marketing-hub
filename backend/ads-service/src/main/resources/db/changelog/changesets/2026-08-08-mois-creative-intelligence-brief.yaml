@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-08-mois-creative-intelligence-brief
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE mois_meta_ad_investigation
+                ADD COLUMN creative_briefing_json LONGTEXT NULL AFTER ethical_modeling_json;

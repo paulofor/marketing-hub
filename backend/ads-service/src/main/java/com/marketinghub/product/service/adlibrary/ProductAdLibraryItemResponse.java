@@ -19,4 +19,8 @@ public record ProductAdLibraryItemResponse(
     String videoUrl,
     String videoId,
     String reuseRecommendation,
-    Instant reviewedAt) {}
+    Instant reviewedAt,
+    String agentReviewStatus,
+    String agentReviewJson,
+    String agentReviewModel,
+    Instant agentReviewedAt) {}

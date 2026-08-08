@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-08-agent-orchestration-v1.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-08-experiment-history-event.yaml
       relativeToChangelogFile: true
   - include:
@@ -1638,4 +1641,7 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changesets/2026-08-07-studio-provider-credit-purchase.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-08-mois-creative-intelligence-brief.yaml
       relativeToChangelogFile: true

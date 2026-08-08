@@ -36,6 +36,7 @@ class MoisMetaAdInvestigationControllerTest {
                 List.of(),
                 List.of("Aguardar observações reais"),
                 MoisMetaAdDtos.EthicalModelingCard.empty(),
+                MoisMetaAdDtos.CreativeIntelligenceBrief.unavailable(),
                 0,
                 Instant.parse("2026-08-03T20:00:00Z"),
                 Instant.parse("2026-08-03T20:00:00Z")));
@@ -53,6 +54,20 @@ class MoisMetaAdInvestigationControllerTest {
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.gateDecision").value("INVESTIGAR"))
         .andExpect(jsonPath("$.adsObserved").value(0));
+  }
+
+  /** Bloqueia briefing quando a investigação ainda não alcançou o gate MODELAR. */
+  @Test
+  void shouldBlockCreativeBriefWithoutModelingEvidence() throws Exception {
+    MoisMetaAdInvestigationService service =
+        org.mockito.Mockito.mock(MoisMetaAdInvestigationService.class);
+    when(service.generateCreativeBrief(81L))
+        .thenThrow(new IllegalStateException("evidência insuficiente"));
+    MockMvc mvc =
+        MockMvcBuilders.standaloneSetup(new MoisMetaAdInvestigationController(service)).build();
+
+    mvc.perform(post("/api/v1/mois/meta-ad-investigations/81/creative-brief"))
+        .andExpect(status().isConflict());
   }
 
   /** Aceita pela rota administrativa somente URLs da Biblioteca pública da Meta. */

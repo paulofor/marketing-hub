@@ -1,0 +1,42 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-08-agent-orchestration-v1
+      author: marketinghub
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: agent_orchestration_case
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE agent_orchestration_case (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                commercial_plan_id BIGINT NOT NULL,
+                experiment_id BIGINT NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                strategist_state VARCHAR(32) NOT NULL,
+                growth_operator_state VARCHAR(32) NOT NULL,
+                ad_specialist_state VARCHAR(32) NOT NULL,
+                strategist_execution_id BIGINT NULL,
+                growth_operator_execution_id BIGINT NULL,
+                creative_id BIGINT NULL,
+                blocker TEXT NULL,
+                evidence_snapshot LONGTEXT NOT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_agent_orchestration_plan_experiment (commercial_plan_id, experiment_id),
+                KEY idx_agent_orchestration_status (status),
+                CONSTRAINT fk_agent_orchestration_plan FOREIGN KEY (commercial_plan_id) REFERENCES commercial_plan (id),
+                CONSTRAINT fk_agent_orchestration_experiment FOREIGN KEY (experiment_id) REFERENCES experiment (id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE agent_orchestration_case;

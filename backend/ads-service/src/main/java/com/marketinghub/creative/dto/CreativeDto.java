@@ -1,5 +1,6 @@
 package com.marketinghub.creative.dto;
 
+import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.creative.CreativeStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -27,4 +28,8 @@ public class CreativeDto {
   private CreativeStatus status;
   private String rejectionReason;
   private Instant reviewedAt;
+  private CreativeAgentReviewStatus agentReviewStatus;
+  private String agentReviewJson;
+  private String agentReviewModel;
+  private Instant agentReviewedAt;
 }

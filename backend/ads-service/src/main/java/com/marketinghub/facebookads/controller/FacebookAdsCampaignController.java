@@ -279,6 +279,11 @@ public class FacebookAdsCampaignController {
       @PathVariable Long experimentId) {
     return creativeRepository.findByExperimentId(experimentId).stream()
         .filter(creative -> creative.getStatus() == CreativeStatus.READY)
+        .filter(
+            creative ->
+                creative.getAgentReviewStatus() == null
+                    || creative.getAgentReviewStatus()
+                        == com.marketinghub.creative.CreativeAgentReviewStatus.APPROVED)
         .sorted(
             Comparator.comparing(Creative::getId, Comparator.nullsLast(Comparator.naturalOrder())))
         .map(this::toFacebookCreativeConsumptionResponse)

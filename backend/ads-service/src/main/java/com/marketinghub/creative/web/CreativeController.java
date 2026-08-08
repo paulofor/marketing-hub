@@ -4,6 +4,8 @@ import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.CreativeVideoReviewSourceType;
 import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
+import com.marketinghub.creative.dto.CreativeAgentReviewPendingDto;
+import com.marketinghub.creative.dto.CreativeAgentReviewResultRequest;
 import com.marketinghub.creative.dto.CreativeDto;
 import com.marketinghub.creative.dto.CreativeVideoReviewDto;
 import com.marketinghub.creative.dto.UpdateCreativeLabelsRequest;
@@ -115,6 +117,20 @@ public class CreativeController {
   public CreativeDto updateStatus(
       @PathVariable Long id, @RequestBody UpdateCreativeStatusRequest request) {
     return mapper.toDto(service.updateStatus(id, request.status(), request.rejectionReason()));
+  }
+
+  /** Entrega ao AI Worker anúncios pendentes e os marca como em processamento. */
+  @GetMapping("/api/internal/creatives/agent-review/stage-executions/pending")
+  public List<CreativeAgentReviewPendingDto> pendingAgentReviews(
+      @RequestParam(value = "limit", defaultValue = "5") int limit) {
+    return service.claimAgentReviewQueue(limit);
+  }
+
+  /** Recebe e persiste o resultado auditável da revisão multimodal. */
+  @PostMapping("/api/internal/creatives/{id}/agent-review/result")
+  public CreativeDto applyAgentReview(
+      @PathVariable Long id, @RequestBody CreativeAgentReviewResultRequest request) {
+    return mapper.toDto(service.applyAgentReview(id, request));
   }
 
   /** Remove um criativo existente. */

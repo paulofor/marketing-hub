@@ -23,6 +23,13 @@ paths:
       responses:
         '200': { description: Pendência reservada }
         '204': { description: Sem pendência }
+  /api/v1/mois/meta-ad-investigations/{id}/creative-brief:
+    post:
+      summary: Gera briefing original a partir de padrões com gate MODELAR
+      description: O briefing preserva evidências e permanece bloqueado para publicação até avaliação do Agente Aprovador.
+      responses:
+        '200': { description: Briefing original criado }
+        '409': { description: Evidência insuficiente para modelagem }
   /api/internal/mois/meta-ad-library/v1/investigations/{id}/observations:
     post:
       summary: Persiste observações brutas reais e recalcula o gate

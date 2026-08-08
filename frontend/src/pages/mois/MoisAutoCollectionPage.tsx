@@ -11,6 +11,7 @@ import {
 } from "../../api/mois/useMoisCollection";
 import {
   useCreateMoisMetaAdInvestigation,
+  useGenerateMoisCreativeBrief,
   useMoisMetaAdInvestigations,
   useRegisterSupervisedMetaAdObservation,
 } from "../../api/mois/useMoisMetaAdInvestigations";
@@ -57,6 +58,7 @@ export default function MoisAutoCollectionPage() {
   const metaInvestigations = useMoisMetaAdInvestigations(WORKSPACE_ID);
   const createMetaInvestigation = useCreateMoisMetaAdInvestigation();
   const registerMetaObservation = useRegisterSupervisedMetaAdObservation();
+  const generateCreativeBrief = useGenerateMoisCreativeBrief();
 
   const filters = useMemo(
     () => ({
@@ -686,10 +688,53 @@ export default function MoisAutoCollectionPage() {
                 </div>
               </div>
               {investigation.gateDecision === "MODELAR" ? (
-                <div className="alert alert-success mt-3 mb-0 small">
-                  <strong>Ficha ética:</strong>{" "}
-                  {investigation.ethicalModeling.pain}. Não copiar{" "}
-                  {investigation.ethicalModeling.prohibitedCopies.join(", ")}.
+                <div className="mt-3 d-flex flex-column gap-2">
+                  <div className="alert alert-success mb-0 small">
+                    <strong>Ficha ética:</strong>{" "}
+                    {investigation.ethicalModeling.pain}. Não copiar{" "}
+                    {investigation.ethicalModeling.prohibitedCopies.join(", ")}.
+                  </div>
+                  {investigation.creativeBrief.status === "UNAVAILABLE" ? (
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary align-self-start"
+                      disabled={generateCreativeBrief.isPending}
+                      onClick={() =>
+                        generateCreativeBrief.mutate(investigation.id)
+                      }
+                    >
+                      {generateCreativeBrief.isPending
+                        ? "Gerando briefing..."
+                        : "Gerar briefing original"}
+                    </button>
+                  ) : (
+                    <div className="card bg-light border-0">
+                      <div className="card-body small">
+                        <div className="d-flex justify-content-between gap-2 mb-2">
+                          <strong>{investigation.creativeBrief.title}</strong>
+                          <span className="badge text-bg-warning">
+                            Exige Aprovador
+                          </span>
+                        </div>
+                        <p>
+                          <strong>Gancho:</strong>{" "}
+                          {investigation.creativeBrief.originalHook}
+                        </p>
+                        <p>
+                          <strong>Visual:</strong>{" "}
+                          {investigation.creativeBrief.visualDirection}
+                        </p>
+                        <p>
+                          <strong>Oferta:</strong>{" "}
+                          {investigation.creativeBrief.offerAngle}
+                        </p>
+                        <p className="mb-0">
+                          <strong>CTA:</strong>{" "}
+                          {investigation.creativeBrief.callToAction}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : null}
             </div>

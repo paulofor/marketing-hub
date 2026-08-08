@@ -1642,3 +1642,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-07-studio-provider-credit-purchase.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-08-mois-creative-intelligence-brief.yaml
+      relativeToChangelogFile: true

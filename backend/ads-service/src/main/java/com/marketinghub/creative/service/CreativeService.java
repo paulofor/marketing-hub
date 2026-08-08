@@ -277,6 +277,24 @@ public class CreativeService {
         .toList();
   }
 
+  /** Enfileira explicitamente um criativo legado ou com falha para nova revisão do agente. */
+  @Transactional
+  public Creative requestAgentReview(Long id) {
+    Creative creative = repository.findByIdWithExperiment(id).orElseThrow();
+    CreativeAgentReviewStatus current = creative.getAgentReviewStatus();
+    if (current == CreativeAgentReviewStatus.PENDING
+        || current == CreativeAgentReviewStatus.PROCESSING) {
+      return creative;
+    }
+    creative.setAgentReviewStatus(CreativeAgentReviewStatus.PENDING);
+    creative.setAgentReviewJson(null);
+    creative.setAgentReviewRequestJson(null);
+    creative.setAgentReviewResponseJson(null);
+    creative.setAgentReviewModel(null);
+    creative.setAgentReviewedAt(null);
+    return repository.save(creative);
+  }
+
   /** Resolve mapa apenas quando o nicho identifica um único produto, evitando contexto cruzado. */
   private Product uniqueProductForDesireMap(Long marketNicheId) {
     List<Product> products = productRepository.findAllByMarketNiche_Id(marketNicheId);

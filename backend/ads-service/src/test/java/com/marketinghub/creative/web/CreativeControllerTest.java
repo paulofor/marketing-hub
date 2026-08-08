@@ -98,6 +98,29 @@ class CreativeControllerTest {
     assertThat(repository.count()).isEqualTo(1);
   }
 
+  /** Garante que um criativo legado possa entrar no gate sem alterar seu conteúdo. */
+  @Test
+  void requestAgentReviewQueuesLegacyCreative() throws Exception {
+    CreateCreativeRequest req = new CreateCreativeRequest();
+    req.setHeadline("Criativo legado");
+    req.setPrimaryText("Texto preservado");
+    req.setImageUrl("https://cdn.test/legacy.jpg");
+    req.setStatus(CreativeStatus.DRAFT);
+    mockMvc.perform(
+        post("/api/experiments/" + expId + "/creatives")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(mapper.writeValueAsString(req)));
+    var legacy = repository.findAll().getFirst();
+    legacy.setAgentReviewStatus(null);
+    repository.save(legacy);
+
+    mockMvc
+        .perform(post("/api/creatives/" + legacy.getId() + "/agent-review/request"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.headline").value("Criativo legado"))
+        .andExpect(jsonPath("$.agentReviewStatus").value("PENDING"));
+  }
+
   /** Garante que a API exponha a fila de aprovação de vídeos. */
   @Test
   void listVideoReviewEndpointReturnsVideoCreatives() throws Exception {

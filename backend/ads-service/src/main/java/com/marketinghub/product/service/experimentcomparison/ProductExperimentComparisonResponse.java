@@ -8,5 +8,11 @@ public record ProductExperimentComparisonResponse(
     String productName,
     String productSlug,
     String commercialStatus,
+    String productFormat,
+    String deliveryMode,
+    String revenueModel,
+    String valueUnit,
+    String valueEvidenceMetric,
+    String validationDefinitionVersion,
     String mainRecommendation,
     List<ProductExperimentComparisonExperimentResponse> experiments) {}

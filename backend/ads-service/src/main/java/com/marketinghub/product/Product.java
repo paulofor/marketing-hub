@@ -65,6 +65,35 @@ public class Product {
   @Column(name = "product_type", length = 64)
   private String productType;
 
+  /** Formato principal entregue ao cliente, comparável entre produtos e experimentos. */
+  @Column(name = "product_format", length = 64)
+  private String productFormat;
+
+  /** Forma operacional de entrega: automática, personalizada, híbrida ou acompanhada. */
+  @Column(name = "delivery_mode", length = 64)
+  private String deliveryMode;
+
+  /** Modelo de receita testado, como compra única, assinatura ou serviço recorrente. */
+  @Column(name = "revenue_model", length = 64)
+  private String revenueModel;
+
+  /** Unidade de valor que o cliente recebe e consegue perceber ou usar. */
+  @Column(name = "value_unit", length = 191)
+  private String valueUnit;
+
+  /** Evidência principal usada para confirmar valor após a compra e a entrega. */
+  @Column(name = "value_evidence_metric", length = 191)
+  private String valueEvidenceMetric;
+
+  /** Versão do contrato modular de descoberta comercial aplicado ao produto. */
+  @Column(name = "validation_definition_version", length = 32)
+  private String validationDefinitionVersion;
+
+  /** Contrato JSON com critérios comparáveis de continuar, ajustar, parar e escalar. */
+  @Lob
+  @Column(name = "validation_definition_json", columnDefinition = "LONGTEXT")
+  private String validationDefinitionJson;
+
   /** Status comercial atual do produto. */
   @Column(name = "commercial_status", length = 64)
   private String commercialStatus;

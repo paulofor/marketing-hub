@@ -1,5 +1,11 @@
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, BarChart3, BookOpen, FlaskConical } from "lucide-react";
+import {
+  ArrowLeft,
+  BarChart3,
+  BookOpen,
+  FlaskConical,
+  Target,
+} from "lucide-react";
 import { useProductExperimentComparison } from "../../api/product/useProductExperimentComparison";
 import type { ProductExperimentComparisonExperiment } from "../../api/product/useProductExperimentComparison";
 import PageTitle from "../../components/PageTitle";
@@ -46,7 +52,9 @@ function statusLabel(value?: string | null) {
   return value ? value.replace(/_/g, " ") : "Sem status";
 }
 
-function isRunningExperiment(experiment: ProductExperimentComparisonExperiment) {
+function isRunningExperiment(
+  experiment: ProductExperimentComparisonExperiment,
+) {
   return experiment.status?.toUpperCase() === "RUNNING";
 }
 
@@ -114,6 +122,29 @@ export default function ProductExperimentComparisonPage() {
           <strong>{comparison.mainRecommendation}</strong>
         </div>
       </section>
+
+      <div className="product-comparison-summary mb-3">
+        <section>
+          <FlaskConical size={18} aria-hidden="true" />
+          <span>Formato</span>
+          <strong>{comparison.productFormat || "Não definido"}</strong>
+        </section>
+        <section>
+          <BookOpen size={18} aria-hidden="true" />
+          <span>Entrega</span>
+          <strong>{comparison.deliveryMode || "Não definida"}</strong>
+        </section>
+        <section>
+          <BarChart3 size={18} aria-hidden="true" />
+          <span>Unidade de valor</span>
+          <strong>{comparison.valueUnit || "Não definida"}</strong>
+        </section>
+        <section>
+          <Target size={18} aria-hidden="true" />
+          <span>Evidência pós-entrega</span>
+          <strong>{comparison.valueEvidenceMetric || "Não definida"}</strong>
+        </section>
+      </div>
 
       <div className="product-comparison-summary mb-3">
         <section>
@@ -209,7 +240,8 @@ export default function ProductExperimentComparisonPage() {
                               {formatNumber(experiment.clicks)} cliques
                             </small>
                             <small className="d-block text-muted">
-                              CTR {ratio(experiment.clicks, experiment.impressions)}
+                              CTR{" "}
+                              {ratio(experiment.clicks, experiment.impressions)}
                             </small>
                           </td>
                           <td>

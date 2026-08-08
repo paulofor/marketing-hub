@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-08-product-validation-definition-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product
+                ADD COLUMN product_format VARCHAR(64) NULL,
+                ADD COLUMN delivery_mode VARCHAR(64) NULL,
+                ADD COLUMN revenue_model VARCHAR(64) NULL,
+                ADD COLUMN value_unit VARCHAR(191) NULL,
+                ADD COLUMN value_evidence_metric VARCHAR(191) NULL,
+                ADD COLUMN validation_definition_version VARCHAR(32) NULL,
+                ADD COLUMN validation_definition_json LONGTEXT NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product
+                DROP COLUMN validation_definition_json,
+                DROP COLUMN validation_definition_version,
+                DROP COLUMN value_evidence_metric,
+                DROP COLUMN value_unit,
+                DROP COLUMN revenue_model,
+                DROP COLUMN delivery_mode,
+                DROP COLUMN product_format;

@@ -4,6 +4,36 @@
 
 Produto é um ativo comercial próprio do Marketing Hub, separado de campanha, experimento e entrega técnica.
 
+## Descoberta modular de formatos
+
+O cadastro de produto deve separar o tipo amplo do formato comercial efetivamente testado. Todo
+produto em validação pode registrar uma definição versionada com os mesmos componentes, para que
+programas guiados, pacotes de imagens, vídeos, diagnósticos, bibliotecas, assinaturas e serviços
+híbridos sejam comparáveis sem perder suas diferenças.
+
+Campos comparáveis mínimos:
+
+- `product_format`: formato entregue ao cliente;
+- `delivery_mode`: entrega automática, personalizada, híbrida ou acompanhada;
+- `revenue_model`: compra única, assinatura ou recorrência;
+- `value_unit`: unidade concreta recebida ou concluída pelo cliente;
+- `value_evidence_metric`: uso, conclusão, satisfação, resultado percebido, recompra ou indicação;
+- `validation_definition_version`: versão do contrato;
+- `validation_definition_json`: snapshot auditável da tese comercial.
+
+O contrato JSON v1 deve conter `problem`, `promise`, `mechanism`, `format`, `delivery`,
+`economics`, `successEvidence` e `decisionRules`. Ele deve registrar preço, custos, esforço de
+entrega, margem, eventos do funil e critérios de continuar, ajustar, parar e escalar. Campos
+específicos de um produto não podem substituir esses componentes comuns.
+
+MUSA deve ser representado inicialmente como programa guiado de sete dias. Agenda Cheia Nail
+Design deve ser representado como pacote personalizado de ativos visuais. Novos formatos devem
+usar o mesmo contrato antes de receber aquisição paga.
+
+O primeiro marco de sucesso comercial continua sendo cinco vendas aprovadas com entrega
+satisfatória, baixa devolução, margem positiva e capacidade repetível. Clique, lead, intenção,
+parecer de agente ou impacto estimado não substituem venda nem evidência de valor pós-entrega.
+
 O cadastro de produto deve consolidar os atributos usados para vender, entregar, ativar e escalar um produto digital. O produto pode nascer de uma hipótese/oferta validada, pertencer a um nicho estratégico e acumular vários experimentos associados ao longo do tempo.
 
 ## Regra de associação

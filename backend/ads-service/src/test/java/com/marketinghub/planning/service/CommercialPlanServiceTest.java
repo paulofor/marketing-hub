@@ -98,6 +98,10 @@ class CommercialPlanServiceTest {
                 BigDecimal.valueOf(81),
                 2,
                 3,
+                1,
+                1,
+                2,
+                5,
                 "Validar formulario",
                 null,
                 null));
@@ -107,6 +111,10 @@ class CommercialPlanServiceTest {
     assertThat(plan.getOperationalRevenueTarget()).isEqualByComparingTo("81");
     assertThat(plan.getExperimentsToCreate()).isEqualTo(2);
     assertThat(plan.getExperimentsToPublish()).isEqualTo(3);
+    assertThat(plan.getProductsToValidate()).isEqualTo(1);
+    assertThat(plan.getProductTypesToExplore()).isEqualTo(1);
+    assertThat(plan.getApproachesToTest()).isEqualTo(2);
+    assertThat(plan.getCustomerConversationsTarget()).isEqualTo(5);
     verify(milestoneRepository, times(9)).save(any());
   }
 

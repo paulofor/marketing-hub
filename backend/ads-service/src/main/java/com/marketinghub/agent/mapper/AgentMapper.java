@@ -31,6 +31,10 @@ public class AgentMapper {
     dto.setModelName(agent.getModelName());
     dto.setTriggerPolicy(agent.getTriggerPolicy());
     dto.setAuthorityPolicy(agent.getAuthorityPolicy());
+    dto.setResponsibilityContract(agent.getResponsibilityContract());
+    dto.setOrchestratorPolicy(agent.getOrchestratorPolicy());
+    dto.setAnalysisPolicy(agent.getAnalysisPolicy());
+    dto.setOfferingPolicy(agent.getOfferingPolicy());
     dto.setPromptContractPath(agent.getPromptContractPath());
     dto.setSchemaContractPath(agent.getSchemaContractPath());
     dto.setExecutionMode(agent.getExecutionMode());

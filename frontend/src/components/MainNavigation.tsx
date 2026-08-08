@@ -30,6 +30,7 @@ import {
   Video,
   Music2,
   Megaphone,
+  Bot,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../assets/icons/hypothesis-icon.svg";
@@ -203,6 +204,11 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "Configurações",
     items: [
+      {
+        to: "/agents",
+        label: "Gestão de agentes",
+        icon: Bot,
+      },
       {
         to: "/whatsapp",
         label: "WhatsApp",

@@ -29,6 +29,10 @@ export interface Agent {
   modelName?: string;
   triggerPolicy?: string;
   authorityPolicy?: string;
+  responsibilityContract?: string;
+  orchestratorPolicy?: string;
+  analysisPolicy?: string;
+  offeringPolicy?: string;
   promptContractPath?: string;
   schemaContractPath?: string;
   executionMode: string;
@@ -52,6 +56,10 @@ export interface AgentPayload {
   modelName?: string;
   triggerPolicy?: string;
   authorityPolicy?: string;
+  responsibilityContract?: string;
+  orchestratorPolicy?: string;
+  analysisPolicy?: string;
+  offeringPolicy?: string;
   promptContractPath?: string;
   schemaContractPath?: string;
   executionMode: string;

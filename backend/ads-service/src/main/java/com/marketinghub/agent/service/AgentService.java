@@ -97,6 +97,10 @@ public class AgentService {
     agent.setModelName(request.getModelName());
     agent.setTriggerPolicy(request.getTriggerPolicy());
     agent.setAuthorityPolicy(request.getAuthorityPolicy());
+    agent.setResponsibilityContract(request.getResponsibilityContract());
+    agent.setOrchestratorPolicy(request.getOrchestratorPolicy());
+    agent.setAnalysisPolicy(request.getAnalysisPolicy());
+    agent.setOfferingPolicy(request.getOfferingPolicy());
     agent.setPromptContractPath(request.getPromptContractPath());
     agent.setSchemaContractPath(request.getSchemaContractPath());
     agent.setExecutionMode(request.getExecutionMode());
@@ -131,6 +135,10 @@ public class AgentService {
       contract.put("model", agent.getModelName());
       contract.put("triggerPolicy", agent.getTriggerPolicy());
       contract.put("authorityPolicy", agent.getAuthorityPolicy());
+      contract.put("responsibilityContract", agent.getResponsibilityContract());
+      contract.put("orchestratorPolicy", agent.getOrchestratorPolicy());
+      contract.put("analysisPolicy", agent.getAnalysisPolicy());
+      contract.put("offeringPolicy", agent.getOfferingPolicy());
       contract.put("promptContractPath", agent.getPromptContractPath());
       contract.put("schemaContractPath", agent.getSchemaContractPath());
       contract.put(

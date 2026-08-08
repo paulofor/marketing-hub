@@ -42,6 +42,9 @@ public class ImageGenerationRequest {
   @Column(name = "job_id", nullable = false, length = 96, unique = true)
   private String jobId;
 
+  @Column(name = "batch_job_id", length = 96)
+  private String batchJobId;
+
   @Column(name = "status", nullable = false, length = 32)
   private String status;
 

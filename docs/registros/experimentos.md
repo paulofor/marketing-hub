@@ -6569,3 +6569,8 @@
 - causa-raiz: uma instância legada do proxy do próprio Lead Portal permanecia vinculada às portas públicas, enquanto o Compose tentava criar uma segunda instância e depois ainda forçava outra recriação do mesmo serviço;
 - correção: o deploy remove exclusivamente os nomes conhecidos do proxy do Lead Portal antes de subir a pilha canônica uma única vez;
 - prevenção: o teste de contrato exige a reconciliação explícita dos proxies legados e proíbe a segunda chamada `up -d --force-recreate proxy`.
+# 2026-08-08 — Recuperação de gerações recentes no Gerador de Imagens
+
+- causa-raiz: a tela mantinha o lote somente no estado da requisição atual; após recarga ou timeout, o histórico auditado no backend não podia ser selecionado novamente.
+- correção preparada: o backend lista metadados concluídos por produto, plano e experimento e transfere o asset apenas após a escolha; a tela restaura prompt, lote e imagem sem nova chamada de IA.
+- prevenção: a recuperação exige o mesmo contexto comercial, jobs antigos sem identificador de lote permanecem isolados e falhas registram `jobId` com stack trace.

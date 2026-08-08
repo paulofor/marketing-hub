@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import ImageGeneratorPage from "./ImageGeneratorPage";
 
@@ -7,11 +7,17 @@ vi.mock("../../app/breadcrumbs", () => ({
 }));
 
 vi.mock("../../api/product/useProducts", () => ({
-  useProducts: vi.fn(() => ({ data: [], isLoading: false })),
+  useProducts: vi.fn(() => ({
+    data: [{ id: 1, name: "Agenda Cheia" }],
+    isLoading: false,
+  })),
 }));
 
 vi.mock("../../api/planning/useCommercialPlans", () => ({
-  useCommercialPlans: vi.fn(() => ({ data: [], isLoading: false })),
+  useCommercialPlans: vi.fn(() => ({
+    data: [{ id: 2, name: "Primeiras vendas", experimentId: 85 }],
+    isLoading: false,
+  })),
 }));
 
 vi.mock("../../api/ai/useGenerateImage", () => ({
@@ -54,6 +60,30 @@ vi.mock("../../api/ai/usePromoteGeneratedImage", () => ({
   })),
 }));
 
+vi.mock("../../api/ai/useRecentImageGenerations", () => ({
+  useRecentImageGenerations: vi.fn(() => ({
+    data: [
+      {
+        jobId: "img-old",
+        batchJobId: "img-batch-old",
+        model: "gpt-image-2",
+        prompt: "Prompt persistido",
+        generatedAt: "2026-08-08T10:00:00Z",
+      },
+    ],
+    isError: false,
+    isLoading: false,
+  })),
+  useRecoverImageGeneration: vi.fn(() => ({
+    data: undefined,
+    error: null,
+    isError: false,
+    isPending: false,
+    mutate: vi.fn(),
+    reset: vi.fn(),
+  })),
+}));
+
 afterEach(() => {
   cleanup();
 });
@@ -74,5 +104,22 @@ describe("ImageGeneratorPage", () => {
     expect(
       screen.getByRole("button", { name: /vincular e enviar ao aprovador/i }),
     ).toBeDisabled();
+  });
+
+  it("lists a persisted generation after selecting its commercial context", () => {
+    render(<ImageGeneratorPage />);
+
+    fireEvent.change(screen.getByLabelText(/produto/i), {
+      target: { value: "1" },
+    });
+    fireEvent.change(screen.getByLabelText(/plano comercial/i), {
+      target: { value: "2" },
+    });
+
+    expect(screen.getByText(/gerações recentes/i)).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /img-batch-old.*img-old/i }),
+    ).toBeTruthy();
+    expect(screen.getByText(/sem gerar novamente nem criar novo custo/i)).toBeTruthy();
   });
 });

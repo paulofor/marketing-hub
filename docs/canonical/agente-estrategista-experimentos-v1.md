@@ -2,7 +2,7 @@
 
 ## Responsabilidade
 
-Transformar sinais reais de sessões, funil e aprendizados em três alternativas pesquisadas de experimento. O agente recomenda; o Operador de Crescimento prioriza e acompanha; o usuário autoriza publicação, preço, gasto e comunicação.
+Transformar sinais reais de sessões, funil, aprendizados e formatos de produto em três alternativas pesquisadas de experimento. O agente compara o portfólio e recomenda qual hipótese testar depois; o Operador de Crescimento prioriza e acompanha a execução de cada experimento; o usuário autoriza publicação, preço, gasto e comunicação.
 
 ## Fontes de verdade
 
@@ -12,6 +12,30 @@ Transformar sinais reais de sessões, funil e aprendizados em três alternativas
 - fontes públicas identificadas por URL, título e data de acesso.
 - memória comportamental estruturada e vigente no MySQL;
 - artefatos textuais anonimizados, criptografados e privados no S3.
+- definições comerciais versionadas dos produtos e comparações persistidas de seus experimentos.
+
+## Aprendizado de portfólio
+
+O Estrategista deve comparar formatos após amostra mínima, venda, entrega, evidência de valor,
+reembolso ou encerramento. O parecer registra fatos observados, lacunas, nível de confiança, variável
+isolada e próximo teste recomendado. O agente não pode declarar um formato vencedor sem consequência
+comercial e humana auditável, incluindo venda aprovada e entrega satisfatória. Ausência de eventos ou
+instrumentação incompleta deve resultar em evidência insuficiente, nunca em ranking inventado.
+
+MUSA, Agenda Cheia e novos formatos usam as mesmas dimensões comparáveis, preservando diferenças de
+entrega, receita, unidade de valor e evidência pós-entrega. O Estrategista não inicia, pausa, avança ou
+encerra experimentos; essas decisões operacionais permanecem com o Operador de Crescimento e com a
+autorização humana aplicável.
+
+### Matriz de homologação ponta a ponta
+
+- caminho feliz: dois ou mais formatos com eventos auditáveis produzem comparação, três alternativas e próximo teste;
+- validações: parecer incompleto, sem três alternativas ou sem fronteira do Operador é rejeitado;
+- falhas: ausência de eventos, integração indisponível ou evidência contraditória resulta em lacunas explícitas e baixa confiança;
+- integrações e observabilidade: snapshot do backend, request/resposta brutos, modelo, custo, fontes e status permanecem persistidos;
+- métricas: vendas, entrega, satisfação, reembolso, margem, esforço e repetibilidade são comparados sem converter proxies em vendas;
+- segregação: resultados permanecem vinculados ao produto, planejamento e experimentos corretos;
+- interface: o painel comunica em desktop e mobile que o Estrategista recomenda e o Operador executa.
 
 ## Memória híbrida
 

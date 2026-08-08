@@ -23,7 +23,7 @@ export default function ExperimentStrategistPanel({
 }) {
   const [question, setQuestion] = useState(
     defaultQuestion ||
-      "Qual oferta tem maior potencial de gerar vendas com as evidências atuais?",
+      "O que o portfólio aprendeu e qual formato devemos testar em seguida com as evidências atuais?",
   );
   const executions = useExperimentStrategistExecutions(planId);
   const start = useStartExperimentStrategist(planId);
@@ -40,8 +40,10 @@ export default function ExperimentStrategistPanel({
             <span className="badge text-bg-success">Somente leitura</span>
           </div>
           <p className="text-muted mb-0 mt-1">
-            Pesquisa três alternativas, compara potencial comercial, risco e
-            esforço e recomenda um experimento mensurável.
+            Compara formatos e resultados do portfólio, pesquisa três
+            alternativas e recomenda o próximo experimento mensurável. A
+            execução de cada teste continua sob responsabilidade do Operador de
+            Crescimento.
           </p>
         </div>
         <div>

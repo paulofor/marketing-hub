@@ -752,6 +752,11 @@ function attachCustomTemplateBridgeToDocument(
     if (isInternalTestTraffic()) {
       return;
     }
+    // A landing publicada já possui o coletor canônico injetado pelo backend.
+    // Evita que a ponte do template registre o mesmo evento uma segunda vez.
+    if (doc.querySelector("script[data-mh-landing-analytics]")) {
+      return;
+    }
     registerFlowPageAnalytics(options.flowSlug, buildFlowPageAnalyticsPayload(eventType)).catch((trackError) => {
       console.warn(`Falha ao registrar ${eventType} do template`, trackError);
     });

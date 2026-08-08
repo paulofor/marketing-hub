@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-08-market-radar-agent-v1.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-08-hypothesis-product-link.yaml
       relativeToChangelogFile: true
   - include:

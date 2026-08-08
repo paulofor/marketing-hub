@@ -146,6 +146,7 @@ import MoisExtractionPage from "./pages/mois/MoisExtractionPage";
 import MoisLibraryPage from "./pages/mois/MoisLibraryPage";
 import MoisSalesPagesLibraryPage from "./pages/mois/MoisSalesPagesLibraryPage";
 import MoisSalesPagesPipelinePage from "./pages/mois/MoisSalesPagesPipelinePage";
+import MarketRadarPage from "./pages/mois/MarketRadarPage";
 import MoisSalesPageLibraryDetailPage from "./pages/mois/MoisSalesPageLibraryDetailPage";
 import MoisSalesPageDossierPage from "./pages/mois/MoisSalesPageDossierPage";
 import MoisComparisonPage from "./pages/mois/MoisComparisonPage";
@@ -518,6 +519,7 @@ export default function App() {
                 element={<OprmNichoCnaeV2JobDetailPage />}
               />
               <Route path="/mois" element={<MoisWorkspacePage />} />
+              <Route path="/market-radar" element={<MarketRadarPage />} />
               <Route
                 path="/mois/references/new"
                 element={<MoisReferenceIntakePage />}

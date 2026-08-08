@@ -97,7 +97,7 @@ Principais chaves:
 - `collector.backend.base-url` (default `http://191.252.181.168:8000`)
 - `collector.clickbank.jwt-setting-key` (default `clickbank_access_token_jwt`)
 - `collector.scheduler.enabled` (default `false` na operação Hotmart-only; reativar explicitamente apenas quando ClickBank voltar a ser fonte ativa)
-- `collector.scheduler.cron` (default `0 0 */2 * * *`)
+- `collector.scheduler.cron` (default `0 0 * * * *`)
 - `collector.scheduler.max-products` (default `25`)
 
 Porta e app:
@@ -110,6 +110,10 @@ A coleta gera snapshots de produto e persiste no backend MOIS com metadados de o
 Para diagnóstico e rastreabilidade, manter logging do payload bruto recebido da fonte antes de transformação.
 
 ## 7. Consolidação documental
+
+## 6.1 Cadência diária do Radar
+
+Quando `collector.scheduler.enabled=true`, o executor alterna os três ciclos a cada hora, entregando cobertura diária superior ao mínimo do Radar. Token ausente ou inválido mantém o ciclo como `COLLECTION_SKIPPED`; não gera sinal negativo de mercado.
 
 Este documento substitui, como referência operacional principal, os conteúdos antes espalhados em:
 - `docs/mois-clickbank-coletor.md`

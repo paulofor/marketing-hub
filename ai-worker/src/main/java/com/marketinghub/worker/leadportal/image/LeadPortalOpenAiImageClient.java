@@ -374,11 +374,12 @@ public class LeadPortalOpenAiImageClient {
         }
     }
 
+    /** Indica se o modelo aceita solicitar explicitamente a resposta em Base64. */
     private boolean supportsResponseFormat(String selectedModel) {
         if (selectedModel == null || selectedModel.isBlank()) {
             return true;
         }
-        return !selectedModel.toLowerCase(Locale.ROOT).startsWith("gpt-image-");
+        return !selectedModel.strip().toLowerCase(Locale.ROOT).startsWith("gpt-image-");
     }
 
     public static class ImageGenerationException extends RuntimeException {

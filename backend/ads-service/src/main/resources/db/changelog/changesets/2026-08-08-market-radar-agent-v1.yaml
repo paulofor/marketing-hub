@@ -1,0 +1,50 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-08-08-market-radar-agent-v1.yaml
+  - changeSet:
+      id: 2026-08-08-market-radar-agent-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO agent (
+                theme_id, name, agent_key, status, current_version, execution_mode,
+                description, owner_name, business_objective, success_metrics, model_name,
+                trigger_policy, authority_policy, responsibility_contract, orchestrator_policy,
+                analysis_policy, offering_policy, prompt_contract_path, schema_contract_path
+              )
+              SELECT at.id, 'Agente Radar de Mercado', 'market-radar', 'TEST', 1, 'SCHEDULED',
+                'Consolida evidencias de plataformas de mercado e prioriza oportunidades auditaveis sem afirmar vendas.',
+                'Marketing Hub',
+                'Reduzir o tempo entre uma demanda observada e um teste comercial proprio, preservando foco e evidencia.',
+                'Oportunidades com fonte, recencia, lacunas e proxima acao; proporcao que progride para teste valido e venda propria.',
+                'gpt-5.6-sol',
+                'Consolidacao diaria apos as coletas Hotmart e ClickBank ou nova observacao supervisionada da Meta.',
+                'Somente leitura e recomendacao. Nao cria produto, experimento, campanha ou gasto; nao copia ativos; exige decisao humana.',
+                'Receber sinais persistidos, separar fato de inferencia, comparar demanda, saturacao, aderencia e risco.',
+                'Solicitar analise somente quando houver evidencia nova e nunca avancar pipeline comercial automaticamente.',
+                'Comparar fontes independentes, recencia e repeticao legitima; popularidade ou ranking externo nao comprovam venda.',
+                'Oferecer prioridade, hipotese de demanda, evidencias, lacunas, riscos e proximo teste recomendado.',
+                'docs/canonical/radar-produtos-oportunidades-canon.v1.md',
+                NULL
+              FROM agent_theme at
+              WHERE at.name = 'Operacoes Autonomas'
+                AND NOT EXISTS (SELECT 1 FROM agent WHERE agent_key = 'market-radar');
+
+              INSERT INTO agent_version (agent_id, version_number, contract_snapshot, created_at)
+              SELECT a.id, 1,
+                CONCAT('{"agentKey":"market-radar","version":1,"status":"TEST","authority":"READ_ONLY_RESEARCH","contract":"', a.prompt_contract_path, '"}'),
+                UTC_TIMESTAMP()
+              FROM agent a
+              WHERE a.agent_key = 'market-radar'
+                AND NOT EXISTS (
+                  SELECT 1 FROM agent_version av
+                  WHERE av.agent_id = a.id AND av.version_number = 1
+                );
+

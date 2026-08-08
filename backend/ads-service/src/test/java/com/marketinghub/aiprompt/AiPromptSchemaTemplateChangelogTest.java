@@ -29,6 +29,9 @@ class AiPromptSchemaTemplateChangelogTest {
   private static final Path GERA_SALES_PAGE_GENERIC_V10_CHANGELOG =
       Path.of(
           "src/main/resources/db/changelog/changesets/2026-08-03-gera-sales-page-generic-templates-v10.yaml");
+  private static final Path GERA_SALES_PAGE_PUBLIC_LANGUAGE_V11_CHANGELOG =
+      Path.of(
+          "src/main/resources/db/changelog/changesets/2026-08-08-gera-sales-page-public-language-v11.yaml");
 
   /** Garante que a etapa Prova use o mesmo campo de evidencias aceito pelo AI Worker. */
   @Test
@@ -117,5 +120,33 @@ class AiPromptSchemaTemplateChangelogTest {
         .doesNotContain("Kit MUSA")
         .doesNotContain("experimento-66-entregaveis.zip")
         .doesNotContain("obrigado-exp66");
+  }
+
+  /** Garante que a página de microamostra use linguagem pública e não exponha implementação. */
+  @Test
+  void geraSalesPageV11ShouldKeepManagedFormLanguageInternal() throws Exception {
+    String changelog =
+        Files.readString(GERA_SALES_PAGE_PUBLIC_LANGUAGE_V11_CHANGELOG, StandardCharsets.UTF_8);
+
+    assertThat(changelog)
+        .contains("gera-sales-page-v1:sales-page-copy:v11")
+        .contains("gera-sales-page-v1:sales-page-html:v11")
+        .contains("gera-sales-page-v1:sales-page-checkout-quality-review:v11")
+        .contains("apresente-o publicamente apenas como formulário")
+        .contains("qualquer linguagem interna visível à cliente")
+        .contains("formulário gerenciado, contrato, runtime, embed, placeholder, endpoint")
+        .contains("ON DUPLICATE KEY UPDATE");
+
+    try (DirectoryResourceAccessor resourceAccessor =
+        new DirectoryResourceAccessor(Path.of(".").toAbsolutePath().normalize())) {
+      var database =
+          DatabaseFactory.getInstance()
+              .openDatabase("offline:mysql", null, null, null, resourceAccessor);
+      var liquibase =
+          new Liquibase(
+              GERA_SALES_PAGE_PUBLIC_LANGUAGE_V11_CHANGELOG.toString(), resourceAccessor, database);
+
+      assertThat(liquibase.getDatabaseChangeLog().getChangeSets()).hasSize(1);
+    }
   }
 }

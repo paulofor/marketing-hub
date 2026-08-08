@@ -1666,3 +1666,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-08-agent-operating-contract.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-08-gera-sales-page-public-language-v11.yaml
+      relativeToChangelogFile: true

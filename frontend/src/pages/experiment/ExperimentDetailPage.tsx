@@ -391,6 +391,10 @@ export function canManageGeraSalesPage(experimentId?: number | string | null) {
   return Number.isInteger(normalizedId) && normalizedId > 0;
 }
 
+export function resolveGeraSalesPageCommand() {
+  return "rebuild" as const;
+}
+
 export default function ExperimentDetailPage() {
   const { id } = useParams();
   const expId = id as string;
@@ -700,10 +704,10 @@ export default function ExperimentDetailPage() {
     }
   };
 
-  const handleStartSalesPage = async (rebuild: boolean) => {
+  const handleStartSalesPage = async () => {
     try {
       setIsStartingSalesPage(true);
-      const action = rebuild ? "rebuild" : "start";
+      const action = resolveGeraSalesPageCommand();
       const { data: startResponse } = await axios.post<{
         jobid: string;
         stageCode: string;
@@ -2322,9 +2326,7 @@ export default function ExperimentDetailPage() {
                   disabled={
                     isStartingSalesPage || geraSalesPagePublications.isLoading
                   }
-                  onClick={() =>
-                    void handleStartSalesPage(salesPagePublications.length > 0)
-                  }
+                  onClick={() => void handleStartSalesPage()}
                 >
                   {isStartingSalesPage
                     ? "Solicitando..."

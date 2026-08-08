@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useExperiments } from "../../api/experiment/useExperiments";
+import { useExperimentSummary } from "../../api/experiment/useExperiments";
 import { useNiches } from "../../api/niche/useNiches";
 import {
   useReactivateExperiment,
@@ -9,7 +9,7 @@ import { useCloseExperimentPipelineJobs } from "../../api/experiment/useCloseExp
 import { useLatestPromiseOptionsDraft } from "../../api/experiment/useGeneratePromiseOptions";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
-import { useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
@@ -23,20 +23,6 @@ const REACTIVATABLE_STATUSES = new Set([
   "INCONCLUSIVE",
   "FAILED",
 ]);
-const FINALIZED_STATUSES = new Set([
-  "FINISHED",
-  "VALIDATED",
-  "INVALIDATED",
-  "INCONCLUSIVE",
-  "FAILED",
-]);
-
-function parseDate(date?: string | null) {
-  if (!date) return 0;
-  const timestamp = new Date(date).getTime();
-  return Number.isNaN(timestamp) ? 0 : timestamp;
-}
-
 function formatDate(value?: string | null) {
   if (!value) return "—";
   const date = new Date(value);
@@ -118,7 +104,6 @@ function isCommercialValidationExperiment(experiment: {
 }
 
 export default function ExperimentListPage() {
-  const { data, isLoading } = useExperiments();
   const { data: niches } = useNiches();
   const updateStatus = useUpdateExperimentStatus();
   const reactivateExperiment = useReactivateExperiment();
@@ -129,6 +114,12 @@ export default function ExperimentListPage() {
   const [status, setStatus] = useState("");
   const [niche, setNiche] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const deferredSearch = useDeferredValue(search.trim());
+  const { data, isLoading } = useExperimentSummary(currentPage - 1, PAGE_SIZE, {
+    search: deferredSearch || undefined,
+    status: status || undefined,
+    nicheId: niche ? Number(niche) : undefined,
+  });
   const [stoppingExperimentId, setStoppingExperimentId] = useState<
     string | null
   >(null);
@@ -161,7 +152,7 @@ export default function ExperimentListPage() {
       ]);
     },
   });
-  const experiments = Array.isArray(data) ? data : [];
+  const experiments = data?.items ?? [];
   const nicheNameById = useMemo(() => {
     if (!Array.isArray(niches)) return new Map<number, string>();
     return new Map(niches.map((item) => [item.id, item.name]));
@@ -178,36 +169,12 @@ export default function ExperimentListPage() {
     }, {});
   }, [experiments]);
 
-  const filtered = useMemo(() => {
-    return experiments.filter(
-      (e) =>
-        !FINALIZED_STATUSES.has(e.status) &&
-        (!search || e.name.toLowerCase().includes(search.toLowerCase())) &&
-        (!status || e.status === status) &&
-        (!niche || e.nicheId === Number(niche)),
-    );
-  }, [experiments, search, status, niche]);
-
-  const sorted = useMemo(() => {
-    return [...filtered].sort((a, b) => {
-      const commercialValidationComparison =
-        Number(isCommercialValidationExperiment(b)) -
-        Number(isCommercialValidationExperiment(a));
-      if (commercialValidationComparison !== 0)
-        return commercialValidationComparison;
-      const bDate = parseDate(b.startDate ?? b.createdAt);
-      const aDate = parseDate(a.startDate ?? a.createdAt);
-      const dateComparison = bDate - aDate;
-      if (dateComparison !== 0) return dateComparison;
-      return Number(b.id) - Number(a.id);
-    });
-  }, [filtered]);
-
-  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const totalPages = Math.max(1, data?.totalPages ?? 1);
   const pageStart = (currentPage - 1) * PAGE_SIZE;
-  const paginated = sorted.slice(pageStart, pageStart + PAGE_SIZE);
-  const visibleStart = sorted.length === 0 ? 0 : pageStart + 1;
-  const visibleEnd = Math.min(pageStart + PAGE_SIZE, sorted.length);
+  const paginated = experiments;
+  const totalElements = data?.totalElements ?? 0;
+  const visibleStart = totalElements === 0 ? 0 : pageStart + 1;
+  const visibleEnd = Math.min(pageStart + experiments.length, totalElements);
   const paginationItems = useMemo(() => {
     if (totalPages <= 7) {
       return Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -228,14 +195,10 @@ export default function ExperimentListPage() {
   }, [currentPage, totalPages]);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [search, status, niche]);
-
-  useEffect(() => {
-    if (currentPage > totalPages) {
+    if (data && currentPage > totalPages) {
       setCurrentPage(totalPages);
     }
-  }, [currentPage, totalPages]);
+  }, [currentPage, data, totalPages]);
 
   async function handleUserStop(experimentId: string) {
     setStoppingExperimentId(experimentId);
@@ -317,14 +280,20 @@ export default function ExperimentListPage() {
             className="form-control"
             placeholder="Buscar"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
           />
         </div>
         <div className="col">
           <select
             className="form-select"
             value={niche}
-            onChange={(e) => setNiche(e.target.value)}
+            onChange={(e) => {
+              setNiche(e.target.value);
+              setCurrentPage(1);
+            }}
           >
             <option value="">Todos Nichos</option>
             {Array.isArray(niches) &&
@@ -339,7 +308,10 @@ export default function ExperimentListPage() {
           <select
             className="form-select"
             value={status}
-            onChange={(e) => setStatus(e.target.value)}
+            onChange={(e) => {
+              setStatus(e.target.value);
+              setCurrentPage(1);
+            }}
           >
             <option value="">Status não finalizados</option>
             <option value="PLANNED">PLANNED</option>
@@ -352,7 +324,7 @@ export default function ExperimentListPage() {
       </div>
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-2">
         <span className="text-muted small">
-          Exibindo {visibleStart}-{visibleEnd} de {sorted.length} experimentos
+          Exibindo {visibleStart}-{visibleEnd} de {totalElements} experimentos
           não finalizados, com {PAGE_SIZE} por página.
         </span>
         <span className="badge text-bg-light align-self-start align-self-md-center">
@@ -517,7 +489,7 @@ export default function ExperimentListPage() {
           </tbody>
         </table>
       </div>
-      {sorted.length === 0 && (
+      {experiments.length === 0 && (
         <div className="alert alert-light border" role="status">
           Nenhum experimento encontrado para os filtros selecionados.
         </div>

@@ -9,6 +9,8 @@ import com.marketinghub.niche.MarketNiche;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -17,6 +19,26 @@ import org.springframework.data.repository.query.Param;
 
 /** Repository for experiments. */
 public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
+  /** Lista experimentos administrativos com filtros aplicados diretamente no banco. */
+  @EntityGraph(attributePaths = {"niche", "hypothesisRef", "facebookPage", "instagramAccount", "leadPortalFlow"})
+  @Query(
+      """
+      select e from Experiment e
+      where e.status not in :finalStatuses
+        and (:status is null or e.status = :status)
+        and (:nicheId is null or e.niche.id = :nicheId)
+        and (:search = '' or lower(e.name) like lower(concat('%', :search, '%')))
+      order by case when e.status = com.marketinghub.experiment.ExperimentStatus.RUNNING then 0 else 1 end,
+               coalesce(e.startDate, e.createdAt) desc,
+               e.id desc
+      """)
+  Page<Experiment> findAdministrativePage(
+      @Param("finalStatuses") List<ExperimentStatus> finalStatuses,
+      @Param("status") ExperimentStatus status,
+      @Param("nicheId") Long nicheId,
+      @Param("search") String search,
+      Pageable pageable);
+
   @Override
   @EntityGraph(attributePaths = {"facebookPage", "instagramAccount", "leadPortalFlow"})
   Optional<Experiment> findById(Long id);

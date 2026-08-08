@@ -3,6 +3,8 @@ package com.marketinghub.experiment.web;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.ExperimentDiagnosticsDto;
 import com.marketinghub.experiment.dto.ExperimentDto;
+import com.marketinghub.experiment.dto.ExperimentListPageDto;
+import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.experiment.dto.ExperimentSessionDurationSummaryDto;
 import com.marketinghub.experiment.dto.ExperimentSessionDurationVariantDto;
@@ -154,6 +156,24 @@ public class ExperimentController {
   @GetMapping
   public List<ExperimentDto> list() {
     return StreamSupport.stream(service.list().spliterator(), false).map(this::toListDto).toList();
+  }
+
+  /** Lista uma página filtrada de experimentos sem carregar todo o histórico administrativo. */
+  @GetMapping("/summary")
+  public ExperimentListPageDto listSummary(
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "25") int size,
+      @RequestParam(required = false) ExperimentStatus status,
+      @RequestParam(required = false) Long nicheId,
+      @RequestParam(defaultValue = "") String search) {
+    org.springframework.data.domain.Page<com.marketinghub.experiment.Experiment> result =
+        service.listAdministrativePage(page, size, status, nicheId, search);
+    return new ExperimentListPageDto(
+        result.getContent().stream().map(this::toListDto).toList(),
+        result.getTotalElements(),
+        result.getTotalPages(),
+        result.getNumber(),
+        result.getSize());
   }
 
   /** Monta o contrato da lista com o resumo de engajamento da landing. */

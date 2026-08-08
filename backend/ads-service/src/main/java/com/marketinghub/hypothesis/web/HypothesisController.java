@@ -4,6 +4,7 @@ import com.marketinghub.hypothesis.HypothesisStatus;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
 import com.marketinghub.hypothesis.dto.CreateHypothesisVersionRequest;
 import com.marketinghub.hypothesis.dto.HypothesisDto;
+import com.marketinghub.hypothesis.dto.HypothesisListPageDto;
 import com.marketinghub.hypothesis.dto.UpdateHypothesisRequest;
 import com.marketinghub.hypothesis.mapper.HypothesisMapper;
 import com.marketinghub.hypothesis.service.HypothesisKanbanFacade;
@@ -57,6 +58,23 @@ public class HypothesisController {
     return StreamSupport.stream(service.list(parsed).spliterator(), false)
         .map(mapper::toDto)
         .toList();
+  }
+
+  /** Lista hipóteses paginadas para a tela administrativa. */
+  @GetMapping("/hypotheses/page")
+  public HypothesisListPageDto listPage(
+      @RequestParam(value = "status", required = false) String status,
+      @RequestParam(value = "page", defaultValue = "0") int page,
+      @RequestParam(value = "size", defaultValue = "25") int size) {
+    HypothesisStatus parsed = parseStatus(status);
+    org.springframework.data.domain.Page<com.marketinghub.hypothesis.Hypothesis> result =
+        service.listPage(parsed, page, size);
+    return new HypothesisListPageDto(
+        result.getContent().stream().map(mapper::toDto).toList(),
+        result.getTotalElements(),
+        result.getTotalPages(),
+        result.getNumber(),
+        result.getSize());
   }
 
   @GetMapping("/niches/{nicheId}/hypotheses")

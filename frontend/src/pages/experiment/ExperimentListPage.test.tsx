@@ -65,7 +65,7 @@ describe("ExperimentListPage", () => {
     });
 
     (axios.get as any).mockImplementation((url: string) => {
-      if (url === "/api/experiments")
+      if (url === "/api/experiments/summary")
         return Promise.resolve({ data: experiments });
       if (url === "/api/niches") {
         return Promise.resolve({
@@ -121,10 +121,10 @@ describe("ExperimentListPage", () => {
     ).toBeTruthy();
     expect(screen.queryByText("Experimento 1")).toBeNull();
 
-    await userEvent.click(screen.getByRole("button", { name: "Próxima" }));
+    await userEvent.click(screen.getByRole("button", { name: "2" }));
 
-    expect(screen.getByText("Página 2 de 2")).toBeTruthy();
-    expect(screen.getByText("Experimento 1")).toBeTruthy();
+    expect(await screen.findByText("Página 2 de 2")).toBeTruthy();
+    expect(await screen.findByText("Experimento 1")).toBeTruthy();
     expect(screen.queryByText("Experimento 26")).toBeNull();
     const row = screen.getByText("Experimento 1").closest("tr");
     expect(row).not.toBeNull();
@@ -184,7 +184,7 @@ describe("ExperimentListPage", () => {
     ];
 
     (axios.get as any).mockImplementation((url: string) => {
-      if (url === "/api/experiments")
+      if (url === "/api/experiments/summary")
         return Promise.resolve({ data: experiments });
       if (url === "/api/niches") {
         return Promise.resolve({
@@ -272,7 +272,7 @@ describe("ExperimentListPage", () => {
     ];
 
     (axios.get as any).mockImplementation((url: string) => {
-      if (url === "/api/experiments")
+      if (url === "/api/experiments/summary")
         return Promise.resolve({ data: experiments });
       if (url === "/api/niches") {
         return Promise.resolve({
@@ -338,7 +338,7 @@ describe("ExperimentListPage", () => {
     ];
 
     (axios.get as any).mockImplementation((url: string) => {
-      if (url === "/api/experiments")
+      if (url === "/api/experiments/summary")
         return Promise.resolve({ data: experiments });
       if (url === "/api/niches") {
         return Promise.resolve({
@@ -399,7 +399,7 @@ describe("ExperimentListPage", () => {
     ];
 
     (axios.get as any).mockImplementation((url: string) => {
-      if (url === "/api/experiments")
+      if (url === "/api/experiments/summary")
         return Promise.resolve({ data: experiments });
       if (url === "/api/niches") {
         return Promise.resolve({
@@ -473,7 +473,7 @@ describe("ExperimentListPage", () => {
     ];
 
     (axios.get as any).mockImplementation((url: string) => {
-      if (url === "/api/experiments")
+      if (url === "/api/experiments/summary")
         return Promise.resolve({ data: experiments });
       if (url === "/api/niches") {
         return Promise.resolve({
@@ -579,7 +579,7 @@ describe("ExperimentListPage", () => {
     ];
 
     (axios.get as any).mockImplementation((url: string) => {
-      if (url === "/api/experiments")
+      if (url === "/api/experiments/summary")
         return Promise.resolve({ data: experiments });
       if (url === "/api/niches") {
         return Promise.resolve({
@@ -641,7 +641,7 @@ describe("ExperimentListPage", () => {
     ];
 
     (axios.get as any).mockImplementation((url: string) => {
-      if (url === "/api/experiments")
+      if (url === "/api/experiments/summary")
         return Promise.resolve({ data: experiments });
       if (url === "/api/niches") {
         return Promise.resolve({

@@ -611,6 +611,25 @@ public class ExperimentService {
     return repository.findAll();
   }
 
+  /** Lista somente a página administrativa solicitada, aplicando filtros no banco. */
+  public org.springframework.data.domain.Page<Experiment> listAdministrativePage(
+      int page, int size, ExperimentStatus status, Long nicheId, String search) {
+    java.util.List<ExperimentStatus> finalStatuses =
+        java.util.List.of(
+            ExperimentStatus.FINISHED,
+            ExperimentStatus.VALIDATED,
+            ExperimentStatus.INVALIDATED,
+            ExperimentStatus.INCONCLUSIVE,
+            ExperimentStatus.FAILED);
+    return repository.findAdministrativePage(
+        finalStatuses,
+        status,
+        nicheId,
+        search == null ? "" : search.trim(),
+        org.springframework.data.domain.PageRequest.of(
+            Math.max(page, 0), Math.min(Math.max(size, 1), 100)));
+  }
+
   public Iterable<Experiment> listByNiche(Long nicheId) {
     return repository.findByNicheId(nicheId);
   }

@@ -29,6 +29,9 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -331,6 +334,16 @@ public class HypothesisService {
       return repository.findAll();
     }
     return repository.findByStatus(status);
+  }
+
+  /** Lista uma página de hipóteses ordenada pelas atualizações mais recentes. */
+  public Page<Hypothesis> listPage(HypothesisStatus status, int page, int size) {
+    PageRequest pageable =
+        PageRequest.of(
+            Math.max(page, 0),
+            Math.min(Math.max(size, 1), 100),
+            Sort.by(Sort.Direction.DESC, "updatedAt").and(Sort.by(Sort.Direction.DESC, "id")));
+    return status == null ? repository.findAll(pageable) : repository.findByStatus(status, pageable);
   }
 
   @Transactional

@@ -201,3 +201,52 @@ export function useExperiments() {
     },
   });
 }
+
+export interface ExperimentSummaryPage {
+  items: Experiment[];
+  totalElements: number;
+  totalPages: number;
+  page: number;
+  size: number;
+}
+
+export function useExperimentSummary(
+  page: number,
+  size: number,
+  filters: { search?: string; status?: string; nicheId?: number },
+) {
+  return useQuery({
+    queryKey: ["experiments-summary", page, size, filters],
+    queryFn: async () => {
+      const { data } = await axios.get<ExperimentSummaryPage | Experiment[]>(
+        "/api/experiments/summary",
+        { params: { page, size, ...filters } },
+      );
+      if (Array.isArray(data)) {
+        const finalized = new Set([
+          "FINISHED",
+          "VALIDATED",
+          "INVALIDATED",
+          "INCONCLUSIVE",
+          "FAILED",
+        ]);
+        const filtered = data
+          .filter((item) => !finalized.has(item.status))
+          .sort((left, right) => {
+            const running = Number(right.status === "RUNNING") - Number(left.status === "RUNNING");
+            if (running !== 0) return running;
+            return Number(right.id) - Number(left.id);
+          });
+        const items = filtered.slice(page * size, page * size + size);
+        return {
+          items,
+          totalElements: filtered.length,
+          totalPages: Math.ceil(filtered.length / size),
+          page,
+          size,
+        };
+      }
+      return data;
+    },
+  });
+}

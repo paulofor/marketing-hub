@@ -6,18 +6,25 @@ import { useNiches } from "../../api/niche/useNiches";
 import { useUpdateHypothesisStatus } from "../../api/hypothesis/useUpdateHypothesisStatus";
 import type { Hypothesis } from "../../api/hypothesis/useHypothesisBoard";
 
-const statuses = ["ALL", "BACKLOG", "TESTING", "VALIDATED", "INVALIDATED"] as const;
+const statuses = [
+  "ALL",
+  "BACKLOG",
+  "TESTING",
+  "VALIDATED",
+  "INVALIDATED",
+] as const;
 
 export default function HypothesisList() {
   const [status, setStatus] = useState<string>("ALL");
-  const { data, isLoading } = useHypotheses(status);
+  const [page, setPage] = useState(0);
+  const { data, isLoading } = useHypotheses(status, page);
   const update = useUpdateHypothesisStatus();
   const { data: angles } = useAngles();
   const { data: niches } = useNiches();
   const angleMap = new Map<number, string>(
     Array.isArray(angles) ? angles.map((a) => [a.id, a.name]) : [],
   );
-  const list = Array.isArray(data) ? data : [];
+  const list = data?.items ?? [];
 
   const changeStatus = async (h: Hypothesis, s: string) => {
     if (s === h.status) return;
@@ -32,7 +39,10 @@ export default function HypothesisList() {
         <select
           className="form-select w-auto"
           value={status}
-          onChange={(e) => setStatus(e.target.value)}
+          onChange={(e) => {
+            setStatus(e.target.value);
+            setPage(0);
+          }}
         >
           {statuses.map((s) => (
             <option key={s} value={s}>
@@ -94,12 +104,38 @@ export default function HypothesisList() {
                   <button className="btn btn-sm btn-outline-secondary me-1">
                     Criar Criativo
                   </button>
-                  <button className="btn btn-sm btn-outline-danger">Excluir</button>
+                  <button className="btn btn-sm btn-outline-danger">
+                    Excluir
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="d-flex justify-content-between align-items-center mt-3">
+        <span className="text-muted small">
+          {data?.totalElements ?? 0} hipóteses · página {page + 1} de{" "}
+          {Math.max(data?.totalPages ?? 1, 1)}
+        </span>
+        <div className="btn-group" aria-label="Paginação de hipóteses">
+          <button
+            type="button"
+            className="btn btn-outline-secondary btn-sm"
+            disabled={page === 0}
+            onClick={() => setPage((current) => current - 1)}
+          >
+            Anterior
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline-secondary btn-sm"
+            disabled={page + 1 >= (data?.totalPages ?? 0)}
+            onClick={() => setPage((current) => current + 1)}
+          >
+            Próxima
+          </button>
+        </div>
       </div>
     </div>
   );

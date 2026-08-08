@@ -15,4 +15,6 @@ public record CreativeAgentReviewPendingDto(
     String description,
     String cta,
     String destinationUrl,
-    String mediaUrl) {}
+    String mediaUrl,
+    String desireAssociationMapVersion,
+    String desireAssociationMapJson) {}

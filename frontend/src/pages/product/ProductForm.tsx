@@ -37,6 +37,8 @@ const defaultForm: ProductFormValues = {
   valueEvidenceMetric: "",
   validationDefinitionVersion: "v1",
   validationDefinitionJson: "",
+  desireAssociationMapVersion: "v1",
+  desireAssociationMapJson: "",
   commercialStatus: "VALIDACAO_COMERCIAL",
   currentPriceBrl: "",
   primaryHypothesisId: "",
@@ -86,6 +88,8 @@ function toFormValues(product?: Product): ProductFormValues {
       product.validationDefinitionVersion ??
       defaultForm.validationDefinitionVersion,
     validationDefinitionJson: product.validationDefinitionJson ?? "",
+    desireAssociationMapVersion: product.desireAssociationMapVersion ?? "v1",
+    desireAssociationMapJson: product.desireAssociationMapJson ?? "",
     commercialStatus: product.commercialStatus ?? defaultForm.commercialStatus,
     currentPriceBrl:
       product.currentPriceBrl != null ? String(product.currentPriceBrl) : "",
@@ -233,6 +237,94 @@ export default function ProductForm({
 
   const submit = () => {
     onSubmit(toPayload(form));
+  };
+
+  const applyAgendaCheiaDesireMap = () => {
+    setForm((current) => ({
+      ...current,
+      desireAssociationMapVersion: "v1",
+      desireAssociationMapJson: JSON.stringify(
+        {
+          painState:
+            "Comunicação improvisada que não transmite o valor profissional do trabalho da nail designer.",
+          desiredState:
+            "Sentir orgulho, reconhecimento e tranquilidade ao divulgar uma presença profissional consistente.",
+          territories: [
+            {
+              code: "PROFESSIONAL_PRIDE",
+              name: "Orgulho profissional",
+              idea: "Um perfil à altura do talento da profissional.",
+              symbols: [
+                "perfil organizado",
+                "trabalho bem apresentado",
+                "post publicado com confiança",
+              ],
+              truthBoundary:
+                "Pode mostrar valorização da apresentação; não pode garantir fama, renda ou agenda lotada.",
+            },
+            {
+              code: "RECOGNITION",
+              name: "Reconhecimento",
+              idea: "O trabalho percebido como profissional antes mesmo da primeira conversa.",
+              symbols: [
+                "cliente demonstrando interesse",
+                "elogio real",
+                "portfólio coerente",
+              ],
+              truthBoundary:
+                "Pode representar interesse plausível; não pode inventar depoimentos, números ou resultados.",
+            },
+            {
+              code: "TRANQUILITY",
+              name: "Tranquilidade",
+              idea: "Conteúdo pronto para divulgar sem perder horas criando.",
+              symbols: [
+                "conteúdo planejado",
+                "tempo preservado",
+                "rotina de divulgação simples",
+              ],
+              truthBoundary:
+                "Pode prometer redução de esforço compatível com a entrega; não pode garantir vendas.",
+            },
+          ],
+          causalChain: [
+            "ativos visuais personalizados",
+            "presença profissional consistente",
+            "maior clareza e confiança percebida",
+            "mais oportunidades de conversa e agendamento",
+          ],
+          evidence: {
+            currentLevel: "HYPOTHESIS",
+            required: [
+              "visualização da prévia",
+              "briefing concluído",
+              "venda aprovada",
+              "satisfação pós-entrega",
+            ],
+          },
+          prohibitedAssociations: [
+            "agenda lotada garantida",
+            "renda garantida",
+            "depoimento ou resultado não comprovado",
+          ],
+          measurementPlan: {
+            isolateOneTerritoryPerCreative: true,
+            keepConstant: ["público", "oferta", "preço", "canal", "CTA"],
+            funnel: [
+              "impressão",
+              "clique",
+              "briefing",
+              "venda",
+              "uso",
+              "satisfação",
+            ],
+            publicationRequires: ["AD_SPECIALIST_APPROVED", "HUMAN_APPROVED"],
+          },
+        },
+        null,
+        2,
+      ),
+    }));
   };
 
   return (
@@ -566,6 +658,32 @@ export default function ProductForm({
         </ProductEditorSection>
 
         <ProductEditorSection icon={Megaphone} title="Comunicação e criativos">
+          <div className="d-flex flex-wrap align-items-end gap-3 mb-3">
+            <div className="flex-grow-1">
+              <ProductField
+                field="desireAssociationMapVersion"
+                label="Versão do mapa de associações de desejo"
+                value={form.desireAssociationMapVersion}
+                onChange={setField}
+              />
+            </div>
+            <button
+              type="button"
+              className="btn btn-outline-primary mb-3"
+              onClick={applyAgendaCheiaDesireMap}
+            >
+              Aplicar mapa inicial do Agenda Cheia
+            </button>
+          </div>
+          <ProductField
+            field="desireAssociationMapJson"
+            label="Mapa de associações de desejo (JSON)"
+            multiline
+            rows={16}
+            value={form.desireAssociationMapJson}
+            onChange={setField}
+            placeholder='{"painState":"...","desiredState":"...","territories":[],"causalChain":[],"evidence":{},"prohibitedAssociations":[],"measurementPlan":{}}'
+          />
           <div className="product-editor-grid product-editor-grid--2">
             <ProductField
               field="languageStyle"

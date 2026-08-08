@@ -125,6 +125,15 @@ class ProductServiceTest {
         {"problem":{},"promise":{},"mechanism":{},"format":{},"delivery":{},
          "economics":{},"successEvidence":{},"decisionRules":{}}
         """);
+    request.setDesireAssociationMapVersion("v1");
+    request.setDesireAssociationMapJson(
+        """
+        {"painState":"improviso","desiredState":"orgulho","territories":[
+          {"code":"PROFESSIONAL_PRIDE","name":"Orgulho profissional","idea":"Perfil à altura do talento",
+           "symbols":["perfil organizado"],"truthBoundary":"Não garantir agenda lotada"}],
+         "causalChain":["ativos","presença"],"evidence":{"currentLevel":"HYPOTHESIS"},
+         "prohibitedAssociations":["renda garantida"],"measurementPlan":{"funnel":["clique","venda"]}}
+        """);
 
     when(productRepository.findById(1L)).thenReturn(Optional.of(product));
     when(marketNicheRepository.findById(10L)).thenReturn(Optional.of(niche));
@@ -151,7 +160,34 @@ class ProductServiceTest {
     assertThat(updated.getValueEvidenceMetric()).isEqualTo("SATISFACTION");
     assertThat(updated.getValidationDefinitionVersion()).isEqualTo("v1");
     assertThat(updated.getValidationDefinitionJson()).contains("decisionRules");
+    assertThat(updated.getDesireAssociationMapVersion()).isEqualTo("v1");
+    assertThat(updated.getDesireAssociationMapJson()).contains("PROFESSIONAL_PRIDE");
     assertThat(updated.getMarketNiche()).isSameAs(niche);
+  }
+
+  /** Rejeita mapa sem limite de verdade para impedir associação comercial enganosa. */
+  @Test
+  void updateProductRejectsDesireMapWithoutTruthBoundary() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    ProductService service =
+        newService(
+            productRepository,
+            mock(InstagramAccountRepository.class),
+            mock(MarketNicheRepository.class),
+            mock(AssetRepository.class));
+    Product product = Product.builder().id(1L).build();
+    CreateProductRequest request = new CreateProductRequest();
+    request.setDesireAssociationMapJson(
+        """
+        {"painState":"dor","desiredState":"prazer","territories":[
+          {"code":"PRIDE","name":"Orgulho","idea":"Ser valorizada","symbols":[]}],
+         "causalChain":[],"evidence":{},"prohibitedAssociations":[],"measurementPlan":{}}
+        """);
+    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+
+    assertThatThrownBy(() -> service.updateProduct(1L, request))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("truthBoundary");
   }
 
   /** Rejeita contrato incompleto para impedir comparações comerciais sem base comum. */

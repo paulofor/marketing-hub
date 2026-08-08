@@ -1232,6 +1232,10 @@ public class ProductService {
         normalizeOptional(request.getValidationDefinitionVersion()));
     product.setValidationDefinitionJson(
         validateValidationDefinitionJson(request.getValidationDefinitionJson()));
+    product.setDesireAssociationMapVersion(
+        normalizeOptional(request.getDesireAssociationMapVersion()));
+    product.setDesireAssociationMapJson(
+        validateDesireAssociationMapJson(request.getDesireAssociationMapJson()));
     product.setCommercialStatus(request.getCommercialStatus());
     product.setCurrentPriceBrl(request.getCurrentPriceBrl());
     product.setPrimaryHypothesisId(request.getPrimaryHypothesisId());
@@ -1300,6 +1304,53 @@ public class ProductService {
     } catch (JsonProcessingException ex) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "A definição de validação deve conter JSON válido.", ex);
+    }
+  }
+
+  /** Valida o mapa de desejo para preservar causalidade, evidência e limites comerciais. */
+  private String validateDesireAssociationMapJson(String value) {
+    String normalized = normalizeOptional(value);
+    if (normalized == null) {
+      return null;
+    }
+    try {
+      JsonNode map = objectMapper.readTree(normalized);
+      if (!map.isObject()) {
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST, "O mapa de associações deve ser um objeto JSON.");
+      }
+      for (String field :
+          List.of(
+              "painState",
+              "desiredState",
+              "territories",
+              "causalChain",
+              "evidence",
+              "prohibitedAssociations",
+              "measurementPlan")) {
+        if (!map.hasNonNull(field)) {
+          throw new ResponseStatusException(
+              HttpStatus.BAD_REQUEST,
+              "O mapa de associações deve informar o campo obrigatório: " + field + ".");
+        }
+      }
+      if (!map.path("territories").isArray() || map.path("territories").isEmpty()) {
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST, "O mapa deve conter ao menos um território de desejo.");
+      }
+      for (JsonNode territory : map.path("territories")) {
+        for (String field : List.of("code", "name", "idea", "symbols", "truthBoundary")) {
+          if (!territory.hasNonNull(field)) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Cada território de desejo deve informar o campo: " + field + ".");
+          }
+        }
+      }
+      return objectMapper.writeValueAsString(map);
+    } catch (JsonProcessingException ex) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "O mapa de associações deve conter JSON válido.", ex);
     }
   }
 

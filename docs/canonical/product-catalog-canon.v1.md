@@ -34,6 +34,28 @@ O primeiro marco de sucesso comercial continua sendo cinco vendas aprovadas com 
 satisfatória, baixa devolução, margem positiva e capacidade repetível. Clique, lead, intenção,
 parecer de agente ou impacto estimado não substituem venda nem evidência de valor pós-entrega.
 
+## Mapa de Associações de Desejo
+
+Todo produto pode registrar um mapa versionado que conecte dor, estado desejado e territórios
+emocionais por uma cadeia causal verdadeira. O mapa deve conter `painState`, `desiredState`,
+`territories`, `causalChain`, `evidence`, `prohibitedAssociations` e `measurementPlan`. Cada
+território deve declarar código, nome, ideia, símbolos observáveis e limite de verdade.
+
+O Estrategista usa o mapa para recomendar territórios isolados; a Inteligência Criativa cria
+briefings originais; o Aprovador verifica clareza, desejo, credibilidade e aderência aos limites; o
+Operador mede o funil real. Associação emocional nunca substitui prova de venda ou satisfação.
+Preço, orçamento, publicação e comunicação em massa permanecem sujeitos aos gates técnico e
+humano. Um criativo deve testar somente um território, mantendo público, oferta, preço, canal e CTA
+constantes sempre que o desenho experimental permitir.
+
+O mapa inicial do Agenda Cheia Nail Design contém três hipóteses, ainda sem vencedor:
+
+- orgulho profissional: perfil à altura do talento;
+- reconhecimento: trabalho percebido como profissional antes da conversa;
+- tranquilidade: conteúdo pronto sem perder horas criando.
+
+São proibidas garantias de agenda lotada, renda e resultados ou depoimentos não comprovados.
+
 O cadastro de produto deve consolidar os atributos usados para vender, entregar, ativar e escalar um produto digital. O produto pode nascer de uma hipótese/oferta validada, pertencer a um nicho estratégico e acumular vários experimentos associados ao longo do tempo.
 
 ## Regra de associação

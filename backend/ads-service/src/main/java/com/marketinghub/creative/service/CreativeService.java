@@ -21,6 +21,7 @@ import com.marketinghub.media.AssetStatus;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.media.MediaProvider;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.creative.label.AngleRepository;
 import com.marketinghub.repository.jpa.creative.label.EmotionalTriggerRepository;
@@ -28,6 +29,7 @@ import com.marketinghub.repository.jpa.creative.label.VisualProofRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.media.AssetRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.storage.AssetStorageService;
 import com.marketinghub.storage.AssetUploadCategory;
 import com.marketinghub.storage.AssetUploadContext;
@@ -75,6 +77,7 @@ public class CreativeService {
   private final CostAttributionService costAttributionService;
   private final AssetStorageService assetStorageService;
   private final ObjectMapper objectMapper;
+  private final ProductRepository productRepository;
 
   /** Cria e persiste um criativo para o experimento informado. */
   @Transactional
@@ -251,6 +254,8 @@ public class CreativeService {
                   "VIDEO".equalsIgnoreCase(creative.getFormat())
                       ? creative.getVideoUrl()
                       : creative.getImageUrl();
+              Product desireMapProduct =
+                  niche == null ? null : uniqueProductForDesireMap(niche.getId());
               return new CreativeAgentReviewPendingDto(
                   creative.getId(),
                   experiment.getId(),
@@ -263,9 +268,19 @@ public class CreativeService {
                   creative.getDescription(),
                   creative.getCta(),
                   creative.getDestinationUrl(),
-                  mediaUrl);
+                  mediaUrl,
+                  desireMapProduct != null
+                      ? desireMapProduct.getDesireAssociationMapVersion()
+                      : null,
+                  desireMapProduct != null ? desireMapProduct.getDesireAssociationMapJson() : null);
             })
         .toList();
+  }
+
+  /** Resolve mapa apenas quando o nicho identifica um único produto, evitando contexto cruzado. */
+  private Product uniqueProductForDesireMap(Long marketNicheId) {
+    List<Product> products = productRepository.findAllByMarketNiche_Id(marketNicheId);
+    return products.size() == 1 ? products.getFirst() : null;
   }
 
   /** Persiste o parecer auditável do agente e mantém o anúncio bloqueado quando não aprovado. */

@@ -94,6 +94,15 @@ public class Product {
   @Column(name = "validation_definition_json", columnDefinition = "LONGTEXT")
   private String validationDefinitionJson;
 
+  /** Versão do mapa que liga o produto a estados desejados de forma auditável. */
+  @Column(name = "desire_association_map_version", length = 32)
+  private String desireAssociationMapVersion;
+
+  /** Mapa JSON de territórios, cadeias causais, evidências e limites de promessa. */
+  @Lob
+  @Column(name = "desire_association_map_json", columnDefinition = "LONGTEXT")
+  private String desireAssociationMapJson;
+
   /** Status comercial atual do produto. */
   @Column(name = "commercial_status", length = 64)
   private String commercialStatus;

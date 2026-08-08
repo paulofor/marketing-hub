@@ -57,6 +57,49 @@ describe("CriativosTab", () => {
     await screen.findByText("Patrocinado");
   });
 
+  it("submits a legacy creative to the agent even when commercial editing is locked", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.endsWith("/products/experiments/1/ads-in-use")) {
+        return Promise.resolve({
+          data: [
+            {
+              id: 261,
+              headline: "Criativo legado",
+              primaryText: "Texto preservado",
+              imageUrl: "legacy.jpg",
+              status: "DRAFT",
+              agentReviewStatus: null,
+            },
+          ],
+        });
+      }
+      if (url.endsWith("/experiments/1")) {
+        return Promise.resolve({ data: { creativesToGenerate: 0 } });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    (axios.post as any).mockResolvedValue({
+      data: { id: 261, agentReviewStatus: "PENDING" },
+    });
+
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <CriativosTab experimentId="1" alterationLocked />
+      </QueryClientProvider>,
+    );
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Enviar ao Aprovador" }),
+    );
+    expect(axios.post).toHaveBeenCalledWith(
+      "/api/creatives/261/agent-review/request",
+    );
+    expect(
+      await screen.findByText("Criativo enviado ao Especialista em Anúncios"),
+    ).toBeInTheDocument();
+  });
+
   it("shows image prompt below ad card when toggled", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url.endsWith("/products/experiments/1/ads-in-use")) {

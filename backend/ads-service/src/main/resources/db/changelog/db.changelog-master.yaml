@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-08-product-desire-association-map-v1.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-08-agent-orchestration-v1.yaml
       relativeToChangelogFile: true
   - include:

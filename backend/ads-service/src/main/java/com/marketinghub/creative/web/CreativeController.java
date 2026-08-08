@@ -126,6 +126,12 @@ public class CreativeController {
     return service.claimAgentReviewQueue(limit);
   }
 
+  /** Solicita revisão do agente sem alterar ou liberar o conteúdo do anúncio. */
+  @PostMapping("/api/creatives/{id}/agent-review/request")
+  public CreativeDto requestAgentReview(@PathVariable Long id) {
+    return mapper.toDto(service.requestAgentReview(id));
+  }
+
   /** Recebe e persiste o resultado auditável da revisão multimodal. */
   @PostMapping("/api/internal/creatives/{id}/agent-review/result")
   public CreativeDto applyAgentReview(

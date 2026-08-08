@@ -26,6 +26,7 @@ import {
   parseImagePromptPayload,
 } from "./imageBriefingParser";
 import { useRequestPipelineCreatives } from "../../api/experiment/useRequestPipelineCreatives";
+import { useRequestCreativeAgentReview } from "../../api/creative/useRequestCreativeAgentReview";
 
 interface Props {
   experimentId: string;
@@ -307,6 +308,7 @@ export default function CriativosTab({
   };
   const update = useUpdateCreative(experimentId);
   const del = useDeleteCreative(experimentId);
+  const requestAgentReview = useRequestCreativeAgentReview(experimentId);
   const [showPreview, setShowPreview] = useState(false);
   const [processingCreativeId, setProcessingCreativeId] = useState<
     number | null
@@ -524,6 +526,26 @@ export default function CriativosTab({
     }
   };
 
+  const submitToAgentReview = async (c: Creative) => {
+    setProcessingCreativeId(c.id);
+    try {
+      await requestAgentReview.mutateAsync(c.id);
+      setFeedback({
+        variant: "success",
+        title: "Criativo enviado ao Especialista em Anúncios",
+        description: "A publicação continua bloqueada até o parecer técnico e a aprovação humana.",
+      });
+    } catch {
+      setFeedback({
+        variant: "error",
+        title: "Não foi possível solicitar a análise",
+        description: "Tente novamente em instantes.",
+      });
+    } finally {
+      setProcessingCreativeId(null);
+    }
+  };
+
   const totalCreatives = creatives.length;
   const handlePipelineRequest = async () => {
     try {
@@ -723,6 +745,20 @@ export default function CriativosTab({
                   <CheckCircle2 size={ICON_SIZE} />
                 )}
                 <span>{isProcessing ? "Aprovando..." : "Aprovar"}</span>
+              </button>
+            )}
+            {(c.agentReviewStatus == null ||
+              c.agentReviewStatus === "FAILED" ||
+              c.agentReviewStatus === "ADJUST" ||
+              c.agentReviewStatus === "REJECTED") && (
+              <button
+                type="button"
+                className="btn btn-outline-warning btn-sm d-flex align-items-center justify-content-center gap-1"
+                onClick={() => submitToAgentReview(c)}
+                disabled={isProcessing}
+              >
+                <Sparkles size={ICON_SIZE} />
+                <span>{isProcessing ? "Enviando..." : "Enviar ao Aprovador"}</span>
               </button>
             )}
             <button

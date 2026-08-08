@@ -19,6 +19,8 @@ export interface Product {
   valueEvidenceMetric?: string;
   validationDefinitionVersion?: string;
   validationDefinitionJson?: string;
+  desireAssociationMapVersion?: string;
+  desireAssociationMapJson?: string;
   commercialStatus?: string;
   currentPriceBrl?: number;
   primaryHypothesisId?: string;

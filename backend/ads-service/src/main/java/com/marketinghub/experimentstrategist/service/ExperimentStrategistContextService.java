@@ -86,6 +86,8 @@ public class ExperimentStrategistContextService {
     item.put("valueEvidenceMetric", product.getValueEvidenceMetric());
     item.put("validationDefinitionVersion", product.getValidationDefinitionVersion());
     item.put("validationDefinitionJson", product.getValidationDefinitionJson());
+    item.put("desireAssociationMapVersion", product.getDesireAssociationMapVersion());
+    item.put("desireAssociationMapJson", product.getDesireAssociationMapJson());
     item.put("experimentComparison", productService.getExperimentComparison(product.getId()));
     return item;
   }

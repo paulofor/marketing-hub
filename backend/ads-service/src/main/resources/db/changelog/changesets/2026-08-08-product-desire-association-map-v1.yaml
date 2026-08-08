@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-08-product-desire-association-map-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product
+                ADD COLUMN desire_association_map_version VARCHAR(32) NULL,
+                ADD COLUMN desire_association_map_json LONGTEXT NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product
+                DROP COLUMN desire_association_map_json,
+                DROP COLUMN desire_association_map_version;

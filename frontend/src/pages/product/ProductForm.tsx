@@ -4,6 +4,7 @@ import {
   BadgeDollarSign,
   Brush,
   FileText,
+  FlaskConical,
   Loader2,
   Megaphone,
   PackageCheck,
@@ -29,6 +30,13 @@ const defaultForm: ProductFormValues = {
   languageStyle: "",
   codeModules: "",
   productType: "PDE - Produto Digital Experiencial",
+  productFormat: "",
+  deliveryMode: "",
+  revenueModel: "",
+  valueUnit: "",
+  valueEvidenceMetric: "",
+  validationDefinitionVersion: "v1",
+  validationDefinitionJson: "",
   commercialStatus: "VALIDACAO_COMERCIAL",
   currentPriceBrl: "",
   primaryHypothesisId: "",
@@ -69,6 +77,15 @@ function toFormValues(product?: Product): ProductFormValues {
     languageStyle: product.languageStyle ?? "",
     codeModules: product.codeModules ?? "",
     productType: product.productType ?? defaultForm.productType,
+    productFormat: product.productFormat ?? "",
+    deliveryMode: product.deliveryMode ?? "",
+    revenueModel: product.revenueModel ?? "",
+    valueUnit: product.valueUnit ?? "",
+    valueEvidenceMetric: product.valueEvidenceMetric ?? "",
+    validationDefinitionVersion:
+      product.validationDefinitionVersion ??
+      defaultForm.validationDefinitionVersion,
+    validationDefinitionJson: product.validationDefinitionJson ?? "",
     commercialStatus: product.commercialStatus ?? defaultForm.commercialStatus,
     currentPriceBrl:
       product.currentPriceBrl != null ? String(product.currentPriceBrl) : "",
@@ -331,6 +348,64 @@ export default function ProductForm({
               onChange={setField}
             />
           </div>
+        </ProductEditorSection>
+
+        <ProductEditorSection
+          icon={FlaskConical}
+          title="Definição do teste de produto"
+        >
+          <div className="product-editor-grid product-editor-grid--3">
+            <ProductField
+              field="productFormat"
+              label="Formato entregue"
+              value={form.productFormat}
+              onChange={setField}
+              placeholder="Programa guiado, pacote de imagens, diagnóstico..."
+            />
+            <ProductField
+              field="deliveryMode"
+              label="Modo de entrega"
+              value={form.deliveryMode}
+              onChange={setField}
+              placeholder="Automática, personalizada, híbrida..."
+            />
+            <ProductField
+              field="revenueModel"
+              label="Modelo de receita"
+              value={form.revenueModel}
+              onChange={setField}
+              placeholder="Compra única, assinatura, recorrência..."
+            />
+            <ProductField
+              field="valueUnit"
+              label="Unidade de valor"
+              value={form.valueUnit}
+              onChange={setField}
+              placeholder="7 dias concluídos, 10 imagens utilizáveis..."
+            />
+            <ProductField
+              field="valueEvidenceMetric"
+              label="Evidência de valor"
+              value={form.valueEvidenceMetric}
+              onChange={setField}
+              placeholder="Uso, satisfação, recompra ou resultado percebido"
+            />
+            <ProductField
+              field="validationDefinitionVersion"
+              label="Versão da definição"
+              value={form.validationDefinitionVersion}
+              onChange={setField}
+            />
+          </div>
+          <ProductField
+            field="validationDefinitionJson"
+            label="Contrato comparável de validação (JSON)"
+            multiline
+            rows={12}
+            value={form.validationDefinitionJson}
+            onChange={setField}
+            placeholder='{"problem":{},"promise":{},"mechanism":{},"format":{},"delivery":{},"economics":{},"successEvidence":{},"decisionRules":{}}'
+          />
         </ProductEditorSection>
 
         <ProductEditorSection icon={Target} title="Mercado e persona">

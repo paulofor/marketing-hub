@@ -358,6 +358,12 @@ public class ProductService {
           product.getName(),
           product.getSlug(),
           product.getCommercialStatus(),
+          product.getProductFormat(),
+          product.getDeliveryMode(),
+          product.getRevenueModel(),
+          product.getValueUnit(),
+          product.getValueEvidenceMetric(),
+          product.getValidationDefinitionVersion(),
           "Vincule o produto a um nicho ou informe experimentos associados para comparar histórico.",
           List.of());
     }
@@ -453,6 +459,12 @@ public class ProductService {
         product.getName(),
         product.getSlug(),
         product.getCommercialStatus(),
+        product.getProductFormat(),
+        product.getDeliveryMode(),
+        product.getRevenueModel(),
+        product.getValueUnit(),
+        product.getValueEvidenceMetric(),
+        product.getValidationDefinitionVersion(),
         recommendProductAction(experiments),
         experiments);
   }
@@ -1191,6 +1203,15 @@ public class ProductService {
     product.setLanguageStyle(request.getLanguageStyle());
     product.setCodeModules(request.getCodeModules());
     product.setProductType(request.getProductType());
+    product.setProductFormat(normalizeOptional(request.getProductFormat()));
+    product.setDeliveryMode(normalizeOptional(request.getDeliveryMode()));
+    product.setRevenueModel(normalizeOptional(request.getRevenueModel()));
+    product.setValueUnit(normalizeOptional(request.getValueUnit()));
+    product.setValueEvidenceMetric(normalizeOptional(request.getValueEvidenceMetric()));
+    product.setValidationDefinitionVersion(
+        normalizeOptional(request.getValidationDefinitionVersion()));
+    product.setValidationDefinitionJson(
+        validateValidationDefinitionJson(request.getValidationDefinitionJson()));
     product.setCommercialStatus(request.getCommercialStatus());
     product.setCurrentPriceBrl(request.getCurrentPriceBrl());
     product.setPrimaryHypothesisId(request.getPrimaryHypothesisId());
@@ -1225,6 +1246,41 @@ public class ProductService {
       return null;
     }
     return value.trim();
+  }
+
+  /** Valida e normaliza o contrato modular usado para comparar formatos de produto. */
+  private String validateValidationDefinitionJson(String value) {
+    String normalized = normalizeOptional(value);
+    if (normalized == null) {
+      return null;
+    }
+    try {
+      JsonNode definition = objectMapper.readTree(normalized);
+      if (!definition.isObject()) {
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST, "A definição de validação deve ser um objeto JSON.");
+      }
+      for (String field :
+          List.of(
+              "problem",
+              "promise",
+              "mechanism",
+              "format",
+              "delivery",
+              "economics",
+              "successEvidence",
+              "decisionRules")) {
+        if (!definition.hasNonNull(field)) {
+          throw new ResponseStatusException(
+              HttpStatus.BAD_REQUEST,
+              "A definição de validação deve informar o campo obrigatório: " + field + ".");
+        }
+      }
+      return objectMapper.writeValueAsString(definition);
+    } catch (JsonProcessingException ex) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "A definição de validação deve conter JSON válido.", ex);
+    }
   }
 
   /** Normaliza e valida o prompt comercial usado para gerar imagens de vídeo. */

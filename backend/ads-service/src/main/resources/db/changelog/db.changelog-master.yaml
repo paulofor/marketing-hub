@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-08-product-validation-definition-v1.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-05-customer-agent-motivational-memory-v1.yaml
       relativeToChangelogFile: true
   - include:

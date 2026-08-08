@@ -114,6 +114,17 @@ class ProductServiceTest {
     request.setSevenDayJourney("Dia 1: diagnóstico; Dia 2: limpeza visual.");
     request.setSupportMaterialPositioning("Material de apoio como reforço secundário.");
     request.setPrimaryCta("Ver meu plano MUSA de 7 dias");
+    request.setProductFormat("GUIDED_PROGRAM");
+    request.setDeliveryMode("HYBRID");
+    request.setRevenueModel("ONE_TIME_PURCHASE");
+    request.setValueUnit("7 dias concluídos");
+    request.setValueEvidenceMetric("SATISFACTION");
+    request.setValidationDefinitionVersion("v1");
+    request.setValidationDefinitionJson(
+        """
+        {"problem":{},"promise":{},"mechanism":{},"format":{},"delivery":{},
+         "economics":{},"successEvidence":{},"decisionRules":{}}
+        """);
 
     when(productRepository.findById(1L)).thenReturn(Optional.of(product));
     when(marketNicheRepository.findById(10L)).thenReturn(Optional.of(niche));
@@ -133,7 +144,54 @@ class ProductServiceTest {
     assertThat(updated.getSupportMaterialPositioning())
         .isEqualTo("Material de apoio como reforço secundário.");
     assertThat(updated.getPrimaryCta()).isEqualTo("Ver meu plano MUSA de 7 dias");
+    assertThat(updated.getProductFormat()).isEqualTo("GUIDED_PROGRAM");
+    assertThat(updated.getDeliveryMode()).isEqualTo("HYBRID");
+    assertThat(updated.getRevenueModel()).isEqualTo("ONE_TIME_PURCHASE");
+    assertThat(updated.getValueUnit()).isEqualTo("7 dias concluídos");
+    assertThat(updated.getValueEvidenceMetric()).isEqualTo("SATISFACTION");
+    assertThat(updated.getValidationDefinitionVersion()).isEqualTo("v1");
+    assertThat(updated.getValidationDefinitionJson()).contains("decisionRules");
     assertThat(updated.getMarketNiche()).isSameAs(niche);
+  }
+
+  /** Rejeita contrato incompleto para impedir comparações comerciais sem base comum. */
+  @Test
+  void updateProductRejectsIncompleteValidationDefinition() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    ProductService service =
+        newService(
+            productRepository,
+            mock(InstagramAccountRepository.class),
+            mock(MarketNicheRepository.class),
+            mock(AssetRepository.class));
+    Product product = Product.builder().id(1L).build();
+    CreateProductRequest request = new CreateProductRequest();
+    request.setValidationDefinitionJson("{\"problem\":{}}");
+    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+
+    assertThatThrownBy(() -> service.updateProduct(1L, request))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("promise");
+  }
+
+  /** Rejeita texto inválido para preservar a auditabilidade da definição versionada. */
+  @Test
+  void updateProductRejectsInvalidValidationDefinitionJson() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    ProductService service =
+        newService(
+            productRepository,
+            mock(InstagramAccountRepository.class),
+            mock(MarketNicheRepository.class),
+            mock(AssetRepository.class));
+    Product product = Product.builder().id(1L).build();
+    CreateProductRequest request = new CreateProductRequest();
+    request.setValidationDefinitionJson("não é JSON");
+    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+
+    assertThatThrownBy(() -> service.updateProduct(1L, request))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("JSON válido");
   }
 
   /** Deve aprovar a imagem semente de vídeo do produto com nome de personagem. */

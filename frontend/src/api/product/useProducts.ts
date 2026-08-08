@@ -12,6 +12,13 @@ export interface Product {
   languageStyle?: string;
   codeModules?: string;
   productType?: string;
+  productFormat?: string;
+  deliveryMode?: string;
+  revenueModel?: string;
+  valueUnit?: string;
+  valueEvidenceMetric?: string;
+  validationDefinitionVersion?: string;
+  validationDefinitionJson?: string;
   commercialStatus?: string;
   currentPriceBrl?: number;
   primaryHypothesisId?: string;

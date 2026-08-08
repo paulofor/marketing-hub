@@ -17,6 +17,13 @@ public class ProductDto {
   private String languageStyle;
   private String codeModules;
   private String productType;
+  private String productFormat;
+  private String deliveryMode;
+  private String revenueModel;
+  private String valueUnit;
+  private String valueEvidenceMetric;
+  private String validationDefinitionVersion;
+  private String validationDefinitionJson;
   private String commercialStatus;
   private java.math.BigDecimal currentPriceBrl;
   private java.util.UUID primaryHypothesisId;

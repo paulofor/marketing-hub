@@ -265,6 +265,12 @@ class ProductControllerTest {
             "Método MUSA",
             "metodo-musa-7-dias",
             "VALIDACAO_COMERCIAL",
+            "GUIDED_PROGRAM",
+            "HYBRID",
+            "ONE_TIME_PURCHASE",
+            "7 dias concluídos",
+            "SATISFACTION",
+            "v1",
             "Priorizar correção da ativação/funil antes de comparar novos criativos ou públicos.",
             List.of(
                 new ProductExperimentComparisonExperimentResponse(
@@ -302,6 +308,8 @@ class ProductControllerTest {
         .perform(get("/api/products/{id}/experiment-comparison", 1L))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.productId").value(1L))
+        .andExpect(jsonPath("$.productFormat").value("GUIDED_PROGRAM"))
+        .andExpect(jsonPath("$.valueEvidenceMetric").value("SATISFACTION"))
         .andExpect(
             jsonPath("$.mainRecommendation")
                 .value(

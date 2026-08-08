@@ -40,6 +40,12 @@ export interface ProductExperimentComparison {
   productName?: string | null;
   productSlug?: string | null;
   commercialStatus?: string | null;
+  productFormat?: string | null;
+  deliveryMode?: string | null;
+  revenueModel?: string | null;
+  valueUnit?: string | null;
+  valueEvidenceMetric?: string | null;
+  validationDefinitionVersion?: string | null;
   mainRecommendation: string;
   experiments: ProductExperimentComparisonExperiment[];
 }

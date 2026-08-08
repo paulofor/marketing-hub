@@ -29,6 +29,7 @@
 - Prevenção: telemetria canônica com heartbeat de 15 segundos, PID, processo vivo, linhas/eventos, bytes de saída, tokens quando informados e detecção de atraso após dois minutos.
 - Contrato: `docs/canonical/codex-agent-execution-telemetry-canon.v1.md` e tool MCP `codex_agent_execution_telemetry`.
 - Fechamento complementar no Operador de Crescimento (2026-08-07): o ciclo automatico recupera `RUNNING` sem processo vivo e heartbeat recente, registra falha auditavel e libera nova execucao; o plano tambem e reconciliado apenas com um experimento ativo compativel, evitando repetir analise de experimento encerrado.
+- Fechamento complementar em planos legados (2026-08-08): quando hipotese e nicho nao estao gravados diretamente no plano, a reconciliacao usa o contexto do experimento ja vinculado; teste de contrato cobre o caso real do plano 2 com troca do experimento 84 para o 85.
 
 ## LOOP-CUSTOMER-AGENT-UNSTRUCTURED-EXECUTION — Avaliação sem parecer final
 

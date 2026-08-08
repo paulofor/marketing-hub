@@ -7,6 +7,7 @@ import type {
   GeneratedImageVariant,
 } from "../../api/ai/useGenerateImage";
 import { useGenerateImage } from "../../api/ai/useGenerateImage";
+import { usePromoteGeneratedImage } from "../../api/ai/usePromoteGeneratedImage";
 import { useProducts } from "../../api/product/useProducts";
 import { useCommercialPlans } from "../../api/planning/useCommercialPlans";
 
@@ -65,17 +66,50 @@ export default function ImageGeneratorPage() {
   const [productId, setProductId] = useState("");
   const [commercialPlanId, setCommercialPlanId] = useState("");
   const [experimentId, setExperimentId] = useState("");
+  const [selectedJobId, setSelectedJobId] = useState("");
+  const [headline, setHeadline] = useState("");
+  const [primaryText, setPrimaryText] = useState("");
+  const [description, setDescription] = useState("");
+  const [cta, setCta] = useState("LEARN_MORE");
+  const [destinationUrl, setDestinationUrl] = useState("");
   const productsQuery = useProducts();
   const plansQuery = useCommercialPlans();
   const generation = useGenerateImage();
+  const promotion = usePromoteGeneratedImage();
   const result = generation.data;
   const generatedImages = useMemo(() => result?.images ?? [], [result]);
   const generationFailures = useMemo(() => result?.failures ?? [], [result]);
+  const selectedImage = generatedImages.find(
+    (image) => image.jobId === selectedJobId,
+  );
+
+  function handlePromotion(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedImage || !experimentId || promotion.isPending) return;
+    promotion.mutate({
+      experimentId: Number(experimentId),
+      jobId: selectedImage.jobId,
+      model: selectedImage.model,
+      prompt: prompt.trim(),
+      format: selectedImage.outputFormat,
+      imageBase64: selectedImage.imageBase64,
+      headline: headline.trim(),
+      primaryText: primaryText.trim(),
+      description: description.trim(),
+      cta,
+      destinationUrl: destinationUrl.trim(),
+    });
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalizedPrompt = prompt.trim();
-    if (!normalizedPrompt || !productId || !commercialPlanId || generation.isPending) {
+    if (
+      !normalizedPrompt ||
+      !productId ||
+      !commercialPlanId ||
+      generation.isPending
+    ) {
       return;
     }
     generation.mutate({
@@ -100,7 +134,10 @@ export default function ImageGeneratorPage() {
             <div className="card-body">
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
-                  <label className="form-label fw-semibold" htmlFor="image-generator-product">
+                  <label
+                    className="form-label fw-semibold"
+                    htmlFor="image-generator-product"
+                  >
                     Produto <span className="text-danger">*</span>
                   </label>
                   <select
@@ -121,7 +158,10 @@ export default function ImageGeneratorPage() {
                 </div>
 
                 <div className="mb-3">
-                  <label className="form-label fw-semibold" htmlFor="image-generator-plan">
+                  <label
+                    className="form-label fw-semibold"
+                    htmlFor="image-generator-plan"
+                  >
                     Plano comercial <span className="text-danger">*</span>
                   </label>
                   <select
@@ -137,13 +177,18 @@ export default function ImageGeneratorPage() {
                   >
                     <option value="">Selecione o plano</option>
                     {(plansQuery.data ?? []).map((plan) => (
-                      <option key={plan.id} value={plan.id}>{plan.name}</option>
+                      <option key={plan.id} value={plan.id}>
+                        {plan.name}
+                      </option>
                     ))}
                   </select>
                 </div>
 
                 <div className="mb-3">
-                  <label className="form-label fw-semibold" htmlFor="image-generator-experiment">
+                  <label
+                    className="form-label fw-semibold"
+                    htmlFor="image-generator-experiment"
+                  >
                     Experimento (opcional)
                   </label>
                   <select
@@ -155,10 +200,18 @@ export default function ImageGeneratorPage() {
                   >
                     <option value="">Sem experimento</option>
                     {(plansQuery.data ?? [])
-                      .filter((plan) => String(plan.id) === commercialPlanId && plan.experimentId)
+                      .filter(
+                        (plan) =>
+                          String(plan.id) === commercialPlanId &&
+                          plan.experimentId,
+                      )
                       .map((plan) => (
-                        <option key={plan.experimentId} value={plan.experimentId ?? ""}>
-                          {plan.experimentName ?? `Experimento ${plan.experimentId}`}
+                        <option
+                          key={plan.experimentId}
+                          value={plan.experimentId ?? ""}
+                        >
+                          {plan.experimentName ??
+                            `Experimento ${plan.experimentId}`}
                         </option>
                       ))}
                   </select>
@@ -196,8 +249,10 @@ export default function ImageGeneratorPage() {
                     type="submit"
                     className="btn btn-primary"
                     disabled={
-                      generation.isPending || prompt.trim().length === 0
-                      || !productId || !commercialPlanId
+                      generation.isPending ||
+                      prompt.trim().length === 0 ||
+                      !productId ||
+                      !commercialPlanId
                     }
                   >
                     {generation.isPending ? (
@@ -313,6 +368,15 @@ export default function ImageGeneratorPage() {
                               }}
                             />
                           </div>
+                          <button
+                            type="button"
+                            className={`btn ${selectedJobId === image.jobId ? "btn-primary" : "btn-outline-primary"}`}
+                            onClick={() => setSelectedJobId(image.jobId)}
+                          >
+                            {selectedJobId === image.jobId
+                              ? "Imagem selecionada"
+                              : "Selecionar imagem"}
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -332,6 +396,121 @@ export default function ImageGeneratorPage() {
                   </div>
                 )}
               </div>
+              {generatedImages.length > 0 ? (
+                <form className="card mt-3" onSubmit={handlePromotion}>
+                  <div className="card-body">
+                    <h3 className="h5">Transformar em criativo</h3>
+                    <p className="text-body-secondary small">
+                      Vincula a imagem ao experimento e solicita o parecer do
+                      Aprovador. Isso não publica nem libera mídia.
+                    </p>
+                    {!experimentId ? (
+                      <div className="alert alert-warning">
+                        Selecione um experimento antes de enviar.
+                      </div>
+                    ) : null}
+                    <div className="row g-3">
+                      <div className="col-12">
+                        <label
+                          className="form-label"
+                          htmlFor="creative-headline"
+                        >
+                          Título
+                        </label>
+                        <input
+                          id="creative-headline"
+                          className="form-control"
+                          value={headline}
+                          onChange={(e) => setHeadline(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="col-12">
+                        <label
+                          className="form-label"
+                          htmlFor="creative-primary-text"
+                        >
+                          Texto principal
+                        </label>
+                        <textarea
+                          id="creative-primary-text"
+                          className="form-control"
+                          value={primaryText}
+                          onChange={(e) => setPrimaryText(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="col-12">
+                        <label
+                          className="form-label"
+                          htmlFor="creative-description"
+                        >
+                          Descrição
+                        </label>
+                        <input
+                          id="creative-description"
+                          className="form-control"
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                        />
+                      </div>
+                      <div className="col-md-4">
+                        <label className="form-label" htmlFor="creative-cta">
+                          CTA
+                        </label>
+                        <select
+                          id="creative-cta"
+                          className="form-select"
+                          value={cta}
+                          onChange={(e) => setCta(e.target.value)}
+                        >
+                          <option value="LEARN_MORE">Saiba mais</option>
+                          <option value="SIGN_UP">Cadastre-se</option>
+                          <option value="SHOP_NOW">Comprar agora</option>
+                        </select>
+                      </div>
+                      <div className="col-md-8">
+                        <label
+                          className="form-label"
+                          htmlFor="creative-destination"
+                        >
+                          URL de destino
+                        </label>
+                        <input
+                          id="creative-destination"
+                          type="url"
+                          className="form-control"
+                          value={destinationUrl}
+                          onChange={(e) => setDestinationUrl(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+                    {promotion.isError ? (
+                      <div className="alert alert-danger mt-3">
+                        {errorMessage(promotion.error)}
+                      </div>
+                    ) : null}
+                    {promotion.isSuccess ? (
+                      <div className="alert alert-success mt-3">
+                        Criativo vinculado e enviado ao Aprovador. Nenhuma mídia
+                        foi liberada.
+                      </div>
+                    ) : null}
+                    <button
+                      type="submit"
+                      className="btn btn-primary mt-3"
+                      disabled={
+                        !selectedImage || !experimentId || promotion.isPending
+                      }
+                    >
+                      {promotion.isPending
+                        ? "Vinculando e enviando..."
+                        : "Vincular e enviar ao Aprovador"}
+                    </button>
+                  </div>
+                </form>
+              ) : null}
             </div>
           </div>
         </div>

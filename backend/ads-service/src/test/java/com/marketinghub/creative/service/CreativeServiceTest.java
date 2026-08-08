@@ -399,4 +399,36 @@ class CreativeServiceTest {
             java.math.BigDecimal.ZERO,
             null));
   }
+
+  /** Garante que a correção crie outro registro e preserve o criativo original. */
+  @Test
+  void createVersionPreservesOriginalAndResetsCommercialGates() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment exp = fixtures.createAndSaveExperiment(niche);
+    CreateCreativeRequest originalRequest = new CreateCreativeRequest();
+    originalRequest.setFormat("IMAGE");
+    originalRequest.setHeadline("Original");
+    originalRequest.setPrimaryText("Texto original");
+    originalRequest.setImageUrl("https://cdn.test/original.png");
+    originalRequest.setStatus(CreativeStatus.DRAFT);
+    Creative original = service.create(exp.getId(), originalRequest);
+
+    CreateCreativeRequest revisionRequest = new CreateCreativeRequest();
+    revisionRequest.setFormat("IMAGE");
+    revisionRequest.setHeadline("Revisão");
+    revisionRequest.setPrimaryText("Texto corrigido");
+    revisionRequest.setImageUrl("https://cdn.test/revision.png");
+    revisionRequest.setDestinationUrl("https://agenda-cheia.test/previa");
+    revisionRequest.setStatus(CreativeStatus.READY);
+
+    Creative revision = service.createVersion(original.getId(), revisionRequest);
+
+    assertThat(revision.getId()).isNotEqualTo(original.getId());
+    assertThat(revision.getSourceCreative().getId()).isEqualTo(original.getId());
+    assertThat(revision.getVersionNumber()).isEqualTo(2);
+    assertThat(revision.getStatus()).isEqualTo(CreativeStatus.DRAFT);
+    assertThat(revision.getAgentReviewStatus()).isEqualTo(CreativeAgentReviewStatus.PENDING);
+    assertThat(repository.findById(original.getId()).orElseThrow().getHeadline())
+        .isEqualTo("Original");
+  }
 }

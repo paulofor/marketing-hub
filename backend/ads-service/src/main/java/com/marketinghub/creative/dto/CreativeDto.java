@@ -10,6 +10,8 @@ import lombok.Data;
 @Data
 public class CreativeDto {
   private Long id;
+  private Long sourceCreativeId;
+  private Integer versionNumber;
   private Long experimentId;
   private String format;
   private String headline;

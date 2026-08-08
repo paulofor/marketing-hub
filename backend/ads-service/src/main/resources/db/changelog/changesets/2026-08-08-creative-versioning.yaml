@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-08-creative-versioning
+      author: marketinghub
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'creative' AND COLUMN_NAME = 'source_creative_id'
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE creative
+                ADD COLUMN source_creative_id BIGINT NULL AFTER id,
+                ADD COLUMN version_number INT NOT NULL DEFAULT 1 AFTER source_creative_id,
+                ADD CONSTRAINT fk_creative_source FOREIGN KEY (source_creative_id) REFERENCES creative(id),
+                ADD INDEX idx_creative_source (source_creative_id);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE creative DROP FOREIGN KEY fk_creative_source;
+              ALTER TABLE creative DROP INDEX idx_creative_source;
+              ALTER TABLE creative DROP COLUMN version_number, DROP COLUMN source_creative_id;

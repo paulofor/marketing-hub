@@ -88,6 +88,7 @@ public class CreativeService {
       Creative creative =
           Creative.builder()
               .experiment(exp)
+              .versionNumber(1)
               .format(request.getFormat())
               .headline(request.getHeadline())
               .primaryText(request.getPrimaryText())
@@ -121,6 +122,47 @@ public class CreativeService {
           request != null ? request.getStatus() : null,
           sanitizeForLog(request != null ? request.getHeadline() : null),
           sanitizeForLog(request != null ? request.getImageUrl() : null),
+          ex.getMessage(),
+          ex);
+      throw ex;
+    }
+  }
+
+  /** Cria uma revisão editável preservando integralmente o criativo de origem. */
+  @Transactional
+  public Creative createVersion(Long sourceCreativeId, CreateCreativeRequest request) {
+    try {
+      Creative source = repository.findByIdWithExperiment(sourceCreativeId).orElseThrow();
+      validateReadyCreativeHasImage(request);
+      Creative revision =
+          Creative.builder()
+              .sourceCreative(source)
+              .versionNumber(Objects.requireNonNullElse(source.getVersionNumber(), 1) + 1)
+              .experiment(source.getExperiment())
+              .format(request.getFormat())
+              .headline(request.getHeadline())
+              .primaryText(request.getPrimaryText())
+              .imageUrl(request.getImageUrl())
+              .videoId(request.getVideoId())
+              .videoUrl(request.getVideoUrl())
+              .costUsd(request.getCostUsd())
+              .description(request.getDescription())
+              .cta(normalizeMetaCallToAction(request.getCta()))
+              .destinationUrl(request.getDestinationUrl())
+              .leadGenFormId(request.getLeadGenFormId())
+              .instagramUserId(request.getInstagramUserId())
+              .status(CreativeStatus.DRAFT)
+              .agentReviewStatus(CreativeAgentReviewStatus.PENDING)
+              .build();
+      Creative saved = repository.save(revision);
+      applyGenerationCost(source.getExperiment(), request.getCostUsd());
+      refreshExperimentApproval(source.getExperiment());
+      return saved;
+    } catch (RuntimeException ex) {
+      log.error(
+          "Falha ao versionar criativo no backend. classe={} operacao=createCreativeVersion sourceCreativeId={} erro='{}'",
+          getClass().getSimpleName(),
+          sourceCreativeId,
           ex.getMessage(),
           ex);
       throw ex;

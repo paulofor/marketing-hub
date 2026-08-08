@@ -50,6 +50,13 @@ public class CreativeController {
     return mapper.toDto(service.create(id, request));
   }
 
+  /** Cria uma nova versão em rascunho sem alterar o criativo original. */
+  @PostMapping("/api/creatives/{id}/versions")
+  public CreativeDto createVersion(
+      @PathVariable Long id, @RequestBody CreateCreativeRequest request) {
+    return mapper.toDto(service.createVersion(id, request));
+  }
+
   /** Lista os criativos de um experimento. */
   @GetMapping("/api/experiments/{id}/creatives")
   public List<CreativeDto> list(@PathVariable Long id) {

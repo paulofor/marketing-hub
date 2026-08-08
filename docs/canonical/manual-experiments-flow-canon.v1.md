@@ -43,6 +43,10 @@ O sistema deve evitar preencher lacunas críticas com suposições comerciais fo
 
 O MDS sustenta a plausibilidade do mecanismo. A FEO materializa a experiência PDE a partir de oferta e promessa definidas; ela não deve reinventar a promessa central nem mascarar ausência de evidência.
 
+### Versionamento de criativos bloqueados
+
+Experimento pausado ou liberado não autoriza sobrescrever um criativo auditado. A correção deve criar uma nova versão ligada ao registro de origem, sempre em `DRAFT` e com nova avaliação técnica pendente. O original permanece imutável. Criar a versão não publica, não retoma campanha e não autoriza gasto; esses atos continuam sujeitos aos gates técnico e humano.
+
 ## 5. Critério de sucesso
 
 Um experimento manual só se torna comercialmente forte quando a Construção consegue conectar:

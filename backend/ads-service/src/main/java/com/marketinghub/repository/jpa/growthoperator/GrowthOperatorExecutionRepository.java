@@ -3,6 +3,7 @@ package com.marketinghub.repository.jpa.growthoperator;
 import com.marketinghub.growthoperator.GrowthOperatorExecution;
 import com.marketinghub.growthoperator.GrowthOperatorExecutionStatus;
 import jakarta.persistence.LockModeType;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +29,16 @@ public interface GrowthOperatorExecutionRepository
 
   /** Busca o ciclo mais recente de um planejamento. */
   Optional<GrowthOperatorExecution> findFirstByCommercialPlanIdOrderByCreatedAtDesc(Long planId);
+
+  /** Conta telemetrias recentes que comprovam atividade viva da execucao do Operador. */
+  @Query(
+      value =
+          "SELECT COUNT(*) FROM codex_agent_execution_telemetry "
+              + "WHERE agent_type = 'GROWTH_OPERATOR' AND execution_id = :executionId "
+              + "AND status = 'RUNNING' AND process_alive = 1 AND last_activity_at >= :cutoff",
+      nativeQuery = true)
+  long countRecentActiveTelemetry(
+      @Param("executionId") Long executionId, @Param("cutoff") Instant cutoff);
 
   /** Vincula a execucao a versao ativa do cadastro canonico do Operador. */
   @Modifying(flushAutomatically = true, clearAutomatically = true)

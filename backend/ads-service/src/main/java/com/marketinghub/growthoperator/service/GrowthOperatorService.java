@@ -56,6 +56,7 @@ public class GrowthOperatorService {
   private static final String READ_ONLY = "READ_ONLY_DIAGNOSIS";
   private static final int SESSION_EVENT_LIMIT = 2000;
   private static final int MEMORY_TIMELINE_LIMIT = 30;
+  private static final long STALE_EXECUTION_SECONDS = 120L;
   private static final Pattern MONEY_GATE_PATTERN =
       Pattern.compile("R\\$\\s*([0-9]+(?:[.,][0-9]{1,2})?)", Pattern.CASE_INSENSITIVE);
   private static final List<GrowthOperatorMcpToolResponse> MCP_TOOLS =
@@ -388,10 +389,17 @@ public class GrowthOperatorService {
   /** Cria ciclo automatico somente quando ha mudanca comercial relevante nas evidencias. */
   @Transactional
   public GrowthOperatorExecutionResponse ensureAutomaticCycle(Long planId) {
-    CommercialPlan plan = commercialPlanService.getPlan(planId);
+    CommercialPlan plan = commercialPlanService.synchronizeRunningExperiment(planId);
     var latest = repository.findFirstByCommercialPlanIdOrderByCreatedAtDesc(planId);
     Instant cutoff = Instant.now().minusSeconds(30 * 60L);
-    if (latest.isPresent()
+    boolean recoveredStaleExecution = false;
+    if (latest.isPresent() && isStaleRunningExecution(latest.get())) {
+      failStaleExecution(latest.get());
+      latest = repository.findFirstByCommercialPlanIdOrderByCreatedAtDesc(planId);
+      recoveredStaleExecution = true;
+    }
+    if (!recoveredStaleExecution
+        && latest.isPresent()
         && (latest.get().getStatus() == GrowthOperatorExecutionStatus.PENDING
             || latest.get().getStatus() == GrowthOperatorExecutionStatus.RUNNING
             || latest.get().getCreatedAt().isAfter(cutoff))) {
@@ -400,7 +408,9 @@ public class GrowthOperatorService {
     String evidenceSnapshot =
         buildEvidenceSnapshot(plan, repository.findByCommercialPlanIdOrderByCreatedAtDesc(planId));
     String evidenceFingerprint = buildEvidenceFingerprint(evidenceSnapshot);
-    if (latest.isPresent() && evidenceFingerprint.equals(latest.get().getEvidenceFingerprint())) {
+    if (!recoveredStaleExecution
+        && latest.isPresent()
+        && evidenceFingerprint.equals(latest.get().getEvidenceFingerprint())) {
       return toResponse(latest.get());
     }
     GrowthOperatorExecution execution = new GrowthOperatorExecution();
@@ -415,6 +425,27 @@ public class GrowthOperatorService {
     execution.setCycleNumber(nextCycleNumber(planId));
     execution.setAutomaticCycle(true);
     return toResponse(saveWithCurrentAgentVersion(execution));
+  }
+
+  /** Detecta execucao RUNNING sem heartbeat vivo dentro do limite canonico de atividade. */
+  private boolean isStaleRunningExecution(GrowthOperatorExecution execution) {
+    if (execution.getStatus() != GrowthOperatorExecutionStatus.RUNNING
+        || execution.getStartedAt() == null
+        || execution.getStartedAt().isAfter(Instant.now().minusSeconds(STALE_EXECUTION_SECONDS))) {
+      return false;
+    }
+    return repository.countRecentActiveTelemetry(
+            execution.getId(), Instant.now().minusSeconds(STALE_EXECUTION_SECONDS))
+        == 0;
+  }
+
+  /** Encerra auditavelmente uma execucao sem progresso para liberar novo ciclo comercial. */
+  private void failStaleExecution(GrowthOperatorExecution execution) {
+    execution.setStatus(GrowthOperatorExecutionStatus.FAILED);
+    execution.setFinishedAt(Instant.now());
+    execution.setErrorMessage(
+        "Execucao recuperada automaticamente: nenhum heartbeat vivo nos ultimos dois minutos.");
+    repository.save(execution);
   }
 
   /** Registra somente o diagnostico, sem executar nem persistir a acao recomendada no plano. */

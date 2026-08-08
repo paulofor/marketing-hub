@@ -157,6 +157,7 @@ class GrowthOperatorServiceTest {
     CommercialPlanService planService = mock(CommercialPlanService.class);
     CommercialPlan plan = CommercialPlan.builder().id(2L).commercialObjective("Vender").build();
     when(planService.getPlan(2L)).thenReturn(plan);
+    when(planService.synchronizeRunningExperiment(2L)).thenReturn(plan);
     when(repository.findFirstByCommercialPlanIdOrderByCreatedAtDesc(2L))
         .thenReturn(java.util.Optional.empty());
     when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
@@ -199,6 +200,7 @@ class GrowthOperatorServiceTest {
     CommercialPlanService planService = mock(CommercialPlanService.class);
     CommercialPlan plan = CommercialPlan.builder().id(2L).commercialObjective("Vender").build();
     when(planService.getPlan(2L)).thenReturn(plan);
+    when(planService.synchronizeRunningExperiment(2L)).thenReturn(plan);
     when(repository.findFirstByCommercialPlanIdOrderByCreatedAtDesc(2L))
         .thenReturn(java.util.Optional.empty());
     when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
@@ -239,6 +241,60 @@ class GrowthOperatorServiceTest {
     service.ensureAutomaticCycle(2L);
 
     verify(repository, never()).save(any(GrowthOperatorExecution.class));
+  }
+
+  /** Recupera execucao sem heartbeat e cria novo ciclo com o experimento ativo reconciliado. */
+  @Test
+  void shouldRecoverStaleRunningExecutionForReconciledExperiment() throws Exception {
+    GrowthOperatorExecutionRepository repository = mock(GrowthOperatorExecutionRepository.class);
+    CommercialPlanService planService = mock(CommercialPlanService.class);
+    Experiment runningExperiment =
+        Experiment.builder()
+            .id(85L)
+            .name("Agenda Cheia")
+            .status(com.marketinghub.experiment.ExperimentStatus.RUNNING)
+            .build();
+    CommercialPlan plan =
+        CommercialPlan.builder()
+            .id(2L)
+            .commercialObjective("Gerar cinco vendas")
+            .experiment(runningExperiment)
+            .build();
+    when(planService.getPlan(2L)).thenReturn(plan);
+    when(planService.synchronizeRunningExperiment(2L)).thenReturn(plan);
+    GrowthOperatorExecution stale = new GrowthOperatorExecution();
+    stale.setId(84L);
+    stale.setCommercialPlan(plan);
+    stale.setStatus(GrowthOperatorExecutionStatus.RUNNING);
+    stale.setStartedAt(Instant.now().minusSeconds(600));
+    stale.setCreatedAt(Instant.now().minusSeconds(600));
+    stale.setCycleNumber(5);
+    stale.setAutomaticCycle(true);
+    when(repository.findFirstByCommercialPlanIdOrderByCreatedAtDesc(2L))
+        .thenReturn(java.util.Optional.of(stale));
+    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of(stale));
+    when(repository.countRecentActiveTelemetry(any(), any())).thenReturn(0L);
+    mockVersionedSave(repository);
+    GrowthOperatorService service =
+        new GrowthOperatorService(
+            repository,
+            mock(com.marketinghub.repository.jpa.growthoperator.GrowthOperatorTaskRepository.class),
+            planService,
+            mock(CommercialPlanWeekObjectiveRepository.class),
+            mock(ExperimentFunnelService.class),
+            mock(VideoProjectRepository.class),
+            mock(ExperimentVideoPerformanceDashboardService.class),
+            mock(com.marketinghub.experiment.service.ExperimentService.class),
+            new ObjectMapper().findAndRegisterModules());
+
+    GrowthOperatorExecutionResponse response = service.ensureAutomaticCycle(2L);
+
+    assertThat(stale.getStatus()).isEqualTo(GrowthOperatorExecutionStatus.FAILED);
+    assertThat(stale.getErrorMessage()).contains("nenhum heartbeat vivo");
+    assertThat(response.status()).isEqualTo(GrowthOperatorExecutionStatus.PENDING);
+    assertThat(
+            new ObjectMapper().readTree(response.evidenceSnapshot()).path("experimentId").asLong())
+        .isEqualTo(85L);
   }
 
   /** Confirma que o novo ciclo recebe conclusoes e resultados observados de todo o historico. */

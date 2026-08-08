@@ -11,6 +11,8 @@ O Operador de Crescimento transforma meta, gargalo e evidencias persistidas do p
 - O Codex roda com sandbox `read-only`, identidade ChatGPT persistida em volume proprio e repositorio montado sem escrita.
 - Como o repositorio e montado de outro host e pertence a um UID diferente, o comando aceita explicitamente essa arvore com `--skip-git-repo-check`; essa opcao nao amplia permissoes e o sandbox `read-only` permanece obrigatorio.
 - O worker mantem o polling operacional, mas o backend so cria novo ciclo quando o fingerprint das evidencias muda. A passagem de 30 minutos, isoladamente, nunca justifica novo consumo de IA.
+- Antes de criar o ciclo automatico, o backend reconcilia o plano com o unico experimento `RUNNING` compativel pela hipotese canonica ou, quando ela nao existir, pelo nicho. Nenhum candidato ou mais de um candidato bloqueia a selecao para impedir mistura de produtos.
+- Uma execucao `RUNNING` somente bloqueia outro ciclo enquanto a telemetria comprovar processo vivo e heartbeat nos ultimos dois minutos. Execucao sem esse sinal e encerrada como falha auditavel antes da nova avaliacao.
 - A investigacao consulta APIs oficiais e documentacao publica. A unica mutacao autonoma permitida e solicitar pausa preventiva; o backend valida gates deterministas, registra auditoria e aciona o worker da Meta. Retomada apenas registra pedido para aprovacao humana.
 - A v1 nao altera plano, codigo, campanha, preco, orcamento, publicacao, comunicacao ou dados comerciais.
 - Toda recomendacao que exija mutacao deve retornar `WAIT_FOR_APPROVAL`.

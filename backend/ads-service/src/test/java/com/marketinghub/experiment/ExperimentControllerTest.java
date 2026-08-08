@@ -39,6 +39,8 @@ class ExperimentControllerTest {
   @Autowired AngleRepository angleRepository;
   @Autowired HypothesisRepository hypothesisRepository;
 
+  @Autowired com.marketinghub.repository.jpa.product.ProductRepository productRepository;
+
   @Autowired
   com.marketinghub.repository.jpa.experiment.MetricPresetRepository metricPresetRepository;
 
@@ -59,7 +61,20 @@ class ExperimentControllerTest {
         .getId();
   }
 
-  private void applyStageDefaults(CreateExperimentRequest request) {
+  /** Aplica o contrato comercial obrigatório de produto, território e etapa ao experimento. */
+  private void applyStageDefaults(CreateExperimentRequest request, MarketNiche niche) {
+    var product =
+        productRepository.save(
+            com.marketinghub.product.Product.builder()
+                .slug("produto-teste-" + UUID.randomUUID())
+                .name("Produto de teste")
+                .marketNiche(niche)
+                .desireAssociationMapVersion("v1")
+                .desireAssociationMapJson(
+                    "{\"territories\":[{\"code\":\"TEST_TERRITORY\",\"name\":\"Território de teste\"}]}")
+                .build());
+    request.setProductId(product.getId());
+    request.setDesireTerritoryCode("TEST_TERRITORY");
     request.setStage(ExperimentStage.AD);
     request.setPrimaryVariable("Ângulo de dor");
     request.setPrimaryMetric("CTR de link (%)");
@@ -93,7 +108,7 @@ class ExperimentControllerTest {
     JourneyTemplate template =
         journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
     CreateExperimentRequest req = new CreateExperimentRequest();
-    applyStageDefaults(req);
+    applyStageDefaults(req, niche);
     req.setName("Exp1");
     req.setHypothesisId(hyp.getId());
     req.setHypothesis("h");
@@ -141,7 +156,7 @@ class ExperimentControllerTest {
     JourneyTemplate template =
         journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
     CreateExperimentRequest req = new CreateExperimentRequest();
-    applyStageDefaults(req);
+    applyStageDefaults(req, niche);
     req.setHypothesisId(hyp.getId());
     req.setName("Exp1");
     req.setMetricPresetId("LEAN_150");

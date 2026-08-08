@@ -70,6 +70,8 @@ class ExperimentControllerTest {
   @Autowired private JourneyTemplateRepository journeyTemplateRepository;
   @Autowired private TargetingElementRepository targetingElementRepository;
   @Autowired private InstagramAccountRepository instagramAccountRepository;
+  @Autowired
+  private com.marketinghub.repository.jpa.product.ProductRepository productRepository;
 
   @Autowired
   private com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository
@@ -100,7 +102,21 @@ class ExperimentControllerTest {
         .getId();
   }
 
+  /** Aplica o contrato comercial obrigatório de produto, território e etapa ao experimento. */
   private void applyStageDefaults(CreateExperimentRequest request) {
+    MarketNiche niche = nicheRepo.findById(nicheId).orElseThrow();
+    var product =
+        productRepository.save(
+            com.marketinghub.product.Product.builder()
+                .slug("produto-teste-" + UUID.randomUUID())
+                .name("Produto de teste")
+                .marketNiche(niche)
+                .desireAssociationMapVersion("v1")
+                .desireAssociationMapJson(
+                    "{\"territories\":[{\"code\":\"TEST_TERRITORY\",\"name\":\"Território de teste\"}]}")
+                .build());
+    request.setProductId(product.getId());
+    request.setDesireTerritoryCode("TEST_TERRITORY");
     request.setStage(com.marketinghub.experiment.ExperimentStage.AD);
     request.setPrimaryVariable("Ângulo de dor");
     request.setPrimaryMetric("CTR de link (%)");
@@ -139,6 +155,7 @@ class ExperimentControllerTest {
     deliverablePackageRepository.deleteAll();
     deliverableRepository.deleteAll();
     hypothesisRepository.deleteAll();
+    productRepository.deleteAll();
     metricPresetRepository.deleteAll();
     angleRepository.deleteAll();
     nicheRepo.deleteAll();

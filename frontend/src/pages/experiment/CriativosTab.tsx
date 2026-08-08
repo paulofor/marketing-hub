@@ -12,6 +12,7 @@ import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import {
   AlertTriangle,
   CheckCircle2,
+  Copy,
   Edit3,
   Eye,
   Sparkles,
@@ -27,6 +28,7 @@ import {
 } from "./imageBriefingParser";
 import { useRequestPipelineCreatives } from "../../api/experiment/useRequestPipelineCreatives";
 import { useRequestCreativeAgentReview } from "../../api/creative/useRequestCreativeAgentReview";
+import { useCreateCreativeVersion } from "../../api/creative/useCreateCreativeVersion";
 
 interface Props {
   experimentId: string;
@@ -228,13 +230,20 @@ const statusLabel = (status: string) => {
 
 const agentReviewLabel = (status?: Creative["agentReviewStatus"]) => {
   switch (status) {
-    case "APPROVED": return "Agente: aprovado";
-    case "ADJUST": return "Agente: ajustar";
-    case "REJECTED": return "Agente: reprovado";
-    case "FAILED": return "Agente: falha técnica";
-    case "PROCESSING": return "Agente: analisando";
-    case "PENDING": return "Agente: aguardando análise";
-    default: return "Agente: legado sem análise";
+    case "APPROVED":
+      return "Agente: aprovado";
+    case "ADJUST":
+      return "Agente: ajustar";
+    case "REJECTED":
+      return "Agente: reprovado";
+    case "FAILED":
+      return "Agente: falha técnica";
+    case "PROCESSING":
+      return "Agente: analisando";
+    case "PENDING":
+      return "Agente: aguardando análise";
+    default:
+      return "Agente: legado sem análise";
   }
 };
 
@@ -299,6 +308,7 @@ export default function CriativosTab({
     !pipelineAvailable;
   const updateExperimentMutation = useUpdateExperiment(experimentId);
   const [editing, setEditing] = useState<Creative | null>(null);
+  const [versioning, setVersioning] = useState<Creative | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [experimentPageId, setExperimentPageId] = useState("");
   const [experimentInstagramAccountId, setExperimentInstagramAccountId] =
@@ -309,6 +319,7 @@ export default function CriativosTab({
   const update = useUpdateCreative(experimentId);
   const del = useDeleteCreative(experimentId);
   const requestAgentReview = useRequestCreativeAgentReview(experimentId);
+  const createVersion = useCreateCreativeVersion(experimentId);
   const [showPreview, setShowPreview] = useState(false);
   const [processingCreativeId, setProcessingCreativeId] = useState<
     number | null
@@ -476,6 +487,43 @@ export default function CriativosTab({
     setShowPreview(true);
   };
 
+  const saveVersion = async () => {
+    if (!versioning) return;
+    setProcessingCreativeId(versioning.id);
+    try {
+      await createVersion.mutateAsync({
+        sourceId: versioning.id,
+        format: versioning.format || "LINK",
+        headline: versioning.headline,
+        primaryText: versioning.primaryText,
+        imageUrl: versioning.imageUrl,
+        videoId: versioning.videoId || "",
+        videoUrl: versioning.videoUrl || "",
+        description: versioning.description || "",
+        cta: versioning.cta || "LEARN_MORE",
+        destinationUrl: versioning.destinationUrl || "",
+        leadGenFormId: versioning.leadGenFormId || "",
+        instagramUserId: versioning.instagramUserId || "",
+        status: "DRAFT",
+      });
+      setVersioning(null);
+      setFeedback({
+        variant: "success",
+        title: "Nova versão criada",
+        description:
+          "O original foi preservado e a revisão continua bloqueada para publicação e gasto.",
+      });
+    } catch {
+      setFeedback({
+        variant: "error",
+        title: "Não foi possível criar a nova versão",
+        description: "Revise os campos e tente novamente.",
+      });
+    } finally {
+      setProcessingCreativeId(null);
+    }
+  };
+
   const startPreview = (c: Creative) => {
     setEditing(c);
     setShowPreview(true);
@@ -533,7 +581,8 @@ export default function CriativosTab({
       setFeedback({
         variant: "success",
         title: "Criativo enviado ao Especialista em Anúncios",
-        description: "A publicação continua bloqueada até o parecer técnico e a aprovação humana.",
+        description:
+          "A publicação continua bloqueada até o parecer técnico e a aprovação humana.",
       });
     } catch {
       setFeedback({
@@ -664,7 +713,9 @@ export default function CriativosTab({
                 {c.format}
               </span>
             )}
-            <span className={`badge rounded-pill ${agentReviewClass(c.agentReviewStatus)}`}>
+            <span
+              className={`badge rounded-pill ${agentReviewClass(c.agentReviewStatus)}`}
+            >
               {agentReviewLabel(c.agentReviewStatus)}
             </span>
           </div>
@@ -719,6 +770,17 @@ export default function CriativosTab({
               <Edit3 size={ICON_SIZE} />
               <span>Editar</span>
             </button>
+            {alterationLocked && (
+              <button
+                type="button"
+                className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center gap-1"
+                onClick={() => setVersioning({ ...c })}
+                disabled={isProcessing}
+              >
+                <Copy size={ICON_SIZE} />
+                <span>Criar nova versão</span>
+              </button>
+            )}
             <button
               type="button"
               className="btn btn-outline-danger btn-sm d-flex align-items-center justify-content-center gap-1"
@@ -758,7 +820,9 @@ export default function CriativosTab({
                 disabled={isProcessing}
               >
                 <Sparkles size={ICON_SIZE} />
-                <span>{isProcessing ? "Enviando..." : "Enviar ao Aprovador"}</span>
+                <span>
+                  {isProcessing ? "Enviando..." : "Enviar ao Aprovador"}
+                </span>
               </button>
             )}
             <button
@@ -1139,6 +1203,112 @@ export default function CriativosTab({
               </div>
               <div className="modal-body">
                 <InstagramAdPreview creative={editing} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {versioning && (
+        <div
+          className="modal d-block"
+          tabIndex={-1}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  Criar nova versão do criativo #{versioning.id}
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setVersioning(null)}
+                />
+              </div>
+              <div className="modal-body d-grid gap-3">
+                <label className="form-label">
+                  Headline
+                  <input
+                    className="form-control"
+                    value={versioning.headline}
+                    onChange={(e) =>
+                      setVersioning({ ...versioning, headline: e.target.value })
+                    }
+                  />
+                </label>
+                <label className="form-label">
+                  Texto principal
+                  <textarea
+                    className="form-control"
+                    rows={4}
+                    value={versioning.primaryText}
+                    onChange={(e) =>
+                      setVersioning({
+                        ...versioning,
+                        primaryText: e.target.value,
+                      })
+                    }
+                  />
+                </label>
+                <label className="form-label">
+                  URL da imagem
+                  <input
+                    className="form-control"
+                    value={versioning.imageUrl}
+                    onChange={(e) =>
+                      setVersioning({ ...versioning, imageUrl: e.target.value })
+                    }
+                  />
+                </label>
+                <label className="form-label">
+                  CTA
+                  <input
+                    className="form-control"
+                    value={versioning.cta || "LEARN_MORE"}
+                    onChange={(e) =>
+                      setVersioning({ ...versioning, cta: e.target.value })
+                    }
+                  />
+                </label>
+                <label className="form-label">
+                  URL de destino
+                  <input
+                    className="form-control"
+                    type="url"
+                    value={versioning.destinationUrl || ""}
+                    onChange={(e) =>
+                      setVersioning({
+                        ...versioning,
+                        destinationUrl: e.target.value,
+                      })
+                    }
+                  />
+                </label>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setVersioning(null)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={saveVersion}
+                  disabled={
+                    createVersion.isPending ||
+                    !versioning.imageUrl.trim() ||
+                    !versioning.destinationUrl?.trim()
+                  }
+                >
+                  {createVersion.isPending
+                    ? "Criando..."
+                    : "Salvar nova versão"}
+                </button>
               </div>
             </div>
           </div>

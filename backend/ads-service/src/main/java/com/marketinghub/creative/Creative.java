@@ -21,6 +21,16 @@ public class Creative {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  /** Criativo anterior que originou esta revisão, quando existir. */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "source_creative_id")
+  private Creative sourceCreative;
+
+  /** Número sequencial da versão dentro da linhagem do criativo. */
+  @Column(name = "version_number", nullable = false)
+  @Builder.Default
+  private Integer versionNumber = 1;
+
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "experiment_id", nullable = false)
   private Experiment experiment;

@@ -100,6 +100,64 @@ describe("CriativosTab", () => {
     ).toBeInTheDocument();
   });
 
+  it("creates an auditable draft version while commercial editing is locked", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.endsWith("/products/experiments/1/ads-in-use"))
+        return Promise.resolve({
+          data: [
+            {
+              id: 259,
+              headline: "Original",
+              primaryText: "Texto",
+              imageUrl: "original.jpg",
+              destinationUrl: "",
+              status: "DRAFT",
+              agentReviewStatus: "ADJUST",
+            },
+          ],
+        });
+      if (url.endsWith("/experiments/1"))
+        return Promise.resolve({ data: { creativesToGenerate: 0 } });
+      return Promise.resolve({ data: [] });
+    });
+    (axios.post as any).mockResolvedValue({
+      data: {
+        id: 300,
+        sourceCreativeId: 259,
+        versionNumber: 2,
+        status: "DRAFT",
+      },
+    });
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <CriativosTab experimentId="1" alterationLocked />
+      </QueryClientProvider>,
+    );
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Criar nova versão" }),
+    );
+    await userEvent.type(
+      screen.getByLabelText("URL de destino"),
+      "https://agenda-cheia.test/previa",
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Salvar nova versão" }),
+    );
+
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/creatives/259/versions",
+        expect.objectContaining({
+          destinationUrl: "https://agenda-cheia.test/previa",
+          status: "DRAFT",
+        }),
+      ),
+    );
+    expect(await screen.findByText("Nova versão criada")).toBeInTheDocument();
+  });
+
   it("shows image prompt below ad card when toggled", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url.endsWith("/products/experiments/1/ads-in-use")) {

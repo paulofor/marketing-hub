@@ -10,5 +10,6 @@ import org.mapstruct.Mapping;
 public interface CreativeMapper {
   /** Converte a entidade de criativo para o DTO usado pela API. */
   @Mapping(target = "experimentId", source = "experiment.id")
+  @Mapping(target = "sourceCreativeId", source = "sourceCreative.id")
   CreativeDto toDto(Creative creative);
 }

@@ -2,6 +2,7 @@ package com.marketinghub.hypothesis.web;
 
 import com.marketinghub.hypothesis.HypothesisStatus;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
+import com.marketinghub.hypothesis.dto.CreateHypothesisVersionRequest;
 import com.marketinghub.hypothesis.dto.HypothesisDto;
 import com.marketinghub.hypothesis.dto.UpdateHypothesisRequest;
 import com.marketinghub.hypothesis.mapper.HypothesisMapper;
@@ -17,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api")
+/** Responsabilidade: expor operações administrativas de hipóteses comerciais. */
 public class HypothesisController {
   private final HypothesisService service;
   private final HypothesisMapper mapper;
@@ -33,6 +35,14 @@ public class HypothesisController {
   @ResponseStatus(org.springframework.http.HttpStatus.CREATED)
   public HypothesisDto create(@RequestBody CreateHypothesisRequest req) {
     return mapper.toDto(service.create(req));
+  }
+
+  /** Cria uma versão comercial preservando a hipótese de origem e sua linhagem. */
+  @PostMapping("/hypotheses/{id}/versions")
+  @ResponseStatus(HttpStatus.CREATED)
+  public HypothesisDto createVersion(
+      @PathVariable UUID id, @RequestBody CreateHypothesisVersionRequest req) {
+    return mapper.toDto(service.createVersion(id, req));
   }
 
   @PutMapping("/hypotheses/{id}")

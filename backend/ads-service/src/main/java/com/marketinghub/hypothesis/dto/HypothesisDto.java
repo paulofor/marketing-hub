@@ -9,10 +9,16 @@ import java.util.List;
 import java.util.UUID;
 import lombok.Data;
 
+/** Responsabilidade: expor uma hipótese comercial e seus vínculos para as interfaces do sistema. */
 @Data
 public class HypothesisDto {
   private UUID id;
   private Long marketNicheId;
+  private Long productId;
+  private String productName;
+  private UUID sourceHypothesisId;
+  private UUID rootHypothesisId;
+  private Integer versionNumber;
   private String title;
   private Long premiseAngleId;
   private String promise;

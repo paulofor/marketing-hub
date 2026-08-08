@@ -5,8 +5,10 @@ import com.marketinghub.productai.ProductAiSubtype;
 import java.math.BigDecimal;
 import java.util.List;
 
+/** Responsabilidade: transportar os dados necessários para criar uma hipótese comercial. */
 public class CreateHypothesisRequest {
   private Long marketNicheId;
+  private Long productId;
   private String title;
   private Long premiseAngleId;
   private String promise;
@@ -39,6 +41,16 @@ public class CreateHypothesisRequest {
 
   public void setMarketNicheId(Long marketNicheId) {
     this.marketNicheId = marketNicheId;
+  }
+
+  /** Retorna o produto comercial obrigatório da hipótese. */
+  public Long getProductId() {
+    return productId;
+  }
+
+  /** Define o produto comercial obrigatório da hipótese. */
+  public void setProductId(Long productId) {
+    this.productId = productId;
   }
 
   public String getTitle() {

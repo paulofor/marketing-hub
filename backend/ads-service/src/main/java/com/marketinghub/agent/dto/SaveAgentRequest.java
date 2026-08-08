@@ -15,6 +15,10 @@ public class SaveAgentRequest {
   private String modelName;
   private String triggerPolicy;
   private String authorityPolicy;
+  private String responsibilityContract;
+  private String orchestratorPolicy;
+  private String analysisPolicy;
+  private String offeringPolicy;
   private String promptContractPath;
   private String schemaContractPath;
   private String executionMode;

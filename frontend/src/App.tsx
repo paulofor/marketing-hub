@@ -68,6 +68,7 @@ import ExperimentGeraLandingExecutionDetailPage from "./pages/experiment/Experim
 import ExperimentGeraLandingProvisionalHtmlPage from "./pages/experiment/ExperimentGeraLandingProvisionalHtmlPage";
 import NicheDetailPage from "./pages/niche/NicheDetailPage";
 import HypothesisDetailPage from "./pages/hypothesis/HypothesisDetailPage";
+import NewHypothesisVersionPage from "./pages/hypothesis/NewHypothesisVersionPage";
 import HypothesesPage from "./pages/hypothesis/HypothesesPage";
 import HypothesisListPage from "./pages/hypothesis/HypothesisListPage";
 import HypothesisPainStageExecutionDetailPage from "./pages/hypothesis/HypothesisPainStageExecutionDetailPage";
@@ -323,6 +324,10 @@ export default function App() {
                 <Route
                   path=":nicheId/hypotheses/:hypothesisId/edit"
                   element={<LegacyHypothesisRedirect />}
+                />
+                <Route
+                  path=":nicheId/hypotheses/:hypothesisId/versions/new"
+                  element={<NewHypothesisVersionPage />}
                 />
               </Route>
               <Route path="/experiments" element={<ExperimentListPage />} />

@@ -4,6 +4,7 @@ import com.marketinghub.ads.FacebookInstantForm;
 import com.marketinghub.creative.label.Angle;
 import com.marketinghub.deliverable.DeliverablePackage;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.product.Product;
 import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.prompt.PromptAttributeDescription;
 import com.marketinghub.targeting.TargetingElement;
@@ -34,6 +35,26 @@ public class Hypothesis {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "market_niche_id")
   private MarketNiche marketNiche;
+
+  /** Produto comercial exclusivo ao qual esta hipótese pertence. */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "product_id")
+  private Product product;
+
+  /** Hipótese imediatamente anterior preservada como origem desta versão. */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "source_hypothesis_id")
+  private Hypothesis sourceHypothesis;
+
+  /** Primeira hipótese da linhagem, usada para ordenar e auditar todas as versões. */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "root_hypothesis_id")
+  private Hypothesis rootHypothesis;
+
+  /** Número sequencial imutável dentro da linhagem comercial. */
+  @Builder.Default
+  @Column(name = "version_number", nullable = false)
+  private Integer versionNumber = 1;
 
   @Column(nullable = false)
   private String title;

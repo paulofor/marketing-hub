@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-08-agent-operating-contract
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent
+                ADD COLUMN responsibility_contract LONGTEXT NULL AFTER authority_policy,
+                ADD COLUMN orchestrator_policy LONGTEXT NULL AFTER responsibility_contract,
+                ADD COLUMN analysis_policy LONGTEXT NULL AFTER orchestrator_policy,
+                ADD COLUMN offering_policy LONGTEXT NULL AFTER analysis_policy;

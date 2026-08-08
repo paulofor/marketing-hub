@@ -292,6 +292,69 @@ export default function AgentForm({
           />
         </div>
         <div className="col-12">
+          <label className="form-label" htmlFor="agent-responsibility-contract">
+            Responsabilidade do agente
+          </label>
+          <textarea
+            id="agent-responsibility-contract"
+            className="form-control"
+            rows={4}
+            value={form.responsibilityContract ?? ""}
+            onChange={(e) =>
+              setForm({ ...form, responsibilityContract: e.target.value })
+            }
+            placeholder="O que este agente deve resolver, por quem e até onde vai sua responsabilidade"
+          />
+        </div>
+        <div className="col-12">
+          <label className="form-label" htmlFor="agent-orchestrator-policy">
+            Regras para o Orquestrador
+          </label>
+          <textarea
+            id="agent-orchestrator-policy"
+            className="form-control"
+            rows={4}
+            value={form.orchestratorPolicy ?? ""}
+            onChange={(e) =>
+              setForm({ ...form, orchestratorPolicy: e.target.value })
+            }
+            placeholder="Quando acionar, pré-condições, prioridade, bloqueios e quando encaminhar para decisão humana"
+          />
+          <div className="form-text">
+            Estas regras coordenam o agente, mas não ampliam sua autoridade.
+          </div>
+        </div>
+        <div className="col-md-6">
+          <label className="form-label" htmlFor="agent-analysis-policy">
+            O que deve analisar
+          </label>
+          <textarea
+            id="agent-analysis-policy"
+            className="form-control"
+            rows={4}
+            value={form.analysisPolicy ?? ""}
+            onChange={(e) =>
+              setForm({ ...form, analysisPolicy: e.target.value })
+            }
+            placeholder="Evidências, comparações, critérios, riscos e perguntas que precisam ser respondidas"
+          />
+        </div>
+        <div className="col-md-6">
+          <label className="form-label" htmlFor="agent-offering-policy">
+            O que deve oferecer
+          </label>
+          <textarea
+            id="agent-offering-policy"
+            className="form-control"
+            rows={4}
+            value={form.offeringPolicy ?? ""}
+            onChange={(e) =>
+              setForm({ ...form, offeringPolicy: e.target.value })
+            }
+            placeholder="Recomendação, decisão, artefato ou próximo passo que deve entregar ao fluxo"
+          />
+        </div>
+        <div className="col-12">
           <label className="form-label">
             Política de autoridade e aprovações
           </label>
@@ -377,14 +440,14 @@ export default function AgentForm({
       </div>
 
       {renderSection(
-        "Entradas do agente",
+        "Informações que o agente deve receber",
         "inputs",
-        "Liste as fontes e formatos esperados: triggers, decisões, lotes ou sinais externos.",
+        "Liste fontes, contexto obrigatório, evidências e formatos esperados.",
         "Nenhuma entrada cadastrada. Clique em Adicionar para registrar.",
       )}
 
       {renderSection(
-        "Saídas do agente",
+        "Saídas e entregáveis do agente",
         "outputs",
         "Resultados estruturados, destinos ou persistência esperada para o fluxo.",
         "Nenhuma saída cadastrada ainda.",

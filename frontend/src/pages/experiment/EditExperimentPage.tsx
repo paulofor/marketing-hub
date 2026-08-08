@@ -36,6 +36,7 @@ interface FormData {
   kpiTarget: string;
   dailyBudget: string;
   unitPrice: string;
+  followUpActionUrl: string;
   startDate: string;
   endDate: string;
   metricPresetId: string;
@@ -94,6 +95,7 @@ export default function EditExperimentPage() {
       kpiTarget: "",
       dailyBudget: "",
       unitPrice: "",
+      followUpActionUrl: "",
       startDate: "",
       endDate: "",
       metricPresetId: "",
@@ -133,6 +135,7 @@ export default function EditExperimentPage() {
         kpiTarget: currentKpi != null ? String(currentKpi) : "",
         dailyBudget: data.dailyBudget != null ? String(data.dailyBudget) : "",
         unitPrice: data.unitPrice != null ? String(data.unitPrice) : "",
+        followUpActionUrl: data.followUpActionUrl ?? "",
         startDate: toDateInputValue(data.startDate),
         endDate: toDateInputValue(data.endDate),
         metricPresetId: data.metricPresetId || "",
@@ -572,6 +575,11 @@ export default function EditExperimentPage() {
         payload.facebookPageId = selectedPageId ? Number(selectedPageId) : null;
       }
 
+      if (dirtyFields.followUpActionUrl) {
+        const checkoutUrl = values.followUpActionUrl.trim();
+        payload.followUpActionUrl = checkoutUrl || null;
+      }
+
       await update.mutateAsync(payload);
       navigate(-1);
     } catch {
@@ -941,6 +949,22 @@ export default function EditExperimentPage() {
                     />
                     <div className="form-text">
                       Usado no link do Mercado Pago.
+                    </div>
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="followUpActionUrl">
+                      URL do checkout comercial
+                    </label>
+                    <input
+                      id="followUpActionUrl"
+                      className="form-control"
+                      type="url"
+                      placeholder="https://..."
+                      {...register("followUpActionUrl")}
+                    />
+                    <div className="form-text">
+                      Destino de pagamento usado para criar a página. Informar a
+                      URL não publica a página nem libera mídia.
                     </div>
                   </div>
                   <div>

@@ -60,6 +60,18 @@ public class Agent {
   @Column(name = "authority_policy", columnDefinition = "LONGTEXT")
   private String authorityPolicy;
 
+  @Column(name = "responsibility_contract", columnDefinition = "LONGTEXT")
+  private String responsibilityContract;
+
+  @Column(name = "orchestrator_policy", columnDefinition = "LONGTEXT")
+  private String orchestratorPolicy;
+
+  @Column(name = "analysis_policy", columnDefinition = "LONGTEXT")
+  private String analysisPolicy;
+
+  @Column(name = "offering_policy", columnDefinition = "LONGTEXT")
+  private String offeringPolicy;
+
   @Column(name = "prompt_contract_path")
   private String promptContractPath;
 

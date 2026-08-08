@@ -6,14 +6,17 @@ import com.marketinghub.deliverable.DeliverablePackage;
 import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.hypothesis.*;
 import com.marketinghub.hypothesis.dto.CreateHypothesisRequest;
+import com.marketinghub.hypothesis.dto.CreateHypothesisVersionRequest;
 import com.marketinghub.hypothesis.dto.UpdateHypothesisRequest;
 import com.marketinghub.hypothesis.framework.HypothesisFrameworkMapperSupport;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.product.Product;
 import com.marketinghub.prompt.PromptAttributeDescription;
 import com.marketinghub.repository.jpa.creative.label.AngleRepository;
 import com.marketinghub.repository.jpa.deliverable.DeliverablePackageRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.repository.jpa.prompt.PromptAttributeDescriptionRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
@@ -42,6 +45,7 @@ public class HypothesisService {
   private final CurrencyConversionService currencyConversionService;
   private final CostAttributionService costAttributionService;
   private final DeliverablePackageRepository deliverablePackageRepository;
+  private final ProductRepository productRepository;
 
   public HypothesisService(
       HypothesisRepository repository,
@@ -52,7 +56,8 @@ public class HypothesisService {
       HypothesisFrameworkMapperSupport frameworkMapperSupport,
       CurrencyConversionService currencyConversionService,
       CostAttributionService costAttributionService,
-      DeliverablePackageRepository deliverablePackageRepository) {
+      DeliverablePackageRepository deliverablePackageRepository,
+      ProductRepository productRepository) {
     this.repository = repository;
     this.nicheRepository = nicheRepository;
     this.angleRepository = angleRepository;
@@ -62,6 +67,7 @@ public class HypothesisService {
     this.currencyConversionService = currencyConversionService;
     this.costAttributionService = costAttributionService;
     this.deliverablePackageRepository = deliverablePackageRepository;
+    this.productRepository = productRepository;
   }
 
   private MarketNiche attachNiche(Long id) {
@@ -82,12 +88,32 @@ public class HypothesisService {
 
   /** Valida os campos comerciais obrigatórios para criar uma hipótese. */
   private void validate(CreateHypothesisRequest req) {
+    if (req.getProductId() == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "productId required");
+    }
     if (req.getProblem() == null || req.getProblem().isBlank()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "problem required");
     }
     if (req.getPersona() == null || req.getPersona().isBlank()) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "persona required");
     }
+  }
+
+  /** Localiza o produto e impede a criação de hipótese fora do nicho comercial selecionado. */
+  private Product resolveProduct(Long productId, MarketNiche niche) {
+    Product product =
+        productRepository
+            .findById(productId)
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado"));
+    Long nicheId = niche == null ? null : niche.getId();
+    Long productNicheId =
+        product.getMarketNiche() == null ? null : product.getMarketNiche().getId();
+    if (!java.util.Objects.equals(productNicheId, nicheId)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "O produto deve pertencer ao mesmo nicho da hipótese");
+    }
+    return product;
   }
 
   /** Monta o título automático da hipótese com sigla do nicho e numeração sequencial. */
@@ -181,10 +207,12 @@ public class HypothesisService {
   public Hypothesis create(CreateHypothesisRequest req) {
     validate(req);
     MarketNiche niche = attachNiche(req.getMarketNicheId());
+    Product product = resolveProduct(req.getProductId(), niche);
     String automaticTitle = buildAutomaticHypothesisTitle(niche);
     Hypothesis h =
         Hypothesis.builder()
             .marketNiche(niche)
+            .product(product)
             .title(automaticTitle)
             .premiseAngle(attachAngle(req.getPremiseAngleId()))
             .promise(req.getPromise())
@@ -217,6 +245,78 @@ public class HypothesisService {
       costAttributionService.addCostToNiche(saved.getMarketNiche(), delta);
     }
     return saved;
+  }
+
+  /**
+   * Cria uma nova hipótese auditável sem alterar a origem, preservando produto, nicho, framework e
+   * metadados técnicos da linhagem.
+   */
+  @Transactional
+  public Hypothesis createVersion(UUID sourceId, CreateHypothesisVersionRequest req) {
+    Hypothesis source =
+        repository
+            .findById(sourceId)
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Hipótese de origem não encontrada"));
+    validateVersion(req);
+    Hypothesis root = source.getRootHypothesis() == null ? source : source.getRootHypothesis();
+    root = repository.findByIdForVersioning(root.getId()).orElseThrow();
+    int nextVersion = repository.findMaximumVersionNumber(root.getId()) + 1;
+    Hypothesis version =
+        Hypothesis.builder()
+            .marketNiche(source.getMarketNiche())
+            .product(source.getProduct())
+            .sourceHypothesis(source)
+            .rootHypothesis(root)
+            .versionNumber(nextVersion)
+            .title(buildAutomaticHypothesisTitle(source.getMarketNiche()))
+            .premiseAngle(source.getPremiseAngle())
+            .promise(req.promise())
+            .problem(req.problem())
+            .persona(req.persona())
+            .mechanism(req.mechanism())
+            .uniqueMechanism(req.uniqueMechanism())
+            .entrega(req.entrega())
+            .successRule(req.successRule())
+            .imageFilterTitle(source.getImageFilterTitle())
+            .prompt(source.getPrompt())
+            .frameworkJson(source.getFrameworkJson())
+            .model(source.getModel())
+            .promptAttributeDescriptions(new HashSet<>(source.getPromptAttributeDescriptions()))
+            .offerType(req.offerType() == null ? null : OfferType.valueOf(req.offerType()))
+            .price(req.price())
+            .kpiTargetCpl(source.getKpiTargetCpl())
+            .productAiSubtype(source.getProductAiSubtype())
+            .status(HypothesisStatus.BACKLOG)
+            .generatedAt(Instant.now())
+            .build();
+    version.setOfferPackage(source.getOfferPackage());
+    return repository.save(version);
+  }
+
+  /** Impede que uma nova versão seja criada sem os dados mínimos para um teste comercial. */
+  private void validateVersion(CreateHypothesisVersionRequest req) {
+    if (req == null || req.problem() == null || req.problem().isBlank()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "problem required");
+    }
+    if (req.persona() == null || req.persona().isBlank()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "persona required");
+    }
+    if (req.entrega() == null || req.entrega().isBlank()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "entrega required");
+    }
+    if (req.price() == null || req.price().signum() <= 0) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "price must be positive");
+    }
+    if (req.offerType() != null) {
+      try {
+        OfferType.valueOf(req.offerType());
+      } catch (IllegalArgumentException ex) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "offerType invalid", ex);
+      }
+    }
   }
 
   public Iterable<Hypothesis> listByMarketNiche(Long marketNicheId, HypothesisStatus status) {

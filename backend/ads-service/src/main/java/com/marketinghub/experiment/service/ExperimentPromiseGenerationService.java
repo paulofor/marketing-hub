@@ -277,6 +277,11 @@ public class ExperimentPromiseGenerationService {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "O produto selecionado não pertence ao nicho informado");
     }
+    if (hypothesis.getProduct() == null
+        || !hypothesis.getProduct().getId().equals(product.getId())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "A hipótese selecionada não pertence ao produto informado");
+    }
   }
 
   /** Localiza e valida o território dentro do Mapa de Desejo do produto selecionado. */

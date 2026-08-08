@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-08-hypothesis-versioning
+      author: marketinghub
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE hypothesis
+                ADD COLUMN source_hypothesis_id BINARY(16) NULL AFTER product_id,
+                ADD COLUMN root_hypothesis_id BINARY(16) NULL AFTER source_hypothesis_id,
+                ADD COLUMN version_number INT NOT NULL DEFAULT 1 AFTER root_hypothesis_id,
+                ADD CONSTRAINT fk_hypothesis_source
+                  FOREIGN KEY (source_hypothesis_id) REFERENCES hypothesis(id),
+                ADD CONSTRAINT fk_hypothesis_root
+                  FOREIGN KEY (root_hypothesis_id) REFERENCES hypothesis(id);
+              CREATE UNIQUE INDEX idx_hypothesis_root_version
+                ON hypothesis(root_hypothesis_id, version_number);

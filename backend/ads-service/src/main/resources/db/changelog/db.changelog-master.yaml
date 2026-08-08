@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-08-hypothesis-product-link.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-08-image-generation-history.yaml
       relativeToChangelogFile: true
   - include:
@@ -1656,4 +1659,10 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changesets/2026-08-08-experiment-product-desire-territory.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-08-hypothesis-versioning.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-08-agent-operating-contract.yaml
       relativeToChangelogFile: true

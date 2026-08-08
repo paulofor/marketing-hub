@@ -417,6 +417,10 @@ public class ExperimentService {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "hypothesis and experiment niche mismatch");
     }
+    if (hyp.getProduct() == null || !hyp.getProduct().getId().equals(product.getId())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "A hipótese selecionada não pertence ao produto do experimento");
+    }
     ExperimentType resolvedExperimentType = resolveExperimentType(request.getExperimentType());
     var resolvedProductAiSubtype =
         resolvedExperimentType == ExperimentType.FAKE_EXPERIMENT

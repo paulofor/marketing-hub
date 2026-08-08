@@ -109,6 +109,8 @@ class ExperimentControllerTest {
         journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
     CreateExperimentRequest req = new CreateExperimentRequest();
     applyStageDefaults(req, niche);
+    hyp.setProduct(productRepository.getReferenceById(req.getProductId()));
+    hypothesisRepository.save(hyp);
     req.setName("Exp1");
     req.setHypothesisId(hyp.getId());
     req.setHypothesis("h");

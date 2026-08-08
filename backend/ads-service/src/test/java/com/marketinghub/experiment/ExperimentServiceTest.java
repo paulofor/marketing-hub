@@ -157,6 +157,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("T")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -220,6 +221,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("T")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -305,6 +307,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("T")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -361,6 +364,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("T")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -412,6 +416,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("T")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -467,6 +472,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("T")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -516,6 +522,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("Hipótese promessa")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -567,6 +574,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("Hipótese venda")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -619,6 +627,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("Hipótese tráfego")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -663,6 +672,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("T")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -706,6 +716,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("T")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -749,6 +760,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("T")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -794,6 +806,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche1)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("T")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -840,6 +853,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("H1")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -940,6 +954,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("HS")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -991,6 +1006,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("HRG")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -1040,6 +1056,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("HPDE")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -1103,6 +1120,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("HPS")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -1193,6 +1211,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("HRX")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -1274,6 +1293,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("HR")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -1361,6 +1381,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("HP")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -1408,6 +1429,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("HFK")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -1463,6 +1485,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("HCOM")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -1530,6 +1553,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("HPDERelease")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -1590,6 +1614,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("HLT")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -1637,6 +1662,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("HLTOk")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -1708,6 +1734,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("HLTCheckout")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -1773,6 +1800,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("T2")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -1821,6 +1849,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("T")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -1866,6 +1895,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("T")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -1908,6 +1938,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("T")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -1964,6 +1995,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("T")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -2018,6 +2050,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("T")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -2070,6 +2103,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("T")
                 .premiseAngle(angle)
                 .promise("Promessa")
@@ -2125,6 +2159,7 @@ class ExperimentServiceTest {
         hypothesisRepository.save(
             com.marketinghub.hypothesis.Hypothesis.builder()
                 .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
                 .title("T")
                 .premiseAngle(angle)
                 .promise("Promessa")

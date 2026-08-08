@@ -13,6 +13,11 @@ objetivo de negócio, métricas de sucesso, modelo, política de gatilhos, polí
 caminhos versionados do prompt e schema. Cada gravação cria uma fotografia imutável em
 `agent_version`.
 
+O contrato operacional também deve registrar separadamente a responsabilidade do agente, as regras
+que o Orquestrador usa para coordená-lo, as informações obrigatórias de entrada, o que deve ser
+analisado e o que deve ser oferecido como saída funcional. Esses campos não substituem prompt ou
+schema do executor e não podem ampliar limites de autoridade.
+
 Status permitidos: `DRAFT`, `TEST`, `ACTIVE`, `PAUSED` e `BLOCKED`.
 
 ## Autoridade
@@ -21,6 +26,13 @@ O cadastro nunca amplia silenciosamente a autoridade do executor. Ações de gas
 publicação, comunicação em massa, início ou retomada de campanhas e abertura de PR exigem regra
 explícita e aprovação humana. Gates determinísticos podem autorizar apenas ações preventivas já
 previstas no contrato canônico do agente.
+
+## Gestão administrativa
+
+A tela `Gestão de agentes` é a entrada canônica para criar e revisar contratos. Cada salvamento
+incrementa a versão e preserva uma fotografia auditável. As regras do Orquestrador descrevem
+acionamento, pré-condições, prioridade, bloqueios e encaminhamento humano; a execução continua
+determinística no backend e os módulos executores apenas consomem pendências e reportam resultados.
 
 ## Migração do Operador de Crescimento
 

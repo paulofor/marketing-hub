@@ -4,6 +4,8 @@
 
 O Operador de Crescimento transforma meta, gargalo e evidencias persistidas do planejamento comercial em diagnostico auditavel. A v1 opera continuamente em modo `READ_ONLY_DIAGNOSIS`, seguindo o ciclo de sandbox do exemplo `/exemplos/aih6`.
 
+Ao reconciliar o experimento em execucao, a compatibilidade usa a hipotese ou o nicho do plano. Para planos legados sem esses campos, usa obrigatoriamente o contexto do experimento ja vinculado, sem selecionar experimento apenas por estar `RUNNING`.
+
 ## Autoridade
 
 - O backend cria a pendencia, congela o contexto e persiste o resultado.

@@ -185,15 +185,26 @@ public class CommercialPlanService {
     return planRepository.save(plan);
   }
 
-  /** Confirma compatibilidade pela hipotese canonica ou, na ausencia dela, pelo nicho do plano. */
+  /**
+   * Confirma compatibilidade pelo contexto direto do plano ou pelo experimento ja vinculado como
+   * legado.
+   */
   private boolean belongsToPlan(CommercialPlan plan, Experiment experiment) {
-    if (plan.getHypothesis() != null) {
+    Hypothesis referenceHypothesis =
+        plan.getHypothesis() != null
+            ? plan.getHypothesis()
+            : plan.getExperiment() != null ? plan.getExperiment().getHypothesisRef() : null;
+    if (referenceHypothesis != null) {
       return experiment.getHypothesisRef() != null
-          && plan.getHypothesis().getId().equals(experiment.getHypothesisRef().getId());
+          && referenceHypothesis.getId().equals(experiment.getHypothesisRef().getId());
     }
-    return plan.getNiche() != null
+    MarketNiche referenceNiche =
+        plan.getNiche() != null
+            ? plan.getNiche()
+            : plan.getExperiment() != null ? plan.getExperiment().getNiche() : null;
+    return referenceNiche != null
         && experiment.getNiche() != null
-        && plan.getNiche().getId().equals(experiment.getNiche().getId());
+        && referenceNiche.getId().equals(experiment.getNiche().getId());
   }
 
   /** Lista marcos de um plano na ordem comercial. */

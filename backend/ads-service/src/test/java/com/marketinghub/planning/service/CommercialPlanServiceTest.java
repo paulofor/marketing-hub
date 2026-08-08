@@ -175,6 +175,36 @@ class CommercialPlanServiceTest {
     assertThat(synchronizedPlan.getExperiment().getId()).isEqualTo(85L);
   }
 
+  /** Usa o contexto do experimento antigo quando o plano legado nao gravou hipotese nem nicho. */
+  @Test
+  void synchronizeRunningExperimentUsesLinkedExperimentContextForLegacyPlan() {
+    Hypothesis hypothesis =
+        Hypothesis.builder().id(UUID.randomUUID()).title("Agenda cheia").build();
+    Experiment oldExperiment =
+        Experiment.builder()
+            .id(84L)
+            .hypothesisRef(hypothesis)
+            .status(ExperimentStatus.PLANNED)
+            .build();
+    Experiment runningExperiment =
+        Experiment.builder()
+            .id(85L)
+            .hypothesisRef(hypothesis)
+            .status(ExperimentStatus.RUNNING)
+            .build();
+    CommercialPlan plan = CommercialPlan.builder().id(2L).experiment(oldExperiment).build();
+    when(planRepository.findById(2L)).thenReturn(Optional.of(plan));
+    when(milestoneRepository.findByPlanIdOrderBySequenceOrderAsc(2L)).thenReturn(List.of());
+    when(experimentRepository.findByStatus(ExperimentStatus.RUNNING))
+        .thenReturn(List.of(runningExperiment));
+    when(planRepository.save(any(CommercialPlan.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    CommercialPlan synchronizedPlan = service.synchronizeRunningExperiment(2L);
+
+    assertThat(synchronizedPlan.getExperiment().getId()).isEqualTo(85L);
+  }
+
   /** Bloqueia selecao automatica quando mais de um experimento ativo pertence ao plano. */
   @Test
   void synchronizeRunningExperimentRejectsAmbiguousCandidates() {

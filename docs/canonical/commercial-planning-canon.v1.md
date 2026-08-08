@@ -15,6 +15,14 @@ Todo plano comercial mensal deve persistir metas numericas planejadas em campos 
 - `operational_revenue_target`: meta operacional desejada acima do minimo.
 - `experiments_to_create`: quantidade de experimentos que devem ser criados no periodo.
 - `experiments_to_publish`: quantidade de experimentos que devem ser publicados e validados no periodo.
+- `products_to_validate`: quantidade maxima de produtos que receberao evidencia comercial nova no periodo.
+- `product_types_to_explore`: quantidade de tipos de PDE distintos que serao investigados sem desviar a execucao do produto prioritario.
+- `approaches_to_test`: quantidade de mecanismos, territorios de desejo ou abordagens comerciais comparaveis que serao testados.
+- `customer_conversations_target`: quantidade de conversas estruturadas com clientes ou compradores usadas como evidencia comercial.
+
+Essas metas medem aprendizado, nao atividade vazia. Um produto, tipo ou abordagem so deve contar quando possuir hipotese explicita, evidencia registrada e decisao `CONTINUE`, `ADJUST` ou `STOP`. Criar cadastros duplicados nao aumenta o realizado. Metas de exploracao nunca substituem vendas aprovadas, entrega satisfatoria e conversao do funil como resultados principais.
+
+Quando o gargalo vigente for instrumentacao, checkout ou entrega, o plano semanal deve limitar o trabalho em paralelo. A referencia inicial recomendada e: um produto prioritario, um tipo de PDE, ate duas abordagens, um experimento pronto para execucao e cinco conversas com clientes. Novas frentes so avancam depois que o gate do gargalo atual estiver verde.
 
 Todo marco semanal do plano pode persistir metas numericas planejadas proprias:
 
@@ -22,6 +30,7 @@ Todo marco semanal do plano pode persistir metas numericas planejadas proprias:
 - `target_revenue`: receita esperada da semana ou acumulada.
 - `experiments_to_create`: quantidade de experimentos que devem ser criados ate o marco.
 - `experiments_to_publish`: quantidade de experimentos que devem ser publicados/validados ate o marco.
+- `products_to_validate`, `product_types_to_explore`, `approaches_to_test` e `customer_conversations_target`: recorte semanal das metas de aprendizado, sujeito aos mesmos gates de evidencia e foco comercial do plano.
 
 ## Regra canonica de semanas comerciais do mes
 

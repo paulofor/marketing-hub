@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-08-01-commercial-planning-learning-goals
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: commercial_plan
+        - not:
+            - columnExists:
+                tableName: commercial_plan
+                columnName: products_to_validate
+      changes:
+        - addColumn:
+            tableName: commercial_plan
+            columns:
+              - column:
+                  name: products_to_validate
+                  type: INT
+              - column:
+                  name: product_types_to_explore
+                  type: INT
+              - column:
+                  name: approaches_to_test
+                  type: INT
+              - column:
+                  name: customer_conversations_target
+                  type: INT
+
+  - changeSet:
+      id: 2026-08-08-02-commercial-plan-milestone-learning-goals
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: commercial_plan_milestone
+        - not:
+            - columnExists:
+                tableName: commercial_plan_milestone
+                columnName: products_to_validate
+      changes:
+        - addColumn:
+            tableName: commercial_plan_milestone
+            columns:
+              - column:
+                  name: products_to_validate
+                  type: INT
+              - column:
+                  name: product_types_to_explore
+                  type: INT
+              - column:
+                  name: approaches_to_test
+                  type: INT
+              - column:
+                  name: customer_conversations_target
+                  type: INT

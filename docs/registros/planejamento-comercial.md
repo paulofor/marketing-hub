@@ -80,3 +80,9 @@
 - `solicitar_retomada_experimento` nunca reativa; retorna pendencia de aprovacao humana.
 - O contexto auditavel de cada ciclo passa a incluir hipotese, papel no funil, custos, progressao, acoes posteriores e aprendizados dos videos vinculados ao experimento.
 - Aprendizado so pode ser confirmado com eventos humanos atribuidos; gasto de campanha, custo de producao e receita permanecem separados.
+# 2026-08-08 — Metas numericas de aprendizado comercial
+
+- Solicitação: incluir no planejamento semanal metas de produtos, tipos de produto, abordagens e experimentos.
+- Decisão: complementar receita, custo, funil e experimentos com metas estruturadas de produtos a validar, tipos de PDE a explorar, abordagens a testar e conversas com clientes.
+- Proteção comercial: volume de cadastro não conta como resultado; cada item exige hipótese, evidência e decisão registrada. Gargalos de instrumentação, checkout e entrega limitam a abertura de novas frentes.
+- Referência inicial para a semana: 1 produto prioritário, 1 tipo de PDE, 2 abordagens, 1 experimento executável e 5 conversas estruturadas.

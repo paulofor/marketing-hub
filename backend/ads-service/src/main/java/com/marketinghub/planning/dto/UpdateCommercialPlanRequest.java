@@ -27,6 +27,10 @@ public record UpdateCommercialPlanRequest(
     BigDecimal operationalRevenueTarget,
     Integer experimentsToCreate,
     Integer experimentsToPublish,
+    Integer productsToValidate,
+    Integer productTypesToExplore,
+    Integer approachesToTest,
+    Integer customerConversationsTarget,
     String nextAction,
     String currentBlocker,
     String rootCause) {}

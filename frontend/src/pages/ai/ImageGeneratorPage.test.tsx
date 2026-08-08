@@ -6,6 +6,14 @@ vi.mock("../../app/breadcrumbs", () => ({
   useBreadcrumbs: vi.fn(),
 }));
 
+vi.mock("../../api/product/useProducts", () => ({
+  useProducts: vi.fn(() => ({ data: [], isLoading: false })),
+}));
+
+vi.mock("../../api/planning/useCommercialPlans", () => ({
+  useCommercialPlans: vi.fn(() => ({ data: [], isLoading: false })),
+}));
+
 vi.mock("../../api/ai/useGenerateImage", () => ({
   useGenerateImage: vi.fn(() => ({
     data: {
@@ -36,6 +44,16 @@ vi.mock("../../api/ai/useGenerateImage", () => ({
   })),
 }));
 
+vi.mock("../../api/ai/usePromoteGeneratedImage", () => ({
+  usePromoteGeneratedImage: vi.fn(() => ({
+    error: null,
+    isError: false,
+    isPending: false,
+    isSuccess: false,
+    mutate: vi.fn(),
+  })),
+}));
+
 afterEach(() => {
   cleanup();
 });
@@ -50,5 +68,11 @@ describe("ImageGeneratorPage", () => {
     expect(
       screen.getByAltText(/resultado gerado por IA com gpt-5.6/i),
     ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /selecionar imagem/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /vincular e enviar ao aprovador/i }),
+    ).toBeDisabled();
   });
 });

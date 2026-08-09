@@ -126,6 +126,16 @@ describe("videoProviderCatalog", () => {
     expect(provider?.supportsSceneAssembly).toBe(true);
   });
 
+  it("inclui Seedance 2.5 sob a Runway com duracao direta de ate 30 segundos", () => {
+    const provider = findSalesVideoProviderOption("RUNWAY_SEEDANCE_2_5");
+
+    expect(provider).toBeDefined();
+    expect(provider?.label).toBe("Seedance 2.5 via Runway");
+    expect(provider?.maxDirectDurationSeconds).toBe(30);
+    expect(provider?.supportsHeroVideo).toBe(true);
+    expect(provider?.creditsUrl).toBe("https://dev.runwayml.com/");
+  });
+
   it("usa imagem aprovada como fonte para Kling e Runway quando houver asset selecionado", () => {
     const provider = findSalesVideoProviderOption("KLING_3_0");
 
@@ -160,6 +170,10 @@ describe("videoProviderCatalog", () => {
     expect(
       findSalesVideoProviderOption("RUNWAY")?.maxDirectDurationSeconds,
     ).toBe(10);
+    expect(
+      findSalesVideoProviderOption("RUNWAY_SEEDANCE_2_5")
+        ?.maxDirectDurationSeconds,
+    ).toBe(30);
     expect(findSalesVideoProviderOption("VEO")?.maxDirectDurationSeconds).toBe(
       8,
     );

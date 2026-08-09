@@ -48,7 +48,7 @@ jobs:
           cache: maven
       - name: Install backend contracts
         working-directory: backend/ads-service
-        run: mvn -B -DskipTests install
+        run: mvn -B -Dmaven.test.skip=true install
       - name: Run architecture tests
         run: mvn -B -s settings.xml -Dtest='*ArchitectureTest,*ArquiteturaTest' test
       - name: Run tests

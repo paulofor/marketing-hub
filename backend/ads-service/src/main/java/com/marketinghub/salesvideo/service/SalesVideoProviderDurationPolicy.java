@@ -8,6 +8,7 @@ public final class SalesVideoProviderDurationPolicy {
   private static final int LUMA_RAY_3_2_MAX_SECONDS = 30;
   private static final int KLING_MAX_SECONDS = 10;
   private static final int RUNWAY_MAX_SECONDS = 10;
+  private static final int RUNWAY_SEEDANCE_2_5_MAX_SECONDS = 30;
   private static final int VEO_MAX_SECONDS = 8;
   private static final int HEYGEN_MAX_SECONDS = 600;
 
@@ -46,6 +47,9 @@ public final class SalesVideoProviderDurationPolicy {
     }
     if (normalized.contains("KLING")) {
       return new ProviderLimit("Kling", KLING_MAX_SECONDS);
+    }
+    if (normalized.contains("SEEDANCE_2_5") || normalized.contains("SEEDANCE2_5")) {
+      return new ProviderLimit("Seedance 2.5 via Runway", RUNWAY_SEEDANCE_2_5_MAX_SECONDS);
     }
     if (normalized.contains("RUNWAY") || normalized.contains("RUNAWAY")) {
       return new ProviderLimit("Runway", RUNWAY_MAX_SECONDS);

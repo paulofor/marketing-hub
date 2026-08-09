@@ -135,6 +135,8 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - **Correção sistêmica**: transporte `stdio` migrado para o SDK oficial, variáveis não sensíveis registradas explicitamente na configuração MCP por job e contexto segregado exposto por endpoint canônico que preserva a mesma landing efetiva da reserva. O teste passa a exigir handshake real do Codex e igualdade entre contexto da fila e contexto consultado pelo MCP.
 - **Recorrência operacional em 2026-08-09**: o MCP voltou a carregar e inspecionou as imagens, mas o subprocesso iniciado pelo Codex não recebeu `PLAYWRIGHT_BROWSERS_PATH`; por isso o `playwright-core` não encontrou o Chromium instalado em `/ms-playwright` e bloqueou a inspeção da landing em mobile e desktop.
 - **Prevenção adicional**: a configuração MCP por job passa a declarar explicitamente o caminho versionado dos navegadores junto das demais variáveis permitidas, e o teste de contrato exige esse transporte antes do deploy.
+- **Recorrência operacional em 2026-08-09 após o Chromium voltar a iniciar**: o MCP capturava a landing logo após `domcontentloaded` e auditava somente o estado transitório React `Preparando uma oferta especial para você...`, embora o conteúdo comercial carregasse em seguida.
+- **Correção sistêmica complementar**: a inspeção mobile e desktop agora espera um critério objetivo de prontidão do conteúdo comercial e das fontes antes do screenshot; o teste de contrato impede o retorno da captura imediata do shell.
 
 ---
 

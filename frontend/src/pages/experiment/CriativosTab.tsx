@@ -29,6 +29,10 @@ import {
 import { useRequestPipelineCreatives } from "../../api/experiment/useRequestPipelineCreatives";
 import { useRequestCreativeAgentReview } from "../../api/creative/useRequestCreativeAgentReview";
 import { useCreateCreativeVersion } from "../../api/creative/useCreateCreativeVersion";
+import {
+  useReusableProductAds,
+  useReuseProductAd,
+} from "../../api/creative/useReusableProductAds";
 
 interface Props {
   experimentId: string;
@@ -320,6 +324,8 @@ export default function CriativosTab({
   const del = useDeleteCreative(experimentId);
   const requestAgentReview = useRequestCreativeAgentReview(experimentId);
   const createVersion = useCreateCreativeVersion(experimentId);
+  const reusableAdsQuery = useReusableProductAds(experimentId);
+  const reuseProductAd = useReuseProductAd(experimentId);
   const [showPreview, setShowPreview] = useState(false);
   const [processingCreativeId, setProcessingCreativeId] = useState<
     number | null
@@ -609,6 +615,23 @@ export default function CriativosTab({
         variant: "error",
         title: "Erro ao gerar anúncios do pipeline",
         description: "Verifique se o pipeline está completo e tente novamente.",
+      });
+    }
+  };
+  const handleReuseProductAd = async (sourceCreativeId: number) => {
+    try {
+      await reuseProductAd.mutateAsync(sourceCreativeId);
+      setFeedback({
+        variant: "success",
+        title: "Anúncio adicionado para revisão",
+        description:
+          "A cópia preserva a origem e precisa passar novamente pelos gates do agente e da aprovação humana.",
+      });
+    } catch {
+      setFeedback({
+        variant: "error",
+        title: "Não foi possível reutilizar o anúncio",
+        description: "Confirme se ele continua aprovado e pertence ao mesmo produto.",
       });
     }
   };
@@ -1073,6 +1096,34 @@ export default function CriativosTab({
           configurada no worker.
         </div>
       </div>
+      {Array.isArray(reusableAdsQuery.data) && reusableAdsQuery.data.length > 0 && (
+        <section className="card border-primary mb-3" aria-label="Biblioteca de anúncios do produto">
+          <div className="card-body">
+            <h4 className="h6 mb-1">Reutilizar anúncio aprovado do produto</h4>
+            <p className="small text-muted">
+              Selecione um anúncio já validado. Ele entrará como nova revisão e não contornará os gates dos agentes.
+            </p>
+            <div className="d-flex flex-column gap-2">
+              {reusableAdsQuery.data.map((ad) => (
+                <div className="d-flex justify-content-between align-items-center gap-3" key={ad.creativeId}>
+                  <span>
+                    <strong>{ad.headline || `Anúncio #${ad.creativeId}`}</strong>
+                    <small className="d-block text-muted">Origem: {ad.experimentName}</small>
+                  </span>
+                  <button
+                    type="button"
+                    className="btn btn-outline-primary btn-sm"
+                    disabled={alterationLocked || reuseProductAd.isPending}
+                    onClick={() => handleReuseProductAd(ad.creativeId)}
+                  >
+                    Selecionar para revisão
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
       {pipelineAvailable ? (
         <div className="alert alert-primary d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mt-3">
           <div>

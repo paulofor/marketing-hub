@@ -6574,3 +6574,9 @@
 - causa-raiz: a tela mantinha o lote somente no estado da requisição atual; após recarga ou timeout, o histórico auditado no backend não podia ser selecionado novamente.
 - correção preparada: o backend lista metadados concluídos por produto, plano e experimento e transfere o asset apenas após a escolha; a tela restaura prompt, lote e imagem sem nova chamada de IA.
 - prevenção: a recuperação exige o mesmo contexto comercial, jobs antigos sem identificador de lote permanecem isolados e falhas registram `jobId` com stack trace.
+## 2026-08-09 — Experimento 88: modelo e público coerentes
+
+- causa-raiz confirmada: o pipeline de experimento ainda possuía `gpt-5.2` como padrão e a tela listava todos os públicos do nicho, embora o backend recusasse na gravação os vinculados a outra hipótese;
+- correção sistêmica: o pipeline passa a usar `gpt-5.6-sol` e o contrato de listagem filtra públicos globais ou da hipótese do experimento;
+- prevenção: testes de backend e frontend devem proteger modelo efetivo e segregação por hipótese antes do preflight.
+- a biblioteca do produto passa a permitir seleção auditável: o anúncio reutilizado preserva a origem, entra como rascunho no novo experimento e repete revisão do agente e aprovação humana.

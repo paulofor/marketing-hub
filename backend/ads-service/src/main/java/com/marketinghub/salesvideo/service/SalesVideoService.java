@@ -34,12 +34,14 @@ import com.marketinghub.salesvideo.dto.SalesVideoJobEventDto;
 import com.marketinghub.salesvideo.dto.SalesVideoPerformanceSummaryDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProviderScoreDto;
+import com.marketinghub.salesvideo.dto.SalesVideoProviderModelDto;
 import com.marketinghub.salesvideo.dto.SalesVideoRolloutStatusDto;
 import com.marketinghub.salesvideo.dto.SalesVideoScriptDto;
 import com.marketinghub.salesvideo.dto.SalesVideoStudioCatalogDto;
 import com.marketinghub.salesvideo.dto.UpdateLandingVideoSlotRequest;
 import com.marketinghub.salesvideo.dto.UpdateSalesVideoComplianceRequest;
 import com.marketinghub.salesvideo.dto.UpdateVideoProjectRequest;
+import com.marketinghub.salesvideo.dto.UpdateSalesVideoProviderModelRequest;
 import com.marketinghub.salesvideo.dto.VideoProjectDto;
 import com.marketinghub.salesvideo.dto.VideoReferenceDto;
 import java.io.IOException;
@@ -58,6 +60,7 @@ public class SalesVideoService {
   private final SalesVideoCommercialInsightsService commercialInsightsService;
   private final VideoProjectService videoProjectService;
   private final VideoReferenceService videoReferenceService;
+  private final SalesVideoProviderCatalogService providerCatalogService;
   private final SalesVideoStudioCatalogService studioCatalogService =
       new SalesVideoStudioCatalogService();
 
@@ -69,7 +72,8 @@ public class SalesVideoService {
       SalesVideoAssetService assetService,
       SalesVideoCommercialInsightsService commercialInsightsService,
       VideoProjectService videoProjectService,
-      VideoReferenceService videoReferenceService) {
+      VideoReferenceService videoReferenceService,
+      SalesVideoProviderCatalogService providerCatalogService) {
     this.profileService = profileService;
     this.jobService = jobService;
     this.slotService = slotService;
@@ -77,6 +81,18 @@ public class SalesVideoService {
     this.commercialInsightsService = commercialInsightsService;
     this.videoProjectService = videoProjectService;
     this.videoReferenceService = videoReferenceService;
+    this.providerCatalogService = providerCatalogService;
+  }
+
+  /** Lista o catálogo administrável de provedores e modelos de vídeo. */
+  public List<SalesVideoProviderModelDto> listProviderModels() {
+    return providerCatalogService.list();
+  }
+
+  /** Atualiza curadoria e gates de homologação de um modelo de vídeo. */
+  public SalesVideoProviderModelDto updateProviderModel(
+      Long modelId, UpdateSalesVideoProviderModelRequest request) {
+    return providerCatalogService.update(modelId, request);
   }
 
   /** Lista projetos editáveis de vídeo do tenant atual. */

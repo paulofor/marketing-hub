@@ -230,7 +230,7 @@ class SalesVideoProfileServiceTest {
 
     assertThat(ex.getMessage()).contains("Runway aceita no máximo 10 segundos");
     assertThat(SalesVideoProviderDurationPolicy.maxSeconds("RUNWAY_SEEDANCE_2_5"))
-        .isEqualTo(30);
+        .isEqualTo(15);
   }
 
   /** Bloqueia render da Luma quando o perfil excede o limite do adapter com montagem atual. */

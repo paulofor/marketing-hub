@@ -34,6 +34,22 @@ public interface TargetingElementRepository extends JpaRepository<TargetingEleme
       @Param("type") TargetingElementType type,
       @Param("status") TargetingElementStatus status);
 
+  /** Lista elementos do nicho sem oferecer itens vinculados a outra hipótese. */
+  @Query(
+      """
+            select e from TargetingElement e
+            where e.niche.id = :nicheId
+              and (:type is null or e.type = :type)
+              and (:status is null or e.status = :status)
+              and (:hypothesisId is null or e.hypothesis is null or e.hypothesis.id = :hypothesisId)
+            order by e.createdAt desc
+            """)
+  List<TargetingElement> findByFiltersAndHypothesis(
+      @Param("nicheId") Long nicheId,
+      @Param("type") TargetingElementType type,
+      @Param("status") TargetingElementStatus status,
+      @Param("hypothesisId") UUID hypothesisId);
+
   /** Lista elementos aprovados para montar segmentação de um experimento. */
   @Query(
       """

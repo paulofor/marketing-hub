@@ -83,7 +83,21 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
     recommendedUse:
       "Cenas comerciais com áudio opcional e maior flexibilidade de duração; validar custo e consistência antes de escalar.",
     clipDurationSeconds: 10,
-    maxDirectDurationSeconds: 30,
+    maxDirectDurationSeconds: 15,
+    supportsHeroVideo: true,
+    supportsSceneAssembly: true,
+    supportsOpenAiReferenceImage: false,
+    creditsUrl: "https://dev.runwayml.com/",
+  },
+  {
+    key: "runway-hailuo-3",
+    label: "Hailuo 3 via Runway",
+    providerName: "RUNWAY_HAILUO_3",
+    providerFamily: "EXTERNAL_VIDEO_MODULE",
+    recommendedUse:
+      "Candidato econômico para movimento corporal, expressão facial e aderência ao prompt; exige QA antes de produção.",
+    clipDurationSeconds: 10,
+    maxDirectDurationSeconds: 10,
     supportsHeroVideo: true,
     supportsSceneAssembly: true,
     supportsOpenAiReferenceImage: false,

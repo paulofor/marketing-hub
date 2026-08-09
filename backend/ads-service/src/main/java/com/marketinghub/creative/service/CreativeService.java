@@ -169,6 +169,58 @@ public class CreativeService {
     }
   }
 
+  /** Reutiliza um anúncio aprovado em outro experimento do mesmo nicho como nova revisão auditável. */
+  @Transactional
+  public Creative reuseInExperiment(Long targetExperimentId, Long sourceCreativeId) {
+    try {
+      Creative source = repository.findByIdWithExperiment(sourceCreativeId).orElseThrow();
+      Experiment target = experimentRepository.findById(targetExperimentId).orElseThrow();
+      if (source.getExperiment().getNiche() == null
+          || target.getNiche() == null
+          || !Objects.equals(
+              source.getExperiment().getNiche().getId(), target.getNiche().getId())) {
+        throw new IllegalArgumentException(
+            "O anúncio de origem não pertence ao mesmo produto/nicho do experimento");
+      }
+      if (source.getStatus() != CreativeStatus.READY
+          || source.getAgentReviewStatus() != CreativeAgentReviewStatus.APPROVED) {
+        throw new IllegalArgumentException(
+            "Somente anúncios aprovados pelo agente e pela revisão humana podem ser reutilizados");
+      }
+      Creative reused =
+          Creative.builder()
+              .sourceCreative(source)
+              .versionNumber(Objects.requireNonNullElse(source.getVersionNumber(), 1) + 1)
+              .experiment(target)
+              .format(source.getFormat())
+              .headline(source.getHeadline())
+              .primaryText(source.getPrimaryText())
+              .imageUrl(source.getImageUrl())
+              .videoId(source.getVideoId())
+              .videoUrl(source.getVideoUrl())
+              .description(source.getDescription())
+              .cta(source.getCta())
+              .destinationUrl(source.getDestinationUrl())
+              .leadGenFormId(source.getLeadGenFormId())
+              .instagramUserId(source.getInstagramUserId())
+              .status(CreativeStatus.DRAFT)
+              .agentReviewStatus(CreativeAgentReviewStatus.PENDING)
+              .build();
+      Creative saved = repository.save(reused);
+      refreshExperimentApproval(target);
+      return saved;
+    } catch (RuntimeException ex) {
+      log.error(
+          "Falha ao reutilizar anúncio no experimento. classe={} operacao=reuseCreative targetExperimentId={} sourceCreativeId={} erro='{}'",
+          getClass().getSimpleName(),
+          targetExperimentId,
+          sourceCreativeId,
+          ex.getMessage(),
+          ex);
+      throw ex;
+    }
+  }
+
   /** Atualiza um criativo existente. */
   @Transactional
   public Creative update(Long id, CreateCreativeRequest request) {

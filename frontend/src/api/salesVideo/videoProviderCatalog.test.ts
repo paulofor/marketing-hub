@@ -126,12 +126,12 @@ describe("videoProviderCatalog", () => {
     expect(provider?.supportsSceneAssembly).toBe(true);
   });
 
-  it("inclui Seedance 2.5 sob a Runway com duracao direta de ate 30 segundos", () => {
+  it("inclui Seedance 2.5 sob a Runway com duracao direta de ate 15 segundos", () => {
     const provider = findSalesVideoProviderOption("RUNWAY_SEEDANCE_2_5");
 
     expect(provider).toBeDefined();
     expect(provider?.label).toBe("Seedance 2.5 via Runway");
-    expect(provider?.maxDirectDurationSeconds).toBe(30);
+    expect(provider?.maxDirectDurationSeconds).toBe(15);
     expect(provider?.supportsHeroVideo).toBe(true);
     expect(provider?.creditsUrl).toBe("https://dev.runwayml.com/");
   });
@@ -186,7 +186,7 @@ describe("videoProviderCatalog", () => {
     expect(
       findSalesVideoProviderOption("RUNWAY_SEEDANCE_2_5")
         ?.maxDirectDurationSeconds,
-    ).toBe(30);
+    ).toBe(15);
     expect(
       findSalesVideoProviderOption("RUNWAY_GEN_4_TURBO")
         ?.maxDirectDurationSeconds,

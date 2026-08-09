@@ -178,3 +178,10 @@
 - Causa-raiz tratada: `VIDEO_READY` representava conclusão técnica e a tela não recebia uma decisão canônica do backend sobre montagem, áudio pt-BR, legendas, CTA, HLS e revisão humana.
 - Correção preparada: o backend passa a expor gate `READY/BLOCKED` com causas objetivas; a montagem narrativa exige exatamente `DOR`, `RESULTADO`, `MECANISMO` e `CTA`; a tela bloqueia visualmente a publicação enquanto faltar qualquer evidência.
 - Critério comercial: só vincular a MUSA v7 ao PDE após gate aprovado e reprodução humana validada em desktop e mobile.
+# 2026-08-09 — Catálogo administrável e investigação Hailuo
+
+- Causa-raiz: modelos, limites e identificação externa estavam duplicados em frontend, backend e executor; a tela podia anunciar uma opção incompatível com o adapter.
+- Decisão: catálogo persistido com estados `DRAFT`, `HOMOLOGATION`, `ACTIVE` e `BLOCKED`; ativação exige gates de adaptador, preço, licença comercial e QA.
+- Correção pela documentação vigente: a Runway expõe `seedance2_5` e `hailuo3`; ambos usam o adaptador e o token Runway.
+- Hailuo 3 foi cadastrado em `HOMOLOGATION`, com custo oficial de US$ 0,10/s em 768p ou US$ 0,15/s em 2K, sem ativação produtiva antes de render real e QA comercial.
+- Prevenção: modelos descobertos no catálogo oficial devem ser confirmados também na tabela oficial de preços e protegidos por teste de payload antes de alterar provider, identificador ou gate.

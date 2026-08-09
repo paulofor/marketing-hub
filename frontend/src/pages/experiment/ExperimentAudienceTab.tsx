@@ -26,6 +26,7 @@ import "./ExperimentAudienceTab.css";
 interface ExperimentAudienceTabProps {
   experimentId: number;
   nicheId?: number | null;
+  hypothesisId?: string | null;
   alterationLocked?: boolean;
 }
 
@@ -100,15 +101,16 @@ function formatCombinedAudienceRange(lower: number, upper: number) {
 export function ExperimentAudienceTab({
   experimentId,
   nicheId,
+  hypothesisId,
   alterationLocked = false,
 }: ExperimentAudienceTabProps) {
   const nicheIdAsString = nicheId != null ? String(nicheId) : undefined;
   const { data: elements, isLoading } = useTargetingElementsByNiche(
     nicheIdAsString,
-    { status: "APPROVED" },
+    { status: "APPROVED", hypothesisId },
   );
   const { data: allElements, isLoading: isLoadingAllElements } =
-    useTargetingElementsByNiche(nicheIdAsString);
+    useTargetingElementsByNiche(nicheIdAsString, { hypothesisId });
   const { data: savedSelections } =
     useExperimentTargetingSelections(experimentId);
   const saveSelections = useSaveExperimentTargetingSelections(experimentId);

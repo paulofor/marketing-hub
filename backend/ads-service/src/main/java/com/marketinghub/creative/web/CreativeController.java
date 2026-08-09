@@ -57,6 +57,13 @@ public class CreativeController {
     return mapper.toDto(service.createVersion(id, request));
   }
 
+  /** Reutiliza um anúncio aprovado do mesmo produto como rascunho auditável do experimento. */
+  @PostMapping("/api/experiments/{experimentId}/creatives/reuse/{sourceCreativeId}")
+  public CreativeDto reuseInExperiment(
+      @PathVariable Long experimentId, @PathVariable Long sourceCreativeId) {
+    return mapper.toDto(service.reuseInExperiment(experimentId, sourceCreativeId));
+  }
+
   /** Lista os criativos de um experimento. */
   @GetMapping("/api/experiments/{id}/creatives")
   public List<CreativeDto> list(@PathVariable Long id) {

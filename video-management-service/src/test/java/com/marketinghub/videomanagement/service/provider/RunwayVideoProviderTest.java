@@ -119,9 +119,9 @@ class RunwayVideoProviderTest {
         assertThat(requestBody).doesNotContain("promptImage");
     }
 
-    /** Deve rotear Seedance 2.5 pelo mesmo adapter e pela mesma chave da Runway. */
+    /** Deve rotear Seedance 2 pelo mesmo adapter e pela mesma chave da Runway. */
     @Test
-    void shouldRenderSeedance25WithRunwayCredentials() throws Exception {
+    void shouldRenderSeedance2WithRunwayCredentials() throws Exception {
         server.enqueue(json("""
                 {"id":"seedance-task"}
                 """));
@@ -142,7 +142,7 @@ class RunwayVideoProviderTest {
     @Test
     void shouldRouteCuratedRunwayModelsWithCompatibleDurations() throws Exception {
         for (String providerName : java.util.List.of(
-                "RUNWAY_GEN_4_TURBO", "RUNWAY_VEO_3_1_FAST", "RUNWAY_VEO_3_1")) {
+                "RUNWAY_GEN_4_TURBO", "RUNWAY_HAILUO_3", "RUNWAY_VEO_3_1_FAST", "RUNWAY_VEO_3_1")) {
             server.enqueue(json("{\"id\":\"curated-task\"}"));
             server.enqueue(json("""
                     {"id":"curated-task","status":"SUCCEEDED","output":["%s/download/curated.mp4"]}
@@ -156,6 +156,8 @@ class RunwayVideoProviderTest {
             String body = request.getBody().readUtf8();
             if (providerName.equals("RUNWAY_GEN_4_TURBO")) {
                 assertThat(body).contains("\"model\":\"gen4_turbo\"").contains("\"duration\":10");
+            } else if (providerName.equals("RUNWAY_HAILUO_3")) {
+                assertThat(body).contains("\"model\":\"hailuo3\"").contains("\"duration\":10");
             } else if (providerName.equals("RUNWAY_VEO_3_1_FAST")) {
                 assertThat(body).contains("\"model\":\"veo3.1_fast\"").contains("\"duration\":8");
             } else {

@@ -63,6 +63,7 @@ video:
         - RUNWAY
         - RUNWAY_GEN_4_5
         - RUNWAY_SEEDANCE_2_5
+        - RUNWAY_HAILUO_3
         - RUNAWAY
       base-url: https://api.dev.runwayml.com
       api-key: ${RUNWAY_API_KEY:${VIDEO_PROVIDERS_RUNWAY_API_KEY:}}

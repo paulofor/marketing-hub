@@ -253,6 +253,10 @@ class SalesVideoJobServiceTest {
         .isEqualByComparingTo(new BigDecimal("2.0000"));
     assertThat(costCalculator.estimateUsd("RUNWAY_SEEDANCE_2_5", "seedance2_5", 10, "720p"))
         .isEqualByComparingTo(new BigDecimal("3.0000"));
+    assertThat(costCalculator.estimateUsd("RUNWAY_HAILUO_3", "hailuo3", 10, "768p"))
+        .isEqualByComparingTo(new BigDecimal("1.0000"));
+    assertThat(costCalculator.estimateUsd("RUNWAY_HAILUO_3", "hailuo3", 10, "2K"))
+        .isEqualByComparingTo(new BigDecimal("1.5000"));
     assertThat(costCalculator.estimateUsd("HEYGEN", "avatar_iv", 30, "720p"))
         .isEqualByComparingTo(new BigDecimal("1.5000"));
     assertThat(costCalculator.estimateUsd("VEO", "veo-3.1-generate-preview", 8, "720p"))

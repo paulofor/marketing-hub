@@ -196,6 +196,7 @@ public class RunwayVideoProvider implements VideoProvider {
         String providerName = normalize(job.providerName());
         return switch (providerName) {
             case "RUNWAY_SEEDANCE_2_5" -> "seedance2_5";
+            case "RUNWAY_HAILUO_3" -> "hailuo3";
             case "RUNWAY_GEN_4_TURBO" -> "gen4_turbo";
             case "RUNWAY_VEO_3_1" -> "veo3.1";
             case "RUNWAY_VEO_3_1_FAST" -> "veo3.1_fast";

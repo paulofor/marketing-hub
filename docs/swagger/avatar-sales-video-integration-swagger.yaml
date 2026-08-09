@@ -22,6 +22,46 @@ tags:
     description: Endpoints de leitura de perfil usados pelo módulo de vídeo.
 
 paths:
+  /api/sales-videos/provider-models:
+    get:
+      tags: [PublicVideoProfiles]
+      summary: Lista o catálogo administrável e os gates dos modelos de vídeo
+      responses:
+        '200':
+          description: Catálogo completo, incluindo rascunhos e modelos bloqueados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [id, code, displayName, providerName, adapterKey, externalModelId, lifecycleStatus]
+                  properties:
+                    id: {type: integer, format: int64}
+                    code: {type: string}
+                    displayName: {type: string}
+                    providerName: {type: string}
+                    adapterKey: {type: string}
+                    externalModelId: {type: string}
+                    lifecycleStatus: {type: string, enum: [DRAFT, HOMOLOGATION, ACTIVE, BLOCKED]}
+                    adapterVerified: {type: boolean}
+                    pricingVerified: {type: boolean}
+                    commercialLicenseVerified: {type: boolean}
+                    qualityGateVerified: {type: boolean}
+
+  /api/sales-videos/provider-models/{modelId}:
+    patch:
+      tags: [PublicVideoProfiles]
+      summary: Atualiza a curadoria e os gates de homologação de um modelo
+      parameters:
+        - in: path
+          name: modelId
+          required: true
+          schema: {type: integer, format: int64}
+      responses:
+        '200': {description: Modelo atualizado}
+        '400': {description: Ativação recusada por gate incompleto ou status inválido}
+
   /internal/video/jobs:
     get:
       tags: [InternalVideoJobs]

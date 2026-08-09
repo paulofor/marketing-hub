@@ -36,12 +36,14 @@ import com.marketinghub.salesvideo.dto.SalesVideoJobEventDto;
 import com.marketinghub.salesvideo.dto.SalesVideoPerformanceSummaryDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
 import com.marketinghub.salesvideo.dto.SalesVideoProviderScoreDto;
+import com.marketinghub.salesvideo.dto.SalesVideoProviderModelDto;
 import com.marketinghub.salesvideo.dto.SalesVideoRolloutStatusDto;
 import com.marketinghub.salesvideo.dto.SalesVideoScriptDto;
 import com.marketinghub.salesvideo.dto.SalesVideoStudioCatalogDto;
 import com.marketinghub.salesvideo.dto.UpdateLandingVideoSlotRequest;
 import com.marketinghub.salesvideo.dto.UpdateSalesVideoComplianceRequest;
 import com.marketinghub.salesvideo.dto.UpdateVideoProjectRequest;
+import com.marketinghub.salesvideo.dto.UpdateSalesVideoProviderModelRequest;
 import com.marketinghub.salesvideo.dto.VideoProjectDto;
 import com.marketinghub.salesvideo.dto.VideoReferenceDto;
 import com.marketinghub.salesvideo.service.SalesVideoService;
@@ -78,6 +80,20 @@ public class SalesVideoController {
   @GetMapping("/api/sales-videos/studio/catalog")
   public SalesVideoStudioCatalogDto getStudioCatalog() {
     return salesVideoService.getStudioCatalog();
+  }
+
+  /** Lista modelos de vídeo e o estado dos gates de homologação. */
+  @GetMapping("/api/sales-videos/provider-models")
+  public List<SalesVideoProviderModelDto> listProviderModels() {
+    return salesVideoService.listProviderModels();
+  }
+
+  /** Atualiza a curadoria de um modelo sem permitir ativação incompleta. */
+  @PatchMapping("/api/sales-videos/provider-models/{modelId}")
+  public SalesVideoProviderModelDto updateProviderModel(
+      @PathVariable Long modelId,
+      @Valid @RequestBody UpdateSalesVideoProviderModelRequest request) {
+    return salesVideoService.updateProviderModel(modelId, request);
   }
 
   /** Lista projetos editáveis do estúdio de vídeos. */

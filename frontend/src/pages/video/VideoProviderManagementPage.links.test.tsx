@@ -13,6 +13,46 @@ vi.mock("../../api/salesVideo/useSalesVideoProviderScores", () => ({
   }),
 }));
 
+vi.mock("../../api/salesVideo/useSalesVideoProviderModels", () => ({
+  useSalesVideoProviderModels: () => ({
+    data: [
+      "RUNWAY",
+      "RUNWAY_SEEDANCE_2_5",
+      "RUNWAY_HAILUO_3",
+      "RUNWAY_GEN_4_TURBO",
+      "RUNWAY_VEO_3_1_FAST",
+      "RUNWAY_VEO_3_1",
+    ].map((providerName, index) => ({
+      id: index + 1,
+      code: providerName.toLowerCase(),
+      displayName: providerName.replace(/_/g, " "),
+      providerName,
+      providerFamily: "EXTERNAL_VIDEO_MODULE",
+      adapterKey: "RUNWAY",
+      externalModelId: "gen4.5",
+      recommendedUse: "Teste",
+      lifecycleStatus: "ACTIVE",
+      clipDurationSeconds: 10,
+      maxDirectDurationSeconds: 10,
+      supportsHeroVideo: true,
+      supportsSceneAssembly: true,
+      requiresSourceImage: false,
+      creditsUrl: "https://dev.runwayml.com/",
+      documentationUrl: "https://docs.dev.runwayml.com/guides/models/",
+      adapterVerified: true,
+      pricingVerified: true,
+      commercialLicenseVerified: true,
+      qualityGateVerified: true,
+    })),
+    isError: false,
+  }),
+  useUpdateSalesVideoProviderModel: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isError: false,
+  }),
+}));
+
 vi.mock("../../api/planning/useProviderCreditPurchases", () => ({
   useProviderCreditPurchases: () => ({ data: [], isLoading: false }),
   useRegisterProviderCreditPurchase: () => ({
@@ -39,7 +79,7 @@ describe("VideoProviderManagementPage links", () => {
     renderPage();
 
     const links = screen.getAllByRole("link", { name: /comprar créditos/i });
-    expect(links).toHaveLength(5);
+    expect(links).toHaveLength(6);
     links.forEach((link) => {
       expect(link).toHaveAttribute("href", "https://dev.runwayml.com/");
       expect(link).toHaveAttribute("target", "_blank");

@@ -465,6 +465,55 @@ class CreativeServiceTest {
     assertThat(reviewed.getAgentImprovementError()).contains("critérios visuais verificáveis");
   }
 
+  /** Bloqueia copy corrigida que seria truncada nos placements Meta. */
+  @Test
+  void rejectsAgentCorrectionAboveMetaDisplayLimits() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment exp = fixtures.createAndSaveExperiment(niche);
+    CreateCreativeRequest create = new CreateCreativeRequest();
+    create.setFormat("IMAGE");
+    create.setImageUrl("https://cdn.test/ad.png");
+    Creative creative = service.create(exp.getId(), create);
+    CreativeAgentReviewResultRequest valid =
+        adjustmentReview(
+            java.util.List.of("Produto legível"),
+            java.util.List.of("Texto simulado"),
+            java.util.List.of("Legível em mobile"));
+    CreativeAgentReviewResultRequest oversized =
+        new CreativeAgentReviewResultRequest(
+            valid.decision(),
+            valid.attentionScore(),
+            valid.clarityScore(),
+            valid.desireScore(),
+            valid.credibilityScore(),
+            valid.actionScore(),
+            valid.copyAssessment(),
+            valid.commercialAestheticAssessment(),
+            valid.destinationIntegrationAssessment(),
+            valid.summary(),
+            valid.issuesJson(),
+            valid.recommendationsJson(),
+            valid.model(),
+            valid.requestJson(),
+            valid.responseJson(),
+            valid.inputTokens(),
+            valid.outputTokens(),
+            valid.costUsd(),
+            valid.error(),
+            valid.revisedHeadline(),
+            "x".repeat(126),
+            valid.revisedDescription(),
+            valid.revisedCta(),
+            valid.revisedImagePrompt(),
+            valid.mandatoryVisualRequirements(),
+            valid.forbiddenVisualElements(),
+            valid.visualAcceptanceCriteria());
+
+    assertThatThrownBy(() -> service.applyAgentReview(creative.getId(), oversized))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("texto principal: 125");
+  }
+
   /** Monta um parecer de ajuste completo para os testes do contrato de correção. */
   private CreativeAgentReviewResultRequest adjustmentReview(
       java.util.List<String> mandatory,

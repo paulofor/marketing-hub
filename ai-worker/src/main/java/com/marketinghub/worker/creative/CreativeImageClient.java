@@ -81,7 +81,7 @@ public class CreativeImageClient {
         this.webClient = clientBuilder.build();
         this.assetClient = assetClient;
         this.imageOptimizer = imageOptimizer;
-        this.model = model;
+        this.model = normalizeImageModel(model);
         this.responsesModel = normalizeConfig(responsesModel, "gpt-5.5");
         this.serviceTier = normalizeConfig(serviceTier, "flex");
         this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -453,6 +453,14 @@ public class CreativeImageClient {
     /**
      * Normaliza valores de configuração vazios para padrões operacionais explícitos.
      */
+    /** Normaliza o modelo visual e impede reativação de variantes Image 1 por ambiente. */
+    private String normalizeImageModel(String value) {
+        String normalized = normalizeConfig(value, "gpt-image-2");
+        return normalized.toLowerCase(java.util.Locale.ROOT).startsWith("gpt-image-1")
+                ? "gpt-image-2"
+                : normalized;
+    }
+
     private String normalizeConfig(String value, String defaultValue) {
         if (value == null || value.isBlank()) {
             return defaultValue;

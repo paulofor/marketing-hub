@@ -97,8 +97,7 @@ public class ImageGenerationPromptBuilder implements StagePromptBuilder<ImageGen
     /** Resolve o modelo efetivo de imagem usando o padrão configurado quando o valor está ausente. */
     private String resolveModel(String requestedModel) {
         if (!StringUtils.hasText(requestedModel)
-                || "gpt-image-1".equalsIgnoreCase(requestedModel.trim())
-                || "gpt-image-1.0".equalsIgnoreCase(requestedModel.trim())) {
+                || requestedModel.trim().toLowerCase(java.util.Locale.ROOT).startsWith("gpt-image-1")) {
             return "gpt-image-2";
         }
         return requestedModel.trim();

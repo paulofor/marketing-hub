@@ -20,6 +20,7 @@ import org.springframework.util.StringUtils;
 public class ImageGenerationPlanService {
 
     private static final Logger log = LoggerFactory.getLogger(ImageGenerationPlanService.class);
+    private static final String CANONICAL_IMAGE_MODEL = "gpt-image-2";
 
     private final ImageGenerationCatalogService catalogService;
 
@@ -52,6 +53,10 @@ public class ImageGenerationPlanService {
                     .findFirst()
                     .orElse(null);
         }
+        if (isObsolete(model)) {
+            model = null;
+            quality = null;
+        }
         if (quality == null && model != null) {
             quality = selectQualityForModel(model, requestedQualityId);
         }
@@ -59,7 +64,10 @@ public class ImageGenerationPlanService {
             model = catalogService.findModel(quality.modelId()).orElse(null);
         }
         if (model == null) {
-            model = catalogService.getCatalog().stream().findFirst().orElse(null);
+            model = catalogService.getCatalog().stream()
+                    .filter(candidate -> CANONICAL_IMAGE_MODEL.equalsIgnoreCase(candidate.apiModel()))
+                    .findFirst()
+                    .orElse(null);
         }
         if (quality == null && model != null) {
             quality = selectQualityForModel(model, null);
@@ -85,6 +93,13 @@ public class ImageGenerationPlanService {
                 height,
                 sizeLabel,
                 unitPrice);
+    }
+
+    /** Identifica modelos Image 1 que devem ser preservados apenas em registros históricos. */
+    private boolean isObsolete(ImageGenerationModelDto model) {
+        return model != null
+                && StringUtils.hasText(model.apiModel())
+                && model.apiModel().strip().toLowerCase(java.util.Locale.ROOT).startsWith("gpt-image-1");
     }
 
     /** Seleciona a qualidade solicitada, a padrão ou a primeira disponível para o modelo. */

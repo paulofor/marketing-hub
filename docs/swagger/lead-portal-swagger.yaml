@@ -53,7 +53,7 @@ paths:
                   description: Captura leads para oferta de imagens profissionais.
                   customFormHtml: "<!doctype html><html><body><form>...</form></body></html>"
                   facebookPixelId: "1234567890"
-                  imagePromptModel: gpt-image-1
+                  imagePromptModel: gpt-image-2
                   imagePromptTemplate: "Crie imagens profissionais para {{activityType}}"
                   imagePromptBatchSize: 4
                   questions: []

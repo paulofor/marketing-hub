@@ -69,7 +69,7 @@ public class LeadPortalOpenAiImageClient {
             @Value("${openai.batch-poll-interval:PT0.5S}") Duration batchPollInterval,
             @Value("${openai.batch-timeout:PT5M}") Duration batchTimeout) {
         this.imageOptimizer = imageOptimizer;
-        this.defaultModel = model;
+        this.defaultModel = normalizeImageModel(model);
         this.enabled = apiKey != null && !apiKey.isBlank();
         WebClient.Builder clientBuilder = builder.clone().baseUrl(baseUrl);
         if (enabled) {
@@ -162,7 +162,7 @@ public class LeadPortalOpenAiImageClient {
 
     private Map<String, Object> buildGenerationPayload(String prompt, ImageGenerationPlan plan) {
         Map<String, Object> payload = new LinkedHashMap<>();
-        String selectedModel = plan != null && plan.apiModel() != null ? plan.apiModel() : defaultModel;
+        String selectedModel = normalizeImageModel(plan != null ? plan.apiModel() : null);
         payload.put("model", selectedModel);
         if (supportsResponseFormat(selectedModel)) {
             payload.put("response_format", "b64_json");
@@ -218,7 +218,7 @@ public class LeadPortalOpenAiImageClient {
 
     private MultiValueMap<String, Object> buildMultipartBody(byte[] baseImage, String prompt, ImageGenerationPlan plan) {
         LinkedMultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        String selectedModel = plan != null && plan.apiModel() != null ? plan.apiModel() : defaultModel;
+        String selectedModel = normalizeImageModel(plan != null ? plan.apiModel() : null);
         body.add("model", selectedModel);
         if (supportsResponseFormat(selectedModel)) {
             // We need the binary payload because the downstream optimizer expects it.
@@ -363,6 +363,16 @@ public class LeadPortalOpenAiImageClient {
             return fallback;
         }
         return candidate;
+    }
+
+    /** Normaliza o modelo visual e impede reativação de variantes Image 1 por pacote ou ambiente. */
+    private String normalizeImageModel(String requestedModel) {
+        if (requestedModel == null
+                || requestedModel.isBlank()
+                || requestedModel.trim().toLowerCase(java.util.Locale.ROOT).startsWith("gpt-image-1")) {
+            return defaultModel == null || defaultModel.isBlank() ? "gpt-image-2" : defaultModel.trim();
+        }
+        return requestedModel.trim();
     }
 
     public record BatchPromptRequest(String customId, String prompt, ImageGenerationPlan plan) {}

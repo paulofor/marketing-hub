@@ -59,7 +59,7 @@ class LeadPortalOpenAiImageClientTest {
         var result = client.generateFromPrompt("prompt", plan);
 
         assertThat(capturedPayload.get()).isNotNull();
-        assertThat(capturedPayload.get()).containsEntry("model", "gpt-image-1");
+        assertThat(capturedPayload.get()).containsEntry("model", "gpt-image-2");
         assertThat(capturedPayload.get()).doesNotContainKey("response_format");
         assertThat(downloaded.get()).isTrue();
         assertThat(result).isNotNull();

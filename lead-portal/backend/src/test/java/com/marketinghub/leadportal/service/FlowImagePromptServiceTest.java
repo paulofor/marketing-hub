@@ -141,7 +141,7 @@ class FlowImagePromptServiceTest {
 
         FlowImagePrompt prompt = service.buildPrompt(flow, submission).orElseThrow();
         assertEquals(Integer.valueOf(8), prompt.plannedOutputs());
-        assertEquals("gpt-image-1.5", prompt.model());
+        assertEquals("gpt-image-2", prompt.model());
         assertTrue(prompt.prompt().contains("Carla"));
         assertTrue(prompt.prompt().contains("@personalcarla"));
         assertTrue(prompt.prompt().contains("Funcional"));

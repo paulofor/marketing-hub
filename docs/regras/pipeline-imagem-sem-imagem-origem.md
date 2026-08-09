@@ -11,7 +11,7 @@ Este fluxo cobre todo o ciclo do novo **formulário simples do Lead Portal**, pe
 - **Processo:**
   - O backend identifica formulários simples pelo prefixo `formulario-simples-` e monta um **SimpleImageBriefing** contendo atividade, serviços, local e contatos.
   - O serviço `FlowImagePromptService` converte o briefing em um prompt rico, descrevendo visual, chamada, CTA e contexto do profissional. Todos os prompts incluem o trecho “entregue um pacote em lote (batch) com pelo menos 6 variações quadradas”.
-  - O pacote é registrado em `flow_submission_image_package` com `planned_outputs = 6`, `free_images = 0`, prompt final e modelo padrão `gpt-image-1` (pode ser sobrescrito por fluxo).
+  - O pacote é registrado em `flow_submission_image_package` com `planned_outputs = 6`, `free_images = 0`, prompt final e modelo padrão `gpt-image-2` (pode ser sobrescrito apenas por modelo ativo homologado).
 - **Saída:** Pacote em status `RECENT`, pronto para ser consumido pelo worker, mesmo sem imagem enviada.
 
 ## 3) Geração batch no worker de IA

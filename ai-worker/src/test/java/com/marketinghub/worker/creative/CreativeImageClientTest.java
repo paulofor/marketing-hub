@@ -83,12 +83,12 @@ class CreativeImageClientTest {
 
         assertThat(result).isEqualTo("/uploads/img.jpg");
         Map<String, Object> request = lastRequestPayload.get();
-        assertThat(request).containsEntry("model", "gpt-image-1");
+        assertThat(request).containsEntry("model", "gpt-image-2");
         assertThat(request).containsEntry("prompt", "prompt");
         assertThat(request).doesNotContainKey("response_format");
         verify(backendAssetClient).uploadImage(any(byte[].class),
                 argThat(name -> name.startsWith("creative-") && name.endsWith(".jpg")),
-                argThat(model -> model.equals("gpt-image-1")),
+                argThat(model -> model.equals("gpt-image-2")),
                 argThat(prompt -> prompt.equals("prompt")),
                 isNull());
     }

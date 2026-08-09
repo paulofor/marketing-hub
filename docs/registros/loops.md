@@ -129,6 +129,8 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - **Causa-raiz confirmada**: o contrato entregava `destinationUrl` como texto, mas não fornecia screenshots renderizados da landing nem quadros do vídeo ao modelo multimodal.
 - **Correção efetiva**: capturar e auditar a landing em mobile e desktop, extrair três quadros de vídeos e exigir pareceres separados de copy, estética comercial e continuidade anúncio → página.
 - **Prevenção**: aprovação técnica exige URL pública válida, evidência visual da landing e todas as dimensões acima do piso; o agente não publica, não aprova humanamente e não altera orçamento.
+- **Correção complementar em 2026-08-09**: criativos legados sem `destinationUrl` recebem no contrato de revisão a URL pública persistida do experimento; o MCP é materializado com acesso somente leitura ao runtime versionado do Playwright, evitando que a extração em `/tmp` rompa a resolução do navegador.
+- **Teste de contrato**: a fila `pending` comprova o fallback para a landing do experimento e o worker comprova o vínculo do MCP ao runtime multimodal do container.
 
 ---
 

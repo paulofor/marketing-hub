@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,25 @@ class MetaAdApproverCodexRunnerTest {
     assertThat(command).contains("mcp_servers.meta_ad_approver.command=\"node\"");
     assertThat(command).anyMatch(value -> value.startsWith("mcp_servers.meta_ad_approver.args="));
     assertThat(command).doesNotContain("--dangerously-bypass-approvals-and-sandbox");
+  }
+
+  /** Confirma que o MCP temporário consegue resolver o Playwright instalado no container. */
+  @Test
+  void linksMcpToVersionedBrowserRuntime() throws Exception {
+    MetaAdApproverCodexRunner runner =
+        new MetaAdApproverCodexRunner(new MetaAdApproverProperties(), new ObjectMapper());
+
+    Path server = runner.materializeMcp();
+    try {
+      assertThat(Files.readString(server)).contains("from 'playwright-core'");
+      assertThat(Files.isSymbolicLink(server.getParent().resolve("node_modules"))).isTrue();
+      assertThat(Files.readSymbolicLink(server.getParent().resolve("node_modules")))
+          .isEqualTo(Path.of("/app/node_modules"));
+    } finally {
+      Files.deleteIfExists(server);
+      Files.deleteIfExists(server.getParent().resolve("node_modules"));
+      Files.deleteIfExists(server.getParent());
+    }
   }
 
   /** Confirma que aprovação abaixo da nota mínima nunca abre o gate. */

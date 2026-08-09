@@ -139,7 +139,7 @@ public class MetaAdApproverCodexRunner {
         + job.creativeId()
         + "\",MCP_EXPERIMENT_ID=\""
         + job.experimentId()
-        + "\"}";
+        + "\",PLAYWRIGHT_BROWSERS_PATH=\"/ms-playwright\"}";
   }
 
   /** Resolve o prompt versionado com o snapshot congelado pelo backend. */

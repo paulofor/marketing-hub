@@ -133,6 +133,8 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - **Teste de contrato**: a fila `pending` comprova o fallback para a landing do experimento e o worker comprova o vínculo do MCP ao runtime multimodal do container.
 - **Recorrência encontrada em 2026-08-09**: o servidor MCP encerrava antes do handshake porque o Codex não repassa variáveis de ambiente arbitrárias aos subprocessos MCP; além disso, suas ferramentas reliam o DTO público do criativo e perdiam a `destinationUrl` resolvida apenas na fila.
 - **Correção sistêmica**: transporte `stdio` migrado para o SDK oficial, variáveis não sensíveis registradas explicitamente na configuração MCP por job e contexto segregado exposto por endpoint canônico que preserva a mesma landing efetiva da reserva. O teste passa a exigir handshake real do Codex e igualdade entre contexto da fila e contexto consultado pelo MCP.
+- **Recorrência operacional em 2026-08-09**: o MCP voltou a carregar e inspecionou as imagens, mas o subprocesso iniciado pelo Codex não recebeu `PLAYWRIGHT_BROWSERS_PATH`; por isso o `playwright-core` não encontrou o Chromium instalado em `/ms-playwright` e bloqueou a inspeção da landing em mobile e desktop.
+- **Prevenção adicional**: a configuração MCP por job passa a declarar explicitamente o caminho versionado dos navegadores junto das demais variáveis permitidas, e o teste de contrato exige esse transporte antes do deploy.
 
 ---
 

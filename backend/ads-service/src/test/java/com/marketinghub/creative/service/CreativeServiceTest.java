@@ -431,4 +431,40 @@ class CreativeServiceTest {
     assertThat(repository.findById(original.getId()).orElseThrow().getHeadline())
         .isEqualTo("Original");
   }
+
+  /** Garante reutilização auditável no mesmo produto sem herdar aprovações comerciais. */
+  @Test
+  void reuseInExperimentPreservesSourceAndResetsGates() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment sourceExperiment = fixtures.createAndSaveExperiment(niche);
+    Experiment targetExperiment = fixtures.createAndSaveExperiment(niche);
+    CreateCreativeRequest request = new CreateCreativeRequest();
+    request.setFormat("IMAGE");
+    request.setHeadline("Agenda cheia");
+    request.setImageUrl("https://cdn.test/agenda.png");
+    Creative source = service.create(sourceExperiment.getId(), request);
+    approveByAgent(source.getId());
+    service.updateStatus(source.getId(), CreativeStatus.READY);
+
+    Creative reused = service.reuseInExperiment(targetExperiment.getId(), source.getId());
+
+    assertThat(reused.getExperiment().getId()).isEqualTo(targetExperiment.getId());
+    assertThat(reused.getSourceCreative().getId()).isEqualTo(source.getId());
+    assertThat(reused.getStatus()).isEqualTo(CreativeStatus.DRAFT);
+    assertThat(reused.getAgentReviewStatus()).isEqualTo(CreativeAgentReviewStatus.PENDING);
+  }
+
+  /** Impede que anúncios de outro produto/nicho sejam associados ao experimento. */
+  @Test
+  void reuseInExperimentRejectsCreativeFromAnotherNiche() {
+    MarketNiche sourceNiche = fixtures.createAndSaveNiche();
+    MarketNiche targetNiche = fixtures.createAndSaveNiche();
+    Experiment sourceExperiment = fixtures.createAndSaveExperiment(sourceNiche);
+    Experiment targetExperiment = fixtures.createAndSaveExperiment(targetNiche);
+    Creative source = fixtures.createAndSaveCreative(sourceExperiment);
+
+    assertThatThrownBy(() -> service.reuseInExperiment(targetExperiment.getId(), source.getId()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("mesmo produto/nicho");
+  }
 }

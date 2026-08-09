@@ -142,7 +142,7 @@ class ExperimentPipelineGenerationServiceTest {
     LeadPortalFlow created = captor.getAllValues().get(0);
     assertEquals("Landing - Experimento 10", created.getName());
     assertEquals("exp-10-landing", created.getSlug());
-    assertEquals("gpt-5.2", created.getModel());
+    assertEquals("gpt-5.6-sol", created.getModel());
     assertEquals("Pipeline: landing-page-html/apply-to-form", created.getPrompt());
     assertTrue(created.isApproved());
     assertNotNull(created.getApprovedAt());

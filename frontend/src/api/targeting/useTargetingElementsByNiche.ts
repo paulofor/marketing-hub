@@ -9,6 +9,7 @@ import type {
 interface UseTargetingElementsOptions {
   type?: TargetingElementType;
   status?: TargetingElementStatus;
+  hypothesisId?: string | null;
 }
 
 export function useTargetingElementsByNiche(
@@ -17,14 +18,16 @@ export function useTargetingElementsByNiche(
 ) {
   const typeFilter = options?.type ?? "ALL";
   const statusFilter = options?.status ?? "ALL";
+  const hypothesisFilter = options?.hypothesisId ?? "ALL";
   return useQuery({
-    queryKey: ["niche-targeting-elements", nicheId, typeFilter, statusFilter],
+    queryKey: ["niche-targeting-elements", nicheId, typeFilter, statusFilter, hypothesisFilter],
     enabled: Boolean(nicheId),
     queryFn: async () => {
       if (!nicheId) return [] as TargetingElement[];
       const params: Record<string, string> = {};
       if (options?.type) params.type = options.type;
       if (options?.status) params.status = options.status;
+      if (options?.hypothesisId) params.hypothesisId = options.hypothesisId;
       const { data } = await axios.get<TargetingElement[]>(
         `/api/niches/${nicheId}/targeting-elements`,
         {

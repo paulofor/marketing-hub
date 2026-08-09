@@ -8,6 +8,7 @@ import com.marketinghub.targeting.dto.UpdateTargetingElementRequest;
 import com.marketinghub.targeting.mapper.TargetingElementMapper;
 import com.marketinghub.targeting.service.TargetingElementService;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.web.bind.annotation.*;
 
 /** Endpoints REST para gerenciar interesses, cargos e comportamentos. */
@@ -55,7 +56,10 @@ public class TargetingElementController {
   public List<TargetingElementDto> listByNiche(
       @PathVariable Long nicheId,
       @RequestParam(value = "type", required = false) TargetingElementType type,
-      @RequestParam(value = "status", required = false) TargetingElementStatus status) {
-    return service.listByNiche(nicheId, type, status).stream().map(mapper::toDto).toList();
+      @RequestParam(value = "status", required = false) TargetingElementStatus status,
+      @RequestParam(value = "hypothesisId", required = false) UUID hypothesisId) {
+    return service.listByNiche(nicheId, type, status, hypothesisId).stream()
+        .map(mapper::toDto)
+        .toList();
   }
 }

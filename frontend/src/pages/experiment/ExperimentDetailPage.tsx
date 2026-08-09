@@ -3815,6 +3815,7 @@ export default function ExperimentDetailPage() {
             <ExperimentAudienceTab
               experimentId={Number(expId)}
               nicheId={data?.nicheId}
+              hypothesisId={data?.hypothesisId}
               alterationLocked={alterationLocked}
             />
           </Tabs.Content>

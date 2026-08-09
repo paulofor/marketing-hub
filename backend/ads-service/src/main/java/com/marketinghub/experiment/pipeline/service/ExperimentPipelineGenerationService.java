@@ -104,7 +104,7 @@ public class ExperimentPipelineGenerationService {
   private static final Pattern OPENING_TAG_PATTERN =
       Pattern.compile("(?is)<([a-z0-9:-]+)\\b[^>]*>");
   private static final Pattern IMG_TAG_PATTERN = Pattern.compile("(?is)<img\\b[^>]*>");
-  private static final String DEFAULT_MODEL = "gpt-5.2";
+  private static final String DEFAULT_MODEL = "gpt-5.6-sol";
   private static final String GERAR_COM_IA_MODEL = "GERAR_COM_IA";
   private static final String LANDING_HTML_AUDIT_FEATURE_FLAG = "lhm.audit.gate.enabled";
   private static final String LANDING_HTML_REGISTRY_FEATURE_FLAG = "lhm.registry.enabled";
@@ -870,8 +870,7 @@ public class ExperimentPipelineGenerationService {
       Experiment experiment,
       ExperimentPipelineSection section,
       ExperimentPipelineGenerationRequest request) {
-    String model =
-        StringUtils.hasText(request.getModel()) ? request.getModel().trim() : DEFAULT_MODEL;
+    String model = DEFAULT_MODEL;
     String userPrompt = buildUserPrompt(experiment, section, request.getCustomInstructions());
     Map<String, Object> requestBody = buildRequestBody(model, userPrompt, section);
 

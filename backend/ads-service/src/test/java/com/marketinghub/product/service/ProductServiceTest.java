@@ -2,6 +2,8 @@ package com.marketinghub.product.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,6 +32,7 @@ import java.math.BigDecimal;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: validar as regras de cadastro comercial de produtos. */
@@ -49,6 +52,46 @@ class ProductServiceTest {
         assetRepository,
         mock(ProductVideoImageRepository.class),
         mock(ProductVideoProviderAvatarRepository.class));
+  }
+
+  /** Deve separar o filtro dinâmico do ORDER BY ao consultar a biblioteca de anúncios. */
+  @Test
+  void getAdLibraryBuildsValidSqlAfterDynamicScope() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+    MarketNiche niche = MarketNiche.builder().id(21L).build();
+    Product product =
+        Product.builder()
+            .id(7L)
+            .name("Agenda Cheia")
+            .slug("agenda-cheia")
+            .marketNiche(niche)
+            .build();
+    when(productRepository.findById(7L)).thenReturn(Optional.of(product));
+    when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(Object[].class)))
+        .thenAnswer(
+            invocation -> {
+              String sql = invocation.getArgument(0);
+              assertThat(sql).contains("e.niche_id = ?\nORDER BY");
+              assertThat(sql).doesNotContain("?ORDER BY");
+              return java.util.List.of();
+            });
+    ProductService service =
+        new ProductService(
+            productRepository,
+            mock(InstagramAccountRepository.class),
+            mock(MarketNicheRepository.class),
+            mock(AssetRepository.class),
+            mock(ProductVideoImageRepository.class),
+            mock(ProductVideoProviderAvatarRepository.class),
+            mock(ImageGeneratorService.class),
+            mock(AssetStorageService.class),
+            objectMapper,
+            jdbcTemplate);
+
+    var response = service.getAdLibrary(7L);
+
+    assertThat(response.ads()).isEmpty();
   }
 
   /** Cria o serviço com repositório de galeria informado para validar revisão de imagem. */

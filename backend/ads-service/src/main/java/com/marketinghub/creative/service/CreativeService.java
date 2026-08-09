@@ -343,37 +343,49 @@ public class CreativeService {
             creative -> {
               creative.setAgentReviewStatus(CreativeAgentReviewStatus.PROCESSING);
               repository.save(creative);
-              Experiment experiment = creative.getExperiment();
-              Hypothesis hypothesis = experiment.getHypothesisRef();
-              MarketNiche niche =
-                  hypothesis != null && hypothesis.getMarketNiche() != null
-                      ? hypothesis.getMarketNiche()
-                      : experiment.getNiche();
-              String mediaUrl =
-                  "VIDEO".equalsIgnoreCase(creative.getFormat())
-                      ? creative.getVideoUrl()
-                      : creative.getImageUrl();
-              Product desireMapProduct =
-                  niche == null ? null : uniqueProductForDesireMap(niche.getId());
-              return new CreativeAgentReviewPendingDto(
-                  creative.getId(),
-                  experiment.getId(),
-                  experiment.getName(),
-                  niche != null ? niche.getName() : null,
-                  hypothesis != null ? hypothesis.getTitle() : experiment.getHypothesis(),
-                  creative.getFormat(),
-                  creative.getHeadline(),
-                  creative.getPrimaryText(),
-                  creative.getDescription(),
-                  creative.getCta(),
-                  resolveAgentReviewDestinationUrl(creative, experiment),
-                  mediaUrl,
-                  desireMapProduct != null
-                      ? desireMapProduct.getDesireAssociationMapVersion()
-                      : null,
-                  desireMapProduct != null ? desireMapProduct.getDesireAssociationMapJson() : null);
+              return toAgentReviewContext(creative);
             })
         .toList();
+  }
+
+  /** Retorna ao MCP o mesmo snapshot efetivo usado na reserva, sem alterar a fila. */
+  @Transactional(readOnly = true)
+  public CreativeAgentReviewPendingDto getAgentReviewContext(Long id, Long experimentId) {
+    Creative creative = repository.findByIdWithExperiment(id).orElseThrow();
+    if (!creative.getExperiment().getId().equals(experimentId)) {
+      throw new IllegalArgumentException("Criativo não pertence ao experimento informado");
+    }
+    return toAgentReviewContext(creative);
+  }
+
+  /** Monta o contexto canônico do Aprovador com mídia e landing efetivas. */
+  private CreativeAgentReviewPendingDto toAgentReviewContext(Creative creative) {
+    Experiment experiment = creative.getExperiment();
+    Hypothesis hypothesis = experiment.getHypothesisRef();
+    MarketNiche niche =
+        hypothesis != null && hypothesis.getMarketNiche() != null
+            ? hypothesis.getMarketNiche()
+            : experiment.getNiche();
+    String mediaUrl =
+        "VIDEO".equalsIgnoreCase(creative.getFormat())
+            ? creative.getVideoUrl()
+            : creative.getImageUrl();
+    Product desireMapProduct = niche == null ? null : uniqueProductForDesireMap(niche.getId());
+    return new CreativeAgentReviewPendingDto(
+        creative.getId(),
+        experiment.getId(),
+        experiment.getName(),
+        niche != null ? niche.getName() : null,
+        hypothesis != null ? hypothesis.getTitle() : experiment.getHypothesis(),
+        creative.getFormat(),
+        creative.getHeadline(),
+        creative.getPrimaryText(),
+        creative.getDescription(),
+        creative.getCta(),
+        resolveAgentReviewDestinationUrl(creative, experiment),
+        mediaUrl,
+        desireMapProduct != null ? desireMapProduct.getDesireAssociationMapVersion() : null,
+        desireMapProduct != null ? desireMapProduct.getDesireAssociationMapJson() : null);
   }
 
   /** Resolve a landing pública do experimento quando o criativo legado não gravou seu destino. */

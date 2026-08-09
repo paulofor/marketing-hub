@@ -24,12 +24,18 @@ class MetaAdApproverCodexRunnerTest {
 
     var command =
         runner.buildCommand(
-            Path.of("/tmp/output.json"), Path.of("/tmp/schema.json"), Path.of("/tmp/mcp.mjs"));
+            Path.of("/tmp/output.json"),
+            Path.of("/tmp/schema.json"),
+            Path.of("/tmp/mcp.mjs"),
+            MetaAdReviewJob.from(Map.of("creativeId", 273, "experimentId", 88)));
 
     assertThat(command).containsSubsequence("--sandbox", "read-only");
     assertThat(command).contains("--cd", "/workspace/repository", "--model", "gpt-5.6-sol");
     assertThat(command).contains("mcp_servers.meta_ad_approver.command=\"node\"");
     assertThat(command).anyMatch(value -> value.startsWith("mcp_servers.meta_ad_approver.args="));
+    assertThat(command)
+        .contains(
+            "mcp_servers.meta_ad_approver.env={MCP_MARKETING_HUB_URL=\"http://backend:8000\",MCP_CREATIVE_ID=\"273\",MCP_EXPERIMENT_ID=\"88\"}");
     assertThat(command).doesNotContain("--dangerously-bypass-approvals-and-sandbox");
   }
 
@@ -80,7 +86,12 @@ class MetaAdApproverCodexRunnerTest {
     String mcp = resource("mcp/meta-ad-approver.mjs");
 
     assertThat(prompt).contains("consultar_contexto", "inspecionar_midia", "inspecionar_landing");
-    assertThat(mcp).contains("MCP_CREATIVE_ID", "MCP_EXPERIMENT_ID", "Criativo não pertence");
+    assertThat(mcp)
+        .contains(
+            "MCP_CREATIVE_ID",
+            "MCP_EXPERIMENT_ID",
+            "StdioServerTransport",
+            "/agent-review/context?experimentId=");
   }
 
   /** Confirma que o job preserva o snapshot e os identificadores do experimento. */

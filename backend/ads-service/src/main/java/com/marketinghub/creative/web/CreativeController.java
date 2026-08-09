@@ -142,6 +142,13 @@ public class CreativeController {
     return service.claimAgentReviewQueue(limit);
   }
 
+  /** Expõe ao MCP do Aprovador o contexto efetivo e segregado de um criativo reservado. */
+  @GetMapping("/api/internal/creatives/{id}/agent-review/context")
+  public CreativeAgentReviewPendingDto agentReviewContext(
+      @PathVariable Long id, @RequestParam Long experimentId) {
+    return service.getAgentReviewContext(id, experimentId);
+  }
+
   /** Solicita revisão do agente sem alterar ou liberar o conteúdo do anúncio. */
   @PostMapping("/api/creatives/{id}/agent-review/request")
   public CreativeDto requestAgentReview(@PathVariable Long id) {

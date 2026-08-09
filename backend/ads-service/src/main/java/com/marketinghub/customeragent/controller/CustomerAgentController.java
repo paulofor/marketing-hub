@@ -66,6 +66,12 @@ public class CustomerAgentController {
     return service.claimPending();
   }
 
+  /** Entrega ao MCP exclusivo o contexto congelado da avaliacao reservada. */
+  @GetMapping("/internal/evaluations/{id}")
+  public EvaluationResponse getEvaluation(@PathVariable Long id) {
+    return service.getEvaluation(id);
+  }
+
   /** Recebe a avaliacao simulada. */
   @PostMapping("/internal/evaluations/{id}/complete")
   public EvaluationResponse complete(

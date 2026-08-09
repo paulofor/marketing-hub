@@ -81,6 +81,12 @@ public class ExperimentStrategistExecutionService {
     return response(repository.save(value));
   }
 
+  /** Entrega ao MCP as evidencias congeladas da pesquisa reservada. */
+  @Transactional(readOnly = true)
+  public ExecutionResponse getExecution(Long id) {
+    return response(running(id));
+  }
+
   /** Persiste o parecer estruturado sem aplicar a recomendacao. */
   @Transactional
   public ExecutionResponse complete(Long id, CompleteRequest request) {

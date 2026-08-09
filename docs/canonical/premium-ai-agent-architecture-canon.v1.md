@@ -33,6 +33,11 @@ Um agente só pode usar status `TEST` ou `ACTIVE` quando possuir simultaneamente
 12. rollout por `DRAFT`, `TEST`, `ACTIVE`, `PAUSED` e `BLOCKED`, com avaliação offline, shadow mode,
     homologação, rollback e versionamento independente.
 
+O gate do repositório deve validar também o contrato ponta a ponta entre cada rota chamada pelo MCP e
+o endpoint realmente exposto pelo controller do próprio módulo no backend. Registrar o servidor no
+comando Codex sem garantir que suas ferramentas alcancem os dados congelados é falha de prontidão e
+deve bloquear a execução antes de consumir modelo, tentativa ou orçamento.
+
 ## Identidade Codex no host compartilhado
 
 Cada agente deve montar um diretório Codex persistente próprio dentro de

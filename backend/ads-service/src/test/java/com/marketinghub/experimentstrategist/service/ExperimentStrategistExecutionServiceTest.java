@@ -14,10 +14,38 @@ import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.repository.jpa.experimentstrategist.ExperimentStrategistExecutionRepository;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: validar fila e congelamento auditavel da pesquisa estrategica. */
 class ExperimentStrategistExecutionServiceTest {
+  /** Entrega ao MCP as evidencias congeladas da execucao estrategica reservada. */
+  @Test
+  void exposesFrozenExecutionEvidenceToMcp() {
+    ExperimentStrategistExecutionRepository repository =
+        mock(ExperimentStrategistExecutionRepository.class);
+    CommercialPlan plan = new CommercialPlan();
+    plan.setId(7L);
+    ExperimentStrategistExecution execution = new ExperimentStrategistExecution();
+    execution.setId(12L);
+    execution.setCommercialPlan(plan);
+    execution.setStatus(ExperimentStrategistExecutionStatus.RUNNING);
+    execution.setResearchQuestion("Qual oferta testar?");
+    execution.setEvidenceSnapshot("{\"bottleneck\":\"CHECKOUT\"}");
+    when(repository.findById(12L)).thenReturn(Optional.of(execution));
+    ExperimentStrategistExecutionService service =
+        new ExperimentStrategistExecutionService(
+            repository,
+            mock(CommercialPlanService.class),
+            mock(ExperimentStrategistContextService.class),
+            new ObjectMapper());
+
+    var response = service.getExecution(12L);
+
+    assertThat(response.id()).isEqualTo(12L);
+    assertThat(response.evidenceSnapshot()).contains("CHECKOUT");
+  }
+
   /** Cria uma pendencia somente leitura com a evidencia congelada. */
   @Test
   void startsPendingResearchWithFrozenEvidence() {

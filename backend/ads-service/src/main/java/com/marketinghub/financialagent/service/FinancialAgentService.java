@@ -101,6 +101,12 @@ public class FinancialAgentService {
     return toResponse(repository.save(execution));
   }
 
+  /** Entrega ao MCP o snapshot congelado da conciliacao reservada. */
+  @Transactional(readOnly = true)
+  public FinancialAgentExecutionResponse getExecution(Long id) {
+    return toResponse(findRunning(id));
+  }
+
   /** Persiste o relatorio sem executar qualquer decisao financeira. */
   @Transactional
   public FinancialAgentExecutionResponse complete(Long id, CompleteFinancialAgentRequest request) {

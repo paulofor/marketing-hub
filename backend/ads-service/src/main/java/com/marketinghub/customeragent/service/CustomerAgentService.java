@@ -256,6 +256,12 @@ public class CustomerAgentService {
     return evaluations.findAll().stream().map(this::evaluationResponse).toList();
   }
 
+  /** Entrega ao MCP o contexto congelado de uma avaliacao pelo identificador reservado. */
+  @Transactional(readOnly = true)
+  public EvaluationResponse getEvaluation(Long id) {
+    return evaluationResponse(findRunning(id));
+  }
+
   /** Encerra uma avaliação com falha técnica sem fabricar resultado simulado. */
   @Transactional
   public EvaluationResponse failEvaluation(Long id, FailExecutionRequest request) {

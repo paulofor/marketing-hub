@@ -76,6 +76,12 @@ public class FinancialAgentController {
     return service.claimPending();
   }
 
+  /** Entrega ao MCP exclusivo o snapshot congelado da conciliacao reservada. */
+  @GetMapping("/internal/executions/{id}")
+  public FinancialAgentExecutionResponse getExecution(@PathVariable Long id) {
+    return service.getExecution(id);
+  }
+
   /** Recebe um relatorio financeiro sem aplicar mutacoes. */
   @PostMapping("/internal/executions/{id}/complete")
   public FinancialAgentExecutionResponse complete(

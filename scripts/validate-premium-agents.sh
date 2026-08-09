@@ -2,8 +2,22 @@
 set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 python3 - "$repo_root" "$repo_root/config/agents/premium-agent-compliance.json" <<'PY'
-import json, pathlib, sys
+import json, pathlib, re, sys
 root=pathlib.Path(sys.argv[1]); agents=json.loads(pathlib.Path(sys.argv[2]).read_text())['agents']; errors=[]
+workflow_by_agent = {
+    'customer-agent': root/'.github/workflows/customer-agent-worker-ci.yml',
+    'financial-agent': root/'.github/workflows/financial-agent-worker-ci.yml',
+    'growth-operator': root/'.github/workflows/growth-operator-worker-ci.yml',
+    'experiment-strategist': root/'.github/workflows/experiment-strategist-worker-ci.yml',
+    'meta-ad-approver': root/'.github/workflows/meta-ad-approver-worker-ci.yml',
+}
+codex_home_by_agent = {
+    'customer-agent': 'CUSTOMER_AGENT_CODEX_HOME',
+    'financial-agent': 'FINANCIAL_AGENT_CODEX_HOME',
+    'growth-operator': 'GROWTH_OPERATOR_CODEX_HOME',
+    'experiment-strategist': 'EXPERIMENT_STRATEGIST_CODEX_HOME',
+    'meta-ad-approver': 'META_AD_APPROVER_CODEX_HOME',
+}
 for agent in agents:
     if not agent['operational']:
         if not agent.get('blockedReason'): errors.append(f"{agent['key']}: bloqueio sem causa")
@@ -24,6 +38,15 @@ for agent in agents:
     if 'pending' not in java or ('complete' not in java and '/result' not in java): errors.append(f"{agent['key']}: pending/callback ausente")
     if 'CodexTelemetryReporter' not in java: errors.append(f"{agent['key']}: telemetria ausente")
     if agent.get('browser') and 'playwright' not in docker.lower(): errors.append(f"{agent['key']}: Playwright ausente")
+    workflow = workflow_by_agent.get(agent['key'])
+    codex_home = codex_home_by_agent.get(agent['key'])
+    if workflow and codex_home:
+        workflow_text = workflow.read_text() if workflow.exists() else ''
+        exported_blocks = re.findall(r'export\s+(.+?)\\\s*\n\s*&&', workflow_text, re.DOTALL)
+        if not any(f'{codex_home}=' in block for block in exported_blocks):
+            errors.append(
+                f"{agent['key']}: workflow não exporta {codex_home} para toda a sessão remota"
+            )
 if errors:
     print('\n'.join(f"[ARQUITETURA] {e}" for e in errors),file=sys.stderr); raise SystemExit(1)
 print(f"[ARQUITETURA] {sum(a['operational'] for a in agents)} agentes conformes; {sum(not a['operational'] for a in agents)} bloqueado(s) com causa explícita.")

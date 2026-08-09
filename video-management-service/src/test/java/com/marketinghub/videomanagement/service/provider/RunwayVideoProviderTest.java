@@ -138,6 +138,52 @@ class RunwayVideoProviderTest {
         assertThat(request.getBody().readUtf8()).contains("\"model\":\"seedance2_5\"");
     }
 
+    /** Deve rotear os modelos comerciais curados pelo mesmo token da Runway. */
+    @Test
+    void shouldRouteCuratedRunwayModelsWithCompatibleDurations() throws Exception {
+        for (String providerName : java.util.List.of(
+                "RUNWAY_GEN_4_TURBO", "RUNWAY_VEO_3_1_FAST", "RUNWAY_VEO_3_1")) {
+            server.enqueue(json("{\"id\":\"curated-task\"}"));
+            server.enqueue(json("""
+                    {"id":"curated-task","status":"SUCCEEDED","output":["%s/download/curated.mp4"]}
+                    """.formatted(server.url("/").toString().replaceAll("/$", ""))));
+            server.enqueue(mp4Response());
+            RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+            provider.render(job(providerName), profile(), (percent, status, message) -> { });
+
+            RecordedRequest request = server.takeRequest();
+            String body = request.getBody().readUtf8();
+            if (providerName.equals("RUNWAY_GEN_4_TURBO")) {
+                assertThat(body).contains("\"model\":\"gen4_turbo\"").contains("\"duration\":10");
+            } else if (providerName.equals("RUNWAY_VEO_3_1_FAST")) {
+                assertThat(body).contains("\"model\":\"veo3.1_fast\"").contains("\"duration\":8");
+            } else {
+                assertThat(body).contains("\"model\":\"veo3.1\"").contains("\"duration\":8");
+            }
+            server.takeRequest();
+            server.takeRequest();
+        }
+    }
+
+    /** Deve bloquear Gen-4 Turbo sem imagem-base antes de consumir créditos. */
+    @Test
+    void shouldRejectGen4TurboWithoutReferenceImage() {
+        RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+        SalesVideoJob base = jobWithoutReferenceImage();
+        SalesVideoJob job = new SalesVideoJob(
+                base.id(), base.profileId(), base.scriptId(), base.tenantId(), base.providerFamily(),
+                "RUNWAY_GEN_4_TURBO", base.providerJobId(), base.jobType(), base.status(), base.retryAttempt(),
+                base.retryReason(), base.retryOfJobId(), base.retryNotes(), base.progressPercent(),
+                base.failureCode(), base.failureDetail(), base.requestedBy(), base.requestedAt(), base.startedAt(),
+                base.finishedAt(), base.expiresAt(), base.assetId(), base.posterAssetId(), base.vttAssetId(),
+                base.metadataJson(), base.createdAt(), base.updatedAt());
+
+        assertThatThrownBy(() -> provider.render(job, profile(), (percent, status, message) -> { }))
+                .isInstanceOf(VideoProviderException.class)
+                .hasMessageContaining("imagem-base");
+    }
+
     /** Deve falhar cedo quando a chave Runway não estiver configurada. */
     @Test
     void shouldRejectMissingRunwayApiKey() {

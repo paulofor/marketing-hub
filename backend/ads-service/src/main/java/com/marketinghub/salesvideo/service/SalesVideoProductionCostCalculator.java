@@ -20,6 +20,7 @@ public class SalesVideoProductionCostCalculator {
   private static final BigDecimal KLING_30_STANDARD_720 = new BigDecimal("0.1120");
   private static final BigDecimal KLING_30_PRO_1080 = new BigDecimal("0.1400");
   private static final BigDecimal RUNWAY_GEN45 = new BigDecimal("0.1200");
+  private static final BigDecimal RUNWAY_GEN4_TURBO = new BigDecimal("0.0500");
   private static final BigDecimal RUNWAY_SEEDANCE_25_480 = new BigDecimal("0.2000");
   private static final BigDecimal RUNWAY_SEEDANCE_25_720 = new BigDecimal("0.3000");
   private static final BigDecimal HEYGEN_AVATAR_IV_PHOTO_PER_SECOND = new BigDecimal("0.0500");
@@ -62,6 +63,15 @@ public class SalesVideoProductionCostCalculator {
     }
     if (isSeedance25(normalizedProvider, normalizedModel)) {
       return is480p(resolution) ? RUNWAY_SEEDANCE_25_480 : RUNWAY_SEEDANCE_25_720;
+    }
+    if (contains(normalizedProvider, "runway-veo-3-1-fast")) {
+      return new BigDecimal("0.1500");
+    }
+    if (contains(normalizedProvider, "runway-veo-3-1")) {
+      return VEO_31_STANDARD_720_1080;
+    }
+    if (contains(normalizedProvider, "runway-gen-4-turbo")) {
+      return RUNWAY_GEN4_TURBO;
     }
     if (isRunway(normalizedProvider, normalizedModel)) {
       return RUNWAY_GEN45;

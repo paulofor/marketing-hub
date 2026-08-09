@@ -51,6 +51,9 @@ public final class SalesVideoProviderDurationPolicy {
     if (normalized.contains("SEEDANCE_2_5") || normalized.contains("SEEDANCE2_5")) {
       return new ProviderLimit("Seedance 2.5 via Runway", RUNWAY_SEEDANCE_2_5_MAX_SECONDS);
     }
+    if (normalized.contains("RUNWAY_VEO_3_1")) {
+      return new ProviderLimit("Veo 3.1 via Runway", VEO_MAX_SECONDS);
+    }
     if (normalized.contains("RUNWAY") || normalized.contains("RUNAWAY")) {
       return new ProviderLimit("Runway", RUNWAY_MAX_SECONDS);
     }

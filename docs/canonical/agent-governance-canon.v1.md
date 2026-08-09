@@ -75,6 +75,11 @@ Codex, compartilhar MCP irrestrito entre domínios ou tratar apenas um cadastro 
 operacional completo. Reuso deve ocorrer nos contratos do backend e nos padrões arquiteturais, não
 pela mistura de responsabilidades entre executores.
 
+Todo agente novo deve seguir o blueprint e a matriz de homologação definidos em
+`premium-ai-agent-architecture-canon.v1.md`. A revisão de arquitetura deve comprovar o gate global
+antes de mudar o cadastro de `DRAFT`/`BLOCKED` para `TEST`; somente resultados reais e auditáveis
+podem justificar a passagem posterior para `ACTIVE`.
+
 ## Métrica de maturidade
 
 A qualidade de um agente é medida por pendências resolvidas e resultados posteriores comprovados,

@@ -52,7 +52,7 @@ contexto operacional.
 
 Cada registro deve conter agente, tenant quando existir, tipo e identificador de escopo, especialidade,
 conteúdo conciso, evidência, fonte, execução originadora, confiança, validade e versão do contrato.
-O backend deduplica conteýo no mesmo escopo e registra quantidade e data de recuperação. Nenhum
+O backend deduplica conteúdo no mesmo escopo e registra quantidade e data de recuperação. Nenhum
 worker acessa banco ou bucket diretamente: leitura e escrita passam pelo backend por ferramentas do
 MCP exclusivo, com `agentKey` fixo e sem argumento controlável pelo modelo.
 
@@ -101,6 +101,79 @@ congelados pelo backend. Todos os agentes operacionais podem pesquisar livrement
 Pesquisa pública deve preservar URL, horário e evidência consultada. Browser completo continua
 instalado apenas quando o domínio exigir interação ou inspeção visual; os demais agentes usam a
 pesquisa web do Codex.
+
+## Baseline dos agentes operacionais
+
+Esta é a configuração mínima vigente. Uma capacidade marcada como específica não pode ser removida
+sem alterar antes este cânone e os testes de contrato.
+
+| Agente | Executor independente | MCP próprio | Codex/sandbox próprios | Capacidades específicas |
+|---|---|---|---|---|
+| Operador de Crescimento | `growth-operator-worker` | `marketing-hub-readonly.mjs` | obrigatórios | diagnóstico comercial e pesquisa web |
+| Cliente | `customer-agent-worker` | `customer-agent.mjs` | obrigatórios | browser, emulação de jornada e memória comportamental |
+| Financeiro | `financial-agent-worker` | `financial-agent.mjs` | obrigatórios | snapshots financeiros congelados; browser dispensado |
+| Estrategista | `experiment-strategist-worker` | `experiment-strategist.mjs` | obrigatórios | browser e pesquisa de mercado auditável |
+| Aprovador Meta | `meta-ad-approver-worker` | `meta-ad-approver.mjs` | obrigatórios | Chromium/Playwright, visão, imagem original, frames de vídeo e landing desktop/mobile |
+
+O Agente Radar permanece `BLOCKED` até possuir executor, identidade Codex, sandbox, MCP,
+prompt/schema, telemetria, CI/CD, memória e contratos completos. Cadastro e histórico isolados não
+o tornam operacional.
+
+## Blueprint obrigatório para criar um agente
+
+Antes de escrever o executor, deve existir um contrato de negócio com: dor atendida, decisão que o
+agente apoia, entrada mínima, saída estruturada, evidência exigida, métrica de sucesso posterior,
+limites de autoridade, custo máximo, timeout, tentativas e condições de bloqueio. O agente só deve
+ser criado quando essa responsabilidade não pertencer a um agente existente.
+
+A implementação deve entregar em conjunto:
+
+1. `<agent>-worker` independente, com responsabilidade única e sem acesso direto ao banco;
+2. Dockerfile e Compose versionados, imagem reproduzível, usuário sem privilégios, root filesystem
+   somente leitura, `tmpfs`, limites de recursos e health/readiness;
+3. diretório Codex exclusivo no host, autenticação validada sem expor segredo, modelo canônico,
+   `sandbox=read-only`, política não interativa e pesquisa web habilitada;
+4. prompt e JSON Schema em `src/main/resources/prompts/<agent>/v1`, sem contrato longo hardcoded;
+5. MCP exclusivo em `src/main/resources/mcp`, com SDK oficial, schemas fechados, `agentKey` fixo,
+   menor privilégio e somente endpoints oficiais do seu domínio;
+6. endpoint `pending`, reserva atômica, snapshot congelado, callback idempotente e persistência de
+   request, response, evidências, custo, erro e decisão de gate no backend;
+7. memória premium pelas ferramentas `recuperar_memoria_especializada` e
+   `registrar_aprendizado_candidato`, sem promoção autônoma e sem acesso direto a MySQL/S3;
+8. telemetria correlacionada, logs consultáveis, métricas, alertas e diagnóstico de causa-raiz;
+9. workflow próprio de teste, build, deploy e rollback, sem publicar imagem criada manualmente;
+10. entrada no `config/agents/premium-agent-compliance.json` e no gate global. Enquanto qualquer
+    requisito estiver ausente, o cadastro deve permanecer `DRAFT` ou `BLOCKED`.
+
+## Matriz de homologação de agente novo
+
+A matriz deve ser definida antes dos testes e usar dados identificados e segregados de produção.
+
+| Dimensão | Evidência mínima de aprovação |
+|---|---|
+| Caminho feliz | reserva, execução Codex/MCP, callback e resultado persistido ponta a ponta |
+| Validações | schema inválido, contexto incompleto e evidência ausente fecham o gate sem fabricar sucesso |
+| Falhas | timeout, retry, indisponibilidade de MCP/backend/internet e callback repetido são determinísticos |
+| Segregação | nenhum tenant, cliente, produto ou experimento enxerga contexto ou memória de outro |
+| Segurança | prompt injection, exfiltração, escrita no filesystem e ação acima da autoridade são bloqueadas |
+| Memória | recuperação limitada, candidato auditável, confirmação externa e contradição/retirada funcionam |
+| Observabilidade | job, ferramenta, fonte, tokens, custo, latência, erro e decisão são correlacionáveis |
+| Qualidade | avaliação offline e shadow mode atendem limiar definido pelo contrato de negócio |
+| Experiência | navegadores, desktop/mobile, imagem, vídeo ou áudio exigidos pelo domínio são testados |
+| Operação | health/readiness, identidade, limites, deploy reproduzível e rollback são comprovados |
+
+Uma rodada local integral sem defeito conclui a homologação. Se a rodada revelar defeito, a
+causa-raiz deve ser corrigida e duas rodadas integrais consecutivas precisam passar; qualquer novo
+defeito reinicia a contagem. Limitação real do ambiente deve ser registrada com evidência e nunca
+contornada por publicação para teste.
+
+## Evolução sem degradação
+
+Aprendizagem não autoriza crescimento ilimitado de contexto. Antes de promover uma nova versão,
+compare-a com a versão ativa usando conjunto de avaliação congelado, custo, latência, qualidade,
+taxa de contradição e resultado comercial posterior. Faça rollout em shadow/canário, preserve a
+versão anterior para rollback e retire memórias degradantes. Um agente não pode alterar sozinho o
+próprio prompt, schema, ferramentas, autoridade, modelo ou critério de aprovação.
 
 ## Gate arquitetural
 

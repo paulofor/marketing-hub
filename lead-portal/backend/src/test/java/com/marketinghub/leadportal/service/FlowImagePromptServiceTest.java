@@ -223,6 +223,10 @@ class FlowImagePromptServiceTest {
         assertEquals(Integer.valueOf(6), prompt.freeImages());
         assertTrue(prompt.prompt().contains("Alongamento em gel delicado"));
         assertTrue(prompt.prompt().contains("Elegante, rosé e minimalista"));
+        assertTrue(prompt.prompt().contains("Produza exatamente uma arte quadrada"));
+        assertTrue(prompt.prompt().contains("Não crie grade, mosaico, colagem"));
+        assertTrue(prompt.prompt().contains("O sistema fará 6 chamadas separadas"));
+        assertFalse(prompt.prompt().contains("Produza 6 variações quadradas"));
         assertFalse(prompt.prompt().contains("um(a) product ai exp 88 personalized sample"));
         assertFalse(prompt.prompt().contains("serviços principais (product ai exp 88 personalized sample)"));
     }

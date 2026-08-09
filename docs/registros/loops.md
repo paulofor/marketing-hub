@@ -836,6 +836,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o Lead Portal reconhecia como amostra gratuita apenas o modelo legado `AI_PERSONALIZED_SAMPLE_FUNNEL`; o contrato atual do GeraSalesPage usa `AI_PERSONALIZED_SAMPLE_GERA_SALES_PAGE`. Sem reconhecer esse modelo, o prompt genérico derivava atividade e serviços do slug técnico e não liberava o lote prometido.
 - **Correção sistêmica:** ambos os contratos passam pela política de amostra personalizada, que usa diretamente nome, serviço e estilo respondidos, proíbe termos técnicos na imagem e libera todo o lote como prévia gratuita.
 - **Prevenção:** teste de contrato reproduz o modelo e os campos publicados pelo experimento #88, exigindo seis imagens livres, conteúdo comercial real e ausência do slug como profissão ou serviço.
+- **Correção complementar em 2026-08-09:** a homologação com GPT Image 2 mostrou que o worker já executava seis chamadas, mas o prompt de cada chamada também pedia seis variações; cada arquivo virou uma colagem com seis miniartes. O prompt versionado agora exige exatamente uma arte ocupando todo o arquivo por chamada e proíbe grade, mosaico, colagem, carrossel ou múltiplos quadros. O teste de contrato mantém o lote de seis no envelope operacional, mas impede que essa quantidade seja repetida como pedido de múltiplas artes dentro de cada imagem.
 
 ### LOOP-LEAD-PORTAL-FORMULARIO-INVALIDO-ENVIADO
 

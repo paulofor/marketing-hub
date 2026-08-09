@@ -141,6 +141,9 @@ class ProductControllerTest {
                     null,
                     null,
                     null,
+                    null,
+                    null,
+                    0,
                     null)));
 
     when(service.getAdLibrary(1L)).thenReturn(response);
@@ -189,7 +192,10 @@ class ProductControllerTest {
                     "APPROVED",
                     "{\"summary\":\"Peça clara\"}",
                     "gpt-test",
-                    Instant.parse("2026-07-29T11:00:00Z"))));
+                    Instant.parse("2026-07-29T11:00:00Z"),
+                    "PROCESSING",
+                    1,
+                    null)));
 
     when(service.getExperimentAdsInUse(76L)).thenReturn(response);
 
@@ -201,7 +207,9 @@ class ProductControllerTest {
         .andExpect(jsonPath("$.ads[0].creativeId").value(253L))
         .andExpect(jsonPath("$.ads[0].experimentId").value(76L))
         .andExpect(jsonPath("$.ads[0].status").value("READY"))
-        .andExpect(jsonPath("$.ads[0].agentReviewStatus").value("APPROVED"));
+        .andExpect(jsonPath("$.ads[0].agentReviewStatus").value("APPROVED"))
+        .andExpect(jsonPath("$.ads[0].agentImprovementStatus").value("PROCESSING"))
+        .andExpect(jsonPath("$.ads[0].agentImprovementAttempts").value(1));
   }
 
   /** Deve expor o resumo financeiro do produto no contrato canônico. */

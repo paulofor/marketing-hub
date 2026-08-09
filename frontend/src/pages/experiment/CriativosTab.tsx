@@ -258,6 +258,24 @@ const agentReviewClass = (status?: Creative["agentReviewStatus"]) =>
       ? "text-bg-danger"
       : "text-bg-warning";
 
+const improvementLabel = (creative: Creative) => {
+  const attempts = creative.agentImprovementAttempts ?? 0;
+  switch (creative.agentImprovementStatus) {
+    case "PENDING":
+      return `Codex: correção ${attempts + 1}/3 aguardando`;
+    case "PROCESSING":
+      return `Codex: criando correção ${attempts + 1}/3`;
+    case "COMPLETED":
+      return `Codex: versão corrigida após ${attempts}/3`;
+    case "FAILED":
+      return "Codex: correção bloqueada";
+    case "LIMIT_REACHED":
+      return "Codex: limite de 3 correções atingido";
+    default:
+      return null;
+  }
+};
+
 export default function CriativosTab({
   experimentId,
   alterationLocked = false,
@@ -631,7 +649,8 @@ export default function CriativosTab({
       setFeedback({
         variant: "error",
         title: "Não foi possível reutilizar o anúncio",
-        description: "Confirme se ele continua aprovado e pertence ao mesmo produto.",
+        description:
+          "Confirme se ele continua aprovado e pertence ao mesmo produto.",
       });
     }
   };
@@ -741,7 +760,24 @@ export default function CriativosTab({
             >
               {agentReviewLabel(c.agentReviewStatus)}
             </span>
+            {improvementLabel(c) && (
+              <span
+                className={`badge rounded-pill ${
+                  c.agentImprovementStatus === "FAILED" ||
+                  c.agentImprovementStatus === "LIMIT_REACHED"
+                    ? "text-bg-danger"
+                    : "text-bg-info"
+                }`}
+              >
+                {improvementLabel(c)}
+              </span>
+            )}
           </div>
+          {c.agentImprovementError && (
+            <div className="alert alert-warning py-2 mt-2 mb-0" role="alert">
+              <strong>Ação necessária:</strong> {c.agentImprovementError}
+            </div>
+          )}
           <h3 className="creative-card-headline">
             {c.headline || "Sem headline"}
           </h3>
@@ -1096,34 +1132,48 @@ export default function CriativosTab({
           configurada no worker.
         </div>
       </div>
-      {Array.isArray(reusableAdsQuery.data) && reusableAdsQuery.data.length > 0 && (
-        <section className="card border-primary mb-3" aria-label="Biblioteca de anúncios do produto">
-          <div className="card-body">
-            <h4 className="h6 mb-1">Reutilizar anúncio aprovado do produto</h4>
-            <p className="small text-muted">
-              Selecione um anúncio já validado. Ele entrará como nova revisão e não contornará os gates dos agentes.
-            </p>
-            <div className="d-flex flex-column gap-2">
-              {reusableAdsQuery.data.map((ad) => (
-                <div className="d-flex justify-content-between align-items-center gap-3" key={ad.creativeId}>
-                  <span>
-                    <strong>{ad.headline || `Anúncio #${ad.creativeId}`}</strong>
-                    <small className="d-block text-muted">Origem: {ad.experimentName}</small>
-                  </span>
-                  <button
-                    type="button"
-                    className="btn btn-outline-primary btn-sm"
-                    disabled={alterationLocked || reuseProductAd.isPending}
-                    onClick={() => handleReuseProductAd(ad.creativeId)}
+      {Array.isArray(reusableAdsQuery.data) &&
+        reusableAdsQuery.data.length > 0 && (
+          <section
+            className="card border-primary mb-3"
+            aria-label="Biblioteca de anúncios do produto"
+          >
+            <div className="card-body">
+              <h4 className="h6 mb-1">
+                Reutilizar anúncio aprovado do produto
+              </h4>
+              <p className="small text-muted">
+                Selecione um anúncio já validado. Ele entrará como nova revisão
+                e não contornará os gates dos agentes.
+              </p>
+              <div className="d-flex flex-column gap-2">
+                {reusableAdsQuery.data.map((ad) => (
+                  <div
+                    className="d-flex justify-content-between align-items-center gap-3"
+                    key={ad.creativeId}
                   >
-                    Selecionar para revisão
-                  </button>
-                </div>
-              ))}
+                    <span>
+                      <strong>
+                        {ad.headline || `Anúncio #${ad.creativeId}`}
+                      </strong>
+                      <small className="d-block text-muted">
+                        Origem: {ad.experimentName}
+                      </small>
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm"
+                      disabled={alterationLocked || reuseProductAd.isPending}
+                      onClick={() => handleReuseProductAd(ad.creativeId)}
+                    >
+                      Selecionar para revisão
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+        )}
       {pipelineAvailable ? (
         <div className="alert alert-primary d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mt-3">
           <div>

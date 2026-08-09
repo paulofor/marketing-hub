@@ -57,6 +57,50 @@ describe("CriativosTab", () => {
     await screen.findByText("Patrocinado");
   });
 
+  it("shows the auditable Codex improvement cycle and its blocking reason", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.endsWith("/products/experiments/1/ads-in-use")) {
+        return Promise.resolve({
+          data: {
+            ads: [
+              {
+                creativeId: 88,
+                experimentId: 1,
+                headline: "Agenda cheia",
+                primaryText: "Texto",
+                imageUrl: "creative.jpg",
+                status: "DRAFT",
+                agentReviewStatus: "REJECTED",
+                agentImprovementStatus: "LIMIT_REACHED",
+                agentImprovementAttempts: 3,
+                agentImprovementError:
+                  "Limite de três correções automáticas atingido",
+              },
+            ],
+          },
+        });
+      }
+      if (url.endsWith("/experiments/1")) {
+        return Promise.resolve({ data: { creativesToGenerate: 0 } });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <CriativosTab experimentId="1" />
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByText("Codex: limite de 3 correções atingido"),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Limite de três correções automáticas atingido/),
+    ).toBeInTheDocument();
+  });
+
   it("submits a legacy creative to the agent even when commercial editing is locked", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url.endsWith("/products/experiments/1/ads-in-use")) {

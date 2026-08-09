@@ -23,4 +23,7 @@ public record ProductAdLibraryItemResponse(
     String agentReviewStatus,
     String agentReviewJson,
     String agentReviewModel,
-    Instant agentReviewedAt) {}
+    Instant agentReviewedAt,
+    String agentImprovementStatus,
+    Integer agentImprovementAttempts,
+    String agentImprovementError) {}

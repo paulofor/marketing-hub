@@ -114,6 +114,19 @@ public class Creative {
   @Column(name = "agent_reviewed_at")
   private Instant agentReviewedAt;
 
+  /** Momento em que o backend concedeu a reserva vigente ao Aprovador Meta. */
+  @Column(name = "agent_review_started_at")
+  private Instant agentReviewStartedAt;
+
+  /** Quantidade de leases órfãos recuperados automaticamente nesta revisão. */
+  @Column(name = "agent_review_recovery_count", nullable = false)
+  @Builder.Default
+  private Integer agentReviewRecoveryCount = 0;
+
+  /** Momento da última recuperação automática, preservado para auditoria. */
+  @Column(name = "agent_review_last_recovered_at")
+  private Instant agentReviewLastRecoveredAt;
+
   /** Estado do ciclo automático de correção solicitado pelo agente. */
   @Enumerated(EnumType.STRING)
   @Column(name = "agent_improvement_status", length = 24)

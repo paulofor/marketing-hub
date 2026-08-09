@@ -58,3 +58,7 @@ O agente não substitui aprovação humana, não publica, não ativa mídia, nã
 A migração de executor não cria nova tabela nem reinicia criativos. Pareceres, versões, tentativas,
 custos e estados já persistidos — inclusive os do experimento #88 — permanecem sob os mesmos
 contratos do backend. Apenas novas reservas são processadas pelo módulo independente.
+A reserva de cada revisão deve ser um lease auditável controlado pelo backend, com horário de início,
+contador de recuperações e horário da última recuperação. Uma revisão `PROCESSING` sem lease ou com
+lease vencido deve voltar automaticamente à fila, no máximo duas vezes; depois disso deve encerrar em
+`FAILED` com causa persistida. O worker nunca redefine estado diretamente nem assume a recuperação.

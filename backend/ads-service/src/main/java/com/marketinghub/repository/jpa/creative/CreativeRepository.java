@@ -4,9 +4,12 @@ import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.creative.CreativeImprovementStatus;
 import com.marketinghub.creative.CreativeStatus;
+import jakarta.persistence.LockModeType;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -74,6 +77,19 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
              order by c.id
             """)
   List<Creative> findAgentReviewQueue(@Param("status") CreativeAgentReviewStatus status);
+
+  /** Bloqueia leases de revisão vencidos para que somente um consumidor os recupere. */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query(
+      """
+            select c from Creative c
+              join fetch c.experiment e
+             where c.agentReviewStatus = :status
+               and (c.agentReviewStartedAt is null or c.agentReviewStartedAt < :cutoff)
+             order by c.id
+            """)
+  List<Creative> findExpiredAgentReviewLeases(
+      @Param("status") CreativeAgentReviewStatus status, @Param("cutoff") Instant cutoff);
 
   /** Lista correções decididas pelo agente que aguardam geração de uma nova versão. */
   @Query(

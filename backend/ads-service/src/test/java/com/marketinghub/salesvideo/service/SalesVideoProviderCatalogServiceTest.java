@@ -41,10 +41,11 @@ class SalesVideoProviderCatalogServiceTest {
     when(repository.save(model)).thenReturn(model);
     SalesVideoProviderCatalogService service = new SalesVideoProviderCatalogService(repository);
 
-    var result = service.update(
-        10L,
-        new UpdateSalesVideoProviderModelRequest(
-            "Teste controlado", "HOMOLOGATION", true, true, false, false, "Sem adapter"));
+    var result =
+        service.update(
+            10L,
+            new UpdateSalesVideoProviderModelRequest(
+                "Teste controlado", "HOMOLOGATION", true, true, false, false, "Sem adapter"));
 
     assertThat(result.lifecycleStatus()).isEqualTo("HOMOLOGATION");
     assertThat(result.adapterVerified()).isTrue();

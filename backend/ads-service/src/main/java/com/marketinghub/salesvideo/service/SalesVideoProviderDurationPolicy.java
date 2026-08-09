@@ -57,8 +57,7 @@ public final class SalesVideoProviderDurationPolicy {
       return new ProviderLimit("Hailuo 3 via Runway", RUNWAY_HAILUO_3_MAX_SECONDS);
     }
     if (normalized.contains("GROK_IMAGINE_1_5") || normalized.contains("GROKIMAGINE1_5")) {
-      return new ProviderLimit(
-          "Grok Imagine 1.5 via Runway", RUNWAY_GROK_IMAGINE_1_5_MAX_SECONDS);
+      return new ProviderLimit("Grok Imagine 1.5 via Runway", RUNWAY_GROK_IMAGINE_1_5_MAX_SECONDS);
     }
     if (normalized.contains("RUNWAY_VEO_3_1")) {
       return new ProviderLimit("Veo 3.1 via Runway", VEO_MAX_SECONDS);

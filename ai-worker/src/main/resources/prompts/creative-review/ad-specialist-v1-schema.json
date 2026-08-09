@@ -1,7 +1,7 @@
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["decision", "attentionScore", "clarityScore", "desireScore", "credibilityScore", "actionScore", "summary", "issues", "recommendations", "revisedHeadline", "revisedPrimaryText", "revisedDescription", "revisedCta", "revisedImagePrompt"],
+  "required": ["decision", "attentionScore", "clarityScore", "desireScore", "credibilityScore", "actionScore", "copyAssessment", "commercialAestheticAssessment", "destinationIntegrationAssessment", "summary", "issues", "recommendations", "revisedHeadline", "revisedPrimaryText", "revisedDescription", "revisedCta", "revisedImagePrompt", "mandatoryVisualRequirements", "forbiddenVisualElements", "visualAcceptanceCriteria"],
   "properties": {
     "decision": {"type": "string", "enum": ["APPROVED", "ADJUST", "REJECTED"]},
     "attentionScore": {"type": "integer", "minimum": 0, "maximum": 100},
@@ -9,6 +9,9 @@
     "desireScore": {"type": "integer", "minimum": 0, "maximum": 100},
     "credibilityScore": {"type": "integer", "minimum": 0, "maximum": 100},
     "actionScore": {"type": "integer", "minimum": 0, "maximum": 100},
+    "copyAssessment": {"type": "string"},
+    "commercialAestheticAssessment": {"type": "string"},
+    "destinationIntegrationAssessment": {"type": "string"},
     "summary": {"type": "string"},
     "issues": {"type": "array", "items": {"type": "string"}},
     "recommendations": {"type": "array", "items": {"type": "string"}},
@@ -16,6 +19,9 @@
     "revisedPrimaryText": {"type": "string"},
     "revisedDescription": {"type": "string"},
     "revisedCta": {"type": "string"},
-    "revisedImagePrompt": {"type": "string"}
+    "revisedImagePrompt": {"type": "string"},
+    "mandatoryVisualRequirements": {"type": "array", "items": {"type": "string"}},
+    "forbiddenVisualElements": {"type": "array", "items": {"type": "string"}},
+    "visualAcceptanceCriteria": {"type": "array", "items": {"type": "string"}}
   }
 }

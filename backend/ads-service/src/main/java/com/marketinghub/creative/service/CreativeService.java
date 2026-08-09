@@ -172,7 +172,9 @@ public class CreativeService {
     }
   }
 
-  /** Reutiliza um anúncio aprovado em outro experimento do mesmo nicho como nova revisão auditável. */
+  /**
+   * Reutiliza um anúncio aprovado em outro experimento do mesmo nicho como nova revisão auditável.
+   */
   @Transactional
   public Creative reuseInExperiment(Long targetExperimentId, Long sourceCreativeId) {
     try {
@@ -414,6 +416,7 @@ public class CreativeService {
     validateScore(request.desireScore());
     validateScore(request.credibilityScore());
     validateScore(request.actionScore());
+    validateSpecialistApprovalContract(request, decision);
     creative.setAgentReviewStatus(decision);
     creative.setAgentReviewJson(toAgentReviewJson(request));
     creative.setAgentReviewRequestJson(request.requestJson());
@@ -452,6 +455,9 @@ public class CreativeService {
                   correction.path("cta").asText(),
                   creative.getDestinationUrl(),
                   correction.path("imagePrompt").asText(),
+                  stringList(correction.path("mandatoryVisualRequirements")),
+                  stringList(correction.path("forbiddenVisualElements")),
+                  stringList(correction.path("visualAcceptanceCriteria")),
                   creative.getAgentReviewJson());
             })
         .toList();
@@ -464,7 +470,9 @@ public class CreativeService {
     if (!StringUtils.hasText(result.imageUrl())) {
       source.setAgentImprovementStatus(CreativeImprovementStatus.FAILED);
       source.setAgentImprovementError(
-          StringUtils.hasText(result.error()) ? result.error().trim() : "Imagem corrigida não gerada");
+          StringUtils.hasText(result.error())
+              ? result.error().trim()
+              : "Imagem corrigida não gerada");
       return repository.save(source);
     }
     JsonNode correction = readImprovementJson(source);
@@ -512,6 +520,13 @@ public class CreativeService {
       creative.setAgentImprovementError("Agente não forneceu prompt visual corrigido");
       return;
     }
+    if (normalizedItems(request.mandatoryVisualRequirements()).isEmpty()
+        || normalizedItems(request.visualAcceptanceCriteria()).isEmpty()) {
+      creative.setAgentImprovementStatus(CreativeImprovementStatus.FAILED);
+      creative.setAgentImprovementError(
+          "Agente não forneceu requisitos e critérios visuais verificáveis");
+      return;
+    }
     creative.setAgentImprovementJson(toImprovementJson(request));
     creative.setAgentImprovementStatus(CreativeImprovementStatus.PENDING);
     creative.setAgentImprovementError(null);
@@ -520,17 +535,46 @@ public class CreativeService {
   /** Serializa o contrato funcional da correção separadamente do parecer técnico. */
   private String toImprovementJson(CreativeAgentReviewResultRequest request) {
     try {
-      Map<String, String> correction = new LinkedHashMap<>();
+      Map<String, Object> correction = new LinkedHashMap<>();
       correction.put("headline", Objects.requireNonNullElse(request.revisedHeadline(), ""));
       correction.put("primaryText", Objects.requireNonNullElse(request.revisedPrimaryText(), ""));
       correction.put("description", Objects.requireNonNullElse(request.revisedDescription(), ""));
-      correction.put("cta", Objects.requireNonNullElse(request.revisedCta(), DEFAULT_META_CALL_TO_ACTION));
+      correction.put(
+          "cta", Objects.requireNonNullElse(request.revisedCta(), DEFAULT_META_CALL_TO_ACTION));
       correction.put("imagePrompt", Objects.requireNonNullElse(request.revisedImagePrompt(), ""));
+      correction.put(
+          "mandatoryVisualRequirements", normalizedItems(request.mandatoryVisualRequirements()));
+      correction.put("forbiddenVisualElements", normalizedItems(request.forbiddenVisualElements()));
+      correction.put(
+          "visualAcceptanceCriteria", normalizedItems(request.visualAcceptanceCriteria()));
       return objectMapper.writeValueAsString(correction);
     } catch (JsonProcessingException ex) {
       log.error("Falha ao serializar correção do agente. creativeId desconhecido", ex);
       throw new IllegalStateException("Correção do agente inválida", ex);
     }
+  }
+
+  /** Normaliza listas do contrato para impedir instruções vazias ou duplicadas. */
+  private List<String> normalizedItems(List<String> items) {
+    if (items == null) {
+      return List.of();
+    }
+    return items.stream().filter(StringUtils::hasText).map(String::trim).distinct().toList();
+  }
+
+  /** Converte um array JSON persistido em lista textual segura para o executor. */
+  private List<String> stringList(JsonNode node) {
+    if (node == null || !node.isArray()) {
+      return List.of();
+    }
+    List<String> values = new java.util.ArrayList<>();
+    node.forEach(
+        item -> {
+          if (StringUtils.hasText(item.asText())) {
+            values.add(item.asText().trim());
+          }
+        });
+    return List.copyOf(values);
   }
 
   /** Lê o contrato de correção persistido e falha sem executar geração genérica. */
@@ -561,6 +605,31 @@ public class CreativeService {
     }
   }
 
+  /** Impede aprovação sem notas mínimas e pareceres especialistas sobre as três dimensões comerciais. */
+  private void validateSpecialistApprovalContract(
+      CreativeAgentReviewResultRequest request, CreativeAgentReviewStatus decision) {
+    if (decision != CreativeAgentReviewStatus.APPROVED) {
+      return;
+    }
+    List<Integer> scores =
+        List.of(
+            Objects.requireNonNullElse(request.attentionScore(), 0),
+            Objects.requireNonNullElse(request.clarityScore(), 0),
+            Objects.requireNonNullElse(request.desireScore(), 0),
+            Objects.requireNonNullElse(request.credibilityScore(), 0),
+            Objects.requireNonNullElse(request.actionScore(), 0));
+    if (scores.stream().anyMatch(score -> score < 80)) {
+      throw new IllegalArgumentException(
+          "Aprovação do agente exige nota mínima 80 em todas as dimensões.");
+    }
+    if (!StringUtils.hasText(request.copyAssessment())
+        || !StringUtils.hasText(request.commercialAestheticAssessment())
+        || !StringUtils.hasText(request.destinationIntegrationAssessment())) {
+      throw new IllegalArgumentException(
+          "Aprovação do agente exige pareceres de copy, estética comercial e integração com a landing.");
+    }
+  }
+
   /** Serializa o parecer funcional sem misturá-lo ao request e response brutos. */
   private String toAgentReviewJson(CreativeAgentReviewResultRequest request) {
     try {
@@ -573,6 +642,13 @@ public class CreativeService {
               Map.entry(
                   "credibilityScore", Objects.requireNonNullElse(request.credibilityScore(), 0)),
               Map.entry("actionScore", Objects.requireNonNullElse(request.actionScore(), 0)),
+              Map.entry("copyAssessment", Objects.requireNonNullElse(request.copyAssessment(), "")),
+              Map.entry(
+                  "commercialAestheticAssessment",
+                  Objects.requireNonNullElse(request.commercialAestheticAssessment(), "")),
+              Map.entry(
+                  "destinationIntegrationAssessment",
+                  Objects.requireNonNullElse(request.destinationIntegrationAssessment(), "")),
               Map.entry("summary", Objects.requireNonNullElse(request.summary(), "")),
               Map.entry("issues", Objects.requireNonNullElse(request.issuesJson(), "[]")),
               Map.entry(

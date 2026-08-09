@@ -78,7 +78,9 @@ public class AgentMaturityService {
     return dto(agent, aggregate("experiment_strategist_execution"), 0, 0, 0);
   }
 
-  /** Consolida cada parecer e correção do Aprovador Meta sem contar aprovação técnica como venda. */
+  /**
+   * Consolida cada parecer e correção do Aprovador Meta sem contar aprovação técnica como venda.
+   */
   private AgentMaturityDto metaAdApprover(Agent agent) {
     Map<String, Object> execution =
         jdbc.queryForMap(

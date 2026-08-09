@@ -261,12 +261,13 @@ public class ExperimentService {
     if (imageModelId == null) {
       return null;
     }
-    ImageGenerationModel model = imageGenerationModelRepository
-        .findById(imageModelId)
-        .orElseThrow(
-            () ->
-                new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "imageModelId not found: " + imageModelId));
+    ImageGenerationModel model =
+        imageGenerationModelRepository
+            .findById(imageModelId)
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "imageModelId not found: " + imageModelId));
     if (model.getApiModel() != null
         && model.getApiModel().toLowerCase(java.util.Locale.ROOT).startsWith("gpt-image-1")) {
       throw new ResponseStatusException(

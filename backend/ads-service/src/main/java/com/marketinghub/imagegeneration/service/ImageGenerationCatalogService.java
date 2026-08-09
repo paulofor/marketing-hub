@@ -34,10 +34,15 @@ public class ImageGenerationCatalogService {
         .collect(Collectors.toList());
   }
 
-  /** Oculta modelos OpenAI aposentados, preservando seus registros apenas para auditoria histórica. */
+  /**
+   * Oculta modelos OpenAI aposentados, preservando seus registros apenas para auditoria histórica.
+   */
   private boolean isObsolete(ImageGenerationModel model) {
     return model.getApiModel() != null
-        && model.getApiModel().toLowerCase(java.util.Locale.ROOT).startsWith(OBSOLETE_OPENAI_IMAGE_PREFIX);
+        && model
+            .getApiModel()
+            .toLowerCase(java.util.Locale.ROOT)
+            .startsWith(OBSOLETE_OPENAI_IMAGE_PREFIX);
   }
 
   /** Converte um modelo persistido para o contrato público do catálogo. */

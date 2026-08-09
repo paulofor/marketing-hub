@@ -28,8 +28,8 @@ public class CreativeImprovementService {
         var pending = backendClient.listPending(limit);
         for (Map<String, Object> correction : pending) {
             Long creativeId = Long.valueOf(correction.get("creativeId").toString());
-            String prompt = text(correction.get("revisedImagePrompt"));
             try {
+                String prompt = buildMandatoryPrompt(correction);
                 if (prompt.isBlank()) {
                     throw new IllegalArgumentException("Correção sem prompt visual");
                 }
@@ -49,6 +49,37 @@ public class CreativeImprovementService {
             }
         }
         return new Summary(pending.size(), success, failed);
+    }
+
+    /** Monta um prompt determinístico que torna cada item do parecer obrigatório e auditável. */
+    private String buildMandatoryPrompt(Map<String, Object> correction) {
+        String basePrompt = text(correction.get("revisedImagePrompt"));
+        var mandatory = stringList(correction.get("mandatoryVisualRequirements"));
+        var acceptance = stringList(correction.get("visualAcceptanceCriteria"));
+        if (basePrompt.isBlank() || mandatory.isEmpty() || acceptance.isEmpty()) {
+            throw new IllegalArgumentException("Correção sem contrato visual obrigatório completo");
+        }
+        StringBuilder prompt = new StringBuilder(basePrompt.trim());
+        appendSection(prompt, "REQUISITOS OBRIGATÓRIOS — cumpra todos", mandatory);
+        appendSection(prompt, "ELEMENTOS PROIBIDOS — não inclua nenhum", stringList(correction.get("forbiddenVisualElements")));
+        appendSection(prompt, "CRITÉRIOS DE ACEITAÇÃO — a arte final deve permitir verificar todos", acceptance);
+        prompt.append("\nENTREGA: gere exatamente uma arte final, sem explicações, variações, grade, mosaico ou mockup de interface.");
+        return prompt.toString();
+    }
+
+    /** Acrescenta uma seção enumerada sem permitir que requisitos se percam no texto livre. */
+    private void appendSection(StringBuilder prompt, String title, java.util.List<String> items) {
+        if (items.isEmpty()) return;
+        prompt.append("\n\n").append(title).append(':');
+        for (int index = 0; index < items.size(); index++) {
+            prompt.append("\n").append(index + 1).append(". ").append(items.get(index));
+        }
+    }
+
+    /** Normaliza listas recebidas do backend sem aceitar itens vazios. */
+    private java.util.List<String> stringList(Object value) {
+        if (!(value instanceof java.util.Collection<?> collection)) return java.util.List.of();
+        return collection.stream().map(this::text).filter(item -> !item.isBlank()).distinct().toList();
     }
 
     /** Normaliza texto do contrato recebido do backend. */

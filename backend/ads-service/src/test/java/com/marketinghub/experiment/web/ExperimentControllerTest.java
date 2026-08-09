@@ -70,8 +70,7 @@ class ExperimentControllerTest {
   @Autowired private JourneyTemplateRepository journeyTemplateRepository;
   @Autowired private TargetingElementRepository targetingElementRepository;
   @Autowired private InstagramAccountRepository instagramAccountRepository;
-  @Autowired
-  private com.marketinghub.repository.jpa.product.ProductRepository productRepository;
+  @Autowired private com.marketinghub.repository.jpa.product.ProductRepository productRepository;
 
   @Autowired
   private com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository

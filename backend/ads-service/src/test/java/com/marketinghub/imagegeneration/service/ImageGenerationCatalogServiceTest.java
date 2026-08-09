@@ -26,9 +26,8 @@ class ImageGenerationCatalogServiceTest {
                 model("gpt-image-2", "gpt-image-2")));
 
     List<String> availableModels =
-        new ImageGenerationCatalogService(repository).listModels().stream()
-            .map(model -> model.apiModel())
-            .toList();
+        new ImageGenerationCatalogService(repository)
+            .listModels().stream().map(model -> model.apiModel()).toList();
 
     assertThat(availableModels).containsExactly("gpt-image-2");
   }

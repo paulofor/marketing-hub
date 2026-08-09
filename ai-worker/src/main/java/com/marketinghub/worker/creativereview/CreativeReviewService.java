@@ -50,6 +50,9 @@ public class CreativeReviewService {
         payload.put("desireScore", result.path("desireScore").asInt());
         payload.put("credibilityScore", result.path("credibilityScore").asInt());
         payload.put("actionScore", result.path("actionScore").asInt());
+        payload.put("copyAssessment", result.path("copyAssessment").asText());
+        payload.put("commercialAestheticAssessment", result.path("commercialAestheticAssessment").asText());
+        payload.put("destinationIntegrationAssessment", result.path("destinationIntegrationAssessment").asText());
         payload.put("summary", result.path("summary").asText());
         payload.put("issuesJson", result.path("issues").toString());
         payload.put("recommendationsJson", result.path("recommendations").toString());
@@ -58,6 +61,9 @@ public class CreativeReviewService {
         payload.put("revisedDescription", result.path("revisedDescription").asText());
         payload.put("revisedCta", result.path("revisedCta").asText());
         payload.put("revisedImagePrompt", result.path("revisedImagePrompt").asText());
+        payload.put("mandatoryVisualRequirements", jsonArray(result.path("mandatoryVisualRequirements")));
+        payload.put("forbiddenVisualElements", jsonArray(result.path("forbiddenVisualElements")));
+        payload.put("visualAcceptanceCriteria", jsonArray(result.path("visualAcceptanceCriteria")));
         payload.put("model", execution.model());
         payload.put("requestJson", execution.requestJson());
         payload.put("responseJson", execution.responseJson());
@@ -65,6 +71,11 @@ public class CreativeReviewService {
         payload.put("outputTokens", execution.outputTokens());
         payload.put("costUsd", execution.costUsd());
         return payload;
+    }
+
+    /** Converte arrays validados pelo schema em valores JSON nativos do callback. */
+    private Object jsonArray(JsonNode node) {
+        return node.isArray() ? node : com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.arrayNode();
     }
 
     /** Extrai a causa mais específica sem perder o stack trace já registrado. */

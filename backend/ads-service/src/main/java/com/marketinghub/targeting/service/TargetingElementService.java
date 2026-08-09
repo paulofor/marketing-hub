@@ -159,10 +159,7 @@ public class TargetingElementService {
 
   /** Lista elementos do nicho compatíveis com a hipótese quando ela for informada. */
   public List<TargetingElement> listByNiche(
-      Long nicheId,
-      TargetingElementType type,
-      TargetingElementStatus status,
-      UUID hypothesisId) {
+      Long nicheId, TargetingElementType type, TargetingElementStatus status, UUID hypothesisId) {
     return repository.findByFiltersAndHypothesis(nicheId, type, status, hypothesisId);
   }
 

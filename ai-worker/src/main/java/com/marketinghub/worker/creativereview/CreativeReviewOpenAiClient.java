@@ -28,15 +28,18 @@ public class CreativeReviewOpenAiClient {
     private final String model;
     private final String prompt;
     private final Object schema;
+    private final CreativeReviewVisualEvidenceService visualEvidenceService;
 
     /** Inicializa o cliente, carregando integralmente prompt e schema versionados do classpath. */
     public CreativeReviewOpenAiClient(WebClient.Builder builder, ObjectMapper objectMapper,
                                       @Value("${openai.api-key:}") String apiKey,
                                       @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-                                      @Value("${creative-review.worker.model:gpt-5.6-sol}") String model) {
+                                      @Value("${creative-review.worker.model:gpt-5.6-sol}") String model,
+                                      CreativeReviewVisualEvidenceService visualEvidenceService) {
         this.webClient = builder.baseUrl(baseUrl).defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey).build();
         this.objectMapper = objectMapper;
         this.model = model;
+        this.visualEvidenceService = visualEvidenceService;
         this.prompt = load("prompts/creative-review/ad-specialist-v1.md");
         try {
             this.schema = objectMapper.readValue(load("prompts/creative-review/ad-specialist-v1-schema.json"), Object.class);
@@ -51,14 +54,23 @@ public class CreativeReviewOpenAiClient {
         if (mediaUrl.isBlank()) {
             throw new IllegalArgumentException("Criativo sem mídia pública para revisão multimodal");
         }
-        String renderedPrompt = prompt.replace("{{context}}", toJson(creative));
+        CreativeReviewVisualEvidenceService.Evidence evidence = visualEvidenceService.capture(creative);
+        Map<String, Object> auditedContext = new LinkedHashMap<>(creative);
+        auditedContext.put("landingScreenshots", evidence.landingScreenshots());
+        auditedContext.put("videoFrames", evidence.videoFrames());
+        String renderedPrompt = prompt.replace("{{context}}", toJson(auditedContext));
         Map<String, Object> format = Map.of("type", "json_schema", "name", "creative_ad_review_v1", "schema", schema, "strict", true);
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", model);
         payload.put("service_tier", "flex");
-        payload.put("input", List.of(Map.of("role", "user", "content", List.of(
-                Map.of("type", "input_text", "text", renderedPrompt),
-                Map.of("type", "input_image", "image_url", mediaUrl, "detail", "high")))));
+        List<Map<String, Object>> content = new java.util.ArrayList<>();
+        content.add(Map.of("type", "input_text", "text", renderedPrompt));
+        if (!"VIDEO".equalsIgnoreCase(text(creative.get("format")))) {
+            content.add(Map.of("type", "input_image", "image_url", mediaUrl, "detail", "high"));
+        }
+        evidence.videoFrames().forEach(url -> content.add(Map.of("type", "input_image", "image_url", url, "detail", "high")));
+        evidence.landingScreenshots().forEach(url -> content.add(Map.of("type", "input_image", "image_url", url, "detail", "high")));
+        payload.put("input", List.of(Map.of("role", "user", "content", content)));
         payload.put("text", Map.of("format", format));
         OpenAiRequestUtils.maybeAddReasoning(payload, model);
         String requestJson = toJson(payload);

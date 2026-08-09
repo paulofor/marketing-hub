@@ -377,6 +377,87 @@ class CreativeServiceTest {
     assertThat(approved.getStatus()).isEqualTo(CreativeStatus.READY);
   }
 
+  /** Preserva requisitos verificáveis do parecer na fila de correção consumida pelo worker. */
+  @Test
+  void schedulesImprovementWithStructuredVisualContract() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment exp = fixtures.createAndSaveExperiment(niche);
+    CreateCreativeRequest create = new CreateCreativeRequest();
+    create.setFormat("IMAGE");
+    create.setImageUrl("https://cdn.test/ad.png");
+    Creative creative = service.create(exp.getId(), create);
+
+    service.applyAgentReview(
+        creative.getId(),
+        adjustmentReview(
+            java.util.List.of("Headline Agenda Cheia legível", "CTA Saiba mais legível"),
+            java.util.List.of("Texto simulado"),
+            java.util.List.of("Headline legível em mobile")));
+
+    var pending = service.claimAgentImprovementQueue(3);
+    assertThat(pending).hasSize(1);
+    assertThat(pending.getFirst().mandatoryVisualRequirements())
+        .containsExactly("Headline Agenda Cheia legível", "CTA Saiba mais legível");
+    assertThat(pending.getFirst().forbiddenVisualElements()).containsExactly("Texto simulado");
+    assertThat(pending.getFirst().visualAcceptanceCriteria())
+        .containsExactly("Headline legível em mobile");
+  }
+
+  /** Bloqueia correção vaga antes de consumir geração visual. */
+  @Test
+  void rejectsImprovementWithoutVerifiableVisualContract() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment exp = fixtures.createAndSaveExperiment(niche);
+    CreateCreativeRequest create = new CreateCreativeRequest();
+    create.setFormat("IMAGE");
+    create.setImageUrl("https://cdn.test/ad.png");
+    Creative creative = service.create(exp.getId(), create);
+
+    Creative reviewed =
+        service.applyAgentReview(
+            creative.getId(),
+            adjustmentReview(java.util.List.of(), java.util.List.of(), java.util.List.of()));
+
+    assertThat(reviewed.getAgentImprovementStatus())
+        .isEqualTo(com.marketinghub.creative.CreativeImprovementStatus.FAILED);
+    assertThat(reviewed.getAgentImprovementError()).contains("critérios visuais verificáveis");
+  }
+
+  /** Monta um parecer de ajuste completo para os testes do contrato de correção. */
+  private CreativeAgentReviewResultRequest adjustmentReview(
+      java.util.List<String> mandatory,
+      java.util.List<String> forbidden,
+      java.util.List<String> acceptance) {
+    return new CreativeAgentReviewResultRequest(
+        CreativeAgentReviewStatus.ADJUST,
+        60,
+        60,
+        60,
+        60,
+        60,
+        "Copy precisa de benefício específico.",
+        "Hierarquia visual insuficiente.",
+        "Promessa ainda não coincide com a landing.",
+        "Ajustar hierarquia visual.",
+        "[\"Headline ilegível\"]",
+        "[\"Aumentar contraste\"]",
+        "gpt-test",
+        "{}",
+        "{}",
+        10,
+        10,
+        java.math.BigDecimal.ZERO,
+        null,
+        "Agenda Cheia",
+        "Preencha sua agenda",
+        "Método prático",
+        "LEARN_MORE",
+        "Crie uma arte premium para manicures.",
+        mandatory,
+        forbidden,
+        acceptance);
+  }
+
   /** Registra um parecer multimodal aprovado para cenários que exercitam a aprovação humana. */
   private void approveByAgent(Long creativeId) {
     service.applyAgentReview(
@@ -388,6 +469,9 @@ class CreativeServiceTest {
             80,
             80,
             80,
+            "Copy específica e persuasiva.",
+            "Design comercial premium.",
+            "Anúncio e landing apresentam a mesma promessa e ação.",
             "Peça pronta para revisão humana.",
             "[]",
             "[]",
@@ -402,7 +486,10 @@ class CreativeServiceTest {
             "Texto aprovado.",
             "Descrição aprovada.",
             "LEARN_MORE",
-            ""));
+            "",
+            java.util.List.of(),
+            java.util.List.of(),
+            java.util.List.of()));
   }
 
   /** Garante que a correção crie outro registro e preserve o criativo original. */

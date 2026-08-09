@@ -28,10 +28,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
-import org.springframework.http.HttpStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -343,7 +343,9 @@ public class HypothesisService {
             Math.max(page, 0),
             Math.min(Math.max(size, 1), 100),
             Sort.by(Sort.Direction.DESC, "updatedAt").and(Sort.by(Sort.Direction.DESC, "id")));
-    return status == null ? repository.findAll(pageable) : repository.findByStatus(status, pageable);
+    return status == null
+        ? repository.findAll(pageable)
+        : repository.findByStatus(status, pageable);
   }
 
   @Transactional

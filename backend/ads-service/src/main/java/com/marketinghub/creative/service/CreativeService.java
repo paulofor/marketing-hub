@@ -68,6 +68,8 @@ public class CreativeService {
   private static final int META_CALL_TO_ACTION_MAX_LENGTH = 32;
   private static final String DEFAULT_META_CALL_TO_ACTION = "LEARN_MORE";
   private static final int MAX_AGENT_IMPROVEMENT_ATTEMPTS = 3;
+  private static final int MAX_AGENT_REVIEW_RECOVERIES = 2;
+  private static final Duration AGENT_REVIEW_LEASE_TIMEOUT = Duration.ofMinutes(50);
 
   private final CreativeRepository repository;
   private final ExperimentRepository experimentRepository;
@@ -337,15 +339,51 @@ public class CreativeService {
   /** Lista e assume anúncios pendentes para impedir processamento concorrente pelo agente. */
   @Transactional
   public List<CreativeAgentReviewPendingDto> claimAgentReviewQueue(int limit) {
+    recoverExpiredAgentReviewLeases(Instant.now());
     return repository.findAgentReviewQueue(CreativeAgentReviewStatus.PENDING).stream()
         .limit(Math.max(1, limit))
         .map(
             creative -> {
               creative.setAgentReviewStatus(CreativeAgentReviewStatus.PROCESSING);
+              creative.setAgentReviewStartedAt(Instant.now());
               repository.save(creative);
               return toAgentReviewContext(creative);
             })
         .toList();
+  }
+
+  /** Recupera leases órfãos com limite de repetição e trilha persistida no próprio criativo. */
+  private void recoverExpiredAgentReviewLeases(Instant now) {
+    Instant cutoff = now.minus(AGENT_REVIEW_LEASE_TIMEOUT);
+    repository
+        .findExpiredAgentReviewLeases(CreativeAgentReviewStatus.PROCESSING, cutoff)
+        .forEach(
+            creative -> {
+              int recoveries =
+                  Objects.requireNonNullElse(creative.getAgentReviewRecoveryCount(), 0);
+              creative.setAgentReviewRecoveryCount(recoveries + 1);
+              creative.setAgentReviewLastRecoveredAt(now);
+              creative.setAgentReviewStartedAt(null);
+              if (recoveries >= MAX_AGENT_REVIEW_RECOVERIES) {
+                creative.setAgentReviewStatus(CreativeAgentReviewStatus.FAILED);
+                creative.setAgentReviewResponseJson(
+                    "{\"error\":\"Lease do Aprovador expirou após o limite de recuperações\"}");
+                creative.setAgentReviewedAt(now);
+                log.error(
+                    "Lease órfão do Aprovador encerrado após limite. creativeId={} experimentId={} recoveries={}",
+                    creative.getId(),
+                    creative.getExperiment().getId(),
+                    recoveries + 1);
+              } else {
+                creative.setAgentReviewStatus(CreativeAgentReviewStatus.PENDING);
+                log.warn(
+                    "Lease órfão do Aprovador recuperado. creativeId={} experimentId={} recovery={}",
+                    creative.getId(),
+                    creative.getExperiment().getId(),
+                    recoveries + 1);
+              }
+              repository.save(creative);
+            });
   }
 
   /** Retorna ao MCP o mesmo snapshot efetivo usado na reserva, sem alterar a fila. */
@@ -415,6 +453,9 @@ public class CreativeService {
     creative.setAgentReviewResponseJson(null);
     creative.setAgentReviewModel(null);
     creative.setAgentReviewedAt(null);
+    creative.setAgentReviewStartedAt(null);
+    creative.setAgentReviewRecoveryCount(0);
+    creative.setAgentReviewLastRecoveredAt(null);
     return repository.save(creative);
   }
 
@@ -447,6 +488,7 @@ public class CreativeService {
     creative.setAgentReviewResponseJson(request.responseJson());
     creative.setAgentReviewModel(request.model());
     creative.setAgentReviewedAt(Instant.now());
+    creative.setAgentReviewStartedAt(null);
     scheduleAgentImprovement(creative, request, decision);
     if (decision != CreativeAgentReviewStatus.APPROVED
         && creative.getStatus() == CreativeStatus.READY) {

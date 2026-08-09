@@ -46,7 +46,7 @@ public class McpController {
             "email-service", "lead-portal-payment", "mds", "mois", "mois-sales-library-worker",
             "mois-hotmart", "clickbank-coletor-mois", "oprm-coletor-receita", "ops-monitor-worker",
             "pde-platform-backend", "video-management-service", "customer-agent-worker", "financial-agent-worker",
-            "experiment-strategist-worker");
+            "experiment-strategist-worker", "meta-ad-approver-worker");
 
     private final McpProperties properties;
     private final DatabaseDiagnosticsService databaseDiagnosticsService;
@@ -183,7 +183,7 @@ public class McpController {
                             "inputSchema", Map.of(
                                     "type", "object",
                                     "properties", Map.of(
-                                            "agentType", Map.of("type", "string", "enum", List.of("CUSTOMER_AGENT", "FINANCIAL_AGENT", "GROWTH_OPERATOR", "EXPERIMENT_STRATEGIST")),
+                                            "agentType", Map.of("type", "string", "enum", List.of("CUSTOMER_AGENT", "FINANCIAL_AGENT", "GROWTH_OPERATOR", "EXPERIMENT_STRATEGIST", "META_AD_APPROVER")),
                                             "executionId", Map.of("type", "integer", "minimum", 1)),
                                     "required", List.of("agentType", "executionId"),
                                     "additionalProperties", false)

@@ -35,6 +35,7 @@ import com.marketinghub.storage.AssetStorageService;
 import com.marketinghub.storage.AssetUploadCategory;
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -111,6 +112,47 @@ class CreativeServiceTest {
     assertThat(saved.getPrompt()).isEqualTo("prompt text");
     assertThat(saved.getPromptIntermediate()).isEqualTo("intermediate prompt");
     assertThat(saved.getPayload()).contains("EXPERIMENT_CREATIVE");
+  }
+
+  /** Recupera revisão órfã, preserva auditoria e entrega um novo lease ao worker. */
+  @Test
+  void recoversExpiredAgentReviewLease() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment exp = fixtures.createAndSaveExperiment(niche);
+    Creative creative = fixtures.createAndSaveCreative(exp);
+    creative.setAgentReviewStatus(CreativeAgentReviewStatus.PROCESSING);
+    creative.setAgentReviewStartedAt(Instant.now().minusSeconds(60 * 60));
+    repository.saveAndFlush(creative);
+
+    var claimed = service.claimAgentReviewQueue(100);
+
+    assertThat(claimed).anyMatch(job -> job.creativeId().equals(creative.getId()));
+    Creative recovered = repository.findById(creative.getId()).orElseThrow();
+    assertThat(recovered.getAgentReviewStatus()).isEqualTo(CreativeAgentReviewStatus.PROCESSING);
+    assertThat(recovered.getAgentReviewRecoveryCount()).isEqualTo(1);
+    assertThat(recovered.getAgentReviewLastRecoveredAt()).isNotNull();
+    assertThat(recovered.getAgentReviewStartedAt()).isAfter(Instant.now().minusSeconds(10));
+  }
+
+  /** Encerra com causa persistida quando o lease excede o limite seguro de recuperações. */
+  @Test
+  void failsAgentReviewAfterRecoveryLimit() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment exp = fixtures.createAndSaveExperiment(niche);
+    Creative creative = fixtures.createAndSaveCreative(exp);
+    creative.setAgentReviewStatus(CreativeAgentReviewStatus.PROCESSING);
+    creative.setAgentReviewStartedAt(Instant.now().minusSeconds(60 * 60));
+    creative.setAgentReviewRecoveryCount(2);
+    repository.saveAndFlush(creative);
+
+    var claimed = service.claimAgentReviewQueue(100);
+
+    assertThat(claimed).noneMatch(job -> job.creativeId().equals(creative.getId()));
+    Creative failed = repository.findById(creative.getId()).orElseThrow();
+    assertThat(failed.getAgentReviewStatus()).isEqualTo(CreativeAgentReviewStatus.FAILED);
+    assertThat(failed.getAgentReviewRecoveryCount()).isEqualTo(3);
+    assertThat(failed.getAgentReviewResponseJson()).contains("limite de recuperações");
+    assertThat(failed.getAgentReviewedAt()).isNotNull();
   }
 
   @Test

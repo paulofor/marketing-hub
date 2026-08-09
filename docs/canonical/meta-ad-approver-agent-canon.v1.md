@@ -14,6 +14,12 @@ telemetria próprios. O `ai-worker` não pode conter pacote, prompt, schema, exe
 Aprovador Meta. Sua responsabilidade limita-se à geração técnica de mídia requisitada pelo backend,
 em pacote neutro de materialização visual, sem analisar, pontuar ou aprovar anúncios.
 
+O worker deve publicar `health` e `logfile` somente leitura em base path operacional dedicada. O MCP
+central deve permitir consultar `meta-ad-approver-worker` com filtros por período e correlação, e
+consultar `META_AD_APPROVER` na telemetria persistida. Os logs devem registrar início, conclusão e
+falha com `experimentId` e `creativeId`, stack trace completo em falhas e sanitização de segredos.
+Logs vivos e telemetria são evidências complementares; nenhum deles substitui o callback funcional.
+
 Cada lote reservado deve executar seus criativos concorrentemente e com isolamento de falha. Um
 processo Codex lento ou bloqueado não pode manter os demais itens do mesmo lote em `PROCESSING` sem
 execução real nem multiplicar o tempo total pelo tamanho do lote. O limite individual, a telemetria
@@ -58,3 +64,7 @@ O agente não substitui aprovação humana, não publica, não ativa mídia, nã
 A migração de executor não cria nova tabela nem reinicia criativos. Pareceres, versões, tentativas,
 custos e estados já persistidos — inclusive os do experimento #88 — permanecem sob os mesmos
 contratos do backend. Apenas novas reservas são processadas pelo módulo independente.
+A reserva de cada revisão deve ser um lease auditável controlado pelo backend, com horário de início,
+contador de recuperações e horário da última recuperação. Uma revisão `PROCESSING` sem lease ou com
+lease vencido deve voltar automaticamente à fila, no máximo duas vezes; depois disso deve encerrar em
+`FAILED` com causa persistida. O worker nunca redefine estado diretamente nem assume a recuperação.

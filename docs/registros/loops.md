@@ -31,6 +31,7 @@
 - Fechamento complementar no Operador de Crescimento (2026-08-07): o ciclo automatico recupera `RUNNING` sem processo vivo e heartbeat recente, registra falha auditavel e libera nova execucao; o plano tambem e reconciliado apenas com um experimento ativo compativel, evitando repetir analise de experimento encerrado.
 - Fechamento complementar em planos legados (2026-08-08): quando hipotese e nicho nao estao gravados diretamente no plano, a reconciliacao usa o contexto do experimento ja vinculado; teste de contrato cobre o caso real do plano 2 com troca do experimento 84 para o 85.
 - Fechamento complementar no Aprovador Meta (2026-08-09): o worker reservava três criativos de uma vez, marcava todos como `PROCESSING`, mas executava o Codex sequencialmente. Um item lento multiplicava o tempo do lote e ocultava quais revisões realmente estavam em execução. O lote agora usa tarefas virtuais concorrentes, mantendo timeout, telemetria, callback e falha isolados por criativo; teste de contrato exige início simultâneo dos três itens.
+- Fechamento complementar no Aprovador Meta (2026-08-09): reinício ou timeout do worker deixava revisões indefinidamente em `PROCESSING`, pois a reserva não possuía lease. O backend agora persiste início e recuperações, reenfileira leases órfãos com limite e encerra em `FAILED` com causa auditável após reincidência.
 
 ## LOOP-CUSTOMER-AGENT-UNSTRUCTURED-EXECUTION — Avaliação sem parecer final
 

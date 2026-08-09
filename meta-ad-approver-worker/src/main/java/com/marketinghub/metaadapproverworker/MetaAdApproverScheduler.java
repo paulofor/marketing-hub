@@ -38,12 +38,30 @@ public class MetaAdApproverScheduler {
 
   /** Executa um criativo isoladamente para que um Codex lento não bloqueie o restante do lote. */
   private void process(MetaAdReviewJob job) {
+    log.info(
+        "Revisão iniciada pelo Aprovador Meta. experimentId={} creativeId={}",
+        job.experimentId(),
+        job.creativeId());
     try {
       backend.report(job.creativeId(), runner.run(job));
+      log.info(
+          "Revisão concluída pelo Aprovador Meta. experimentId={} creativeId={}",
+          job.experimentId(),
+          job.creativeId());
     } catch (InterruptedException ex) {
       Thread.currentThread().interrupt();
+      log.error(
+          "Revisão interrompida pelo Aprovador Meta. experimentId={} creativeId={}",
+          job.experimentId(),
+          job.creativeId(),
+          ex);
       backend.fail(job.creativeId(), new IllegalStateException("Execução interrompida", ex));
     } catch (RuntimeException | IOException ex) {
+      log.error(
+          "Falha na revisão do Aprovador Meta. experimentId={} creativeId={}",
+          job.experimentId(),
+          job.creativeId(),
+          ex);
       backend.fail(job.creativeId(), new IllegalStateException("Falha ao revisar anúncio", ex));
     }
   }

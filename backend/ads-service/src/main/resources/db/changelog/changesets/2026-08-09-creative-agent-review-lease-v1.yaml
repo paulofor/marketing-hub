@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-09-creative-agent-review-lease-v1
+      author: marketinghub
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'creative' AND COLUMN_NAME = 'agent_review_started_at'
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE creative
+                ADD COLUMN agent_review_started_at DATETIME NULL AFTER agent_reviewed_at,
+                ADD COLUMN agent_review_recovery_count INT NOT NULL DEFAULT 0 AFTER agent_review_started_at,
+                ADD COLUMN agent_review_last_recovered_at DATETIME NULL AFTER agent_review_recovery_count,
+                ADD INDEX idx_creative_agent_review_lease (agent_review_status, agent_review_started_at);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE creative
+                DROP INDEX idx_creative_agent_review_lease,
+                DROP COLUMN agent_review_last_recovered_at,
+                DROP COLUMN agent_review_recovery_count,
+                DROP COLUMN agent_review_started_at;

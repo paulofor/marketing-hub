@@ -13,11 +13,12 @@ services:
       EXPERIMENT_STRATEGIST_CODEX_TIMEOUT: ${EXPERIMENT_STRATEGIST_CODEX_TIMEOUT:-PT40M}
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
       LOG_FILE_NAME: /tmp/experiment-strategist-worker.log
+      EXPERIMENT_STRATEGIST_MCP_URL: ${EXPERIMENT_STRATEGIST_MCP_URL:-http://backend:8000}
     ports:
       - "8096:8096"
     volumes:
       - ${MARKETING_HUB_REPOSITORY_HOST:-..}:/workspace/marketing-hub:ro
-      - ${EXPERIMENT_STRATEGIST_CODEX_HOME:-/opt/growth-operator/codex-home}:/home/strategist/.codex
+      - ${EXPERIMENT_STRATEGIST_CODEX_HOME:?Defina uma identidade Codex exclusiva}:/home/strategist/.codex
     read_only: true
     tmpfs:
       - /tmp:size=128m,noexec,nosuid

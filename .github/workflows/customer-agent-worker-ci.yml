@@ -26,6 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validate premium agent architecture
+        run: bash scripts/validate-premium-agents.sh
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -71,7 +73,7 @@ jobs:
           ssh "${VPS_USER}@${VPS_IP}" "\
             cd '${REPOSITORY_DIR}/customer-agent-worker' \
             && BACKEND_URL=http://191.252.181.168 \
-               CODEX_HOME_PATH=/opt/growth-operator/codex-home \
+               CUSTOMER_AGENT_CODEX_HOME=/opt/marketing-hub/agents/customer/codex-home \
                MARKETING_HUB_REPOSITORY='${REPOSITORY_DIR}' \
                CUSTOMER_AGENT_MODEL=gpt-5.6-sol \
                docker compose up -d --build --remove-orphans \

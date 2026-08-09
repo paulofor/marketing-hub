@@ -16,7 +16,7 @@ services:
       GROWTH_OPERATOR_CODEX_TIMEOUT: ${GROWTH_OPERATOR_CODEX_TIMEOUT:-PT40M}
     volumes:
       - ${MARKETING_HUB_REPOSITORY_HOST:-..}:/workspace/marketing-hub:ro
-      - ${CODEX_HOME}:/home/operator/.codex
+      - ${GROWTH_OPERATOR_CODEX_HOME:?Defina uma identidade Codex exclusiva}:/home/operator/.codex
     read_only: true
     tmpfs:
       - /tmp:size=128m,noexec,nosuid

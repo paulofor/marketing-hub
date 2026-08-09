@@ -47,6 +47,10 @@ O prompt e o schema canônicos são:
 
 ## Arquitetura obrigatória dos agentes
 
+O contrato detalhado e bloqueante está em
+`docs/canonical/premium-ai-agent-architecture-canon.v1.md` e prevalece para qualquer agente novo,
+migrado ou reativado.
+
 Os primeiros agentes independentes — Cliente, Financeiro, Operador de Crescimento e Estrategista de
 Experimentos — são o modelo arquitetural obrigatório para agentes novos ou migrados. Todo agente
 operacional deve possuir:

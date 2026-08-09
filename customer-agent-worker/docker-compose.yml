@@ -10,11 +10,17 @@ services:
       CUSTOMER_AGENT_POLL_MS: ${CUSTOMER_AGENT_POLL_MS:-60000}
       CUSTOMER_AGENT_OBSERVATION_POLL_MS: ${CUSTOMER_AGENT_OBSERVATION_POLL_MS:-60000}
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      CUSTOMER_AGENT_MCP_URL: ${CUSTOMER_AGENT_MCP_URL:-http://host.docker.internal}
       LOG_FILE_NAME: /tmp/customer-agent-worker.log
     ports:
       - "${CUSTOMER_AGENT_WORKER_PORT:-8099}:8099"
     volumes:
-      - ${CODEX_HOME_PATH:-/opt/growth-operator/codex-home}:/home/operator/.codex
+      - ${CUSTOMER_AGENT_CODEX_HOME:?Defina uma identidade Codex exclusiva}:/home/operator/.codex
       - ${MARKETING_HUB_REPOSITORY:-..}:/workspace:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true

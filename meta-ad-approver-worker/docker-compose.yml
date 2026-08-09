@@ -17,7 +17,7 @@ services:
       - "8097:8097"
     volumes:
       - ${MARKETING_HUB_REPOSITORY_HOST:-..}:/workspace/marketing-hub:ro
-      - ${CODEX_HOME}:/home/approver/.codex
+      - ${META_AD_APPROVER_CODEX_HOME:?Defina uma identidade Codex exclusiva}:/home/approver/.codex
     read_only: true
     tmpfs:
       - /tmp:size=256m,noexec,nosuid

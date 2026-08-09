@@ -20,5 +20,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm git 
 COPY --from=build /build/target/app.jar /app/app.jar
 COPY --from=build /build/src/main/resources/prompts /app/prompts
 COPY --from=build /build/src/main/resources/browser /app/browser
+COPY --from=build /build/src/main/resources/mcp /app/mcp
 USER operator
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

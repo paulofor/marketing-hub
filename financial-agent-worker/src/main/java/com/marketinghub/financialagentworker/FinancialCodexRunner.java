@@ -43,12 +43,13 @@ public class FinancialCodexRunner {
     Path output = Files.createTempFile("financial-agent-", ".json");
     Path processOutput = Files.createTempFile("financial-agent-process-", ".log");
     Path schema = materialize("prompts/financial-agent/v1/report-schema.json", ".json");
+    Path mcp = materialize("mcp/financial-agent.mjs", ".mjs");
     try {
-      Process process =
-          new ProcessBuilder(buildCommand(output, schema))
-              .redirectErrorStream(true)
-              .redirectOutput(processOutput.toFile())
-              .start();
+      ProcessBuilder builder = new ProcessBuilder(buildCommand(output, schema, mcp));
+      builder.redirectErrorStream(true).redirectOutput(processOutput.toFile());
+      builder.environment().put("MCP_BACKEND_URL", properties.getBackendUrl());
+      builder.environment().put("MCP_EXECUTION_ID", job.id().toString());
+      Process process = builder.start();
       process.getOutputStream().write(buildPrompt(job).getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
       CodexTelemetryReporter.Session session =
@@ -84,11 +85,17 @@ public class FinancialCodexRunner {
       Files.deleteIfExists(output);
       Files.deleteIfExists(processOutput);
       Files.deleteIfExists(schema);
+      Files.deleteIfExists(mcp);
     }
   }
 
   /** Monta o comando Codex preservando sandbox e repositorio somente leitura. */
   List<String> buildCommand(Path output, Path schema) {
+    return buildCommand(output, schema, Path.of("financial-agent.mjs"));
+  }
+
+  /** Monta o comando com o servidor MCP exclusivo do agente. */
+  List<String> buildCommand(Path output, Path schema, Path mcp) {
     List<String> command =
         new ArrayList<>(
             List.of(
@@ -105,7 +112,11 @@ public class FinancialCodexRunner {
                 "--output-last-message",
                 output.toString(),
                 "--color",
-                "never"));
+                "never",
+                "--config",
+                "mcp_servers.financial_agent.command=\"node\"",
+                "--config",
+                "mcp_servers.financial_agent.args=[\"" + mcp.toAbsolutePath() + "\"]"));
     if (properties.getModel() != null && !properties.getModel().isBlank()) {
       command.add("--model");
       command.add(properties.getModel());

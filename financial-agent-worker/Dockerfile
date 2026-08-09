@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm git 
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /build/target/app.jar /app/app.jar
+COPY --from=build /build/src/main/resources/mcp /app/mcp
 RUN groupadd --gid 10001 financial-agent && useradd --create-home --uid 10001 --gid financial-agent financial-agent
 USER financial-agent
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

@@ -27,6 +27,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate premium agent architecture
+        run: bash scripts/validate-premium-agents.sh
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -78,7 +81,7 @@ jobs:
           set -euo pipefail
           ssh "${VPS_USER}@${VPS_IP}" "\
             cd '${REPOSITORY_DIR}/growth-operator-worker' \
-            && CODEX_HOME=/opt/growth-operator/codex-home \
+            && GROWTH_OPERATOR_CODEX_HOME=/opt/marketing-hub/agents/growth-operator/codex-home \
                BACKEND_URL=http://191.252.181.168 \
                MARKETING_HUB_URL=http://191.252.181.168 \
                MARKETING_HUB_REPOSITORY_HOST='${REPOSITORY_DIR}' \

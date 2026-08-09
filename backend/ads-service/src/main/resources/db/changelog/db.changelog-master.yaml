@@ -1,8 +1,5 @@
 databaseChangeLog:
   - include:
-      file: changesets/2026-08-08-image-generation-history.yaml
-      relativeToChangelogFile: true
-  - include:
       file: changesets/2026-08-08-creative-versioning.yaml
       relativeToChangelogFile: true
   - include:
@@ -205,6 +202,9 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changesets/2026-07-16-image-generation-request.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-08-image-generation-history.yaml
       relativeToChangelogFile: true
   - include:
       file: changesets/2026-07-14-feo-fabricacao-v1-stage-execution.yaml

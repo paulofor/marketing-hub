@@ -130,6 +130,11 @@ mínima com a dor, promessa, recompensa ou CTA do experimento. Se o gate falhar,
 o worker registra o passo `CAMPAIGN_CREATIVE_PUBLICATION_GATE`, marca o
 experimento como `FAILED` e não cria campanha, ad set, criativo ou anúncio.
 
+O mesmo gate aplica explicitamente o contrato de copy adotado para os placements
+Meta: `primaryText` com até 125 caracteres, `headline` com até 40 e `description`
+com até 25. Excessos são bloqueados, nunca truncados; devem voltar ao AI Worker e
+ao Aprovador Meta para reescrita semântica antes de uma nova tentativa.
+
 1. **Campanha** (`POST /campaigns`) com objetivo `OUTCOME_LEADS` quando o
    experimento trouxer `campaignObjective=LEADS`, `freeReward` ou criativo
    direcionado para formulário de leads; use `OUTCOME_TRAFFIC` apenas para

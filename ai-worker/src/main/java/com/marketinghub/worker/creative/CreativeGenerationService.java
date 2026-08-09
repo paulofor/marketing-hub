@@ -21,7 +21,9 @@ import org.springframework.util.StringUtils;
 @Service
 public class CreativeGenerationService {
     private static final Logger log = LoggerFactory.getLogger(CreativeGenerationService.class);
-    private static final int CREATIVE_TEXT_MAX_LENGTH = 255;
+    private static final int META_PRIMARY_TEXT_MAX_LENGTH = 125;
+    private static final int META_HEADLINE_MAX_LENGTH = 40;
+    private static final int META_DESCRIPTION_MAX_LENGTH = 25;
     private static final int META_CALL_TO_ACTION_MAX_LENGTH = 32;
     private static final String DEFAULT_META_CALL_TO_ACTION = "LEARN_MORE";
     private static final String IMAGE_TEXT_GUARD =
@@ -170,15 +172,23 @@ public class CreativeGenerationService {
         return prompt.toString().trim();
     }
 
-    /** Normaliza o criativo para respeitar o contrato persistivel do backend e da Meta. */
+    /** Valida a copy Meta sem truncamento e normaliza apenas o CTA técnico. */
     private void normalizeCreativeContract(CreateCreativeRequest creative) {
         if (creative == null) {
             return;
         }
-        creative.setHeadline(limitText(creative.getHeadline(), CREATIVE_TEXT_MAX_LENGTH));
-        creative.setPrimaryText(limitText(creative.getPrimaryText(), CREATIVE_TEXT_MAX_LENGTH));
-        creative.setDescription(limitText(creative.getDescription(), CREATIVE_TEXT_MAX_LENGTH));
+        requireMetaTextLimit("primaryText", creative.getPrimaryText(), META_PRIMARY_TEXT_MAX_LENGTH);
+        requireMetaTextLimit("headline", creative.getHeadline(), META_HEADLINE_MAX_LENGTH);
+        requireMetaTextLimit("description", creative.getDescription(), META_DESCRIPTION_MAX_LENGTH);
         creative.setCta(normalizeMetaCallToAction(creative.getCta()));
+    }
+
+    /** Bloqueia copy acima do contrato de exibição para exigir reescrita semântica. */
+    private void requireMetaTextLimit(String field, String value, int maxLength) {
+        if (value != null && value.codePointCount(0, value.length()) > maxLength) {
+            throw new IllegalArgumentException(
+                    "Copy Meta inválida: " + field + " excede " + maxLength + " caracteres; reescrita obrigatória");
+        }
     }
 
     /** Define o prompt de imagem do modo padrão usando prompt customizado ou texto do criativo. */

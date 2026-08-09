@@ -221,7 +221,7 @@ export default function LeadPortalImagePromptPage() {
                   <span>Modelo de imagem</span>
                   <div className="lp-readonly-value">
                     <strong>
-                      {resolvedModel || metadata?.defaultModel || "gpt-image-1"}
+                      {resolvedModel || metadata?.defaultModel || "gpt-image-2"}
                     </strong>
                     {isExperimentManaged ? (
                       <span className="lp-badge">Controlado pelo experimento</span>

@@ -32,7 +32,7 @@ public class FlowImagePromptService {
     private static final String GERA_SALES_PAGE_PERSONALIZED_SAMPLE_MODEL =
             "AI_PERSONALIZED_SAMPLE_GERA_SALES_PAGE";
     private static final int DEFAULT_BATCH_SIZE = 6;
-    private static final String DEFAULT_IMAGE_MODEL = "gpt-image-1";
+    private static final String DEFAULT_IMAGE_MODEL = "gpt-image-2";
     private static final int DEFAULT_REFERENCE_IMAGE_FREE_IMAGES = 1;
     private static final String DEFAULT_TEMPLATE = String.join("\n",
             "Gere materiais de divulgação premium em português para {{profissional}}, um(a) {{atividade}} que atua em {{local}}.",

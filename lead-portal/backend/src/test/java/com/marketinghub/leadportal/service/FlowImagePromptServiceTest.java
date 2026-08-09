@@ -57,7 +57,7 @@ class FlowImagePromptServiceTest {
         assertTrue(result.isPresent());
         FlowImagePrompt prompt = result.get();
         assertEquals(Integer.valueOf(6), prompt.plannedOutputs());
-        assertEquals("gpt-image-1", prompt.model());
+        assertEquals("gpt-image-2", prompt.model());
         String promptText = prompt.prompt();
         assertTrue(promptText.contains("WhatsApp"));
         assertTrue(promptText.contains("Musculação"));

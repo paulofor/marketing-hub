@@ -185,3 +185,10 @@
 - Correção pela documentação vigente: a Runway expõe `seedance2_5` e `hailuo3`; ambos usam o adaptador e o token Runway.
 - Hailuo 3 foi cadastrado em `HOMOLOGATION`, com custo oficial de US$ 0,10/s em 768p ou US$ 0,15/s em 2K, sem ativação produtiva antes de render real e QA comercial.
 - Prevenção: modelos descobertos no catálogo oficial devem ser confirmados também na tabela oficial de preços e protegidos por teste de payload antes de alterar provider, identificador ou gate.
+
+# 2026-08-09 — Grok Imagine 1.5 em homologação
+
+- Decisão: cadastrar `grok_imagine_1_5` como modelo image-to-video da Runway, sem ativação produtiva e sem consumo de créditos nesta entrega.
+- Gates: adapter preparado; preço, licença comercial e QA permanecem reprovados até evidência oficial e render controlado.
+- Matriz comparativa: usar o mesmo briefing e a mesma imagem-base em Grok Imagine 1.5, Hailuo 3, Gen-4.5 e Veo 3.1 Fast; medir custo por vídeo aprovado, aderência ao briefing, realismo, consistência de personagem/produto, artefatos visuais, retenção potencial nos 3 primeiros segundos e tempo de geração.
+- Critério de ativação: liberar somente se o modelo complementar ou superar os ativos atuais em qualidade/custo, sem falha de licença, contrato ou observabilidade.

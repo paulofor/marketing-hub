@@ -95,8 +95,7 @@ public class MetaAdApproverCodexRunner {
   }
 
   /** Monta o comando impondo sandbox read-only e MCP próprio do agente. */
-  List<String> buildCommand(
-      Path output, Path schema, Path mcpServer, MetaAdReviewJob job) {
+  List<String> buildCommand(Path output, Path schema, Path mcpServer, MetaAdReviewJob job) {
     List<String> command = new ArrayList<>();
     command.addAll(
         List.of(
@@ -114,6 +113,8 @@ public class MetaAdApproverCodexRunner {
             output.toString(),
             "--color",
             "never",
+            "--config",
+            "approval_policy=\"never\"",
             "--config",
             "mcp_servers.meta_ad_approver.command=\"node\"",
             "--config",

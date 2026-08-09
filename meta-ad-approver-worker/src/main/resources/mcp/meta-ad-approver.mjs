@@ -13,7 +13,15 @@ registerTool('inspecionar_landing', 'Renderiza e retorna a página de destino em
 await server.connect(new StdioServerTransport());
 
 function registerTool(name, description) {
-  server.registerTool(name, { description, inputSchema: {} }, async () => callTool(name));
+  server.registerTool(name, {
+    description,
+    inputSchema: {},
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: true,
+      destructiveHint: false,
+    },
+  }, async () => callTool(name));
 }
 
 async function callTool(name) {

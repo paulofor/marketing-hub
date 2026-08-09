@@ -30,6 +30,7 @@ class MetaAdApproverCodexRunnerTest {
             MetaAdReviewJob.from(Map.of("creativeId", 273, "experimentId", 88)));
 
     assertThat(command).containsSubsequence("--sandbox", "read-only");
+    assertThat(command).contains("approval_policy=\"never\"");
     assertThat(command).contains("--cd", "/workspace/repository", "--model", "gpt-5.6-sol");
     assertThat(command).contains("mcp_servers.meta_ad_approver.command=\"node\"");
     assertThat(command).anyMatch(value -> value.startsWith("mcp_servers.meta_ad_approver.args="));
@@ -91,7 +92,10 @@ class MetaAdApproverCodexRunnerTest {
             "MCP_CREATIVE_ID",
             "MCP_EXPERIMENT_ID",
             "StdioServerTransport",
-            "/agent-review/context?experimentId=");
+            "/agent-review/context?experimentId=",
+            "readOnlyHint: true",
+            "openWorldHint: true",
+            "destructiveHint: false");
   }
 
   /** Confirma que o job preserva o snapshot e os identificadores do experimento. */

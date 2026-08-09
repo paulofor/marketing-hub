@@ -20,6 +20,12 @@ alta definição ou três quadros do vídeo e renderizam a landing em mobile e d
 identificador, evidência ausente ou falha de inspeção mantém o gate fechado. O MCP não publica, não
 altera campanha e não acessa banco.
 
+Como o Aprovador executa por `codex exec` sem usuário interativo, o runner declara explicitamente
+`approval_policy=never` por configuração explícita, mantendo `sandbox=read-only`. Todas as ferramentas do MCP publicam
+`readOnlyHint: true`, `destructiveHint: false` e `openWorldHint` coerente com o acesso HTTP. É
+proibido depender da política herdada da identidade Codex: uma solicitação de aprovação sem operador
+cancela a ferramenta, invalida as evidências e fecha o gate.
+
 ## Evidências obrigatórias
 
 - copy completa, CTA, público, hipótese e oferta;

@@ -64,6 +64,9 @@ jobs:
         run: |
           set -euo pipefail
           ssh "${VPS_USER}@${VPS_IP}" "\
+            install -d -m 700 -o 10001 -g 10001 /opt/marketing-hub/agents/financial/codex-home \
+            && test -s /opt/marketing-hub/agents/financial/codex-home/auth.json \
+            || { printf '%s\n' 'Falha: autenticação Codex exclusiva do Agente Financeiro não foi provisionada.'; exit 1; }; \
             export BACKEND_URL=http://191.252.181.168 \
                    FINANCIAL_AGENT_CODEX_HOME=/opt/marketing-hub/agents/financial/codex-home \
                    MARKETING_HUB_REPOSITORY_PATH='${REPOSITORY_DIR}' \
@@ -73,10 +76,19 @@ jobs:
             && docker compose up -d --build --remove-orphans \
             && for attempt in \$(seq 1 12); do \
                  status=\$(docker inspect --format '{{.State.Status}}' financial-agent-worker-financial-agent-worker-1 2>/dev/null || true); \
-                 [ \"\${status}\" = running ] \
+                 codex_ready=false; \
+                 health_body=; \
+                 if [ \"\${status}\" = running ] \
                    && docker exec financial-agent-worker-financial-agent-worker-1 \
-                        sh -lc 'test -w /home/financial-agent/.codex && codex login status' \
-                   && exit 0; \
+                        sh -lc 'test -w /home/financial-agent/.codex && codex login status' >/dev/null 2>&1; then \
+                   codex_ready=true; \
+                 fi; \
+                 health_body=\$(curl -fsS http://127.0.0.1:8095/ops-financial-agent-observability-v1/health 2>/dev/null || true); \
+                 printf 'readiness attempt=%s container=%s codex=%s health=%s\\n' \
+                   \"\${attempt}\" \"\${status:-missing}\" \"\${codex_ready}\" \"\${health_body:-unavailable}\"; \
+                 if [ \"\${status}\" = running ] && [ \"\${codex_ready}\" = true ] \
+                   && printf '%s' \"\${health_body}\" | grep -Eq 'status.*UP'; then exit 0; fi; \
                  sleep 5; \
                done; \
+            printf '%s\n' 'Falha: Agente Financeiro não ficou pronto com identidade Codex e health próprios.'; \
             docker compose logs --tail=150 financial-agent-worker; exit 1"

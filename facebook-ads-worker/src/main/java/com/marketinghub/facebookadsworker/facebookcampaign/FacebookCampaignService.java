@@ -70,6 +70,9 @@ import java.util.stream.Stream;
  */
 @Service
 public class FacebookCampaignService {
+    private static final int META_PRIMARY_TEXT_MAX_LENGTH = 125;
+    private static final int META_HEADLINE_MAX_LENGTH = 40;
+    private static final int META_DESCRIPTION_MAX_LENGTH = 25;
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookCampaignService.class);
     private static final int AD_CREATIVE_IMAGE_DOWNLOAD_RETRY_MAX_ATTEMPTS = 3;
     private static final int AD_CREATIVE_IMAGE_DOWNLOAD_ERROR_SUBCODE = 3858258;
@@ -1543,15 +1546,15 @@ public class FacebookCampaignService {
             || !StringUtils.hasText(creative.cta())) {
             return "creative copy requires primaryText, headline and cta";
         }
-        if (creative.primaryText().codePointCount(0, creative.primaryText().length()) > 125) {
-            return "creative primaryText exceeds Meta display limit of 125 characters";
+        if (creative.primaryText().codePointCount(0, creative.primaryText().length()) > META_PRIMARY_TEXT_MAX_LENGTH) {
+            return "creative primaryText exceeds Meta display limit of " + META_PRIMARY_TEXT_MAX_LENGTH + " characters";
         }
-        if (creative.headline().codePointCount(0, creative.headline().length()) > 40) {
-            return "creative headline exceeds Meta display limit of 40 characters";
+        if (creative.headline().codePointCount(0, creative.headline().length()) > META_HEADLINE_MAX_LENGTH) {
+            return "creative headline exceeds Meta display limit of " + META_HEADLINE_MAX_LENGTH + " characters";
         }
         if (creative.description() != null
-            && creative.description().codePointCount(0, creative.description().length()) > 25) {
-            return "creative description exceeds Meta display limit of 25 characters";
+            && creative.description().codePointCount(0, creative.description().length()) > META_DESCRIPTION_MAX_LENGTH) {
+            return "creative description exceeds Meta display limit of " + META_DESCRIPTION_MAX_LENGTH + " characters";
         }
         List<String> anchors = commercialCopyAnchors(experiment);
         if (anchors.isEmpty()) {

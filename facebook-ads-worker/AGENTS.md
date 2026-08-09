@@ -74,6 +74,9 @@
 - Na criação de criativos (`POST /adcreatives`), `call_to_action.type` deve ser sempre um enum técnico aceito pela Meta
   (ex.: `LEARN_MORE`, `SIGN_UP`, `SHOP_NOW`) e nunca o texto comercial do botão. Labels comerciais vindos do criativo
   devem ser normalizados antes do envio, usando fallback seguro (`LEARN_MORE` para destino web e `SIGN_UP` para lead form).
+- Antes de qualquer publicação, bloquear sem truncar copy com `primaryText` acima de 125 caracteres, `headline` acima de 40
+  ou `description` acima de 25. O AI Worker deve gerar dentro desses limites e o Aprovador Meta deve exigir reescrita
+  semântica; o Facebook Ads Worker é a última barreira determinística antes da Graph API.
 - Na criação de criativos (`POST /adcreatives`), quando a Meta rejeitar o payload principal de link com imagem já enviada por
   `image_hash`, URL final e CTA técnico, o worker deve registrar o diagnóstico do payload e tentar uma única vez um criativo
   mínimo de link, preservando `page_id`, `instagram_user_id` quando existir, `image_hash`, URL final, mensagem e CTA, mas

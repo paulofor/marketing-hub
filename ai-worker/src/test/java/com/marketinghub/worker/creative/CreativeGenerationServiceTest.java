@@ -60,11 +60,9 @@ class CreativeGenerationServiceTest {
         verify(backendClient).markCompleted(49L);
     }
 
-    /**
-     * Garante que textos longos gerados pela IA sejam ajustados antes do envio ao backend.
-     */
+    /** Garante que copy acima dos limites Meta seja bloqueada sem truncamento silencioso. */
     @Test
-    void shouldNormalizeGeneratedCreativeTextBeforeSaving() {
+    void shouldRejectGeneratedCreativeTextAboveMetaLimits() {
         CreativeGenerationBackendClient backendClient = mock(CreativeGenerationBackendClient.class);
         CreativeChatGptClient textClient = mock(CreativeChatGptClient.class);
         CreativeImageClient imageClient = mock(CreativeImageClient.class);
@@ -81,29 +79,18 @@ class CreativeGenerationServiceTest {
         when(backendClient.listPending(5)).thenReturn(List.of(experiment));
         when(textClient.generateCreatives(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(1)))
                 .thenReturn(new CreativeChatGptClient.Generation(List.of(generated), null, null));
-        when(imageClient.generateImage(
-                org.mockito.ArgumentMatchers.anyString(),
-                org.mockito.ArgumentMatchers.isNull(),
-                org.mockito.ArgumentMatchers.anyString()))
-                .thenReturn("/assets/creative.jpg");
-
         CreativeGenerationService.ProcessingSummary summary = service.processPending(5);
 
-        assertThat(summary.failed()).isZero();
-        ArgumentCaptor<CreateCreativeRequest> creativeCaptor = ArgumentCaptor.forClass(CreateCreativeRequest.class);
-        verify(backendClient).createCreative(org.mockito.ArgumentMatchers.eq(49L), creativeCaptor.capture());
-        CreateCreativeRequest saved = creativeCaptor.getValue();
-        assertThat(saved.getHeadline()).hasSizeLessThanOrEqualTo(255);
-        assertThat(saved.getPrimaryText()).hasSizeLessThanOrEqualTo(255);
-        assertThat(saved.getDescription()).hasSizeLessThanOrEqualTo(255);
-        assertThat(saved.getCta()).isEqualTo("LEARN_MORE");
-        ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
-        verify(imageClient).generateImage(
-                promptCaptor.capture(),
-                org.mockito.ArgumentMatchers.isNull(),
+        assertThat(summary.failed()).isEqualTo(1);
+        verify(imageClient, never()).generateImage(
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.anyString());
-        assertThat(promptCaptor.getValue()).contains(saved.getPrimaryText());
-        assertThat(promptCaptor.getValue()).contains("Nao incluir texto, letras, numeros");
+        verify(backendClient, never()).createCreative(
+                org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.any());
+        verify(backendClient).markFailed(
+                org.mockito.ArgumentMatchers.eq(49L),
+                org.mockito.ArgumentMatchers.contains("primaryText excede 125 caracteres"));
     }
 
     /** Garante que o worker não cria criativo quando a imagem não foi gerada. */

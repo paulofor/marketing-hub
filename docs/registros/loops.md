@@ -830,6 +830,13 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Correção sistêmica:** o planejador agora resolve primeiro IDs explícitos, depois o modelo persistido por `apiModel` e somente então usa o fallback do catálogo.
 - **Prevenção:** teste de contrato mantém `gpt-image-1` mesmo quando `dall-e-2` aparece primeiro no catálogo e o pacote não possui IDs novos.
 
+### LOOP-LEAD-PORTAL-AMOSTRA-USA-SLUG-COMO-SERVICO
+
+- **Sintoma:** a amostra do experimento #88 escreve `product ai exp 88 personalized sample` nas imagens, embora o formulário informe `Alongamento em gel delicado`, e persiste `free_images = 0`.
+- **Causa-raiz:** o Lead Portal reconhecia como amostra gratuita apenas o modelo legado `AI_PERSONALIZED_SAMPLE_FUNNEL`; o contrato atual do GeraSalesPage usa `AI_PERSONALIZED_SAMPLE_GERA_SALES_PAGE`. Sem reconhecer esse modelo, o prompt genérico derivava atividade e serviços do slug técnico e não liberava o lote prometido.
+- **Correção sistêmica:** ambos os contratos passam pela política de amostra personalizada, que usa diretamente nome, serviço e estilo respondidos, proíbe termos técnicos na imagem e libera todo o lote como prévia gratuita.
+- **Prevenção:** teste de contrato reproduz o modelo e os campos publicados pelo experimento #88, exigindo seis imagens livres, conteúdo comercial real e ausência do slug como profissão ou serviço.
+
 ### LOOP-LEAD-PORTAL-FORMULARIO-INVALIDO-ENVIADO
 
 - **Sintoma:** ao tocar no CTA com campos obrigatórios vazios, a página exibe erro genérico de envio e registra uma exceção técnica, em vez de orientar o preenchimento do primeiro campo inválido.

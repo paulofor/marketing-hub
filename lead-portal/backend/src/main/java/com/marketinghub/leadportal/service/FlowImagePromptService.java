@@ -6,6 +6,8 @@ import com.marketinghub.leadportal.model.Flow;
 import com.marketinghub.leadportal.model.FlowImagePrompt;
 import com.marketinghub.leadportal.model.FlowSubmission;
 import com.marketinghub.leadportal.model.SimpleImageBriefing;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +15,9 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -22,7 +27,10 @@ import org.springframework.util.StringUtils;
 @Service
 public class FlowImagePromptService {
 
+    private static final Logger log = LoggerFactory.getLogger(FlowImagePromptService.class);
     private static final String PERSONALIZED_SAMPLE_FUNNEL_MODEL = "AI_PERSONALIZED_SAMPLE_FUNNEL";
+    private static final String GERA_SALES_PAGE_PERSONALIZED_SAMPLE_MODEL =
+            "AI_PERSONALIZED_SAMPLE_GERA_SALES_PAGE";
     private static final int DEFAULT_BATCH_SIZE = 6;
     private static final String DEFAULT_IMAGE_MODEL = "gpt-image-1";
     private static final int DEFAULT_REFERENCE_IMAGE_FREE_IMAGES = 1;
@@ -46,6 +54,8 @@ public class FlowImagePromptService {
             "Dados coletados no formulário:",
             "{{dados_json}}",
             "");
+    private static final String PERSONALIZED_SAMPLE_TEMPLATE_RESOURCE =
+            "prompts/lead-portal/personalized-sample-image.md";
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{\\{\\s*([a-zA-Z0-9_.-]+)\\s*\\}\\}");
 
     private final SimpleImageBriefingMapper briefingMapper;
@@ -102,17 +112,40 @@ public class FlowImagePromptService {
     /** Monta o prompt do formulário simples e libera o lote quando o fluxo é uma amostra gratuita. */
     private FlowImagePrompt buildSimpleFormPrompt(Flow flow, SimpleImageBriefing briefing) {
         int batchSize = resolveBatchSize(flow.imageBatchSize());
-        String template = StringUtils.hasText(flow.imagePromptTemplate()) ? flow.imagePromptTemplate() : DEFAULT_TEMPLATE;
+        String defaultTemplate = isPersonalizedSampleFunnel(flow.model())
+                ? loadPersonalizedSampleTemplate()
+                : DEFAULT_TEMPLATE;
+        String template = StringUtils.hasText(flow.imagePromptTemplate()) ? flow.imagePromptTemplate() : defaultTemplate;
         String prompt = renderTemplate(template, briefing, batchSize);
         if (!StringUtils.hasText(prompt)) {
-            prompt = renderTemplate(DEFAULT_TEMPLATE, briefing, batchSize);
+            prompt = renderTemplate(defaultTemplate, briefing, batchSize);
         }
         if (!StringUtils.hasText(prompt)) {
             prompt = buildFallbackPrompt(briefing, batchSize);
         }
         String model = StringUtils.hasText(flow.imagePromptModel()) ? flow.imagePromptModel() : DEFAULT_IMAGE_MODEL;
-        int freeImages = PERSONALIZED_SAMPLE_FUNNEL_MODEL.equals(flow.model()) ? batchSize : 0;
+        int freeImages = isPersonalizedSampleFunnel(flow.model()) ? batchSize : 0;
         return new FlowImagePrompt(prompt, model, batchSize, freeImages);
+    }
+
+    /** Identifica os contratos canônicos e legados do funil de amostra personalizada. */
+    private boolean isPersonalizedSampleFunnel(String model) {
+        return PERSONALIZED_SAMPLE_FUNNEL_MODEL.equals(model)
+                || GERA_SALES_PAGE_PERSONALIZED_SAMPLE_MODEL.equals(model);
+    }
+
+    /** Carrega do classpath o prompt versionado usado na geração da amostra personalizada. */
+    private String loadPersonalizedSampleTemplate() {
+        try {
+            return new ClassPathResource(PERSONALIZED_SAMPLE_TEMPLATE_RESOURCE)
+                    .getContentAsString(StandardCharsets.UTF_8);
+        } catch (IOException ex) {
+            log.error(
+                    "Falha ao carregar prompt da amostra personalizada. recurso={}",
+                    PERSONALIZED_SAMPLE_TEMPLATE_RESOURCE,
+                    ex);
+            throw new IllegalStateException("Prompt da amostra personalizada indisponível", ex);
+        }
     }
 
     private boolean hasReferenceImage(FlowSubmission submission) {

@@ -366,7 +366,7 @@ public class CreativeService {
                   creative.getPrimaryText(),
                   creative.getDescription(),
                   creative.getCta(),
-                  creative.getDestinationUrl(),
+                  resolveAgentReviewDestinationUrl(creative, experiment),
                   mediaUrl,
                   desireMapProduct != null
                       ? desireMapProduct.getDesireAssociationMapVersion()
@@ -374,6 +374,18 @@ public class CreativeService {
                   desireMapProduct != null ? desireMapProduct.getDesireAssociationMapJson() : null);
             })
         .toList();
+  }
+
+  /** Resolve a landing pública do experimento quando o criativo legado não gravou seu destino. */
+  private String resolveAgentReviewDestinationUrl(Creative creative, Experiment experiment) {
+    if (StringUtils.hasText(creative.getDestinationUrl())) {
+      return creative.getDestinationUrl().trim();
+    }
+    boolean publishedLanding =
+        experiment.getLeadPortalFlow() != null && experiment.getLeadPortalFlow().isApproved();
+    return publishedLanding && StringUtils.hasText(experiment.getFollowUpActionUrl())
+        ? experiment.getFollowUpActionUrl().trim()
+        : null;
   }
 
   /** Enfileira explicitamente um criativo legado ou com falha para nova revisão do agente. */

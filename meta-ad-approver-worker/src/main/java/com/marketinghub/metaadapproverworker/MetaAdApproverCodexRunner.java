@@ -43,7 +43,7 @@ public class MetaAdApproverCodexRunner {
   public Map<String, Object> run(MetaAdReviewJob job) throws IOException, InterruptedException {
     Path output = Files.createTempFile("meta-ad-approver-", ".json");
     Path processOutput = Files.createTempFile("meta-ad-approver-process-", ".log");
-    Path mcpServer = materialize("mcp/meta-ad-approver.mjs", "meta-ad-approver-mcp-", ".mjs");
+    Path mcpServer = materializeMcp();
     Path schema =
         materialize("prompts/meta-ad-approver/v1/review-schema.json", "meta-ad-schema-", ".json");
     try {
@@ -89,7 +89,7 @@ public class MetaAdApproverCodexRunner {
     } finally {
       Files.deleteIfExists(output);
       Files.deleteIfExists(processOutput);
-      Files.deleteIfExists(mcpServer);
+      deleteMcpRuntime(mcpServer);
       Files.deleteIfExists(schema);
     }
   }
@@ -176,6 +176,23 @@ public class MetaAdApproverCodexRunner {
     Path path = Files.createTempFile(prefix, suffix);
     Files.writeString(path, read(resource));
     return path;
+  }
+
+  /** Materializa o MCP junto a um vínculo somente leitura para as dependências do navegador. */
+  Path materializeMcp() throws IOException {
+    Path directory = Files.createTempDirectory("meta-ad-approver-mcp-");
+    Path server = directory.resolve("meta-ad-approver.mjs");
+    Files.writeString(server, read("mcp/meta-ad-approver.mjs"));
+    Files.createSymbolicLink(directory.resolve("node_modules"), Path.of("/app/node_modules"));
+    return server;
+  }
+
+  /** Remove apenas o runtime temporário criado para uma execução do MCP. */
+  private void deleteMcpRuntime(Path server) throws IOException {
+    Path directory = server.getParent();
+    Files.deleteIfExists(server);
+    Files.deleteIfExists(directory.resolve("node_modules"));
+    Files.deleteIfExists(directory);
   }
 
   /** Lê um recurso versionado integralmente. */

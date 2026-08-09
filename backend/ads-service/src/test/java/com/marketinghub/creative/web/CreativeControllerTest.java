@@ -17,6 +17,7 @@ import com.marketinghub.experiment.video.ExperimentVideoAsset;
 import com.marketinghub.experiment.video.ExperimentVideoReviewStatus;
 import com.marketinghub.experiment.video.ExperimentVideoSlot;
 import com.marketinghub.experiment.video.ExperimentVideoStatus;
+import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
@@ -73,8 +74,16 @@ class CreativeControllerTest {
   void setup() {
     videoAssetRepository.deleteAll();
     repository.deleteAll();
-    experimentRepository.deleteAll();
+    experimentRepository
+        .findAll()
+        .forEach(
+            experiment -> {
+              experiment.setLeadPortalFlow(null);
+              experimentRepository.save(experiment);
+            });
+    experimentRepository.flush();
     leadPortalFlowRepository.deleteAll();
+    experimentRepository.deleteAll();
     hypothesisRepository.deleteAll();
     marketNicheRepository.deleteAll();
     MarketNiche niche = fixtures.createAndSaveNiche();
@@ -119,6 +128,37 @@ class CreativeControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.headline").value("Criativo legado"))
         .andExpect(jsonPath("$.agentReviewStatus").value("PENDING"));
+  }
+
+  /** Garante que a revisão use a landing publicada quando o criativo não gravou o destino. */
+  @Test
+  void pendingAgentReviewFallsBackToPublishedExperimentLanding() throws Exception {
+    Experiment experiment = experimentRepository.findById(expId).orElseThrow();
+    LeadPortalFlow flow =
+        leadPortalFlowRepository.save(
+            LeadPortalFlow.builder()
+                .name("Landing publicada")
+                .slug("exp-" + expId + "-landing-publicada")
+                .experiment(experiment)
+                .approved(true)
+                .build());
+    experiment.setLeadPortalFlow(flow);
+    experiment.setFollowUpActionUrl("https://landing.test/experimento");
+    experimentRepository.save(experiment);
+    CreateCreativeRequest req = new CreateCreativeRequest();
+    req.setHeadline("Criativo sem destino legado");
+    req.setPrimaryText("Texto");
+    req.setImageUrl("https://cdn.test/creative.jpg");
+    req.setStatus(CreativeStatus.DRAFT);
+    mockMvc.perform(
+        post("/api/experiments/" + expId + "/creatives")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(mapper.writeValueAsString(req)));
+
+    mockMvc
+        .perform(get("/api/internal/creatives/agent-review/stage-executions/pending"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].destinationUrl").value("https://landing.test/experimento"));
   }
 
   /** Garante que a API exponha a fila de aprovação de vídeos. */

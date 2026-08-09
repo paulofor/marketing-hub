@@ -13,6 +13,12 @@ const tools = [
   tool('consultar_memoria', 'Consulta o historico auditavel dos ciclos do Operador.', {}),
   tool('consultar_estrategia_videos', 'Consulta estrategia, custos, progressao e aprendizados dos videos.', {}),
   tool('consultar_pendencias', 'Consulta acoes abertas e resultados comprovados do planejamento.', {}),
+  tool('recuperar_memoria_especializada', 'Recupera aprendizados comerciais confirmados e candidatos deste planejamento.', {}, []),
+  tool('registrar_aprendizado_candidato', 'Registra uma hipótese comercial sem tratá-la como resultado confirmado.', {
+    specialty: { type: 'string', minLength: 3, maxLength: 120 }, content: { type: 'string', minLength: 10, maxLength: 4000 },
+    evidence: { type: 'string', minLength: 10, maxLength: 4000 }, sourceReference: { type: 'string', maxLength: 700 },
+    confidence: { type: 'number', minimum: 0, maximum: 1 }
+  }, ['specialty', 'content', 'evidence', 'confidence']),
   tool('solicitar_pausa_experimento', 'Solicita pausa preventiva governada pelo backend.', actionSchema(), ['reason', 'evidence']),
   tool('solicitar_retomada_experimento', 'Solicita retomada sujeita a aprovacao humana.', actionSchema(), ['reason', 'evidence'])
 ];
@@ -56,6 +62,8 @@ async function dispatch(request) {
 }
 
 async function callTool(params) {
+  if (params.name === 'recuperar_memoria_especializada') return callMemory('GET', params.arguments ?? {});
+  if (params.name === 'registrar_aprendizado_candidato') return callMemory('POST', params.arguments ?? {});
   const route = routes[params.name];
   if (!route) throw new Error(`Ferramenta nao permitida: ${params.name}`);
   const args = params.arguments ?? {};
@@ -68,6 +76,15 @@ async function callTool(params) {
   if (!response.ok) throw new Error(`Marketing Hub respondeu HTTP ${response.status} em ${params.name}`);
   const payload = JSON.parse(body);
   return { content: [{ type: 'text', text: JSON.stringify({ audit: { tool: params.name, planId, source: path, consultedAt: startedAt, readOnly: !mutable, governedMutation: mutable }, data: payload }) }] };
+}
+
+async function callMemory(method, args) {
+  const root = '/api/internal/agent-memory/v1/agents/growth-operator';
+  const path = method === 'GET' ? `${root}?${new URLSearchParams({ scopeType: 'COMMERCIAL_PLAN', scopeId: String(planId), limit: '8' })}` : root;
+  const body = method === 'POST' ? JSON.stringify({ ...args, scopeType: 'COMMERCIAL_PLAN', scopeId: String(planId), sourceExecutionId: `plan-${planId}` }) : undefined;
+  const response = await fetch(`${baseUrl}${path}`, { method, headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body, signal: AbortSignal.timeout(30000) });
+  if (!response.ok) throw new Error(`Marketing Hub respondeu HTTP ${response.status} na memória do Operador`);
+  return { content: [{ type: 'text', text: await response.text() }] };
 }
 
 function actionSchema() {

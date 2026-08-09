@@ -17,7 +17,7 @@ try {
   await client.connect(transport);
   const response = await client.listTools();
   const names = response.tools.map(tool => tool.name).sort();
-  const expected = ['consultar_contexto', 'inspecionar_landing', 'inspecionar_midia'];
+  const expected = ['consultar_contexto', 'inspecionar_landing', 'inspecionar_midia', 'recuperar_memoria_especializada', 'registrar_aprendizado_candidato'];
   if (JSON.stringify(names) !== JSON.stringify(expected)) {
     throw new Error(`Ferramentas MCP divergentes: ${JSON.stringify(names)}`);
   }

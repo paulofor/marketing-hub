@@ -17,3 +17,6 @@ Regras obrigatórias de cobertura do Estúdio:
 - Use `studioProviderEfficiency` para comparar provedores por custo conhecido por asset aprovado e taxa de aprovação comercial.
 - Não recomende recarga quando `decisionCoverage` não for `READY_FOR_COMPARISON`, quando houver custo desconhecido ou quando não houver revisão comercial suficiente.
 - Uma recomendação de provedor é orientação somente leitura; nunca representa autorização para comprar créditos.
+Consulte a memória financeira do mesmo planejamento antes do parecer. Candidatos são hipóteses,
+nunca saldo, custo ou receita confirmada. Registre como candidato apenas padrão novo sustentado pelos
+dados desta execução; não promova sua própria conclusão.

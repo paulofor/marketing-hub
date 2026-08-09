@@ -1,6 +1,7 @@
 import { chromium } from 'playwright-core';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { z } from 'zod';
 
 const baseUrl = requiredEnv('MCP_MARKETING_HUB_URL').replace(/\/$/, '');
 const creativeId = positiveInteger(requiredEnv('MCP_CREATIVE_ID'), 'MCP_CREATIVE_ID');
@@ -10,6 +11,8 @@ const server = new McpServer({ name: 'meta-ad-approver', version: '1.0.0' });
 registerTool('consultar_contexto', 'Confirma no Marketing Hub os dados atuais do anúncio reservado.');
 registerTool('inspecionar_midia', 'Retorna a imagem em alta definição ou três quadros do vídeo.');
 registerTool('inspecionar_landing', 'Renderiza e retorna a página de destino em mobile e desktop.');
+registerMemoryTool('recuperar_memoria_especializada', 'Recupera aprendizados de copy, estética e integração deste experimento.', false);
+registerMemoryTool('registrar_aprendizado_candidato', 'Registra uma hipótese de melhoria do anúncio sem aprová-la automaticamente.', true);
 await server.connect(new StdioServerTransport());
 
 function registerTool(name, description) {
@@ -22,6 +25,24 @@ function registerTool(name, description) {
       destructiveHint: false,
     },
   }, async () => callTool(name));
+}
+
+function registerMemoryTool(name, description, writable) {
+  const inputSchema = writable ? {
+    specialty: z.string().min(3).max(120), content: z.string().min(10).max(4000),
+    evidence: z.string().min(10).max(4000), sourceReference: z.string().max(700).optional(),
+    confidence: z.number().min(0).max(1)
+  } : {};
+  server.registerTool(name, { description, inputSchema, annotations: { readOnlyHint: !writable, openWorldHint: false, destructiveHint: false } }, async args => callMemory(writable ? 'POST' : 'GET', args));
+}
+
+async function callMemory(method, args) {
+  const root = '/api/internal/agent-memory/v1/agents/meta-ad-approver';
+  const path = method === 'GET' ? `${root}?${new URLSearchParams({ scopeType: 'EXPERIMENT', scopeId: String(experimentId), limit: '8' })}` : root;
+  const body = method === 'POST' ? JSON.stringify({ ...args, scopeType: 'EXPERIMENT', scopeId: String(experimentId), sourceExecutionId: `creative-${creativeId}` }) : undefined;
+  const response = await fetch(`${baseUrl}${path}`, { method, headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body, signal: AbortSignal.timeout(30000) });
+  if (!response.ok) throw new Error(`Marketing Hub respondeu HTTP ${response.status} na memória do Aprovador`);
+  return { content: [text({ audit: audit(method === 'GET' ? 'recuperar_memoria_especializada' : 'registrar_aprendizado_candidato', new Date().toISOString()), data: await response.json() })] };
 }
 
 async function callTool(name) {

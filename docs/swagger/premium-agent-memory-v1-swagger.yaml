@@ -1,0 +1,61 @@
+openapi: 3.0.3
+info:
+  title: Memória Premium dos Agentes
+  version: 1.0.0
+paths:
+  /api/internal/agent-memory/v1/agents/{agentKey}:
+    get:
+      summary: Recupera memórias utilizáveis e segregadas do agente
+      parameters:
+        - {name: agentKey, in: path, required: true, schema: {type: string}}
+        - {name: tenantKey, in: query, required: false, schema: {type: string, maxLength: 120}}
+        - {name: scopeType, in: query, required: true, schema: {type: string, maxLength: 60}}
+        - {name: scopeId, in: query, required: true, schema: {type: string, maxLength: 120}}
+        - {name: limit, in: query, required: false, schema: {type: integer, minimum: 1, maximum: 12, default: 8}}
+      responses:
+        '200': {description: Memórias confirmadas e candidatas, com estado explícito}
+    post:
+      summary: Registra uma memória candidata sem autopromoção
+      parameters:
+        - {name: agentKey, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [scopeType, scopeId, specialty, content, evidence, sourceExecutionId, confidence]
+              properties:
+                tenantKey: {type: string, maxLength: 120}
+                scopeType: {type: string, maxLength: 60}
+                scopeId: {type: string, maxLength: 120}
+                specialty: {type: string, maxLength: 120}
+                content: {type: string, maxLength: 4000}
+                evidence: {type: string, maxLength: 4000}
+                sourceReference: {type: string, maxLength: 700}
+                sourceExecutionId: {type: string, maxLength: 120}
+                confidence: {type: number, minimum: 0, maximum: 1}
+                validUntil: {type: string, format: date-time}
+      responses:
+        '201': {description: Memória candidata criada ou deduplicada}
+  /api/internal/agent-memory/v1/agents/{agentKey}/{memoryId}/feedback:
+    post:
+      summary: Registra resultado oficial posterior sobre uma memória
+      parameters:
+        - {name: agentKey, in: path, required: true, schema: {type: string}}
+        - {name: memoryId, in: path, required: true, schema: {type: integer, format: int64}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [outcome, evidence]
+              properties:
+                outcome: {type: string, enum: [CONFIRMED, CONTRADICTED, INCONCLUSIVE, RETIRED]}
+                evidence: {type: string, maxLength: 4000}
+                sourceReference: {type: string, maxLength: 700}
+      responses:
+        '200': {description: Estado recalibrado e feedback preservado}

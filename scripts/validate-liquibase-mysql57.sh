@@ -121,6 +121,37 @@ if positions != sorted(positions):
     sys.exit(1)
 PY
 
+log "Validando dependências do vínculo entre hipótese e produto"
+python3 - "${MASTER_CHANGELOG}" <<'PY'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+required_order = [
+    "V2025_07_23__create_hypothesis.sql",
+    "changesets/2026-08-08-hypothesis-product-link.yaml",
+]
+
+positions = []
+for changeset in required_order:
+    count = text.count(f"file: {changeset}")
+    if count != 1:
+        print(
+            f"{path}: esperado exatamente um include de {changeset}, encontrado(s): {count}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    positions.append(text.index(f"file: {changeset}"))
+
+if positions != sorted(positions):
+    print(
+        f"{path}: ordem inválida do vínculo hipótese-produto; crie hypothesis antes de alterar a tabela",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+PY
+
 log "Validando padrões temporais e erro MySQL 5.7 1093 (escopo=${LIQUIBASE_VALIDATE_SCOPE})"
 python3 - "${CHANGELOG_ROOT}" "${LIQUIBASE_VALIDATE_SCOPE}" <<'PY'
 import re

@@ -14,6 +14,11 @@ telemetria próprios. O `ai-worker` não pode conter pacote, prompt, schema, exe
 Aprovador Meta. Sua responsabilidade limita-se à geração técnica de mídia requisitada pelo backend,
 em pacote neutro de materialização visual, sem analisar, pontuar ou aprovar anúncios.
 
+Cada lote reservado deve executar seus criativos concorrentemente e com isolamento de falha. Um
+processo Codex lento ou bloqueado não pode manter os demais itens do mesmo lote em `PROCESSING` sem
+execução real nem multiplicar o tempo total pelo tamanho do lote. O limite individual, a telemetria
+e o callback continuam sendo aplicados separadamente a cada criativo.
+
 Cada execução materializa o MCP versionado `meta_ad_approver`, restrito ao criativo e ao experimento
 reservados. As ferramentas obrigatórias confirmam o contexto no backend, retornam a mídia real em
 alta definição ou três quadros do vídeo e renderizam a landing em mobile e desktop. Divergência de

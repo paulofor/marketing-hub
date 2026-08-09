@@ -47,6 +47,15 @@ for agent in agents:
             errors.append(
                 f"{agent['key']}: workflow não exporta {codex_home} para toda a sessão remota"
             )
+        for marker in (
+            '/opt/growth-operator/codex-home/auth.json',
+            'install -m 600 -o 10001 -g 10001',
+            'codex login status',
+        ):
+            if marker not in workflow_text:
+                errors.append(
+                    f"{agent['key']}: workflow sem bootstrap/readiness seguro da identidade Codex ({marker})"
+                )
 if errors:
     print('\n'.join(f"[ARQUITETURA] {e}" for e in errors),file=sys.stderr); raise SystemExit(1)
 print(f"[ARQUITETURA] {sum(a['operational'] for a in agents)} agentes conformes; {sum(not a['operational'] for a in agents)} bloqueado(s) com causa explícita.")

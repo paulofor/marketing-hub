@@ -131,18 +131,18 @@ class RunwayVideoProviderTest {
         server.enqueue(mp4Response());
         RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
 
-        provider.render(job("RUNWAY_SEEDANCE_2"), profile(), (percent, status, message) -> { });
+        provider.render(job("RUNWAY_SEEDANCE_2_5"), profile(), (percent, status, message) -> { });
 
         RecordedRequest request = server.takeRequest();
         assertThat(request.getHeader("Authorization")).isEqualTo("Bearer runway-test-key");
-        assertThat(request.getBody().readUtf8()).contains("\"model\":\"seedance2\"");
+        assertThat(request.getBody().readUtf8()).contains("\"model\":\"seedance2_5\"");
     }
 
     /** Deve rotear os modelos comerciais curados pelo mesmo token da Runway. */
     @Test
     void shouldRouteCuratedRunwayModelsWithCompatibleDurations() throws Exception {
         for (String providerName : java.util.List.of(
-                "RUNWAY_GEN_4_TURBO", "RUNWAY_VEO_3_1_FAST", "RUNWAY_VEO_3_1")) {
+                "RUNWAY_GEN_4_TURBO", "RUNWAY_HAILUO_3", "RUNWAY_VEO_3_1_FAST", "RUNWAY_VEO_3_1")) {
             server.enqueue(json("{\"id\":\"curated-task\"}"));
             server.enqueue(json("""
                     {"id":"curated-task","status":"SUCCEEDED","output":["%s/download/curated.mp4"]}
@@ -156,6 +156,8 @@ class RunwayVideoProviderTest {
             String body = request.getBody().readUtf8();
             if (providerName.equals("RUNWAY_GEN_4_TURBO")) {
                 assertThat(body).contains("\"model\":\"gen4_turbo\"").contains("\"duration\":10");
+            } else if (providerName.equals("RUNWAY_HAILUO_3")) {
+                assertThat(body).contains("\"model\":\"hailuo3\"").contains("\"duration\":10");
             } else if (providerName.equals("RUNWAY_VEO_3_1_FAST")) {
                 assertThat(body).contains("\"model\":\"veo3.1_fast\"").contains("\"duration\":8");
             } else {

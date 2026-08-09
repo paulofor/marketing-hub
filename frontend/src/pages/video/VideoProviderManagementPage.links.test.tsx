@@ -17,7 +17,8 @@ vi.mock("../../api/salesVideo/useSalesVideoProviderModels", () => ({
   useSalesVideoProviderModels: () => ({
     data: [
       "RUNWAY",
-      "RUNWAY_SEEDANCE_2",
+      "RUNWAY_SEEDANCE_2_5",
+      "RUNWAY_HAILUO_3",
       "RUNWAY_GEN_4_TURBO",
       "RUNWAY_VEO_3_1_FAST",
       "RUNWAY_VEO_3_1",
@@ -78,7 +79,7 @@ describe("VideoProviderManagementPage links", () => {
     renderPage();
 
     const links = screen.getAllByRole("link", { name: /comprar créditos/i });
-    expect(links).toHaveLength(5);
+    expect(links).toHaveLength(6);
     links.forEach((link) => {
       expect(link).toHaveAttribute("href", "https://dev.runwayml.com/");
       expect(link).toHaveAttribute("target", "_blank");

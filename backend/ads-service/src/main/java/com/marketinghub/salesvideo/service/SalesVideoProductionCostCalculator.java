@@ -23,6 +23,8 @@ public class SalesVideoProductionCostCalculator {
   private static final BigDecimal RUNWAY_GEN4_TURBO = new BigDecimal("0.0500");
   private static final BigDecimal RUNWAY_SEEDANCE_25_480 = new BigDecimal("0.2000");
   private static final BigDecimal RUNWAY_SEEDANCE_25_720 = new BigDecimal("0.3000");
+  private static final BigDecimal RUNWAY_HAILUO_3_768 = new BigDecimal("0.1000");
+  private static final BigDecimal RUNWAY_HAILUO_3_2K = new BigDecimal("0.1500");
   private static final BigDecimal HEYGEN_AVATAR_IV_PHOTO_PER_SECOND = new BigDecimal("0.0500");
   private static final BigDecimal VEO_31_STANDARD_720_1080 = new BigDecimal("0.40");
   private static final BigDecimal VEO_31_STANDARD_4K = new BigDecimal("0.60");
@@ -63,6 +65,9 @@ public class SalesVideoProductionCostCalculator {
     }
     if (isSeedance2(normalizedProvider, normalizedModel)) {
       return is480p(resolution) ? RUNWAY_SEEDANCE_25_480 : RUNWAY_SEEDANCE_25_720;
+    }
+    if (isHailuo3(normalizedProvider, normalizedModel)) {
+      return is2k(resolution) ? RUNWAY_HAILUO_3_2K : RUNWAY_HAILUO_3_768;
     }
     if (contains(normalizedProvider, "runway-veo-3-1-fast")) {
       return new BigDecimal("0.1500");
@@ -194,6 +199,12 @@ public class SalesVideoProductionCostCalculator {
     return normalized.contains("4k") || normalized.contains("2160");
   }
 
+  /** Verifica se a resolução solicitada é 2K. */
+  private boolean is2k(String resolution) {
+    String normalized = normalize(resolution);
+    return normalized.contains("2k") || normalized.contains("1440");
+  }
+
   /** Normaliza texto para comparação tolerante. */
   private String normalize(String value) {
     return StringUtils.hasText(value)
@@ -230,6 +241,13 @@ public class SalesVideoProductionCostCalculator {
         || contains(normalizedProvider, "seedance2")
         || contains(normalizedModel, "seedance2")
         || contains(normalizedModel, "seedance-2");
+  }
+
+  /** Identifica o Hailuo 3 disponibilizado pelo contrato oficial da Runway. */
+  private boolean isHailuo3(String normalizedProvider, String normalizedModel) {
+    return contains(normalizedProvider, "hailuo-3")
+        || contains(normalizedProvider, "hailuo3")
+        || contains(normalizedModel, "hailuo3");
   }
 
   /** Identifica modelos ou providers HeyGen. */

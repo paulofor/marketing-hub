@@ -185,8 +185,8 @@ public class VideoManagementProperties {
          */
         @NotNull
         private List<String> acceptedNames = new ArrayList<>(List.of(
-                "RUNWAY", "RUNWAY_GEN_4_5", "RUNWAY_SEEDANCE_2", "RUNWAY_GEN_4_TURBO",
-                "RUNWAY_VEO_3_1", "RUNWAY_VEO_3_1_FAST", "RUNAWAY"));
+                "RUNWAY", "RUNWAY_GEN_4_5", "RUNWAY_SEEDANCE_2_5", "RUNWAY_HAILUO_3",
+                "RUNWAY_GEN_4_TURBO", "RUNWAY_VEO_3_1", "RUNWAY_VEO_3_1_FAST", "RUNAWAY"));
 
         /**
          * Base URL oficial da API Runway.

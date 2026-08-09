@@ -182,6 +182,6 @@
 
 - Causa-raiz: modelos, limites e identificação externa estavam duplicados em frontend, backend e executor; a tela podia anunciar uma opção incompatível com o adapter.
 - Decisão: catálogo persistido com estados `DRAFT`, `HOMOLOGATION`, `ACTIVE` e `BLOCKED`; ativação exige gates de adaptador, preço, licença comercial e QA.
-- Correção documental: a Runway expõe `seedance2`, não `seedance2_5`; o contrato foi alinhado para 4–15 segundos.
-- Investigação Hailuo: a API oficial MiniMax expõe `MiniMax-Hailuo-2.3` e `MiniMax-Hailuo-2.3-Fast`. “Hailuo 3” não foi encontrado como identificador oficial e não pertence à Runway.
-- Segurança comercial: Hailuo 2.3 fica em `DRAFT`, visível para investigação, mas bloqueado para produção até existir adapter MiniMax versionado, credencial segura, preço/licença confirmados, render real e QA comercial.
+- Correção pela documentação vigente: a Runway expõe `seedance2_5` e `hailuo3`; ambos usam o adaptador e o token Runway.
+- Hailuo 3 foi cadastrado em `HOMOLOGATION`, com custo oficial de US$ 0,10/s em 768p ou US$ 0,15/s em 2K, sem ativação produtiva antes de render real e QA comercial.
+- Prevenção: modelos descobertos no catálogo oficial devem ser confirmados também na tabela oficial de preços e protegidos por teste de payload antes de alterar provider, identificador ou gate.

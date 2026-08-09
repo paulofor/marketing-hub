@@ -55,9 +55,9 @@ databaseChangeLog:
                 ('runway-gen-4-5','Runway Gen-4.5','RUNWAY','EXTERNAL_VIDEO_MODULE','RUNWAY','gen4.5',
                  'Cenas curtas e variações; hero longo exige montagem.','ACTIVE',10,10,0,1,0,'https://dev.runwayml.com/',
                  'https://docs.dev.runwayml.com/guides/models/',1,1,1,1,NULL,NOW(),NOW()),
-                ('runway-seedance-2','Seedance 2 via Runway','RUNWAY_SEEDANCE_2','EXTERNAL_VIDEO_MODULE','RUNWAY','seedance2',
+                ('runway-seedance-2-5','Seedance 2.5 via Runway','RUNWAY_SEEDANCE_2_5','EXTERNAL_VIDEO_MODULE','RUNWAY','seedance2_5',
                  'Cenas flexíveis com texto, imagem ou vídeo; homologar qualidade antes de escala.','HOMOLOGATION',15,15,1,1,0,'https://dev.runwayml.com/',
-                 'https://docs.dev.runwayml.com/guides/models/',1,1,1,0,'Substitui o nome incorreto Seedance 2.5; aguarda QA comercial.',NOW(),NOW()),
+                 'https://docs.dev.runwayml.com/guides/models/',1,1,1,0,'Identificador oficial Runway; aguarda QA comercial.',NOW(),NOW()),
                 ('runway-gen-4-turbo','Runway Gen-4 Turbo','RUNWAY_GEN_4_TURBO','EXTERNAL_VIDEO_MODULE','RUNWAY','gen4_turbo',
                  'Variações econômicas a partir de imagem aprovada.','ACTIVE',10,10,0,1,1,'https://dev.runwayml.com/',
                  'https://docs.dev.runwayml.com/guides/models/',1,1,1,1,NULL,NOW(),NOW()),
@@ -73,7 +73,7 @@ databaseChangeLog:
                 ('heygen-avatar-video','HeyGen','HEYGEN','EXTERNAL_VIDEO_MODULE','HEYGEN','avatar-video',
                  'Avatar e narração sincronizada para ofertas educativas.','ACTIVE',30,600,1,0,0,'https://app.heygen.com/',
                  'https://docs.heygen.com/',1,1,1,1,NULL,NOW(),NOW()),
-                ('minimax-hailuo-2-3','MiniMax Hailuo 2.3','MINIMAX_HAILUO_2_3','EXTERNAL_VIDEO_MODULE','MINIMAX','MiniMax-Hailuo-2.3',
-                 'Candidato para movimento corporal, expressão facial e aderência ao prompt.','DRAFT',6,10,0,1,0,'https://platform.minimax.io/',
-                 'https://platform.minimax.io/docs/api-reference/video-generation-i2v',0,1,0,0,'Hailuo 3 não é identificador oficial disponível; não executar até adapter, licença e QA.',NOW(),NOW())
+                ('runway-hailuo-3','Hailuo 3 via Runway','RUNWAY_HAILUO_3','EXTERNAL_VIDEO_MODULE','RUNWAY','hailuo3',
+                 'Candidato econômico para movimento corporal, expressão facial e aderência ao prompt.','HOMOLOGATION',10,10,1,1,0,'https://dev.runwayml.com/',
+                 'https://docs.dev.runwayml.com/guides/models/',1,1,1,0,'Identificador oficial Runway; aguarda render real e QA comercial antes da ativação.',NOW(),NOW())
               ON DUPLICATE KEY UPDATE display_name = VALUES(display_name), updated_at = VALUES(updated_at);

@@ -18,10 +18,21 @@ export interface Creative {
   instagramUserId?: string;
   imagePrompt?: string;
   imageIntermediatePrompt?: string;
-  agentReviewStatus?: "PENDING" | "PROCESSING" | "APPROVED" | "ADJUST" | "REJECTED" | "FAILED" | null;
+  agentReviewStatus?:
+    | "PENDING"
+    | "PROCESSING"
+    | "APPROVED"
+    | "ADJUST"
+    | "REJECTED"
+    | "FAILED"
+    | null;
   agentReviewJson?: string | null;
   agentReviewModel?: string | null;
   agentReviewedAt?: string | null;
+  agentImprovementStatus?:
+    "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "LIMIT_REACHED" | null;
+  agentImprovementAttempts?: number | null;
+  agentImprovementError?: string | null;
 }
 
 interface ExperimentProductAd {
@@ -41,6 +52,9 @@ interface ExperimentProductAd {
   agentReviewJson?: string | null;
   agentReviewModel?: string | null;
   agentReviewedAt?: string | null;
+  agentImprovementStatus?: Creative["agentImprovementStatus"];
+  agentImprovementAttempts?: number | null;
+  agentImprovementError?: string | null;
 }
 
 interface ExperimentProductAdsResponse {
@@ -65,6 +79,9 @@ function mapProductAdToCreative(ad: ExperimentProductAd): Creative {
     agentReviewJson: ad.agentReviewJson ?? null,
     agentReviewModel: ad.agentReviewModel ?? null,
     agentReviewedAt: ad.agentReviewedAt ?? null,
+    agentImprovementStatus: ad.agentImprovementStatus ?? null,
+    agentImprovementAttempts: ad.agentImprovementAttempts ?? 0,
+    agentImprovementError: ad.agentImprovementError ?? null,
   };
 }
 

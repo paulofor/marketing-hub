@@ -504,7 +504,10 @@ public class ProductService {
                c.agent_review_status AS agent_review_status,
                c.agent_review_json AS agent_review_json,
                c.agent_review_model AS agent_review_model,
-               c.agent_reviewed_at AS agent_reviewed_at
+               c.agent_reviewed_at AS agent_reviewed_at,
+               c.agent_improvement_status AS agent_improvement_status,
+               c.agent_improvement_attempts AS agent_improvement_attempts,
+               c.agent_improvement_error AS agent_improvement_error
         FROM creative c
         JOIN experiment e ON e.id = c.experiment_id
         """
@@ -543,7 +546,10 @@ public class ProductService {
                     rs.getString("agent_review_model"),
                     rs.getTimestamp("agent_reviewed_at") != null
                         ? rs.getTimestamp("agent_reviewed_at").toInstant()
-                        : null),
+                        : null,
+                    rs.getString("agent_improvement_status"),
+                    rs.getInt("agent_improvement_attempts"),
+                    rs.getString("agent_improvement_error")),
             scope.params().toArray());
     return new ProductAdLibraryResponse(
         product.getId(),
@@ -623,7 +629,10 @@ public class ProductService {
                c.agent_review_status AS agent_review_status,
                c.agent_review_json AS agent_review_json,
                c.agent_review_model AS agent_review_model,
-               c.agent_reviewed_at AS agent_reviewed_at
+               c.agent_reviewed_at AS agent_reviewed_at,
+               c.agent_improvement_status AS agent_improvement_status,
+               c.agent_improvement_attempts AS agent_improvement_attempts,
+               c.agent_improvement_error AS agent_improvement_error
         FROM creative c
         JOIN experiment e ON e.id = c.experiment_id
         WHERE c.experiment_id = ?
@@ -717,7 +726,10 @@ public class ProductService {
         rs.getString("agent_review_model"),
         rs.getTimestamp("agent_reviewed_at") != null
             ? rs.getTimestamp("agent_reviewed_at").toInstant()
-            : null);
+            : null,
+        rs.getString("agent_improvement_status"),
+        rs.getInt("agent_improvement_attempts"),
+        rs.getString("agent_improvement_error"));
   }
 
   /** Escopo SQL seguro para consultar experimentos relacionados ao produto. */

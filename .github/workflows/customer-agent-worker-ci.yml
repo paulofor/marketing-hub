@@ -71,18 +71,30 @@ jobs:
         run: |
           set -euo pipefail
           ssh "${VPS_USER}@${VPS_IP}" "\
-            cd '${REPOSITORY_DIR}/customer-agent-worker' \
-            && BACKEND_URL=http://191.252.181.168 \
-               CUSTOMER_AGENT_CODEX_HOME=/opt/marketing-hub/agents/customer/codex-home \
-               MARKETING_HUB_REPOSITORY='${REPOSITORY_DIR}' \
-               CUSTOMER_AGENT_MODEL=gpt-5.6-sol \
-               docker compose up -d --build --remove-orphans \
+            install -d -m 700 -o 10001 -g 10001 /opt/marketing-hub/agents/customer/codex-home \
+            && test -s /opt/marketing-hub/agents/customer/codex-home/auth.json \
+            || { printf '%s\n' 'Falha: autenticação Codex exclusiva do Agente Cliente não foi provisionada.'; exit 1; }; \
+            export BACKEND_URL=http://191.252.181.168 \
+                   CUSTOMER_AGENT_CODEX_HOME=/opt/marketing-hub/agents/customer/codex-home \
+                   MARKETING_HUB_REPOSITORY='${REPOSITORY_DIR}' \
+                   CUSTOMER_AGENT_MODEL=gpt-5.6-sol \
+            && cd '${REPOSITORY_DIR}/customer-agent-worker' \
+            && docker compose up -d --build --remove-orphans \
             && for attempt in \$(seq 1 12); do \
                  status=\$(docker inspect --format '{{.State.Status}}' customer-agent-worker-customer-agent-worker-1 2>/dev/null || true); \
-                 [ \"\${status}\" = running ] \
+                 codex_ready=false; \
+                 health_body=; \
+                 if [ \"\${status}\" = running ] \
                    && docker exec customer-agent-worker-customer-agent-worker-1 \
-                        sh -lc 'test -w /home/operator/.codex && codex login status' \
-                   && exit 0; \
+                        sh -lc 'test -w /home/operator/.codex && codex login status' >/dev/null 2>&1; then \
+                   codex_ready=true; \
+                 fi; \
+                 health_body=\$(curl -fsS http://127.0.0.1:8099/ops-customer-agent-observability-v1/health 2>/dev/null || true); \
+                 printf 'readiness attempt=%s container=%s codex=%s health=%s\\n' \
+                   \"\${attempt}\" \"\${status:-missing}\" \"\${codex_ready}\" \"\${health_body:-unavailable}\"; \
+                 if [ \"\${status}\" = running ] && [ \"\${codex_ready}\" = true ] \
+                   && printf '%s' \"\${health_body}\" | grep -Eq 'status.*UP'; then exit 0; fi; \
                  sleep 5; \
                done; \
+            printf '%s\n' 'Falha: Agente Cliente não ficou pronto com identidade Codex e health próprios.'; \
             docker compose logs --tail=150 customer-agent-worker; exit 1"

@@ -80,15 +80,15 @@ jobs:
         run: |
           set -euo pipefail
           ssh "${VPS_USER}@${VPS_IP}" "\
-            cd '${REPOSITORY_DIR}/growth-operator-worker' \
-            && GROWTH_OPERATOR_CODEX_HOME=/opt/marketing-hub/agents/growth-operator/codex-home \
-               BACKEND_URL=http://191.252.181.168 \
-               MARKETING_HUB_URL=http://191.252.181.168 \
-               MARKETING_HUB_REPOSITORY_HOST='${REPOSITORY_DIR}' \
-               COMMERCIAL_PLAN_ID=2 \
-               CODEX_MODEL=gpt-5.6-sol \
-               GROWTH_OPERATOR_IMAGE=marketing-hub/growth-operator-worker:${GITHUB_SHA} \
-               docker compose up -d --build --remove-orphans \
+            export GROWTH_OPERATOR_CODEX_HOME=/opt/marketing-hub/agents/growth-operator/codex-home \
+                   BACKEND_URL=http://191.252.181.168 \
+                   MARKETING_HUB_URL=http://191.252.181.168 \
+                   MARKETING_HUB_REPOSITORY_HOST='${REPOSITORY_DIR}' \
+                   COMMERCIAL_PLAN_ID=2 \
+                   CODEX_MODEL=gpt-5.6-sol \
+                   GROWTH_OPERATOR_IMAGE=marketing-hub/growth-operator-worker:${GITHUB_SHA} \
+            && cd '${REPOSITORY_DIR}/growth-operator-worker' \
+            && docker compose up -d --build --remove-orphans \
             && for attempt in \$(seq 1 12); do \
                  status=\$(docker inspect --format '{{.State.Status}}' growth-operator-worker-growth-operator-worker-1 2>/dev/null || true); \
                  [ \"\${status}\" = running ] \

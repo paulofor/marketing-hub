@@ -80,6 +80,9 @@ jobs:
         run: |
           set -euo pipefail
           ssh "${VPS_USER}@${VPS_IP}" "\
+            install -d -m 700 -o 10001 -g 10001 /opt/marketing-hub/agents/strategist/codex-home \
+            && test -s /opt/marketing-hub/agents/strategist/codex-home/auth.json \
+            || { printf '%s\n' 'Falha: autenticação Codex exclusiva do Agente Estrategista não foi provisionada.'; exit 1; }; \
             export EXPERIMENT_STRATEGIST_CODEX_HOME=/opt/marketing-hub/agents/strategist/codex-home \
             && cd '${REPOSITORY_DIR}/experiment-strategist-worker' \
             && BACKEND_URL=http://191.252.181.168 \

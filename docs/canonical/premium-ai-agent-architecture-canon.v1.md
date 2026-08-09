@@ -33,6 +33,16 @@ Um agente só pode usar status `TEST` ou `ACTIVE` quando possuir simultaneamente
 12. rollout por `DRAFT`, `TEST`, `ACTIVE`, `PAUSED` e `BLOCKED`, com avaliação offline, shadow mode,
     homologação, rollback e versionamento independente.
 
+## Identidade Codex no host compartilhado
+
+Cada agente deve montar um diretório Codex persistente próprio dentro de
+`/opt/marketing-hub/agents/<agente>/codex-home`; é proibido que containers diferentes montem o mesmo
+diretório mutável. Durante a migração do layout legado, o workflow pode copiar uma única vez
+`auth.json` e `config.toml` da sessão operacional confiável em `/opt/growth-operator/codex-home`,
+sempre com modo `600`, proprietário do usuário sem privilégios do container e sem imprimir o
+conteúdo. Depois do bootstrap, cada diretório evolui de forma independente. Diretório vazio nunca
+é considerado autenticação e o deploy deve validar `codex login status` antes de declarar prontidão.
+
 ## Capacidades por domínio
 
 Browser, visão, áudio ou vídeo só são instalados quando necessários. O Aprovador Meta deve possuir

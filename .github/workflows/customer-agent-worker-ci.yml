@@ -72,6 +72,13 @@ jobs:
           set -euo pipefail
           ssh "${VPS_USER}@${VPS_IP}" "\
             install -d -m 700 -o 10001 -g 10001 /opt/marketing-hub/agents/customer/codex-home \
+            && if [ ! -s /opt/marketing-hub/agents/customer/codex-home/auth.json ]; then \
+                 test -s /opt/growth-operator/codex-home/auth.json \
+                 && install -m 600 -o 10001 -g 10001 /opt/growth-operator/codex-home/auth.json /opt/marketing-hub/agents/customer/codex-home/auth.json; \
+                 if [ -s /opt/growth-operator/codex-home/config.toml ]; then \
+                   install -m 600 -o 10001 -g 10001 /opt/growth-operator/codex-home/config.toml /opt/marketing-hub/agents/customer/codex-home/config.toml; \
+                 fi; \
+               fi \
             && test -s /opt/marketing-hub/agents/customer/codex-home/auth.json \
             || { printf '%s\n' 'Falha: autenticação Codex exclusiva do Agente Cliente não foi provisionada.'; exit 1; }; \
             export BACKEND_URL=http://191.252.181.168 \

@@ -81,6 +81,13 @@ jobs:
           set -euo pipefail
           ssh "${VPS_USER}@${VPS_IP}" "\
             install -d -m 700 -o 10001 -g 10001 /opt/marketing-hub/agents/strategist/codex-home \
+            && if [ ! -s /opt/marketing-hub/agents/strategist/codex-home/auth.json ]; then \
+                 test -s /opt/growth-operator/codex-home/auth.json \
+                 && install -m 600 -o 10001 -g 10001 /opt/growth-operator/codex-home/auth.json /opt/marketing-hub/agents/strategist/codex-home/auth.json; \
+                 if [ -s /opt/growth-operator/codex-home/config.toml ]; then \
+                   install -m 600 -o 10001 -g 10001 /opt/growth-operator/codex-home/config.toml /opt/marketing-hub/agents/strategist/codex-home/config.toml; \
+                 fi; \
+               fi \
             && test -s /opt/marketing-hub/agents/strategist/codex-home/auth.json \
             || { printf '%s\n' 'Falha: autenticação Codex exclusiva do Agente Estrategista não foi provisionada.'; exit 1; }; \
             export EXPERIMENT_STRATEGIST_CODEX_HOME=/opt/marketing-hub/agents/strategist/codex-home \

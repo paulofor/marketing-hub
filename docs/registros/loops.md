@@ -903,3 +903,10 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o contrato de correção entregava ao gerador apenas `revisedImagePrompt` em texto livre. Problemas, recomendações e critérios verificáveis permaneciam no parecer, sem obrigação estrutural no prompt executado nem bloqueio de contratos vagos.
 - **Correção sistêmica:** o Aprovador passa a devolver requisitos visuais obrigatórios, elementos proibidos e critérios objetivos de aceitação; o backend persiste e publica essas listas e o worker monta deterministicamente o prompt final com todos os itens.
 - **Prevenção:** testes de contrato bloqueiam geração sem requisitos/critérios e comprovam que cada lista chega ao prompt enviado ao GPT Image 2. A versão continua voltando ao gate multimodal e não herda aprovação técnica ou humana.
+
+# LOOP-AGENT-MCP-BACKEND-ROUTE-DRIFT — MCP registrado aponta para endpoint inexistente
+
+- **Sintoma:** o agente inicia o Codex e registra seu MCP, mas a primeira ferramenta de contexto falha com HTTP 404, impedindo a análise baseada nos dados congelados.
+- **Causa-raiz:** Cliente, Financeiro e Estrategista implementaram no MCP rotas internas de detalhe por execução sem criar os endpoints equivalentes nos controllers do backend; o gate premium verificava apenas a presença textual de `mcp_servers`, não o contrato ponta a ponta.
+- **Correção sistêmica:** cada módulo passou a expor a leitura interna pelo identificador reservado, sem mutação nem recomputação do snapshot.
+- **Prevenção:** o gate premium compara a rota usada por cada MCP com o `@GetMapping` canônico do controller e bloqueia divergências antes do consumo do modelo.

@@ -15,10 +15,36 @@ import com.marketinghub.repository.jpa.financialagent.FinancialAgentExecutionRep
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: proteger a conciliacao honesta das fontes financeiras do planejamento. */
 class FinancialAgentServiceTest {
+  /** Entrega ao MCP o mesmo snapshot imutavel associado a execucao reservada. */
+  @Test
+  void deveExporSnapshotCongeladoAoMcp() {
+    FinancialAgentExecutionRepository repository = mock(FinancialAgentExecutionRepository.class);
+    CommercialPlan plan = new CommercialPlan();
+    plan.setId(2L);
+    FinancialAgentExecution execution = new FinancialAgentExecution();
+    execution.setId(8L);
+    execution.setCommercialPlan(plan);
+    execution.setStatus(FinancialAgentExecutionStatus.RUNNING);
+    execution.setFinancialSnapshot("{\"approvedRevenueBrl\":0}");
+    when(repository.findById(8L)).thenReturn(Optional.of(execution));
+    FinancialAgentService service =
+        new FinancialAgentService(
+            repository,
+            mock(CommercialPlanService.class),
+            new ObjectMapper(),
+            mock(StudioCostLedgerService.class));
+
+    FinancialAgentExecutionResponse response = service.getExecution(8L);
+
+    assertThat(response.id()).isEqualTo(8L);
+    assertThat(response.financialSnapshot()).contains("approvedRevenueBrl");
+  }
+
   /** Confirma que custos sao separados e lacunas nao viram zeros confirmados. */
   @Test
   void deveCongelarCustosReceitaECoberturaDasFontes() throws Exception {

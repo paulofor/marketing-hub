@@ -617,7 +617,10 @@ public class CreativeService {
     }
   }
 
-  /** Impede aprovação sem notas mínimas e pareceres especialistas sobre as três dimensões comerciais. */
+  /**
+   * Impede aprovação sem notas mínimas e pareceres especialistas sobre as três dimensões
+   * comerciais.
+   */
   private void validateSpecialistApprovalContract(
       CreativeAgentReviewResultRequest request, CreativeAgentReviewStatus decision) {
     if (decision != CreativeAgentReviewStatus.APPROVED) {

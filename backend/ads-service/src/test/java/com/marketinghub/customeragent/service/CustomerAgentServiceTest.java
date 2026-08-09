@@ -120,6 +120,34 @@ class CustomerAgentServiceTest {
     assertThat(response.simulationVersion()).isEqualTo("BASELINE_V1");
   }
 
+  /** Entrega ao MCP exatamente a avaliacao reservada, incluindo persona e ativo congelados. */
+  @Test
+  void shouldExposeFrozenEvaluationContextToMcp() {
+    CustomerAgentEvaluationRepository evaluations = mock(CustomerAgentEvaluationRepository.class);
+    CustomerPersona persona = new CustomerPersona();
+    persona.setId(4L);
+    persona.setName("Nail designer");
+    CustomerAgentEvaluation evaluation = new CustomerAgentEvaluation();
+    evaluation.setId(9L);
+    evaluation.setPersona(persona);
+    evaluation.setAssetType("PAGE");
+    evaluation.setAssetReference("https://example.test/oferta");
+    evaluation.setStatus("RUNNING");
+    when(evaluations.findById(9L)).thenReturn(Optional.of(evaluation));
+    var service =
+        new CustomerAgentService(
+            mock(CustomerPersonaRepository.class),
+            evaluations,
+            mock(CustomerDigitalObservationRepository.class),
+            mock(CustomerAgentMotivationService.class));
+
+    var response = service.getEvaluation(9L);
+
+    assertThat(response.id()).isEqualTo(9L);
+    assertThat(response.persona().id()).isEqualTo(4L);
+    assertThat(response.assetReference()).isEqualTo("https://example.test/oferta");
+  }
+
   /** Bloqueia versões desconhecidas para preservar comparação entre contratos estáveis. */
   @Test
   void shouldRejectUnknownSimulationVersion() {

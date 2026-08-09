@@ -56,6 +56,12 @@ public class ExperimentStrategistController {
     return executionService.claim();
   }
 
+  /** Entrega ao MCP exclusivo as evidencias congeladas da pesquisa reservada. */
+  @GetMapping("/internal/executions/{id}")
+  public ExecutionResponse getExecution(@PathVariable Long id) {
+    return executionService.getExecution(id);
+  }
+
   /** Recebe um parecer estruturado sem executar sua recomendacao. */
   @PostMapping("/internal/executions/{id}/complete")
   public ExecutionResponse complete(@PathVariable Long id, @RequestBody CompleteRequest request) {

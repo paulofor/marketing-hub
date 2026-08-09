@@ -18,6 +18,23 @@ codex_home_by_agent = {
     'experiment-strategist': 'EXPERIMENT_STRATEGIST_CODEX_HOME',
     'meta-ad-approver': 'META_AD_APPROVER_CODEX_HOME',
 }
+mcp_backend_contracts = {
+    'customer-agent': (
+        '/api/customer-agent/v1/internal/evaluations/',
+        root/'backend/ads-service/src/main/java/com/marketinghub/customeragent/controller/CustomerAgentController.java',
+        '@GetMapping("/internal/evaluations/{id}")',
+    ),
+    'financial-agent': (
+        '/api/financial-agent/v1/internal/executions/',
+        root/'backend/ads-service/src/main/java/com/marketinghub/financialagent/controller/FinancialAgentController.java',
+        '@GetMapping("/internal/executions/{id}")',
+    ),
+    'experiment-strategist': (
+        '/api/experiment-strategist/v1/internal/executions/',
+        root/'backend/ads-service/src/main/java/com/marketinghub/experimentstrategist/controller/ExperimentStrategistController.java',
+        '@GetMapping("/internal/executions/{id}")',
+    ),
+}
 for agent in agents:
     if not agent['operational']:
         if not agent.get('blockedReason'): errors.append(f"{agent['key']}: bloqueio sem causa")
@@ -38,6 +55,15 @@ for agent in agents:
     if 'pending' not in java or ('complete' not in java and '/result' not in java): errors.append(f"{agent['key']}: pending/callback ausente")
     if 'CodexTelemetryReporter' not in java: errors.append(f"{agent['key']}: telemetria ausente")
     if agent.get('browser') and 'playwright' not in docker.lower(): errors.append(f"{agent['key']}: Playwright ausente")
+    backend_contract = mcp_backend_contracts.get(agent['key'])
+    if backend_contract:
+        route_prefix, controller_path, controller_mapping = backend_contract
+        mcp_text = (resources/agent['mcp']).read_text() if (resources/agent['mcp']).exists() else ''
+        controller_text = controller_path.read_text() if controller_path.exists() else ''
+        if route_prefix not in mcp_text:
+            errors.append(f"{agent['key']}: MCP não consulta a rota interna canônica")
+        if controller_mapping not in controller_text:
+            errors.append(f"{agent['key']}: backend não expõe a rota de contexto usada pelo MCP")
     workflow = workflow_by_agent.get(agent['key'])
     codex_home = codex_home_by_agent.get(agent['key'])
     if workflow and codex_home:

@@ -71,12 +71,12 @@ jobs:
         run: |
           set -euo pipefail
           ssh "${VPS_USER}@${VPS_IP}" "\
-            cd '${REPOSITORY_DIR}/customer-agent-worker' \
-            && BACKEND_URL=http://191.252.181.168 \
-               CUSTOMER_AGENT_CODEX_HOME=/opt/marketing-hub/agents/customer/codex-home \
-               MARKETING_HUB_REPOSITORY='${REPOSITORY_DIR}' \
-               CUSTOMER_AGENT_MODEL=gpt-5.6-sol \
-               docker compose up -d --build --remove-orphans \
+            export BACKEND_URL=http://191.252.181.168 \
+                   CUSTOMER_AGENT_CODEX_HOME=/opt/marketing-hub/agents/customer/codex-home \
+                   MARKETING_HUB_REPOSITORY='${REPOSITORY_DIR}' \
+                   CUSTOMER_AGENT_MODEL=gpt-5.6-sol \
+            && cd '${REPOSITORY_DIR}/customer-agent-worker' \
+            && docker compose up -d --build --remove-orphans \
             && for attempt in \$(seq 1 12); do \
                  status=\$(docker inspect --format '{{.State.Status}}' customer-agent-worker-customer-agent-worker-1 2>/dev/null || true); \
                  [ \"\${status}\" = running ] \

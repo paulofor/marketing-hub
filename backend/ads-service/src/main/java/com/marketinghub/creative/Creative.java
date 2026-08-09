@@ -114,6 +114,24 @@ public class Creative {
   @Column(name = "agent_reviewed_at")
   private Instant agentReviewedAt;
 
+  /** Estado do ciclo automático de correção solicitado pelo agente. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "agent_improvement_status", length = 24)
+  private CreativeImprovementStatus agentImprovementStatus;
+
+  /** Quantidade de correções automáticas já realizadas nesta linhagem. */
+  @Column(name = "agent_improvement_attempts", nullable = false)
+  @Builder.Default
+  private Integer agentImprovementAttempts = 0;
+
+  /** Contrato de correção estruturado produzido pelo agente aprovador. */
+  @Column(name = "agent_improvement_json", columnDefinition = "LONGTEXT")
+  private String agentImprovementJson;
+
+  /** Erro da última tentativa de melhoria, quando existir. */
+  @Column(name = "agent_improvement_error", columnDefinition = "LONGTEXT")
+  private String agentImprovementError;
+
   @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(
       name = "creative_angle",

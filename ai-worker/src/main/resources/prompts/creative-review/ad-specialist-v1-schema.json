@@ -1,7 +1,7 @@
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["decision", "attentionScore", "clarityScore", "desireScore", "credibilityScore", "actionScore", "summary", "issues", "recommendations"],
+  "required": ["decision", "attentionScore", "clarityScore", "desireScore", "credibilityScore", "actionScore", "summary", "issues", "recommendations", "revisedHeadline", "revisedPrimaryText", "revisedDescription", "revisedCta", "revisedImagePrompt"],
   "properties": {
     "decision": {"type": "string", "enum": ["APPROVED", "ADJUST", "REJECTED"]},
     "attentionScore": {"type": "integer", "minimum": 0, "maximum": 100},
@@ -11,6 +11,11 @@
     "actionScore": {"type": "integer", "minimum": 0, "maximum": 100},
     "summary": {"type": "string"},
     "issues": {"type": "array", "items": {"type": "string"}},
-    "recommendations": {"type": "array", "items": {"type": "string"}}
+    "recommendations": {"type": "array", "items": {"type": "string"}},
+    "revisedHeadline": {"type": "string"},
+    "revisedPrimaryText": {"type": "string"},
+    "revisedDescription": {"type": "string"},
+    "revisedCta": {"type": "string"},
+    "revisedImagePrompt": {"type": "string"}
   }
 }

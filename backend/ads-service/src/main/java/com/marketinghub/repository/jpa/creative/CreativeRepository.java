@@ -2,6 +2,7 @@ package com.marketinghub.repository.jpa.creative;
 
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
+import com.marketinghub.creative.CreativeImprovementStatus;
 import com.marketinghub.creative.CreativeStatus;
 import java.util.List;
 import java.util.Optional;
@@ -73,6 +74,16 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
              order by c.id
             """)
   List<Creative> findAgentReviewQueue(@Param("status") CreativeAgentReviewStatus status);
+
+  /** Lista correções decididas pelo agente que aguardam geração de uma nova versão. */
+  @Query(
+      """
+            select c from Creative c
+              join fetch c.experiment e
+             where c.agentImprovementStatus = :status
+             order by c.id
+            """)
+  List<Creative> findAgentImprovementQueue(@Param("status") CreativeImprovementStatus status);
 
   /** Lista criativos de vídeo com o contexto comercial necessário para revisão. */
   @Query(

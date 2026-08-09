@@ -53,6 +53,11 @@ public class CreativeReviewService {
         payload.put("summary", result.path("summary").asText());
         payload.put("issuesJson", result.path("issues").toString());
         payload.put("recommendationsJson", result.path("recommendations").toString());
+        payload.put("revisedHeadline", result.path("revisedHeadline").asText());
+        payload.put("revisedPrimaryText", result.path("revisedPrimaryText").asText());
+        payload.put("revisedDescription", result.path("revisedDescription").asText());
+        payload.put("revisedCta", result.path("revisedCta").asText());
+        payload.put("revisedImagePrompt", result.path("revisedImagePrompt").asText());
         payload.put("model", execution.model());
         payload.put("requestJson", execution.requestJson());
         payload.put("responseJson", execution.responseJson());

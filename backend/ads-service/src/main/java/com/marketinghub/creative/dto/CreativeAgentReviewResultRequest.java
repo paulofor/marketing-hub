@@ -20,4 +20,9 @@ public record CreativeAgentReviewResultRequest(
     Integer inputTokens,
     Integer outputTokens,
     BigDecimal costUsd,
-    String error) {}
+    String error,
+    String revisedHeadline,
+    String revisedPrimaryText,
+    String revisedDescription,
+    String revisedCta,
+    String revisedImagePrompt) {}

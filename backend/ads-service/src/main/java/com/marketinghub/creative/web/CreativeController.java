@@ -6,6 +6,8 @@ import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.creative.dto.CreativeAgentReviewPendingDto;
 import com.marketinghub.creative.dto.CreativeAgentReviewResultRequest;
+import com.marketinghub.creative.dto.CreativeImprovementPendingDto;
+import com.marketinghub.creative.dto.CreativeImprovementResultRequest;
 import com.marketinghub.creative.dto.CreativeDto;
 import com.marketinghub.creative.dto.CreativeVideoReviewDto;
 import com.marketinghub.creative.dto.UpdateCreativeLabelsRequest;
@@ -151,6 +153,20 @@ public class CreativeController {
   public CreativeDto applyAgentReview(
       @PathVariable Long id, @RequestBody CreativeAgentReviewResultRequest request) {
     return mapper.toDto(service.applyAgentReview(id, request));
+  }
+
+  /** Entrega ao AI Worker correções decididas pelo agente e marca cada item como processando. */
+  @GetMapping("/api/internal/creatives/agent-improvement/stage-executions/pending")
+  public List<CreativeImprovementPendingDto> pendingAgentImprovements(
+      @RequestParam(value = "limit", defaultValue = "3") int limit) {
+    return service.claimAgentImprovementQueue(limit);
+  }
+
+  /** Recebe a nova arte e cria uma versão que volta automaticamente para revisão do agente. */
+  @PostMapping("/api/internal/creatives/{id}/agent-improvement/result")
+  public CreativeDto completeAgentImprovement(
+      @PathVariable Long id, @RequestBody CreativeImprovementResultRequest request) {
+    return mapper.toDto(service.completeAgentImprovement(id, request));
   }
 
   /** Remove um criativo existente. */

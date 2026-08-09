@@ -77,6 +77,10 @@ class McpControllerTest {
                 () -> TEST_LOG_DIR.resolve("customer-agent-worker.log").toString());
         registry.add("mcp.logs.financial-agent-worker-path",
                 () -> TEST_LOG_DIR.resolve("financial-agent-worker.log").toString());
+        registry.add("mcp.logs.experiment-strategist-worker-path",
+                () -> TEST_LOG_DIR.resolve("experiment-strategist-worker.log").toString());
+        registry.add("mcp.logs.meta-ad-approver-worker-path",
+                () -> TEST_LOG_DIR.resolve("meta-ad-approver-worker.log").toString());
         registry.add("mcp.logs.max-lines", () -> "500");
         registry.add("mcp.chat-logs.enabled", () -> "true");
         registry.add("mcp.chat-logs.allowed-containers", () -> "marketinghub-fashion-chat,product-discovery-worker");
@@ -195,6 +199,9 @@ class McpControllerTest {
                 StandardCharsets.UTF_8);
         Files.writeString(TEST_LOG_DIR.resolve("financial-agent-worker.log"),
                 "jobId=91 decision=BLOCKED_BY_MISSING_SOURCE\njobId=92 reconciliation=completed\n",
+                StandardCharsets.UTF_8);
+        Files.writeString(TEST_LOG_DIR.resolve("meta-ad-approver-worker.log"),
+                "experimentId=88 creativeId=278 status=PROCESSING\nexperimentId=88 creativeId=278 codex=timeout\n",
                 StandardCharsets.UTF_8);
         Path fakeDocker = TEST_LOG_DIR.resolve("docker-fake.sh");
         Files.writeString(fakeDocker,
@@ -592,6 +599,23 @@ class McpControllerTest {
     }
 
     /**
+     * Garante que o MCP exponha logs vivos correlacionáveis do Aprovador Meta.
+     */
+    @Test
+    void shouldReadMetaAdApproverWorkerLogs() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":33,"method":"tools/call","params":{"name":"java_module_logs","arguments":{"module":"meta-ad-approver-worker","lines":2,"contains":"creativeId=278"}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.module").value("meta-ad-approver-worker"))
+                .andExpect(jsonPath("$.result.structuredContent.path")
+                        .value(TEST_LOG_DIR.resolve("meta-ad-approver-worker.log").toString()))
+                .andExpect(jsonPath("$.result.structuredContent.lines.length()").value(2));
+    }
+
+    /**
      * Garante que a tool java_module_logs rejeita módulos fora da lista permitida.
      */
     @Test
@@ -604,7 +628,7 @@ class McpControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error.code").value(-32602))
                 .andExpect(jsonPath("$.error.message")
-                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, pde-platform-backend, video-management-service, customer-agent-worker, financial-agent-worker, experiment-strategist-worker"));
+                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, pde-platform-backend, video-management-service, customer-agent-worker, financial-agent-worker, experiment-strategist-worker, meta-ad-approver-worker"));
     }
 
     /**

@@ -6,8 +6,15 @@ spring:
 management:
   endpoints:
     web:
+      base-path: /ops-meta-ad-approver-observability-v1
       exposure:
-        include: health
+        include: health,logfile
+  endpoint:
+    logfile:
+      external-file: ${LOG_FILE_NAME:/tmp/meta-ad-approver-worker.log}
+logging:
+  file:
+    name: ${LOG_FILE_NAME:/tmp/meta-ad-approver-worker.log}
 meta-ad-approver:
   backend-url: ${BACKEND_URL:http://backend:8000}
   marketing-hub-url: ${MARKETING_HUB_URL:http://backend:8000}

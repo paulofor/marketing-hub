@@ -177,6 +177,7 @@ class VpsHostInventoryServiceTest {
                 "/tmp/customer-agent-worker.log",
                 "/tmp/financial-agent-worker.log",
                 "/tmp/experiment-strategist-worker.log",
+                "/tmp/meta-ad-approver-worker.log",
                 2,
                 3,
                 1,

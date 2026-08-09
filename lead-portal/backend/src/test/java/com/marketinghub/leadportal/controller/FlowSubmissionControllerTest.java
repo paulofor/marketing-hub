@@ -260,7 +260,7 @@ class FlowSubmissionControllerTest {
                 .first()
                 .satisfies(pack -> {
                     assertThat(pack.getStatus()).isEqualTo("RECENT");
-                    assertThat(pack.getModel()).isEqualTo("gpt-image-1.5");
+                    assertThat(pack.getModel()).isEqualTo("gpt-image-2");
                     assertThat(pack.getPlannedOutputs()).isEqualTo(3);
                     assertThat(pack.getFreeImages()).isEqualTo(1);
                     assertThat(pack.getPrompt())

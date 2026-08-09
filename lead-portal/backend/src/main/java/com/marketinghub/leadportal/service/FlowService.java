@@ -15,6 +15,7 @@ import java.util.Collection;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/** Gerencia persistência, leitura e contabilização de acessos dos fluxos públicos. */
 @Service
 public class FlowService {
 
@@ -25,6 +26,7 @@ public class FlowService {
     private final FlowAssetService flowAssetService;
     private final SimpleFormStyleDefaults simpleFormStyleDefaults;
 
+    /** Inicializa o serviço com persistência, métricas, catálogo e tratamento de ativos. */
     public FlowService(
             FlowRepository repository,
             FlowAccessRepository accessRepository,
@@ -40,6 +42,7 @@ public class FlowService {
         this.simpleFormStyleDefaults = simpleFormStyleDefaults;
     }
 
+    /** Persiste o fluxo depois de normalizar estilos e migrar ativos legados. */
     @Transactional
     public Flow save(Flow flow) {
         if (simpleFlowCatalog.supports(flow.slug())) {
@@ -61,6 +64,7 @@ public class FlowService {
         return applyStyleDefaults(normalizeCustomFormHtml(saved.toModel()));
     }
 
+    /** Retorna um fluxo sem registrar acesso ou executar integrações externas. */
     @Transactional(readOnly = true)
     public Flow get(String slug) {
         Flow flow = simpleFlowCatalog.find(slug).orElseGet(() -> repository
@@ -70,6 +74,7 @@ public class FlowService {
         return applyStyleDefaults(normalizeCustomFormHtml(flow));
     }
 
+    /** Retorna o fluxo e registra somente os dados operacionais do acesso. */
     @Transactional
     public Flow getAndTrackAccess(String slug, FlowAccessMetadata accessMetadata) {
         return simpleFlowCatalog.find(slug)
@@ -82,6 +87,7 @@ public class FlowService {
                 .orElseGet(() -> fetchAndTrackPersistedFlow(slug, accessMetadata));
     }
 
+    /** Remove um fluxo persistido quando ele não pertence ao catálogo automático. */
     @Transactional
     public void delete(String slug) {
         if (simpleFlowCatalog.supports(slug)) {
@@ -94,6 +100,7 @@ public class FlowService {
         }
     }
 
+    /** Lista os fluxos persistidos com os estilos padrão aplicados. */
     @Transactional(readOnly = true)
     public Collection<Flow> list() {
         return repository.findAll().stream()
@@ -103,32 +110,20 @@ public class FlowService {
                 .toList();
     }
 
+    /** Carrega o fluxo persistido e contabiliza o acesso sem migrar ativos na rota pública. */
     private Flow fetchAndTrackPersistedFlow(String slug, FlowAccessMetadata accessMetadata) {
         FlowEntity entity = repository
                 .findById(slug)
                 .orElseThrow(() -> new FlowNotFoundException(slug));
 
-        Flow originalFlow = applyStyleDefaults(normalizeCustomFormHtml(entity.toModel()));
-        Flow optimizedFlow = flowAssetService.optimizeAssets(originalFlow);
-
-        Flow flowToReturn = originalFlow;
-        if (optimizedFlow != null) {
-            Flow optimizedWithDefaults = applyStyleDefaults(normalizeCustomFormHtml(optimizedFlow));
-            if (!optimizedWithDefaults.equals(originalFlow)) {
-                FlowEntity updatedEntity = FlowEntity.fromModel(optimizedWithDefaults);
-                updatedEntity.setAccessCount(entity.getAccessCount());
-                repository.save(updatedEntity);
-            }
-            flowToReturn = optimizedWithDefaults;
-        }
-
         repository.incrementAccessCount(slug);
         recordAccessMetric(slug);
         registerAccess(slug, accessMetadata);
 
-        return flowToReturn;
+        return applyStyleDefaults(normalizeCustomFormHtml(entity.toModel()));
     }
 
+    /** Completa o estilo ausente com os padrões do Lead Portal. */
     private Flow applyStyleDefaults(Flow flow) {
         if (flow == null) {
             return null;
@@ -156,6 +151,7 @@ public class FlowService {
                 flow.facebookPixelCreatedAt());
     }
 
+    /** Mantém o ponto canônico de normalização do HTML de fluxos. */
     private Flow normalizeCustomFormHtml(Flow flow) {
         if (flow == null) {
             return null;
@@ -164,6 +160,7 @@ public class FlowService {
         return flow;
     }
 
+    /** Persiste os metadados disponíveis para auditoria do acesso. */
     private void registerAccess(String slug, FlowAccessMetadata metadata) {
         if (metadata == null) {
             return;
@@ -180,6 +177,7 @@ public class FlowService {
         accessRepository.save(access);
     }
 
+    /** Incrementa a métrica operacional de acessos do fluxo. */
     private void recordAccessMetric(String slug) {
         meterRegistry.counter("lead_portal_flow_access_total", "slug", slug).increment();
     }

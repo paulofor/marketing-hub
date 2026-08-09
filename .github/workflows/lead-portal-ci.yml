@@ -77,6 +77,8 @@ jobs:
             config | grep -F 'LEAD_PORTAL_IMAGE_PIPELINE_ENABLED: "true"' >/dev/null
       - name: Validate runtime healthcheck contract
         run: lead-portal/scripts/test-runtime-health-contract.sh
+      - name: Validate production deploy trigger contract
+        run: lead-portal/scripts/test-deploy-trigger-contract.sh
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Log in to GitHub Container Registry
@@ -124,7 +126,7 @@ jobs:
         run: echo "value=${IMAGE_SHA_TAG}" >> "$GITHUB_OUTPUT"
 
   deploy:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     needs:
       - backend
       - frontend
@@ -257,9 +259,9 @@ jobs:
           docker exec lead-portal-frontend test -f "/usr/share/nginx/html${asset_path}"
           test "$(curl -fsS -o /dev/null -w '%{http_code}:%{content_type}' "https://oportunidadebrasil.shop${asset_path}")" = '200:application/javascript'
           for probe in 1 2 3 4 5; do
-            curl -fsS "https://oportunidadebrasil.shop/flows/exp-81-gerasalespage-v1?deploy-probe=${github_sha}-${probe}" | grep -F 'data-mh-landing-analytics' >/dev/null
+            curl -fsS "https://oportunidadebrasil.shop/flows/exp-81-gerasalespage-v1?mh_test=1&deploy-probe=${github_sha}-${probe}" | grep -F 'data-mh-landing-analytics' >/dev/null
           done
-          test "$(curl -fsS -o /dev/null -w '%{http_code}' 'https://oportunidadebrasil.shop/flows/exp-81-gerasalespage-v1?deploy-health=1')" = '200'
+          test "$(curl -fsS -o /dev/null -w '%{http_code}' 'https://oportunidadebrasil.shop/flows/exp-81-gerasalespage-v1?mh_test=1&deploy-health=1')" = '200'
           docker image prune -af
           trap - EXIT
           REMOTE_PUBLISH

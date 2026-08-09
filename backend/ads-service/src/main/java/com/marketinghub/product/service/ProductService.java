@@ -509,6 +509,7 @@ public class ProductService {
         JOIN experiment e ON e.id = c.experiment_id
         """
             + scope.where()
+            + "\n"
             + """
         ORDER BY CASE WHEN c.status = 'READY' THEN 0 ELSE 1 END,
                  c.reviewed_at DESC,

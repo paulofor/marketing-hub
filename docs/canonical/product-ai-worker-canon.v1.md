@@ -43,3 +43,5 @@ Toda chamada OpenAI do Product AI Worker deve usar 3 tentativas:
 3. Standard/default
 
 O custo persistido deve ser calculado pelo backend a partir do modelo, tokens e service tier.
+
+O contrato ativo de `paid-delivery` deve existir no catálogo persistido antes de aceitar uma compra aprovada. A versão v2 usa `gpt-5.6-sol`, exige diagnóstico personalizado, entregáveis finais com conteúdo e orientação de uso, instruções ao comprador e checklist de qualidade. A ausência desse contrato bloqueia a entrega; nunca deve ser tratada como sucesso ou substituída por conteúdo genérico.

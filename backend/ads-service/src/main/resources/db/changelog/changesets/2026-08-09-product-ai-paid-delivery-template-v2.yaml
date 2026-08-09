@@ -1,0 +1,45 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-09-product-ai-paid-delivery-template-v2-001
+      author: codex
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE ai_prompt_schema_template
+                 SET active = FALSE,
+                     updated_at = CURRENT_TIMESTAMP(6)
+               WHERE pipeline_code = 'personalizedsample.v1'
+                 AND stage_code = 'paid-delivery'
+                 AND active = TRUE;
+
+              INSERT INTO ai_prompt_schema_template (
+                template_key, pipeline_code, stage_code, version, openai_model, schema_name,
+                prompt_markdown_content, schema_json, active, created_at, updated_at
+              ) VALUES (
+                'product-ai.personalizedsample.v1.paid-delivery.v2',
+                'personalizedsample.v1',
+                'paid-delivery',
+                'v2',
+                'gpt-5.6-sol',
+                'product_ai_personalized_sample_paid_delivery_v2',
+                'Você gera a entrega paga personalizada de um produto AI_PERSONALIZED_SAMPLE. Use somente os dados reais do experimento, comprador e respostas de personalização recebidos no contrato. Entregue um kit completo coerente com a promessa comercial e claramente superior à amostra gratuita, sem inventar fatos, depoimentos, resultados ou dados ausentes. A saída deve ser aplicável pelo comprador, separar diagnóstico, materiais finais e instruções de uso, e preservar a experiência premium. Responda somente JSON válido aderente ao schema.',
+                '{"type":"object","additionalProperties":false,"required":["title","personalizedDiagnostic","deliverables","deliveryText","customerInstructions","qualityChecklist"],"properties":{"title":{"type":"string","minLength":1},"personalizedDiagnostic":{"type":"string","minLength":1},"deliverables":{"type":"array","minItems":1,"items":{"type":"object","additionalProperties":false,"required":["name","content","usage"],"properties":{"name":{"type":"string","minLength":1},"content":{"type":"string","minLength":1},"usage":{"type":"string","minLength":1}}}},"deliveryText":{"type":"string","minLength":1},"customerInstructions":{"type":"array","minItems":1,"items":{"type":"string","minLength":1}},"qualityChecklist":{"type":"array","minItems":1,"items":{"type":"string","minLength":1}}}}',
+                TRUE,
+                CURRENT_TIMESTAMP(6),
+                CURRENT_TIMESTAMP(6)
+              )
+              ON DUPLICATE KEY UPDATE
+                pipeline_code = VALUES(pipeline_code),
+                stage_code = VALUES(stage_code),
+                version = VALUES(version),
+                openai_model = VALUES(openai_model),
+                schema_name = VALUES(schema_name),
+                prompt_markdown_content = VALUES(prompt_markdown_content),
+                schema_json = VALUES(schema_json),
+                active = TRUE,
+                updated_at = CURRENT_TIMESTAMP(6);

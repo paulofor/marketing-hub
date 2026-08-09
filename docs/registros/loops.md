@@ -44,6 +44,15 @@
 - Causa-raiz: o worker corretamente não fabrica evidência, mas o contrato backend exigia ao menos uma oportunidade.
 - Prevenção: aceitar lista vazia de oportunidades, concluir o ciclo auditavelmente como pesquisa insuficiente e manter teste de contrato que proíba a reintrodução de fallback artificial.
 
+## LOOP-PRODUCT-AI-PAID-DELIVERY-CONTRACT-DRIFT — Entrega paga sem template ativo
+
+- **Severidade**: CRÍTICO.
+- **Status**: fechado localmente em 2026-08-09; aguarda publicação.
+- **Sintoma**: o worker consulta `personalizedsample.v1/paid-delivery` e recebe HTTP 409, impedindo a entrega posterior à compra aprovada.
+- **Causa-raiz confirmada**: o Liquibase registrava o changeset v1 como executado, mas o catálogo persistido não continha nenhuma versão do contrato; reaplicar o changeset antigo não repararia o drift.
+- **Correção efetiva**: criar versão v2 idempotente em novo changeset, ativar explicitamente o contrato e proteger modelo, schema e inclusão relativa com teste preventivo.
+- **Prevenção**: nunca editar changeset já executado para recuperar template ausente; criar nova versão idempotente e manter a ausência do contrato como bloqueio explícito, sem fallback genérico.
+
 ## Regra operacional de uso
 
 Antes de implementar uma correção em tema com histórico de loop:

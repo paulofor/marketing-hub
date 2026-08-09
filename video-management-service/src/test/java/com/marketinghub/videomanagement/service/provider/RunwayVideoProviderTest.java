@@ -142,7 +142,8 @@ class RunwayVideoProviderTest {
     @Test
     void shouldRouteCuratedRunwayModelsWithCompatibleDurations() throws Exception {
         for (String providerName : java.util.List.of(
-                "RUNWAY_GEN_4_TURBO", "RUNWAY_HAILUO_3", "RUNWAY_VEO_3_1_FAST", "RUNWAY_VEO_3_1")) {
+                "RUNWAY_GEN_4_TURBO", "RUNWAY_HAILUO_3", "RUNWAY_GROK_IMAGINE_1_5",
+                "RUNWAY_VEO_3_1_FAST", "RUNWAY_VEO_3_1")) {
             server.enqueue(json("{\"id\":\"curated-task\"}"));
             server.enqueue(json("""
                     {"id":"curated-task","status":"SUCCEEDED","output":["%s/download/curated.mp4"]}
@@ -158,6 +159,8 @@ class RunwayVideoProviderTest {
                 assertThat(body).contains("\"model\":\"gen4_turbo\"").contains("\"duration\":10");
             } else if (providerName.equals("RUNWAY_HAILUO_3")) {
                 assertThat(body).contains("\"model\":\"hailuo3\"").contains("\"duration\":10");
+            } else if (providerName.equals("RUNWAY_GROK_IMAGINE_1_5")) {
+                assertThat(body).contains("\"model\":\"grok_imagine_1_5\"").contains("\"duration\":10");
             } else if (providerName.equals("RUNWAY_VEO_3_1_FAST")) {
                 assertThat(body).contains("\"model\":\"veo3.1_fast\"").contains("\"duration\":8");
             } else {
@@ -166,6 +169,24 @@ class RunwayVideoProviderTest {
             server.takeRequest();
             server.takeRequest();
         }
+    }
+
+    /** Deve bloquear Grok Imagine sem imagem-base antes de consumir créditos. */
+    @Test
+    void shouldRejectGrokImagineWithoutReferenceImage() {
+        RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+        SalesVideoJob base = jobWithoutReferenceImage();
+        SalesVideoJob job = new SalesVideoJob(
+                base.id(), base.profileId(), base.scriptId(), base.tenantId(), base.providerFamily(),
+                "RUNWAY_GROK_IMAGINE_1_5", base.providerJobId(), base.jobType(), base.status(), base.retryAttempt(),
+                base.retryReason(), base.retryOfJobId(), base.retryNotes(), base.progressPercent(),
+                base.failureCode(), base.failureDetail(), base.requestedBy(), base.requestedAt(), base.startedAt(),
+                base.finishedAt(), base.expiresAt(), base.assetId(), base.posterAssetId(), base.vttAssetId(),
+                base.metadataJson(), base.createdAt(), base.updatedAt());
+
+        assertThatThrownBy(() -> provider.render(job, profile(), (percent, status, message) -> { }))
+                .isInstanceOf(VideoProviderException.class)
+                .hasMessageContaining("imagem-base aprovada");
     }
 
     /** Deve bloquear Gen-4 Turbo sem imagem-base antes de consumir créditos. */

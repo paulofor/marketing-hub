@@ -3,6 +3,7 @@ package com.marketinghub.salesvideo.service;
 import com.marketinghub.media.Asset;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.media.MediaProvider;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoProviderModelRepository;
 import com.marketinghub.salesvideo.SalesVideoJobType;
 import com.marketinghub.salesvideo.SalesVideoProviderFamily;
 import com.marketinghub.salesvideo.SalesVideoStatus;
@@ -73,7 +74,7 @@ public class SalesVideoService {
       SalesVideoCommercialInsightsService commercialInsightsService,
       VideoProjectService videoProjectService,
       VideoReferenceService videoReferenceService,
-      SalesVideoProviderCatalogService providerCatalogService) {
+      SalesVideoProviderModelRepository providerModelRepository) {
     this.profileService = profileService;
     this.jobService = jobService;
     this.slotService = slotService;
@@ -81,7 +82,7 @@ public class SalesVideoService {
     this.commercialInsightsService = commercialInsightsService;
     this.videoProjectService = videoProjectService;
     this.videoReferenceService = videoReferenceService;
-    this.providerCatalogService = providerCatalogService;
+    this.providerCatalogService = new SalesVideoProviderCatalogService(providerModelRepository);
   }
 
   /** Lista o catálogo administrável de provedores e modelos de vídeo. */

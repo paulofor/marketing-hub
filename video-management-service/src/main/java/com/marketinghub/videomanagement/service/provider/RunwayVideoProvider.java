@@ -184,9 +184,11 @@ public class RunwayVideoProvider implements VideoProvider {
         if (StringUtils.hasText(promptImage)) {
             payload.put("promptImage", promptImage);
         }
-        if (resolveModel(job, config).equals("gen4_turbo") && !StringUtils.hasText(promptImage)) {
+        if ((resolveModel(job, config).equals("gen4_turbo")
+                || resolveModel(job, config).equals("grok_imagine_1_5"))
+                && !StringUtils.hasText(promptImage)) {
             throw new VideoProviderException("PROVIDER_INPUT_INVALID",
-                    "Runway Gen-4 Turbo exige uma imagem-base aprovada");
+                    "O modelo Runway selecionado exige uma imagem-base aprovada");
         }
         return payload;
     }
@@ -197,6 +199,7 @@ public class RunwayVideoProvider implements VideoProvider {
         return switch (providerName) {
             case "RUNWAY_SEEDANCE_2_5" -> "seedance2_5";
             case "RUNWAY_HAILUO_3" -> "hailuo3";
+            case "RUNWAY_GROK_IMAGINE_1_5" -> "grok_imagine_1_5";
             case "RUNWAY_GEN_4_TURBO" -> "gen4_turbo";
             case "RUNWAY_VEO_3_1" -> "veo3.1";
             case "RUNWAY_VEO_3_1_FAST" -> "veo3.1_fast";

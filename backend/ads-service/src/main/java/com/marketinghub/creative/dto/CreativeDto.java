@@ -1,6 +1,7 @@
 package com.marketinghub.creative.dto;
 
 import com.marketinghub.creative.CreativeAgentReviewStatus;
+import com.marketinghub.creative.CreativeImprovementStatus;
 import com.marketinghub.creative.CreativeStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -34,4 +35,7 @@ public class CreativeDto {
   private String agentReviewJson;
   private String agentReviewModel;
   private Instant agentReviewedAt;
+  private CreativeImprovementStatus agentImprovementStatus;
+  private Integer agentImprovementAttempts;
+  private String agentImprovementError;
 }

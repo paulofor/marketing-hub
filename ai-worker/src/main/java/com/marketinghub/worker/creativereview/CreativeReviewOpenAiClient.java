@@ -33,7 +33,7 @@ public class CreativeReviewOpenAiClient {
     public CreativeReviewOpenAiClient(WebClient.Builder builder, ObjectMapper objectMapper,
                                       @Value("${openai.api-key:}") String apiKey,
                                       @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-                                      @Value("${creative-review.worker.model:gpt-5.5}") String model) {
+                                      @Value("${creative-review.worker.model:gpt-5.6-sol}") String model) {
         this.webClient = builder.baseUrl(baseUrl).defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey).build();
         this.objectMapper = objectMapper;
         this.model = model;

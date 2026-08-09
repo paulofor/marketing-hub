@@ -397,7 +397,12 @@ class CreativeServiceTest {
             10,
             10,
             java.math.BigDecimal.ZERO,
-            null));
+            null,
+            "Peça pronta para revisão humana.",
+            "Texto aprovado.",
+            "Descrição aprovada.",
+            "LEARN_MORE",
+            ""));
   }
 
   /** Garante que a correção crie outro registro e preserve o criativo original. */

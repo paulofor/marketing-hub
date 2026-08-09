@@ -1,0 +1,37 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-09-creative-agent-improvement-loop-v1
+      author: marketinghub
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: creative
+        - not:
+            - columnExists:
+                tableName: creative
+                columnName: agent_improvement_status
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE creative
+                ADD COLUMN agent_improvement_status VARCHAR(24) NULL AFTER agent_reviewed_at,
+                ADD COLUMN agent_improvement_attempts INT NOT NULL DEFAULT 0 AFTER agent_improvement_status,
+                ADD COLUMN agent_improvement_json LONGTEXT NULL AFTER agent_improvement_attempts,
+                ADD COLUMN agent_improvement_error LONGTEXT NULL AFTER agent_improvement_json;
+              CREATE INDEX idx_creative_agent_improvement_queue
+                ON creative (agent_improvement_status, id);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DROP INDEX idx_creative_agent_improvement_queue ON creative;
+              ALTER TABLE creative
+                DROP COLUMN agent_improvement_error,
+                DROP COLUMN agent_improvement_json,
+                DROP COLUMN agent_improvement_attempts,
+                DROP COLUMN agent_improvement_status;

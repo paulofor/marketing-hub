@@ -815,6 +815,9 @@ databaseChangeLog:
       file: changesets/2026-08-08-creative-agent-review-gate-v1.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-08-09-creative-agent-improvement-loop-v1.yaml
+      relativeToChangelogFile: true
+  - include:
       file: V2025_10_05__create_facebook_ads_tables.sql
       relativeToChangelogFile: true
   - include:

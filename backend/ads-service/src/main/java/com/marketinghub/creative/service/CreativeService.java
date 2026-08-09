@@ -9,6 +9,8 @@ import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.creative.dto.CreativeAgentReviewPendingDto;
 import com.marketinghub.creative.dto.CreativeAgentReviewResultRequest;
+import com.marketinghub.creative.dto.CreativeImprovementPendingDto;
+import com.marketinghub.creative.dto.CreativeImprovementResultRequest;
 import com.marketinghub.creative.dto.CreativeVideoReviewDto;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.video.ExperimentVideoAsset;
@@ -65,6 +67,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class CreativeService {
   private static final int META_CALL_TO_ACTION_MAX_LENGTH = 32;
   private static final String DEFAULT_META_CALL_TO_ACTION = "LEARN_MORE";
+  private static final int MAX_AGENT_IMPROVEMENT_ATTEMPTS = 3;
 
   private final CreativeRepository repository;
   private final ExperimentRepository experimentRepository;
@@ -417,6 +420,7 @@ public class CreativeService {
     creative.setAgentReviewResponseJson(request.responseJson());
     creative.setAgentReviewModel(request.model());
     creative.setAgentReviewedAt(Instant.now());
+    scheduleAgentImprovement(creative, request, decision);
     if (decision != CreativeAgentReviewStatus.APPROVED
         && creative.getStatus() == CreativeStatus.READY) {
       creative.setStatus(CreativeStatus.DRAFT);
@@ -425,6 +429,118 @@ public class CreativeService {
     Creative saved = repository.save(creative);
     refreshExperimentApproval(saved.getExperiment());
     return saved;
+  }
+
+  /** Lista e assume correções pendentes, mantendo o backend como controlador do ciclo. */
+  @Transactional
+  public List<CreativeImprovementPendingDto> claimAgentImprovementQueue(int limit) {
+    return repository.findAgentImprovementQueue(CreativeImprovementStatus.PENDING).stream()
+        .limit(Math.max(1, limit))
+        .map(
+            creative -> {
+              creative.setAgentImprovementStatus(CreativeImprovementStatus.PROCESSING);
+              repository.save(creative);
+              JsonNode correction = readImprovementJson(creative);
+              return new CreativeImprovementPendingDto(
+                  creative.getId(),
+                  creative.getExperiment().getId(),
+                  Objects.requireNonNullElse(creative.getVersionNumber(), 1) + 1,
+                  creative.getFormat(),
+                  correction.path("headline").asText(),
+                  correction.path("primaryText").asText(),
+                  correction.path("description").asText(),
+                  correction.path("cta").asText(),
+                  creative.getDestinationUrl(),
+                  correction.path("imagePrompt").asText(),
+                  creative.getAgentReviewJson());
+            })
+        .toList();
+  }
+
+  /** Cria a nova versão gerada e a devolve automaticamente ao gate do agente. */
+  @Transactional
+  public Creative completeAgentImprovement(Long id, CreativeImprovementResultRequest result) {
+    Creative source = repository.findByIdWithExperiment(id).orElseThrow();
+    if (!StringUtils.hasText(result.imageUrl())) {
+      source.setAgentImprovementStatus(CreativeImprovementStatus.FAILED);
+      source.setAgentImprovementError(
+          StringUtils.hasText(result.error()) ? result.error().trim() : "Imagem corrigida não gerada");
+      return repository.save(source);
+    }
+    JsonNode correction = readImprovementJson(source);
+    CreateCreativeRequest request = new CreateCreativeRequest();
+    request.setFormat(source.getFormat());
+    request.setHeadline(correction.path("headline").asText(source.getHeadline()));
+    request.setPrimaryText(correction.path("primaryText").asText(source.getPrimaryText()));
+    request.setDescription(correction.path("description").asText(source.getDescription()));
+    request.setCta(correction.path("cta").asText(source.getCta()));
+    request.setDestinationUrl(source.getDestinationUrl());
+    request.setImageUrl(result.imageUrl());
+    request.setCostUsd(result.costUsd());
+    Creative revision = createVersion(id, request);
+    revision.setAgentImprovementAttempts(
+        Objects.requireNonNullElse(source.getAgentImprovementAttempts(), 0) + 1);
+    source.setAgentImprovementStatus(CreativeImprovementStatus.COMPLETED);
+    source.setAgentImprovementError(null);
+    repository.save(source);
+    return repository.save(revision);
+  }
+
+  /** Agenda uma correção quando o parecer reprova e ainda existe orçamento de tentativas. */
+  private void scheduleAgentImprovement(
+      Creative creative,
+      CreativeAgentReviewResultRequest request,
+      CreativeAgentReviewStatus decision) {
+    if (decision == CreativeAgentReviewStatus.APPROVED) {
+      creative.setAgentImprovementStatus(null);
+      creative.setAgentImprovementError(null);
+      return;
+    }
+    if (decision != CreativeAgentReviewStatus.ADJUST
+        && decision != CreativeAgentReviewStatus.REJECTED) {
+      creative.setAgentImprovementStatus(CreativeImprovementStatus.FAILED);
+      return;
+    }
+    int attempts = Objects.requireNonNullElse(creative.getAgentImprovementAttempts(), 0);
+    if (attempts >= MAX_AGENT_IMPROVEMENT_ATTEMPTS) {
+      creative.setAgentImprovementStatus(CreativeImprovementStatus.LIMIT_REACHED);
+      creative.setAgentImprovementError("Limite de três correções automáticas atingido");
+      return;
+    }
+    if (!StringUtils.hasText(request.revisedImagePrompt())) {
+      creative.setAgentImprovementStatus(CreativeImprovementStatus.FAILED);
+      creative.setAgentImprovementError("Agente não forneceu prompt visual corrigido");
+      return;
+    }
+    creative.setAgentImprovementJson(toImprovementJson(request));
+    creative.setAgentImprovementStatus(CreativeImprovementStatus.PENDING);
+    creative.setAgentImprovementError(null);
+  }
+
+  /** Serializa o contrato funcional da correção separadamente do parecer técnico. */
+  private String toImprovementJson(CreativeAgentReviewResultRequest request) {
+    try {
+      Map<String, String> correction = new LinkedHashMap<>();
+      correction.put("headline", Objects.requireNonNullElse(request.revisedHeadline(), ""));
+      correction.put("primaryText", Objects.requireNonNullElse(request.revisedPrimaryText(), ""));
+      correction.put("description", Objects.requireNonNullElse(request.revisedDescription(), ""));
+      correction.put("cta", Objects.requireNonNullElse(request.revisedCta(), DEFAULT_META_CALL_TO_ACTION));
+      correction.put("imagePrompt", Objects.requireNonNullElse(request.revisedImagePrompt(), ""));
+      return objectMapper.writeValueAsString(correction);
+    } catch (JsonProcessingException ex) {
+      log.error("Falha ao serializar correção do agente. creativeId desconhecido", ex);
+      throw new IllegalStateException("Correção do agente inválida", ex);
+    }
+  }
+
+  /** Lê o contrato de correção persistido e falha sem executar geração genérica. */
+  private JsonNode readImprovementJson(Creative creative) {
+    try {
+      return objectMapper.readTree(creative.getAgentImprovementJson());
+    } catch (JsonProcessingException | IllegalArgumentException ex) {
+      log.error("Falha ao ler correção do agente. creativeId={}", creative.getId(), ex);
+      throw new IllegalStateException("Contrato de correção do agente inválido", ex);
+    }
   }
 
   /** Bloqueia aprovação humana enquanto o agente não aprovar o anúncio. */

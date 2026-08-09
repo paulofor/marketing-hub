@@ -108,7 +108,7 @@ jobs:
                  status=\$(docker inspect --format '{{.State.Status}}' meta-ad-approver-worker-meta-ad-approver-worker-1 2>/dev/null || true); \
                  [ \"\${status}\" = running ] \
                    && docker exec meta-ad-approver-worker-meta-ad-approver-worker-1 sh -lc 'test -w /home/approver/.codex && codex login status' \
-                   && curl -fsS http://127.0.0.1:8097/actuator/health | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' \
+                   && curl -fsS http://127.0.0.1:8097/ops-meta-ad-approver-observability-v1/health | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' \
                    && exit 0; \
                  sleep 5; \
                done; \

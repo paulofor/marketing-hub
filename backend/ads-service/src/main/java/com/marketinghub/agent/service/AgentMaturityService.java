@@ -35,6 +35,7 @@ public class AgentMaturityService {
       case "financial-agent" -> financial(agent);
       case "customer-agent" -> customer(agent);
       case "experiment-strategist" -> strategist(agent);
+      case "meta-ad-approver" -> metaAdApprover(agent);
       default -> empty(agent);
     };
   }
@@ -75,6 +76,35 @@ public class AgentMaturityService {
   /** Consolida pesquisas concluídas sem contar recomendações como resultado comercial. */
   private AgentMaturityDto strategist(Agent agent) {
     return dto(agent, aggregate("experiment_strategist_execution"), 0, 0, 0);
+  }
+
+  /** Consolida cada parecer e correção do Aprovador Meta sem contar aprovação técnica como venda. */
+  private AgentMaturityDto metaAdApprover(Agent agent) {
+    Map<String, Object> execution =
+        jdbc.queryForMap(
+            "SELECT COUNT(*) total, "
+                + "SUM(agent_review_status IN ('APPROVED','ADJUST','REJECTED')) completed, "
+                + "SUM(agent_review_status = 'FAILED') failed, "
+                + "COALESCE(SUM(CASE WHEN agent_review_json IS NOT NULL "
+                + "THEN CAST(JSON_UNQUOTE(JSON_EXTRACT(agent_review_json, '$.costUsd')) AS DECIMAL(12,4)) "
+                + "ELSE 0 END), 0) + "
+                + "COALESCE(SUM(CASE WHEN source_creative_id IS NOT NULL THEN cost_usd ELSE 0 END), 0) cost, "
+                + "MAX(agent_reviewed_at) last_at "
+                + "FROM creative WHERE agent_reviewed_at IS NOT NULL");
+    Map<String, Object> cycle =
+        jdbc.queryForMap(
+            "SELECT "
+                + "SUM(agent_review_status IN ('PENDING','PROCESSING') "
+                + "OR agent_improvement_status IN ('PENDING','PROCESSING')) open_count, "
+                + "SUM(agent_review_status IN ('APPROVED','ADJUST','REJECTED','FAILED')) resolved_count, "
+                + "SUM(agent_review_status = 'APPROVED') confirmed_count "
+                + "FROM creative");
+    return dto(
+        agent,
+        execution,
+        number(cycle, "open_count"),
+        number(cycle, "resolved_count"),
+        number(cycle, "confirmed_count"));
   }
 
   /** Calcula os indicadores comuns sem promover hipótese a resultado confirmado. */

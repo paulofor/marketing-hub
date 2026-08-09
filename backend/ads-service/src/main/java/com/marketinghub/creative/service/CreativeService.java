@@ -172,7 +172,9 @@ public class CreativeService {
     }
   }
 
-  /** Reutiliza um anúncio aprovado em outro experimento do mesmo nicho como nova revisão auditável. */
+  /**
+   * Reutiliza um anúncio aprovado em outro experimento do mesmo nicho como nova revisão auditável.
+   */
   @Transactional
   public Creative reuseInExperiment(Long targetExperimentId, Long sourceCreativeId) {
     try {
@@ -452,6 +454,9 @@ public class CreativeService {
                   correction.path("cta").asText(),
                   creative.getDestinationUrl(),
                   correction.path("imagePrompt").asText(),
+                  stringList(correction.path("mandatoryVisualRequirements")),
+                  stringList(correction.path("forbiddenVisualElements")),
+                  stringList(correction.path("visualAcceptanceCriteria")),
                   creative.getAgentReviewJson());
             })
         .toList();
@@ -464,7 +469,9 @@ public class CreativeService {
     if (!StringUtils.hasText(result.imageUrl())) {
       source.setAgentImprovementStatus(CreativeImprovementStatus.FAILED);
       source.setAgentImprovementError(
-          StringUtils.hasText(result.error()) ? result.error().trim() : "Imagem corrigida não gerada");
+          StringUtils.hasText(result.error())
+              ? result.error().trim()
+              : "Imagem corrigida não gerada");
       return repository.save(source);
     }
     JsonNode correction = readImprovementJson(source);
@@ -512,6 +519,13 @@ public class CreativeService {
       creative.setAgentImprovementError("Agente não forneceu prompt visual corrigido");
       return;
     }
+    if (normalizedItems(request.mandatoryVisualRequirements()).isEmpty()
+        || normalizedItems(request.visualAcceptanceCriteria()).isEmpty()) {
+      creative.setAgentImprovementStatus(CreativeImprovementStatus.FAILED);
+      creative.setAgentImprovementError(
+          "Agente não forneceu requisitos e critérios visuais verificáveis");
+      return;
+    }
     creative.setAgentImprovementJson(toImprovementJson(request));
     creative.setAgentImprovementStatus(CreativeImprovementStatus.PENDING);
     creative.setAgentImprovementError(null);
@@ -520,17 +534,46 @@ public class CreativeService {
   /** Serializa o contrato funcional da correção separadamente do parecer técnico. */
   private String toImprovementJson(CreativeAgentReviewResultRequest request) {
     try {
-      Map<String, String> correction = new LinkedHashMap<>();
+      Map<String, Object> correction = new LinkedHashMap<>();
       correction.put("headline", Objects.requireNonNullElse(request.revisedHeadline(), ""));
       correction.put("primaryText", Objects.requireNonNullElse(request.revisedPrimaryText(), ""));
       correction.put("description", Objects.requireNonNullElse(request.revisedDescription(), ""));
-      correction.put("cta", Objects.requireNonNullElse(request.revisedCta(), DEFAULT_META_CALL_TO_ACTION));
+      correction.put(
+          "cta", Objects.requireNonNullElse(request.revisedCta(), DEFAULT_META_CALL_TO_ACTION));
       correction.put("imagePrompt", Objects.requireNonNullElse(request.revisedImagePrompt(), ""));
+      correction.put(
+          "mandatoryVisualRequirements", normalizedItems(request.mandatoryVisualRequirements()));
+      correction.put("forbiddenVisualElements", normalizedItems(request.forbiddenVisualElements()));
+      correction.put(
+          "visualAcceptanceCriteria", normalizedItems(request.visualAcceptanceCriteria()));
       return objectMapper.writeValueAsString(correction);
     } catch (JsonProcessingException ex) {
       log.error("Falha ao serializar correção do agente. creativeId desconhecido", ex);
       throw new IllegalStateException("Correção do agente inválida", ex);
     }
+  }
+
+  /** Normaliza listas do contrato para impedir instruções vazias ou duplicadas. */
+  private List<String> normalizedItems(List<String> items) {
+    if (items == null) {
+      return List.of();
+    }
+    return items.stream().filter(StringUtils::hasText).map(String::trim).distinct().toList();
+  }
+
+  /** Converte um array JSON persistido em lista textual segura para o executor. */
+  private List<String> stringList(JsonNode node) {
+    if (node == null || !node.isArray()) {
+      return List.of();
+    }
+    List<String> values = new java.util.ArrayList<>();
+    node.forEach(
+        item -> {
+          if (StringUtils.hasText(item.asText())) {
+            values.add(item.asText().trim());
+          }
+        });
+    return List.copyOf(values);
   }
 
   /** Lê o contrato de correção persistido e falha sem executar geração genérica. */

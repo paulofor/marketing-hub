@@ -882,3 +882,10 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** a consulta do pacote ainda exigia o sinalizador legado `experiment.creative_approved`, enquanto a prontidão e a publicação de mídia usam os criativos `READY` como fonte canônica.
 - **Correção sistêmica:** remover a dependência do sinalizador legado da consulta de público e preservar os gates canônicos independentes de criativo e segmentação.
 - **Prevenção:** teste de repositório comprova que um público Meta aprovado continua disponível quando o sinalizador legado está falso.
+
+# LOOP-CREATIVE-APPROVER-FREE-TEXT-CORRECTION — Parecer não materializado na nova arte
+
+- **Sintoma:** o Aprovador registra problemas concretos e gera sucessivas versões, mas os mesmos defeitos visuais reaparecem até o limite de tentativas; no experimento #88, 12 versões terminaram com 0/3 criativos aprovados.
+- **Causa-raiz:** o contrato de correção entregava ao gerador apenas `revisedImagePrompt` em texto livre. Problemas, recomendações e critérios verificáveis permaneciam no parecer, sem obrigação estrutural no prompt executado nem bloqueio de contratos vagos.
+- **Correção sistêmica:** o Aprovador passa a devolver requisitos visuais obrigatórios, elementos proibidos e critérios objetivos de aceitação; o backend persiste e publica essas listas e o worker monta deterministicamente o prompt final com todos os itens.
+- **Prevenção:** testes de contrato bloqueiam geração sem requisitos/critérios e comprovam que cada lista chega ao prompt enviado ao GPT Image 2. A versão continua voltando ao gate multimodal e não herda aprovação técnica ou humana.

@@ -1,5 +1,7 @@
 package com.marketinghub.creative.dto;
 
+import java.util.List;
+
 /** Responsabilidade: transportar uma correção de anúncio decidida pelo agente ao AI Worker. */
 public record CreativeImprovementPendingDto(
     Long creativeId,
@@ -12,4 +14,7 @@ public record CreativeImprovementPendingDto(
     String revisedCta,
     String destinationUrl,
     String revisedImagePrompt,
+    List<String> mandatoryVisualRequirements,
+    List<String> forbiddenVisualElements,
+    List<String> visualAcceptanceCriteria,
     String agentReviewJson) {}

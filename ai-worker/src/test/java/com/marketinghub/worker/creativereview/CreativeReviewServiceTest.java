@@ -24,7 +24,8 @@ class CreativeReviewServiceTest {
         Map<String, Object> pending = Map.of("creativeId", 85L, "mediaUrl", "https://cdn.test/ad.png");
         var result = new ObjectMapper().readTree("""
                 {"decision":"APPROVED","attentionScore":84,"clarityScore":90,"desireScore":78,
-                "credibilityScore":76,"actionScore":88,"summary":"Pronto","issues":[],"recommendations":[]}
+                "credibilityScore":76,"actionScore":88,"summary":"Pronto","issues":[],"recommendations":[],
+                "mandatoryVisualRequirements":[],"forbiddenVisualElements":[],"visualAcceptanceCriteria":[]}
                 """);
         when(backend.listPending(3)).thenReturn(List.of(pending));
         when(openAi.review(pending)).thenReturn(
@@ -40,6 +41,7 @@ class CreativeReviewServiceTest {
         assertThat(payload.getValue()).containsEntry("attentionScore", 84);
         assertThat(payload.getValue()).containsEntry("requestJson", "{request}");
         assertThat(payload.getValue()).containsEntry("responseJson", "{response}");
+        assertThat(payload.getValue()).containsKey("mandatoryVisualRequirements");
     }
 
     /** Confirma que falha técnica nunca abre o gate e é reportada como FAILED. */

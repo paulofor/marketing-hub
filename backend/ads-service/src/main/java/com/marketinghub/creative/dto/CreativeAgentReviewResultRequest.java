@@ -2,6 +2,7 @@ package com.marketinghub.creative.dto;
 
 import com.marketinghub.creative.CreativeAgentReviewStatus;
 import java.math.BigDecimal;
+import java.util.List;
 
 /** Responsabilidade: receber o parecer estruturado e a auditoria bruta do agente especialista. */
 public record CreativeAgentReviewResultRequest(
@@ -25,4 +26,7 @@ public record CreativeAgentReviewResultRequest(
     String revisedPrimaryText,
     String revisedDescription,
     String revisedCta,
-    String revisedImagePrompt) {}
+    String revisedImagePrompt,
+    List<String> mandatoryVisualRequirements,
+    List<String> forbiddenVisualElements,
+    List<String> visualAcceptanceCriteria) {}

@@ -912,3 +912,10 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** Cliente, Financeiro e Estrategista implementaram no MCP rotas internas de detalhe por execução sem criar os endpoints equivalentes nos controllers do backend; o gate premium verificava apenas a presença textual de `mcp_servers`, não o contrato ponta a ponta.
 - **Correção sistêmica:** cada módulo passou a expor a leitura interna pelo identificador reservado, sem mutação nem recomputação do snapshot.
 - **Prevenção:** o gate premium compara a rota usada por cada MCP com o `@GetMapping` canônico do controller e bloqueia divergências antes do consumo do modelo.
+
+# LOOP-META-AD-APPROVER-MCP-APPROVAL-CANCELLED — Ferramentas canceladas sem operador
+
+- **Sintoma:** o Aprovador devolve `ADJUST` informando `user cancelled MCP tool call` para contexto, mídia e landing, mesmo com handshake e catálogo MCP válidos.
+- **Causa-raiz:** o `codex exec` não interativo herdava política de aprovação da identidade e as ferramentas MCP não declaravam anotações de risco; não existia usuário para responder à elicitação.
+- **Correção sistêmica:** declarar `approval_policy=never` por configuração explícita com sandbox `read-only` e anotar todas as ferramentas com `readOnlyHint`, `openWorldHint` e `destructiveHint` coerentes.
+- **Prevenção:** teste de contrato valida simultaneamente a política não interativa e as anotações MCP.

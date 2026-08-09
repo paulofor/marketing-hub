@@ -1,0 +1,8 @@
+{
+  "name": "meta-ad-approver-worker-runtime",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "playwright-core": "1.49.0"
+  }
+}

@@ -8,10 +8,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import org.springframework.stereotype.Service;
 
-/** Responsabilidade: administrar modelos de vídeo sem liberar integrações não homologadas. */
-@Service
+/** Responsabilidade: administrar modelos de vídeo sob a fachada única do módulo SalesVideo. */
 public class SalesVideoProviderCatalogService {
   private static final Set<String> STATUSES = Set.of("DRAFT", "HOMOLOGATION", "ACTIVE", "BLOCKED");
   private static final Set<String> IMPLEMENTED_ADAPTERS =

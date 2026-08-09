@@ -189,32 +189,26 @@ Em resumo: o erro normalmente não está na UI; ele nasce na qualidade do campo 
 
 ---
 
-## 9) Execução dos ciclos
+## 9) Execução vigente
 
-Agendamento operacional vigente no `mois-hotmart-collector`:
+As rotinas e os schedulers Hotmart do Marketing Hub estão desativados. O sistema não recebe nem persiste usuário, senha, JWT, cookie ou sessão Hotmart.
 
-- **Ciclo 1 (listagem):** execução diária às **05:00**, no fuso `America/Sao_Paulo`.
-- **Ciclo 2 (detalhes):** execução diária às **06:00**, no fuso `America/Sao_Paulo`, após a listagem.
-- Os crons ficam versionados diretamente no `HotmartCollectorScheduler`; credencial ausente ou inválida deve gerar estado auditável sem ser interpretada como ausência de demanda.
+O Agente Radar é o único responsável pela pesquisa diária autenticada, usando navegador no ambiente isolado do agente e permissão somente de leitura. Cada pesquisa deve registrar no Radar a fonte, data, URLs, evidências comerciais observadas e lacunas, sem registrar credenciais.
 
-Sequência operacional consolidada:
+O agente não pode afiliar, comprar, alterar produto, conta, configuração ou qualquer outro dado na Hotmart. Os endpoints e dados dos antigos ciclos permanecem somente para leitura histórica e compatibilidade de auditoria.
 
-1. Obter token JWT da Hotmart via configuração geral no backend.
-2. No ciclo 1, chamar `POST https://api-affiliation-market.hotmart.com/v2/market/search` e persistir snapshots base, percorrendo até 20 páginas de 20 itens por execução (alvo operacional padrão de 400 produtos), com requisições sempre em páginas completas de 20 itens e deduplicação por produto antes da persistência, salvo se a Hotmart retornar menos itens antes desse limite.
-3. No ciclo 2, buscar produtos candidatos em `/api/v1/mois/hotmart/products/cycle-2-candidates`, usando o ciclo 1 mais recente e excluindo produtos já processados por ciclos 2 anteriores.
-4. Para cada produto do ciclo 2, chamar `GET https://api-affiliation-market.hotmart.com/v1/market/product/{id}/details?userSessionId={session}`.
-5. Persistir novamente no backend para atualizar as referências com foco em `salesPageUrl`.
+## 10) Tratamento de falhas (pesquisa do agente)
 
-## 10) Tratamento de falhas (ingestão)
-
-- Se falhar a obtenção do token: marcar ciclo como `COLLECTION_SKIPPED`.
-- Se falhar o detalhe de um produto no ciclo 2: manter dados do ciclo 1 para o item e continuar os demais.
-- Registrar em log `status` HTTP e `productId` para diagnóstico de causa-raiz.
+- Se falhar o login ou houver desafio de autenticação, registrar a fonte como indisponível e interromper a pesquisa sem contornar a proteção.
+- Se um produto não puder ser aberto, preservar as evidências já obtidas e registrar a lacuna.
+- Nunca interpretar falha de acesso como ausência de demanda.
 
 
 ---
 
-## 11) Diagramas canônicos dos dois fluxos (Ciclo 1 e Ciclo 2)
+## 11) Diagramas históricos dos fluxos desativados
+
+Os diagramas abaixo documentam apenas o legado para auditoria. Eles não autorizam execução automática nem uso de credenciais pelo Marketing Hub.
 
 ### 11.1 Diagrama — Ciclo 1 (listagem/search)
 

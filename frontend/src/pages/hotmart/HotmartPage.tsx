@@ -1,28 +1,9 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import PageTitle from "../../components/PageTitle";
-import {
-  useHotmartAccessTokenSetting,
-  useUpdateHotmartAccessTokenSetting,
-} from "../../api/settings/useHotmartAccessTokenSetting";
 import {
   useHotmartCollectedProducts,
   useHotmartCollectionJobs,
 } from "../../api/settings/useHotmartCollectedProducts";
-
-function shouldShowHotmartTokenAlert(
-  status?: string | null,
-  message?: string | null,
-) {
-  const normalizedStatus = status ?? "";
-  const normalizedMessage = (message ?? "").toLowerCase();
-  return (
-    normalizedStatus === "COLLECTION_ERROR" ||
-    normalizedStatus === "HOTMART_TOKEN_EXPIRED" ||
-    normalizedMessage.includes("token jwt da hotmart") ||
-    normalizedMessage.includes("invalid_token") ||
-    normalizedMessage.includes("expired jwt")
-  );
-}
 
 function formatUpdatedAt(value?: string | null) {
   if (!value) return "—";
@@ -39,23 +20,8 @@ function formatUpdatedAt(value?: string | null) {
 
 export default function HotmartPage() {
   const workspaceId = "workspace-001";
-  const { data, isLoading, isError } = useHotmartAccessTokenSetting();
-  const updateSetting = useUpdateHotmartAccessTokenSetting();
   const hotmartProductsQuery = useHotmartCollectedProducts(workspaceId, 24);
   const hotmartJobsQuery = useHotmartCollectionJobs(workspaceId);
-  const [tokenValue, setTokenValue] = useState("");
-  const [feedback, setFeedback] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (data) {
-      setTokenValue(data.value ?? "");
-    }
-  }, [data?.value]);
-
-  const updatedAt = useMemo(
-    () => formatUpdatedAt(data?.updatedAt),
-    [data?.updatedAt],
-  );
   const latestHotmartJob = useMemo(() => {
     const firstItem = hotmartProductsQuery.data?.[0];
     return {
@@ -63,15 +29,6 @@ export default function HotmartPage() {
       collectedAt: formatUpdatedAt(firstItem?.collectedAt),
     };
   }, [hotmartProductsQuery.data]);
-
-  const latestHotmartExecution = useMemo(
-    () => hotmartJobsQuery.data?.[0],
-    [hotmartJobsQuery.data],
-  );
-  const showHotmartTokenAlert = shouldShowHotmartTokenAlert(
-    latestHotmartExecution?.status,
-    latestHotmartExecution?.message,
-  );
 
   const hotmartCycleStats = useMemo(() => {
     const products = hotmartProductsQuery.data ?? [];
@@ -97,105 +54,26 @@ export default function HotmartPage() {
     };
   }, [hotmartJobsQuery.data, hotmartProductsQuery.data]);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setFeedback(null);
-
-    const trimmed = tokenValue.trim();
-    if (!trimmed) {
-      setFeedback("Informe o token JWT de acesso da Hotmart.");
-      return;
-    }
-
-    try {
-      await updateSetting.mutateAsync(trimmed);
-      setFeedback("Token salvo com sucesso.");
-    } catch {
-      setFeedback("Não foi possível salvar o token. Tente novamente.");
-    }
-  };
-
   return (
     <div className="mt-3">
       <PageTitle>Hotmart</PageTitle>
 
       <section className="card mt-3 shadow-sm border-0">
         <div className="card-header">
-          <h5 className="mb-1">Token de acesso</h5>
+          <h5 className="mb-1">Pesquisa Hotmart pelo Agente Radar</h5>
           <p className="text-muted small mb-0">
-            Cole aqui o JWT obtido no login da Hotmart para uso nas integrações
-            deste módulo.
+            As rotinas automáticas do Marketing Hub estão desativadas.
           </p>
         </div>
         <div className="card-body">
-          {isLoading ? <p className="mb-0">Carregando token...</p> : null}
-          {isError ? (
-            <p className="text-danger mb-0">
-              Não foi possível carregar o token salvo.
-            </p>
-          ) : null}
-
-          {!isLoading && !isError ? (
-            <form
-              onSubmit={handleSubmit}
-              className="d-flex flex-column gap-3"
-              noValidate
-            >
-              <div>
-                <label
-                  htmlFor="hotmartAccessToken"
-                  className="form-label fw-semibold"
-                >
-                  JWT Hotmart <span className="text-danger">*</span>
-                </label>
-                <textarea
-                  id="hotmartAccessToken"
-                  className="form-control"
-                  rows={6}
-                  value={tokenValue}
-                  onChange={(event) => setTokenValue(event.target.value)}
-                  placeholder="Cole aqui o token JWT"
-                  required
-                />
-                <div className="form-text">Última atualização: {updatedAt}</div>
-              </div>
-
-              <div className="d-flex gap-2">
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={updateSetting.isPending}
-                >
-                  {updateSetting.isPending ? (
-                    <>
-                      <span
-                        className="spinner-border spinner-border-sm me-2"
-                        role="status"
-                        aria-hidden="true"
-                      />
-                      Salvando...
-                    </>
-                  ) : (
-                    "Salvar"
-                  )}
-                </button>
-              </div>
-            </form>
-          ) : null}
-
-          {feedback ? (
-            <div className="alert alert-info mt-3 mb-0">{feedback}</div>
-          ) : null}
-          {showHotmartTokenAlert ? (
-            <div
-              className="alert alert-danger border border-danger mt-3 mb-0"
-              role="alert"
-            >
-              <strong>Ação necessária: atualize o token Hotmart.</strong>{" "}
-              {latestHotmartExecution?.message ||
-                "A última coleta não conseguiu autenticar na Hotmart."}
-            </div>
-          ) : null}
+          <p className="mb-2">
+            O agente acessa a plataforma pelo navegador do próprio ambiente,
+            com permissão somente de leitura, e registra evidências no Radar.
+          </p>
+          <p className="text-muted small mb-0">
+            Usuário, senha, cookies e tokens não devem ser cadastrados nesta
+            tela nem armazenados no Marketing Hub.
+          </p>
         </div>
       </section>
 
@@ -283,8 +161,8 @@ export default function HotmartPage() {
         <div className="card-header">
           <h5 className="mb-1">Produtos coletados da Hotmart</h5>
           <p className="text-muted small mb-0">
-            Exibe os produtos da última coleta automática registrada para o
-            workspace.
+            Exibe o histórico de produtos e evidências Hotmart já registrados
+            para o workspace.
           </p>
         </div>
         <div className="card-body">

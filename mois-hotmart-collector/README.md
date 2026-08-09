@@ -60,7 +60,7 @@ COLLECTOR_HOTMART_PASSWORD=sua_senha
 COLLECTOR_HOTMART_SESSION_COOKIE=
 
 # Agendamento (execução automática)
-COLLECTOR_SCHEDULER_ENABLED=true
+COLLECTOR_SCHEDULER_ENABLED=false
 COLLECTOR_SCHEDULER_CRON=0 0 * * * *
 COLLECTOR_SCHEDULER_SOURCE=hotmart-market
 COLLECTOR_SCHEDULER_MAX_PRODUCTS=400
@@ -82,9 +82,9 @@ O script `run-local-jar.sh` executa via `java -jar`, evitando dependência de pe
 - A coleta autenticada usa:
   - `collector.hotmart.search-url` (default: `https://app.hotmart.com/market/search`)
   - `collector.hotmart.session-cookie` (opção 1 para área logada)
-  - `collector.hotmart.username` + `collector.hotmart.password` (opção 2 para login automático)
+  - credenciais de login não são aceitas neste módulo; o Agente Radar usa navegador isolado
 - Agendamento automático:
-  - `collector.scheduler.enabled=true`
+  - `collector.scheduler.enabled=false` (bloqueado pela regra operacional atual)
   - `collector.scheduler.cron=0 0 * * * *` (**executa de hora em hora**)
   - `collector.scheduler.max-products=400`
 
@@ -97,7 +97,7 @@ O script `run-local-jar.sh` executa via `java -jar`, evitando dependência de pe
 | `COLLECTOR_HOTMART_SESSION_COOKIE` | Cookie de sessão Hotmart (alternativa ao login/senha) | vazio |
 | `COLLECTOR_HOTMART_USERNAME` | Usuário Hotmart para login automatizado | vazio |
 | `COLLECTOR_HOTMART_PASSWORD` | Senha Hotmart para login automatizado | vazio |
-| `COLLECTOR_SCHEDULER_ENABLED` | Habilita/desabilita execução automática | `true` |
+| `COLLECTOR_SCHEDULER_ENABLED` | Execução automática, mantida desativada | `false` |
 | `COLLECTOR_SCHEDULER_CRON` | Expressão cron da execução automática | `0 0 * * * *` |
 | `COLLECTOR_SCHEDULER_SOURCE` | Identificador da fonte usada no job agendado | `hotmart-market` |
 | `COLLECTOR_SCHEDULER_MAX_PRODUCTS` | Limite de produtos por execução agendada | `400` |

@@ -99,11 +99,21 @@ async function inspectLanding(creative, toolName, startedAt) {
     for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 1000 }]) {
       const page = await browser.newPage({ viewport });
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 });
+      await waitForCommercialLanding(page);
       result.push({ type: 'image', data: (await page.screenshot({ fullPage: true, type: 'jpeg', quality: 82 })).toString('base64'), mimeType: 'image/jpeg' });
       await page.close();
     }
     return result;
   });
+}
+
+async function waitForCommercialLanding(page) {
+  await page.waitForFunction(() => {
+    const text = document.body?.innerText?.trim() ?? '';
+    const transient = text === 'Preparando uma oferta especial para você...';
+    return !transient && text.length >= 200;
+  }, null, { timeout: 120000 });
+  await page.evaluate(() => document.fonts?.ready);
 }
 
 async function withBrowser(action) {

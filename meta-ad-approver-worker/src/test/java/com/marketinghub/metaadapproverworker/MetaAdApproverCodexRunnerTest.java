@@ -100,6 +100,9 @@ class MetaAdApproverCodexRunnerTest {
             "MCP_EXPERIMENT_ID",
             "StdioServerTransport",
             "/agent-review/context?experimentId=",
+            "waitForCommercialLanding(page)",
+            "text.length >= 200",
+            "Preparando uma oferta especial para você...",
             "readOnlyHint: true",
             "openWorldHint: true",
             "destructiveHint: false");

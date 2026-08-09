@@ -27,10 +27,11 @@ public class SalesVideoProviderCatalogService {
   }
 
   /** Atualiza a curadoria e impede ativação antes de todos os gates e do adaptador real. */
-  public SalesVideoProviderModelDto update(
-      Long id, UpdateSalesVideoProviderModelRequest request) {
+  public SalesVideoProviderModelDto update(Long id, UpdateSalesVideoProviderModelRequest request) {
     SalesVideoProviderModel model =
-        repository.findById(id).orElseThrow(() -> new IllegalArgumentException("Modelo de vídeo não encontrado"));
+        repository
+            .findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Modelo de vídeo não encontrado"));
     String status = request.lifecycleStatus().trim().toUpperCase(Locale.ROOT);
     if (!STATUSES.contains(status)) {
       throw new IllegalArgumentException("Status de homologação inválido");
@@ -59,12 +60,26 @@ public class SalesVideoProviderCatalogService {
   /** Converte a entidade persistida no contrato estável da API. */
   private SalesVideoProviderModelDto toDto(SalesVideoProviderModel model) {
     return new SalesVideoProviderModelDto(
-        model.getId(), model.getCode(), model.getDisplayName(), model.getProviderName(),
-        model.getProviderFamily(), model.getAdapterKey(), model.getExternalModelId(),
-        model.getRecommendedUse(), model.getLifecycleStatus(), model.getClipDurationSeconds(),
-        model.getMaxDirectDurationSeconds(), model.isSupportsHeroVideo(),
-        model.isSupportsSceneAssembly(), model.isRequiresSourceImage(), model.getCreditsUrl(),
-        model.getDocumentationUrl(), model.isAdapterVerified(), model.isPricingVerified(),
-        model.isCommercialLicenseVerified(), model.isQualityGateVerified(), model.getNotes());
+        model.getId(),
+        model.getCode(),
+        model.getDisplayName(),
+        model.getProviderName(),
+        model.getProviderFamily(),
+        model.getAdapterKey(),
+        model.getExternalModelId(),
+        model.getRecommendedUse(),
+        model.getLifecycleStatus(),
+        model.getClipDurationSeconds(),
+        model.getMaxDirectDurationSeconds(),
+        model.isSupportsHeroVideo(),
+        model.isSupportsSceneAssembly(),
+        model.isRequiresSourceImage(),
+        model.getCreditsUrl(),
+        model.getDocumentationUrl(),
+        model.isAdapterVerified(),
+        model.isPricingVerified(),
+        model.isCommercialLicenseVerified(),
+        model.isQualityGateVerified(),
+        model.getNotes());
   }
 }

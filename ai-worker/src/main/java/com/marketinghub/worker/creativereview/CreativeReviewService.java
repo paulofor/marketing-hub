@@ -50,6 +50,9 @@ public class CreativeReviewService {
         payload.put("desireScore", result.path("desireScore").asInt());
         payload.put("credibilityScore", result.path("credibilityScore").asInt());
         payload.put("actionScore", result.path("actionScore").asInt());
+        payload.put("copyAssessment", result.path("copyAssessment").asText());
+        payload.put("commercialAestheticAssessment", result.path("commercialAestheticAssessment").asText());
+        payload.put("destinationIntegrationAssessment", result.path("destinationIntegrationAssessment").asText());
         payload.put("summary", result.path("summary").asText());
         payload.put("issuesJson", result.path("issues").toString());
         payload.put("recommendationsJson", result.path("recommendations").toString());

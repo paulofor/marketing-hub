@@ -108,6 +108,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 | `LOOP-LOW-TICKET-SALES-PAGE-BYPASS` | CRÍTICO | Fechado em 2026-07-01 | Low-ticket/GeraSalesPage | campanha bloqueada sem etapa final do pipeline concluída |
 | `LOOP-GERASALESPAGE-VISUAL-TRANSFORMATION` | ALTO | Fechado em 2026-07-07 | GeraSalesPage | prompts v5 + quality review + auditoria bloqueiam pagina sem cenas visuais |
 | `LOOP-GERASALESPAGE-PER-PAGE-CUSTOMIZATION` | ALTO | Fechado em 2026-08-09 | GeraSalesPage | blueprint + componentes/tokens versionados + processor único com gates |
+| `LOOP-CREATIVE-REVIEW-WITHOUT-DESTINATION-EVIDENCE` | CRÍTICO | Fechado localmente em 2026-08-09 | Aprovador Meta | copy + evidência visual do anúncio e da landing + continuidade auditável |
 | `LOOP-VIDEO-SCENE-PROMPT-PERSISTENCE` | ALTO | Fechado em 2026-08-05 | Estudio de Audio e Video | storyboard editavel + persistencia unica + teste impede prompt fixo de substituir cena salva |
 | `LOOP-DEPLOY-COMPOSE-CROSS-SERVICE-SECRETS` | ALTO | Fechado em 2026-08-04 | Deploy por serviço | descritor Compose isolado por destino + teste sem secrets alheios |
 | `LOOP-DEPLOY-STALE-IMAGE` | ALTO | Fechado em 2026-08-04 | Detecção de mudanças do deploy | alteração de publicador/workflow força rebuild e teste do artefato |
@@ -117,6 +118,17 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 | `LOOP-FINANCIAL-AGENT-OBSERVABILITY` | ALTO | Fechado em 2026-08-06 | Agente Financeiro | logfile canônico do worker + alias MCP + teste ponta a ponta |
 | `LOOP-BACKEND-LOGS-DEPENDENT-ON-BACKEND` | ALTO | Fechado em 2026-08-06 | Backend / MCP | leitor independente no volume persistente + erro de rede explícito |
 | `LOOP-STUDIO-COST-ATTRIBUTION` | CRÍTICO | Fechado em 2026-08-06 | Estúdio / Agente Financeiro | ledger em todo estado terminal + custos sem plano visíveis e bloqueantes |
+
+---
+
+## LOOP-CREATIVE-REVIEW-WITHOUT-DESTINATION-EVIDENCE — Parecer isolado do anúncio
+
+- **Severidade**: CRÍTICO.
+- **Status**: fechado localmente em 2026-08-09; aguarda publicação.
+- **Sintoma**: o Aprovador Meta repetia correções sem comprovar a coerência entre o anúncio e a página de destino; vídeos também eram representados apenas pela URL do arquivo.
+- **Causa-raiz confirmada**: o contrato entregava `destinationUrl` como texto, mas não fornecia screenshots renderizados da landing nem quadros do vídeo ao modelo multimodal.
+- **Correção efetiva**: capturar e auditar a landing em mobile e desktop, extrair três quadros de vídeos e exigir pareceres separados de copy, estética comercial e continuidade anúncio → página.
+- **Prevenção**: aprovação técnica exige URL pública válida, evidência visual da landing e todas as dimensões acima do piso; o agente não publica, não aprova humanamente e não altera orçamento.
 
 ---
 

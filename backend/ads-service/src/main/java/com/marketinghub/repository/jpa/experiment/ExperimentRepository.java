@@ -20,7 +20,14 @@ import org.springframework.data.repository.query.Param;
 /** Repository for experiments. */
 public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
   /** Lista experimentos administrativos com filtros aplicados diretamente no banco. */
-  @EntityGraph(attributePaths = {"niche", "hypothesisRef", "facebookPage", "instagramAccount", "leadPortalFlow"})
+  @EntityGraph(
+      attributePaths = {
+        "niche",
+        "hypothesisRef",
+        "facebookPage",
+        "instagramAccount",
+        "leadPortalFlow"
+      })
   @Query(
       """
       select e from Experiment e

@@ -416,6 +416,7 @@ public class CreativeService {
     validateScore(request.desireScore());
     validateScore(request.credibilityScore());
     validateScore(request.actionScore());
+    validateSpecialistApprovalContract(request, decision);
     creative.setAgentReviewStatus(decision);
     creative.setAgentReviewJson(toAgentReviewJson(request));
     creative.setAgentReviewRequestJson(request.requestJson());
@@ -604,6 +605,31 @@ public class CreativeService {
     }
   }
 
+  /** Impede aprovação sem notas mínimas e pareceres especialistas sobre as três dimensões comerciais. */
+  private void validateSpecialistApprovalContract(
+      CreativeAgentReviewResultRequest request, CreativeAgentReviewStatus decision) {
+    if (decision != CreativeAgentReviewStatus.APPROVED) {
+      return;
+    }
+    List<Integer> scores =
+        List.of(
+            Objects.requireNonNullElse(request.attentionScore(), 0),
+            Objects.requireNonNullElse(request.clarityScore(), 0),
+            Objects.requireNonNullElse(request.desireScore(), 0),
+            Objects.requireNonNullElse(request.credibilityScore(), 0),
+            Objects.requireNonNullElse(request.actionScore(), 0));
+    if (scores.stream().anyMatch(score -> score < 80)) {
+      throw new IllegalArgumentException(
+          "Aprovação do agente exige nota mínima 80 em todas as dimensões.");
+    }
+    if (!StringUtils.hasText(request.copyAssessment())
+        || !StringUtils.hasText(request.commercialAestheticAssessment())
+        || !StringUtils.hasText(request.destinationIntegrationAssessment())) {
+      throw new IllegalArgumentException(
+          "Aprovação do agente exige pareceres de copy, estética comercial e integração com a landing.");
+    }
+  }
+
   /** Serializa o parecer funcional sem misturá-lo ao request e response brutos. */
   private String toAgentReviewJson(CreativeAgentReviewResultRequest request) {
     try {
@@ -616,6 +642,13 @@ public class CreativeService {
               Map.entry(
                   "credibilityScore", Objects.requireNonNullElse(request.credibilityScore(), 0)),
               Map.entry("actionScore", Objects.requireNonNullElse(request.actionScore(), 0)),
+              Map.entry("copyAssessment", Objects.requireNonNullElse(request.copyAssessment(), "")),
+              Map.entry(
+                  "commercialAestheticAssessment",
+                  Objects.requireNonNullElse(request.commercialAestheticAssessment(), "")),
+              Map.entry(
+                  "destinationIntegrationAssessment",
+                  Objects.requireNonNullElse(request.destinationIntegrationAssessment(), "")),
               Map.entry("summary", Objects.requireNonNullElse(request.summary(), "")),
               Map.entry("issues", Objects.requireNonNullElse(request.issuesJson(), "[]")),
               Map.entry(

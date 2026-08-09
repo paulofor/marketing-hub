@@ -41,10 +41,7 @@ class ProductAiPersonalizedSampleFunnelServiceTest {
   void setUp() {
     service =
         new ProductAiPersonalizedSampleFunnelService(
-            experimentRepository,
-            flowRepository,
-            publisher,
-            "https://oportunidadebrasil.shop/");
+            experimentRepository, flowRepository, publisher, "https://oportunidadebrasil.shop/");
     MarketNiche niche = MarketNiche.builder().name("Nail Design").build();
     experiment =
         Experiment.builder()

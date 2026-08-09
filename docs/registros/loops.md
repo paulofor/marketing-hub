@@ -139,6 +139,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - **Prevenção adicional**: a configuração MCP por job passa a declarar explicitamente o caminho versionado dos navegadores junto das demais variáveis permitidas, e o teste de contrato exige esse transporte antes do deploy.
 - **Recorrência operacional em 2026-08-09 após o Chromium voltar a iniciar**: o MCP capturava a landing logo após `domcontentloaded` e auditava somente o estado transitório React `Preparando uma oferta especial para você...`, embora o conteúdo comercial carregasse em seguida.
 - **Correção sistêmica complementar**: a inspeção mobile e desktop agora espera um critério objetivo de prontidão do conteúdo comercial e das fontes antes do screenshot; o teste de contrato impede o retorno da captura imediata do shell.
+- **Prevenção de copy incompatível em 2026-08-09**: armazenamento e publicação foram separados. O histórico permanece íntegro em campo textual amplo, mas correções do Aprovador e o preflight de publicação bloqueiam texto principal acima de 125 caracteres, headline acima de 40 e descrição acima de 25, sem truncamento silencioso.
 
 ---
 
@@ -431,6 +432,8 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - imagens de agentes com Playwright devem fixar uma distribuição Linux suportada pela versão do navegador; o Estrategista usa `eclipse-temurin:21-jre-noble`, protegido por teste de contrato e build do container no CI, evitando que a tag móvel avance para Ubuntu 26.04 incompatível.
   - a prontidão do deploy de agentes deve registrar separadamente estado do container, autenticação Codex e corpo do health check em cada tentativa; o Estrategista aceita JSON com espaços e aguarda até dois minutos, evitando falso negativo de um comando composto sem evidência do requisito que falhou;
   - em 2026-08-06, o workflow ainda rejeitou 23 respostas saudáveis `{"status":"UP"}` porque as aspas do regex foram consumidas pela camada de quoting do comando SSH. A verificação passou a buscar os marcadores estáveis `status` e `UP`, sem depender das aspas literais do JSON no shell remoto.
+  - em 2026-08-09, o Aprovador Meta iniciou saudável e autenticado, mas o deploy falhou porque a observabilidade dedicada moveu o health check para `/ops-meta-ad-approver-observability-v1/health` enquanto o workflow continuou consultando `/actuator/health`. Um teste de contrato agora exige que a rota de prontidão do workflow acompanhe o `base-path` versionado do agente.
+  - no mesmo ciclo, a correção comercial do criativo 280 falhou no callback porque `creative.primary_text` ainda era `VARCHAR(255)`, menor que a copy válida produzida pelo fluxo. O contrato canônico passou a preservar o texto integral em `LONGTEXT`, alinhado explicitamente na entidade JPA e no changelog MySQL 5.7.
 
 ## LOOP-GL-ARCHITECTURE-STAGES — Arquitetura por etapas do GeraLanding
 

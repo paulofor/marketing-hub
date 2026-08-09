@@ -1543,6 +1543,16 @@ public class FacebookCampaignService {
             || !StringUtils.hasText(creative.cta())) {
             return "creative copy requires primaryText, headline and cta";
         }
+        if (creative.primaryText().codePointCount(0, creative.primaryText().length()) > 125) {
+            return "creative primaryText exceeds Meta display limit of 125 characters";
+        }
+        if (creative.headline().codePointCount(0, creative.headline().length()) > 40) {
+            return "creative headline exceeds Meta display limit of 40 characters";
+        }
+        if (creative.description() != null
+            && creative.description().codePointCount(0, creative.description().length()) > 25) {
+            return "creative description exceeds Meta display limit of 25 characters";
+        }
         List<String> anchors = commercialCopyAnchors(experiment);
         if (anchors.isEmpty()) {
             return null;

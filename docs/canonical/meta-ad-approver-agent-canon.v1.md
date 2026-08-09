@@ -4,6 +4,10 @@
 
 O Aprovador Meta é um gate técnico anterior à aprovação humana e ao preflight. Atua como especialista em copy de resposta direta, estética comercial de imagens e vídeos e continuidade entre anúncio e página de destino.
 
+## Contrato de copy para Meta
+
+O armazenamento deve preservar a copy integral e o histórico em campo textual amplo. A versão destinada à publicação, porém, deve respeitar os limites comerciais de exibição adotados para os placements Meta: texto principal com até 125 caracteres, headline com até 40 e descrição com até 25. O Aprovador deve reescrever semanticamente qualquer excesso; truncamento automático é proibido. O backend valida a correção e o Facebook Ads Worker repete a validação imediatamente antes de qualquer chamada externa.
+
 ## Executor independente
 
 O executor canônico é `meta-ad-approver-worker`. Ele consome somente

@@ -65,6 +65,9 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 @Slf4j
 public class CreativeService {
+  private static final int META_PRIMARY_TEXT_RECOMMENDED_MAX_LENGTH = 125;
+  private static final int META_HEADLINE_RECOMMENDED_MAX_LENGTH = 40;
+  private static final int META_DESCRIPTION_RECOMMENDED_MAX_LENGTH = 25;
   private static final int META_CALL_TO_ACTION_MAX_LENGTH = 32;
   private static final String DEFAULT_META_CALL_TO_ACTION = "LEARN_MORE";
   private static final int MAX_AGENT_IMPROVEMENT_ATTEMPTS = 3;
@@ -482,6 +485,7 @@ public class CreativeService {
     validateScore(request.credibilityScore());
     validateScore(request.actionScore());
     validateSpecialistApprovalContract(request, decision);
+    validateMetaCorrectionCopy(request, decision);
     creative.setAgentReviewStatus(decision);
     creative.setAgentReviewJson(toAgentReviewJson(request));
     creative.setAgentReviewRequestJson(request.requestJson());
@@ -498,6 +502,29 @@ public class CreativeService {
     Creative saved = repository.save(creative);
     refreshExperimentApproval(saved.getExperiment());
     return saved;
+  }
+
+  /** Impede que uma correção automática ultrapasse os limites de exibição definidos para Meta. */
+  private void validateMetaCorrectionCopy(
+      CreativeAgentReviewResultRequest request, CreativeAgentReviewStatus decision) {
+    if (decision != CreativeAgentReviewStatus.ADJUST
+        && decision != CreativeAgentReviewStatus.REJECTED) {
+      return;
+    }
+    validateMetaCopyLength(
+        "texto principal", request.revisedPrimaryText(), META_PRIMARY_TEXT_RECOMMENDED_MAX_LENGTH);
+    validateMetaCopyLength(
+        "headline", request.revisedHeadline(), META_HEADLINE_RECOMMENDED_MAX_LENGTH);
+    validateMetaCopyLength(
+        "descrição", request.revisedDescription(), META_DESCRIPTION_RECOMMENDED_MAX_LENGTH);
+  }
+
+  /** Rejeita copy acima do limite sem truncar ou perder a intenção comercial. */
+  private void validateMetaCopyLength(String field, String value, int maxLength) {
+    if (value != null && value.codePointCount(0, value.length()) > maxLength) {
+      throw new IllegalArgumentException(
+          "Correção do anúncio excede o limite Meta para " + field + ": " + maxLength);
+    }
   }
 
   /** Lista e assume correções pendentes, mantendo o backend como controlador do ciclo. */

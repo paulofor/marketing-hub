@@ -37,7 +37,8 @@ public class Creative {
 
   private String headline;
 
-  @Column(name = "primary_text")
+  /** Texto principal completo do anúncio, preservado entre versões e correções comerciais. */
+  @Column(name = "primary_text", columnDefinition = "LONGTEXT")
   private String primaryText;
 
   @Column(name = "image_url")

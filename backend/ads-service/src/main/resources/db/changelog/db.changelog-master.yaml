@@ -1693,3 +1693,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-09-premium-agent-memory-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-09-creative-primary-text-longtext.yaml
+      relativeToChangelogFile: true

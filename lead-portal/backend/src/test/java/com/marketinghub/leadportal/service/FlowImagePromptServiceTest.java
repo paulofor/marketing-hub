@@ -185,6 +185,48 @@ class FlowImagePromptServiceTest {
         assertEquals(Integer.valueOf(2), prompt.freeImages());
     }
 
+    /** Garante que o contrato publicado pelo GeraSalesPage use respostas reais e libere a amostra. */
+    @Test
+    void shouldBuildCommercialPromptForGeraSalesPagePersonalizedSample() {
+        Flow flow = new Flow(
+                "product-ai-exp-88-personalized-sample",
+                "Produto IA - amostra personalizada - exp 88",
+                null,
+                null,
+                "AI_PERSONALIZED_SAMPLE_GERA_SALES_PAGE",
+                null,
+                null,
+                null,
+                null,
+                List.of(),
+                null, null, null, null);
+
+        FlowSubmission submission = new FlowSubmission(
+                UUID.randomUUID(),
+                flow.slug(),
+                "Studio Homologação Exp88",
+                "teste+exp88@sandbox.local",
+                Map.of(
+                        "nome_profissional", "Studio Homologação Exp88",
+                        "servico_divulgado", "Alongamento em gel delicado",
+                        "estilo_visual", "Elegante, rosé e minimalista"),
+                null,
+                null,
+                null,
+                null,
+                Instant.now(),
+                null);
+
+        FlowImagePrompt prompt = service.buildPrompt(flow, submission).orElseThrow();
+
+        assertEquals(Integer.valueOf(6), prompt.plannedOutputs());
+        assertEquals(Integer.valueOf(6), prompt.freeImages());
+        assertTrue(prompt.prompt().contains("Alongamento em gel delicado"));
+        assertTrue(prompt.prompt().contains("Elegante, rosé e minimalista"));
+        assertFalse(prompt.prompt().contains("um(a) product ai exp 88 personalized sample"));
+        assertFalse(prompt.prompt().contains("serviços principais (product ai exp 88 personalized sample)"));
+    }
+
     @Test
     void shouldBuildPromptWhenSubmissionHasReferenceImage() {
         Flow flow = new Flow(

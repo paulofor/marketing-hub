@@ -32,7 +32,7 @@ public class FlowImagePromptService {
     private static final String GERA_SALES_PAGE_PERSONALIZED_SAMPLE_MODEL =
             "AI_PERSONALIZED_SAMPLE_GERA_SALES_PAGE";
     private static final int DEFAULT_BATCH_SIZE = 6;
-    private static final String DEFAULT_IMAGE_MODEL = "gpt-image-1";
+    private static final String DEFAULT_IMAGE_MODEL = "gpt-image-2";
     private static final int DEFAULT_REFERENCE_IMAGE_FREE_IMAGES = 1;
     private static final String DEFAULT_TEMPLATE = String.join("\n",
             "Gere materiais de divulgação premium em português para {{profissional}}, um(a) {{atividade}} que atua em {{local}}.",
@@ -85,7 +85,7 @@ public class FlowImagePromptService {
 
         return Optional.of(new FlowImagePrompt(
                 Optional.ofNullable(flow.prompt()).orElse(""),
-                flow.model(),
+                resolveImageModel(flow.model()),
                 null,
                 null));
     }
@@ -105,7 +105,7 @@ public class FlowImagePromptService {
             prompt = renderTemplate(DEFAULT_REFERENCE_IMAGE_TEMPLATE, submission, batchSize);
         }
         prompt = appendReferenceImageInstructions(prompt, submission);
-        String model = firstText(flow.imagePromptModel(), flow.model(), DEFAULT_IMAGE_MODEL);
+        String model = resolveImageModel(firstText(flow.imagePromptModel(), flow.model(), DEFAULT_IMAGE_MODEL));
         return Optional.of(new FlowImagePrompt(prompt, model, batchSize, DEFAULT_REFERENCE_IMAGE_FREE_IMAGES));
     }
 
@@ -123,7 +123,7 @@ public class FlowImagePromptService {
         if (!StringUtils.hasText(prompt)) {
             prompt = buildFallbackPrompt(briefing, batchSize);
         }
-        String model = StringUtils.hasText(flow.imagePromptModel()) ? flow.imagePromptModel() : DEFAULT_IMAGE_MODEL;
+        String model = resolveImageModel(flow.imagePromptModel());
         int freeImages = isPersonalizedSampleFunnel(flow.model()) ? batchSize : 0;
         return new FlowImagePrompt(prompt, model, batchSize, freeImages);
     }
@@ -132,6 +132,15 @@ public class FlowImagePromptService {
     private boolean isPersonalizedSampleFunnel(String model) {
         return PERSONALIZED_SAMPLE_FUNNEL_MODEL.equals(model)
                 || GERA_SALES_PAGE_PERSONALIZED_SAMPLE_MODEL.equals(model);
+    }
+
+    /** Impede que configurações legadas reativem modelos Image 1 em novas gerações. */
+    private String resolveImageModel(String requestedModel) {
+        if (!StringUtils.hasText(requestedModel)
+                || requestedModel.trim().toLowerCase(java.util.Locale.ROOT).startsWith("gpt-image-1")) {
+            return DEFAULT_IMAGE_MODEL;
+        }
+        return requestedModel.trim();
     }
 
     /** Carrega do classpath o prompt versionado usado na geração da amostra personalizada. */

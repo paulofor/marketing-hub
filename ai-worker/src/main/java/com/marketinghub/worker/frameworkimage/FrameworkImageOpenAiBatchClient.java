@@ -167,7 +167,7 @@ public class FrameworkImageOpenAiBatchClient {
         }
 
         String trimmed = requestedModel.trim();
-        if ("gpt-image-1".equalsIgnoreCase(trimmed) || "gpt-image-1.0".equalsIgnoreCase(trimmed)) {
+        if (trimmed.toLowerCase(Locale.ROOT).startsWith("gpt-image-1")) {
             return normalizedDefaultModel;
         }
         return trimmed;

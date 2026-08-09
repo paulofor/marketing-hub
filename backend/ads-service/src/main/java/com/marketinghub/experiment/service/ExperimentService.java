@@ -256,16 +256,23 @@ public class ExperimentService {
     return entityManager.getReference(LeadPortalFlow.class, flowId);
   }
 
+  /** Vincula somente um modelo visual ativo e homologado a um experimento. */
   private ImageGenerationModel attachImageGenerationModel(Long imageModelId) {
     if (imageModelId == null) {
       return null;
     }
-    return imageGenerationModelRepository
+    ImageGenerationModel model = imageGenerationModelRepository
         .findById(imageModelId)
         .orElseThrow(
             () ->
                 new ResponseStatusException(
                     HttpStatus.BAD_REQUEST, "imageModelId not found: " + imageModelId));
+    if (model.getApiModel() != null
+        && model.getApiModel().toLowerCase(java.util.Locale.ROOT).startsWith("gpt-image-1")) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Modelos GPT Image 1 foram desativados; selecione gpt-image-2");
+    }
+    return model;
   }
 
   private ImageGenerationQuality attachImageGenerationQuality(Long imageModelQualityId) {

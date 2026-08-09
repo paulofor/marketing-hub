@@ -1,13 +1,15 @@
 # Modelo canônico para geração de imagens
 
 > STATUS: CANÔNICO
-> ÚLTIMA VALIDAÇÃO: 2026-08-03
+> ÚLTIMA VALIDAÇÃO: 2026-08-09
 
 ## Decisão
 
 Toda geração de imagem nova do Marketing Hub deve usar, por padrão, o modelo de imagem de maior qualidade disponível e homologado para produção no provedor adotado. Economia de custo ou velocidade não autoriza silenciosamente o uso de um modelo visual inferior quando a imagem participa de anúncio, página de venda, produto, prova visual ou entrega ao cliente.
 
 Na OpenAI, o padrão homologado na data desta decisão é `gpt-image-2`, com qualidade `high`. Novos fluxos não podem introduzir `gpt-image-1`, `gpt-image-1.5` ou outro modelo anterior como padrão ou fallback silencioso.
+
+Por decisão operacional de 2026-08-09, nenhuma nova execução pode selecionar qualquer variante `gpt-image-1*`. Registros antigos permanecem somente como evidência histórica. Fluxos visuais usam `gpt-image-2`; agentes e tarefas de raciocínio compatíveis podem usar `gpt-5.6-sol`, sem tratá-lo como substituto automático do modelo visual.
 
 ## Seleção e atualização do modelo
 

@@ -13,13 +13,14 @@ import org.junit.jupiter.api.Test;
 /** Responsabilidade: validar a seleção canônica do plano de geração de imagens. */
 class ImageGenerationPlanServiceTest {
 
-    /** Confirma que pacotes legados sem ID preservam o modelo persistido em vez da ordem do catálogo. */
+    /** Confirma que pacotes legados com Image 1 migram para Image 2, nunca para a ordem do catálogo. */
     @Test
     void resolvesPersistedModelBeforeCatalogFallback() {
         ImageGenerationCatalogService catalog = mock(ImageGenerationCatalogService.class);
         ImageGenerationModelDto dalle = model(4L, "dall-e-2", 9L);
-        ImageGenerationModelDto gptImage = model(1L, "gpt-image-1", 2L);
-        when(catalog.getCatalog()).thenReturn(List.of(dalle, gptImage));
+        ImageGenerationModelDto legacyImage = model(1L, "gpt-image-1", 2L);
+        ImageGenerationModelDto gptImage = model(5L, "gpt-image-2", 6L);
+        when(catalog.getCatalog()).thenReturn(List.of(dalle, legacyImage, gptImage));
 
         var imagePackage = new LeadPortalImagePackageClient.ImagePackage(
                 163L,
@@ -37,8 +38,8 @@ class ImageGenerationPlanServiceTest {
                 .resolvePlan(imagePackage, ImageOrientation.SQUARE);
 
         assertThat(plan).isNotNull();
-        assertThat(plan.modelId()).isEqualTo(1L);
-        assertThat(plan.apiModel()).isEqualTo("gpt-image-1");
+        assertThat(plan.modelId()).isEqualTo(5L);
+        assertThat(plan.apiModel()).isEqualTo("gpt-image-2");
     }
 
     /** Monta um modelo mínimo com qualidade e preço quadrados para o cenário de seleção. */

@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/lead-portal/image-prompts")
 public class LeadPortalImagePromptController {
 
-  private static final String DEFAULT_IMAGE_MODEL = "gpt-image-1";
+  private static final String DEFAULT_IMAGE_MODEL = "gpt-image-2";
   private static final int DEFAULT_BATCH_SIZE = 6;
   private static final String DEFAULT_TEMPLATE =
 """

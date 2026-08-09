@@ -49,9 +49,12 @@ jobs:
       - name: Validate Java and architecture
         working-directory: meta-ad-approver-worker
         run: mvn -B verify
-      - name: Validate MCP syntax
+      - name: Validate MCP handshake
         working-directory: meta-ad-approver-worker
-        run: node --check src/main/resources/mcp/meta-ad-approver.mjs
+        run: |
+          npm ci --omit=dev
+          node --check src/main/resources/mcp/meta-ad-approver.mjs
+          npm run test:mcp-handshake
       - name: Validate container build
         run: docker build -t marketing-hub/meta-ad-approver-worker:${{ github.sha }} meta-ad-approver-worker
 

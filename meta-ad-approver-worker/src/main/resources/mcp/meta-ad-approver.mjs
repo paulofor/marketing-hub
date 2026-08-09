@@ -1,36 +1,19 @@
-import readline from 'node:readline';
 import { chromium } from 'playwright-core';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
 const baseUrl = requiredEnv('MCP_MARKETING_HUB_URL').replace(/\/$/, '');
 const creativeId = positiveInteger(requiredEnv('MCP_CREATIVE_ID'), 'MCP_CREATIVE_ID');
 const experimentId = positiveInteger(requiredEnv('MCP_EXPERIMENT_ID'), 'MCP_EXPERIMENT_ID');
 
-const tools = [
-  tool('consultar_contexto', 'Confirma no Marketing Hub os dados atuais do anúncio reservado.', {}),
-  tool('inspecionar_midia', 'Retorna a imagem em alta definição ou três quadros do vídeo.', {}),
-  tool('inspecionar_landing', 'Renderiza e retorna a página de destino em mobile e desktop.', {})
-];
+const server = new McpServer({ name: 'meta-ad-approver', version: '1.0.0' });
+registerTool('consultar_contexto', 'Confirma no Marketing Hub os dados atuais do anúncio reservado.');
+registerTool('inspecionar_midia', 'Retorna a imagem em alta definição ou três quadros do vídeo.');
+registerTool('inspecionar_landing', 'Renderiza e retorna a página de destino em mobile e desktop.');
+await server.connect(new StdioServerTransport());
 
-const input = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
-input.on('line', async line => {
-  if (!line.trim()) return;
-  let request;
-  try {
-    request = JSON.parse(line);
-    const result = await dispatch(request);
-    if (request.id !== undefined) send({ jsonrpc: '2.0', id: request.id, result });
-  } catch (error) {
-    if (request?.id !== undefined) send({ jsonrpc: '2.0', id: request.id, error: { code: -32000, message: safeMessage(error) } });
-  }
-});
-
-async function dispatch(request) {
-  if (request.method === 'initialize') return { protocolVersion: request.params?.protocolVersion ?? '2025-03-26', capabilities: { tools: {} }, serverInfo: { name: 'meta-ad-approver', version: '1.0.0' } };
-  if (request.method === 'ping') return {};
-  if (request.method === 'tools/list') return { tools };
-  if (request.method === 'tools/call') return callTool(request.params?.name);
-  if (request.method?.startsWith('notifications/')) return {};
-  throw new Error(`Método MCP não permitido: ${request.method}`);
+function registerTool(name, description) {
+  server.registerTool(name, { description, inputSchema: {} }, async () => callTool(name));
 }
 
 async function callTool(name) {
@@ -51,12 +34,9 @@ async function callTool(name) {
 }
 
 async function loadCreative() {
-  const response = await fetch(`${baseUrl}/api/experiments/${experimentId}/creatives`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(30000) });
-  if (!response.ok) throw new Error(`Marketing Hub respondeu HTTP ${response.status} ao consultar o experimento`);
-  const values = await response.json();
-  const value = values.find(candidate => Number(candidate.id) === creativeId);
-  if (!value) throw new Error('Criativo não pertence ao experimento informado');
-  return { ...value, mediaUrl: value.videoUrl ?? value.imageUrl };
+  const response = await fetch(`${baseUrl}/api/internal/creatives/${creativeId}/agent-review/context?experimentId=${experimentId}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(30000) });
+  if (!response.ok) throw new Error(`Marketing Hub respondeu HTTP ${response.status} ao consultar o contexto do criativo`);
+  return response.json();
 }
 
 async function inspectMedia(creative, toolName, startedAt) {
@@ -104,10 +84,7 @@ async function withBrowser(action) {
 
 function audit(toolName, consultedAt) { return { tool: toolName, creativeId, experimentId, consultedAt, readOnly: true }; }
 function text(value) { return { type: 'text', text: JSON.stringify(value) }; }
-function tool(name, description, properties) { return { name, description, inputSchema: { type: 'object', additionalProperties: false, properties } }; }
 function httpUrl(value, name) { if (!/^https?:\/\//i.test(String(value ?? ''))) throw new Error(`${name} ausente ou inválida`); return String(value); }
 function positiveInteger(value, name) { const parsed = Number(value); if (!Number.isSafeInteger(parsed) || parsed < 1) throw new Error(`${name} deve ser inteiro positivo`); return parsed; }
 function requiredEnv(name) { const value = process.env[name]; if (!value) throw new Error(`Variável obrigatória ausente: ${name}`); return value; }
 function escapeHtml(value) { return value.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;'); }
-function safeMessage(error) { return error instanceof Error ? error.message : 'Falha MCP não identificada'; }
-function send(value) { process.stdout.write(`${JSON.stringify(value)}\n`); }

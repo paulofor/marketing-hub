@@ -2,7 +2,11 @@
   "name": "meta-ad-approver-worker-runtime",
   "private": true,
   "version": "1.0.0",
+  "scripts": {
+    "test:mcp-handshake": "node scripts/test-mcp-handshake.mjs"
+  },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "playwright-core": "1.49.0"
   }
 }

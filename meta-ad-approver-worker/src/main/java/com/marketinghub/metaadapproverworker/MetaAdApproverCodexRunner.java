@@ -48,7 +48,7 @@ public class MetaAdApproverCodexRunner {
         materialize("prompts/meta-ad-approver/v1/review-schema.json", "meta-ad-schema-", ".json");
     try {
       ProcessBuilder builder =
-          new ProcessBuilder(buildCommand(output, schema, mcpServer))
+          new ProcessBuilder(buildCommand(output, schema, mcpServer, job))
               .redirectErrorStream(true)
               .redirectOutput(processOutput.toFile());
       builder.environment().put("MCP_MARKETING_HUB_URL", properties.getMarketingHubUrl());
@@ -95,7 +95,8 @@ public class MetaAdApproverCodexRunner {
   }
 
   /** Monta o comando impondo sandbox read-only e MCP próprio do agente. */
-  List<String> buildCommand(Path output, Path schema, Path mcpServer) {
+  List<String> buildCommand(
+      Path output, Path schema, Path mcpServer, MetaAdReviewJob job) {
     List<String> command = new ArrayList<>();
     command.addAll(
         List.of(
@@ -116,7 +117,9 @@ public class MetaAdApproverCodexRunner {
             "--config",
             "mcp_servers.meta_ad_approver.command=\"node\"",
             "--config",
-            "mcp_servers.meta_ad_approver.args=[\"" + mcpServer.toAbsolutePath() + "\"]"));
+            "mcp_servers.meta_ad_approver.args=[\"" + mcpServer.toAbsolutePath() + "\"]",
+            "--config",
+            mcpEnvironment(job)));
     if (hasText(properties.getReasoningEffort())) {
       command.addAll(
           List.of(
@@ -124,6 +127,17 @@ public class MetaAdApproverCodexRunner {
     }
     if (hasText(properties.getModel())) command.addAll(List.of("--model", properties.getModel()));
     return command;
+  }
+
+  /** Declara ao Codex as variáveis não sensíveis permitidas no processo MCP deste job. */
+  private String mcpEnvironment(MetaAdReviewJob job) {
+    return "mcp_servers.meta_ad_approver.env={MCP_MARKETING_HUB_URL=\""
+        + properties.getMarketingHubUrl()
+        + "\",MCP_CREATIVE_ID=\""
+        + job.creativeId()
+        + "\",MCP_EXPERIMENT_ID=\""
+        + job.experimentId()
+        + "\"}";
   }
 
   /** Resolve o prompt versionado com o snapshot congelado pelo backend. */

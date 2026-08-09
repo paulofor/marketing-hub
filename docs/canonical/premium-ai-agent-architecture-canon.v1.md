@@ -38,6 +38,12 @@ o endpoint realmente exposto pelo controller do próprio módulo no backend. Reg
 comando Codex sem garantir que suas ferramentas alcancem os dados congelados é falha de prontidão e
 deve bloquear a execução antes de consumir modelo, tentativa ou orçamento.
 
+O transporte `stdio` do MCP deve usar o SDK oficial compatível com a versão do Codex instalada. O
+healthcheck deve executar um handshake real `initialize` + `tools/list`, não apenas validar arquivo,
+dependência ou processo. Quando a fila aplicar fallback ou enriquecer um dado, o MCP deve consultar um
+endpoint de contexto canônico que devolva o mesmo snapshot efetivo; é proibido reler um DTO público
+empobrecido e perder URL, mídia, tenant, experimento ou outra evidência usada na reserva.
+
 ## Identidade Codex no host compartilhado
 
 Cada agente deve montar um diretório Codex persistente próprio dentro de

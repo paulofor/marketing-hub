@@ -159,6 +159,16 @@ class CreativeControllerTest {
         .perform(get("/api/internal/creatives/agent-review/stage-executions/pending"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].destinationUrl").value("https://landing.test/experimento"));
+
+    Long creativeId = repository.findAll().getLast().getId();
+    mockMvc
+        .perform(
+            get("/api/internal/creatives/" + creativeId + "/agent-review/context")
+                .param("experimentId", expId.toString()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.creativeId").value(creativeId))
+        .andExpect(jsonPath("$.experimentId").value(expId))
+        .andExpect(jsonPath("$.destinationUrl").value("https://landing.test/experimento"));
   }
 
   /** Garante que a API exponha a fila de aprovação de vídeos. */

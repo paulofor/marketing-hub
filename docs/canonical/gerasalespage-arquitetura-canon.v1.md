@@ -16,6 +16,30 @@ O GeraSalesPage v1 é um pipeline independente para gerar página de vendas dire
 
 ## Regras
 
+### Fábrica padronizada de páginas premium
+
+- Página nova é uma **instância configurada** do GeraSalesPage v1, não uma implementação paralela, HTML manual ou novo processor.
+- A entrada obrigatória é um `Sales Page Blueprint` persistido no contexto do experimento: oferta, persona, promessa, mecanismo, provas disponíveis, objeções, entregáveis, preço, garantia, checkout, identidade visual e restrições de compliance.
+- O blueprint define conteúdo e direção visual; não contém HTML. A composição usa blocos semânticos reutilizáveis (`hero`, problema, mecanismo, transformação, prova, entregáveis, objeções, garantia, FAQ e CTA), cuja ordem pode variar conforme a estratégia aprovada.
+- O sistema visual usa tokens configuráveis de cor, tipografia, espaçamento, raio, contraste e densidade. Tokens preservam identidade e variedade sem permitir CSS arbitrário escapar das regras de acessibilidade e responsividade.
+- Componentes e tokens devem ser versionados. Uma página publicada mantém o snapshot da versão usada para reprodução, auditoria e rollback.
+- Exceções realmente necessárias entram como novo componente reutilizável ou nova versão do contrato; não como remendo exclusivo de um experimento.
+- O único processor canônico do executor monta request, chama o modelo, valida a resposta, registra auditoria e aplica enriquecimentos técnicos. Scheduler, client e novas classes auxiliares não podem chamar o modelo diretamente.
+- A validação por agentes continua obrigatória: oferta/copy, experiência do cliente, qualidade visual, compliance e checkout/publicação. Nenhuma aprovação técnica substitui aprovação funcional do gate.
+
+### Matriz mínima de homologação de página nova
+
+| Dimensão | Caminho feliz | Validações e falhas | Evidência persistida |
+| --- | --- | --- | --- |
+| Oferta e copy | promessa, mecanismo, prova e CTA coerentes | bloquear alegação sem prova, termo técnico público e divergência de preço/garantia | parecer do agente e blockers |
+| Visual premium | componentes e tokens renderizam a transformação | bloquear mídia ausente, baixa legibilidade, colagem indevida e layout quebrado | HTML, assets, screenshots e hashes |
+| Checkout e entrega | CTA abre checkout correto e entrega corresponde à oferta | bloquear URL inválida, preço divergente, falha de pagamento/entrega | eventos e status segregados |
+| Analytics | eventos de página, seção e checkout são emitidos uma vez | bloquear ausência, duplicação e contaminação por homologação | eventos brutos e normalizados |
+| Navegadores | desktop Chromium, iPhone e Pixel aprovados | bloquear overflow, interação inacessível e mídia incompatível | screenshots e resultado por dispositivo |
+| Agentes | todos os pareceres obrigatórios aprovados | qualquer reprovação impede publicação/RUNNING | identidade do agente, versão, decisão e justificativa |
+
+Uma rodada local completa sem defeitos conclui a homologação. Se houver correção, a contagem reinicia e são exigidas cinco rodadas completas e consecutivas sem falhas depois da última correção.
+
 - O pipeline só pode iniciar com `followUpActionUrl` real de checkout.
 - CTA deve apontar para checkout, não para formulário ou `#checkout_externo`.
 - O backend controla fila, status, auditoria e avanço de etapa.

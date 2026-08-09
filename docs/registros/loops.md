@@ -98,6 +98,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 | `LOOP-COST-MODEL-AUDIT` | MÉDIO | Em observação | Custos OpenAI e modelo por etapa | preço vindo do catálogo backend + modelo efetivo auditado por etapa |
 | `LOOP-LOW-TICKET-SALES-PAGE-BYPASS` | CRÍTICO | Fechado em 2026-07-01 | Low-ticket/GeraSalesPage | campanha bloqueada sem etapa final do pipeline concluída |
 | `LOOP-GERASALESPAGE-VISUAL-TRANSFORMATION` | ALTO | Fechado em 2026-07-07 | GeraSalesPage | prompts v5 + quality review + auditoria bloqueiam pagina sem cenas visuais |
+| `LOOP-GERASALESPAGE-PER-PAGE-CUSTOMIZATION` | ALTO | Fechado em 2026-08-09 | GeraSalesPage | blueprint + componentes/tokens versionados + processor único com gates |
 | `LOOP-VIDEO-SCENE-PROMPT-PERSISTENCE` | ALTO | Fechado em 2026-08-05 | Estudio de Audio e Video | storyboard editavel + persistencia unica + teste impede prompt fixo de substituir cena salva |
 | `LOOP-DEPLOY-COMPOSE-CROSS-SERVICE-SECRETS` | ALTO | Fechado em 2026-08-04 | Deploy por serviço | descritor Compose isolado por destino + teste sem secrets alheios |
 | `LOOP-DEPLOY-STALE-IMAGE` | ALTO | Fechado em 2026-08-04 | Detecção de mudanças do deploy | alteração de publicador/workflow força rebuild e teste do artefato |
@@ -206,6 +207,15 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - sucesso do workflow só comprova publicação quando o job de build e o job de deploy do destino foram executados, não apenas quando o workflow agregado ficou verde.
 
 ---
+
+## LOOP-GERASALESPAGE-PER-PAGE-CUSTOMIZATION — Correções exclusivas a cada página
+
+- **Severidade**: ALTO.
+- **Status**: fechado arquiteturalmente em 2026-08-09.
+- **Sintoma**: cada experimento novo exige alterações particulares de HTML, prompt, responsividade, analytics ou checkout antes de atingir qualidade publicável.
+- **Causa-raiz**: conteúdo, identidade visual, componentes e validações não estavam formalizados como camadas distintas de uma fábrica de páginas configurável.
+- **Correção efetiva**: `Sales Page Blueprint` persistido, biblioteca de componentes e tokens versionados, processor único e matriz de homologação com pareceres obrigatórios dos agentes.
+- **Prevenção**: páginas novas configuram o pipeline canônico; exceções viram componente/contrato reutilizável e versionado. ArchUnit impede processor paralelo e acesso direto ao modelo fora do processor auditável.
 
 ## LOOP-GERASALESPAGE-VISUAL-TRANSFORMATION — Pagina de venda sem transformacao visual
 

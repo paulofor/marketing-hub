@@ -14,14 +14,17 @@ import {
 } from "../../api/planning/useProviderCreditPurchases";
 import { useSalesVideoProviderScores } from "../../api/salesVideo/useSalesVideoProviderScores";
 import {
-  SALES_VIDEO_PROVIDER_OPTIONS,
-  SalesVideoProviderOption,
-} from "../../api/salesVideo/videoProviderCatalog";
+  SalesVideoProviderModel,
+  useSalesVideoProviderModels,
+  useUpdateSalesVideoProviderModel,
+} from "../../api/salesVideo/useSalesVideoProviderModels";
+import { SalesVideoProviderOption } from "../../api/salesVideo/videoProviderCatalog";
 import { SalesVideoProviderScore } from "../../api/salesVideo/types";
 import "./VideoProviderManagementPage.css";
 
 type ProviderRow = {
   option: SalesVideoProviderOption;
+  model: SalesVideoProviderModel;
   score?: SalesVideoProviderScore;
 };
 
@@ -41,7 +44,10 @@ const RECOMMENDATION_LABELS: Record<string, string> = {
 
 export default function VideoProviderManagementPage() {
   const providerScoresQuery = useSalesVideoProviderScores();
-  const [purchaseProvider, setPurchaseProvider] = useState<SalesVideoProviderOption>();
+  const providerModelsQuery = useSalesVideoProviderModels();
+  const [purchaseProvider, setPurchaseProvider] =
+    useState<SalesVideoProviderOption>();
+  const [editingModel, setEditingModel] = useState<SalesVideoProviderModel>();
 
   const rows = useMemo<ProviderRow[]>(() => {
     const scoresByProvider = new Map(
@@ -50,11 +56,14 @@ export default function VideoProviderManagementPage() {
         score,
       ]),
     );
-    return SALES_VIDEO_PROVIDER_OPTIONS.map((option) => ({
-      option,
-      score: scoresByProvider.get(option.providerName),
-    })).sort(compareProviderRows);
-  }, [providerScoresQuery.data]);
+    return (providerModelsQuery.data ?? [])
+      .map((model) => ({
+        model,
+        option: modelToOption(model),
+        score: scoresByProvider.get(model.providerName),
+      }))
+      .sort(compareProviderRows);
+  }, [providerModelsQuery.data, providerScoresQuery.data]);
 
   const bestProvider = rows
     .filter((row) => row.score)
@@ -97,15 +106,15 @@ export default function VideoProviderManagementPage() {
         />
       </section>
 
-      {providerScoresQuery.isError ? (
+      {providerScoresQuery.isError || providerModelsQuery.isError ? (
         <div className="video-provider-page__notice video-provider-page__notice--error">
           <AlertTriangle size={18} aria-hidden="true" />
-          Não foi possível carregar o score dos provedores.
+          Não foi possível carregar o catálogo ou o score dos provedores.
         </div>
       ) : null}
 
       <section className="video-provider-page__grid" aria-label="Provedores">
-        {rows.map(({ option, score }) => (
+        {rows.map(({ option, model, score }) => (
           <article className="video-provider-page__card" key={option.key}>
             <div className="video-provider-page__card-header">
               <div>
@@ -126,6 +135,10 @@ export default function VideoProviderManagementPage() {
                   "Sem histórico"}
               </span>
             </div>
+
+            <p>
+              <strong>Status:</strong> {model.lifecycleStatus}
+            </p>
 
             <div className="video-provider-page__score">
               <strong>{score?.score ?? "N/D"}</strong>
@@ -165,10 +178,7 @@ export default function VideoProviderManagementPage() {
             ) : null}
 
             <div className="video-provider-page__capabilities">
-              <Capability
-                active={option.supportsHeroVideo}
-                label="Hero PDE"
-              />
+              <Capability active={option.supportsHeroVideo} label="Hero PDE" />
               <Capability
                 active={option.supportsSceneAssembly}
                 label="Montagem"
@@ -177,6 +187,23 @@ export default function VideoProviderManagementPage() {
                 active={option.supportsOpenAiReferenceImage}
                 label="Imagem base"
               />
+            </div>
+            <div className="video-provider-page__credit-actions">
+              <a
+                className="btn btn-outline-primary"
+                href={model.documentationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Documentação <ExternalLink size={15} aria-hidden="true" />
+              </a>
+              <button
+                type="button"
+                className="btn btn-outline-primary"
+                onClick={() => setEditingModel(model)}
+              >
+                Homologação
+              </button>
             </div>
             {option.creditsUrl ? (
               <div className="video-provider-page__credit-actions">
@@ -209,6 +236,158 @@ export default function VideoProviderManagementPage() {
           onClose={() => setPurchaseProvider(undefined)}
         />
       ) : null}
+      {editingModel ? (
+        <ProviderHomologationDialog
+          model={editingModel}
+          onClose={() => setEditingModel(undefined)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function modelToOption(
+  model: SalesVideoProviderModel,
+): SalesVideoProviderOption {
+  return {
+    key: model.code,
+    label: model.displayName,
+    providerName: model.providerName,
+    providerFamily: model.providerFamily,
+    recommendedUse: model.recommendedUse,
+    clipDurationSeconds: model.clipDurationSeconds,
+    maxDirectDurationSeconds: model.maxDirectDurationSeconds,
+    supportsHeroVideo: model.supportsHeroVideo,
+    supportsSceneAssembly: model.supportsSceneAssembly,
+    supportsOpenAiReferenceImage: model.requiresSourceImage,
+    creditsUrl: model.creditsUrl ?? undefined,
+  };
+}
+
+function ProviderHomologationDialog({
+  model,
+  onClose,
+}: {
+  model: SalesVideoProviderModel;
+  onClose: () => void;
+}) {
+  const update = useUpdateSalesVideoProviderModel(model.id);
+  const [draft, setDraft] = useState(model);
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    update.mutate(
+      {
+        recommendedUse: draft.recommendedUse,
+        lifecycleStatus: draft.lifecycleStatus,
+        adapterVerified: draft.adapterVerified,
+        pricingVerified: draft.pricingVerified,
+        commercialLicenseVerified: draft.commercialLicenseVerified,
+        qualityGateVerified: draft.qualityGateVerified,
+        notes: draft.notes,
+      },
+      { onSuccess: onClose },
+    );
+  };
+  return (
+    <div className="video-provider-page__dialog-backdrop" role="presentation">
+      <section
+        className="video-provider-page__dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="provider-gates-title"
+      >
+        <div className="video-provider-page__dialog-header">
+          <div>
+            <h2 id="provider-gates-title">Homologação — {model.displayName}</h2>
+            <p>
+              {model.adapterKey} · {model.externalModelId}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn-close"
+            aria-label="Fechar"
+            onClick={onClose}
+          />
+        </div>
+        <form onSubmit={submit}>
+          <label className="form-label" htmlFor="provider-status">
+            Status
+          </label>
+          <select
+            id="provider-status"
+            className="form-select"
+            value={draft.lifecycleStatus}
+            onChange={(event) =>
+              setDraft({
+                ...draft,
+                lifecycleStatus: event.target
+                  .value as SalesVideoProviderModel["lifecycleStatus"],
+              })
+            }
+          >
+            <option value="DRAFT">Rascunho</option>
+            <option value="HOMOLOGATION">Homologação</option>
+            <option value="ACTIVE">Ativo</option>
+            <option value="BLOCKED">Bloqueado</option>
+          </select>
+          <label className="form-label mt-3" htmlFor="provider-use">
+            Uso recomendado
+          </label>
+          <textarea
+            id="provider-use"
+            className="form-control"
+            value={draft.recommendedUse}
+            onChange={(event) =>
+              setDraft({ ...draft, recommendedUse: event.target.value })
+            }
+          />
+          {[
+            ["adapterVerified", "Adaptador testado"],
+            ["pricingVerified", "Preço verificado"],
+            ["commercialLicenseVerified", "Licença comercial verificada"],
+            ["qualityGateVerified", "QA comercial aprovado"],
+          ].map(([field, label]) => (
+            <label className="form-check mt-3" key={field}>
+              <input
+                className="form-check-input"
+                type="checkbox"
+                checked={Boolean(draft[field as keyof SalesVideoProviderModel])}
+                onChange={(event) =>
+                  setDraft({ ...draft, [field]: event.target.checked })
+                }
+              />
+              <span className="form-check-label">{label}</span>
+            </label>
+          ))}
+          <label className="form-label mt-3" htmlFor="provider-notes">
+            Evidências e observações
+          </label>
+          <textarea
+            id="provider-notes"
+            className="form-control"
+            value={draft.notes ?? ""}
+            onChange={(event) =>
+              setDraft({ ...draft, notes: event.target.value })
+            }
+          />
+          {update.isError ? (
+            <p className="text-danger mt-3">
+              Não foi possível salvar: verifique se todos os gates exigidos para
+              ativação estão aprovados.
+            </p>
+          ) : null}
+          <div className="video-provider-page__credit-actions mt-3">
+            <button
+              className="btn btn-primary"
+              type="submit"
+              disabled={update.isPending}
+            >
+              Salvar homologação
+            </button>
+          </div>
+        </form>
+      </section>
     </div>
   );
 }
@@ -221,7 +400,9 @@ function CreditPurchaseDialog({
   onClose: () => void;
 }) {
   const purchasesQuery = useProviderCreditPurchases(provider.providerName);
-  const registerPurchase = useRegisterProviderCreditPurchase(provider.providerName);
+  const registerPurchase = useRegisterProviderCreditPurchase(
+    provider.providerName,
+  );
   const [purchasedAt, setPurchasedAt] = useState("");
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("USD");
@@ -249,43 +430,124 @@ function CreditPurchaseDialog({
       >
         <div className="video-provider-page__dialog-header">
           <div>
-            <h2 id="credit-purchase-title">Registrar créditos — {provider.label}</h2>
-            <p>Registra a saída de caixa sem duplicar o custo consumido pelos renders.</p>
+            <h2 id="credit-purchase-title">
+              Registrar créditos — {provider.label}
+            </h2>
+            <p>
+              Registra a saída de caixa sem duplicar o custo consumido pelos
+              renders.
+            </p>
           </div>
-          <button type="button" className="btn-close" aria-label="Fechar" onClick={onClose} />
+          <button
+            type="button"
+            className="btn-close"
+            aria-label="Fechar"
+            onClick={onClose}
+          />
         </div>
         <form onSubmit={submit}>
           <div className="row g-3">
             <div className="col-md-6">
-              <label className="form-label" htmlFor="credit-purchased-at">Data e hora *</label>
-              <input id="credit-purchased-at" className="form-control" type="datetime-local" required value={purchasedAt} onChange={(event) => setPurchasedAt(event.target.value)} />
+              <label className="form-label" htmlFor="credit-purchased-at">
+                Data e hora *
+              </label>
+              <input
+                id="credit-purchased-at"
+                className="form-control"
+                type="datetime-local"
+                required
+                value={purchasedAt}
+                onChange={(event) => setPurchasedAt(event.target.value)}
+              />
             </div>
             <div className="col-md-3">
-              <label className="form-label" htmlFor="credit-amount">Valor *</label>
-              <input id="credit-amount" className="form-control" type="number" min="0.01" step="0.01" required value={amount} onChange={(event) => setAmount(event.target.value)} />
+              <label className="form-label" htmlFor="credit-amount">
+                Valor *
+              </label>
+              <input
+                id="credit-amount"
+                className="form-control"
+                type="number"
+                min="0.01"
+                step="0.01"
+                required
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+              />
             </div>
             <div className="col-md-3">
-              <label className="form-label" htmlFor="credit-currency">Moeda *</label>
-              <select id="credit-currency" className="form-select" required value={currency} onChange={(event) => setCurrency(event.target.value)}>
+              <label className="form-label" htmlFor="credit-currency">
+                Moeda *
+              </label>
+              <select
+                id="credit-currency"
+                className="form-select"
+                required
+                value={currency}
+                onChange={(event) => setCurrency(event.target.value)}
+              >
                 <option value="USD">USD</option>
                 <option value="BRL">BRL</option>
               </select>
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor="credit-quantity">Créditos adquiridos *</label>
-              <input id="credit-quantity" className="form-control" type="number" min="1" step="1" required value={creditsPurchased} onChange={(event) => setCreditsPurchased(event.target.value)} />
+              <label className="form-label" htmlFor="credit-quantity">
+                Créditos adquiridos *
+              </label>
+              <input
+                id="credit-quantity"
+                className="form-control"
+                type="number"
+                min="1"
+                step="1"
+                required
+                value={creditsPurchased}
+                onChange={(event) => setCreditsPurchased(event.target.value)}
+              />
             </div>
             <div className="col-md-6">
-              <label className="form-label" htmlFor="credit-evidence">Referência do comprovante</label>
-              <input id="credit-evidence" className="form-control" maxLength={500} placeholder="Número da fatura ou URL" value={evidenceReference} onChange={(event) => setEvidenceReference(event.target.value)} />
+              <label className="form-label" htmlFor="credit-evidence">
+                Referência do comprovante
+              </label>
+              <input
+                id="credit-evidence"
+                className="form-control"
+                maxLength={500}
+                placeholder="Número da fatura ou URL"
+                value={evidenceReference}
+                onChange={(event) => setEvidenceReference(event.target.value)}
+              />
             </div>
           </div>
-          {registerPurchase.isError ? <div className="alert alert-danger mt-3">Não foi possível registrar a compra.</div> : null}
-          {registerPurchase.isSuccess ? <div className="alert alert-success mt-3">Compra registrada no Financeiro.</div> : null}
+          {registerPurchase.isError ? (
+            <div className="alert alert-danger mt-3">
+              Não foi possível registrar a compra.
+            </div>
+          ) : null}
+          {registerPurchase.isSuccess ? (
+            <div className="alert alert-success mt-3">
+              Compra registrada no Financeiro.
+            </div>
+          ) : null}
           <div className="video-provider-page__dialog-actions">
-            <button type="button" className="btn btn-outline-secondary" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="btn btn-primary" disabled={registerPurchase.isPending}>
-              {registerPurchase.isPending ? <span className="spinner-border spinner-border-sm" aria-hidden="true" /> : null}
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              onClick={onClose}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={registerPurchase.isPending}
+            >
+              {registerPurchase.isPending ? (
+                <span
+                  className="spinner-border spinner-border-sm"
+                  aria-hidden="true"
+                />
+              ) : null}
               Salvar no Financeiro
             </button>
           </div>
@@ -293,10 +555,16 @@ function CreditPurchaseDialog({
         <div className="video-provider-page__purchase-history">
           <h3>Histórico</h3>
           {purchasesQuery.isLoading ? <p>Carregando...</p> : null}
-          {purchasesQuery.data?.length === 0 ? <p>Nenhuma compra registrada.</p> : null}
+          {purchasesQuery.data?.length === 0 ? (
+            <p>Nenhuma compra registrada.</p>
+          ) : null}
           {purchasesQuery.data?.map((purchase) => (
             <p key={purchase.id}>
-              <strong>{purchase.currency} {purchase.amount.toFixed(2)}</strong> — {purchase.creditsPurchased.toLocaleString("pt-BR")} créditos em {new Date(purchase.purchasedAt).toLocaleString("pt-BR")}
+              <strong>
+                {purchase.currency} {purchase.amount.toFixed(2)}
+              </strong>{" "}
+              — {purchase.creditsPurchased.toLocaleString("pt-BR")} créditos em{" "}
+              {new Date(purchase.purchasedAt).toLocaleString("pt-BR")}
             </p>
           ))}
         </div>
@@ -326,10 +594,7 @@ function Fact({ label, value }: { label: string; value: string | number }) {
 function Capability({ active, label }: { active: boolean; label: string }) {
   return (
     <span
-      className={[
-        "video-provider-page__capability",
-        active ? "is-active" : "",
-      ]
+      className={["video-provider-page__capability", active ? "is-active" : ""]
         .filter(Boolean)
         .join(" ")}
     >
@@ -356,7 +621,10 @@ function recommendationClass(recommendation?: string) {
   return "";
 }
 
-export function compareProviderRows(a: ProviderRow, b: ProviderRow) {
+export function compareProviderRows(
+  a: Pick<ProviderRow, "option" | "score">,
+  b: Pick<ProviderRow, "option" | "score">,
+) {
   const scoreDiff = (b.score?.score ?? -1) - (a.score?.score ?? -1);
   if (scoreDiff !== 0) {
     return scoreDiff;
@@ -389,7 +657,8 @@ export function compareProviderRows(a: ProviderRow, b: ProviderRow) {
     return readyJobsDiff;
   }
 
-  const failedJobsDiff = (a.score?.failedJobs ?? 0) - (b.score?.failedJobs ?? 0);
+  const failedJobsDiff =
+    (a.score?.failedJobs ?? 0) - (b.score?.failedJobs ?? 0);
   if (failedJobsDiff !== 0) {
     return failedJobsDiff;
   }

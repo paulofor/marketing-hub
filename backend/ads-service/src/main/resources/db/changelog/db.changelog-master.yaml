@@ -1678,3 +1678,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-09-product-ai-paid-delivery-template-v2.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-09-video-provider-catalog.yaml
+      relativeToChangelogFile: true

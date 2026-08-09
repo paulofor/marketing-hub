@@ -249,9 +249,9 @@ class SalesVideoJobServiceTest {
         .isEqualByComparingTo(new BigDecimal("1.2000"));
     assertThat(costCalculator.estimateUsd("RUNWAY_VEO_3_1", "veo3.1", 8, "720p"))
         .isEqualByComparingTo(new BigDecimal("3.2000"));
-    assertThat(costCalculator.estimateUsd("RUNWAY_SEEDANCE_2_5", "seedance2_5", 10, "480p"))
+    assertThat(costCalculator.estimateUsd("RUNWAY_SEEDANCE_2", "seedance2", 10, "480p"))
         .isEqualByComparingTo(new BigDecimal("2.0000"));
-    assertThat(costCalculator.estimateUsd("RUNWAY_SEEDANCE_2_5", "seedance2_5", 10, "720p"))
+    assertThat(costCalculator.estimateUsd("RUNWAY_SEEDANCE_2", "seedance2", 10, "720p"))
         .isEqualByComparingTo(new BigDecimal("3.0000"));
     assertThat(costCalculator.estimateUsd("HEYGEN", "avatar_iv", 30, "720p"))
         .isEqualByComparingTo(new BigDecimal("1.5000"));

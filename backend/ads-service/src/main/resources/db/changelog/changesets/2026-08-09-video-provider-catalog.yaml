@@ -1,0 +1,79 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-09-video-provider-catalog-001
+      author: codex
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS sales_video_provider_model (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                code VARCHAR(80) NOT NULL,
+                display_name VARCHAR(140) NOT NULL,
+                provider_name VARCHAR(80) NOT NULL,
+                provider_family VARCHAR(40) NOT NULL,
+                adapter_key VARCHAR(80) NOT NULL,
+                external_model_id VARCHAR(120) NOT NULL,
+                recommended_use VARCHAR(500) NOT NULL,
+                lifecycle_status VARCHAR(24) NOT NULL,
+                clip_duration_seconds INT NOT NULL,
+                max_direct_duration_seconds INT NOT NULL,
+                supports_hero_video TINYINT(1) NOT NULL DEFAULT 0,
+                supports_scene_assembly TINYINT(1) NOT NULL DEFAULT 0,
+                requires_source_image TINYINT(1) NOT NULL DEFAULT 0,
+                credits_url VARCHAR(500) NULL,
+                documentation_url VARCHAR(500) NOT NULL,
+                adapter_verified TINYINT(1) NOT NULL DEFAULT 0,
+                pricing_verified TINYINT(1) NOT NULL DEFAULT 0,
+                commercial_license_verified TINYINT(1) NOT NULL DEFAULT 0,
+                quality_gate_verified TINYINT(1) NOT NULL DEFAULT 0,
+                notes VARCHAR(1000) NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_sales_video_provider_model_code (code),
+                UNIQUE KEY uk_sales_video_provider_model_provider (provider_name)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              INSERT INTO sales_video_provider_model
+                (code, display_name, provider_name, provider_family, adapter_key, external_model_id,
+                 recommended_use, lifecycle_status, clip_duration_seconds, max_direct_duration_seconds,
+                 supports_hero_video, supports_scene_assembly, requires_source_image, credits_url,
+                 documentation_url, adapter_verified, pricing_verified, commercial_license_verified,
+                 quality_gate_verified, notes, created_at, updated_at)
+              VALUES
+                ('luma-ray-3-2','Luma Ray 3.2','LUMA_RAY_3_2','EXTERNAL_VIDEO_MODULE','LUMA','ray-2',
+                 'Hero premium do PDE com montagem auditável.','ACTIVE',10,30,1,1,0,NULL,
+                 'https://docs.lumalabs.ai/docs/video-generation',1,1,1,1,NULL,NOW(),NOW()),
+                ('kling-3-0','Kling 3.0','KLING_3_0','EXTERNAL_VIDEO_MODULE','KLING','kling-v2-1-master',
+                 'Teste alternativo para cenas cinematográficas curtas.','ACTIVE',10,10,1,1,0,NULL,
+                 'https://app.klingai.com/global/dev/document-api/apiReference/model/videoGeneration',1,1,1,1,'Nome comercial interno; adapter usa o identificador externo homologado.',NOW(),NOW()),
+                ('runway-gen-4-5','Runway Gen-4.5','RUNWAY','EXTERNAL_VIDEO_MODULE','RUNWAY','gen4.5',
+                 'Cenas curtas e variações; hero longo exige montagem.','ACTIVE',10,10,0,1,0,'https://dev.runwayml.com/',
+                 'https://docs.dev.runwayml.com/guides/models/',1,1,1,1,NULL,NOW(),NOW()),
+                ('runway-seedance-2','Seedance 2 via Runway','RUNWAY_SEEDANCE_2','EXTERNAL_VIDEO_MODULE','RUNWAY','seedance2',
+                 'Cenas flexíveis com texto, imagem ou vídeo; homologar qualidade antes de escala.','HOMOLOGATION',15,15,1,1,0,'https://dev.runwayml.com/',
+                 'https://docs.dev.runwayml.com/guides/models/',1,1,1,0,'Substitui o nome incorreto Seedance 2.5; aguarda QA comercial.',NOW(),NOW()),
+                ('runway-gen-4-turbo','Runway Gen-4 Turbo','RUNWAY_GEN_4_TURBO','EXTERNAL_VIDEO_MODULE','RUNWAY','gen4_turbo',
+                 'Variações econômicas a partir de imagem aprovada.','ACTIVE',10,10,0,1,1,'https://dev.runwayml.com/',
+                 'https://docs.dev.runwayml.com/guides/models/',1,1,1,1,NULL,NOW(),NOW()),
+                ('runway-veo-3-1-fast','Veo 3.1 Fast via Runway','RUNWAY_VEO_3_1_FAST','EXTERNAL_VIDEO_MODULE','RUNWAY','veo3.1_fast',
+                 'Criativos rápidos com áudio e boa relação custo/qualidade.','ACTIVE',8,8,1,1,0,'https://dev.runwayml.com/',
+                 'https://docs.dev.runwayml.com/guides/models/',1,1,1,1,NULL,NOW(),NOW()),
+                ('runway-veo-3-1','Veo 3.1 via Runway','RUNWAY_VEO_3_1','EXTERNAL_VIDEO_MODULE','RUNWAY','veo3.1',
+                 'Hero e cenas premium quando o ganho justificar o custo.','ACTIVE',8,8,1,1,0,'https://dev.runwayml.com/',
+                 'https://docs.dev.runwayml.com/guides/models/',1,1,1,1,NULL,NOW(),NOW()),
+                ('veo-teaser','Veo','VEO','EXTERNAL_VIDEO_MODULE','VEO','veo-3.0-generate-preview',
+                 'Teaser curto ou cena isolada dentro de montagem.','ACTIVE',8,8,0,1,0,NULL,
+                 'https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/veo-video-generation',1,1,1,1,NULL,NOW(),NOW()),
+                ('heygen-avatar-video','HeyGen','HEYGEN','EXTERNAL_VIDEO_MODULE','HEYGEN','avatar-video',
+                 'Avatar e narração sincronizada para ofertas educativas.','ACTIVE',30,600,1,0,0,'https://app.heygen.com/',
+                 'https://docs.heygen.com/',1,1,1,1,NULL,NOW(),NOW()),
+                ('minimax-hailuo-2-3','MiniMax Hailuo 2.3','MINIMAX_HAILUO_2_3','EXTERNAL_VIDEO_MODULE','MINIMAX','MiniMax-Hailuo-2.3',
+                 'Candidato para movimento corporal, expressão facial e aderência ao prompt.','DRAFT',6,10,0,1,0,'https://platform.minimax.io/',
+                 'https://platform.minimax.io/docs/api-reference/video-generation-i2v',0,1,0,0,'Hailuo 3 não é identificador oficial disponível; não executar até adapter, licença e QA.',NOW(),NOW())
+              ON DUPLICATE KEY UPDATE display_name = VALUES(display_name), updated_at = VALUES(updated_at);

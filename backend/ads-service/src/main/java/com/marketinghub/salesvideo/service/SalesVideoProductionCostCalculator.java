@@ -61,7 +61,7 @@ public class SalesVideoProductionCostCalculator {
     if (isKling(normalizedProvider, normalizedModel)) {
       return is1080p(resolution) ? KLING_30_PRO_1080 : KLING_30_STANDARD_720;
     }
-    if (isSeedance25(normalizedProvider, normalizedModel)) {
+    if (isSeedance2(normalizedProvider, normalizedModel)) {
       return is480p(resolution) ? RUNWAY_SEEDANCE_25_480 : RUNWAY_SEEDANCE_25_720;
     }
     if (contains(normalizedProvider, "runway-veo-3-1-fast")) {
@@ -224,12 +224,12 @@ public class SalesVideoProductionCostCalculator {
         || contains(normalizedModel, "gen-4.5");
   }
 
-  /** Identifica o Seedance 2.5 disponibilizado pelo contrato da Runway. */
-  private boolean isSeedance25(String normalizedProvider, String normalizedModel) {
-    return contains(normalizedProvider, "seedance-2-5")
-        || contains(normalizedProvider, "seedance2-5")
-        || contains(normalizedModel, "seedance2-5")
-        || contains(normalizedModel, "seedance-2-5");
+  /** Identifica o Seedance 2 disponibilizado pelo contrato oficial da Runway. */
+  private boolean isSeedance2(String normalizedProvider, String normalizedModel) {
+    return contains(normalizedProvider, "seedance-2")
+        || contains(normalizedProvider, "seedance2")
+        || contains(normalizedModel, "seedance2")
+        || contains(normalizedModel, "seedance-2");
   }
 
   /** Identifica modelos ou providers HeyGen. */

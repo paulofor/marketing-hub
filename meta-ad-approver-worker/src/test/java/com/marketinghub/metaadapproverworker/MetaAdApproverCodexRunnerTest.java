@@ -14,7 +14,7 @@ import org.springframework.core.io.ClassPathResource;
 
 /** Responsabilidade: validar isolamento, contrato e gates do executor Codex. */
 class MetaAdApproverCodexRunnerTest {
-  /** Confirma sandbox read-only, MCP próprio, modelo canônico e ausência de bypass. */
+  /** Confirma internet, sandbox read-only, MCP próprio, modelo canônico e ausência de bypass. */
   @Test
   void forcesDedicatedReadOnlyCodexSandbox() throws Exception {
     MetaAdApproverProperties properties = new MetaAdApproverProperties();
@@ -29,6 +29,7 @@ class MetaAdApproverCodexRunnerTest {
             Path.of("/tmp/mcp.mjs"),
             MetaAdReviewJob.from(Map.of("creativeId", 273, "experimentId", 88)));
 
+    assertThat(command).containsSubsequence("codex", "--search", "exec", "-");
     assertThat(command).containsSubsequence("--sandbox", "read-only");
     assertThat(command).contains("approval_policy=\"never\"");
     assertThat(command).contains("--cd", "/workspace/repository", "--model", "gpt-5.6-sol");

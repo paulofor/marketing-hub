@@ -100,6 +100,7 @@ public class FinancialCodexRunner {
         new ArrayList<>(
             List.of(
                 properties.getCodexCommand(),
+                "--search",
                 "exec",
                 "-",
                 "--skip-git-repo-check",

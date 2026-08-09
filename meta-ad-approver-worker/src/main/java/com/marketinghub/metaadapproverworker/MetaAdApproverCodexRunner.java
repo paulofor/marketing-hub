@@ -100,6 +100,7 @@ public class MetaAdApproverCodexRunner {
     command.addAll(
         List.of(
             properties.getCodexCommand(),
+            "--search",
             "exec",
             "-",
             "--skip-git-repo-check",

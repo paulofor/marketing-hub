@@ -32,6 +32,11 @@ Um agente só pode usar status `TEST` ou `ACTIVE` quando possuir simultaneamente
     observabilidade e autoridade; testes multimodais e navegador quando o domínio exigir;
 12. rollout por `DRAFT`, `TEST`, `ACTIVE`, `PAUSED` e `BLOCKED`, com avaliação offline, shadow mode,
     homologação, rollback e versionamento independente.
+13. acesso de saída livre à internet e pesquisa web habilitada explicitamente no processo Codex. A
+    rede amplia somente a capacidade de consulta: filesystem continua somente leitura, conteúdo
+    externo é tratado como não confiável e nenhuma requisição pode publicar, comprar, gastar,
+    alterar sistemas externos ou transmitir segredos. Navegação, fontes e ferramentas usadas devem
+    permanecer auditáveis por execução.
 
 O gate do repositório deve validar também o contrato ponta a ponta entre cada rota chamada pelo MCP e
 o endpoint realmente exposto pelo controller do próprio módulo no backend. Registrar o servidor no
@@ -59,7 +64,10 @@ conteúdo. Depois do bootstrap, cada diretório evolui de forma independente. Di
 Browser, visão, áudio ou vídeo só são instalados quando necessários. O Aprovador Meta deve possuir
 Chromium/Playwright, inspeção da landing em desktop e mobile, imagem em resolução original e quadros
 representativos de vídeo. Agentes financeiros não precisam de browser; recebem snapshots contábeis
-congelados pelo backend. Pesquisa pública deve preservar URL, horário e evidência consultada.
+congelados pelo backend. Todos os agentes operacionais podem pesquisar livremente a internet.
+Pesquisa pública deve preservar URL, horário e evidência consultada. Browser completo continua
+instalado apenas quando o domínio exigir interação ou inspeção visual; os demais agentes usam a
+pesquisa web do Codex.
 
 ## Gate arquitetural
 

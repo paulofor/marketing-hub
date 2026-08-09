@@ -40,6 +40,7 @@ public class CodexObservationAnalyzer {
     Process process =
         new ProcessBuilder(
                 executable,
+                "--search",
                 "exec",
                 "--sandbox",
                 "read-only",

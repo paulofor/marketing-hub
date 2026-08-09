@@ -51,6 +51,8 @@ for agent in agents:
         if marker not in compose: errors.append(f"{agent['key']}: Compose sem {marker}")
     if 'codex@' not in docker: errors.append(f"{agent['key']}: Codex não instalado")
     if '--sandbox' not in java or 'read-only' not in java: errors.append(f"{agent['key']}: sandbox read-only ausente")
+    if agent.get('internetAccess') != 'unrestricted': errors.append(f"{agent['key']}: acesso livre à internet não declarado")
+    if '--search' not in java: errors.append(f"{agent['key']}: pesquisa livre na internet não habilitada no Codex")
     if 'mcp_servers.' not in java: errors.append(f"{agent['key']}: MCP não registrado")
     if 'pending' not in java or ('complete' not in java and '/result' not in java): errors.append(f"{agent['key']}: pending/callback ausente")
     if 'CodexTelemetryReporter' not in java: errors.append(f"{agent['key']}: telemetria ausente")

@@ -1,8 +1,8 @@
 {"contractVersion":"premium-v1","agents":[
-  {"key":"growth-operator","module":"growth-operator-worker","operational":true,"mcp":"mcp/marketing-hub-readonly.mjs","browser":false},
-  {"key":"customer-agent","module":"customer-agent-worker","operational":true,"mcp":"mcp/customer-agent.mjs","browser":true},
-  {"key":"financial-agent","module":"financial-agent-worker","operational":true,"mcp":"mcp/financial-agent.mjs","browser":false},
-  {"key":"experiment-strategist","module":"experiment-strategist-worker","operational":true,"mcp":"mcp/experiment-strategist.mjs","browser":true},
-  {"key":"meta-ad-approver","module":"meta-ad-approver-worker","operational":true,"mcp":"mcp/meta-ad-approver.mjs","browser":true,"vision":true,"videoFrames":true},
+  {"key":"growth-operator","module":"growth-operator-worker","operational":true,"mcp":"mcp/marketing-hub-readonly.mjs","browser":false,"internetAccess":"unrestricted"},
+  {"key":"customer-agent","module":"customer-agent-worker","operational":true,"mcp":"mcp/customer-agent.mjs","browser":true,"internetAccess":"unrestricted"},
+  {"key":"financial-agent","module":"financial-agent-worker","operational":true,"mcp":"mcp/financial-agent.mjs","browser":false,"internetAccess":"unrestricted"},
+  {"key":"experiment-strategist","module":"experiment-strategist-worker","operational":true,"mcp":"mcp/experiment-strategist.mjs","browser":true,"internetAccess":"unrestricted"},
+  {"key":"meta-ad-approver","module":"meta-ad-approver-worker","operational":true,"mcp":"mcp/meta-ad-approver.mjs","browser":true,"vision":true,"videoFrames":true,"internetAccess":"unrestricted"},
   {"key":"market-radar","module":"market-radar-worker","operational":false,"blockedReason":"Executor premium ainda não implementado; cadastro não pode consumir pendências."}
 ]}

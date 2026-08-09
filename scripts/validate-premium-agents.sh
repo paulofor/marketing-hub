@@ -52,10 +52,16 @@ for agent in agents:
     if 'codex@' not in docker: errors.append(f"{agent['key']}: Codex não instalado")
     if '--sandbox' not in java or 'read-only' not in java: errors.append(f"{agent['key']}: sandbox read-only ausente")
     if agent.get('internetAccess') != 'unrestricted': errors.append(f"{agent['key']}: acesso livre à internet não declarado")
+    if agent.get('premiumMemory') is not True: errors.append(f"{agent['key']}: memória premium não declarada")
     if '--search' not in java: errors.append(f"{agent['key']}: pesquisa livre na internet não habilitada no Codex")
     if 'mcp_servers.' not in java: errors.append(f"{agent['key']}: MCP não registrado")
     if 'pending' not in java or ('complete' not in java and '/result' not in java): errors.append(f"{agent['key']}: pending/callback ausente")
     if 'CodexTelemetryReporter' not in java: errors.append(f"{agent['key']}: telemetria ausente")
+    mcp_text = (resources/agent['mcp']).read_text() if (resources/agent['mcp']).exists() else ''
+    for memory_tool in ('recuperar_memoria_especializada', 'registrar_aprendizado_candidato'):
+        if memory_tool not in mcp_text: errors.append(f"{agent['key']}: MCP sem {memory_tool}")
+    if f'/agents/{agent["key"]}' not in mcp_text:
+        errors.append(f"{agent['key']}: MCP sem agentKey fixo na memória premium")
     if agent.get('browser') and 'playwright' not in docker.lower(): errors.append(f"{agent['key']}: Playwright ausente")
     backend_contract = mcp_backend_contracts.get(agent['key'])
     if backend_contract:

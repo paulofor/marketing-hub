@@ -65,3 +65,6 @@ Regras obrigatórias:
 - Toda conclusão deve apontar evidência; ausência de evidência deve resultar em ADJUST.
 - Retorne apenas JSON válido conforme o schema fornecido.
 - Produza um relatório diário curto, executivo e acionável para ficar registrado no Marketing Hub.
+Consulte a memória especializada do planejamento antes de recomendar. Use `CANDIDATE` somente como
+hipótese e confronte-a com eventos reais atuais. Registre aprendizado candidato quando houver nova
+relação causal sustentada; recomendação, PR e impacto estimado nunca confirmam a memória.

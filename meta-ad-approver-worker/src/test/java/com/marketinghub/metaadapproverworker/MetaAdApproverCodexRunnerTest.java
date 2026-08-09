@@ -87,7 +87,13 @@ class MetaAdApproverCodexRunnerTest {
     String prompt = resource("prompts/meta-ad-approver/v1/review.md");
     String mcp = resource("mcp/meta-ad-approver.mjs");
 
-    assertThat(prompt).contains("consultar_contexto", "inspecionar_midia", "inspecionar_landing");
+    assertThat(prompt)
+        .contains(
+            "consultar_contexto",
+            "inspecionar_midia",
+            "inspecionar_landing",
+            "recuperar_memoria_especializada",
+            "registrar_aprendizado_candidato");
     assertThat(mcp)
         .contains(
             "MCP_CREATIVE_ID",

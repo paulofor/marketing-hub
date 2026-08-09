@@ -37,6 +37,39 @@ Um agente só pode usar status `TEST` ou `ACTIVE` quando possuir simultaneamente
     externo é tratado como não confiável e nenhuma requisição pode publicar, comprar, gastar,
     alterar sistemas externos ou transmitir segredos. Navegação, fontes e ferramentas usadas devem
     permanecer auditáveis por execução.
+14. memória premium híbrida e exclusiva: MySQL é a fonte de verdade para conhecimento textual,
+    escopo, procedência, versão, confiança, feedback e uso; S3 privado guarda somente evidências
+    grandes e imutáveis, referenciadas por chave e checksum. Cada MCP deve oferecer recuperação
+    limitada e registro de candidatos para o `agentKey` fixo do próprio módulo.
+
+## Memória premium e aprendizagem protegida
+
+A memória é append-only e separa `CANDIDATE`, `CONFIRMED`, `CONTRADICTED` e `RETIRED`. O agente
+pode propor uma lembrança candidata, mas nunca promovê-la sozinho. Somente resultado oficial
+posterior, callback governado ou decisão humana pode confirmar, contradizer ou retirar conhecimento.
+Memória candidata deve ser apresentada como hipótese; memória contradita ou retirada não entra no
+contexto operacional.
+
+Cada registro deve conter agente, tenant quando existir, tipo e identificador de escopo, especialidade,
+conteúdo conciso, evidência, fonte, execução originadora, confiança, validade e versão do contrato.
+O backend deduplica conteýo no mesmo escopo e registra quantidade e data de recuperação. Nenhum
+worker acessa banco ou bucket diretamente: leitura e escrita passam pelo backend por ferramentas do
+MCP exclusivo, com `agentKey` fixo e sem argumento controlável pelo modelo.
+
+A recuperação deve impor limite de itens e caracteres, priorizar confirmação, confiança, recência,
+validade e aderência ao escopo. Não se deve despejar o histórico inteiro no prompt. Resumos, índices
+semânticos e caches são derivados reconstruíveis, nunca fonte de verdade. Conteúdo externo e saída
+do próprio modelo permanecem não confiáveis até confirmação independente.
+
+Evidências grandes usam bucket S3 compatível privado, criptografia, retenção e prefixo segregado por
+agente/tenant/escopo. Falha do S3 não pode impedir a leitura da memória textual; o MySQL guarda apenas
+metadados e referência. Segredos, dados pessoais desnecessários, HTML ou instruções externas brutas
+não entram no contexto de memória.
+
+A qualidade da memória é medida por precisão posterior, taxa de contradição, reutilização que reduz
+tempo/custo ou melhora resultado e impacto comercial comprovado. Crescimento da tabela, quantidade de
+lembranças e autorreferência do agente não constituem aprendizagem. Memórias sem uso, vencidas,
+repetidas ou frequentemente contraditas devem ser retiradas sem apagar a trilha auditável.
 
 O gate do repositório deve validar também o contrato ponta a ponta entre cada rota chamada pelo MCP e
 o endpoint realmente exposto pelo controller do próprio módulo no backend. Registrar o servidor no

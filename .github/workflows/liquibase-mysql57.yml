@@ -1,0 +1,73 @@
+name: Liquibase MySQL 5.7
+
+on:
+  pull_request:
+    paths:
+      - "backend/ads-service/src/main/resources/db/changelog/**"
+      - "scripts/validate-liquibase-mysql57.sh"
+      - ".github/workflows/liquibase-mysql57.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: liquibase-mysql57-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Aplicar changelog no MySQL 5.7
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: ads
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Validar regras estáticas do MySQL 5.7
+        env:
+          LIQUIBASE_VALIDATE_SCOPE: changed
+        run: bash scripts/validate-liquibase-mysql57.sh
+
+      - name: Validar estrutura completa do changelog
+        working-directory: backend/ads-service
+        run: |
+          mvn -B \
+            org.liquibase:liquibase-maven-plugin:4.26.0:validate \
+            -Dliquibase.changeLogFile=src/main/resources/db/changelog/db.changelog-master.yaml \
+            -Dliquibase.url=jdbc:mysql://127.0.0.1:3306/ads \
+            -Dliquibase.username=root \
+            -Dliquibase.password=root
+
+      - name: Aplicar todas as migrações em banco efêmero
+        working-directory: backend/ads-service
+        run: |
+          mvn -B \
+            org.liquibase:liquibase-maven-plugin:4.26.0:update \
+            -Dliquibase.changeLogFile=src/main/resources/db/changelog/db.changelog-master.yaml \
+            -Dliquibase.url=jdbc:mysql://127.0.0.1:3306/ads \
+            -Dliquibase.username=root \
+            -Dliquibase.password=root

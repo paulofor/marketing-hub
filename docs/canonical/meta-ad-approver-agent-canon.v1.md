@@ -10,8 +10,9 @@ O executor canônico é `meta-ad-approver-worker`. Ele consome somente
 `/api/internal/creatives/agent-review/stage-executions/pending`, executa `gpt-5.6-sol` pelo Codex
 ChatGPT em sandbox própria `read-only` e envia o parecer exclusivamente pelo callback do backend.
 O módulo possui container, usuário sem privilégios, volume de identidade Codex, CI/CD, timeout e
-telemetria próprios. O `ai-worker` não pode revisar ou aprovar anúncios; sua responsabilidade nesse
-ciclo limita-se a materializar a correção visual persistida pelo backend.
+telemetria próprios. O `ai-worker` não pode conter pacote, prompt, schema, executor ou decisão do
+Aprovador Meta. Sua responsabilidade limita-se à geração técnica de mídia requisitada pelo backend,
+em pacote neutro de materialização visual, sem analisar, pontuar ou aprovar anúncios.
 
 Cada execução materializa o MCP versionado `meta_ad_approver`, restrito ao criativo e ao experimento
 reservados. As ferramentas obrigatórias confirmam o contexto no backend, retornam a mídia real em

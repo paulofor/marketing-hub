@@ -1,4 +1,4 @@
-package com.marketinghub.worker.creativereview;
+package com.marketinghub.worker.creativeimprovement;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-/** Responsabilidade: validar que correções visuais preservam integralmente o contrato do Aprovador. */
+/** Responsabilidade: validar a materialização técnica de revisões visuais. */
 class CreativeImprovementServiceTest {
 
     /** Exige requisitos, proibições e critérios no prompt enviado ao gerador. */
@@ -35,8 +35,8 @@ class CreativeImprovementServiceTest {
         assertThat(result.success()).isEqualTo(1);
         verify(imageClient).generateImage(
                 contains("1. Headline Agenda Cheia legível"),
-                eq("Correção definida pelo Agente Especialista em Aprovação de Anúncios"),
-                eq("agent-improvement-creative-88"));
+                eq("Revisão visual solicitada pelo backend"),
+                eq("creative-improvement-88"));
         verify(imageClient).generateImage(contains("ELEMENTOS PROIBIDOS"), any(), any());
         verify(imageClient).generateImage(contains("CRITÉRIOS DE ACEITAÇÃO"), any(), any());
         verify(backend).report(eq(88L), any());

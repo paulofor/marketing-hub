@@ -1,4 +1,4 @@
-package com.marketinghub.worker.creativereview;
+package com.marketinghub.worker.creativeimprovement;
 
 import java.time.Duration;
 import java.util.List;
@@ -10,7 +10,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
-/** Responsabilidade: consumir e concluir correções de anúncios controladas pelo backend. */
+/** Responsabilidade: consumir e concluir revisões visuais controladas pelo backend. */
 @Component
 public class CreativeImprovementBackendClient {
     private static final Logger log = LoggerFactory.getLogger(CreativeImprovementBackendClient.class);
@@ -25,11 +25,11 @@ public class CreativeImprovementBackendClient {
         this.backendBaseUrl = backendBaseUrl.replaceAll("/+$", "");
     }
 
-    /** Busca correções pendentes no ponto inicial canônico publicado pelo backend. */
+    /** Busca revisões visuais pendentes no ponto inicial canônico publicado pelo backend. */
     public List<Map<String, Object>> listPending(int limit) {
         String url = backendBaseUrl + "/api/internal/creatives/agent-improvement/stage-executions/pending?limit="
                 + Math.max(1, limit);
-        log.info("Buscando correções de anúncios pendentes. url={}", url);
+        log.info("Buscando revisões visuais pendentes. url={}", url);
         List<Map<String, Object>> result = webClient.get().uri(url).retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
                 .block(TIMEOUT);

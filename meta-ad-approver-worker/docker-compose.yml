@@ -1,6 +1,6 @@
 services:
-  growth-operator-worker:
-    image: ${GROWTH_OPERATOR_IMAGE:-marketing-hub/growth-operator-worker:local}
+  meta-ad-approver-worker:
+    image: ${META_AD_APPROVER_IMAGE:-marketing-hub/meta-ad-approver-worker:local}
     restart: unless-stopped
     build:
       context: .
@@ -10,15 +10,16 @@ services:
       BACKEND_URL: ${BACKEND_URL:-http://backend:8000}
       MARKETING_HUB_REPOSITORY: /workspace/marketing-hub
       MARKETING_HUB_URL: ${MARKETING_HUB_URL:-http://backend:8000}
-      COMMERCIAL_PLAN_ID: ${COMMERCIAL_PLAN_ID:-1}
       CODEX_MODEL: ${CODEX_MODEL:-gpt-5.6-sol}
       CODEX_REASONING_EFFORT: ${CODEX_REASONING_EFFORT:-high}
-      GROWTH_OPERATOR_CODEX_TIMEOUT: ${GROWTH_OPERATOR_CODEX_TIMEOUT:-PT40M}
+      META_AD_APPROVER_CODEX_TIMEOUT: ${META_AD_APPROVER_CODEX_TIMEOUT:-PT40M}
+    ports:
+      - "8097:8097"
     volumes:
       - ${MARKETING_HUB_REPOSITORY_HOST:-..}:/workspace/marketing-hub:ro
-      - ${GROWTH_OPERATOR_CODEX_HOME:?Defina uma identidade Codex exclusiva}:/home/operator/.codex
+      - ${META_AD_APPROVER_CODEX_HOME:?Defina uma identidade Codex exclusiva}:/home/approver/.codex
     read_only: true
     tmpfs:
-      - /tmp:size=128m,noexec,nosuid
+      - /tmp:size=256m,noexec,nosuid
     security_opt:
       - no-new-privileges:true

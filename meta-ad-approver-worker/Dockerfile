@@ -15,11 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm git 
     && npx playwright-core install --with-deps chromium \
     && chmod -R a+rX /ms-playwright \
     && rm -rf /var/lib/apt/lists/* \
-    && (getent group operator >/dev/null || groupadd --gid 10001 operator) \
-    && (id --user operator >/dev/null 2>&1 || useradd --create-home --uid 10001 --gid operator operator)
+    && groupadd --gid 10001 approver \
+    && useradd --create-home --uid 10001 --gid approver approver
 COPY --from=build /build/target/app.jar /app/app.jar
-COPY --from=build /build/src/main/resources/prompts /app/prompts
-COPY --from=build /build/src/main/resources/browser /app/browser
-COPY --from=build /build/src/main/resources/mcp /app/mcp
-USER operator
+USER approver
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

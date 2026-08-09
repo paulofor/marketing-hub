@@ -93,7 +93,8 @@ class CodexStrategistRunnerTest {
     assertThat(prompt)
         .contains("Sem venda aprovada e entrega satisfatória")
         .contains("não inicie, pause, avance ou encerre experimento");
-    assertThat(schema.path("required")).anyMatch(value -> value.asText().equals("portfolioAssessment"));
+    assertThat(schema.path("required"))
+        .anyMatch(value -> value.asText().equals("portfolioAssessment"));
     assertThat(
             schema
                 .path("properties")

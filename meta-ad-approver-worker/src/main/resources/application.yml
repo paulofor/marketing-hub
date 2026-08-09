@@ -1,0 +1,19 @@
+server:
+  port: 8097
+spring:
+  application:
+    name: meta-ad-approver-worker
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+meta-ad-approver:
+  backend-url: ${BACKEND_URL:http://backend:8000}
+  marketing-hub-url: ${MARKETING_HUB_URL:http://backend:8000}
+  repository-path: ${MARKETING_HUB_REPOSITORY:/workspace/marketing-hub}
+  codex-command: ${CODEX_COMMAND:codex}
+  model: ${CODEX_MODEL:gpt-5.6-sol}
+  reasoning-effort: ${CODEX_REASONING_EFFORT:high}
+  codex-timeout: ${META_AD_APPROVER_CODEX_TIMEOUT:PT40M}
+  pending-limit: ${META_AD_APPROVER_PENDING_LIMIT:3}

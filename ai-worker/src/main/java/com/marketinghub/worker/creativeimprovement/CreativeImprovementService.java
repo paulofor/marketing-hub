@@ -1,4 +1,4 @@
-package com.marketinghub.worker.creativereview;
+package com.marketinghub.worker.creativeimprovement;
 
 import com.marketinghub.worker.creative.CreativeImageClient;
 import java.util.LinkedHashMap;
@@ -7,21 +7,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-/** Responsabilidade: materializar as correções visuais decididas pelo agente aprovador. */
+/** Responsabilidade: materializar revisões visuais solicitadas pelo backend. */
 @Service
 public class CreativeImprovementService {
     private static final Logger log = LoggerFactory.getLogger(CreativeImprovementService.class);
     private final CreativeImprovementBackendClient backendClient;
     private final CreativeImageClient imageClient;
 
-    /** Inicializa a etapa com a fila oficial e o gerador visual homologado. */
+    /** Inicializa a etapa técnica com a fila oficial e o gerador visual homologado. */
     public CreativeImprovementService(CreativeImprovementBackendClient backendClient,
                                       CreativeImageClient imageClient) {
         this.backendClient = backendClient;
         this.imageClient = imageClient;
     }
 
-    /** Gera uma nova versão para cada correção e deixa a próxima revisão sob controle do backend. */
+    /** Gera uma nova versão sem revisar, pontuar ou aprovar o anúncio. */
     public Summary processPending(int limit) {
         int success = 0;
         int failed = 0;
@@ -35,8 +35,8 @@ public class CreativeImprovementService {
                 }
                 String imageUrl = imageClient.generateImage(
                         prompt,
-                        "Correção definida pelo Agente Especialista em Aprovação de Anúncios",
-                        "agent-improvement-creative-" + creativeId);
+                        "Revisão visual solicitada pelo backend",
+                        "creative-improvement-" + creativeId);
                 Map<String, Object> result = new LinkedHashMap<>();
                 result.put("imageUrl", imageUrl);
                 result.put("requestJson", prompt);

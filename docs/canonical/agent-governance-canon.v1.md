@@ -45,6 +45,36 @@ O prompt e o schema canônicos são:
 - `growth-operator-worker/src/main/resources/prompts/growth-operator/v1/diagnosis.md`
 - `growth-operator-worker/src/main/resources/prompts/growth-operator/v1/diagnosis-schema.json`
 
+## Arquitetura obrigatória dos agentes
+
+O contrato detalhado e bloqueante está em
+`docs/canonical/premium-ai-agent-architecture-canon.v1.md` e prevalece para qualquer agente novo,
+migrado ou reativado.
+
+Os primeiros agentes independentes — Cliente, Financeiro, Operador de Crescimento e Estrategista de
+Experimentos — são o modelo arquitetural obrigatório para agentes novos ou migrados. Todo agente
+operacional deve possuir:
+
+- módulo executor e container próprios, com CI/CD e identidade operacional independentes;
+- Codex ChatGPT executado em sandbox isolada e `read-only`, com timeout, usuário sem privilégios,
+  filesystem somente leitura e diretório temporário efêmero;
+- servidor MCP próprio, versionado no módulo, com catálogo mínimo de ferramentas tipadas e restritas
+  ao domínio do agente; o MCP deve consultar somente endpoints oficiais do backend e registrar cada
+  ferramenta, origem, correlação e horário usados;
+- prompt e schema versionados no módulo executor;
+- consumo iniciado exclusivamente pelo endpoint `pending` canônico e callback oficial de resultado;
+- request/contexto, resposta bruta, modelo, status, erro, telemetria e custos persistíveis e
+  correlacionados à execução;
+- segregação determinística entre experimentos, clientes ou planejamentos e teste preventivo contra
+  mistura de dados;
+- backend como fonte de verdade dos estados, tentativas, gates e avanço. O agente nunca publica,
+  gasta, aprova humanamente ou dispara a próxima etapa por conta própria.
+
+É proibido embutir um agente em worker genérico de geração, chamar OpenAI diretamente no lugar do
+Codex, compartilhar MCP irrestrito entre domínios ou tratar apenas um cadastro na tela como agente
+operacional completo. Reuso deve ocorrer nos contratos do backend e nos padrões arquiteturais, não
+pela mistura de responsabilidades entre executores.
+
 ## Métrica de maturidade
 
 A qualidade de um agente é medida por pendências resolvidas e resultados posteriores comprovados,
@@ -59,6 +89,6 @@ do mesmo experimento, a coordenação deve seguir `orquestrador-agentes-canon.v1
 
 O Cadastro de Agentes deve consolidar execuções, pendências e resultados confirmados dos executores Operador, Financeiro, Cliente e Aprovador de Anúncios Meta sem criar uma fila paralela. Cada executor permanece responsável por sua execução; o backend normaliza os indicadores. Simulação, hipótese, relatório ou impacto estimado nunca contam como resultado confirmado. A maturidade deve priorizar taxa de conclusão, pendências encerradas com evidência posterior e dez resultados confirmados antes de qualquer ampliação de autonomia.
 
-No Aprovador de Anúncios Meta, cada parecer persistido por versão do criativo representa uma execução. Revisões e correções pendentes formam as pendências do ciclo; decisões encerradas formam resoluções; apenas `APPROVED` conta como resultado técnico confirmado. O custo consolidado inclui a chamada auditada de revisão e as versões visuais geradas por solicitação corretiva do agente, sem atribuir ao aprovador o custo do criativo inicial. Aprovação técnica nunca substitui aprovação humana, publicação ou resultado comercial.
+No Aprovador de Anúncios Meta, cada parecer persistido por versão do criativo representa uma execução. O executor canônico é o módulo independente `meta-ad-approver-worker`, que usa Codex em sandbox somente leitura e MCP próprio. Revisões e correções pendentes formam as pendências do ciclo; decisões encerradas formam resoluções; apenas `APPROVED` conta como resultado técnico confirmado. O custo consolidado inclui a chamada auditada de revisão e as versões visuais geradas por solicitação corretiva do agente, sem atribuir ao aprovador o custo do criativo inicial. Aprovação técnica nunca substitui aprovação humana, publicação ou resultado comercial.
 
 Quando o Aprovador decidir `ADJUST` ou `REJECTED`, a correção seguinte deve usar um contrato visual estruturado, persistido e auditável. O contrato precisa separar requisitos obrigatórios, elementos proibidos e critérios objetivos de aceitação; o worker deve incorporar todos esses itens ao prompt final e bloquear a geração quando requisitos ou critérios estiverem ausentes. Parecer em texto livre ou recomendação vaga não autoriza nova chamada paga. A versão gerada retorna ao mesmo gate multimodal, preservando limite de tentativas, custo e aprovação humana.

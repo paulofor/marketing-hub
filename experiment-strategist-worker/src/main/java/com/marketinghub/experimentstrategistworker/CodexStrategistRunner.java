@@ -41,12 +41,13 @@ public class CodexStrategistRunner {
     Path output = Files.createTempFile("experiment-strategist-", ".json");
     Path log = Files.createTempFile("experiment-strategist-", ".log");
     Path schema = materialize("prompts/experiment-strategist/v1/research-schema.json", ".json");
+    Path mcp = materialize("mcp/experiment-strategist.mjs", ".mjs");
     try {
-      Process process =
-          new ProcessBuilder(command(output, schema))
-              .redirectErrorStream(true)
-              .redirectOutput(log.toFile())
-              .start();
+      ProcessBuilder builder = new ProcessBuilder(command(output, schema, mcp));
+      builder.redirectErrorStream(true).redirectOutput(log.toFile());
+      builder.environment().put("MCP_BACKEND_URL", properties.getBackendUrl());
+      builder.environment().put("MCP_EXECUTION_ID", job.id().toString());
+      Process process = builder.start();
       process.getOutputStream().write(prompt(job).getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
       CodexTelemetryReporter.Session session =
@@ -89,11 +90,17 @@ public class CodexStrategistRunner {
       Files.deleteIfExists(output);
       Files.deleteIfExists(log);
       Files.deleteIfExists(schema);
+      Files.deleteIfExists(mcp);
     }
   }
 
   /** Monta o comando com busca publica, sandbox somente leitura e schema versionado. */
   List<String> command(Path output, Path schema) {
+    return command(output, schema, Path.of("experiment-strategist.mjs"));
+  }
+
+  /** Monta o comando com o MCP exclusivo e versionado do Estrategista. */
+  List<String> command(Path output, Path schema, Path mcp) {
     List<String> command = new ArrayList<>();
     command.add(properties.getCodexCommand());
     command.add("--search");
@@ -110,6 +117,10 @@ public class CodexStrategistRunner {
     command.add(output.toString());
     command.add("--color");
     command.add("never");
+    command.add("--config");
+    command.add("mcp_servers.experiment_strategist.command=\"node\"");
+    command.add("--config");
+    command.add("mcp_servers.experiment_strategist.args=[\"" + mcp.toAbsolutePath() + "\"]");
     if (hasText(properties.getModel())) {
       command.add("--model");
       command.add(properties.getModel());

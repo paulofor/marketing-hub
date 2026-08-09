@@ -88,12 +88,17 @@ public class CustomerEvaluationCodexRunner {
     Path answer = Files.createTempFile("customer-agent-evaluation-answer-", ".json");
     Path processLog = Files.createTempFile("customer-agent-evaluation-process-", ".log");
     Path schema = materialize(schemaResource, ".json");
+    Path mcp = materialize("mcp/customer-agent.mjs", ".mjs");
     try {
-      Process process =
-          new ProcessBuilder(buildCommand(answer, schema))
-              .redirectErrorStream(true)
-              .redirectOutput(processLog.toFile())
-              .start();
+      ProcessBuilder builder = new ProcessBuilder(buildCommand(answer, schema, mcp));
+      builder.redirectErrorStream(true).redirectOutput(processLog.toFile());
+      builder
+          .environment()
+          .put(
+              "MCP_BACKEND_URL",
+              System.getenv().getOrDefault("CUSTOMER_AGENT_MCP_URL", "http://backend:8000"));
+      builder.environment().put("MCP_EVALUATION_ID", String.valueOf(evaluationId));
+      Process process = builder.start();
       process.getOutputStream().write(prompt.getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
       try (CodexTelemetryReporter.Session session =
@@ -118,6 +123,7 @@ public class CustomerEvaluationCodexRunner {
       Files.deleteIfExists(answer);
       Files.deleteIfExists(processLog);
       Files.deleteIfExists(schema);
+      Files.deleteIfExists(mcp);
     }
   }
 
@@ -137,6 +143,11 @@ public class CustomerEvaluationCodexRunner {
 
   /** Monta o comando com arquivo final, schema versionado e sandbox somente leitura. */
   List<String> buildCommand(Path answer, Path schema) {
+    return buildCommand(answer, schema, Path.of("customer-agent.mjs"));
+  }
+
+  /** Monta o comando com o MCP exclusivo do Agente Cliente. */
+  List<String> buildCommand(Path answer, Path schema, Path mcp) {
     List<String> command =
         new ArrayList<>(
             List.of(
@@ -154,7 +165,11 @@ public class CustomerEvaluationCodexRunner {
                 "--output-last-message",
                 answer.toString(),
                 "--color",
-                "never"));
+                "never",
+                "--config",
+                "mcp_servers.customer_agent.command=\"node\"",
+                "--config",
+                "mcp_servers.customer_agent.args=[\"" + mcp.toAbsolutePath() + "\"]"));
     if (model != null && !model.isBlank()) {
       command.add("--model");
       command.add(model);

@@ -1,5 +1,9 @@
 # Radar de Produtos e Oportunidades — cânone v1
 
+> Estado arquitetural: `BLOCKED`. O cadastro do Agente Radar não pode consumir pendências até existir
+> um `market-radar-worker` completo com Codex, sandbox, MCP, prompt/schema, telemetria e CI/CD,
+> conforme `premium-ai-agent-architecture-canon.v1.md`. O histórico permanece disponível.
+
 ## Objetivo
 
 Transformar evidências públicas e auditáveis de mercado em uma fila diária de pesquisa e validação comercial. O Radar reduz dispersão, mas não substitui experimento próprio, venda confirmada ou decisão humana.

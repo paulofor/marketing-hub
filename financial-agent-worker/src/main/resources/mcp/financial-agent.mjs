@@ -1,0 +1,9 @@
+import readline from 'node:readline';
+const base = required('MCP_BACKEND_URL').replace(/\/$/, '');
+const executionId = required('MCP_EXECUTION_ID');
+const tools = [{name:'consultar_execucao_financeira',description:'Consulta o snapshot financeiro congelado da execução.',inputSchema:{type:'object',additionalProperties:false,properties:{}}}];
+const input = readline.createInterface({input:process.stdin,crlfDelay:Infinity});
+input.on('line', async line => { let request; try { request=JSON.parse(line); const result=await dispatch(request); if(request.id!==undefined) send({jsonrpc:'2.0',id:request.id,result}); } catch(error) { if(request?.id!==undefined) send({jsonrpc:'2.0',id:request.id,error:{code:-32000,message:error.message}}); }});
+async function dispatch(request){ if(request.method==='initialize') return {protocolVersion:request.params?.protocolVersion??'2025-03-26',capabilities:{tools:{}},serverInfo:{name:'financial-agent',version:'1.0.0'}}; if(request.method==='tools/list') return {tools}; if(request.method==='ping'||request.method?.startsWith('notifications/')) return {}; if(request.method!=='tools/call'||request.params?.name!=='consultar_execucao_financeira') throw new Error('Ferramenta não permitida'); const path=`/api/financial-agent/v1/internal/executions/${encodeURIComponent(executionId)}`; const response=await fetch(base+path,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(30000)}); process.stderr.write(JSON.stringify({tool:'consultar_execucao_financeira',executionId,path,status:response.status,at:new Date().toISOString()})+'\n'); if(!response.ok) throw new Error(`Backend respondeu HTTP ${response.status}`); return {content:[{type:'text',text:await response.text()}]}; }
+function required(name){const value=process.env[name];if(!value)throw new Error(`Variável obrigatória ausente: ${name}`);return value;}
+function send(value){process.stdout.write(JSON.stringify(value)+'\n');}

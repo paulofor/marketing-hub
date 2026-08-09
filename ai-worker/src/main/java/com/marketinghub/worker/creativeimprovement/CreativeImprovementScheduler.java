@@ -1,4 +1,4 @@
-package com.marketinghub.worker.creativereview;
+package com.marketinghub.worker.creativeimprovement;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/** Responsabilidade: acionar periodicamente a etapa de melhoria de anúncios. */
+/** Responsabilidade: acionar periodicamente a materialização de revisões visuais. */
 @Component
 public class CreativeImprovementScheduler {
     private static final Logger log = LoggerFactory.getLogger(CreativeImprovementScheduler.class);
@@ -20,7 +20,7 @@ public class CreativeImprovementScheduler {
         this.limit = Math.max(1, limit);
     }
 
-    /** Executa a fila sem decidir aprovação ou publicação fora do backend. */
+    /** Executa somente geração visual, sem analisar, decidir ou aprovar anúncios. */
     @Scheduled(cron = "0 */1 * * * *")
     public void run() {
         CreativeImprovementService.Summary summary = service.processPending(limit);

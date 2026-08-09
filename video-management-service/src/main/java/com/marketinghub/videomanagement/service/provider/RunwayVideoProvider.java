@@ -175,7 +175,7 @@ public class RunwayVideoProvider implements VideoProvider {
         payload.put("model", resolveModel(job, config));
         payload.put("promptText", limitPrompt(buildPrompt(job, profile, script, metadata), 1000));
         payload.put("ratio", config.getRatio());
-        payload.put("duration", config.getDurationSeconds());
+        payload.put("duration", resolveDuration(job, config));
         String promptImage = firstText(metadata,
                 "/characterImageReferenceUrl",
                 "/image_to_video/reference_image_url",
@@ -184,16 +184,32 @@ public class RunwayVideoProvider implements VideoProvider {
         if (StringUtils.hasText(promptImage)) {
             payload.put("promptImage", promptImage);
         }
+        if (resolveModel(job, config).equals("gen4_turbo") && !StringUtils.hasText(promptImage)) {
+            throw new VideoProviderException("PROVIDER_INPUT_INVALID",
+                    "Runway Gen-4 Turbo exige uma imagem-base aprovada");
+        }
         return payload;
     }
 
     /** Resolve o modelo pelo contrato do job, mantendo Gen-4.5 como padrão da Runway. */
     private String resolveModel(SalesVideoJob job, VideoManagementProperties.Runway config) {
         String providerName = normalize(job.providerName());
-        if (providerName.equals("RUNWAY_SEEDANCE_2_5")) {
-            return "seedance2_5";
+        return switch (providerName) {
+            case "RUNWAY_SEEDANCE_2_5" -> "seedance2_5";
+            case "RUNWAY_GEN_4_TURBO" -> "gen4_turbo";
+            case "RUNWAY_VEO_3_1" -> "veo3.1";
+            case "RUNWAY_VEO_3_1_FAST" -> "veo3.1_fast";
+            default -> config.getModel();
+        };
+    }
+
+    /** Resolve duração compatível com o modelo selecionado antes de consumir créditos. */
+    private int resolveDuration(SalesVideoJob job, VideoManagementProperties.Runway config) {
+        String providerName = normalize(job.providerName());
+        if (providerName.equals("RUNWAY_VEO_3_1") || providerName.equals("RUNWAY_VEO_3_1_FAST")) {
+            return Math.min(config.getDurationSeconds(), 8);
         }
-        return config.getModel();
+        return config.getDurationSeconds();
     }
 
     /** Limita o prompt ao contrato oficial da Runway sem cortar um par substituto UTF-16. */

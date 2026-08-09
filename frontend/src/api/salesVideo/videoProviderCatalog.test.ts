@@ -136,6 +136,19 @@ describe("videoProviderCatalog", () => {
     expect(provider?.creditsUrl).toBe("https://dev.runwayml.com/");
   });
 
+  it("inclui a curadoria comercial de modelos acessiveis pela Runway", () => {
+    expect(findSalesVideoProviderOption("RUNWAY_GEN_4_TURBO")?.label).toBe(
+      "Runway Gen-4 Turbo",
+    );
+    expect(
+      findSalesVideoProviderOption("RUNWAY_VEO_3_1_FAST")
+        ?.maxDirectDurationSeconds,
+    ).toBe(8);
+    expect(
+      findSalesVideoProviderOption("RUNWAY_VEO_3_1")?.supportsHeroVideo,
+    ).toBe(true);
+  });
+
   it("usa imagem aprovada como fonte para Kling e Runway quando houver asset selecionado", () => {
     const provider = findSalesVideoProviderOption("KLING_3_0");
 
@@ -174,6 +187,14 @@ describe("videoProviderCatalog", () => {
       findSalesVideoProviderOption("RUNWAY_SEEDANCE_2_5")
         ?.maxDirectDurationSeconds,
     ).toBe(30);
+    expect(
+      findSalesVideoProviderOption("RUNWAY_GEN_4_TURBO")
+        ?.maxDirectDurationSeconds,
+    ).toBe(10);
+    expect(
+      findSalesVideoProviderOption("RUNWAY_VEO_3_1_FAST")
+        ?.maxDirectDurationSeconds,
+    ).toBe(8);
     expect(findSalesVideoProviderOption("VEO")?.maxDirectDurationSeconds).toBe(
       8,
     );

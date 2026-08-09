@@ -26,7 +26,11 @@ vi.mock("../../api/planning/useProviderCreditPurchases", () => ({
 describe("VideoProviderManagementPage links", () => {
   const renderPage = () =>
     render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
+      >
         <VideoProviderManagementPage />
       </QueryClientProvider>,
     );
@@ -34,10 +38,13 @@ describe("VideoProviderManagementPage links", () => {
   it("abre a compra de creditos da API Runway em uma nova aba segura", () => {
     renderPage();
 
-    const link = screen.getByRole("link", { name: /comprar créditos/i });
-    expect(link).toHaveAttribute("href", "https://dev.runwayml.com/");
-    expect(link).toHaveAttribute("target", "_blank");
-    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    const links = screen.getAllByRole("link", { name: /comprar créditos/i });
+    expect(links).toHaveLength(5);
+    links.forEach((link) => {
+      expect(link).toHaveAttribute("href", "https://dev.runwayml.com/");
+      expect(link).toHaveAttribute("target", "_blank");
+      expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    });
   });
 
   it("abre o formulário financeiro de compra de créditos", async () => {
@@ -45,7 +52,9 @@ describe("VideoProviderManagementPage links", () => {
     await userEvent.click(
       screen.getAllByRole("button", { name: /registrar compra runway/i })[0],
     );
-    expect(screen.getByRole("dialog", { name: /registrar créditos/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("dialog", { name: /registrar créditos/i }),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText(/data e hora/i)).toBeRequired();
     expect(screen.getByLabelText(/créditos adquiridos/i)).toBeRequired();
   });

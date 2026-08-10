@@ -18,6 +18,18 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
   /** Lista os criativos vinculados ao experimento informado. */
   List<Creative> findByExperimentId(Long experimentId);
 
+  /** Lista apenas a versão mais recente de cada linhagem criativa do experimento. */
+  @Query(
+      """
+            select c from Creative c
+             where c.experiment.id = :experimentId
+               and not exists (
+                    select newer.id from Creative newer where newer.sourceCreative.id = c.id
+               )
+             order by c.id
+            """)
+  List<Creative> findLatestLineageCreativesByExperimentId(@Param("experimentId") Long experimentId);
+
   /** Busca o criativo mais recente do experimento para o gate coordenado. */
   Optional<Creative> findFirstByExperimentIdOrderByIdDesc(Long experimentId);
 

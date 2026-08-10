@@ -229,6 +229,7 @@ class SalesVideoProfileServiceTest {
             VideoModuleException.class, () -> service.requestRender(profile.getId(), request));
 
     assertThat(ex.getMessage()).contains("Runway aceita no máximo 10 segundos");
+    assertThat(SalesVideoProviderDurationPolicy.maxSeconds("RUNWAY_SEEDANCE_2")).isEqualTo(15);
     assertThat(SalesVideoProviderDurationPolicy.maxSeconds("RUNWAY_SEEDANCE_2_5")).isEqualTo(15);
   }
 

@@ -62,6 +62,7 @@ video:
       accepted-names:
         - RUNWAY
         - RUNWAY_GEN_4_5
+        - RUNWAY_SEEDANCE_2
         - RUNWAY_SEEDANCE_2_5
         - RUNWAY_HAILUO_3
         - RUNWAY_GROK_IMAGINE_1_5

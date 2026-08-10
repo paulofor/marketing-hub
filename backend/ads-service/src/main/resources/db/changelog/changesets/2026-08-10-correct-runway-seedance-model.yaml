@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-10-correct-runway-seedance-model-001
+      author: codex
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE sales_video_provider_model
+              SET code = 'runway-seedance-2',
+                  display_name = 'Seedance 2.0 via Runway',
+                  provider_name = 'RUNWAY_SEEDANCE_2',
+                  external_model_id = 'seedance2',
+                  recommended_use = 'Cenas comerciais de ate 15s com audio opcional; 4K exige autorizacao de custo e homologacao antes de escalar.',
+                  lifecycle_status = 'HOMOLOGATION',
+                  notes = 'Contrato oficial Runway corrigido; Seedance 2.5 do Pippit aguarda API oficial, preco, licenca e QA.',
+                  updated_at = NOW()
+              WHERE code = 'runway-seedance-2-5';

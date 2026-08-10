@@ -17,7 +17,7 @@ vi.mock("../../api/salesVideo/useSalesVideoProviderModels", () => ({
   useSalesVideoProviderModels: () => ({
     data: [
       "RUNWAY",
-      "RUNWAY_SEEDANCE_2_5",
+      "RUNWAY_SEEDANCE_2",
       "RUNWAY_HAILUO_3",
       "RUNWAY_GEN_4_TURBO",
       "RUNWAY_VEO_3_1_FAST",

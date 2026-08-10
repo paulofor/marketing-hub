@@ -229,15 +229,19 @@ public class GrowthOperatorService {
     CommercialPlan plan = commercialPlanService.getPlan(planId);
     GrowthOperatorExecution execution = new GrowthOperatorExecution();
     execution.setCommercialPlan(plan);
-    execution.setWeekNumber(
-        request.weekNumber() == null ? resolveCurrentWeekNumber(plan) : request.weekNumber());
+    int executionWeekNumber =
+        request.weekNumber() == null ? resolveCurrentWeekNumber(plan) : request.weekNumber();
+    execution.setWeekNumber(executionWeekNumber);
     execution.setStatus(GrowthOperatorExecutionStatus.PENDING);
     execution.setAuthorityMode(READ_ONLY);
     execution.setObjective(
         hasText(request.objective()) ? request.objective() : defaultObjective(plan));
     execution.setBlocker(plan.getCurrentBlocker());
     execution.setEvidenceSnapshot(
-        buildEvidenceSnapshot(plan, repository.findByCommercialPlanIdOrderByCreatedAtDesc(planId)));
+        buildEvidenceSnapshot(
+            plan,
+            repository.findByCommercialPlanIdOrderByCreatedAtDesc(planId),
+            executionWeekNumber));
     execution.setEvidenceFingerprint(buildEvidenceFingerprint(execution.getEvidenceSnapshot()));
     execution.setCycleNumber(nextCycleNumber(planId));
     execution.setAutomaticCycle(false);
@@ -390,6 +394,7 @@ public class GrowthOperatorService {
   @Transactional
   public GrowthOperatorExecutionResponse ensureAutomaticCycle(Long planId) {
     CommercialPlan plan = commercialPlanService.synchronizeRunningExperiment(planId);
+    int executionWeekNumber = resolveCurrentWeekNumber(plan);
     var latest = repository.findFirstByCommercialPlanIdOrderByCreatedAtDesc(planId);
     Instant cutoff = Instant.now().minusSeconds(30 * 60L);
     boolean recoveredStaleExecution = false;
@@ -406,7 +411,10 @@ public class GrowthOperatorService {
       return toResponse(latest.get());
     }
     String evidenceSnapshot =
-        buildEvidenceSnapshot(plan, repository.findByCommercialPlanIdOrderByCreatedAtDesc(planId));
+        buildEvidenceSnapshot(
+            plan,
+            repository.findByCommercialPlanIdOrderByCreatedAtDesc(planId),
+            executionWeekNumber);
     String evidenceFingerprint = buildEvidenceFingerprint(evidenceSnapshot);
     if (!recoveredStaleExecution
         && latest.isPresent()
@@ -415,7 +423,7 @@ public class GrowthOperatorService {
     }
     GrowthOperatorExecution execution = new GrowthOperatorExecution();
     execution.setCommercialPlan(plan);
-    execution.setWeekNumber(resolveCurrentWeekNumber(plan));
+    execution.setWeekNumber(executionWeekNumber);
     execution.setStatus(GrowthOperatorExecutionStatus.PENDING);
     execution.setAuthorityMode(READ_ONLY);
     execution.setObjective(defaultObjective(plan));
@@ -541,14 +549,11 @@ public class GrowthOperatorService {
         + text(plan.getCurrentBlocker());
   }
 
-  /** Congela as evidencias comerciais disponiveis no momento da solicitacao. */
-  private String buildEvidenceSnapshot(CommercialPlan plan) {
-    return buildEvidenceSnapshot(plan, List.of());
-  }
-
-  /** Congela o plano e a memoria consolidada para impedir ciclos repetitivos sem aprendizado. */
+  /** Congela o plano, a semana da execucao e a memoria para impedir evidencias incoerentes. */
   private String buildEvidenceSnapshot(
-      CommercialPlan plan, List<GrowthOperatorExecution> executionHistory) {
+      CommercialPlan plan,
+      List<GrowthOperatorExecution> executionHistory,
+      int executionWeekNumber) {
     LinkedHashMap<String, Object> snapshot = new LinkedHashMap<>();
     snapshot.put("planId", plan.getId());
     snapshot.put("objective", plan.getCommercialObjective());
@@ -561,8 +566,7 @@ public class GrowthOperatorService {
     snapshot.put("actualCost", plan.getActualTotalCost());
     snapshot.put("actualRevenue", plan.getActualRevenue());
     snapshot.put("deadline", plan.getDeadline());
-    int currentWeekNumber = resolveCurrentWeekNumber(plan);
-    snapshot.put("currentWeek", buildCurrentWeekContext(plan, currentWeekNumber));
+    snapshot.put("currentWeek", buildCurrentWeekContext(plan, executionWeekNumber));
     snapshot.put("spendGovernance", buildSpendGovernance(plan));
     if (plan.getExperiment() != null) {
       Long experimentId = plan.getExperiment().getId();

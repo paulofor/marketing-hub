@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
-  "required": ["decision", "attentionScore", "clarityScore", "desireScore", "credibilityScore", "actionScore", "copyAssessment", "commercialAestheticAssessment", "destinationIntegrationAssessment", "summary", "issues", "recommendations", "revisedHeadline", "revisedPrimaryText", "revisedDescription", "revisedCta", "revisedImagePrompt", "mandatoryVisualRequirements", "forbiddenVisualElements", "visualAcceptanceCriteria"],
+  "required": ["decision", "attentionScore", "clarityScore", "desireScore", "credibilityScore", "actionScore", "copyAssessment", "commercialAestheticAssessment", "destinationIntegrationAssessment", "summary", "issues", "recommendations", "revisedHeadline", "revisedPrimaryText", "revisedDescription", "revisedCta", "revisedImagePrompt", "mandatoryVisualRequirements", "forbiddenVisualElements", "visualAcceptanceCriteria", "correctionTargets"],
   "properties": {
     "decision": {"type": "string", "enum": ["APPROVED", "ADJUST", "REJECTED"]},
     "attentionScore": {"type": "integer", "minimum": 0, "maximum": 100},
@@ -23,6 +23,20 @@
     "revisedImagePrompt": {"type": "string"},
     "mandatoryVisualRequirements": {"type": "array", "items": {"type": "string"}},
     "forbiddenVisualElements": {"type": "array", "items": {"type": "string"}},
-    "visualAcceptanceCriteria": {"type": "array", "items": {"type": "string"}}
+    "visualAcceptanceCriteria": {"type": "array", "items": {"type": "string"}},
+    "correctionTargets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["target", "issueCode", "requirement", "acceptanceCriterion"],
+        "properties": {
+          "target": {"type": "string", "enum": ["CREATIVE_COPY", "CREATIVE_MEDIA", "LANDING"]},
+          "issueCode": {"type": "string", "minLength": 3},
+          "requirement": {"type": "string", "minLength": 10},
+          "acceptanceCriterion": {"type": "string", "minLength": 10}
+        }
+      }
+    }
   }
 }

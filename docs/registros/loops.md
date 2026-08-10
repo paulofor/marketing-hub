@@ -915,6 +915,13 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Correção sistêmica:** o Aprovador passa a devolver requisitos visuais obrigatórios, elementos proibidos e critérios objetivos de aceitação; o backend persiste e publica essas listas e o worker monta deterministicamente o prompt final com todos os itens.
 - **Prevenção:** testes de contrato bloqueiam geração sem requisitos/critérios e comprovam que cada lista chega ao prompt enviado ao GPT Image 2. A versão continua voltando ao gate multimodal e não herda aprovação técnica ou humana.
 
+# LOOP-CREATIVE-CONVERGENCE-UNCOORDINATED — Gate identifica falha fora do próprio executor
+
+- **Sintoma:** novas versões do anúncio repetem a mesma divergência com a landing até consumir o limite, embora o parecer descreva corretamente o problema.
+- **Causa-raiz:** o parecer possuía recomendações em texto livre, mas o backend encaminhava somente a correção visual; não existiam responsável, aceite, progresso ou tarefa de landing persistidos.
+- **Correção sistêmica:** ciclo versionado no backend transforma cada bloqueio em tarefa de `CREATIVE_COPY`, `CREATIVE_MEDIA` ou `LANDING`, encaminha a landing pelo pipeline GeraLanding e mede score, custo e repetição entre versões.
+- **Prevenção:** contrato estruturado obrigatório, impressão digital estável e gates de repetição, custo e iteração impedem ciclos infinitos ou falsos sucessos.
+
 # LOOP-AGENT-MCP-BACKEND-ROUTE-DRIFT — MCP registrado aponta para endpoint inexistente
 
 - **Sintoma:** o agente inicia o Codex e registra seu MCP, mas a primeira ferramenta de contexto falha com HTTP 404, impedindo a análise baseada nos dados congelados.

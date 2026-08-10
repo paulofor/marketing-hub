@@ -12,6 +12,8 @@ import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.CreativeVideoReviewSourceType;
+import com.marketinghub.creative.convergence.v1.ConvergenceCycleStatus;
+import com.marketinghub.creative.convergence.v1.ConvergenceTaskStatus;
 import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.creative.dto.CreativeAgentReviewResultRequest;
@@ -25,6 +27,8 @@ import com.marketinghub.media.AssetStatus;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
+import com.marketinghub.repository.jpa.creative.convergence.CreativeConvergenceCycleRepository;
+import com.marketinghub.repository.jpa.creative.convergence.CreativeConvergenceTaskRepository;
 import com.marketinghub.repository.jpa.creative.label.AngleRepository;
 import com.marketinghub.repository.jpa.creative.label.EmotionalTriggerRepository;
 import com.marketinghub.repository.jpa.creative.label.VisualProofRepository;
@@ -64,6 +68,8 @@ class CreativeServiceTest {
   @Autowired FixtureUtils fixtures;
   @Autowired AssetRepository assetRepository;
   @Autowired ExperimentVideoAssetRepository experimentVideoAssetRepository;
+  @Autowired CreativeConvergenceCycleRepository convergenceCycleRepository;
+  @Autowired CreativeConvergenceTaskRepository convergenceTaskRepository;
 
   @Autowired CreativeService service;
 
@@ -465,6 +471,40 @@ class CreativeServiceTest {
     assertThat(reviewed.getAgentImprovementError()).contains("critérios visuais verificáveis");
   }
 
+  /** Persiste tarefas verificáveis e bloqueia o ciclo quando a mesma falha não progride. */
+  @Test
+  void coordinatesAndStopsRepeatedConvergenceIssue() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment exp = fixtures.createAndSaveExperiment(niche);
+    CreateCreativeRequest create = new CreateCreativeRequest();
+    create.setFormat("IMAGE");
+    create.setImageUrl("https://cdn.test/ad.png");
+    Creative creative = service.create(exp.getId(), create);
+    CreativeAgentReviewResultRequest review =
+        adjustmentReview(
+            java.util.List.of("Produto legível"),
+            java.util.List.of("Texto simulado"),
+            java.util.List.of("Legível em mobile"));
+
+    service.applyAgentReview(creative.getId(), review);
+    service.applyAgentReview(creative.getId(), review);
+    service.applyAgentReview(creative.getId(), review);
+
+    var cycle =
+        convergenceCycleRepository.findAll().stream()
+            .filter(item -> item.getRootCreativeId().equals(creative.getId()))
+            .findFirst()
+            .orElseThrow();
+    assertThat(cycle.getStatus()).isEqualTo(ConvergenceCycleStatus.BLOCKED_NO_PROGRESS);
+    assertThat(cycle.getRepeatedIssueCount()).isEqualTo(2);
+    assertThat(convergenceTaskRepository.findByCycleIdOrderByIdAsc(cycle.getId()))
+        .extracting(task -> task.getStatus())
+        .containsExactly(
+            ConvergenceTaskStatus.PENDING,
+            ConvergenceTaskStatus.REPEATED,
+            ConvergenceTaskStatus.REPEATED);
+  }
+
   /** Bloqueia copy corrigida que seria truncada nos placements Meta. */
   @Test
   void rejectsAgentCorrectionAboveMetaDisplayLimits() {
@@ -507,7 +547,8 @@ class CreativeServiceTest {
             valid.revisedImagePrompt(),
             valid.mandatoryVisualRequirements(),
             valid.forbiddenVisualElements(),
-            valid.visualAcceptanceCriteria());
+            valid.visualAcceptanceCriteria(),
+            valid.correctionTargets());
 
     assertThatThrownBy(() -> service.applyAgentReview(creative.getId(), oversized))
         .isInstanceOf(IllegalArgumentException.class)
@@ -546,7 +587,13 @@ class CreativeServiceTest {
         "Crie uma arte premium para manicures.",
         mandatory,
         forbidden,
-        acceptance);
+        acceptance,
+        java.util.List.of(
+            new CreativeAgentReviewResultRequest.ConvergenceCorrectionTarget(
+                "CREATIVE_MEDIA",
+                "PRODUCT_DEMONSTRATION",
+                "Mostrar o produto digital de forma legível.",
+                "A imagem deve mostrar post e story legíveis em mobile.")));
   }
 
   /** Registra um parecer multimodal aprovado para cenários que exercitam a aprovação humana. */
@@ -578,6 +625,7 @@ class CreativeServiceTest {
             "Descrição aprovada.",
             "LEARN_MORE",
             "",
+            java.util.List.of(),
             java.util.List.of(),
             java.util.List.of(),
             java.util.List.of()));

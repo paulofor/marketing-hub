@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.cost.CostAttributionService;
 import com.marketinghub.creative.*;
+import com.marketinghub.creative.convergence.v1.CreativeConvergenceReport;
+import com.marketinghub.creative.convergence.v1.CreativeConvergenceService;
 import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.creative.dto.CreativeAgentReviewPendingDto;
@@ -70,7 +72,7 @@ public class CreativeService {
   private static final int META_DESCRIPTION_RECOMMENDED_MAX_LENGTH = 25;
   private static final int META_CALL_TO_ACTION_MAX_LENGTH = 32;
   private static final String DEFAULT_META_CALL_TO_ACTION = "LEARN_MORE";
-  private static final int MAX_AGENT_IMPROVEMENT_ATTEMPTS = 3;
+  private static final int MAX_AGENT_IMPROVEMENT_ATTEMPTS = 8;
   private static final int MAX_AGENT_REVIEW_RECOVERIES = 2;
   private static final Duration AGENT_REVIEW_LEASE_TIMEOUT = Duration.ofMinutes(50);
 
@@ -86,6 +88,7 @@ public class CreativeService {
   private final AssetStorageService assetStorageService;
   private final ObjectMapper objectMapper;
   private final ProductRepository productRepository;
+  private final CreativeConvergenceService convergenceService;
 
   /** Cria e persiste um criativo para o experimento informado. */
   @Transactional
@@ -462,6 +465,12 @@ public class CreativeService {
     return repository.save(creative);
   }
 
+  /** Retorna o relatório funcional do ciclo de convergência da linhagem. */
+  @Transactional(readOnly = true)
+  public CreativeConvergenceReport getConvergenceReport(Long id) {
+    return convergenceService.report(repository.findByIdWithExperiment(id).orElseThrow());
+  }
+
   /** Resolve mapa apenas quando o nicho identifica um único produto, evitando contexto cruzado. */
   private Product uniqueProductForDesireMap(Long marketNicheId) {
     List<Product> products = productRepository.findAllByMarketNiche_Id(marketNicheId);
@@ -493,6 +502,7 @@ public class CreativeService {
     creative.setAgentReviewModel(request.model());
     creative.setAgentReviewedAt(Instant.now());
     creative.setAgentReviewStartedAt(null);
+    convergenceService.registerReview(creative, request);
     scheduleAgentImprovement(creative, request, decision);
     if (decision != CreativeAgentReviewStatus.APPROVED
         && creative.getStatus() == CreativeStatus.READY) {
@@ -605,7 +615,7 @@ public class CreativeService {
     int attempts = Objects.requireNonNullElse(creative.getAgentImprovementAttempts(), 0);
     if (attempts >= MAX_AGENT_IMPROVEMENT_ATTEMPTS) {
       creative.setAgentImprovementStatus(CreativeImprovementStatus.LIMIT_REACHED);
-      creative.setAgentImprovementError("Limite de três correções automáticas atingido");
+      creative.setAgentImprovementError("Limite seguro de oito correções automáticas atingido");
       return;
     }
     if (!StringUtils.hasText(request.revisedImagePrompt())) {

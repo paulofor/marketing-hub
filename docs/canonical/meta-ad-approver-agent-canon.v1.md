@@ -59,7 +59,21 @@ O agente avalia separadamente atenção, clareza, desejo, credibilidade e ação
 
 ## Ciclo de melhoria
 
-Em `ADJUST` ou `REJECTED`, o agente entrega textos revisados, prompt visual, requisitos obrigatórios, elementos proibidos e critérios verificáveis. O backend controla até três tentativas, preserva versões, custos, requests, responses e evidências. O executor apenas materializa a correção e reporta o resultado.
+Em `ADJUST` ou `REJECTED`, o agente entrega textos revisados, prompt visual, requisitos obrigatórios, elementos proibidos e critérios verificáveis. O backend controla tentativas pelos gates de progresso, repetição, custo e iteração do ciclo de convergência, preservando versões, requests, responses e evidências. O executor apenas materializa a correção e reporta o resultado.
+
+## Ciclo de convergência v1
+
+O backend é o coordenador exclusivo da convergência anúncio → landing. Cada falha bloqueante do
+Aprovador deve declarar um código estável, requisito, critério de aceite e exatamente um responsável:
+`CREATIVE_COPY`, `CREATIVE_MEDIA` ou `LANDING`. O backend persiste ciclo, versão, score, custo,
+evidência e tarefa; encaminha mídia ao AI Worker e landing ao endpoint `pending` oficial do
+GeraLanding. Nenhum executor chama outro executor nem decide a próxima etapa.
+
+Uma nova versão sempre retorna ao Aprovador. A mesma impressão digital de falha não pode reaparecer
+duas vezes sem bloquear o ciclo por ausência de progresso. O ciclo também bloqueia ao atingir oito
+avaliações ou US$ 5,00 de custo auditável. Esses limites não autorizam publicação: aprovação humana,
+orçamento e mudança do experimento para `RUNNING` permanecem gates separados. A aprovação técnica
+encerra somente a linhagem avaliada; o experimento exige todos os criativos e a jornada aprovados.
 
 ## Limites de autoridade
 

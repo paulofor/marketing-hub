@@ -8,6 +8,7 @@ public record RecordWireframePending(
     Long experimentId,
     String jobid,
     String stageCode,
+    String convergenceBrief,
     RecordWireframeExperiment experiment,
     RecordWireframeHypothesis hypothesis,
     List<GeraLandingReferenceInsight> geralandingReferenceInsights) {
@@ -33,6 +34,6 @@ public record RecordWireframePending(
       String stageCode,
       RecordWireframeExperiment experiment,
       RecordWireframeHypothesis hypothesis) {
-    this(experimentId, jobid, stageCode, experiment, hypothesis, List.of());
+    this(experimentId, jobid, stageCode, null, experiment, hypothesis, List.of());
   }
 }

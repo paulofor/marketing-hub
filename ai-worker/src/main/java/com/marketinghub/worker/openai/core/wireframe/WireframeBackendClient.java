@@ -167,6 +167,7 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
         payload.put("PAIN_JSON", framework.getOrDefault("pain", Map.of()));
         payload.put("RESULT_JSON", framework.getOrDefault("result", Map.of()));
         payload.put("geralandingReferenceInsights", pending.get("geralandingReferenceInsights"));
+        payload.put("convergenceBrief", pending.get("convergenceBrief"));
 
         return payload;
     }

@@ -22,7 +22,7 @@ services:
       MCP_LOG_CUSTOMER_AGENT_WORKER_PATH: ${MCP_LOG_CUSTOMER_AGENT_WORKER_PATH:-http://163.245.202.80:8099/ops-customer-agent-observability-v1/customer-agent-worker-log}
       MCP_LOG_FINANCIAL_AGENT_WORKER_PATH: ${MCP_LOG_FINANCIAL_AGENT_WORKER_PATH:-http://163.245.202.80:8095/ops-financial-agent-observability-v1/financial-agent-worker-log}
       MCP_LOG_EXPERIMENT_STRATEGIST_WORKER_PATH: ${MCP_LOG_EXPERIMENT_STRATEGIST_WORKER_PATH:-http://163.245.202.80:8096/ops-experiment-strategist-observability-v1/experiment-strategist-worker-log}
-      MCP_LOG_META_AD_APPROVER_WORKER_PATH: ${MCP_LOG_META_AD_APPROVER_WORKER_PATH:-http://163.245.202.80:8097/ops-meta-ad-approver-observability-v1/meta-ad-approver-worker-log}
+      MCP_LOG_META_AD_APPROVER_WORKER_PATH: ${MCP_LOG_META_AD_APPROVER_WORKER_PATH:-http://163.245.202.80:8097/ops-meta-ad-approver-observability-v1/logfile}
       MCP_LOG_PDE_PLATFORM_BACKEND_PATH: ${MCP_LOG_PDE_PLATFORM_BACKEND_PATH:-http://163.245.200.7:8096/actuator/logfile}
       MCP_CHAT_LOG_ALLOWED_CONTAINERS: ${MCP_CHAT_LOG_ALLOWED_CONTAINERS:-marketinghub-fashion-chat,product-discovery-worker}
       MCP_DOCKER_OPS_ENABLED: ${MCP_DOCKER_OPS_ENABLED:-true}

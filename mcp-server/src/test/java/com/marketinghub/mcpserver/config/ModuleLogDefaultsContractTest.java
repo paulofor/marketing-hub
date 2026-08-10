@@ -22,7 +22,7 @@ class ModuleLogDefaultsContractTest {
     private static final String FINANCIAL_AGENT_WORKER_LOG_URL =
             "http://163.245.202.80:8095/ops-financial-agent-observability-v1/financial-agent-worker-log";
     private static final String META_AD_APPROVER_WORKER_LOG_URL =
-            "http://163.245.202.80:8097/ops-meta-ad-approver-observability-v1/meta-ad-approver-worker-log";
+            "http://163.245.202.80:8097/ops-meta-ad-approver-observability-v1/logfile";
 
     /**
      * Garante que a configuração Spring não direcione o alias backend ao log do AI Worker.

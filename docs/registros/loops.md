@@ -928,3 +928,10 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o `codex exec` não interativo herdava política de aprovação da identidade e as ferramentas MCP não declaravam anotações de risco; não existia usuário para responder à elicitação.
 - **Correção sistêmica:** declarar `approval_policy=never` por configuração explícita com sandbox `read-only` e anotar todas as ferramentas com `readOnlyHint`, `openWorldHint` e `destructiveHint` coerentes.
 - **Prevenção:** teste de contrato valida simultaneamente a política não interativa e as anotações MCP.
+
+# LOOP-META-AD-APPROVER-LOG-ENDPOINT-DRIFT — MCP aponta para rota de log inexistente
+
+- **Sintoma:** `java_module_logs` retorna HTTP 404 para `meta-ad-approver-worker`, embora o health do agente esteja `UP` e o logfile real esteja disponível.
+- **Causa-raiz:** o MCP registrou uma rota nominal `meta-ad-approver-worker-log`, mas o Actuator expõe o endpoint configurado como `logfile` sob o base path versionado.
+- **Correção sistêmica:** aplicação, Composes, documentação operacional e teste de contrato usam `/ops-meta-ad-approver-observability-v1/logfile`, validado contra o runtime publicado.
+- **Prevenção:** o teste de defaults exige o mesmo endpoint nos descritores local e de deploy; a homologação operacional deve confirmar HTTP 200 tanto no health quanto no logfile.

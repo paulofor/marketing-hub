@@ -174,12 +174,18 @@ public class MetaAdApproverCodexRunner {
       throw new IllegalArgumentException("Parecer Codex incompleto");
     }
     if ("APPROVED".equals(decision)) {
+      if (!value.path("correctionTargets").isEmpty()) {
+        throw new IllegalArgumentException("Aprovação não pode solicitar correções");
+      }
       for (String score :
           List.of(
               "attentionScore", "clarityScore", "desireScore", "credibilityScore", "actionScore")) {
         if (value.path(score).asInt(-1) < 80)
           throw new IllegalArgumentException("Aprovação com nota inferior a 80");
       }
+    } else if (value.path("correctionTargets").isEmpty()) {
+      throw new IllegalArgumentException(
+          "Ajuste ou reprovação sem correções verificáveis e responsáveis definidos");
     } else if (value.path("revisedImagePrompt").asText().isBlank()
         || value.path("mandatoryVisualRequirements").isEmpty()
         || value.path("visualAcceptanceCriteria").isEmpty()) {

@@ -81,6 +81,44 @@ class MetaAdApproverCodexRunnerTest {
         .hasRootCauseMessage("Aprovação com nota inferior a 80");
   }
 
+  /** Impede que ajuste ou reprovação chegue ao backend sem tarefas executáveis. */
+  @Test
+  void rejectsAdjustmentWithoutConvergenceTargets() throws Exception {
+    MetaAdApproverCodexRunner runner =
+        new MetaAdApproverCodexRunner(new MetaAdApproverProperties(), new ObjectMapper());
+    Method validate =
+        MetaAdApproverCodexRunner.class.getDeclaredMethod(
+            "validate", com.fasterxml.jackson.databind.JsonNode.class);
+    validate.setAccessible(true);
+    var value =
+        new ObjectMapper()
+            .readTree(
+                """
+        {"decision":"ADJUST","summary":"Parecer completo",
+        "revisedImagePrompt":"Gerar imagem premium do produto",
+        "mandatoryVisualRequirements":["Mostrar o produto"],
+        "visualAcceptanceCriteria":["Produto legível em mobile"],
+        "correctionTargets":[]}
+        """);
+
+    assertThatThrownBy(() -> validate.invoke(runner, value))
+        .hasRootCauseMessage(
+            "Ajuste ou reprovação sem correções verificáveis e responsáveis definidos");
+  }
+
+  /** Mantém o schema alinhado ao gate condicional de convergência. */
+  @Test
+  void requiresTargetsOnlyWhenReviewIsNotApproved() throws Exception {
+    String schema = resource("prompts/meta-ad-approver/v1/review-schema.json");
+
+    assertThat(schema)
+        .contains(
+            "\"const\": \"APPROVED\"",
+            "\"correctionTargets\": {\"maxItems\": 0}",
+            "\"decision\": {\"enum\": [\"ADJUST\", \"REJECTED\"]}",
+            "\"correctionTargets\": {\"minItems\": 1}");
+  }
+
   /** Confirma que o prompt exige mídia, landing e segregação pelo MCP. */
   @Test
   void requiresAllVisualEvidenceThroughMcp() throws Exception {

@@ -941,4 +941,10 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Sintoma:** `java_module_logs` retorna HTTP 404 para `meta-ad-approver-worker`, embora o health do agente esteja `UP` e o logfile real esteja disponível.
 - **Causa-raiz:** o MCP registrou uma rota nominal `meta-ad-approver-worker-log`, mas o Actuator expõe o endpoint configurado como `logfile` sob o base path versionado.
 - **Correção sistêmica:** aplicação, Composes, documentação operacional e teste de contrato usam `/ops-meta-ad-approver-observability-v1/logfile`, validado contra o runtime publicado.
+
+### LOOP-META-AD-APPROVER-CORRECTION-TARGETS-EMPTY
+
+- **Sintoma:** na primeira execução assistida do ciclo de convergência do experimento #88, o Aprovador devolveu `ADJUST` sem `correctionTargets`; o backend encerrou o ciclo como `FAILED` e o callback respondeu HTTP 500.
+- **Causa-raiz:** o prompt descrevia a obrigação, mas o schema aceitava uma lista vazia e o gate local do executor validava somente o contrato visual legado.
+- **Correção sistêmica:** o schema exige ao menos uma tarefa para `ADJUST`/`REJECTED` e nenhuma para `APPROVED`; o executor repete a validação deterministicamente antes do callback, com testes de contrato contra recorrência.
 - **Prevenção:** o teste de defaults exige o mesmo endpoint nos descritores local e de deploy; a homologação operacional deve confirmar HTTP 200 tanto no health quanto no logfile.

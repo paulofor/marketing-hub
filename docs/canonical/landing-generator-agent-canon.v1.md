@@ -16,6 +16,12 @@ O Quality Review independente produz a reprovação e o backend cria uma execuç
 
 O agente pode corrigir somente rascunhos. Ele não aprova o próprio trabalho, publica, compra, gasta, muda preço, ativa campanha, avança pipeline ou altera seus contratos. Publicação e campanha permanecem sujeitas aos gates e à autorização humana.
 
+## Autonomia orientada ao objetivo
+
+O agente deve trabalhar sem solicitar escolhas humanas de copy, layout, CTA, imagens ou responsividade quando houver contexto e evidência suficientes. Em cada execução ele audita visual e funcionalmente desktop, iPhone e Android, compara ao menos três estratégias, escolhe a de melhor aderência comercial e entrega um backlog causal ordenado para execução pelo pipeline oficial. O plano deve incluir critérios por dispositivo, métricas esperadas e condições explícitas de continuar, ajustar e parar.
+
+Para **Agenda Cheia — Nail Design**, a especialização obrigatória mantém uma única promessa entre anúncio, hero, formulário e entrega: a prévia personalizada deve estar clara e ser o CTA principal. A prova visual precisa representar o trabalho real de nail designer, sem inventar depoimentos nem prometer retorno garantido de clientes. O agente decide e itera sozinho dentro desses limites; GeraLanding e Gerador de Imagens materializam as mudanças, e o Quality Review independente concede ou nega aprovação.
+
 ## Capacidades premium herdadas
 
 - container, workflow, Codex Home e MCP exclusivos;

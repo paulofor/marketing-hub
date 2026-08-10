@@ -13,3 +13,14 @@
 | Métricas | aprovação, reincidência, custo/tempo e eventos reais do funil | sem contar estimativa como venda |
 
 Uma rodada completa sem defeito conclui a homologação local. Se houver defeito, após a correção são exigidas duas rodadas integrais consecutivas sem falha.
+
+## Autonomia Agenda Cheia — Nail Design
+
+| Cenário | Caminho feliz | Validações e falhas | Evidência |
+|---|---|---|---|
+| Estratégia | compara pelo menos três alternativas e escolhe uma | bloqueia plano sem comparação, justificativa ou backlog causal | JSON estruturado e teste de contrato |
+| Jornada | promessa de prévia personalizada é contínua entre anúncio, hero, formulário e entrega | bloqueia promessa de retorno garantido, prova inventada ou CTA divergente | prompt, plano e Quality Review independente |
+| Visual | solicita assets pelo Gerador de Imagens oficial | não aceita URL inventada, cópia de concorrente ou mídia fora do pipeline | job e manifesto de imagem |
+| Desktop e mobile | audita 1440 px, iPhone 15 Pro e Pixel 7 | detecta overflow, links inválidos, formulário sem submit e campos obrigatórios ausentes | auditoria MCP e screenshots |
+| Observabilidade | persiste estratégia, backlog, métricas e condições de parada | não emite eventos nem submete formulário durante auditoria local | `eventsEmitted=false` e `formSubmitted=false` |
+| Aprendizado | usa recompensa do Quality Review e eventos reais segregados | não conta geração ou avaliação própria como recompensa | memória auditável e feedback independente |

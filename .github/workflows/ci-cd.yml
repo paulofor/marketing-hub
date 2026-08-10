@@ -89,15 +89,40 @@ jobs:
 
       - name: Enviar lib ao GitHub Packages com Maven Deploy Plugin
         run: |
-          mvn -B -s ../settings.xml \
-            org.apache.maven.plugins:maven-deploy-plugin:3.1.1:deploy-file \
-            -DrepositoryId=github \
-            -Durl=https://maven.pkg.github.com/paulofor/marketing-hub \
-            -Dfile=target/app-lib.jar \
-            -DgroupId=com.marketinghub \
-            -DartifactId=ads-service \
-            -Dversion=0.0.1-SNAPSHOT \
-            -Dpackaging=jar
+          set -euo pipefail
+
+          for attempt in 1 2 3; do
+            deploy_log="$(mktemp)"
+
+            if mvn -B -s ../settings.xml \
+              org.apache.maven.plugins:maven-deploy-plugin:3.1.1:deploy-file \
+              -DrepositoryId=github \
+              -Durl=https://maven.pkg.github.com/paulofor/marketing-hub \
+              -Dfile=target/app-lib.jar \
+              -DgroupId=com.marketinghub \
+              -DartifactId=ads-service \
+              -Dversion=0.0.1-SNAPSHOT \
+              -Dpackaging=jar 2>&1 | tee "${deploy_log}"; then
+              rm -f "${deploy_log}"
+              break
+            fi
+
+            if ! grep -Eq 'status code: 5[0-9]{2}|timed out|Connection reset|Connection refused' "${deploy_log}"; then
+              echo "Falha permanente ao publicar o pacote; não será feita nova tentativa." >&2
+              rm -f "${deploy_log}"
+              exit 1
+            fi
+
+            rm -f "${deploy_log}"
+            if [[ "${attempt}" -eq 3 ]]; then
+              echo "GitHub Packages permaneceu indisponível após 3 tentativas." >&2
+              exit 1
+            fi
+
+            wait_seconds=$((attempt * 20))
+            echo "Falha transitória do GitHub Packages. Nova tentativa em ${wait_seconds}s."
+            sleep "${wait_seconds}"
+          done
 
       - name: Remover versões antigas do pacote ads-service
         env:

@@ -12,6 +12,7 @@ server.registerTool('consultar_contexto', { description: 'Consulta o snapshot co
 server.registerTool('inspecionar_landing_desktop_mobile', { description: 'Renderiza o rascunho HTML em desktop, iPhone e Android sem publicar.', inputSchema: {}, annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false } }, async () => inspectLanding());
 server.registerTool('auditar_jornada_funcional', { description: 'Audita DOM, overflow, CTAs, links, formulário e instrumentação sem publicar nem enviar eventos.', inputSchema: {}, annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false } }, async () => auditJourney());
 server.registerTool('recuperar_memoria_especializada', { description: 'Recupera aprendizados confirmados ou candidatos vigentes deste experimento.', inputSchema: {}, annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false } }, async () => memory('GET', {}));
+server.registerTool('recuperar_estrategias_promovidas', { description: 'Recupera somente estratégias que venceram replay, holdout e regressão locais.', inputSchema: {}, annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false } }, async () => promotedLearning());
 server.registerTool('registrar_aprendizado_candidato', { description: 'Registra uma hipótese de melhoria sem permitir autopromoção.', inputSchema: { specialty: z.string().min(3).max(120), content: z.string().min(10).max(4000), evidence: z.string().min(10).max(4000), sourceReference: z.string().max(700).optional(), confidence: z.number().min(0).max(1) }, annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false } }, async args => memory('POST', args));
 await server.connect(new StdioServerTransport());
 
@@ -71,6 +72,13 @@ async function memory(method, args) {
   const response = await fetch(`${baseUrl}${path}`, { method, headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body, signal: AbortSignal.timeout(30000) });
   if (!response.ok) throw new Error(`Marketing Hub respondeu HTTP ${response.status} ao acessar memória`);
   return { content: [text({ audit: audit(method === 'GET' ? 'recuperar_memoria_especializada' : 'registrar_aprendizado_candidato'), data: await response.json() })] };
+}
+
+async function promotedLearning() {
+  const query = new URLSearchParams({ scopeType: 'EXPERIMENT', scopeId: String(experimentId) });
+  const response = await fetch(`${baseUrl}/api/internal/agent-learning/v1/agents/landing-generator/promoted?${query}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(30000) });
+  if (!response.ok) throw new Error(`Marketing Hub respondeu HTTP ${response.status} ao acessar estratégias promovidas`);
+  return { content: [text({ audit: audit('recuperar_estrategias_promovidas'), data: await response.json() })] };
 }
 
 function audit(tool) { return { tool, executionId, experimentId, consultedAt: new Date().toISOString(), authority: 'DRAFT_ONLY_NO_PUBLICATION' }; }

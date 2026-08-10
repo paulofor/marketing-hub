@@ -51,3 +51,10 @@ Memórias confirmadas podem orientar novas versões; candidatas exigem cautela; 
 ## Métricas e rollout
 
 A qualidade é medida por aprovação independente, reincidência, tempo e custo por landing aprovada, clique no CTA, início de checkout e vendas posteriores. Texto produzido, ciclos e impacto estimado não contam como resultado. A versão nasce em `TEST`; somente resultados reais e auditáveis autorizam futura ativação.
+
+## Replay e promoção de estratégias
+
+Dédalo separa memória de estratégia promovida. Uma hipótese só entra no playbook operacional depois
+de comparar baseline e candidata nos mesmos casos congelados, passar em holdout fora da amostra,
+regressão, custo e validação local. O conjunto mínimo é de dez replays e cinco casos de holdout. O
+agente consulta promoções pelo MCP, mas não executa a avaliação nem promove a própria hipótese.

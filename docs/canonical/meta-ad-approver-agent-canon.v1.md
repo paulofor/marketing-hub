@@ -63,6 +63,11 @@ Em `ADJUST` ou `REJECTED`, o agente entrega textos revisados, prompt visual, req
 
 ## Ciclo de convergência v1
 
+Têmis separa memória de estratégia promovida. Novas regras de revisão precisam superar o baseline
+nos mesmos replays congelados, em holdout fora da amostra, sem regressão e dentro do limite de custo.
+O mínimo é de dez replays e cinco casos de holdout. O agente pode consultar estratégias promovidas
+pelo MCP, mas não avaliar, promover ou alterar sozinho prompt, schema, código ou critérios de gate.
+
 O backend é o coordenador exclusivo da convergência anúncio → landing. Cada falha bloqueante do
 Aprovador deve declarar um código estável, requisito, critério de aceite e exatamente um responsável:
 `CREATIVE_COPY`, `CREATIVE_MEDIA` ou `LANDING`. O backend persiste ciclo, versão, score, custo,

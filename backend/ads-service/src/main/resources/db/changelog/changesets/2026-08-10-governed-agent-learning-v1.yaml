@@ -1,0 +1,40 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-10-governed-agent-learning-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE governed_agent_learning_experiment (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                agent_key VARCHAR(80) NOT NULL,
+                scope_type VARCHAR(60) NOT NULL,
+                scope_id VARCHAR(120) NOT NULL,
+                memory_id BIGINT NOT NULL,
+                candidate_version VARCHAR(80) NOT NULL,
+                baseline_version VARCHAR(80) NOT NULL,
+                frozen_replay_set_json LONGTEXT NOT NULL,
+                holdout_replay_set_json LONGTEXT NOT NULL,
+                baseline_result_json LONGTEXT NULL,
+                candidate_result_json LONGTEXT NULL,
+                decision_evidence LONGTEXT NULL,
+                status VARCHAR(40) NOT NULL,
+                minimum_gain DECIMAL(8,4) NOT NULL,
+                maximum_cost_increase_ratio DECIMAL(8,4) NOT NULL,
+                regression_passed BIT NOT NULL DEFAULT 0,
+                local_validation_passed BIT NOT NULL DEFAULT 0,
+                created_at DATETIME NOT NULL,
+                evaluated_at DATETIME NULL,
+                promoted_at DATETIME NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_agent_learning_candidate (agent_key, candidate_version),
+                INDEX idx_agent_learning_scope (agent_key, scope_type, scope_id, status),
+                CONSTRAINT fk_agent_learning_memory FOREIGN KEY (memory_id) REFERENCES premium_agent_memory(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

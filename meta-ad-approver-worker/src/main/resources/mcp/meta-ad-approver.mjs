@@ -13,6 +13,7 @@ registerTool('inspecionar_midia', 'Retorna a imagem em alta definição ou três
 registerTool('inspecionar_landing', 'Renderiza e retorna a página de destino em mobile e desktop.');
 registerMemoryTool('recuperar_memoria_especializada', 'Recupera aprendizados de copy, estética e integração deste experimento.', false);
 registerMemoryTool('registrar_aprendizado_candidato', 'Registra uma hipótese de melhoria do anúncio sem aprová-la automaticamente.', true);
+registerPromotedLearningTool();
 await server.connect(new StdioServerTransport());
 
 function registerTool(name, description) {
@@ -34,6 +35,15 @@ function registerMemoryTool(name, description, writable) {
     confidence: z.number().min(0).max(1)
   } : {};
   server.registerTool(name, { description, inputSchema, annotations: { readOnlyHint: !writable, openWorldHint: false, destructiveHint: false } }, async args => callMemory(writable ? 'POST' : 'GET', args));
+}
+
+function registerPromotedLearningTool() {
+  server.registerTool('recuperar_estrategias_promovidas', { description: 'Recupera somente estratégias aprovadas em replay, holdout e regressão locais.', inputSchema: {}, annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false } }, async () => {
+    const query = new URLSearchParams({ scopeType: 'EXPERIMENT', scopeId: String(experimentId) });
+    const response = await fetch(`${baseUrl}/api/internal/agent-learning/v1/agents/meta-ad-approver/promoted?${query}`, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(30000) });
+    if (!response.ok) throw new Error(`Marketing Hub respondeu HTTP ${response.status} ao acessar estratégias promovidas`);
+    return { content: [text({ audit: audit('recuperar_estrategias_promovidas', new Date().toISOString()), data: await response.json() })] };
+  });
 }
 
 async function callMemory(method, args) {

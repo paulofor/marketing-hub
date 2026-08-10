@@ -152,6 +152,7 @@ class MetaAdApproverCodexRunnerTest {
             "inspecionar_midia",
             "inspecionar_landing",
             "recuperar_memoria_especializada",
+            "recuperar_estrategias_promovidas",
             "registrar_aprendizado_candidato");
     assertThat(mcp)
         .contains(
@@ -165,6 +166,9 @@ class MetaAdApproverCodexRunnerTest {
             "readOnlyHint: true",
             "openWorldHint: true",
             "destructiveHint: false");
+    assertThat(mcp)
+        .contains("/api/internal/agent-learning/v1/agents/meta-ad-approver/promoted")
+        .doesNotContain("/promotion");
   }
 
   /** Garante que baixa qualidade visual bloqueie e anteceda otimizações secundárias. */

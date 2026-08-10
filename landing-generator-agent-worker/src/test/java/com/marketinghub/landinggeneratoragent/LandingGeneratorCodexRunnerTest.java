@@ -43,6 +43,7 @@ class LandingGeneratorCodexRunnerTest {
     String schema =
         Files.readString(
             Path.of("src/main/resources/prompts/landing-generator/v1/remediation-schema.json"));
+    String mcp = Files.readString(Path.of("src/main/resources/mcp/landing-generator.mjs"));
 
     assertTrue(prompt.contains("aprendizado por reforço governado"));
     assertTrue(prompt.contains("Nunca copie"));
@@ -55,6 +56,9 @@ class LandingGeneratorCodexRunnerTest {
     assertTrue(prompt.contains("qual abordagem de geração de landing é a melhor"));
     assertTrue(schema.contains("generationApproachOptions"));
     assertTrue(schema.contains("selectedGenerationApproach"));
+    assertTrue(prompt.contains("recuperar_estrategias_promovidas"));
+    assertTrue(mcp.contains("/api/internal/agent-learning/v1/agents/landing-generator/promoted"));
+    assertFalse(mcp.contains("/promotion"));
   }
 
   /** Deve impedir palavras-chave rejeitadas pelo Structured Outputs da OpenAI. */

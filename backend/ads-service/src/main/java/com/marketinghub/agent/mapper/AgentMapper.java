@@ -23,6 +23,10 @@ public class AgentMapper {
     dto.setId(agent.getId());
     dto.setName(agent.getName());
     dto.setNickname(agent.getNickname());
+    dto.setPortraitAssetId(
+        Optional.ofNullable(agent.getPortraitAsset()).map(asset -> asset.getId()).orElse(null));
+    dto.setPortraitUrl(
+        Optional.ofNullable(agent.getPortraitAsset()).map(asset -> asset.getUrl()).orElse(null));
     dto.setAgentKey(agent.getAgentKey());
     dto.setStatus(agent.getStatus());
     dto.setCurrentVersion(agent.getCurrentVersion());

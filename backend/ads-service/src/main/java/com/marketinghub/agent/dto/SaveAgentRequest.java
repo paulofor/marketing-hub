@@ -8,6 +8,7 @@ import lombok.Data;
 public class SaveAgentRequest {
   private String name;
   private String nickname;
+  private Long portraitAssetId;
   private String agentKey;
   private String status;
   private String ownerName;

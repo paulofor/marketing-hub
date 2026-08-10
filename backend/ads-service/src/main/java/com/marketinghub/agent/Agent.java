@@ -1,5 +1,6 @@
 package com.marketinghub.agent;
 
+import com.marketinghub.media.Asset;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -33,6 +34,10 @@ public class Agent {
 
   @Column(name = "nickname", nullable = false, unique = true, length = 60)
   private String nickname;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "portrait_asset_id")
+  private Asset portraitAsset;
 
   @Column(name = "agent_key", unique = true, length = 100)
   private String agentKey;

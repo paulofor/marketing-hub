@@ -14,12 +14,92 @@ import com.marketinghub.agent.AgentVersion;
 import com.marketinghub.agent.dto.SaveAgentRequest;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agent.AgentVersionRepository;
+import com.marketinghub.repository.jpa.media.AssetRepository;
+import com.marketinghub.storage.AssetStorageService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: validar a persistência e a auditoria do contrato operacional dos agentes. */
 class AgentServiceTest {
+
+  /** Persiste uma imagem válida no storage oficial e no catálogo de assets. */
+  @Test
+  void uploadsValidPortrait() throws Exception {
+    AssetStorageService storage = mock(AssetStorageService.class);
+    AssetRepository assetRepository = mock(AssetRepository.class);
+    when(storage.store(any(), any()))
+        .thenReturn(
+            new AssetStorageService.StoredObject(
+                "agents/portrait.png", "https://assets.test/portrait.png", 3, "image/png", true));
+    when(assetRepository.save(any(com.marketinghub.media.Asset.class)))
+        .thenAnswer(
+            invocation -> {
+              com.marketinghub.media.Asset asset = invocation.getArgument(0);
+              asset.setId(42L);
+              return asset;
+            });
+    AgentService service =
+        new AgentService(
+            mock(AgentRepository.class),
+            mock(AgentThemeService.class),
+            mock(AgentVersionRepository.class),
+            new ObjectMapper(),
+            assetRepository,
+            storage);
+
+    var response =
+        service.uploadPortrait(
+            new MockMultipartFile(
+                "file",
+                "portrait.png",
+                "image/png",
+                new byte[] {(byte) 0x89, 'P', 'N', 'G', 13, 10, 26, 10}));
+
+    assertThat(response.assetId()).isEqualTo(42L);
+    assertThat(response.url()).isEqualTo("https://assets.test/portrait.png");
+  }
+
+  /** Impede que conteúdo arbitrário seja salvo como imagem de agente. */
+  @Test
+  void rejectsUnsupportedPortraitFile() {
+    AgentService service =
+        new AgentService(
+            mock(AgentRepository.class),
+            mock(AgentThemeService.class),
+            mock(AgentVersionRepository.class),
+            new ObjectMapper(),
+            mock(AssetRepository.class),
+            mock(AssetStorageService.class));
+
+    assertThatThrownBy(
+            () ->
+                service.uploadPortrait(
+                    new MockMultipartFile("file", "script.svg", "image/svg+xml", "x".getBytes())))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("PNG, JPEG ou WebP");
+  }
+
+  /** Impede que um arquivo arbitrário contorne a validação declarando content type de imagem. */
+  @Test
+  void rejectsSpoofedPortraitContent() {
+    AgentService service =
+        new AgentService(
+            mock(AgentRepository.class),
+            mock(AgentThemeService.class),
+            mock(AgentVersionRepository.class),
+            new ObjectMapper(),
+            mock(AssetRepository.class),
+            mock(AssetStorageService.class));
+
+    assertThatThrownBy(
+            () ->
+                service.uploadPortrait(
+                    new MockMultipartFile("file", "fake.png", "image/png", "script".getBytes())))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("não corresponde a uma imagem válida");
+  }
 
   /** Confirma que as regras administrativas entram no agente e em sua versão imutável. */
   @Test
@@ -50,7 +130,13 @@ class AgentServiceTest {
     request.setOfferingPolicy("Entregar parecer e próximo teste.");
 
     AgentService service =
-        new AgentService(repository, themeService, versionRepository, new ObjectMapper());
+        new AgentService(
+            repository,
+            themeService,
+            versionRepository,
+            new ObjectMapper(),
+            mock(AssetRepository.class),
+            mock(AssetStorageService.class));
     Agent saved = service.create(request);
 
     assertThat(saved.getResponsibilityContract()).isEqualTo(request.getResponsibilityContract());
@@ -81,7 +167,9 @@ class AgentServiceTest {
             repository,
             mock(AgentThemeService.class),
             mock(AgentVersionRepository.class),
-            new ObjectMapper());
+            new ObjectMapper(),
+            mock(AssetRepository.class),
+            mock(AssetStorageService.class));
     SaveAgentRequest request = new SaveAgentRequest();
     request.setNickname(" Closer ");
 

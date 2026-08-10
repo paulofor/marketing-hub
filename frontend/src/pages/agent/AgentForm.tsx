@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AgentItem, AgentPayload, AgentTheme } from "../../api/agent/types";
+import { uploadAgentPortrait } from "../../api/agent/uploadAgentPortrait";
+import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 
 interface AgentFormProps {
   initialValue: AgentPayload;
@@ -39,6 +41,28 @@ export default function AgentForm({
     outputs: normalizeItems(initialValue.outputs),
     internalFunctions: normalizeItems(initialValue.internalFunctions),
   });
+  const [isUploadingPortrait, setIsUploadingPortrait] = useState(false);
+  const [portraitError, setPortraitError] = useState("");
+
+  const handlePortraitUpload = async (file?: File) => {
+    if (!file) return;
+    setPortraitError("");
+    setIsUploadingPortrait(true);
+    try {
+      const uploaded = await uploadAgentPortrait(file);
+      setForm((current) => ({
+        ...current,
+        portraitAssetId: uploaded.assetId,
+        portraitUrl: uploaded.url,
+      }));
+    } catch {
+      setPortraitError(
+        "Não foi possível enviar a imagem. Confira o formato e o tamanho.",
+      );
+    } finally {
+      setIsUploadingPortrait(false);
+    }
+  };
 
   useEffect(() => {
     setForm({
@@ -213,6 +237,75 @@ export default function AgentForm({
   return (
     <form onSubmit={handleSubmit} className="vstack gap-3">
       <div className="row g-3">
+        <div className="col-12">
+          <div className="card bg-body-tertiary border-0">
+            <div className="card-body d-flex flex-column flex-sm-row align-items-sm-center gap-3">
+              {form.portraitUrl ? (
+                <img
+                  src={resolveAssetUrl(form.portraitUrl)}
+                  alt={`Figura mitológica de ${form.nickname || form.name || "agente"}`}
+                  className="rounded-circle border bg-white object-fit-cover"
+                  width={88}
+                  height={88}
+                />
+              ) : (
+                <div
+                  className="rounded-circle border bg-white d-flex align-items-center justify-content-center text-body-secondary"
+                  style={{ width: 88, height: 88, fontSize: 32, flexShrink: 0 }}
+                  aria-label="Agente sem imagem"
+                >
+                  ◇
+                </div>
+              )}
+              <div className="flex-grow-1">
+                <label
+                  className="form-label fw-semibold"
+                  htmlFor="agent-portrait"
+                >
+                  Figura mitológica
+                </label>
+                <input
+                  id="agent-portrait"
+                  className="form-control"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  disabled={isUploadingPortrait}
+                  onChange={(event) =>
+                    void handlePortraitUpload(event.target.files?.[0])
+                  }
+                />
+                <div className="form-text">
+                  PNG, JPEG ou WebP, até 5 MB. Recomendado: imagem quadrada.
+                </div>
+                {isUploadingPortrait ? (
+                  <div className="small text-primary mt-1">
+                    Enviando imagem...
+                  </div>
+                ) : null}
+                {portraitError ? (
+                  <div className="small text-danger mt-1" role="alert">
+                    {portraitError}
+                  </div>
+                ) : null}
+              </div>
+              {form.portraitAssetId ? (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      portraitAssetId: undefined,
+                      portraitUrl: undefined,
+                    })
+                  }
+                >
+                  Remover
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
         <div className="col-md-5">
           <label className="form-label">
             Nome do agente <span className="text-danger">*</span>
@@ -484,7 +577,7 @@ export default function AgentForm({
         <button
           className="btn btn-primary"
           type="submit"
-          disabled={!canSubmit || isSubmitting}
+          disabled={!canSubmit || isSubmitting || isUploadingPortrait}
         >
           {isSubmitting && (
             <span

@@ -9,6 +9,7 @@ public enum AssetUploadCategory {
   LEAD_PORTAL_FORM("lead-portal/forms"),
   PRODUCT_VIDEO_IMAGE("products/video-images"),
   SALES_VIDEO("sales-videos"),
+  AGENT_PORTRAIT("agents/portraits"),
   GENERIC("uploads");
 
   private final String rootFolder;

@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import { useAgents } from "../../api/agent/useAgents";
 import { useAgentMaturity } from "../../api/agent/useAgentMaturity";
+import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 
 export default function AgentListPage() {
   const navigate = useNavigate();
@@ -97,12 +98,33 @@ export default function AgentListPage() {
               {agents.map((agent) => (
                 <tr key={agent.id}>
                   <td>
-                    <div className="fw-semibold">{agent.nickname}</div>
-                    <div className="text-body-secondary small">
-                      {agent.name}
-                    </div>
-                    <div className="text-body-secondary small">
-                      {agent.description || "Sem descrição"}
+                    <div className="d-flex align-items-center gap-3">
+                      {agent.portraitUrl ? (
+                        <img
+                          src={resolveAssetUrl(agent.portraitUrl)}
+                          alt={`Figura mitológica de ${agent.nickname}`}
+                          className="rounded-circle border object-fit-cover"
+                          width={56}
+                          height={56}
+                        />
+                      ) : (
+                        <div
+                          className="rounded-circle border d-flex align-items-center justify-content-center text-body-secondary"
+                          style={{ width: 56, height: 56, flexShrink: 0 }}
+                          aria-label={`${agent.nickname} sem imagem`}
+                        >
+                          ◇
+                        </div>
+                      )}
+                      <div>
+                        <div className="fw-semibold">{agent.nickname}</div>
+                        <div className="text-body-secondary small">
+                          {agent.name}
+                        </div>
+                        <div className="text-body-secondary small">
+                          {agent.description || "Sem descrição"}
+                        </div>
+                      </div>
                     </div>
                   </td>
                   <td>{agent.themeName || "-"}</td>

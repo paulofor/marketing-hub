@@ -1,0 +1,34 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-10-agent-portrait
+      author: marketinghub
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: agent
+        - tableExists:
+            tableName: asset
+        - not:
+            columnExists:
+              tableName: agent
+              columnName: portrait_asset_id
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent
+                ADD COLUMN portrait_asset_id BIGINT NULL AFTER nickname,
+                ADD CONSTRAINT fk_agent_portrait_asset
+                  FOREIGN KEY (portrait_asset_id) REFERENCES asset(id);
+              CREATE INDEX idx_agent_portrait_asset ON agent(portrait_asset_id);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent DROP FOREIGN KEY fk_agent_portrait_asset;
+              DROP INDEX idx_agent_portrait_asset ON agent;
+              ALTER TABLE agent DROP COLUMN portrait_asset_id;

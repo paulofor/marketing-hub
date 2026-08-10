@@ -106,17 +106,38 @@ class MetaAdApproverCodexRunnerTest {
             "Ajuste ou reprovação sem correções verificáveis e responsáveis definidos");
   }
 
-  /** Mantém o schema alinhado ao gate condicional de convergência. */
+  /** Impede que uma aprovação carregue tarefas pendentes de convergência. */
   @Test
-  void requiresTargetsOnlyWhenReviewIsNotApproved() throws Exception {
+  void rejectsApprovalWithConvergenceTargets() throws Exception {
+    MetaAdApproverCodexRunner runner =
+        new MetaAdApproverCodexRunner(new MetaAdApproverProperties(), new ObjectMapper());
+    Method validate =
+        MetaAdApproverCodexRunner.class.getDeclaredMethod(
+            "validate", com.fasterxml.jackson.databind.JsonNode.class);
+    validate.setAccessible(true);
+    var value =
+        new ObjectMapper()
+            .readTree(
+                """
+        {"decision":"APPROVED","summary":"Parecer completo","attentionScore":90,
+        "clarityScore":90,"desireScore":90,"credibilityScore":90,"actionScore":90,
+        "correctionTargets":[{"target":"LANDING","issueCode":"CTA_MISMATCH",
+        "requirement":"Alinhar o CTA da página ao anúncio",
+        "acceptanceCriterion":"Anúncio e página exibem o mesmo CTA"}]}
+        """);
+
+    assertThatThrownBy(() -> validate.invoke(runner, value))
+        .hasRootCauseMessage("Aprovação não pode solicitar correções");
+  }
+
+  /** Mantém o schema aceito pelo Structured Outputs e delega a condição ao gate local. */
+  @Test
+  void keepsConditionalTargetsOutOfStrictSchema() throws Exception {
     String schema = resource("prompts/meta-ad-approver/v1/review-schema.json");
 
     assertThat(schema)
-        .contains(
-            "\"const\": \"APPROVED\"",
-            "\"correctionTargets\": {\"maxItems\": 0}",
-            "\"decision\": {\"enum\": [\"ADJUST\", \"REJECTED\"]}",
-            "\"correctionTargets\": {\"minItems\": 1}");
+        .contains("\"additionalProperties\": false", "\"correctionTargets\":")
+        .doesNotContain("\"anyOf\"", "\"allOf\"", "\"oneOf\"");
   }
 
   /** Confirma que o prompt exige mídia, landing e segregação pelo MCP. */

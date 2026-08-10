@@ -3,10 +3,23 @@ name: Landing Generator Agent Worker CI
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     paths:
       - "landing-generator-agent-worker/**"
       - "backend/ads-service/src/main/java/com/marketinghub/geralanding/agent/**"
       - ".github/workflows/landing-generator-agent-worker-ci.yml"
+
+concurrency:
+  group: landing-generator-agent-worker-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  VPS_IP: 163.245.202.80
+  VPS_USER: root
+  REPOSITORY_DIR: /opt/marketing-hub/repo
 
 jobs:
   test-build:
@@ -30,19 +43,52 @@ jobs:
   deploy:
     if: github.ref == 'refs/heads/main'
     needs: test-build
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: shared-growth-agents-repository-deploy
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-      - name: Preparar identidade e subir no mesmo host
-        shell: bash
+      - name: Adicionar chave SSH do host dos agentes
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.GROWTH_OPERATOR_VPS_SSH_KEY }}
+      - name: Confiar no host dos agentes
         run: |
-          export LANDING_GENERATOR_CODEX_HOME=/opt/marketing-hub/agents/landing-generator/codex-home \
-                 MARKETING_HUB_REPOSITORY_HOST="${GITHUB_WORKSPACE}" \
-                 CODEX_MODEL=gpt-5.6-sol \
-          && sudo install -d -m 700 -o 10001 -g 10001 "${LANDING_GENERATOR_CODEX_HOME}" \
-          && if [ ! -s "${LANDING_GENERATOR_CODEX_HOME}/auth.json" ]; then sudo install -m 600 -o 10001 -g 10001 /opt/growth-operator/codex-home/auth.json "${LANDING_GENERATOR_CODEX_HOME}/auth.json"; fi \
-          && if [ ! -s "${LANDING_GENERATOR_CODEX_HOME}/config.toml" ]; then sudo install -m 600 -o 10001 -g 10001 /opt/growth-operator/codex-home/config.toml "${LANDING_GENERATOR_CODEX_HOME}/config.toml"; fi \
-          && docker compose -f landing-generator-agent-worker/docker-compose.yml build \
-          && docker compose -f landing-generator-agent-worker/docker-compose.yml up -d \
-          && docker compose -f landing-generator-agent-worker/docker-compose.yml exec -T landing-generator-agent-worker codex login status \
-          && curl --fail --retry 24 --retry-delay 5 http://127.0.0.1:8100/ops-landing-generator-observability-v1/health
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          ssh-keyscan -T 30 -4 -p 22 -t rsa,ecdsa,ed25519 -H "${VPS_IP}" >> ~/.ssh/known_hosts
+      - name: Sincronizar repositório versionado
+        run: |
+          set -euo pipefail
+          ssh "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}'"
+          rsync -az --delete --exclude '.git/' --exclude 'target/' --exclude 'node_modules/' ./ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/"
+      - name: Preparar identidade e subir no mesmo host
+        run: |
+          set -euo pipefail
+          ssh "${VPS_USER}@${VPS_IP}" "
+            install -d -m 700 -o 10001 -g 10001 /opt/marketing-hub/agents/landing-generator/codex-home \
+            && if [ ! -s /opt/marketing-hub/agents/landing-generator/codex-home/auth.json ]; then \
+                 test -s /opt/growth-operator/codex-home/auth.json \
+                 && install -m 600 -o 10001 -g 10001 /opt/growth-operator/codex-home/auth.json /opt/marketing-hub/agents/landing-generator/codex-home/auth.json; \
+                 if [ -s /opt/growth-operator/codex-home/config.toml ]; then \
+                   install -m 600 -o 10001 -g 10001 /opt/growth-operator/codex-home/config.toml /opt/marketing-hub/agents/landing-generator/codex-home/config.toml; \
+                 fi; \
+               fi \
+            && test -s /opt/marketing-hub/agents/landing-generator/codex-home/auth.json \
+            && export LANDING_GENERATOR_CODEX_HOME=/opt/marketing-hub/agents/landing-generator/codex-home \
+                      BACKEND_URL=http://191.252.181.168 \
+                      MARKETING_HUB_URL=http://191.252.181.168 \
+                      MARKETING_HUB_REPOSITORY_HOST='${REPOSITORY_DIR}' \
+                      CODEX_MODEL=gpt-5.6-sol \
+                      LANDING_GENERATOR_AGENT_IMAGE=marketing-hub/landing-generator-agent-worker:${GITHUB_SHA} \
+            && cd '${REPOSITORY_DIR}/landing-generator-agent-worker' \
+            && docker compose up -d --build --remove-orphans \
+            && for attempt in \$(seq 1 24); do \
+                 docker compose exec -T landing-generator-agent-worker codex login status \
+                   && curl -fsS http://127.0.0.1:8100/ops-landing-generator-observability-v1/health | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' \
+                   && exit 0; \
+                 sleep 5; \
+               done; \
+            docker compose logs --tail=150 landing-generator-agent-worker; exit 1"

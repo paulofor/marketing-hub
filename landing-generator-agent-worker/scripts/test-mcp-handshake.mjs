@@ -10,6 +10,6 @@ const client = new Client({ name: 'landing-generator-contract-test', version: '1
 try {
   await client.connect(transport);
   const names = (await client.listTools()).tools.map(tool => tool.name).sort();
-  const expected = ['consultar_contexto', 'inspecionar_landing_desktop_mobile', 'recuperar_memoria_especializada', 'registrar_aprendizado_candidato'];
+  const expected = ['auditar_jornada_funcional', 'consultar_contexto', 'inspecionar_landing_desktop_mobile', 'recuperar_memoria_especializada', 'registrar_aprendizado_candidato'];
   if (JSON.stringify(names) !== JSON.stringify(expected)) throw new Error(`Ferramentas MCP divergentes: ${JSON.stringify(names)}`);
 } finally { await client.close(); }

@@ -46,5 +46,9 @@ class LandingGeneratorCodexRunnerTest {
     assertTrue(prompt.contains("Nunca copie"));
     assertTrue(schema.contains("referencePatternModels"));
     assertTrue(schema.contains("learningHypotheses"));
+    assertTrue(prompt.contains("Agenda Cheia"));
+    assertTrue(prompt.contains("três estratégias"));
+    assertTrue(schema.contains("autonomousBacklog"));
+    assertTrue(schema.contains("stopConditions"));
   }
 }

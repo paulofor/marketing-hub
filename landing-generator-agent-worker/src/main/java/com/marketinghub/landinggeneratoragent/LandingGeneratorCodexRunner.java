@@ -128,7 +128,7 @@ public class LandingGeneratorCodexRunner {
         .replace("{{CONTEXT}}", objectMapper.writeValueAsString(job.context()));
   }
 
-  /** Bloqueia planos vagos, autoaprovação e etapas inexistentes. */
+  /** Bloqueia planos vagos, autoaprovação e autonomia sem estratégia ou controle. */
   private void validate(JsonNode value) {
     if (!"REGENERATE_BEFORE_PUBLICATION".equals(value.path("approvalRecommendation").asText()))
       throw new IllegalArgumentException("Agente executor não pode aprovar a própria landing");
@@ -137,6 +137,15 @@ public class LandingGeneratorCodexRunner {
       throw new IllegalArgumentException("Correção sem etapa e critérios verificáveis");
     if (value.path("score").asInt(-1) < 0)
       throw new IllegalArgumentException("Plano sem score de referência");
+    if (value.path("strategyOptions").size() < 3
+        || value.path("selectedStrategy").isEmpty()
+        || value.path("autonomousBacklog").isEmpty())
+      throw new IllegalArgumentException("Plano sem decisão autônoma comparada e executável");
+    if (value.path("expectedMetrics").isEmpty()
+        || value.path("stopConditions").path("continueWhen").isEmpty()
+        || value.path("stopConditions").path("adjustWhen").isEmpty()
+        || value.path("stopConditions").path("stopWhen").isEmpty())
+      throw new IllegalArgumentException("Plano autônomo sem métricas e condições de controle");
   }
 
   /** Materializa um recurso versionado somente no diretório temporário. */

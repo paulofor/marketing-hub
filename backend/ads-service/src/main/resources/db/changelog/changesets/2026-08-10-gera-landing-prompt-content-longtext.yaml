@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-10-gera-landing-prompt-content-longtext
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: gera_landing_stage_execution
+        - columnExists:
+            tableName: gera_landing_stage_execution
+            columnName: prompt_content
+      changes:
+        - modifyDataType:
+            tableName: gera_landing_stage_execution
+            columnName: prompt_content
+            newDataType: LONGTEXT

@@ -46,7 +46,7 @@ public class GeraLandingStageExecution {
   private String promptTemplateId;
 
   @Lob
-  @Column(name = "prompt_content", nullable = false)
+  @Column(name = "prompt_content", nullable = false, columnDefinition = "LONGTEXT")
   private String promptContent;
 
   @Lob

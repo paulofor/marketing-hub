@@ -141,6 +141,14 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - **Correção sistêmica complementar**: a inspeção mobile e desktop agora espera um critério objetivo de prontidão do conteúdo comercial e das fontes antes do screenshot; o teste de contrato impede o retorno da captura imediata do shell.
 - **Prevenção de copy incompatível em 2026-08-09**: armazenamento e publicação foram separados. O histórico permanece íntegro em campo textual amplo, mas correções do Aprovador e o preflight de publicação bloqueiam texto principal acima de 125 caracteres, headline acima de 40 e descrição acima de 25, sem truncamento silencioso.
 
+## LOOP-META-AD-APPROVER-LANDING-PROMPT-TRUNCATION — aprendizado bloqueado ao persistir correção da landing
+
+- **Severidade**: ALTO.
+- **Status**: fechado localmente em 2026-08-10, pendente de publicação por PR.
+- **Causa-raiz confirmada**: o schema real preservava `gera_landing_stage_execution.prompt_content` como `TINYTEXT`, embora o changelog de criação já declarasse `LONGTEXT`. O ciclo enriquecido com memória concluiu a análise, mas o callback falhou ao distribuir a tarefa de landing porque o briefing auditável excedeu 255 caracteres.
+- **Correção efetiva**: changelog corretivo altera explicitamente `prompt_content` para `LONGTEXT`, e a entidade JPA fixa o mesmo tipo canônico sem truncar o prompt.
+- **Prevenção**: teste de contrato valida entidade, changelog MySQL e include relativo no mestre; o cânone proíbe reduzir ou truncar prompts para contornar limites de persistência.
+
 ---
 
 ## LOOP-LEAD-PORTAL-STALE-FRONTEND — HTML carregado com bundle inexistente

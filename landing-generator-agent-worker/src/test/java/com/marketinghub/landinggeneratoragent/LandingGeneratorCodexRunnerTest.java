@@ -1,5 +1,6 @@
 package com.marketinghub.landinggeneratoragent;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -50,5 +51,35 @@ class LandingGeneratorCodexRunnerTest {
     assertTrue(prompt.contains("três estratégias"));
     assertTrue(schema.contains("autonomousBacklog"));
     assertTrue(schema.contains("stopConditions"));
+    assertTrue(prompt.contains("qual abordagem de geração de landing é a melhor"));
+    assertTrue(schema.contains("generationApproachOptions"));
+    assertTrue(schema.contains("selectedGenerationApproach"));
+  }
+
+  /** Deve impedir que o modelo selecione uma abordagem sem executor no catálogo congelado. */
+  @Test
+  void shouldRejectUnavailableGenerationApproach() throws Exception {
+    LandingGeneratorCodexRunner runner =
+        new LandingGeneratorCodexRunner(
+            new LandingGeneratorAgentProperties(),
+            new ObjectMapper(),
+            mock(CodexTelemetryReporter.class));
+    String decision =
+        """
+        {"approvalRecommendation":"REGENERATE_BEFORE_PUBLICATION","recommendedRegeneration":["LANDING_PAGE_HTML"],"acceptanceCriteria":["Quality Review independente"],"score":70,"strategyOptions":[{},{},{}],"selectedStrategy":{"name":"premium"},"autonomousBacklog":[{}],"generationApproachOptions":[{"approachCode":"GERALANDING_PIPELINE","available":true},{"approachCode":"COMPONENT_TEMPLATE_COMPOSER","available":true},{"approachCode":"CODEX_CODE_IMPLEMENTATION","available":true}],"selectedGenerationApproach":{"approachCode":"CODEX_CODE_IMPLEMENTATION"},"expectedMetrics":[{}],"stopConditions":{"continueWhen":["evolução"],"adjustWhen":["estagnação"],"stopWhen":["risco"]}}
+        """;
+    LandingAgentJob job =
+        new LandingAgentJob(
+            "job-88",
+            88L,
+            Map.of(
+                "generationApproachCatalog",
+                List.of(
+                    Map.of("approachCode", "GERALANDING_PIPELINE", "available", true),
+                    Map.of("approachCode", "CODEX_CODE_IMPLEMENTATION", "available", false))));
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> runner.validate(new ObjectMapper().readTree(decision), job));
   }
 }

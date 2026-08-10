@@ -131,11 +131,32 @@ class RunwayVideoProviderTest {
         server.enqueue(mp4Response());
         RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
 
+        provider.render(job("RUNWAY_SEEDANCE_2"), profile(), (percent, status, message) -> { });
+
+        RecordedRequest request = server.takeRequest();
+        assertThat(request.getHeader("Authorization")).isEqualTo("Bearer runway-test-key");
+        assertThat(request.getBody().readUtf8()).contains("\"model\":\"seedance2\"");
+    }
+
+    /** Deve preservar o identificador do Seedance 2.5 usando a mesma credencial da Runway. */
+    @Test
+    void shouldRenderSeedance25WithRunwayCredentialsAndOwnModelId() throws Exception {
+        server.enqueue(json("""
+                {"id":"seedance-25-task"}
+                """));
+        server.enqueue(json("""
+                {"id":"seedance-25-task","status":"SUCCEEDED","output":["%s/download/seedance-25.mp4"]}
+                """.formatted(server.url("/").toString().replaceAll("/$", ""))));
+        server.enqueue(mp4Response());
+        RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
         provider.render(job("RUNWAY_SEEDANCE_2_5"), profile(), (percent, status, message) -> { });
 
         RecordedRequest request = server.takeRequest();
         assertThat(request.getHeader("Authorization")).isEqualTo("Bearer runway-test-key");
-        assertThat(request.getBody().readUtf8()).contains("\"model\":\"seedance2_5\"");
+        assertThat(request.getBody().readUtf8())
+                .contains("\"model\":\"seedance2_5\"")
+                .doesNotContain("\"model\":\"seedance2\"");
     }
 
     /** Deve rotear os modelos comerciais curados pelo mesmo token da Runway. */

@@ -97,7 +97,10 @@ export default function AgentListPage() {
               {agents.map((agent) => (
                 <tr key={agent.id}>
                   <td>
-                    <div className="fw-semibold">{agent.name}</div>
+                    <div className="fw-semibold">{agent.nickname}</div>
+                    <div className="text-body-secondary small">
+                      {agent.name}
+                    </div>
                     <div className="text-body-secondary small">
                       {agent.description || "Sem descrição"}
                     </div>

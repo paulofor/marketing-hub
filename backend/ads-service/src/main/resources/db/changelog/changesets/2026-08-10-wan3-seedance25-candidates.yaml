@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-10-wan3-seedance25-candidates-001
+      author: codex
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO sales_video_provider_model
+                (code, display_name, provider_name, provider_family, adapter_key, external_model_id,
+                 recommended_use, lifecycle_status, clip_duration_seconds, max_direct_duration_seconds,
+                 supports_hero_video, supports_scene_assembly, requires_source_image, credits_url,
+                 documentation_url, adapter_verified, pricing_verified, commercial_license_verified,
+                 quality_gate_verified, notes, created_at, updated_at)
+              VALUES
+                ('alibaba-wan-3-preview','Wan3.0 Preview','ALIBABA_WAN_3_PREVIEW','EXTERNAL_VIDEO_MODULE','ALIBABA_MODEL_STUDIO','wan3.0-video',
+                 'Candidato multimodal para anúncios e vídeos explicativos de até 30s a partir de briefing, imagens, vídeo, áudio, documentos ou página pública.','DRAFT',30,30,1,0,0,'https://www.alibabacloud.com/en/product/modelstudio',
+                 'https://help.aliyun.com/en/model-studio/wan3-video-generation-api-reference',0,0,0,0,'Preview limitado e sem pesos públicos. Exige acesso internacional, adapter dedicado, rate card aplicável, licença comercial e QA antes da homologação. Áudio vem habilitado por padrão; nenhuma geração está autorizada por este cadastro.',NOW(),NOW()),
+                ('pippit-seedance-2-5','Seedance 2.5 via Pippit','PIPPIT_SEEDANCE_2_5','EXTERNAL_VIDEO_MODULE','PIPPIT','seedance-2.5',
+                 'Candidato para anúncios narrativos de 30s com referências multimodais, direção temporal, extensão e edição localizada.','DRAFT',30,30,1,0,0,'https://www.pippit.ai/models/seedance/2-5',
+                 'https://seed.bytedance.com/en/seedance2_5',0,0,0,0,'Pippit anuncia exportação até 4K, mas isso não comprova resolução nativa universal do modelo. Sem contrato de API homologado no Marketing Hub; não reutilizar o adapter ou o identificador Seedance 2.0 da Runway.',NOW(),NOW())
+              ON DUPLICATE KEY UPDATE
+                display_name = VALUES(display_name),
+                recommended_use = VALUES(recommended_use),
+                lifecycle_status = VALUES(lifecycle_status),
+                notes = VALUES(notes),
+                updated_at = VALUES(updated_at);

@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-10-agent-nickname
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: agent
+                columnName: nickname
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent
+                ADD COLUMN nickname VARCHAR(60) NULL AFTER name;
+
+              UPDATE agent
+              SET nickname = CONCAT(
+                LEFT(COALESCE(NULLIF(TRIM(agent_key), ''), 'agente'), 48),
+                '-',
+                id
+              );
+
+              ALTER TABLE agent
+                MODIFY COLUMN nickname VARCHAR(60) NOT NULL,
+                ADD UNIQUE INDEX uq_agent_nickname (nickname);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent
+                DROP INDEX uq_agent_nickname,
+                DROP COLUMN nickname;

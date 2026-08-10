@@ -12,7 +12,7 @@ O worker usa a porta exclusiva `8100`, grava log em arquivo e expõe leitura ope
 
 ## Fluxo e autoridade
 
-O Quality Review independente produz a reprovação e o backend cria uma execução em `/api/internal/geralanding/agent/v1/stage-executions/pending`. O agente consulta apenas o snapshot segregado pelo MCP, inspeciona a landing em desktop, iPhone e Android e devolve causas, etapas e critérios de aceite. O backend inicia a etapa causal mais antiga do GeraLanding; a nova versão sempre retorna ao Quality Review e ao Aprovador de Anúncios.
+O Quality Review independente produz a reprovação e o backend cria uma execução em `/api/internal/geralanding/agent/v1/stage-executions/pending`. O agente consulta apenas o snapshot segregado pelo MCP, inspeciona a landing em desktop, iPhone e Android e devolve causas, abordagem de geração, etapas e critérios de aceite. O backend inicia somente uma abordagem com executor registrado; a nova versão sempre retorna ao Quality Review e ao Aprovador de Anúncios.
 
 O agente pode corrigir somente rascunhos. Ele não aprova o próprio trabalho, publica, compra, gasta, muda preço, ativa campanha, avança pipeline ou altera seus contratos. Publicação e campanha permanecem sujeitas aos gates e à autorização humana.
 
@@ -21,6 +21,12 @@ O agente pode corrigir somente rascunhos. Ele não aprova o próprio trabalho, p
 O agente deve trabalhar sem solicitar escolhas humanas de copy, layout, CTA, imagens ou responsividade quando houver contexto e evidência suficientes. Em cada execução ele audita visual e funcionalmente desktop, iPhone e Android, compara ao menos três estratégias, escolhe a de melhor aderência comercial e entrega um backlog causal ordenado para execução pelo pipeline oficial. O plano deve incluir critérios por dispositivo, métricas esperadas e condições explícitas de continuar, ajustar e parar.
 
 Para **Agenda Cheia — Nail Design**, a especialização obrigatória mantém uma única promessa entre anúncio, hero, formulário e entrega: a prévia personalizada deve estar clara e ser o CTA principal. A prova visual precisa representar o trabalho real de nail designer, sem inventar depoimentos nem prometer retorno garantido de clientes. O agente decide e itera sozinho dentro desses limites; GeraLanding e Gerador de Imagens materializam as mudanças, e o Quality Review independente concede ou nega aprovação.
+
+## Seleção aprendível da abordagem de geração
+
+O GeraLanding é uma capacidade disponível, não uma escolha permanente. Em cada ciclo, o agente compara ao menos `GERALANDING_PIPELINE`, `COMPONENT_TEMPLATE_COMPOSER` e `CODEX_CODE_IMPLEMENTATION` por aderência à oferta, liberdade criativa, consistência, tempo, custo, manutenção, observabilidade, Quality Review e eventos comerciais reais. Ele só pode selecionar abordagem presente no catálogo congelado do backend com executor e contrato disponíveis; opções indisponíveis podem gerar recomendação de capacidade, nunca execução inventada.
+
+A escolha é uma hipótese auditável. O agente registra baseline e critério de troca, mantém a abordagem enquanto houver evolução e explora outra opção disponível quando houver estagnação ou evidência comparável. Quality Review independente, tempo e custo alimentam a recompensa operacional; CTA, checkout e venda contam apenas por eventos reais segregados. A troca deve preservar segurança, mudar uma variável estrutural por ciclo e nunca autorizar publicação, gasto ou autoaprovação. Inicialmente, apenas `GERALANDING_PIPELINE` está registrado; os demais exigem implementação e homologação próprias antes de poderem ser selecionados.
 
 ## Capacidades premium herdadas
 

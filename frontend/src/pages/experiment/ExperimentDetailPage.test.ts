@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   buildExperimentTestUrl,
   buildPdeInternalPreviewUrl,
-  canManageGeraSalesPage,
   canAccessExperimentConstruction,
+  canManageGeraSalesPage,
+  experimentDetailTabs,
   resolveGeraSalesPageCommand,
 } from "./ExperimentDetailPage";
 
@@ -79,5 +80,14 @@ describe("buildPdeInternalPreviewUrl", () => {
     expect(
       buildPdeInternalPreviewUrl("clubemusa.com.br", 74, "musa-pde-entry-v5"),
     ).toBeNull();
+  });
+});
+
+describe("ExperimentDetailPage", () => {
+  it("mantém o painel operacional do GeraLanding acessível pela navegação", () => {
+    expect(experimentDetailTabs).toContainEqual({
+      value: "gera-landing",
+      label: "GeraLanding",
+    });
   });
 });

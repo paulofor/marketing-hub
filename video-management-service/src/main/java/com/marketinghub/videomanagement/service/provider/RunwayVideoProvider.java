@@ -197,6 +197,7 @@ public class RunwayVideoProvider implements VideoProvider {
     private String resolveModel(SalesVideoJob job, VideoManagementProperties.Runway config) {
         String providerName = normalize(job.providerName());
         return switch (providerName) {
+            case "RUNWAY_SEEDANCE_2" -> "seedance2";
             case "RUNWAY_SEEDANCE_2_5" -> "seedance2_5";
             case "RUNWAY_HAILUO_3" -> "hailuo3";
             case "RUNWAY_GROK_IMAGINE_1_5" -> "grok_imagine_1_5";

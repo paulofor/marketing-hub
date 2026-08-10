@@ -116,6 +116,23 @@ class LandingGenerationAgentCoordinatorTest {
     verify(imagePlanningService).start(88L);
   }
 
+  /** Deve bloquear uma abordagem ainda sem executor registrado no backend. */
+  @Test
+  void shouldRejectGenerationApproachWithoutRegisteredExecutor() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            coordinator.continueAfterQualityReview(
+                88L,
+                reviewWithApproach(
+                    "REGENERATE_BEFORE_PUBLICATION",
+                    78,
+                    "CODEX_CODE_IMPLEMENTATION",
+                    "LANDING_PAGE_HTML")));
+
+    verify(presetDesignService, never()).start(88L);
+  }
+
   /** Deve devolver as versões finais ao Aprovador sem publicar a landing ou a campanha. */
   @Test
   void shouldRequeueLatestCreativesAfterLandingApproval() {
@@ -175,6 +192,12 @@ class LandingGenerationAgentCoordinatorTest {
 
   /** Monta uma resposta mínima compatível com o contrato do Quality Review. */
   private String review(String recommendation, int score, String... stages) {
+    return reviewWithApproach(recommendation, score, "GERALANDING_PIPELINE", stages);
+  }
+
+  /** Monta uma resposta mínima com abordagem explícita para testar o gate do executor. */
+  private String reviewWithApproach(
+      String recommendation, int score, String approach, String... stages) {
     String regeneration =
         java.util.Arrays.stream(stages)
             .map(stage -> "\"" + stage + "\"")
@@ -183,7 +206,9 @@ class LandingGenerationAgentCoordinatorTest {
         + score
         + ",\"approvalRecommendation\":\""
         + recommendation
-        + "\",\"recommendedRegeneration\":["
+        + "\",\"selectedGenerationApproach\":{\"approachCode\":\""
+        + approach
+        + "\"},\"recommendedRegeneration\":["
         + regeneration
         + "]}";
   }

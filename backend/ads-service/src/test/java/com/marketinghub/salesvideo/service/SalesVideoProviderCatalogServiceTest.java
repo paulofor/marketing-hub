@@ -52,6 +52,23 @@ class SalesVideoProviderCatalogServiceTest {
     assertThat(result.qualityGateVerified()).isFalse();
   }
 
+  /** Impede ativar candidato Wan3.0 antes de existir um adapter implementado no executor. */
+  @Test
+  void shouldRejectWanPreviewWithoutImplementedAdapter() {
+    SalesVideoProviderModelRepository repository = mock(SalesVideoProviderModelRepository.class);
+    SalesVideoProviderModel model = model("ALIBABA_MODEL_STUDIO");
+    when(repository.findById(10L)).thenReturn(Optional.of(model));
+    SalesVideoProviderCatalogService service = new SalesVideoProviderCatalogService(repository);
+
+    UpdateSalesVideoProviderModelRequest request =
+        new UpdateSalesVideoProviderModelRequest(
+            "Teste multimodal controlado", "ACTIVE", true, true, true, true, "Preview");
+
+    assertThatThrownBy(() -> service.update(10L, request))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("adaptador, preço, licença e qualidade");
+  }
+
   /** Cria um modelo mínimo para validar as transições administrativas. */
   private SalesVideoProviderModel model(String adapterKey) {
     SalesVideoProviderModel model = new SalesVideoProviderModel();

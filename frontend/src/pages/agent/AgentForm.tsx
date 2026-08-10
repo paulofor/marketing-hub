@@ -56,8 +56,11 @@ export default function AgentForm({
   }, [themes, form.themeId]);
 
   const canSubmit = useMemo(
-    () => Boolean(form.name && form.executionMode && form.themeId),
-    [form.executionMode, form.name, form.themeId],
+    () =>
+      Boolean(
+        form.name && form.nickname.trim() && form.executionMode && form.themeId,
+      ),
+    [form.executionMode, form.name, form.nickname, form.themeId],
   );
 
   const updateItem = (
@@ -210,7 +213,7 @@ export default function AgentForm({
   return (
     <form onSubmit={handleSubmit} className="vstack gap-3">
       <div className="row g-3">
-        <div className="col-md-6">
+        <div className="col-md-5">
           <label className="form-label">
             Nome do agente <span className="text-danger">*</span>
           </label>
@@ -220,6 +223,23 @@ export default function AgentForm({
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             placeholder="Ex: SignalMiner Standard"
           />
+        </div>
+        <div className="col-md-3">
+          <label className="form-label" htmlFor="agent-nickname">
+            Apelido <span className="text-danger">*</span>
+          </label>
+          <input
+            id="agent-nickname"
+            className="form-control"
+            value={form.nickname}
+            maxLength={60}
+            required
+            onChange={(e) => setForm({ ...form, nickname: e.target.value })}
+            placeholder="Ex: Closer"
+          />
+          <div className="form-text">
+            Nome curto e exclusivo para falar com o agente.
+          </div>
         </div>
         <div className="col-md-4">
           <label className="form-label">Chave canônica</label>

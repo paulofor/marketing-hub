@@ -167,6 +167,22 @@ class MetaAdApproverCodexRunnerTest {
             "destructiveHint: false");
   }
 
+  /** Garante que baixa qualidade visual bloqueie e anteceda otimizações secundárias. */
+  @Test
+  void prioritizesBlockingVisualQualityGate() throws Exception {
+    String prompt = resource("prompts/meta-ad-approver/v1/review.md");
+
+    assertThat(prompt)
+        .contains(
+            "Gate visual prioritário",
+            "Antes de diagnosticar copy, CTA, público, oferta ou continuidade",
+            "Esse gate é bloqueante e tem precedência sobre todas as demais otimizações",
+            "CREATIVE_MEDIA",
+            "LANDING",
+            "não proponha ajustes secundários de copy, CTA ou segmentação",
+            "Não confunda imagem tecnicamente carregada com imagem comercialmente aceitável");
+  }
+
   /** Confirma que o job preserva o snapshot e os identificadores do experimento. */
   @Test
   void preservesJobSegregation() {

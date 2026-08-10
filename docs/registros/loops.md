@@ -832,6 +832,12 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** ao servir a landing standalone, o Lead Portal remove qualquer coletor legado `data-mh-sales-page-analytics` e mantém somente `data-mh-landing-analytics`, com slug recebido pelo controller e teste de contrato contra regressão.
 - Em 2026-08-08, a homologação do experimento #88 encontrou nova duplicidade: o coletor canônico da landing e a ponte React do formulário gerenciado registravam `form_start`/`form_submit` para a mesma interação. A ponte agora detecta `data-mh-landing-analytics` e delega esses eventos exclusivamente ao coletor canônico.
 
+# LOOP-GERALANDING-AGENT-AFTER-COMMIT — Parecer não chega ao Agente Gerador de Landing
+
+- **Sintoma:** o Quality Review conclui com `REGENERATE_BEFORE_PUBLICATION`, mas nenhuma execução `landing-generation-agent-v1` é persistida e Dédalo não inicia a correção.
+- **Causa-raiz:** o listener `AFTER_COMMIT` chamava a persistência da fila dentro da transação já concluída; a autoinvocação de `enqueue` não abria outra fronteira transacional e a gravação era descartada sem erro.
+- **Prevenção:** o listener abre transação `REQUIRES_NEW` para memória, decisão e fila do agente; teste de contrato protege explicitamente essa propagação.
+
 # LOOP-GROWTH-OPERATOR-REPEATED-DIAGNOSIS — Ciclos sem evidência nova
 
 - **Sintoma:** o Operador consome IA a cada 30 minutos e repete a mesma conclusão sem mudança de sessão, custo, venda, vídeo, falha ou prazo.

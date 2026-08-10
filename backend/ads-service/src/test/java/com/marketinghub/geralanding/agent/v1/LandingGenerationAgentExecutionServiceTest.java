@@ -1,6 +1,8 @@
 package com.marketinghub.geralanding.agent.v1;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -66,6 +68,13 @@ class LandingGenerationAgentExecutionServiceTest {
     assertEquals(1, result.size());
     assertEquals(88L, result.getFirst().experimentId());
     assertEquals("PROCESSANDO", execution.getStatus());
+    @SuppressWarnings("unchecked")
+    List<java.util.Map<String, Object>> catalog =
+        (List<java.util.Map<String, Object>>)
+            result.getFirst().context().get("generationApproachCatalog");
+    assertEquals(3, catalog.size());
+    assertTrue((Boolean) catalog.getFirst().get("available"));
+    assertFalse((Boolean) catalog.get(1).get("available"));
   }
 
   /** Deve tornar callback repetido idempotente e não avançar novamente. */

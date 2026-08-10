@@ -80,6 +80,7 @@ public class LandingGenerationAgentCoordinator {
         throw new IllegalArgumentException("Quality Review sem recomendação canônica");
       }
       enforceIterationAndProgressGates(experimentId, review);
+      enforceRegisteredGenerationApproach(review);
       Set<String> stages = readRecommendedStages(review);
       registerLearningCandidate(experimentId, review, stages);
       String memoryAwareBrief = enrichWithMemory(experimentId, review);
@@ -97,6 +98,17 @@ public class LandingGenerationAgentCoordinator {
           experimentId,
           ex);
       throw new IllegalArgumentException("Quality Review inválido", ex);
+    }
+  }
+
+  /** Permite avanço somente por uma abordagem com executor contratado no backend. */
+  private void enforceRegisteredGenerationApproach(JsonNode decision) {
+    JsonNode selected = decision.path("selectedGenerationApproach");
+    if (selected.isMissingNode() || selected.isEmpty()) {
+      throw new IllegalArgumentException("Decisão sem abordagem de geração selecionada");
+    }
+    if (!"GERALANDING_PIPELINE".equals(selected.path("approachCode").asText())) {
+      throw new IllegalArgumentException("Abordagem de geração sem executor registrado no backend");
     }
   }
 
@@ -167,7 +179,9 @@ public class LandingGenerationAgentCoordinator {
   private void registerLearningCandidate(Long experimentId, JsonNode review, Set<String> stages) {
     JsonNode issues = review.path("blockingIssues");
     String content =
-        "Evitar reincidência nas etapas "
+        "Abordagem "
+            + review.path("selectedGenerationApproach").path("approachCode").asText("UNKNOWN")
+            + "; evitar reincidência nas etapas "
             + String.join(",", stages)
             + ": "
             + (issues.isMissingNode() || issues.isEmpty() ? review.toString() : issues.toString());

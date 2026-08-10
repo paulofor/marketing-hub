@@ -161,6 +161,21 @@ public class LandingGenerationAgentExecutionService {
       context.put("qualityReview", objectMapper.readTree(execution.getPromptContent()));
       context.put("agentKey", "landing-generator");
       context.put("authority", "DRAFT_ONLY_NO_PUBLICATION");
+      context.put(
+          "generationApproachCatalog",
+          List.of(
+              Map.of(
+                  "approachCode", "GERALANDING_PIPELINE",
+                  "available", true,
+                  "executorContract", "canonical-stages-v1"),
+              Map.of(
+                  "approachCode", "COMPONENT_TEMPLATE_COMPOSER",
+                  "available", false,
+                  "executorContract", "NOT_REGISTERED"),
+              Map.of(
+                  "approachCode", "CODEX_CODE_IMPLEMENTATION",
+                  "available", false,
+                  "executorContract", "NOT_REGISTERED")));
       experimentRepository
           .findById(execution.getExperimentId())
           .ifPresent(

@@ -58,7 +58,7 @@ public class LandingGeneratorCodexRunner {
               "Codex encerrou com código " + process.exitValue() + ": " + Files.readString(log));
         String raw = Files.readString(output);
         JsonNode decision = objectMapper.readTree(raw);
-        validate(decision);
+        validate(decision, job);
         session.success();
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("decisionJson", raw);
@@ -128,8 +128,8 @@ public class LandingGeneratorCodexRunner {
         .replace("{{CONTEXT}}", objectMapper.writeValueAsString(job.context()));
   }
 
-  /** Bloqueia planos vagos, autoaprovação e autonomia sem estratégia ou controle. */
-  private void validate(JsonNode value) {
+  /** Bloqueia planos vagos, abordagens indisponíveis, autoaprovação e autonomia sem controle. */
+  void validate(JsonNode value, LandingAgentJob job) {
     if (!"REGENERATE_BEFORE_PUBLICATION".equals(value.path("approvalRecommendation").asText()))
       throw new IllegalArgumentException("Agente executor não pode aprovar a própria landing");
     if (value.path("recommendedRegeneration").isEmpty()
@@ -141,6 +141,28 @@ public class LandingGeneratorCodexRunner {
         || value.path("selectedStrategy").isEmpty()
         || value.path("autonomousBacklog").isEmpty())
       throw new IllegalArgumentException("Plano sem decisão autônoma comparada e executável");
+    if (value.path("generationApproachOptions").size() < 3
+        || value.path("selectedGenerationApproach").isEmpty())
+      throw new IllegalArgumentException("Plano sem comparação da abordagem de geração");
+    String selectedApproach =
+        value.path("selectedGenerationApproach").path("approachCode").asText();
+    boolean selectedDeclaredAvailable = false;
+    for (JsonNode option : value.path("generationApproachOptions")) {
+      if (selectedApproach.equals(option.path("approachCode").asText())
+          && option.path("available").asBoolean(false)) {
+        selectedDeclaredAvailable = true;
+      }
+    }
+    JsonNode context = objectMapper.valueToTree(job.context());
+    boolean selectedContractAvailable = false;
+    for (JsonNode option : context.path("generationApproachCatalog")) {
+      if (selectedApproach.equals(option.path("approachCode").asText())
+          && option.path("available").asBoolean(false)) {
+        selectedContractAvailable = true;
+      }
+    }
+    if (!selectedDeclaredAvailable || !selectedContractAvailable)
+      throw new IllegalArgumentException("Abordagem selecionada não possui executor disponível");
     if (value.path("expectedMetrics").isEmpty()
         || value.path("stopConditions").path("continueWhen").isEmpty()
         || value.path("stopConditions").path("adjustWhen").isEmpty()

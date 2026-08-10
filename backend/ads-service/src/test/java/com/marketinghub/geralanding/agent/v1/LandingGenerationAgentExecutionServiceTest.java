@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /** Valida fila, segregação e callback do executor premium de landing. */
 class LandingGenerationAgentExecutionServiceTest {
@@ -53,6 +55,17 @@ class LandingGenerationAgentExecutionServiceTest {
             88L, "{\"approvalRecommendation\":\"REGENERATE_BEFORE_PUBLICATION\",\"score\":70}"));
 
     verify(repository).save(any(GeraLandingStageExecution.class));
+  }
+
+  /** Deve abrir nova transação ao persistir a fila depois do commit do Quality Review. */
+  @Test
+  void shouldPersistQualityReviewEventInNewTransaction() throws NoSuchMethodException {
+    Transactional transactional =
+        LandingGenerationAgentExecutionService.class
+            .getMethod("onQualityReviewCompleted", LandingQualityReviewedEvent.class)
+            .getAnnotation(Transactional.class);
+
+    assertEquals(Propagation.REQUIRES_NEW, transactional.propagation());
   }
 
   /** Deve reservar uma pendência e preservar o experimento no snapshot. */

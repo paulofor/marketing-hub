@@ -38,6 +38,10 @@ describe("contrato operacional do agente", () => {
     fireEvent.change(screen.getByLabelText(/^apelido/i), {
       target: { value: "Conselheiro" },
     });
+    expect(screen.getByLabelText(/figura mitológica/i)).toHaveAttribute(
+      "accept",
+      "image/png,image/jpeg,image/webp",
+    );
     fireEvent.click(screen.getByRole("button", { name: /^salvar$/i }));
 
     expect(submit).toHaveBeenCalledWith(

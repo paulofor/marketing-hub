@@ -19,6 +19,8 @@ export default function EditAgentPage() {
     return {
       name: agent.name,
       nickname: agent.nickname,
+      portraitAssetId: agent.portraitAssetId,
+      portraitUrl: agent.portraitUrl,
       agentKey: agent.agentKey ?? "",
       status: agent.status ?? "DRAFT",
       ownerName: agent.ownerName ?? "",

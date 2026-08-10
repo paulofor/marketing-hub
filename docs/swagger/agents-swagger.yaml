@@ -1,0 +1,37 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub - Gestão de Agentes
+  version: 1.1.0
+paths:
+  /api/agents/portrait:
+    post:
+      summary: Envia a figura mitológica de um agente
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Imagem PNG, JPEG ou WebP de até 5 MB.
+      responses:
+        "200":
+          description: Imagem armazenada e pronta para associação ao cadastro.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [assetId, url]
+                properties:
+                  assetId:
+                    type: integer
+                    format: int64
+                  url:
+                    type: string
+                    format: uri
+        "400":
+          description: Arquivo vazio, grande ou em formato não permitido.

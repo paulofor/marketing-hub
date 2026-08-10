@@ -10,6 +10,8 @@ public class AgentDto {
   private Long id;
   private String name;
   private String nickname;
+  private Long portraitAssetId;
+  private String portraitUrl;
   private String agentKey;
   private String status;
   private Integer currentVersion;

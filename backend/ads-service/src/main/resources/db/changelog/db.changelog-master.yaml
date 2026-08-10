@@ -1714,3 +1714,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-10-wan3-seedance25-candidates.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-10-agent-portrait.yaml
+      relativeToChangelogFile: true

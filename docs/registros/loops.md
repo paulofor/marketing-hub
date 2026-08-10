@@ -922,6 +922,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o contrato de correção entregava ao gerador apenas `revisedImagePrompt` em texto livre. Problemas, recomendações e critérios verificáveis permaneciam no parecer, sem obrigação estrutural no prompt executado nem bloqueio de contratos vagos.
 - **Correção sistêmica:** o Aprovador passa a devolver requisitos visuais obrigatórios, elementos proibidos e critérios objetivos de aceitação; o backend persiste e publica essas listas e o worker monta deterministicamente o prompt final com todos os itens.
 - **Prevenção:** testes de contrato bloqueiam geração sem requisitos/critérios e comprovam que cada lista chega ao prompt enviado ao GPT Image 2. A versão continua voltando ao gate multimodal e não herda aprovação técnica ou humana.
+- **Prevenção complementar em 2026-08-10:** a baixa qualidade das imagens do anúncio ou da landing tornou-se gate visual prioritário e eliminatório no Aprovador. O parecer deve começar pela evidência visual, atribuir o responsável correto e impedir otimizações secundárias enquanto a imagem não tiver nitidez, foco, autenticidade, coerência com o público e acabamento comercial; teste de contrato preserva essa precedência.
 
 # LOOP-CREATIVE-CONVERGENCE-UNCOORDINATED — Gate identifica falha fora do próprio executor
 

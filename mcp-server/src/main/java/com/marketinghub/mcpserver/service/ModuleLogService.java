@@ -417,6 +417,9 @@ public class ModuleLogService {
             case "financial-agent-worker" -> properties.logs().financialAgentWorkerPath();
             case "experiment-strategist-worker" -> properties.logs().experimentStrategistWorkerPath();
             case "meta-ad-approver-worker" -> properties.logs().metaAdApproverWorkerPath();
+            case "landing-generator-agent-worker" -> System.getenv().getOrDefault(
+                    "MCP_LOG_LANDING_GENERATOR_AGENT_WORKER_PATH",
+                    "http://163.245.202.80:8100/ops-landing-generator-observability-v1/logfile");
             default -> throw new IllegalArgumentException("Unknown module: " + module);
         };
     }
@@ -434,12 +437,13 @@ public class ModuleLogService {
                     "mds", "mois", "mois-sales-library-worker", "mois-hotmart", "clickbank-coletor-mois",
                     "oprm-coletor-receita", "ops-monitor-worker", "pde-platform-backend",
                     "video-management-service", "customer-agent-worker", "financial-agent-worker",
-                    "experiment-strategist-worker", "meta-ad-approver-worker" -> normalized;
+                    "experiment-strategist-worker", "meta-ad-approver-worker",
+                    "landing-generator-agent-worker" -> normalized;
             default -> throw new IllegalArgumentException("module must be one of: backend, ai-worker, lead-portal, "
                     + "facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, "
                     + "mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, "
                     + "pde-platform-backend, video-management-service, customer-agent-worker, financial-agent-worker, "
-                    + "experiment-strategist-worker, meta-ad-approver-worker");
+                    + "experiment-strategist-worker, meta-ad-approver-worker, landing-generator-agent-worker");
         };
     }
 

@@ -6,7 +6,7 @@ Distinguir um job apenas reservado de um processo Codex efetivamente ativo, sem 
 
 ## Contrato obrigatório
 
-- Cliente, Financeiro, Operador de Crescimento, Estrategista e Aprovador de Anúncios Meta enviam heartbeat a cada 15 segundos durante a execução.
+- Cliente, Financeiro, Operador de Crescimento, Estrategista, Aprovador de Anúncios Meta e Gerador de Landing enviam heartbeat a cada 15 segundos durante a execução.
 - O backend é a fonte de verdade e persiste agente, execução, PID, processo vivo, quantidade de eventos, bytes de saída, última atividade e encerramento.
 - Uma execução `RUNNING` sem heartbeat por mais de dois minutos é apresentada como possivelmente presa.
 - Eventos representam linhas observadas na saída do processo; não equivalem necessariamente a interações do modelo.
@@ -15,7 +15,7 @@ Distinguir um job apenas reservado de um processo Codex efetivamente ativo, sem 
 
 ## Visualização
 
-Os painéis dos agentes exibem última atividade, processo ativo, eventos, bytes e tokens disponíveis. A API canônica é `GET /api/codex-agent-telemetry/v1/{agentType}/executions/{executionId}`. Para o Aprovador Meta, `agentType=META_AD_APPROVER` e `executionId` é o identificador do criativo reservado.
+Os painéis dos agentes exibem última atividade, processo ativo, eventos, bytes e tokens disponíveis. A API canônica é `GET /api/codex-agent-telemetry/v1/{agentType}/executions/{executionId}`. Para o Aprovador Meta, `agentType=META_AD_APPROVER`; para o Gerador de Landing, `agentType=LANDING_GENERATOR` e a correlação operacional é o experimento reservado.
 
 ## Critério operacional
 

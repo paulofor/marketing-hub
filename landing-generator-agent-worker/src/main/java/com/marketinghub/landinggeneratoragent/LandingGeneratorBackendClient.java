@@ -1,0 +1,71 @@
+package com.marketinghub.landinggeneratoragent;
+
+import java.util.List;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClient;
+
+/** Responsabilidade: consumir fila e callbacks exclusivamente pelo backend. */
+@Component
+public class LandingGeneratorBackendClient {
+  private static final Logger log = LoggerFactory.getLogger(LandingGeneratorBackendClient.class);
+  private final RestClient client;
+
+  /** Configura o backend como única porta de estado. */
+  public LandingGeneratorBackendClient(LandingGeneratorAgentProperties properties) {
+    client = RestClient.builder().baseUrl(properties.getBackendUrl()).build();
+  }
+
+  /** Reserva no máximo uma landing para preservar custo e isolamento. */
+  public List<LandingAgentJob> claimPending() {
+    List<Map<String, Object>> values =
+        client
+            .get()
+            .uri("/api/internal/geralanding/agent/v1/stage-executions/pending?limit=1")
+            .retrieve()
+            .body(new ParameterizedTypeReference<>() {});
+    return values == null ? List.of() : values.stream().map(LandingAgentJob::from).toList();
+  }
+
+  /** Persiste o resultado sem decidir a próxima etapa localmente. */
+  public void report(LandingAgentJob job, Map<String, Object> result) {
+    client
+        .post()
+        .uri("/api/internal/geralanding/agent/v1/stage-executions/{id}/result", job.executionId())
+        .body(result)
+        .retrieve()
+        .toBodilessEntity();
+  }
+
+  /** Registra falha técnica mantendo publicação e pipeline bloqueados. */
+  public void fail(LandingAgentJob job, RuntimeException error) {
+    log.error(
+        "Falha no Agente Gerador de Landing. experimentId={} executionId={}",
+        job.experimentId(),
+        job.executionId(),
+        error);
+    report(
+        job,
+        Map.of(
+            "decisionJson",
+            "{}",
+            "requestJson",
+            "falha antes da conclusão",
+            "responseJson",
+            "{}",
+            "model",
+            "gpt-5.6-sol",
+            "error",
+            rootMessage(error)));
+  }
+
+  /** Extrai a causa específica preservada integralmente no log. */
+  private String rootMessage(Throwable error) {
+    Throwable current = error;
+    while (current.getCause() != null) current = current.getCause();
+    return current.getMessage() == null ? current.getClass().getSimpleName() : current.getMessage();
+  }
+}

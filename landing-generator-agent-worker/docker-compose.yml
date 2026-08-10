@@ -1,0 +1,31 @@
+services:
+  landing-generator-agent-worker:
+    image: ${LANDING_GENERATOR_AGENT_IMAGE:-marketing-hub/landing-generator-agent-worker:local}
+    restart: unless-stopped
+    build:
+      context: .
+      args:
+        CODEX_VERSION: "0.146.0"
+    environment:
+      BACKEND_URL: ${BACKEND_URL:-http://backend:8000}
+      MARKETING_HUB_URL: ${MARKETING_HUB_URL:-http://backend:8000}
+      MARKETING_HUB_REPOSITORY: /workspace/marketing-hub
+      CODEX_MODEL: ${CODEX_MODEL:-gpt-5.6-sol}
+      CODEX_REASONING_EFFORT: ${CODEX_REASONING_EFFORT:-high}
+      LANDING_GENERATOR_CODEX_TIMEOUT: ${LANDING_GENERATOR_CODEX_TIMEOUT:-PT40M}
+      LOG_FILE_NAME: /tmp/landing-generator-agent-worker.log
+    ports:
+      - "8100:8100"
+    volumes:
+      - ${MARKETING_HUB_REPOSITORY_HOST:-..}:/workspace/marketing-hub:ro
+      - ${LANDING_GENERATOR_CODEX_HOME:?Defina uma identidade Codex exclusiva}:/home/landingagent/.codex
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G

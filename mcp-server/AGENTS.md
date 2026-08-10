@@ -22,6 +22,7 @@ Manter os seguintes endpoints como defaults de origem de logs no módulo `mcp-se
 - Financial Agent Worker: `http://163.245.202.80:8095/ops-financial-agent-observability-v1/financial-agent-worker-log`
 - Experiment Strategist Worker: `http://163.245.202.80:8096/ops-experiment-strategist-observability-v1/experiment-strategist-worker-log`
 - Meta Ad Approver Worker: `http://163.245.202.80:8097/ops-meta-ad-approver-observability-v1/logfile`
+- Landing Generator Agent Worker: `http://163.245.202.80:8100/ops-landing-generator-observability-v1/logfile`
 
 Sempre que houver alteração desses endpoints, atualizar em conjunto:
 

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -49,6 +50,11 @@ public interface GeraLandingStageExecutionRepository
   /** Busca as execuções mais antigas de uma etapa com experimento e hipótese carregados. */
   @EntityGraph(attributePaths = {"experiment", "experiment.hypothesisRef"})
   List<GeraLandingStageExecution> findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+      String stageCode, String status);
+
+  /** Reserva com bloqueio pessimista as três execuções mais antigas de um agente. */
+  @Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+  List<GeraLandingStageExecution> findTop3ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
       String stageCode, String status);
 
   /** Lista execuções iniciadas antigas de uma etapa para diagnóstico operacional do worker. */

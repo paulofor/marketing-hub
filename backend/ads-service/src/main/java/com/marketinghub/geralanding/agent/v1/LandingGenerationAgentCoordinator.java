@@ -13,7 +13,6 @@ import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.copy.service.GeraLandingCopyStageService;
 import com.marketinghub.geralanding.imageplanning.service.BackendImagePlanningService;
 import com.marketinghub.geralanding.presetdesign.service.BackendPresetDesignService;
-import com.marketinghub.geralanding.qualityreview.service.LandingQualityReviewedEvent;
 import com.marketinghub.geralanding.wireframe.service.BackendWireframeService;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
@@ -25,8 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 /** Responsabilidade: coordenar a convergência autônoma da landing sem aprovar ou publicar. */
 @Service
@@ -35,6 +32,7 @@ public class LandingGenerationAgentCoordinator {
       LoggerFactory.getLogger(LandingGenerationAgentCoordinator.class);
   private static final String QUALITY_REVIEW_STAGE = "landing-page-quality-review";
   private static final int MAX_QUALITY_REVIEWS = 4;
+  private static final BigDecimal MAX_AUTONOMOUS_COST_USD = new BigDecimal("5.00");
   private static final String AGENT_KEY = "landing-generator";
   private static final String MEMORY_SCOPE = "EXPERIMENT";
 
@@ -159,22 +157,14 @@ public class LandingGenerationAgentCoordinator {
         .orElse("review-" + experimentId);
   }
 
-  /** Recebe a conclusão persistida da etapa sem acoplar o Quality Review ao coordenador. */
-  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
-  public void onQualityReviewCompleted(LandingQualityReviewedEvent event) {
-    try {
-      continueAfterQualityReview(event.experimentId(), event.reviewJson());
-    } catch (RuntimeException ex) {
-      log.error(
-          "Agente Gerador de Landing bloqueado após Quality Review persistido (experimentId={})",
-          event.experimentId(),
-          ex);
-    }
-  }
-
   /** Bloqueia ciclos excessivos ou sem melhora objetiva antes de consumir nova geração. */
   private void enforceIterationAndProgressGates(Long experimentId, JsonNode currentReview)
       throws Exception {
+    BigDecimal accumulatedCost =
+        executionRepository.sumCompletedCostUsdByExperimentId(experimentId);
+    if (accumulatedCost != null && accumulatedCost.compareTo(MAX_AUTONOMOUS_COST_USD) >= 0) {
+      throw new IllegalStateException("Limite de custo autônomo da landing atingido");
+    }
     List<GeraLandingStageExecution> reviews =
         executionRepository.findTop20ByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
             experimentId, QUALITY_REVIEW_STAGE);

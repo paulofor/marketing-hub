@@ -4,5 +4,6 @@
   {"key":"financial-agent","module":"financial-agent-worker","operational":true,"mcp":"mcp/financial-agent.mjs","browser":false,"internetAccess":"unrestricted","premiumMemory":true},
   {"key":"experiment-strategist","module":"experiment-strategist-worker","operational":true,"mcp":"mcp/experiment-strategist.mjs","browser":true,"internetAccess":"unrestricted","premiumMemory":true},
   {"key":"meta-ad-approver","module":"meta-ad-approver-worker","operational":true,"mcp":"mcp/meta-ad-approver.mjs","browser":true,"vision":true,"videoFrames":true,"internetAccess":"unrestricted","premiumMemory":true},
+  {"key":"landing-generator","module":"landing-generator-agent-worker","operational":true,"mcp":"mcp/landing-generator.mjs","browser":true,"vision":true,"internetAccess":"unrestricted","premiumMemory":true},
   {"key":"market-radar","module":"market-radar-worker","operational":false,"blockedReason":"Executor premium ainda não implementado; cadastro não pode consumir pendências."}
 ]}

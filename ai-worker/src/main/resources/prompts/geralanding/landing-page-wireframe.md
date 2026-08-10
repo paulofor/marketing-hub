@@ -55,6 +55,9 @@ Copy do Anuncio:
 Briefing das Imagens dos Anuncios:
 {{dados-adImageBriefing}}
 
+Correção verificável solicitada pelo Aprovador Meta:
+{{convergenceBrief}}
+
 
 template_id: landing-wireframe
 template_version: v7
@@ -69,6 +72,7 @@ O wireframe define seções, hierarquia, elementos, intenção comercial, assets
 # Contrato obrigatório
 
 - Se houver contrato de promessa única no contexto, o wireframe deve estruturar hero, prova, entregáveis, formulário e CTAs para a mesma dor, recompensa gratuita, promessa e CTA.
+- Quando a correção do Aprovador Meta estiver preenchida, o requisito e o critério de aceite são obrigatórios e devem ser atendidos na estrutura mobile e desktop sem criar promessa fora do contrato.
 - O wireframe não pode trocar a recompensa gratuita por diagnóstico, prévia genérica, amostra vaga, consultoria, sistema completo ou outro ativo fora do contrato.
 - Se `campaignObjective` for `SALES`, substitua mentalmente “recompensa gratuita” por prova/preview da oferta paga e “formulário” por CTA de checkout. Não crie formulário de captura como etapa obrigatória antes do checkout.
 

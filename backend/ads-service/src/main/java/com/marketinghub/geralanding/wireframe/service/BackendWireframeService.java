@@ -58,12 +58,20 @@ public class BackendWireframeService {
   /** Inicia a execução manual da etapa wireframe usando o código canônico da etapa. */
   @Transactional
   public GeraLandingWireframeStartResponse start(Long experimentId) {
-    return registerInitialExecution(experimentId, STAGE_CODE);
+    return registerInitialExecution(
+        experimentId, STAGE_CODE, "Início manual via interface do experimento.");
+  }
+
+  /** Enfileira a reconstrução integral da landing com o briefing verificável do gate comercial. */
+  @Transactional
+  public GeraLandingWireframeStartResponse registerConvergenceExecution(
+      Long experimentId, String correctionBrief) {
+    return registerInitialExecution(experimentId, STAGE_CODE, correctionBrief);
   }
 
   /** Registra a execução inicial da etapa convertendo para o DTO local de início. */
   private GeraLandingWireframeStartResponse registerInitialExecution(
-      Long experimentId, String stageCode) {
+      Long experimentId, String stageCode, String promptContent) {
     Instant now = Instant.now();
     var experiment =
         experimentRepository
@@ -79,7 +87,7 @@ public class BackendWireframeService {
             .executionRequestedAt(now)
             .createdAt(now)
             .promptTemplateId("manual/start")
-            .promptContent("Início manual via interface do experimento.")
+            .promptContent(promptContent)
             .status(STATUS_STARTED)
             .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
             .build();
@@ -115,6 +123,7 @@ public class BackendWireframeService {
                     execution.getExperimentId(),
                     fromDatabaseIdJob(execution.getIdJob()),
                     execution.getStageCode(),
+                    execution.getPromptContent(),
                     toPendingExperiment(execution.getExperiment()),
                     toPendingHypothesis(execution.getExperiment()),
                     loadGeraLandingReferenceInsights()))

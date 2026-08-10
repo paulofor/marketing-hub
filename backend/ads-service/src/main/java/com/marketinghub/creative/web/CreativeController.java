@@ -2,6 +2,7 @@ package com.marketinghub.creative.web;
 
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.CreativeVideoReviewSourceType;
+import com.marketinghub.creative.convergence.v1.CreativeConvergenceReport;
 import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.creative.dto.CreativeAgentReviewPendingDto;
@@ -153,6 +154,12 @@ public class CreativeController {
   @PostMapping("/api/creatives/{id}/agent-review/request")
   public CreativeDto requestAgentReview(@PathVariable Long id) {
     return mapper.toDto(service.requestAgentReview(id));
+  }
+
+  /** Expõe progresso, custo, pendências e critérios do ciclo sem depender de logs. */
+  @GetMapping("/api/creatives/{id}/convergence")
+  public CreativeConvergenceReport convergenceReport(@PathVariable Long id) {
+    return service.getConvergenceReport(id);
   }
 
   /** Recebe e persiste o resultado auditável da revisão multimodal. */

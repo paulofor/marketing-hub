@@ -1,0 +1,62 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-10-creative-convergence-v1
+      author: marketinghub
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: creative_convergence_cycle
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE creative_convergence_cycle (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                experiment_id BIGINT NOT NULL,
+                root_creative_id BIGINT NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                iteration_count INT NOT NULL DEFAULT 0,
+                repeated_issue_count INT NOT NULL DEFAULT 0,
+                last_score INT NULL,
+                best_score INT NULL,
+                cost_usd DECIMAL(12,4) NOT NULL DEFAULT 0,
+                stop_reason LONGTEXT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                INDEX idx_convergence_cycle_active (root_creative_id, status, id),
+                INDEX idx_convergence_cycle_experiment (experiment_id, id),
+                CONSTRAINT fk_convergence_cycle_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id),
+                CONSTRAINT fk_convergence_cycle_creative FOREIGN KEY (root_creative_id) REFERENCES creative(id)
+              );
+              CREATE TABLE creative_convergence_task (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                cycle_id BIGINT NOT NULL,
+                creative_id BIGINT NOT NULL,
+                target VARCHAR(32) NOT NULL,
+                status VARCHAR(24) NOT NULL,
+                issue_code VARCHAR(100) NOT NULL,
+                requirement_text LONGTEXT NOT NULL,
+                acceptance_criterion LONGTEXT NOT NULL,
+                fingerprint CHAR(64) NOT NULL,
+                evidence_json LONGTEXT NULL,
+                created_at DATETIME NOT NULL,
+                completed_at DATETIME NULL,
+                PRIMARY KEY (id),
+                INDEX idx_convergence_task_cycle (cycle_id, id),
+                INDEX idx_convergence_task_queue (target, status, id),
+                INDEX idx_convergence_task_fingerprint (cycle_id, fingerprint),
+                CONSTRAINT fk_convergence_task_cycle FOREIGN KEY (cycle_id) REFERENCES creative_convergence_cycle(id),
+                CONSTRAINT fk_convergence_task_creative FOREIGN KEY (creative_id) REFERENCES creative(id)
+              );
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DROP TABLE creative_convergence_task;
+              DROP TABLE creative_convergence_cycle;

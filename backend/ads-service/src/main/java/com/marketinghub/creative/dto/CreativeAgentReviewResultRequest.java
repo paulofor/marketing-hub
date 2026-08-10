@@ -32,4 +32,9 @@ public record CreativeAgentReviewResultRequest(
     String revisedImagePrompt,
     List<String> mandatoryVisualRequirements,
     List<String> forbiddenVisualElements,
-    List<String> visualAcceptanceCriteria) {}
+    List<String> visualAcceptanceCriteria,
+    List<ConvergenceCorrectionTarget> correctionTargets) {
+  /** Responsabilidade: descrever uma correção verificável e o executor responsável. */
+  public record ConvergenceCorrectionTarget(
+      String target, String issueCode, String requirement, String acceptanceCriterion) {}
+}

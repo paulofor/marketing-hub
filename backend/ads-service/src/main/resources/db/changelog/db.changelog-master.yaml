@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-10-creative-convergence-v1.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-09-creative-agent-review-lease-v1.yaml
       relativeToChangelogFile: true
   - include:

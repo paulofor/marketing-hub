@@ -422,6 +422,50 @@ paths:
       responses:
         '200':
           description: Preview retornado
+  /api/creatives/{id}/convergence:
+    get:
+      tags: [Creatives]
+      summary: Consultar convergência comercial do criativo
+      description: Retorna score, custo, bloqueio e tarefas verificáveis da linhagem sem depender de logs técnicos.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Relatório auditável do ciclo mais recente
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [cycleId, experimentId, rootCreativeId, status, iterationCount, repeatedIssueCount, costUsd, tasks]
+                properties:
+                  cycleId: {type: integer, format: int64}
+                  experimentId: {type: integer, format: int64}
+                  rootCreativeId: {type: integer, format: int64}
+                  status: {type: string}
+                  iterationCount: {type: integer}
+                  repeatedIssueCount: {type: integer}
+                  lastScore: {type: integer}
+                  bestScore: {type: integer}
+                  costUsd: {type: number}
+                  stopReason: {type: string}
+                  tasks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: {type: integer, format: int64}
+                        creativeId: {type: integer, format: int64}
+                        target: {type: string}
+                        status: {type: string}
+                        issueCode: {type: string}
+                        requirement: {type: string}
+                        acceptanceCriterion: {type: string}
+                        evidenceJson: {type: string}
   /api/creatives/video-review:
     get:
       tags: [Creatives]

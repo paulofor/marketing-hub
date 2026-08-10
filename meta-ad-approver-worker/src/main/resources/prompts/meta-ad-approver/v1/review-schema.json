@@ -3,22 +3,6 @@
   "type": "object",
   "additionalProperties": false,
   "required": ["decision", "attentionScore", "clarityScore", "desireScore", "credibilityScore", "actionScore", "copyAssessment", "commercialAestheticAssessment", "destinationIntegrationAssessment", "summary", "issues", "recommendations", "revisedHeadline", "revisedPrimaryText", "revisedDescription", "revisedCta", "revisedImagePrompt", "mandatoryVisualRequirements", "forbiddenVisualElements", "visualAcceptanceCriteria", "correctionTargets"],
-  "anyOf": [
-    {
-      "properties": {
-        "decision": {"const": "APPROVED"},
-        "correctionTargets": {"maxItems": 0}
-      },
-      "required": ["decision", "correctionTargets"]
-    },
-    {
-      "properties": {
-        "decision": {"enum": ["ADJUST", "REJECTED"]},
-        "correctionTargets": {"minItems": 1}
-      },
-      "required": ["decision", "correctionTargets"]
-    }
-  ],
   "properties": {
     "decision": {"type": "string", "enum": ["APPROVED", "ADJUST", "REJECTED"]},
     "attentionScore": {"type": "integer", "minimum": 0, "maximum": 100},

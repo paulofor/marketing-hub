@@ -948,3 +948,10 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o prompt descrevia a obrigação, mas o schema aceitava uma lista vazia e o gate local do executor validava somente o contrato visual legado.
 - **Correção sistêmica:** o schema exige ao menos uma tarefa para `ADJUST`/`REJECTED` e nenhuma para `APPROVED`; o executor repete a validação deterministicamente antes do callback, com testes de contrato contra recorrência.
 - **Prevenção:** o teste de defaults exige o mesmo endpoint nos descritores local e de deploy; a homologação operacional deve confirmar HTTP 200 tanto no health quanto no logfile.
+
+### LOOP-META-AD-APPROVER-STRICT-SCHEMA-CONDITIONAL
+
+- **Sintoma:** o Aprovador encerra três revisões com `invalid_json_schema` antes de inspecionar mídia e landing, embora o JSON Schema seja válido pelo padrão 2020-12.
+- **Causa-raiz:** o contrato adicionou `anyOf` para condicionar `correctionTargets`, mas cada ramo era interpretado como objeto pelo Structured Outputs e não declarava `additionalProperties: false`; tornar os ramos estritos também proibiria os demais campos da resposta.
+- **Correção sistêmica:** remover a condição incompatível do schema enviado à OpenAI e manter a regra no gate determinístico do executor, que já bloqueia `ADJUST`/`REJECTED` sem tarefas e `APPROVED` com tarefas.
+- **Prevenção:** teste de contrato proíbe `anyOf`, `oneOf` e `allOf` no schema estrito do Aprovador e preserva testes executáveis para as condições de negócio antes do callback.

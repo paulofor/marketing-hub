@@ -1717,3 +1717,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-10-agent-portrait.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-10-governed-agent-learning-v1.yaml
+      relativeToChangelogFile: true

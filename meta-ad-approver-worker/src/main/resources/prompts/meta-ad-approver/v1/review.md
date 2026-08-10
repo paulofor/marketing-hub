@@ -48,6 +48,9 @@ Para `APPROVED`, preserve os textos aprovados e deixe o prompt e as três listas
 Retorne somente JSON válido conforme o schema.
 Use `recuperar_memoria_especializada` para recuperar a memória do experimento depois de inspecionar
 o contexto e antes do parecer.
+Use também `recuperar_estrategias_promovidas`. Somente essas estratégias venceram replay congelado,
+holdout fora da amostra, regressão e validação local. Você não pode promover a própria estratégia
+nem executar testes em produção.
 Use candidatos apenas como hipóteses e nunca como motivo suficiente para aprovar. Se copy, estética,
 vídeo ou continuidade anúncio→landing revelar um padrão novo verificável, registre-o como candidato
 com referência à evidência por `registrar_aprendizado_candidato`; o agente não pode confirmar a

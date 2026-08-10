@@ -176,6 +176,20 @@ taxa de contradição e resultado comercial posterior. Faça rollout em shadow/c
 versão anterior para rollback e retire memórias degradantes. Um agente não pode alterar sozinho o
 próprio prompt, schema, ferramentas, autoridade, modelo ou critério de aprovação.
 
+## Aprendizado governado por replay
+
+Dédalo e Têmis usam a primeira versão governada de aprendizado do sistema. Toda mudança nasce como
+memória `CANDIDATE` e congela, antes do teste, versão baseline, versão candidata, replay de falhas
+históricas e holdout fora da amostra. Baseline e candidata executam os mesmos casos na sandbox local.
+A promoção exige no mínimo dez casos de replay, cinco de holdout, ganho mínimo declarado, custo dentro
+do limite, regressão integral e validação local completa. Melhoria apenas nos casos que originaram a
+mudança é rejeitada.
+
+O backend persiste entrada, resultados e decisão. O agente pode consultar estratégias `PROMOTED`, mas
+nunca avaliar ou promover a própria candidata. Promoção confirma a memória por feedback governado;
+reprovação preserva a evidência e não altera o playbook ativo. Alterações de prompt, schema, código,
+ferramentas, modelo ou autoridade continuam passando por diff, testes locais e Pull Request humano.
+
 ## Gate arquitetural
 
 O repositório deve manter um teste global que falhe quando agente `TEST`/`ACTIVE` não tiver módulo,

@@ -60,6 +60,23 @@ vi.mock("../../api/ai/usePromoteGeneratedImage", () => ({
   })),
 }));
 
+vi.mock("../../api/ai/usePromoteGeneratedLandingImage", () => ({
+  usePromoteGeneratedLandingImage: vi.fn(() => ({
+    error: null,
+    isError: false,
+    isPending: false,
+    isSuccess: false,
+    mutate: vi.fn(),
+  })),
+}));
+
+vi.mock("../../api/experiment/useExperiments", () => ({
+  useExperiments: vi.fn(() => ({
+    data: [{ id: 88, name: "MAQA-H002-E001", productId: 1 }],
+    isLoading: false,
+  })),
+}));
+
 vi.mock("../../api/ai/useRecentImageGenerations", () => ({
   useRecentImageGenerations: vi.fn(() => ({
     data: [
@@ -104,6 +121,9 @@ describe("ImageGeneratorPage", () => {
     expect(
       screen.getByRole("button", { name: /vincular e enviar ao aprovador/i }),
     ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /aplicar ao rascunho/i }),
+    ).toBeDisabled();
   });
 
   it("lists a persisted generation after selecting its commercial context", () => {
@@ -120,6 +140,26 @@ describe("ImageGeneratorPage", () => {
     expect(
       screen.getByRole("button", { name: /img-batch-old.*img-old/i }),
     ).toBeTruthy();
-    expect(screen.getByText(/sem gerar novamente nem criar novo custo/i)).toBeTruthy();
+    expect(
+      screen.getByText(/sem gerar novamente nem criar novo custo/i),
+    ).toBeTruthy();
+  });
+
+  it("offers product-compatible experiment and canonical landing slots", () => {
+    render(<ImageGeneratorPage />);
+
+    fireEvent.change(screen.getByLabelText(/^produto/i), {
+      target: { value: "1" },
+    });
+
+    expect(
+      screen.getByRole("option", { name: /#88.*MAQA-H002-E001/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("option", { name: /hero principal/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("option", { name: /prova da entrega/i }),
+    ).toBeTruthy();
   });
 });

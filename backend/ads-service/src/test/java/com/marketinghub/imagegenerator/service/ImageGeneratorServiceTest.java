@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.imagegenerator.ImageGenerationRequest;
 import com.marketinghub.imagegenerator.dto.ImageGeneratorResponse.ImageGeneratorResult;
 import java.util.List;
 import java.util.Map;
@@ -151,5 +152,40 @@ class ImageGeneratorServiceTest {
     assertThat(result.failures()).hasSize(1);
     assertThat(result.failures().get(0).model()).isEqualTo("gpt-image-2");
     assertThat(result.failures().get(0).message()).contains("limite momentâneo");
+  }
+
+  /** Garante que a promoção substitua apenas a URL do slot escolhido no rascunho. */
+  @Test
+  void replacesOnlySelectedLandingImageSlot() {
+    ImageGeneratorService service =
+        new ImageGeneratorService(
+            null, null, null, derivativeService, objectMapper, "gpt-5.6", "gpt-image-2");
+    String html =
+        "<img id=\"hero-media-img\" src=\"old-hero.jpg\"><img id=\"prova-img\" src=\"old-proof.jpg\">";
+
+    String updated =
+        service.replaceLandingImage(html, "hero-media-img", "https://cdn/new-hero.jpg");
+
+    assertThat(updated).contains("src=\"https://cdn/new-hero.jpg\"");
+    assertThat(updated).contains("id=\"prova-img\" src=\"old-proof.jpg\"");
+  }
+
+  /** Garante que o manifesto preserve a proveniência do job escolhido para a landing. */
+  @Test
+  void recordsLandingPromotionInImageManifest() throws Exception {
+    ImageGeneratorService service =
+        new ImageGeneratorService(
+            null, null, null, derivativeService, objectMapper, "gpt-5.6", "gpt-image-2");
+    ImageGenerationRequest audit =
+        ImageGenerationRequest.builder().jobId("img-premium").model("gpt-image-2").build();
+
+    String updated =
+        service.updateLandingImageManifest(
+            "{\"images\":[{\"elementId\":\"hero-media-img\",\"resolvedUrl\":\"old\"}]}",
+            "hero-media-img",
+            "https://cdn/premium.png",
+            audit);
+
+    assertThat(updated).contains("https://cdn/premium.png", "img-premium", "gpt-image-2");
   }
 }

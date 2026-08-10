@@ -10,6 +10,7 @@ workflow_by_agent = {
     'growth-operator': root/'.github/workflows/growth-operator-worker-ci.yml',
     'experiment-strategist': root/'.github/workflows/experiment-strategist-worker-ci.yml',
     'meta-ad-approver': root/'.github/workflows/meta-ad-approver-worker-ci.yml',
+    'landing-generator': root/'.github/workflows/landing-generator-agent-worker-ci.yml',
 }
 codex_home_by_agent = {
     'customer-agent': 'CUSTOMER_AGENT_CODEX_HOME',
@@ -17,6 +18,7 @@ codex_home_by_agent = {
     'growth-operator': 'GROWTH_OPERATOR_CODEX_HOME',
     'experiment-strategist': 'EXPERIMENT_STRATEGIST_CODEX_HOME',
     'meta-ad-approver': 'META_AD_APPROVER_CODEX_HOME',
+    'landing-generator': 'LANDING_GENERATOR_CODEX_HOME',
 }
 mcp_backend_contracts = {
     'customer-agent': (
@@ -33,6 +35,11 @@ mcp_backend_contracts = {
         '/api/experiment-strategist/v1/internal/executions/',
         root/'backend/ads-service/src/main/java/com/marketinghub/experimentstrategist/controller/ExperimentStrategistController.java',
         '@GetMapping("/internal/executions/{id}")',
+    ),
+    'landing-generator': (
+        '/api/internal/geralanding/agent/v1/stage-executions/',
+        root/'backend/ads-service/src/main/java/com/marketinghub/geralanding/agent/v1/LandingGenerationAgentController.java',
+        '@GetMapping("/{executionId}/context")',
     ),
 }
 for agent in agents:

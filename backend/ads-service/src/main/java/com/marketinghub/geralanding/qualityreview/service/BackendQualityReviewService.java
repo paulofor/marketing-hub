@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -44,15 +45,18 @@ public class BackendQualityReviewService {
   private final ExperimentRepository experimentRepository;
   private final GeraLandingStageExecutionRepository executionRepository;
   private final ObjectMapper objectMapper;
+  private final ApplicationEventPublisher eventPublisher;
 
   /** Inicializa o serviço com repositórios e serializador usados pela revisão visual. */
   public BackendQualityReviewService(
       ExperimentRepository experimentRepository,
       GeraLandingStageExecutionRepository executionRepository,
-      ObjectMapper objectMapper) {
+      ObjectMapper objectMapper,
+      ApplicationEventPublisher eventPublisher) {
     this.experimentRepository = experimentRepository;
     this.executionRepository = executionRepository;
     this.objectMapper = objectMapper;
+    this.eventPublisher = eventPublisher;
   }
 
   /**
@@ -463,6 +467,8 @@ public class BackendQualityReviewService {
     }
     experiment.setLandingPageQualityReview(modelResponse);
     experimentRepository.save(experiment);
+    eventPublisher.publishEvent(
+        new LandingQualityReviewedEvent(execution.getExperimentId(), modelResponse));
   }
 
   /**

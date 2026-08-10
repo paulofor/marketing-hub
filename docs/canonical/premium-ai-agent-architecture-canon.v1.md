@@ -114,6 +114,7 @@ sem alterar antes este cânone e os testes de contrato.
 | Financeiro | `financial-agent-worker` | `financial-agent.mjs` | obrigatórios | snapshots financeiros congelados; browser dispensado |
 | Estrategista | `experiment-strategist-worker` | `experiment-strategist.mjs` | obrigatórios | browser e pesquisa de mercado auditável |
 | Aprovador Meta | `meta-ad-approver-worker` | `meta-ad-approver.mjs` | obrigatórios | Chromium/Playwright, visão, imagem original, frames de vídeo e landing desktop/mobile |
+| Gerador de Landing | `landing-generator-agent-worker` | `landing-generator.mjs` | obrigatórios | Codex `gpt-5.6-sol`, Chromium/Playwright, visão desktop/iPhone/Android, memória premium e solicitação de imagens pelo fluxo oficial `gpt-image-2` |
 
 O Agente Radar permanece `BLOCKED` até possuir executor, identidade Codex, sandbox, MCP,
 prompt/schema, telemetria, CI/CD, memória e contratos completos. Cadastro e histórico isolados não

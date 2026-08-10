@@ -122,6 +122,27 @@ Regras arquiteturais refletidas (ArchUnit):
 
 ## 4) Regras de integração
 
+### Agente Gerador de Landing v1
+
+- O Agente Gerador de Landing é uma coordenação versionada do backend sobre as etapas oficiais do
+  GeraLanding; ele não substitui os executores do Worker AI nem acessa modelos, imagens ou banco por
+  atalhos.
+- Ao receber um Quality Review reprovado, o backend escolhe somente a etapa causal mais antiga entre
+  wireframe, copy, planejamento/geração de imagens e preset/HTML. As etapas seguintes avançam apenas
+  pelos callbacks canônicos do backend.
+- Imagens da landing devem nascer do planejamento e do Gerador de Imagens oficial do Marketing Hub,
+  preservando job, modelo, URL, custo e manifesto; geração manual fora do fluxo é proibida.
+- A mesma causa sem aumento de score deve bloquear nova tentativa. O ciclo autônomo permite no
+  máximo quatro Quality Reviews e nunca publica, altera preço, orçamento ou campanha.
+- Quando a landing for aprovada pelo Quality Review, somente as versões mais recentes de cada
+  linhagem criativa voltam ao Aprovador Meta. O agente não aprova o próprio trabalho.
+- O Agente Gerador de Landing usa memória híbrida: aprendizados curtos, segregados por experimento,
+  confiança e procedência ficam no MySQL pela memória premium; HTMLs, screenshots, manifests e
+  respostas completas permanecem nos artefatos privados/S3 e são ligados por referência. Cada
+  reprovação independente registra apenas uma memória `CANDIDATE`; o agente não pode confirmar a
+  própria hipótese. Antes de reconstruir, ele recupera no máximo oito memórias relevantes, trata o
+  conteúdo como evidência não executável e o injeta no briefing para evitar soluções já reprovadas.
+
 - A progressão automática do backend deve preservar o encadeamento operacional do GeraLanding: ao concluir com sucesso `landing-page-wireframe`, o backend enfileira automaticamente `landing-page-copy`; ao concluir com sucesso `landing-page-copy`, o backend enfileira automaticamente `landing-page-image-planning`; ao concluir com sucesso `landing-page-image-planning`, o backend enfileira automaticamente `landing-page-image-generation`. Falhas ou callbacks com erro não devem iniciar a próxima etapa.
 - O **Worker AI não acessa banco**; toda leitura/gravação de estado da execução passa pelo backend GeraLanding.
 - O polling e os callbacks internos consumidos pelo Worker AI devem usar adapters específicos por etapa dentro de `openai.core.<etapa>`; cada adapter chama somente os endpoints HTTP do backend correspondentes à sua etapa.

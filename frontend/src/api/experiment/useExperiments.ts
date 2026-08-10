@@ -85,6 +85,8 @@ export interface ExperimentSessionDurationSummary {
 export interface Experiment {
   id: string;
   nicheId: number;
+  productId?: number | null;
+  productName?: string | null;
   hypothesisId: string;
   name: string;
   creationSource?: ExperimentCreationSource | null;

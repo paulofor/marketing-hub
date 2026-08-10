@@ -218,6 +218,8 @@ public class AssetStorageService {
     return switch (category) {
       case EXPERIMENT_CREATIVE ->
           context.experimentId() != null ? "exp-" + context.experimentId() : "exp-generic";
+      case LANDING_PAGE_IMAGE ->
+          context.experimentId() != null ? "exp-" + context.experimentId() : "exp-generic";
       case LEAD_PORTAL_FORM -> {
         if (context.flowId() != null) {
           yield "flow-" + context.flowId();

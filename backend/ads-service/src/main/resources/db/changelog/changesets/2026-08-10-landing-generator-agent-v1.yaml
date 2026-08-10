@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-10-landing-generator-agent-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO agent (
+                theme_id, name, agent_key, status, current_version, execution_mode,
+                description, owner_name, business_objective, success_metrics, model_name,
+                trigger_policy, authority_policy, prompt_contract_path, schema_contract_path
+              )
+              SELECT at.id, 'Agente Gerador de Landing', 'landing-generator', 'TEST', 1, 'EVENT_DRIVEN',
+                'Corrige rascunhos de landing com memoria, navegador e criterios verificaveis sem autoaprovacao.',
+                'Marketing Hub', 'Convergir anuncio e landing ao padrao premium antes de publicacao.',
+                'Aprovacao independente; menor reincidencia; custo e tempo por landing aprovada; efeito posterior no funil.',
+                'gpt-5.6-sol', 'Quality Review independente reprova uma landing e declara causas verificaveis.',
+                'Pode alterar apenas rascunhos pelo pipeline oficial; nao aprova, publica, gasta, muda preco ou ativa campanha.',
+                'landing-generator-agent-worker/src/main/resources/prompts/landing-generator/v1/remediation.md',
+                'landing-generator-agent-worker/src/main/resources/prompts/landing-generator/v1/remediation-schema.json'
+              FROM agent_theme at
+              WHERE at.name = 'Operacoes Autonomas'
+                AND NOT EXISTS (SELECT 1 FROM agent WHERE agent_key = 'landing-generator');
+
+              INSERT INTO agent_version (agent_id, version_number, contract_snapshot, created_at)
+              SELECT a.id, 1,
+                CONCAT('{"agentKey":"landing-generator","version":1,"status":"TEST","model":"gpt-5.6-sol","authority":"DRAFT_ONLY_NO_PUBLICATION","prompt":"', a.prompt_contract_path, '","schema":"', a.schema_contract_path, '"}'),
+                UTC_TIMESTAMP()
+              FROM agent a
+              WHERE a.agent_key = 'landing-generator'
+                AND NOT EXISTS (
+                  SELECT 1 FROM agent_version av
+                  WHERE av.agent_id = a.id AND av.version_number = 1
+                );

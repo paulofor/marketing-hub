@@ -1702,3 +1702,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-10-gera-landing-prompt-content-longtext.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-10-landing-generator-agent-v1.yaml
+      relativeToChangelogFile: true

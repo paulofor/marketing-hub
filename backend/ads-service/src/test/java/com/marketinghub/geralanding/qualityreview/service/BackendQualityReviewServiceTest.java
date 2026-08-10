@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 
 /** Valida a execução assíncrona do Quality Gate visual da landing gerada. */
 class BackendQualityReviewServiceTest {
@@ -34,7 +35,10 @@ class BackendQualityReviewServiceTest {
         mock(GeraLandingStageExecutionRepository.class);
     BackendQualityReviewService service =
         new BackendQualityReviewService(
-            experimentRepository, executionRepository, new ObjectMapper());
+            experimentRepository,
+            executionRepository,
+            new ObjectMapper(),
+            mock(ApplicationEventPublisher.class));
     Experiment experiment = mock(Experiment.class);
     when(experiment.getId()).thenReturn(36L);
     when(experimentRepository.findById(36L)).thenReturn(Optional.of(experiment));
@@ -64,7 +68,10 @@ class BackendQualityReviewServiceTest {
         mock(GeraLandingStageExecutionRepository.class);
     BackendQualityReviewService service =
         new BackendQualityReviewService(
-            experimentRepository, executionRepository, new ObjectMapper());
+            experimentRepository,
+            executionRepository,
+            new ObjectMapper(),
+            mock(ApplicationEventPublisher.class));
     Experiment experiment = mock(Experiment.class);
     when(experiment.getId()).thenReturn(37L);
     when(experiment.getName()).thenReturn("Experimento qualidade");
@@ -102,9 +109,10 @@ class BackendQualityReviewServiceTest {
     ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
     GeraLandingStageExecutionRepository executionRepository =
         mock(GeraLandingStageExecutionRepository.class);
+    ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     BackendQualityReviewService service =
         new BackendQualityReviewService(
-            experimentRepository, executionRepository, new ObjectMapper());
+            experimentRepository, executionRepository, new ObjectMapper(), eventPublisher);
     Experiment experiment = mock(Experiment.class);
     GeraLandingStageExecution execution =
         GeraLandingStageExecution.builder()
@@ -135,6 +143,7 @@ class BackendQualityReviewServiceTest {
     assertEquals("CONCLUIDO", execution.getStatus());
     verify(experiment).setLandingPageQualityReview("{\"score\":90}");
     verify(experimentRepository).save(experiment);
+    verify(eventPublisher).publishEvent(new LandingQualityReviewedEvent(38L, "{\"score\":90}"));
     verify(executionRepository, times(1)).save(execution);
   }
 
@@ -149,7 +158,10 @@ class BackendQualityReviewServiceTest {
         mock(GeraLandingStageExecutionRepository.class);
     BackendQualityReviewService service =
         new BackendQualityReviewService(
-            experimentRepository, executionRepository, new ObjectMapper());
+            experimentRepository,
+            executionRepository,
+            new ObjectMapper(),
+            mock(ApplicationEventPublisher.class));
     Experiment experiment = mock(Experiment.class);
     String auditJson =
         "{\"landingHtmlSha256\":\"html-a\",\"screenshots\":[{\"viewport\":\"mobile\",\"sha256\":\"img-m\"},{\"viewport\":\"desktop\",\"sha256\":\"img-d\"}]}";
@@ -208,7 +220,10 @@ class BackendQualityReviewServiceTest {
         mock(GeraLandingStageExecutionRepository.class);
     BackendQualityReviewService service =
         new BackendQualityReviewService(
-            experimentRepository, executionRepository, new ObjectMapper());
+            experimentRepository,
+            executionRepository,
+            new ObjectMapper(),
+            mock(ApplicationEventPublisher.class));
     GeraLandingStageExecution execution =
         GeraLandingStageExecution.builder()
             .experimentId(40L)
@@ -238,7 +253,10 @@ class BackendQualityReviewServiceTest {
         mock(GeraLandingStageExecutionRepository.class);
     BackendQualityReviewService service =
         new BackendQualityReviewService(
-            experimentRepository, executionRepository, new ObjectMapper());
+            experimentRepository,
+            executionRepository,
+            new ObjectMapper(),
+            mock(ApplicationEventPublisher.class));
     GeraLandingStageExecution execution =
         GeraLandingStageExecution.builder()
             .experimentId(39L)

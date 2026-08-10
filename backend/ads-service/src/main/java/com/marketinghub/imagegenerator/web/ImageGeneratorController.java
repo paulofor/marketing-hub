@@ -3,6 +3,8 @@ package com.marketinghub.imagegenerator.web;
 import com.marketinghub.imagegenerator.dto.ImageGenerationHistoryItem;
 import com.marketinghub.imagegenerator.dto.ImageGeneratorRequest;
 import com.marketinghub.imagegenerator.dto.ImageGeneratorResponse;
+import com.marketinghub.imagegenerator.dto.LandingImagePromotionRequest;
+import com.marketinghub.imagegenerator.dto.LandingImagePromotionResponse;
 import com.marketinghub.imagegenerator.service.ImageGeneratorService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -48,5 +50,12 @@ public class ImageGeneratorController {
       @RequestParam Long commercialPlanId,
       @RequestParam(required = false) Long experimentId) {
     return service.getGeneratedImage(productId, commercialPlanId, experimentId, jobId);
+  }
+
+  /** Aplica uma geração concluída a um slot da landing sem publicar a página. */
+  @PostMapping("/generations/{jobId}/landing-assets")
+  public LandingImagePromotionResponse promoteToLanding(
+      @PathVariable String jobId, @Valid @RequestBody LandingImagePromotionRequest request) {
+    return service.promoteToLanding(jobId, request);
   }
 }

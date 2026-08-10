@@ -8,12 +8,14 @@ import type {
 } from "../../api/ai/useGenerateImage";
 import { useGenerateImage } from "../../api/ai/useGenerateImage";
 import { usePromoteGeneratedImage } from "../../api/ai/usePromoteGeneratedImage";
+import { usePromoteGeneratedLandingImage } from "../../api/ai/usePromoteGeneratedLandingImage";
 import {
   useRecentImageGenerations,
   useRecoverImageGeneration,
 } from "../../api/ai/useRecentImageGenerations";
 import { useProducts } from "../../api/product/useProducts";
 import { useCommercialPlans } from "../../api/planning/useCommercialPlans";
+import { useExperiments } from "../../api/experiment/useExperiments";
 
 const EXAMPLE_PROMPT =
   "Mulher brasileira elegante, 35 anos, olhando para o espelho antes de sair, ambiente claro, estética premium, fotografia realista para anúncio de produto digital de presença pessoal.";
@@ -76,19 +78,23 @@ export default function ImageGeneratorPage() {
   const [description, setDescription] = useState("");
   const [cta, setCta] = useState("LEARN_MORE");
   const [destinationUrl, setDestinationUrl] = useState("");
+  const [landingExperimentId, setLandingExperimentId] = useState("");
+  const [landingSlotId, setLandingSlotId] = useState<
+    "hero-media-img" | "prova-img"
+  >("hero-media-img");
   const productsQuery = useProducts();
   const plansQuery = useCommercialPlans();
+  const experimentsQuery = useExperiments();
   const generation = useGenerateImage();
   const recentContext = {
     productId: productId ? Number(productId) : undefined,
-    commercialPlanId: commercialPlanId
-      ? Number(commercialPlanId)
-      : undefined,
+    commercialPlanId: commercialPlanId ? Number(commercialPlanId) : undefined,
     experimentId: experimentId ? Number(experimentId) : undefined,
   };
   const recentGenerations = useRecentImageGenerations(recentContext);
   const recovery = useRecoverImageGeneration();
   const promotion = usePromoteGeneratedImage();
+  const landingPromotion = usePromoteGeneratedLandingImage();
   const recoveredResult = recovery.data
     ? {
         jobId:
@@ -121,6 +127,18 @@ export default function ImageGeneratorPage() {
       description: description.trim(),
       cta,
       destinationUrl: destinationUrl.trim(),
+    });
+  }
+
+  function handleLandingPromotion(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedImage || !landingExperimentId || landingPromotion.isPending) {
+      return;
+    }
+    landingPromotion.mutate({
+      experimentId: Number(landingExperimentId),
+      jobId: selectedImage.jobId,
+      slotId: landingSlotId,
     });
   }
 
@@ -317,7 +335,9 @@ export default function ImageGeneratorPage() {
                     novo custo.
                   </p>
                   {recentGenerations.isLoading ? (
-                    <div className="text-body-secondary small">Carregando...</div>
+                    <div className="text-body-secondary small">
+                      Carregando...
+                    </div>
                   ) : recentGenerations.isError ? (
                     <div className="alert alert-warning py-2">
                       Não foi possível carregar as gerações recentes.
@@ -471,6 +491,91 @@ export default function ImageGeneratorPage() {
                   </div>
                 )}
               </div>
+              {generatedImages.length > 0 ? (
+                <form className="card mt-3" onSubmit={handleLandingPromotion}>
+                  <div className="card-body">
+                    <h3 className="h5">Aplicar à landing</h3>
+                    <p className="text-body-secondary small">
+                      Atualiza o rascunho do experimento. Não publica nem altera
+                      a landing ativa.
+                    </p>
+                    <div className="row g-3">
+                      <div className="col-md-7">
+                        <label
+                          className="form-label"
+                          htmlFor="landing-experiment"
+                        >
+                          Experimento de destino
+                        </label>
+                        <select
+                          id="landing-experiment"
+                          className="form-select"
+                          value={landingExperimentId}
+                          onChange={(event) =>
+                            setLandingExperimentId(event.target.value)
+                          }
+                          required
+                        >
+                          <option value="">Selecione o experimento</option>
+                          {(experimentsQuery.data ?? [])
+                            .filter(
+                              (item) =>
+                                String(item.productId ?? "") === productId,
+                            )
+                            .map((item) => (
+                              <option key={item.id} value={item.id}>
+                                #{item.id} · {item.name}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                      <div className="col-md-5">
+                        <label className="form-label" htmlFor="landing-slot">
+                          Posição na página
+                        </label>
+                        <select
+                          id="landing-slot"
+                          className="form-select"
+                          value={landingSlotId}
+                          onChange={(event) =>
+                            setLandingSlotId(
+                              event.target.value as
+                                "hero-media-img" | "prova-img",
+                            )
+                          }
+                        >
+                          <option value="hero-media-img">Hero principal</option>
+                          <option value="prova-img">Prova da entrega</option>
+                        </select>
+                      </div>
+                    </div>
+                    {landingPromotion.isError ? (
+                      <div className="alert alert-danger mt-3">
+                        {errorMessage(landingPromotion.error)}
+                      </div>
+                    ) : null}
+                    {landingPromotion.isSuccess ? (
+                      <div className="alert alert-success mt-3">
+                        Imagem aplicada ao rascunho. A landing ativa não foi
+                        publicada.
+                      </div>
+                    ) : null}
+                    <button
+                      type="submit"
+                      className="btn btn-primary mt-3"
+                      disabled={
+                        !selectedImage ||
+                        !landingExperimentId ||
+                        landingPromotion.isPending
+                      }
+                    >
+                      {landingPromotion.isPending
+                        ? "Aplicando..."
+                        : "Aplicar ao rascunho"}
+                    </button>
+                  </div>
+                </form>
+              ) : null}
               {generatedImages.length > 0 ? (
                 <form className="card mt-3" onSubmit={handlePromotion}>
                   <div className="card-body">

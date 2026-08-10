@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Gerador de Imagens do Estúdio
-  version: 1.1.0
+  version: 1.2.0
 paths:
   /api/image-generator/generations:
     post:
@@ -22,3 +22,27 @@ paths:
         '200': {description: Lote comparativo gerado e auditado no ledger}
         '400': {description: Contexto comercial ausente ou inconsistente}
         '502': {description: Provedor não concluiu nenhuma imagem}
+  /api/image-generator/generations/{jobId}/landing-assets:
+    post:
+      summary: Aplica uma geração concluída a um slot do rascunho da landing
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [experimentId, slotId]
+              properties:
+                experimentId: {type: integer, format: int64}
+                slotId:
+                  type: string
+                  enum: [hero-media-img, prova-img]
+      responses:
+        '200': {description: Asset persistido e HTML de rascunho atualizado sem publicação}
+        '404': {description: Geração ou experimento não encontrado}
+        '409': {description: Produto ou slot incompatível com a landing}

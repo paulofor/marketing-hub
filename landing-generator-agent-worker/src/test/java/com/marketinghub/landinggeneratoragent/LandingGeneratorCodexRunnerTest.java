@@ -1,5 +1,6 @@
 package com.marketinghub.landinggeneratoragent;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -54,6 +55,19 @@ class LandingGeneratorCodexRunnerTest {
     assertTrue(prompt.contains("qual abordagem de geração de landing é a melhor"));
     assertTrue(schema.contains("generationApproachOptions"));
     assertTrue(schema.contains("selectedGenerationApproach"));
+  }
+
+  /** Deve impedir palavras-chave rejeitadas pelo Structured Outputs da OpenAI. */
+  @Test
+  void shouldKeepStrictOutputSchemaCompatibleWithOpenAi() throws Exception {
+    String schema =
+        Files.readString(
+            Path.of("src/main/resources/prompts/landing-generator/v1/remediation-schema.json"));
+
+    assertFalse(schema.contains("\"uniqueItems\""));
+    assertFalse(schema.contains("\"anyOf\""));
+    assertFalse(schema.contains("\"oneOf\""));
+    assertFalse(schema.contains("\"allOf\""));
   }
 
   /** Deve impedir que o modelo selecione uma abordagem sem executor no catálogo congelado. */

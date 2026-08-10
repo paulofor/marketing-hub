@@ -970,3 +970,10 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o contrato adicionou `anyOf` para condicionar `correctionTargets`, mas cada ramo era interpretado como objeto pelo Structured Outputs e não declarava `additionalProperties: false`; tornar os ramos estritos também proibiria os demais campos da resposta.
 - **Correção sistêmica:** remover a condição incompatível do schema enviado à OpenAI e manter a regra no gate determinístico do executor, que já bloqueia `ADJUST`/`REJECTED` sem tarefas e `APPROVED` com tarefas.
 - **Prevenção:** teste de contrato proíbe `anyOf`, `oneOf` e `allOf` no schema estrito do Aprovador e preserva testes executáveis para as condições de negócio antes do callback.
+
+### LOOP-LANDING-GENERATOR-STRICT-SCHEMA-UNIQUE-ITEMS
+
+- **Sintoma:** Dédalo recebe e reserva a reprovação do Quality Review, mas encerra antes de analisar a landing com `invalid_json_schema` em `recommendedRegeneration`.
+- **Causa-raiz:** o schema JSON versionado usava `uniqueItems`, válido no padrão 2020-12, porém não aceito pelo Structured Outputs usado pelo Codex.
+- **Correção sistêmica:** remover `uniqueItems` do contrato enviado ao modelo; duplicidades continuam inofensivas porque o backend converte a recomendação em uma única etapa causal.
+- **Prevenção:** teste do worker proíbe `uniqueItems`, `anyOf`, `oneOf` e `allOf` no schema estrito antes do deploy.

@@ -6,7 +6,9 @@ on:
 
 concurrency:
   group: deploy-containers-${{ github.ref }}
-  cancel-in-progress: true
+  # Um push posterior pode conter somente documentação. Ele não pode cancelar
+  # uma publicação válida antes de a detecção de módulos ser executada.
+  cancel-in-progress: false
 
 env:
   APP_VPS_IP: 191.252.181.168

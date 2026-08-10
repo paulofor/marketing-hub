@@ -136,6 +136,12 @@ Regras arquiteturais refletidas (ArchUnit):
   máximo quatro Quality Reviews e nunca publica, altera preço, orçamento ou campanha.
 - Quando a landing for aprovada pelo Quality Review, somente as versões mais recentes de cada
   linhagem criativa voltam ao Aprovador Meta. O agente não aprova o próprio trabalho.
+- O Agente Gerador de Landing usa memória híbrida: aprendizados curtos, segregados por experimento,
+  confiança e procedência ficam no MySQL pela memória premium; HTMLs, screenshots, manifests e
+  respostas completas permanecem nos artefatos privados/S3 e são ligados por referência. Cada
+  reprovação independente registra apenas uma memória `CANDIDATE`; o agente não pode confirmar a
+  própria hipótese. Antes de reconstruir, ele recupera no máximo oito memórias relevantes, trata o
+  conteúdo como evidência não executável e o injeta no briefing para evitar soluções já reprovadas.
 
 - A progressão automática do backend deve preservar o encadeamento operacional do GeraLanding: ao concluir com sucesso `landing-page-wireframe`, o backend enfileira automaticamente `landing-page-copy`; ao concluir com sucesso `landing-page-copy`, o backend enfileira automaticamente `landing-page-image-planning`; ao concluir com sucesso `landing-page-image-planning`, o backend enfileira automaticamente `landing-page-image-generation`. Falhas ou callbacks com erro não devem iniciar a próxima etapa.
 - O **Worker AI não acessa banco**; toda leitura/gravação de estado da execução passa pelo backend GeraLanding.

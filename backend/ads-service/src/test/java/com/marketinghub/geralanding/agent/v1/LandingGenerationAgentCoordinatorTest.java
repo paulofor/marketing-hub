@@ -8,6 +8,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agentmemory.service.AgentMemoryService;
+import com.marketinghub.agentmemory.service.retrieveMemory.MemoryResponse;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.geralanding.copy.service.GeraLandingCopyStageService;
@@ -16,6 +18,8 @@ import com.marketinghub.geralanding.presetdesign.service.BackendPresetDesignServ
 import com.marketinghub.geralanding.wireframe.service.BackendWireframeService;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +32,7 @@ class LandingGenerationAgentCoordinatorTest {
   private GeraLandingCopyStageService copyService;
   private BackendImagePlanningService imagePlanningService;
   private BackendPresetDesignService presetDesignService;
+  private AgentMemoryService memoryService;
   private LandingGenerationAgentCoordinator coordinator;
 
   /** Prepara portas isoladas para cada cenário da matriz de convergência. */
@@ -39,6 +44,7 @@ class LandingGenerationAgentCoordinatorTest {
     copyService = mock(GeraLandingCopyStageService.class);
     imagePlanningService = mock(BackendImagePlanningService.class);
     presetDesignService = mock(BackendPresetDesignService.class);
+    memoryService = mock(AgentMemoryService.class);
     coordinator =
         new LandingGenerationAgentCoordinator(
             new ObjectMapper(),
@@ -47,10 +53,41 @@ class LandingGenerationAgentCoordinatorTest {
             wireframeService,
             copyService,
             imagePlanningService,
-            presetDesignService);
+            presetDesignService,
+            memoryService);
     when(executionRepository.findTop20ByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
             88L, "landing-page-quality-review"))
         .thenReturn(List.of());
+    when(memoryService.retrieve("landing-generator", null, "EXPERIMENT", "88", 8))
+        .thenReturn(List.of());
+  }
+
+  /** Deve recuperar a memória persistida e anexá-la ao briefing da reconstrução. */
+  @Test
+  void shouldUsePersistentMemoryInCorrectionBrief() {
+    when(memoryService.retrieve("landing-generator", null, "EXPERIMENT", "88", 8))
+        .thenReturn(
+            List.of(
+                new MemoryResponse(
+                    1L,
+                    "CONFIRMED",
+                    "landing-conversion-quality",
+                    "CTA deve cumprir a promessa do anúncio",
+                    "Reprovação independente",
+                    "s3://bucket/evidence.json",
+                    "review-87",
+                    BigDecimal.ONE,
+                    null,
+                    2,
+                    Instant.parse("2026-08-10T00:00:00Z"))));
+
+    coordinator.continueAfterQualityReview(
+        88L, review("REGENERATE_BEFORE_PUBLICATION", 72, "LANDING_PAGE_WIREFRAME"));
+
+    verify(wireframeService)
+        .registerConvergenceExecution(
+            org.mockito.ArgumentMatchers.eq(88L), contains("CTA deve cumprir a promessa"));
+    verify(memoryService).retrieve("landing-generator", null, "EXPERIMENT", "88", 8);
   }
 
   /** Deve reiniciar pela causa estrutural mais antiga e deixar o backend avançar o restante. */

@@ -20,6 +20,10 @@ publicação ou gasto de mídia.
 | Limite | quatro revisões autônomas | ciclo bloqueado | nenhuma publicação ou nova despesa |
 | Integração | landing aprovada | Aprovador reavalia anúncio → landing | aprovação continua independente |
 | Segurança | qualquer resultado | preço, orçamento, campanha e publicação permanecem inalterados | nenhuma chamada de publicação |
+| Memória | nova reprovação independente | hipótese candidata deduplicada no MySQL com execução e evidência | agente `landing-generator` e escopo exclusivo do experimento |
+| Recuperação | novo ciclo do mesmo experimento | até oito memórias relevantes entram no briefing sem virar instrução confiável | contador de recuperação e referência ao artefato/S3 |
+| Segregação | ciclos de experimentos distintos | nenhuma memória cruza o `scopeId` do experimento | consultas isoladas por agente, tenant, tipo e escopo |
+| Evidência pesada | screenshots, HTML e manifests | conteúdo permanece no storage privado; banco guarda apenas referência pesquisável | checksum, URL/chave S3 e execução de origem |
 
 Uma rodada completa sem defeitos conclui a homologação. Quando uma rodada revelar defeito, a causa
 deve ser corrigida e duas rodadas completas consecutivas sem falha devem ser executadas.

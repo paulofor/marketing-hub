@@ -31,6 +31,7 @@ public class AgentMemoryService {
           "financial-agent",
           "growth-operator",
           "experiment-strategist",
+          "landing-generator",
           "meta-ad-approver");
   private static final String GLOBAL_TENANT = "__GLOBAL__";
   private final PremiumAgentMemoryRepository repository;

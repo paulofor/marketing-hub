@@ -2,6 +2,11 @@ package com.marketinghub.geralanding.agent.v1;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.agentmemory.service.AgentMemoryService;
+import com.marketinghub.agentmemory.service.registerMemory.RegisterMemoryRequest;
+import com.marketinghub.agentmemory.service.retrieveMemory.MemoryResponse;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
@@ -12,6 +17,7 @@ import com.marketinghub.geralanding.qualityreview.service.LandingQualityReviewed
 import com.marketinghub.geralanding.wireframe.service.BackendWireframeService;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -29,6 +35,8 @@ public class LandingGenerationAgentCoordinator {
       LoggerFactory.getLogger(LandingGenerationAgentCoordinator.class);
   private static final String QUALITY_REVIEW_STAGE = "landing-page-quality-review";
   private static final int MAX_QUALITY_REVIEWS = 4;
+  private static final String AGENT_KEY = "landing-generator";
+  private static final String MEMORY_SCOPE = "EXPERIMENT";
 
   private final ObjectMapper objectMapper;
   private final GeraLandingStageExecutionRepository executionRepository;
@@ -37,6 +45,7 @@ public class LandingGenerationAgentCoordinator {
   private final GeraLandingCopyStageService copyService;
   private final BackendImagePlanningService imagePlanningService;
   private final BackendPresetDesignService presetDesignService;
+  private final AgentMemoryService memoryService;
 
   /** Inicializa o coordenador com as portas oficiais do backend para cada executor. */
   public LandingGenerationAgentCoordinator(
@@ -46,7 +55,8 @@ public class LandingGenerationAgentCoordinator {
       BackendWireframeService wireframeService,
       GeraLandingCopyStageService copyService,
       BackendImagePlanningService imagePlanningService,
-      BackendPresetDesignService presetDesignService) {
+      BackendPresetDesignService presetDesignService,
+      AgentMemoryService memoryService) {
     this.objectMapper = objectMapper;
     this.executionRepository = executionRepository;
     this.creativeRepository = creativeRepository;
@@ -54,6 +64,7 @@ public class LandingGenerationAgentCoordinator {
     this.copyService = copyService;
     this.imagePlanningService = imagePlanningService;
     this.presetDesignService = presetDesignService;
+    this.memoryService = memoryService;
   }
 
   /** Interpreta o Quality Review e agenda a correção causal ou uma nova revisão dos anúncios. */
@@ -71,7 +82,9 @@ public class LandingGenerationAgentCoordinator {
       }
       enforceIterationAndProgressGates(experimentId, review);
       Set<String> stages = readRecommendedStages(review);
-      dispatchEarliestRootCause(experimentId, stages, reviewJson);
+      registerLearningCandidate(experimentId, review, stages);
+      String memoryAwareBrief = enrichWithMemory(experimentId, review);
+      dispatchEarliestRootCause(experimentId, stages, memoryAwareBrief);
     } catch (RuntimeException ex) {
       log.error(
           "Falha ao coordenar Agente Gerador de Landing (experimentId={}, reviewLength={})",
@@ -86,6 +99,64 @@ public class LandingGenerationAgentCoordinator {
           ex);
       throw new IllegalArgumentException("Quality Review inválido", ex);
     }
+  }
+
+  /** Registra a causa observada como hipótese, sem permitir que o agente a confirme sozinho. */
+  private void registerLearningCandidate(Long experimentId, JsonNode review, Set<String> stages) {
+    JsonNode issues = review.path("blockingIssues");
+    String content =
+        "Evitar reincidência nas etapas "
+            + String.join(",", stages)
+            + ": "
+            + (issues.isMissingNode() || issues.isEmpty() ? review.toString() : issues.toString());
+    if (content.length() > 4000) {
+      content = content.substring(0, 4000);
+    }
+    memoryService.register(
+        AGENT_KEY,
+        new RegisterMemoryRequest(
+            null,
+            MEMORY_SCOPE,
+            experimentId.toString(),
+            "landing-conversion-quality",
+            content,
+            "Quality Review independente reprovou a versão com score "
+                + review.path("score").asInt(-1),
+            "gera-landing-quality-review/experiment/" + experimentId,
+            latestReviewExecutionId(experimentId),
+            BigDecimal.valueOf(0.70),
+            null));
+  }
+
+  /** Recupera memória curta do experimento e anexa somente contexto tratado como evidência. */
+  private String enrichWithMemory(Long experimentId, JsonNode review) throws Exception {
+    List<MemoryResponse> memories =
+        memoryService.retrieve(AGENT_KEY, null, MEMORY_SCOPE, experimentId.toString(), 8);
+    ObjectNode enriched = review.deepCopy();
+    ArrayNode context = enriched.putArray("agentMemory");
+    for (MemoryResponse memory : memories) {
+      ObjectNode item = context.addObject();
+      item.put("status", memory.status());
+      item.put("learning", memory.content());
+      item.put("evidence", memory.evidence());
+      if (memory.sourceReference() != null) {
+        item.put("artifactReference", memory.sourceReference());
+      }
+    }
+    return objectMapper.writeValueAsString(enriched);
+  }
+
+  /** Resolve uma correlação estável com a execução que originou a aprendizagem. */
+  private String latestReviewExecutionId(Long experimentId) {
+    return executionRepository
+        .findTop20ByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
+            experimentId, QUALITY_REVIEW_STAGE)
+        .stream()
+        .findFirst()
+        .map(
+            value ->
+                value.getIdJob() != null ? value.getIdJob().toString() : "review-" + experimentId)
+        .orElse("review-" + experimentId);
   }
 
   /** Recebe a conclusão persistida da etapa sem acoplar o Quality Review ao coordenador. */

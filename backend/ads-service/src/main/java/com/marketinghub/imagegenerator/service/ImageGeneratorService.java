@@ -9,16 +9,22 @@ import com.marketinghub.imagegenerator.dto.ImageGeneratorRequest;
 import com.marketinghub.imagegenerator.dto.ImageGeneratorResponse;
 import com.marketinghub.imagegenerator.dto.ImageGeneratorResponse.ImageGeneratorFailure;
 import com.marketinghub.imagegenerator.dto.ImageGeneratorResponse.ImageGeneratorResult;
+import com.marketinghub.imagegenerator.dto.LandingImagePromotionRequest;
+import com.marketinghub.imagegenerator.dto.LandingImagePromotionResponse;
 import com.marketinghub.openai.OpenAiProperties;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.imagegenerator.ImageGenerationRequestRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
+import com.marketinghub.storage.AssetStorageService;
+import com.marketinghub.storage.AssetUploadCategory;
+import com.marketinghub.storage.AssetUploadContext;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -32,6 +38,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -57,6 +64,7 @@ public class ImageGeneratorService {
   private final ObjectMapper objectMapper;
   private final String model;
   private final String comparisonImageModel;
+  private final AssetStorageService assetStorageService;
 
   /** Inicializa o serviço com cliente OpenAI autenticado e repositório de auditoria. */
   @Autowired
@@ -72,7 +80,8 @@ public class ImageGeneratorService {
       ObjectMapper objectMapper,
       @Value("${image-generator.openai.model:gpt-5.6}") String model,
       @Value("${image-generator.openai.comparison-image-model:gpt-image-2}")
-          String comparisonImageModel) {
+          String comparisonImageModel,
+      AssetStorageService assetStorageService) {
     this.openAiWebClient = openAiWebClient;
     this.openAiProperties = openAiProperties;
     this.repository = repository;
@@ -84,6 +93,7 @@ public class ImageGeneratorService {
     this.objectMapper = objectMapper;
     this.model = model;
     this.comparisonImageModel = comparisonImageModel;
+    this.assetStorageService = assetStorageService;
   }
 
   /** Inicializa a unidade de geração para testes puros de payload e extração. */
@@ -106,7 +116,112 @@ public class ImageGeneratorService {
         null,
         objectMapper,
         model,
-        comparisonImageModel);
+        comparisonImageModel,
+        null);
+  }
+
+  /** Persiste a imagem escolhida e atualiza somente o rascunho auditável da landing. */
+  @Transactional
+  public LandingImagePromotionResponse promoteToLanding(
+      String jobId, LandingImagePromotionRequest request) {
+    ImageGenerationRequest audit =
+        repository
+            .findByJobIdAndStatus(jobId, "COMPLETED")
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Geração concluída não encontrada."));
+    var experiment =
+        experimentRepository
+            .findById(request.experimentId())
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Experimento não encontrado."));
+    if (experiment.getProduct() == null
+        || !experiment.getProduct().getId().equals(audit.getProductId())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "A geração não pertence ao produto do experimento.");
+    }
+    if (!StringUtils.hasText(experiment.getHtmlGeraLanding())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "A landing ainda não possui HTML em rascunho.");
+    }
+    try {
+      String imageBase64 = extractImageBase64(objectMapper.readTree(audit.getOpenAiResponseBody()));
+      byte[] bytes = Base64.getDecoder().decode(imageBase64);
+      var stored =
+          assetStorageService.storeBytes(
+              bytes,
+              jobId + "." + audit.getOutputFormat(),
+              "image/" + audit.getOutputFormat(),
+              new AssetUploadContext(
+                  AssetUploadCategory.LANDING_PAGE_IMAGE, request.experimentId(), null, null));
+      experiment.setHtmlGeraLanding(
+          replaceLandingImage(
+              experiment.getHtmlGeraLanding(), request.slotId(), stored.publicUrl()));
+      experiment.setLandingPageImageAssets(
+          updateLandingImageManifest(
+              experiment.getLandingPageImageAssets(), request.slotId(), stored.publicUrl(), audit));
+      experimentRepository.save(experiment);
+      return new LandingImagePromotionResponse(
+          request.experimentId(), jobId, request.slotId(), stored.publicUrl());
+    } catch (IOException | IllegalArgumentException ex) {
+      log.error(
+          "Falha ao promover imagem para landing. modulo=image-generator operacao=promoteToLanding jobId={} experimentId={} slotId={}",
+          jobId,
+          request.experimentId(),
+          request.slotId(),
+          ex);
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY, "Não foi possível aplicar a imagem à landing.", ex);
+    }
+  }
+
+  /** Substitui a URL do elemento de imagem identificado sem alterar a estrutura da landing. */
+  String replaceLandingImage(String html, String slotId, String assetUrl) {
+    String marker = "id=\"" + slotId + "\"";
+    int markerIndex = html.indexOf(marker);
+    if (markerIndex < 0) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Slot não encontrado no HTML da landing.");
+    }
+    int tagStart = html.lastIndexOf("<img", markerIndex);
+    int tagEnd = html.indexOf('>', markerIndex);
+    if (tagStart < 0 || tagEnd < 0) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Slot de imagem inválido na landing.");
+    }
+    String tag = html.substring(tagStart, tagEnd + 1);
+    String updatedTag = tag.replaceFirst("src=\"[^\"]*\"", "src=\"" + assetUrl + "\"");
+    if (tag.equals(updatedTag)) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Slot de imagem sem atributo src.");
+    }
+    return html.substring(0, tagStart) + updatedTag + html.substring(tagEnd + 1);
+  }
+
+  /** Atualiza o manifesto da landing com URL e proveniência da geração manual escolhida. */
+  String updateLandingImageManifest(
+      String manifest, String slotId, String assetUrl, ImageGenerationRequest audit)
+      throws IOException {
+    JsonNode root = objectMapper.readTree(manifest);
+    JsonNode images = root == null ? null : root.path("images");
+    if (images == null || !images.isArray()) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Manifesto de imagens da landing inválido.");
+    }
+    for (JsonNode image : images) {
+      if (slotId.equals(image.path("elementId").asText()) && image.isObject()) {
+        var item = (com.fasterxml.jackson.databind.node.ObjectNode) image;
+        item.put("sourceUrl", assetUrl);
+        item.put("resolvedUrl", assetUrl);
+        item.put("sourceGeneratorJobId", audit.getJobId());
+        item.put("sourceModel", audit.getModel());
+        item.put("promotedAt", Instant.now().toString());
+        return objectMapper.writeValueAsString(root);
+      }
+    }
+    throw new ResponseStatusException(
+        HttpStatus.CONFLICT, "Slot não encontrado no manifesto de imagens da landing.");
   }
 
   /**

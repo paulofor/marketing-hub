@@ -151,6 +151,13 @@ A FAQ deve responder objeções que impedem conversão:
 
 ## 6. Quality Gate de Landing
 
+### Promoção auditável de imagens manuais
+
+O Gerador de Imagens pode aplicar uma geração concluída aos slots canônicos `hero-media-img` e
+`prova-img` do HTML em rascunho. A operação deve validar o produto de origem, persistir o asset na
+categoria própria de landing e nunca publicar automaticamente a página ativa. A escolha visual
+continua sujeita ao Quality Review antes da aprovação humana.
+
 Criar uma validação automática após o HTML final para avaliar se a landing está pronta para publicação ou se precisa voltar para etapas anteriores.
 
 Etapa proposta:

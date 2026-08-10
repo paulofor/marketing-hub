@@ -5,6 +5,7 @@ import java.util.Locale;
 /** Categorias reconhecidas para upload de arquivos no storage compartilhado. */
 public enum AssetUploadCategory {
   EXPERIMENT_CREATIVE("experiments/creatives"),
+  LANDING_PAGE_IMAGE("experiments/landing-images"),
   LEAD_PORTAL_FORM("lead-portal/forms"),
   PRODUCT_VIDEO_IMAGE("products/video-images"),
   SALES_VIDEO("sales-videos"),

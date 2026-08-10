@@ -74,4 +74,7 @@ public interface ImageGenerationRequestRepository
       @Param("commercialPlanId") Long commercialPlanId,
       @Param("experimentId") Long experimentId,
       @Param("jobId") String jobId);
+
+  /** Recupera uma geração concluída para promoção auditável dentro do produto de origem. */
+  java.util.Optional<ImageGenerationRequest> findByJobIdAndStatus(String jobId, String status);
 }

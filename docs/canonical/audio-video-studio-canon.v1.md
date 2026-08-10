@@ -193,10 +193,17 @@ checkout e venda.
 
 Wan3.0 permanece candidato `DRAFT` enquanto estiver em preview e sem adapter internacional
 homologado. Seu diferencial a testar é transformar documentos, páginas públicas, imagens, vídeo e
-áudio em uma narrativa de até 30 segundos. Seedance 2.5 via Pippit também permanece `DRAFT` até
-existir contrato de API utilizável pelo executor; exportação anunciada até 4K não deve ser registrada
-como geração nativa 4K sem inspeção do arquivo e confirmação do contrato. Nenhum dos dois pode
-reutilizar silenciosamente o adapter ou identificador do Seedance 2.0 disponível pela Runway.
+áudio em uma narrativa de até 30 segundos.
+
+Seedance 2.5 e Hailuo 3 são modelos do provider operacional `RUNWAY`: o executor deve usar o
+adapter Runway e exclusivamente o segredo `RUNWAY_API_KEY` já governado pelo Marketing Hub. É
+proibido criar, solicitar ou persistir token Pippit, ByteDance ou MiniMax para esses modelos. Cada
+modelo deve preservar seu identificador externo próprio (`seedance2_5` e `hailuo3`), modelo, custo,
+request, response e resultado de QA no job. Compartilhar adapter e credencial não autoriza mapear
+Seedance 2.5 para `seedance2`, nem ativar ou consumir créditos antes de o contrato vigente da Runway
+aceitar o identificador e os gates de preço, licença e qualidade estarem homologados. A exportação
+anunciada até 4K não deve ser registrada como geração nativa 4K sem inspeção do arquivo e confirmação
+do contrato.
 
 O Videomaker pode propor uma homologação comparativa, mas não pode ativar provider, consumir
 créditos, publicar ou promover uma peça sem os gates técnicos, financeiros, jurídicos e comerciais

@@ -166,6 +166,15 @@ describe("AudioVideoStudioPage", () => {
     (axios.patch as any).mockResolvedValue({ data: {} });
   });
 
+  it("explica os gates de curadoria autônoma do Videomaker", async () => {
+    setup();
+
+    expect(
+      await screen.findByText(/curadoria autônoma do videomaker/i),
+    ).toBeTruthy();
+    expect(screen.getByText(/anúncio de exportação 4k/i)).toBeTruthy();
+  });
+
   it("preenche e salva o blueprint cinematografico da MUSA v7", async () => {
     const user = userEvent.setup();
     setup();

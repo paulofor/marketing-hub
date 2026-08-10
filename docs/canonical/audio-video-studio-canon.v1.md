@@ -182,6 +182,26 @@ A tela do Estudio de Audio e Video deve organizar projetos premium pelas seguint
 8. **Revisao / gate comercial:** promessa permitida, clareza, continuidade, audio, prova, CTA, HLS e aderencia ao PDE.
 9. **Aprendizado / metricas:** play, retencao, clique, diagnostico, paywall, checkout e compra para decidir novos cortes.
 
+### Curadoria aprendível do agente Videomaker
+
+O agente Videomaker deve avaliar continuamente os modelos disponíveis e candidatos, sem tratar o
+provider mais novo ou a maior resolução anunciada como vencedor automático. A comparação deve usar
+o mesmo brief e referências, considerando duração nativa, continuidade, áudio, controle temporal,
+modalidades de entrada, resolução efetivamente inspecionada com `ffprobe`, custo por ativo aprovado,
+tempo de geração, licença comercial, falhas, revisão independente e eventos reais de retenção, CTA,
+checkout e venda.
+
+Wan3.0 permanece candidato `DRAFT` enquanto estiver em preview e sem adapter internacional
+homologado. Seu diferencial a testar é transformar documentos, páginas públicas, imagens, vídeo e
+áudio em uma narrativa de até 30 segundos. Seedance 2.5 via Pippit também permanece `DRAFT` até
+existir contrato de API utilizável pelo executor; exportação anunciada até 4K não deve ser registrada
+como geração nativa 4K sem inspeção do arquivo e confirmação do contrato. Nenhum dos dois pode
+reutilizar silenciosamente o adapter ou identificador do Seedance 2.0 disponível pela Runway.
+
+O Videomaker pode propor uma homologação comparativa, mas não pode ativar provider, consumir
+créditos, publicar ou promover uma peça sem os gates técnicos, financeiros, jurídicos e comerciais
+persistidos no backend.
+
 ### Estrategia e aprendizado por experimento
 
 Cada video comercial deve preservar a hipotese, funcao no funil, framework, evidencias cientificas, limites da promessa, plano de medicao, resultados reais, decisao e proxima versao. Pecas complementares usam o mesmo `strategyGroupKey`: o video de campanha qualifica pela dor e o hero do PDE aprofunda mecanismo e jornada, mantendo `message match`. Resultados estimados nunca podem ser registrados como venda; a decisao permitida e `COLLECTING`, `CONTINUE`, `ADJUST` ou `STOP`.

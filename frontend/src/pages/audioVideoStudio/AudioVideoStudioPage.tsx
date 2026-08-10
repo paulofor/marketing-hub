@@ -2065,6 +2065,17 @@ export default function AudioVideoStudioPage() {
                   de pedir uma nova renderizacao.
                 </p>
               </div>
+              <article className="audio-video-studio-page__project-card">
+                <strong>Curadoria autônoma do Videomaker</strong>
+                <p>
+                  O Videomaker compara duração nativa, áudio, referências,
+                  continuidade, resolução realmente entregue, custo e resultado
+                  comercial. Wan3.0 Preview e Seedance 2.5/Pippit ficam somente
+                  como candidatos até API, licença, preço e qualidade serem
+                  homologados; anúncio de exportação 4K não vale como prova de
+                  geração nativa 4K.
+                </p>
+              </article>
               <div className="audio-video-studio-page__provider-grid">
                 {SALES_VIDEO_PROVIDER_OPTIONS.map((option) => {
                   const isSelected =

@@ -192,3 +192,9 @@
 - Gates: adapter preparado; preço, licença comercial e QA permanecem reprovados até evidência oficial e render controlado.
 - Matriz comparativa: usar o mesmo briefing e a mesma imagem-base em Grok Imagine 1.5, Hailuo 3, Gen-4.5 e Veo 3.1 Fast; medir custo por vídeo aprovado, aderência ao briefing, realismo, consistência de personagem/produto, artefatos visuais, retenção potencial nos 3 primeiros segundos e tempo de geração.
 - Critério de ativação: liberar somente se o modelo complementar ou superar os ativos atuais em qualidade/custo, sem falha de licença, contrato ou observabilidade.
+
+# 2026-08-10 — Wan3.0 e Seedance 2.5/Pippit como candidatos governados
+
+- Evidência: Wan3.0 foi anunciado em preview com até 30 segundos, áudio e entradas multimodais, inclusive documentos e páginas; Seedance 2.5 oferece 30 segundos e controles avançados no produto Pippit.
+- Risco confirmado: o ambiente não possui adapter/credencial Alibaba, e Pippit não apresenta contrato de API homologado no Marketing Hub. O “até 4K” é uma capacidade de exportação anunciada pela Pippit, não prova de geração nativa universal.
+- Decisão: cadastrar ambos como `DRAFT`, visíveis na gestão de providers e proibidos para render até adapter, preço, licença e QA. O Videomaker passa a comparar qualidade, custo e resultado real, sem priorizar novidade ou resolução declarada.

@@ -9,6 +9,7 @@ import lombok.Data;
 public class AgentDto {
   private Long id;
   private String name;
+  private String nickname;
   private String agentKey;
   private String status;
   private Integer currentVersion;

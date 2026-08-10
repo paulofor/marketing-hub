@@ -18,6 +18,7 @@ export default function EditAgentPage() {
     if (!agent) return null;
     return {
       name: agent.name,
+      nickname: agent.nickname,
       agentKey: agent.agentKey ?? "",
       status: agent.status ?? "DRAFT",
       ownerName: agent.ownerName ?? "",

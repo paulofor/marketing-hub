@@ -14,8 +14,10 @@ import com.marketinghub.repository.jpa.agent.AgentVersionRepository;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: manter o cadastro atual e o historico versionado dos agentes. */
 @Service
@@ -42,6 +44,7 @@ public class AgentService {
   @Transactional
   public Agent create(SaveAgentRequest request) {
     Agent agent = new Agent();
+    validateNickname(request.getNickname(), null);
     apply(agent, request);
     Agent saved = repository.save(agent);
     saveVersion(saved);
@@ -52,6 +55,7 @@ public class AgentService {
   @Transactional
   public Agent update(Long id, SaveAgentRequest request) {
     Agent agent = repository.findDetailedById(id).orElseThrow();
+    validateNickname(request.getNickname(), id);
     agent.setCurrentVersion(
         (agent.getCurrentVersion() == null ? 0 : agent.getCurrentVersion()) + 1);
     apply(agent, request);
@@ -61,7 +65,6 @@ public class AgentService {
   }
 
   /** Recupera um agente com todos os seus contratos operacionais. */
-  /** Lista os agentes cadastrados em ordem alfabetica. */
   @Transactional(readOnly = true)
   public Agent get(Long id) {
     Agent agent = repository.findDetailedById(id).orElseThrow();
@@ -69,9 +72,10 @@ public class AgentService {
     return agent;
   }
 
+  /** Lista os agentes cadastrados em ordem alfabetica pelo apelido. */
   @Transactional(readOnly = true)
   public List<Agent> list() {
-    List<Agent> agents = repository.findAllByOrderByNameAsc();
+    List<Agent> agents = repository.findAllByOrderByNicknameAsc();
     agents.forEach(this::initialize);
     return agents;
   }
@@ -89,6 +93,7 @@ public class AgentService {
   /** Aplica os campos editaveis e substitui os contratos filhos. */
   private void apply(Agent agent, SaveAgentRequest request) {
     agent.setName(request.getName());
+    agent.setNickname(request.getNickname().trim());
     agent.setAgentKey(request.getAgentKey());
     agent.setStatus(request.getStatus() == null ? "DRAFT" : request.getStatus());
     agent.setOwnerName(request.getOwnerName());
@@ -128,6 +133,7 @@ public class AgentService {
       LinkedHashMap<String, Object> contract = new LinkedHashMap<>();
       contract.put("agentKey", agent.getAgentKey());
       contract.put("name", agent.getName());
+      contract.put("nickname", agent.getNickname());
       contract.put("status", agent.getStatus());
       contract.put("executionMode", agent.getExecutionMode());
       contract.put("businessObjective", agent.getBusinessObjective());
@@ -181,6 +187,26 @@ public class AgentService {
   /** Evita valores nulos nas listas do contrato serializado. */
   private String valueOrEmpty(String value) {
     return value == null ? "" : value;
+  }
+
+  /** Garante um apelido curto e exclusivo antes da persistencia. */
+  private void validateNickname(String nickname, Long currentAgentId) {
+    if (nickname == null || nickname.isBlank()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Apelido do agente é obrigatório.");
+    }
+    String normalized = nickname.trim();
+    if (normalized.length() > 60) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Apelido do agente deve ter no máximo 60 caracteres.");
+    }
+    boolean duplicate =
+        currentAgentId == null
+            ? repository.existsByNicknameIgnoreCase(normalized)
+            : repository.existsByNicknameIgnoreCaseAndIdNot(normalized, currentAgentId);
+    if (duplicate) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Já existe um agente com este apelido.");
+    }
   }
 
   /** Substitui as entradas declaradas pelo agente. */

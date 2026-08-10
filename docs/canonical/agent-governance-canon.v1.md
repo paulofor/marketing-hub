@@ -8,10 +8,14 @@ versionados no módulo executor responsável.
 
 ## Contrato mínimo
 
-Todo agente deve possuir `agentKey` estável, versão incremental, status operacional, responsável,
+Todo agente deve possuir `agentKey` estável, `nickname` curto e exclusivo para comunicação, versão incremental, status operacional, responsável,
 objetivo de negócio, métricas de sucesso, modelo, política de gatilhos, política de autoridade e
 caminhos versionados do prompt e schema. Cada gravação cria uma fotografia imutável em
 `agent_version`.
+
+O `nickname` é obrigatório, possui no máximo 60 caracteres e identifica o agente para pessoas e
+telas. Ele não substitui o nome descritivo nem a `agentKey`, que continua sendo a identidade técnica
+estável das integrações. Cada alteração do apelido deve permanecer registrada na versão do contrato.
 
 O contrato operacional também deve registrar separadamente a responsabilidade do agente, as regras
 que o Orquestrador usa para coordená-lo, as informações obrigatórias de entrada, o que deve ser

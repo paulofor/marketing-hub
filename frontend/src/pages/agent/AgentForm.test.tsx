@@ -9,6 +9,7 @@ describe("contrato operacional do agente", () => {
       <AgentForm
         initialValue={{
           name: "Especialista comercial",
+          nickname: "Closer",
           agentKey: "commercial-specialist",
           status: "DRAFT",
           executionMode: "DECISION_GATE",
@@ -34,10 +35,14 @@ describe("contrato operacional do agente", () => {
     fireEvent.change(screen.getByLabelText(/o que deve oferecer/i), {
       target: { value: "Parecer e próximo teste." },
     });
+    fireEvent.change(screen.getByLabelText(/^apelido/i), {
+      target: { value: "Conselheiro" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /^salvar$/i }));
 
     expect(submit).toHaveBeenCalledWith(
       expect.objectContaining({
+        nickname: "Conselheiro",
         responsibilityContract: "Avaliar viabilidade.",
         orchestratorPolicy: "Bloquear sem evidências.",
         analysisPolicy: "Conversão e risco.",

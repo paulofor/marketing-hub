@@ -7,6 +7,7 @@ import lombok.Data;
 /** Responsabilidade: receber os dados editaveis do cadastro de um agente. */
 public class SaveAgentRequest {
   private String name;
+  private String nickname;
   private String agentKey;
   private String status;
   private String ownerName;

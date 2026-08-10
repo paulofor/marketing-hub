@@ -1,6 +1,7 @@
 package com.marketinghub.agent.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -15,6 +16,7 @@ import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agent.AgentVersionRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: validar a persistência e a auditoria do contrato operacional dos agentes. */
 class AgentServiceTest {
@@ -38,6 +40,7 @@ class AgentServiceTest {
 
     SaveAgentRequest request = new SaveAgentRequest();
     request.setName("Especialista comercial");
+    request.setNickname("Closer");
     request.setAgentKey("commercial-specialist");
     request.setExecutionMode("DECISION_GATE");
     request.setThemeId(7L);
@@ -51,6 +54,7 @@ class AgentServiceTest {
     Agent saved = service.create(request);
 
     assertThat(saved.getResponsibilityContract()).isEqualTo(request.getResponsibilityContract());
+    assertThat(saved.getNickname()).isEqualTo("Closer");
     assertThat(saved.getOrchestratorPolicy()).isEqualTo(request.getOrchestratorPolicy());
     assertThat(saved.getAnalysisPolicy()).isEqualTo(request.getAnalysisPolicy());
     assertThat(saved.getOfferingPolicy()).isEqualTo(request.getOfferingPolicy());
@@ -59,6 +63,30 @@ class AgentServiceTest {
     verify(versionRepository).save(version.capture());
     assertThat(version.getValue().getContractSnapshot())
         .contains(
-            "responsibilityContract", "orchestratorPolicy", "analysisPolicy", "offeringPolicy");
+            "nickname",
+            "Closer",
+            "responsibilityContract",
+            "orchestratorPolicy",
+            "analysisPolicy",
+            "offeringPolicy");
+  }
+
+  /** Impede que dois agentes sejam conhecidos pelo mesmo apelido. */
+  @Test
+  void rejectsDuplicatedNickname() {
+    AgentRepository repository = mock(AgentRepository.class);
+    when(repository.existsByNicknameIgnoreCase("Closer")).thenReturn(true);
+    AgentService service =
+        new AgentService(
+            repository,
+            mock(AgentThemeService.class),
+            mock(AgentVersionRepository.class),
+            new ObjectMapper());
+    SaveAgentRequest request = new SaveAgentRequest();
+    request.setNickname(" Closer ");
+
+    assertThatThrownBy(() -> service.create(request))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Já existe um agente com este apelido");
   }
 }

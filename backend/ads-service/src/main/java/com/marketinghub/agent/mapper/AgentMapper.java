@@ -22,6 +22,7 @@ public class AgentMapper {
     AgentDto dto = new AgentDto();
     dto.setId(agent.getId());
     dto.setName(agent.getName());
+    dto.setNickname(agent.getNickname());
     dto.setAgentKey(agent.getAgentKey());
     dto.setStatus(agent.getStatus());
     dto.setCurrentVersion(agent.getCurrentVersion());

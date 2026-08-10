@@ -31,6 +31,9 @@ public class Agent {
   @Column(nullable = false)
   private String name;
 
+  @Column(name = "nickname", nullable = false, unique = true, length = 60)
+  private String nickname;
+
   @Column(name = "agent_key", unique = true, length = 100)
   private String agentKey;
 

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.agentmemory.service.AgentMemoryService;
+import com.marketinghub.agentmemory.service.registerFeedback.RegisterMemoryFeedbackRequest;
 import com.marketinghub.agentmemory.service.registerMemory.RegisterMemoryRequest;
 import com.marketinghub.agentmemory.service.retrieveMemory.MemoryResponse;
 import com.marketinghub.creative.Creative;
@@ -97,6 +98,69 @@ public class LandingGenerationAgentCoordinator {
           ex);
       throw new IllegalArgumentException("Quality Review inválido", ex);
     }
+  }
+
+  /** Aplica recompensa somente a partir do Quality Review independente posterior à intervenção. */
+  @Transactional
+  public void learnFromIndependentQualityReview(Long experimentId, String reviewJson) {
+    try {
+      JsonNode review = objectMapper.readTree(reviewJson);
+      int currentScore = review.path("score").asInt(-1);
+      boolean approved =
+          "APPROVE_FOR_PUBLICATION".equals(review.path("approvalRecommendation").asText());
+      if (currentScore < 0) {
+        return;
+      }
+      for (MemoryResponse memory :
+          memoryService.retrieve(AGENT_KEY, null, MEMORY_SCOPE, experimentId.toString(), 12)) {
+        if (!"CANDIDATE".equals(memory.status())) {
+          continue;
+        }
+        int baselineScore = scoreFromEvidence(memory.evidence());
+        if (baselineScore < 0) {
+          continue;
+        }
+        int delta = currentScore - baselineScore;
+        String outcome =
+            approved || delta >= 5 ? "CONFIRMED" : delta <= 0 ? "CONTRADICTED" : "INCONCLUSIVE";
+        memoryService.feedback(
+            AGENT_KEY,
+            memory.id(),
+            new RegisterMemoryFeedbackRequest(
+                outcome,
+                "Quality Review independente posterior: score "
+                    + currentScore
+                    + ", baseline "
+                    + baselineScore
+                    + ", delta "
+                    + delta
+                    + ", aprovação "
+                    + approved,
+                "gera-landing-quality-review/experiment/" + experimentId));
+      }
+    } catch (RuntimeException ex) {
+      log.error(
+          "Falha ao aplicar aprendizado por reforço da landing (experimentId={})",
+          experimentId,
+          ex);
+      throw ex;
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao interpretar recompensa independente da landing (experimentId={})",
+          experimentId,
+          ex);
+      throw new IllegalArgumentException("Quality Review inválido para aprendizado", ex);
+    }
+  }
+
+  /** Extrai o score de referência persistido na evidência da memória candidata. */
+  private int scoreFromEvidence(String evidence) {
+    if (evidence == null) {
+      return -1;
+    }
+    java.util.regex.Matcher matcher =
+        java.util.regex.Pattern.compile("score\\s+(\\d{1,3})").matcher(evidence);
+    return matcher.find() ? Integer.parseInt(matcher.group(1)) : -1;
   }
 
   /** Registra a causa observada como hipótese, sem permitir que o agente a confirme sozinho. */

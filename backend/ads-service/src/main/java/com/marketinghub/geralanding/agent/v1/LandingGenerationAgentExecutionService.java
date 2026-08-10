@@ -49,6 +49,7 @@ public class LandingGenerationAgentExecutionService {
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
   public void onQualityReviewCompleted(LandingQualityReviewedEvent event) {
     try {
+      coordinator.learnFromIndependentQualityReview(event.experimentId(), event.reviewJson());
       Map<String, Object> review =
           objectMapper.readValue(event.reviewJson(), new TypeReference<>() {});
       if ("APPROVE_FOR_PUBLICATION".equals(review.get("approvalRecommendation"))) {

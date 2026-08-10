@@ -28,6 +28,14 @@ O agente pode corrigir somente rascunhos. Ele não aprova o próprio trabalho, p
 - idempotência, limite de quatro revisões, bloqueio de repetição sem progresso e revisão independente;
 - proteção contra prompt injection, exfiltração e ampliação de autoridade.
 
+## Modelagem e aprendizado por reforço
+
+O agente pode pesquisar outras landings para abstrair padrões transferíveis de hierarquia, mecanismo, prova, redução de fricção e CTA. Deve preservar fonte, aplicabilidade e evidência de não cópia; é proibido reproduzir copy, marca, identidade visual, layout distintivo ou ativo de terceiros.
+
+Cada correção nasce como hipótese `CANDIDATE`, vinculada ao score independente anterior. O Quality Review posterior aplica a recompensa: aprovação ou ganho de ao menos 5 pontos confirma a hipótese; ausência de evolução a contradiz; ganho intermediário permanece inconclusivo. O agente nunca recompensa ou promove a própria memória. Clique no CTA, checkout e venda são recompensas tardias válidas somente quando provenientes de eventos reais e segregados; geração, ciclos e impacto estimado não contam como resultado.
+
+Memórias confirmadas podem orientar novas versões; candidatas exigem cautela; contraditas e retiradas não podem ser reutilizadas. Evidências estruturadas ficam no MySQL e artefatos grandes podem ficar no S3 privado com checksum e referência auditável.
+
 ## Métricas e rollout
 
 A qualidade é medida por aprovação independente, reincidência, tempo e custo por landing aprovada, clique no CTA, início de checkout e vendas posteriores. Texto produzido, ciclos e impacto estimado não contam como resultado. A versão nasce em `TEST`; somente resultados reais e auditáveis autorizam futura ativação.

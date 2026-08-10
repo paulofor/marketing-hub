@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agentmemory.service.AgentMemoryService;
+import com.marketinghub.agentmemory.service.registerFeedback.RegisterMemoryFeedbackRequest;
 import com.marketinghub.agentmemory.service.retrieveMemory.MemoryResponse;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
@@ -138,6 +139,38 @@ class LandingGenerationAgentCoordinatorTest {
         () ->
             coordinator.continueAfterQualityReview(
                 88L, review("REGENERATE_BEFORE_PUBLICATION", 60)));
+  }
+
+  /** Deve confirmar uma hipótese somente quando a revisão independente posterior evoluir. */
+  @Test
+  void shouldRewardLearningFromIndependentQualityReview() {
+    when(memoryService.retrieve("landing-generator", null, "EXPERIMENT", "88", 12))
+        .thenReturn(
+            List.of(
+                new MemoryResponse(
+                    9L,
+                    "CANDIDATE",
+                    "landing-conversion-quality",
+                    "Reduzir fricção no CTA",
+                    "Quality Review independente reprovou a versão com score 70",
+                    null,
+                    "review-88",
+                    BigDecimal.valueOf(0.7),
+                    null,
+                    0,
+                    Instant.parse("2026-08-10T00:00:00Z"))));
+
+    coordinator.learnFromIndependentQualityReview(
+        88L, review("REGENERATE_BEFORE_PUBLICATION", 77, "LANDING_PAGE_COPY"));
+
+    verify(memoryService)
+        .feedback(
+            org.mockito.ArgumentMatchers.eq("landing-generator"),
+            org.mockito.ArgumentMatchers.eq(9L),
+            org.mockito.ArgumentMatchers.argThat(
+                (RegisterMemoryFeedbackRequest request) ->
+                    "CONFIRMED".equals(request.outcome())
+                        && request.evidence().contains("delta 7")));
   }
 
   /** Monta uma resposta mínima compatível com o contrato do Quality Review. */

@@ -67,7 +67,7 @@ function formatPipelineStageModel(stageModel?: GeraLandingStageModel) {
   );
 }
 
-const experimentDetailTabs = [
+export const experimentDetailTabs = [
   { value: "construction", label: "Construção", manualOnly: true },
   { value: "funnel", label: "Funil de vendas" },
   { value: "history", label: "Histórico" },
@@ -77,6 +77,7 @@ const experimentDetailTabs = [
   { value: "creatives", label: "Criativos" },
   { value: "landing", label: "Landing" },
   { value: "video", label: "Vídeo" },
+  { value: "gera-landing", label: "GeraLanding" },
   { value: "content-structure", label: "Estrutura de conteúdo" },
   { value: "publico", label: "Público" },
 ] as const;

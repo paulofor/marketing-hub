@@ -1920,6 +1920,27 @@ export default function CommercialPlanningPage() {
                       }
                     />
                   </div>
+                  <div className="col-md-4">
+                    <label className="form-label" htmlFor="planning-max-budget">
+                      Teto total do plano (R$)
+                    </label>
+                    <input
+                      id="planning-max-budget"
+                      className="form-control"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={planDraft.maxBudget ?? ""}
+                      onChange={(event) =>
+                        updatePlanDraft(
+                          "maxBudget",
+                          event.target.value === ""
+                            ? null
+                            : Number(event.target.value),
+                        )
+                      }
+                    />
+                  </div>
                   {(
                     [
                       ["offerPriceBrl", "Preço da oferta (R$)", "0.01"],

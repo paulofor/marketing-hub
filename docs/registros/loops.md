@@ -558,6 +558,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - UI exibindo evidências visuais usadas na decisão.
 - **Regra preventiva**:
   - nenhuma decisão de Quality Review deve ser analisada sem conferir qual screenshot/hash foi avaliado.
+- **Recalibração em 2026-08-11:** 44 revisões produtivas mostraram teto de score 88 e apenas uma aprovação histórica, com score 86, enquanto avaliações recentes entre 84 e 88 ainda misturavam bloqueios reais com refinamentos opcionais. O gate deixou de depender do corte isolado de 90 e passou a exigir score mínimo 85, piso 8/10 por dimensão, prontidão comercial, especificidade e ausência de bloqueios; melhorias opcionais foram separadas em `improvementOpportunities`. O validator determinístico impede aprovação inconsistente.
 
 ## LOOP-LANDING-ANALYTICS-FUNNEL — Analytics, funil e submissão
 

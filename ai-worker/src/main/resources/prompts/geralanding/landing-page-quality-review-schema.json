@@ -82,6 +82,13 @@
         "type": "string"
       }
     },
+    "improvementOpportunities": {
+      "type": "array",
+      "description": "Otimizações opcionais que podem elevar conversão ou acabamento, mas não impedem publicação segura.",
+      "items": {
+        "type": "string"
+      }
+    },
     "recommendedRegeneration": {
       "type": "array",
       "description": "Etapas que devem ser reexecutadas para atacar a causa-raiz dos bloqueios encontrados.",
@@ -110,6 +117,7 @@
     "commercialReadiness",
     "criteriaScores",
     "blockingIssues",
+    "improvementOpportunities",
     "recommendedRegeneration",
     "approvalRecommendation"
   ]

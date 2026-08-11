@@ -199,7 +199,6 @@ public class OpportunityDossierService {
                 null,
                 null,
                 null,
-                null,
                 1,
                 0,
                 1,

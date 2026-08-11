@@ -1,0 +1,31 @@
+openapi: 3.0.3
+info:
+  title: Ciclos de vídeo de Apolo e Plutus
+  version: 1.0.0
+paths:
+  /api/sales-videos/autonomy/v1/cycles:
+    post:
+      summary: Solicita um ciclo de produção ainda sem autorização de consumo
+      responses:
+        '201': {description: Ciclo enviado a Plutus}
+  /api/sales-videos/projects/{projectId}/autonomy/v1/cycles:
+    get:
+      summary: Lista os ciclos auditáveis do projeto
+      parameters:
+        - {name: projectId, in: path, required: true, schema: {type: integer, format: int64}}
+      responses:
+        '200': {description: Histórico do projeto}
+  /api/internal/sales-videos/autonomy/v1/financial-review/pending:
+    get:
+      summary: Lista a caixa financeira pendente de Plutus
+      responses:
+        '200': {description: Ciclos bloqueados aguardando decisão}
+  /api/internal/sales-videos/autonomy/v1/cycles/{cycleId}/financial-decision:
+    post:
+      summary: Registra decisão de Plutus e enfileira Apolo apenas quando aprovada
+      parameters:
+        - {name: cycleId, in: path, required: true, schema: {type: integer, format: int64}}
+      responses:
+        '200': {description: Ciclo decidido}
+        '403': {description: Identidade diferente de Plutus}
+        '409': {description: Ciclo já decidido}

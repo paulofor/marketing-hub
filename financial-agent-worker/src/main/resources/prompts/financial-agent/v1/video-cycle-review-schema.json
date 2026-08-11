@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "decision": {"type": "string", "enum": ["APPROVED", "REJECTED"]},
+    "reason": {"type": "string", "minLength": 10}
+  },
+  "required": ["decision", "reason"]
+}

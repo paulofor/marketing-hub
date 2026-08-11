@@ -1,5 +1,6 @@
 package com.marketinghub.financialagentworker;
 
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +14,7 @@ public class FinancialAgentBackendClient {
   private static final Logger log = LoggerFactory.getLogger(FinancialAgentBackendClient.class);
   private final RestClient client;
 
+  /** Configura o cliente exclusivamente contra os contratos do backend principal. */
   public FinancialAgentBackendClient(FinancialAgentProperties properties) {
     client = RestClient.builder().baseUrl(properties.getBackendUrl()).build();
   }
@@ -30,6 +32,27 @@ public class FinancialAgentBackendClient {
       log.error("Falha no financial-agent-worker ao reservar conciliacao", ex);
       throw ex;
     }
+  }
+
+  /** Consulta o ciclo de vídeo mais antigo que ainda aguarda Plutus. */
+  public VideoProductionCycleReview pendingVideoCycle() {
+    List<VideoProductionCycleReview> cycles =
+        client
+            .get()
+            .uri("/api/internal/sales-videos/autonomy/v1/financial-review/pending")
+            .retrieve()
+            .body(new org.springframework.core.ParameterizedTypeReference<>() {});
+    return cycles == null || cycles.isEmpty() ? null : cycles.getFirst();
+  }
+
+  /** Persiste a decisão de Plutus sem chamar diretamente Apolo ou qualquer provider. */
+  public void decideVideoCycle(Long cycleId, Map<String, Object> decision) {
+    client
+        .post()
+        .uri("/api/internal/sales-videos/autonomy/v1/cycles/{cycleId}/financial-decision", cycleId)
+        .body(decision)
+        .retrieve()
+        .toBodilessEntity();
   }
 
   /** Solicita ao backend a conciliacao diaria idempotente do plano configurado. */

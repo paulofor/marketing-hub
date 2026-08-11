@@ -159,12 +159,20 @@ export default function AgentListPage() {
                   <td>{agent.outputs?.length ?? 0}</td>
                   <td>{agent.internalFunctions?.length ?? 0}</td>
                   <td className="text-end">
-                    <button
-                      className="btn btn-sm btn-outline-primary"
-                      onClick={() => navigate(`/agents/${agent.id}/edit`)}
-                    >
-                      Editar
-                    </button>
+                    <div className="d-flex justify-content-end gap-2">
+                      <button
+                        className="btn btn-sm btn-primary"
+                        onClick={() => navigate(`/agents/${agent.id}`)}
+                      >
+                        Abrir mesa
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => navigate(`/agents/${agent.id}/edit`)}
+                      >
+                        Editar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -38,6 +38,20 @@ incrementa a versão e preserva uma fotografia auditável. As regras do Orquestr
 acionamento, pré-condições, prioridade, bloqueios e encaminhamento humano; a execução continua
 determinística no backend e os módulos executores apenas consomem pendências e reportam resultados.
 
+## Mesa de trabalho e caixa de entrada
+
+Cada agente cadastrado possui uma mesa própria em `/agents/{id}`. A mesa apresenta sua identidade,
+caixa de entrada, remetente, data, prioridade, estado e resultado esperado de cada solicitação.
+Pessoas abrem tarefas pela interface administrativa; agentes delegam pelo contrato comum
+`POST /api/internal/agent-tasks/v1`, informando obrigatoriamente a própria `agentKey` e a do
+destinatário. O backend valida ambas no catálogo e preserva a autoria.
+
+Os estados canônicos são `PENDING`, `IN_PROGRESS`, `BLOCKED`, `COMPLETED` e `CANCELLED`. Uma tarefa
+não concede novas permissões ao destinatário: gasto, publicação, preço, campanha, comunicação em
+massa e aprovação continuam sujeitos aos gates do agente. A caixa de entrada registra intenção e
+andamento; executores continuam consumindo seus endpoints `pending` específicos, coordenados pelo
+backend, até que exista um orquestrador canônico que materialize a tarefa na fila operacional.
+
 ## Melhorias sugeridas pelos agentes
 
 Todo agente cadastrado pode sugerir uma melhoria do Marketing Hub enquanto realiza uma tarefa. A

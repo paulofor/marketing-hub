@@ -416,6 +416,9 @@ public class ModuleLogService {
             case "customer-agent-worker" -> properties.logs().customerAgentWorkerPath();
             case "financial-agent-worker" -> properties.logs().financialAgentWorkerPath();
             case "experiment-strategist-worker" -> properties.logs().experimentStrategistWorkerPath();
+            case "product-discovery-worker" -> System.getenv().getOrDefault(
+                    "MCP_LOG_PRODUCT_DISCOVERY_WORKER_PATH",
+                    "http://191.252.120.96:18081/ops-product-discovery-observability-v1/logfile");
             case "meta-ad-approver-worker" -> properties.logs().metaAdApproverWorkerPath();
             case "landing-generator-agent-worker" -> System.getenv().getOrDefault(
                     "MCP_LOG_LANDING_GENERATOR_AGENT_WORKER_PATH",
@@ -438,12 +441,13 @@ public class ModuleLogService {
                     "oprm-coletor-receita", "ops-monitor-worker", "pde-platform-backend",
                     "video-management-service", "customer-agent-worker", "financial-agent-worker",
                     "experiment-strategist-worker", "meta-ad-approver-worker",
-                    "landing-generator-agent-worker" -> normalized;
+                    "landing-generator-agent-worker", "product-discovery-worker" -> normalized;
             default -> throw new IllegalArgumentException("module must be one of: backend, ai-worker, lead-portal, "
                     + "facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, "
                     + "mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, "
                     + "pde-platform-backend, video-management-service, customer-agent-worker, financial-agent-worker, "
-                    + "experiment-strategist-worker, meta-ad-approver-worker, landing-generator-agent-worker");
+                    + "experiment-strategist-worker, meta-ad-approver-worker, landing-generator-agent-worker, "
+                    + "product-discovery-worker");
         };
     }
 

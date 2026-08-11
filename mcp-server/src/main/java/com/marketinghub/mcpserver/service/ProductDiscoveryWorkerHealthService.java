@@ -8,15 +8,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
- * Consulta o health operacional do Product Discovery Worker por Docker com comando restrito.
+ * Consulta o health operacional do Product Discovery Worker no host real do executor.
  */
 @Service
 public class ProductDiscoveryWorkerHealthService {
@@ -26,6 +27,7 @@ public class ProductDiscoveryWorkerHealthService {
 
     private final McpProperties properties;
     private final ObjectMapper objectMapper;
+    private final HttpClient httpClient;
 
     /**
      * Inicializa o serviço com a configuração do container e parser JSON.
@@ -33,10 +35,11 @@ public class ProductDiscoveryWorkerHealthService {
     public ProductDiscoveryWorkerHealthService(McpProperties properties, ObjectMapper objectMapper) {
         this.properties = properties;
         this.objectMapper = objectMapper;
+        this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
     }
 
     /**
-     * Executa a leitura do endpoint de health dentro do container operacional do worker.
+     * Executa a leitura HTTP do endpoint de health publicado pelo worker.
      */
     public Map<String, Object> readHealth() {
         McpProperties.ProductDiscoveryWorker config = properties.productDiscoveryWorker();
@@ -44,8 +47,17 @@ public class ProductDiscoveryWorkerHealthService {
             throw new IllegalArgumentException("product discovery worker health is disabled");
         }
 
-        String output = executeDockerHealthCheck(config);
         try {
+            HttpRequest request = HttpRequest.newBuilder(URI.create(config.healthUrl()))
+                    .timeout(Duration.ofSeconds(config.timeoutSeconds()))
+                    .GET()
+                    .build();
+            HttpResponse<String> httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (httpResponse.statusCode() < 200 || httpResponse.statusCode() >= 300) {
+                throw new IllegalArgumentException(
+                        "product discovery worker health failed: HTTP " + httpResponse.statusCode());
+            }
+            String output = httpResponse.body();
             Map<String, Object> payload = objectMapper.readValue(output, MAP_TYPE);
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("container", config.container());
@@ -54,59 +66,11 @@ public class ProductDiscoveryWorkerHealthService {
             response.put("payload", payload);
             return response;
         } catch (IOException ex) {
-            logger.error("mcp-server readHealth failed to parse product-discovery-worker health payload", ex);
-            throw new IllegalArgumentException("invalid product discovery worker health payload: " + ex.getMessage());
-        }
-    }
-
-    /**
-     * Chama o Node do próprio container para consultar o endpoint HTTP local do worker.
-     */
-    private String executeDockerHealthCheck(McpProperties.ProductDiscoveryWorker config) {
-        String script = """
-                fetch(process.argv[1])
-                  .then(async (response) => {
-                    const body = await response.text();
-                    process.stdout.write(body);
-                    if (!response.ok) process.exit(2);
-                  })
-                  .catch((error) => {
-                    console.error(error.message);
-                    process.exit(1);
-                  });
-                """;
-        List<String> command = List.of(
-                config.dockerCommand(),
-                "exec",
-                config.container(),
-                "node",
-                "-e",
-                script,
-                config.healthUrl()
-        );
-        ProcessBuilder processBuilder = new ProcessBuilder(command);
-        processBuilder.redirectErrorStream(true);
-        try {
-            Process process = processBuilder.start();
-            boolean finished = process.waitFor(config.timeoutSeconds(), TimeUnit.SECONDS);
-            if (!finished) {
-                process.destroyForcibly();
-                throw new IllegalArgumentException("product discovery worker health timed out after "
-                        + Duration.ofSeconds(config.timeoutSeconds()).toSeconds() + " seconds");
-            }
-
-            String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            if (process.exitValue() != 0) {
-                throw new IllegalArgumentException("product discovery worker health failed: " + output.strip());
-            }
-            return output;
-        } catch (IOException ex) {
-            logger.error("mcp-server executeDockerHealthCheck failed to start docker command for container={}",
-                    config.container(), ex);
-            throw new IllegalArgumentException("failed to execute product discovery worker health: " + ex.getMessage());
+            logger.error("mcp-server readHealth failed url={}", config.healthUrl(), ex);
+            throw new IllegalArgumentException("failed to read product discovery worker health: " + ex.getMessage());
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
-            logger.error("mcp-server executeDockerHealthCheck interrupted for container={}", config.container(), ex);
+            logger.error("mcp-server readHealth interrupted url={}", config.healthUrl(), ex);
             throw new IllegalArgumentException("product discovery worker health interrupted");
         }
     }

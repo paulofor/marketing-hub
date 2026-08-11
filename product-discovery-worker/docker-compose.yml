@@ -1,5 +1,6 @@
 services:
   product-discovery-worker:
+    container_name: product-discovery-worker
     build: .
     environment:
       BACKEND_BASE_URL: ${BACKEND_BASE_URL:-http://191.252.181.168}
@@ -18,5 +19,5 @@ services:
       TAVILY_API_KEY: ${TAVILY_API_KEY:-}
       SERPAPI_API_KEY: ${SERPAPI_API_KEY:-}
     ports:
-      - "127.0.0.1:${PRODUCT_DISCOVERY_HEALTH_PUBLISHED_PORT:-18081}:8080"
+      - "${PRODUCT_DISCOVERY_HEALTH_BIND_ADDRESS:-0.0.0.0}:${PRODUCT_DISCOVERY_HEALTH_PUBLISHED_PORT:-18081}:8080"
     restart: unless-stopped

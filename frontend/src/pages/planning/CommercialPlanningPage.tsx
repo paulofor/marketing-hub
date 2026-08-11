@@ -44,6 +44,13 @@ const emptyCommercialPlan: SaveCommercialPlanPayload = {
   maxBudget: null,
   targetRevenue: null,
   operationalRevenueTarget: null,
+  offerPriceBrl: null,
+  variableCostPerSaleBrl: null,
+  expectedMonthlyTraffic: null,
+  expectedConversionRatePercent: null,
+  expectedCacBrl: null,
+  expectedRefundRatePercent: null,
+  fixedOperationalCostBrl: null,
   experimentsToCreate: 1,
   experimentsToPublish: 0,
   productsToValidate: 1,
@@ -81,6 +88,13 @@ const augustRevenuePlan: SaveCommercialPlanPayload = {
   maxBudget: 400,
   targetRevenue: 67,
   operationalRevenueTarget: 335,
+  offerPriceBrl: 67,
+  variableCostPerSaleBrl: null,
+  expectedMonthlyTraffic: null,
+  expectedConversionRatePercent: null,
+  expectedCacBrl: null,
+  expectedRefundRatePercent: null,
+  fixedOperationalCostBrl: null,
   experimentsToCreate: 1,
   experimentsToPublish: 1,
   productsToValidate: 1,
@@ -123,6 +137,13 @@ const julyPlanningForm: SaveCommercialPlanPayload = {
   maxBudget: 300,
   targetRevenue: 27,
   operationalRevenueTarget: 81,
+  offerPriceBrl: 19.9,
+  variableCostPerSaleBrl: null,
+  expectedMonthlyTraffic: null,
+  expectedConversionRatePercent: null,
+  expectedCacBrl: null,
+  expectedRefundRatePercent: null,
+  fixedOperationalCostBrl: null,
   experimentsToCreate: 2,
   experimentsToPublish: 3,
   productsToValidate: 1,
@@ -169,6 +190,13 @@ function planToPayload(plan: CommercialPlan): SaveCommercialPlanPayload {
     maxBudget: plan.maxBudget,
     targetRevenue: plan.targetRevenue,
     operationalRevenueTarget: plan.operationalRevenueTarget,
+    offerPriceBrl: plan.offerPriceBrl,
+    variableCostPerSaleBrl: plan.variableCostPerSaleBrl,
+    expectedMonthlyTraffic: plan.expectedMonthlyTraffic,
+    expectedConversionRatePercent: plan.expectedConversionRatePercent,
+    expectedCacBrl: plan.expectedCacBrl,
+    expectedRefundRatePercent: plan.expectedRefundRatePercent,
+    fixedOperationalCostBrl: plan.fixedOperationalCostBrl,
     experimentsToCreate: plan.experimentsToCreate,
     experimentsToPublish: plan.experimentsToPublish,
     productsToValidate: plan.productsToValidate,
@@ -382,6 +410,14 @@ function fallbackMonthPlan(): CommercialPlan {
     maxBudget: julyPlanningForm.maxBudget,
     targetRevenue: julyPlanningForm.targetRevenue,
     operationalRevenueTarget: julyPlanningForm.operationalRevenueTarget,
+    offerPriceBrl: julyPlanningForm.offerPriceBrl,
+    variableCostPerSaleBrl: julyPlanningForm.variableCostPerSaleBrl,
+    expectedMonthlyTraffic: julyPlanningForm.expectedMonthlyTraffic,
+    expectedConversionRatePercent:
+      julyPlanningForm.expectedConversionRatePercent,
+    expectedCacBrl: julyPlanningForm.expectedCacBrl,
+    expectedRefundRatePercent: julyPlanningForm.expectedRefundRatePercent,
+    fixedOperationalCostBrl: julyPlanningForm.fixedOperationalCostBrl,
     experimentsToCreate: julyPlanningForm.experimentsToCreate,
     experimentsToPublish: julyPlanningForm.experimentsToPublish,
     actualCampaignCost: null,
@@ -1645,6 +1681,56 @@ export default function CommercialPlanningPage() {
                   }
                 />
               </div>
+              {(
+                [
+                  ["offerPriceBrl", "Preço da oferta (R$)", "0.01"],
+                  [
+                    "variableCostPerSaleBrl",
+                    "Custo variável por venda (R$)",
+                    "0.01",
+                  ],
+                  ["expectedMonthlyTraffic", "Tráfego mensal esperado", "1"],
+                  [
+                    "expectedConversionRatePercent",
+                    "Conversão esperada (%)",
+                    "0.01",
+                  ],
+                  ["expectedCacBrl", "CAC esperado (R$)", "0.01"],
+                  [
+                    "expectedRefundRatePercent",
+                    "Reembolso esperado (%)",
+                    "0.01",
+                  ],
+                  [
+                    "fixedOperationalCostBrl",
+                    "Custo operacional fixo (R$)",
+                    "0.01",
+                  ],
+                ] as const
+              ).map(([field, label, step]) => (
+                <div className="col-md-4" key={field}>
+                  <label className="form-label" htmlFor={`new-plan-${field}`}>
+                    {label}
+                  </label>
+                  <input
+                    id={`new-plan-${field}`}
+                    className="form-control"
+                    type="number"
+                    min="0"
+                    max={field.includes("Percent") ? "100" : undefined}
+                    step={step}
+                    value={newPlanDraft[field] ?? ""}
+                    onChange={(event) =>
+                      updateNewPlanDraft(
+                        field,
+                        event.target.value === ""
+                          ? null
+                          : Number(event.target.value),
+                      )
+                    }
+                  />
+                </div>
+              ))}
             </div>
             {(
               [
@@ -1834,6 +1920,63 @@ export default function CommercialPlanningPage() {
                       }
                     />
                   </div>
+                  {(
+                    [
+                      ["offerPriceBrl", "Preço da oferta (R$)", "0.01"],
+                      [
+                        "variableCostPerSaleBrl",
+                        "Custo variável por venda (R$)",
+                        "0.01",
+                      ],
+                      [
+                        "expectedMonthlyTraffic",
+                        "Tráfego mensal esperado",
+                        "1",
+                      ],
+                      [
+                        "expectedConversionRatePercent",
+                        "Conversão esperada (%)",
+                        "0.01",
+                      ],
+                      ["expectedCacBrl", "CAC esperado (R$)", "0.01"],
+                      [
+                        "expectedRefundRatePercent",
+                        "Reembolso esperado (%)",
+                        "0.01",
+                      ],
+                      [
+                        "fixedOperationalCostBrl",
+                        "Custo operacional fixo (R$)",
+                        "0.01",
+                      ],
+                    ] as const
+                  ).map(([field, label, step]) => (
+                    <div className="col-md-4" key={field}>
+                      <label
+                        className="form-label"
+                        htmlFor={`planning-${field}`}
+                      >
+                        {label}
+                      </label>
+                      <input
+                        id={`planning-${field}`}
+                        className="form-control"
+                        type="number"
+                        min="0"
+                        max={field.includes("Percent") ? "100" : undefined}
+                        step={step}
+                        value={planDraft[field] ?? ""}
+                        onChange={(event) =>
+                          updatePlanDraft(
+                            field,
+                            event.target.value === ""
+                              ? null
+                              : Number(event.target.value),
+                          )
+                        }
+                      />
+                    </div>
+                  ))}
                 </div>
                 <div
                   className="row g-3"

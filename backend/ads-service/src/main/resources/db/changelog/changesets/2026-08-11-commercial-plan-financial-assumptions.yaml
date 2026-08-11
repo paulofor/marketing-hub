@@ -1,0 +1,42 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-08-11-commercial-plan-financial-assumptions.yaml
+  - changeSet:
+      id: 2026-08-11-commercial-plan-financial-assumptions
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: commercial_plan
+        - not:
+            columnExists:
+              tableName: commercial_plan
+              columnName: offer_price_brl
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE commercial_plan
+                ADD COLUMN offer_price_brl DECIMAL(12,2) NULL AFTER operational_revenue_target,
+                ADD COLUMN variable_cost_per_sale_brl DECIMAL(12,2) NULL AFTER offer_price_brl,
+                ADD COLUMN expected_monthly_traffic INT NULL AFTER variable_cost_per_sale_brl,
+                ADD COLUMN expected_conversion_rate_percent DECIMAL(7,4) NULL AFTER expected_monthly_traffic,
+                ADD COLUMN expected_cac_brl DECIMAL(12,2) NULL AFTER expected_conversion_rate_percent,
+                ADD COLUMN expected_refund_rate_percent DECIMAL(7,4) NULL AFTER expected_cac_brl,
+                ADD COLUMN fixed_operational_cost_brl DECIMAL(12,2) NULL AFTER expected_refund_rate_percent;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE commercial_plan
+                DROP COLUMN fixed_operational_cost_brl,
+                DROP COLUMN expected_refund_rate_percent,
+                DROP COLUMN expected_cac_brl,
+                DROP COLUMN expected_conversion_rate_percent,
+                DROP COLUMN expected_monthly_traffic,
+                DROP COLUMN variable_cost_per_sale_brl,
+                DROP COLUMN offer_price_brl;

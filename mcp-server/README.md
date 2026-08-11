@@ -21,7 +21,7 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 - `pde_db_list_tables`: lista as tabelas do schema efetivo do PDE em produção.
 - `pde_db_read_table`: lê dados de uma tabela do schema efetivo do PDE com paginação (`table`, `limit`, `offset`).
 - `pde_db_query`: executa SQL de leitura (`SELECT`/`WITH`) no schema efetivo do PDE.
-- `java_module_logs`: retorna logs do Spring Boot com filtros opcionais por texto/intervalo e paginação (`lines`, `contains`, `from`, `to`, `offset`, `cursor`) para os módulos Java, incluindo `meta-ad-approver-worker` e `landing-generator-agent-worker`.
+- `java_module_logs`: retorna logs operacionais com filtros opcionais por texto/intervalo e paginação (`lines`, `contains`, `from`, `to`, `offset`, `cursor`), incluindo `meta-ad-approver-worker`, `landing-generator-agent-worker` e `product-discovery-worker`.
 - `studio_ledger_coverage`: compara todas as tentativas conhecidas de vídeo, áudio e imagem do Estúdio com o ledger financeiro, agrupadas por origem, tipo e provedor; evidencia entradas ausentes, custos desconhecidos e custos sem plano, sem interpretá-los como zero.
 - `codex_agent_execution_telemetry`: consulta heartbeat, processo ativo, eventos, bytes de saída e tokens realmente informados de uma execução dos agentes Cliente, Financeiro, Operador, Estrategista ou Aprovador Meta.
 - `meta_docs_get`: busca páginas de documentação da Meta em hosts aprovados.
@@ -57,6 +57,8 @@ mvn -s settings.xml spring-boot:run
 ## Logs de Spring Boot dos módulos Java
 
 O tool `java_module_logs` lê logs do Spring Boot a partir de arquivo local **ou URL HTTP/HTTPS** configurada em:
+
+- Product Discovery Worker: `MCP_LOG_PRODUCT_DISCOVERY_WORKER_PATH` (padrão `http://191.252.120.96:18081/ops-product-discovery-observability-v1/logfile`).
 
 - `MCP_LOG_BACKEND_PATH` (default `http://191.252.181.168:8099/ops-mh-observability-v2/backend-log-stream-x9k`, servido pelo leitor independente montado no volume persistente do backend);
 - `MCP_LOG_AI_WORKER_PATH` (default `http://191.252.210.83:4567/worker-observability/logfile`);
@@ -205,10 +207,10 @@ Não versione a chave privada nem cole o conteúdo dela em logs, issues, PRs ou 
 
 ## Health do Product Discovery Worker
 
-O tool `product_discovery_worker_health` consulta o endpoint `GET /healthz` dentro do container `product-discovery-worker` usando um comando Docker restrito:
+O tool `product_discovery_worker_health` consulta diretamente o endpoint HTTP `GET /healthz` do host operacional do `product-discovery-worker`, sem depender do Docker local do MCP:
 
 ```text
-docker exec product-discovery-worker node -e <health-fetch-fixo> http://127.0.0.1:8080/healthz
+GET http://191.252.120.96:18081/healthz
 ```
 
 Isso evita depender da porta publicada no host e permite diagnosticar rapidamente:
@@ -223,7 +225,7 @@ Configuração:
 - `MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_ENABLED` (default `true`);
 - `MCP_PRODUCT_DISCOVERY_WORKER_CONTAINER` (default `product-discovery-worker`);
 - `MCP_PRODUCT_DISCOVERY_WORKER_DOCKER_COMMAND` (default herda `MCP_CHAT_LOG_DOCKER_COMMAND` ou `docker`);
-- `MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL` (default `http://127.0.0.1:8080/healthz`);
+- `MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL` (default `http://191.252.120.96:18081/healthz`);
 - `MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_TIMEOUT_SECONDS` (default `10`).
 
 ## Ferramentas de diagnóstico Meta

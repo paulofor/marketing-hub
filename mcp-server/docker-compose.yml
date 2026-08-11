@@ -35,7 +35,8 @@ services:
       MCP_VPS_HOST_INVENTORY_IDENTITY_FILE: ${MCP_VPS_HOST_INVENTORY_IDENTITY_FILE:-/opt/marketinghub/mcp/ssh/id_ed25519}
       MCP_VPS_HOST_INVENTORY_KNOWN_HOSTS_FILE: ${MCP_VPS_HOST_INVENTORY_KNOWN_HOSTS_FILE:-/opt/marketinghub/mcp/ssh/known_hosts}
       MCP_PRODUCT_DISCOVERY_WORKER_CONTAINER: ${MCP_PRODUCT_DISCOVERY_WORKER_CONTAINER:-product-discovery-worker}
-      MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL: ${MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL:-http://127.0.0.1:8080/healthz}
+      MCP_LOG_PRODUCT_DISCOVERY_WORKER_PATH: ${MCP_LOG_PRODUCT_DISCOVERY_WORKER_PATH:-http://191.252.120.96:18081/ops-product-discovery-observability-v1/logfile}
+      MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL: ${MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL:-http://191.252.120.96:18081/healthz}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /opt/marketinghub/mcp/ssh:/opt/marketinghub/mcp/ssh:ro

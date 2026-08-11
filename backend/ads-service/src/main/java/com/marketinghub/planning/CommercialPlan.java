@@ -109,6 +109,27 @@ public class CommercialPlan {
   @Column(name = "operational_revenue_target", precision = 12, scale = 2)
   private BigDecimal operationalRevenueTarget;
 
+  @Column(name = "offer_price_brl", precision = 12, scale = 2)
+  private BigDecimal offerPriceBrl;
+
+  @Column(name = "variable_cost_per_sale_brl", precision = 12, scale = 2)
+  private BigDecimal variableCostPerSaleBrl;
+
+  @Column(name = "expected_monthly_traffic")
+  private Integer expectedMonthlyTraffic;
+
+  @Column(name = "expected_conversion_rate_percent", precision = 7, scale = 4)
+  private BigDecimal expectedConversionRatePercent;
+
+  @Column(name = "expected_cac_brl", precision = 12, scale = 2)
+  private BigDecimal expectedCacBrl;
+
+  @Column(name = "expected_refund_rate_percent", precision = 7, scale = 4)
+  private BigDecimal expectedRefundRatePercent;
+
+  @Column(name = "fixed_operational_cost_brl", precision = 12, scale = 2)
+  private BigDecimal fixedOperationalCostBrl;
+
   @Column(name = "experiments_to_create")
   private Integer experimentsToCreate;
 

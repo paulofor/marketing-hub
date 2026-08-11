@@ -12,11 +12,15 @@ Cada novo dossiê abre no backend um ciclo `productdiscovery.v1/research` e uma 
 
 Os estados canônicos do dossiê são `RESEARCHING`, `UNDER_REVIEW`, `READY_FOR_TEST`, `APPROVED`, `DISCARDED` e `CONVERTED_TO_PLAN`. Evidências devem registrar fonte e data; pareceres devem registrar agente, decisão, justificativa, riscos, recomendação e data. Dossiês e pareceres não autorizam gastos, publicação, preço ou campanhas.
 
+Pesquisa externa indisponível não é resultado de mercado. Se todas as consultas de Argos falharem por provider, credencial, rede ou contrato HTTP, o ciclo deve falhar e bloquear a tarefa com provider, quantidade de tentativas e status auditáveis. Somente consultas executadas com sucesso e sem resultados podem concluir com zero evidências. O MCP deve expor health e logfile do executor no host operacional real.
+
 O Plano Comercial é a fonte oficial comum para usuários e agentes atuarem sobre o mesmo objetivo de vendas e lucro. Cada criação ou alteração deve gerar uma versão imutável contendo objetivo, público, dor, desejo/oferta, canal, métricas, orçamento, receita esperada, realizado, gargalo, próxima ação e critérios de sucesso e parada.
 
 ## Projeção financeira por Plutus
 
 Cada Plano Comercial pode solicitar projeções tipadas a Plutus. A solicitação congela a versão oficial do plano, abre uma tarefa correlacionada na mesa do agente e entra em fila própria, independente da conciliação financeira e dos gates de vídeo. A resposta deve conter cenários conservador, base e otimista, premissas explícitas, ponto de equilíbrio, investimento inicial e limite por ciclo recomendados, critérios de continuar, ajustar e parar, limitações e candidato de aprendizado.
+
+As premissas mínimas estruturadas do plano são preço da oferta, custo variável por venda, tráfego mensal esperado, conversão esperada, CAC esperado, taxa esperada de reembolso e custo operacional fixo. Elas são hipóteses versionadas, nunca métricas realizadas. Valores monetários e tráfego não podem ser negativos; percentuais devem permanecer entre zero e cem; custo variável por venda não pode superar o preço. Cada produto mantém suas próprias premissas e histórico.
 
 Projeção nunca é receita realizada, não altera orçamento e não autoriza gasto. O aprendizado de Plutus deve comparar posteriormente previsão e resultado real; conclusões novas permanecem candidatas e só podem ser promovidas pelo fluxo governado após evidência fora da amostra.
 

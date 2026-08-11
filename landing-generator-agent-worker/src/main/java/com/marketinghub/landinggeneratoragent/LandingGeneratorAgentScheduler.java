@@ -33,6 +33,12 @@ public class LandingGeneratorAgentScheduler {
   private void process(LandingAgentJob job) {
     try {
       backend.report(job, runner.run(job));
+    } catch (CodexActivityTimeoutException ex) {
+      log.error(
+          "Execução sem atividade será retomada pela lease canônica. executionId={} experimentId={}",
+          job.executionId(),
+          job.experimentId(),
+          ex);
     } catch (InterruptedException ex) {
       Thread.currentThread().interrupt();
       log.error("Execução interrompida. experimentId={}", job.experimentId(), ex);

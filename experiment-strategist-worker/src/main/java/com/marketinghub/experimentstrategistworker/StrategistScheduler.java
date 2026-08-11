@@ -38,6 +38,12 @@ public class StrategistScheduler {
           "Pesquisa do Estrategista concluída. executionId={} planId={}",
           job.id(),
           job.commercialPlanId());
+    } catch (CodexActivityTimeoutException ex) {
+      log.error(
+          "Pesquisa sem atividade aguardará retomada da lease. executionId={} planId={}",
+          job == null ? null : job.id(),
+          job == null ? null : job.commercialPlanId(),
+          ex);
     } catch (Exception ex) {
       log.error(
           "Falha no experiment-strategist-worker. executionId={} planId={}",

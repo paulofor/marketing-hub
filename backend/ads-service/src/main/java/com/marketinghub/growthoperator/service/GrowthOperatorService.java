@@ -368,6 +368,7 @@ public class GrowthOperatorService {
   /** Reserva a pendencia mais antiga para um unico worker. */
   @Transactional
   public GrowthOperatorExecutionResponse claimPending() {
+    recoverAllStaleRunningExecutions();
     GrowthOperatorExecution execution =
         repository
             .findByStatusOrderByCreatedAtAsc(
@@ -381,6 +382,16 @@ public class GrowthOperatorService {
     execution.setStatus(GrowthOperatorExecutionStatus.RUNNING);
     execution.setStartedAt(Instant.now());
     return toResponse(saveWithCurrentAgentVersion(execution));
+  }
+
+  /** Recupera todas as leases órfãs, inclusive quando não são a execução mais recente do plano. */
+  private void recoverAllStaleRunningExecutions() {
+    repository
+        .findByStatusOrderByCreatedAtAsc(
+            GrowthOperatorExecutionStatus.RUNNING, PageRequest.of(0, 100))
+        .stream()
+        .filter(this::isStaleRunningExecution)
+        .forEach(this::failStaleExecution);
   }
 
   /** Salva a execucao e fixa a versao exata do contrato que a governou. */

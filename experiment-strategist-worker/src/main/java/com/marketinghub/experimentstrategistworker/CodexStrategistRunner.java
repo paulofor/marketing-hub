@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 /** Responsabilidade: executar pesquisa Codex somente leitura com saida estruturada. */
 @Component
 public class CodexStrategistRunner {
+  private static final long ACTIVITY_POLL_SECONDS = 15L;
   private final WorkerProperties properties;
   private final ObjectMapper json;
   private final CodexTelemetryReporter telemetry;
@@ -53,12 +54,11 @@ public class CodexStrategistRunner {
       CodexTelemetryReporter.Session session =
           telemetry == null ? null : telemetry.monitor(job.id(), process, log);
       try {
-        if (!process.waitFor(properties.getCodexTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
+        if (!waitWhileActive(process, log)) {
           process.destroyForcibly();
-          throw new IllegalStateException(
-              "Timeout do Codex do Estrategista apos "
-                  + properties.getCodexTimeout().toMinutes()
-                  + " minutos.");
+          process.waitFor(10, TimeUnit.SECONDS);
+          throw new CodexActivityTimeoutException(
+              "Timeout do Codex do Estrategista sem atividade comprovada.");
         }
         if (process.exitValue() != 0)
           throw new IllegalStateException(
@@ -92,6 +92,25 @@ public class CodexStrategistRunner {
       Files.deleteIfExists(schema);
       Files.deleteIfExists(mcp);
     }
+  }
+
+  /** Aguarda progresso observável e estende a janela até o teto absoluto de três ciclos. */
+  boolean waitWhileActive(Process process, Path log) throws IOException, InterruptedException {
+    long idleLimit = properties.getCodexTimeout().toMillis();
+    long hardLimit = Math.multiplyExact(idleLimit, 3L);
+    long startedAt = System.currentTimeMillis();
+    long lastActivityAt = startedAt;
+    long observedSize = Files.size(log);
+    while (System.currentTimeMillis() - startedAt < hardLimit) {
+      if (process.waitFor(ACTIVITY_POLL_SECONDS, TimeUnit.SECONDS)) return true;
+      long currentSize = Files.size(log);
+      if (currentSize != observedSize) {
+        observedSize = currentSize;
+        lastActivityAt = System.currentTimeMillis();
+      }
+      if (System.currentTimeMillis() - lastActivityAt >= idleLimit) return false;
+    }
+    return false;
   }
 
   /** Monta o comando com busca publica, sandbox somente leitura e schema versionado. */

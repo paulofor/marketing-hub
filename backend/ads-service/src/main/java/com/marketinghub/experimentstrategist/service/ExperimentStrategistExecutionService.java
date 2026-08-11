@@ -22,6 +22,8 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @Service
 public class ExperimentStrategistExecutionService {
+  private static final long STALE_EXECUTION_SECONDS = 120L;
+  private static final String LEASE_RECOVERED = "LEASE_RECOVERED_ONCE";
   private final ExperimentStrategistExecutionRepository repository;
   private final CommercialPlanService plans;
   private final ExperimentStrategistContextService contexts;
@@ -68,6 +70,7 @@ public class ExperimentStrategistExecutionService {
   /** Reserva uma unica pesquisa pendente para o worker. */
   @Transactional
   public ExecutionResponse claim() {
+    recoverExpiredLeases();
     ExperimentStrategistExecution value =
         repository
             .findByStatusOrderByCreatedAtAsc(
@@ -79,6 +82,26 @@ public class ExperimentStrategistExecutionService {
     value.setStartedAt(Instant.now());
     value.setErrorMessage(null);
     return response(repository.save(value));
+  }
+
+  /** Retoma uma lease órfã uma vez e encerra reincidência para impedir loop infinito. */
+  private void recoverExpiredLeases() {
+    Instant cutoff = Instant.now().minusSeconds(STALE_EXECUTION_SECONDS);
+    for (ExperimentStrategistExecution value :
+        repository.findByStatusAndStartedAtBeforeOrderByStartedAtAsc(
+            ExperimentStrategistExecutionStatus.RUNNING, cutoff)) {
+      if (repository.countRecentActiveTelemetry(value.getId(), cutoff) > 0) continue;
+      if (LEASE_RECOVERED.equals(value.getErrorMessage())) {
+        value.setStatus(ExperimentStrategistExecutionStatus.FAILED);
+        value.setFinishedAt(Instant.now());
+        value.setErrorMessage("Lease expirou novamente após a retomada automática.");
+      } else {
+        value.setStatus(ExperimentStrategistExecutionStatus.PENDING);
+        value.setStartedAt(null);
+        value.setErrorMessage(LEASE_RECOVERED);
+      }
+      repository.save(value);
+    }
   }
 
   /** Entrega ao MCP as evidencias congeladas da pesquisa reservada. */

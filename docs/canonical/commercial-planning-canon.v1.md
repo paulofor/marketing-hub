@@ -46,6 +46,24 @@ Todo marco semanal do plano pode persistir metas numericas planejadas proprias:
 - `experiments_to_publish`: quantidade de experimentos que devem ser publicados/validados ate o marco.
 - `products_to_validate`, `product_types_to_explore`, `approaches_to_test` e `customer_conversations_target`: recorte semanal das metas de aprendizado, sujeito aos mesmos gates de evidencia e foco comercial do plano.
 
+## Planejamento semanal como realização temporal do plano
+
+O Planejamento Semanal não é uma estratégia paralela nem uma cópia editável do Plano Comercial. Ele é a realização temporal da versão oficial do plano: transforma objetivo, gargalo, próxima ação, meta de venda, lucro e geração de valor em compromissos executáveis de segunda a domingo.
+
+Todo compromisso semanal novo deve persistir:
+
+- `plan_id` e `plan_version_number` usados na decisão;
+- ação objetiva e resultado comercial mensurável esperado;
+- agente responsável, quando a execução for delegada;
+- estado `PLANNED`, `IN_PROGRESS`, `BLOCKED`, `COMPLETED` ou `CANCELLED`;
+- prazo dentro da semana comercial;
+- custo e receita planejados, quando aplicáveis;
+- custo, receita, funil e evidências realizados vindos das fontes operacionais oficiais.
+
+Uma versão posterior do Plano Comercial não reinterpreta silenciosamente compromissos antigos. O usuário deve conseguir comparar planejado e realizado por semana, identificar agente, dificuldade e decisão externa pendente e verificar contribuição para venda, lucro e entrega de valor. Planejamento semanal não autoriza gasto, publicação, alteração de preço ou campanha; os gates próprios continuam obrigatórios.
+
+Antes de abrir nova frente, a semana deve priorizar o gargalo oficial do plano. Um compromisso concluído sem evidência de avanço comercial deve ser registrado como entrega operacional, não como venda, lucro ou validação de valor.
+
 ## Regra canonica de semanas comerciais do mes
 
 O planejamento mensal do Marketing Hub deve organizar semanas comerciais sempre a partir das segundas-feiras existentes dentro do proprio mes. A semana comercial nao deve ser calculada por dia 1 a dia 7, nem por semana ISO do calendario, porque o objetivo e manter ciclos operacionais completos de segunda a domingo.

@@ -55,6 +55,16 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/CommercialPlanWeek"
+  /api/planning/commercial-plans/{id}/weeks/commitments/{commitmentId}/status:
+    patch:
+      tags: [planning]
+      summary: Atualiza o andamento de um compromisso semanal sem alterar sua estratégia.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer, format: int64}}
+        - {name: commitmentId, in: path, required: true, schema: {type: integer, format: int64}}
+      responses:
+        "200":
+          description: Compromisso atualizado e preservado na versão original do plano.
 components:
   schemas:
     CommercialPlanAgentActivity:
@@ -117,7 +127,7 @@ components:
         objectives:
           type: array
           items:
-            type: object
+            $ref: "#/components/schemas/CommercialPlanWeekCommitment"
         experiments:
           type: array
           items:
@@ -158,3 +168,21 @@ components:
           type: boolean
         evidenceSource:
           type: string
+    CommercialPlanWeekCommitment:
+      type: object
+      description: Compromisso temporal vinculado à versão oficial do Plano Comercial.
+      properties:
+        id: {type: integer, format: int64, nullable: true}
+        sequenceOrder: {type: integer}
+        objectiveText: {type: string}
+        score: {type: integer, nullable: true, minimum: 0, maximum: 10}
+        planVersionNumber: {type: integer}
+        assignedAgentKey: {type: string, nullable: true}
+        assignedAgentNickname: {type: string, nullable: true}
+        expectedResult: {type: string, nullable: true}
+        executionStatus:
+          type: string
+          enum: [PLANNED, IN_PROGRESS, BLOCKED, COMPLETED, CANCELLED]
+        dueDate: {type: string, format: date}
+        plannedCost: {type: number, nullable: true}
+        plannedRevenue: {type: number, nullable: true}

@@ -1,0 +1,65 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-11-commercial-plan-weekly-execution
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE commercial_plan_week_objective
+                ADD COLUMN plan_version_number INT NULL AFTER score,
+                ADD COLUMN assigned_agent_key VARCHAR(100) NULL AFTER plan_version_number,
+                ADD COLUMN assigned_agent_nickname VARCHAR(100) NULL AFTER assigned_agent_key,
+                ADD COLUMN expected_result LONGTEXT NULL AFTER assigned_agent_nickname,
+                ADD COLUMN execution_status VARCHAR(30) NOT NULL DEFAULT 'PLANNED' AFTER expected_result,
+                ADD COLUMN due_date DATE NULL AFTER execution_status,
+                ADD COLUMN planned_cost DECIMAL(15,2) NULL AFTER due_date,
+                ADD COLUMN planned_revenue DECIMAL(15,2) NULL AFTER planned_cost,
+                ADD INDEX idx_week_objective_agent_status
+                  (assigned_agent_key, execution_status, due_date);
+
+              UPDATE commercial_plan_week_objective objective
+              JOIN (
+                SELECT commercial_plan_id, MAX(version_number) AS version_number
+                FROM commercial_plan_version
+                GROUP BY commercial_plan_id
+              ) current_version
+                ON current_version.commercial_plan_id = objective.plan_id
+              SET objective.plan_version_number = current_version.version_number
+              WHERE objective.plan_version_number IS NULL;
+
+              UPDATE commercial_plan_week_objective objective
+              JOIN commercial_plan plan ON plan.id = objective.plan_id
+              SET objective.due_date = DATE_ADD(
+                DATE_ADD(
+                  DATE_SUB(plan.deadline, INTERVAL (DAYOFMONTH(plan.deadline) - 1) DAY),
+                  INTERVAL MOD(9 - DAYOFWEEK(DATE_SUB(plan.deadline, INTERVAL (DAYOFMONTH(plan.deadline) - 1) DAY)), 7) DAY
+                ),
+                INTERVAL ((objective.week_number - 1) * 7 + 6) DAY
+              )
+              WHERE objective.due_date IS NULL;
+
+              ALTER TABLE commercial_plan_week_objective
+                MODIFY COLUMN plan_version_number INT NOT NULL,
+                MODIFY COLUMN due_date DATE NOT NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE commercial_plan_week_objective
+                DROP INDEX idx_week_objective_agent_status,
+                DROP COLUMN planned_revenue,
+                DROP COLUMN planned_cost,
+                DROP COLUMN due_date,
+                DROP COLUMN execution_status,
+                DROP COLUMN expected_result,
+                DROP COLUMN assigned_agent_nickname,
+                DROP COLUMN assigned_agent_key,
+                DROP COLUMN plan_version_number;

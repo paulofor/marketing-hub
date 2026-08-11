@@ -4,6 +4,26 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import CommercialPlanningPage from "./CommercialPlanningPage";
 
+vi.mock("../../api/agent/useAgents", () => ({
+  useAgents: () => ({
+    data: [
+      {
+        id: 1,
+        name: "Operador de Crescimento",
+        nickname: "Hermes",
+        agentKey: "growth-operator",
+        status: "ACTIVE",
+        currentVersion: 1,
+        executionMode: "ON_DEMAND",
+        themeId: 1,
+        inputs: [],
+        outputs: [],
+        internalFunctions: [],
+      },
+    ],
+  }),
+}));
+
 const defaultPlans = [
   {
     id: 1,
@@ -164,6 +184,7 @@ let mockWeeks: unknown[] = [
   },
 ];
 const createPlanMutate = vi.fn();
+const updateWeekMutate = vi.fn();
 
 vi.mock("../../api/planning/useCommercialPlans", async () => {
   const actual = await vi.importActual<
@@ -274,10 +295,14 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
       };
     },
     useUpdateCommercialPlanWeekObjectives: () => ({
-      mutate: vi.fn(),
+      mutate: updateWeekMutate,
       isPending: false,
       isError: false,
       isSuccess: false,
+    }),
+    useUpdateCommercialPlanWeekCommitmentStatus: () => ({
+      mutate: vi.fn(),
+      isPending: false,
     }),
     useCreateCommercialPlan: () => ({
       mutate: createPlanMutate,
@@ -722,6 +747,49 @@ describe("CommercialPlanningPage", () => {
 
     expect(screen.getByLabelText("Novo objetivo para a semana 2")).toBeTruthy();
     expect(screen.getByText("Salvar novo")).toBeTruthy();
+  });
+
+  it("cria compromisso semanal vinculado ao plano, agente e metas financeiras", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole("button", { name: "Inserir novo" }));
+    await user.type(
+      screen.getByLabelText("Novo objetivo para a semana 2"),
+      "Corrigir o gargalo do checkout",
+    );
+    await user.type(
+      screen.getByLabelText("Resultado comercial esperado"),
+      "Uma compra aprovada",
+    );
+    await user.selectOptions(
+      screen.getByLabelText("Agente responsável"),
+      "growth-operator",
+    );
+    await user.type(screen.getByLabelText("Custo planejado da semana"), "50");
+    await user.type(
+      screen.getByLabelText("Receita planejada da semana"),
+      "134",
+    );
+    await user.click(screen.getByRole("button", { name: "Salvar novo" }));
+
+    expect(updateWeekMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        weekNumber: 1,
+        objectives: expect.arrayContaining([
+          expect.objectContaining({
+            objectiveText: "Corrigir o gargalo do checkout",
+            planVersionNumber: 2,
+            assignedAgentKey: "growth-operator",
+            assignedAgentNickname: "Hermes",
+            expectedResult: "Uma compra aprovada",
+            executionStatus: "PLANNED",
+            plannedCost: 50,
+            plannedRevenue: 134,
+          }),
+        ]),
+      }),
+    );
   });
 
   it("oculta insercao de objetivo quando a semana esta fora da janela permitida", () => {

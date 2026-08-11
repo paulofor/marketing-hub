@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.agent.Agent;
+import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
@@ -51,5 +52,38 @@ class AgentWorkMonitorServiceTest {
         .containsExactly("WAITING", "DECISION_REQUIRED");
     assertThat(result.get(1).externalDecisionRequired()).isTrue();
     assertThat(result.get(1).sourceReference()).isEqualTo("video-production-cycle:21");
+  }
+
+  /** Impede que a falha canônica de Dédalo continue aparecendo como trabalho ativo. */
+  @Test
+  void shouldExposeDedaloFailureAsBlocked() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    GeraLandingStageExecutionRepository landings = mock(GeraLandingStageExecutionRepository.class);
+    VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
+    Agent dedalo =
+        Agent.builder()
+            .id(7L)
+            .agentKey("landing-generator")
+            .nickname("Dédalo")
+            .name("Landing")
+            .build();
+    GeraLandingStageExecution execution =
+        GeraLandingStageExecution.builder()
+            .experimentId(88L)
+            .stageCode("landing-generation-agent-v1")
+            .status("FALHA")
+            .errorMessage("Timeout registrado")
+            .completedAt(Instant.parse("2026-08-11T04:39:00Z"))
+            .build();
+    when(agents.findAllByOrderByNicknameAsc()).thenReturn(List.of(dedalo));
+    when(landings.findTopByStageCodeOrderByExecutionRequestedAtDesc("landing-generation-agent-v1"))
+        .thenReturn(Optional.of(execution));
+
+    AgentWorkMonitorResponse result =
+        new AgentWorkMonitorService(agents, tasks, landings, cycles).list().getFirst();
+
+    assertThat(result.workStatus()).isEqualTo("BLOCKED");
+    assertThat(result.difficulty()).isEqualTo("Timeout registrado");
   }
 }

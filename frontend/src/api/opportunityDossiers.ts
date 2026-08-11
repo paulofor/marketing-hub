@@ -23,6 +23,7 @@ export interface OpportunityDossier {
   knownRisks?: string;
   experimentRecommendation?: string;
   convertedPlanId?: number;
+  productDiscoveryCycleId?: number;
   evidence: {
     id: number;
     sourceUrl: string;

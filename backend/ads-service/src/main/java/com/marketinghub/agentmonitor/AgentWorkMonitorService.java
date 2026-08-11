@@ -8,6 +8,7 @@ import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository;
 import com.marketinghub.salesvideo.VideoProductionCycle;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class AgentWorkMonitorService {
+  private static final Duration DEDALO_STALE_AFTER = Duration.ofMinutes(45);
   private static final String DEDALO = "landing-generator";
   private static final String APOLO = "videomaker";
   private static final String PLUTUS = "financial-agent";
@@ -65,19 +67,31 @@ public class AgentWorkMonitorService {
   /** Traduz o estado persistido do GeraLanding sem inferir sucesso comercial. */
   private AgentWorkMonitorResponse landing(Agent agent, GeraLandingStageExecution execution) {
     String status = normalize(execution.getStatus());
-    boolean failed = status.equals("FAILED") || status.equals("FALHOU") || status.equals("ERRO");
+    boolean failed =
+        status.equals("FAILED")
+            || status.equals("FALHOU")
+            || status.equals("FALHA")
+            || status.equals("ERRO");
     boolean done =
         status.equals("COMPLETED") || status.equals("CONCLUIDO") || status.equals("CONCLUÍDO");
+    Instant lastActivity = activity(execution);
+    boolean stale =
+        !failed
+            && !done
+            && lastActivity != null
+            && lastActivity.plus(DEDALO_STALE_AFTER).isBefore(Instant.now());
     return response(
         agent,
-        failed ? "BLOCKED" : done ? "COMPLETED" : "WORKING",
+        failed || stale ? "BLOCKED" : done ? "COMPLETED" : "WORKING",
         "Correção autônoma da landing do experimento #" + execution.getExperimentId(),
         "Etapa landing-generation-agent-v1 · " + execution.getStatus(),
-        failed ? text(execution.getErrorMessage(), "Falha técnica registrada na execução.") : null,
+        failed
+            ? text(execution.getErrorMessage(), "Falha técnica registrada na execução.")
+            : stale ? "Execução sem atividade além da janela operacional." : null,
         false,
         null,
         "geralanding-experiment:" + execution.getExperimentId(),
-        activity(execution));
+        lastActivity);
   }
 
   /** Consolida o mesmo ciclo de vídeo sob as perspectivas de Apolo e Plutus. */
@@ -139,9 +153,10 @@ public class AgentWorkMonitorService {
     boolean blocked = "BLOCKED".equals(task.getStatus());
     boolean gate =
         "GATE_DECISION".equals(task.getTaskKind()) && "PENDING".equals(task.getGateStatus());
+    boolean pending = "PENDING".equals(task.getStatus());
     return response(
         agent,
-        gate ? "DECISION_REQUIRED" : blocked ? "BLOCKED" : "WORKING",
+        gate ? "DECISION_REQUIRED" : blocked ? "BLOCKED" : pending ? "WAITING" : "WORKING",
         task.getTitle(),
         task.getDescription(),
         blocked ? "Tarefa marcada como bloqueada." : null,

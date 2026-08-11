@@ -1,5 +1,7 @@
 package com.marketinghub.opportunitydossier.service;
 
+import com.marketinghub.agenttask.AgentTaskService;
+import com.marketinghub.agenttask.CreateAgentTaskRequest;
 import com.marketinghub.opportunitydossier.*;
 import com.marketinghub.opportunitydossier.service.convert.ConvertOpportunityRequest;
 import com.marketinghub.opportunitydossier.service.create.CreateOpportunityDossierRequest;
@@ -10,7 +12,10 @@ import com.marketinghub.opportunitydossier.service.status.UpdateOpportunityStatu
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.dto.CreateCommercialPlanRequest;
 import com.marketinghub.planning.service.CommercialPlanService;
+import com.marketinghub.productdiscovery.v1.service.CreateProductDiscoveryCycleRequest;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryService;
 import com.marketinghub.repository.jpa.opportunitydossier.*;
+import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryCycleRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -28,16 +33,26 @@ public class OpportunityDossierService {
   private final OpportunityEvidenceRepository evidenceRepository;
   private final OpportunityAgentReviewRepository reviewRepository;
   private final CommercialPlanService commercialPlanService;
+  private final ProductDiscoveryService productDiscoveryService;
+  private final ProductDiscoveryCycleRepository productDiscoveryCycleRepository;
+  private final AgentTaskService agentTaskService;
 
+  /** Configura persistência, conversão comercial e execução de pesquisa de Argos. */
   public OpportunityDossierService(
       OpportunityDossierRepository dossierRepository,
       OpportunityEvidenceRepository evidenceRepository,
       OpportunityAgentReviewRepository reviewRepository,
-      CommercialPlanService commercialPlanService) {
+      CommercialPlanService commercialPlanService,
+      ProductDiscoveryService productDiscoveryService,
+      ProductDiscoveryCycleRepository productDiscoveryCycleRepository,
+      AgentTaskService agentTaskService) {
     this.dossierRepository = dossierRepository;
     this.evidenceRepository = evidenceRepository;
     this.reviewRepository = reviewRepository;
     this.commercialPlanService = commercialPlanService;
+    this.productDiscoveryService = productDiscoveryService;
+    this.productDiscoveryCycleRepository = productDiscoveryCycleRepository;
+    this.agentTaskService = agentTaskService;
   }
 
   /** Cadastra uma oportunidade sob responsabilidade de Argos ou agente informado. */
@@ -66,6 +81,27 @@ public class OpportunityDossierService {
                 .knownRisks(request.knownRisks())
                 .experimentRecommendation(request.experimentRecommendation())
                 .build());
+    var cycle =
+        productDiscoveryService.createCycle(
+            new CreateProductDiscoveryCycleRequest(
+                saved.getTitle(),
+                saved.getTargetAudience(),
+                "BR",
+                "pt-BR",
+                null,
+                "Modelar produto comprovado melhorado por IA sem copiar ativos nem assumir vendas.",
+                saved.getKnownRisks(),
+                "Pesquisar evidências para o dossiê de oportunidade #" + saved.getId()));
+    saved.setProductDiscoveryCycle(productDiscoveryCycleRepository.getReferenceById(cycle.id()));
+    saved = dossierRepository.save(saved);
+    agentTaskService.createByHuman(
+        new CreateAgentTaskRequest(
+            "market-radar",
+            "Marketing Hub",
+            "Pesquisar oportunidade: " + saved.getTitle(),
+            "Produzir evidências auditáveis de demanda, lacunas, referência e vantagem por IA.",
+            "HIGH",
+            "opportunity-dossier:" + saved.getId()));
     return response(saved);
   }
 
@@ -266,6 +302,9 @@ public class OpportunityDossierService {
         dossier.getHumanDecisionBy(),
         dossier.getHumanDecisionAt(),
         dossier.getConvertedPlan() == null ? null : dossier.getConvertedPlan().getId(),
+        dossier.getProductDiscoveryCycle() == null
+            ? null
+            : dossier.getProductDiscoveryCycle().getId(),
         dossier.getCreatedAt(),
         dossier.getUpdatedAt(),
         evidence,

@@ -5,13 +5,19 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.opportunitydossier.*;
 import com.marketinghub.opportunitydossier.service.convert.ConvertOpportunityRequest;
 import com.marketinghub.opportunitydossier.service.review.SubmitOpportunityReviewRequest;
 import com.marketinghub.opportunitydossier.service.status.UpdateOpportunityStatusRequest;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.service.CommercialPlanService;
+import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycle;
+import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycleStatus;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryCycleResponse;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryService;
 import com.marketinghub.repository.jpa.opportunitydossier.*;
+import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryCycleRepository;
 import java.time.Instant;
 import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,14 +34,70 @@ class OpportunityDossierServiceTest {
   @Mock OpportunityEvidenceRepository evidence;
   @Mock OpportunityAgentReviewRepository reviews;
   @Mock CommercialPlanService plans;
+  @Mock ProductDiscoveryService productDiscovery;
+  @Mock ProductDiscoveryCycleRepository productDiscoveryCycles;
+  @Mock AgentTaskService agentTasks;
   OpportunityDossierService service;
 
   /** Prepara o serviço e comportamento mínimo da persistência. */
   @BeforeEach
   void setUp() {
-    service = new OpportunityDossierService(dossiers, evidence, reviews, plans);
+    service =
+        new OpportunityDossierService(
+            dossiers,
+            evidence,
+            reviews,
+            plans,
+            productDiscovery,
+            productDiscoveryCycles,
+            agentTasks);
     lenient().when(dossiers.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
     lenient().when(reviews.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+  }
+
+  /** Cria a fila executável de Argos junto com o novo dossiê. */
+  @Test
+  void createsArgosResearchCycle() {
+    OpportunityDossier dossier = dossier(OpportunityDossierStatus.RESEARCHING);
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(42L);
+    when(dossiers.save(any())).thenReturn(dossier);
+    when(productDiscovery.createCycle(any()))
+        .thenReturn(
+            new ProductDiscoveryCycleResponse(
+                42L,
+                "Produto IA",
+                "Profissionais",
+                "BR",
+                "pt-BR",
+                null,
+                ProductDiscoveryCycleStatus.READY_FOR_RESEARCH,
+                "research",
+                null,
+                null,
+                Instant.now(),
+                Instant.now()));
+    when(productDiscoveryCycles.getReferenceById(42L)).thenReturn(cycle);
+    when(evidence.findByDossierIdOrderByCreatedAtAsc(1L)).thenReturn(List.of());
+    when(reviews.findByDossierIdOrderByAgentKeyAsc(1L)).thenReturn(List.of());
+
+    var response =
+        service.create(
+            new com.marketinghub.opportunitydossier.service.create.CreateOpportunityDossierRequest(
+                "Produto IA",
+                "ARGOS",
+                "Profissionais",
+                "Esforço",
+                "Produto validado",
+                "Automação",
+                "Oferta",
+                null,
+                null,
+                null,
+                null));
+
+    assertThat(response.productDiscoveryCycleId()).isEqualTo(42L);
+    verify(productDiscovery).createCycle(any());
   }
 
   /** Impede iniciar pareceres sem evidência verificável. */

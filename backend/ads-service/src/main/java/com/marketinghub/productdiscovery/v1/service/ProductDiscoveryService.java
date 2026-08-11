@@ -1,5 +1,6 @@
 package com.marketinghub.productdiscovery.v1.service;
 
+import com.marketinghub.opportunitydossier.service.OpportunityDossierResearchSyncService;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycle;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycleStatus;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunity;
@@ -27,13 +28,16 @@ public class ProductDiscoveryService {
       "Evidências artificiais legadas invalidadas: a página de busca sem resultados não comprova dor, ciência ou intenção de compra.";
   private final ProductDiscoveryCycleRepository cycleRepository;
   private final ProductDiscoveryOpportunityRepository opportunityRepository;
+  private final OpportunityDossierResearchSyncService dossierResearchSyncService;
 
   /** Inicializa o serviço com repositórios canônicos do módulo. */
   public ProductDiscoveryService(
       ProductDiscoveryCycleRepository cycleRepository,
-      ProductDiscoveryOpportunityRepository opportunityRepository) {
+      ProductDiscoveryOpportunityRepository opportunityRepository,
+      OpportunityDossierResearchSyncService dossierResearchSyncService) {
     this.cycleRepository = cycleRepository;
     this.opportunityRepository = opportunityRepository;
+    this.dossierResearchSyncService = dossierResearchSyncService;
   }
 
   /** Cria um ciclo pronto para o worker pesquisar dores e lacunas na internet. */
@@ -252,6 +256,7 @@ public class ProductDiscoveryService {
               cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
               cycle.setStageCode(STAGE_CODE);
               cycle.setErrorMessage(null);
+              dossierResearchSyncService.start(cycle.getId());
               return toPendingResponse(cycleRepository.save(cycle));
             })
         .toList();
@@ -286,6 +291,8 @@ public class ProductDiscoveryService {
     cycle.setStageCode("opportunity-gate");
     cycle.setErrorMessage(null);
     cycleRepository.save(cycle);
+    dossierResearchSyncService.synchronize(
+        cycleId, opportunityRepository.findAllByCycleIdOrderByScoreDesc(cycleId));
     return getCycle(cycleId);
   }
 
@@ -338,6 +345,7 @@ public class ProductDiscoveryService {
     ProductDiscoveryCycle cycle = findCycle(cycleId);
     cycle.setStatus(ProductDiscoveryCycleStatus.FAILED);
     cycle.setErrorMessage(requiredText(request.errorMessage(), "errorMessage"));
+    dossierResearchSyncService.fail(cycleId);
     return toCycleResponse(cycleRepository.save(cycle));
   }
 

@@ -115,6 +115,22 @@ export interface CommercialPlanVersion {
   createdAt: string;
 }
 
+export interface RevenueProjectionExecution {
+  id: number;
+  commercialPlanId: number;
+  status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
+  authorityMode: "READ_ONLY_REVENUE_PROJECTION";
+  commercialPlanVersion: number;
+  agentTaskId?: number | null;
+  projectionRequest?: string | null;
+  reconciliationJson?: string | null;
+  dailyReport?: string | null;
+  errorMessage?: string | null;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+  createdAt: string;
+}
+
 export interface CommercialPlanAgentActivityEntry {
   recordType: string;
   agentKey: string;
@@ -284,6 +300,44 @@ export function useCommercialPlanAgentActivity(planId?: number | null) {
         `/api/planning/commercial-plans/${planId}/agent-activity`,
       );
       return data;
+    },
+  });
+}
+
+/** Consulta as projeções de Plutus sem misturá-las às receitas realizadas. */
+export function useRevenueProjections(planId?: number | null) {
+  return useQuery({
+    queryKey: ["revenue-projections", planId],
+    enabled: !!planId && planId > 0,
+    refetchInterval: 15_000,
+    queryFn: async () => {
+      const { data } = await axios.get<RevenueProjectionExecution[]>(
+        `/api/financial-agent/v1/commercial-plans/${planId}/revenue-projections`,
+      );
+      return data;
+    },
+  });
+}
+
+/** Enfileira uma projeção versionada e abre a tarefa correspondente na mesa de Plutus. */
+export function useRequestRevenueProjection(planId?: number | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (decisionContext?: string) => {
+      if (!planId) throw new Error("Plano comercial não informado.");
+      const { data } = await axios.post<RevenueProjectionExecution>(
+        `/api/financial-agent/v1/commercial-plans/${planId}/revenue-projections`,
+        { decisionContext: decisionContext || null },
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["revenue-projections", planId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["commercial-plan-agent-activity", planId],
+      });
     },
   });
 }

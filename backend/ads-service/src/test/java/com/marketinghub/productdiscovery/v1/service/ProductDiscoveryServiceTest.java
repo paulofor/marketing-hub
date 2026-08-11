@@ -3,6 +3,7 @@ package com.marketinghub.productdiscovery.v1.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import com.marketinghub.opportunitydossier.service.OpportunityDossierResearchSyncService;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycle;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycleStatus;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunity;
@@ -25,6 +26,8 @@ class ProductDiscoveryServiceTest {
 
   @Mock private ProductDiscoveryOpportunityRepository opportunityRepository;
 
+  @Mock private OpportunityDossierResearchSyncService dossierResearchSyncService;
+
   /** Deve concluir sem oportunidade quando a busca real não trouxer evidência suficiente. */
   @Test
   void completeWithoutArtificialOpportunityWhenResearchIsEmpty() {
@@ -35,7 +38,8 @@ class ProductDiscoveryServiceTest {
     when(cycleRepository.save(cycle)).thenReturn(cycle);
     when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(20L)).thenReturn(List.of());
     ProductDiscoveryService service =
-        new ProductDiscoveryService(cycleRepository, opportunityRepository);
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService);
 
     ProductDiscoveryCycleDetailResponse response =
         service.complete(
@@ -55,7 +59,8 @@ class ProductDiscoveryServiceTest {
             ProductDiscoveryCycleStatus.COMPLETED))
         .thenReturn(List.of());
     ProductDiscoveryService service =
-        new ProductDiscoveryService(cycleRepository, opportunityRepository);
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService);
 
     ProductDiscoveryMaturityRankingResponse ranking = service.getMaturityRanking();
 
@@ -86,7 +91,8 @@ class ProductDiscoveryServiceTest {
             ProductDiscoveryCycleStatus.COMPLETED))
         .thenReturn(List.of(opportunity));
     ProductDiscoveryService service =
-        new ProductDiscoveryService(cycleRepository, opportunityRepository);
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService);
 
     ProductDiscoveryMaturityRankingResponse ranking = service.getMaturityRanking();
 
@@ -108,7 +114,8 @@ class ProductDiscoveryServiceTest {
     when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(17L))
         .thenReturn(List.of(opportunity));
     ProductDiscoveryService service =
-        new ProductDiscoveryService(cycleRepository, opportunityRepository);
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService);
 
     ProductDiscoveryLegacyCleanupResponse response = service.archiveArtificialLegacyEvidence();
 
@@ -132,7 +139,8 @@ class ProductDiscoveryServiceTest {
     when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(1L))
         .thenReturn(List.of(opportunity));
     ProductDiscoveryService service =
-        new ProductDiscoveryService(cycleRepository, opportunityRepository);
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService);
 
     ProductDiscoveryLegacyCleanupResponse response = service.archiveArtificialLegacyEvidence();
 

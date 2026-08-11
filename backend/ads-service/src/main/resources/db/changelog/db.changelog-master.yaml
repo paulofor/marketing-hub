@@ -1750,3 +1750,9 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-11-opportunity-dossier-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-11-opportunity-dossier-argos-cycle.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-11-financial-agent-revenue-projection.yaml
+      relativeToChangelogFile: true

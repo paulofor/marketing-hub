@@ -1,0 +1,44 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-11-financial-agent-revenue-projection
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE financial_agent_execution
+                ADD COLUMN commercial_plan_version INT NULL AFTER authority_mode,
+                ADD COLUMN agent_task_id BIGINT NULL AFTER commercial_plan_version,
+                ADD COLUMN projection_request LONGTEXT NULL AFTER agent_task_id,
+                ADD INDEX idx_financial_agent_authority_plan (authority_mode, commercial_plan_id, created_at),
+                ADD CONSTRAINT fk_financial_agent_execution_task
+                  FOREIGN KEY (agent_task_id) REFERENCES agent_task(id);
+
+              UPDATE financial_agent_execution fae
+              LEFT JOIN commercial_plan_version cpv
+                ON cpv.commercial_plan_id = fae.commercial_plan_id
+              LEFT JOIN commercial_plan_version newer
+                ON newer.commercial_plan_id = cpv.commercial_plan_id
+               AND newer.version_number > cpv.version_number
+              SET fae.commercial_plan_version = COALESCE(cpv.version_number, 1)
+              WHERE newer.id IS NULL;
+
+              ALTER TABLE financial_agent_execution
+                MODIFY COLUMN commercial_plan_version INT NOT NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE financial_agent_execution
+                DROP FOREIGN KEY fk_financial_agent_execution_task,
+                DROP INDEX idx_financial_agent_authority_plan,
+                DROP COLUMN projection_request,
+                DROP COLUMN agent_task_id,
+                DROP COLUMN commercial_plan_version;

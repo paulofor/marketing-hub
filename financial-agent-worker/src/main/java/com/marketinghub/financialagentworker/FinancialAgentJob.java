@@ -6,4 +6,7 @@ public record FinancialAgentJob(
     Long commercialPlanId,
     String status,
     String authorityMode,
+    Integer commercialPlanVersion,
+    Long agentTaskId,
+    String projectionRequest,
     String financialSnapshot) {}

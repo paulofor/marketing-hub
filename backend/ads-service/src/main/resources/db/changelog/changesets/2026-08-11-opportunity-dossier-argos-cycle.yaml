@@ -1,0 +1,59 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-11-opportunity-dossier-argos-cycle
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE opportunity_dossier
+                ADD COLUMN product_discovery_cycle_id BIGINT NULL,
+                ADD KEY idx_opportunity_dossier_discovery_cycle (product_discovery_cycle_id),
+                ADD CONSTRAINT fk_opportunity_dossier_discovery_cycle
+                  FOREIGN KEY (product_discovery_cycle_id) REFERENCES product_discovery_cycle(id);
+
+              INSERT INTO product_discovery_cycle (
+                theme, target_audience, country, language, acquisition_channel,
+                commercial_constraints, forbidden_categories, objective, status, stage_code,
+                decision_summary, error_message, created_at, updated_at
+              )
+              SELECT od.title, LEFT(od.target_audience, 191), 'BR', 'pt-BR', NULL,
+                'Modelar produto comprovado melhorado por IA sem copiar ativos nem assumir vendas.',
+                od.known_risks,
+                CONCAT('Pesquisar evidências para o dossiê de oportunidade #', od.id),
+                'READY_FOR_RESEARCH', 'research', NULL, NULL, UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM opportunity_dossier od
+              LEFT JOIN product_discovery_cycle pdc
+                ON pdc.objective = CONCAT('Pesquisar evidências para o dossiê de oportunidade #', od.id)
+              WHERE od.status = 'RESEARCHING'
+                AND od.product_discovery_cycle_id IS NULL
+                AND pdc.id IS NULL;
+
+              UPDATE opportunity_dossier od
+              INNER JOIN product_discovery_cycle pdc
+                ON pdc.objective = CONCAT('Pesquisar evidências para o dossiê de oportunidade #', od.id)
+              SET od.product_discovery_cycle_id = pdc.id
+              WHERE od.product_discovery_cycle_id IS NULL;
+
+              INSERT INTO agent_task (
+                assigned_agent_id, requested_by_agent_id, requested_by_type, requested_by_name,
+                title, description, priority, status, source_reference, task_kind,
+                gate_code, gate_status, gate_decision_reason, gate_decided_at, created_at, updated_at
+              )
+              SELECT a.id, NULL, 'HUMAN', 'Marketing Hub',
+                CONCAT('Pesquisar oportunidade: ', od.title),
+                'Produzir evidências auditáveis de demanda, lacunas, referência e vantagem por IA.',
+                'HIGH', 'PENDING', CONCAT('opportunity-dossier:', od.id), 'WORK',
+                NULL, NULL, NULL, NULL, UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM opportunity_dossier od
+              INNER JOIN agent a ON a.agent_key = 'market-radar'
+              LEFT JOIN agent_task at
+                ON at.source_reference = CONCAT('opportunity-dossier:', od.id)
+              WHERE od.status = 'RESEARCHING'
+                AND at.id IS NULL;

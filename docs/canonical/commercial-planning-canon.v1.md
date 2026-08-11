@@ -8,9 +8,17 @@ O planejamento comercial do Marketing Hub deve transformar objetivos de venda em
 
 O Dossiê de Oportunidade é a etapa canônica anterior ao Plano Comercial. Ele deve permanecer em um portfólio segregado enquanto Argos registra evidências e Atena, Psique, Plutus e Hermes emitem pareceres independentes. Somente um dossiê aprovado por decisão humana pode ser convertido, uma única vez, em novo Plano Comercial. A conversão copia uma fotografia auditável do contexto validado e mantém o vínculo permanente com o dossiê de origem; não herda orçamento, custos, receita ou métricas de planos existentes.
 
+Cada novo dossiê abre no backend um ciclo `productdiscovery.v1/research` e uma tarefa vinculada na mesa de Argos (`market-radar`). O executor consome exclusivamente o endpoint `pending` canônico da descoberta; ao concluir, as evidências reais são incorporadas ao dossiê e a tarefa é concluída. Resultado vazio permanece auditável sem evidência artificial, e falha operacional bloqueia a tarefa com visibilidade no monitor. Dossiês legados em pesquisa recebem o mesmo vínculo por migração idempotente.
+
 Os estados canônicos do dossiê são `RESEARCHING`, `UNDER_REVIEW`, `READY_FOR_TEST`, `APPROVED`, `DISCARDED` e `CONVERTED_TO_PLAN`. Evidências devem registrar fonte e data; pareceres devem registrar agente, decisão, justificativa, riscos, recomendação e data. Dossiês e pareceres não autorizam gastos, publicação, preço ou campanhas.
 
 O Plano Comercial é a fonte oficial comum para usuários e agentes atuarem sobre o mesmo objetivo de vendas e lucro. Cada criação ou alteração deve gerar uma versão imutável contendo objetivo, público, dor, desejo/oferta, canal, métricas, orçamento, receita esperada, realizado, gargalo, próxima ação e critérios de sucesso e parada.
+
+## Projeção financeira por Plutus
+
+Cada Plano Comercial pode solicitar projeções tipadas a Plutus. A solicitação congela a versão oficial do plano, abre uma tarefa correlacionada na mesa do agente e entra em fila própria, independente da conciliação financeira e dos gates de vídeo. A resposta deve conter cenários conservador, base e otimista, premissas explícitas, ponto de equilíbrio, investimento inicial e limite por ciclo recomendados, critérios de continuar, ajustar e parar, limitações e candidato de aprendizado.
+
+Projeção nunca é receita realizada, não altera orçamento e não autoriza gasto. O aprendizado de Plutus deve comparar posteriormente previsão e resultado real; conclusões novas permanecem candidatas e só podem ser promovidas pelo fluxo governado após evidência fora da amostra.
 
 Tarefas, gates e execuções devem registrar `planId` e número da versão consumida, ou uma referência equivalente `commercial-plan:<id>@v<numero>`, para que decisões antigas não sejam reinterpretadas com contexto novo. O monitor deve apresentar esse vínculo quando existir.
 

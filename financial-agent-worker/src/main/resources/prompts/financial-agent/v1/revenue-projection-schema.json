@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["scenarios", "recommendedInitialInvestmentBrl", "recommendedCycleLimitBrl", "breakEven", "decisionCriteria", "limitations", "learningCandidate", "executiveSummary"],
+  "properties": {
+    "scenarios": {
+      "type": "array", "minItems": 3, "maxItems": 3,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["name", "assumptions", "traffic", "conversionRatePercent", "averagePriceBrl", "revenueBrl", "contributionMarginPercent", "profitBrl", "cacBrl", "roas"],
+        "properties": {
+          "name": {"type": "string", "enum": ["CONSERVATIVE", "BASE", "OPTIMISTIC"]},
+          "assumptions": {"type": "array", "items": {"type": "string"}},
+          "traffic": {"type": ["integer", "null"]},
+          "conversionRatePercent": {"type": ["number", "null"]},
+          "averagePriceBrl": {"type": ["number", "null"]},
+          "revenueBrl": {"type": ["number", "null"]},
+          "contributionMarginPercent": {"type": ["number", "null"]},
+          "profitBrl": {"type": ["number", "null"]},
+          "cacBrl": {"type": ["number", "null"]},
+          "roas": {"type": ["number", "null"]}
+        }
+      }
+    },
+    "recommendedInitialInvestmentBrl": {"type": ["number", "null"]},
+    "recommendedCycleLimitBrl": {"type": ["number", "null"]},
+    "breakEven": {"type": "string"},
+    "decisionCriteria": {
+      "type": "object", "additionalProperties": false,
+      "required": ["continue", "adjust", "stop"],
+      "properties": {"continue": {"type": "array", "items": {"type": "string"}}, "adjust": {"type": "array", "items": {"type": "string"}}, "stop": {"type": "array", "items": {"type": "string"}}}
+    },
+    "limitations": {"type": "array", "items": {"type": "string"}},
+    "learningCandidate": {"type": ["string", "null"]},
+    "executiveSummary": {"type": "string", "minLength": 30}
+  }
+}

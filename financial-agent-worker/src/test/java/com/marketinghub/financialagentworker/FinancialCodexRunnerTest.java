@@ -3,6 +3,7 @@ package com.marketinghub.financialagentworker;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
@@ -32,5 +33,17 @@ class FinancialCodexRunnerTest {
     FinancialAgentProperties properties = new FinancialAgentProperties();
 
     assertThat(properties.getCodexTimeout()).isEqualTo(Duration.ofMinutes(40));
+  }
+
+  /** Protege o schema de projeção contra palavras incompatíveis com Structured Outputs. */
+  @Test
+  void schemaDeProjecaoDevePermanecerCompativel() throws Exception {
+    String schema =
+        Files.readString(
+            Path.of(
+                "src/main/resources/prompts/financial-agent/v1/revenue-projection-schema.json"));
+
+    assertThat(schema).doesNotContain("uniqueItems", "anyOf", "oneOf", "allOf");
+    assertThat(schema).contains("CONSERVATIVE", "BASE", "OPTIMISTIC", "learningCandidate");
   }
 }

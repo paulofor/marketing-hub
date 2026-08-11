@@ -24,6 +24,7 @@ public record OpportunityDossierResponse(
     String humanDecisionBy,
     Instant humanDecisionAt,
     Long convertedPlanId,
+    Long productDiscoveryCycleId,
     Instant createdAt,
     Instant updatedAt,
     List<Evidence> evidence,

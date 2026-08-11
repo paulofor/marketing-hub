@@ -2,10 +2,15 @@ package com.marketinghub.financialagent.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agenttask.AgentTaskResponse;
+import com.marketinghub.agenttask.AgentTaskService;
+import com.marketinghub.agenttask.CreateAgentTaskRequest;
+import com.marketinghub.agenttask.UpdateAgentTaskStatusRequest;
 import com.marketinghub.financialagent.FinancialAgentExecution;
 import com.marketinghub.financialagent.FinancialAgentExecutionStatus;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.service.CommercialPlanService;
+import com.marketinghub.planning.service.CommercialPlanVersionService;
 import com.marketinghub.repository.jpa.financialagent.FinancialAgentExecutionRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -14,6 +19,7 @@ import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -24,20 +30,38 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class FinancialAgentService {
   private static final String READ_ONLY = "READ_ONLY_FINANCIAL_RECONCILIATION";
+  private static final String REVENUE_PROJECTION = "READ_ONLY_REVENUE_PROJECTION";
   private final FinancialAgentExecutionRepository repository;
   private final CommercialPlanService commercialPlanService;
   private final ObjectMapper objectMapper;
   private final StudioCostLedgerService studioCostLedgerService;
+  private final CommercialPlanVersionService versionService;
+  private final AgentTaskService taskService;
 
+  /** Configura fontes financeiras, versão comercial e integração com a mesa de Plutus. */
+  @Autowired
   public FinancialAgentService(
       FinancialAgentExecutionRepository repository,
       CommercialPlanService commercialPlanService,
       ObjectMapper objectMapper,
-      StudioCostLedgerService studioCostLedgerService) {
+      StudioCostLedgerService studioCostLedgerService,
+      CommercialPlanVersionService versionService,
+      AgentTaskService taskService) {
     this.repository = repository;
     this.commercialPlanService = commercialPlanService;
     this.objectMapper = objectMapper;
     this.studioCostLedgerService = studioCostLedgerService;
+    this.versionService = versionService;
+    this.taskService = taskService;
+  }
+
+  /** Mantém construção direta dos testes legados de conciliação. */
+  FinancialAgentService(
+      FinancialAgentExecutionRepository repository,
+      CommercialPlanService commercialPlanService,
+      ObjectMapper objectMapper,
+      StudioCostLedgerService studioCostLedgerService) {
+    this(repository, commercialPlanService, objectMapper, studioCostLedgerService, null, null);
   }
 
   /** Cria uma conciliacao manual com snapshot imutavel das fontes atuais. */
@@ -48,8 +72,48 @@ public class FinancialAgentService {
     execution.setCommercialPlan(plan);
     execution.setStatus(FinancialAgentExecutionStatus.PENDING);
     execution.setAuthorityMode(READ_ONLY);
+    execution.setCommercialPlanVersion(currentVersion(planId));
     execution.setFinancialSnapshot(buildSnapshot(plan));
     return toResponse(repository.save(execution));
+  }
+
+  /** Abre uma projeção tipada e uma tarefa correlacionada na mesa de Plutus. */
+  @Transactional
+  public FinancialAgentExecutionResponse startRevenueProjection(
+      Long planId, StartRevenueProjectionRequest request) {
+    CommercialPlan plan = commercialPlanService.getPlan(planId);
+    int version = currentVersion(planId);
+    String context = request == null ? null : trimToNull(request.decisionContext());
+    AgentTaskResponse task =
+        taskService.createByHuman(
+            new CreateAgentTaskRequest(
+                "financial-agent",
+                "Plano Comercial",
+                "Estimar receita e investimento de " + plan.getName(),
+                "Produzir cenários conservador, base e otimista, com premissas, margem, CAC, ROAS, ponto de equilíbrio, teto recomendado e critérios de continuar, ajustar ou parar."
+                    + (context == null ? "" : " Contexto de decisão: " + context),
+                "HIGH",
+                "commercial-plan:" + planId + "@v" + version + ":revenue-projection"));
+    FinancialAgentExecution execution = new FinancialAgentExecution();
+    execution.setCommercialPlan(plan);
+    execution.setStatus(FinancialAgentExecutionStatus.PENDING);
+    execution.setAuthorityMode(REVENUE_PROJECTION);
+    execution.setCommercialPlanVersion(version);
+    execution.setAgentTaskId(task.id());
+    execution.setProjectionRequest(context);
+    execution.setFinancialSnapshot(buildSnapshot(plan));
+    return toResponse(repository.save(execution));
+  }
+
+  /** Lista somente projeções, mantendo-as distintas de receita realizada e conciliações. */
+  @Transactional(readOnly = true)
+  public List<FinancialAgentExecutionResponse> listRevenueProjections(Long planId) {
+    commercialPlanService.getPlan(planId);
+    return repository
+        .findByCommercialPlanIdAndAuthorityModeOrderByCreatedAtDesc(planId, REVENUE_PROJECTION)
+        .stream()
+        .map(this::toResponse)
+        .toList();
   }
 
   /** Cria no maximo uma conciliacao automatica por dia para o planejamento. */
@@ -119,6 +183,10 @@ public class FinancialAgentService {
     FinancialAgentExecution execution = pending.getFirst();
     execution.setStatus(FinancialAgentExecutionStatus.RUNNING);
     execution.setStartedAt(Instant.now());
+    if (execution.getAgentTaskId() != null) {
+      taskService.updateStatus(
+          execution.getAgentTaskId(), new UpdateAgentTaskStatusRequest("IN_PROGRESS"));
+    }
     return toResponse(repository.save(execution));
   }
 
@@ -144,6 +212,10 @@ public class FinancialAgentService {
     execution.setEstimatedCost(request.estimatedCost());
     execution.setStatus(FinancialAgentExecutionStatus.COMPLETED);
     execution.setFinishedAt(Instant.now());
+    if (execution.getAgentTaskId() != null) {
+      taskService.updateStatus(
+          execution.getAgentTaskId(), new UpdateAgentTaskStatusRequest("COMPLETED"));
+    }
     return toResponse(repository.save(execution));
   }
 
@@ -154,6 +226,10 @@ public class FinancialAgentService {
     execution.setStatus(FinancialAgentExecutionStatus.FAILED);
     execution.setErrorMessage(request == null ? "Falha nao informada." : request.errorMessage());
     execution.setFinishedAt(Instant.now());
+    if (execution.getAgentTaskId() != null) {
+      taskService.updateStatus(
+          execution.getAgentTaskId(), new UpdateAgentTaskStatusRequest("BLOCKED"));
+    }
     return toResponse(repository.save(execution));
   }
 
@@ -228,6 +304,16 @@ public class FinancialAgentService {
     return value == null ? BigDecimal.ZERO : value;
   }
 
+  /** Resolve a versão oficial congelada para a execução financeira. */
+  private int currentVersion(Long planId) {
+    return versionService == null ? 1 : versionService.current(planId).versionNumber();
+  }
+
+  /** Normaliza o contexto opcional da decisão. */
+  private String trimToNull(String value) {
+    return value == null || value.isBlank() ? null : value.trim();
+  }
+
   /** Verifica se o texto possui conteudo auditavel. */
   private boolean hasText(String value) {
     return value != null && !value.isBlank();
@@ -240,6 +326,9 @@ public class FinancialAgentService {
         execution.getCommercialPlan().getId(),
         execution.getStatus(),
         execution.getAuthorityMode(),
+        execution.getCommercialPlanVersion(),
+        execution.getAgentTaskId(),
+        execution.getProjectionRequest(),
         execution.getFinancialSnapshot(),
         execution.getReconciliationJson(),
         execution.getDailyReport(),

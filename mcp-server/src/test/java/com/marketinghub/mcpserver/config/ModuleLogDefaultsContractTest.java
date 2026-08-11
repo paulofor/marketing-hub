@@ -25,6 +25,10 @@ class ModuleLogDefaultsContractTest {
             "http://163.245.202.80:8096/ops-experiment-strategist-observability-v1/logfile";
     private static final String META_AD_APPROVER_WORKER_LOG_URL =
             "http://163.245.202.80:8097/ops-meta-ad-approver-observability-v1/logfile";
+    private static final String PRODUCT_DISCOVERY_WORKER_LOG_URL =
+            "http://191.252.120.96:18081/ops-product-discovery-observability-v1/logfile";
+    private static final String PRODUCT_DISCOVERY_WORKER_HEALTH_URL =
+            "http://191.252.120.96:18081/healthz";
 
     /**
      * Garante que a configuração Spring não direcione o alias backend ao log do AI Worker.
@@ -133,5 +137,33 @@ class ModuleLogDefaultsContractTest {
         assertTrue(configuration.contains("MCP_LOG_META_AD_APPROVER_WORKER_PATH:" + META_AD_APPROVER_WORKER_LOG_URL));
         assertTrue(localCompose.contains("MCP_LOG_META_AD_APPROVER_WORKER_PATH:-" + META_AD_APPROVER_WORKER_LOG_URL));
         assertTrue(deploymentCompose.contains("MCP_LOG_META_AD_APPROVER_WORKER_PATH:-" + META_AD_APPROVER_WORKER_LOG_URL));
+    }
+
+    /**
+     * Garante que o MCP publicado observe Argos por HTTP no host real do executor.
+     */
+    @Test
+    void shouldPublishProductDiscoveryWorkerObservabilityEndpoints() throws IOException {
+        String configuration = Files.readString(Path.of("src/main/resources/application.yml"));
+        String localCompose = Files.readString(Path.of("docker-compose.yml"));
+        String isolatedDeploymentCompose = Files.readString(Path.of("../deploy/docker-compose.mcp.yml"));
+        String deploymentCompose = Files.readString(Path.of("../deploy/docker-compose.yml"));
+
+        assertTrue(configuration.contains(
+                "MCP_LOG_PRODUCT_DISCOVERY_WORKER_PATH:" + PRODUCT_DISCOVERY_WORKER_LOG_URL));
+        assertTrue(configuration.contains(
+                "MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL:" + PRODUCT_DISCOVERY_WORKER_HEALTH_URL));
+        assertTrue(localCompose.contains(
+                "MCP_LOG_PRODUCT_DISCOVERY_WORKER_PATH:-" + PRODUCT_DISCOVERY_WORKER_LOG_URL));
+        assertTrue(localCompose.contains(
+                "MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL:-" + PRODUCT_DISCOVERY_WORKER_HEALTH_URL));
+        assertTrue(isolatedDeploymentCompose.contains(
+                "MCP_LOG_PRODUCT_DISCOVERY_WORKER_PATH:-" + PRODUCT_DISCOVERY_WORKER_LOG_URL));
+        assertTrue(isolatedDeploymentCompose.contains(
+                "MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL:-" + PRODUCT_DISCOVERY_WORKER_HEALTH_URL));
+        assertTrue(deploymentCompose.contains(
+                "MCP_LOG_PRODUCT_DISCOVERY_WORKER_PATH:-" + PRODUCT_DISCOVERY_WORKER_LOG_URL));
+        assertTrue(deploymentCompose.contains(
+                "MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL:-" + PRODUCT_DISCOVERY_WORKER_HEALTH_URL));
     }
 }

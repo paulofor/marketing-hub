@@ -17,6 +17,10 @@ grep -Fq 'MCP_GITHUB_TOKEN: ${{ secrets.MCP_GITHUB_TOKEN }}' ../.github/workflow
 
 grep -Fq 'MCP_LOG_BACKEND_PATH: ${MCP_LOG_BACKEND_PATH:-http://191.252.181.168:8099/ops-mh-observability-v2/backend-log-stream-x9k}' \
   docker-compose.mcp.yml
+grep -Fq 'MCP_LOG_PRODUCT_DISCOVERY_WORKER_PATH: ${MCP_LOG_PRODUCT_DISCOVERY_WORKER_PATH:-http://191.252.120.96:18081/ops-product-discovery-observability-v1/logfile}' \
+  docker-compose.mcp.yml
+grep -Fq 'MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL: ${MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL:-http://191.252.120.96:18081/healthz}' \
+  docker-compose.mcp.yml
 
 if grep -q 'docker compose up' bin/apply-video-only.sh; then
   echo "[CONTRATO] apply-video-only.sh deve informar explicitamente docker-compose.video.yml." >&2

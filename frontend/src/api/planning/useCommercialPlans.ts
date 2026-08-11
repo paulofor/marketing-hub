@@ -115,6 +115,38 @@ export interface CommercialPlanVersion {
   createdAt: string;
 }
 
+export interface CommercialPlanAgentActivityEntry {
+  recordType: string;
+  agentKey: string;
+  agentNickname: string;
+  title: string;
+  status: string;
+  detail?: string | null;
+  difficulty?: string | null;
+  externalDecisionRequired: boolean;
+  externalDecision?: string | null;
+  sourceReference?: string | null;
+  budgetLimitUsd?: number | null;
+  knownCostUsd?: number | null;
+  financialDecision?: string | null;
+  occurredAt?: string | null;
+}
+
+export interface CommercialPlanAgentActivity {
+  commercialPlanId: number;
+  currentVersion: number;
+  budgetLimitBrl?: number | null;
+  campaignCostBrl?: number | null;
+  aiCostBrl?: number | null;
+  totalCostBrl?: number | null;
+  revenueBrl?: number | null;
+  videoBudgetLimitUsd: number;
+  videoKnownCostUsd: number;
+  openTasks: number;
+  pendingDecisions: number;
+  entries: CommercialPlanAgentActivityEntry[];
+}
+
 export interface CommercialPlanWeekExperiment {
   id: number;
   name: string;
@@ -226,6 +258,21 @@ export function useCommercialPlanVersions(planId?: number | null) {
     queryFn: async () => {
       const { data } = await axios.get<CommercialPlanVersion[]>(
         `/api/planning/commercial-plans/${planId}/versions`,
+      );
+      return data;
+    },
+  });
+}
+
+/** Consulta a prestação de contas persistida dos agentes no plano. */
+export function useCommercialPlanAgentActivity(planId?: number | null) {
+  return useQuery({
+    queryKey: ["commercial-plan-agent-activity", planId],
+    enabled: !!planId && planId > 0,
+    refetchInterval: 15_000,
+    queryFn: async () => {
+      const { data } = await axios.get<CommercialPlanAgentActivity>(
+        `/api/planning/commercial-plans/${planId}/agent-activity`,
       );
       return data;
     },

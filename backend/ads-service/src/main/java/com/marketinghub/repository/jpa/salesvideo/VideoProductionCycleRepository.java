@@ -15,4 +15,7 @@ public interface VideoProductionCycleRepository extends JpaRepository<VideoProdu
 
   /** Busca o ciclo de vídeo atualizado mais recentemente. */
   Optional<VideoProductionCycle> findTopByOrderByUpdatedAtDesc();
+
+  /** Lista os ciclos financeiros e criativos pertencentes ao plano comercial. */
+  List<VideoProductionCycle> findByCommercialPlanIdOrderByUpdatedAtDesc(Long commercialPlanId);
 }

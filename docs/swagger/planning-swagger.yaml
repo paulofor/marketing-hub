@@ -21,6 +21,19 @@ paths:
       responses:
         "200":
           description: Snapshot funcional com identidade de versão.
+  /api/planning/commercial-plans/{id}/agent-activity:
+    get:
+      tags: [planning]
+      summary: Consolida trabalhos, dificuldades, decisões e finanças dos agentes no plano.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer, format: int64}}
+      responses:
+        "200":
+          description: Prestação de contas persistida e segregada pelo plano.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommercialPlanAgentActivity"
   /api/planning/commercial-plans/{id}/weeks:
     get:
       tags:
@@ -44,6 +57,38 @@ paths:
                   $ref: "#/components/schemas/CommercialPlanWeek"
 components:
   schemas:
+    CommercialPlanAgentActivity:
+      type: object
+      properties:
+        commercialPlanId: {type: integer, format: int64}
+        currentVersion: {type: integer}
+        budgetLimitBrl: {type: number, nullable: true}
+        campaignCostBrl: {type: number, nullable: true}
+        aiCostBrl: {type: number, nullable: true}
+        totalCostBrl: {type: number, nullable: true}
+        revenueBrl: {type: number, nullable: true}
+        videoBudgetLimitUsd: {type: number}
+        videoKnownCostUsd: {type: number}
+        openTasks: {type: integer, format: int64}
+        pendingDecisions: {type: integer, format: int64}
+        entries:
+          type: array
+          items:
+            type: object
+            properties:
+              recordType: {type: string}
+              agentKey: {type: string}
+              agentNickname: {type: string}
+              title: {type: string}
+              status: {type: string}
+              difficulty: {type: string, nullable: true}
+              externalDecisionRequired: {type: boolean}
+              externalDecision: {type: string, nullable: true}
+              sourceReference: {type: string, nullable: true}
+              budgetLimitUsd: {type: number, nullable: true}
+              knownCostUsd: {type: number, nullable: true}
+              financialDecision: {type: string, nullable: true}
+              occurredAt: {type: string, format: date-time, nullable: true}
     CommercialPlanWeek:
       type: object
       properties:

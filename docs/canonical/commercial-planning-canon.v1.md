@@ -12,6 +12,12 @@ Tarefas, gates e execuções devem registrar `planId` e número da versão consu
 
 Versões novas não autorizam gasto, publicação, mudança de preço ou campanha. Esses atos continuam sujeitos aos gates próprios. Planos de produtos distintos não podem compartilhar orçamento ou resultados; MUSA e Agenda Cheia permanecem segregados.
 
+## Prestação de contas dos agentes no frontend
+
+O detalhe do Plano Comercial deve exibir uma visão persistida e atualizada dos trabalhos dos agentes vinculados ao plano. A visão deve apresentar agente, tarefa ou execução, estado, dificuldade, decisão externa pendente, referência de origem, data e versão do contexto consumido.
+
+O mesmo painel deve consolidar teto, custo de campanha, custo de IA, custo total e receita em BRL. Ciclos audiovisuais devem preservar também teto, custo conhecido e decisão financeira em USD. A tela não pode deduzir estados por heurística nem misturar registros de outros planos; tarefas entram no dossiê pela referência versionada `commercial-plan:<id>@v<numero>`, e execuções entram por vínculo persistido com `commercial_plan_id` ou com o experimento oficial do plano.
+
 As metas devem respeitar os tipos de produto definidos em `docs/canonical/product-types-canon.v1.md`: low-ticket como pacote de infoprodutos de baixo custo produzido por IA, e Produto IA como infoproduto/ferramenta com integracao OpenAI por tras e experiencia simples para o usuario.
 
 ## Regra canonica de metas numericas

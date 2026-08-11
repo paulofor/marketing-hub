@@ -9,6 +9,7 @@ import {
   CommercialPlanStatus,
   SaveCommercialPlanPayload,
   useCommercialPlanWeeks,
+  useCommercialPlanAgentActivity,
   useCommercialPlanVersions,
   useCommercialPlans,
   useCreateCommercialPlan,
@@ -969,6 +970,10 @@ export default function CommercialPlanningPage() {
     currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
   );
   const planVersions = asArray(planVersionsQuery.data);
+  const agentActivityQuery = useCommercialPlanAgentActivity(
+    currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
+  );
+  const agentActivity = agentActivityQuery.data;
   const currentPlanVersion = planVersions[0];
   const [selectedReferenceMonth, setSelectedReferenceMonth] =
     useState(planReferenceMonth);
@@ -1142,6 +1147,179 @@ export default function CommercialPlanningPage() {
             ) : null}
           </div>
         </div>
+      ) : null}
+
+      {currentMonthPlan.id > 0 ? (
+        <section className="card" aria-labelledby="plan-agent-activity-title">
+          <div className="card-body d-flex flex-column gap-3">
+            <div className="d-flex flex-column flex-lg-row justify-content-between gap-2">
+              <div>
+                <h2 id="plan-agent-activity-title" className="h5 mb-1">
+                  Atuação dos agentes no plano
+                </h2>
+                <p className="text-body-secondary mb-0">
+                  Trabalhos, decisões, dificuldades e prestação de contas no
+                  mesmo objetivo comercial.
+                </p>
+              </div>
+              {agentActivity ? (
+                <span className="badge text-bg-primary align-self-start">
+                  Contexto v{agentActivity.currentVersion}
+                </span>
+              ) : null}
+            </div>
+
+            {agentActivityQuery.isLoading ? (
+              <p className="mb-0">Carregando registros dos agentes...</p>
+            ) : agentActivityQuery.isError ? (
+              <div className="alert alert-danger mb-0" role="alert">
+                Não foi possível carregar a atuação dos agentes neste plano.
+              </div>
+            ) : agentActivity ? (
+              <>
+                <div
+                  className="row g-3"
+                  aria-label="Resumo financeiro dos agentes"
+                >
+                  <div className="col-md-4 col-xl-2">
+                    <small className="text-body-secondary">Teto do plano</small>
+                    <strong className="d-block">
+                      {formatExecutedCurrency(agentActivity.budgetLimitBrl)}
+                    </strong>
+                  </div>
+                  <div className="col-md-4 col-xl-2">
+                    <small className="text-body-secondary">Campanhas</small>
+                    <strong className="d-block">
+                      {formatExecutedCurrency(agentActivity.campaignCostBrl)}
+                    </strong>
+                  </div>
+                  <div className="col-md-4 col-xl-2">
+                    <small className="text-body-secondary">IA</small>
+                    <strong className="d-block">
+                      {formatExecutedCurrency(agentActivity.aiCostBrl)}
+                    </strong>
+                  </div>
+                  <div className="col-md-4 col-xl-2">
+                    <small className="text-body-secondary">Custo total</small>
+                    <strong className="d-block">
+                      {formatExecutedCurrency(agentActivity.totalCostBrl)}
+                    </strong>
+                  </div>
+                  <div className="col-md-4 col-xl-2">
+                    <small className="text-body-secondary">Receita</small>
+                    <strong className="d-block">
+                      {formatExecutedCurrency(agentActivity.revenueBrl)}
+                    </strong>
+                  </div>
+                  <div className="col-md-4 col-xl-2">
+                    <small className="text-body-secondary">Vídeo (USD)</small>
+                    <strong className="d-block">
+                      US$ {agentActivity.videoKnownCostUsd.toFixed(2)} / US${" "}
+                      {agentActivity.videoBudgetLimitUsd.toFixed(2)}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="d-flex flex-wrap gap-2">
+                  <span className="badge text-bg-secondary">
+                    {agentActivity.openTasks} tarefas abertas
+                  </span>
+                  <span
+                    className={`badge ${
+                      agentActivity.pendingDecisions > 0
+                        ? "text-bg-warning"
+                        : "text-bg-success"
+                    }`}
+                  >
+                    {agentActivity.pendingDecisions} decisões pendentes
+                  </span>
+                </div>
+
+                {agentActivity.entries.length > 0 ? (
+                  <div className="table-responsive">
+                    <table className="table align-middle mb-0">
+                      <thead>
+                        <tr>
+                          <th>Agente</th>
+                          <th>Registro</th>
+                          <th>Status</th>
+                          <th>Dificuldade / decisão</th>
+                          <th>Financeiro</th>
+                          <th>Atualização</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {agentActivity.entries.map((entry, index) => (
+                          <tr
+                            key={`${entry.recordType}-${entry.sourceReference}-${index}`}
+                          >
+                            <td>
+                              <strong>{entry.agentNickname}</strong>
+                              <small className="d-block text-body-secondary">
+                                {entry.agentKey}
+                              </small>
+                            </td>
+                            <td>
+                              <strong>{entry.title}</strong>
+                              {entry.detail ? (
+                                <small className="d-block text-body-secondary">
+                                  {entry.detail}
+                                </small>
+                              ) : null}
+                            </td>
+                            <td>
+                              <span className="badge text-bg-light border">
+                                {entry.status}
+                              </span>
+                            </td>
+                            <td>
+                              {entry.externalDecisionRequired ? (
+                                <span className="text-warning-emphasis">
+                                  {entry.externalDecision}
+                                </span>
+                              ) : entry.difficulty ? (
+                                <span className="text-danger">
+                                  {entry.difficulty}
+                                </span>
+                              ) : (
+                                <span className="text-body-secondary">
+                                  Sem bloqueio
+                                </span>
+                              )}
+                            </td>
+                            <td>
+                              {entry.budgetLimitUsd != null ? (
+                                <span>
+                                  US$ {(entry.knownCostUsd ?? 0).toFixed(2)} /
+                                  US$ {entry.budgetLimitUsd.toFixed(2)}
+                                </span>
+                              ) : entry.knownCostUsd != null ? (
+                                <span>US$ {entry.knownCostUsd.toFixed(2)}</span>
+                              ) : (
+                                <span className="text-body-secondary">—</span>
+                              )}
+                            </td>
+                            <td>
+                              {entry.occurredAt
+                                ? new Date(entry.occurredAt).toLocaleString(
+                                    "pt-BR",
+                                  )
+                                : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-body-secondary mb-0">
+                    Nenhum registro de agente foi vinculado a este plano ainda.
+                  </p>
+                )}
+              </>
+            ) : null}
+          </div>
+        </section>
       ) : null}
 
       {isCreatingPlan ? (

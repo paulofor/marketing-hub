@@ -6,6 +6,10 @@ O planejamento comercial do Marketing Hub deve transformar objetivos de venda em
 
 ## Fonte comum versionada para agentes
 
+O Dossiê de Oportunidade é a etapa canônica anterior ao Plano Comercial. Ele deve permanecer em um portfólio segregado enquanto Argos registra evidências e Atena, Psique, Plutus e Hermes emitem pareceres independentes. Somente um dossiê aprovado por decisão humana pode ser convertido, uma única vez, em novo Plano Comercial. A conversão copia uma fotografia auditável do contexto validado e mantém o vínculo permanente com o dossiê de origem; não herda orçamento, custos, receita ou métricas de planos existentes.
+
+Os estados canônicos do dossiê são `RESEARCHING`, `UNDER_REVIEW`, `READY_FOR_TEST`, `APPROVED`, `DISCARDED` e `CONVERTED_TO_PLAN`. Evidências devem registrar fonte e data; pareceres devem registrar agente, decisão, justificativa, riscos, recomendação e data. Dossiês e pareceres não autorizam gastos, publicação, preço ou campanhas.
+
 O Plano Comercial é a fonte oficial comum para usuários e agentes atuarem sobre o mesmo objetivo de vendas e lucro. Cada criação ou alteração deve gerar uma versão imutável contendo objetivo, público, dor, desejo/oferta, canal, métricas, orçamento, receita esperada, realizado, gargalo, próxima ação e critérios de sucesso e parada.
 
 Tarefas, gates e execuções devem registrar `planId` e número da versão consumida, ou uma referência equivalente `commercial-plan:<id>@v<numero>`, para que decisões antigas não sejam reinterpretadas com contexto novo. O monitor deve apresentar esse vínculo quando existir.

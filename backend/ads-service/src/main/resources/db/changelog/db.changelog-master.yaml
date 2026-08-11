@@ -1747,3 +1747,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-11-commercial-plan-weekly-execution.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-11-opportunity-dossier-v1.yaml
+      relativeToChangelogFile: true

@@ -352,6 +352,69 @@ test("searchInternet limits Brave query while preserving the research intent", a
   assert.match(query, /cliente pergunta preço e some$/);
 });
 
+test("searchInternet retries Brave 422 with the documented minimal contract", async () => {
+  const calls = [];
+  const warnings = [];
+
+  const results = await searchInternet(
+    { theme: "assistente de execução diária", targetAudience: "especialistas" },
+    {
+      maxSearchResults: 1,
+      minSearchQueries: 1,
+      maxSearchQueries: 1,
+      config: resolveSearchConfig({
+        PRODUCT_DISCOVERY_SEARCH_PROVIDER: "brave",
+        BRAVE_SEARCH_API_KEY: "brave-test-key",
+      }),
+      logger: {
+        info() {},
+        warn(...args) {
+          warnings.push(args);
+        },
+      },
+      fetchFn: async (url) => {
+        calls.push(url);
+        if (calls.length === 1) {
+          return {
+            ok: false,
+            status: 422,
+            text: async () =>
+              JSON.stringify({ error: { detail: "invalid search_lang" } }),
+          };
+        }
+        return {
+          ok: true,
+          json: async () => ({
+            web: {
+              results: [
+                {
+                  title: "Execução assistida por IA",
+                  url: "https://evidence.example/execucao",
+                  description: "review de uma solução paga",
+                },
+              ],
+            },
+          }),
+        };
+      },
+    },
+  );
+
+  assert.equal(calls.length, 2);
+  assert.deepEqual(
+    [...new URL(calls[0]).searchParams.keys()],
+    ["q", "country", "search_lang", "count"],
+  );
+  assert.deepEqual([...new URL(calls[1]).searchParams.keys()], ["q"]);
+  assert.equal(results.length, 1);
+  assert.ok(
+    warnings.some((entry) =>
+      entry.some((value) => String(value).includes("invalid search_lang")),
+    ),
+    "deve preservar o diagnóstico sanitizado do provider",
+  );
+});
+
 test("searchInternet uses stronger default search depth before stopping", async () => {
   const calls = [];
   const results = await searchInternet(
@@ -434,7 +497,7 @@ test("searchInternet fails operationally when every provider query fails", async
           fetchFn: async () => ({
             ok: false,
             status: 422,
-            json: async () => ({}),
+            text: async () => JSON.stringify({ error: { detail: "invalid" } }),
           }),
         },
       ),

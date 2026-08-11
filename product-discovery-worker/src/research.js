@@ -552,24 +552,48 @@ async function searchQuery(query, config, fetchFn, logger) {
 
 async function searchBrave(query, config, fetchFn, logger) {
   requireApiKey(config.braveApiKey, "BRAVE_SEARCH_API_KEY", config.provider);
+  const normalizedQuery = normalizeBraveQuery(query);
   const url = new URL(config.braveEndpoint);
-  url.searchParams.set("q", normalizeBraveQuery(query));
+  url.searchParams.set("q", normalizedQuery);
   url.searchParams.set("country", config.country.toUpperCase());
   url.searchParams.set("search_lang", config.language.split("-")[0]);
   url.searchParams.set("count", "10");
-  const payload = await getSearchJson(
-    url.toString(),
-    fetchFn,
-    logger,
-    config.provider,
-    query,
-    {
-      Accept: "application/json",
-      "Accept-Encoding": "gzip",
-      "User-Agent": config.userAgent,
-      "X-Subscription-Token": config.braveApiKey,
-    },
-  );
+  const headers = {
+    Accept: "application/json",
+    "Accept-Encoding": "gzip",
+    "User-Agent": config.userAgent,
+    "X-Subscription-Token": config.braveApiKey,
+  };
+  let payload;
+  try {
+    payload = await getSearchJson(
+      url.toString(),
+      fetchFn,
+      logger,
+      config.provider,
+      query,
+      headers,
+    );
+  } catch (error) {
+    if (!isSearchProviderHttpError(error) || error.status !== 422) {
+      throw error;
+    }
+    const minimalUrl = new URL(config.braveEndpoint);
+    minimalUrl.searchParams.set("q", normalizedQuery);
+    logger.warn?.(
+      "[product-discovery-worker] Brave rejected localized request; retrying minimal contract query=%s detail=%s",
+      normalizedQuery,
+      error.responseDetail || "indisponivel",
+    );
+    payload = await getSearchJson(
+      minimalUrl.toString(),
+      fetchFn,
+      logger,
+      config.provider,
+      query,
+      headers,
+    );
+  }
   return normalizeBraveResponse(payload);
 }
 
@@ -581,9 +605,7 @@ export function normalizeBraveQuery(query) {
     .split(/\s+/)
     .filter(Boolean);
   const wordLimited =
-    words.length <= 50
-      ? words
-      : [...words.slice(0, 36), ...words.slice(-14)];
+    words.length <= 50 ? words : [...words.slice(0, 36), ...words.slice(-14)];
   const normalized = wordLimited.join(" ");
   if (Array.from(normalized).length <= 400) {
     return normalized;
@@ -674,11 +696,43 @@ async function getSearchJson(
     headers: { Accept: "application/json", ...headers },
   });
   if (!response.ok) {
-    throw new SearchProviderHttpError(provider, query, response.status);
+    const responseDetail = await readProviderErrorDetail(response);
+    logger.warn?.(
+      "[product-discovery-worker] search response rejected provider=%s url=%s status=%s detail=%s",
+      provider,
+      sanitizeSearchUrl(url),
+      response.status,
+      responseDetail || "indisponivel",
+    );
+    throw new SearchProviderHttpError(
+      provider,
+      query,
+      response.status,
+      responseDetail,
+    );
   }
   const payload = await response.json();
   logRawSearchPayload(logger, provider, query, payload);
   return payload;
+}
+
+async function readProviderErrorDetail(response) {
+  try {
+    const payload = await response.text();
+    return JSON.stringify(maskSecrets(JSON.parse(payload))).slice(0, 2000);
+  } catch {
+    return "resposta_sem_detalhe_json";
+  }
+}
+
+function sanitizeSearchUrl(value) {
+  const url = new URL(value);
+  for (const key of url.searchParams.keys()) {
+    if (/token|api[_-]?key|authorization|secret/i.test(key)) {
+      url.searchParams.set(key, "[REDACTED]");
+    }
+  }
+  return url.toString();
 }
 
 async function postSearchJson(
@@ -840,12 +894,13 @@ function normalizeForMatching(value) {
 }
 
 class SearchProviderHttpError extends Error {
-  constructor(provider, query, status) {
+  constructor(provider, query, status, responseDetail = "") {
     super(`${provider} search failed with status ${status}`);
     this.name = "SearchProviderHttpError";
     this.provider = provider;
     this.query = query;
     this.status = status;
+    this.responseDetail = responseDetail;
   }
 }
 

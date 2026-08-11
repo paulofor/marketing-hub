@@ -52,7 +52,9 @@ class LandingGenerationAgentExecutionServiceTest {
   void shouldEnqueueRejectedQualityReview() {
     service.onQualityReviewCompleted(
         new LandingQualityReviewedEvent(
-            88L, "{\"approvalRecommendation\":\"REGENERATE_BEFORE_PUBLICATION\",\"score\":70}"));
+            88L,
+            "cycle-88",
+            "{\"approvalRecommendation\":\"REGENERATE_BEFORE_PUBLICATION\",\"score\":70}"));
 
     verify(repository).save(any(GeraLandingStageExecution.class));
   }

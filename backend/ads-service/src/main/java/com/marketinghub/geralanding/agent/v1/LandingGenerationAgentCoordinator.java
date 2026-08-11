@@ -68,7 +68,8 @@ public class LandingGenerationAgentCoordinator {
 
   /** Interpreta o Quality Review e agenda a correção causal ou uma nova revisão dos anúncios. */
   @Transactional
-  public void continueAfterQualityReview(Long experimentId, String reviewJson) {
+  public void continueAfterQualityReview(
+      Long experimentId, String autonomousCycleId, String reviewJson) {
     try {
       JsonNode review = objectMapper.readTree(reviewJson);
       String recommendation = review.path("approvalRecommendation").asText();
@@ -79,7 +80,7 @@ public class LandingGenerationAgentCoordinator {
       if (!"REGENERATE_BEFORE_PUBLICATION".equals(recommendation)) {
         throw new IllegalArgumentException("Quality Review sem recomendação canônica");
       }
-      enforceIterationAndProgressGates(experimentId, review);
+      enforceIterationAndProgressGates(experimentId, autonomousCycleId, review);
       enforceRegisteredGenerationApproach(review);
       Set<String> stages = readRecommendedStages(review);
       registerLearningCandidate(experimentId, review, stages);
@@ -236,16 +237,21 @@ public class LandingGenerationAgentCoordinator {
   }
 
   /** Bloqueia ciclos excessivos ou sem melhora objetiva antes de consumir nova geração. */
-  private void enforceIterationAndProgressGates(Long experimentId, JsonNode currentReview)
-      throws Exception {
+  private void enforceIterationAndProgressGates(
+      Long experimentId, String autonomousCycleId, JsonNode currentReview) throws Exception {
+    if (autonomousCycleId == null || autonomousCycleId.isBlank()) {
+      throw new IllegalStateException("Ciclo autônomo da landing não informado");
+    }
     BigDecimal accumulatedCost =
-        executionRepository.sumCompletedCostUsdByExperimentId(experimentId);
+        executionRepository.sumCompletedCostUsdByExperimentIdAndAutonomousCycleId(
+            experimentId, autonomousCycleId);
     if (accumulatedCost != null && accumulatedCost.compareTo(MAX_AUTONOMOUS_COST_USD) >= 0) {
       throw new IllegalStateException("Limite de custo autônomo da landing atingido");
     }
     List<GeraLandingStageExecution> reviews =
-        executionRepository.findTop20ByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
-            experimentId, QUALITY_REVIEW_STAGE);
+        executionRepository
+            .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
+                experimentId, QUALITY_REVIEW_STAGE, autonomousCycleId);
     if (reviews.size() >= MAX_QUALITY_REVIEWS) {
       throw new IllegalStateException("Limite seguro de revisões autônomas da landing atingido");
     }

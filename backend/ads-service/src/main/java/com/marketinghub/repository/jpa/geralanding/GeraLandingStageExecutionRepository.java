@@ -47,6 +47,18 @@ public interface GeraLandingStageExecutionRepository
             """)
   BigDecimal sumCompletedCostUsdByExperimentId(@Param("experimentId") Long experimentId);
 
+  /** Soma custos concluídos somente dentro do ciclo autônomo informado. */
+  @Query(
+      """
+            select coalesce(sum(e.costUsd), 0)
+              from GeraLandingStageExecution e
+             where e.experimentId = :experimentId
+               and e.autonomousCycleId = :cycleId
+               and e.status in ('CONCLUIDO', 'CONCLUÍDO', 'COMPLETED', 'SUCCESS', 'SUCCEEDED', 'DONE')
+            """)
+  BigDecimal sumCompletedCostUsdByExperimentIdAndAutonomousCycleId(
+      @Param("experimentId") Long experimentId, @Param("cycleId") String cycleId);
+
   /** Busca as execuções mais antigas de uma etapa com experimento e hipótese carregados. */
   @EntityGraph(attributePaths = {"experiment", "experiment.hypothesisRef"})
   List<GeraLandingStageExecution> findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
@@ -66,6 +78,16 @@ public interface GeraLandingStageExecutionRepository
   List<GeraLandingStageExecution>
       findTop20ByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
           Long experimentId, String stageCode);
+
+  /** Lista revisões pertencentes ao mesmo ciclo autônomo, da mais recente para a mais antiga. */
+  List<GeraLandingStageExecution>
+      findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
+          Long experimentId, String stageCode, String autonomousCycleId);
+
+  /** Localiza a execução mais recente que já possua correlação com um ciclo autônomo. */
+  Optional<GeraLandingStageExecution>
+      findTopByExperimentIdAndAutonomousCycleIdIsNotNullOrderByExecutionRequestedAtDesc(
+          Long experimentId);
 
   /** Lista as últimas vinte execuções de uma etapa excluindo um status operacional. */
   List<GeraLandingStageExecution>

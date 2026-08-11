@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-11-landing-agent-autonomous-cycle-v1
+      author: marketinghub
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: gera_landing_stage_execution
+        - not:
+            - columnExists:
+                tableName: gera_landing_stage_execution
+                columnName: autonomous_cycle_id
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE gera_landing_stage_execution
+                ADD COLUMN autonomous_cycle_id VARCHAR(36) NULL AFTER stage_code,
+                ADD INDEX idx_gera_landing_autonomous_cycle
+                  (experiment_id, autonomous_cycle_id, stage_code, execution_requested_at);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE gera_landing_stage_execution
+                DROP INDEX idx_gera_landing_autonomous_cycle,
+                DROP COLUMN autonomous_cycle_id;

@@ -37,8 +37,13 @@ A escolha é uma hipótese auditável. O agente registra baseline e critério de
 - memória append-only no MySQL com `CANDIDATE`, `CONFIRMED`, `CONTRADICTED` e `RETIRED`;
 - evidências grandes opcionais no S3 privado, referenciadas por chave e checksum, sem acesso direto do worker;
 - request, resposta bruta, modelo, tokens quando conhecidos, custo, erro, tempo e telemetria persistíveis;
-- idempotência, limite de quatro revisões, bloqueio de repetição sem progresso e revisão independente;
+- idempotência, limite de quatro revisões por ciclo autônomo, bloqueio de repetição sem progresso e revisão independente;
 - proteção contra prompt injection, exfiltração e ampliação de autoridade.
+
+Cada início manual do Quality Review abre um ciclo autônomo identificado e auditável. As etapas de
+regeneração, as revisões automáticas e os custos herdam essa identidade até a aprovação ou o bloqueio.
+Revisões e custos de ciclos históricos permanecem disponíveis para aprendizado e auditoria, mas não
+consomem os limites de um novo ciclo.
 
 ## Modelagem e aprendizado por reforço
 

@@ -295,6 +295,7 @@ public class BackendPresetDesignService {
             .experimentId(experiment.getId())
             .experiment(experiment)
             .stageCode("landing-page-quality-review")
+            .autonomousCycleId(resolveCurrentAutonomousCycle(experiment.getId()))
             .executionRequestedAt(now)
             .createdAt(now)
             .promptTemplateId("auto/html-geralanding")
@@ -303,6 +304,15 @@ public class BackendPresetDesignService {
             .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
             .build();
     executionRepository.save(qualityExecution);
+  }
+
+  /** Mantém a revisão automática ligada ao ciclo que originou a regeneração. */
+  private String resolveCurrentAutonomousCycle(Long experimentId) {
+    return executionRepository
+        .findTopByExperimentIdAndAutonomousCycleIdIsNotNullOrderByExecutionRequestedAtDesc(
+            experimentId)
+        .map(GeraLandingStageExecution::getAutonomousCycleId)
+        .orElseGet(() -> UUID.randomUUID().toString());
   }
 
   /** Monta o HTML final do GeraLanding usando os artefatos canônicos disponíveis no experimento. */

@@ -137,15 +137,13 @@ public class AgentWorkMonitorService {
 
   /** Usa a tarefa aberta mais recente como fallback para qualquer agente. */
   private AgentWorkMonitorResponse task(Agent agent) {
-    return taskRepository
-        .findByAssignedAgentAgentKeyOrderByCreatedAtDescIdDesc(agent.getAgentKey())
-        .stream()
-        .filter(item -> List.of("PENDING", "IN_PROGRESS", "BLOCKED").contains(item.getStatus()))
-        .findFirst()
-        .map(item -> task(agent, item))
-        .orElseGet(
-            () ->
-                response(agent, "IDLE", "Sem trabalho ativo", null, null, false, null, null, null));
+    List<AgentTask> history =
+        taskRepository.findByAssignedAgentAgentKeyOrderByCreatedAtDescIdDesc(agent.getAgentKey());
+    if (history.isEmpty()
+        || !List.of("PENDING", "IN_PROGRESS", "BLOCKED").contains(history.getFirst().getStatus())) {
+      return response(agent, "IDLE", "Sem trabalho ativo", null, null, false, null, null, null);
+    }
+    return task(agent, history.getFirst());
   }
 
   /** Traduz uma solicitação da caixa de entrada para o monitor. */

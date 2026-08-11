@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.agent.Agent;
+import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
@@ -19,6 +20,32 @@ import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: proteger a leitura comum de paralelismo, bloqueios e decisões dos agentes. */
 class AgentWorkMonitorServiceTest {
+  /** Impede que bloqueio antigo de Argos prevaleça sobre a pesquisa mais recente concluída. */
+  @Test
+  void shouldIgnoreObsoleteBlockedTaskWhenLatestTaskIsCompleted() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    GeraLandingStageExecutionRepository landings = mock(GeraLandingStageExecutionRepository.class);
+    VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
+    Agent argos =
+        Agent.builder().id(5L).agentKey("market-radar").nickname("Argos").name("Radar").build();
+    AgentTask completed = new AgentTask();
+    completed.setId(20L);
+    completed.setStatus("COMPLETED");
+    AgentTask obsolete = new AgentTask();
+    obsolete.setId(10L);
+    obsolete.setStatus("BLOCKED");
+    when(agents.findAllByOrderByNicknameAsc()).thenReturn(List.of(argos));
+    when(tasks.findByAssignedAgentAgentKeyOrderByCreatedAtDescIdDesc("market-radar"))
+        .thenReturn(List.of(completed, obsolete));
+
+    AgentWorkMonitorResponse result =
+        new AgentWorkMonitorService(agents, tasks, landings, cycles).list().getFirst();
+
+    assertThat(result.workStatus()).isEqualTo("IDLE");
+    assertThat(result.currentWork()).isEqualTo("Sem trabalho ativo");
+  }
+
   /** Comprova que Plutus decide enquanto Apolo aguarda o mesmo ciclo sem duplicar estado. */
   @Test
   void shouldExposeFinancialDecisionAndApolloWaitingFromSameCycle() {

@@ -106,10 +106,12 @@ jobs:
                    codex_ready=true; \
                  fi; \
                  health_body=\$(curl -fsS http://127.0.0.1:8096/ops-experiment-strategist-observability-v1/health 2>/dev/null || true); \
-                 printf 'readiness attempt=%s container=%s codex=%s health=%s\\n' \
-                   \"\${attempt}\" \"\${status:-missing}\" \"\${codex_ready}\" \"\${health_body:-unavailable}\"; \
+                 logfile_status=\$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8096/ops-experiment-strategist-observability-v1/logfile 2>/dev/null || true); \
+                 printf 'readiness attempt=%s container=%s codex=%s health=%s logfile=%s\\n' \
+                   \"\${attempt}\" \"\${status:-missing}\" \"\${codex_ready}\" \"\${health_body:-unavailable}\" \"\${logfile_status:-unavailable}\"; \
                  if [ \"\${status}\" = running ] \
                    && [ \"\${codex_ready}\" = true ] \
+                   && [ \"\${logfile_status}\" = 200 ] \
                    && printf '%s' \"\${health_body}\" | grep -Eq 'status.*UP'; then \
                    exit 0; \
                  fi; \

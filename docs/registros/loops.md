@@ -960,6 +960,13 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o MCP registrou uma rota nominal `meta-ad-approver-worker-log`, mas o Actuator expõe o endpoint configurado como `logfile` sob o base path versionado.
 - **Correção sistêmica:** aplicação, Composes, documentação operacional e teste de contrato usam `/ops-meta-ad-approver-observability-v1/logfile`, validado contra o runtime publicado.
 
+# LOOP-EXPERIMENT-STRATEGIST-LOG-ENDPOINT-DRIFT — Atena executa sem logs acessíveis pelo MCP
+
+- **Sintoma:** `java_module_logs` retorna HTTP 404 para `experiment-strategist-worker`, embora o worker esteja em execução.
+- **Causa-raiz:** o MCP apontava para a rota nominal `experiment-strategist-worker-log`, mas o Actuator publica o endpoint como `logfile` sob o base path versionado.
+- **Correção sistêmica:** defaults do MCP, Composes e documentação usam `/ops-experiment-strategist-observability-v1/logfile`; o deploy valida health e logfile antes de declarar o worker pronto.
+- **Prevenção:** testes de contrato no worker e no MCP fixam a rota, a porta, os descritores publicados e a sonda do workflow.
+
 ### LOOP-META-AD-APPROVER-CORRECTION-TARGETS-EMPTY
 
 - **Sintoma:** na primeira execução assistida do ciclo de convergência do experimento #88, o Aprovador devolveu `ADJUST` sem `correctionTargets`; o backend encerrou o ciclo como `FAILED` e o callback respondeu HTTP 500.

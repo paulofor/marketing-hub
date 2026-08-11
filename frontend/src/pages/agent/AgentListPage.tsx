@@ -9,6 +9,7 @@ export default function AgentListPage() {
   const { data, isLoading } = useAgents();
   const maturity = useAgentMaturity();
   const agents = Array.isArray(data) ? data : [];
+  const agentsById = new Map(agents.map((agent) => [agent.id, agent]));
 
   return (
     <div>
@@ -54,23 +55,36 @@ export default function AgentListPage() {
                 </tr>
               </thead>
               <tbody>
-                {(maturity.data ?? []).map((item) => (
-                  <tr key={item.agentId}>
-                    <td>{item.agentName}</td>
-                    <td>
-                      <span className="badge text-bg-light">
-                        {item.maturityLevel}
-                      </span>
-                    </td>
-                    <td>{item.executions}</td>
-                    <td>{item.completionRate}%</td>
-                    <td>
-                      {item.openTasks} abertas / {item.resolvedTasks} resolvidas
-                    </td>
-                    <td>{item.confirmedResults}</td>
-                    <td className="small">{item.nextMaturityAction}</td>
-                  </tr>
-                ))}
+                {(maturity.data ?? []).map((item) => {
+                  const agent = agentsById.get(item.agentId);
+                  return (
+                    <tr key={item.agentId}>
+                      <td>
+                        <div className="fw-semibold">
+                          {agent?.nickname || item.agentName}
+                        </div>
+                        {agent?.nickname ? (
+                          <div className="small text-body-secondary">
+                            {item.agentName}
+                          </div>
+                        ) : null}
+                      </td>
+                      <td>
+                        <span className="badge text-bg-light">
+                          {item.maturityLevel}
+                        </span>
+                      </td>
+                      <td>{item.executions}</td>
+                      <td>{item.completionRate}%</td>
+                      <td>
+                        {item.openTasks} abertas / {item.resolvedTasks}{" "}
+                        resolvidas
+                      </td>
+                      <td>{item.confirmedResults}</td>
+                      <td className="small">{item.nextMaturityAction}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -145,12 +159,20 @@ export default function AgentListPage() {
                   <td>{agent.outputs?.length ?? 0}</td>
                   <td>{agent.internalFunctions?.length ?? 0}</td>
                   <td className="text-end">
-                    <button
-                      className="btn btn-sm btn-outline-primary"
-                      onClick={() => navigate(`/agents/${agent.id}/edit`)}
-                    >
-                      Editar
-                    </button>
+                    <div className="d-flex justify-content-end gap-2">
+                      <button
+                        className="btn btn-sm btn-primary"
+                        onClick={() => navigate(`/agents/${agent.id}`)}
+                      >
+                        Abrir mesa
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => navigate(`/agents/${agent.id}/edit`)}
+                      >
+                        Editar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

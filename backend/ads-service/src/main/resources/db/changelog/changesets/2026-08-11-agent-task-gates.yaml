@@ -1,0 +1,33 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-11-agent-task-gates
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent_task
+                ADD COLUMN task_kind VARCHAR(30) NOT NULL DEFAULT 'WORK' AFTER source_reference,
+                ADD COLUMN gate_code VARCHAR(100) NULL AFTER task_kind,
+                ADD COLUMN gate_status VARCHAR(30) NULL AFTER gate_code,
+                ADD COLUMN gate_decision_reason LONGTEXT NULL AFTER gate_status,
+                ADD COLUMN gate_decided_at DATETIME NULL AFTER gate_decision_reason,
+                ADD INDEX idx_agent_task_gate (gate_code, gate_status, assigned_agent_id);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent_task
+                DROP INDEX idx_agent_task_gate,
+                DROP COLUMN gate_decided_at,
+                DROP COLUMN gate_decision_reason,
+                DROP COLUMN gate_status,
+                DROP COLUMN gate_code,
+                DROP COLUMN task_kind;

@@ -89,6 +89,67 @@ public class FinancialCodexRunner {
     }
   }
 
+  /** Avalia um teto de vídeo sem movimentar dinheiro e devolve somente a decisão estruturada. */
+  public Map<String, Object> reviewVideoCycle(VideoProductionCycleReview cycle)
+      throws IOException, InterruptedException {
+    Path output = Files.createTempFile("financial-video-cycle-", ".json");
+    Path processOutput = Files.createTempFile("financial-video-cycle-process-", ".log");
+    Path schema = materialize("prompts/financial-agent/v1/video-cycle-review-schema.json", ".json");
+    try {
+      List<String> command =
+          new ArrayList<>(
+              List.of(
+                  properties.getCodexCommand(),
+                  "exec",
+                  "-",
+                  "--skip-git-repo-check",
+                  "--sandbox",
+                  "read-only",
+                  "--cd",
+                  properties.getRepositoryPath(),
+                  "--output-schema",
+                  schema.toString(),
+                  "--output-last-message",
+                  output.toString(),
+                  "--color",
+                  "never"));
+      if (properties.getModel() != null && !properties.getModel().isBlank()) {
+        command.add("--model");
+        command.add(properties.getModel());
+      }
+      Process process =
+          new ProcessBuilder(command)
+              .redirectErrorStream(true)
+              .redirectOutput(processOutput.toFile())
+              .start();
+      String prompt =
+          read("prompts/financial-agent/v1/video-cycle-review.md")
+              .replace("{{CYCLE}}", objectMapper.writeValueAsString(cycle));
+      process.getOutputStream().write(prompt.getBytes(StandardCharsets.UTF_8));
+      process.getOutputStream().close();
+      if (!process.waitFor(properties.getCodexTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
+        process.destroyForcibly();
+        throw new IllegalStateException("Timeout ao avaliar ciclo de vídeo.");
+      }
+      if (process.exitValue() != 0) {
+        throw new IllegalStateException(
+            "Codex financeiro falhou no ciclo: " + Files.readString(processOutput));
+      }
+      JsonNode result = objectMapper.readTree(Files.readString(output));
+      if (!result.hasNonNull("decision") || !result.hasNonNull("reason")) {
+        throw new IllegalArgumentException("Parecer financeiro de vídeo incompleto.");
+      }
+      return Map.of(
+          "decision", result.get("decision").asText(),
+          "reason", result.get("reason").asText(),
+          "decidedByAgentKey", "financial-agent");
+    } finally {
+      Files.deleteIfExists(output);
+      Files.deleteIfExists(processOutput);
+      Files.deleteIfExists(schema);
+    }
+  }
+
   /** Monta o comando Codex preservando sandbox e repositorio somente leitura. */
   List<String> buildCommand(Path output, Path schema) {
     return buildCommand(output, schema, Path.of("financial-agent.mjs"));

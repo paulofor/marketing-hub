@@ -19,7 +19,7 @@ public class PremiumAgentMemoryFeedback {
   private String outcome;
 
   @Lob
-  @Column(name = "evidence_text", nullable = false)
+  @Column(name = "evidence_text", nullable = false, columnDefinition = "LONGTEXT")
   private String evidence;
 
   @Column(name = "source_reference", length = 700)

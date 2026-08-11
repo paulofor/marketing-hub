@@ -558,6 +558,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - UI exibindo evidências visuais usadas na decisão.
 - **Regra preventiva**:
   - nenhuma decisão de Quality Review deve ser analisada sem conferir qual screenshot/hash foi avaliado.
+- **Recalibração em 2026-08-11:** 44 revisões produtivas mostraram teto de score 88 e apenas uma aprovação histórica, com score 86, enquanto avaliações recentes entre 84 e 88 ainda misturavam bloqueios reais com refinamentos opcionais. O gate deixou de depender do corte isolado de 90 e passou a exigir score mínimo 85, piso 8/10 por dimensão, prontidão comercial, especificidade e ausência de bloqueios; melhorias opcionais foram separadas em `improvementOpportunities`. O validator determinístico impede aprovação inconsistente.
 
 ## LOOP-LANDING-ANALYTICS-FUNNEL — Analytics, funil e submissão
 
@@ -984,3 +985,10 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** os gates de revisão e custo eram acumulados por experimento, sem identidade persistida para o ciclo autônomo que originou a regeneração.
 - **Correção sistêmica:** cada início manual abre um `autonomous_cycle_id`; tarefas, revisões automáticas e custos herdam a correlação, e os gates consultam somente o ciclo corrente.
 - **Prevenção:** teste de contrato mantém revisões históricas fora do contador atual sem apagar auditoria nem ampliar o limite seguro de quatro revisões.
+
+### LOOP-LANDING-GENERATOR-MEMORY-TEXT-OVERFLOW
+
+- **Sintoma:** Dédalo conclui a análise autônoma, mas o callback responde HTTP 500 e nenhuma regeneração é iniciada.
+- **Causa-raiz:** `premium_agent_memory.content_text` usava `TEXT`; o parecer enriquecido de 21.406 caracteres excedeu a capacidade efetiva em `utf8mb4` e o MySQL 5.7 retornou erro 1406.
+- **Correção sistêmica:** conteúdo e evidências da memória premium e de seus feedbacks passam a `LONGTEXT`, com mapeamento JPA explícito e sem truncamento silencioso.
+- **Prevenção:** teste de contrato valida conjuntamente entidade, changelog e include relativo do Liquibase.

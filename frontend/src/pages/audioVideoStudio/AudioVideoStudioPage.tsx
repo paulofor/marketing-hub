@@ -39,6 +39,10 @@ import {
 import { useSalesVideoJobs } from "../../api/salesVideo/useSalesVideoJobs";
 import { useRequestVideoRender } from "../../api/salesVideo/useRequestVideoRender";
 import { useRequestSalesVideoMontage } from "../../api/salesVideo/useRequestSalesVideoMontage";
+import {
+  useCreateVideoProductionCycle,
+  useVideoProductionCycles,
+} from "../../api/salesVideo/useVideoProductionCycles";
 import { useAsset } from "../../api/media/useAsset";
 import { useTenantContext } from "../../utils/tenantContext";
 import type {
@@ -812,7 +816,9 @@ const studioPresets: StudioPreset[] = [
 function buildBriefingFromProject(project: VideoProject): StudioBriefing {
   return {
     productId: project.productId ? String(project.productId) : "",
-    commercialPlanId: project.commercialPlanId ? String(project.commercialPlanId) : "",
+    commercialPlanId: project.commercialPlanId
+      ? String(project.commercialPlanId)
+      : "",
     campaignKey: project.campaignKey || "",
     videoCategory: project.videoCategory || defaultBriefing.videoCategory,
     contextType: project.contextType || defaultBriefing.contextType,
@@ -949,6 +955,10 @@ export default function AudioVideoStudioPage() {
   );
   const createVideoProject = useCreateVideoProject();
   const updateVideoProject = useUpdateVideoProject();
+  const productionCycles = useVideoProductionCycles(editableProjectId);
+  const createProductionCycle =
+    useCreateVideoProductionCycle(editableProjectId);
+  const [cycleBudgetUsd, setCycleBudgetUsd] = useState("");
   const [saveFeedback, setSaveFeedback] = useState("");
   const [selectedSceneJobIds, setSelectedSceneJobIds] = useState<number[]>([]);
   const [sourceImageAssetId, setSourceImageAssetId] = useState("1953");
@@ -1149,8 +1159,13 @@ export default function AudioVideoStudioPage() {
 
   const handleSaveProject = async () => {
     setSaveFeedback("");
-    if (!parseOptionalNumber(briefing.productId) || !parseOptionalNumber(briefing.commercialPlanId)) {
-      setSaveFeedback("Selecione produto e plano comercial antes de criar o projeto.");
+    if (
+      !parseOptionalNumber(briefing.productId) ||
+      !parseOptionalNumber(briefing.commercialPlanId)
+    ) {
+      setSaveFeedback(
+        "Selecione produto e plano comercial antes de criar o projeto.",
+      );
       return;
     }
     if (durationIssue) {
@@ -2075,6 +2090,58 @@ export default function AudioVideoStudioPage() {
                   homologados; anúncio de exportação 4K não vale como prova de
                   geração nativa 4K.
                 </p>
+                {selectedProject ? (
+                  <div>
+                    <label>
+                      Teto do ciclo em USD *
+                      <input
+                        aria-label="Teto do ciclo em USD"
+                        min="0.01"
+                        step="0.01"
+                        type="number"
+                        value={cycleBudgetUsd}
+                        onChange={(event) =>
+                          setCycleBudgetUsd(event.target.value)
+                        }
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      disabled={
+                        createProductionCycle.isPending ||
+                        !Number.isFinite(Number(cycleBudgetUsd)) ||
+                        Number(cycleBudgetUsd) <= 0
+                      }
+                      onClick={() =>
+                        createProductionCycle.mutate({
+                          budgetLimitUsd: Number(cycleBudgetUsd),
+                          requestedBy: "Usuário do Marketing Hub",
+                        })
+                      }
+                    >
+                      {createProductionCycle.isPending ? (
+                        <span className="spinner-border spinner-border-sm" />
+                      ) : null}
+                      Solicitar produção a Apolo sob controle de Plutus
+                    </button>
+                    <small>
+                      O teto não é meta de gasto. Plutus avalia antes de
+                      qualquer provider; Apolo trabalha em TEST e não publica.
+                    </small>
+                    {createProductionCycle.isError ? (
+                      <p role="alert">Não foi possível abrir o ciclo.</p>
+                    ) : null}
+                    {productionCycles.data?.[0] ? (
+                      <p>
+                        Ciclo #{productionCycles.data[0].id}:{" "}
+                        <strong>{productionCycles.data[0].status}</strong>
+                        {productionCycles.data[0].financialReason
+                          ? ` · ${productionCycles.data[0].financialReason}`
+                          : ""}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
               </article>
               <div className="audio-video-studio-page__provider-grid">
                 {SALES_VIDEO_PROVIDER_OPTIONS.map((option) => {

@@ -201,12 +201,12 @@ Verifique desktop e mobile:
 
 Qualquer artefato técnico visível deve pesar muito na nota.
 
-## Escala de score
+## Escala de score calibrada
 
 Use a escala abaixo com rigor:
 
-- 90-100: pronta para tráfego pago. Forte, clara, específica, confiável, com prova visível e CTA convincente.
-- 80-89: boa landing, mas ainda com ajustes relevantes antes de escalar tráfego.
+- 85-100: pode estar pronta para tráfego pago quando não houver bloqueio de publicação e todos os critérios essenciais atingirem o piso definido abaixo.
+- 80-84: boa landing, mas ainda com ajustes relevantes antes de escalar tráfego.
 - 70-79: funcional, porém comercialmente fraca ou visualmente comum. Não deveria ser publicada sem revisão.
 - 60-69: estrutura existe, mas falta força de promessa, prova, mecanismo ou acabamento.
 - 40-59: bloqueio forte. Parece rascunho, genérica, pouco confiável ou confusa.
@@ -216,7 +216,12 @@ Use a escala abaixo com rigor:
 
 Recomende `APPROVE_FOR_PUBLICATION` somente se todas as condições abaixo forem verdadeiras:
 
-- `score` maior ou igual a 90;
+- `score` maior ou igual a 85;
+- todos os itens de `criteriaScores` têm nota maior ou igual a 8;
+- `targetAudienceSpecificity` é `medium` ou `high`;
+- `commercialReadiness` é `strong` ou `excellent`;
+- `blockingIssues` está vazio;
+- `recommendedRegeneration` está vazio;
 - primeira dobra comunica dor, resultado, mecanismo e CTA;
 - existe prova ou amostra concreta do valor da solução;
 - o formulário/CTA deixa claro o benefício de enviar o e-mail;
@@ -226,6 +231,10 @@ Recomende `APPROVE_FOR_PUBLICATION` somente se todas as condições abaixo forem
 - mobile e desktop estão visualmente corretos.
 
 Em qualquer outro caso, recomende `REGENERATE_BEFORE_PUBLICATION`.
+
+Não transforme refinamentos opcionais em bloqueios. Registre em `improvementOpportunities` ajustes que podem elevar conversão ou acabamento, mas cuja ausência não impede checkout/formulário, compreensão, confiança, responsividade ou entrega. Uma landing pode ser aprovada com oportunidades de melhoria.
+
+Considere `blockingIssues` somente falhas que tornam inseguro receber tráfego: checkout/formulário/link inoperante, promessa ou oferta incoerente, ausência de prova suficiente, baixa legibilidade, falha responsiva, artefato técnico, baixa confiança ou critério essencial abaixo de 8.
 
 Se a página estiver bonita, mas não vender bem a transformação, não aprove.
 
@@ -280,6 +289,10 @@ Exemplos:
 
 Não escreva problemas vagos como “melhorar design” ou “copy fraca”. Sempre diga o que está fraco, por que isso afeta conversão e qual direção de correção.
 
+## Como preencher `improvementOpportunities`
+
+Registre apenas otimizações não bloqueantes, como um teste futuro de CTA, variação editorial ou refinamento visual incremental. Não use este campo para esconder falha funcional, comercial, responsiva ou de confiança.
+
 ## Como escolher `recommendedRegeneration`
 
 Recomende somente as etapas que atacam a causa-raiz.
@@ -305,5 +318,6 @@ O JSON deve conter exatamente os campos definidos no schema:
 - `commercialReadiness`
 - `criteriaScores`
 - `blockingIssues`
+- `improvementOpportunities`
 - `recommendedRegeneration`
 - `approvalRecommendation`

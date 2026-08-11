@@ -13,6 +13,7 @@ public class FinancialAgentScheduler {
   private final FinancialCodexRunner runner;
   private final FinancialAgentProperties properties;
 
+  /** Configura fila, executor Codex e limites operacionais de Plutus. */
   public FinancialAgentScheduler(
       FinancialAgentBackendClient backend,
       FinancialCodexRunner runner,
@@ -27,6 +28,11 @@ public class FinancialAgentScheduler {
   public void processOne() {
     FinancialAgentJob job = null;
     try {
+      VideoProductionCycleReview cycle = backend.pendingVideoCycle();
+      if (cycle != null) {
+        backend.decideVideoCycle(cycle.id(), runner.reviewVideoCycle(cycle));
+        return;
+      }
       if (properties.getCommercialPlanId() != null) {
         backend.ensureDaily(properties.getCommercialPlanId());
       }

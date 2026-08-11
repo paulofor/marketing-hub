@@ -1,0 +1,37 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-11-apollo-plutus-video-cycle-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE video_production_cycle (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                video_project_id BIGINT NOT NULL,
+                product_id BIGINT NOT NULL,
+                commercial_plan_id BIGINT NOT NULL,
+                experiment_id BIGINT NULL,
+                requested_by VARCHAR(191) NOT NULL,
+                status VARCHAR(40) NOT NULL,
+                budget_limit_usd DECIMAL(12,4) NOT NULL,
+                known_cost_usd DECIMAL(12,4) NOT NULL DEFAULT 0,
+                financial_decision VARCHAR(30) NULL,
+                financial_reason LONGTEXT NULL,
+                financial_decided_at DATETIME NULL,
+                sales_video_job_id BIGINT NULL,
+                agent_task_id BIGINT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                INDEX idx_video_cycle_project (video_project_id, created_at),
+                INDEX idx_video_cycle_status (status, created_at),
+                CONSTRAINT fk_video_cycle_project FOREIGN KEY (video_project_id) REFERENCES video_project(id),
+                CONSTRAINT fk_video_cycle_job FOREIGN KEY (sales_video_job_id) REFERENCES sales_video_job(id),
+                CONSTRAINT fk_video_cycle_task FOREIGN KEY (agent_task_id) REFERENCES agent_task(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

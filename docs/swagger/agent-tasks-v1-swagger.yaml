@@ -1,0 +1,121 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub - Caixa de Entrada dos Agentes
+  version: 1.0.0
+paths:
+  /api/agent-tasks/agents/{agentKey}:
+    get:
+      summary: Lista a caixa de entrada de um agente
+      parameters:
+        - name: agentKey
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: Tarefas ordenadas da mais recente para a mais antiga
+  /api/agent-tasks:
+    post:
+      summary: Abre uma solicitação humana para um agente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/HumanTaskRequest'}
+      responses:
+        '201': {description: Tarefa criada}
+  /api/agent-tasks/{taskId}/status:
+    patch:
+      summary: Evolui o estado auditável de uma tarefa
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema: {type: integer, format: int64}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [PENDING, IN_PROGRESS, COMPLETED, BLOCKED, CANCELLED]
+      responses:
+        '200': {description: Estado atualizado}
+        '409': {description: Transição inválida}
+  /api/internal/agent-tasks/v1:
+    post:
+      summary: Permite que um agente delegue uma tarefa a outro agente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AgentTaskRequest'}
+      responses:
+        '201': {description: Delegação registrada}
+  /api/internal/agent-tasks/v1/{taskId}/gate-decision:
+    post:
+      summary: Registra a decisão do gate pelo agente destinatário
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema: {type: integer, format: int64}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GateDecisionRequest'}
+      responses:
+        '200': {description: Gate decidido e tarefa encerrada ou bloqueada}
+        '403': {description: Identidade diferente do agente destinatário}
+        '409': {description: Tarefa comum ou gate já decidido}
+  /api/internal/agent-tasks/v1/gates:
+    post:
+      summary: Permite que um agente abra um gate na mesa do responsável
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AgentGateRequest'}
+      responses:
+        '201': {description: Gate pendente registrado na mesa}
+components:
+  schemas:
+    HumanTaskRequest:
+      type: object
+      required: [assignedAgentKey, requestedByName, title, description, priority]
+      properties:
+        assignedAgentKey: {type: string, maxLength: 100}
+        requestedByName: {type: string, maxLength: 100}
+        title: {type: string, maxLength: 160}
+        description: {type: string}
+        priority: {type: string, enum: [LOW, NORMAL, HIGH, URGENT]}
+        sourceReference: {type: string, maxLength: 200}
+    AgentTaskRequest:
+      type: object
+      required: [requestedByAgentKey, assignedAgentKey, title, description, priority]
+      properties:
+        requestedByAgentKey: {type: string, maxLength: 100}
+        assignedAgentKey: {type: string, maxLength: 100}
+        title: {type: string, maxLength: 160}
+        description: {type: string}
+        priority: {type: string, enum: [LOW, NORMAL, HIGH, URGENT]}
+        sourceReference: {type: string, maxLength: 200}
+    GateDecisionRequest:
+      type: object
+      required: [decidedByAgentKey, decision, reason]
+      properties:
+        decidedByAgentKey: {type: string, maxLength: 100}
+        decision: {type: string, enum: [APPROVED, REJECTED]}
+        reason: {type: string}
+    AgentGateRequest:
+      allOf:
+        - $ref: '#/components/schemas/AgentTaskRequest'
+        - type: object
+          required: [gateCode]
+          properties:
+            gateCode: {type: string, maxLength: 100}

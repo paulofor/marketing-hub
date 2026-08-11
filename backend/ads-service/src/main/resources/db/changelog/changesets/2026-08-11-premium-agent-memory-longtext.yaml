@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-11-premium-agent-memory-longtext
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE premium_agent_memory
+                MODIFY COLUMN content_text LONGTEXT NOT NULL,
+                MODIFY COLUMN evidence_text LONGTEXT NOT NULL;
+
+              ALTER TABLE premium_agent_memory_feedback
+                MODIFY COLUMN evidence_text LONGTEXT NOT NULL;

@@ -105,6 +105,16 @@ export interface CommercialPlan {
   updatedAt?: string | null;
 }
 
+export interface CommercialPlanVersion {
+  id: number;
+  commercialPlanId: number;
+  versionNumber: number;
+  snapshotJson: string;
+  changedBy: string;
+  changeReason: string;
+  createdAt: string;
+}
+
 export interface CommercialPlanWeekExperiment {
   id: number;
   name: string;
@@ -208,6 +218,20 @@ export function useCommercialPlans() {
   });
 }
 
+/** Consulta o histórico oficial que orientou tarefas, gates e agentes. */
+export function useCommercialPlanVersions(planId?: number | null) {
+  return useQuery({
+    queryKey: ["commercial-plan-versions", planId],
+    enabled: !!planId && planId > 0,
+    queryFn: async () => {
+      const { data } = await axios.get<CommercialPlanVersion[]>(
+        `/api/planning/commercial-plans/${planId}/versions`,
+      );
+      return data;
+    },
+  });
+}
+
 export function useCommercialPlanWeeks(
   planId?: number | null,
   referenceMonth?: string | null,
@@ -283,8 +307,12 @@ export function useUpdateCommercialPlan() {
       );
       return data;
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["commercial-plans"] }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["commercial-plans"] });
+      queryClient.invalidateQueries({
+        queryKey: ["commercial-plan-versions", variables.id],
+      });
+    },
   });
 }
 

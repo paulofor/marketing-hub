@@ -9,6 +9,7 @@ import {
   CommercialPlanStatus,
   SaveCommercialPlanPayload,
   useCommercialPlanWeeks,
+  useCommercialPlanVersions,
   useCommercialPlans,
   useCreateCommercialPlan,
   useUpdateCommercialPlan,
@@ -964,6 +965,11 @@ export default function CommercialPlanningPage() {
     [plans, selectedPlanId],
   );
   const planReferenceMonth = resolvePlanReferenceMonth(currentMonthPlan);
+  const planVersionsQuery = useCommercialPlanVersions(
+    currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
+  );
+  const planVersions = asArray(planVersionsQuery.data);
+  const currentPlanVersion = planVersions[0];
   const [selectedReferenceMonth, setSelectedReferenceMonth] =
     useState(planReferenceMonth);
   const [isEditingPlan, setIsEditingPlan] = useState(false);
@@ -1103,6 +1109,37 @@ export default function CommercialPlanningPage() {
                 </option>
               ))}
             </select>
+            <div className="d-flex flex-wrap align-items-center gap-2 mt-3">
+              <span className="badge text-bg-primary">
+                {planVersionsQuery.isLoading
+                  ? "Consultando versão..."
+                  : currentPlanVersion
+                    ? `Contexto oficial v${currentPlanVersion.versionNumber}`
+                    : "Contexto ainda não versionado"}
+              </span>
+              {currentPlanVersion ? (
+                <small className="text-body-secondary">
+                  {currentPlanVersion.changeReason} · referência para agentes:{" "}
+                  <code>
+                    commercial-plan:{currentMonthPlan.id}@v
+                    {currentPlanVersion.versionNumber}
+                  </code>
+                </small>
+              ) : null}
+            </div>
+            {planVersions.length > 1 ? (
+              <details className="mt-3">
+                <summary>Histórico de versões ({planVersions.length})</summary>
+                <ol className="small mt-2 mb-0">
+                  {planVersions.map((version) => (
+                    <li key={version.id}>
+                      v{version.versionNumber} — {version.changeReason} —{" "}
+                      {new Date(version.createdAt).toLocaleString("pt-BR")}
+                    </li>
+                  ))}
+                </ol>
+              </details>
+            ) : null}
           </div>
         </div>
       ) : null}

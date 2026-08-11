@@ -1741,3 +1741,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-11-agent-task-gates.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-11-commercial-plan-versioning.yaml
+      relativeToChangelogFile: true

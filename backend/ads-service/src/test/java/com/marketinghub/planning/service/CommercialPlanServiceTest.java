@@ -49,6 +49,8 @@ class CommercialPlanServiceTest {
 
   @Mock private CommercialPlanExecutionSyncService executionSyncService;
 
+  @Mock private CommercialPlanVersionService versionService;
+
   private CommercialPlanService service;
 
   /** Prepara o servico com repositorios simulados antes de cada teste. */
@@ -62,7 +64,8 @@ class CommercialPlanServiceTest {
             nicheRepository,
             hypothesisRepository,
             experimentRepository,
-            executionSyncService);
+            executionSyncService,
+            versionService);
   }
 
   /** Deve bloquear planos sem os gates comerciais minimos. */

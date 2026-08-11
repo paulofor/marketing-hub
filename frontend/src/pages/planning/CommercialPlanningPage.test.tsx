@@ -177,6 +177,24 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
       isLoading: false,
       isError: false,
     }),
+    useCommercialPlanVersions: (planId?: number | null) => ({
+      data:
+        planId && planId > 0
+          ? [
+              {
+                id: 101,
+                commercialPlanId: planId,
+                versionNumber: 2,
+                snapshotJson: "{}",
+                changedBy: "USER",
+                changeReason: "Atualização do contexto comercial",
+                createdAt: "2026-08-11T12:00:00Z",
+              },
+            ]
+          : [],
+      isLoading: false,
+      isError: false,
+    }),
     useCommercialPlanWeeks: (
       _planId?: number | null,
       referenceMonth?: string | null,
@@ -263,6 +281,15 @@ vi.mock("../../api/planning/useGrowthOperator", () => ({
 vi.mock("../../api/planning/useFinancialAgent", () => ({
   useFinancialAgentExecutions: () => ({ data: [], isError: false }),
   useStartFinancialAgent: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isError: false,
+  }),
+}));
+
+vi.mock("../../api/planning/useExperimentStrategist", () => ({
+  useExperimentStrategistExecutions: () => ({ data: [], isError: false }),
+  useStartExperimentStrategist: () => ({
     mutate: vi.fn(),
     isPending: false,
     isError: false,

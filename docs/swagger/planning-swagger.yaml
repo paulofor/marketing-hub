@@ -3,6 +3,24 @@ info:
   title: Marketing Hub Planning API
   version: v1
 paths:
+  /api/planning/commercial-plans/{id}/versions:
+    get:
+      tags: [planning]
+      summary: Lista versões imutáveis do contexto comercial.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer, format: int64}}
+      responses:
+        "200":
+          description: Histórico auditável do plano.
+  /api/planning/commercial-plans/{id}/context/current:
+    get:
+      tags: [planning]
+      summary: Entrega a versão corrente do contexto para agentes, tarefas e gates.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer, format: int64}}
+      responses:
+        "200":
+          description: Snapshot funcional com identidade de versão.
   /api/planning/commercial-plans/{id}/weeks:
     get:
       tags:

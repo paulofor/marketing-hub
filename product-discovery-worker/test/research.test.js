@@ -374,43 +374,59 @@ test("searchInternet uses stronger default search depth before stopping", async 
   );
   assert.ok(
     calls.some((url) =>
-      new URL(url).searchParams.get("q")?.includes("scientific study mechanism"),
+      new URL(url).searchParams
+        .get("q")
+        ?.includes("scientific study mechanism"),
     ),
     "deve executar consulta científica antes de encerrar pelo volume de resultados",
   );
 });
 
-test("searchInternet does not fabricate evidence when every query fails", async () => {
-  const results = await searchInternet(
-    {
-      theme: "diagnostico de estilo acessivel",
-      targetAudience: "mulheres 30+ estilo imagem pessoal",
-    },
-    {
-      maxSearchResults: 3,
-      config: resolveSearchConfig({
-        PRODUCT_DISCOVERY_SEARCH_PROVIDER: "brave",
-        BRAVE_SEARCH_API_KEY: "brave-test-key",
-      }),
-      logger: { warn() {}, info() {} },
-      fetchFn: async () => ({
-        ok: false,
-        status: 422,
-        json: async () => ({}),
-      }),
-    },
+test("searchInternet fails operationally when every provider query fails", async () => {
+  await assert.rejects(
+    () =>
+      searchInternet(
+        {
+          theme: "diagnostico de estilo acessivel",
+          targetAudience: "mulheres 30+ estilo imagem pessoal",
+        },
+        {
+          maxSearchResults: 3,
+          config: resolveSearchConfig({
+            PRODUCT_DISCOVERY_SEARCH_PROVIDER: "brave",
+            BRAVE_SEARCH_API_KEY: "brave-test-key",
+          }),
+          logger: { warn() {}, info() {} },
+          fetchFn: async () => ({
+            ok: false,
+            status: 422,
+            json: async () => ({}),
+          }),
+        },
+      ),
+    /Todas as consultas externas falharam; provider=brave; tentativas=14; status=422/,
   );
-
-  assert.deepEqual(results, []);
 });
 
 test("analyzeSearchResults blocks approval without commercial intent", () => {
   const report = analyzeSearchResults(
     { theme: "organização pessoal", targetAudience: "adultos" },
     [
-      { title: "Dificuldade de organização", url: "https://forum.example/a", snippet: "problema confuso não consigo" },
-      { title: "Relato sobre rotina", url: "https://community.example/b", snippet: "dificuldade demorado" },
-      { title: "Behavior change systematic review", url: "https://pubmed.ncbi.nlm.nih.gov/42", snippet: "systematic review intervention" },
+      {
+        title: "Dificuldade de organização",
+        url: "https://forum.example/a",
+        snippet: "problema confuso não consigo",
+      },
+      {
+        title: "Relato sobre rotina",
+        url: "https://community.example/b",
+        snippet: "dificuldade demorado",
+      },
+      {
+        title: "Behavior change systematic review",
+        url: "https://pubmed.ncbi.nlm.nih.gov/42",
+        snippet: "systematic review intervention",
+      },
     ],
   );
   assert.equal(report.opportunities.length, 3);
@@ -419,7 +435,16 @@ test("analyzeSearchResults blocks approval without commercial intent", () => {
 });
 
 test("scientific and commercial queries are inside the operational query limit", () => {
-  const queries = buildSearchQueries({ theme: "tema novo", targetAudience: "público" }).slice(0, 14);
-  assert.ok(queries.some((query) => query.includes("scientific study mechanism")));
-  assert.ok(queries.some((query) => query.includes("preço") || query.includes("resposta pronta")));
+  const queries = buildSearchQueries({
+    theme: "tema novo",
+    targetAudience: "público",
+  }).slice(0, 14);
+  assert.ok(
+    queries.some((query) => query.includes("scientific study mechanism")),
+  );
+  assert.ok(
+    queries.some(
+      (query) => query.includes("preço") || query.includes("resposta pronta"),
+    ),
+  );
 });

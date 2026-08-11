@@ -247,6 +247,13 @@ public class FinancialAgentService {
     snapshot.put("periodStart", plan.getCreatedAt());
     snapshot.put("periodEnd", plan.getDeadline());
     snapshot.put("monthlyBudgetCeilingBrl", plan.getMaxBudget());
+    snapshot.put("offerPriceBrl", plan.getOfferPriceBrl());
+    snapshot.put("variableCostPerSaleBrl", plan.getVariableCostPerSaleBrl());
+    snapshot.put("expectedMonthlyTraffic", plan.getExpectedMonthlyTraffic());
+    snapshot.put("expectedConversionRatePercent", plan.getExpectedConversionRatePercent());
+    snapshot.put("expectedCacBrl", plan.getExpectedCacBrl());
+    snapshot.put("expectedRefundRatePercent", plan.getExpectedRefundRatePercent());
+    snapshot.put("fixedOperationalCostBrl", plan.getFixedOperationalCostBrl());
     snapshot.put("campaignCostBrl", campaign);
     snapshot.put("aiProviderCostBrl", ai);
     snapshot.put("otherAttributedCostBrl", other);

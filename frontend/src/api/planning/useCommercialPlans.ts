@@ -79,6 +79,13 @@ export interface CommercialPlan {
   maxBudget?: number | null;
   targetRevenue?: number | null;
   operationalRevenueTarget?: number | null;
+  offerPriceBrl?: number | null;
+  variableCostPerSaleBrl?: number | null;
+  expectedMonthlyTraffic?: number | null;
+  expectedConversionRatePercent?: number | null;
+  expectedCacBrl?: number | null;
+  expectedRefundRatePercent?: number | null;
+  fixedOperationalCostBrl?: number | null;
   experimentsToCreate?: number | null;
   experimentsToPublish?: number | null;
   productsToValidate?: number | null;
@@ -252,6 +259,13 @@ export interface SaveCommercialPlanPayload {
   maxBudget?: number | null;
   targetRevenue?: number | null;
   operationalRevenueTarget?: number | null;
+  offerPriceBrl?: number | null;
+  variableCostPerSaleBrl?: number | null;
+  expectedMonthlyTraffic?: number | null;
+  expectedConversionRatePercent?: number | null;
+  expectedCacBrl?: number | null;
+  expectedRefundRatePercent?: number | null;
+  fixedOperationalCostBrl?: number | null;
   experimentsToCreate?: number | null;
   experimentsToPublish?: number | null;
   productsToValidate?: number | null;

@@ -3,6 +3,34 @@ info:
   title: Marketing Hub Planning API
   version: v1
 paths:
+  /api/planning/commercial-plans:
+    post:
+      tags: [planning]
+      summary: Cria plano comercial com premissas financeiras versionadas.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommercialPlanFinancialAssumptions"
+      responses:
+        "200":
+          description: Plano criado e primeira versão congelada.
+  /api/planning/commercial-plans/{id}:
+    put:
+      tags: [planning]
+      summary: Atualiza o plano e cria nova versão das premissas.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer, format: int64}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommercialPlanFinancialAssumptions"
+      responses:
+        "200":
+          description: Plano atualizado sem autorizar gastos.
   /api/planning/commercial-plans/{id}/versions:
     get:
       tags: [planning]
@@ -67,6 +95,17 @@ paths:
           description: Compromisso atualizado e preservado na versão original do plano.
 components:
   schemas:
+    CommercialPlanFinancialAssumptions:
+      type: object
+      description: Premissas estimadas e segregadas; não representam valores realizados.
+      properties:
+        offerPriceBrl: {type: number, minimum: 0, nullable: true}
+        variableCostPerSaleBrl: {type: number, minimum: 0, nullable: true}
+        expectedMonthlyTraffic: {type: integer, minimum: 0, nullable: true}
+        expectedConversionRatePercent: {type: number, minimum: 0, maximum: 100, nullable: true}
+        expectedCacBrl: {type: number, minimum: 0, nullable: true}
+        expectedRefundRatePercent: {type: number, minimum: 0, maximum: 100, nullable: true}
+        fixedOperationalCostBrl: {type: number, minimum: 0, nullable: true}
     CommercialPlanAgentActivity:
       type: object
       properties:

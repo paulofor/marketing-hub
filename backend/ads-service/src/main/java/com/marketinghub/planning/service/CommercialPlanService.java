@@ -21,6 +21,7 @@ import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanMilestoneRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanSimulationRepository;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -77,6 +78,14 @@ public class CommercialPlanService {
   @Transactional
   public CommercialPlan create(CreateCommercialPlanRequest request) {
     validateRequired(request.name(), "name");
+    validateFinancialAssumptions(
+        request.offerPriceBrl(),
+        request.variableCostPerSaleBrl(),
+        request.expectedMonthlyTraffic(),
+        request.expectedConversionRatePercent(),
+        request.expectedCacBrl(),
+        request.expectedRefundRatePercent(),
+        request.fixedOperationalCostBrl());
     CommercialPlan plan =
         CommercialPlan.builder()
             .name(request.name())
@@ -98,6 +107,13 @@ public class CommercialPlanService {
             .maxBudget(request.maxBudget())
             .targetRevenue(request.targetRevenue())
             .operationalRevenueTarget(request.operationalRevenueTarget())
+            .offerPriceBrl(request.offerPriceBrl())
+            .variableCostPerSaleBrl(request.variableCostPerSaleBrl())
+            .expectedMonthlyTraffic(request.expectedMonthlyTraffic())
+            .expectedConversionRatePercent(request.expectedConversionRatePercent())
+            .expectedCacBrl(request.expectedCacBrl())
+            .expectedRefundRatePercent(request.expectedRefundRatePercent())
+            .fixedOperationalCostBrl(request.fixedOperationalCostBrl())
             .experimentsToCreate(request.experimentsToCreate())
             .experimentsToPublish(request.experimentsToPublish())
             .productsToValidate(request.productsToValidate())
@@ -119,6 +135,14 @@ public class CommercialPlanService {
   public CommercialPlan update(Long id, UpdateCommercialPlanRequest request) {
     CommercialPlan plan = getPlan(id);
     validateRequired(request.name(), "name");
+    validateFinancialAssumptions(
+        request.offerPriceBrl(),
+        request.variableCostPerSaleBrl(),
+        request.expectedMonthlyTraffic(),
+        request.expectedConversionRatePercent(),
+        request.expectedCacBrl(),
+        request.expectedRefundRatePercent(),
+        request.fixedOperationalCostBrl());
     plan.setName(request.name());
     plan.setStatus(request.status() != null ? request.status() : plan.getStatus());
     plan.setNiche(resolveNiche(request.nicheId()));
@@ -137,6 +161,13 @@ public class CommercialPlanService {
     plan.setMaxBudget(request.maxBudget());
     plan.setTargetRevenue(request.targetRevenue());
     plan.setOperationalRevenueTarget(request.operationalRevenueTarget());
+    plan.setOfferPriceBrl(request.offerPriceBrl());
+    plan.setVariableCostPerSaleBrl(request.variableCostPerSaleBrl());
+    plan.setExpectedMonthlyTraffic(request.expectedMonthlyTraffic());
+    plan.setExpectedConversionRatePercent(request.expectedConversionRatePercent());
+    plan.setExpectedCacBrl(request.expectedCacBrl());
+    plan.setExpectedRefundRatePercent(request.expectedRefundRatePercent());
+    plan.setFixedOperationalCostBrl(request.fixedOperationalCostBrl());
     plan.setExperimentsToCreate(request.experimentsToCreate());
     plan.setExperimentsToPublish(request.experimentsToPublish());
     plan.setProductsToValidate(request.productsToValidate());
@@ -501,6 +532,49 @@ public class CommercialPlanService {
   private void validateRequired(String value, String fieldName) {
     if (isBlank(value)) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, fieldName + " e obrigatorio");
+    }
+  }
+
+  /** Valida as premissas financeiras sem transformar estimativas em fatos realizados. */
+  private void validateFinancialAssumptions(
+      BigDecimal offerPrice,
+      BigDecimal variableCostPerSale,
+      Integer monthlyTraffic,
+      BigDecimal conversionRate,
+      BigDecimal expectedCac,
+      BigDecimal refundRate,
+      BigDecimal fixedOperationalCost) {
+    validateNonNegative(offerPrice, "offerPriceBrl");
+    validateNonNegative(variableCostPerSale, "variableCostPerSaleBrl");
+    validateNonNegative(expectedCac, "expectedCacBrl");
+    validateNonNegative(fixedOperationalCost, "fixedOperationalCostBrl");
+    if (monthlyTraffic != null && monthlyTraffic < 0) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "expectedMonthlyTraffic nao pode ser negativo");
+    }
+    validatePercentage(conversionRate, "expectedConversionRatePercent");
+    validatePercentage(refundRate, "expectedRefundRatePercent");
+    if (offerPrice != null
+        && variableCostPerSale != null
+        && variableCostPerSale.compareTo(offerPrice) > 0) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "variableCostPerSaleBrl nao pode superar offerPriceBrl");
+    }
+  }
+
+  /** Bloqueia valores monetarios negativos. */
+  private void validateNonNegative(BigDecimal value, String fieldName) {
+    if (value != null && value.signum() < 0) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, fieldName + " nao pode ser negativo");
+    }
+  }
+
+  /** Bloqueia percentuais fora do intervalo de zero a cem. */
+  private void validatePercentage(BigDecimal value, String fieldName) {
+    if (value != null && (value.signum() < 0 || value.compareTo(BigDecimal.valueOf(100)) > 0)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, fieldName + " deve estar entre 0 e 100");
     }
   }
 

@@ -95,9 +95,18 @@ export function startHealthServer({
   maxSearchResults,
   logger = console,
   env = process.env,
+  logLines = () => [],
 }) {
   const server = createServer((request, response) => {
     const path = new URL(request.url, "http://localhost").pathname;
+    if (
+      request.method === "GET" &&
+      path === "/ops-product-discovery-observability-v1/logfile"
+    ) {
+      response.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+      response.end(`${logLines().join("\n")}\n`);
+      return;
+    }
     if (request.method !== "GET" || !["/healthz", "/health"].includes(path)) {
       response.writeHead(404, { "Content-Type": "application/json" });
       response.end(JSON.stringify({ error: "not_found" }));

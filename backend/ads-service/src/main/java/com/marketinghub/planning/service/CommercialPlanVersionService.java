@@ -91,6 +91,13 @@ public class CommercialPlanVersionService {
     context.put("deadline", plan.getDeadline());
     context.put("maxBudgetBrl", plan.getMaxBudget());
     context.put("targetRevenueBrl", plan.getTargetRevenue());
+    context.put("offerPriceBrl", plan.getOfferPriceBrl());
+    context.put("variableCostPerSaleBrl", plan.getVariableCostPerSaleBrl());
+    context.put("expectedMonthlyTraffic", plan.getExpectedMonthlyTraffic());
+    context.put("expectedConversionRatePercent", plan.getExpectedConversionRatePercent());
+    context.put("expectedCacBrl", plan.getExpectedCacBrl());
+    context.put("expectedRefundRatePercent", plan.getExpectedRefundRatePercent());
+    context.put("fixedOperationalCostBrl", plan.getFixedOperationalCostBrl());
     context.put("actualTotalCostBrl", plan.getActualTotalCost());
     context.put("actualRevenueBrl", plan.getActualRevenue());
     context.put("currentBlocker", plan.getCurrentBlocker());

@@ -79,6 +79,14 @@ Antes de implementar uma correção em tema com histórico de loop:
 
 ## Como ler este documento
 
+## LOOP-PRODUCT-DISCOVERY-FALSE-EMPTY-SUCCESS — falha externa tratada como pesquisa vazia
+
+- **Severidade**: ALTO.
+- **Status**: fechado localmente em 2026-08-11; pendente de publicação.
+- **Causa-raiz confirmada**: o worker capturava erros HTTP de todas as consultas do provider, retornava lista vazia e concluía o ciclo como `RESEARCH_MORE`, ocultando a indisponibilidade externa. O MCP também tentava observar um container inexistente no próprio host.
+- **Correção efetiva**: falhar o ciclo quando todas as consultas falharem, registrar provider/status/ciclo, publicar logfile operacional versionado no host real e disponibilizá-lo em `java_module_logs`.
+- **Prevenção**: teste de contrato impede converter falha total do provider em zero evidências e valida a rota operacional sem expor segredo.
+
 Cada loop possui dois tipos de informação:
 
 - **Correção efetiva**: aquilo que, no histórico real do projeto, reduziu ou encerrou o ciclo de retrabalho.

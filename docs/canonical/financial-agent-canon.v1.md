@@ -11,6 +11,7 @@ O Agente Financeiro reconcilia diariamente custos e receitas do Marketing Hub po
 - A v1 não movimenta dinheiro, compra créditos, altera preço, orçamento, campanha, publicação ou status comercial.
 - Reembolsos e infraestrutura ausentes devem aparecer como lacuna de fonte, nunca como zero confirmado.
 - Projeções, impactos estimados, pedidos, checkouts e PRs nunca contam como receita.
+- Projeções de receita devem consumir as premissas financeiras estruturadas e versionadas do Plano Comercial. Ausência de preço, custo variável, tráfego, conversão, CAC, reembolso ou custo fixo deve aparecer como limitação explícita, sem inferência silenciosa.
 - Toda nova geração manual de imagem ou projeto de vídeo do Estúdio exige produto e plano comercial; experimento é opcional e deve pertencer ao plano quando informado. Tentativas legadas ou excepcionalmente sem plano nunca podem desaparecer: entram no ledger como custo sem atribuição e bloqueiam a conclusão até a regularização.
 - Cada tentativa do Estúdio deve possuir entrada idempotente no ledger com tipo de ativo, origem, produto, plano, experimento, provedor, modelo, status, horários e evidência de custo.
 - Compras de créditos pré-pagos devem ser registradas separadamente do ledger de consumo, com provedor, data, valor, moeda, quantidade de créditos e referência da evidência. A recarga representa saída de caixa e saldo adquirido; somente o uso por job representa custo consumido. Somar os dois como custo de produção é proibido.

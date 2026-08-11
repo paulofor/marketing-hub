@@ -869,6 +869,10 @@ describe("CommercialPlanningPage", () => {
     renderPage();
 
     expect(screen.getByText("Projeções de receita por Plutus")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Editar plano" }));
+    expect(screen.getAllByText("Preço da oferta (R$)").length).toBeGreaterThan(
+      0,
+    );
     expect(
       screen.getByText(
         "Cenário base recomenda começar pequeno e validar o CAC.",

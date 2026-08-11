@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -15,7 +16,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -40,6 +43,9 @@ class McpControllerTest {
     @Autowired
     @Qualifier("pdeJdbcTemplate")
     private JdbcTemplate pdeJdbcTemplate;
+
+    @MockBean
+    private com.marketinghub.mcpserver.service.ProductDiscoveryWorkerHealthService productDiscoveryWorkerHealthService;
 
     /**
      * Configura datasource e paths de logs isolados para os testes do controller MCP.
@@ -628,7 +634,7 @@ class McpControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error.code").value(-32602))
                 .andExpect(jsonPath("$.error.message")
-                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, pde-platform-backend, video-management-service, customer-agent-worker, financial-agent-worker, experiment-strategist-worker, meta-ad-approver-worker, landing-generator-agent-worker"));
+                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, pde-platform-backend, video-management-service, customer-agent-worker, financial-agent-worker, experiment-strategist-worker, meta-ad-approver-worker, landing-generator-agent-worker, product-discovery-worker"));
     }
 
     /**
@@ -667,6 +673,13 @@ class McpControllerTest {
      */
     @Test
     void shouldReadProductDiscoveryWorkerHealth() throws Exception {
+        when(productDiscoveryWorkerHealthService.readHealth()).thenReturn(Map.of(
+                "container", "product-discovery-worker",
+                "payload", Map.of(
+                        "status", "UP",
+                        "activeSearchProvider", "brave",
+                        "polling", Map.of("lastPollStatus", "COMPLETED"))));
+
         mockMvc.perform(post("/mcp")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""

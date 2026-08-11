@@ -96,6 +96,7 @@ test("startHealthServer serves healthz JSON and not found responses", async () =
     pollIntervalMs: 60000,
     maxSearchResults: 8,
     logger: { info() {} },
+    logLines: () => ["2026-08-11T12:00:00.000Z level=INFO cycle=42"],
     env: {},
   });
 
@@ -108,6 +109,12 @@ test("startHealthServer serves healthz JSON and not found responses", async () =
     const payload = await healthResponse.json();
     assert.equal(payload.service, "product-discovery-worker");
     assert.equal(payload.activeSearchProvider, SEARCH_PROVIDERS.DUCKDUCKGO);
+
+    const logResponse = await fetch(
+      `http://127.0.0.1:${port}/ops-product-discovery-observability-v1/logfile`,
+    );
+    assert.equal(logResponse.status, 200);
+    assert.match(await logResponse.text(), /cycle=42/);
 
     const notFoundResponse = await fetch(`http://127.0.0.1:${port}/missing`);
     assert.equal(notFoundResponse.status, 404);

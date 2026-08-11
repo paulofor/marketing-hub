@@ -22,6 +22,7 @@ O worker não cria produto, hipótese, landing, campanha ou gasto de mídia.
 - `PRODUCT_DISCOVERY_HEALTH_HOST`: host do servidor HTTP de health. Padrão: `0.0.0.0`.
 - `PRODUCT_DISCOVERY_HEALTH_PORT`: porta interna do servidor HTTP de health. Padrão: `8080`.
 - `PRODUCT_DISCOVERY_HEALTH_PUBLISHED_PORT`: porta publicada no host pelo Compose. Padrão: `18081`.
+- `PRODUCT_DISCOVERY_HEALTH_BIND_ADDRESS`: endereço publicado para health e observabilidade. Padrão: `0.0.0.0`.
 - `PRODUCT_DISCOVERY_SEARCH_PROVIDER`: provedor dedicado de busca. Aceita `brave`,
   `tavily`, `serpapi` ou `duckduckgo`. Quando vazio, o worker escolhe pela primeira
   chave disponível nesta ordem: Brave, Tavily, SerpAPI e DuckDuckGo.
@@ -53,7 +54,11 @@ O compose de produção monta esse arquivo como Docker secret em
 ## Health operacional
 
 O worker expõe `GET /healthz` e `GET /health` na porta interna `8080`. Em
-produção, o Compose publica o endpoint apenas em `127.0.0.1:18081` por padrão.
+produção, o Compose publica o endpoint em `0.0.0.0:18081` para leitura pelo MCP.
+
+O endpoint `GET /ops-product-discovery-observability-v1/logfile` expõe as linhas
+operacionais recentes sem incluir chaves de API. Quando todas as consultas externas
+falham, o ciclo falha e bloqueia a tarefa; resposta vazia não mascara o provider.
 
 O payload informa o provider ativo, status da chave Brave sem revelar o segredo,
 último polling e último ciclo processado:

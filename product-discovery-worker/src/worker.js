@@ -12,6 +12,10 @@ import {
   markPollStarted,
   startHealthServer,
 } from "./health.js";
+import {
+  operationalLogger,
+  recentOperationalLogLines,
+} from "./operational-log.js";
 
 const backendBaseUrl = process.env.BACKEND_BASE_URL || "http://191.252.181.168";
 const pollIntervalMs = Number(
@@ -35,7 +39,7 @@ const searchConfig = resolveSearchConfig();
 const healthState = createHealthState();
 
 async function main() {
-  console.log(
+  operationalLogger.info(
     `[product-discovery-worker] started searchProvider=${searchConfig.provider}`,
   );
   startHealthServer({
@@ -45,6 +49,8 @@ async function main() {
     state: healthState,
     pollIntervalMs,
     maxSearchResults,
+    logger: operationalLogger,
+    logLines: recentOperationalLogLines,
   });
   await runCycle();
   setInterval(runCycle, pollIntervalMs);
@@ -62,12 +68,12 @@ async function runCycle() {
     markPollCompleted(healthState);
   } catch (error) {
     markPollFailed(healthState, error);
-    console.error("[product-discovery-worker] cycle failed", error);
+    operationalLogger.error("[product-discovery-worker] cycle failed", error);
   }
 }
 
 async function processJob(job) {
-  console.log(
+  operationalLogger.info(
     `[product-discovery-worker] processing cycle=${job.cycleId} theme=${job.theme}`,
   );
   try {
@@ -77,7 +83,7 @@ async function processJob(job) {
       minSearchQueries,
       maxSearchQueries,
       maxResultsPerQuery,
-      logger: console,
+      logger: operationalLogger,
     });
     const report = analyzeSearchResults(job, results);
     await postJson(
@@ -85,7 +91,7 @@ async function processJob(job) {
       report,
     );
     markCycleCompleted(healthState, job, report);
-    console.log(
+    operationalLogger.info(
       `[product-discovery-worker] completed cycle=${job.cycleId} opportunities=${report.opportunities.length}`,
     );
   } catch (error) {
@@ -94,7 +100,7 @@ async function processJob(job) {
       `${backendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${job.cycleId}/fail`,
       { errorMessage: error.message || "Falha desconhecida na pesquisa PDE" },
     );
-    console.error(
+    operationalLogger.error(
       `[product-discovery-worker] failed cycle=${job.cycleId}`,
       error,
     );

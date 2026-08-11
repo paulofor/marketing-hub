@@ -2,12 +2,11 @@ package com.marketinghub.mcpserver.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.mcpserver.config.McpProperties;
+import com.sun.net.httpserver.HttpServer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
 
@@ -18,16 +17,30 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 class ProductDiscoveryWorkerHealthServiceTest {
 
-    @TempDir
-    private Path tempDir;
+    private HttpServer server;
+
+    /** Encerra o servidor HTTP usado pelo teste. */
+    @AfterEach
+    void tearDown() {
+        if (server != null) server.stop(0);
+    }
 
     /**
-     * Garante que o serviço executa o comando Docker fixo e retorna o payload de health estruturado.
+     * Garante que o serviço consulta o host real por HTTP e retorna o payload estruturado.
      */
     @Test
     void shouldReadProductDiscoveryWorkerHealth() throws Exception {
+        server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/healthz", exchange -> {
+            byte[] body = "{\"service\":\"product-discovery-worker\",\"status\":\"UP\",\"activeSearchProvider\":\"brave\",\"polling\":{\"lastPollStatus\":\"COMPLETED\"}}".getBytes();
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.close();
+        });
+        server.start();
+        String healthUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/healthz";
         ProductDiscoveryWorkerHealthService service = new ProductDiscoveryWorkerHealthService(
-                buildProperties(fakeDockerCommand()),
+                buildProperties(healthUrl),
                 new ObjectMapper()
         );
 
@@ -43,22 +56,9 @@ class ProductDiscoveryWorkerHealthServiceTest {
     }
 
     /**
-     * Cria um executável falso para simular docker exec durante o teste.
-     */
-    private String fakeDockerCommand() throws Exception {
-        Path script = tempDir.resolve("docker-fake.sh");
-        Files.writeString(script, """
-                #!/usr/bin/env sh
-                echo '{"service":"product-discovery-worker","status":"UP","activeSearchProvider":"brave","braveSearch":{"keyStatus":"CONFIGURED","keySource":"file"},"polling":{"lastPollStatus":"COMPLETED","lastPollError":null},"lastCycleProcessed":null}'
-                """, StandardCharsets.UTF_8);
-        script.toFile().setExecutable(true);
-        return script.toString();
-    }
-
-    /**
      * Monta propriedades MCP mínimas para testar o health do Product Discovery Worker.
      */
-    private McpProperties buildProperties(String dockerCommand) {
+    private McpProperties buildProperties(String healthUrl) {
         McpProperties.Logs logs = new McpProperties.Logs(
                 "/tmp/backend.log",
                 "/tmp/ai-worker.log",
@@ -88,21 +88,21 @@ class ProductDiscoveryWorkerHealthServiceTest {
         McpProperties.ChatLogs chatLogs = new McpProperties.ChatLogs(
                 true,
                 List.of("marketinghub-fashion-chat", "product-discovery-worker"),
-                dockerCommand,
+                "docker",
                 500,
                 5
         );
         McpProperties.ProductDiscoveryWorker productDiscoveryWorker = new McpProperties.ProductDiscoveryWorker(
                 true,
                 "product-discovery-worker",
-                dockerCommand,
-                "http://127.0.0.1:8080/healthz",
+                "docker",
+                healthUrl,
                 5
         );
         McpProperties.DockerOps dockerOps = new McpProperties.DockerOps(
                 true,
                 List.of("marketinghub-backend", "product-discovery-worker"),
-                dockerCommand,
+                "docker",
                 500,
                 5,
                 false

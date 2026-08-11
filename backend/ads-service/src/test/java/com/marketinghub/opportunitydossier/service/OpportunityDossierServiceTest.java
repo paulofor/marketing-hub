@@ -94,7 +94,18 @@ class OpportunityDossierServiceTest {
     assertThat(response.status()).isEqualTo(OpportunityDossierStatus.CONVERTED_TO_PLAN);
     assertThat(response.convertedPlanId()).isEqualTo(77L);
     verify(plans)
-        .create(argThat(request -> request.maxBudget() == null && request.targetRevenue() == null));
+        .create(
+            argThat(
+                request ->
+                    request.maxBudget() == null
+                        && request.targetRevenue() == null
+                        && request.operationalRevenueTarget() == null
+                        && request.experimentsToCreate() == 1
+                        && request.experimentsToPublish() == 0
+                        && request.productsToValidate() == 1
+                        && request.productTypesToExplore() == 1
+                        && request.approachesToTest() == 1
+                        && request.customerConversationsTarget() == 0));
   }
 
   /** Cria um dossiê mínimo válido para os cenários. */

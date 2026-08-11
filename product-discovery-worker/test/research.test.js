@@ -318,6 +318,40 @@ test("searchInternet calls configured Brave API and deduplicates results", async
   assert.equal(results.length, 3);
 });
 
+test("searchInternet limits Brave query while preserving the research intent", async () => {
+  const calls = [];
+  const longAudience = Array.from(
+    { length: 70 },
+    (_, index) => `segmento${index}`,
+  ).join(" ");
+
+  await searchInternet(
+    {
+      theme: "plano adaptativo para concursos",
+      targetAudience: longAudience,
+    },
+    {
+      maxSearchResults: 1,
+      minSearchQueries: 1,
+      maxSearchQueries: 1,
+      config: resolveSearchConfig({
+        PRODUCT_DISCOVERY_SEARCH_PROVIDER: "brave",
+        BRAVE_SEARCH_API_KEY: "brave-test-key",
+      }),
+      logger: { info() {} },
+      fetchFn: async (url) => {
+        calls.push(url);
+        return { ok: true, json: async () => ({ web: { results: [] } }) };
+      },
+    },
+  );
+
+  const query = new URL(calls[0]).searchParams.get("q");
+  assert.ok(Array.from(query).length <= 400);
+  assert.ok(query.split(/\s+/).length <= 50);
+  assert.match(query, /cliente pergunta preço e some$/);
+});
+
 test("searchInternet uses stronger default search depth before stopping", async () => {
   const calls = [];
   const results = await searchInternet(

@@ -553,7 +553,7 @@ async function searchQuery(query, config, fetchFn, logger) {
 async function searchBrave(query, config, fetchFn, logger) {
   requireApiKey(config.braveApiKey, "BRAVE_SEARCH_API_KEY", config.provider);
   const url = new URL(config.braveEndpoint);
-  url.searchParams.set("q", query);
+  url.searchParams.set("q", normalizeBraveQuery(query));
   url.searchParams.set("country", config.country.toUpperCase());
   url.searchParams.set("search_lang", config.language.split("-")[0]);
   url.searchParams.set("count", "10");
@@ -571,6 +571,35 @@ async function searchBrave(query, config, fetchFn, logger) {
     },
   );
   return normalizeBraveResponse(payload);
+}
+
+export function normalizeBraveQuery(query) {
+  const words = String(query || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  const wordLimited =
+    words.length <= 50
+      ? words
+      : [...words.slice(0, 36), ...words.slice(-14)];
+  const normalized = wordLimited.join(" ");
+  if (Array.from(normalized).length <= 400) {
+    return normalized;
+  }
+
+  const intent = wordLimited.slice(-14).join(" ");
+  const availablePrefixLength = Math.max(
+    1,
+    400 - Array.from(intent).length - 1,
+  );
+  const prefix = Array.from(wordLimited.slice(0, -14).join(" "))
+    .slice(0, availablePrefixLength)
+    .join("")
+    .replace(/\s+\S*$/, "")
+    .trim();
+  return `${prefix} ${intent}`.trim();
 }
 
 async function searchTavily(query, config, fetchFn, logger) {

@@ -86,7 +86,8 @@ Antes de implementar uma correção em tema com histórico de loop:
 - **Causa-raiz confirmada**: o worker capturava erros HTTP de todas as consultas do provider, retornava lista vazia e concluía o ciclo como `RESEARCH_MORE`, ocultando a indisponibilidade externa. O MCP também tentava observar um container inexistente no próprio host.
 - **Correção efetiva**: falhar o ciclo quando todas as consultas falharem, registrar provider/status/ciclo, publicar logfile operacional versionado no host real e disponibilizá-lo em `java_module_logs`.
 - **Fechamento complementar em produção (2026-08-11)**: a primeira pesquisa apó o deploy comprovou que o worker alcançava backend e Brave, mas as 14 consultas excediam o contrato do provider e retornavam HTTP 422. O gerador agora limita cada consulta a 400 caracteres e 50 palavras, preservando o recorte inicial e a intenção de pesquisa final.
-- **Prevenção**: testes de contrato impedem converter falha total do provider em zero evidências, validam a rota operacional sem expor segredo e bloqueiam consultas Brave acima de 400 caracteres ou 50 palavras.
+- **Reabertura complementar em produção (2026-08-11)**: consultas já curtas continuaram retornando HTTP 422, descartando tamanho como causa completa. O cliente agora registra o corpo sanitizado do erro e, somente para 422, repete uma vez pelo contrato mínimo oficial (`q`), removendo parâmetros opcionais incompatíveis sem ocultar uma segunda falha.
+- **Prevenção**: testes de contrato impedem converter falha total do provider em zero evidências, validam a rota operacional sem expor segredo, bloqueiam consultas Brave acima de 400 caracteres ou 50 palavras e exigem fallback mínimo auditável para HTTP 422.
 
 Cada loop possui dois tipos de informação:
 

@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-11-system-improvements
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE system_improvement (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                requested_by_agent_id BIGINT NOT NULL,
+                title VARCHAR(160) NOT NULL,
+                description LONGTEXT NOT NULL,
+                task_reference VARCHAR(200) NULL,
+                status VARCHAR(30) NOT NULL,
+                requested_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                INDEX idx_system_improvement_requested_at (requested_at),
+                INDEX idx_system_improvement_agent (requested_by_agent_id, requested_at),
+                CONSTRAINT fk_system_improvement_agent FOREIGN KEY (requested_by_agent_id) REFERENCES agent(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE system_improvement;

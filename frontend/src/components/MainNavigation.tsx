@@ -211,6 +211,11 @@ const NAV_SECTIONS: NavSection[] = [
         icon: Bot,
       },
       {
+        to: "/system-improvements",
+        label: "Melhorias do Sistema",
+        icon: ClipboardCheck,
+      },
+      {
         to: "/whatsapp",
         label: "WhatsApp",
         icon: MessageSquare,

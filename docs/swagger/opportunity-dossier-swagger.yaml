@@ -1,0 +1,21 @@
+openapi: 3.0.3
+info:
+  title: Dossiês de Oportunidade
+  version: v1
+paths:
+  /api/opportunity-dossiers:
+    get: {summary: Lista o portfólio de oportunidades, responses: {'200': {description: OK}}}
+    post: {summary: Cadastra uma oportunidade pesquisada, responses: {'200': {description: Criado}}}
+  /api/opportunity-dossiers/{id}:
+    get: {summary: Exibe evidências e pareceres, parameters: [{$ref: '#/components/parameters/id'}], responses: {'200': {description: OK}}}
+  /api/opportunity-dossiers/{id}/evidence:
+    post: {summary: Anexa evidência verificável, parameters: [{$ref: '#/components/parameters/id'}], responses: {'200': {description: OK}}}
+  /api/opportunity-dossiers/{id}/status:
+    patch: {summary: Executa transição governada, parameters: [{$ref: '#/components/parameters/id'}], responses: {'200': {description: OK}, '409': {description: Transição bloqueada}}}
+  /api/opportunity-dossiers/{id}/reviews/{agentKey}:
+    put: {summary: Registra parecer do agente solicitado, parameters: [{$ref: '#/components/parameters/id'}, {name: agentKey, in: path, required: true, schema: {type: string}}], responses: {'200': {description: OK}}}
+  /api/opportunity-dossiers/{id}/convert:
+    post: {summary: Converte dossiê aprovado uma única vez, parameters: [{$ref: '#/components/parameters/id'}], responses: {'200': {description: Plano criado}, '409': {description: Conversão bloqueada}}}
+components:
+  parameters:
+    id: {name: id, in: path, required: true, schema: {type: integer, format: int64}}

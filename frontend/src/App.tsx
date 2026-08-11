@@ -165,6 +165,7 @@ import HotmartPage from "./pages/hotmart/HotmartPage";
 import ClickbasePage from "./pages/clickbase/ClickbasePage";
 import OpsMonitorPage from "./pages/OpsMonitorPage";
 import CommercialPlanningPage from "./pages/planning/CommercialPlanningPage";
+import OpportunityDossiersPage from "./pages/opportunity/OpportunityDossiersPage";
 import FashionChatPage from "./pages/fashionChat/FashionChatPage";
 import FashionChatValidationPage from "./pages/fashionChat/FashionChatValidationPage";
 import VideoHubPage from "./pages/video/VideoHubPage";
@@ -335,6 +336,10 @@ export default function App() {
               </Route>
               <Route path="/experiments" element={<ExperimentListPage />} />
               <Route path="/planning" element={<CommercialPlanningPage />} />
+              <Route
+                path="/opportunities"
+                element={<OpportunityDossiersPage />}
+              />
               <Route path="/experiments/new" element={<NewExperimentPage />} />
               <Route
                 path="/experiments/manual/new"

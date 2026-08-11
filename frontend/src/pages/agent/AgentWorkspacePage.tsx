@@ -8,6 +8,10 @@ import {
 } from "../../api/agentTask/useAgentTasks";
 import { AgentTask, AgentTaskStatus } from "../../api/agentTask/types";
 import PageTitle from "../../components/PageTitle";
+import {
+  useCommercialPlans,
+  useCommercialPlanVersions,
+} from "../../api/planning/useCommercialPlans";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 
 const statusLabel: Record<AgentTaskStatus, string> = {
@@ -33,6 +37,11 @@ export default function AgentWorkspacePage() {
   const inbox = useAgentTasks(agent?.agentKey);
   const create = useCreateAgentTask(agent?.agentKey);
   const updateStatus = useUpdateAgentTaskStatus(agent?.agentKey);
+  const plans = useCommercialPlans();
+  const [commercialPlanId, setCommercialPlanId] = useState<number | null>(null);
+  const selectedPlanId = commercialPlanId ?? plans.data?.[0]?.id ?? null;
+  const planVersions = useCommercialPlanVersions(selectedPlanId);
+  const currentPlanVersion = planVersions.data?.[0]?.versionNumber;
   const [form, setForm] = useState({
     requestedByName: "Usuário do Marketing Hub",
     title: "",
@@ -53,8 +62,13 @@ export default function AgentWorkspacePage() {
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
+    if (!selectedPlanId || !currentPlanVersion) return;
     create.mutate(
-      { ...form, assignedAgentKey: agent.agentKey! },
+      {
+        ...form,
+        sourceReference: `commercial-plan:${selectedPlanId}@v${currentPlanVersion}`,
+        assignedAgentKey: agent.agentKey!,
+      },
       {
         onSuccess: () =>
           setForm({
@@ -109,6 +123,35 @@ export default function AgentWorkspacePage() {
             <div className="card-body">
               <h2 className="h5">Nova solicitação</h2>
               <form onSubmit={submit} className="d-grid gap-3">
+                <div>
+                  <label className="form-label" htmlFor="task-commercial-plan">
+                    Plano comercial *
+                  </label>
+                  <select
+                    id="task-commercial-plan"
+                    className="form-select"
+                    required
+                    value={selectedPlanId ?? ""}
+                    onChange={(event) =>
+                      setCommercialPlanId(Number(event.target.value))
+                    }
+                  >
+                    <option value="" disabled>
+                      Selecione o objetivo comum
+                    </option>
+                    {(plans.data ?? []).map((plan) => (
+                      <option key={plan.id} value={plan.id}>
+                        {plan.name}
+                      </option>
+                    ))}
+                  </select>
+                  {currentPlanVersion ? (
+                    <small className="text-body-secondary">
+                      A tarefa será registrada no contexto v{currentPlanVersion}
+                      .
+                    </small>
+                  ) : null}
+                </div>
                 <div>
                   <label className="form-label" htmlFor="requester-name">
                     Solicitante
@@ -175,7 +218,12 @@ export default function AgentWorkspacePage() {
                     <option value="URGENT">Urgente</option>
                   </select>
                 </div>
-                <button className="btn btn-primary" disabled={create.isPending}>
+                <button
+                  className="btn btn-primary"
+                  disabled={
+                    create.isPending || !selectedPlanId || !currentPlanVersion
+                  }
+                >
                   Enviar para {agent.nickname}
                 </button>
               </form>

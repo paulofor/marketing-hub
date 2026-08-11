@@ -1,9 +1,11 @@
 package com.marketinghub.planning.web;
 
 import com.marketinghub.planning.CommercialPlanStatus;
+import com.marketinghub.planning.dto.CommercialPlanAgentActivityDto;
 import com.marketinghub.planning.dto.CommercialPlanDto;
 import com.marketinghub.planning.dto.CommercialPlanMilestoneDto;
 import com.marketinghub.planning.dto.CommercialPlanSimulationDto;
+import com.marketinghub.planning.dto.CommercialPlanVersionDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekObjectiveDto;
 import com.marketinghub.planning.dto.CreateCommercialPlanRequest;
@@ -12,7 +14,9 @@ import com.marketinghub.planning.dto.UpdateCommercialPlanMilestoneRequest;
 import com.marketinghub.planning.dto.UpdateCommercialPlanRequest;
 import com.marketinghub.planning.dto.UpdateCommercialPlanWeekObjectivesRequest;
 import com.marketinghub.planning.mapper.CommercialPlanMapper;
+import com.marketinghub.planning.service.CommercialPlanAgentActivityService;
 import com.marketinghub.planning.service.CommercialPlanService;
+import com.marketinghub.planning.service.CommercialPlanVersionService;
 import com.marketinghub.planning.service.CommercialPlanWeeklyExperimentService;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,14 +36,20 @@ public class CommercialPlanController {
   private final CommercialPlanService service;
   private final CommercialPlanWeeklyExperimentService weeklyExperimentService;
   private final CommercialPlanMapper mapper;
+  private final CommercialPlanVersionService versionService;
+  private final CommercialPlanAgentActivityService agentActivityService;
 
   public CommercialPlanController(
       CommercialPlanService service,
       CommercialPlanWeeklyExperimentService weeklyExperimentService,
-      CommercialPlanMapper mapper) {
+      CommercialPlanMapper mapper,
+      CommercialPlanVersionService versionService,
+      CommercialPlanAgentActivityService agentActivityService) {
     this.service = service;
     this.weeklyExperimentService = weeklyExperimentService;
     this.mapper = mapper;
+    this.versionService = versionService;
+    this.agentActivityService = agentActivityService;
   }
 
   /** Cria um plano comercial de primeira venda. */
@@ -68,6 +78,26 @@ public class CommercialPlanController {
   public CommercialPlanDto get(@PathVariable Long id) {
     return mapper.toDto(
         service.getPlan(id), service.listMilestones(id), service.listSimulations(id));
+  }
+
+  /** Lista as versões imutáveis que orientaram usuários, agentes e gates. */
+  @GetMapping("/{id}/versions")
+  public List<CommercialPlanVersionDto> listVersions(@PathVariable Long id) {
+    service.getPlan(id);
+    return versionService.list(id);
+  }
+
+  /** Entrega aos agentes o contexto comercial corrente com identidade de versão. */
+  @GetMapping("/{id}/context/current")
+  public CommercialPlanVersionDto currentContext(@PathVariable Long id) {
+    service.getPlan(id);
+    return versionService.current(id);
+  }
+
+  /** Exibe trabalhos, gates, dificuldades e finanças dos agentes vinculados ao plano. */
+  @GetMapping("/{id}/agent-activity")
+  public CommercialPlanAgentActivityDto agentActivity(@PathVariable Long id) {
+    return agentActivityService.activity(service.getPlan(id));
   }
 
   /**

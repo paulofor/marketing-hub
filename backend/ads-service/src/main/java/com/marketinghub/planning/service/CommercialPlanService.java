@@ -52,6 +52,7 @@ public class CommercialPlanService {
   private final HypothesisRepository hypothesisRepository;
   private final ExperimentRepository experimentRepository;
   private final CommercialPlanExecutionSyncService executionSyncService;
+  private final CommercialPlanVersionService versionService;
 
   public CommercialPlanService(
       CommercialPlanRepository planRepository,
@@ -60,7 +61,8 @@ public class CommercialPlanService {
       MarketNicheRepository nicheRepository,
       HypothesisRepository hypothesisRepository,
       ExperimentRepository experimentRepository,
-      CommercialPlanExecutionSyncService executionSyncService) {
+      CommercialPlanExecutionSyncService executionSyncService,
+      CommercialPlanVersionService versionService) {
     this.planRepository = planRepository;
     this.milestoneRepository = milestoneRepository;
     this.simulationRepository = simulationRepository;
@@ -68,6 +70,7 @@ public class CommercialPlanService {
     this.hypothesisRepository = hypothesisRepository;
     this.experimentRepository = experimentRepository;
     this.executionSyncService = executionSyncService;
+    this.versionService = versionService;
   }
 
   /** Cria um plano de primeira venda e seus marcos comerciais padrao. */
@@ -107,6 +110,7 @@ public class CommercialPlanService {
             .build();
     CommercialPlan saved = planRepository.save(plan);
     createDefaultMilestones(saved);
+    versionService.snapshot(saved, "SYSTEM", "Criação do plano comercial");
     return syncExecution(saved);
   }
 
@@ -142,7 +146,9 @@ public class CommercialPlanService {
     plan.setNextAction(request.nextAction());
     plan.setCurrentBlocker(request.currentBlocker());
     plan.setRootCause(request.rootCause());
-    return syncExecution(planRepository.save(plan));
+    CommercialPlan saved = planRepository.save(plan);
+    versionService.snapshot(saved, "USER", "Atualização do contexto comercial");
+    return syncExecution(saved);
   }
 
   /** Lista planos comerciais, com filtro opcional por status. */

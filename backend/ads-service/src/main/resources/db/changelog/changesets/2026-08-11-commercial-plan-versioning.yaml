@@ -1,0 +1,66 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-11-commercial-plan-versioning
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE commercial_plan_version (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                commercial_plan_id BIGINT NOT NULL,
+                version_number INT NOT NULL,
+                snapshot_json LONGTEXT NOT NULL,
+                changed_by VARCHAR(100) NOT NULL,
+                change_reason VARCHAR(500) NOT NULL,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_commercial_plan_version (commercial_plan_id, version_number),
+                KEY idx_commercial_plan_version_created (commercial_plan_id, created_at),
+                CONSTRAINT fk_commercial_plan_version_plan
+                  FOREIGN KEY (commercial_plan_id) REFERENCES commercial_plan(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              INSERT INTO commercial_plan_version (
+                commercial_plan_id, version_number, snapshot_json,
+                changed_by, change_reason, created_at
+              )
+              SELECT
+                cp.id,
+                1,
+                JSON_OBJECT(
+                  'planId', cp.id,
+                  'name', cp.name,
+                  'status', cp.status,
+                  'commercialObjective', cp.commercial_objective,
+                  'targetAudience', cp.target_audience,
+                  'mainPain', cp.main_pain,
+                  'mainOffer', cp.main_offer,
+                  'mainChannel', cp.main_channel,
+                  'mainMetric', cp.main_metric,
+                  'successCriteria', cp.success_criteria,
+                  'stopCriteria', cp.stop_criteria,
+                  'deadline', cp.deadline,
+                  'maxBudgetBrl', cp.max_budget,
+                  'targetRevenueBrl', cp.target_revenue,
+                  'actualTotalCostBrl', cp.actual_total_cost,
+                  'actualRevenueBrl', cp.actual_revenue,
+                  'currentBlocker', cp.current_blocker,
+                  'nextAction', cp.next_action
+                ),
+                'MIGRATION',
+                'Versão inicial do contexto comercial preexistente',
+                CURRENT_TIMESTAMP
+              FROM commercial_plan cp;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DROP TABLE commercial_plan_version;

@@ -213,7 +213,9 @@ public class VideoProductionCycleService {
   private String financialSnapshot(VideoProductionCycle cycle) {
     try {
       return objectMapper.writeValueAsString(
-          financialAgentService.intelligence(cycle.getCommercialPlanId()));
+          cycle.getCommercialPlanId() == null
+              ? financialAgentService.unassignedStudioIntelligence(cycle.getProductId())
+              : financialAgentService.intelligence(cycle.getCommercialPlanId()));
     } catch (JsonProcessingException ex) {
       throw new IllegalStateException("Não foi possível congelar o contexto financeiro.", ex);
     }

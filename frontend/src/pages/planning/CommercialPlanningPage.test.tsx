@@ -177,6 +177,59 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
       isLoading: false,
       isError: false,
     }),
+    useCommercialPlanVersions: (planId?: number | null) => ({
+      data:
+        planId && planId > 0
+          ? [
+              {
+                id: 101,
+                commercialPlanId: planId,
+                versionNumber: 2,
+                snapshotJson: "{}",
+                changedBy: "USER",
+                changeReason: "Atualização do contexto comercial",
+                createdAt: "2026-08-11T12:00:00Z",
+              },
+            ]
+          : [],
+      isLoading: false,
+      isError: false,
+    }),
+    useCommercialPlanAgentActivity: (planId?: number | null) => ({
+      data:
+        planId && planId > 0
+          ? {
+              commercialPlanId: planId,
+              currentVersion: 2,
+              budgetLimitBrl: 400,
+              campaignCostBrl: 25,
+              aiCostBrl: 10,
+              totalCostBrl: 35,
+              revenueBrl: 0,
+              videoBudgetLimitUsd: 40,
+              videoKnownCostUsd: 0,
+              openTasks: 1,
+              pendingDecisions: 1,
+              entries: [
+                {
+                  recordType: "FINANCIAL_GATE",
+                  agentKey: "financial-agent",
+                  agentNickname: "Plutus",
+                  title: "Controle financeiro do ciclo de vídeo #1",
+                  status: "PENDING_FINANCIAL_REVIEW",
+                  externalDecisionRequired: true,
+                  externalDecision: "Plutus precisa decidir o orçamento.",
+                  sourceReference: "video-production-cycle:1",
+                  budgetLimitUsd: 40,
+                  knownCostUsd: 0,
+                  occurredAt: "2026-08-11T12:00:00Z",
+                },
+              ],
+            }
+          : undefined,
+      isLoading: false,
+      isError: false,
+    }),
     useCommercialPlanWeeks: (
       _planId?: number | null,
       referenceMonth?: string | null,
@@ -263,6 +316,15 @@ vi.mock("../../api/planning/useGrowthOperator", () => ({
 vi.mock("../../api/planning/useFinancialAgent", () => ({
   useFinancialAgentExecutions: () => ({ data: [], isError: false }),
   useStartFinancialAgent: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isError: false,
+  }),
+}));
+
+vi.mock("../../api/planning/useExperimentStrategist", () => ({
+  useExperimentStrategistExecutions: () => ({ data: [], isError: false }),
+  useStartExperimentStrategist: () => ({
     mutate: vi.fn(),
     isPending: false,
     isError: false,
@@ -481,7 +543,7 @@ describe("CommercialPlanningPage", () => {
     renderPage();
 
     expect(screen.getByRole("heading", { name: "Agosto 2026" })).toBeTruthy();
-    expect(screen.getByText("R$ 400,00")).toBeTruthy();
+    expect(screen.getAllByText("R$ 400,00").length).toBeGreaterThan(0);
   });
 
   it("permite preparar um plano comercial dedicado com teto de producao", async () => {
@@ -579,7 +641,10 @@ describe("CommercialPlanningPage", () => {
       screen.getAllByRole("link", { name: "Agenda recorrente" })[0],
     ).toHaveAttribute("href", "/experiments/40");
 
-    const rows = screen.getAllByRole("row");
+    const experimentTable = screen
+      .getByText("Nome do experimento")
+      .closest("table")!;
+    const rows = Array.from(experimentTable.querySelectorAll("tr"));
     expect(rows[1]).toHaveTextContent("Agenda recorrente");
     expect(rows[1]).toHaveTextContent("1min 30s");
     expect(rows[2]).toHaveTextContent("Kit manutenção");
@@ -689,6 +754,20 @@ describe("CommercialPlanningPage", () => {
     expect(
       screen.getByText(/Catálogo autorizado para investigação direta/),
     ).toBeTruthy();
+  });
+
+  it("mostra trabalhos, decisões e finanças dos agentes dentro do plano", () => {
+    renderPage();
+
+    expect(screen.getByText("Atuação dos agentes no plano")).toBeTruthy();
+    expect(screen.getByText("Plutus")).toBeTruthy();
+    expect(screen.getByText("1 decisões pendentes")).toBeTruthy();
+    expect(
+      screen.getByText("Plutus precisa decidir o orçamento."),
+    ).toBeTruthy();
+    expect(screen.getAllByText("US$ 0.00 / US$ 40.00").length).toBeGreaterThan(
+      0,
+    );
   });
 
   it("renderiza sugestao de julho quando a API ainda nao retorna planos", () => {

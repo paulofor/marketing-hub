@@ -22,7 +22,7 @@ public class VideoProductionCycle {
   @Column(name = "product_id", nullable = false)
   private Long productId;
 
-  @Column(name = "commercial_plan_id", nullable = false)
+  @Column(name = "commercial_plan_id")
   private Long commercialPlanId;
 
   @Column(name = "experiment_id")

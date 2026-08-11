@@ -143,7 +143,8 @@ class BackendQualityReviewServiceTest {
     assertEquals("CONCLUIDO", execution.getStatus());
     verify(experiment).setLandingPageQualityReview("{\"score\":90}");
     verify(experimentRepository).save(experiment);
-    verify(eventPublisher).publishEvent(new LandingQualityReviewedEvent(38L, "{\"score\":90}"));
+    verify(eventPublisher)
+        .publishEvent(new LandingQualityReviewedEvent(38L, null, "{\"score\":90}"));
     verify(executionRepository, times(1)).save(execution);
   }
 

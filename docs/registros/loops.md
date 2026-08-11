@@ -977,3 +977,10 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o schema JSON versionado usava `uniqueItems`, válido no padrão 2020-12, porém não aceito pelo Structured Outputs usado pelo Codex.
 - **Correção sistêmica:** remover `uniqueItems` do contrato enviado ao modelo; duplicidades continuam inofensivas porque o backend converte a recomendação em uma única etapa causal.
 - **Prevenção:** teste do worker proíbe `uniqueItems`, `anyOf`, `oneOf` e `allOf` no schema estrito antes do deploy.
+
+### LOOP-LANDING-GENERATOR-HISTORICAL-REVIEW-LIMIT
+
+- **Sintoma:** Dédalo conclui a análise de uma nova tarefa, mas o backend bloqueia a primeira correção válida porque quatro Quality Reviews antigos já existem no experimento.
+- **Causa-raiz:** os gates de revisão e custo eram acumulados por experimento, sem identidade persistida para o ciclo autônomo que originou a regeneração.
+- **Correção sistêmica:** cada início manual abre um `autonomous_cycle_id`; tarefas, revisões automáticas e custos herdam a correlação, e os gates consultam somente o ciclo corrente.
+- **Prevenção:** teste de contrato mantém revisões históricas fora do contador atual sem apagar auditoria nem ampliar o limite seguro de quatro revisões.

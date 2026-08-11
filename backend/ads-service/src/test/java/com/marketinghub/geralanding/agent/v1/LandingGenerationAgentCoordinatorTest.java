@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 /** Valida os gates e a delegação causal do Agente Gerador de Landing. */
 class LandingGenerationAgentCoordinatorTest {
+  private static final String CYCLE_ID = "cycle-88-current";
   private GeraLandingStageExecutionRepository executionRepository;
   private CreativeRepository creativeRepository;
   private BackendWireframeService wireframeService;
@@ -56,8 +57,9 @@ class LandingGenerationAgentCoordinatorTest {
             imagePlanningService,
             presetDesignService,
             memoryService);
-    when(executionRepository.findTop20ByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
-            88L, "landing-page-quality-review"))
+    when(executionRepository
+            .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
+                88L, "landing-page-quality-review", CYCLE_ID))
         .thenReturn(List.of());
     when(memoryService.retrieve("landing-generator", null, "EXPERIMENT", "88", 8))
         .thenReturn(List.of());
@@ -83,7 +85,7 @@ class LandingGenerationAgentCoordinatorTest {
                     Instant.parse("2026-08-10T00:00:00Z"))));
 
     coordinator.continueAfterQualityReview(
-        88L, review("REGENERATE_BEFORE_PUBLICATION", 72, "LANDING_PAGE_WIREFRAME"));
+        88L, CYCLE_ID, review("REGENERATE_BEFORE_PUBLICATION", 72, "LANDING_PAGE_WIREFRAME"));
 
     verify(wireframeService)
         .registerConvergenceExecution(
@@ -96,6 +98,7 @@ class LandingGenerationAgentCoordinatorTest {
   void shouldDispatchEarliestRootCause() {
     coordinator.continueAfterQualityReview(
         88L,
+        CYCLE_ID,
         review(
             "REGENERATE_BEFORE_PUBLICATION",
             72,
@@ -111,7 +114,9 @@ class LandingGenerationAgentCoordinatorTest {
   @Test
   void shouldDispatchImagePlanningForVisualRootCause() {
     coordinator.continueAfterQualityReview(
-        88L, review("REGENERATE_BEFORE_PUBLICATION", 78, "LANDING_PAGE_IMAGE_GENERATION"));
+        88L,
+        CYCLE_ID,
+        review("REGENERATE_BEFORE_PUBLICATION", 78, "LANDING_PAGE_IMAGE_GENERATION"));
 
     verify(imagePlanningService).start(88L);
   }
@@ -124,6 +129,7 @@ class LandingGenerationAgentCoordinatorTest {
         () ->
             coordinator.continueAfterQualityReview(
                 88L,
+                CYCLE_ID,
                 reviewWithApproach(
                     "REGENERATE_BEFORE_PUBLICATION",
                     78,
@@ -141,7 +147,7 @@ class LandingGenerationAgentCoordinatorTest {
     when(creativeRepository.findLatestLineageCreativesByExperimentId(88L))
         .thenReturn(List.of(creative));
 
-    coordinator.continueAfterQualityReview(88L, review("APPROVE_FOR_PUBLICATION", 93));
+    coordinator.continueAfterQualityReview(88L, CYCLE_ID, review("APPROVE_FOR_PUBLICATION", 93));
 
     verify(creativeRepository).save(creative);
     org.junit.jupiter.api.Assertions.assertEquals(
@@ -155,7 +161,23 @@ class LandingGenerationAgentCoordinatorTest {
         IllegalArgumentException.class,
         () ->
             coordinator.continueAfterQualityReview(
-                88L, review("REGENERATE_BEFORE_PUBLICATION", 60)));
+                88L, CYCLE_ID, review("REGENERATE_BEFORE_PUBLICATION", 60)));
+  }
+
+  /** Deve ignorar revisões históricas de ciclos anteriores ao aplicar o limite do ciclo atual. */
+  @Test
+  void shouldCountOnlyReviewsFromCurrentAutonomousCycle() {
+    when(executionRepository
+            .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
+                88L, "landing-page-quality-review", CYCLE_ID))
+        .thenReturn(List.of());
+
+    coordinator.continueAfterQualityReview(
+        88L, CYCLE_ID, review("REGENERATE_BEFORE_PUBLICATION", 84, "LANDING_PAGE_COPY"));
+
+    verify(copyService).start(88L);
+    verify(executionRepository)
+        .sumCompletedCostUsdByExperimentIdAndAutonomousCycleId(88L, CYCLE_ID);
   }
 
   /** Deve confirmar uma hipótese somente quando a revisão independente posterior evoluir. */

@@ -55,9 +55,10 @@ public class LandingGenerationAgentExecutionService {
       Map<String, Object> review =
           objectMapper.readValue(event.reviewJson(), new TypeReference<>() {});
       if ("APPROVE_FOR_PUBLICATION".equals(review.get("approvalRecommendation"))) {
-        coordinator.continueAfterQualityReview(event.experimentId(), event.reviewJson());
+        coordinator.continueAfterQualityReview(
+            event.experimentId(), event.autonomousCycleId(), event.reviewJson());
       } else {
-        enqueue(event.experimentId(), event.reviewJson());
+        enqueue(event.experimentId(), event.autonomousCycleId(), event.reviewJson());
       }
     } catch (Exception ex) {
       log.error(
@@ -69,12 +70,13 @@ public class LandingGenerationAgentExecutionService {
 
   /** Cria uma execução segregada com o parecer que motivou a correção. */
   @Transactional
-  public void enqueue(Long experimentId, String qualityReviewJson) {
+  public void enqueue(Long experimentId, String autonomousCycleId, String qualityReviewJson) {
     Instant now = Instant.now();
     repository.save(
         GeraLandingStageExecution.builder()
             .experimentId(experimentId)
             .stageCode(STAGE)
+            .autonomousCycleId(autonomousCycleId)
             .executionRequestedAt(now)
             .createdAt(now)
             .promptTemplateId("landing-generator/v1/remediation")
@@ -138,7 +140,8 @@ public class LandingGenerationAgentExecutionService {
     execution.setStatus(request.error() == null ? "CONCLUIDO" : "FALHA");
     repository.save(execution);
     if (request.error() == null) {
-      coordinator.continueAfterQualityReview(execution.getExperimentId(), request.decisionJson());
+      coordinator.continueAfterQualityReview(
+          execution.getExperimentId(), execution.getAutonomousCycleId(), request.decisionJson());
     }
   }
 

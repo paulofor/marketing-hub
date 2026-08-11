@@ -25,6 +25,9 @@ public class GeraLandingStageExecution {
   @Column(name = "stage_code", nullable = false, length = 100)
   private String stageCode;
 
+  @Column(name = "autonomous_cycle_id", length = 36)
+  private String autonomousCycleId;
+
   @CreationTimestamp
   @Column(name = "execution_requested_at", nullable = false, updatable = false)
   private Instant executionRequestedAt;

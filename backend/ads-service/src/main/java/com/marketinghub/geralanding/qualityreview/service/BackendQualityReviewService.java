@@ -70,7 +70,8 @@ public class BackendQualityReviewService {
             .findById(experimentId)
             .orElseThrow(
                 () -> new EntityNotFoundException("Experiment not found: " + experimentId));
-    GeraLandingStageExecution execution = createExecution(experiment, "manual/start");
+    GeraLandingStageExecution execution =
+        createExecution(experiment, "manual/start", UUID.randomUUID().toString());
     return new GeraLandingQualityReviewStartResponse(
         fromDatabaseIdJob(execution.getIdJob()), execution.getStatus(), null);
   }
@@ -78,7 +79,9 @@ public class BackendQualityReviewService {
   /** Agenda automaticamente o Quality Gate visual após a montagem do HTML final do GeraLanding. */
   @Transactional
   public String reviewAfterHtmlGeneration(Experiment experiment) {
-    GeraLandingStageExecution execution = createExecution(experiment, "auto/html-geralanding");
+    GeraLandingStageExecution execution =
+        createExecution(
+            experiment, "auto/html-geralanding", resolveCurrentCycle(experiment.getId()));
     return fromDatabaseIdJob(execution.getIdJob());
   }
 
@@ -243,13 +246,14 @@ public class BackendQualityReviewService {
 
   /** Cria o registro inicial da execução de Quality Gate visual com status pendente. */
   private GeraLandingStageExecution createExecution(
-      Experiment experiment, String promptTemplateId) {
+      Experiment experiment, String promptTemplateId, String autonomousCycleId) {
     Instant now = Instant.now();
     GeraLandingStageExecution execution =
         GeraLandingStageExecution.builder()
             .experimentId(experiment.getId())
             .experiment(experiment)
             .stageCode(STAGE_CODE)
+            .autonomousCycleId(autonomousCycleId)
             .executionRequestedAt(now)
             .createdAt(now)
             .promptTemplateId(promptTemplateId)
@@ -258,6 +262,15 @@ public class BackendQualityReviewService {
             .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
             .build();
     return executionRepository.save(execution);
+  }
+
+  /** Reutiliza o ciclo autônomo corrente ou abre um ciclo para uma geração automática inicial. */
+  private String resolveCurrentCycle(Long experimentId) {
+    return executionRepository
+        .findTopByExperimentIdAndAutonomousCycleIdIsNotNullOrderByExecutionRequestedAtDesc(
+            experimentId)
+        .map(GeraLandingStageExecution::getAutonomousCycleId)
+        .orElseGet(() -> UUID.randomUUID().toString());
   }
 
   /** Enriquece a auditoria de despacho com hashes do prompt/request persistidos no backend. */
@@ -468,7 +481,8 @@ public class BackendQualityReviewService {
     experiment.setLandingPageQualityReview(modelResponse);
     experimentRepository.save(experiment);
     eventPublisher.publishEvent(
-        new LandingQualityReviewedEvent(execution.getExperimentId(), modelResponse));
+        new LandingQualityReviewedEvent(
+            execution.getExperimentId(), execution.getAutonomousCycleId(), modelResponse));
   }
 
   /**

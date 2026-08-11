@@ -984,3 +984,10 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** os gates de revisão e custo eram acumulados por experimento, sem identidade persistida para o ciclo autônomo que originou a regeneração.
 - **Correção sistêmica:** cada início manual abre um `autonomous_cycle_id`; tarefas, revisões automáticas e custos herdam a correlação, e os gates consultam somente o ciclo corrente.
 - **Prevenção:** teste de contrato mantém revisões históricas fora do contador atual sem apagar auditoria nem ampliar o limite seguro de quatro revisões.
+
+### LOOP-LANDING-GENERATOR-MEMORY-TEXT-OVERFLOW
+
+- **Sintoma:** Dédalo conclui a análise autônoma, mas o callback responde HTTP 500 e nenhuma regeneração é iniciada.
+- **Causa-raiz:** `premium_agent_memory.content_text` usava `TEXT`; o parecer enriquecido de 21.406 caracteres excedeu a capacidade efetiva em `utf8mb4` e o MySQL 5.7 retornou erro 1406.
+- **Correção sistêmica:** conteúdo e evidências da memória premium e de seus feedbacks passam a `LONGTEXT`, com mapeamento JPA explícito e sem truncamento silencioso.
+- **Prevenção:** teste de contrato valida conjuntamente entidade, changelog e include relativo do Liquibase.

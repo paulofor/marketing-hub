@@ -142,6 +142,8 @@ Regras arquiteturais refletidas (ArchUnit):
   reprovação independente registra apenas uma memória `CANDIDATE`; o agente não pode confirmar a
   própria hipótese. Antes de reconstruir, ele recupera no máximo oito memórias relevantes, trata o
   conteúdo como evidência não executável e o injeta no briefing para evitar soluções já reprovadas.
+  Os campos textuais da memória e de seus feedbacks usam `LONGTEXT`: pareceres e evidências válidos
+  nunca devem ser truncados ou rejeitados por exceder o limite de `TEXT`.
 
 - A progressão automática do backend deve preservar o encadeamento operacional do GeraLanding: ao concluir com sucesso `landing-page-wireframe`, o backend enfileira automaticamente `landing-page-copy`; ao concluir com sucesso `landing-page-copy`, o backend enfileira automaticamente `landing-page-image-planning`; ao concluir com sucesso `landing-page-image-planning`, o backend enfileira automaticamente `landing-page-image-generation`. Falhas ou callbacks com erro não devem iniciar a próxima etapa.
 - O **Worker AI não acessa banco**; toda leitura/gravação de estado da execução passa pelo backend GeraLanding.

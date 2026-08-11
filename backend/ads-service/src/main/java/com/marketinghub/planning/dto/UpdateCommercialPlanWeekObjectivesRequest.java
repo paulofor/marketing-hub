@@ -1,5 +1,6 @@
 package com.marketinghub.planning.dto;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -8,5 +9,16 @@ import java.util.List;
  */
 public record UpdateCommercialPlanWeekObjectivesRequest(List<Item> objectives) {
   /** Responsabilidade: representar um objetivo da próxima semana enviado pela tela. */
-  public record Item(Long id, Integer sequenceOrder, String objectiveText, Integer score) {}
+  public record Item(
+      Long id,
+      Integer sequenceOrder,
+      String objectiveText,
+      Integer score,
+      Integer planVersionNumber,
+      String assignedAgentKey,
+      String assignedAgentNickname,
+      String expectedResult,
+      String executionStatus,
+      BigDecimal plannedCost,
+      BigDecimal plannedRevenue) {}
 }

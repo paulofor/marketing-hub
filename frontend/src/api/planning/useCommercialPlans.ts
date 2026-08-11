@@ -179,6 +179,15 @@ export interface CommercialPlanWeekObjective {
   sequenceOrder: number;
   objectiveText: string;
   score?: number | null;
+  planVersionNumber?: number | null;
+  assignedAgentKey?: string | null;
+  assignedAgentNickname?: string | null;
+  expectedResult?: string | null;
+  executionStatus?:
+    "PLANNED" | "IN_PROGRESS" | "BLOCKED" | "COMPLETED" | "CANCELLED";
+  dueDate?: string | null;
+  plannedCost?: number | null;
+  plannedRevenue?: number | null;
 }
 
 export interface CommercialPlanFunnelStage {
@@ -313,6 +322,34 @@ export function useUpdateCommercialPlanWeekObjectives(planId?: number | null) {
       const { data } = await axios.put<CommercialPlanWeekObjective[]>(
         `/api/planning/commercial-plans/${planId}/weeks/${weekNumber}/objectives`,
         { objectives },
+      );
+      return data;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["commercial-plan-weeks", planId],
+      }),
+  });
+}
+
+export function useUpdateCommercialPlanWeekCommitmentStatus(
+  planId?: number | null,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      commitmentId,
+      status,
+      score,
+    }: {
+      commitmentId: number;
+      status: NonNullable<CommercialPlanWeekObjective["executionStatus"]>;
+      score?: number | null;
+    }) => {
+      if (!planId) throw new Error("Plano comercial não informado.");
+      const { data } = await axios.patch<CommercialPlanWeekObjective>(
+        `/api/planning/commercial-plans/${planId}/weeks/commitments/${commitmentId}/status`,
+        { status, score },
       );
       return data;
     },

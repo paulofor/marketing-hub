@@ -7,6 +7,7 @@ import com.marketinghub.planning.dto.CommercialPlanFunnelStageDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekExperimentDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekObjectiveDto;
+import com.marketinghub.planning.dto.UpdateCommercialPlanWeekCommitmentStatusRequest;
 import com.marketinghub.planning.dto.UpdateCommercialPlanWeekObjectivesRequest;
 import com.marketinghub.repository.jpa.planning.CommercialPlanWeekObjectiveRepository;
 import java.math.BigDecimal;
@@ -46,6 +47,7 @@ public class CommercialPlanWeeklyExperimentService {
   private final JdbcTemplate jdbcTemplate;
   private final CommercialPlanWeekObjectiveRepository objectiveRepository;
   private final CurrencyConversionService currencyConversionService;
+  private final CommercialPlanVersionService versionService;
   private final Clock clock;
 
   /** Inicializa o serviço com a fonte de plano e acesso SQL de leitura operacional. */
@@ -54,12 +56,14 @@ public class CommercialPlanWeeklyExperimentService {
       CommercialPlanService planService,
       JdbcTemplate jdbcTemplate,
       CommercialPlanWeekObjectiveRepository objectiveRepository,
-      CurrencyConversionService currencyConversionService) {
+      CurrencyConversionService currencyConversionService,
+      CommercialPlanVersionService versionService) {
     this(
         planService,
         jdbcTemplate,
         objectiveRepository,
         currencyConversionService,
+        versionService,
         Clock.systemUTC());
   }
 
@@ -69,11 +73,13 @@ public class CommercialPlanWeeklyExperimentService {
       JdbcTemplate jdbcTemplate,
       CommercialPlanWeekObjectiveRepository objectiveRepository,
       CurrencyConversionService currencyConversionService,
+      CommercialPlanVersionService versionService,
       Clock clock) {
     this.planService = planService;
     this.jdbcTemplate = jdbcTemplate;
     this.objectiveRepository = objectiveRepository;
     this.currencyConversionService = currencyConversionService;
+    this.versionService = versionService;
     this.clock = clock;
   }
 
@@ -151,10 +157,36 @@ public class CommercialPlanWeeklyExperimentService {
               .sequenceOrder(nextOrder)
               .objectiveText(item.objectiveText().trim())
               .score(normalizeScore(item.score()))
+              .planVersionNumber(requireCurrentPlanVersion(plan.getId(), item.planVersionNumber()))
+              .assignedAgentKey(trimToNull(item.assignedAgentKey()))
+              .assignedAgentNickname(trimToNull(item.assignedAgentNickname()))
+              .expectedResult(trimToNull(item.expectedResult()))
+              .executionStatus(normalizeExecutionStatus(item.executionStatus()))
+              .dueDate(resolveWeekPeriod(plan, objectiveWeekNumber).endDate())
+              .plannedCost(normalizeMoney(item.plannedCost()))
+              .plannedRevenue(normalizeMoney(item.plannedRevenue()))
               .build());
       nextOrder++;
     }
     return objectiveRepository.saveAll(objectives).stream().map(this::toObjectiveDto).toList();
+  }
+
+  /** Atualiza o andamento sem reabrir a janela de definição estratégica da semana. */
+  @Transactional
+  public CommercialPlanWeekObjectiveDto updateCommitmentStatus(
+      Long planId, Long objectiveId, UpdateCommercialPlanWeekCommitmentStatusRequest request) {
+    planService.getPlan(planId);
+    CommercialPlanWeekObjective objective =
+        objectiveRepository
+            .findByIdAndPlanId(objectiveId, planId)
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Compromisso semanal não encontrado."));
+    objective.setExecutionStatus(
+        normalizeExecutionStatus(request == null ? null : request.status()));
+    objective.setScore(normalizeScore(request == null ? null : request.score()));
+    return toObjectiveDto(objectiveRepository.save(objective));
   }
 
   /** Resolve a semana solicitada dentro do mes de referencia do plano. */
@@ -258,7 +290,18 @@ public class CommercialPlanWeeklyExperimentService {
     for (int index = 0; index < JULY_FIRST_WEEK_DEFAULT_OBJECTIVES.size(); index++) {
       defaults.add(
           new CommercialPlanWeekObjectiveDto(
-              null, index + 1, JULY_FIRST_WEEK_DEFAULT_OBJECTIVES.get(index), null));
+              null,
+              index + 1,
+              JULY_FIRST_WEEK_DEFAULT_OBJECTIVES.get(index),
+              null,
+              null,
+              null,
+              null,
+              null,
+              "PLANNED",
+              null,
+              null,
+              null));
     }
     return defaults;
   }
@@ -277,7 +320,55 @@ public class CommercialPlanWeeklyExperimentService {
         objective.getId(),
         objective.getSequenceOrder(),
         objective.getObjectiveText(),
-        objective.getScore());
+        objective.getScore(),
+        objective.getPlanVersionNumber(),
+        objective.getAssignedAgentKey(),
+        objective.getAssignedAgentNickname(),
+        objective.getExpectedResult(),
+        objective.getExecutionStatus(),
+        objective.getDueDate(),
+        objective.getPlannedCost(),
+        objective.getPlannedRevenue());
+  }
+
+  /** Exige que o compromisso semanal congele a versão oficial que orientou sua criação. */
+  private Integer requireCurrentPlanVersion(Long planId, Integer planVersionNumber) {
+    if (planVersionNumber == null || planVersionNumber < 1) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Versão do Plano Comercial é obrigatória.");
+    }
+    int currentVersion = versionService.current(planId).versionNumber();
+    if (planVersionNumber != currentVersion) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "O Plano Comercial mudou. Recarregue a semana antes de criar o compromisso.");
+    }
+    return planVersionNumber;
+  }
+
+  /** Normaliza o estado permitido para a realização temporal do plano. */
+  private String normalizeExecutionStatus(String status) {
+    String normalized = status == null ? "PLANNED" : status.trim().toUpperCase();
+    if (!List.of("PLANNED", "IN_PROGRESS", "BLOCKED", "COMPLETED", "CANCELLED")
+        .contains(normalized)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status semanal inválido.");
+    }
+    return normalized;
+  }
+
+  /** Remove espaços e converte texto vazio em ausência de valor. */
+  private String trimToNull(String value) {
+    return value == null || value.isBlank() ? null : value.trim();
+  }
+
+  /** Impede metas financeiras negativas no compromisso semanal. */
+  private BigDecimal normalizeMoney(BigDecimal value) {
+    if (value == null) return null;
+    if (value.signum() < 0) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Metas financeiras semanais não podem ser negativas.");
+    }
+    return value.setScale(2, RoundingMode.HALF_UP);
   }
 
   /** Mantem a nota dentro da escala simples de avaliacao semanal. */

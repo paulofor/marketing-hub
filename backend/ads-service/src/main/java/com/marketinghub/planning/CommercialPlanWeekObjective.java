@@ -10,7 +10,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -49,6 +51,32 @@ public class CommercialPlanWeekObjective {
 
   @Column(name = "score")
   private Integer score;
+
+  @Column(name = "plan_version_number", nullable = false)
+  private Integer planVersionNumber;
+
+  @Column(name = "assigned_agent_key", length = 100)
+  private String assignedAgentKey;
+
+  @Column(name = "assigned_agent_nickname", length = 100)
+  private String assignedAgentNickname;
+
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  @Column(name = "expected_result", columnDefinition = "LONGTEXT")
+  private String expectedResult;
+
+  @Column(name = "execution_status", nullable = false, length = 30)
+  private String executionStatus;
+
+  @Column(name = "due_date", nullable = false)
+  private LocalDate dueDate;
+
+  @Column(name = "planned_cost", precision = 15, scale = 2)
+  private BigDecimal plannedCost;
+
+  @Column(name = "planned_revenue", precision = 15, scale = 2)
+  private BigDecimal plannedRevenue;
 
   @CreationTimestamp
   @Column(name = "created_at")

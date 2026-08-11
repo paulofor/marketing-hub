@@ -12,6 +12,7 @@ import com.marketinghub.planning.dto.CreateCommercialPlanRequest;
 import com.marketinghub.planning.dto.CreateCommercialPlanSimulationRequest;
 import com.marketinghub.planning.dto.UpdateCommercialPlanMilestoneRequest;
 import com.marketinghub.planning.dto.UpdateCommercialPlanRequest;
+import com.marketinghub.planning.dto.UpdateCommercialPlanWeekCommitmentStatusRequest;
 import com.marketinghub.planning.dto.UpdateCommercialPlanWeekObjectivesRequest;
 import com.marketinghub.planning.mapper.CommercialPlanMapper;
 import com.marketinghub.planning.service.CommercialPlanAgentActivityService;
@@ -117,6 +118,15 @@ public class CommercialPlanController {
       @PathVariable Integer weekNumber,
       @RequestBody UpdateCommercialPlanWeekObjectivesRequest request) {
     return weeklyExperimentService.updateObjectives(id, weekNumber, request);
+  }
+
+  /** Registra o andamento de um compromisso semanal sem alterar a estratégia congelada. */
+  @PatchMapping("/{id}/weeks/commitments/{commitmentId}/status")
+  public CommercialPlanWeekObjectiveDto updateWeekCommitmentStatus(
+      @PathVariable Long id,
+      @PathVariable Long commitmentId,
+      @RequestBody UpdateCommercialPlanWeekCommitmentStatusRequest request) {
+    return weeklyExperimentService.updateCommitmentStatus(id, commitmentId, request);
   }
 
   /** Atualiza um plano comercial existente. */

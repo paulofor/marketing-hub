@@ -14,6 +14,7 @@ import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.CommercialPlanWeekObjective;
 import com.marketinghub.planning.dto.CommercialPlanFunnelStageDto;
+import com.marketinghub.planning.dto.CommercialPlanVersionDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekExperimentDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekObjectiveDto;
@@ -23,6 +24,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +44,8 @@ class CommercialPlanWeeklyExperimentServiceTest {
 
   @Mock private CommercialPlanWeekObjectiveRepository objectiveRepository;
 
+  @Mock private CommercialPlanVersionService versionService;
+
   private CommercialPlan plan;
 
   /** Prepara um plano de julho sem experimentos para isolar a regra de janela semanal. */
@@ -50,6 +54,9 @@ class CommercialPlanWeeklyExperimentServiceTest {
     plan =
         CommercialPlan.builder().id(1L).name("Julho").deadline(LocalDate.of(2026, 7, 31)).build();
     when(planService.getPlan(1L)).thenReturn(plan);
+    org.mockito.Mockito.lenient()
+        .when(versionService.current(1L))
+        .thenReturn(new CommercialPlanVersionDto(10L, 1L, 3, "{}", "USER", "Teste", null));
   }
 
   /**
@@ -245,7 +252,17 @@ class CommercialPlanWeeklyExperimentServiceTest {
             new UpdateCommercialPlanWeekObjectivesRequest(
                 List.of(
                     new UpdateCommercialPlanWeekObjectivesRequest.Item(
-                        null, 1, "Focar a semana 3 em prova comercial real.", 12))));
+                        null,
+                        1,
+                        "Focar a semana 3 em prova comercial real.",
+                        12,
+                        3,
+                        "growth-operator",
+                        "Hermes",
+                        "Uma venda aprovada.",
+                        "PLANNED",
+                        null,
+                        null))));
 
     verify(objectiveRepository).deleteByPlanIdAndWeekNumber(1L, 3);
     assertThat(objectives).hasSize(1);
@@ -256,6 +273,39 @@ class CommercialPlanWeeklyExperimentServiceTest {
     assertThat(saved.getWeekNumber()).isEqualTo(3);
     assertThat(saved.getObjectiveText()).isEqualTo("Focar a semana 3 em prova comercial real.");
     assertThat(saved.getScore()).isEqualTo(10);
+    assertThat(saved.getPlanVersionNumber()).isEqualTo(3);
+    assertThat(saved.getAssignedAgentNickname()).isEqualTo("Hermes");
+    assertThat(saved.getDueDate()).isEqualTo(LocalDate.of(2026, 7, 26));
+  }
+
+  /** Deve atualizar o andamento sem alterar o contexto comercial congelado do compromisso. */
+  @Test
+  void updateCommitmentStatusPreservesFrozenPlanVersion() {
+    CommercialPlanWeeklyExperimentService service = serviceAt(LocalDate.of(2026, 7, 18));
+    CommercialPlanWeekObjective objective =
+        CommercialPlanWeekObjective.builder()
+            .id(50L)
+            .plan(plan)
+            .weekNumber(3)
+            .sequenceOrder(1)
+            .objectiveText("Obter uma compra aprovada.")
+            .planVersionNumber(3)
+            .executionStatus("PLANNED")
+            .dueDate(LocalDate.of(2026, 7, 26))
+            .build();
+    when(objectiveRepository.findByIdAndPlanId(50L, 1L)).thenReturn(Optional.of(objective));
+    when(objectiveRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+    CommercialPlanWeekObjectiveDto updated =
+        service.updateCommitmentStatus(
+            1L,
+            50L,
+            new com.marketinghub.planning.dto.UpdateCommercialPlanWeekCommitmentStatusRequest(
+                "COMPLETED", 9));
+
+    assertThat(updated.executionStatus()).isEqualTo("COMPLETED");
+    assertThat(updated.score()).isEqualTo(9);
+    assertThat(updated.planVersionNumber()).isEqualTo(3);
   }
 
   /** Cria o servico com data fixa para testar a regra de disponibilidade. */
@@ -264,6 +314,6 @@ class CommercialPlanWeeklyExperimentServiceTest {
     CurrencyConversionService conversionService =
         new CurrencyConversionService(new CurrencyConversionProperties());
     return new CommercialPlanWeeklyExperimentService(
-        planService, jdbcTemplate, objectiveRepository, conversionService, clock);
+        planService, jdbcTemplate, objectiveRepository, conversionService, versionService, clock);
   }
 }

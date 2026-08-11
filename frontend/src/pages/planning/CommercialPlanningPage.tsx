@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAgents } from "../../api/agent/useAgents";
+import { Agent } from "../../api/agent/types";
 import PageTitle from "../../components/PageTitle";
 import {
   CommercialPlan,
@@ -15,6 +17,7 @@ import {
   useCreateCommercialPlan,
   useUpdateCommercialPlan,
   useUpdateCommercialPlanWeekObjectives,
+  useUpdateCommercialPlanWeekCommitmentStatus,
 } from "../../api/planning/useCommercialPlans";
 import "./CommercialPlanningPage.css";
 import GrowthOperatorPanel from "./GrowthOperatorPanel";
@@ -540,16 +543,26 @@ function MonthlyMetricCard({
 function WeeklyObjectiveEditor({
   planId,
   week,
+  agents,
+  planVersionNumber,
 }: {
   planId: number;
   week: CommercialPlanWeek;
+  agents: Agent[];
+  planVersionNumber: number;
 }) {
   const updateObjectives = useUpdateCommercialPlanWeekObjectives(planId);
+  const updateCommitmentStatus =
+    useUpdateCommercialPlanWeekCommitmentStatus(planId);
   const [objectives, setObjectives] = useState<CommercialPlanWeekObjective[]>(
     () => normalizeObjectives(week.objectives),
   );
   const [isAddingObjective, setIsAddingObjective] = useState(false);
   const [newObjectiveText, setNewObjectiveText] = useState("");
+  const [newExpectedResult, setNewExpectedResult] = useState("");
+  const [newAgentKey, setNewAgentKey] = useState("");
+  const [newPlannedCost, setNewPlannedCost] = useState("");
+  const [newPlannedRevenue, setNewPlannedRevenue] = useState("");
   const objectivesEditable = week.objectivesEditable === true;
   const objectiveWeekNumber = week.weekNumber + 1;
   const bottleneck = findMainFunnelBottleneck(asArray(week.funnelStages));
@@ -558,11 +571,18 @@ function WeeklyObjectiveEditor({
     setObjectives(normalizeObjectives(week.objectives));
     setIsAddingObjective(false);
     setNewObjectiveText("");
+    setNewExpectedResult("");
+    setNewAgentKey("");
+    setNewPlannedCost("");
+    setNewPlannedRevenue("");
   }, [week.objectives]);
 
   function saveNewObjective() {
     const objectiveText = newObjectiveText.trim();
     if (!objectiveText) return;
+    const assignedAgent = agents.find(
+      (agent) => agent.agentKey === newAgentKey,
+    );
     const nextObjectives = [
       ...objectives,
       {
@@ -570,6 +590,14 @@ function WeeklyObjectiveEditor({
         sequenceOrder: objectives.length + 1,
         objectiveText,
         score: null,
+        planVersionNumber,
+        assignedAgentKey: assignedAgent?.agentKey ?? null,
+        assignedAgentNickname: assignedAgent?.nickname ?? null,
+        expectedResult: newExpectedResult.trim() || null,
+        executionStatus: "PLANNED" as const,
+        plannedCost: newPlannedCost === "" ? null : Number(newPlannedCost),
+        plannedRevenue:
+          newPlannedRevenue === "" ? null : Number(newPlannedRevenue),
       },
     ];
     updateObjectives.mutate({
@@ -577,6 +605,8 @@ function WeeklyObjectiveEditor({
       objectives: nextObjectives.map((objective, index) => ({
         ...objective,
         sequenceOrder: index + 1,
+        planVersionNumber: objective.planVersionNumber ?? planVersionNumber,
+        executionStatus: objective.executionStatus ?? "PLANNED",
       })),
     });
   }
@@ -587,7 +617,7 @@ function WeeklyObjectiveEditor({
         <div>
           <h4>Objetivos para a próxima semana</h4>
           <span>
-            Gargalo de referência:{" "}
+            Execução do Plano Comercial v{planVersionNumber} · Gargalo:{" "}
             {bottleneck?.name ?? "sem conversão suficiente"}
           </span>
         </div>
@@ -611,14 +641,63 @@ function WeeklyObjectiveEditor({
             <span className="commercial-planning-week-objective-bullet">
               {index + 1}
             </span>
-            <p className="commercial-planning-week-objective-text mb-0">
-              {objective.objectiveText || "Objetivo sem descrição."}
-            </p>
-            {objective.score != null ? (
-              <span className="badge text-bg-light border">
-                Nota {objective.score}
-              </span>
-            ) : null}
+            <div className="commercial-planning-week-objective-content">
+              <p className="commercial-planning-week-objective-text mb-0">
+                {objective.objectiveText || "Objetivo sem descrição."}
+              </p>
+              <div className="d-flex flex-wrap gap-2 align-items-center">
+                <span className="badge text-bg-primary">
+                  {objective.assignedAgentNickname ??
+                    "Responsável não definido"}
+                </span>
+                {objective.id ? (
+                  <select
+                    aria-label={`Status do compromisso ${index + 1}`}
+                    className="form-select form-select-sm w-auto"
+                    value={objective.executionStatus ?? "PLANNED"}
+                    disabled={updateCommitmentStatus.isPending}
+                    onChange={(event) =>
+                      updateCommitmentStatus.mutate({
+                        commitmentId: objective.id as number,
+                        status: event.target.value as NonNullable<
+                          CommercialPlanWeekObjective["executionStatus"]
+                        >,
+                        score: objective.score,
+                      })
+                    }
+                  >
+                    <option value="PLANNED">Planejado</option>
+                    <option value="IN_PROGRESS">Em andamento</option>
+                    <option value="BLOCKED">Bloqueado</option>
+                    <option value="COMPLETED">Concluído</option>
+                    <option value="CANCELLED">Cancelado</option>
+                  </select>
+                ) : (
+                  <span className="badge text-bg-light border">Planejado</span>
+                )}
+                {objective.planVersionNumber ? (
+                  <span className="badge text-bg-light border">
+                    Plano v{objective.planVersionNumber}
+                  </span>
+                ) : null}
+              </div>
+              {objective.expectedResult ? (
+                <small>Resultado esperado: {objective.expectedResult}</small>
+              ) : null}
+              <small>
+                Custo planejado: {formatExecutedCurrency(objective.plannedCost)}
+                {" · "}Receita planejada:{" "}
+                {formatExecutedCurrency(objective.plannedRevenue)}
+                {objective.dueDate
+                  ? ` · Prazo: ${formatDate(objective.dueDate)}`
+                  : ""}
+              </small>
+              {objective.score != null ? (
+                <span className="badge text-bg-light border align-self-start">
+                  Nota {objective.score}
+                </span>
+              ) : null}
+            </div>
           </div>
         ))}
       </div>
@@ -631,8 +710,55 @@ function WeeklyObjectiveEditor({
             rows={2}
             value={newObjectiveText}
             onChange={(event) => setNewObjectiveText(event.target.value)}
-            placeholder="Descreva o novo objetivo ligado ao gargalo de funil"
+            placeholder="Ação semanal ligada ao gargalo e à venda"
           />
+          <textarea
+            aria-label="Resultado comercial esperado"
+            className="form-control form-control-sm"
+            rows={2}
+            value={newExpectedResult}
+            onChange={(event) => setNewExpectedResult(event.target.value)}
+            placeholder="Resultado mensurável esperado ao final da semana"
+          />
+          <select
+            aria-label="Agente responsável"
+            className="form-select form-select-sm"
+            value={newAgentKey}
+            onChange={(event) => setNewAgentKey(event.target.value)}
+          >
+            <option value="">Responsável não definido</option>
+            {agents.map((agent) => (
+              <option key={agent.id} value={agent.agentKey ?? ""}>
+                {agent.nickname} — {agent.name}
+              </option>
+            ))}
+          </select>
+          <div className="row g-2">
+            <div className="col-md-6">
+              <input
+                aria-label="Custo planejado da semana"
+                className="form-control form-control-sm"
+                type="number"
+                min="0"
+                step="0.01"
+                value={newPlannedCost}
+                onChange={(event) => setNewPlannedCost(event.target.value)}
+                placeholder="Custo planejado (R$)"
+              />
+            </div>
+            <div className="col-md-6">
+              <input
+                aria-label="Receita planejada da semana"
+                className="form-control form-control-sm"
+                type="number"
+                min="0"
+                step="0.01"
+                value={newPlannedRevenue}
+                onChange={(event) => setNewPlannedRevenue(event.target.value)}
+                placeholder="Receita planejada (R$)"
+              />
+            </div>
+          </div>
           <button
             className="btn btn-sm btn-primary"
             type="button"
@@ -894,9 +1020,13 @@ function FunnelStagesPanel({
 function WeeklyExperimentList({
   planId,
   weeks,
+  agents,
+  planVersionNumber,
 }: {
   planId: number;
   weeks: CommercialPlanWeek[];
+  agents: Agent[];
+  planVersionNumber: number;
 }) {
   return (
     <section className="commercial-planning-week-list">
@@ -936,7 +1066,12 @@ function WeeklyExperimentList({
             title={`Funil da semana ${week.weekNumber}`}
           />
 
-          <WeeklyObjectiveEditor planId={planId} week={week} />
+          <WeeklyObjectiveEditor
+            planId={planId}
+            week={week}
+            agents={agents}
+            planVersionNumber={planVersionNumber}
+          />
         </details>
       ))}
     </section>
@@ -944,6 +1079,7 @@ function WeeklyExperimentList({
 }
 
 export default function CommercialPlanningPage() {
+  const agentsQuery = useAgents();
   const plansQuery = useCommercialPlans();
   const createPlan = useCreateCommercialPlan();
   const updatePlan = useUpdateCommercialPlan();
@@ -1850,7 +1986,12 @@ export default function CommercialPlanningPage() {
             stages={monthFunnelStages}
             title="Funil acumulado do mês"
           />
-          <WeeklyExperimentList planId={currentMonthPlan.id} weeks={weeks} />
+          <WeeklyExperimentList
+            planId={currentMonthPlan.id}
+            weeks={weeks}
+            agents={asArray(agentsQuery.data)}
+            planVersionNumber={currentPlanVersion?.versionNumber ?? 1}
+          />
           <TopExperimentsRanking weeks={weeks} />
         </>
       ) : null}

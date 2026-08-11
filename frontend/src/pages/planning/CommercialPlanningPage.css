@@ -963,9 +963,20 @@
 
 .commercial-planning-week-objective {
   display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  grid-template-columns: 2rem minmax(0, 1fr);
   gap: 0.5rem;
   align-items: start;
+}
+
+.commercial-planning-week-objective-content {
+  display: grid;
+  min-width: 0;
+  gap: 0.4rem;
+}
+
+.commercial-planning-week-objective-content small {
+  color: #667085;
+  overflow-wrap: anywhere;
 }
 
 .commercial-planning-week-objective-bullet {
@@ -988,9 +999,13 @@
 
 .commercial-planning-week-objective-form {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.5rem;
   align-items: start;
+}
+
+.commercial-planning-week-objective-form > .btn {
+  justify-self: end;
 }
 
 .commercial-planning-week-objectives-actions {

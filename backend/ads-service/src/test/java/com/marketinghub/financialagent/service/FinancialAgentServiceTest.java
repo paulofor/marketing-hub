@@ -7,10 +7,14 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.marketinghub.agenttask.AgentTaskResponse;
+import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.financialagent.FinancialAgentExecution;
 import com.marketinghub.financialagent.FinancialAgentExecutionStatus;
 import com.marketinghub.planning.CommercialPlan;
+import com.marketinghub.planning.dto.CommercialPlanVersionDto;
 import com.marketinghub.planning.service.CommercialPlanService;
+import com.marketinghub.planning.service.CommercialPlanVersionService;
 import com.marketinghub.repository.jpa.financialagent.FinancialAgentExecutionRepository;
 import java.math.BigDecimal;
 import java.util.List;
@@ -20,6 +24,64 @@ import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: proteger a conciliacao honesta das fontes financeiras do planejamento. */
 class FinancialAgentServiceTest {
+  /** Abre projeção vinculada à versão oficial e à mesa sem alterar valores realizados. */
+  @Test
+  void deveEnfileirarProjecaoDeReceitaNaMesaDePlutus() {
+    FinancialAgentExecutionRepository repository = mock(FinancialAgentExecutionRepository.class);
+    CommercialPlanService planService = mock(CommercialPlanService.class);
+    CommercialPlanVersionService versionService = mock(CommercialPlanVersionService.class);
+    AgentTaskService taskService = mock(AgentTaskService.class);
+    CommercialPlan plan = new CommercialPlan();
+    plan.setId(9L);
+    plan.setName("MUSA v7");
+    plan.setActualRevenue(BigDecimal.ZERO);
+    when(planService.getPlan(9L)).thenReturn(plan);
+    when(versionService.current(9L))
+        .thenReturn(new CommercialPlanVersionDto(3L, 9L, 4, "{}", "USER", "contexto", null));
+    when(taskService.createByHuman(any()))
+        .thenReturn(
+            new AgentTaskResponse(
+                55L,
+                4L,
+                "financial-agent",
+                "Plutus",
+                "HUMAN",
+                null,
+                null,
+                "Plano Comercial",
+                "Projetar",
+                "Cenários",
+                "HIGH",
+                "PENDING",
+                "commercial-plan:9@v4:revenue-projection",
+                "WORK",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null));
+    when(repository.save(any(FinancialAgentExecution.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    FinancialAgentService service =
+        new FinancialAgentService(
+            repository,
+            planService,
+            new ObjectMapper().registerModule(new JavaTimeModule()),
+            mock(StudioCostLedgerService.class),
+            versionService,
+            taskService);
+
+    FinancialAgentExecutionResponse response =
+        service.startRevenueProjection(
+            9L, new StartRevenueProjectionRequest("Decidir teto inicial"));
+
+    assertThat(response.authorityMode()).isEqualTo("READ_ONLY_REVENUE_PROJECTION");
+    assertThat(response.commercialPlanVersion()).isEqualTo(4);
+    assertThat(response.agentTaskId()).isEqualTo(55L);
+    assertThat(response.financialSnapshot()).contains("\"approvedRevenueBrl\":0");
+  }
+
   /** Entrega ao MCP o mesmo snapshot imutavel associado a execucao reservada. */
   @Test
   void deveExporSnapshotCongeladoAoMcp() {

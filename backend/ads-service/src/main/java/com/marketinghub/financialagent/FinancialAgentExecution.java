@@ -40,6 +40,15 @@ public class FinancialAgentExecution {
   @Column(name = "authority_mode", nullable = false)
   private String authorityMode;
 
+  @Column(name = "commercial_plan_version", nullable = false)
+  private Integer commercialPlanVersion;
+
+  @Column(name = "agent_task_id")
+  private Long agentTaskId;
+
+  @Column(name = "projection_request", columnDefinition = "LONGTEXT")
+  private String projectionRequest;
+
   @Column(name = "financial_snapshot", nullable = false, columnDefinition = "LONGTEXT")
   private String financialSnapshot;
 

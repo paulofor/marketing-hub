@@ -1,0 +1,14 @@
+openapi: 3.0.3
+info:
+  title: Projeção de receita de Plutus
+  version: 1.0.0
+paths:
+  /api/financial-agent/v1/commercial-plans/{planId}/revenue-projections:
+    post:
+      summary: Solicita projeção de receita somente leitura ligada à versão oficial do plano
+      responses:
+        '200': {description: Projeção enfileirada e tarefa aberta na mesa de Plutus}
+    get:
+      summary: Lista projeções sem misturar cenários com receita realizada
+      responses:
+        '200': {description: Histórico auditável de projeções}

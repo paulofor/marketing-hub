@@ -5,6 +5,7 @@ import com.marketinghub.financialagent.service.FailFinancialAgentRequest;
 import com.marketinghub.financialagent.service.FinancialAgentExecutionResponse;
 import com.marketinghub.financialagent.service.FinancialAgentService;
 import com.marketinghub.financialagent.service.ProviderCreditPurchaseService;
+import com.marketinghub.financialagent.service.StartRevenueProjectionRequest;
 import com.marketinghub.financialagent.service.registerProviderCreditPurchase.ProviderCreditPurchaseResponse;
 import com.marketinghub.financialagent.service.registerProviderCreditPurchase.RegisterProviderCreditPurchaseRequest;
 import jakarta.validation.Valid;
@@ -56,6 +57,19 @@ public class FinancialAgentController {
   @GetMapping("/commercial-plans/{planId}/executions")
   public List<FinancialAgentExecutionResponse> list(@PathVariable Long planId) {
     return service.list(planId);
+  }
+
+  /** Solicita a Plutus uma projeção de receita sem autorizar investimento. */
+  @PostMapping("/commercial-plans/{planId}/revenue-projections")
+  public FinancialAgentExecutionResponse startRevenueProjection(
+      @PathVariable Long planId, @Valid @RequestBody StartRevenueProjectionRequest request) {
+    return service.startRevenueProjection(planId, request);
+  }
+
+  /** Lista projeções auditáveis separadas dos valores realizados. */
+  @GetMapping("/commercial-plans/{planId}/revenue-projections")
+  public List<FinancialAgentExecutionResponse> listRevenueProjections(@PathVariable Long planId) {
+    return service.listRevenueProjections(planId);
   }
 
   /** Entrega os valores e a cobertura das fontes para consulta somente leitura. */

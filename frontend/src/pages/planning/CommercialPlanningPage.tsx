@@ -18,6 +18,8 @@ import {
   useUpdateCommercialPlan,
   useUpdateCommercialPlanWeekObjectives,
   useUpdateCommercialPlanWeekCommitmentStatus,
+  useRevenueProjections,
+  useRequestRevenueProjection,
 } from "../../api/planning/useCommercialPlans";
 import "./CommercialPlanningPage.css";
 import GrowthOperatorPanel from "./GrowthOperatorPanel";
@@ -1110,6 +1112,13 @@ export default function CommercialPlanningPage() {
     currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
   );
   const agentActivity = agentActivityQuery.data;
+  const revenueProjectionsQuery = useRevenueProjections(
+    currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
+  );
+  const requestRevenueProjection = useRequestRevenueProjection(
+    currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
+  );
+  const revenueProjections = asArray(revenueProjectionsQuery.data);
   const currentPlanVersion = planVersions[0];
   const [selectedReferenceMonth, setSelectedReferenceMonth] =
     useState(planReferenceMonth);
@@ -1283,6 +1292,77 @@ export default function CommercialPlanningPage() {
             ) : null}
           </div>
         </div>
+      ) : null}
+
+      {currentMonthPlan.id > 0 ? (
+        <section className="card" aria-labelledby="revenue-projection-title">
+          <div className="card-body d-flex flex-column gap-3">
+            <div className="d-flex flex-column flex-lg-row justify-content-between gap-3">
+              <div>
+                <h2 id="revenue-projection-title" className="h5 mb-1">
+                  Projeções de receita por Plutus
+                </h2>
+                <p className="text-body-secondary mb-0">
+                  Cenários para decidir investimento. Projeções não são vendas e
+                  não liberam orçamento automaticamente.
+                </p>
+              </div>
+              <button
+                className="btn btn-outline-primary align-self-start"
+                type="button"
+                disabled={requestRevenueProjection.isPending}
+                onClick={() => requestRevenueProjection.mutate(undefined)}
+              >
+                {requestRevenueProjection.isPending
+                  ? "Enviando para Plutus..."
+                  : "Solicitar projeção"}
+              </button>
+            </div>
+            {requestRevenueProjection.isError ? (
+              <div className="alert alert-danger mb-0" role="alert">
+                Não foi possível solicitar a projeção financeira.
+              </div>
+            ) : null}
+            {revenueProjectionsQuery.isLoading ? (
+              <p className="mb-0">Consultando projeções...</p>
+            ) : revenueProjections.length === 0 ? (
+              <p className="text-body-secondary mb-0">
+                Nenhuma projeção solicitada para este plano.
+              </p>
+            ) : (
+              <div className="d-flex flex-column gap-2">
+                {revenueProjections.map((projection) => (
+                  <article className="border rounded p-3" key={projection.id}>
+                    <div className="d-flex flex-wrap justify-content-between gap-2">
+                      <strong>
+                        Projeção #{projection.id} · contexto v
+                        {projection.commercialPlanVersion}
+                      </strong>
+                      <span className="badge text-bg-light border">
+                        {projection.status}
+                      </span>
+                    </div>
+                    {projection.dailyReport ? (
+                      <p className="mt-2 mb-0">{projection.dailyReport}</p>
+                    ) : projection.errorMessage ? (
+                      <p className="text-danger mt-2 mb-0">
+                        {projection.errorMessage}
+                      </p>
+                    ) : (
+                      <p className="text-body-secondary mt-2 mb-0">
+                        Plutus ainda está preparando os cenários.
+                      </p>
+                    )}
+                    <small className="text-body-secondary d-block mt-2">
+                      Tarefa #{projection.agentTaskId ?? "—"} · solicitada em{" "}
+                      {new Date(projection.createdAt).toLocaleString("pt-BR")}
+                    </small>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
       ) : null}
 
       {currentMonthPlan.id > 0 ? (

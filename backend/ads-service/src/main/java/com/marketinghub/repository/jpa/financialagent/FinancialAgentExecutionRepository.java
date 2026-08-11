@@ -14,6 +14,10 @@ public interface FinancialAgentExecutionRepository
   /** Lista os relatorios mais recentes de um planejamento. */
   List<FinancialAgentExecution> findByCommercialPlanIdOrderByCreatedAtDesc(Long planId);
 
+  /** Lista as projeções de receita de um plano sem misturá-las às conciliações realizadas. */
+  List<FinancialAgentExecution> findByCommercialPlanIdAndAuthorityModeOrderByCreatedAtDesc(
+      Long planId, String authorityMode);
+
   /** Reserva a conciliacao pendente mais antiga. */
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   List<FinancialAgentExecution> findByStatusOrderByCreatedAtAsc(

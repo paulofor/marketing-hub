@@ -185,6 +185,7 @@ let mockWeeks: unknown[] = [
 ];
 const createPlanMutate = vi.fn();
 const updateWeekMutate = vi.fn();
+const requestRevenueProjectionMutate = vi.fn();
 
 vi.mock("../../api/planning/useCommercialPlans", async () => {
   const actual = await vi.importActual<
@@ -249,6 +250,31 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
             }
           : undefined,
       isLoading: false,
+      isError: false,
+    }),
+    useRevenueProjections: (planId?: number | null) => ({
+      data:
+        planId && planId > 0
+          ? [
+              {
+                id: 77,
+                commercialPlanId: planId,
+                status: "COMPLETED",
+                authorityMode: "READ_ONLY_REVENUE_PROJECTION",
+                commercialPlanVersion: 2,
+                agentTaskId: 88,
+                dailyReport:
+                  "Cenário base recomenda começar pequeno e validar o CAC.",
+                createdAt: "2026-08-11T13:00:00Z",
+              },
+            ]
+          : [],
+      isLoading: false,
+      isError: false,
+    }),
+    useRequestRevenueProjection: () => ({
+      mutate: requestRevenueProjectionMutate,
+      isPending: false,
       isError: false,
     }),
     useCommercialPlanWeeks: (
@@ -836,6 +862,25 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getAllByText("US$ 0.00 / US$ 40.00").length).toBeGreaterThan(
       0,
     );
+  });
+
+  it("solicita projeção de receita a Plutus sem apresentá-la como venda", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(screen.getByText("Projeções de receita por Plutus")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Cenário base recomenda começar pequeno e validar o CAC.",
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText(/Projeções não são vendas/)).toBeTruthy();
+
+    await user.click(
+      screen.getByRole("button", { name: "Solicitar projeção" }),
+    );
+
+    expect(requestRevenueProjectionMutate).toHaveBeenCalledWith(undefined);
   });
 
   it("renderiza sugestao de julho quando a API ainda nao retorna planos", () => {

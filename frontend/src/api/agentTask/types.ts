@@ -15,6 +15,11 @@ export interface AgentTask {
   priority: "LOW" | "NORMAL" | "HIGH" | "URGENT";
   status: AgentTaskStatus;
   sourceReference?: string;
+  taskKind: "WORK" | "GATE_DECISION";
+  gateCode?: string;
+  gateStatus?: "PENDING" | "APPROVED" | "REJECTED";
+  gateDecisionReason?: string;
+  gateDecidedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

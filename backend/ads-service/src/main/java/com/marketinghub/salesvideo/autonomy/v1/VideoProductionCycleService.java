@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTaskResponse;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.CreateAgentTaskByAgentRequest;
+import com.marketinghub.agenttask.DecideAgentGateRequest;
 import com.marketinghub.financialagent.service.FinancialAgentService;
 import com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
@@ -74,7 +75,7 @@ public class VideoProductionCycleService {
     cycle.setUpdatedAt(now);
     cycle = repository.save(cycle);
     AgentTaskResponse task =
-        taskService.createByAgent(
+        taskService.createGateByAgent(
             new CreateAgentTaskByAgentRequest(
                 APOLLO_KEY,
                 PLUTUS_KEY,
@@ -85,7 +86,8 @@ public class VideoProductionCycleService {
                     + project.getTitle()
                     + ". Nenhum provider pode ser acionado antes da aprovação.",
                 "HIGH",
-                "video-production-cycle:" + cycle.getId()));
+                "video-production-cycle:" + cycle.getId()),
+            "VIDEO_BUDGET_APPROVAL");
     cycle.setAgentTaskId(task.id());
     return response(repository.save(cycle));
   }
@@ -118,6 +120,8 @@ public class VideoProductionCycleService {
     cycle.setFinancialReason(request.reason().trim());
     cycle.setFinancialDecidedAt(Instant.now());
     cycle.setUpdatedAt(Instant.now());
+    taskService.decideGate(
+        cycle.getAgentTaskId(), new DecideAgentGateRequest(PLUTUS_KEY, decision, request.reason()));
     if ("REJECTED".equals(decision)) {
       cycle.setStatus("FINANCIAL_BLOCKED");
       return response(repository.save(cycle));

@@ -17,5 +17,10 @@ public record AgentTaskResponse(
     String priority,
     String status,
     String sourceReference,
+    String taskKind,
+    String gateCode,
+    String gateStatus,
+    String gateDecisionReason,
+    Instant gateDecidedAt,
     Instant createdAt,
     Instant updatedAt) {}

@@ -45,6 +45,21 @@ public class AgentTask {
   @Column(name = "source_reference", length = 200)
   private String sourceReference;
 
+  @Column(name = "task_kind", nullable = false, length = 30)
+  private String taskKind;
+
+  @Column(name = "gate_code", length = 100)
+  private String gateCode;
+
+  @Column(name = "gate_status", length = 30)
+  private String gateStatus;
+
+  @Column(name = "gate_decision_reason", columnDefinition = "LONGTEXT")
+  private String gateDecisionReason;
+
+  @Column(name = "gate_decided_at")
+  private Instant gateDecidedAt;
+
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 

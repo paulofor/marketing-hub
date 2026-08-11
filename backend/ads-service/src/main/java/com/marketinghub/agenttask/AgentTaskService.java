@@ -73,6 +73,43 @@ public class AgentTaskService {
         request.sourceReference());
   }
 
+  /**
+   * Abre na mesa do responsável uma decisão de gate que não pode ser concluída como tarefa comum.
+   */
+  @Transactional
+  public AgentTaskResponse createGateByAgent(
+      CreateAgentTaskByAgentRequest request, String gateCode) {
+    AgentTaskResponse created = createByAgent(request);
+    AgentTask task = repository.findById(created.id()).orElseThrow();
+    task.setTaskKind("GATE_DECISION");
+    task.setGateCode(gateCode.trim());
+    task.setGateStatus("PENDING");
+    return response(repository.save(task));
+  }
+
+  /** Persiste a decisão do gate somente quando tomada pelo agente destinatário da tarefa. */
+  @Transactional
+  public AgentTaskResponse decideGate(Long taskId, DecideAgentGateRequest request) {
+    AgentTask task = task(taskId);
+    if (!"GATE_DECISION".equals(task.getTaskKind())) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "A tarefa não representa um gate.");
+    }
+    if (!task.getAssignedAgent().getAgentKey().equals(request.decidedByAgentKey().trim())) {
+      throw new ResponseStatusException(
+          HttpStatus.FORBIDDEN, "Somente o agente responsável pode decidir este gate.");
+    }
+    if (!"PENDING".equals(task.getGateStatus())) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "O gate já recebeu uma decisão.");
+    }
+    Instant now = Instant.now(clock);
+    task.setGateStatus(request.decision());
+    task.setGateDecisionReason(request.reason().trim());
+    task.setGateDecidedAt(now);
+    task.setStatus("APPROVED".equals(request.decision()) ? "COMPLETED" : "BLOCKED");
+    task.setUpdatedAt(now);
+    return response(repository.save(task));
+  }
+
   /** Lista exclusivamente as tarefas destinadas ao agente solicitado. */
   @Transactional(readOnly = true)
   public List<AgentTaskResponse> inbox(String agentKey) {
@@ -87,12 +124,17 @@ public class AgentTaskService {
   /** Atualiza o estado sem permitir saltos que eliminem a rastreabilidade do trabalho. */
   @Transactional
   public AgentTaskResponse updateStatus(Long taskId, UpdateAgentTaskStatusRequest request) {
-    AgentTask task =
-        repository
-            .findById(taskId)
-            .orElseThrow(
-                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tarefa não encontrada."));
+    AgentTask task = task(taskId);
     String next = request.status();
+    if ("GATE_DECISION".equals(task.getTaskKind()) && !"PENDING".equals(task.getGateStatus())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Gate decidido não pode ser reaberto pelo status da tarefa.");
+    }
+    if ("GATE_DECISION".equals(task.getTaskKind())
+        && ("COMPLETED".equals(next) || "CANCELLED".equals(next))) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Gate deve ser encerrado pelo contrato de decisão.");
+    }
     if (!task.getStatus().equals(next)
         && !ALLOWED_TRANSITIONS.contains(task.getStatus() + ":" + next)) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Transição de status inválida.");
@@ -123,6 +165,7 @@ public class AgentTaskService {
     task.setPriority(priority);
     task.setStatus("PENDING");
     task.setSourceReference(trimToNull(sourceReference));
+    task.setTaskKind("WORK");
     task.setCreatedAt(now);
     task.setUpdatedAt(now);
     return response(repository.save(task));
@@ -154,8 +197,21 @@ public class AgentTaskService {
         task.getPriority(),
         task.getStatus(),
         task.getSourceReference(),
+        task.getTaskKind(),
+        task.getGateCode(),
+        task.getGateStatus(),
+        task.getGateDecisionReason(),
+        task.getGateDecidedAt(),
         task.getCreatedAt(),
         task.getUpdatedAt());
+  }
+
+  /** Resolve uma tarefa existente para mudanças auditáveis de estado ou gate. */
+  private AgentTask task(Long taskId) {
+    return repository
+        .findById(taskId)
+        .orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tarefa não encontrada."));
   }
 
   /** Normaliza referências opcionais sem persistir texto vazio. */

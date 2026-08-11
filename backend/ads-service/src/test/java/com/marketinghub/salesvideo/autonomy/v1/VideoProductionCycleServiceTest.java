@@ -69,7 +69,7 @@ class VideoProductionCycleServiceTest {
   @Test
   void shouldOpenFinancialGateBeforeAnyProviderJob() {
     when(projectRepository.findById(7L)).thenReturn(Optional.of(project()));
-    when(taskService.createByAgent(any()))
+    when(taskService.createGateByAgent(any(), any()))
         .thenReturn(
             new AgentTaskResponse(
                 99L,
@@ -85,6 +85,11 @@ class VideoProductionCycleServiceTest {
                 "HIGH",
                 "PENDING",
                 "cycle",
+                "GATE_DECISION",
+                "VIDEO_BUDGET_APPROVAL",
+                "PENDING",
+                null,
+                null,
                 Instant.now(),
                 Instant.now()));
 
@@ -97,7 +102,9 @@ class VideoProductionCycleServiceTest {
     assertThat(result.salesVideoJobId()).isNull();
     ArgumentCaptor<CreateAgentTaskByAgentRequest> task =
         ArgumentCaptor.forClass(CreateAgentTaskByAgentRequest.class);
-    verify(taskService).createByAgent(task.capture());
+    verify(taskService)
+        .createGateByAgent(
+            task.capture(), org.mockito.ArgumentMatchers.eq("VIDEO_BUDGET_APPROVAL"));
     assertThat(task.getValue().requestedByAgentKey()).isEqualTo("videomaker");
     assertThat(task.getValue().assignedAgentKey()).isEqualTo("financial-agent");
     verify(salesVideoService, never()).requestRender(any(), any());

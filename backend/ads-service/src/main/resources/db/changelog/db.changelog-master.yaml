@@ -1735,3 +1735,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-11-apollo-plutus-video-cycle-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-11-agent-task-gates.yaml
+      relativeToChangelogFile: true

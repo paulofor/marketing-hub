@@ -57,6 +57,58 @@ class AgentTaskServiceTest {
     assertThat(response.createdAt()).isEqualTo(now);
   }
 
+  /** Registra gate pendente na mesa sem conceder aprovação ao solicitante. */
+  @Test
+  void createsPendingGateForAnyRegisteredAgent() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent requester = agent(7L, "landing-generator", "Dédalo");
+    Agent assignee = agent(6L, "meta-ad-approver", "Têmis");
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(requester));
+    when(agents.findByAgentKey("meta-ad-approver")).thenReturn(Optional.of(assignee));
+    when(repository.save(any(AgentTask.class)))
+        .thenAnswer(
+            invocation -> {
+              AgentTask task = invocation.getArgument(0);
+              task.setId(42L);
+              return task;
+            });
+    when(repository.findById(42L))
+        .thenAnswer(
+            invocation -> {
+              AgentTask task = new AgentTask();
+              task.setId(42L);
+              task.setAssignedAgent(assignee);
+              task.setRequestedByAgent(requester);
+              task.setRequestedByType("AGENT");
+              task.setRequestedByName("Dédalo");
+              task.setTitle("Revisar landing");
+              task.setDescription("Validar evidências independentes.");
+              task.setPriority("HIGH");
+              task.setStatus("PENDING");
+              task.setTaskKind("WORK");
+              task.setCreatedAt(Instant.now());
+              task.setUpdatedAt(task.getCreatedAt());
+              return Optional.of(task);
+            });
+    AgentTaskService service = new AgentTaskService(repository, agents, Clock.systemUTC());
+
+    AgentTaskResponse gate =
+        service.createGateByAgent(
+            new CreateAgentTaskByAgentRequest(
+                "landing-generator",
+                "meta-ad-approver",
+                "Revisar landing",
+                "Validar evidências independentes.",
+                "HIGH",
+                "experiment:88"),
+            "LANDING_QUALITY_APPROVAL");
+
+    assertThat(gate.taskKind()).isEqualTo("GATE_DECISION");
+    assertThat(gate.gateCode()).isEqualTo("LANDING_QUALITY_APPROVAL");
+    assertThat(gate.gateStatus()).isEqualTo("PENDING");
+  }
+
   /** Retorna somente a caixa do destinatário consultado. */
   @Test
   void listsSegregatedInbox() {
@@ -86,6 +138,48 @@ class AgentTaskServiceTest {
             () -> service.updateStatus(5L, new UpdateAgentTaskStatusRequest("COMPLETED")))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("Transição de status inválida");
+  }
+
+  /** Impede que o status operacional substitua a decisão formal de um gate. */
+  @Test
+  void requiresGateDecisionFromAssignedAgent() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    Agent plutus = agent(4L, "financial-agent", "Plutus");
+    AgentTask task = new AgentTask();
+    task.setId(51L);
+    task.setAssignedAgent(plutus);
+    task.setTaskKind("GATE_DECISION");
+    task.setGateCode("VIDEO_BUDGET_APPROVAL");
+    task.setGateStatus("PENDING");
+    task.setStatus("IN_PROGRESS");
+    task.setCreatedAt(Instant.parse("2026-08-11T15:00:00Z"));
+    task.setUpdatedAt(task.getCreatedAt());
+    when(repository.findById(51L)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    AgentTaskService service =
+        new AgentTaskService(repository, mock(AgentRepository.class), Clock.systemUTC());
+
+    assertThatThrownBy(
+            () -> service.updateStatus(51L, new UpdateAgentTaskStatusRequest("COMPLETED")))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("contrato de decisão");
+    assertThatThrownBy(
+            () ->
+                service.decideGate(
+                    51L, new DecideAgentGateRequest("videomaker", "APPROVED", "Dentro do teto.")))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Somente o agente responsável");
+
+    AgentTaskResponse approved =
+        service.decideGate(
+            51L, new DecideAgentGateRequest("financial-agent", "APPROVED", "Dentro do teto."));
+    assertThat(approved.gateStatus()).isEqualTo("APPROVED");
+    assertThat(approved.status()).isEqualTo("COMPLETED");
+    assertThat(approved.gateDecisionReason()).isEqualTo("Dentro do teto.");
+    assertThatThrownBy(
+            () -> service.updateStatus(51L, new UpdateAgentTaskStatusRequest("IN_PROGRESS")))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("não pode ser reaberto");
   }
 
   /** Cria um agente mínimo para os cenários do serviço. */

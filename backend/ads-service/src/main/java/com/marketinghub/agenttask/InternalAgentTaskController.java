@@ -21,4 +21,18 @@ public class InternalAgentTaskController {
   public AgentTaskResponse create(@Valid @RequestBody CreateAgentTaskByAgentRequest request) {
     return service.createByAgent(request);
   }
+
+  /** Permite que qualquer agente cadastrado abra um gate na mesa do responsável. */
+  @PostMapping("/gates")
+  @ResponseStatus(HttpStatus.CREATED)
+  public AgentTaskResponse createGate(@Valid @RequestBody CreateAgentGateByAgentRequest request) {
+    return service.createGateByAgent(request.asTaskRequest(), request.gateCode());
+  }
+
+  /** Registra a decisão protegida de um gate na própria mesa do agente responsável. */
+  @PostMapping("/{taskId}/gate-decision")
+  public AgentTaskResponse decideGate(
+      @PathVariable Long taskId, @Valid @RequestBody DecideAgentGateRequest request) {
+    return service.decideGate(taskId, request);
+  }
 }

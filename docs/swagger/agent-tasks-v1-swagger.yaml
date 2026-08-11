@@ -56,6 +56,33 @@ paths:
             schema: {$ref: '#/components/schemas/AgentTaskRequest'}
       responses:
         '201': {description: Delegação registrada}
+  /api/internal/agent-tasks/v1/{taskId}/gate-decision:
+    post:
+      summary: Registra a decisão do gate pelo agente destinatário
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema: {type: integer, format: int64}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GateDecisionRequest'}
+      responses:
+        '200': {description: Gate decidido e tarefa encerrada ou bloqueada}
+        '403': {description: Identidade diferente do agente destinatário}
+        '409': {description: Tarefa comum ou gate já decidido}
+  /api/internal/agent-tasks/v1/gates:
+    post:
+      summary: Permite que um agente abra um gate na mesa do responsável
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AgentGateRequest'}
+      responses:
+        '201': {description: Gate pendente registrado na mesa}
 components:
   schemas:
     HumanTaskRequest:
@@ -78,3 +105,17 @@ components:
         description: {type: string}
         priority: {type: string, enum: [LOW, NORMAL, HIGH, URGENT]}
         sourceReference: {type: string, maxLength: 200}
+    GateDecisionRequest:
+      type: object
+      required: [decidedByAgentKey, decision, reason]
+      properties:
+        decidedByAgentKey: {type: string, maxLength: 100}
+        decision: {type: string, enum: [APPROVED, REJECTED]}
+        reason: {type: string}
+    AgentGateRequest:
+      allOf:
+        - $ref: '#/components/schemas/AgentTaskRequest'
+        - type: object
+          required: [gateCode]
+          properties:
+            gateCode: {type: string, maxLength: 100}

@@ -52,6 +52,18 @@ massa e aprovação continuam sujeitos aos gates do agente. A caixa de entrada r
 andamento; executores continuam consumindo seus endpoints `pending` específicos, coordenados pelo
 backend, até que exista um orquestrador canônico que materialize a tarefa na fila operacional.
 
+Todo gate atribuído a um agente deve aparecer em sua mesa como tarefa `GATE_DECISION`, com
+`gateCode`, estado, causa e referência para a entidade protegida. O status operacional da tarefa não
+aprova o gate: somente o contrato de decisão pode registrar `APPROVED` ou `REJECTED`, e apenas a
+`agentKey` destinatária pode decidir. A aprovação conclui a tarefa; a reprovação a bloqueia. O
+serviço do domínio continua responsável por validar a decisão antes de avançar, e a mesa nunca
+substitui os endpoints `pending`, callbacks, limites financeiros, revisão independente ou aprovação
+humana aplicáveis.
+
+Todos os agentes cadastrados podem solicitar um gate pelo contrato comum
+`POST /api/internal/agent-tasks/v1/gates`. A solicitação não decide nem libera o gate e deve informar
+remetente, destinatário, `gateCode`, critério esperado e referência da entidade protegida.
+
 ## Melhorias sugeridas pelos agentes
 
 Todo agente cadastrado pode sugerir uma melhoria do Marketing Hub enquanto realiza uma tarefa. A

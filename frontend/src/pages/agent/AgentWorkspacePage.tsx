@@ -194,6 +194,11 @@ export default function AgentWorkspacePage() {
                     <div className="d-flex justify-content-between gap-3">
                       <div>
                         <h3 className="h6 mb-1">{task.title}</h3>
+                        {task.taskKind === "GATE_DECISION" ? (
+                          <span className="badge text-bg-warning mb-1">
+                            Gate · {task.gateCode}
+                          </span>
+                        ) : null}
                         <div className="small text-body-secondary">
                           Solicitado por {task.requestedByName} ·{" "}
                           {task.requestedByType === "AGENT"
@@ -209,11 +214,27 @@ export default function AgentWorkspacePage() {
                       </div>
                     </div>
                     <p className="mt-3 mb-2 text-break">{task.description}</p>
+                    {task.gateStatus ? (
+                      <div className="small mb-2">
+                        Decisão do gate: <strong>{task.gateStatus}</strong>
+                        {task.gateDecisionReason
+                          ? ` · ${task.gateDecisionReason}`
+                          : ""}
+                      </div>
+                    ) : null}
                     <div className="small text-body-secondary mb-3">
                       {new Date(task.createdAt).toLocaleString("pt-BR")}
                     </div>
                     <div className="d-flex flex-wrap gap-2">
-                      {nextStatuses[task.status].map((status) => (
+                      {(task.taskKind === "GATE_DECISION" &&
+                      task.gateStatus === "PENDING"
+                        ? nextStatuses[task.status].filter(
+                            (status) => status === "IN_PROGRESS",
+                          )
+                        : task.taskKind === "GATE_DECISION"
+                          ? []
+                          : nextStatuses[task.status]
+                      ).map((status) => (
                         <button
                           key={status}
                           className="btn btn-sm btn-outline-primary"

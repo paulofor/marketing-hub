@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,7 @@ public class CommercialPlanVersionService {
   private final Clock clock;
 
   /** Configura a persistência e a serialização determinística dos snapshots. */
+  @Autowired
   public CommercialPlanVersionService(
       CommercialPlanVersionRepository repository, ObjectMapper objectMapper) {
     this(repository, objectMapper, Clock.systemUTC());

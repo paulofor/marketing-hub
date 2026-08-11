@@ -10,6 +10,7 @@ import java.math.RoundingMode;
 import java.time.Clock;
 import java.util.List;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +29,7 @@ public class GovernedAgentLearningService {
   private final Clock clock;
 
   /** Inicializa a governança com persistência, memória oficial e relógio UTC. */
+  @Autowired
   public GovernedAgentLearningService(
       GovernedAgentLearningExperimentRepository repository,
       AgentMemoryService memoryService,

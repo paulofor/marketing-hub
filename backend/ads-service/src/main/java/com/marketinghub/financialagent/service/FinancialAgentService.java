@@ -86,6 +86,27 @@ public class FinancialAgentService {
     }
   }
 
+  /**
+   * Entrega a Plutus o contexto seguro de custos quando o projeto legado ainda não possui plano.
+   */
+  @Transactional(readOnly = true)
+  public Map<String, Object> unassignedStudioIntelligence(Long productId) {
+    LinkedHashMap<String, Object> snapshot = new LinkedHashMap<>();
+    snapshot.put("capturedAt", Instant.now());
+    snapshot.put("productId", productId);
+    snapshot.put("commercialPlanId", null);
+    snapshot.put("studioUnassignedKnownCostUsd", studioCostLedgerService.totalUnassignedCostUsd());
+    snapshot.put("studioUnassignedCostCoverage", studioCostLedgerService.unassignedCoverage());
+    snapshot.put("decisionScope", "VIDEO_CYCLE_BUDGET_ONLY");
+    snapshot.put(
+        "guardrails",
+        List.of(
+            "Nao movimentar dinheiro ou comprar creditos.",
+            "Nao aprovar consumo acima do teto do ciclo.",
+            "Bloquear quando custos estiverem ausentes ou divergentes."));
+    return snapshot;
+  }
+
   /** Reserva uma unica conciliacao pendente para o executor externo. */
   @Transactional
   public FinancialAgentExecutionResponse claimPending() {

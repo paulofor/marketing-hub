@@ -26,6 +26,10 @@ public interface GeraLandingStageExecutionRepository
       findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
           Long experimentId, String stageCode);
 
+  /** Busca a execução mais recente de uma etapa em qualquer experimento. */
+  Optional<GeraLandingStageExecution> findTopByStageCodeOrderByExecutionRequestedAtDesc(
+      String stageCode);
+
   /** Lista as próximas vinte execuções de um status em ordem de solicitação. */
   List<GeraLandingStageExecution> findTop20ByStatusOrderByExecutionRequestedAtAsc(String status);
 

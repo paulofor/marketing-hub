@@ -2,12 +2,14 @@ import { Link, useNavigate } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import { useAgents } from "../../api/agent/useAgents";
 import { useAgentMaturity } from "../../api/agent/useAgentMaturity";
+import { useAgentWorkMonitor } from "../../api/agent/useAgentWorkMonitor";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 
 export default function AgentListPage() {
   const navigate = useNavigate();
   const { data, isLoading } = useAgents();
   const maturity = useAgentMaturity();
+  const workMonitor = useAgentWorkMonitor();
   const agents = Array.isArray(data) ? data : [];
   const agentsById = new Map(agents.map((agent) => [agent.id, agent]));
 
@@ -33,6 +35,81 @@ export default function AgentListPage() {
           </div>
         </div>
       </div>
+
+      <section className="card mb-4">
+        <div className="card-body">
+          <div className="d-flex justify-content-between align-items-start gap-3">
+            <div>
+              <h2 className="h5">Monitor de trabalho dos agentes</h2>
+              <p className="small text-body-secondary mb-0">
+                Atualização automática a cada 15 segundos com tarefas,
+                pipelines, dificuldades e decisões externas pendentes.
+              </p>
+            </div>
+            <span className="badge text-bg-light">
+              {
+                (workMonitor.data ?? []).filter((item) =>
+                  ["WORKING", "DECISION_REQUIRED"].includes(item.workStatus),
+                ).length
+              }{" "}
+              ativos
+            </span>
+          </div>
+          <div className="table-responsive mt-3">
+            <table className="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Agente</th>
+                  <th>Estado</th>
+                  <th>Trabalho atual</th>
+                  <th>Dificuldade / decisão</th>
+                  <th>Última atividade</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(workMonitor.data ?? []).map((item) => (
+                  <tr key={item.agentId}>
+                    <td>
+                      <Link
+                        to={`/agents/${item.agentId}`}
+                        className="fw-semibold"
+                      >
+                        {item.nickname}
+                      </Link>
+                      <div className="small text-body-secondary">
+                        {item.agentName}
+                      </div>
+                    </td>
+                    <td>
+                      <span
+                        className={`badge ${item.workStatus === "BLOCKED" ? "text-bg-danger" : item.workStatus === "DECISION_REQUIRED" ? "text-bg-warning" : item.workStatus === "WORKING" ? "text-bg-success" : "text-bg-light"}`}
+                      >
+                        {item.workStatus}
+                      </span>
+                    </td>
+                    <td>
+                      {item.currentWork}
+                      <div className="small text-body-secondary">
+                        {item.progressDetail}
+                      </div>
+                    </td>
+                    <td>
+                      {item.externalDecision ||
+                        item.difficulty ||
+                        "Sem dificuldade registrada"}
+                    </td>
+                    <td className="small">
+                      {item.lastActivityAt
+                        ? new Date(item.lastActivityAt).toLocaleString("pt-BR")
+                        : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
       <section className="card mb-4">
         <div className="card-body">

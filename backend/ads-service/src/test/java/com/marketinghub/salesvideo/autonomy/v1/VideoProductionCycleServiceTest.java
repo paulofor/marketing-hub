@@ -110,6 +110,49 @@ class VideoProductionCycleServiceTest {
     verify(salesVideoService, never()).requestRender(any(), any());
   }
 
+  /** Comprova que um projeto legado usa custos não atribuídos sem falhar nem inventar plano. */
+  @Test
+  void shouldOpenLegacyProjectWithUnassignedFinancialSnapshot() {
+    VideoProject legacy = project();
+    legacy.setCommercialPlanId(null);
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(legacy));
+    when(financialAgentService.unassignedStudioIntelligence(76L))
+        .thenReturn(java.util.Map.of("coverage", "PARTIAL"));
+    when(taskService.createGateByAgent(any(), any()))
+        .thenReturn(
+            new AgentTaskResponse(
+                100L,
+                3L,
+                "financial-agent",
+                "Plutus",
+                "AGENT",
+                8L,
+                "videomaker",
+                "Apolo",
+                "Avaliar",
+                "Ciclo",
+                "HIGH",
+                "PENDING",
+                "cycle",
+                "GATE_DECISION",
+                "VIDEO_BUDGET_APPROVAL",
+                "PENDING",
+                null,
+                null,
+                Instant.now(),
+                Instant.now()));
+
+    var result =
+        service.create(
+            new VideoProductionCycleContracts.CreateRequest(
+                7L, new BigDecimal("40.00"), "usuario@mkt"));
+
+    assertThat(result.commercialPlanId()).isNull();
+    assertThat(result.financialSnapshot()).contains("PARTIAL");
+    verify(financialAgentService).unassignedStudioIntelligence(76L);
+    verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
   /** Comprova que somente a identidade técnica de Plutus decide o gate. */
   @Test
   void shouldRejectDecisionFromAnotherAgent() {

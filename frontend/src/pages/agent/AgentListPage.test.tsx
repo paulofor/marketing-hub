@@ -1,6 +1,6 @@
-import { render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import AgentListPage from "./AgentListPage";
 
 vi.mock("../../api/agent/useAgents", () => ({
@@ -41,7 +41,26 @@ vi.mock("../../api/agent/useAgentMaturity", () => ({
   }),
 }));
 
+vi.mock("../../api/agent/useAgentWorkMonitor", () => ({
+  useAgentWorkMonitor: () => ({
+    data: [
+      {
+        agentId: 7,
+        nickname: "Dédalo",
+        agentName: "Agente Gerador de Landing",
+        workStatus: "WORKING",
+        currentWork: "Correção autônoma da landing do experimento #88",
+        progressDetail: "Etapa em processamento",
+        externalDecisionRequired: false,
+        lastActivityAt: "2026-08-11T04:00:00Z",
+      },
+    ],
+  }),
+}));
+
 describe("AgentListPage", () => {
+  afterEach(() => cleanup());
+
   it("exibe o apelido e preserva o nome formal no quadro de maturidade", () => {
     render(
       <MemoryRouter>
@@ -58,5 +77,20 @@ describe("AgentListPage", () => {
     expect(
       within(maturitySection!).getByText("Agente Gerador de Landing"),
     ).toBeInTheDocument();
+  });
+
+  it("mostra trabalho real e necessidade de decisão no monitor", () => {
+    render(
+      <MemoryRouter>
+        <AgentListPage />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByRole("heading", { name: "Monitor de trabalho dos agentes" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Correção autônoma da landing do experimento #88"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("WORKING")).toBeInTheDocument();
   });
 });

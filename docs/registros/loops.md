@@ -180,6 +180,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - **Prevenção**: testes devem provar que toda tentativa nasce no ledger antes do consumo, que sucesso, falha e expiração atualizam sem duplicar, que áudio é contado separadamente, que custo desconhecido nunca vira zero e que custos sem plano aparecem ao Agente Financeiro até atribuição correta.
 - **Correção complementar em 2026-08-06**: o snapshot e o painel financeiro passaram a cruzar ledger e revisão comercial por provedor, expondo taxa de aprovação e custo conhecido por asset aprovado. A recomendação de recarga fica bloqueada quando custos ou revisões estiverem incompletos.
 - **Diagnóstico operacional**: a tool MCP `studio_ledger_coverage` compara jobs e ativos do Estúdio com o ledger por origem, tipo e provedor, tornando ausências, custos desconhecidos e falta de atribuição comprováveis sem SQL manual.
+- **Recorrência fechada em 2026-08-11**: o ciclo Apolo–Plutus exigia `commercial_plan_id NOT NULL`, embora projetos MUSA legados e o ledger canônico permitissem custo sem plano. O ciclo agora preserva plano nulo e entrega a Plutus o snapshot segregado de custos não atribuídos, com teste que impede voltar a vincular ou inventar planejamento.
 
 ---
 

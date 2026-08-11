@@ -242,3 +242,10 @@ A tela do Marketing Hub deve permitir identificar se o video possui HLS pronto p
 O gate comercial final deve ser calculado no backend a partir de evidencias persistidas. Uma peca so pode aparecer como `READY` quando derivar de montagem narrativa auditavel com exatamente `DOR`, `RESULTADO`, `MECANISMO` e `CTA`, estiver finalizada com narracao pt-BR, legenda queimada legivel em mobile e VTT, preservar CTA funcional, possuir HLS `.m3u8` e tiver revisao humana final registrada. `VIDEO_READY` isoladamente significa apenas conclusao tecnica e nunca autoriza publicacao comercial.
 
 Quando existir uma playlist HLS ja publicada fora do fluxo completo de render, ela deve ser cadastrada ou corrigida no ativo comercial do Marketing Hub antes de ser usada por PDE. O operador deve conseguir salvar a URL `.m3u8` no Hub, associada ao experimento/projeto/job, para preservar governanca de custo, revisao, aprovacao e rastreabilidade.
+
+# Monitoramento governado de agentes
+
+- Projetos legados de vídeo podem iniciar ciclo sem `commercialPlanId`; nesse caso, Plutus recebe somente o snapshot segregado do ledger sem plano e o teto explícito do ciclo.
+- Ausência de plano nunca autoriza atribuir custos a outro planejamento nem transformar o teto em meta de gasto.
+- O monitor administrativo deve expor, por agente, trabalho atual, estado, última atividade, dificuldade e decisão externa pendente usando dados persistidos das tarefas e pipelines.
+- Apolo permanece aguardando enquanto o gate financeiro estiver pendente; Plutus aparece como responsável pela decisão do mesmo ciclo.

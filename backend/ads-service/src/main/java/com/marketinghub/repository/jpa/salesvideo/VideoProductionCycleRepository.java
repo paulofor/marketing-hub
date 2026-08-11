@@ -2,6 +2,7 @@ package com.marketinghub.repository.jpa.salesvideo;
 
 import com.marketinghub.salesvideo.VideoProductionCycle;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /** Responsabilidade: acessar ciclos governados de produção de vídeo. */
@@ -11,4 +12,7 @@ public interface VideoProductionCycleRepository extends JpaRepository<VideoProdu
 
   /** Lista ciclos aguardando decisão financeira. */
   List<VideoProductionCycle> findByStatusOrderByCreatedAtAsc(String status);
+
+  /** Busca o ciclo de vídeo atualizado mais recentemente. */
+  Optional<VideoProductionCycle> findTopByOrderByUpdatedAtDesc();
 }

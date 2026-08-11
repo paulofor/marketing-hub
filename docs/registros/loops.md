@@ -32,6 +32,7 @@
 - Fechamento complementar em planos legados (2026-08-08): quando hipotese e nicho nao estao gravados diretamente no plano, a reconciliacao usa o contexto do experimento ja vinculado; teste de contrato cobre o caso real do plano 2 com troca do experimento 84 para o 85.
 - Fechamento complementar no Aprovador Meta (2026-08-09): o worker reservava três criativos de uma vez, marcava todos como `PROCESSING`, mas executava o Codex sequencialmente. Um item lento multiplicava o tempo do lote e ocultava quais revisões realmente estavam em execução. O lote agora usa tarefas virtuais concorrentes, mantendo timeout, telemetria, callback e falha isolados por criativo; teste de contrato exige início simultâneo dos três itens.
 - Fechamento complementar no Aprovador Meta (2026-08-09): reinício ou timeout do worker deixava revisões indefinidamente em `PROCESSING`, pois a reserva não possuía lease. O backend agora persiste início e recuperações, reenfileira leases órfãos com limite e encerra em `FAILED` com causa auditável após reincidência.
+- Fechamento complementar nas mesas e planos comerciais (2026-08-11): o limite fixo de 40 minutos encerrava Atena e Dédalo mesmo com atividade, leases antigas podiam permanecer `RUNNING` fora do item mais recente e uma falha na fila auxiliar de vídeo impedia Plutus de consumir sua fila financeira. O timeout passa a medir inatividade com teto absoluto, leases órfãs recebem uma única retomada com a entrada congelada e filas independentes falham isoladamente. Testes de contrato impedem transformar timeout recuperável em falha definitiva e impedem a fila de vídeo de causar starvation financeiro.
 
 ## LOOP-CUSTOMER-AGENT-UNSTRUCTURED-EXECUTION — Avaliação sem parecer final
 
@@ -958,6 +959,13 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Sintoma:** `java_module_logs` retorna HTTP 404 para `meta-ad-approver-worker`, embora o health do agente esteja `UP` e o logfile real esteja disponível.
 - **Causa-raiz:** o MCP registrou uma rota nominal `meta-ad-approver-worker-log`, mas o Actuator expõe o endpoint configurado como `logfile` sob o base path versionado.
 - **Correção sistêmica:** aplicação, Composes, documentação operacional e teste de contrato usam `/ops-meta-ad-approver-observability-v1/logfile`, validado contra o runtime publicado.
+
+# LOOP-EXPERIMENT-STRATEGIST-LOG-ENDPOINT-DRIFT — Atena executa sem logs acessíveis pelo MCP
+
+- **Sintoma:** `java_module_logs` retorna HTTP 404 para `experiment-strategist-worker`, embora o worker esteja em execução.
+- **Causa-raiz:** o MCP apontava para a rota nominal `experiment-strategist-worker-log`, mas o Actuator publica o endpoint como `logfile` sob o base path versionado.
+- **Correção sistêmica:** defaults do MCP, Composes e documentação usam `/ops-experiment-strategist-observability-v1/logfile`; o deploy valida health e logfile antes de declarar o worker pronto.
+- **Prevenção:** testes de contrato no worker e no MCP fixam a rota, a porta, os descritores publicados e a sonda do workflow.
 
 ### LOOP-META-AD-APPROVER-CORRECTION-TARGETS-EMPTY
 

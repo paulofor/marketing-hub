@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 /** Responsabilidade: executar o Codex 5.6 Sol isolado e validar o plano de correção da landing. */
 @Component
 public class LandingGeneratorCodexRunner {
+  private static final long ACTIVITY_POLL_SECONDS = 15L;
   private final LandingGeneratorAgentProperties properties;
   private final ObjectMapper objectMapper;
   private final CodexTelemetryReporter telemetry;
@@ -49,9 +50,11 @@ public class LandingGeneratorCodexRunner {
       process.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
       try (CodexTelemetryReporter.Session session = telemetry.monitor(job, process, log)) {
-        if (!process.waitFor(properties.getCodexTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
+        if (!waitWhileActive(process, log)) {
           process.destroyForcibly();
-          throw new IllegalStateException("Timeout do Codex do Agente Gerador de Landing");
+          process.waitFor(10, TimeUnit.SECONDS);
+          throw new CodexActivityTimeoutException(
+              "Timeout do Codex do Agente Gerador de Landing sem atividade comprovada");
         }
         if (process.exitValue() != 0)
           throw new IllegalStateException(
@@ -76,6 +79,27 @@ public class LandingGeneratorCodexRunner {
       Files.deleteIfExists(schema);
       Files.deleteIfExists(mcp);
     }
+  }
+
+  /**
+   * Aguarda enquanto o processo produz atividade, com teto absoluto de três janelas operacionais.
+   */
+  boolean waitWhileActive(Process process, Path log) throws IOException, InterruptedException {
+    long idleLimit = properties.getCodexTimeout().toMillis();
+    long hardLimit = Math.multiplyExact(idleLimit, 3L);
+    long startedAt = System.currentTimeMillis();
+    long lastActivityAt = startedAt;
+    long observedSize = Files.size(log);
+    while (System.currentTimeMillis() - startedAt < hardLimit) {
+      if (process.waitFor(ACTIVITY_POLL_SECONDS, TimeUnit.SECONDS)) return true;
+      long currentSize = Files.size(log);
+      if (currentSize != observedSize) {
+        observedSize = currentSize;
+        lastActivityAt = System.currentTimeMillis();
+      }
+      if (System.currentTimeMillis() - lastActivityAt >= idleLimit) return false;
+    }
+    return false;
   }
 
   /** Monta o comando com modelo, pesquisa, MCP exclusivo e autoridade não interativa. */

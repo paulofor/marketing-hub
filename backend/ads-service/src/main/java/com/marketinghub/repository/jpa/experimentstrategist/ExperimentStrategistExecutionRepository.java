@@ -3,6 +3,7 @@ package com.marketinghub.repository.jpa.experimentstrategist;
 import com.marketinghub.experimentstrategist.ExperimentStrategistExecution;
 import com.marketinghub.experimentstrategist.ExperimentStrategistExecutionStatus;
 import jakarta.persistence.LockModeType;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +26,19 @@ public interface ExperimentStrategistExecutionRepository
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   List<ExperimentStrategistExecution> findByStatusOrderByCreatedAtAsc(
       ExperimentStrategistExecutionStatus status, Pageable pageable);
+
+  /** Lista leases em execução para recuperação auditável antes de uma nova reserva. */
+  List<ExperimentStrategistExecution> findByStatusAndStartedAtBeforeOrderByStartedAtAsc(
+      ExperimentStrategistExecutionStatus status, Instant threshold);
+
+  /** Conta telemetria recente que comprova atividade viva da pesquisa. */
+  @Query(
+      value =
+          "SELECT COUNT(*) FROM codex_agent_execution_telemetry "
+              + "WHERE agent_type = 'EXPERIMENT_STRATEGIST' AND execution_id = ?1 "
+              + "AND status = 'RUNNING' AND process_alive = 1 AND last_activity_at >= ?2",
+      nativeQuery = true)
+  long countRecentActiveTelemetry(Long executionId, Instant cutoff);
 
   /** Vincula a versão ativa do contrato do Estrategista à execução criada. */
   @Modifying

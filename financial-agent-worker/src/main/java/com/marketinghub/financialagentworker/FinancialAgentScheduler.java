@@ -28,7 +28,7 @@ public class FinancialAgentScheduler {
   public void processOne() {
     FinancialAgentJob job = null;
     try {
-      VideoProductionCycleReview cycle = backend.pendingVideoCycle();
+      VideoProductionCycleReview cycle = pendingVideoCycleWithoutStarvation();
       if (cycle != null) {
         backend.decideVideoCycle(cycle.id(), runner.reviewVideoCycle(cycle));
         return;
@@ -46,6 +46,16 @@ public class FinancialAgentScheduler {
       log.error("Falha no financial-agent-worker jobId={}", job == null ? null : job.id(), ex);
       if (job != null)
         backend.fail(job.id(), ex.getMessage() == null ? ex.getClass().getName() : ex.getMessage());
+    }
+  }
+
+  /** Isola indisponibilidade da fila de vídeo para não bloquear conciliações e demais pareceres. */
+  private VideoProductionCycleReview pendingVideoCycleWithoutStarvation() {
+    try {
+      return backend.pendingVideoCycle();
+    } catch (Exception ex) {
+      log.error("Falha ao consultar ciclos de vídeo; Plutus continuará nas demais filas", ex);
+      return null;
     }
   }
 }

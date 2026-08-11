@@ -1,0 +1,39 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub - Melhorias sugeridas pelos agentes
+  version: 1.0.0
+paths:
+  /api/internal/system-improvements/v1:
+    post:
+      summary: Registra uma melhoria percebida por qualquer agente durante uma tarefa
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSystemImprovement'
+      responses:
+        '201':
+          description: Melhoria registrada
+  /api/system-improvements:
+    get:
+      summary: Lista o backlog administrativo de melhorias
+      responses:
+        '200':
+          description: Melhorias ordenadas da mais recente para a mais antiga
+    post:
+      summary: Cadastra uma melhoria pela interface administrativa
+      responses:
+        '201':
+          description: Melhoria registrada
+components:
+  schemas:
+    CreateSystemImprovement:
+      type: object
+      additionalProperties: false
+      required: [agentKey, title, description]
+      properties:
+        agentKey: {type: string, maxLength: 100}
+        title: {type: string, maxLength: 160}
+        description: {type: string, maxLength: 10000}
+        taskReference: {type: string, maxLength: 200}

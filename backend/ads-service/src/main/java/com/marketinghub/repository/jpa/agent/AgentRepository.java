@@ -11,6 +11,9 @@ public interface AgentRepository extends JpaRepository<Agent, Long> {
   /** Recupera o agente e seus relacionamentos para exibicao administrativa. */
   Optional<Agent> findDetailedById(Long id);
 
+  /** Recupera a identidade técnica usada por integrações dos agentes. */
+  Optional<Agent> findByAgentKey(String agentKey);
+
   /** Lista os agentes pelo apelido usado na comunicacao operacional. */
   List<Agent> findAllByOrderByNicknameAsc();
 

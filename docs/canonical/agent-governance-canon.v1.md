@@ -38,6 +38,19 @@ incrementa a versão e preserva uma fotografia auditável. As regras do Orquestr
 acionamento, pré-condições, prioridade, bloqueios e encaminhamento humano; a execução continua
 determinística no backend e os módulos executores apenas consomem pendências e reportam resultados.
 
+## Melhorias sugeridas pelos agentes
+
+Todo agente cadastrado pode sugerir uma melhoria do Marketing Hub enquanto realiza uma tarefa. A
+sugestão deve usar o contrato comum `POST /api/internal/system-improvements/v1` e informar a
+`agentKey`, um título objetivo, a descrição acionável e, quando existir, a referência da tarefa,
+job, execução ou experimento que originou a percepção.
+
+O backend valida a identidade no catálogo, registra a data em UTC e preserva o agente solicitante.
+As sugestões formam um backlog administrativo próprio, visível no menu `Melhorias do Sistema`;
+elas não são memória promovida, não alteram código automaticamente e não ampliam a autoridade do
+agente. Implementação, publicação, gasto ou mudança comercial continuam sujeitos aos gates e às
+aprovações já definidos neste cânone.
+
 ## Migração do Operador de Crescimento
 
 O Operador usa a chave `growth-operator`, versão inicial `1`, modelo `gpt-5.6-sol` e execução

@@ -82,10 +82,11 @@ Antes de implementar uma correção em tema com histórico de loop:
 ## LOOP-PRODUCT-DISCOVERY-FALSE-EMPTY-SUCCESS — falha externa tratada como pesquisa vazia
 
 - **Severidade**: ALTO.
-- **Status**: fechado localmente em 2026-08-11; pendente de publicação.
+- **Status**: reaberto e corrigido localmente em 2026-08-11; pendente de publicação.
 - **Causa-raiz confirmada**: o worker capturava erros HTTP de todas as consultas do provider, retornava lista vazia e concluía o ciclo como `RESEARCH_MORE`, ocultando a indisponibilidade externa. O MCP também tentava observar um container inexistente no próprio host.
 - **Correção efetiva**: falhar o ciclo quando todas as consultas falharem, registrar provider/status/ciclo, publicar logfile operacional versionado no host real e disponibilizá-lo em `java_module_logs`.
-- **Prevenção**: teste de contrato impede converter falha total do provider em zero evidências e valida a rota operacional sem expor segredo.
+- **Fechamento complementar em produção (2026-08-11)**: a primeira pesquisa apó o deploy comprovou que o worker alcançava backend e Brave, mas as 14 consultas excediam o contrato do provider e retornavam HTTP 422. O gerador agora limita cada consulta a 400 caracteres e 50 palavras, preservando o recorte inicial e a intenção de pesquisa final.
+- **Prevenção**: testes de contrato impedem converter falha total do provider em zero evidências, validam a rota operacional sem expor segredo e bloqueiam consultas Brave acima de 400 caracteres ou 50 palavras.
 
 Cada loop possui dois tipos de informação:
 

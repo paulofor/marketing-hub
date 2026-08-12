@@ -1,8 +1,20 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Gestão de Agentes
-  version: 1.1.0
+  version: 1.2.0
 paths:
+  /api/agents/work-monitor:
+    get:
+      summary: Lista o trabalho e o consumo diário de tokens dos agentes
+      responses:
+        "200":
+          description: Estado operacional persistido, atualizado automaticamente pela tela.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgentWorkMonitor"
   /api/agents/portrait:
     post:
       summary: Envia a figura mitológica de um agente
@@ -35,3 +47,57 @@ paths:
                     format: uri
         "400":
           description: Arquivo vazio, grande ou em formato não permitido.
+components:
+  schemas:
+    AgentWorkMonitor:
+      type: object
+      required:
+        - agentId
+        - agentKey
+        - nickname
+        - agentName
+        - workStatus
+        - currentWork
+        - externalDecisionRequired
+        - dailyTokens
+        - dailyTokenDate
+      properties:
+        agentId:
+          type: integer
+          format: int64
+        agentKey:
+          type: string
+        nickname:
+          type: string
+        agentName:
+          type: string
+        workStatus:
+          type: string
+        currentWork:
+          type: string
+        progressDetail:
+          type: string
+          nullable: true
+        difficulty:
+          type: string
+          nullable: true
+        externalDecisionRequired:
+          type: boolean
+        externalDecision:
+          type: string
+          nullable: true
+        sourceReference:
+          type: string
+          nullable: true
+        lastActivityAt:
+          type: string
+          format: date-time
+          nullable: true
+        dailyTokens:
+          type: integer
+          format: int64
+          description: Soma de tokens de entrada e saída reportados pelas execuções iniciadas no dia comercial.
+        dailyTokenDate:
+          type: string
+          format: date
+          description: Dia comercial do contador no fuso America/Sao_Paulo.

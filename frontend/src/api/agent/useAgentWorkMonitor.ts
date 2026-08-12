@@ -20,6 +20,8 @@ export interface AgentWorkMonitor {
   externalDecision?: string | null;
   sourceReference?: string | null;
   lastActivityAt?: string | null;
+  dailyTokens: number;
+  dailyTokenDate: string;
 }
 
 /** Consulta o estado persistido das tarefas e pipelines de todos os agentes. */

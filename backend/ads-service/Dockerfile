@@ -1,27 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ─────────────────────────────────────────
-# Build stage – compiles the Spring Boot app
-# ─────────────────────────────────────────
-FROM maven:3.9.9-eclipse-temurin-21 AS build
-WORKDIR /workspace
-ARG BACKEND_BUILD_COMMIT=unknown
-ARG BACKEND_BUILD_BRANCH=unknown
-ENV GITHUB_SHA=${BACKEND_BUILD_COMMIT}
-ENV GITHUB_REF_NAME=${BACKEND_BUILD_BRANCH}
-
-# Copy files required to cache Maven dependencies first
-COPY backend/settings.xml backend/settings.xml
-COPY backend/ads-service/pom.xml backend/ads-service/pom.xml
-RUN mvn -B -s backend/settings.xml -f backend/ads-service/pom.xml dependency:go-offline
-
-# Copy the full source tree and build the executable JAR
-COPY backend/ads-service backend/ads-service
-RUN mvn -B -s backend/settings.xml -f backend/ads-service/pom.xml package -DskipTests \
-    && mv backend/ads-service/target/app-exec.jar backend/ads-service/target/app.jar
-
-# ─────────────────────────────────────────
-# Runtime stage – lightweight JRE with the packaged app
+# Runtime image – receives the JAR already tested and packaged by CI
 # ─────────────────────────────────────────
 FROM eclipse-temurin:21-jre
 ENV JAVA_OPTS ""
@@ -39,7 +19,7 @@ RUN apt-get update \
 # Create directories that will be mounted as volumes
 RUN mkdir -p uploads logs
 
-COPY --from=build /workspace/backend/ads-service/target/app.jar /app/app.jar
+COPY backend/ads-service/target/app-exec.jar /app/app.jar
 EXPOSE 8000 80
 VOLUME ["/app/uploads", "/app/logs"]
 

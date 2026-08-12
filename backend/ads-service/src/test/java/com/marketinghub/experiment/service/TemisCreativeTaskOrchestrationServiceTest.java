@@ -63,9 +63,7 @@ class TemisCreativeTaskOrchestrationServiceTest {
     when(experiments.findById(88L)).thenReturn(Optional.of(experiment));
     TemisCreativeTaskOrchestrationService service =
         new TemisCreativeTaskOrchestrationService(
-            tasks,
-            experiments,
-            Clock.fixed(Instant.parse("2026-08-12T18:40:00Z"), ZoneOffset.UTC));
+            tasks, experiments, Clock.fixed(Instant.parse("2026-08-12T18:40:00Z"), ZoneOffset.UTC));
 
     service.reconcilePendingTasks();
 

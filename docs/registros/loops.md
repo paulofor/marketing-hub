@@ -242,6 +242,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - **Correção complementar em 2026-08-06**: o snapshot e o painel financeiro passaram a cruzar ledger e revisão comercial por provedor, expondo taxa de aprovação e custo conhecido por asset aprovado. A recomendação de recarga fica bloqueada quando custos ou revisões estiverem incompletos.
 - **Diagnóstico operacional**: a tool MCP `studio_ledger_coverage` compara jobs e ativos do Estúdio com o ledger por origem, tipo e provedor, tornando ausências, custos desconhecidos e falta de atribuição comprováveis sem SQL manual.
 - **Recorrência fechada em 2026-08-11**: o ciclo Apolo–Plutus exigia `commercial_plan_id NOT NULL`, embora projetos MUSA legados e o ledger canônico permitissem custo sem plano. O ciclo agora preserva plano nulo e entrega a Plutus o snapshot segregado de custos não atribuídos, com teste que impede voltar a vincular ou inventar planejamento.
+- **Decisão comercial de encerramento histórico em 2026-08-12**: as tentativas anteriores a 2026-08-13 que ainda não possuem custo recuperável são classificadas uma única vez como USD 0 com evidência `USER_ASSUMED_ZERO_LEGACY_20260812`. Valores conhecidos permanecem intactos e toda tentativa nova continua obrigada a registrar custo real ou estimado; a exceção elimina dívida impossível de apurar sem reabrir o risco sistêmico para novos consumos.
 
 ---
 

@@ -62,4 +62,22 @@ class FinancialCodexRunnerTest {
     assertThat(schema)
         .contains("validatedAssumptions", "offerPriceBrl", "expectedCacBrl", "REJECT");
   }
+
+  /** Protege o investimento controlado em materiais durante a fase inicial de descoberta. */
+  @Test
+  void contratoDeVideoDevePermitirDescobertaSemRetornoAnterior() throws Exception {
+    String prompt =
+        Files.readString(
+            Path.of("src/main/resources/prompts/financial-agent/v1/video-cycle-review.md"));
+
+    assertThat(prompt)
+        .contains(
+            "Não exija retorno, venda ou ROI anterior",
+            "custos históricos irrecuperavelmente desconhecidos são USD 0",
+            "custos históricos conhecidos sem plano são gastos passados",
+            "não compare o total histórico sem plano com o teto incremental",
+            "US$ 20 no total",
+            "no máximo US$ 10 por vídeo",
+            "rastreabilidade do custo incremental novo");
+  }
 }

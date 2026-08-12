@@ -5,6 +5,10 @@
 **/dist
 **/build
 **/target
+!backend/ads-service/target/
+!backend/ads-service/target/app-exec.jar
+!frontend/dist/
+!frontend/dist/**
 **/.idea
 **/.vscode
 **/.DS_Store

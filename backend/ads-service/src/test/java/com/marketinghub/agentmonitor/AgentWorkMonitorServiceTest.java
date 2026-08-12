@@ -9,6 +9,7 @@ import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.codextelemetry.CodexAgentExecutionTelemetryRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository;
 import com.marketinghub.salesvideo.VideoProductionCycle;
@@ -27,6 +28,8 @@ class AgentWorkMonitorServiceTest {
     AgentTaskRepository tasks = mock(AgentTaskRepository.class);
     GeraLandingStageExecutionRepository landings = mock(GeraLandingStageExecutionRepository.class);
     VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
+    CodexAgentExecutionTelemetryRepository telemetry =
+        mock(CodexAgentExecutionTelemetryRepository.class);
     Agent argos =
         Agent.builder().id(5L).agentKey("market-radar").nickname("Argos").name("Radar").build();
     AgentTask completed = new AgentTask();
@@ -40,7 +43,7 @@ class AgentWorkMonitorServiceTest {
         .thenReturn(List.of(completed, obsolete));
 
     AgentWorkMonitorResponse result =
-        new AgentWorkMonitorService(agents, tasks, landings, cycles).list().getFirst();
+        new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry).list().getFirst();
 
     assertThat(result.workStatus()).isEqualTo("IDLE");
     assertThat(result.currentWork()).isEqualTo("Sem trabalho ativo");
@@ -53,6 +56,8 @@ class AgentWorkMonitorServiceTest {
     AgentTaskRepository tasks = mock(AgentTaskRepository.class);
     GeraLandingStageExecutionRepository landings = mock(GeraLandingStageExecutionRepository.class);
     VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
+    CodexAgentExecutionTelemetryRepository telemetry =
+        mock(CodexAgentExecutionTelemetryRepository.class);
     Agent apolo =
         Agent.builder().id(8L).agentKey("videomaker").nickname("Apolo").name("Videomaker").build();
     Agent plutus =
@@ -70,7 +75,8 @@ class AgentWorkMonitorServiceTest {
     cycle.setUpdatedAt(Instant.parse("2026-08-11T04:00:00Z"));
     when(agents.findAllByOrderByNicknameAsc()).thenReturn(List.of(apolo, plutus));
     when(cycles.findTopByOrderByUpdatedAtDesc()).thenReturn(Optional.of(cycle));
-    AgentWorkMonitorService service = new AgentWorkMonitorService(agents, tasks, landings, cycles);
+    AgentWorkMonitorService service =
+        new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry);
 
     List<AgentWorkMonitorResponse> result = service.list();
 
@@ -88,6 +94,8 @@ class AgentWorkMonitorServiceTest {
     AgentTaskRepository tasks = mock(AgentTaskRepository.class);
     GeraLandingStageExecutionRepository landings = mock(GeraLandingStageExecutionRepository.class);
     VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
+    CodexAgentExecutionTelemetryRepository telemetry =
+        mock(CodexAgentExecutionTelemetryRepository.class);
     Agent dedalo =
         Agent.builder()
             .id(7L)
@@ -108,9 +116,37 @@ class AgentWorkMonitorServiceTest {
         .thenReturn(Optional.of(execution));
 
     AgentWorkMonitorResponse result =
-        new AgentWorkMonitorService(agents, tasks, landings, cycles).list().getFirst();
+        new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry).list().getFirst();
 
     assertThat(result.workStatus()).isEqualTo("BLOCKED");
     assertThat(result.difficulty()).isEqualTo("Timeout registrado");
+  }
+
+  /** Soma entrada e saída do dia e associa a telemetria à identidade canônica do agente. */
+  @Test
+  void shouldExposeDailyTokensReportedByAgentTelemetry() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    GeraLandingStageExecutionRepository landings = mock(GeraLandingStageExecutionRepository.class);
+    VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
+    CodexAgentExecutionTelemetryRepository telemetry =
+        mock(CodexAgentExecutionTelemetryRepository.class);
+    Agent temis =
+        Agent.builder()
+            .id(9L)
+            .agentKey("meta-ad-approver")
+            .nickname("Têmis")
+            .name("Criadora de anúncios")
+            .build();
+    when(agents.findAllByOrderByNicknameAsc()).thenReturn(List.of(temis));
+    when(telemetry.sumTokensByAgentTypeBetween(
+            org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+        .thenReturn(List.<Object[]>of(new Object[] {"META_AD_APPROVER", 12_345L}));
+
+    AgentWorkMonitorResponse result =
+        new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry).list().getFirst();
+
+    assertThat(result.dailyTokens()).isEqualTo(12_345L);
+    assertThat(result.dailyTokenDate()).isNotNull();
   }
 }

@@ -13,8 +13,19 @@ Apolo é o executor criativo dos vídeos do Estúdio. Plutus é o gate financeir
 5. Somente a identidade técnica `financial-agent` pode registrar `APPROVED` ou `REJECTED`, sempre com motivo auditável.
 6. Uma aprovação cria em modo `TEST` o job do executor oficial de vídeo, vinculado ao ciclo e ao teto em USD. Uma rejeição termina em `FINANCIAL_BLOCKED`.
 7. Apolo planeja, gera, inspeciona e devolve o candidato. O provider não decide próxima etapa.
-8. O custo conhecido deve ser conciliado no ledger. Novo consumo é bloqueado ao atingir o teto, quando o custo estiver desconhecido ou quando a cobertura financeira estiver incompleta.
+8. O custo conhecido deve ser conciliado no ledger. Novo consumo é bloqueado ao atingir o teto ou quando o custo do ciclo atual estiver desconhecido. Cobertura histórica incompleta deve gerar pendência de conciliação, mas não bloqueia sozinha um ciclo de descoberta com teto explícito, ledger segregado e custo incremental rastreável.
 9. QA independente decide qualidade. Apolo não aprova o próprio trabalho.
+
+## Contrato financeiro da fase de descoberta
+
+Enquanto o produto ainda estiver produzindo materiais para descobrir qual combinação de mensagem, formato e provider funciona, Plutus deve avaliar o ciclo como investimento de aprendizado, e não exigir retorno ou venda prévia como condição de aprovação.
+
+- Retorno igual a zero, ausência de vendas e ROI ainda não comprovado são esperados antes de existir material testável e não constituem, isoladamente, motivo para rejeição.
+- Plutus deve aprovar gasto incremental controlado quando existir objetivo de aprendizado explícito, teto autorizado pelo usuário, ledger segregado do ciclo e capacidade de interromper novo consumo ao atingir o limite.
+- Para o grupo inicial `musa-two-video-funnel-v1`, o teto autorizado é de US$ 20 no total, distribuído em até US$ 10 por vídeo; esse limite não autoriza excedente nem compra de créditos.
+- Custos históricos conhecidos sem atribuição continuam como dívida obrigatória de conciliação, mas não devem ser somados ficticiamente ao novo ciclo nem bloquear sozinhos a descoberta quando o custo incremental novo puder ser medido desde a primeira tentativa. Por decisão comercial de 2026-08-12, custos anteriores a 2026-08-13 que permanecem irrecuperavelmente desconhecidos são assumidos em USD 0 com evidência auditável; esse fechamento histórico não autoriza estimar como zero qualquer consumo novo.
+- Plutus deve bloquear quando faltar rastreabilidade do custo novo, houver risco de ultrapassar o teto, o objetivo não produzir aprendizado verificável ou o ciclo tentar publicar/consumir mídia sem autorização.
+- A métrica operacional é material tecnicamente válido por dólar consumido. Deve-se continuar enquanto houver aprendizado dentro do teto, ajustar provider ou abordagem quando qualidade/custo falhar e parar ao atingir US$ 20, perder rastreabilidade ou concluir os dois candidatos válidos.
 
 ## Escopo operacional de Apolo v2
 

@@ -3,6 +3,8 @@ set -euo pipefail
 
 APPLY_SCRIPT="${1:-deploy/bin/apply.sh}"
 WORKFLOW_FILE="${2:-.github/workflows/deploy-containers.yml}"
+BACKEND_DOCKERFILE="${3:-backend/ads-service/Dockerfile}"
+FRONTEND_DOCKERFILE="${4:-frontend/Dockerfile}"
 
 bash -n "${APPLY_SCRIPT}"
 
@@ -23,6 +25,22 @@ require_contract 'wait_http "backend restaurado"' 'validação de saúde após o
 
 if ! grep -A4 '^concurrency:' "${WORKFLOW_FILE}" | grep -Fq 'cancel-in-progress: false'; then
   printf '[ARQUITETURA] workflow pode cancelar um deploy válido por causa de push posterior sem mudança operacional.\n' >&2
+  exit 1
+fi
+
+if [[ "$(grep -Fc 'mvn -B -q test' "${WORKFLOW_FILE}")" -ne 1 ]]; then
+  printf '[ARQUITETURA] workflow deve executar a suíte completa do backend exatamente uma vez.\n' >&2
+  exit 1
+fi
+
+if grep -Eq 'mvn .*package|npm run build' "${BACKEND_DOCKERFILE}" "${FRONTEND_DOCKERFILE}"; then
+  printf '[ARQUITETURA] Dockerfiles de runtime não podem recompilar artefatos já validados pelo workflow.\n' >&2
+  exit 1
+fi
+
+if ! grep -Fq "if: needs.detect-changes.outputs.backend == 'true'" "${WORKFLOW_FILE}" \
+  || ! grep -Fq "if: needs.detect-changes.outputs.frontend == 'true'" "${WORKFLOW_FILE}"; then
+  printf '[ARQUITETURA] imagens de backend e frontend devem respeitar detecção independente de módulos.\n' >&2
   exit 1
 fi
 

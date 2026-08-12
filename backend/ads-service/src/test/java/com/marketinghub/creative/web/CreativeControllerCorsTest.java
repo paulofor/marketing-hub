@@ -12,6 +12,7 @@ import com.marketinghub.WebConfig;
 import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.mapper.CreativeMapper;
 import com.marketinghub.creative.service.CreativeService;
+import com.marketinghub.experiment.service.TemisCreativeTaskOrchestrationService;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.storage.AssetUploadCategory;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
+/** Responsabilidade: validar o contrato CORS dos endpoints de ativos de criativos. */
 @WebMvcTest(CreativeController.class)
 @Import(WebConfig.class)
 class CreativeControllerCorsTest {
@@ -36,6 +38,8 @@ class CreativeControllerCorsTest {
   @MockBean private CreativeMapper creativeMapper;
 
   @MockBean private AssetRepository assetRepository;
+
+  @MockBean private TemisCreativeTaskOrchestrationService temisCreativeTaskOrchestrationService;
 
   @Test
   void uploadImageRespondsWithCorsHeaders() throws Exception {

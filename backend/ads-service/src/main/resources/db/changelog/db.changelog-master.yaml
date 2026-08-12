@@ -1768,3 +1768,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-12-commercial-plan-multiple-experiments.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-12-apollo-full-studio-v2.yaml
+      relativeToChangelogFile: true

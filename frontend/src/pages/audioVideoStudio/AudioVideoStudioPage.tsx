@@ -2100,15 +2100,27 @@ export default function AudioVideoStudioPage() {
                 </p>
               </div>
               <article className="audio-video-studio-page__project-card">
-                <strong>Curadoria autônoma do Videomaker</strong>
+                <strong>Apolo · produção completa no Estúdio</strong>
                 <p>
-                  O Videomaker compara duração nativa, áudio, referências,
-                  continuidade, resolução realmente entregue, custo e resultado
-                  comercial. Wan3.0 Preview e Seedance 2.5/Pippit ficam somente
-                  como candidatos até API, licença, preço e qualidade serem
-                  homologados; anúncio de exportação 4K não vale como prova de
-                  geração nativa 4K.
+                  Apolo pode planejar roteiro e storyboard, usar imagens mestre,
+                  gerar e corrigir cenas, escolher o provider adequado, montar,
+                  narrar, sonorizar, legendar, criar HLS e inspecionar o
+                  candidato. Plutus preserva o teto financeiro e o QA
+                  independente decide a aprovação final.
                 </p>
+                <p>
+                  A curadoria autônoma do Videomaker compara a resolução
+                  realmente entregue; anúncio de exportação 4K não vale como
+                  prova de geração nativa 4K.
+                </p>
+                {selectedProject?.strategyGroupKey ===
+                "musa-two-video-funnel-v1" ? (
+                  <p>
+                    <strong>Primeira missão:</strong> finalizar os dois vídeos
+                    da nova versão do MUSA, preservando o papel de campanha e o
+                    papel de conversão no PDE.
+                  </p>
+                ) : null}
                 {selectedProject ? (
                   <div>
                     <label>

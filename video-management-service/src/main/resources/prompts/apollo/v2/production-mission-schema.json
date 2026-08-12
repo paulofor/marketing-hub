@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["projectId", "decision", "summary", "sceneActions", "qualityEvidence", "nextAction"],
+  "properties": {
+    "projectId": { "type": "integer" },
+    "decision": { "type": "string", "enum": ["READY_FOR_QA", "ADJUST", "BLOCKED"] },
+    "summary": { "type": "string" },
+    "sceneActions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sceneOrder", "action", "reason"],
+        "properties": {
+          "sceneOrder": { "type": "integer" },
+          "action": { "type": "string", "enum": ["KEEP", "GENERATE", "REGENERATE"] },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "qualityEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mobileReadable", "audioValid", "captionsValid", "ctaPresent", "hlsReady"],
+      "properties": {
+        "mobileReadable": { "type": "boolean" },
+        "audioValid": { "type": "boolean" },
+        "captionsValid": { "type": "boolean" },
+        "ctaPresent": { "type": "boolean" },
+        "hlsReady": { "type": "boolean" }
+      }
+    },
+    "nextAction": { "type": "string" }
+  }
+}

@@ -453,6 +453,69 @@ function CommercialPlanBlockersPanel({
   );
 }
 
+function CommercialPlanObjectiveAndGoals({ plan }: { plan: CommercialPlan }) {
+  const numericGoals = [
+    ["Receita", formatCurrency(plan.targetRevenue)],
+    ["Produtos a validar", formatNumber(plan.productsToValidate)],
+    ["Experimentos a criar", formatNumber(plan.experimentsToCreate)],
+    ["Experimentos a publicar", formatNumber(plan.experimentsToPublish)],
+    ["Abordagens a testar", formatNumber(plan.approachesToTest)],
+    ["Conversas com clientes", formatNumber(plan.customerConversationsTarget)],
+  ];
+
+  return (
+    <section className="card" aria-labelledby="commercial-plan-goals-title">
+      <div className="card-body d-flex flex-column gap-3">
+        <div>
+          <p className="commercial-planning-month-eyebrow mb-1">
+            Direção comercial
+          </p>
+          <h2 id="commercial-plan-goals-title" className="h5 mb-1">
+            Objetivo e metas
+          </h2>
+          <p className="text-body-secondary mb-0">
+            Resultado que o plano deve produzir e números usados para medir o
+            avanço real.
+          </p>
+        </div>
+        <div>
+          <small className="text-body-secondary d-block">Objetivo</small>
+          <strong>
+            {plan.commercialObjective?.trim() ||
+              "Objetivo comercial ainda não definido."}
+          </strong>
+        </div>
+        <div className="row g-3" aria-label="Metas do plano comercial">
+          {numericGoals.map(([label, value]) => (
+            <div className="col-6 col-lg-4 col-xl-2" key={label}>
+              <small className="text-body-secondary d-block">{label}</small>
+              <strong>{value}</strong>
+            </div>
+          ))}
+        </div>
+        <div className="row g-3">
+          <div className="col-lg-4">
+            <small className="text-body-secondary d-block">
+              Métrica principal
+            </small>
+            <span>{plan.mainMetric?.trim() || "Não definida"}</span>
+          </div>
+          <div className="col-lg-4">
+            <small className="text-body-secondary d-block">
+              Critério de sucesso
+            </small>
+            <span>{plan.successCriteria?.trim() || "Não definido"}</span>
+          </div>
+          <div className="col-lg-4">
+            <small className="text-body-secondary d-block">Prazo</small>
+            <span>{formatDate(plan.deadline)}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function formatDate(value?: string | null) {
   if (!value) return "Não definido";
   return new Date(value).toLocaleDateString("pt-BR", { timeZone: "UTC" });
@@ -1720,6 +1783,10 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
             ) : null}
           </div>
         </div>
+      ) : null}
+
+      {currentMonthPlan.id > 0 ? (
+        <CommercialPlanObjectiveAndGoals plan={currentMonthPlan} />
       ) : null}
 
       {currentMonthPlan.id > 0 ? (

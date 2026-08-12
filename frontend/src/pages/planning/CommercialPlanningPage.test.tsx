@@ -557,6 +557,12 @@ describe("CommercialPlanningPage", () => {
     expect(
       screen.getByText(/tudo que os agentes fizeram em cada plano/i),
     ).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: "Objetivo e metas" }),
+    ).toBeTruthy();
+    expect(screen.getByLabelText("Metas do plano comercial")).toBeTruthy();
+    expect(screen.getByText("Métrica principal")).toBeTruthy();
+    expect(screen.getByText("Critério de sucesso")).toBeTruthy();
     expect(screen.getByText("Plano do mês corrente")).toBeTruthy();
     expect(screen.getAllByText("Custo total").length).toBeGreaterThan(0);
     expect(screen.getByText("Receita mínima")).toBeTruthy();

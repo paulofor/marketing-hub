@@ -2,6 +2,7 @@ package com.marketinghub.geralanding.agent.v1;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.qualityreview.service.LandingQualityReviewedEvent;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
@@ -33,17 +34,20 @@ public class LandingGenerationAgentExecutionService {
   private final LandingGenerationAgentCoordinator coordinator;
   private final ExperimentRepository experimentRepository;
   private final ObjectMapper objectMapper;
+  private final AgentTaskService agentTaskService;
 
   /** Inicializa a fila usando a persistência canônica do GeraLanding. */
   public LandingGenerationAgentExecutionService(
       GeraLandingStageExecutionRepository repository,
       LandingGenerationAgentCoordinator coordinator,
       ExperimentRepository experimentRepository,
-      ObjectMapper objectMapper) {
+      ObjectMapper objectMapper,
+      AgentTaskService agentTaskService) {
     this.repository = repository;
     this.coordinator = coordinator;
     this.experimentRepository = experimentRepository;
     this.objectMapper = objectMapper;
+    this.agentTaskService = agentTaskService;
   }
 
   /** Converte o parecer independente em trabalho do agente ou conclui a jornada aprovada. */
@@ -84,6 +88,43 @@ public class LandingGenerationAgentExecutionService {
             .status(PENDING)
             .idJob(UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8))
             .build());
+  }
+
+  /** Converte o bloqueio comercial apontado por Têmis em um briefing autônomo para Dédalo. */
+  @Transactional
+  public void enqueueCreativeConvergenceCorrection(
+      Long experimentId,
+      String sourceReference,
+      String issueCode,
+      String correctionBrief,
+      String acceptanceCriterion) {
+    try {
+      Map<String, Object> review = new LinkedHashMap<>();
+      review.put("approvalRecommendation", "REGENERATE_BEFORE_PUBLICATION");
+      review.put("score", 0);
+      review.put("summary", correctionBrief);
+      review.put(
+          "blockingIssues",
+          List.of(
+              Map.of(
+                  "code", issueCode,
+                  "rootCause", correctionBrief,
+                  "impact", "Impede a continuidade verificável entre anúncio e landing.",
+                  "requiredChange", correctionBrief,
+                  "evidence", acceptanceCriterion)));
+      review.put("acceptanceCriteria", List.of(acceptanceCriterion));
+      review.put(
+          "authority",
+          "Dédalo pode reconstruir livremente copy, hierarquia, imagens e HTML pelas etapas canônicas; não pode publicar, alterar oferta, preço, checkout ou tracking.");
+      enqueue(experimentId, sourceReference, objectMapper.writeValueAsString(review));
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao preparar correção de convergência para Dédalo. experimentId={} sourceReference={}",
+          experimentId,
+          sourceReference,
+          ex);
+      throw new IllegalStateException("Briefing de correção da landing inválido", ex);
+    }
   }
 
   /** Reserva jobs de forma transacional antes de qualquer consumo do Codex. */
@@ -159,6 +200,8 @@ public class LandingGenerationAgentExecutionService {
     execution.setErrorMessage(request.error());
     execution.setStatus(request.error() == null ? "CONCLUIDO" : "FALHA");
     repository.save(execution);
+    agentTaskService.finishOperationalDelegation(
+        "landing-generator", execution.getAutonomousCycleId(), request.error() == null);
     if (request.error() == null) {
       coordinator.continueAfterQualityReview(
           execution.getExperimentId(), execution.getAutonomousCycleId(), request.decisionJson());

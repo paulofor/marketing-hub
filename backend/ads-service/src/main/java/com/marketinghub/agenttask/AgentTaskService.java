@@ -74,6 +74,39 @@ public class AgentTaskService {
   }
 
   /**
+   * Abre uma única delegação operacional para uma causa persistida, mesmo sob callbacks repetidos.
+   */
+  @Transactional
+  public AgentTaskResponse createOperationalDelegationIfAbsent(
+      CreateAgentTaskByAgentRequest request) {
+    String sourceReference = trimToNull(request.sourceReference());
+    if (sourceReference == null) {
+      throw new IllegalArgumentException("Delegação operacional exige referência de origem.");
+    }
+    return repository
+        .findTopByAssignedAgentAgentKeyAndSourceReferenceOrderByUpdatedAtDescIdDesc(
+            request.assignedAgentKey().trim(), sourceReference)
+        .map(this::response)
+        .orElseGet(() -> createByAgent(request));
+  }
+
+  /** Sincroniza a tarefa operacional com o resultado efetivo do executor responsável. */
+  @Transactional
+  public void finishOperationalDelegation(
+      String assignedAgentKey, String sourceReference, boolean successful) {
+    repository
+        .findTopByAssignedAgentAgentKeyAndSourceReferenceOrderByUpdatedAtDescIdDesc(
+            assignedAgentKey, sourceReference)
+        .ifPresent(
+            task -> {
+              if (List.of("COMPLETED", "CANCELLED").contains(task.getStatus())) return;
+              task.setStatus(successful ? "COMPLETED" : "BLOCKED");
+              task.setUpdatedAt(Instant.now(clock));
+              repository.save(task);
+            });
+  }
+
+  /**
    * Abre na mesa do responsável uma decisão de gate que não pode ser concluída como tarefa comum.
    */
   @Transactional

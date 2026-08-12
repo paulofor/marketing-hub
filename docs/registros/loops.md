@@ -88,6 +88,15 @@
 
 ## Regra operacional de uso
 
+## LOOP-TEMIS-LANDING-WITHOUT-DEDALO-DELEGATION — diagnóstico sem responsável operacional
+
+- **Severidade:** CRÍTICO.
+- **Status:** fechado localmente em 2026-08-12; aguarda publicação.
+- **Sintoma:** Têmis reprova um anúncio por falha da landing, mas a interface não mostra tarefa para Dédalo e o fluxo permanece preso em correções de criativo.
+- **Causa-raiz confirmada:** o coordenador enviava o parecer `LANDING` diretamente ao wireframe, sem criar delegação entre agentes nem acionar a fila autônoma de Dédalo.
+- **Correção efetiva:** o backend cria delegação idempotente Têmis → Dédalo, enfileira o mesmo briefing no executor autônomo, sincroniza o resultado da tarefa pelo callback e mantém publicação, oferta, checkout e tracking protegidos.
+- **Prevenção:** teste de contrato deve exigir tarefa, execução autônoma e correlação única para cada causa de landing do ciclo de convergência.
+
 ## LOOP-LANDING-AGENT-DELIVERABLES-NOT-DISPATCHED — parecer correto termina em HTTP 500
 
 - **Severidade:** CRÍTICO.

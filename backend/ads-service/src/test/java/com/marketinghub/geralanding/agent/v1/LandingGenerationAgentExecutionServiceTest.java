@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.qualityreview.service.LandingQualityReviewedEvent;
@@ -28,6 +29,7 @@ class LandingGenerationAgentExecutionServiceTest {
   private GeraLandingStageExecutionRepository repository;
   private LandingGenerationAgentCoordinator coordinator;
   private ExperimentRepository experimentRepository;
+  private AgentTaskService agentTaskService;
   private LandingGenerationAgentExecutionService service;
 
   /** Prepara dependências isoladas antes de cada cenário. */
@@ -36,9 +38,10 @@ class LandingGenerationAgentExecutionServiceTest {
     repository = mock(GeraLandingStageExecutionRepository.class);
     coordinator = mock(LandingGenerationAgentCoordinator.class);
     experimentRepository = mock(ExperimentRepository.class);
+    agentTaskService = mock(AgentTaskService.class);
     service =
         new LandingGenerationAgentExecutionService(
-            repository, coordinator, experimentRepository, new ObjectMapper());
+            repository, coordinator, experimentRepository, new ObjectMapper(), agentTaskService);
     when(experimentRepository.findById(88L)).thenReturn(Optional.empty());
     when(repository
             .findTop20ByStageCodeAndStatusAndExecutionRequestedAtBeforeOrderByExecutionRequestedAtAsc(
@@ -61,6 +64,24 @@ class LandingGenerationAgentExecutionServiceTest {
             "{\"approvalRecommendation\":\"REGENERATE_BEFORE_PUBLICATION\",\"score\":70}"));
 
     verify(repository).save(any(GeraLandingStageExecution.class));
+  }
+
+  /** Deve transformar a causa de Têmis em contexto explícito para a autonomia de Dédalo. */
+  @Test
+  void shouldEnqueueCreativeLandingCorrectionWithProtectedAuthority() {
+    service.enqueueCreativeConvergenceCorrection(
+        88L,
+        "creative-convergence:14:landing",
+        "PRODUCT_PROOF_MISSING",
+        "Mostrar o produto digital real.",
+        "Desktop e mobile comprovam posts, stories e legendas antes do CTA.");
+
+    org.mockito.ArgumentCaptor<GeraLandingStageExecution> execution =
+        org.mockito.ArgumentCaptor.forClass(GeraLandingStageExecution.class);
+    verify(repository).save(execution.capture());
+    assertEquals("creative-convergence:14:landing", execution.getValue().getAutonomousCycleId());
+    assertTrue(execution.getValue().getPromptContent().contains("PRODUCT_PROOF_MISSING"));
+    assertTrue(execution.getValue().getPromptContent().contains("não pode publicar"));
   }
 
   /** Deve abrir nova transação ao persistir a fila depois do commit do Quality Review. */

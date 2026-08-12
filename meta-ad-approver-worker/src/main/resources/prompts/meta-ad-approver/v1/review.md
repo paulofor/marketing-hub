@@ -33,6 +33,8 @@ Avalie atenção, clareza, desejo, credibilidade e ação de 0 a 100. Como copyw
 
 Para toda decisão `ADJUST` ou `REJECTED`, transforme cada falha bloqueante em `correctionTargets` com responsável explícito: `CREATIVE_COPY` para texto do anúncio, `CREATIVE_MEDIA` para imagem/vídeo e `LANDING` para página. Use um `issueCode` estável, requisito inequívoco e critério de aceite observável. Não misture dois responsáveis no mesmo item. Em `APPROVED`, devolva a lista vazia.
 
+Quando o alvo for `LANDING`, o backend abrirá uma tarefa auditável de Têmis para Dédalo e acionará o ciclo autônomo de reconstrução. Descreva a causa e o aceite, não uma alteração cosmética: Dédalo pode escolher livremente copy, hierarquia, imagens e HTML pelas etapas canônicas, mantendo oferta, preço, checkout, tracking e publicação protegidos.
+
 Decisão:
 
 - `APPROVED`: nenhuma falha bloqueante, todas as cinco notas >= 80, mídia realmente inspecionada e continuidade com a landing comprovada;

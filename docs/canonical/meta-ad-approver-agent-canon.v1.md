@@ -89,8 +89,11 @@ pelo MCP, mas não avaliar, promover ou alterar sozinho prompt, schema, código 
 O backend é o coordenador exclusivo da convergência anúncio → landing. Cada falha bloqueante do
 Aprovador deve declarar um código estável, requisito, critério de aceite e exatamente um responsável:
 `CREATIVE_COPY`, `CREATIVE_MEDIA` ou `LANDING`. O backend persiste ciclo, versão, score, custo,
-evidência e tarefa; encaminha mídia ao AI Worker e landing ao endpoint `pending` oficial do
-GeraLanding. Nenhum executor chama outro executor nem decide a próxima etapa.
+evidência e tarefa. Quando o alvo for `LANDING`, o backend cria de forma idempotente uma delegação
+Têmis → Dédalo, envia o mesmo briefing à fila autônoma oficial de Dédalo e sincroniza o estado da
+tarefa com o callback do executor. Dédalo escolhe a reconstrução causal por etapas canônicas; não
+recebe autoridade para alterar oferta, preço, checkout, tracking ou publicar. Nenhum executor chama
+outro executor nem decide a próxima etapa.
 
 Uma nova versão sempre retorna ao Aprovador. A mesma impressão digital de falha não pode reaparecer
 duas vezes sem bloquear o ciclo por ausência de progresso. O ciclo também bloqueia ao atingir oito

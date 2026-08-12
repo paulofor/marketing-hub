@@ -55,12 +55,26 @@ public class TemisCreativeTaskOrchestrationService {
         block(task);
         continue;
       }
-      if ("PENDING".equals(task.getStatus())) {
+      if (shouldRequestCreative(task, experiment)) {
         requestOneCreative(experiment);
         task.setStatus("IN_PROGRESS");
         task.setUpdatedAt(Instant.now(clock));
       }
     }
+  }
+
+  /** Retoma uma tarefa bloqueada sem duplicar geração que já esteja solicitada ou em execução. */
+  private boolean shouldRequestCreative(AgentTask task, Experiment experiment) {
+    if ("PENDING".equals(task.getStatus())) {
+      return true;
+    }
+    CreativeGenerationStatus status = experiment.getCreativeGenerationStatus();
+    int pendingQuantity =
+        experiment.getCreativesToGenerate() == null ? 0 : experiment.getCreativesToGenerate();
+    return "IN_PROGRESS".equals(task.getStatus())
+        && pendingQuantity <= 0
+        && status != CreativeGenerationStatus.REQUESTED
+        && status != CreativeGenerationStatus.PROCESSING;
   }
 
   /** Encerra a tarefa da Têmis somente após o worker materializar o anúncio solicitado. */

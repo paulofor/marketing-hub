@@ -199,6 +199,8 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - **Recorrência operacional em 2026-08-09 após o Chromium voltar a iniciar**: o MCP capturava a landing logo após `domcontentloaded` e auditava somente o estado transitório React `Preparando uma oferta especial para você...`, embora o conteúdo comercial carregasse em seguida.
 - **Correção sistêmica complementar**: a inspeção mobile e desktop agora espera um critério objetivo de prontidão do conteúdo comercial e das fontes antes do screenshot; o teste de contrato impede o retorno da captura imediata do shell.
 - **Prevenção de copy incompatível em 2026-08-09**: armazenamento e publicação foram separados. O histórico permanece íntegro em campo textual amplo, mas correções do Aprovador e o preflight de publicação bloqueiam texto principal acima de 125 caracteres, headline acima de 40 e descrição acima de 25, sem truncamento silencioso.
+- **Recorrência operacional em 2026-08-12**: a tarefa da Têmis foi bloqueada porque a primeira geração desrespeitou o limite de `primaryText`; ao ser retomada pela tela, permaneceu `IN_PROGRESS` sem voltar à fila, pois a reconciliação enfileirava somente tarefas `PENDING`.
+- **Correção sistêmica complementar**: tarefas retomadas após `FAILED` ou `TIMEOUT` voltam à fila sem duplicar geração ativa, e o AI Worker solicita uma única reescrita semântica completa antes de encerrar por violação persistente do contrato Meta. Testes de contrato cobrem retomada, idempotência, reescrita válida e bloqueio após duas respostas inválidas.
 
 ## LOOP-META-AD-APPROVER-LANDING-PROMPT-TRUNCATION — aprendizado bloqueado ao persistir correção da landing
 

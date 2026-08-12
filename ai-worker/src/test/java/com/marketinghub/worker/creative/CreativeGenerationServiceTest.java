@@ -3,6 +3,7 @@ package com.marketinghub.worker.creative;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -91,6 +92,42 @@ class CreativeGenerationServiceTest {
         verify(backendClient).markFailed(
                 org.mockito.ArgumentMatchers.eq(49L),
                 org.mockito.ArgumentMatchers.contains("primaryText excede 125 caracteres"));
+    }
+
+    /** Garante uma reescrita semântica antes de desistir de uma copy inválida. */
+    @Test
+    void shouldRetryCopyGenerationAfterMetaContractViolation() {
+        CreativeGenerationBackendClient backendClient = mock(CreativeGenerationBackendClient.class);
+        CreativeChatGptClient textClient = mock(CreativeChatGptClient.class);
+        CreativeImageClient imageClient = mock(CreativeImageClient.class);
+        CreativeGenerationService service =
+                new CreativeGenerationService(backendClient, textClient, imageClient, new ObjectMapper());
+        ExperimentDto experiment = pendingExperiment();
+        CreateCreativeRequest invalid = new CreateCreativeRequest();
+        invalid.setPrimaryText(repeat("Texto principal persuasivo", 30));
+        CreateCreativeRequest valid = new CreateCreativeRequest();
+        valid.setHeadline("Seu perfil à altura");
+        valid.setPrimaryText("Veja uma prévia real do seu perfil e conheça o kit Agenda Cheia por R$ 67.");
+        valid.setDescription("Veja antes de comprar");
+        valid.setCta("LEARN_MORE");
+
+        when(backendClient.listPending(5)).thenReturn(List.of(experiment));
+        when(textClient.generateCreatives(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(1)))
+                .thenReturn(new CreativeChatGptClient.Generation(List.of(invalid), null, null))
+                .thenReturn(new CreativeChatGptClient.Generation(List.of(valid), null, null));
+        when(imageClient.generateImage(
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn("/assets/creative-rewritten.jpg");
+
+        CreativeGenerationService.ProcessingSummary summary = service.processPending(5);
+
+        assertThat(summary.succeeded()).isEqualTo(1);
+        verify(textClient, times(2)).generateCreatives(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(1));
+        verify(backendClient).createCreative(
+                org.mockito.ArgumentMatchers.eq(49L), org.mockito.ArgumentMatchers.eq(valid));
     }
 
     /** Garante que o worker não cria criativo quando a imagem não foi gerada. */

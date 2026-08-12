@@ -17,6 +17,8 @@ services:
       AGENT_HEALTH_KEY: landing-generator
       AGENT_HEALTH_VERSION: "1"
       AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
+      CODEX_HOME: /home/landingagent/.codex
+      CODEX_COMMAND: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh
     ports:
       - "8100:8100"
     volumes:

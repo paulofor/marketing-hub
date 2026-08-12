@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Consolida somente a sessão mais recente para impedir cópias concorrentes do mesmo refresh token.
+# Migra uma sessão legada somente quando a sessão canônica ainda não existe.
 canonical_home=${AGENT_CODEX_CANONICAL_HOME:-/opt/growth-operator/codex-home}
 legacy_root=${AGENT_CODEX_LEGACY_ROOT:-/opt/marketing-hub/agents}
 lock_file=${AGENT_CODEX_LOCK_FILE:-/opt/growth-operator/.codex-auth-reconcile.lock}
@@ -24,15 +24,19 @@ candidates=(
 
 latest=
 latest_mtime=0
-for candidate in "${candidates[@]}"; do
-  if [[ -s "$candidate" ]]; then
-    candidate_mtime=$(stat -c %Y "$candidate")
-    if (( candidate_mtime > latest_mtime )); then
-      latest=$candidate
-      latest_mtime=$candidate_mtime
+if [[ -s "$canonical_home/auth.json" ]]; then
+  latest="$canonical_home/auth.json"
+else
+  for candidate in "${candidates[@]:1}"; do
+    if [[ -s "$candidate" ]]; then
+      candidate_mtime=$(stat -c %Y "$candidate")
+      if (( candidate_mtime > latest_mtime )); then
+        latest=$candidate
+        latest_mtime=$candidate_mtime
+      fi
     fi
-  fi
-done
+  done
+fi
 
 if [[ -z "$latest" ]]; then
   printf '%s\n' 'Nenhuma sessão Codex foi encontrada; reconecte a conta operacional.' >&2

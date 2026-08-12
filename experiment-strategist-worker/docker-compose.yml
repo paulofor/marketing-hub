@@ -17,6 +17,9 @@ services:
       AGENT_HEALTH_KEY: experiment-strategist
       AGENT_HEALTH_VERSION: "1"
       AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
+      CODEX_HOME: /home/strategist/.codex
+      CODEX_COMMAND: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh
+      STRATEGIST_CODEX_EXECUTABLE: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh
     ports:
       - "8096:8096"
     volumes:

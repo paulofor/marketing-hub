@@ -17,6 +17,8 @@ services:
       AGENT_HEALTH_KEY: growth-operator
       AGENT_HEALTH_VERSION: "1"
       AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
+      CODEX_HOME: /home/operator/.codex
+      CODEX_COMMAND: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh
     ports:
       - "8094:8094"
     volumes:

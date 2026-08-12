@@ -935,6 +935,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o Compose monta um diretório novo e vazio como `CODEX_HOME`, confundindo volume gravável com volume autenticado.
 - **Prevenção:** agentes com o mesmo UID usam o volume persistente autenticado `/opt/growth-operator/codex-home`; o workflow valida escrita e identidade Codex e informa explicitamente qual contrato de prontidão falhou.
 - **Correção complementar em 2026-08-12:** os workflows deixaram de copiar `auth.json` para diretórios isolados. As cópias faziam vários agentes renovarem o mesmo refresh token independentemente e geravam `refresh_token_reused`. O deploy reconcilia atomicamente a sessão mais recente, todos os agentes montam o mesmo `CODEX_HOME` persistente e um teste de contrato impede a clonagem de retornar.
+- **Correção complementar OAuth por device code em 2026-08-12:** a sessão canônica deixa de ser substituída por cópias legadas, todas as execuções Codex são serializadas por um lock no volume compartilhado e uma rotina interativa renova a conta operacional uma única vez com `codex login --device-auth`. Isso preserva a cobrança ChatGPT e impede duas renovações concorrentes do mesmo refresh token.
 
 # LOOP-DEPLOY-GLOBAL-TIMEOUT — Deploy interrompido durante carga das imagens
 

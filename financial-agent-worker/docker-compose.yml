@@ -13,6 +13,8 @@ services:
       AGENT_HEALTH_KEY: financial-agent
       AGENT_HEALTH_VERSION: "1"
       AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
+      CODEX_HOME: /home/financial-agent/.codex
+      CODEX_COMMAND: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh
     ports:
       - "${FINANCIAL_AGENT_WORKER_PORT:-8095}:8095"
     volumes:

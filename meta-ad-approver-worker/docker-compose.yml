@@ -16,6 +16,8 @@ services:
       AGENT_HEALTH_KEY: meta-ad-approver
       AGENT_HEALTH_VERSION: "1"
       AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
+      CODEX_HOME: /home/approver/.codex
+      CODEX_COMMAND: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh
     ports:
       - "8097:8097"
     volumes:

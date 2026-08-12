@@ -15,6 +15,7 @@ import {
   Copy,
   Edit3,
   Eye,
+  ImagePlus,
   Sparkles,
   Trash2,
   X,
@@ -33,6 +34,7 @@ import {
   useReusableProductAds,
   useReuseProductAd,
 } from "../../api/creative/useReusableProductAds";
+import { useSubmitProductProof } from "../../api/creative/useSubmitProductProof";
 
 interface Props {
   experimentId: string;
@@ -262,15 +264,15 @@ const improvementLabel = (creative: Creative) => {
   const attempts = creative.agentImprovementAttempts ?? 0;
   switch (creative.agentImprovementStatus) {
     case "PENDING":
-      return `Codex: correção ${attempts + 1}/3 aguardando`;
+      return `Codex: correção ${attempts + 1}/8 aguardando`;
     case "PROCESSING":
-      return `Codex: criando correção ${attempts + 1}/3`;
+      return `Codex: criando correção ${attempts + 1}/8`;
     case "COMPLETED":
-      return `Codex: versão corrigida após ${attempts}/3`;
+      return `Codex: versão corrigida após ${attempts}/8`;
     case "FAILED":
       return "Codex: correção bloqueada";
     case "LIMIT_REACHED":
-      return "Codex: limite de 3 correções atingido";
+      return "Codex: limite de 8 correções atingido";
     default:
       return null;
   }
@@ -331,6 +333,8 @@ export default function CriativosTab({
   const updateExperimentMutation = useUpdateExperiment(experimentId);
   const [editing, setEditing] = useState<Creative | null>(null);
   const [versioning, setVersioning] = useState<Creative | null>(null);
+  const [proofSource, setProofSource] = useState<Creative | null>(null);
+  const [proofFile, setProofFile] = useState<File | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const [experimentPageId, setExperimentPageId] = useState("");
   const [experimentInstagramAccountId, setExperimentInstagramAccountId] =
@@ -342,6 +346,7 @@ export default function CriativosTab({
   const del = useDeleteCreative(experimentId);
   const requestAgentReview = useRequestCreativeAgentReview(experimentId);
   const createVersion = useCreateCreativeVersion(experimentId);
+  const submitProductProof = useSubmitProductProof(experimentId);
   const reusableAdsQuery = useReusableProductAds(experimentId);
   const reuseProductAd = useReuseProductAd(experimentId);
   const [showPreview, setShowPreview] = useState(false);
@@ -619,6 +624,34 @@ export default function CriativosTab({
     }
   };
 
+  const submitProofToAgent = async () => {
+    if (!proofSource || !proofFile) return;
+    setProcessingCreativeId(proofSource.id);
+    try {
+      await submitProductProof.mutateAsync({
+        experimentId,
+        source: proofSource,
+        file: proofFile,
+      });
+      setProofSource(null);
+      setProofFile(null);
+      setFeedback({
+        variant: "success",
+        title: "Prova visual enviada para Têmis",
+        description:
+          "Uma nova versão auditável foi criada com a imagem real do produto e já voltou para avaliação.",
+      });
+    } catch {
+      setFeedback({
+        variant: "error",
+        title: "Não foi possível enviar a prova visual",
+        description: "Confirme o arquivo e tente novamente.",
+      });
+    } finally {
+      setProcessingCreativeId(null);
+    }
+  };
+
   const totalCreatives = creatives.length;
   const handlePipelineRequest = async () => {
     try {
@@ -882,6 +915,22 @@ export default function CriativosTab({
                 <span>
                   {isProcessing ? "Enviando..." : "Enviar ao Aprovador"}
                 </span>
+              </button>
+            )}
+            {(c.agentReviewStatus === "ADJUST" ||
+              c.agentReviewStatus === "REJECTED" ||
+              c.agentImprovementStatus === "LIMIT_REACHED") && (
+              <button
+                type="button"
+                className="btn btn-outline-info btn-sm d-flex align-items-center justify-content-center gap-1"
+                onClick={() => {
+                  setProofSource(c);
+                  setProofFile(null);
+                }}
+                disabled={isProcessing || alterationLocked}
+              >
+                <ImagePlus size={ICON_SIZE} />
+                <span>Usar prova real do produto</span>
               </button>
             )}
             <button
@@ -1409,6 +1458,78 @@ export default function CriativosTab({
                   {createVersion.isPending
                     ? "Criando..."
                     : "Salvar nova versão"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {proofSource && (
+        <div
+          className="modal d-block"
+          tabIndex={-1}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  Dar prova visual real para Têmis
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  aria-label="Fechar"
+                  onClick={() => {
+                    setProofSource(null);
+                    setProofFile(null);
+                  }}
+                />
+              </div>
+              <div className="modal-body d-grid gap-3">
+                <p className="mb-0">
+                  Envie um print, mockup ou página real do produto. A imagem
+                  substituirá a arte que não conseguiu demonstrar a entrega;
+                  texto, destino e histórico serão preservados.
+                </p>
+                <label className="form-label" htmlFor="product-proof-file">
+                  Imagem real do produto
+                </label>
+                <input
+                  id="product-proof-file"
+                  className="form-control"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={(event) =>
+                    setProofFile(event.target.files?.[0] ?? null)
+                  }
+                />
+                <small className="text-muted">
+                  A nova versão continuará bloqueada até Têmis aprovar a
+                  demonstração e a revisão humana liberar o anúncio.
+                </small>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setProofSource(null);
+                    setProofFile(null);
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={!proofFile || submitProductProof.isPending}
+                  onClick={() => void submitProofToAgent()}
+                >
+                  {submitProductProof.isPending
+                    ? "Enviando..."
+                    : "Criar versão e enviar para Têmis"}
                 </button>
               </div>
             </div>

@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-12-apollo-full-studio-v2
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE agent
+              SET status = 'ACTIVE',
+                  current_version = 2,
+                  execution_mode = 'EVENT_DRIVEN',
+                  description = 'Cria videos comerciais completos no Estudio de Audio e Video, do roteiro ao candidato final auditavel.',
+                  owner_name = 'Marketing Hub',
+                  business_objective = 'Transformar briefings comerciais em videos impactantes que avancem a cliente no funil.',
+                  success_metrics = 'Videos finalizados com narrativa clara, retencao, CTA, audio, legendas, HLS, custo auditado e QA independente.',
+                  trigger_policy = 'Novo ciclo de producao aprovado financeiramente ou ajuste solicitado pelo QA independente.',
+                  authority_policy = 'Acesso completo ao Estudio para planejar roteiro e storyboard, selecionar imagens aprovadas, gerar cenas, narracao e trilha, montar, legendar, criar HLS, inspecionar e iterar. Pode trocar provider dentro do teto aprovado e regenerar somente a cena causal. Deve preservar ledger, contratos salvos, segregacao por projeto e modo TEST. Nao aprova o proprio trabalho, publica, ativa campanha, compra creditos, altera preco ou ultrapassa o teto de Plutus.',
+                  prompt_contract_path = 'video-management-service/src/main/resources/prompts/apollo/v2/production-mission.md',
+                  schema_contract_path = 'video-management-service/src/main/resources/prompts/apollo/v2/production-mission-schema.json'
+              WHERE agent_key = 'videomaker';
+
+              INSERT INTO agent_version (agent_id, version_number, contract_snapshot, created_at)
+              SELECT a.id, 2,
+                CONCAT('{"agentKey":"videomaker","version":2,"status":"ACTIVE","scope":"FULL_AUDIO_VIDEO_STUDIO","prompt":"', a.prompt_contract_path, '","schema":"', a.schema_contract_path, '","publicationAllowed":false}'),
+                UTC_TIMESTAMP()
+              FROM agent a
+              WHERE a.agent_key = 'videomaker'
+                AND NOT EXISTS (
+                  SELECT 1 FROM agent_version av
+                  WHERE av.agent_id = a.id AND av.version_number = 2
+                );

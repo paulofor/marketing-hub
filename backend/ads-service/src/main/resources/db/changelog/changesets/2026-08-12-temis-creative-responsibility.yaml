@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-12-temis-creative-responsibility
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM agent WHERE agent_key = 'meta-ad-approver'
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE agent
+              SET name = 'Agente Criador e Aprovador de Anuncios Meta',
+                  description = 'Cria propostas completas de anuncios Meta e executa a aprovacao tecnica multimodal em uma revisao separada.',
+                  business_objective = 'Produzir anuncios desejaveis, verdadeiros e publicaveis que avancem experimentos ate o teste comercial.',
+                  success_metrics = 'Propostas materializadas, taxa de aprovacao tecnica, diversidade de conceitos, tempo ate criativo elegivel e vendas atribuidas sem contar aprovacao como venda.',
+                  responsibility_contract = 'Criar a proposta inicial e alternativas completas de anuncio com copy, CTA, conceito visual, associacao de desejo, prova do produto e criterios de aceite; revisar em execucao separada a midia materializada e sua continuidade com a landing. Nao autoaprovar, publicar, ativar campanha, alterar preco ou orcamento.',
+                  authority_policy = 'Pode criar conceitos, copies e briefings executaveis e aprovar ou bloquear tecnicamente uma versao ja materializada. O backend cria versoes, controla tentativas e custos e coordena o avancar; aprovacao humana, publicacao, gasto e RUNNING permanecem externos a Temis.'
+              WHERE agent_key = 'meta-ad-approver';
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE agent
+              SET name = 'Agente Especialista em Aprovacao de Anuncios',
+                  description = 'Analisa criativos Meta antes da aprovacao humana.',
+                  business_objective = NULL,
+                  success_metrics = NULL,
+                  responsibility_contract = NULL,
+                  authority_policy = NULL
+              WHERE agent_key = 'meta-ad-approver';

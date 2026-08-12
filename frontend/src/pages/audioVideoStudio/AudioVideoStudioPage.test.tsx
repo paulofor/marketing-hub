@@ -143,9 +143,7 @@ afterEach(() => {
 describe("AudioVideoStudioPage", () => {
   it("classifica os quatro planos conforme o contrato comercial da montagem", () => {
     expect(
-      Array.from({ length: 4 }, (_, index) =>
-        resolveStudioSceneRole(index, 4),
-      ),
+      Array.from({ length: 4 }, (_, index) => resolveStudioSceneRole(index, 4)),
     ).toEqual(["DOR", "RESULTADO", "MECANISMO", "CTA"]);
   });
 
@@ -476,5 +474,50 @@ describe("AudioVideoStudioPage", () => {
         }),
       ),
     );
+  });
+
+  it("expõe o escopo completo de Apolo e a primeira missão dos dois vídeos MUSA", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/studio/catalog") {
+        return Promise.resolve({ data: studioCatalog });
+      }
+      if (url === "/api/sales-videos/projects/1") {
+        return Promise.resolve({
+          data: {
+            id: 1,
+            productId: 4,
+            salesVideoProfileId: 55,
+            videoCategory: "COMMERCIAL_SHORT",
+            contextType: "PDE",
+            productionMode: "STORY_FIRST_AUDIO_VIDEO",
+            targetChannel: "PDE_AND_SOCIAL",
+            format: "VERTICAL_9_16",
+            title: "MUSA v7",
+            objective: "Finalizar vídeo",
+            strategyGroupKey: "musa-two-video-funnel-v1",
+            targetDurationSeconds: 30,
+            status: "READY_FOR_SCRIPT",
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    setupProject();
+
+    expect(
+      await screen.findByText(/Apolo · produção completa no Estúdio/i),
+    ).toBeTruthy();
+    expect(
+      await screen.findByText(
+        (_, element) =>
+          element?.tagName === "P" &&
+          Boolean(
+            element.textContent?.includes(
+              "finalizar os dois vídeos da nova versão do MUSA",
+            ),
+          ),
+      ),
+    ).toBeTruthy();
   });
 });

@@ -94,10 +94,83 @@ describe("CriativosTab", () => {
     );
 
     expect(
-      await screen.findByText("Codex: limite de 3 correções atingido"),
+      await screen.findByText("Codex: limite de 8 correções atingido"),
     ).toBeInTheDocument();
     expect(
       await screen.findByText(/Limite de três correções automáticas atingido/),
+    ).toBeInTheDocument();
+  });
+
+  it("replaces a blocked generated image with real product proof and resubmits it to Temis", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.endsWith("/products/experiments/1/ads-in-use")) {
+        return Promise.resolve({
+          data: [
+            {
+              id: 311,
+              experimentId: 1,
+              headline: "Veja sua agenda organizada",
+              primaryText: "Conheça o Agenda Cheia",
+              imageUrl: "generated.jpg",
+              destinationUrl: "https://agenda-cheia.test",
+              status: "DRAFT",
+              agentReviewStatus: "REJECTED",
+              agentImprovementStatus: "LIMIT_REACHED",
+              agentImprovementAttempts: 8,
+            },
+          ],
+        });
+      }
+      if (url.endsWith("/experiments/1")) {
+        return Promise.resolve({ data: { creativesToGenerate: 0 } });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    (axios.post as any).mockImplementation((url: string) => {
+      if (url === "/api/assets") {
+        return Promise.resolve({ data: { url: "/uploads/product-proof.png" } });
+      }
+      if (url === "/api/creatives/311/versions") {
+        return Promise.resolve({ data: { id: 312 } });
+      }
+      if (url === "/api/creatives/312/agent-review/request") {
+        return Promise.resolve({
+          data: { id: 312, agentReviewStatus: "PENDING" },
+        });
+      }
+      return Promise.resolve({ data: {} });
+    });
+
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <CriativosTab experimentId="1" />
+      </QueryClientProvider>,
+    );
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Usar prova real do produto" }),
+    );
+    const file = new File(["proof"], "agenda-cheia.png", { type: "image/png" });
+    await userEvent.upload(
+      screen.getByLabelText("Imagem real do produto"),
+      file,
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Criar versão e enviar para Têmis" }),
+    );
+
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/creatives/311/versions",
+        expect.objectContaining({ imageUrl: "/uploads/product-proof.png" }),
+      ),
+    );
+    expect(axios.post).toHaveBeenCalledWith(
+      "/api/creatives/312/agent-review/request",
+    );
+    expect(
+      await screen.findByText("Prova visual enviada para Têmis"),
     ).toBeInTheDocument();
   });
 

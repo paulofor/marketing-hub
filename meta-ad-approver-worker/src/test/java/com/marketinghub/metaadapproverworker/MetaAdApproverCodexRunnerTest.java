@@ -187,6 +187,19 @@ class MetaAdApproverCodexRunnerTest {
             "Não confunda imagem tecnicamente carregada com imagem comercialmente aceitável");
   }
 
+  /** Garante que Têmis crie uma alternativa completa e não aprove a própria proposta. */
+  @Test
+  void requiresCreativeProposalAndIndependentReview() throws Exception {
+    String prompt = resource("prompts/meta-ad-approver/v1/review.md");
+
+    assertThat(prompt)
+        .contains(
+            "responsável por criar e aprovar tecnicamente anúncios Meta",
+            "proposta completa de anúncio pronta para materialização",
+            "outro território criativo, outra cena e outra forma verdadeira de provar o produto",
+            "nunca aprove na mesma execução aquilo que você acabou de criar");
+  }
+
   /** Confirma que o job preserva o snapshot e os identificadores do experimento. */
   @Test
   void preservesJobSegregation() {

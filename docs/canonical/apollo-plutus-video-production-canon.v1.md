@@ -16,6 +16,12 @@ Apolo é o executor criativo dos vídeos do Estúdio. Plutus é o gate financeir
 8. O custo conhecido deve ser conciliado no ledger. Novo consumo é bloqueado ao atingir o teto, quando o custo estiver desconhecido ou quando a cobertura financeira estiver incompleta.
 9. QA independente decide qualidade. Apolo não aprova o próprio trabalho.
 
+## Escopo operacional de Apolo v2
+
+Apolo possui acesso operacional completo ao Estúdio de Áudio e Vídeo depois da aprovação financeira: roteiro, storyboard, imagens mestre aprovadas, geração de cenas, seleção de provider por cena, continuidade, narração, trilha, montagem, legendas, HLS, inspeção técnica e iteração causal. Esse acesso não remove os gates de Plutus, o ledger nem o QA independente.
+
+A primeira missão v2 é concluir os dois projetos persistidos do grupo `musa-two-video-funnel-v1`: vídeo de qualificação da campanha e vídeo hero de conversão do PDE. Cada vídeo mantém objetivo, métrica e CTA próprios; a conclusão exige montagem narrativa, áudio pt-BR, legendas mobile, HLS, inspeção técnica e entrega ao QA.
+
 ## Autoridade e segurança
 
 - Aprovar um ciclo não autoriza publicação, campanha, mudança de preço ou compra de créditos.

@@ -3,6 +3,7 @@ package com.marketinghub.planning.web;
 import com.marketinghub.planning.CommercialPlanStatus;
 import com.marketinghub.planning.dto.CommercialPlanAgentActivityDto;
 import com.marketinghub.planning.dto.CommercialPlanDto;
+import com.marketinghub.planning.dto.CommercialPlanJourneyHomologationDto;
 import com.marketinghub.planning.dto.CommercialPlanMilestoneDto;
 import com.marketinghub.planning.dto.CommercialPlanSimulationDto;
 import com.marketinghub.planning.dto.CommercialPlanVersionDto;
@@ -16,6 +17,7 @@ import com.marketinghub.planning.dto.UpdateCommercialPlanWeekCommitmentStatusReq
 import com.marketinghub.planning.dto.UpdateCommercialPlanWeekObjectivesRequest;
 import com.marketinghub.planning.mapper.CommercialPlanMapper;
 import com.marketinghub.planning.service.CommercialPlanAgentActivityService;
+import com.marketinghub.planning.service.CommercialPlanJourneyHomologationService;
 import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.planning.service.CommercialPlanVersionService;
 import com.marketinghub.planning.service.CommercialPlanWeeklyExperimentService;
@@ -39,18 +41,21 @@ public class CommercialPlanController {
   private final CommercialPlanMapper mapper;
   private final CommercialPlanVersionService versionService;
   private final CommercialPlanAgentActivityService agentActivityService;
+  private final CommercialPlanJourneyHomologationService journeyHomologationService;
 
   public CommercialPlanController(
       CommercialPlanService service,
       CommercialPlanWeeklyExperimentService weeklyExperimentService,
       CommercialPlanMapper mapper,
       CommercialPlanVersionService versionService,
-      CommercialPlanAgentActivityService agentActivityService) {
+      CommercialPlanAgentActivityService agentActivityService,
+      CommercialPlanJourneyHomologationService journeyHomologationService) {
     this.service = service;
     this.weeklyExperimentService = weeklyExperimentService;
     this.mapper = mapper;
     this.versionService = versionService;
     this.agentActivityService = agentActivityService;
+    this.journeyHomologationService = journeyHomologationService;
   }
 
   /** Cria um plano comercial de primeira venda. */
@@ -99,6 +104,12 @@ public class CommercialPlanController {
   @GetMapping("/{id}/agent-activity")
   public CommercialPlanAgentActivityDto agentActivity(@PathVariable Long id) {
     return agentActivityService.activity(service.getPlan(id));
+  }
+
+  /** Solicita a homologação integral da jornada do experimento vinculado ao plano. */
+  @PostMapping("/{id}/journey-homologations")
+  public CommercialPlanJourneyHomologationDto requestJourneyHomologation(@PathVariable Long id) {
+    return journeyHomologationService.request(id);
   }
 
   /**

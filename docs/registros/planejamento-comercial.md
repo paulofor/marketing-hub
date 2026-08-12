@@ -86,3 +86,10 @@
 - Decisão: complementar receita, custo, funil e experimentos com metas estruturadas de produtos a validar, tipos de PDE a explorar, abordagens a testar e conversas com clientes.
 - Proteção comercial: volume de cadastro não conta como resultado; cada item exige hipótese, evidência e decisão registrada. Gargalos de instrumentação, checkout e entrega limitam a abertura de novas frentes.
 - Referência inicial para a semana: 1 produto prioritário, 1 tipo de PDE, 2 abordagens, 1 experimento executável e 5 conversas estruturadas.
+
+## 2026-08-12 — Vinculo do experimento e homologacao por Dédalo
+
+- Causa-raiz: o Agenda Cheia apontava para o experimento #85 enquanto a execução técnica válida de Dédalo pertencia ao #88; a tela não permitia corrigir o vínculo nem iniciar a homologação integral.
+- Foi feito: o detalhe do plano passou a editar o experimento pelo contrato oficial e a solicitar uma execução auditável de Dédalo para toda a jornada.
+- Gate: a execução usa `mh_test=1`, exige evidências de landing até entrega e não autoriza publicação, mídia ou gasto.
+- Impacto esperado: remover a inconsistência de correlação e transformar o bloqueio técnico em trabalho consumível, visível no histórico do plano.

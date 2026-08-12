@@ -187,6 +187,7 @@ const createPlanMutate = vi.fn();
 const updateWeekMutate = vi.fn();
 const requestRevenueProjectionMutate = vi.fn();
 const requestCommercialAssumptionsMutate = vi.fn();
+const requestJourneyHomologationMutate = vi.fn();
 
 vi.mock("../../api/planning/useCommercialPlans", async () => {
   const actual = await vi.importActual<
@@ -298,6 +299,12 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
       mutate: requestCommercialAssumptionsMutate,
       isPending: false,
       isError: false,
+    }),
+    useRequestCommercialPlanJourneyHomologation: () => ({
+      mutate: requestJourneyHomologationMutate,
+      isPending: false,
+      isError: false,
+      isSuccess: false,
     }),
     useCommercialPlanWeeks: (
       _planId?: number | null,
@@ -590,6 +597,7 @@ describe("CommercialPlanningPage", () => {
     mockPlans = [
       {
         ...defaultPlans[0],
+        experimentId: 85,
         stopCriteria: "Gate vigente do plano selecionado",
         nextAction: "Próxima ação do plano selecionado",
       },
@@ -603,6 +611,7 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getByLabelText("Prazo da meta")).toBeTruthy();
     expect(screen.getByLabelText("Meta de receita")).toBeTruthy();
     expect(screen.getByLabelText("Teto total do plano (R$)")).toHaveValue(300);
+    expect(screen.getByLabelText("Experimento vinculado")).toHaveValue(85);
     expect(screen.getByLabelText("Objetivo comercial")).toBeTruthy();
     expect(screen.getByLabelText("Critério de sucesso")).toBeTruthy();
     expect(screen.getByLabelText("Critério de parada")).toBeTruthy();
@@ -618,6 +627,10 @@ describe("CommercialPlanningPage", () => {
     expect(
       screen.getByRole("button", { name: "Salvar planejamento" }),
     ).toBeTruthy();
+    await user.click(
+      screen.getByRole("button", { name: "Homologar jornada com Dédalo" }),
+    );
+    expect(requestJourneyHomologationMutate).toHaveBeenCalledTimes(1);
   });
 
   it("seleciona o plano do mes operacional em vez do primeiro plano retornado", () => {

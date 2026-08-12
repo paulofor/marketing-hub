@@ -23,6 +23,7 @@ import {
   useRequestRevenueProjection,
   useCommercialAssumptionDefinitions,
   useRequestCommercialAssumptions,
+  useRequestCommercialPlanJourneyHomologation,
 } from "../../api/planning/useCommercialPlans";
 import "./CommercialPlanningPage.css";
 import GrowthOperatorPanel from "./GrowthOperatorPanel";
@@ -1638,6 +1639,10 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
   const requestCommercialAssumptions = useRequestCommercialAssumptions(
     currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
   );
+  const requestJourneyHomologation =
+    useRequestCommercialPlanJourneyHomologation(
+      currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
+    );
   const assumptionDefinitions = asArray(assumptionDefinitionsQuery.data);
   const currentPlanVersion = planVersions[0];
   const [selectedReferenceMonth, setSelectedReferenceMonth] =
@@ -2413,6 +2418,27 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
               <div className="card-body d-flex flex-column gap-3">
                 <div className="row g-3">
                   <div className="col-md-4">
+                    <label className="form-label" htmlFor="planning-experiment">
+                      Experimento vinculado
+                    </label>
+                    <input
+                      id="planning-experiment"
+                      className="form-control"
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={planDraft.experimentId ?? ""}
+                      onChange={(event) =>
+                        updatePlanDraft(
+                          "experimentId",
+                          event.target.value === ""
+                            ? null
+                            : Number(event.target.value),
+                        )
+                      }
+                    />
+                  </div>
+                  <div className="col-md-4">
                     <label className="form-label" htmlFor="planning-status">
                       Status
                     </label>
@@ -2688,6 +2714,36 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
                   {updatePlan.isSuccess ? (
                     <span className="text-success">
                       Planejamento atualizado.
+                    </span>
+                  ) : null}
+                </div>
+                <div className="border-top pt-3 d-flex flex-column align-items-start gap-2">
+                  <button
+                    className="btn btn-outline-primary"
+                    type="button"
+                    disabled={
+                      requestJourneyHomologation.isPending ||
+                      !currentMonthPlan.experimentId
+                    }
+                    onClick={() => requestJourneyHomologation.mutate()}
+                  >
+                    {requestJourneyHomologation.isPending
+                      ? "Solicitando homologação..."
+                      : "Homologar jornada com Dédalo"}
+                  </button>
+                  <small className="text-body-secondary">
+                    Usa dados segregados com mh_test=1 e não autoriza
+                    publicação, mídia ou gasto.
+                  </small>
+                  {requestJourneyHomologation.isSuccess ? (
+                    <span className="text-success" role="status">
+                      Homologação enfileirada para o experimento #
+                      {requestJourneyHomologation.data.experimentId}.
+                    </span>
+                  ) : null}
+                  {requestJourneyHomologation.isError ? (
+                    <span className="text-danger" role="alert">
+                      Não foi possível enfileirar a homologação.
                     </span>
                   ) : null}
                 </div>

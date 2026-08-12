@@ -164,3 +164,9 @@ Um experimento so deve contar como publicado quando estiver comercialmente valid
 ## Preparacao para IA
 
 A futura integracao com IA deve consumir esses campos estruturados como entrada primaria para gerar cenarios, alertas e recomendacoes. Texto livre pode complementar o contexto, mas nao substitui as metas numericas persistidas.
+
+## Vinculo e homologacao da jornada comercial
+
+O detalhe do plano deve permitir identificar e corrigir explicitamente o experimento vinculado. Quando o plano depender da comprovacao tecnica da jornada, a homologacao deve ser solicitada pelo proprio plano e persistida como execucao auditavel do agente responsavel.
+
+A homologacao deve usar dados segregados (`mh_test=1`), cobrir landing, eventos, amostra, e-mail, checkout, pagamento de teste, briefing, producao e entrega, e registrar as evidencias produzidas. Esse comando nao autoriza publicacao, ativacao de midia ou gasto. Aquisicao somente pode avancar quando os gates essenciais estiverem comprovados.

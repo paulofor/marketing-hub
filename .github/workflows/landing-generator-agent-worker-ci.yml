@@ -33,7 +33,9 @@ jobs:
           cache: maven
       - name: Testar worker
         working-directory: landing-generator-agent-worker
-        run: mvn -B verify
+        run: bash ../scripts/maven-verify-with-transient-retry.sh
+      - name: Validar retry transitório do Maven
+        run: bash scripts/test-maven-verify-with-transient-retry.sh
       - name: Validar arquitetura premium
         run: bash scripts/validate-premium-agents.sh
       - name: Construir imagem versionada

@@ -1410,7 +1410,7 @@ function WeeklyExperimentList({
   );
 }
 
-function CommercialPlanListPage() {
+function CommercialPlanListPage({ monthly = false }: { monthly?: boolean }) {
   const navigate = useNavigate();
   const plansQuery = useCommercialPlans();
   const createPlan = useCreateCommercialPlan();
@@ -1429,19 +1429,24 @@ function CommercialPlanListPage() {
     <div className="commercial-planning-page d-flex flex-column gap-4">
       <header className="d-flex flex-column flex-lg-row justify-content-between gap-3">
         <div>
-          <PageTitle>Planos comerciais</PageTitle>
+          <PageTitle>
+            {monthly ? "Planejamentos mensais" : "Planos comerciais"}
+          </PageTitle>
           <p className="text-body-secondary mb-0">
-            Escolha um plano para acompanhar bloqueios, decisões, execução e
-            histórico dos agentes.
+            {monthly
+              ? "Escolha um mês para acompanhar metas, semanas, funil e execução."
+              : "Escolha um plano para acompanhar bloqueios, decisões, execução e histórico dos agentes."}
           </p>
         </div>
-        <button
-          className="btn btn-primary align-self-start"
-          type="button"
-          onClick={() => setIsCreatingPlan((current) => !current)}
-        >
-          {isCreatingPlan ? "Cancelar" : "Novo plano comercial"}
-        </button>
+        {!monthly ? (
+          <button
+            className="btn btn-primary align-self-start"
+            type="button"
+            onClick={() => setIsCreatingPlan((current) => !current)}
+          >
+            {isCreatingPlan ? "Cancelar" : "Novo plano comercial"}
+          </button>
+        ) : null}
       </header>
 
       {isCreatingPlan ? (
@@ -1555,18 +1560,35 @@ function CommercialPlanListPage() {
         </section>
       ) : null}
 
-      {plansQuery.isLoading ? <p>Carregando planos comerciais...</p> : null}
+      {plansQuery.isLoading ? (
+        <p>
+          {monthly
+            ? "Carregando planejamentos mensais..."
+            : "Carregando planos comerciais..."}
+        </p>
+      ) : null}
       {plansQuery.isError ? (
         <div className="alert alert-danger" role="alert">
-          Não foi possível carregar os planos comerciais.
+          {monthly
+            ? "Não foi possível carregar os planejamentos mensais."
+            : "Não foi possível carregar os planos comerciais."}
         </div>
       ) : null}
       {!plansQuery.isLoading && plans.length === 0 ? (
         <div className="alert alert-info" role="status">
-          Nenhum plano comercial cadastrado.
+          {monthly
+            ? "Nenhum planejamento mensal cadastrado."
+            : "Nenhum plano comercial cadastrado."}
         </div>
       ) : (
-        <div className="row g-3" aria-label="Lista de planos comerciais">
+        <div
+          className="row g-3"
+          aria-label={
+            monthly
+              ? "Lista de planejamentos mensais"
+              : "Lista de planos comerciais"
+          }
+        >
           {plans.map((plan) => (
             <div className="col-12 col-xl-6" key={plan.id}>
               <article className="card h-100">
@@ -1616,9 +1638,15 @@ function CommercialPlanListPage() {
                   ) : null}
                   <Link
                     className="btn btn-outline-primary mt-auto align-self-start"
-                    to={`/planning/${plan.id}`}
+                    to={
+                      monthly
+                        ? `/monthly-planning/${plan.id}`
+                        : `/planning/${plan.id}`
+                    }
                   >
-                    Ver detalhe completo
+                    {monthly
+                      ? "Abrir planejamento mensal"
+                      : "Ver detalhe completo"}
                   </Link>
                 </div>
               </article>
@@ -1630,7 +1658,13 @@ function CommercialPlanListPage() {
   );
 }
 
-function CommercialPlanDetailPage({ planId }: { planId: number }) {
+function CommercialPlanDetailPage({
+  planId,
+  monthly = false,
+}: {
+  planId: number;
+  monthly?: boolean;
+}) {
   const agentsQuery = useAgents();
   const plansQuery = useCommercialPlans();
   const createPlan = useCreateCommercialPlan();
@@ -1814,8 +1848,11 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
     <div className="commercial-planning-page d-flex flex-column gap-4">
       <header className="d-flex flex-column flex-xl-row justify-content-between gap-3">
         <div>
-          <Link className="small text-decoration-none" to="/planning">
-            ← Todos os planos comerciais
+          <Link
+            className="small text-decoration-none"
+            to={monthly ? "/monthly-planning" : "/planning"}
+          >
+            ← Todos os {monthly ? "planejamentos mensais" : "planos comerciais"}
           </Link>
           <PageTitle>{currentMonthPlan.name}</PageTitle>
           <p className="text-body-secondary mb-0">
@@ -3064,12 +3101,16 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
   );
 }
 
-export default function CommercialPlanningPage() {
+export default function CommercialPlanningPage({
+  monthly = false,
+}: {
+  monthly?: boolean;
+}) {
   const { planId } = useParams<{ planId: string }>();
-  if (!planId) return <CommercialPlanListPage />;
+  if (!planId) return <CommercialPlanListPage monthly={monthly} />;
   const parsedPlanId = Number(planId);
   if (!Number.isInteger(parsedPlanId) || parsedPlanId <= 0) {
-    return <CommercialPlanListPage />;
+    return <CommercialPlanListPage monthly={monthly} />;
   }
-  return <CommercialPlanDetailPage planId={parsedPlanId} />;
+  return <CommercialPlanDetailPage planId={parsedPlanId} monthly={monthly} />;
 }

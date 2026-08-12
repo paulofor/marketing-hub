@@ -57,12 +57,12 @@ class BackendWireframeControllerTest {
                 "landing-page-wireframe",
                 pendingExperiment(12L, "Experimento 12", "Hipótese"),
                 pendingHypothesis()));
-    when(executionService.listPending("landing-page-wireframe")).thenReturn(pending);
+    when(executionService.listPending("landing-page-wireframe", 5)).thenReturn(pending);
 
-    List<RecordWireframePending> response = controller.pending();
+    List<RecordWireframePending> response = controller.pending(5);
 
     assertEquals(pending, response);
-    verify(executionService).listPending("landing-page-wireframe");
+    verify(executionService).listPending("landing-page-wireframe", 5);
   }
 
   /** Deve receber o prompt enviado para IA e delegar marcação de espera pelo retorno OpenAI. */
@@ -170,7 +170,7 @@ class BackendWireframeControllerTest {
   void pendingShouldSerializeListItemsWithExperimentAndJobid() throws Exception {
     BackendWireframeService executionService = mock(BackendWireframeService.class);
     BackendWireframeController controller = new BackendWireframeController(executionService);
-    when(executionService.listPending("landing-page-wireframe"))
+    when(executionService.listPending("landing-page-wireframe", 5))
         .thenReturn(
             List.of(
                 new RecordWireframePending(
@@ -180,7 +180,7 @@ class BackendWireframeControllerTest {
                     pendingExperiment(33L, "Experimento 33", "Hipótese 33"),
                     pendingHypothesis())));
 
-    JsonNode json = new ObjectMapper().valueToTree(controller.pending());
+    JsonNode json = new ObjectMapper().valueToTree(controller.pending(5));
 
     assertTrue(json.isArray());
     assertEquals(1, json.size());

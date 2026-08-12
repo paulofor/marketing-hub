@@ -1059,3 +1059,10 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** `premium_agent_memory.content_text` usava `TEXT`; o parecer enriquecido de 21.406 caracteres excedeu a capacidade efetiva em `utf8mb4` e o MySQL 5.7 retornou erro 1406.
 - **Correção sistêmica:** conteúdo e evidências da memória premium e de seus feedbacks passam a `LONGTEXT`, com mapeamento JPA explícito e sem truncamento silencioso.
 - **Prevenção:** teste de contrato valida conjuntamente entidade, changelog e include relativo do Liquibase.
+## LOOP-GERALANDING-WIREFRAME-PENDING-PAYLOAD — lote rico bloqueia o scheduler
+
+- **Data:** 2026-08-12.
+- **Sintoma:** Dédalo enfileira `landing-page-wireframe`, mas a execução permanece `INICIADO` e o AI Worker registra erro não tratado a cada polling.
+- **Causa-raiz:** o backend retornava até 20 snapshots ricos sem respeitar o limite do worker; o client desserializava o lote inteiro com o buffer padrão e ainda aceitava campos opcionais nulos em um mapa imutável.
+- **Correção:** o endpoint passou a limitar o lote solicitado, o client envia esse limite, reserva memória compatível com o teto controlado e normaliza campos opcionais antes de criar o input.
+- **Prevenção:** testes de contrato exigem o parâmetro `limit`, payload acima do buffer padrão e snapshot com campos opcionais ausentes.

@@ -111,12 +111,14 @@ public class BackendWireframeService {
     return executions.stream().map(this::toSummaryResponse).toList();
   }
 
-  /** Lista os jobs iniciados da etapa wireframe para processamento independente de experimento. */
+  /** Lista um lote limitado de jobs iniciados para manter previsível o payload rico da etapa. */
   @Transactional(readOnly = true)
-  public List<RecordWireframePending> listPending(String stageCode) {
+  public List<RecordWireframePending> listPending(String stageCode, int limit) {
+    int effectiveLimit = Math.max(1, Math.min(limit, 20));
     return executionRepository
         .findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(stageCode, STATUS_STARTED)
         .stream()
+        .limit(effectiveLimit)
         .map(
             execution ->
                 new RecordWireframePending(

@@ -39,6 +39,22 @@ class WireframeBackendClientTest {
         server.shutdown();
     }
 
+    /** Deve enviar o limite ao backend e aceitar snapshots ricos maiores que o buffer padrão. */
+    @Test
+    void listPendingShouldBoundBatchAndAcceptRichSnapshot() throws Exception {
+        String largeText = "x".repeat(400_000);
+        server.enqueue(new MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody("[{\"experimentId\":88,\"jobid\":\"job-88\",\"stageCode\":\"landing-page-wireframe\",\"experiment\":{\"name\":\"" + largeText + "\"}}]"));
+        WireframeBackendClient client = client(3);
+
+        var pending = client.listPending(3);
+
+        assertThat(server.takeRequest().getPath())
+                .isEqualTo("/api/internal/geralanding/wireframe/stage-executions/pending?limit=3");
+        assertThat(pending).singleElement().satisfies(item -> assertThat(item.aggregateId()).isEqualTo(88L));
+    }
+
     /** Deve enviar prompt, schema e request cru no callback recebe-prompt. */
     @Test
     void markDispatchedShouldSendPromptSchemaAndRawRequestToRecebePrompt() throws Exception {
@@ -84,6 +100,23 @@ class WireframeBackendClientTest {
                 .containsEntry("schemaJson", "{\"type\":\"object\"}")
                 .containsEntry("requestBodyJson", "{\"model\":\"gpt-test\",\"input\":\"Prompt renderizado\"}")
                 .containsEntry("jobidopenai", "openai-job-1");
+    }
+
+    /** Cria o client com o limite indicado para os testes de polling. */
+    private WireframeBackendClient client(int pendingLimit) {
+        return new WireframeBackendClient(
+                WebClient.builder(),
+                new WireframeWorkerProperties(
+                        true,
+                        pendingLimit,
+                        server.url("/").toString(),
+                        "/api",
+                        "prompts/geralanding/landing-page-wireframe.md",
+                        "prompts/geralanding/landing-page-wireframe-schema.json",
+                        "experiment_pipeline_landing_page_wireframe",
+                        "gpt-5.4",
+                        Duration.ofSeconds(5)),
+                objectMapper);
     }
 
     /** Deve enviar o payload bruto de erro da OpenAI no callback recebe-resposta quando a etapa falhar. */

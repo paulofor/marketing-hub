@@ -53,8 +53,8 @@ public class BackendWireframeController {
 
   /** Lista os jobs pendentes iniciados da etapa wireframe para processamento pelo Worker AI. */
   @GetMapping("/internal/geralanding/wireframe/stage-executions/pending")
-  public List<RecordWireframePending> pending() {
-    return executionService.listPending(STAGE_CODE);
+  public List<RecordWireframePending> pending(@RequestParam(defaultValue = "5") int limit) {
+    return executionService.listPending(STAGE_CODE, limit);
   }
 
   /**

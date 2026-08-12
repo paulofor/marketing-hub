@@ -115,7 +115,7 @@ class BackendWireframeServiceTest {
             "landing-page-wireframe", "INICIADO"))
         .thenReturn(List.of(execution));
 
-    List<RecordWireframePending> response = service.listPending("landing-page-wireframe");
+    List<RecordWireframePending> response = service.listPending("landing-page-wireframe", 5);
 
     assertEquals(1, response.size());
     assertEquals(77L, response.get(0).experimentId());

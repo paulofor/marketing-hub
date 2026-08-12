@@ -89,6 +89,16 @@ paths:
       tags: [landing-page-wireframe]
       summary: Lista jobs pendentes da etapa landing-page-wireframe.
       operationId: pendingGeraLandingWireframeExecutions
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Quantidade máxima de snapshots ricos retornados, limitada entre 1 e 20.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 5
       responses:
         '200':
           $ref: '#/components/responses/PendingStageExecutionList'

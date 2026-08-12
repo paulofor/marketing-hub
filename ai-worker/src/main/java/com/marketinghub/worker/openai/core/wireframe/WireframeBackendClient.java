@@ -18,6 +18,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class WireframeBackendClient implements StageBackendPort<WireframeInput, WireframeOutput> {
 
     private static final String STATUS_STARTED = "INICIADO";
+    private static final int MAX_PENDING_PAYLOAD_BYTES = 8 * 1024 * 1024;
 
     private final WebClient webClient;
     private final WireframeWorkerProperties properties;
@@ -29,7 +30,9 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
             WireframeWorkerProperties properties,
             ObjectMapper objectMapper
     ) {
-        this.webClient = builder.build();
+        this.webClient = builder.clone()
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_PENDING_PAYLOAD_BYTES))
+                .build();
         this.properties = properties;
         this.objectMapper = objectMapper;
     }
@@ -42,7 +45,7 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
                 properties.backendBaseUrl(),
                 properties.apiPrefix(),
                 "/internal/geralanding/wireframe/stage-executions/pending"
-        );
+        ) + "?limit=" + effectiveLimit;
 
         List<Map<String, Object>> payload = webClient.get()
                 .uri(uri)
@@ -153,11 +156,11 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
         Map<String, Object> framework = asMap(hypothesis.get("framework"));
 
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("singlePain", experiment.get("singlePain"));
-        payload.put("freeReward", experiment.get("freeReward"));
-        payload.put("funnelPromise", experiment.get("funnelPromise"));
-        payload.put("primaryCta", experiment.get("primaryCta"));
-        payload.put("campaignObjective", experiment.get("campaignObjective"));
+        payload.put("singlePain", textOrEmpty(experiment.get("singlePain")));
+        payload.put("freeReward", textOrEmpty(experiment.get("freeReward")));
+        payload.put("funnelPromise", textOrEmpty(experiment.get("funnelPromise")));
+        payload.put("primaryCta", textOrEmpty(experiment.get("primaryCta")));
+        payload.put("campaignObjective", textOrEmpty(experiment.get("campaignObjective")));
         payload.put("campaignAngle", normalizeJsonArtifact(experiment.get("campaignAngle")));
         payload.put("adCopy", normalizeJsonArtifact(experiment.get("adCopy")));
         payload.put("adImageBriefing", normalizeJsonArtifact(experiment.get("adImageBriefing")));
@@ -166,10 +169,20 @@ public class WireframeBackendClient implements StageBackendPort<WireframeInput, 
         payload.put("NICHE_NAME", firstText(experiment.get("nicheName"), experiment.get("niche"), experiment.get("name")));
         payload.put("PAIN_JSON", framework.getOrDefault("pain", Map.of()));
         payload.put("RESULT_JSON", framework.getOrDefault("result", Map.of()));
-        payload.put("geralandingReferenceInsights", pending.get("geralandingReferenceInsights"));
-        payload.put("convergenceBrief", pending.get("convergenceBrief"));
+        payload.put("geralandingReferenceInsights", valueOrEmptyList(pending.get("geralandingReferenceInsights")));
+        payload.put("convergenceBrief", textOrEmpty(pending.get("convergenceBrief")));
 
         return payload;
+    }
+
+    /** Normaliza texto opcional para que o contrato imutável do input nunca receba nulo. */
+    private String textOrEmpty(Object value) {
+        return value != null ? value.toString() : "";
+    }
+
+    /** Normaliza coleções opcionais sem descartar valores fornecidos pelo backend. */
+    private Object valueOrEmptyList(Object value) {
+        return value != null ? value : List.of();
     }
 
     /** Normaliza artefatos que podem chegar como JSON textual, objeto estruturado ou valor simples. */

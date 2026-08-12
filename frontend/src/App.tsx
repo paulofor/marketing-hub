@@ -93,6 +93,7 @@ import PersonaLibraryPage from "./pages/agent/PersonaLibraryPage";
 import NewAgentPage from "./pages/agent/NewAgentPage";
 import EditAgentPage from "./pages/agent/EditAgentPage";
 import AgentWorkspacePage from "./pages/agent/AgentWorkspacePage";
+import ActiveAgentTasksPage from "./pages/agent/ActiveAgentTasksPage";
 import AgentThemePage from "./pages/agent/AgentThemePage";
 import SystemImprovementsPage from "./pages/systemImprovement/SystemImprovementsPage";
 import { ToastContainer } from "react-toastify";
@@ -408,6 +409,7 @@ export default function App() {
                 element={<EditOpenAiModelPage />}
               />
               <Route path="/agents" element={<AgentListPage />} />
+              <Route path="/agent-tasks" element={<ActiveAgentTasksPage />} />
               <Route path="/agents/personas" element={<PersonaLibraryPage />} />
               <Route path="/agents/new" element={<NewAgentPage />} />
               <Route path="/agents/:id" element={<AgentWorkspacePage />} />

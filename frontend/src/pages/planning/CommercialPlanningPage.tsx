@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAgents } from "../../api/agent/useAgents";
 import { Agent } from "../../api/agent/types";
 import PageTitle from "../../components/PageTitle";
@@ -1298,7 +1298,227 @@ function WeeklyExperimentList({
   );
 }
 
-export default function CommercialPlanningPage() {
+function CommercialPlanListPage() {
+  const navigate = useNavigate();
+  const plansQuery = useCommercialPlans();
+  const createPlan = useCreateCommercialPlan();
+  const plans = asArray(plansQuery.data);
+  const [isCreatingPlan, setIsCreatingPlan] = useState(false);
+  const [newPlanDraft, setNewPlanDraft] =
+    useState<SaveCommercialPlanPayload>(emptyCommercialPlan);
+
+  function submitNewPlan() {
+    createPlan.mutate(newPlanDraft, {
+      onSuccess: (createdPlan) => navigate(`/planning/${createdPlan.id}`),
+    });
+  }
+
+  return (
+    <div className="commercial-planning-page d-flex flex-column gap-4">
+      <header className="d-flex flex-column flex-lg-row justify-content-between gap-3">
+        <div>
+          <PageTitle>Planos comerciais</PageTitle>
+          <p className="text-body-secondary mb-0">
+            Escolha um plano para acompanhar bloqueios, decisões, execução e
+            histórico dos agentes.
+          </p>
+        </div>
+        <button
+          className="btn btn-primary align-self-start"
+          type="button"
+          onClick={() => setIsCreatingPlan((current) => !current)}
+        >
+          {isCreatingPlan ? "Cancelar" : "Novo plano comercial"}
+        </button>
+      </header>
+
+      {isCreatingPlan ? (
+        <section
+          className="card border-primary"
+          aria-label="Novo plano comercial"
+        >
+          <div className="card-body">
+            <h2 className="h5">Novo plano comercial</h2>
+            <div className="row g-3">
+              <div className="col-lg-6">
+                <label
+                  className="form-label"
+                  htmlFor="new-commercial-plan-name"
+                >
+                  Nome *
+                </label>
+                <input
+                  id="new-commercial-plan-name"
+                  className="form-control"
+                  value={newPlanDraft.name}
+                  onChange={(event) =>
+                    setNewPlanDraft((current) => ({
+                      ...current,
+                      name: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="col-md-3">
+                <label
+                  className="form-label"
+                  htmlFor="new-commercial-plan-deadline"
+                >
+                  Prazo *
+                </label>
+                <input
+                  id="new-commercial-plan-deadline"
+                  className="form-control"
+                  type="date"
+                  value={newPlanDraft.deadline}
+                  onChange={(event) =>
+                    setNewPlanDraft((current) => ({
+                      ...current,
+                      deadline: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="col-md-3">
+                <label
+                  className="form-label"
+                  htmlFor="new-commercial-plan-budget"
+                >
+                  Teto (R$) *
+                </label>
+                <input
+                  id="new-commercial-plan-budget"
+                  className="form-control"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={newPlanDraft.maxBudget ?? ""}
+                  onChange={(event) =>
+                    setNewPlanDraft((current) => ({
+                      ...current,
+                      maxBudget:
+                        event.target.value === ""
+                          ? null
+                          : Number(event.target.value),
+                    }))
+                  }
+                />
+              </div>
+              <div className="col-12">
+                <label
+                  className="form-label"
+                  htmlFor="new-commercial-plan-objective"
+                >
+                  Objetivo comercial *
+                </label>
+                <textarea
+                  id="new-commercial-plan-objective"
+                  className="form-control"
+                  rows={2}
+                  value={newPlanDraft.commercialObjective}
+                  onChange={(event) =>
+                    setNewPlanDraft((current) => ({
+                      ...current,
+                      commercialObjective: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+            </div>
+            <button
+              className="btn btn-primary mt-3"
+              type="button"
+              disabled={
+                createPlan.isPending ||
+                !newPlanDraft.name.trim() ||
+                !newPlanDraft.deadline ||
+                newPlanDraft.maxBudget == null ||
+                !newPlanDraft.commercialObjective?.trim()
+              }
+              onClick={submitNewPlan}
+            >
+              {createPlan.isPending ? "Criando..." : "Criar e abrir plano"}
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {plansQuery.isLoading ? <p>Carregando planos comerciais...</p> : null}
+      {plansQuery.isError ? (
+        <div className="alert alert-danger" role="alert">
+          Não foi possível carregar os planos comerciais.
+        </div>
+      ) : null}
+      {!plansQuery.isLoading && plans.length === 0 ? (
+        <div className="alert alert-info" role="status">
+          Nenhum plano comercial cadastrado.
+        </div>
+      ) : (
+        <div className="row g-3" aria-label="Lista de planos comerciais">
+          {plans.map((plan) => (
+            <div className="col-12 col-xl-6" key={plan.id}>
+              <article className="card h-100">
+                <div className="card-body d-flex flex-column gap-3">
+                  <div className="d-flex justify-content-between align-items-start gap-3">
+                    <div>
+                      <h2 className="h5 mb-1">{plan.name}</h2>
+                      <p className="text-body-secondary mb-0">
+                        {plan.commercialObjective ||
+                          "Objetivo comercial ainda não definido."}
+                      </p>
+                    </div>
+                    <span className={`badge ${planStatusClass(plan.status)}`}>
+                      {planStatusLabel(plan.status)}
+                    </span>
+                  </div>
+                  <div className="row g-2 small">
+                    <div className="col-6">
+                      <span className="text-body-secondary d-block">Prazo</span>
+                      <strong>{formatDate(plan.deadline)}</strong>
+                    </div>
+                    <div className="col-6">
+                      <span className="text-body-secondary d-block">Teto</span>
+                      <strong>{formatCurrency(plan.maxBudget)}</strong>
+                    </div>
+                    <div className="col-6">
+                      <span className="text-body-secondary d-block">
+                        Custo realizado
+                      </span>
+                      <strong>
+                        {formatExecutedCurrency(plan.actualTotalCost)}
+                      </strong>
+                    </div>
+                    <div className="col-6">
+                      <span className="text-body-secondary d-block">
+                        Receita realizada
+                      </span>
+                      <strong>
+                        {formatExecutedCurrency(plan.actualRevenue)}
+                      </strong>
+                    </div>
+                  </div>
+                  {plan.currentBlocker?.trim() ? (
+                    <div className="alert alert-warning py-2 mb-0">
+                      <strong>Bloqueio atual:</strong> {plan.currentBlocker}
+                    </div>
+                  ) : null}
+                  <Link
+                    className="btn btn-outline-primary mt-auto align-self-start"
+                    to={`/planning/${plan.id}`}
+                  >
+                    Ver detalhe completo
+                  </Link>
+                </div>
+              </article>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CommercialPlanDetailPage({ planId }: { planId: number }) {
   const agentsQuery = useAgents();
   const plansQuery = useCommercialPlans();
   const createPlan = useCreateCommercialPlan();
@@ -1307,7 +1527,7 @@ export default function CommercialPlanningPage() {
   const hasAugustPlan = plans.some(
     (plan) => resolvePlanReferenceMonth(plan) === "2026-08",
   );
-  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
+  const selectedPlanId = planId;
   const [isCreatingPlan, setIsCreatingPlan] = useState(false);
   const [newPlanDraft, setNewPlanDraft] =
     useState<SaveCommercialPlanPayload>(emptyCommercialPlan);
@@ -1390,7 +1610,7 @@ export default function CommercialPlanningPage() {
   function submitNewPlan() {
     createPlan.mutate(newPlanDraft, {
       onSuccess: (createdPlan) => {
-        setSelectedPlanId(createdPlan.id);
+        navigate(`/planning/${createdPlan.id}`);
         setNewPlanDraft(emptyCommercialPlan);
         setIsCreatingPlan(false);
       },
@@ -1447,59 +1667,26 @@ export default function CommercialPlanningPage() {
     [weeks],
   );
 
+  const navigate = useNavigate();
+
   return (
     <div className="commercial-planning-page d-flex flex-column gap-4">
       <header className="d-flex flex-column flex-xl-row justify-content-between gap-3">
         <div>
-          <PageTitle>Planos comerciais</PageTitle>
+          <Link className="small text-decoration-none" to="/planning">
+            ← Todos os planos comerciais
+          </Link>
+          <PageTitle>{currentMonthPlan.name}</PageTitle>
           <p className="text-body-secondary mb-0">
             Acompanhe objetivos, versões, execução financeira e tudo que os
             agentes fizeram em cada plano.
           </p>
-        </div>
-        <div className="d-flex flex-wrap gap-2 align-self-start">
-          <button
-            className="btn btn-outline-primary"
-            type="button"
-            onClick={() => setIsCreatingPlan((current) => !current)}
-          >
-            {isCreatingPlan ? "Fechar novo plano" : "Novo plano comercial"}
-          </button>
-          {!hasAugustPlan ? (
-            <button
-              className="btn btn-primary"
-              type="button"
-              disabled={createPlan.isPending}
-              onClick={() => createPlan.mutate(augustRevenuePlan)}
-            >
-              {createPlan.isPending
-                ? "Criando plano de agosto..."
-                : "Criar plano de agosto"}
-            </button>
-          ) : null}
         </div>
       </header>
 
       {plans.length > 0 ? (
         <div className="card">
           <div className="card-body">
-            <label className="form-label" htmlFor="commercial-plan-selector">
-              Plano comercial em análise
-            </label>
-            <select
-              id="commercial-plan-selector"
-              className="form-select"
-              value={currentMonthPlan.id}
-              onChange={(event) =>
-                setSelectedPlanId(Number(event.target.value))
-              }
-            >
-              {plans.map((plan) => (
-                <option key={plan.id} value={plan.id}>
-                  {plan.name}
-                </option>
-              ))}
-            </select>
             <div className="d-flex flex-wrap align-items-center gap-2 mt-3">
               <span className="badge text-bg-primary">
                 {planVersionsQuery.isLoading
@@ -2527,4 +2714,14 @@ export default function CommercialPlanningPage() {
       ) : null}
     </div>
   );
+}
+
+export default function CommercialPlanningPage() {
+  const { planId } = useParams<{ planId: string }>();
+  if (!planId) return <CommercialPlanListPage />;
+  const parsedPlanId = Number(planId);
+  if (!Number.isInteger(parsedPlanId) || parsedPlanId <= 0) {
+    return <CommercialPlanListPage />;
+  }
+  return <CommercialPlanDetailPage planId={parsedPlanId} />;
 }

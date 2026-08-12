@@ -337,6 +337,10 @@ export default function App() {
               <Route path="/experiments" element={<ExperimentListPage />} />
               <Route path="/planning" element={<CommercialPlanningPage />} />
               <Route
+                path="/planning/:planId"
+                element={<CommercialPlanningPage />}
+              />
+              <Route
                 path="/opportunities"
                 element={<OpportunityDossiersPage />}
               />

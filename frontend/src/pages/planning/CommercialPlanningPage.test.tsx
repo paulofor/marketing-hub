@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import CommercialPlanningPage from "./CommercialPlanningPage";
 
@@ -402,10 +402,21 @@ vi.mock("../../api/planning/useExperimentStrategist", () => ({
   }),
 }));
 
-function renderPage() {
+function renderPage(path?: string) {
+  const operationalPlan = mockPlans.find(
+    (candidate) =>
+      typeof candidate === "object" &&
+      candidate !== null &&
+      "deadline" in candidate &&
+      String(candidate.deadline).startsWith("2026-08"),
+  ) as { id?: number } | undefined;
+  const initialPath = path ?? `/planning/${operationalPlan?.id ?? 1}`;
   return render(
-    <MemoryRouter>
-      <CommercialPlanningPage />
+    <MemoryRouter initialEntries={[initialPath]}>
+      <Routes>
+        <Route path="/planning" element={<CommercialPlanningPage />} />
+        <Route path="/planning/:planId" element={<CommercialPlanningPage />} />
+      </Routes>
     </MemoryRouter>,
   );
 }
@@ -538,7 +549,9 @@ describe("CommercialPlanningPage", () => {
   it("renderiza somente o planejamento superior", () => {
     renderPage();
 
-    expect(screen.getByText("Planos comerciais")).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: /todos os planos comerciais/i }),
+    ).toBeTruthy();
     expect(
       screen.getByText(/tudo que os agentes fizeram em cada plano/i),
     ).toBeTruthy();
@@ -623,7 +636,7 @@ describe("CommercialPlanningPage", () => {
 
   it("permite preparar um plano comercial dedicado com teto de producao", async () => {
     const user = userEvent.setup();
-    renderPage();
+    renderPage("/planning");
 
     await user.click(
       screen.getByRole("button", { name: "Novo plano comercial" }),
@@ -634,18 +647,14 @@ describe("CommercialPlanningPage", () => {
       "MUSA v7 - produção supervisionada",
     );
     await user.type(screen.getByLabelText("Prazo *"), "2026-08-31");
-    await user.type(screen.getByLabelText("Teto de produção (R$) *"), "100");
+    await user.type(screen.getByLabelText("Teto (R$) *"), "100");
     await user.type(
-      screen.getByLabelText("Objetivo comercial"),
+      screen.getByLabelText("Objetivo comercial *"),
       "Concluir MECANISMO e CTA sem gerar cenas já aprovadas.",
-    );
-    await user.type(
-      screen.getByLabelText("Critério de parada"),
-      "Parar ao atingir o teto ou quebrar continuidade visual.",
     );
 
     await user.click(
-      screen.getByRole("button", { name: "Criar plano comercial" }),
+      screen.getByRole("button", { name: "Criar e abrir plano" }),
     );
 
     expect(createPlanMutate).toHaveBeenCalledWith(
@@ -654,14 +663,12 @@ describe("CommercialPlanningPage", () => {
         maxBudget: 100,
         commercialObjective:
           "Concluir MECANISMO e CTA sem gerar cenas já aprovadas.",
-        stopCriteria: "Parar ao atingir o teto ou quebrar continuidade visual.",
       }),
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
   });
 
   it("permite alternar entre planos comerciais sem misturar atribuicao", async () => {
-    const user = userEvent.setup();
     mockPlans = [
       { ...defaultPlans[0], name: "Agenda Cheia", deadline: "2026-08-09" },
       {
@@ -673,17 +680,13 @@ describe("CommercialPlanningPage", () => {
         maxBudget: 100,
       },
     ];
-    renderPage();
+    renderPage("/planning");
 
-    await user.selectOptions(
-      screen.getByLabelText("Plano comercial em análise"),
-      "9",
-    );
-
-    expect(screen.getByLabelText("Plano comercial em análise")).toHaveValue(
-      "9",
-    );
-    expect(screen.getByText("R$ 100,00")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Agenda Cheia" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "MUSA v7" })).toBeTruthy();
+    expect(
+      screen.getAllByRole("link", { name: "Ver detalhe completo" })[1],
+    ).toHaveAttribute("href", "/planning/9");
   });
 
   it("inicializa semanas fechadas e abre a tabela ordenada por media de tempo", async () => {
@@ -979,7 +982,9 @@ describe("CommercialPlanningPage", () => {
 
     renderPage();
 
-    expect(screen.getByText("Planos comerciais")).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: /todos os planos comerciais/i }),
+    ).toBeTruthy();
     expect(screen.getByText("Julho 2026")).toBeTruthy();
     expect(screen.queryByText("Plano sugerido")).toBeNull();
   });

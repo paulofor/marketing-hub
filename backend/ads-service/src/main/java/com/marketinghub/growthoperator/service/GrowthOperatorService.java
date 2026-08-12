@@ -21,6 +21,7 @@ import com.marketinghub.growthoperator.service.view.GrowthOperatorExecutionRespo
 import com.marketinghub.growthoperator.service.view.GrowthOperatorMcpToolResponse;
 import com.marketinghub.growthoperator.service.view.GrowthOperatorTaskResponse;
 import com.marketinghub.planning.CommercialPlan;
+import com.marketinghub.planning.CommercialPlanStatus;
 import com.marketinghub.planning.CommercialPlanWeekObjective;
 import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.repository.jpa.growthoperator.GrowthOperatorExecutionRepository;
@@ -404,7 +405,7 @@ public class GrowthOperatorService {
   /** Cria ciclo automatico somente quando ha mudanca comercial relevante nas evidencias. */
   @Transactional
   public GrowthOperatorExecutionResponse ensureAutomaticCycle(Long planId) {
-    CommercialPlan plan = commercialPlanService.synchronizeRunningExperiment(planId);
+    CommercialPlan plan = commercialPlanService.synchronizeAvailableRunningExperiments(planId);
     int executionWeekNumber = resolveCurrentWeekNumber(plan);
     var latest = repository.findFirstByCommercialPlanIdOrderByCreatedAtDesc(planId);
     Instant cutoff = Instant.now().minusSeconds(30 * 60L);
@@ -444,6 +445,33 @@ public class GrowthOperatorService {
     execution.setCycleNumber(nextCycleNumber(planId));
     execution.setAutomaticCycle(true);
     return toResponse(saveWithCurrentAgentVersion(execution));
+  }
+
+  /** Garante continuidade idempotente para todos os planos comerciais ainda não encerrados. */
+  @Transactional
+  public List<GrowthOperatorExecutionResponse> ensureActivePlanCycles() {
+    return commercialPlanService.list(null).stream()
+        .filter(
+            plan ->
+                plan.getStatus() != CommercialPlanStatus.COMPLETED
+                    && plan.getStatus() != CommercialPlanStatus.CANCELLED)
+        .map(this::ensureActivePlanCycleSafely)
+        .flatMap(java.util.Optional::stream)
+        .toList();
+  }
+
+  /** Isola falha de um plano para que ela não deixe os demais sem continuidade operacional. */
+  private java.util.Optional<GrowthOperatorExecutionResponse> ensureActivePlanCycleSafely(
+      CommercialPlan plan) {
+    try {
+      return java.util.Optional.of(ensureAutomaticCycle(plan.getId()));
+    } catch (Exception ex) {
+      log.error(
+          "Falha no backend growth-operator ao garantir continuidade do plano comercial planId={}",
+          plan.getId(),
+          ex);
+      return java.util.Optional.empty();
+    }
   }
 
   /** Detecta execucao RUNNING sem heartbeat vivo dentro do limite canonico de atividade. */

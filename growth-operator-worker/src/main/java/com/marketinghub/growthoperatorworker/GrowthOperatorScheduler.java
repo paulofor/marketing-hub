@@ -55,15 +55,11 @@ public class GrowthOperatorScheduler {
    * ja persistidos na fila principal.
    */
   private void ensureAutomaticCycleWithoutBlockingPendingQueue() {
-    if (properties.getCommercialPlanId() == null) {
-      return;
-    }
     try {
-      backendClient.ensureAutomaticCycle(properties.getCommercialPlanId());
+      backendClient.ensureActivePlanCycles();
     } catch (Exception ex) {
       log.warn(
-          "Ciclo automatico indisponivel no growth-operator-worker; a fila pendente continuara sendo consumida planId={}",
-          properties.getCommercialPlanId(),
+          "Continuidade dos planos indisponivel no growth-operator-worker; a fila pendente continuara sendo consumida",
           ex);
     }
   }

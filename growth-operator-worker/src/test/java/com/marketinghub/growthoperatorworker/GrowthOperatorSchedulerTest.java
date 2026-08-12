@@ -17,14 +17,26 @@ class GrowthOperatorSchedulerTest {
     GrowthOperatorBackendClient backendClient = mock(GrowthOperatorBackendClient.class);
     CodexReadOnlyRunner runner = mock(CodexReadOnlyRunner.class);
     WorkerProperties properties = new WorkerProperties();
-    properties.setCommercialPlanId(2L);
-    doThrow(new IllegalStateException("Nenhum experimento RUNNING"))
+    doThrow(new IllegalStateException("Continuidade indisponivel"))
         .when(backendClient)
-        .ensureAutomaticCycle(2L);
+        .ensureActivePlanCycles();
     when(backendClient.claimPending()).thenReturn(null);
 
     new GrowthOperatorScheduler(backendClient, runner, properties).processOne();
 
+    verify(backendClient).claimPending();
+  }
+
+  /** Confirma que o polling protege todos os planos abertos, sem depender de um ID configurado. */
+  @Test
+  void shouldEnsureAllActivePlansBeforeClaimingPending() {
+    GrowthOperatorBackendClient backendClient = mock(GrowthOperatorBackendClient.class);
+    CodexReadOnlyRunner runner = mock(CodexReadOnlyRunner.class);
+    when(backendClient.claimPending()).thenReturn(null);
+
+    new GrowthOperatorScheduler(backendClient, runner, new WorkerProperties()).processOne();
+
+    verify(backendClient).ensureActivePlanCycles();
     verify(backendClient).claimPending();
   }
 }

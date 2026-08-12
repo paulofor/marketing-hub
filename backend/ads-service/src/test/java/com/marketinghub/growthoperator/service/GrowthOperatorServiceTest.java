@@ -22,6 +22,7 @@ import com.marketinghub.growthoperator.service.result.CompleteGrowthOperatorRequ
 import com.marketinghub.growthoperator.service.start.StartGrowthOperatorRequest;
 import com.marketinghub.growthoperator.service.view.GrowthOperatorExecutionResponse;
 import com.marketinghub.planning.CommercialPlan;
+import com.marketinghub.planning.CommercialPlanStatus;
 import com.marketinghub.planning.CommercialPlanWeekObjective;
 import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.repository.jpa.growthoperator.GrowthOperatorExecutionRepository;
@@ -54,6 +55,38 @@ class GrowthOperatorServiceTest {
             });
     when(repository.findById(any()))
         .thenAnswer(invocation -> java.util.Optional.ofNullable(saved[0]));
+  }
+
+  /** Confirma continuidade para plano aberto sem exigir experimento e ignora plano encerrado. */
+  @Test
+  void shouldEnsureOpenPlansWithoutRunningExperiment() {
+    GrowthOperatorExecutionRepository repository = mock(GrowthOperatorExecutionRepository.class);
+    CommercialPlanService planService = mock(CommercialPlanService.class);
+    CommercialPlan openPlan =
+        CommercialPlan.builder().id(2L).status(CommercialPlanStatus.IN_PROGRESS).build();
+    CommercialPlan completedPlan =
+        CommercialPlan.builder().id(3L).status(CommercialPlanStatus.COMPLETED).build();
+    when(planService.list(null)).thenReturn(List.of(openPlan, completedPlan));
+    when(planService.synchronizeAvailableRunningExperiments(2L)).thenReturn(openPlan);
+    when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
+    mockVersionedSave(repository);
+    GrowthOperatorService service =
+        new GrowthOperatorService(
+            repository,
+            mock(com.marketinghub.repository.jpa.growthoperator.GrowthOperatorTaskRepository.class),
+            planService,
+            mock(CommercialPlanWeekObjectiveRepository.class),
+            mock(ExperimentFunnelService.class),
+            mock(VideoProjectRepository.class),
+            mock(ExperimentVideoPerformanceDashboardService.class),
+            mock(com.marketinghub.experiment.service.ExperimentService.class),
+            new ObjectMapper().findAndRegisterModules());
+
+    List<GrowthOperatorExecutionResponse> result = service.ensureActivePlanCycles();
+
+    assertThat(result).hasSize(1);
+    verify(planService).synchronizeAvailableRunningExperiments(2L);
+    verify(planService, never()).synchronizeAvailableRunningExperiments(3L);
   }
 
   /** Confirma que o Operador recebe o contrato estrategico congelado do experimento. */
@@ -157,7 +190,7 @@ class GrowthOperatorServiceTest {
     CommercialPlanService planService = mock(CommercialPlanService.class);
     CommercialPlan plan = CommercialPlan.builder().id(2L).commercialObjective("Vender").build();
     when(planService.getPlan(2L)).thenReturn(plan);
-    when(planService.synchronizeRunningExperiment(2L)).thenReturn(plan);
+    when(planService.synchronizeAvailableRunningExperiments(2L)).thenReturn(plan);
     when(repository.findFirstByCommercialPlanIdOrderByCreatedAtDesc(2L))
         .thenReturn(java.util.Optional.empty());
     when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
@@ -200,7 +233,7 @@ class GrowthOperatorServiceTest {
     CommercialPlanService planService = mock(CommercialPlanService.class);
     CommercialPlan plan = CommercialPlan.builder().id(2L).commercialObjective("Vender").build();
     when(planService.getPlan(2L)).thenReturn(plan);
-    when(planService.synchronizeRunningExperiment(2L)).thenReturn(plan);
+    when(planService.synchronizeAvailableRunningExperiments(2L)).thenReturn(plan);
     when(repository.findFirstByCommercialPlanIdOrderByCreatedAtDesc(2L))
         .thenReturn(java.util.Optional.empty());
     when(repository.findByCommercialPlanIdOrderByCreatedAtDesc(2L)).thenReturn(List.of());
@@ -261,7 +294,7 @@ class GrowthOperatorServiceTest {
             .experiment(runningExperiment)
             .build();
     when(planService.getPlan(2L)).thenReturn(plan);
-    when(planService.synchronizeRunningExperiment(2L)).thenReturn(plan);
+    when(planService.synchronizeAvailableRunningExperiments(2L)).thenReturn(plan);
     GrowthOperatorExecution stale = new GrowthOperatorExecution();
     stale.setId(84L);
     stale.setCommercialPlan(plan);

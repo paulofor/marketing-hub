@@ -102,6 +102,12 @@ public class GrowthOperatorController {
     return service.ensureAutomaticCycle(planId);
   }
 
+  /** Garante que nenhum plano comercial aberto fique sem uma próxima análise persistida. */
+  @PostMapping("/internal/commercial-plans/executions/ensure-active")
+  public List<GrowthOperatorExecutionResponse> ensureActivePlanCycles() {
+    return service.ensureActivePlanCycles();
+  }
+
   /** Recebe um diagnostico estruturado sem aplicar a recomendacao. */
   @PostMapping("/internal/executions/{id}/complete")
   public GrowthOperatorExecutionResponse complete(

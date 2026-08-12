@@ -269,14 +269,27 @@ public class CommercialPlanService {
    */
   @Transactional
   public CommercialPlan synchronizeRunningExperiment(Long id) {
+    CommercialPlan plan = synchronizeAvailableRunningExperiments(id);
+    if (plan.getExperiment() == null
+        || plan.getExperiment().getStatus() != ExperimentStatus.RUNNING) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Nenhum experimento RUNNING compativel com o planejamento.");
+    }
+    return plan;
+  }
+
+  /**
+   * Atualiza o portfolio com experimentos compativeis em execucao sem exigir que o plano possua um.
+   */
+  @Transactional
+  public CommercialPlan synchronizeAvailableRunningExperiments(Long id) {
     CommercialPlan plan = getPlan(id);
     List<Experiment> compatible =
         experimentRepository.findByStatus(ExperimentStatus.RUNNING).stream()
             .filter(experiment -> belongsToPlan(plan, experiment))
             .toList();
     if (compatible.isEmpty()) {
-      throw new ResponseStatusException(
-          HttpStatus.CONFLICT, "Nenhum experimento RUNNING compativel com o planejamento.");
+      return plan;
     }
     plan.getExperiments().addAll(compatible);
     plan.setExperiment(compatible.get(0));

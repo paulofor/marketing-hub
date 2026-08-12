@@ -16,4 +16,8 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
 
   /** Busca a tarefa mais recente pela referência exata, sem confundir ids com prefixo comum. */
   Optional<AgentTask> findTopBySourceReferenceOrderByUpdatedAtDescIdDesc(String sourceReference);
+
+  /** Lista tarefas operacionais da Têmis nos estados que ainda exigem execução. */
+  List<AgentTask> findByAssignedAgentAgentKeyAndTaskKindAndStatusInOrderByCreatedAtAscIdAsc(
+      String agentKey, String taskKind, List<String> statuses);
 }

@@ -27,6 +27,7 @@ import com.marketinghub.experiment.service.ExperimentDiagnosticsService;
 import com.marketinghub.experiment.service.ExperimentPromiseGenerationService;
 import com.marketinghub.experiment.service.ExperimentReadinessService;
 import com.marketinghub.experiment.service.ExperimentService;
+import com.marketinghub.experiment.service.TemisCreativeTaskOrchestrationService;
 import com.marketinghub.experiment.service.cockpit.ExperimentCockpitDto;
 import com.marketinghub.experiment.service.construction.ExperimentConstructionDto;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsRequest;
@@ -61,6 +62,7 @@ public class ExperimentController {
   private final ExperimentConstructionService constructionService;
   private final ExperimentCostReconciliationService costReconciliationService;
   private final ExperimentCockpitService cockpitService;
+  private final TemisCreativeTaskOrchestrationService temisCreativeTaskOrchestrationService;
 
   /**
    * Inicializa o controller com serviços de experimento, diagnóstico, prontidão e geração de
@@ -78,7 +80,8 @@ public class ExperimentController {
       ExperimentDeliverablesZipService deliverablesZipService,
       ExperimentConstructionService constructionService,
       ExperimentCostReconciliationService costReconciliationService,
-      ExperimentCockpitService cockpitService) {
+      ExperimentCockpitService cockpitService,
+      TemisCreativeTaskOrchestrationService temisCreativeTaskOrchestrationService) {
     this.service = service;
     this.mapper = mapper;
     this.diagnosticsService = diagnosticsService;
@@ -91,6 +94,7 @@ public class ExperimentController {
     this.constructionService = constructionService;
     this.costReconciliationService = costReconciliationService;
     this.cockpitService = cockpitService;
+    this.temisCreativeTaskOrchestrationService = temisCreativeTaskOrchestrationService;
   }
 
   /** Cria um novo experimento com os dados comerciais informados na tela. */
@@ -265,6 +269,7 @@ public class ExperimentController {
   @GetMapping("/creatives/stage-executions/pending")
   public List<ExperimentDto> pendingCreativeGeneration(
       @RequestParam(defaultValue = "10") int limit) {
+    temisCreativeTaskOrchestrationService.reconcilePendingTasks();
     return service.listPendingCreativeGeneration(limit).stream().map(mapper::toDto).toList();
   }
 
@@ -284,8 +289,11 @@ public class ExperimentController {
   @PostMapping("/{id}/creatives/stage-execution/fail")
   public ExperimentDto failCreativeGeneration(
       @PathVariable Long id, @RequestBody CreativeGenerationFailureRequest request) {
-    return mapper.toDto(
-        service.markCreativeGenerationFailed(id, request != null ? request.error() : null));
+    ExperimentDto result =
+        mapper.toDto(
+            service.markCreativeGenerationFailed(id, request != null ? request.error() : null));
+    temisCreativeTaskOrchestrationService.blockForExperiment(id);
+    return result;
   }
 
   /** Payload de falha operacional informado pelo AI Worker. */

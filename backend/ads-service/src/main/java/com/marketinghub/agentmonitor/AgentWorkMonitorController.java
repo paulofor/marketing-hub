@@ -16,7 +16,7 @@ public class AgentWorkMonitorController {
     this.service = service;
   }
 
-  /** Lista trabalho, dificuldade e decisão externa de todos os agentes. */
+  /** Lista trabalho, dificuldade, decisão externa e prontidão técnica de todos os agentes. */
   @GetMapping
   public List<AgentWorkMonitorResponse> list() {
     return service.list();

@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm git 
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /build/target/app.jar /app/app.jar
+COPY agent-health-report.mjs /app/agent-health-report.mjs
 RUN useradd --create-home --uid 10001 --gid operator operator
 USER operator
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

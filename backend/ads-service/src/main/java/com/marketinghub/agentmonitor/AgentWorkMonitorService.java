@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,21 +51,45 @@ public class AgentWorkMonitorService {
   private final VideoProductionCycleRepository videoCycleRepository;
   private final CodexAgentExecutionTelemetryRepository telemetryRepository;
   private final CreativeRepository creativeRepository;
+  private final AgentExecutorHealthService executorHealthService;
 
   /** Configura as fontes persistidas usadas pelo monitor. */
+  @Autowired
   public AgentWorkMonitorService(
       AgentRepository agentRepository,
       AgentTaskRepository taskRepository,
       GeraLandingStageExecutionRepository landingRepository,
       VideoProductionCycleRepository videoCycleRepository,
       CodexAgentExecutionTelemetryRepository telemetryRepository,
-      CreativeRepository creativeRepository) {
+      CreativeRepository creativeRepository,
+      AgentExecutorHealthService executorHealthService) {
     this.agentRepository = agentRepository;
     this.taskRepository = taskRepository;
     this.landingRepository = landingRepository;
     this.videoCycleRepository = videoCycleRepository;
     this.telemetryRepository = telemetryRepository;
     this.creativeRepository = creativeRepository;
+    this.executorHealthService = executorHealthService;
+  }
+
+  /**
+   * Mantém testes unitários antigos focados somente no trabalho, sem persistência de health-check.
+   */
+  AgentWorkMonitorService(
+      AgentRepository agentRepository,
+      AgentTaskRepository taskRepository,
+      GeraLandingStageExecutionRepository landingRepository,
+      VideoProductionCycleRepository videoCycleRepository,
+      CodexAgentExecutionTelemetryRepository telemetryRepository,
+      CreativeRepository creativeRepository) {
+    this(
+        agentRepository,
+        taskRepository,
+        landingRepository,
+        videoCycleRepository,
+        telemetryRepository,
+        creativeRepository,
+        null);
   }
 
   /** Lista todos os agentes, inclusive os ociosos, com bloqueios e decisões externas explícitos. */
@@ -340,7 +365,10 @@ public class AgentWorkMonitorService {
         executionId,
         lastActivity,
         dailyTokens(agent, tokens),
-        tokens.date());
+        tokens.date(),
+        executorHealthService == null
+            ? AgentExecutorHealthResponse.unknown(agent.getCurrentVersion())
+            : executorHealthService.current(agent));
   }
 
   /** Retorna o consumo diário comprovado ou zero quando o agente ainda não reportou tokens. */

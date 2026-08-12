@@ -18,5 +18,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm git 
     && groupadd --gid 10001 landingagent \
     && useradd --create-home --uid 10001 --gid landingagent landingagent
 COPY --from=build /build/target/app.jar /app/app.jar
+COPY agent-health-report.mjs /app/agent-health-report.mjs
 USER landingagent
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

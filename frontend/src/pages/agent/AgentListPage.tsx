@@ -63,6 +63,7 @@ export default function AgentListPage() {
                   <th>Estado</th>
                   <th>Trabalho atual</th>
                   <th>Dificuldade / decisão</th>
+                  <th>Executor</th>
                   <th className="text-end">Tokens hoje</th>
                   <th>Última atividade</th>
                 </tr>
@@ -107,6 +108,25 @@ export default function AgentListPage() {
                       {item.externalDecision ||
                         item.difficulty ||
                         "Sem dificuldade registrada"}
+                    </td>
+                    <td>
+                      <span
+                        className={`badge ${item.executorHealth.status === "READY" ? "text-bg-success" : item.executorHealth.status === "BLOCKED" ? "text-bg-danger" : "text-bg-warning"}`}
+                      >
+                        {item.executorHealth.status}
+                      </span>
+                      <div className="small text-body-secondary mt-1">
+                        versão {item.executorHealth.deployedVersion ?? "?"}/
+                        {item.executorHealth.expectedVersion} · backend{" "}
+                        {item.executorHealth.backendAccessible ? "ok" : "falha"} ·
+                        Codex{" "}
+                        {item.executorHealth.codexAuthenticated
+                          ? "autenticado"
+                          : "não comprovado"}
+                      </div>
+                      {item.executorHealth.detail ? (
+                        <div className="small">{item.executorHealth.detail}</div>
+                      ) : null}
                     </td>
                     <td className="text-end text-nowrap">
                       <span className="fw-semibold">

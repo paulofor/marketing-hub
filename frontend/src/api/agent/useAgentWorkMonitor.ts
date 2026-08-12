@@ -24,6 +24,17 @@ export interface AgentWorkMonitor {
   lastActivityAt?: string | null;
   dailyTokens: number;
   dailyTokenDate: string;
+  executorHealth: {
+    status: "READY" | "BLOCKED" | "UNKNOWN";
+    expectedVersion: number;
+    deployedVersion?: number | null;
+    versionCurrent: boolean;
+    backendAccessible: boolean;
+    codexAuthenticated: boolean;
+    buildReference?: string | null;
+    detail?: string | null;
+    checkedAt?: string | null;
+  };
 }
 
 /** Consulta o estado persistido das tarefas e pipelines de todos os agentes. */

@@ -1774,3 +1774,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-12-assume-legacy-unknown-studio-cost-zero.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-12-agent-executor-health-check.yaml
+      relativeToChangelogFile: true

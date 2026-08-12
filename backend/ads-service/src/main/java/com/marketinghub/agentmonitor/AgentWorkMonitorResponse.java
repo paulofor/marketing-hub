@@ -18,6 +18,8 @@ public record AgentWorkMonitorResponse(
     boolean externalDecisionRequired,
     String externalDecision,
     String sourceReference,
+    Long taskId,
+    Long executionId,
     Instant lastActivityAt,
     long dailyTokens,
     LocalDate dailyTokenDate) {}

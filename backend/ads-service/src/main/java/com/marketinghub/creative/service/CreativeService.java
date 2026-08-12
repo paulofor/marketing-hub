@@ -597,6 +597,28 @@ public class CreativeService {
     return repository.save(revision);
   }
 
+  /** Recebe a arte produzida pelo agente, armazena-a e conclui a melhoria pela fila canônica. */
+  @Transactional
+  public Creative uploadAgentImprovementArtifact(
+      Long id, MultipartFile file, String model, String prompt, BigDecimal costUsd)
+      throws IOException {
+    Creative source = repository.findByIdWithExperiment(id).orElseThrow();
+    AssetUploadResponse asset =
+        uploadImage(
+            file,
+            model,
+            prompt,
+            "Arte produzida autonomamente por Têmis para a correção do criativo #" + id,
+            AssetUploadCategory.EXPERIMENT_CREATIVE,
+            source.getExperiment().getId(),
+            null,
+            null);
+    return completeAgentImprovement(
+        id,
+        new CreativeImprovementResultRequest(
+            asset.url(), costUsd, prompt, "Arte binária enviada e persistida pelo backend", null));
+  }
+
   /** Agenda uma correção quando o parecer reprova e ainda existe orçamento de tentativas. */
   private void scheduleAgentImprovement(
       Creative creative,

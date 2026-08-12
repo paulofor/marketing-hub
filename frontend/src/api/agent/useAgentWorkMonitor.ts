@@ -19,6 +19,8 @@ export interface AgentWorkMonitor {
   externalDecisionRequired: boolean;
   externalDecision?: string | null;
   sourceReference?: string | null;
+  taskId?: number | null;
+  executionId?: number | null;
   lastActivityAt?: string | null;
   dailyTokens: number;
   dailyTokenDate: string;

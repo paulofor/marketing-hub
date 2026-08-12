@@ -20,6 +20,7 @@ import com.marketinghub.media.Asset;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.storage.AssetUploadCategory;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Comparator;
 import java.util.List;
@@ -192,6 +193,20 @@ public class CreativeController {
   public CreativeDto completeAgentImprovement(
       @PathVariable Long id, @RequestBody CreativeImprovementResultRequest request) {
     return mapper.toDto(service.completeAgentImprovement(id, request));
+  }
+
+  /** Permite que Têmis envie diretamente a nova imagem sem depender de uma URL externa manual. */
+  @PostMapping(
+      value = "/api/internal/creatives/{id}/agent-improvement/artifact",
+      consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+  public CreativeDto uploadAgentImprovementArtifact(
+      @PathVariable Long id,
+      @RequestParam("file") MultipartFile file,
+      @RequestParam(value = "model", required = false) String model,
+      @RequestParam(value = "prompt", required = false) String prompt,
+      @RequestParam(value = "costUsd", required = false) BigDecimal costUsd)
+      throws IOException {
+    return mapper.toDto(service.uploadAgentImprovementArtifact(id, file, model, prompt, costUsd));
   }
 
   /** Remove um criativo existente. */

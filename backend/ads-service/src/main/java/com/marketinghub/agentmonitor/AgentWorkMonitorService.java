@@ -2,10 +2,14 @@ package com.marketinghub.agentmonitor;
 
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.creative.Creative;
+import com.marketinghub.creative.CreativeAgentReviewStatus;
+import com.marketinghub.creative.CreativeImprovementStatus;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.codextelemetry.CodexAgentExecutionTelemetryRepository;
+import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository;
 import com.marketinghub.salesvideo.VideoProductionCycle;
@@ -29,6 +33,7 @@ public class AgentWorkMonitorService {
   private static final String DEDALO = "landing-generator";
   private static final String APOLO = "videomaker";
   private static final String PLUTUS = "financial-agent";
+  private static final String TEMIS = "meta-ad-approver";
   private static final ZoneId BUSINESS_ZONE = ZoneId.of("America/Sao_Paulo");
   private static final Map<String, String> TELEMETRY_TYPE_BY_AGENT_KEY =
       Map.of(
@@ -43,6 +48,7 @@ public class AgentWorkMonitorService {
   private final GeraLandingStageExecutionRepository landingRepository;
   private final VideoProductionCycleRepository videoCycleRepository;
   private final CodexAgentExecutionTelemetryRepository telemetryRepository;
+  private final CreativeRepository creativeRepository;
 
   /** Configura as fontes persistidas usadas pelo monitor. */
   public AgentWorkMonitorService(
@@ -50,12 +56,14 @@ public class AgentWorkMonitorService {
       AgentTaskRepository taskRepository,
       GeraLandingStageExecutionRepository landingRepository,
       VideoProductionCycleRepository videoCycleRepository,
-      CodexAgentExecutionTelemetryRepository telemetryRepository) {
+      CodexAgentExecutionTelemetryRepository telemetryRepository,
+      CreativeRepository creativeRepository) {
     this.agentRepository = agentRepository;
     this.taskRepository = taskRepository;
     this.landingRepository = landingRepository;
     this.videoCycleRepository = videoCycleRepository;
     this.telemetryRepository = telemetryRepository;
+    this.creativeRepository = creativeRepository;
   }
 
   /** Lista todos os agentes, inclusive os ociosos, com bloqueios e decisões externas explícitos. */
@@ -126,6 +134,8 @@ public class AgentWorkMonitorService {
         false,
         null,
         "geralanding-experiment:" + execution.getExperimentId(),
+        null,
+        null,
         lastActivity,
         tokens);
   }
@@ -169,6 +179,8 @@ public class AgentWorkMonitorService {
             ? "Plutus precisa aprovar ou rejeitar o teto antes de qualquer provider."
             : null,
         "video-production-cycle:" + cycle.getId(),
+        cycle.getAgentTaskId(),
+        cycle.getId(),
         cycle.getUpdatedAt(),
         tokens);
   }
@@ -180,13 +192,28 @@ public class AgentWorkMonitorService {
     if (history.isEmpty()
         || !List.of("PENDING", "IN_PROGRESS", "BLOCKED").contains(history.getFirst().getStatus())) {
       return response(
-          agent, "IDLE", "Sem trabalho ativo", null, null, false, null, null, null, tokens);
+          agent,
+          "IDLE",
+          "Sem trabalho ativo",
+          null,
+          null,
+          false,
+          null,
+          null,
+          null,
+          null,
+          null,
+          tokens);
     }
     return task(agent, history.getFirst(), tokens);
   }
 
   /** Traduz uma solicitação da caixa de entrada para o monitor. */
   private AgentWorkMonitorResponse task(Agent agent, AgentTask task, DailyTokenSnapshot tokens) {
+    if (TEMIS.equals(agent.getAgentKey())) {
+      AgentWorkMonitorResponse creativeWork = temisCreativeWork(agent, task, tokens);
+      if (creativeWork != null) return creativeWork;
+    }
     boolean blocked = "BLOCKED".equals(task.getStatus());
     boolean gate =
         "GATE_DECISION".equals(task.getTaskKind()) && "PENDING".equals(task.getGateStatus());
@@ -200,8 +227,81 @@ public class AgentWorkMonitorService {
         gate,
         gate ? "Decisão externa pendente no gate " + task.getGateCode() + "." : null,
         task.getSourceReference(),
+        task.getId(),
+        null,
         task.getUpdatedAt(),
         tokens);
+  }
+
+  /** Prioriza a execução criativa real da Têmis sobre o status histórico da tarefa agregadora. */
+  private AgentWorkMonitorResponse temisCreativeWork(
+      Agent agent, AgentTask task, DailyTokenSnapshot tokens) {
+    Long experimentId = experimentId(task.getSourceReference());
+    if (experimentId == null) return null;
+    return creativeRepository.findTemisOpenExecutions(experimentId).stream()
+        .findFirst()
+        .map(creative -> temisCreativeWork(agent, task, creative, tokens))
+        .orElse(null);
+  }
+
+  /**
+   * Traduz revisão e materialização da imagem mais recente em tarefa, execução e bloqueio atuais.
+   */
+  private AgentWorkMonitorResponse temisCreativeWork(
+      Agent agent, AgentTask task, Creative creative, DailyTokenSnapshot tokens) {
+    CreativeAgentReviewStatus review = creative.getAgentReviewStatus();
+    CreativeImprovementStatus improvement = creative.getAgentImprovementStatus();
+    boolean improving =
+        improvement == CreativeImprovementStatus.PENDING
+            || improvement == CreativeImprovementStatus.PROCESSING;
+    boolean reviewing =
+        review == CreativeAgentReviewStatus.PENDING
+            || review == CreativeAgentReviewStatus.PROCESSING;
+    boolean blocked =
+        improvement == CreativeImprovementStatus.FAILED
+            || improvement == CreativeImprovementStatus.LIMIT_REACHED
+            || review == CreativeAgentReviewStatus.ADJUST
+            || review == CreativeAgentReviewStatus.REJECTED
+            || review == CreativeAgentReviewStatus.FAILED;
+    if (!improving && !reviewing && !blocked && !"BLOCKED".equals(task.getStatus())) return null;
+    String phase =
+        improving
+            ? "Produzindo e enviando uma imagem melhor"
+            : reviewing ? "Revisando o anúncio" : "Correção visual bloqueada";
+    String difficulty = blocked ? temisBlockReason(creative) : null;
+    return response(
+        agent,
+        blocked ? "BLOCKED" : "WORKING",
+        "Tarefa #" + task.getId() + " — " + task.getTitle(),
+        phase + " · criativo #" + creative.getId(),
+        difficulty,
+        false,
+        null,
+        task.getSourceReference(),
+        task.getId(),
+        creative.getId(),
+        creative.getAgentReviewedAt() != null ? creative.getAgentReviewedAt() : task.getUpdatedAt(),
+        tokens);
+  }
+
+  /** Expõe a causa persistida mais específica sem substituir por uma mensagem genérica. */
+  private String temisBlockReason(Creative creative) {
+    if (creative.getAgentImprovementError() != null
+        && !creative.getAgentImprovementError().isBlank()) {
+      return creative.getAgentImprovementError();
+    }
+    if (creative.getRejectionReason() != null && !creative.getRejectionReason().isBlank()) {
+      return creative.getRejectionReason();
+    }
+    return "O criativo #"
+        + creative.getId()
+        + " aguarda uma nova imagem que cumpra o parecer visual.";
+  }
+
+  /** Extrai o experimento apenas da referência canônica usada pela tarefa. */
+  private Long experimentId(String sourceReference) {
+    if (sourceReference == null || !sourceReference.matches("experiment:\\d+")) return null;
+    return Long.valueOf(sourceReference.substring("experiment:".length()));
   }
 
   /** Monta o contrato uniforme do monitor. */
@@ -214,6 +314,8 @@ public class AgentWorkMonitorService {
       boolean decisionRequired,
       String decision,
       String source,
+      Long taskId,
+      Long executionId,
       Instant lastActivity,
       DailyTokenSnapshot tokens) {
     return new AgentWorkMonitorResponse(
@@ -228,6 +330,8 @@ public class AgentWorkMonitorService {
         decisionRequired,
         decision,
         source,
+        taskId,
+        executionId,
         lastActivity,
         dailyTokens(agent, tokens),
         tokens.date());

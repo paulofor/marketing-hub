@@ -2,6 +2,7 @@ package com.marketinghub.creative.web;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
@@ -100,5 +101,29 @@ class CreativeControllerCorsTest {
         .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, REQUEST_ORIGIN))
         .andExpect(
             header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, containsString("POST")));
+  }
+
+  /** Comprova que o agente pode enviar a arte binária sem depender de URL informada por pessoa. */
+  @Test
+  void temisCanUploadImprovementArtifact() throws Exception {
+    MockMultipartFile file =
+        new MockMultipartFile("file", "temis.png", "image/png", "generated-image".getBytes());
+
+    mockMvc
+        .perform(
+            multipart("/api/internal/creatives/326/agent-improvement/artifact")
+                .file(file)
+                .param("model", "gpt-image-2")
+                .param("prompt", "Demonstre o produto digital")
+                .param("costUsd", "0.15"))
+        .andExpect(status().isOk());
+
+    verify(creativeService)
+        .uploadAgentImprovementArtifact(
+            org.mockito.ArgumentMatchers.eq(326L),
+            any(),
+            org.mockito.ArgumentMatchers.eq("gpt-image-2"),
+            org.mockito.ArgumentMatchers.eq("Demonstre o produto digital"),
+            org.mockito.ArgumentMatchers.eq(new java.math.BigDecimal("0.15")));
   }
 }

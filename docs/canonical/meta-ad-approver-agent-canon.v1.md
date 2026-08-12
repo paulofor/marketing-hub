@@ -12,6 +12,8 @@ Toda proposta criada por Têmis deve conter copy publicável, CTA, conceito visu
 
 O backend continua sendo a autoridade exclusiva para criar a nova versão, solicitar sua materialização, controlar custo e tentativas e devolver a peça ao gate. O AI Worker materializa mídia, mas não escolhe estratégia nem aprova. A criação de Têmis não autoriza publicação, ativação de campanha, alteração de orçamento ou mudança do experimento para `RUNNING`.
 
+Têmis possui autonomia para produzir uma imagem nova quando o artefato visual não cumprir os critérios. A interface não pode exigir que uma pessoa hospede a mídia ou informe uma URL: o contrato interno aceita o arquivo binário, modelo, prompt e custo, armazena o asset na categoria do experimento, cria a versão e a devolve à revisão independente. A autonomia termina nos gates persistidos de custo, progresso e qualidade; não inclui autoaprovação ou publicação.
+
 Uma tarefa operacional `WORK` atribuída a `meta-ad-approver` e vinculada pela referência canônica
 `experiment:<id>` deve ser reconciliada pelo backend com a fila de geração de criativos. O backend
 muda a tarefa de `PENDING` para `IN_PROGRESS`, solicita uma única alternativa sem apagar o histórico
@@ -74,6 +76,8 @@ O agente avalia separadamente atenção, clareza, desejo, credibilidade e ação
 ## Ciclo de melhoria
 
 Em `ADJUST` ou `REJECTED`, o agente entrega textos revisados, prompt visual, requisitos obrigatórios, elementos proibidos e critérios verificáveis. O backend controla tentativas pelos gates de progresso, repetição, custo e iteração do ciclo de convergência, preservando versões, requests, responses e evidências. O executor apenas materializa a correção e reporta o resultado.
+
+O upload canônico da mídia produzida é `POST /api/internal/creatives/{id}/agent-improvement/artifact` em `multipart/form-data`. O arquivo é obrigatório; `model`, `prompt` e `costUsd` preservam a auditoria. O frontend e o monitor devem exibir o identificador da tarefa, o identificador da execução criativa e a causa persistida atual, priorizando a execução ativa sobre um bloqueio histórico da tarefa agregadora.
 
 ## Ciclo de convergência v1
 

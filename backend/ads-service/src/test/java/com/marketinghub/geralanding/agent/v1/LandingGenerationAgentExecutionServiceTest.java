@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.qualityreview.service.LandingQualityReviewedEvent;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
@@ -93,6 +94,25 @@ class LandingGenerationAgentExecutionServiceTest {
     assertEquals(3, catalog.size());
     assertTrue((Boolean) catalog.getFirst().get("available"));
     assertFalse((Boolean) catalog.get(1).get("available"));
+  }
+
+  /** Deve reservar a fila mesmo quando o experimento possui campos opcionais nulos. */
+  @Test
+  void shouldClaimPendingWhenExperimentSnapshotHasNullOptionalFields() {
+    GeraLandingStageExecution execution = execution("job-null-fields-88", "INICIADO");
+    Experiment experiment = new Experiment();
+    experiment.setId(88L);
+    experiment.setName("MAQA-H002-E001");
+    when(experimentRepository.findById(88L)).thenReturn(Optional.of(experiment));
+    when(repository.findTop3ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+            "landing-generation-agent-v1", "INICIADO"))
+        .thenReturn(List.of(execution));
+
+    LandingAgentPendingResponse result = service.claimPending(1).getFirst();
+
+    assertEquals("MAQA-H002-E001", result.context().get("experimentName"));
+    assertFalse(result.context().containsKey("landingHtml"));
+    assertEquals("PROCESSANDO", execution.getStatus());
   }
 
   /** Deve reabrir uma única vez o timeout terminal deixado por uma versão antiga do worker. */

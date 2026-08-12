@@ -97,6 +97,15 @@
 - **Correção efetiva:** registrar `GeraLandingDeliverablesStageExecutionService` no coordenador e iniciar `landing-page-deliverables` quando essa for a causa mais antiga recomendada.
 - **Prevenção:** teste de contrato exige que uma reprovação por checkout/entrega seja encaminhada à etapa de entregáveis, sem cair no erro genérico de etapa não automatizável.
 
+## LOOP-LANDING-AGENT-NULL-SNAPSHOT — fila do Dédalo bloqueada por campo opcional
+
+- **Severidade:** CRÍTICO.
+- **Status:** fechado localmente em 2026-08-12; aguarda publicação.
+- **Sintoma:** a homologação fica em `INICIADO` e o endpoint `pending` retorna HTTP 500 antes de o worker reservar o trabalho.
+- **Causa-raiz confirmada:** o snapshot adicionava campos opcionais nulos do experimento e depois chamava `Map.copyOf`, que rejeita valores nulos.
+- **Correção efetiva:** omitir do snapshot os campos opcionais ausentes, preservando os dados disponíveis e o contrato imutável.
+- **Prevenção:** teste de contrato reserva a fila com experimento parcialmente preenchido e comprova que a ausência de HTML não bloqueia o Dédalo.
+
 Antes de implementar uma correção em tema com histórico de loop:
 
 1. Identificar se o problema pertence a algum `LOOP-*` deste documento.

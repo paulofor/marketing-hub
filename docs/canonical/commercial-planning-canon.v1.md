@@ -38,6 +38,8 @@ O detalhe do Plano Comercial deve exibir uma visão persistida e atualizada dos 
 
 O mesmo painel deve consolidar teto, custo de campanha, custo de IA, custo total e receita em BRL. Ciclos audiovisuais devem preservar também teto, custo conhecido e decisão financeira em USD. A tela não pode deduzir estados por heurística nem misturar registros de outros planos; tarefas entram no dossiê pela referência versionada `commercial-plan:<id>@v<numero>`, e execuções entram por vínculo persistido com `commercial_plan_id` ou com o experimento oficial do plano.
 
+O detalhe de cada plano deve consolidar em posição de destaque todos os bloqueios persistidos que impedem avanço: gargalo e causa-raiz oficiais, marcos bloqueados, dificuldades ou decisões externas dos agentes e premissas financeiras estruturadas ausentes. Cada bloqueio deve informar causa, impacto, responsável, evidência de origem e ação necessária para desbloquear. Ausência de dado estruturado pode ser mostrada como premissa faltante; estado operacional não pode ser inferido de logs ou texto histórico.
+
 As metas devem respeitar os tipos de produto definidos em `docs/canonical/product-types-canon.v1.md`: low-ticket como pacote de infoprodutos de baixo custo produzido por IA, e Produto IA como infoproduto/ferramenta com integracao OpenAI por tras e experiencia simples para o usuario.
 
 ## Regra canonica de metas numericas

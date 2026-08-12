@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAgents } from "../../api/agent/useAgents";
 import { Agent } from "../../api/agent/types";
 import PageTitle from "../../components/PageTitle";
 import {
   CommercialPlan,
+  CommercialPlanAgentActivity,
   CommercialPlanFunnelStage,
   CommercialPlanWeek,
   CommercialPlanWeekObjective,
@@ -271,6 +272,248 @@ function formatAverageViewTime(valueMs?: number | null) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return seconds > 0 ? `${minutes}min ${seconds}s` : `${minutes}min`;
+}
+
+type CommercialPlanBlocker = {
+  key: string;
+  title: string;
+  cause: string;
+  impact: string;
+  nextAction: string;
+  owner: string;
+  source: string;
+};
+
+const commercialAssumptionLabels: Array<[keyof CommercialPlan, string]> = [
+  ["variableCostPerSaleBrl", "custo variável por venda"],
+  ["expectedMonthlyTraffic", "tráfego mensal esperado"],
+  ["expectedConversionRatePercent", "conversão esperada"],
+  ["expectedCacBrl", "CAC esperado"],
+  ["expectedRefundRatePercent", "taxa de reembolso"],
+  ["fixedOperationalCostBrl", "custo operacional fixo"],
+];
+
+function buildCommercialPlanBlockers(
+  plan: CommercialPlan,
+  activity?: CommercialPlanAgentActivity,
+): CommercialPlanBlocker[] {
+  const blockers: CommercialPlanBlocker[] = [];
+
+  if (plan.currentBlocker?.trim()) {
+    blockers.push({
+      key: "plan",
+      title: "Gargalo comercial vigente",
+      cause: plan.rootCause?.trim() || "Causa-raiz ainda não registrada.",
+      impact: plan.currentBlocker.trim(),
+      nextAction:
+        plan.nextAction?.trim() ||
+        "Definir a próxima ação responsável pelo desbloqueio.",
+      owner: "Plano comercial",
+      source: "Contexto oficial versionado",
+    });
+  }
+
+  asArray(plan.milestones)
+    .filter((milestone) => milestone.status === "BLOCKED")
+    .forEach((milestone) =>
+      blockers.push({
+        key: `milestone-${milestone.id}`,
+        title: milestone.name,
+        cause:
+          milestone.blocker?.trim() ||
+          "Marco marcado como bloqueado sem causa informada.",
+        impact:
+          "O marco não pode ser concluído enquanto este impedimento estiver ativo.",
+        nextAction:
+          milestone.recommendedNextAction?.trim() ||
+          "Registrar a ação recomendada para liberar o marco.",
+        owner: "Marco do plano",
+        source: milestone.evidenceSource?.trim() || "Marco persistido",
+      }),
+    );
+
+  activity?.entries
+    .filter(
+      (entry) =>
+        entry.externalDecisionRequired ||
+        Boolean(entry.difficulty?.trim()) ||
+        /BLOCKED|FAILED|ERROR/.test(entry.status),
+    )
+    .forEach((entry, index) =>
+      blockers.push({
+        key: `activity-${entry.recordType}-${entry.sourceReference ?? index}`,
+        title: entry.title,
+        cause:
+          entry.difficulty?.trim() ||
+          entry.externalDecision?.trim() ||
+          `Execução no estado ${entry.status}.`,
+        impact: entry.externalDecisionRequired
+          ? "A execução aguarda uma decisão externa para avançar."
+          : "A execução do agente não consegue avançar no estado atual.",
+        nextAction:
+          entry.externalDecision?.trim() ||
+          "Corrigir a dificuldade registrada e retomar a execução.",
+        owner: entry.agentNickname,
+        source: entry.sourceReference?.trim() || entry.recordType,
+      }),
+    );
+
+  const missingAssumptions = commercialAssumptionLabels
+    .filter(([field]) => plan[field] == null)
+    .map(([, label]) => label);
+  if (missingAssumptions.length > 0) {
+    blockers.push({
+      key: "commercial-assumptions",
+      title: "Premissas financeiras incompletas",
+      cause: `Faltam ${missingAssumptions.join(", ")}.`,
+      impact:
+        "Plutus não consegue recomendar investimento com margem, CAC e ponto de equilíbrio confiáveis.",
+      nextAction: "Executar “Definir premissas ausentes” com Atena + Plutus.",
+      owner: "Atena + Plutus",
+      source: "Campos estruturados do plano",
+    });
+  }
+
+  return blockers;
+}
+
+function CommercialPlanBlockersPanel({
+  plan,
+  activity,
+}: {
+  plan: CommercialPlan;
+  activity?: CommercialPlanAgentActivity;
+}) {
+  const blockers = useMemo(
+    () => buildCommercialPlanBlockers(plan, activity),
+    [plan, activity],
+  );
+
+  return (
+    <section
+      className="commercial-planning-blockers"
+      aria-labelledby="commercial-plan-blockers-title"
+    >
+      <div className="commercial-planning-blockers-header">
+        <div>
+          <p className="commercial-planning-month-eyebrow mb-1">
+            Decisão operacional
+          </p>
+          <h2 id="commercial-plan-blockers-title">O que bloqueia este plano</h2>
+          <p>
+            Impedimentos ativos, causa, impacto e ação necessária para voltar a
+            avançar.
+          </p>
+        </div>
+        <span
+          className={`badge ${blockers.length > 0 ? "text-bg-danger" : "text-bg-success"}`}
+        >
+          {blockers.length}{" "}
+          {blockers.length === 1 ? "bloqueio ativo" : "bloqueios ativos"}
+        </span>
+      </div>
+      {blockers.length > 0 ? (
+        <div className="commercial-planning-blockers-list">
+          {blockers.map((blocker) => (
+            <article
+              key={blocker.key}
+              className="commercial-planning-blocker-item"
+            >
+              <div className="commercial-planning-blocker-title">
+                <strong>{blocker.title}</strong>
+                <span>{blocker.owner}</span>
+              </div>
+              <dl>
+                <div>
+                  <dt>Causa</dt>
+                  <dd>{blocker.cause}</dd>
+                </div>
+                <div>
+                  <dt>Impacto</dt>
+                  <dd>{blocker.impact}</dd>
+                </div>
+                <div>
+                  <dt>Como desbloquear</dt>
+                  <dd>{blocker.nextAction}</dd>
+                </div>
+                <div>
+                  <dt>Evidência</dt>
+                  <dd>{blocker.source}</dd>
+                </div>
+              </dl>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="alert alert-success mb-0" role="status">
+          Nenhum bloqueio ativo foi registrado para este plano.
+        </div>
+      )}
+    </section>
+  );
+}
+
+function CommercialPlanObjectiveAndGoals({ plan }: { plan: CommercialPlan }) {
+  const numericGoals = [
+    ["Receita", formatCurrency(plan.targetRevenue)],
+    ["Produtos a validar", formatNumber(plan.productsToValidate)],
+    ["Experimentos a criar", formatNumber(plan.experimentsToCreate)],
+    ["Experimentos a publicar", formatNumber(plan.experimentsToPublish)],
+    ["Abordagens a testar", formatNumber(plan.approachesToTest)],
+    ["Conversas com clientes", formatNumber(plan.customerConversationsTarget)],
+  ];
+
+  return (
+    <section className="card" aria-labelledby="commercial-plan-goals-title">
+      <div className="card-body d-flex flex-column gap-3">
+        <div>
+          <p className="commercial-planning-month-eyebrow mb-1">
+            Direção comercial
+          </p>
+          <h2 id="commercial-plan-goals-title" className="h5 mb-1">
+            Objetivo e metas
+          </h2>
+          <p className="text-body-secondary mb-0">
+            Resultado que o plano deve produzir e números usados para medir o
+            avanço real.
+          </p>
+        </div>
+        <div>
+          <small className="text-body-secondary d-block">Objetivo</small>
+          <strong>
+            {plan.commercialObjective?.trim() ||
+              "Objetivo comercial ainda não definido."}
+          </strong>
+        </div>
+        <div className="row g-3" aria-label="Metas do plano comercial">
+          {numericGoals.map(([label, value]) => (
+            <div className="col-6 col-lg-4 col-xl-2" key={label}>
+              <small className="text-body-secondary d-block">{label}</small>
+              <strong>{value}</strong>
+            </div>
+          ))}
+        </div>
+        <div className="row g-3">
+          <div className="col-lg-4">
+            <small className="text-body-secondary d-block">
+              Métrica principal
+            </small>
+            <span>{plan.mainMetric?.trim() || "Não definida"}</span>
+          </div>
+          <div className="col-lg-4">
+            <small className="text-body-secondary d-block">
+              Critério de sucesso
+            </small>
+            <span>{plan.successCriteria?.trim() || "Não definido"}</span>
+          </div>
+          <div className="col-lg-4">
+            <small className="text-body-secondary d-block">Prazo</small>
+            <span>{formatDate(plan.deadline)}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function formatDate(value?: string | null) {
@@ -1118,7 +1361,227 @@ function WeeklyExperimentList({
   );
 }
 
-export default function CommercialPlanningPage() {
+function CommercialPlanListPage() {
+  const navigate = useNavigate();
+  const plansQuery = useCommercialPlans();
+  const createPlan = useCreateCommercialPlan();
+  const plans = asArray(plansQuery.data);
+  const [isCreatingPlan, setIsCreatingPlan] = useState(false);
+  const [newPlanDraft, setNewPlanDraft] =
+    useState<SaveCommercialPlanPayload>(emptyCommercialPlan);
+
+  function submitNewPlan() {
+    createPlan.mutate(newPlanDraft, {
+      onSuccess: (createdPlan) => navigate(`/planning/${createdPlan.id}`),
+    });
+  }
+
+  return (
+    <div className="commercial-planning-page d-flex flex-column gap-4">
+      <header className="d-flex flex-column flex-lg-row justify-content-between gap-3">
+        <div>
+          <PageTitle>Planos comerciais</PageTitle>
+          <p className="text-body-secondary mb-0">
+            Escolha um plano para acompanhar bloqueios, decisões, execução e
+            histórico dos agentes.
+          </p>
+        </div>
+        <button
+          className="btn btn-primary align-self-start"
+          type="button"
+          onClick={() => setIsCreatingPlan((current) => !current)}
+        >
+          {isCreatingPlan ? "Cancelar" : "Novo plano comercial"}
+        </button>
+      </header>
+
+      {isCreatingPlan ? (
+        <section
+          className="card border-primary"
+          aria-label="Novo plano comercial"
+        >
+          <div className="card-body">
+            <h2 className="h5">Novo plano comercial</h2>
+            <div className="row g-3">
+              <div className="col-lg-6">
+                <label
+                  className="form-label"
+                  htmlFor="new-commercial-plan-name"
+                >
+                  Nome *
+                </label>
+                <input
+                  id="new-commercial-plan-name"
+                  className="form-control"
+                  value={newPlanDraft.name}
+                  onChange={(event) =>
+                    setNewPlanDraft((current) => ({
+                      ...current,
+                      name: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="col-md-3">
+                <label
+                  className="form-label"
+                  htmlFor="new-commercial-plan-deadline"
+                >
+                  Prazo *
+                </label>
+                <input
+                  id="new-commercial-plan-deadline"
+                  className="form-control"
+                  type="date"
+                  value={newPlanDraft.deadline}
+                  onChange={(event) =>
+                    setNewPlanDraft((current) => ({
+                      ...current,
+                      deadline: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="col-md-3">
+                <label
+                  className="form-label"
+                  htmlFor="new-commercial-plan-budget"
+                >
+                  Teto (R$) *
+                </label>
+                <input
+                  id="new-commercial-plan-budget"
+                  className="form-control"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={newPlanDraft.maxBudget ?? ""}
+                  onChange={(event) =>
+                    setNewPlanDraft((current) => ({
+                      ...current,
+                      maxBudget:
+                        event.target.value === ""
+                          ? null
+                          : Number(event.target.value),
+                    }))
+                  }
+                />
+              </div>
+              <div className="col-12">
+                <label
+                  className="form-label"
+                  htmlFor="new-commercial-plan-objective"
+                >
+                  Objetivo comercial *
+                </label>
+                <textarea
+                  id="new-commercial-plan-objective"
+                  className="form-control"
+                  rows={2}
+                  value={newPlanDraft.commercialObjective}
+                  onChange={(event) =>
+                    setNewPlanDraft((current) => ({
+                      ...current,
+                      commercialObjective: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+            </div>
+            <button
+              className="btn btn-primary mt-3"
+              type="button"
+              disabled={
+                createPlan.isPending ||
+                !newPlanDraft.name.trim() ||
+                !newPlanDraft.deadline ||
+                newPlanDraft.maxBudget == null ||
+                !newPlanDraft.commercialObjective?.trim()
+              }
+              onClick={submitNewPlan}
+            >
+              {createPlan.isPending ? "Criando..." : "Criar e abrir plano"}
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {plansQuery.isLoading ? <p>Carregando planos comerciais...</p> : null}
+      {plansQuery.isError ? (
+        <div className="alert alert-danger" role="alert">
+          Não foi possível carregar os planos comerciais.
+        </div>
+      ) : null}
+      {!plansQuery.isLoading && plans.length === 0 ? (
+        <div className="alert alert-info" role="status">
+          Nenhum plano comercial cadastrado.
+        </div>
+      ) : (
+        <div className="row g-3" aria-label="Lista de planos comerciais">
+          {plans.map((plan) => (
+            <div className="col-12 col-xl-6" key={plan.id}>
+              <article className="card h-100">
+                <div className="card-body d-flex flex-column gap-3">
+                  <div className="d-flex justify-content-between align-items-start gap-3">
+                    <div>
+                      <h2 className="h5 mb-1">{plan.name}</h2>
+                      <p className="text-body-secondary mb-0">
+                        {plan.commercialObjective ||
+                          "Objetivo comercial ainda não definido."}
+                      </p>
+                    </div>
+                    <span className={`badge ${planStatusClass(plan.status)}`}>
+                      {planStatusLabel(plan.status)}
+                    </span>
+                  </div>
+                  <div className="row g-2 small">
+                    <div className="col-6">
+                      <span className="text-body-secondary d-block">Prazo</span>
+                      <strong>{formatDate(plan.deadline)}</strong>
+                    </div>
+                    <div className="col-6">
+                      <span className="text-body-secondary d-block">Teto</span>
+                      <strong>{formatCurrency(plan.maxBudget)}</strong>
+                    </div>
+                    <div className="col-6">
+                      <span className="text-body-secondary d-block">
+                        Custo realizado
+                      </span>
+                      <strong>
+                        {formatExecutedCurrency(plan.actualTotalCost)}
+                      </strong>
+                    </div>
+                    <div className="col-6">
+                      <span className="text-body-secondary d-block">
+                        Receita realizada
+                      </span>
+                      <strong>
+                        {formatExecutedCurrency(plan.actualRevenue)}
+                      </strong>
+                    </div>
+                  </div>
+                  {plan.currentBlocker?.trim() ? (
+                    <div className="alert alert-warning py-2 mb-0">
+                      <strong>Bloqueio atual:</strong> {plan.currentBlocker}
+                    </div>
+                  ) : null}
+                  <Link
+                    className="btn btn-outline-primary mt-auto align-self-start"
+                    to={`/planning/${plan.id}`}
+                  >
+                    Ver detalhe completo
+                  </Link>
+                </div>
+              </article>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CommercialPlanDetailPage({ planId }: { planId: number }) {
   const agentsQuery = useAgents();
   const plansQuery = useCommercialPlans();
   const createPlan = useCreateCommercialPlan();
@@ -1127,7 +1590,7 @@ export default function CommercialPlanningPage() {
   const hasAugustPlan = plans.some(
     (plan) => resolvePlanReferenceMonth(plan) === "2026-08",
   );
-  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
+  const selectedPlanId = planId;
   const [isCreatingPlan, setIsCreatingPlan] = useState(false);
   const [newPlanDraft, setNewPlanDraft] =
     useState<SaveCommercialPlanPayload>(emptyCommercialPlan);
@@ -1150,6 +1613,18 @@ export default function CommercialPlanningPage() {
     currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
   );
   const agentActivity = agentActivityQuery.data;
+  const chronologicalAgentActivity = useMemo(
+    () =>
+      [...(agentActivity?.entries ?? [])].sort((left, right) => {
+        if (!left.occurredAt) return right.occurredAt ? 1 : 0;
+        if (!right.occurredAt) return -1;
+        return (
+          new Date(right.occurredAt).getTime() -
+          new Date(left.occurredAt).getTime()
+        );
+      }),
+    [agentActivity?.entries],
+  );
   const revenueProjectionsQuery = useRevenueProjections(
     currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
   );
@@ -1198,7 +1673,7 @@ export default function CommercialPlanningPage() {
   function submitNewPlan() {
     createPlan.mutate(newPlanDraft, {
       onSuccess: (createdPlan) => {
-        setSelectedPlanId(createdPlan.id);
+        navigate(`/planning/${createdPlan.id}`);
         setNewPlanDraft(emptyCommercialPlan);
         setIsCreatingPlan(false);
       },
@@ -1255,59 +1730,26 @@ export default function CommercialPlanningPage() {
     [weeks],
   );
 
+  const navigate = useNavigate();
+
   return (
     <div className="commercial-planning-page d-flex flex-column gap-4">
       <header className="d-flex flex-column flex-xl-row justify-content-between gap-3">
         <div>
-          <PageTitle>Planos comerciais</PageTitle>
+          <Link className="small text-decoration-none" to="/planning">
+            ← Todos os planos comerciais
+          </Link>
+          <PageTitle>{currentMonthPlan.name}</PageTitle>
           <p className="text-body-secondary mb-0">
             Acompanhe objetivos, versões, execução financeira e tudo que os
             agentes fizeram em cada plano.
           </p>
-        </div>
-        <div className="d-flex flex-wrap gap-2 align-self-start">
-          <button
-            className="btn btn-outline-primary"
-            type="button"
-            onClick={() => setIsCreatingPlan((current) => !current)}
-          >
-            {isCreatingPlan ? "Fechar novo plano" : "Novo plano comercial"}
-          </button>
-          {!hasAugustPlan ? (
-            <button
-              className="btn btn-primary"
-              type="button"
-              disabled={createPlan.isPending}
-              onClick={() => createPlan.mutate(augustRevenuePlan)}
-            >
-              {createPlan.isPending
-                ? "Criando plano de agosto..."
-                : "Criar plano de agosto"}
-            </button>
-          ) : null}
         </div>
       </header>
 
       {plans.length > 0 ? (
         <div className="card">
           <div className="card-body">
-            <label className="form-label" htmlFor="commercial-plan-selector">
-              Plano comercial em análise
-            </label>
-            <select
-              id="commercial-plan-selector"
-              className="form-select"
-              value={currentMonthPlan.id}
-              onChange={(event) =>
-                setSelectedPlanId(Number(event.target.value))
-              }
-            >
-              {plans.map((plan) => (
-                <option key={plan.id} value={plan.id}>
-                  {plan.name}
-                </option>
-              ))}
-            </select>
             <div className="d-flex flex-wrap align-items-center gap-2 mt-3">
               <span className="badge text-bg-primary">
                 {planVersionsQuery.isLoading
@@ -1341,6 +1783,17 @@ export default function CommercialPlanningPage() {
             ) : null}
           </div>
         </div>
+      ) : null}
+
+      {currentMonthPlan.id > 0 ? (
+        <CommercialPlanObjectiveAndGoals plan={currentMonthPlan} />
+      ) : null}
+
+      {currentMonthPlan.id > 0 ? (
+        <CommercialPlanBlockersPanel
+          plan={currentMonthPlan}
+          activity={agentActivity}
+        />
       ) : null}
 
       {currentMonthPlan.id > 0 ? (
@@ -1557,81 +2010,110 @@ export default function CommercialPlanningPage() {
                   </span>
                 </div>
 
-                {agentActivity.entries.length > 0 ? (
-                  <div className="table-responsive">
-                    <table className="table align-middle mb-0">
-                      <thead>
-                        <tr>
-                          <th>Agente</th>
-                          <th>Registro</th>
-                          <th>Status</th>
-                          <th>Dificuldade / decisão</th>
-                          <th>Financeiro</th>
-                          <th>Atualização</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {agentActivity.entries.map((entry, index) => (
-                          <tr
-                            key={`${entry.recordType}-${entry.sourceReference}-${index}`}
-                          >
-                            <td>
-                              <strong>{entry.agentNickname}</strong>
-                              <small className="d-block text-body-secondary">
-                                {entry.agentKey}
-                              </small>
-                            </td>
-                            <td>
-                              <strong>{entry.title}</strong>
-                              {entry.detail ? (
-                                <small className="d-block text-body-secondary">
-                                  {entry.detail}
-                                </small>
-                              ) : null}
-                            </td>
-                            <td>
-                              <span className="badge text-bg-light border">
-                                {entry.status}
-                              </span>
-                            </td>
-                            <td>
-                              {entry.externalDecisionRequired ? (
-                                <span className="text-warning-emphasis">
-                                  {entry.externalDecision}
-                                </span>
-                              ) : entry.difficulty ? (
-                                <span className="text-danger">
-                                  {entry.difficulty}
-                                </span>
-                              ) : (
-                                <span className="text-body-secondary">
-                                  Sem bloqueio
-                                </span>
-                              )}
-                            </td>
-                            <td>
-                              {entry.budgetLimitUsd != null ? (
-                                <span>
-                                  US$ {(entry.knownCostUsd ?? 0).toFixed(2)} /
-                                  US$ {entry.budgetLimitUsd.toFixed(2)}
-                                </span>
-                              ) : entry.knownCostUsd != null ? (
-                                <span>US$ {entry.knownCostUsd.toFixed(2)}</span>
-                              ) : (
-                                <span className="text-body-secondary">—</span>
-                              )}
-                            </td>
-                            <td>
-                              {entry.occurredAt
-                                ? new Date(entry.occurredAt).toLocaleString(
-                                    "pt-BR",
-                                  )
-                                : "—"}
-                            </td>
+                {chronologicalAgentActivity.length > 0 ? (
+                  <div className="d-flex flex-column gap-2">
+                    <div>
+                      <h3 className="h6 mb-1">Histórico cronológico</h3>
+                      <p className="small text-body-secondary mb-0">
+                        Atuações mais recentes primeiro, preservando data,
+                        agente, resultado, bloqueio e referência de origem.
+                      </p>
+                    </div>
+                    <div className="table-responsive">
+                      <table className="table align-middle mb-0">
+                        <thead>
+                          <tr>
+                            <th scope="col">Ordem</th>
+                            <th>Agente</th>
+                            <th>Registro</th>
+                            <th>Parecer final</th>
+                            <th>Status</th>
+                            <th>Dificuldade / decisão</th>
+                            <th>Financeiro</th>
+                            <th>Atualização</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {chronologicalAgentActivity.map((entry, index) => (
+                            <tr
+                              key={`${entry.recordType}-${entry.sourceReference}-${index}`}
+                            >
+                              <td>
+                                <span className="badge text-bg-light border">
+                                  {index + 1}
+                                </span>
+                              </td>
+                              <td>
+                                <strong>{entry.agentNickname}</strong>
+                                <small className="d-block text-body-secondary">
+                                  {entry.agentKey}
+                                </small>
+                              </td>
+                              <td>
+                                <strong>{entry.title}</strong>
+                                {entry.detail ? (
+                                  <small className="d-block text-body-secondary">
+                                    {entry.detail}
+                                  </small>
+                                ) : null}
+                              </td>
+                              <td>
+                                {entry.finalOpinion ? (
+                                  <span className="commercial-planning-agent-opinion">
+                                    {entry.finalOpinion}
+                                  </span>
+                                ) : (
+                                  <span className="text-body-secondary">
+                                    Ainda não gerado
+                                  </span>
+                                )}
+                              </td>
+                              <td>
+                                <span className="badge text-bg-light border">
+                                  {entry.status}
+                                </span>
+                              </td>
+                              <td>
+                                {entry.externalDecisionRequired ? (
+                                  <span className="text-warning-emphasis">
+                                    {entry.externalDecision}
+                                  </span>
+                                ) : entry.difficulty ? (
+                                  <span className="text-danger">
+                                    {entry.difficulty}
+                                  </span>
+                                ) : (
+                                  <span className="text-body-secondary">
+                                    Sem bloqueio
+                                  </span>
+                                )}
+                              </td>
+                              <td>
+                                {entry.budgetLimitUsd != null ? (
+                                  <span>
+                                    US$ {(entry.knownCostUsd ?? 0).toFixed(2)} /
+                                    US$ {entry.budgetLimitUsd.toFixed(2)}
+                                  </span>
+                                ) : entry.knownCostUsd != null ? (
+                                  <span>
+                                    US$ {entry.knownCostUsd.toFixed(2)}
+                                  </span>
+                                ) : (
+                                  <span className="text-body-secondary">—</span>
+                                )}
+                              </td>
+                              <td>
+                                {entry.occurredAt
+                                  ? new Date(entry.occurredAt).toLocaleString(
+                                      "pt-BR",
+                                    )
+                                  : "—"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 ) : (
                   <p className="text-body-secondary mb-0">
@@ -2311,4 +2793,14 @@ export default function CommercialPlanningPage() {
       ) : null}
     </div>
   );
+}
+
+export default function CommercialPlanningPage() {
+  const { planId } = useParams<{ planId: string }>();
+  if (!planId) return <CommercialPlanListPage />;
+  const parsedPlanId = Number(planId);
+  if (!Number.isInteger(parsedPlanId) || parsedPlanId <= 0) {
+    return <CommercialPlanListPage />;
+  }
+  return <CommercialPlanDetailPage planId={parsedPlanId} />;
 }

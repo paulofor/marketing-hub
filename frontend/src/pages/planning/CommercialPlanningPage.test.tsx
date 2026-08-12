@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import CommercialPlanningPage from "./CommercialPlanningPage";
 
@@ -235,6 +235,17 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
               pendingDecisions: 1,
               entries: [
                 {
+                  recordType: "TASK",
+                  agentKey: "experiment-strategist",
+                  agentNickname: "Atena",
+                  title: "Análise inicial do plano",
+                  status: "COMPLETED",
+                  finalOpinion:
+                    "Validar a oferta com pagamento real antes de ampliar aquisição.",
+                  sourceReference: "commercial-plan:1@v1",
+                  occurredAt: "2026-08-10T12:00:00Z",
+                },
+                {
                   recordType: "FINANCIAL_GATE",
                   agentKey: "financial-agent",
                   agentNickname: "Plutus",
@@ -393,10 +404,21 @@ vi.mock("../../api/planning/useExperimentStrategist", () => ({
   }),
 }));
 
-function renderPage() {
+function renderPage(path?: string) {
+  const operationalPlan = mockPlans.find(
+    (candidate) =>
+      typeof candidate === "object" &&
+      candidate !== null &&
+      "deadline" in candidate &&
+      String(candidate.deadline).startsWith("2026-08"),
+  ) as { id?: number } | undefined;
+  const initialPath = path ?? `/planning/${operationalPlan?.id ?? 1}`;
   return render(
-    <MemoryRouter>
-      <CommercialPlanningPage />
+    <MemoryRouter initialEntries={[initialPath]}>
+      <Routes>
+        <Route path="/planning" element={<CommercialPlanningPage />} />
+        <Route path="/planning/:planId" element={<CommercialPlanningPage />} />
+      </Routes>
     </MemoryRouter>,
   );
 }
@@ -529,10 +551,18 @@ describe("CommercialPlanningPage", () => {
   it("renderiza somente o planejamento superior", () => {
     renderPage();
 
-    expect(screen.getByText("Planos comerciais")).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: /todos os planos comerciais/i }),
+    ).toBeTruthy();
     expect(
       screen.getByText(/tudo que os agentes fizeram em cada plano/i),
     ).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: "Objetivo e metas" }),
+    ).toBeTruthy();
+    expect(screen.getByLabelText("Metas do plano comercial")).toBeTruthy();
+    expect(screen.getByText("Métrica principal")).toBeTruthy();
+    expect(screen.getByText("Critério de sucesso")).toBeTruthy();
     expect(screen.getByText("Plano do mês corrente")).toBeTruthy();
     expect(screen.getAllByText("Custo total").length).toBeGreaterThan(0);
     expect(screen.getByText("Receita mínima")).toBeTruthy();
@@ -614,7 +644,7 @@ describe("CommercialPlanningPage", () => {
 
   it("permite preparar um plano comercial dedicado com teto de producao", async () => {
     const user = userEvent.setup();
-    renderPage();
+    renderPage("/planning");
 
     await user.click(
       screen.getByRole("button", { name: "Novo plano comercial" }),
@@ -625,18 +655,14 @@ describe("CommercialPlanningPage", () => {
       "MUSA v7 - produção supervisionada",
     );
     await user.type(screen.getByLabelText("Prazo *"), "2026-08-31");
-    await user.type(screen.getByLabelText("Teto de produção (R$) *"), "100");
+    await user.type(screen.getByLabelText("Teto (R$) *"), "100");
     await user.type(
-      screen.getByLabelText("Objetivo comercial"),
+      screen.getByLabelText("Objetivo comercial *"),
       "Concluir MECANISMO e CTA sem gerar cenas já aprovadas.",
-    );
-    await user.type(
-      screen.getByLabelText("Critério de parada"),
-      "Parar ao atingir o teto ou quebrar continuidade visual.",
     );
 
     await user.click(
-      screen.getByRole("button", { name: "Criar plano comercial" }),
+      screen.getByRole("button", { name: "Criar e abrir plano" }),
     );
 
     expect(createPlanMutate).toHaveBeenCalledWith(
@@ -645,14 +671,12 @@ describe("CommercialPlanningPage", () => {
         maxBudget: 100,
         commercialObjective:
           "Concluir MECANISMO e CTA sem gerar cenas já aprovadas.",
-        stopCriteria: "Parar ao atingir o teto ou quebrar continuidade visual.",
       }),
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
   });
 
   it("permite alternar entre planos comerciais sem misturar atribuicao", async () => {
-    const user = userEvent.setup();
     mockPlans = [
       { ...defaultPlans[0], name: "Agenda Cheia", deadline: "2026-08-09" },
       {
@@ -664,17 +688,13 @@ describe("CommercialPlanningPage", () => {
         maxBudget: 100,
       },
     ];
-    renderPage();
+    renderPage("/planning");
 
-    await user.selectOptions(
-      screen.getByLabelText("Plano comercial em análise"),
-      "9",
-    );
-
-    expect(screen.getByLabelText("Plano comercial em análise")).toHaveValue(
-      "9",
-    );
-    expect(screen.getByText("R$ 100,00")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Agenda Cheia" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "MUSA v7" })).toBeTruthy();
+    expect(
+      screen.getAllByRole("link", { name: "Ver detalhe completo" })[1],
+    ).toHaveAttribute("href", "/planning/9");
   });
 
   it("inicializa semanas fechadas e abre a tabela ordenada por media de tempo", async () => {
@@ -869,14 +889,71 @@ describe("CommercialPlanningPage", () => {
     renderPage();
 
     expect(screen.getByText("Atuação dos agentes no plano")).toBeTruthy();
-    expect(screen.getByText("Plutus")).toBeTruthy();
+    expect(screen.getByText("Histórico cronológico")).toBeTruthy();
+    expect(screen.getByText("Parecer final")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Validar a oferta com pagamento real antes de ampliar aquisição.",
+      ),
+    ).toBeTruthy();
+    expect(screen.getAllByText("Plutus").length).toBeGreaterThan(0);
     expect(screen.getByText("1 decisões pendentes")).toBeTruthy();
     expect(
-      screen.getByText("Plutus precisa decidir o orçamento."),
-    ).toBeTruthy();
+      screen.getAllByText("Plutus precisa decidir o orçamento.").length,
+    ).toBeGreaterThan(0);
     expect(screen.getAllByText("US$ 0.00 / US$ 40.00").length).toBeGreaterThan(
       0,
     );
+    const chronologicalRows = screen.getAllByRole("row");
+    const plutusRow = chronologicalRows.findIndex((row) =>
+      row.textContent?.includes("Plutus"),
+    );
+    const atenaRow = chronologicalRows.findIndex((row) =>
+      row.textContent?.includes("Atena"),
+    );
+    expect(plutusRow).toBeGreaterThan(-1);
+    expect(atenaRow).toBeGreaterThan(plutusRow);
+  });
+
+  it("consolida bloqueios do plano com causa, impacto, ação e evidência", () => {
+    mockPlans = [
+      {
+        ...defaultPlans[0],
+        currentBlocker: "Ainda não existe compra aprovada.",
+        rootCause:
+          "A jornada entre página, checkout e entrega não foi homologada.",
+        nextAction:
+          "Homologar uma compra completa com dados de teste segregados.",
+        milestones: [
+          {
+            id: 31,
+            sequenceOrder: 1,
+            code: "DELIVERY_GATE",
+            name: "Homologar entrega",
+            status: "BLOCKED",
+            blocker: "Briefing não retorna ao plano.",
+            recommendedNextAction:
+              "Corrigir a correlação e repetir a homologação.",
+            evidenceSource: "execução #88",
+          },
+        ],
+      },
+    ];
+
+    renderPage();
+
+    expect(
+      screen.getByRole("heading", { name: "O que bloqueia este plano" }),
+    ).toBeTruthy();
+    expect(screen.getByText("Gargalo comercial vigente")).toBeTruthy();
+    expect(
+      screen.getAllByText("Ainda não existe compra aprovada.").length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByText("Homologar entrega")).toBeTruthy();
+    expect(screen.getByText("Briefing não retorna ao plano.")).toBeTruthy();
+    expect(screen.getByText("Premissas financeiras incompletas")).toBeTruthy();
+    expect(screen.getAllByText("Como desbloquear").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Evidência").length).toBeGreaterThan(0);
   });
 
   it("solicita projeção de receita a Plutus sem apresentá-la como venda", async () => {
@@ -919,7 +996,9 @@ describe("CommercialPlanningPage", () => {
 
     renderPage();
 
-    expect(screen.getByText("Planos comerciais")).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: /todos os planos comerciais/i }),
+    ).toBeTruthy();
     expect(screen.getByText("Julho 2026")).toBeTruthy();
     expect(screen.queryByText("Plano sugerido")).toBeNull();
   });

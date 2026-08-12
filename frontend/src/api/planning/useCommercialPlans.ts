@@ -182,6 +182,7 @@ export interface CommercialPlanAgentActivityEntry {
   title: string;
   status: string;
   detail?: string | null;
+  finalOpinion?: string | null;
   difficulty?: string | null;
   externalDecisionRequired: boolean;
   externalDecision?: string | null;

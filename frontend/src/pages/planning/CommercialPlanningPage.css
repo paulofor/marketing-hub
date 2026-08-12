@@ -894,6 +894,87 @@
   color: #667085;
 }
 
+.commercial-planning-blockers {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid #f3b4b4;
+  border-radius: 0.75rem;
+  background: #fffafa;
+}
+
+.commercial-planning-blockers-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.commercial-planning-blockers-header h2 {
+  margin: 0;
+  color: #7f1d1d;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.commercial-planning-blockers-header p:last-child {
+  margin: 0.35rem 0 0;
+  color: #667085;
+}
+
+.commercial-planning-blockers-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.commercial-planning-blocker-item {
+  display: grid;
+  grid-template-columns: minmax(13rem, 0.7fr) minmax(0, 2fr);
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #fecaca;
+  border-left: 0.3rem solid #dc2626;
+  border-radius: 0.5rem;
+  background: #ffffff;
+}
+
+.commercial-planning-blocker-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.commercial-planning-blocker-title strong {
+  color: #101828;
+}
+.commercial-planning-blocker-title span {
+  color: #667085;
+  font-size: 0.8rem;
+}
+
+.commercial-planning-blocker-item dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+  margin: 0;
+}
+
+.commercial-planning-blocker-item dl div {
+  min-width: 0;
+}
+.commercial-planning-blocker-item dt {
+  color: #7f1d1d;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.commercial-planning-blocker-item dd {
+  margin: 0.2rem 0 0;
+  color: #344054;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
 .commercial-planning-funnel-stage strong {
   color: #101828;
   font-size: 0.92rem;
@@ -1035,6 +1116,16 @@
 }
 
 @media (max-width: 767.98px) {
+  .commercial-planning-blockers-header,
+  .commercial-planning-blocker-item {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .commercial-planning-blocker-item dl {
+    grid-template-columns: 1fr;
+  }
+
   .commercial-planning-week-card-header {
     flex-direction: column;
   }
@@ -1104,4 +1195,11 @@
   .commercial-planning-ranking-metrics {
     grid-template-columns: 1fr;
   }
+}
+.commercial-planning-agent-opinion {
+  display: block;
+  max-width: 32rem;
+  max-height: 12rem;
+  overflow: auto;
+  white-space: pre-wrap;
 }

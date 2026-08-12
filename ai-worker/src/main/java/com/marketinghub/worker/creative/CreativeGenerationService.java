@@ -189,7 +189,7 @@ public class CreativeGenerationService {
         return prompt.toString().trim();
     }
 
-    /** Valida a copy Meta sem truncamento e normaliza apenas o CTA técnico. */
+    /** Valida todos os campos textuais publicáveis sem truncamento e normaliza apenas o CTA técnico. */
     private void normalizeCreativeContract(CreateCreativeRequest creative) {
         if (creative == null) {
             return;
@@ -197,7 +197,9 @@ public class CreativeGenerationService {
         requireMetaTextLimit("primaryText", creative.getPrimaryText(), META_PRIMARY_TEXT_MAX_LENGTH);
         requireMetaTextLimit("headline", creative.getHeadline(), META_HEADLINE_MAX_LENGTH);
         requireMetaTextLimit("description", creative.getDescription(), META_DESCRIPTION_MAX_LENGTH);
-        creative.setCta(normalizeMetaCallToAction(creative.getCta()));
+        String normalizedCta = normalizeMetaCallToAction(creative.getCta());
+        requireMetaTextLimit("cta", normalizedCta, META_CALL_TO_ACTION_MAX_LENGTH);
+        creative.setCta(normalizedCta);
     }
 
     /** Bloqueia copy acima do contrato de exibição para exigir reescrita semântica. */

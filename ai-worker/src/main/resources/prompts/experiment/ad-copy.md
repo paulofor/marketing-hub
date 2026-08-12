@@ -31,11 +31,17 @@ Regras fixas da etapa:
 10. `lengthVariants.media` deve explicar a promessa com mecanismo e CTA.
 11. `lengthVariants.longa` deve aprofundar dor, resultado, mecanismo, prova e ação sem virar texto de landing.
 11.1. As variações devem vender alivio percebido, facilidade e futuro imaginável, não apenas o formato do material.
-12. `primaryText` é o texto final que será salvo e publicado no campo Primary text do Meta Ads; deve ter no máximo 125 caracteres.
-12.1. As variações em `lengthVariants` são apenas apoio criativo; se alguma passar de 125 caracteres, reescreva `primaryText` como síntese curta, sem copiar a versão longa.
+12. Antes de escrever, trate esta tabela como contrato obrigatório dos campos publicáveis do anúncio:
+    - `primaryText`: máximo de 125 caracteres, contando espaços, pontuação, emojis e quebras de linha;
+    - `headline`: máximo de 40 caracteres, contando espaços, pontuação e emojis;
+    - `description`: máximo de 25 caracteres, contando espaços, pontuação e emojis;
+    - `ctaText`: deve representar um botão canônico da Meta e ter no máximo 32 caracteres; não escreva uma frase livre no botão.
+12.1. Conte caracteres Unicode completos, não bytes. Se qualquer campo exceder seu limite, reescreva semanticamente antes de responder; nunca corte palavras, frases ou emojis.
+12.2. `primaryText` é o texto final que será salvo e publicado no campo Primary text do Meta Ads.
+12.3. `lengthVariants.curta`, `lengthVariants.media` e `lengthVariants.longa` são apenas apoio criativo e não são campos enviados à Meta. Seus tamanhos não alteram os limites dos quatro campos publicáveis; sempre produza `primaryText` como síntese de até 125 caracteres.
 13. `headline` deve ser curta, clara e específica, sem promessa absoluta, com no máximo 40 caracteres.
 14. `description` deve apoiar a headline com benefício concreto e baixo atrito, com no máximo 25 caracteres.
-15. `ctaText` deve repetir a ação principal do `campaignAngle`, sem inventar ação nova.
+15. `ctaText` deve repetir a ação principal do `campaignAngle`, sem inventar ação nova, e caber no limite de 32 caracteres do contrato técnico.
 16. Não prometa consultoria, call, acompanhamento humano, diagnóstico individualizado ou gestão manual se isso não estiver no envelope real do produto.
 17. Não use promessas absolutas, garantias individuais, linguagem de enriquecimento rápido ou alegações impossíveis de comprovar.
 18. Não crie campos técnicos, comentários internos, instruções de pipeline ou metadados fora do contrato final.
@@ -60,4 +66,4 @@ Checklist antes de responder:
 4. A copy evita consultoria/call/acompanhamento se não fizer parte do produto?
 5. A copy reduz carga cognitiva e deixa claro por que clicar exige pouco esforço?
 6. O JSON final contém somente `adCopy` e `experimentMetadata` na raiz?
-7. Cada `primaryText` tem até 125 caracteres, cada `headline` até 40 caracteres e cada `description` até 25 caracteres?
+7. Cada `primaryText` tem até 125 caracteres, cada `headline` até 40, cada `description` até 25 e cada `ctaText` até 32, contando espaços, pontuação, emojis e quebras de linha?

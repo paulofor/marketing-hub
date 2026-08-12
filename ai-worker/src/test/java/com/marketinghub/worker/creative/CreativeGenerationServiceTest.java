@@ -130,6 +130,36 @@ class CreativeGenerationServiceTest {
                 org.mockito.ArgumentMatchers.eq(49L), org.mockito.ArgumentMatchers.eq(valid));
     }
 
+    /** Garante que a validação conta emojis como caracteres Unicode completos, e não como dois chars UTF-16. */
+    @Test
+    void shouldAcceptPrimaryTextAtUnicodeCodePointLimit() {
+        CreativeGenerationBackendClient backendClient = mock(CreativeGenerationBackendClient.class);
+        CreativeChatGptClient textClient = mock(CreativeChatGptClient.class);
+        CreativeImageClient imageClient = mock(CreativeImageClient.class);
+        CreativeGenerationService service =
+                new CreativeGenerationService(backendClient, textClient, imageClient, new ObjectMapper());
+        ExperimentDto experiment = pendingExperiment();
+        CreateCreativeRequest generated = new CreateCreativeRequest();
+        generated.setHeadline("Agenda cheia");
+        generated.setPrimaryText("🚀".repeat(125));
+        generated.setDescription("Venda com clareza");
+        generated.setCta("LEARN_MORE");
+
+        when(backendClient.listPending(5)).thenReturn(List.of(experiment));
+        when(textClient.generateCreatives(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(1)))
+                .thenReturn(new CreativeChatGptClient.Generation(List.of(generated), null, null));
+        when(imageClient.generateImage(
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn("/assets/unicode-creative.jpg");
+
+        CreativeGenerationService.ProcessingSummary summary = service.processPending(5);
+
+        assertThat(summary.succeeded()).isEqualTo(1);
+        verify(backendClient).createCreative(49L, generated);
+    }
+
     /** Garante que o worker não cria criativo quando a imagem não foi gerada. */
     @Test
     void shouldFailPendingGenerationWhenImageUrlIsEmpty() {

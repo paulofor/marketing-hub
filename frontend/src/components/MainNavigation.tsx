@@ -82,7 +82,11 @@ const NAV_SECTIONS: NavSection[] = [
         label: "Planos comerciais",
         icon: ClipboardCheck,
       },
-      { to: "/opportunities", label: "Oportunidades", icon: Search },
+      {
+        to: "/opportunities",
+        label: "Dossiê de oportunidades",
+        icon: FileText,
+      },
       {
         to: "/product-discovery",
         label: "Descoberta PDE",

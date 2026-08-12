@@ -119,12 +119,9 @@ public class CreativeGenerationService {
 
     /** Gera criativos no modo padrão usando texto gerado por IA e imagem por prompt do experimento. */
     private List<CreateCreativeRequest> generateDefaultCreatives(ExperimentDto dto, int quantity) {
-        CreativeChatGptClient.Generation generation = textClient.generateCreatives(toExperiment(dto), quantity);
-        List<CreateCreativeRequest> creatives = generation.creatives().stream()
-                .limit(Math.max(1, quantity))
-                .toList();
+        Experiment experiment = toExperiment(dto);
+        List<CreateCreativeRequest> creatives = generateAndValidateCopy(experiment, quantity);
         for (CreateCreativeRequest creative : creatives) {
-            normalizeCreativeContract(creative);
             String prompt = defaultImagePrompt(dto, creative);
             String imageUrl = imageClient.generateImage(prompt, null, "creative-experiment-" + dto.getId());
             requireGeneratedImageUrl(dto.getId(), creative.getHeadline(), imageUrl);
@@ -134,6 +131,26 @@ public class CreativeGenerationService {
             }
         }
         return creatives;
+    }
+
+    /** Reexecuta uma vez a criação textual quando o modelo viola o contrato comercial da Meta. */
+    private List<CreateCreativeRequest> generateAndValidateCopy(Experiment experiment, int quantity) {
+        IllegalArgumentException lastContractFailure = null;
+        for (int attempt = 1; attempt <= 2; attempt++) {
+            List<CreateCreativeRequest> creatives = textClient.generateCreatives(experiment, quantity)
+                    .creatives().stream()
+                    .limit(Math.max(1, quantity))
+                    .toList();
+            try {
+                creatives.forEach(this::normalizeCreativeContract);
+                return creatives;
+            } catch (IllegalArgumentException ex) {
+                lastContractFailure = ex;
+                log.warn("Copy Meta fora do contrato; solicitando reescrita completa. experimentId={} tentativa={}",
+                        experiment.getId(), attempt, ex);
+            }
+        }
+        throw lastContractFailure;
     }
 
     /** Converte o DTO do backend em entidade mínima para reutilizar os geradores existentes. */
@@ -172,7 +189,7 @@ public class CreativeGenerationService {
         return prompt.toString().trim();
     }
 
-    /** Valida a copy Meta sem truncamento e normaliza apenas o CTA técnico. */
+    /** Valida todos os campos textuais publicáveis sem truncamento e normaliza apenas o CTA técnico. */
     private void normalizeCreativeContract(CreateCreativeRequest creative) {
         if (creative == null) {
             return;
@@ -180,7 +197,9 @@ public class CreativeGenerationService {
         requireMetaTextLimit("primaryText", creative.getPrimaryText(), META_PRIMARY_TEXT_MAX_LENGTH);
         requireMetaTextLimit("headline", creative.getHeadline(), META_HEADLINE_MAX_LENGTH);
         requireMetaTextLimit("description", creative.getDescription(), META_DESCRIPTION_MAX_LENGTH);
-        creative.setCta(normalizeMetaCallToAction(creative.getCta()));
+        String normalizedCta = normalizeMetaCallToAction(creative.getCta());
+        requireMetaTextLimit("cta", normalizedCta, META_CALL_TO_ACTION_MAX_LENGTH);
+        creative.setCta(normalizedCta);
     }
 
     /** Bloqueia copy acima do contrato de exibição para exigir reescrita semântica. */

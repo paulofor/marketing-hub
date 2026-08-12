@@ -47,6 +47,33 @@ class TemisCreativeTaskOrchestrationServiceTest {
     assertThat(experiment.getCreativeGenerationRequestedAt()).isEqualTo(now);
   }
 
+  /** Reenfileira uma tarefa retomada depois de falha sem duplicar trabalho ainda ativo. */
+  @Test
+  void retriesResumedTemisTaskAfterCreativeGenerationFailure() {
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    AgentTask task = task("IN_PROGRESS", "experiment:88");
+    Experiment experiment = new Experiment();
+    experiment.setId(88L);
+    experiment.setCreativesToGenerate(0);
+    experiment.setCreativeGenerationStatus(CreativeGenerationStatus.FAILED);
+    when(tasks.findByAssignedAgentAgentKeyAndTaskKindAndStatusInOrderByCreatedAtAscIdAsc(
+            "meta-ad-approver", "WORK", List.of("PENDING", "IN_PROGRESS")))
+        .thenReturn(List.of(task));
+    when(experiments.findById(88L)).thenReturn(Optional.of(experiment));
+    TemisCreativeTaskOrchestrationService service =
+        new TemisCreativeTaskOrchestrationService(
+            tasks,
+            experiments,
+            Clock.fixed(Instant.parse("2026-08-12T18:40:00Z"), ZoneOffset.UTC));
+
+    service.reconcilePendingTasks();
+
+    assertThat(experiment.getCreativesToGenerate()).isEqualTo(1);
+    assertThat(experiment.getCreativeGenerationStatus())
+        .isEqualTo(CreativeGenerationStatus.REQUESTED);
+  }
+
   /** Conclui a tarefa somente depois do callback de aprovação independente. */
   @Test
   void completesTaskAfterCreativeMaterializationCallback() {

@@ -24,6 +24,8 @@ Cada Plano Comercial pode solicitar projeções tipadas a Plutus. A solicitaçã
 
 As premissas mínimas estruturadas do plano são preço da oferta, custo variável por venda, tráfego mensal esperado, conversão esperada, CAC esperado, taxa esperada de reembolso e custo operacional fixo. Elas são hipóteses versionadas, nunca métricas realizadas. Valores monetários e tráfego não podem ser negativos; percentuais devem permanecer entre zero e cem; custo variável por venda não pode superar o preço. Cada produto mantém suas próprias premissas e histórico.
 
+Quando essas premissas estiverem ausentes, o plano pode solicitar uma definição conjunta. Atena deve pesquisar evidências públicas, comparar exatamente três alternativas e propor faixas conservadoras; Plutus deve validar preço, margem, CAC, ponto de equilíbrio e compatibilidade com o teto. Somente uma validação financeira `APPROVE` pode preencher campos ainda vazios e criar uma versão identificada por `ATENA_PLUTUS`; valores já definidos pelo usuário nunca são sobrescritos. A aprovação registra hipóteses de planejamento e não autoriza gasto, campanha, publicação ou alteração de preço público.
+
 Projeção nunca é receita realizada, não altera orçamento e não autoriza gasto. O aprendizado de Plutus deve comparar posteriormente previsão e resultado real; conclusões novas permanecem candidatas e só podem ser promovidas pelo fluxo governado após evidência fora da amostra.
 
 Tarefas, gates e execuções devem registrar `planId` e número da versão consumida, ou uma referência equivalente `commercial-plan:<id>@v<numero>`, para que decisões antigas não sejam reinterpretadas com contexto novo. O monitor deve apresentar esse vínculo quando existir.

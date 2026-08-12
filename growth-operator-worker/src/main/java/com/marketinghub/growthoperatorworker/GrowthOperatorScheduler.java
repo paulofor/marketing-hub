@@ -27,9 +27,7 @@ public class GrowthOperatorScheduler {
   public void processOne() {
     GrowthOperatorJob job = null;
     try {
-      if (properties.getCommercialPlanId() != null) {
-        backendClient.ensureAutomaticCycle(properties.getCommercialPlanId());
-      }
+      ensureAutomaticCycleWithoutBlockingPendingQueue();
       job = backendClient.claimPending();
       if (job == null) {
         return;
@@ -49,6 +47,24 @@ public class GrowthOperatorScheduler {
         backendClient.fail(
             job.id(), ex.getMessage() == null ? ex.getClass().getName() : ex.getMessage());
       }
+    }
+  }
+
+  /**
+   * Avalia o ciclo automatico configurado sem permitir que sua indisponibilidade bloqueie trabalhos
+   * ja persistidos na fila principal.
+   */
+  private void ensureAutomaticCycleWithoutBlockingPendingQueue() {
+    if (properties.getCommercialPlanId() == null) {
+      return;
+    }
+    try {
+      backendClient.ensureAutomaticCycle(properties.getCommercialPlanId());
+    } catch (Exception ex) {
+      log.warn(
+          "Ciclo automatico indisponivel no growth-operator-worker; a fila pendente continuara sendo consumida planId={}",
+          properties.getCommercialPlanId(),
+          ex);
     }
   }
 }

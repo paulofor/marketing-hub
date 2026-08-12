@@ -105,4 +105,21 @@ class CodexStrategistRunnerTest {
                 .asText())
         .isEqualTo("STRATEGIST_RECOMMENDS_OPERATOR_EXECUTES");
   }
+
+  /** Protege a proposta estratégica que antecede a validação financeira de Plutus. */
+  @Test
+  void packagesCommercialAssumptionProposal() throws Exception {
+    String prompt =
+        Files.readString(
+            Path.of(
+                "src/main/resources/prompts/experiment-strategist/v1/commercial-assumptions.md"));
+    String schema =
+        Files.readString(
+            Path.of(
+                "src/main/resources/prompts/experiment-strategist/v1/commercial-assumptions-schema.json"));
+
+    assertThat(prompt).contains("três alternativas", "Plutus", "não comprova disposição de pagar");
+    assertThat(schema)
+        .contains("proposedAssumptions", "offerPriceBrl", "expectedConversionRatePercent");
+  }
 }

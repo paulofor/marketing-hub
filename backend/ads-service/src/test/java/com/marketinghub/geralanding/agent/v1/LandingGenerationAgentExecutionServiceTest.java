@@ -45,6 +45,9 @@ class LandingGenerationAgentExecutionServiceTest {
                 org.mockito.ArgumentMatchers.anyString(),
                 any()))
         .thenReturn(List.of());
+    when(repository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+            "landing-generation-agent-v1", "FALHA"))
+        .thenReturn(List.of());
   }
 
   /** Deve enfileirar reprovação sem executar Codex dentro do backend. */
@@ -90,6 +93,44 @@ class LandingGenerationAgentExecutionServiceTest {
     assertEquals(3, catalog.size());
     assertTrue((Boolean) catalog.getFirst().get("available"));
     assertFalse((Boolean) catalog.get(1).get("available"));
+  }
+
+  /** Deve reabrir uma única vez o timeout terminal deixado por uma versão antiga do worker. */
+  @Test
+  void shouldRecoverLegacyTimeoutFailureOnce() {
+    GeraLandingStageExecution timedOut = execution("job-timeout-88", "FALHA");
+    timedOut.setCompletedAt(Instant.now());
+    timedOut.setErrorMessage("Timeout do Codex do Agente Gerador de Landing");
+    when(repository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+            "landing-generation-agent-v1", "FALHA"))
+        .thenReturn(List.of(timedOut));
+    when(repository.findTop3ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+            "landing-generation-agent-v1", "INICIADO"))
+        .thenReturn(List.of(timedOut));
+
+    List<LandingAgentPendingResponse> result = service.claimPending(1);
+
+    assertEquals(1, result.size());
+    assertEquals("PROCESSANDO", timedOut.getStatus());
+    assertEquals("LEGACY_TIMEOUT_RECOVERED_ONCE", timedOut.getErrorDetail());
+    assertEquals(null, timedOut.getErrorMessage());
+    assertEquals(null, timedOut.getCompletedAt());
+  }
+
+  /** Não reabre novamente um timeout que já consumiu sua retomada controlada. */
+  @Test
+  void shouldNotRecoverLegacyTimeoutTwice() {
+    GeraLandingStageExecution timedOut = execution("job-timeout-88", "FALHA");
+    timedOut.setErrorMessage("Timeout do Codex do Agente Gerador de Landing");
+    timedOut.setErrorDetail("LEGACY_TIMEOUT_RECOVERED_ONCE");
+    when(repository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+            "landing-generation-agent-v1", "FALHA"))
+        .thenReturn(List.of(timedOut));
+
+    List<LandingAgentPendingResponse> result = service.claimPending(1);
+
+    assertTrue(result.isEmpty());
+    assertEquals("FALHA", timedOut.getStatus());
   }
 
   /** Deve tornar callback repetido idempotente e não avançar novamente. */

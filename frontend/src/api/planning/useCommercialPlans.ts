@@ -126,7 +126,8 @@ export interface RevenueProjectionExecution {
   id: number;
   commercialPlanId: number;
   status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
-  authorityMode: "READ_ONLY_REVENUE_PROJECTION";
+  authorityMode:
+    "READ_ONLY_REVENUE_PROJECTION" | "COMMERCIAL_ASSUMPTIONS_VALIDATION";
   commercialPlanVersion: number;
   agentTaskId?: number | null;
   projectionRequest?: string | null;
@@ -136,6 +137,42 @@ export interface RevenueProjectionExecution {
   startedAt?: string | null;
   finishedAt?: string | null;
   createdAt: string;
+}
+
+/** Consulta o trabalho conjunto de Atena e Plutus para completar premissas ausentes. */
+export function useCommercialAssumptionDefinitions(planId?: number | null) {
+  return useQuery({
+    queryKey: ["commercial-assumption-definitions", planId],
+    enabled: !!planId && planId > 0,
+    refetchInterval: 15_000,
+    queryFn: async () => {
+      const { data } = await axios.get<RevenueProjectionExecution[]>(
+        `/api/financial-agent/v1/commercial-plans/${planId}/commercial-assumptions`,
+      );
+      return data;
+    },
+  });
+}
+
+/** Inicia Atena e encadeia automaticamente a validação financeira de Plutus. */
+export function useRequestCommercialAssumptions(planId?: number | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      if (!planId) throw new Error("Plano comercial não informado.");
+      await axios.post(
+        `/api/experiment-strategist/v1/commercial-plans/${planId}/commercial-assumptions`,
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["commercial-assumption-definitions", planId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["commercial-plan-agent-activity", planId],
+      });
+    },
+  });
 }
 
 export interface CommercialPlanAgentActivityEntry {

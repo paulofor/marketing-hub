@@ -186,6 +186,7 @@ let mockWeeks: unknown[] = [
 const createPlanMutate = vi.fn();
 const updateWeekMutate = vi.fn();
 const requestRevenueProjectionMutate = vi.fn();
+const requestCommercialAssumptionsMutate = vi.fn();
 
 vi.mock("../../api/planning/useCommercialPlans", async () => {
   const actual = await vi.importActual<
@@ -274,6 +275,16 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
     }),
     useRequestRevenueProjection: () => ({
       mutate: requestRevenueProjectionMutate,
+      isPending: false,
+      isError: false,
+    }),
+    useCommercialAssumptionDefinitions: () => ({
+      data: [],
+      isLoading: false,
+      isError: false,
+    }),
+    useRequestCommercialAssumptions: () => ({
+      mutate: requestCommercialAssumptionsMutate,
       isPending: false,
       isError: false,
     }),
@@ -518,7 +529,10 @@ describe("CommercialPlanningPage", () => {
   it("renderiza somente o planejamento superior", () => {
     renderPage();
 
-    expect(screen.getByText("Planejamento")).toBeTruthy();
+    expect(screen.getByText("Planos comerciais")).toBeTruthy();
+    expect(
+      screen.getByText(/tudo que os agentes fizeram em cada plano/i),
+    ).toBeTruthy();
     expect(screen.getByText("Plano do mês corrente")).toBeTruthy();
     expect(screen.getAllByText("Custo total").length).toBeGreaterThan(0);
     expect(screen.getByText("Receita mínima")).toBeTruthy();
@@ -888,12 +902,24 @@ describe("CommercialPlanningPage", () => {
     expect(requestRevenueProjectionMutate).toHaveBeenCalledWith(undefined);
   });
 
+  it("inicia a definição conjunta de premissas por Atena e Plutus", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(
+      screen.getByRole("button", { name: "Definir premissas ausentes" }),
+    );
+
+    expect(requestCommercialAssumptionsMutate).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/hipóteses versionadas/i)).toBeTruthy();
+  });
+
   it("renderiza sugestao de julho quando a API ainda nao retorna planos", () => {
     mockPlans = [];
 
     renderPage();
 
-    expect(screen.getByText("Planejamento")).toBeTruthy();
+    expect(screen.getByText("Planos comerciais")).toBeTruthy();
     expect(screen.getByText("Julho 2026")).toBeTruthy();
     expect(screen.queryByText("Plano sugerido")).toBeNull();
   });

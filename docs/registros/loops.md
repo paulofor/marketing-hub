@@ -15,6 +15,13 @@
 - **Correção efetiva:** exposição HTTP versionada de health/logfile, aliases no MCP e validação obrigatória dos endpoints durante o deploy.
 - **Prevenção:** testes de contrato preservam host e rotas; o deploy falha se health ou logfile não responderem.
 
+## LOOP-GROWTH-OPERATOR-AUXILIARY-QUEUE-STARVATION — ciclo automático bloqueia pendências
+
+- **Sintoma:** execuções de Planos Comerciais permanecem `PENDING` embora o worker esteja saudável.
+- **Causa-raiz confirmada em 2026-08-12:** antes de reservar a fila principal, o scheduler tentava criar um ciclo automático para um plano configurado. O HTTP 409 esperado quando esse plano não possuía experimento `RUNNING` encerrava o polling e impedia o consumo de pendências independentes de Agenda Cheia e MUSA.
+- **Correção efetiva:** a avaliação do ciclo automático continua auditável, mas sua falha fica isolada; o worker sempre tenta reservar a fila principal no mesmo polling.
+- **Prevenção:** teste unitário exige `claimPending()` mesmo quando `ensureAutomaticCycle()` falha, impedindo uma fila auxiliar de causar starvation global.
+
 ## LOOP-EXPERIMENTO-FAKE-CONTABILIZADO-COMO-HUMANO — Métricas de homologação
 
 - Sintoma: sessões de homologação do experimento fake apareciam como humanas para o Operador de Crescimento.
@@ -41,6 +48,7 @@
 - Fechamento complementar no Aprovador Meta (2026-08-09): reinício ou timeout do worker deixava revisões indefinidamente em `PROCESSING`, pois a reserva não possuía lease. O backend agora persiste início e recuperações, reenfileira leases órfãos com limite e encerra em `FAILED` com causa auditável após reincidência.
 - Fechamento complementar nas mesas e planos comerciais (2026-08-11): o limite fixo de 40 minutos encerrava Atena e Dédalo mesmo com atividade, leases antigas podiam permanecer `RUNNING` fora do item mais recente e uma falha na fila auxiliar de vídeo impedia Plutus de consumir sua fila financeira. O timeout passa a medir inatividade com teto absoluto, leases órfãs recebem uma única retomada com a entrada congelada e filas independentes falham isoladamente. Testes de contrato impedem transformar timeout recuperável em falha definitiva e impedem a fila de vídeo de causar starvation financeiro.
 - Fechamento complementar em dossiês e monitor (2026-08-11): cadastrar oportunidade não abria execução consumível por Argos e o monitor não reconhecia `FALHA` como estado terminal de Dédalo. Cada dossiê agora cria ciclo de descoberta e tarefa correlacionada; conclusão sincroniza evidências reais, falha bloqueia a mesa e o monitor trata status terminal ou inatividade como bloqueio, impedindo trabalho fantasma.
+- Fechamento complementar em Dédalo (2026-08-12): a execução do experimento #88 já havia sido gravada como `FALHA` por uma versão antiga do worker antes da política de preservar a lease em timeout. Como a recuperação consultava apenas `PROCESSANDO`, esse registro terminal nunca voltava à fila. O backend agora reconhece exclusivamente o erro legado de timeout, limpa o estado terminal e permite uma única retomada auditável; o marcador persistido impede repetição infinita.
 
 ## LOOP-CUSTOMER-AGENT-UNSTRUCTURED-EXECUTION — Avaliação sem parecer final
 

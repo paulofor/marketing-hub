@@ -43,12 +43,15 @@ public class FinancialCodexRunner {
   public Map<String, Object> run(FinancialAgentJob job) throws IOException, InterruptedException {
     Path output = Files.createTempFile("financial-agent-", ".json");
     Path processOutput = Files.createTempFile("financial-agent-process-", ".log");
+    boolean assumptions = "COMMERCIAL_ASSUMPTIONS_VALIDATION".equals(job.authorityMode());
     boolean projection = "READ_ONLY_REVENUE_PROJECTION".equals(job.authorityMode());
     Path schema =
         materialize(
-            projection
-                ? "prompts/financial-agent/v1/revenue-projection-schema.json"
-                : "prompts/financial-agent/v1/report-schema.json",
+            assumptions
+                ? "prompts/financial-agent/v1/commercial-assumptions-schema.json"
+                : projection
+                    ? "prompts/financial-agent/v1/revenue-projection-schema.json"
+                    : "prompts/financial-agent/v1/report-schema.json",
             ".json");
     Path mcp = materialize("mcp/financial-agent.mjs", ".mjs");
     try {
@@ -76,11 +79,17 @@ public class FinancialCodexRunner {
           throw new IllegalStateException("Codex financeiro falhou: " + processLog);
         String raw = Files.readString(output);
         JsonNode result = objectMapper.readTree(raw);
-        validate(result, projection);
+        validate(result, projection, assumptions);
         LinkedHashMap<String, Object> payload = new LinkedHashMap<>();
         payload.put("reconciliationJson", objectMapper.writeValueAsString(result));
         payload.put(
-            "dailyReport", result.get(projection ? "executiveSummary" : "dailyReport").asText());
+            "dailyReport",
+            result
+                .get(
+                    assumptions
+                        ? "executiveSummary"
+                        : projection ? "executiveSummary" : "dailyReport")
+                .asText());
         payload.put("rawModelResponse", raw);
         payload.put("model", properties.getModel());
         payload.put("estimatedCost", null);
@@ -196,10 +205,13 @@ public class FinancialCodexRunner {
 
   /** Resolve o prompt versionado com o snapshot congelado pelo backend. */
   private String buildPrompt(FinancialAgentJob job) throws IOException {
+    boolean assumptions = "COMMERCIAL_ASSUMPTIONS_VALIDATION".equals(job.authorityMode());
     boolean projection = "READ_ONLY_REVENUE_PROJECTION".equals(job.authorityMode());
-    return read(projection
-            ? "prompts/financial-agent/v1/revenue-projection.md"
-            : "prompts/financial-agent/v1/report.md")
+    return read(assumptions
+            ? "prompts/financial-agent/v1/commercial-assumptions.md"
+            : projection
+                ? "prompts/financial-agent/v1/revenue-projection.md"
+                : "prompts/financial-agent/v1/report.md")
         .replace("{{PLAN_ID}}", String.valueOf(job.commercialPlanId()))
         .replace("{{PLAN_VERSION}}", String.valueOf(job.commercialPlanVersion()))
         .replace("{{DECISION_CONTEXT}}", String.valueOf(job.projectionRequest()))
@@ -221,7 +233,17 @@ public class FinancialCodexRunner {
   }
 
   /** Rejeita relatorio que omita reconciliacao, cobertura ou bloqueios. */
-  private void validate(JsonNode result, boolean projection) {
+  private void validate(JsonNode result, boolean projection, boolean assumptions) {
+    if (assumptions) {
+      if (!result.hasNonNull("decision")
+          || !result.has("validatedAssumptions")
+          || !result.hasNonNull("executiveSummary")
+          || !result.has("risks")) {
+        throw new IllegalArgumentException(
+            "Validação de premissas fora do contrato financeiro v1.");
+      }
+      return;
+    }
     if (projection) {
       Set<String> scenarioNames = new java.util.HashSet<>();
       if (result.has("scenarios")) {

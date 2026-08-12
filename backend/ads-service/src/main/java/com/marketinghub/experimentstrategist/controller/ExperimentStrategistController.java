@@ -44,6 +44,12 @@ public class ExperimentStrategistController {
     return executionService.start(planId, request);
   }
 
+  /** Solicita a definição conjunta das premissas ausentes por Atena e Plutus. */
+  @PostMapping("/commercial-plans/{planId}/commercial-assumptions")
+  public ExecutionResponse startCommercialAssumptions(@PathVariable Long planId) {
+    return executionService.startCommercialAssumptions(planId);
+  }
+
   /** Lista as pesquisas e os pareceres do planejamento. */
   @GetMapping("/commercial-plans/{planId}/executions")
   public List<ExecutionResponse> listExecutions(@PathVariable Long planId) {

@@ -41,7 +41,13 @@ public class CodexStrategistRunner {
   public Map<String, Object> run(StrategistJob job) throws IOException, InterruptedException {
     Path output = Files.createTempFile("experiment-strategist-", ".json");
     Path log = Files.createTempFile("experiment-strategist-", ".log");
-    Path schema = materialize("prompts/experiment-strategist/v1/research-schema.json", ".json");
+    boolean assumptions = "COMMERCIAL_ASSUMPTIONS_PROPOSAL".equals(job.authorityMode());
+    Path schema =
+        materialize(
+            assumptions
+                ? "prompts/experiment-strategist/v1/commercial-assumptions-schema.json"
+                : "prompts/experiment-strategist/v1/research-schema.json",
+            ".json");
     Path mcp = materialize("mcp/experiment-strategist.mjs", ".mjs");
     try {
       ProcessBuilder builder = new ProcessBuilder(command(output, schema, mcp));
@@ -65,17 +71,23 @@ public class CodexStrategistRunner {
               "Codex encerrou com codigo " + process.exitValue() + ": " + Files.readString(log));
         String raw = Files.readString(output);
         JsonNode result = json.readTree(raw);
-        validate(result);
+        validate(result, assumptions);
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("alternativesJson", json.writeValueAsString(result.get("alternatives")));
         payload.put(
             "recommendationJson",
             json.writeValueAsString(
                 Map.of(
-                    "diagnosis", result.get("diagnosis"),
-                    "marketIntelligence", result.get("marketIntelligence"),
-                    "portfolioAssessment", result.get("portfolioAssessment"),
-                    "recommendation", result.get("recommendation"))));
+                    "diagnosis",
+                    result.get("diagnosis"),
+                    assumptions ? "proposedAssumptions" : "marketIntelligence",
+                    assumptions
+                        ? result.get("proposedAssumptions")
+                        : result.get("marketIntelligence"),
+                    assumptions ? "evidenceQuality" : "portfolioAssessment",
+                    assumptions ? result.get("evidenceQuality") : result.get("portfolioAssessment"),
+                    "recommendation",
+                    result.get("recommendation"))));
         payload.put("publicSourcesJson", json.writeValueAsString(result.get("sources")));
         payload.put("rawModelResponse", raw);
         payload.put(
@@ -149,7 +161,10 @@ public class CodexStrategistRunner {
 
   /** Resolve o prompt com evidencias e biblioteca comportamental versionadas. */
   private String prompt(StrategistJob job) throws IOException {
-    return read("prompts/experiment-strategist/v1/research.md")
+    boolean assumptions = "COMMERCIAL_ASSUMPTIONS_PROPOSAL".equals(job.authorityMode());
+    return read(assumptions
+            ? "prompts/experiment-strategist/v1/commercial-assumptions.md"
+            : "prompts/experiment-strategist/v1/research.md")
         .replace("{{EVIDENCE_SNAPSHOT}}", text(job.evidenceSnapshot()))
         .replace("{{BEHAVIORAL_MEMORY}}", "Incluida no snapshot de evidencias.")
         .replace("{{BEHAVIORAL_SCIENCE_LIBRARY}}", read("behavioral-science/v1/library.md"))
@@ -157,7 +172,18 @@ public class CodexStrategistRunner {
   }
 
   /** Rejeita parecer sem portfólio, inteligência de mercado, três caminhos ou recomendação. */
-  private void validate(JsonNode result) {
+  private void validate(JsonNode result, boolean assumptions) {
+    if (assumptions) {
+      if (!result.has("alternatives")
+          || result.get("alternatives").size() != 3
+          || !result.has("proposedAssumptions")
+          || !result.hasNonNull("evidenceQuality")
+          || !result.hasNonNull("recommendation")
+          || !result.hasNonNull("diagnosis"))
+        throw new IllegalArgumentException(
+            "Proposta de premissas fora do contrato estratégico v1.");
+      return;
+    }
     if (!result.has("alternatives")
         || result.get("alternatives").size() != 3
         || !result.has("sources")

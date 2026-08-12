@@ -72,6 +72,13 @@ public class FinancialAgentController {
     return service.listRevenueProjections(planId);
   }
 
+  /** Lista as definições conjuntas de premissas realizadas por Atena e Plutus. */
+  @GetMapping("/commercial-plans/{planId}/commercial-assumptions")
+  public List<FinancialAgentExecutionResponse> listAssumptionDefinitions(
+      @PathVariable Long planId) {
+    return service.listAssumptionDefinitions(planId);
+  }
+
   /** Entrega os valores e a cobertura das fontes para consulta somente leitura. */
   @GetMapping("/internal/commercial-plans/{planId}/intelligence")
   public Map<String, Object> intelligence(@PathVariable Long planId) {

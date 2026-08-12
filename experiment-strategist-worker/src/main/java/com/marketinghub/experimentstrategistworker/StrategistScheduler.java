@@ -27,7 +27,8 @@ public class StrategistScheduler {
     try {
       job = backend.claim();
       if (job == null) return;
-      if (!"READ_ONLY_RESEARCH".equals(job.authorityMode()))
+      if (!"READ_ONLY_RESEARCH".equals(job.authorityMode())
+          && !"COMMERCIAL_ASSUMPTIONS_PROPOSAL".equals(job.authorityMode()))
         throw new IllegalStateException("Autoridade da pesquisa não é somente leitura.");
       log.info(
           "Iniciando pesquisa do Estrategista. executionId={} planId={}",

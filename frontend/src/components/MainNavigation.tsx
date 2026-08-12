@@ -77,8 +77,16 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "Produtos e Mercado",
     items: [
-      { to: "/planning", label: "Planejamento", icon: ClipboardCheck },
-      { to: "/opportunities", label: "Oportunidades", icon: Search },
+      {
+        to: "/planning",
+        label: "Planos comerciais",
+        icon: ClipboardCheck,
+      },
+      {
+        to: "/opportunities",
+        label: "Dossiê de oportunidades",
+        icon: FileText,
+      },
       {
         to: "/product-discovery",
         label: "Descoberta PDE",

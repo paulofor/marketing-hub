@@ -20,6 +20,8 @@ import {
   useUpdateCommercialPlanWeekCommitmentStatus,
   useRevenueProjections,
   useRequestRevenueProjection,
+  useCommercialAssumptionDefinitions,
+  useRequestCommercialAssumptions,
 } from "../../api/planning/useCommercialPlans";
 import "./CommercialPlanningPage.css";
 import GrowthOperatorPanel from "./GrowthOperatorPanel";
@@ -1155,6 +1157,13 @@ export default function CommercialPlanningPage() {
     currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
   );
   const revenueProjections = asArray(revenueProjectionsQuery.data);
+  const assumptionDefinitionsQuery = useCommercialAssumptionDefinitions(
+    currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
+  );
+  const requestCommercialAssumptions = useRequestCommercialAssumptions(
+    currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
+  );
+  const assumptionDefinitions = asArray(assumptionDefinitionsQuery.data);
   const currentPlanVersion = planVersions[0];
   const [selectedReferenceMonth, setSelectedReferenceMonth] =
     useState(planReferenceMonth);
@@ -1250,7 +1259,11 @@ export default function CommercialPlanningPage() {
     <div className="commercial-planning-page d-flex flex-column gap-4">
       <header className="d-flex flex-column flex-xl-row justify-content-between gap-3">
         <div>
-          <PageTitle>Planejamento</PageTitle>
+          <PageTitle>Planos comerciais</PageTitle>
+          <p className="text-body-secondary mb-0">
+            Acompanhe objetivos, versões, execução financeira e tudo que os
+            agentes fizeram em cada plano.
+          </p>
         </div>
         <div className="d-flex flex-wrap gap-2 align-self-start">
           <button
@@ -1328,6 +1341,63 @@ export default function CommercialPlanningPage() {
             ) : null}
           </div>
         </div>
+      ) : null}
+
+      {currentMonthPlan.id > 0 ? (
+        <section
+          className="card"
+          aria-labelledby="commercial-assumptions-title"
+        >
+          <div className="card-body d-flex flex-column gap-3">
+            <div className="d-flex flex-column flex-lg-row justify-content-between gap-3">
+              <div>
+                <h2 id="commercial-assumptions-title" className="h5 mb-1">
+                  Premissas comerciais por Atena + Plutus
+                </h2>
+                <p className="text-body-secondary mb-0">
+                  Atena pesquisa e propõe; Plutus valida preço, margem, tráfego,
+                  conversão e CAC. Os valores são hipóteses versionadas e não
+                  liberam gasto.
+                </p>
+              </div>
+              <button
+                className="btn btn-primary align-self-start"
+                type="button"
+                disabled={requestCommercialAssumptions.isPending}
+                onClick={() => requestCommercialAssumptions.mutate()}
+              >
+                {requestCommercialAssumptions.isPending
+                  ? "Enviando para Atena..."
+                  : "Definir premissas ausentes"}
+              </button>
+            </div>
+            {requestCommercialAssumptions.isError ? (
+              <div className="alert alert-danger mb-0" role="alert">
+                Não foi possível iniciar a definição das premissas.
+              </div>
+            ) : assumptionDefinitions.length > 0 ? (
+              <div className="d-flex flex-column gap-2">
+                {assumptionDefinitions.map((definition) => (
+                  <article className="border rounded p-3" key={definition.id}>
+                    <strong>Validação conjunta #{definition.id}</strong>{" "}
+                    <span className="badge text-bg-light border">
+                      {definition.status}
+                    </span>
+                    <p className="mb-0 mt-2">
+                      {definition.dailyReport ??
+                        definition.errorMessage ??
+                        "Atena concluiu a proposta; Plutus está validando os números."}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="text-body-secondary mb-0">
+                Nenhuma definição conjunta solicitada para este plano.
+              </p>
+            )}
+          </div>
+        </section>
       ) : null}
 
       {currentMonthPlan.id > 0 ? (

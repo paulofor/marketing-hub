@@ -323,6 +323,38 @@ export interface CommercialPlanJourneyHomologation {
   requestedAt: string;
 }
 
+export interface CommercialPlanOperationalFlow {
+  commercialPlanId: number;
+  currentStage: string;
+  status: "APROVADO" | "BLOQUEADO" | "AJUSTE_NECESSARIO" | "EM_ANDAMENTO";
+  nextAction: string;
+  blocker?: string | null;
+  expectedMetric: string;
+  decisionCriterion: string;
+  stages: Array<{ code: string; label: string; status: "CONCLUIDO" | "ATUAL" | "PENDENTE" }>;
+  specialistDecisions: Array<{
+    specialist: string;
+    responsibility: string;
+    decision: string;
+    nextAction: string;
+  }>;
+}
+
+/** Consulta a visão canônica e simplificada do avanço comercial. */
+export function useCommercialPlanOperationalFlow(planId?: number | null) {
+  return useQuery({
+    queryKey: ["commercial-plan-operational-flow", planId],
+    enabled: !!planId && planId > 0,
+    refetchInterval: 15_000,
+    queryFn: async () => {
+      const { data } = await axios.get<CommercialPlanOperationalFlow>(
+        `/api/planning/commercial-plans/${planId}/operational-flow`,
+      );
+      return data;
+    },
+  });
+}
+
 export function useCommercialPlans() {
   return useQuery({
     queryKey: ["commercial-plans"],

@@ -6,6 +6,11 @@ O Orquestrador coordena os pareceres do Estrategista de Experimentos, do Operado
 do Especialista em Aprovação de Anúncios. Ele é um mecanismo determinístico do backend, não um
 agente opinativo, e não substitui a fonte de verdade de cada domínio.
 
+Para planos de primeiras vendas, a experiência canônica é um fluxo único:
+`Escolher oferta → preparar experimento → homologar jornada → publicar teste → medir vendas → ajustar ou escalar`.
+Os especialistas permanecem invisíveis na operação comum e são apresentados apenas por decisão curta
+(`APROVADO`, `BLOQUEADO`, `AJUSTE_NECESSARIO` ou `EM_ANDAMENTO`) acompanhada de próxima ação.
+
 ## Responsabilidades
 
 - reconciliar cada caso pelo par imutável `commercialPlanId + experimentId`;
@@ -15,6 +20,9 @@ agente opinativo, e não substitui a fonte de verdade de cada domínio.
 - impedir duplicidade por chave única;
 - bloquear divergência entre o experimento atual e o snapshot recebido pelo Operador;
 - indicar quando o conjunto está pronto para decisão humana.
+- expor uma única etapa corrente e uma única próxima ação calculadas no backend;
+- manter o detalhe de pareceres e gates como auditoria avançada, sem exigir sua leitura para operar o plano;
+- acionar trabalho especializado somente quando a etapa do fluxo exigir aquela competência.
 
 ## Limites de autoridade
 
@@ -44,6 +52,7 @@ gates concluídos, o estado final é `READY_FOR_HUMAN_DECISION`.
 - zero publicação ou gasto originado pelo Orquestrador;
 - 100% das reconciliações com evidência persistida;
 - bloqueio de toda divergência de experimento.
+- tempo entre a criação do plano e o experimento homologado/publicável.
 
 ## Evolução
 

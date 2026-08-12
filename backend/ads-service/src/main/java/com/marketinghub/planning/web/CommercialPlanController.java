@@ -5,6 +5,7 @@ import com.marketinghub.planning.dto.CommercialPlanAgentActivityDto;
 import com.marketinghub.planning.dto.CommercialPlanDto;
 import com.marketinghub.planning.dto.CommercialPlanJourneyHomologationDto;
 import com.marketinghub.planning.dto.CommercialPlanMilestoneDto;
+import com.marketinghub.planning.dto.CommercialPlanOperationalFlowDto;
 import com.marketinghub.planning.dto.CommercialPlanSimulationDto;
 import com.marketinghub.planning.dto.CommercialPlanVersionDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekDto;
@@ -18,6 +19,7 @@ import com.marketinghub.planning.dto.UpdateCommercialPlanWeekObjectivesRequest;
 import com.marketinghub.planning.mapper.CommercialPlanMapper;
 import com.marketinghub.planning.service.CommercialPlanAgentActivityService;
 import com.marketinghub.planning.service.CommercialPlanJourneyHomologationService;
+import com.marketinghub.planning.service.CommercialPlanOperationalFlowService;
 import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.planning.service.CommercialPlanVersionService;
 import com.marketinghub.planning.service.CommercialPlanWeeklyExperimentService;
@@ -42,6 +44,7 @@ public class CommercialPlanController {
   private final CommercialPlanVersionService versionService;
   private final CommercialPlanAgentActivityService agentActivityService;
   private final CommercialPlanJourneyHomologationService journeyHomologationService;
+  private final CommercialPlanOperationalFlowService operationalFlowService;
 
   public CommercialPlanController(
       CommercialPlanService service,
@@ -49,13 +52,15 @@ public class CommercialPlanController {
       CommercialPlanMapper mapper,
       CommercialPlanVersionService versionService,
       CommercialPlanAgentActivityService agentActivityService,
-      CommercialPlanJourneyHomologationService journeyHomologationService) {
+      CommercialPlanJourneyHomologationService journeyHomologationService,
+      CommercialPlanOperationalFlowService operationalFlowService) {
     this.service = service;
     this.weeklyExperimentService = weeklyExperimentService;
     this.mapper = mapper;
     this.versionService = versionService;
     this.agentActivityService = agentActivityService;
     this.journeyHomologationService = journeyHomologationService;
+    this.operationalFlowService = operationalFlowService;
   }
 
   /** Cria um plano comercial de primeira venda. */
@@ -104,6 +109,12 @@ public class CommercialPlanController {
   @GetMapping("/{id}/agent-activity")
   public CommercialPlanAgentActivityDto agentActivity(@PathVariable Long id) {
     return agentActivityService.activity(service.getPlan(id));
+  }
+
+  /** Exibe o fluxo comercial simplificado e a única próxima ação canônica. */
+  @GetMapping("/{id}/operational-flow")
+  public CommercialPlanOperationalFlowDto operationalFlow(@PathVariable Long id) {
+    return operationalFlowService.view(service.getPlan(id));
   }
 
   /** Adiciona um experimento ao portfólio de testes do plano. */

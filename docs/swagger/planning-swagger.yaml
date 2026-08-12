@@ -62,6 +62,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CommercialPlanAgentActivity"
+  /api/planning/commercial-plans/{id}/operational-flow:
+    get:
+      tags: [planning]
+      summary: Entrega a etapa corrente e a próxima ação do fluxo comercial simplificado.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer, format: int64}}
+      responses:
+        "200":
+          description: Fluxo calculado pelo backend sem autorizar publicação ou gasto.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommercialPlanOperationalFlow"
   /api/planning/commercial-plans/{id}/weeks:
     get:
       tags:
@@ -95,6 +108,34 @@ paths:
           description: Compromisso atualizado e preservado na versão original do plano.
 components:
   schemas:
+    CommercialPlanOperationalFlow:
+      type: object
+      required: [commercialPlanId, currentStage, status, nextAction, expectedMetric, decisionCriterion, stages, specialistDecisions]
+      properties:
+        commercialPlanId: {type: integer, format: int64}
+        currentStage: {type: string}
+        status: {type: string, enum: [APROVADO, BLOQUEADO, AJUSTE_NECESSARIO, EM_ANDAMENTO]}
+        nextAction: {type: string}
+        blocker: {type: string, nullable: true}
+        expectedMetric: {type: string}
+        decisionCriterion: {type: string}
+        stages:
+          type: array
+          items:
+            type: object
+            properties:
+              code: {type: string}
+              label: {type: string}
+              status: {type: string, enum: [CONCLUIDO, ATUAL, PENDENTE]}
+        specialistDecisions:
+          type: array
+          items:
+            type: object
+            properties:
+              specialist: {type: string}
+              responsibility: {type: string}
+              decision: {type: string}
+              nextAction: {type: string}
     CommercialPlanFinancialAssumptions:
       type: object
       description: Premissas estimadas e segregadas; não representam valores realizados.

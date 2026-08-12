@@ -265,6 +265,33 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
       isLoading: false,
       isError: false,
     }),
+    useCommercialPlanOperationalFlow: (planId?: number | null) => ({
+      data: planId
+        ? {
+            commercialPlanId: planId,
+            currentStage: "HOMOLOGATE_JOURNEY",
+            status: "BLOQUEADO",
+            nextAction: "Solicitar a homologação de tracking, pagamento e entrega.",
+            blocker: "Jornada essencial ainda não homologada.",
+            expectedMetric: "Tempo até experimento publicável.",
+            decisionCriterion: "Continuar apenas com a jornada homologada.",
+            stages: [
+              { code: "CHOOSE_OFFER", label: "Escolher oferta", status: "CONCLUIDO" },
+              { code: "HOMOLOGATE_JOURNEY", label: "Homologar jornada", status: "ATUAL" },
+            ],
+            specialistDecisions: [
+              {
+                specialist: "Dédalo",
+                responsibility: "Homologação técnica",
+                decision: "AJUSTE_NECESSARIO",
+                nextAction: "Executar a homologação.",
+              },
+            ],
+          }
+        : undefined,
+      isLoading: false,
+      isError: false,
+    }),
     useRevenueProjections: (planId?: number | null) => ({
       data:
         planId && planId > 0

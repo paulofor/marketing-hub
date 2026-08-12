@@ -1,6 +1,7 @@
 package com.marketinghub.planning.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -34,7 +35,7 @@ class CommercialPlanJourneyHomologationServiceTest {
     verify(executionService)
         .enqueue(
             eq(88L),
-            contains("commercial-plan-homologation-2-"),
+            argThat(cycleId -> cycleId.startsWith("cph-2-") && cycleId.length() <= 36),
             contains("\"mediaSpendAuthorized\":false"));
   }
 }

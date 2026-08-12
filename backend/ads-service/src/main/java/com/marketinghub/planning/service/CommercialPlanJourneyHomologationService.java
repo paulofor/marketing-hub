@@ -34,7 +34,7 @@ public class CommercialPlanJourneyHomologationService {
   public CommercialPlanJourneyHomologationDto request(Long planId, Long experimentId) {
     commercialPlanService.requireExperiment(planId, experimentId);
     Instant requestedAt = Instant.now();
-    String cycleId = "commercial-plan-homologation-" + planId + "-" + UUID.randomUUID();
+    String cycleId = "cph-" + planId + "-" + UUID.randomUUID().toString().substring(0, 20);
     executionService.enqueue(experimentId, cycleId, buildAuditBrief(planId, experimentId));
     return new CommercialPlanJourneyHomologationDto(
         planId, experimentId, "INICIADO", requestedAt.toString());

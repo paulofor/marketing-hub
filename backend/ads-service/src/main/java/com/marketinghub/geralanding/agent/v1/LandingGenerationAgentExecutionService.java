@@ -106,7 +106,9 @@ public class LandingGenerationAgentExecutionService {
         repository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(STAGE, "FALHA")) {
       if (execution.getErrorDetail() == null
           && execution.getErrorMessage() != null
-          && execution.getErrorMessage().contains("Timeout do Codex do Agente Gerador de Landing")) {
+          && execution
+              .getErrorMessage()
+              .contains("Timeout do Codex do Agente Gerador de Landing")) {
         execution.setStatus(PENDING);
         execution.setProcessingStartedAt(null);
         execution.setCompletedAt(null);

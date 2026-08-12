@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -32,6 +33,7 @@ public class ExperimentStrategistExecutionService {
   private final ApplicationEventPublisher events;
 
   /** Configura as fontes e a persistencia da execucao estrategica. */
+  @Autowired
   public ExperimentStrategistExecutionService(
       ExperimentStrategistExecutionRepository repository,
       CommercialPlanService plans,

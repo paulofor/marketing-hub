@@ -28,4 +28,14 @@ describe("navegação dos planos comerciais", () => {
 
     expect(link.getAttribute("href")).toBe("/planning");
   });
+
+  it("separa o planejamento mensal em um item de menu próprio", () => {
+    setup(["/"]);
+
+    const link = screen.getByRole("link", {
+      name: /planejamentos mensais/i,
+    });
+
+    expect(link.getAttribute("href")).toBe("/monthly-planning");
+  });
 });

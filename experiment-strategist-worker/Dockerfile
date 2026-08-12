@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm git 
     && chmod -R a+rX /ms-playwright \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=build /build/target/app.jar /app/app.jar
+COPY agent-health-report.mjs /app/agent-health-report.mjs
 COPY --from=build /build/src/main/resources/browser /app/browser
 COPY --from=build /build/src/main/resources/mcp /app/mcp
 RUN useradd --create-home --uid 10001 strategist

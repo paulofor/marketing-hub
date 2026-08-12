@@ -10,6 +10,11 @@ services:
       MARKETING_HUB_REPOSITORY: /workspace/marketing-hub
       LOG_FILE_NAME: /tmp/financial-agent-worker.log
       FINANCIAL_AGENT_MCP_URL: ${FINANCIAL_AGENT_MCP_URL:-http://backend:8000}
+      AGENT_HEALTH_KEY: financial-agent
+      AGENT_HEALTH_VERSION: "1"
+      AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
+      CODEX_HOME: /home/financial-agent/.codex
+      CODEX_COMMAND: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh
     ports:
       - "${FINANCIAL_AGENT_WORKER_PORT:-8095}:8095"
     volumes:
@@ -20,3 +25,9 @@ services:
       - /tmp:size=128m,noexec,nosuid
     security_opt:
       - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "node", "/app/agent-health-report.mjs"]
+      interval: 5m
+      timeout: 20s
+      retries: 2
+      start_period: 30s

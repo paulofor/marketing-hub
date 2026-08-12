@@ -81,6 +81,12 @@ const NAV_SECTIONS: NavSection[] = [
         to: "/planning",
         label: "Planos comerciais",
         icon: ClipboardCheck,
+        end: true,
+      },
+      {
+        to: "/monthly-planning",
+        label: "Planejamentos mensais",
+        icon: BarChart3,
       },
       {
         to: "/opportunities",

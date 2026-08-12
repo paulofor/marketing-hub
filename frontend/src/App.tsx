@@ -342,6 +342,14 @@ export default function App() {
                 element={<CommercialPlanningPage />}
               />
               <Route
+                path="/monthly-planning"
+                element={<CommercialPlanningPage monthly />}
+              />
+              <Route
+                path="/monthly-planning/:planId"
+                element={<CommercialPlanningPage monthly />}
+              />
+              <Route
                 path="/opportunities"
                 element={<OpportunityDossiersPage />}
               />

@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-12-agent-executor-health-check
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE agent_executor_health_check (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                agent_id BIGINT NOT NULL,
+                deployed_version INT NOT NULL,
+                build_reference VARCHAR(100) NULL,
+                backend_accessible TINYINT(1) NOT NULL,
+                codex_authenticated TINYINT(1) NOT NULL,
+                status VARCHAR(30) NOT NULL,
+                detail VARCHAR(500) NULL,
+                checked_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                INDEX idx_agent_executor_health_agent_checked (agent_id, checked_at),
+                CONSTRAINT fk_agent_executor_health_agent
+                  FOREIGN KEY (agent_id) REFERENCES agent(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

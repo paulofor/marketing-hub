@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm git 
     && (getent group operator >/dev/null || groupadd --gid 10001 operator) \
     && (id --user operator >/dev/null 2>&1 || useradd --create-home --uid 10001 --gid operator operator)
 COPY --from=build /build/target/app.jar /app/app.jar
+COPY agent-health-report.mjs /app/agent-health-report.mjs
 COPY --from=build /build/src/main/resources/prompts /app/prompts
 COPY --from=build /build/src/main/resources/browser /app/browser
 COPY --from=build /build/src/main/resources/mcp /app/mcp

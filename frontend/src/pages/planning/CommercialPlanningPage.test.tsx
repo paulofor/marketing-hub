@@ -461,6 +461,14 @@ function renderPage(path?: string) {
       <Routes>
         <Route path="/planning" element={<CommercialPlanningPage />} />
         <Route path="/planning/:planId" element={<CommercialPlanningPage />} />
+        <Route
+          path="/monthly-planning"
+          element={<CommercialPlanningPage monthly />}
+        />
+        <Route
+          path="/monthly-planning/:planId"
+          element={<CommercialPlanningPage monthly />}
+        />
       </Routes>
     </MemoryRouter>,
   );
@@ -591,6 +599,20 @@ afterEach(() => {
 });
 
 describe("CommercialPlanningPage", () => {
+  it("exibe a lista mensal separada e direciona para sua rota própria", () => {
+    renderPage("/monthly-planning");
+
+    expect(
+      screen.getByRole("heading", { name: "Planejamentos mensais" }),
+    ).toBeTruthy();
+    expect(
+      screen.getAllByRole("link", { name: "Abrir planejamento mensal" })[0],
+    ).toHaveAttribute("href", "/monthly-planning/1");
+    expect(
+      screen.queryByRole("button", { name: "Novo plano comercial" }),
+    ).toBeNull();
+  });
+
   it("renderiza somente o planejamento superior", () => {
     renderPage();
 

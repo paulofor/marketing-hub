@@ -22,4 +22,5 @@ public record AgentWorkMonitorResponse(
     Long executionId,
     Instant lastActivityAt,
     long dailyTokens,
-    LocalDate dailyTokenDate) {}
+    LocalDate dailyTokenDate,
+    AgentExecutorHealthResponse executorHealth) {}

@@ -18,6 +18,10 @@ Pesquisa externa indisponível não é resultado de mercado. Se todas as consult
 
 O Plano Comercial é a fonte oficial comum para usuários e agentes atuarem sobre o mesmo objetivo de vendas e lucro. Cada criação ou alteração deve gerar uma versão imutável contendo objetivo, público, dor, desejo/oferta, canal, métricas, orçamento, receita esperada, realizado, gargalo, próxima ação e critérios de sucesso e parada.
 
+## Separação das experiências administrativas
+
+Plano Comercial e Planejamento Mensal devem possuir itens de menu e rotas administrativas distintos. A visão de planos comerciais apresenta o contrato de negócio, seus bloqueios, decisões e histórico; a visão de planejamentos mensais apresenta metas, semanas, funil e execução temporal. As duas visões podem consumir a mesma fonte canônica persistida, mas não devem voltar a ser apresentadas como um único item de navegação. A criação de um Plano Comercial permanece na visão comercial; o planejamento mensal apenas organiza sua execução no período.
+
 ## Projeção financeira por Plutus
 
 Cada Plano Comercial pode solicitar projeções tipadas a Plutus. A solicitação congela a versão oficial do plano, abre uma tarefa correlacionada na mesa do agente e entra em fila própria, independente da conciliação financeira e dos gates de vídeo. A resposta deve conter cenários conservador, base e otimista, premissas explícitas, ponto de equilíbrio, investimento inicial e limite por ciclo recomendados, critérios de continuar, ajustar e parar, limitações e candidato de aprendizado.

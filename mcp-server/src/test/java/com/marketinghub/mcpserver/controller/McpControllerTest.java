@@ -634,7 +634,7 @@ class McpControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error.code").value(-32602))
                 .andExpect(jsonPath("$.error.message")
-                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, pde-platform-backend, video-management-service, customer-agent-worker, financial-agent-worker, experiment-strategist-worker, meta-ad-approver-worker, landing-generator-agent-worker, product-discovery-worker"));
+                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, pde-platform-backend, video-management-service, customer-agent-worker, financial-agent-worker, experiment-strategist-worker, meta-ad-approver-worker, landing-generator-agent-worker, product-discovery-worker, growth-operator-worker"));
     }
 
     /**
@@ -915,7 +915,9 @@ class McpControllerTest {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("docker_ops")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("vps_host_inventory")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("marketinghub-backend")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("product_discovery_worker_health")));
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("product_discovery_worker_health")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("growth_operator_worker_health")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("growth-operator-worker")));
     }
 
 

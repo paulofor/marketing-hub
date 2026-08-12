@@ -6,6 +6,7 @@ import com.marketinghub.mcpserver.service.DatabaseDiagnosticsService;
 import com.marketinghub.mcpserver.service.DockerOperationsService;
 import com.marketinghub.mcpserver.service.MetaDiagnosticsService;
 import com.marketinghub.mcpserver.service.GithubActionsService;
+import com.marketinghub.mcpserver.service.GrowthOperatorWorkerHealthService;
 import com.marketinghub.mcpserver.service.ModuleLogService;
 import com.marketinghub.mcpserver.service.PdeDatabaseDiagnosticsService;
 import com.marketinghub.mcpserver.service.ProductDiscoveryWorkerHealthService;
@@ -47,7 +48,7 @@ public class McpController {
             "mois-hotmart", "clickbank-coletor-mois", "oprm-coletor-receita", "ops-monitor-worker",
             "pde-platform-backend", "video-management-service", "customer-agent-worker", "financial-agent-worker",
             "experiment-strategist-worker", "meta-ad-approver-worker", "landing-generator-agent-worker",
-            "product-discovery-worker");
+            "product-discovery-worker", "growth-operator-worker");
 
     private final McpProperties properties;
     private final DatabaseDiagnosticsService databaseDiagnosticsService;
@@ -58,6 +59,7 @@ public class McpController {
     private final RuntimeBuildInfoService runtimeBuildInfoService;
     private final VpsHostInventoryService vpsHostInventoryService;
     private final ProductDiscoveryWorkerHealthService productDiscoveryWorkerHealthService;
+    private final GrowthOperatorWorkerHealthService growthOperatorWorkerHealthService;
     private final MetaDiagnosticsService metaDiagnosticsService;
     private final GithubActionsService githubActionsService;
     private final SensitiveDataSanitizer sensitiveDataSanitizer;
@@ -75,6 +77,7 @@ public class McpController {
                          RuntimeBuildInfoService runtimeBuildInfoService,
                          VpsHostInventoryService vpsHostInventoryService,
                          ProductDiscoveryWorkerHealthService productDiscoveryWorkerHealthService,
+                         GrowthOperatorWorkerHealthService growthOperatorWorkerHealthService,
                          MetaDiagnosticsService metaDiagnosticsService,
                          GithubActionsService githubActionsService,
                          SensitiveDataSanitizer sensitiveDataSanitizer,
@@ -88,6 +91,7 @@ public class McpController {
         this.runtimeBuildInfoService = runtimeBuildInfoService;
         this.vpsHostInventoryService = vpsHostInventoryService;
         this.productDiscoveryWorkerHealthService = productDiscoveryWorkerHealthService;
+        this.growthOperatorWorkerHealthService = growthOperatorWorkerHealthService;
         this.metaDiagnosticsService = metaDiagnosticsService;
         this.githubActionsService = githubActionsService;
         this.sensitiveDataSanitizer = sensitiveDataSanitizer;
@@ -347,6 +351,14 @@ public class McpController {
                                     "additionalProperties", false)
                     ),
                     Map.of(
+                            "name", "growth_operator_worker_health",
+                            "description", "Consulta o health operacional do Growth Operator Worker.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
                             "name", "meta_docs_get",
                             "description", "Busca uma página de documentação da Meta em hosts aprovados e retorna texto simplificado.",
                             "inputSchema", Map.of(
@@ -471,6 +483,7 @@ public class McpController {
                 case "vps_host_inventory" -> callVpsHostInventoryTool(id, arguments);
                 case "vps_docker_logs" -> callVpsDockerLogsTool(id, arguments);
                 case "product_discovery_worker_health" -> callProductDiscoveryWorkerHealthTool(id);
+                case "growth_operator_worker_health" -> callGrowthOperatorWorkerHealthTool(id);
                 case "meta_docs_get" -> callMetaDocsTool(id, arguments);
                 case "meta_graph_get" -> callMetaGraphGetTool(id, arguments);
                 case "meta_graph_debug_token" -> callMetaGraphDebugTokenTool(id, arguments);
@@ -844,6 +857,20 @@ public class McpController {
         } catch (Exception ex) {
             logger.error("Falha ao executar product_discovery_worker_health: requestId={}", id, ex);
             return error(id, -32603, "Failed to read product discovery worker health: " + ex.getMessage());
+        }
+    }
+
+    /** Consulta o health HTTP do Growth Operator Worker no host operacional. */
+    private Map<String, Object> callGrowthOperatorWorkerHealthTool(Object id) {
+        try {
+            Map<String, Object> result = growthOperatorWorkerHealthService.readHealth();
+            return successToolResult(id, result, "Growth Operator Worker health: " + result.get("payload"));
+        } catch (IllegalArgumentException ex) {
+            logger.warn("MCP growth_operator_worker_health inválido: requestId={} motivo={}", id, ex.getMessage());
+            return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            logger.error("Falha ao executar growth_operator_worker_health: requestId={}", id, ex);
+            return error(id, -32603, "Failed to read growth operator worker health: " + ex.getMessage());
         }
     }
 

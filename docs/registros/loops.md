@@ -8,6 +8,13 @@
 >
 > Uso obrigatório recomendado: antes de corrigir problema em GeraLanding, Facebook Ads, Lead Portal, OpenAI/schema, pipelines administrativos ou pipeline de hipótese, verificar se a solicitação reabre algum loop listado aqui.
 
+## LOOP-GROWTH-OPERATOR-OBSERVABILIDADE-001 — backlog sem diagnóstico do executor
+
+- **Sintoma:** o `growth-operator-worker` deixa de consumir a fila, mas o MCP não oferece health nem logs próprios do executor.
+- **Causa-raiz:** o worker não publicava porta, logfile persistente ou endpoints operacionais; o deploy validava apenas processo e identidade Codex.
+- **Correção efetiva:** exposição HTTP versionada de health/logfile, aliases no MCP e validação obrigatória dos endpoints durante o deploy.
+- **Prevenção:** testes de contrato preservam host e rotas; o deploy falha se health ou logfile não responderem.
+
 ## LOOP-EXPERIMENTO-FAKE-CONTABILIZADO-COMO-HUMANO — Métricas de homologação
 
 - Sintoma: sessões de homologação do experimento fake apareciam como humanas para o Operador de Crescimento.

@@ -159,6 +159,11 @@ main() {
   ./scripts/validate-liquibase-mysql57.sh
   validate_liquibase_with_maven
 
+  log "Empacotando backend antes de montar a imagem de runtime"
+  run_with_heartbeat \
+    "maven package backend" \
+    mvn -B -s backend/settings.xml -f backend/ads-service/pom.xml package -DskipTests
+
   log "Buildando imagem backend ${BACKEND_IMAGE}:${IMAGE_TAG}"
   run_with_heartbeat \
     "docker build backend" \

@@ -22,6 +22,12 @@ public class AgentTaskController {
     return service.inbox(agentKey);
   }
 
+  /** Lista todo trabalho que ainda exige atuação de algum agente. */
+  @GetMapping("/active")
+  public List<AgentTaskResponse> activeTasks() {
+    return service.activeTasks();
+  }
+
   /** Permite que uma pessoa abra uma solicitação pela tela. */
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)

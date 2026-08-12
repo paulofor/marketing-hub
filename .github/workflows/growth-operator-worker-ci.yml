@@ -6,6 +6,8 @@ on:
     paths:
       - growth-operator-worker/**
       - .github/workflows/growth-operator-worker-ci.yml
+      - scripts/reconcile-agent-codex-auth.sh
+      - scripts/test-shared-agent-codex-auth.sh
   workflow_dispatch:
 
 concurrency:
@@ -80,17 +82,9 @@ jobs:
         run: |
           set -euo pipefail
           ssh "${VPS_USER}@${VPS_IP}" "\
-            install -d -m 700 -o 10001 -g 10001 /opt/marketing-hub/agents/growth-operator/codex-home \
-            && if [ ! -s /opt/marketing-hub/agents/growth-operator/codex-home/auth.json ]; then \
-                 test -s /opt/growth-operator/codex-home/auth.json \
-                 && install -m 600 -o 10001 -g 10001 /opt/growth-operator/codex-home/auth.json /opt/marketing-hub/agents/growth-operator/codex-home/auth.json; \
-                 if [ -s /opt/growth-operator/codex-home/config.toml ]; then \
-                   install -m 600 -o 10001 -g 10001 /opt/growth-operator/codex-home/config.toml /opt/marketing-hub/agents/growth-operator/codex-home/config.toml; \
-                 fi; \
-               fi \
-            && test -s /opt/marketing-hub/agents/growth-operator/codex-home/auth.json \
-            || { printf '%s\\n' 'Falha: sessão Codex operacional não está disponível para migrar o Operador.'; exit 1; }; \
-            export GROWTH_OPERATOR_CODEX_HOME=/opt/marketing-hub/agents/growth-operator/codex-home \
+            bash '${REPOSITORY_DIR}/scripts/reconcile-agent-codex-auth.sh' \
+            || { printf '%s\\n' 'Falha: sessão Codex compartilhada dos agentes não pôde ser reconciliada.'; exit 1; }; \
+            export GROWTH_OPERATOR_CODEX_HOME=/opt/growth-operator/codex-home \
                    BACKEND_URL=http://191.252.181.168 \
                    MARKETING_HUB_URL=http://191.252.181.168 \
                    MARKETING_HUB_REPOSITORY_HOST='${REPOSITORY_DIR}' \

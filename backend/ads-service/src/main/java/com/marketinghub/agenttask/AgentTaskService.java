@@ -154,6 +154,16 @@ public class AgentTaskService {
         .toList();
   }
 
+  /** Lista a fila operacional central com todo trabalho pendente, ativo ou bloqueado. */
+  @Transactional(readOnly = true)
+  public List<AgentTaskResponse> activeTasks() {
+    return repository
+        .findByStatusInOrderByUpdatedAtDescIdDesc(List.of("IN_PROGRESS", "BLOCKED", "PENDING"))
+        .stream()
+        .map(this::response)
+        .toList();
+  }
+
   /** Atualiza o estado sem permitir saltos que eliminem a rastreabilidade do trabalho. */
   @Transactional
   public AgentTaskResponse updateStatus(Long taskId, UpdateAgentTaskStatusRequest request) {

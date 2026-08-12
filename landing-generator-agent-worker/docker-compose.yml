@@ -18,7 +18,7 @@ services:
       - "8100:8100"
     volumes:
       - ${MARKETING_HUB_REPOSITORY_HOST:-..}:/workspace/marketing-hub:ro
-      - ${LANDING_GENERATOR_CODEX_HOME:?Defina uma identidade Codex exclusiva}:/home/landingagent/.codex
+      - ${LANDING_GENERATOR_CODEX_HOME:?Defina a sessão Codex compartilhada dos agentes}:/home/landingagent/.codex
     read_only: true
     tmpfs:
       - /tmp:size=512m,noexec,nosuid

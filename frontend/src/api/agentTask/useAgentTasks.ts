@@ -16,6 +16,16 @@ export function useAgentTasks(agentKey?: string) {
   });
 }
 
+/** Consulta a fila central de trabalho que ainda exige atuação dos agentes. */
+export function useActiveAgentTasks() {
+  return useQuery({
+    queryKey: ["agent-tasks", "active"],
+    queryFn: async () =>
+      (await axios.get<AgentTask[]>("/api/agent-tasks/active")).data,
+    refetchInterval: 15_000,
+  });
+}
+
 /** Abre uma solicitação humana e atualiza a caixa do destinatário. */
 export function useCreateAgentTask(agentKey?: string) {
   const queryClient = useQueryClient();

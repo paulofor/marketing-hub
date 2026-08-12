@@ -123,6 +123,38 @@ class AgentTaskServiceTest {
     assertThat(service.inbox("landing-generator")).isEmpty();
   }
 
+  /** Reúne em uma fila central somente tarefas que ainda exigem atuação. */
+  @Test
+  void listsActiveTasksAcrossAgents() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    Agent assignee = agent(8L, "videomaker", "Apolo");
+    AgentTask task = new AgentTask();
+    task.setId(91L);
+    task.setAssignedAgent(assignee);
+    task.setRequestedByType("HUMAN");
+    task.setRequestedByName("Operador");
+    task.setTitle("Finalizar vídeo MUSA");
+    task.setDescription("Concluir montagem e QA.");
+    task.setPriority("URGENT");
+    task.setStatus("IN_PROGRESS");
+    task.setTaskKind("WORK");
+    task.setCreatedAt(Instant.parse("2026-08-12T10:00:00Z"));
+    task.setUpdatedAt(task.getCreatedAt());
+    when(repository.findByStatusInOrderByUpdatedAtDescIdDesc(
+            List.of("IN_PROGRESS", "BLOCKED", "PENDING")))
+        .thenReturn(List.of(task));
+    AgentTaskService service =
+        new AgentTaskService(repository, mock(AgentRepository.class), Clock.systemUTC());
+
+    assertThat(service.activeTasks())
+        .singleElement()
+        .satisfies(
+            result -> {
+              assertThat(result.assignedAgentNickname()).isEqualTo("Apolo");
+              assertThat(result.status()).isEqualTo("IN_PROGRESS");
+            });
+  }
+
   /** Impede concluir uma tarefa que ainda não foi iniciada. */
   @Test
   void rejectsInvalidStatusJump() {

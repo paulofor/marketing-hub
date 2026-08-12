@@ -3,6 +3,12 @@ info:
   title: Marketing Hub - Caixa de Entrada dos Agentes
   version: 1.0.0
 paths:
+  /api/agent-tasks/active:
+    get:
+      summary: Lista todas as tarefas que ainda exigem atuação dos agentes
+      responses:
+        '200':
+          description: Tarefas pendentes, em andamento ou bloqueadas, ordenadas pela atividade mais recente
   /api/agent-tasks/agents/{agentKey}:
     get:
       summary: Lista a caixa de entrada de um agente

@@ -220,6 +220,11 @@ const NAV_SECTIONS: NavSection[] = [
         icon: Bot,
       },
       {
+        to: "/agent-tasks",
+        label: "Tarefas dos agentes",
+        icon: List,
+      },
+      {
         to: "/system-improvements",
         label: "Melhorias do Sistema",
         icon: ClipboardCheck,

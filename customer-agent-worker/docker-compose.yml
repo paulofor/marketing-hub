@@ -15,7 +15,7 @@ services:
     ports:
       - "${CUSTOMER_AGENT_WORKER_PORT:-8099}:8099"
     volumes:
-      - ${CUSTOMER_AGENT_CODEX_HOME:?Defina uma identidade Codex exclusiva}:/home/operator/.codex
+      - ${CUSTOMER_AGENT_CODEX_HOME:?Defina a sessão Codex compartilhada dos agentes}:/home/operator/.codex
       - ${MARKETING_HUB_REPOSITORY:-..}:/workspace:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"

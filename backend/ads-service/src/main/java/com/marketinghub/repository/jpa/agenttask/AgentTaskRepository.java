@@ -10,6 +10,9 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
   /** Lista a caixa do agente com as solicitações mais recentes primeiro. */
   List<AgentTask> findByAssignedAgentAgentKeyOrderByCreatedAtDescIdDesc(String agentKey);
 
+  /** Lista todas as tarefas que ainda exigem atuação, priorizando a atividade mais recente. */
+  List<AgentTask> findByStatusInOrderByUpdatedAtDescIdDesc(List<String> statuses);
+
   /** Lista os registros vinculados a qualquer versão de um plano comercial. */
   List<AgentTask> findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
       String sourceReferencePrefix);

@@ -14,7 +14,7 @@ services:
       - "${FINANCIAL_AGENT_WORKER_PORT:-8095}:8095"
     volumes:
       - ${MARKETING_HUB_REPOSITORY_PATH:-..}:/workspace/marketing-hub:ro
-      - ${FINANCIAL_AGENT_CODEX_HOME:?Defina uma identidade Codex exclusiva}:/home/financial-agent/.codex
+      - ${FINANCIAL_AGENT_CODEX_HOME:?Defina a sessão Codex compartilhada dos agentes}:/home/financial-agent/.codex
     read_only: true
     tmpfs:
       - /tmp:size=128m,noexec,nosuid

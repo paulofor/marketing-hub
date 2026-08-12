@@ -53,6 +53,8 @@ vi.mock("../../api/agent/useAgentWorkMonitor", () => ({
         progressDetail: "Etapa em processamento",
         externalDecisionRequired: false,
         lastActivityAt: "2026-08-11T04:00:00Z",
+        dailyTokens: 12345,
+        dailyTokenDate: "2026-08-11",
       },
     ],
   }),
@@ -92,5 +94,7 @@ describe("AgentListPage", () => {
       screen.getByText("Correção autônoma da landing do experimento #88"),
     ).toBeInTheDocument();
     expect(screen.getByText("WORKING")).toBeInTheDocument();
+    expect(screen.getByText("Tokens hoje")).toBeInTheDocument();
+    expect(screen.getByText("12.345")).toBeInTheDocument();
   });
 });

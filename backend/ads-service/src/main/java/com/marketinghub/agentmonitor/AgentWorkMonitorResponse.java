@@ -1,6 +1,7 @@
 package com.marketinghub.agentmonitor;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 /**
  * Responsabilidade: expor o estado operacional comprovável de um agente na tela de monitoramento.
@@ -17,4 +18,6 @@ public record AgentWorkMonitorResponse(
     boolean externalDecisionRequired,
     String externalDecision,
     String sourceReference,
-    Instant lastActivityAt) {}
+    Instant lastActivityAt,
+    long dailyTokens,
+    LocalDate dailyTokenDate) {}

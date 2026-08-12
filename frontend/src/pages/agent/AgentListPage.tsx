@@ -63,6 +63,7 @@ export default function AgentListPage() {
                   <th>Estado</th>
                   <th>Trabalho atual</th>
                   <th>Dificuldade / decisão</th>
+                  <th className="text-end">Tokens hoje</th>
                   <th>Última atividade</th>
                 </tr>
               </thead>
@@ -97,6 +98,14 @@ export default function AgentListPage() {
                       {item.externalDecision ||
                         item.difficulty ||
                         "Sem dificuldade registrada"}
+                    </td>
+                    <td className="text-end text-nowrap">
+                      <span className="fw-semibold">
+                        {item.dailyTokens.toLocaleString("pt-BR")}
+                      </span>
+                      <div className="small text-body-secondary">
+                        entrada + saída
+                      </div>
                     </td>
                     <td className="small">
                       {item.lastActivityAt

@@ -128,7 +128,7 @@ class VideoProjectServiceTest {
     UpdateVideoProjectRequest request =
         new UpdateVideoProjectRequest(
             4L,
-            99L,
+            null,
             null,
             null,
             "musa-campanha",
@@ -182,6 +182,7 @@ class VideoProjectServiceTest {
     assertThat(result.contextType()).isEqualTo("CAMPAIGN");
     assertThat(result.storyText()).contains("rotina guiada por IA");
     assertThat(result.status()).isEqualTo(VideoProjectStatus.READY_FOR_RENDER);
+    assertThat(result.commercialPlanId()).isNull();
   }
 
   /** Permite projeto comercial curto quando a categoria declara esse uso no funil. */

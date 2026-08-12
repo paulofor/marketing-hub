@@ -1074,3 +1074,11 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o avanço automático wireframe → copy não verificava se uma copy igual ou mais recente já havia sido enfileirada para o experimento.
 - **Correção:** o backend só cria a próxima copy quando a última copy é anterior ao wireframe que acabou de concluir.
 - **Prevenção:** teste de contrato simula callback tardio de wireframe e impede duplicação da próxima etapa.
+
+## LOOP-MUSA-PROJETO-LEGADO-PLANO-OBRIGATORIO — perfil de Apolo não é salvo
+
+- **Data:** 2026-08-12.
+- **Sintoma:** ao vincular um perfil de vídeo a um projeto MUSA legado, a edição retorna HTTP 400 e o ciclo de Apolo retorna HTTP 409 por ausência do perfil.
+- **Causa-raiz:** os DTOs REST ainda exigiam `commercialPlanId`, embora a entidade, o ledger e o ciclo autônomo já suportassem projetos legados sem plano comercial.
+- **Correção:** criação e edição de projetos aceitam plano comercial ausente, preservando o vínculo opcional e a segregação financeira já aplicada pelo serviço.
+- **Prevenção:** teste atualiza um projeto sem plano, persiste o perfil e comprova que o contrato continua aceitando o cenário legado.

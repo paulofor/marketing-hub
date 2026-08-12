@@ -77,9 +77,21 @@ public class CommercialPlanAgentActivityService {
     var planExperiments = new LinkedHashSet<>(plan.getExperiments());
     if (plan.getExperiment() != null) planExperiments.add(plan.getExperiment());
     for (var experiment : planExperiments) {
-      landingRepository
-          .findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
-              experiment.getId(), "landing-generation-agent-v1")
+      List<GeraLandingStageExecution> landingExecutions =
+          landingRepository.findTop20ByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
+              experiment.getId(), "landing-generation-agent-v1");
+      landingExecutions.stream()
+          .findFirst()
+          .ifPresent(execution -> entries.add(landingEntry(execution)));
+      landingExecutions.stream()
+          .filter(this::isJourneyHomologation)
+          .findFirst()
+          .filter(
+              execution ->
+                  entries.stream()
+                      .noneMatch(
+                          entry ->
+                              entry.sourceReference().endsWith(execution.getAutonomousCycleId())))
           .ifPresent(execution -> entries.add(landingEntry(execution)));
     }
     entries.sort(
@@ -166,22 +178,33 @@ public class CommercialPlanAgentActivityService {
 
   /** Converte a execução mais recente de Dédalo vinculada ao experimento do plano. */
   private Entry landingEntry(GeraLandingStageExecution execution) {
+    boolean journeyHomologation = isJourneyHomologation(execution);
     return new Entry(
-        "LANDING",
+        journeyHomologation ? "JOURNEY_HOMOLOGATION" : "LANDING",
         "landing-generator",
         "Dédalo",
-        "Landing do experimento #" + execution.getExperimentId(),
+        journeyHomologation
+            ? "Homologação da jornada do experimento #" + execution.getExperimentId()
+            : "Landing do experimento #" + execution.getExperimentId(),
         execution.getStatus(),
         "Etapa " + execution.getStageCode(),
         null,
         execution.getErrorMessage(),
         false,
         null,
-        "geralanding-experiment:" + execution.getExperimentId(),
+        journeyHomologation
+            ? "commercial-plan-journey-homologation:" + execution.getAutonomousCycleId()
+            : "geralanding-experiment:" + execution.getExperimentId(),
         null,
         execution.getCostUsd(),
         null,
         latestActivity(execution));
+  }
+
+  /** Identifica exclusivamente ciclos criados pelo contrato de homologação comercial. */
+  private boolean isJourneyHomologation(GeraLandingStageExecution execution) {
+    return execution.getAutonomousCycleId() != null
+        && execution.getAutonomousCycleId().startsWith("cph-");
   }
 
   /** Converte a pesquisa estratégica de Atena e preserva seu parecer final estruturado. */

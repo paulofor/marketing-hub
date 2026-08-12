@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 /** Payload para edição de projeto de vídeo no estúdio. */
 public record UpdateVideoProjectRequest(
     @NotNull Long productId,
-    @NotNull Long commercialPlanId,
+    Long commercialPlanId,
     Long experimentId,
     Long salesVideoProfileId,
     @Size(max = 191) String campaignKey,

@@ -325,6 +325,10 @@ function buildCommercialPlanBlockers(
       owner: "Plano comercial",
       source: "Contexto oficial versionado",
     });
+
+    // O gargalo oficial já consolida a causa-raiz vigente. Execuções e marcos
+    // antigos permanecem no histórico e não voltam à fila operacional.
+    return blockers;
   }
 
   asArray(plan.milestones)
@@ -394,9 +398,13 @@ function buildCommercialPlanBlockers(
 function CommercialPlanBlockersPanel({
   plan,
   activity,
+  onExecute,
+  executing,
 }: {
   plan: CommercialPlan;
   activity?: CommercialPlanAgentActivity;
+  onExecute?: () => void;
+  executing?: boolean;
 }) {
   const blockers = useMemo(
     () => buildCommercialPlanBlockers(plan, activity),
@@ -454,7 +462,33 @@ function CommercialPlanBlockersPanel({
                   <dt>Evidência</dt>
                   <dd>{blocker.source}</dd>
                 </div>
+                <div>
+                  <dt>Critério de aprovação</dt>
+                  <dd>
+                    {plan.successCriteria?.trim() || "Ainda não definido."}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Prazo ou atualização</dt>
+                  <dd>
+                    {plan.deadline
+                      ? new Date(
+                          `${plan.deadline}T00:00:00`,
+                        ).toLocaleDateString("pt-BR")
+                      : formatInterventionDateTime(plan.updatedAt)}
+                  </dd>
+                </div>
               </dl>
+              {onExecute ? (
+                <button
+                  className="btn btn-primary mt-3"
+                  type="button"
+                  disabled={executing}
+                  onClick={onExecute}
+                >
+                  {executing ? "Acionando Dédalo..." : "Acionar Dédalo"}
+                </button>
+              ) : null}
             </article>
           ))}
         </div>
@@ -1607,6 +1641,11 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
   );
   const selectedPlanId = planId;
   const [isCreatingPlan, setIsCreatingPlan] = useState(false);
+  const [planView, setPlanView] = useState<"current" | "history">("current");
+  const [historyAgent, setHistoryAgent] = useState("ALL");
+  const [historyStatus, setHistoryStatus] = useState("ALL");
+  const [historyPhase, setHistoryPhase] = useState("ALL");
+  const [historyPeriod, setHistoryPeriod] = useState("ALL");
   const [newPlanDraft, setNewPlanDraft] =
     useState<SaveCommercialPlanPayload>(emptyCommercialPlan);
   const currentMonthPlan = useMemo<CommercialPlan>(
@@ -1639,6 +1678,26 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
         );
       }),
     [agentActivity?.entries],
+  );
+  const filteredAgentActivity = useMemo(
+    () =>
+      chronologicalAgentActivity.filter(
+        (entry) =>
+          (historyAgent === "ALL" || entry.agentNickname === historyAgent) &&
+          (historyStatus === "ALL" || entry.status === historyStatus) &&
+          (historyPhase === "ALL" || entry.recordType === historyPhase) &&
+          (historyPeriod === "ALL" ||
+            (entry.occurredAt != null &&
+              new Date(entry.occurredAt).getTime() >=
+                Date.now() - Number(historyPeriod) * 86_400_000)),
+      ),
+    [
+      chronologicalAgentActivity,
+      historyAgent,
+      historyPeriod,
+      historyPhase,
+      historyStatus,
+    ],
   );
   const revenueProjectionsQuery = useRevenueProjections(
     currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
@@ -1805,6 +1864,27 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
       ) : null}
 
       {currentMonthPlan.id > 0 ? (
+        <nav className="nav nav-tabs" aria-label="Visões do plano comercial">
+          <button
+            className={`nav-link ${planView === "current" ? "active" : ""}`}
+            type="button"
+            aria-selected={planView === "current"}
+            onClick={() => setPlanView("current")}
+          >
+            Estado atual
+          </button>
+          <button
+            className={`nav-link ${planView === "history" ? "active" : ""}`}
+            type="button"
+            aria-selected={planView === "history"}
+            onClick={() => setPlanView("history")}
+          >
+            Histórico
+          </button>
+        </nav>
+      ) : null}
+
+      {currentMonthPlan.id > 0 && planView === "current" ? (
         <CommercialOperationalFlowPanel planId={currentMonthPlan.id} />
       ) : null}
 
@@ -1812,10 +1892,19 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
         <CommercialPlanObjectiveAndGoals plan={currentMonthPlan} />
       ) : null}
 
-      {currentMonthPlan.id > 0 ? (
+      {currentMonthPlan.id > 0 && planView === "current" ? (
         <CommercialPlanBlockersPanel
           plan={currentMonthPlan}
           activity={agentActivity}
+          executing={requestJourneyHomologation.isPending}
+          onExecute={
+            currentMonthPlan.experimentId
+              ? () =>
+                  requestJourneyHomologation.mutate(
+                    currentMonthPlan.experimentId as number,
+                  )
+              : undefined
+          }
         />
       ) : null}
 
@@ -1947,7 +2036,7 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
         </section>
       ) : null}
 
-      {currentMonthPlan.id > 0 ? (
+      {currentMonthPlan.id > 0 && planView === "history" ? (
         <section className="card" aria-labelledby="plan-agent-activity-title">
           <div className="card-body d-flex flex-column gap-3">
             <div className="d-flex flex-column flex-lg-row justify-content-between gap-2">
@@ -2033,7 +2122,98 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
                   </span>
                 </div>
 
-                {chronologicalAgentActivity.length > 0 ? (
+                <div className="row g-2" aria-label="Filtros do histórico">
+                  <div className="col-md-3">
+                    <label className="form-label" htmlFor="history-agent">
+                      Agente
+                    </label>
+                    <select
+                      id="history-agent"
+                      className="form-select"
+                      value={historyAgent}
+                      onChange={(event) => setHistoryAgent(event.target.value)}
+                    >
+                      <option value="ALL">Todos</option>
+                      {Array.from(
+                        new Set(
+                          chronologicalAgentActivity.map(
+                            (entry) => entry.agentNickname,
+                          ),
+                        ),
+                      ).map((agent) => (
+                        <option key={agent} value={agent}>
+                          {agent}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label" htmlFor="history-status">
+                      Status
+                    </label>
+                    <select
+                      id="history-status"
+                      className="form-select"
+                      value={historyStatus}
+                      onChange={(event) => setHistoryStatus(event.target.value)}
+                    >
+                      <option value="ALL">Todos</option>
+                      {Array.from(
+                        new Set(
+                          chronologicalAgentActivity.map(
+                            (entry) => entry.status,
+                          ),
+                        ),
+                      ).map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label" htmlFor="history-phase">
+                      Fase
+                    </label>
+                    <select
+                      id="history-phase"
+                      className="form-select"
+                      value={historyPhase}
+                      onChange={(event) => setHistoryPhase(event.target.value)}
+                    >
+                      <option value="ALL">Todas</option>
+                      {Array.from(
+                        new Set(
+                          chronologicalAgentActivity.map(
+                            (entry) => entry.recordType,
+                          ),
+                        ),
+                      ).map((phase) => (
+                        <option key={phase} value={phase}>
+                          {phase}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label" htmlFor="history-period">
+                      Período
+                    </label>
+                    <select
+                      id="history-period"
+                      className="form-select"
+                      value={historyPeriod}
+                      onChange={(event) => setHistoryPeriod(event.target.value)}
+                    >
+                      <option value="ALL">Todo o período</option>
+                      <option value="7">Últimos 7 dias</option>
+                      <option value="30">Últimos 30 dias</option>
+                      <option value="90">Últimos 90 dias</option>
+                    </select>
+                  </div>
+                </div>
+
+                {filteredAgentActivity.length > 0 ? (
                   <div className="d-flex flex-column gap-2">
                     <div>
                       <h3 className="h6 mb-1">Histórico cronológico</h3>
@@ -2046,7 +2226,7 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
                       className="commercial-planning-agent-timeline"
                       aria-label="Atuações dos agentes"
                     >
-                      {chronologicalAgentActivity.map((entry, index) => (
+                      {filteredAgentActivity.map((entry, index) => (
                         <li
                           className="commercial-planning-agent-event"
                           key={`${entry.recordType}-${entry.sourceReference}-${index}`}

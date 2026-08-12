@@ -271,13 +271,22 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
             commercialPlanId: planId,
             currentStage: "HOMOLOGATE_JOURNEY",
             status: "BLOQUEADO",
-            nextAction: "Solicitar a homologação de tracking, pagamento e entrega.",
+            nextAction:
+              "Solicitar a homologação de tracking, pagamento e entrega.",
             blocker: "Jornada essencial ainda não homologada.",
             expectedMetric: "Tempo até experimento publicável.",
             decisionCriterion: "Continuar apenas com a jornada homologada.",
             stages: [
-              { code: "CHOOSE_OFFER", label: "Escolher oferta", status: "CONCLUIDO" },
-              { code: "HOMOLOGATE_JOURNEY", label: "Homologar jornada", status: "ATUAL" },
+              {
+                code: "CHOOSE_OFFER",
+                label: "Escolher oferta",
+                status: "CONCLUIDO",
+              },
+              {
+                code: "HOMOLOGATE_JOURNEY",
+                label: "Homologar jornada",
+                status: "ATUAL",
+              },
             ],
             specialistDecisions: [
               {
@@ -927,10 +936,22 @@ describe("CommercialPlanningPage", () => {
     ).toBeTruthy();
   });
 
-  it("mostra trabalhos, decisões e finanças dos agentes dentro do plano", () => {
+  it("separa o estado atual do histórico auditável dos agentes", async () => {
+    const user = userEvent.setup();
     const { container } = renderPage();
 
+    expect(screen.getByRole("button", { name: "Estado atual" })).toHaveClass(
+      "active",
+    );
+    expect(screen.queryByText("Atuação dos agentes no plano")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Histórico" }));
+
     expect(screen.getByText("Atuação dos agentes no plano")).toBeTruthy();
+    expect(screen.getByLabelText("Agente")).toBeTruthy();
+    expect(screen.getByLabelText("Status")).toBeTruthy();
+    expect(screen.getByLabelText("Fase")).toBeTruthy();
+    expect(screen.getByLabelText("Período")).toBeTruthy();
     expect(screen.getByText("Histórico cronológico")).toBeTruthy();
     expect(screen.getAllByText("Parecer final").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Data e hora")).toHaveLength(2);
@@ -999,9 +1020,10 @@ describe("CommercialPlanningPage", () => {
     expect(
       screen.getAllByText("Ainda não existe compra aprovada.").length,
     ).toBeGreaterThan(0);
-    expect(screen.getByText("Homologar entrega")).toBeTruthy();
-    expect(screen.getByText("Briefing não retorna ao plano.")).toBeTruthy();
-    expect(screen.getByText("Premissas financeiras incompletas")).toBeTruthy();
+    expect(screen.queryByText("Homologar entrega")).toBeNull();
+    expect(screen.queryByText("Briefing não retorna ao plano.")).toBeNull();
+    expect(screen.queryByText("Premissas financeiras incompletas")).toBeNull();
+    expect(screen.getByText("1 bloqueio ativo")).toBeTruthy();
     expect(screen.getAllByText("Como desbloquear").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Evidência").length).toBeGreaterThan(0);
   });

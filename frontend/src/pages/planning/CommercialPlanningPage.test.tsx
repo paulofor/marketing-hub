@@ -240,6 +240,8 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
                   agentNickname: "Atena",
                   title: "Análise inicial do plano",
                   status: "COMPLETED",
+                  finalOpinion:
+                    "Validar a oferta com pagamento real antes de ampliar aquisição.",
                   sourceReference: "commercial-plan:1@v1",
                   occurredAt: "2026-08-10T12:00:00Z",
                 },
@@ -882,6 +884,12 @@ describe("CommercialPlanningPage", () => {
 
     expect(screen.getByText("Atuação dos agentes no plano")).toBeTruthy();
     expect(screen.getByText("Histórico cronológico")).toBeTruthy();
+    expect(screen.getByText("Parecer final")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Validar a oferta com pagamento real antes de ampliar aquisição.",
+      ),
+    ).toBeTruthy();
     expect(screen.getAllByText("Plutus").length).toBeGreaterThan(0);
     expect(screen.getByText("1 decisões pendentes")).toBeTruthy();
     expect(

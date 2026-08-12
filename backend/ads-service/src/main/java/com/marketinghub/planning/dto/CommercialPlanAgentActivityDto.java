@@ -27,6 +27,7 @@ public record CommercialPlanAgentActivityDto(
       String title,
       String status,
       String detail,
+      String finalOpinion,
       String difficulty,
       boolean externalDecisionRequired,
       String externalDecision,

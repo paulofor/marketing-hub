@@ -1,12 +1,18 @@
 package com.marketinghub.planning.service;
 
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.experimentstrategist.ExperimentStrategistExecution;
+import com.marketinghub.financialagent.FinancialAgentExecution;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
+import com.marketinghub.growthoperator.GrowthOperatorExecution;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.dto.CommercialPlanAgentActivityDto;
 import com.marketinghub.planning.dto.CommercialPlanAgentActivityDto.Entry;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.experimentstrategist.ExperimentStrategistExecutionRepository;
+import com.marketinghub.repository.jpa.financialagent.FinancialAgentExecutionRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.repository.jpa.growthoperator.GrowthOperatorExecutionRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository;
 import com.marketinghub.salesvideo.VideoProductionCycle;
 import java.math.BigDecimal;
@@ -23,6 +29,9 @@ public class CommercialPlanAgentActivityService {
   private final AgentTaskRepository taskRepository;
   private final VideoProductionCycleRepository videoCycleRepository;
   private final GeraLandingStageExecutionRepository landingRepository;
+  private final ExperimentStrategistExecutionRepository strategistRepository;
+  private final FinancialAgentExecutionRepository financialRepository;
+  private final GrowthOperatorExecutionRepository growthOperatorRepository;
   private final CommercialPlanVersionService versionService;
 
   /** Configura as fontes persistidas da visão unificada do plano. */
@@ -30,10 +39,16 @@ public class CommercialPlanAgentActivityService {
       AgentTaskRepository taskRepository,
       VideoProductionCycleRepository videoCycleRepository,
       GeraLandingStageExecutionRepository landingRepository,
+      ExperimentStrategistExecutionRepository strategistRepository,
+      FinancialAgentExecutionRepository financialRepository,
+      GrowthOperatorExecutionRepository growthOperatorRepository,
       CommercialPlanVersionService versionService) {
     this.taskRepository = taskRepository;
     this.videoCycleRepository = videoCycleRepository;
     this.landingRepository = landingRepository;
+    this.strategistRepository = strategistRepository;
+    this.financialRepository = financialRepository;
+    this.growthOperatorRepository = growthOperatorRepository;
     this.versionService = versionService;
   }
 
@@ -49,6 +64,15 @@ public class CommercialPlanAgentActivityService {
     tasks.forEach(task -> entries.add(taskEntry(task)));
     cycles.forEach(cycle -> entries.add(videoEntry(cycle, "financial-agent", "Plutus")));
     cycles.forEach(cycle -> entries.add(videoEntry(cycle, "videomaker", "Apolo")));
+    strategistRepository
+        .findByCommercialPlanIdOrderByCreatedAtDesc(plan.getId())
+        .forEach(execution -> entries.add(strategistEntry(execution)));
+    financialRepository
+        .findByCommercialPlanIdOrderByCreatedAtDesc(plan.getId())
+        .forEach(execution -> entries.add(financialEntry(execution)));
+    growthOperatorRepository
+        .findByCommercialPlanIdOrderByCreatedAtDesc(plan.getId())
+        .forEach(execution -> entries.add(growthOperatorEntry(execution)));
     if (plan.getExperiment() != null) {
       landingRepository
           .findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
@@ -102,6 +126,7 @@ public class CommercialPlanAgentActivityService {
         task.getTitle(),
         task.getStatus(),
         task.getDescription(),
+        null,
         "BLOCKED".equals(task.getStatus()) ? "Tarefa bloqueada na mesa do agente." : null,
         decision,
         decision ? "Decisão pendente no gate " + task.getGateCode() + "." : null,
@@ -125,6 +150,7 @@ public class CommercialPlanAgentActivityService {
             : "Produção audiovisual do ciclo #" + cycle.getId(),
         pending && !plutus ? "WAITING" : cycle.getStatus(),
         cycle.getFinancialReason(),
+        plutus ? cycle.getFinancialReason() : null,
         "FINANCIAL_BLOCKED".equals(cycle.getStatus()) ? cycle.getFinancialReason() : null,
         pending && plutus,
         pending && plutus ? "Plutus precisa decidir o orçamento antes da geração." : null,
@@ -144,6 +170,7 @@ public class CommercialPlanAgentActivityService {
         "Landing do experimento #" + execution.getExperimentId(),
         execution.getStatus(),
         "Etapa " + execution.getStageCode(),
+        null,
         execution.getErrorMessage(),
         false,
         null,
@@ -152,6 +179,74 @@ public class CommercialPlanAgentActivityService {
         execution.getCostUsd(),
         null,
         latestActivity(execution));
+  }
+
+  /** Converte a pesquisa estratégica de Atena e preserva seu parecer final estruturado. */
+  private Entry strategistEntry(ExperimentStrategistExecution execution) {
+    return new Entry(
+        "STRATEGIC_OPINION",
+        "experiment-strategist",
+        "Atena",
+        "Parecer estratégico #" + execution.getId(),
+        execution.getStatus().name(),
+        execution.getResearchQuestion(),
+        execution.getRecommendationJson(),
+        execution.getErrorMessage(),
+        false,
+        null,
+        "experiment-strategist-execution:" + execution.getId(),
+        null,
+        execution.getEstimatedCost(),
+        null,
+        execution.getFinishedAt() != null ? execution.getFinishedAt() : execution.getUpdatedAt());
+  }
+
+  /** Converte a análise de Plutus e preserva o relatório financeiro final. */
+  private Entry financialEntry(FinancialAgentExecution execution) {
+    return new Entry(
+        "FINANCIAL_OPINION",
+        "financial-agent",
+        "Plutus",
+        "Parecer financeiro #" + execution.getId(),
+        execution.getStatus().name(),
+        execution.getProjectionRequest(),
+        execution.getDailyReport() != null
+            ? execution.getDailyReport()
+            : execution.getReconciliationJson(),
+        execution.getErrorMessage(),
+        false,
+        null,
+        "financial-agent-execution:" + execution.getId(),
+        null,
+        execution.getEstimatedCost(),
+        null,
+        execution.getFinishedAt() != null ? execution.getFinishedAt() : execution.getUpdatedAt());
+  }
+
+  /** Converte a coordenação de Hermes e preserva diagnóstico e recomendação finais. */
+  private Entry growthOperatorEntry(GrowthOperatorExecution execution) {
+    String opinion =
+        execution.getDailyReport() != null
+            ? execution.getDailyReport()
+            : execution.getRecommendedAction();
+    return new Entry(
+        "GROWTH_OPINION",
+        "growth-operator",
+        "Hermes",
+        "Parecer de crescimento #" + execution.getId(),
+        execution.getStatus().name(),
+        execution.getObjective(),
+        opinion,
+        execution.getErrorMessage() != null ? execution.getErrorMessage() : execution.getBlocker(),
+        false,
+        null,
+        "growth-operator-execution:" + execution.getId(),
+        null,
+        execution.getEstimatedCost(),
+        execution.getRecommendedDecision() != null
+            ? execution.getRecommendedDecision().name()
+            : null,
+        execution.getFinishedAt() != null ? execution.getFinishedAt() : execution.getUpdatedAt());
   }
 
   /** Seleciona o instante mais recente persistido na execução de landing. */

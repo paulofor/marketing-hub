@@ -1959,6 +1959,7 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
                             <th scope="col">Ordem</th>
                             <th>Agente</th>
                             <th>Registro</th>
+                            <th>Parecer final</th>
                             <th>Status</th>
                             <th>Dificuldade / decisão</th>
                             <th>Financeiro</th>
@@ -1988,6 +1989,17 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
                                     {entry.detail}
                                   </small>
                                 ) : null}
+                              </td>
+                              <td>
+                                {entry.finalOpinion ? (
+                                  <span className="commercial-planning-agent-opinion">
+                                    {entry.finalOpinion}
+                                  </span>
+                                ) : (
+                                  <span className="text-body-secondary">
+                                    Ainda não gerado
+                                  </span>
+                                )}
                               </td>
                               <td>
                                 <span className="badge text-bg-light border">

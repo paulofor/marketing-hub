@@ -1196,3 +1196,10 @@
     grid-template-columns: 1fr;
   }
 }
+.commercial-planning-agent-opinion {
+  display: block;
+  max-width: 32rem;
+  max-height: 12rem;
+  overflow: auto;
+  white-space: pre-wrap;
+}

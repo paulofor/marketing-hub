@@ -15,6 +15,13 @@
 - **Correção efetiva:** exposição HTTP versionada de health/logfile, aliases no MCP e validação obrigatória dos endpoints durante o deploy.
 - **Prevenção:** testes de contrato preservam host e rotas; o deploy falha se health ou logfile não responderem.
 
+## LOOP-GROWTH-OPERATOR-AUXILIARY-QUEUE-STARVATION — ciclo automático bloqueia pendências
+
+- **Sintoma:** execuções de Planos Comerciais permanecem `PENDING` embora o worker esteja saudável.
+- **Causa-raiz confirmada em 2026-08-12:** antes de reservar a fila principal, o scheduler tentava criar um ciclo automático para um plano configurado. O HTTP 409 esperado quando esse plano não possuía experimento `RUNNING` encerrava o polling e impedia o consumo de pendências independentes de Agenda Cheia e MUSA.
+- **Correção efetiva:** a avaliação do ciclo automático continua auditável, mas sua falha fica isolada; o worker sempre tenta reservar a fila principal no mesmo polling.
+- **Prevenção:** teste unitário exige `claimPending()` mesmo quando `ensureAutomaticCycle()` falha, impedindo uma fila auxiliar de causar starvation global.
+
 ## LOOP-EXPERIMENTO-FAKE-CONTABILIZADO-COMO-HUMANO — Métricas de homologação
 
 - Sintoma: sessões de homologação do experimento fake apareciam como humanas para o Operador de Crescimento.

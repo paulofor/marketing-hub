@@ -906,6 +906,9 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getByText("Atuação dos agentes no plano")).toBeTruthy();
     expect(screen.getByText("Histórico cronológico")).toBeTruthy();
     expect(screen.getAllByText("Parecer final").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Data e hora")).toHaveLength(2);
+    expect(screen.getByText(/11\/08\/2026.*12:00:00/)).toBeTruthy();
+    expect(screen.getByText(/10\/08\/2026.*12:00:00/)).toBeTruthy();
     expect(
       screen.getByRole("list", { name: "Atuações dos agentes" }),
     ).toBeTruthy();

@@ -1275,6 +1275,20 @@
   font-size: 0.82rem;
 }
 
+.commercial-planning-agent-event-datetime {
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.commercial-planning-agent-event-datetime time {
+  color: var(--bs-body-color);
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .commercial-planning-agent-event-content {
   display: grid;
   grid-template-columns: minmax(14rem, 0.8fr) minmax(20rem, 1.6fr);
@@ -1348,6 +1362,10 @@
     align-items: flex-start;
     flex-direction: column;
     gap: 0.4rem;
+  }
+
+  .commercial-planning-agent-event-datetime {
+    align-items: flex-start;
   }
 
   .commercial-planning-agent-event-content {

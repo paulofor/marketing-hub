@@ -33,6 +33,18 @@ import FinancialAgentPanel from "./FinancialAgentPanel";
 const CURRENT_OPERATIONAL_MONTH = new Date().toISOString().slice(0, 7);
 const LEGACY_PLAN_REFERENCE_MONTH = "2026-07";
 
+function formatInterventionDateTime(occurredAt?: string | null) {
+  if (!occurredAt) return "Data e hora não informadas";
+
+  const date = new Date(occurredAt);
+  if (Number.isNaN(date.getTime())) return "Data e hora inválidas";
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "medium",
+  }).format(date);
+}
+
 const emptyCommercialPlan: SaveCommercialPlanPayload = {
   name: "",
   status: "DRAFT",
@@ -2051,13 +2063,18 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
                                 <span className="badge text-bg-light border">
                                   {entry.status}
                                 </span>
-                                <time dateTime={entry.occurredAt ?? undefined}>
-                                  {entry.occurredAt
-                                    ? new Date(entry.occurredAt).toLocaleString(
-                                        "pt-BR",
-                                      )
-                                    : "Data não informada"}
-                                </time>
+                                <span className="commercial-planning-agent-event-datetime">
+                                  <span className="commercial-planning-agent-event-label">
+                                    Data e hora
+                                  </span>
+                                  <time
+                                    dateTime={entry.occurredAt ?? undefined}
+                                  >
+                                    {formatInterventionDateTime(
+                                      entry.occurredAt,
+                                    )}
+                                  </time>
+                                </span>
                               </div>
                             </header>
 

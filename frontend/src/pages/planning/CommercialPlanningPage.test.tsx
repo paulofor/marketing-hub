@@ -235,6 +235,15 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
               pendingDecisions: 1,
               entries: [
                 {
+                  recordType: "TASK",
+                  agentKey: "experiment-strategist",
+                  agentNickname: "Atena",
+                  title: "Análise inicial do plano",
+                  status: "COMPLETED",
+                  sourceReference: "commercial-plan:1@v1",
+                  occurredAt: "2026-08-10T12:00:00Z",
+                },
+                {
                   recordType: "FINANCIAL_GATE",
                   agentKey: "financial-agent",
                   agentNickname: "Plutus",
@@ -869,6 +878,7 @@ describe("CommercialPlanningPage", () => {
     renderPage();
 
     expect(screen.getByText("Atuação dos agentes no plano")).toBeTruthy();
+    expect(screen.getByText("Histórico cronológico")).toBeTruthy();
     expect(screen.getAllByText("Plutus").length).toBeGreaterThan(0);
     expect(screen.getByText("1 decisões pendentes")).toBeTruthy();
     expect(
@@ -877,6 +887,15 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getAllByText("US$ 0.00 / US$ 40.00").length).toBeGreaterThan(
       0,
     );
+    const chronologicalRows = screen.getAllByRole("row");
+    const plutusRow = chronologicalRows.findIndex((row) =>
+      row.textContent?.includes("Plutus"),
+    );
+    const atenaRow = chronologicalRows.findIndex((row) =>
+      row.textContent?.includes("Atena"),
+    );
+    expect(plutusRow).toBeGreaterThan(-1);
+    expect(atenaRow).toBeGreaterThan(plutusRow);
   });
 
   it("consolida bloqueios do plano com causa, impacto, ação e evidência", () => {

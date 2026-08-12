@@ -1330,6 +1330,18 @@ export default function CommercialPlanningPage() {
     currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
   );
   const agentActivity = agentActivityQuery.data;
+  const chronologicalAgentActivity = useMemo(
+    () =>
+      [...(agentActivity?.entries ?? [])].sort((left, right) => {
+        if (!left.occurredAt) return right.occurredAt ? 1 : 0;
+        if (!right.occurredAt) return -1;
+        return (
+          new Date(right.occurredAt).getTime() -
+          new Date(left.occurredAt).getTime()
+        );
+      }),
+    [agentActivity?.entries],
+  );
   const revenueProjectionsQuery = useRevenueProjections(
     currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
   );
@@ -1744,81 +1756,98 @@ export default function CommercialPlanningPage() {
                   </span>
                 </div>
 
-                {agentActivity.entries.length > 0 ? (
-                  <div className="table-responsive">
-                    <table className="table align-middle mb-0">
-                      <thead>
-                        <tr>
-                          <th>Agente</th>
-                          <th>Registro</th>
-                          <th>Status</th>
-                          <th>Dificuldade / decisão</th>
-                          <th>Financeiro</th>
-                          <th>Atualização</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {agentActivity.entries.map((entry, index) => (
-                          <tr
-                            key={`${entry.recordType}-${entry.sourceReference}-${index}`}
-                          >
-                            <td>
-                              <strong>{entry.agentNickname}</strong>
-                              <small className="d-block text-body-secondary">
-                                {entry.agentKey}
-                              </small>
-                            </td>
-                            <td>
-                              <strong>{entry.title}</strong>
-                              {entry.detail ? (
-                                <small className="d-block text-body-secondary">
-                                  {entry.detail}
-                                </small>
-                              ) : null}
-                            </td>
-                            <td>
-                              <span className="badge text-bg-light border">
-                                {entry.status}
-                              </span>
-                            </td>
-                            <td>
-                              {entry.externalDecisionRequired ? (
-                                <span className="text-warning-emphasis">
-                                  {entry.externalDecision}
-                                </span>
-                              ) : entry.difficulty ? (
-                                <span className="text-danger">
-                                  {entry.difficulty}
-                                </span>
-                              ) : (
-                                <span className="text-body-secondary">
-                                  Sem bloqueio
-                                </span>
-                              )}
-                            </td>
-                            <td>
-                              {entry.budgetLimitUsd != null ? (
-                                <span>
-                                  US$ {(entry.knownCostUsd ?? 0).toFixed(2)} /
-                                  US$ {entry.budgetLimitUsd.toFixed(2)}
-                                </span>
-                              ) : entry.knownCostUsd != null ? (
-                                <span>US$ {entry.knownCostUsd.toFixed(2)}</span>
-                              ) : (
-                                <span className="text-body-secondary">—</span>
-                              )}
-                            </td>
-                            <td>
-                              {entry.occurredAt
-                                ? new Date(entry.occurredAt).toLocaleString(
-                                    "pt-BR",
-                                  )
-                                : "—"}
-                            </td>
+                {chronologicalAgentActivity.length > 0 ? (
+                  <div className="d-flex flex-column gap-2">
+                    <div>
+                      <h3 className="h6 mb-1">Histórico cronológico</h3>
+                      <p className="small text-body-secondary mb-0">
+                        Atuações mais recentes primeiro, preservando data,
+                        agente, resultado, bloqueio e referência de origem.
+                      </p>
+                    </div>
+                    <div className="table-responsive">
+                      <table className="table align-middle mb-0">
+                        <thead>
+                          <tr>
+                            <th scope="col">Ordem</th>
+                            <th>Agente</th>
+                            <th>Registro</th>
+                            <th>Status</th>
+                            <th>Dificuldade / decisão</th>
+                            <th>Financeiro</th>
+                            <th>Atualização</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {chronologicalAgentActivity.map((entry, index) => (
+                            <tr
+                              key={`${entry.recordType}-${entry.sourceReference}-${index}`}
+                            >
+                              <td>
+                                <span className="badge text-bg-light border">
+                                  {index + 1}
+                                </span>
+                              </td>
+                              <td>
+                                <strong>{entry.agentNickname}</strong>
+                                <small className="d-block text-body-secondary">
+                                  {entry.agentKey}
+                                </small>
+                              </td>
+                              <td>
+                                <strong>{entry.title}</strong>
+                                {entry.detail ? (
+                                  <small className="d-block text-body-secondary">
+                                    {entry.detail}
+                                  </small>
+                                ) : null}
+                              </td>
+                              <td>
+                                <span className="badge text-bg-light border">
+                                  {entry.status}
+                                </span>
+                              </td>
+                              <td>
+                                {entry.externalDecisionRequired ? (
+                                  <span className="text-warning-emphasis">
+                                    {entry.externalDecision}
+                                  </span>
+                                ) : entry.difficulty ? (
+                                  <span className="text-danger">
+                                    {entry.difficulty}
+                                  </span>
+                                ) : (
+                                  <span className="text-body-secondary">
+                                    Sem bloqueio
+                                  </span>
+                                )}
+                              </td>
+                              <td>
+                                {entry.budgetLimitUsd != null ? (
+                                  <span>
+                                    US$ {(entry.knownCostUsd ?? 0).toFixed(2)} /
+                                    US$ {entry.budgetLimitUsd.toFixed(2)}
+                                  </span>
+                                ) : entry.knownCostUsd != null ? (
+                                  <span>
+                                    US$ {entry.knownCostUsd.toFixed(2)}
+                                  </span>
+                                ) : (
+                                  <span className="text-body-secondary">—</span>
+                                )}
+                              </td>
+                              <td>
+                                {entry.occurredAt
+                                  ? new Date(entry.occurredAt).toLocaleString(
+                                      "pt-BR",
+                                    )
+                                  : "—"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 ) : (
                   <p className="text-body-secondary mb-0">

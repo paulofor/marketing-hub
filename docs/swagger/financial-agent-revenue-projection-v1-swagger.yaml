@@ -3,6 +3,16 @@ info:
   title: Projeção de receita de Plutus
   version: 1.0.0
 paths:
+  /api/experiment-strategist/v1/commercial-plans/{planId}/commercial-assumptions:
+    post:
+      summary: Solicita a Atena uma proposta de premissas e encadeia a validação de Plutus.
+      responses:
+        '200': {description: Proposta estratégica enfileirada}
+  /api/financial-agent/v1/commercial-plans/{planId}/commercial-assumptions:
+    get:
+      summary: Lista as validações conjuntas de premissas do plano.
+      responses:
+        '200': {description: Histórico auditável das validações}
   /api/financial-agent/v1/commercial-plans/{planId}/revenue-projections:
     post:
       summary: Solicita projeção de receita somente leitura ligada à versão oficial do plano

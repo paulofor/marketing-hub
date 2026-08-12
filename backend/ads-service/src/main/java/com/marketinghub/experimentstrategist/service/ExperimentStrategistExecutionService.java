@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -28,17 +29,46 @@ public class ExperimentStrategistExecutionService {
   private final CommercialPlanService plans;
   private final ExperimentStrategistContextService contexts;
   private final ObjectMapper json;
+  private final ApplicationEventPublisher events;
 
   /** Configura as fontes e a persistencia da execucao estrategica. */
   public ExperimentStrategistExecutionService(
       ExperimentStrategistExecutionRepository repository,
       CommercialPlanService plans,
       ExperimentStrategistContextService contexts,
-      ObjectMapper json) {
+      ObjectMapper json,
+      ApplicationEventPublisher events) {
     this.repository = repository;
     this.plans = plans;
     this.contexts = contexts;
     this.json = json;
+    this.events = events;
+  }
+
+  /** Mantém a construção direta usada pelos testes legados sem barramento de eventos. */
+  ExperimentStrategistExecutionService(
+      ExperimentStrategistExecutionRepository repository,
+      CommercialPlanService plans,
+      ExperimentStrategistContextService contexts,
+      ObjectMapper json) {
+    this(repository, plans, contexts, json, event -> {});
+  }
+
+  /** Enfileira Atena para propor as premissas ausentes antes da validação de Plutus. */
+  @Transactional
+  public ExecutionResponse startCommercialAssumptions(Long planId) {
+    CommercialPlan plan = plans.getPlan(planId);
+    ExperimentStrategistExecution value = new ExperimentStrategistExecution();
+    value.setCommercialPlan(plan);
+    value.setStatus(ExperimentStrategistExecutionStatus.PENDING);
+    value.setAuthorityMode("COMMERCIAL_ASSUMPTIONS_PROPOSAL");
+    value.setResearchQuestion(
+        "Definir, com evidências e faixas conservadoras, as premissas comerciais ausentes do plano "
+            + plan.getName());
+    value.setEvidenceSnapshot(serialize(contexts.researchContext(planId)));
+    ExperimentStrategistExecution saved = repository.save(value);
+    repository.attachCurrentAgentVersion(saved.getId());
+    return response(saved);
   }
 
   /** Enfileira uma pesquisa e congela suas evidencias antes da execucao. */
@@ -128,7 +158,13 @@ public class ExperimentStrategistExecutionService {
     value.setEstimatedCost(request.estimatedCost());
     value.setStatus(ExperimentStrategistExecutionStatus.COMPLETED);
     value.setFinishedAt(Instant.now());
-    return response(repository.save(value));
+    ExperimentStrategistExecution saved = repository.save(value);
+    if ("COMMERCIAL_ASSUMPTIONS_PROPOSAL".equals(saved.getAuthorityMode())) {
+      events.publishEvent(
+          new CommercialAssumptionsProposed(
+              saved.getCommercialPlan().getId(), saved.getId(), saved.getRecommendationJson()));
+    }
+    return response(saved);
   }
 
   /** Persiste a causa completa de uma falha tecnica. */
@@ -203,6 +239,10 @@ public class ExperimentStrategistExecutionService {
 
   /** Contrato de falha do worker. */
   public record FailRequest(String errorMessage) {}
+
+  /** Evento que entrega a proposta auditável de Atena à validação financeira de Plutus. */
+  public record CommercialAssumptionsProposed(
+      Long commercialPlanId, Long strategistExecutionId, String recommendationJson) {}
 
   /** Contrato de visualizacao e consumo da execucao. */
   public record ExecutionResponse(

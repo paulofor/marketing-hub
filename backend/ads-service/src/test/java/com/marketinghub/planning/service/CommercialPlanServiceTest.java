@@ -162,6 +162,30 @@ class CommercialPlanServiceTest {
     verify(planRepository, times(2)).save(plan);
   }
 
+  /** Aplica hipóteses aprovadas apenas nos campos que ainda estavam ausentes. */
+  @Test
+  void applyAgentAssumptionsPreservesExistingValuesAndVersionsProposal() {
+    CommercialPlan plan =
+        CommercialPlan.builder().id(42L).name("MUSA").offerPriceBrl(BigDecimal.valueOf(97)).build();
+    when(planRepository.findById(42L)).thenReturn(Optional.of(plan));
+    when(planRepository.save(any(CommercialPlan.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    service.applyAgentAssumptions(
+        42L,
+        """
+        {"decision":"APPROVE","validatedAssumptions":{"offerPriceBrl":147,"variableCostPerSaleBrl":20,"expectedMonthlyTraffic":300,"expectedConversionRatePercent":2.5,"expectedCacBrl":35,"expectedRefundRatePercent":5,"fixedOperationalCostBrl":80}}
+        """);
+
+    assertThat(plan.getOfferPriceBrl()).isEqualByComparingTo("97");
+    assertThat(plan.getVariableCostPerSaleBrl()).isEqualByComparingTo("20");
+    assertThat(plan.getExpectedMonthlyTraffic()).isEqualTo(300);
+    assertThat(plan.getExpectedConversionRatePercent()).isEqualByComparingTo("2.5");
+    verify(versionService)
+        .snapshot(
+            plan, "ATENA_PLUTUS", "Premissas hipotéticas definidas e validadas pelos agentes");
+  }
+
   /** Atualiza o plano quando existe um unico experimento ativo da mesma hipotese. */
   @Test
   void synchronizeRunningExperimentLinksUniqueCompatibleExperiment() {

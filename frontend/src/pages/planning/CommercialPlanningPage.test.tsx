@@ -186,6 +186,7 @@ let mockWeeks: unknown[] = [
 const createPlanMutate = vi.fn();
 const updateWeekMutate = vi.fn();
 const requestRevenueProjectionMutate = vi.fn();
+const requestCommercialAssumptionsMutate = vi.fn();
 
 vi.mock("../../api/planning/useCommercialPlans", async () => {
   const actual = await vi.importActual<
@@ -274,6 +275,16 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
     }),
     useRequestRevenueProjection: () => ({
       mutate: requestRevenueProjectionMutate,
+      isPending: false,
+      isError: false,
+    }),
+    useCommercialAssumptionDefinitions: () => ({
+      data: [],
+      isLoading: false,
+      isError: false,
+    }),
+    useRequestCommercialAssumptions: () => ({
+      mutate: requestCommercialAssumptionsMutate,
       isPending: false,
       isError: false,
     }),
@@ -889,6 +900,18 @@ describe("CommercialPlanningPage", () => {
     );
 
     expect(requestRevenueProjectionMutate).toHaveBeenCalledWith(undefined);
+  });
+
+  it("inicia a definição conjunta de premissas por Atena e Plutus", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(
+      screen.getByRole("button", { name: "Definir premissas ausentes" }),
+    );
+
+    expect(requestCommercialAssumptionsMutate).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/hipóteses versionadas/i)).toBeTruthy();
   });
 
   it("renderiza sugestao de julho quando a API ainda nao retorna planos", () => {

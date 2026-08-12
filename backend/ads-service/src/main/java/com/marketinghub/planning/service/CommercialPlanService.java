@@ -1,5 +1,7 @@
 package com.marketinghub.planning.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.hypothesis.Hypothesis;
@@ -34,6 +36,7 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: coordenar cadastro, marcos e simulacoes de planos comerciais. */
 @Service
 public class CommercialPlanService {
+  private static final ObjectMapper JSON = new ObjectMapper();
   private static final List<DefaultMilestone> DEFAULT_MILESTONES =
       List.of(
           new DefaultMilestone("NICHE_APPROVED", "Nicho aprovado"),
@@ -180,6 +183,54 @@ public class CommercialPlanService {
     CommercialPlan saved = planRepository.save(plan);
     versionService.snapshot(saved, "USER", "Atualização do contexto comercial");
     return syncExecution(saved);
+  }
+
+  /** Aplica somente premissas ausentes depois da validação conjunta de Atena e Plutus. */
+  @Transactional
+  public CommercialPlan applyAgentAssumptions(Long id, String validationJson) {
+    CommercialPlan plan = getPlan(id);
+    try {
+      JsonNode root = JSON.readTree(validationJson);
+      if (!"APPROVE".equals(root.path("decision").asText())) {
+        return plan;
+      }
+      JsonNode values = root.path("validatedAssumptions");
+      if (plan.getOfferPriceBrl() == null) plan.setOfferPriceBrl(decimal(values, "offerPriceBrl"));
+      if (plan.getVariableCostPerSaleBrl() == null)
+        plan.setVariableCostPerSaleBrl(decimal(values, "variableCostPerSaleBrl"));
+      if (plan.getExpectedMonthlyTraffic() == null && values.hasNonNull("expectedMonthlyTraffic"))
+        plan.setExpectedMonthlyTraffic(values.get("expectedMonthlyTraffic").intValue());
+      if (plan.getExpectedConversionRatePercent() == null)
+        plan.setExpectedConversionRatePercent(decimal(values, "expectedConversionRatePercent"));
+      if (plan.getExpectedCacBrl() == null)
+        plan.setExpectedCacBrl(decimal(values, "expectedCacBrl"));
+      if (plan.getExpectedRefundRatePercent() == null)
+        plan.setExpectedRefundRatePercent(decimal(values, "expectedRefundRatePercent"));
+      if (plan.getFixedOperationalCostBrl() == null)
+        plan.setFixedOperationalCostBrl(decimal(values, "fixedOperationalCostBrl"));
+      validateFinancialAssumptions(
+          plan.getOfferPriceBrl(),
+          plan.getVariableCostPerSaleBrl(),
+          plan.getExpectedMonthlyTraffic(),
+          plan.getExpectedConversionRatePercent(),
+          plan.getExpectedCacBrl(),
+          plan.getExpectedRefundRatePercent(),
+          plan.getFixedOperationalCostBrl());
+      CommercialPlan saved = planRepository.save(plan);
+      versionService.snapshot(
+          saved, "ATENA_PLUTUS", "Premissas hipotéticas definidas e validadas pelos agentes");
+      return saved;
+    } catch (ResponseStatusException ex) {
+      throw ex;
+    } catch (Exception ex) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Validação de premissas fora do contrato.", ex);
+    }
+  }
+
+  /** Converte um número JSON opcional em valor monetário ou percentual. */
+  private BigDecimal decimal(JsonNode values, String field) {
+    return values.hasNonNull(field) ? values.get(field).decimalValue() : null;
   }
 
   /** Lista planos comerciais, com filtro opcional por status. */

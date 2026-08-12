@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "validatedAssumptions", "risks", "breakEven", "executiveSummary"],
+  "properties": {
+    "decision": {"type": "string", "enum": ["APPROVE", "REJECT"]},
+    "validatedAssumptions": {
+      "type": "object", "additionalProperties": false,
+      "required": ["offerPriceBrl", "variableCostPerSaleBrl", "expectedMonthlyTraffic", "expectedConversionRatePercent", "expectedCacBrl", "expectedRefundRatePercent", "fixedOperationalCostBrl"],
+      "properties": {
+        "offerPriceBrl": {"type": ["number", "null"], "minimum": 0},
+        "variableCostPerSaleBrl": {"type": ["number", "null"], "minimum": 0},
+        "expectedMonthlyTraffic": {"type": ["integer", "null"], "minimum": 0},
+        "expectedConversionRatePercent": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
+        "expectedCacBrl": {"type": ["number", "null"], "minimum": 0},
+        "expectedRefundRatePercent": {"type": ["number", "null"], "minimum": 0, "maximum": 100},
+        "fixedOperationalCostBrl": {"type": ["number", "null"], "minimum": 0}
+      }
+    },
+    "risks": {"type": "array", "items": {"type": "string"}},
+    "breakEven": {"type": "string"},
+    "executiveSummary": {"type": "string", "minLength": 30}
+  }
+}

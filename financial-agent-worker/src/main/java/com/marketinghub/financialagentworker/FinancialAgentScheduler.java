@@ -39,7 +39,8 @@ public class FinancialAgentScheduler {
       job = backend.claimPending();
       if (job == null) return;
       if (!"READ_ONLY_FINANCIAL_RECONCILIATION".equals(job.authorityMode())
-          && !"READ_ONLY_REVENUE_PROJECTION".equals(job.authorityMode())) {
+          && !"READ_ONLY_REVENUE_PROJECTION".equals(job.authorityMode())
+          && !"COMMERCIAL_ASSUMPTIONS_VALIDATION".equals(job.authorityMode())) {
         throw new IllegalStateException("Autoridade financeira recusada.");
       }
       backend.complete(job.id(), runner.run(job));

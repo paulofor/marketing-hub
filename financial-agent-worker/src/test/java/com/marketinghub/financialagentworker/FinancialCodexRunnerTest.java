@@ -46,4 +46,20 @@ class FinancialCodexRunnerTest {
     assertThat(schema).doesNotContain("uniqueItems", "anyOf", "oneOf", "allOf");
     assertThat(schema).contains("CONSERVATIVE", "BASE", "OPTIMISTIC", "learningCandidate");
   }
+
+  /** Protege a separação entre hipótese aprovada e autorização de gasto. */
+  @Test
+  void contratoDePremissasNaoDeveAutorizarGasto() throws Exception {
+    String prompt =
+        Files.readString(
+            Path.of("src/main/resources/prompts/financial-agent/v1/commercial-assumptions.md"));
+    String schema =
+        Files.readString(
+            Path.of(
+                "src/main/resources/prompts/financial-agent/v1/commercial-assumptions-schema.json"));
+
+    assertThat(prompt).contains("não libera orçamento", "APPROVE", "Plutus");
+    assertThat(schema)
+        .contains("validatedAssumptions", "offerPriceBrl", "expectedCacBrl", "REJECT");
+  }
 }

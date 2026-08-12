@@ -31,6 +31,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class FinancialAgentService {
   private static final String READ_ONLY = "READ_ONLY_FINANCIAL_RECONCILIATION";
   private static final String REVENUE_PROJECTION = "READ_ONLY_REVENUE_PROJECTION";
+  private static final String ASSUMPTION_DEFINITION = "COMMERCIAL_ASSUMPTIONS_VALIDATION";
   private final FinancialAgentExecutionRepository repository;
   private final CommercialPlanService commercialPlanService;
   private final ObjectMapper objectMapper;
@@ -103,6 +104,48 @@ public class FinancialAgentService {
     execution.setProjectionRequest(context);
     execution.setFinancialSnapshot(buildSnapshot(plan));
     return toResponse(repository.save(execution));
+  }
+
+  /** Enfileira Plutus para validar financeiramente a proposta produzida por Atena. */
+  @Transactional
+  public FinancialAgentExecutionResponse startAssumptionValidation(
+      Long planId, Long strategistExecutionId, String atenaProposal) {
+    CommercialPlan plan = commercialPlanService.getPlan(planId);
+    int version = currentVersion(planId);
+    AgentTaskResponse task =
+        taskService.createByHuman(
+            new CreateAgentTaskRequest(
+                "financial-agent",
+                "Plano Comercial",
+                "Validar premissas propostas para " + plan.getName(),
+                "Revisar coerência, margem, ponto de equilíbrio e risco das hipóteses propostas por Atena, sem autorizar gasto.",
+                "HIGH",
+                "commercial-plan:"
+                    + planId
+                    + "@v"
+                    + version
+                    + ":assumptions:"
+                    + strategistExecutionId));
+    FinancialAgentExecution execution = new FinancialAgentExecution();
+    execution.setCommercialPlan(plan);
+    execution.setStatus(FinancialAgentExecutionStatus.PENDING);
+    execution.setAuthorityMode(ASSUMPTION_DEFINITION);
+    execution.setCommercialPlanVersion(version);
+    execution.setAgentTaskId(task.id());
+    execution.setProjectionRequest(atenaProposal);
+    execution.setFinancialSnapshot(buildSnapshot(plan));
+    return toResponse(repository.save(execution));
+  }
+
+  /** Lista as definições conjuntas sem misturá-las às projeções de receita. */
+  @Transactional(readOnly = true)
+  public List<FinancialAgentExecutionResponse> listAssumptionDefinitions(Long planId) {
+    commercialPlanService.getPlan(planId);
+    return repository
+        .findByCommercialPlanIdAndAuthorityModeOrderByCreatedAtDesc(planId, ASSUMPTION_DEFINITION)
+        .stream()
+        .map(this::toResponse)
+        .toList();
   }
 
   /** Lista somente projeções, mantendo-as distintas de receita realizada e conciliações. */
@@ -212,6 +255,10 @@ public class FinancialAgentService {
     execution.setEstimatedCost(request.estimatedCost());
     execution.setStatus(FinancialAgentExecutionStatus.COMPLETED);
     execution.setFinishedAt(Instant.now());
+    if (ASSUMPTION_DEFINITION.equals(execution.getAuthorityMode())) {
+      commercialPlanService.applyAgentAssumptions(
+          execution.getCommercialPlan().getId(), request.reconciliationJson());
+    }
     if (execution.getAgentTaskId() != null) {
       taskService.updateStatus(
           execution.getAgentTaskId(), new UpdateAgentTaskStatusRequest("COMPLETED"));

@@ -257,8 +257,21 @@ export default function OpportunityDossiersPage() {
                   <div className="col-md-6" key={r.id}>
                     <div className="border rounded p-2">
                       <strong>{r.agentKey}</strong>
-                      <div>{r.completedAt ? r.decision : "Pendente"}</div>
+                      <div>
+                        {r.executionStatus === "RUNNING"
+                          ? "Trabalhando"
+                          : r.executionStatus === "FAILED"
+                            ? "Bloqueado"
+                            : r.completedAt
+                              ? r.decision
+                              : "Aguardando"}
+                      </div>
                       <small>{r.recommendation}</small>
+                      {r.errorMessage && (
+                        <small className="d-block text-danger">
+                          {r.errorMessage}
+                        </small>
+                      )}
                     </div>
                   </div>
                 ))}

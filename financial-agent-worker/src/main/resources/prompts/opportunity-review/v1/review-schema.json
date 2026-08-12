@@ -1,0 +1,1 @@
+{"type":"object","additionalProperties":false,"properties":{"decision":{"type":"string","enum":["SUPPORT","ADJUST","REJECT"]},"rationale":{"type":"string"},"risks":{"type":"string"},"recommendation":{"type":"string"}},"required":["decision","rationale","risks","recommendation"]}

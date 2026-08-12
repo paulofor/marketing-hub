@@ -16,6 +16,14 @@ paths:
     put: {summary: Registra parecer do agente solicitado, parameters: [{$ref: '#/components/parameters/id'}, {name: agentKey, in: path, required: true, schema: {type: string}}], responses: {'200': {description: OK}}}
   /api/opportunity-dossiers/{id}/convert:
     post: {summary: Converte dossiê aprovado uma única vez, parameters: [{$ref: '#/components/parameters/id'}], responses: {'200': {description: Plano criado}, '409': {description: Conversão bloqueada}}}
+  /api/opportunity-dossiers/internal/reviews/{agentKey}/stage-executions/pending:
+    post: {summary: Reserva o próximo parecer do agente, parameters: [{$ref: '#/components/parameters/agentKey'}], responses: {'200': {description: Contexto persistido do parecer}, '404': {description: Fila vazia}}}
+  /api/opportunity-dossiers/internal/reviews/{agentKey}/stage-executions/{reviewId}/complete:
+    post: {summary: Registra resultado e auditoria do parecer, parameters: [{$ref: '#/components/parameters/agentKey'}, {$ref: '#/components/parameters/reviewId'}], responses: {'200': {description: Parecer concluído}, '409': {description: Execução não reservada}}}
+  /api/opportunity-dossiers/internal/reviews/{agentKey}/stage-executions/{reviewId}/fail:
+    post: {summary: Registra falha técnica do parecer, parameters: [{$ref: '#/components/parameters/agentKey'}, {$ref: '#/components/parameters/reviewId'}], responses: {'200': {description: Falha registrada}, '409': {description: Execução não reservada}}}
 components:
   parameters:
     id: {name: id, in: path, required: true, schema: {type: integer, format: int64}}
+    agentKey: {name: agentKey, in: path, required: true, schema: {type: string, enum: [ATENA, PSIQUE, PLUTUS, HERMES]}}
+    reviewId: {name: reviewId, in: path, required: true, schema: {type: integer, format: int64}}

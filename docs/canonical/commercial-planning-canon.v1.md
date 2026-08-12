@@ -12,6 +12,8 @@ Cada novo dossiê abre no backend um ciclo `productdiscovery.v1/research` e uma 
 
 Os estados canônicos do dossiê são `RESEARCHING`, `UNDER_REVIEW`, `READY_FOR_TEST`, `APPROVED`, `DISCARDED` e `CONVERTED_TO_PLAN`. Evidências devem registrar fonte e data; pareceres devem registrar agente, decisão, justificativa, riscos, recomendação e data. Dossiês e pareceres não autorizam gastos, publicação, preço ou campanhas.
 
+Ao entrar em `UNDER_REVIEW`, cada parecer deve nascer como execução consumível na fila exclusiva do agente responsável. Atena, Psique, Plutus e Hermes reservam trabalho pelo endpoint `pending`, recebem o contexto persistido completo, executam prompt e schema versionados em seus próprios workers e reportam conclusão ou falha ao backend. As filas são independentes para permitir paralelismo real; uma lease inativa admite uma única retomada e a reincidência termina bloqueada. O frontend deve mostrar aguardando, trabalhando, bloqueado ou concluído a partir do estado persistido, nunca por inferência de logs.
+
 Pesquisa externa indisponível não é resultado de mercado. Se todas as consultas de Argos falharem por provider, credencial, rede ou contrato HTTP, o ciclo deve falhar e bloquear a tarefa com provider, quantidade de tentativas e status auditáveis. Somente consultas executadas com sucesso e sem resultados podem concluir com zero evidências. O MCP deve expor health e logfile do executor no host operacional real.
 
 O Plano Comercial é a fonte oficial comum para usuários e agentes atuarem sobre o mesmo objetivo de vendas e lucro. Cada criação ou alteração deve gerar uma versão imutável contendo objetivo, público, dor, desejo/oferta, canal, métricas, orçamento, receita esperada, realizado, gargalo, próxima ação e critérios de sucesso e parada.

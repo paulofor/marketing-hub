@@ -205,11 +205,11 @@ public class LandingGenerationAgentExecutionService {
           .findById(execution.getExperimentId())
           .ifPresent(
               experiment -> {
-                context.put("experimentName", experiment.getName());
-                context.put("pain", experiment.getSinglePain());
-                context.put("promise", experiment.getFunnelPromise());
-                context.put("primaryCta", experiment.getPrimaryCta());
-                context.put("landingHtml", experiment.getHtmlGeraLanding());
+                putWhenPresent(context, "experimentName", experiment.getName());
+                putWhenPresent(context, "pain", experiment.getSinglePain());
+                putWhenPresent(context, "promise", experiment.getFunnelPromise());
+                putWhenPresent(context, "primaryCta", experiment.getPrimaryCta());
+                putWhenPresent(context, "landingHtml", experiment.getHtmlGeraLanding());
               });
       return new LandingAgentPendingResponse(
           textId(execution),
@@ -219,6 +219,11 @@ public class LandingGenerationAgentExecutionService {
     } catch (Exception ex) {
       throw new IllegalStateException("Snapshot inválido do Agente Gerador de Landing", ex);
     }
+  }
+
+  /** Inclui no snapshot somente campos opcionais efetivamente disponíveis. */
+  private void putWhenPresent(Map<String, Object> context, String key, Object value) {
+    if (value != null) context.put(key, value);
   }
 
   /** Localiza uma execução pelo identificador textual. */

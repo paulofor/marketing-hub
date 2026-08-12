@@ -14,6 +14,7 @@ import com.marketinghub.agentmemory.service.retrieveMemory.MemoryResponse;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.geralanding.copy.service.GeraLandingCopyStageService;
+import com.marketinghub.geralanding.deliverables.service.GeraLandingDeliverablesStageExecutionService;
 import com.marketinghub.geralanding.imageplanning.service.BackendImagePlanningService;
 import com.marketinghub.geralanding.presetdesign.service.BackendPresetDesignService;
 import com.marketinghub.geralanding.wireframe.service.BackendWireframeService;
@@ -34,6 +35,7 @@ class LandingGenerationAgentCoordinatorTest {
   private GeraLandingCopyStageService copyService;
   private BackendImagePlanningService imagePlanningService;
   private BackendPresetDesignService presetDesignService;
+  private GeraLandingDeliverablesStageExecutionService deliverablesService;
   private AgentMemoryService memoryService;
   private LandingGenerationAgentCoordinator coordinator;
 
@@ -46,6 +48,7 @@ class LandingGenerationAgentCoordinatorTest {
     copyService = mock(GeraLandingCopyStageService.class);
     imagePlanningService = mock(BackendImagePlanningService.class);
     presetDesignService = mock(BackendPresetDesignService.class);
+    deliverablesService = mock(GeraLandingDeliverablesStageExecutionService.class);
     memoryService = mock(AgentMemoryService.class);
     coordinator =
         new LandingGenerationAgentCoordinator(
@@ -56,6 +59,7 @@ class LandingGenerationAgentCoordinatorTest {
             copyService,
             imagePlanningService,
             presetDesignService,
+            deliverablesService,
             memoryService);
     when(executionRepository
             .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
@@ -119,6 +123,15 @@ class LandingGenerationAgentCoordinatorTest {
         review("REGENERATE_BEFORE_PUBLICATION", 78, "LANDING_PAGE_IMAGE_GENERATION"));
 
     verify(imagePlanningService).start(88L);
+  }
+
+  /** Deve encaminhar bloqueios de checkout e entrega para a etapa contratada de entregáveis. */
+  @Test
+  void shouldDispatchDeliverablesForCheckoutRootCause() {
+    coordinator.continueAfterQualityReview(
+        88L, CYCLE_ID, review("REGENERATE_BEFORE_PUBLICATION", 80, "LANDING_PAGE_DELIVERABLES"));
+
+    verify(deliverablesService).registerInitialExecution(88L, "landing-page-deliverables");
   }
 
   /** Deve bloquear uma abordagem ainda sem executor registrado no backend. */

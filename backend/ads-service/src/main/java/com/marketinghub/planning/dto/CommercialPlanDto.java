@@ -20,6 +20,7 @@ public record CommercialPlanDto(
     String hypothesisTitle,
     Long experimentId,
     String experimentName,
+    List<CommercialPlanExperimentDto> experiments,
     String commercialObjective,
     String targetAudience,
     String mainPain,

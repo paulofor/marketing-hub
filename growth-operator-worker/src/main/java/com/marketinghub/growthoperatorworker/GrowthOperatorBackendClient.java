@@ -45,6 +45,15 @@ public class GrowthOperatorBackendClient {
         .toBodilessEntity();
   }
 
+  /** Pede ao backend para garantir continuidade de todos os planos comerciais abertos. */
+  public void ensureActivePlanCycles() {
+    client
+        .post()
+        .uri("/api/growth-operator/v1/internal/commercial-plans/executions/ensure-active")
+        .retrieve()
+        .toBodilessEntity();
+  }
+
   /** Envia o diagnostico estruturado e preserva a resposta bruta para auditoria. */
   public void complete(Long id, Map<String, Object> payload) {
     client

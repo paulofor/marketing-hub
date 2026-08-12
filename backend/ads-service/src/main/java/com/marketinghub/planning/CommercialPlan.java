@@ -12,12 +12,16 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -63,6 +67,14 @@ public class CommercialPlan {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "experiment_id")
   private Experiment experiment;
+
+  @Builder.Default
+  @ManyToMany(fetch = FetchType.LAZY)
+  @JoinTable(
+      name = "commercial_plan_experiment",
+      joinColumns = @JoinColumn(name = "commercial_plan_id"),
+      inverseJoinColumns = @JoinColumn(name = "experiment_id"))
+  private Set<Experiment> experiments = new LinkedHashSet<>();
 
   @Lob
   @JdbcTypeCode(SqlTypes.LONGVARCHAR)

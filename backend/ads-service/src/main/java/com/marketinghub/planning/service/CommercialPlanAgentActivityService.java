@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -73,10 +74,12 @@ public class CommercialPlanAgentActivityService {
     growthOperatorRepository
         .findByCommercialPlanIdOrderByCreatedAtDesc(plan.getId())
         .forEach(execution -> entries.add(growthOperatorEntry(execution)));
-    if (plan.getExperiment() != null) {
+    var planExperiments = new LinkedHashSet<>(plan.getExperiments());
+    if (plan.getExperiment() != null) planExperiments.add(plan.getExperiment());
+    for (var experiment : planExperiments) {
       landingRepository
           .findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
-              plan.getExperiment().getId(), "landing-generation-agent-v1")
+              experiment.getId(), "landing-generation-agent-v1")
           .ifPresent(execution -> entries.add(landingEntry(execution)));
     }
     entries.sort(

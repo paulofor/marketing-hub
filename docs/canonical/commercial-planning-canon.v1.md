@@ -164,3 +164,11 @@ Um experimento so deve contar como publicado quando estiver comercialmente valid
 ## Preparacao para IA
 
 A futura integracao com IA deve consumir esses campos estruturados como entrada primaria para gerar cenarios, alertas e recomendacoes. Texto livre pode complementar o contexto, mas nao substitui as metas numericas persistidas.
+
+## Vinculo e homologacao da jornada comercial
+
+Um Plano Comercial pode e deve reunir varios experimentos independentes que testem sua oferta, publico, canal ou abordagem. O plano nunca pode ficar preso a um unico experimento nem substituir o historico anterior ao iniciar um novo teste. Cada vinculo deve ser persistido de forma relacional e auditavel; metricas, evidencias, custos, pareceres e homologacoes continuam segregados por `experimentId` e somente depois sao consolidados no nivel do plano.
+
+O detalhe do plano deve listar todos os experimentos vinculados e permitir adicionar novos testes sem apagar os anteriores. Toda acao operacional, inclusive homologacao, deve exigir a escolha explicita do experimento alvo. O campo legado singular `commercial_plan.experiment_id` existe apenas para migracao e compatibilidade temporaria e nao pode ser usado como fonte unica de verdade ou como criterio para descartar evidencias de outros experimentos do mesmo plano.
+
+A homologacao deve usar dados segregados (`mh_test=1`), cobrir landing, eventos, amostra, e-mail, checkout, pagamento de teste, briefing, producao e entrega, e registrar as evidencias produzidas. Esse comando nao autoriza publicacao, ativacao de midia ou gasto. Aquisicao somente pode avancar quando os gates essenciais estiverem comprovados.

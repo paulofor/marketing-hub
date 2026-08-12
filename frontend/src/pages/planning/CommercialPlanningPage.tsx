@@ -23,6 +23,7 @@ import {
   useRequestRevenueProjection,
   useCommercialAssumptionDefinitions,
   useRequestCommercialAssumptions,
+  useRequestCommercialPlanJourneyHomologation,
 } from "../../api/planning/useCommercialPlans";
 import "./CommercialPlanningPage.css";
 import GrowthOperatorPanel from "./GrowthOperatorPanel";
@@ -31,6 +32,18 @@ import FinancialAgentPanel from "./FinancialAgentPanel";
 
 const CURRENT_OPERATIONAL_MONTH = new Date().toISOString().slice(0, 7);
 const LEGACY_PLAN_REFERENCE_MONTH = "2026-07";
+
+function formatInterventionDateTime(occurredAt?: string | null) {
+  if (!occurredAt) return "Data e hora não informadas";
+
+  const date = new Date(occurredAt);
+  if (Number.isNaN(date.getTime())) return "Data e hora inválidas";
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "medium",
+  }).format(date);
+}
 
 const emptyCommercialPlan: SaveCommercialPlanPayload = {
   name: "",
@@ -642,6 +655,7 @@ function fallbackMonthPlan(): CommercialPlan {
     name: julyPlanningForm.name,
     planType: "FIRST_SALE",
     status: julyPlanningForm.status ?? "DRAFT",
+    experiments: [],
     commercialObjective: julyPlanningForm.commercialObjective,
     targetAudience: julyPlanningForm.targetAudience,
     mainPain: julyPlanningForm.mainPain,
@@ -1638,6 +1652,10 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
   const requestCommercialAssumptions = useRequestCommercialAssumptions(
     currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
   );
+  const requestJourneyHomologation =
+    useRequestCommercialPlanJourneyHomologation(
+      currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
+    );
   const assumptionDefinitions = asArray(assumptionDefinitionsQuery.data);
   const currentPlanVersion = planVersions[0];
   const [selectedReferenceMonth, setSelectedReferenceMonth] =
@@ -2019,101 +2037,95 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
                         agente, resultado, bloqueio e referência de origem.
                       </p>
                     </div>
-                    <div className="table-responsive">
-                      <table className="table align-middle mb-0">
-                        <thead>
-                          <tr>
-                            <th scope="col">Ordem</th>
-                            <th>Agente</th>
-                            <th>Registro</th>
-                            <th>Parecer final</th>
-                            <th>Status</th>
-                            <th>Dificuldade / decisão</th>
-                            <th>Financeiro</th>
-                            <th>Atualização</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {chronologicalAgentActivity.map((entry, index) => (
-                            <tr
-                              key={`${entry.recordType}-${entry.sourceReference}-${index}`}
-                            >
-                              <td>
-                                <span className="badge text-bg-light border">
-                                  {index + 1}
-                                </span>
-                              </td>
-                              <td>
-                                <strong>{entry.agentNickname}</strong>
+                    <ol
+                      className="commercial-planning-agent-timeline"
+                      aria-label="Atuações dos agentes"
+                    >
+                      {chronologicalAgentActivity.map((entry, index) => (
+                        <li
+                          className="commercial-planning-agent-event"
+                          key={`${entry.recordType}-${entry.sourceReference}-${index}`}
+                        >
+                          <span className="commercial-planning-agent-event-order">
+                            {index + 1}
+                          </span>
+                          <article className="commercial-planning-agent-event-card">
+                            <header className="commercial-planning-agent-event-header">
+                              <div>
+                                <strong className="commercial-planning-agent-name">
+                                  {entry.agentNickname}
+                                </strong>
                                 <small className="d-block text-body-secondary">
                                   {entry.agentKey}
                                 </small>
-                              </td>
-                              <td>
-                                <strong>{entry.title}</strong>
-                                {entry.detail ? (
-                                  <small className="d-block text-body-secondary">
-                                    {entry.detail}
-                                  </small>
-                                ) : null}
-                              </td>
-                              <td>
-                                {entry.finalOpinion ? (
-                                  <span className="commercial-planning-agent-opinion">
-                                    {entry.finalOpinion}
-                                  </span>
-                                ) : (
-                                  <span className="text-body-secondary">
-                                    Ainda não gerado
-                                  </span>
-                                )}
-                              </td>
-                              <td>
+                              </div>
+                              <div className="commercial-planning-agent-event-meta">
                                 <span className="badge text-bg-light border">
                                   {entry.status}
                                 </span>
-                              </td>
-                              <td>
-                                {entry.externalDecisionRequired ? (
-                                  <span className="text-warning-emphasis">
-                                    {entry.externalDecision}
+                                <span className="commercial-planning-agent-event-datetime">
+                                  <span className="commercial-planning-agent-event-label">
+                                    Data e hora
                                   </span>
-                                ) : entry.difficulty ? (
-                                  <span className="text-danger">
-                                    {entry.difficulty}
-                                  </span>
+                                  <time
+                                    dateTime={entry.occurredAt ?? undefined}
+                                  >
+                                    {formatInterventionDateTime(
+                                      entry.occurredAt,
+                                    )}
+                                  </time>
+                                </span>
+                              </div>
+                            </header>
+
+                            <div className="commercial-planning-agent-event-content">
+                              <section>
+                                <span className="commercial-planning-agent-event-label">
+                                  Atuação
+                                </span>
+                                <h4>{entry.title}</h4>
+                                {entry.detail ? (
+                                  <p className="text-body-secondary mb-0">
+                                    {entry.detail}
+                                  </p>
+                                ) : null}
+                              </section>
+                              <section className="commercial-planning-agent-opinion-panel">
+                                <span className="commercial-planning-agent-event-label">
+                                  Parecer final
+                                </span>
+                                {entry.finalOpinion ? (
+                                  <p className="commercial-planning-agent-opinion mb-0">
+                                    {entry.finalOpinion}
+                                  </p>
                                 ) : (
-                                  <span className="text-body-secondary">
-                                    Sem bloqueio
-                                  </span>
+                                  <p className="text-body-secondary mb-0">
+                                    Ainda não gerado
+                                  </p>
                                 )}
-                              </td>
-                              <td>
-                                {entry.budgetLimitUsd != null ? (
-                                  <span>
-                                    US$ {(entry.knownCostUsd ?? 0).toFixed(2)} /
-                                    US$ {entry.budgetLimitUsd.toFixed(2)}
-                                  </span>
-                                ) : entry.knownCostUsd != null ? (
-                                  <span>
-                                    US$ {entry.knownCostUsd.toFixed(2)}
-                                  </span>
-                                ) : (
-                                  <span className="text-body-secondary">—</span>
-                                )}
-                              </td>
-                              <td>
-                                {entry.occurredAt
-                                  ? new Date(entry.occurredAt).toLocaleString(
-                                      "pt-BR",
-                                    )
-                                  : "—"}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                              </section>
+                            </div>
+
+                            <footer className="commercial-planning-agent-event-footer">
+                              <span>
+                                <strong>Bloqueio:</strong>{" "}
+                                {entry.externalDecisionRequired
+                                  ? entry.externalDecision
+                                  : entry.difficulty || "Sem bloqueio"}
+                              </span>
+                              <span>
+                                <strong>Financeiro:</strong>{" "}
+                                {entry.budgetLimitUsd != null
+                                  ? `US$ ${(entry.knownCostUsd ?? 0).toFixed(2)} / US$ ${entry.budgetLimitUsd.toFixed(2)}`
+                                  : entry.knownCostUsd != null
+                                    ? `US$ ${entry.knownCostUsd.toFixed(2)}`
+                                    : "—"}
+                              </span>
+                            </footer>
+                          </article>
+                        </li>
+                      ))}
+                    </ol>
                   </div>
                 ) : (
                   <p className="text-body-secondary mb-0">
@@ -2413,6 +2425,32 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
               <div className="card-body d-flex flex-column gap-3">
                 <div className="row g-3">
                   <div className="col-md-4">
+                    <label className="form-label" htmlFor="planning-experiment">
+                      Adicionar/selecionar experimento
+                    </label>
+                    <input
+                      id="planning-experiment"
+                      className="form-control"
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={planDraft.experimentId ?? ""}
+                      onChange={(event) =>
+                        updatePlanDraft(
+                          "experimentId",
+                          event.target.value === ""
+                            ? null
+                            : Number(event.target.value),
+                        )
+                      }
+                    />
+                    <small className="text-body-secondary">
+                      O plano preserva todos os experimentos anteriores; este
+                      campo adiciona um novo teste e o seleciona para a próxima
+                      ação.
+                    </small>
+                  </div>
+                  <div className="col-md-4">
                     <label className="form-label" htmlFor="planning-status">
                       Status
                     </label>
@@ -2688,6 +2726,49 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
                   {updatePlan.isSuccess ? (
                     <span className="text-success">
                       Planejamento atualizado.
+                    </span>
+                  ) : null}
+                </div>
+                <div className="border-top pt-3 d-flex flex-column align-items-start gap-2">
+                  <button
+                    className="btn btn-outline-primary"
+                    type="button"
+                    disabled={
+                      requestJourneyHomologation.isPending ||
+                      !currentMonthPlan.experimentId
+                    }
+                    onClick={() =>
+                      requestJourneyHomologation.mutate(
+                        Number(planDraft.experimentId),
+                      )
+                    }
+                  >
+                    {requestJourneyHomologation.isPending
+                      ? "Solicitando homologação..."
+                      : "Homologar jornada com Dédalo"}
+                  </button>
+                  <small className="text-body-secondary">
+                    Usa dados segregados com mh_test=1 e não autoriza
+                    publicação, mídia ou gasto.
+                  </small>
+                  <small className="text-body-secondary">
+                    Experimentos deste plano:{" "}
+                    {asArray(currentMonthPlan.experiments)
+                      .map(
+                        (experiment) => `#${experiment.id} ${experiment.name}`,
+                      )
+                      .join(", ") || "nenhum"}
+                    .
+                  </small>
+                  {requestJourneyHomologation.isSuccess ? (
+                    <span className="text-success" role="status">
+                      Homologação enfileirada para o experimento #
+                      {requestJourneyHomologation.data.experimentId}.
+                    </span>
+                  ) : null}
+                  {requestJourneyHomologation.isError ? (
+                    <span className="text-danger" role="alert">
+                      Não foi possível enfileirar a homologação.
                     </span>
                   ) : null}
                 </div>

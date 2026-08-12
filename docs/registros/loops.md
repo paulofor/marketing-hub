@@ -22,6 +22,13 @@
 - **Correção efetiva:** a avaliação do ciclo automático continua auditável, mas sua falha fica isolada; o worker sempre tenta reservar a fila principal no mesmo polling.
 - **Prevenção:** teste unitário exige `claimPending()` mesmo quando `ensureAutomaticCycle()` falha, impedindo uma fila auxiliar de causar starvation global.
 
+## LOOP-COMMERCIAL-PLAN-WITHOUT-NEXT-ACTION — plano aberto esquecido sem agente
+
+- **Sintoma:** plano comercial permanece aberto e bloqueado, mas nenhum agente possui execução pendente ou em andamento.
+- **Causa-raiz confirmada em 2026-08-12:** o worker garantia continuidade somente para um `commercialPlanId` configurado e o backend recusava criar novo diagnóstico quando não existia experimento `RUNNING`.
+- **Correção efetiva:** a cada polling, o backend reconcilia todos os planos não encerrados e cria ciclos idempotentes mesmo sem experimento ativo; experimentos compatíveis continuam compondo um portfólio, sem vínculo exclusivo.
+- **Prevenção:** teste do worker exige varredura global antes da reserva da fila e teste do backend deve excluir apenas planos concluídos ou cancelados.
+
 ## LOOP-EXPERIMENTO-FAKE-CONTABILIZADO-COMO-HUMANO — Métricas de homologação
 
 - Sintoma: sessões de homologação do experimento fake apareciam como humanas para o Operador de Crescimento.

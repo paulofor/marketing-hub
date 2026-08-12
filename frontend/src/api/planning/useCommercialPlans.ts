@@ -66,6 +66,7 @@ export interface CommercialPlan {
   hypothesisTitle?: string | null;
   experimentId?: number | null;
   experimentName?: string | null;
+  experiments: Array<{ id: number; name: string; status: string }>;
   commercialObjective?: string | null;
   targetAudience?: string | null;
   mainPain?: string | null;
@@ -315,6 +316,13 @@ export interface SaveCommercialPlanPayload {
   rootCause?: string;
 }
 
+export interface CommercialPlanJourneyHomologation {
+  planId: number;
+  experimentId: number;
+  status: string;
+  requestedAt: string;
+}
+
 export function useCommercialPlans() {
   return useQuery({
     queryKey: ["commercial-plans"],
@@ -352,6 +360,29 @@ export function useCommercialPlanAgentActivity(planId?: number | null) {
         `/api/planning/commercial-plans/${planId}/agent-activity`,
       );
       return data;
+    },
+  });
+}
+
+/** Solicita a homologação integral da jornada pelo agente Dédalo. */
+export function useRequestCommercialPlanJourneyHomologation(
+  planId?: number | null,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (experimentId: number) => {
+      if (!planId) throw new Error("Plano comercial não informado.");
+      const { data } = await axios.post<CommercialPlanJourneyHomologation>(
+        `/api/planning/commercial-plans/${planId}/journey-homologations`,
+        null,
+        { params: { experimentId } },
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["commercial-plan-agent-activity", planId],
+      });
     },
   });
 }

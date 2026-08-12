@@ -5,6 +5,7 @@ import { Agent } from "../../api/agent/types";
 import PageTitle from "../../components/PageTitle";
 import {
   CommercialPlan,
+  CommercialPlanAgentActivity,
   CommercialPlanFunnelStage,
   CommercialPlanWeek,
   CommercialPlanWeekObjective,
@@ -271,6 +272,185 @@ function formatAverageViewTime(valueMs?: number | null) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return seconds > 0 ? `${minutes}min ${seconds}s` : `${minutes}min`;
+}
+
+type CommercialPlanBlocker = {
+  key: string;
+  title: string;
+  cause: string;
+  impact: string;
+  nextAction: string;
+  owner: string;
+  source: string;
+};
+
+const commercialAssumptionLabels: Array<[keyof CommercialPlan, string]> = [
+  ["variableCostPerSaleBrl", "custo variável por venda"],
+  ["expectedMonthlyTraffic", "tráfego mensal esperado"],
+  ["expectedConversionRatePercent", "conversão esperada"],
+  ["expectedCacBrl", "CAC esperado"],
+  ["expectedRefundRatePercent", "taxa de reembolso"],
+  ["fixedOperationalCostBrl", "custo operacional fixo"],
+];
+
+function buildCommercialPlanBlockers(
+  plan: CommercialPlan,
+  activity?: CommercialPlanAgentActivity,
+): CommercialPlanBlocker[] {
+  const blockers: CommercialPlanBlocker[] = [];
+
+  if (plan.currentBlocker?.trim()) {
+    blockers.push({
+      key: "plan",
+      title: "Gargalo comercial vigente",
+      cause: plan.rootCause?.trim() || "Causa-raiz ainda não registrada.",
+      impact: plan.currentBlocker.trim(),
+      nextAction:
+        plan.nextAction?.trim() ||
+        "Definir a próxima ação responsável pelo desbloqueio.",
+      owner: "Plano comercial",
+      source: "Contexto oficial versionado",
+    });
+  }
+
+  asArray(plan.milestones)
+    .filter((milestone) => milestone.status === "BLOCKED")
+    .forEach((milestone) =>
+      blockers.push({
+        key: `milestone-${milestone.id}`,
+        title: milestone.name,
+        cause:
+          milestone.blocker?.trim() ||
+          "Marco marcado como bloqueado sem causa informada.",
+        impact:
+          "O marco não pode ser concluído enquanto este impedimento estiver ativo.",
+        nextAction:
+          milestone.recommendedNextAction?.trim() ||
+          "Registrar a ação recomendada para liberar o marco.",
+        owner: "Marco do plano",
+        source: milestone.evidenceSource?.trim() || "Marco persistido",
+      }),
+    );
+
+  activity?.entries
+    .filter(
+      (entry) =>
+        entry.externalDecisionRequired ||
+        Boolean(entry.difficulty?.trim()) ||
+        /BLOCKED|FAILED|ERROR/.test(entry.status),
+    )
+    .forEach((entry, index) =>
+      blockers.push({
+        key: `activity-${entry.recordType}-${entry.sourceReference ?? index}`,
+        title: entry.title,
+        cause:
+          entry.difficulty?.trim() ||
+          entry.externalDecision?.trim() ||
+          `Execução no estado ${entry.status}.`,
+        impact: entry.externalDecisionRequired
+          ? "A execução aguarda uma decisão externa para avançar."
+          : "A execução do agente não consegue avançar no estado atual.",
+        nextAction:
+          entry.externalDecision?.trim() ||
+          "Corrigir a dificuldade registrada e retomar a execução.",
+        owner: entry.agentNickname,
+        source: entry.sourceReference?.trim() || entry.recordType,
+      }),
+    );
+
+  const missingAssumptions = commercialAssumptionLabels
+    .filter(([field]) => plan[field] == null)
+    .map(([, label]) => label);
+  if (missingAssumptions.length > 0) {
+    blockers.push({
+      key: "commercial-assumptions",
+      title: "Premissas financeiras incompletas",
+      cause: `Faltam ${missingAssumptions.join(", ")}.`,
+      impact:
+        "Plutus não consegue recomendar investimento com margem, CAC e ponto de equilíbrio confiáveis.",
+      nextAction: "Executar “Definir premissas ausentes” com Atena + Plutus.",
+      owner: "Atena + Plutus",
+      source: "Campos estruturados do plano",
+    });
+  }
+
+  return blockers;
+}
+
+function CommercialPlanBlockersPanel({
+  plan,
+  activity,
+}: {
+  plan: CommercialPlan;
+  activity?: CommercialPlanAgentActivity;
+}) {
+  const blockers = useMemo(
+    () => buildCommercialPlanBlockers(plan, activity),
+    [plan, activity],
+  );
+
+  return (
+    <section
+      className="commercial-planning-blockers"
+      aria-labelledby="commercial-plan-blockers-title"
+    >
+      <div className="commercial-planning-blockers-header">
+        <div>
+          <p className="commercial-planning-month-eyebrow mb-1">
+            Decisão operacional
+          </p>
+          <h2 id="commercial-plan-blockers-title">O que bloqueia este plano</h2>
+          <p>
+            Impedimentos ativos, causa, impacto e ação necessária para voltar a
+            avançar.
+          </p>
+        </div>
+        <span
+          className={`badge ${blockers.length > 0 ? "text-bg-danger" : "text-bg-success"}`}
+        >
+          {blockers.length}{" "}
+          {blockers.length === 1 ? "bloqueio ativo" : "bloqueios ativos"}
+        </span>
+      </div>
+      {blockers.length > 0 ? (
+        <div className="commercial-planning-blockers-list">
+          {blockers.map((blocker) => (
+            <article
+              key={blocker.key}
+              className="commercial-planning-blocker-item"
+            >
+              <div className="commercial-planning-blocker-title">
+                <strong>{blocker.title}</strong>
+                <span>{blocker.owner}</span>
+              </div>
+              <dl>
+                <div>
+                  <dt>Causa</dt>
+                  <dd>{blocker.cause}</dd>
+                </div>
+                <div>
+                  <dt>Impacto</dt>
+                  <dd>{blocker.impact}</dd>
+                </div>
+                <div>
+                  <dt>Como desbloquear</dt>
+                  <dd>{blocker.nextAction}</dd>
+                </div>
+                <div>
+                  <dt>Evidência</dt>
+                  <dd>{blocker.source}</dd>
+                </div>
+              </dl>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="alert alert-success mb-0" role="status">
+          Nenhum bloqueio ativo foi registrado para este plano.
+        </div>
+      )}
+    </section>
+  );
 }
 
 function formatDate(value?: string | null) {
@@ -1341,6 +1521,13 @@ export default function CommercialPlanningPage() {
             ) : null}
           </div>
         </div>
+      ) : null}
+
+      {currentMonthPlan.id > 0 ? (
+        <CommercialPlanBlockersPanel
+          plan={currentMonthPlan}
+          activity={agentActivity}
+        />
       ) : null}
 
       {currentMonthPlan.id > 0 ? (

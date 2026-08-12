@@ -869,14 +869,55 @@ describe("CommercialPlanningPage", () => {
     renderPage();
 
     expect(screen.getByText("Atuação dos agentes no plano")).toBeTruthy();
-    expect(screen.getByText("Plutus")).toBeTruthy();
+    expect(screen.getAllByText("Plutus").length).toBeGreaterThan(0);
     expect(screen.getByText("1 decisões pendentes")).toBeTruthy();
     expect(
-      screen.getByText("Plutus precisa decidir o orçamento."),
-    ).toBeTruthy();
+      screen.getAllByText("Plutus precisa decidir o orçamento.").length,
+    ).toBeGreaterThan(0);
     expect(screen.getAllByText("US$ 0.00 / US$ 40.00").length).toBeGreaterThan(
       0,
     );
+  });
+
+  it("consolida bloqueios do plano com causa, impacto, ação e evidência", () => {
+    mockPlans = [
+      {
+        ...defaultPlans[0],
+        currentBlocker: "Ainda não existe compra aprovada.",
+        rootCause:
+          "A jornada entre página, checkout e entrega não foi homologada.",
+        nextAction:
+          "Homologar uma compra completa com dados de teste segregados.",
+        milestones: [
+          {
+            id: 31,
+            sequenceOrder: 1,
+            code: "DELIVERY_GATE",
+            name: "Homologar entrega",
+            status: "BLOCKED",
+            blocker: "Briefing não retorna ao plano.",
+            recommendedNextAction:
+              "Corrigir a correlação e repetir a homologação.",
+            evidenceSource: "execução #88",
+          },
+        ],
+      },
+    ];
+
+    renderPage();
+
+    expect(
+      screen.getByRole("heading", { name: "O que bloqueia este plano" }),
+    ).toBeTruthy();
+    expect(screen.getByText("Gargalo comercial vigente")).toBeTruthy();
+    expect(
+      screen.getAllByText("Ainda não existe compra aprovada.").length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByText("Homologar entrega")).toBeTruthy();
+    expect(screen.getByText("Briefing não retorna ao plano.")).toBeTruthy();
+    expect(screen.getByText("Premissas financeiras incompletas")).toBeTruthy();
+    expect(screen.getAllByText("Como desbloquear").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Evidência").length).toBeGreaterThan(0);
   });
 
   it("solicita projeção de receita a Plutus sem apresentá-la como venda", async () => {

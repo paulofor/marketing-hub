@@ -106,10 +106,18 @@ public class CommercialPlanController {
     return agentActivityService.activity(service.getPlan(id));
   }
 
-  /** Solicita a homologação integral da jornada do experimento vinculado ao plano. */
+  /** Adiciona um experimento ao portfólio de testes do plano. */
+  @PostMapping("/{id}/experiments/{experimentId}")
+  public CommercialPlanDto addExperiment(@PathVariable Long id, @PathVariable Long experimentId) {
+    var plan = service.addExperiment(id, experimentId);
+    return mapper.toDto(plan, service.listMilestones(id), service.listSimulations(id));
+  }
+
+  /** Solicita a homologação integral da jornada de um experimento escolhido do plano. */
   @PostMapping("/{id}/journey-homologations")
-  public CommercialPlanJourneyHomologationDto requestJourneyHomologation(@PathVariable Long id) {
-    return journeyHomologationService.request(id);
+  public CommercialPlanJourneyHomologationDto requestJourneyHomologation(
+      @PathVariable Long id, @RequestParam Long experimentId) {
+    return journeyHomologationService.request(id, experimentId);
   }
 
   /**

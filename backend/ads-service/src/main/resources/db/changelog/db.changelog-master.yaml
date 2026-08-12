@@ -1762,3 +1762,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-11-opportunity-review-execution.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-12-commercial-plan-multiple-experiments.yaml
+      relativeToChangelogFile: true

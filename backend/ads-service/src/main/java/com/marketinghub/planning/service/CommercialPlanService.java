@@ -128,6 +128,10 @@ public class CommercialPlanService {
             .rootCause(request.rootCause())
             .build();
     CommercialPlan saved = planRepository.save(plan);
+    if (saved.getExperiment() != null) {
+      saved.getExperiments().add(saved.getExperiment());
+      saved = planRepository.save(saved);
+    }
     createDefaultMilestones(saved);
     versionService.snapshot(saved, "SYSTEM", "Criação do plano comercial");
     return syncExecution(saved);
@@ -150,7 +154,11 @@ public class CommercialPlanService {
     plan.setStatus(request.status() != null ? request.status() : plan.getStatus());
     plan.setNiche(resolveNiche(request.nicheId()));
     plan.setHypothesis(resolveHypothesis(request.hypothesisId()));
-    plan.setExperiment(resolveExperiment(request.experimentId()));
+    Experiment requestedExperiment = resolveExperiment(request.experimentId());
+    if (requestedExperiment != null) {
+      plan.getExperiments().add(requestedExperiment);
+      plan.setExperiment(requestedExperiment);
+    }
     plan.setCommercialObjective(request.commercialObjective());
     plan.setTargetAudience(request.targetAudience());
     plan.setMainPain(request.mainPain());
@@ -256,14 +264,12 @@ public class CommercialPlanService {
     return syncExecution(plan);
   }
 
-  /** Vincula o plano ao unico experimento em execucao que pertence ao mesmo contexto comercial. */
+  /**
+   * Vincula ao plano todos os experimentos em execução compatíveis sem apagar vínculos anteriores.
+   */
   @Transactional
   public CommercialPlan synchronizeRunningExperiment(Long id) {
     CommercialPlan plan = getPlan(id);
-    if (plan.getExperiment() != null
-        && plan.getExperiment().getStatus() == ExperimentStatus.RUNNING) {
-      return plan;
-    }
     List<Experiment> compatible =
         experimentRepository.findByStatus(ExperimentStatus.RUNNING).stream()
             .filter(experiment -> belongsToPlan(plan, experiment))
@@ -272,13 +278,38 @@ public class CommercialPlanService {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "Nenhum experimento RUNNING compativel com o planejamento.");
     }
-    if (compatible.size() > 1) {
-      throw new ResponseStatusException(
-          HttpStatus.CONFLICT,
-          "Mais de um experimento RUNNING compativel; vinculo automatico bloqueado.");
-    }
+    plan.getExperiments().addAll(compatible);
     plan.setExperiment(compatible.get(0));
     return planRepository.save(plan);
+  }
+
+  /** Adiciona um experimento compatível ao portfólio de testes do plano. */
+  @Transactional
+  public CommercialPlan addExperiment(Long planId, Long experimentId) {
+    CommercialPlan plan = getPlan(planId);
+    Experiment experiment = resolveExperiment(experimentId);
+    if (!belongsToPlan(plan, experiment)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "O experimento não pertence ao contexto comercial do plano.");
+    }
+    plan.getExperiments().add(experiment);
+    if (plan.getExperiment() == null) plan.setExperiment(experiment);
+    CommercialPlan saved = planRepository.save(plan);
+    versionService.snapshot(saved, "USER", "Experimento adicionado ao portfólio de testes");
+    return saved;
+  }
+
+  /** Confirma se o experimento informado pertence ao portfólio do plano. */
+  @Transactional(readOnly = true)
+  public Experiment requireExperiment(Long planId, Long experimentId) {
+    CommercialPlan plan = getPlan(planId);
+    return plan.getExperiments().stream()
+        .filter(experiment -> experiment.getId().equals(experimentId))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Experimento não vinculado ao plano comercial."));
   }
 
   /**

@@ -66,6 +66,7 @@ export interface CommercialPlan {
   hypothesisTitle?: string | null;
   experimentId?: number | null;
   experimentName?: string | null;
+  experiments: Array<{ id: number; name: string; status: string }>;
   commercialObjective?: string | null;
   targetAudience?: string | null;
   mainPain?: string | null;
@@ -369,10 +370,12 @@ export function useRequestCommercialPlanJourneyHomologation(
 ) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (experimentId: number) => {
       if (!planId) throw new Error("Plano comercial não informado.");
       const { data } = await axios.post<CommercialPlanJourneyHomologation>(
         `/api/planning/commercial-plans/${planId}/journey-homologations`,
+        null,
+        { params: { experimentId } },
       );
       return data;
     },

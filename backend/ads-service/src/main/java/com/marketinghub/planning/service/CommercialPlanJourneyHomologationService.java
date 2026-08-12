@@ -9,10 +9,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: solicitar a Dédalo a homologação técnica da jornada vinculada ao plano. */
 @Service
@@ -33,13 +31,8 @@ public class CommercialPlanJourneyHomologationService {
 
   /** Enfileira uma auditoria integral segregada, sem publicar landing ou liberar mídia. */
   @Transactional
-  public CommercialPlanJourneyHomologationDto request(Long planId) {
-    var plan = commercialPlanService.getPlan(planId);
-    if (plan.getExperiment() == null) {
-      throw new ResponseStatusException(
-          HttpStatus.CONFLICT, "Plano comercial sem experimento vinculado.");
-    }
-    Long experimentId = plan.getExperiment().getId();
+  public CommercialPlanJourneyHomologationDto request(Long planId, Long experimentId) {
+    commercialPlanService.requireExperiment(planId, experimentId);
     Instant requestedAt = Instant.now();
     String cycleId = "commercial-plan-homologation-" + planId + "-" + UUID.randomUUID();
     executionService.enqueue(experimentId, cycleId, buildAuditBrief(planId, experimentId));

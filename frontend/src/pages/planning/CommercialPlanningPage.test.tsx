@@ -611,7 +611,9 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getByLabelText("Prazo da meta")).toBeTruthy();
     expect(screen.getByLabelText("Meta de receita")).toBeTruthy();
     expect(screen.getByLabelText("Teto total do plano (R$)")).toHaveValue(300);
-    expect(screen.getByLabelText("Experimento vinculado")).toHaveValue(85);
+    expect(
+      screen.getByLabelText("Adicionar/selecionar experimento"),
+    ).toHaveValue(85);
     expect(screen.getByLabelText("Objetivo comercial")).toBeTruthy();
     expect(screen.getByLabelText("Critério de sucesso")).toBeTruthy();
     expect(screen.getByLabelText("Critério de parada")).toBeTruthy();

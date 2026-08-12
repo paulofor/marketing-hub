@@ -643,6 +643,7 @@ function fallbackMonthPlan(): CommercialPlan {
     name: julyPlanningForm.name,
     planType: "FIRST_SALE",
     status: julyPlanningForm.status ?? "DRAFT",
+    experiments: [],
     commercialObjective: julyPlanningForm.commercialObjective,
     targetAudience: julyPlanningForm.targetAudience,
     mainPain: julyPlanningForm.mainPain,
@@ -2419,7 +2420,7 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
                 <div className="row g-3">
                   <div className="col-md-4">
                     <label className="form-label" htmlFor="planning-experiment">
-                      Experimento vinculado
+                      Adicionar/selecionar experimento
                     </label>
                     <input
                       id="planning-experiment"
@@ -2437,6 +2438,11 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
                         )
                       }
                     />
+                    <small className="text-body-secondary">
+                      O plano preserva todos os experimentos anteriores; este
+                      campo adiciona um novo teste e o seleciona para a próxima
+                      ação.
+                    </small>
                   </div>
                   <div className="col-md-4">
                     <label className="form-label" htmlFor="planning-status">
@@ -2725,7 +2731,11 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
                       requestJourneyHomologation.isPending ||
                       !currentMonthPlan.experimentId
                     }
-                    onClick={() => requestJourneyHomologation.mutate()}
+                    onClick={() =>
+                      requestJourneyHomologation.mutate(
+                        Number(planDraft.experimentId),
+                      )
+                    }
                   >
                     {requestJourneyHomologation.isPending
                       ? "Solicitando homologação..."
@@ -2734,6 +2744,15 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
                   <small className="text-body-secondary">
                     Usa dados segregados com mh_test=1 e não autoriza
                     publicação, mídia ou gasto.
+                  </small>
+                  <small className="text-body-secondary">
+                    Experimentos deste plano:{" "}
+                    {asArray(currentMonthPlan.experiments)
+                      .map(
+                        (experiment) => `#${experiment.id} ${experiment.name}`,
+                      )
+                      .join(", ") || "nenhum"}
+                    .
                   </small>
                   {requestJourneyHomologation.isSuccess ? (
                     <span className="text-success" role="status">

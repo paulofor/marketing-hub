@@ -4,6 +4,7 @@ import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.CommercialPlanMilestone;
 import com.marketinghub.planning.CommercialPlanSimulation;
 import com.marketinghub.planning.dto.CommercialPlanDto;
+import com.marketinghub.planning.dto.CommercialPlanExperimentDto;
 import com.marketinghub.planning.dto.CommercialPlanMilestoneDto;
 import com.marketinghub.planning.dto.CommercialPlanSimulationDto;
 import java.time.LocalDate;
@@ -30,6 +31,12 @@ public class CommercialPlanMapper {
         plan.getHypothesis() != null ? plan.getHypothesis().getTitle() : null,
         plan.getExperiment() != null ? plan.getExperiment().getId() : null,
         plan.getExperiment() != null ? plan.getExperiment().getName() : null,
+        plan.getExperiments().stream()
+            .map(
+                experiment ->
+                    new CommercialPlanExperimentDto(
+                        experiment.getId(), experiment.getName(), experiment.getStatus().name()))
+            .toList(),
         plan.getCommercialObjective(),
         plan.getTargetAudience(),
         plan.getMainPain(),

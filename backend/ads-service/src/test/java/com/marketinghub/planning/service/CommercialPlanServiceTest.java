@@ -247,9 +247,9 @@ class CommercialPlanServiceTest {
     assertThat(synchronizedPlan.getExperiment().getId()).isEqualTo(85L);
   }
 
-  /** Bloqueia selecao automatica quando mais de um experimento ativo pertence ao plano. */
+  /** Preserva todos os experimentos ativos compatíveis no portfólio do plano. */
   @Test
-  void synchronizeRunningExperimentRejectsAmbiguousCandidates() {
+  void synchronizeRunningExperimentLinksAllCompatibleCandidates() {
     Hypothesis hypothesis =
         Hypothesis.builder().id(UUID.randomUUID()).title("Agenda cheia").build();
     CommercialPlan plan = CommercialPlan.builder().id(2L).hypothesis(hypothesis).build();
@@ -268,10 +268,13 @@ class CommercialPlanServiceTest {
                     .hypothesisRef(hypothesis)
                     .status(ExperimentStatus.RUNNING)
                     .build()));
+    when(planRepository.save(any(CommercialPlan.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
 
-    org.assertj.core.api.Assertions.assertThatThrownBy(
-            () -> service.synchronizeRunningExperiment(2L))
-        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-        .hasMessageContaining("Mais de um experimento RUNNING compativel");
+    CommercialPlan synchronizedPlan = service.synchronizeRunningExperiment(2L);
+
+    assertThat(synchronizedPlan.getExperiments())
+        .extracting(Experiment::getId)
+        .containsExactly(85L, 86L);
   }
 }

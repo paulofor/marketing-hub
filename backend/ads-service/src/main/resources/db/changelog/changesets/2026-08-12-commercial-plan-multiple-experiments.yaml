@@ -1,0 +1,40 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-08-12-commercial-plan-multiple-experiments.yaml
+  - changeSet:
+      id: 2026-08-12-commercial-plan-multiple-experiments
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: commercial_plan
+        - tableExists:
+            tableName: experiment
+        - not:
+            tableExists:
+              tableName: commercial_plan_experiment
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE commercial_plan_experiment (
+                commercial_plan_id BIGINT NOT NULL,
+                experiment_id BIGINT NOT NULL,
+                linked_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (commercial_plan_id, experiment_id),
+                CONSTRAINT fk_commercial_plan_experiment_plan FOREIGN KEY (commercial_plan_id) REFERENCES commercial_plan(id),
+                CONSTRAINT fk_commercial_plan_experiment_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id)
+              );
+              CREATE INDEX idx_commercial_plan_experiment_experiment ON commercial_plan_experiment(experiment_id);
+              INSERT INTO commercial_plan_experiment (commercial_plan_id, experiment_id, linked_at)
+              SELECT id, experiment_id, COALESCE(updated_at, created_at, NOW())
+              FROM commercial_plan
+              WHERE experiment_id IS NOT NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE commercial_plan_experiment;

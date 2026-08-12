@@ -12,6 +12,12 @@ Toda proposta criada por Têmis deve conter copy publicável, CTA, conceito visu
 
 O backend continua sendo a autoridade exclusiva para criar a nova versão, solicitar sua materialização, controlar custo e tentativas e devolver a peça ao gate. O AI Worker materializa mídia, mas não escolhe estratégia nem aprova. A criação de Têmis não autoriza publicação, ativação de campanha, alteração de orçamento ou mudança do experimento para `RUNNING`.
 
+Uma tarefa operacional `WORK` atribuída a `meta-ad-approver` e vinculada pela referência canônica
+`experiment:<id>` deve ser reconciliada pelo backend com a fila de geração de criativos. O backend
+muda a tarefa de `PENDING` para `IN_PROGRESS`, solicita uma única alternativa sem apagar o histórico
+e somente conclui a tarefa após o callback de aprovação independente da peça materializada. Falha do
+executor bloqueia a tarefa; polling repetido não pode duplicar a solicitação.
+
 ## Contrato de copy para Meta
 
 O armazenamento deve preservar a copy integral e o histórico em campo textual amplo. A versão destinada à publicação, porém, deve respeitar os limites comerciais de exibição adotados para os placements Meta: texto principal com até 125 caracteres, headline com até 40 e descrição com até 25. O Aprovador deve reescrever semanticamente qualquer excesso; truncamento automático é proibido. O backend valida a correção e o Facebook Ads Worker repete a validação imediatamente antes de qualquer chamada externa.

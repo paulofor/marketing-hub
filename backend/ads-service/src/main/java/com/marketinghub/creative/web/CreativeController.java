@@ -15,6 +15,7 @@ import com.marketinghub.creative.dto.UpdateCreativeLabelsRequest;
 import com.marketinghub.creative.dto.UpdateCreativeStatusRequest;
 import com.marketinghub.creative.mapper.CreativeMapper;
 import com.marketinghub.creative.service.CreativeService;
+import com.marketinghub.experiment.service.TemisCreativeTaskOrchestrationService;
 import com.marketinghub.media.Asset;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.storage.AssetUploadCategory;
@@ -39,12 +40,17 @@ public class CreativeController {
   private final CreativeService service;
   private final CreativeMapper mapper;
   private final AssetRepository assetRepository;
+  private final TemisCreativeTaskOrchestrationService temisCreativeTaskOrchestrationService;
 
   public CreativeController(
-      CreativeService service, CreativeMapper mapper, AssetRepository assetRepository) {
+      CreativeService service,
+      CreativeMapper mapper,
+      AssetRepository assetRepository,
+      TemisCreativeTaskOrchestrationService temisCreativeTaskOrchestrationService) {
     this.service = service;
     this.mapper = mapper;
     this.assetRepository = assetRepository;
+    this.temisCreativeTaskOrchestrationService = temisCreativeTaskOrchestrationService;
   }
 
   /** Cria um criativo vinculado ao experimento informado. */
@@ -166,7 +172,12 @@ public class CreativeController {
   @PostMapping("/api/internal/creatives/{id}/agent-review/result")
   public CreativeDto applyAgentReview(
       @PathVariable Long id, @RequestBody CreativeAgentReviewResultRequest request) {
-    return mapper.toDto(service.applyAgentReview(id, request));
+    com.marketinghub.creative.Creative creative = service.applyAgentReview(id, request);
+    if (creative.getAgentReviewStatus()
+        == com.marketinghub.creative.CreativeAgentReviewStatus.APPROVED) {
+      temisCreativeTaskOrchestrationService.completeForExperiment(creative.getExperiment().getId());
+    }
+    return mapper.toDto(creative);
   }
 
   /** Entrega ao AI Worker correções decididas pelo agente e marca cada item como processando. */

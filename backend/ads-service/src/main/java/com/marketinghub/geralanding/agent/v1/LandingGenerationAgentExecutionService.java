@@ -89,6 +89,7 @@ public class LandingGenerationAgentExecutionService {
   /** Reserva jobs de forma transacional antes de qualquer consumo do Codex. */
   @Transactional
   public List<LandingAgentPendingResponse> claimPending(int requestedLimit) {
+    recoverLegacyTimeoutFailures();
     recoverExpiredLeases();
     int limit = Math.max(1, Math.min(3, requestedLimit));
     return repository
@@ -97,6 +98,23 @@ public class LandingGenerationAgentExecutionService {
         .limit(limit)
         .map(this::claim)
         .toList();
+  }
+
+  /** Reabre uma única vez timeouts terminais gravados por versões antigas do worker. */
+  private void recoverLegacyTimeoutFailures() {
+    for (GeraLandingStageExecution execution :
+        repository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(STAGE, "FALHA")) {
+      if (execution.getErrorDetail() == null
+          && execution.getErrorMessage() != null
+          && execution.getErrorMessage().contains("Timeout do Codex do Agente Gerador de Landing")) {
+        execution.setStatus(PENDING);
+        execution.setProcessingStartedAt(null);
+        execution.setCompletedAt(null);
+        execution.setErrorMessage(null);
+        execution.setErrorDetail("LEGACY_TIMEOUT_RECOVERED_ONCE");
+        repository.save(execution);
+      }
+    }
   }
 
   /** Recupera uma lease órfã uma vez e bloqueia reincidência para evitar loop infinito. */

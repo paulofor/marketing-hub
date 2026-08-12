@@ -2025,101 +2025,90 @@ function CommercialPlanDetailPage({ planId }: { planId: number }) {
                         agente, resultado, bloqueio e referência de origem.
                       </p>
                     </div>
-                    <div className="table-responsive">
-                      <table className="table align-middle mb-0">
-                        <thead>
-                          <tr>
-                            <th scope="col">Ordem</th>
-                            <th>Agente</th>
-                            <th>Registro</th>
-                            <th>Parecer final</th>
-                            <th>Status</th>
-                            <th>Dificuldade / decisão</th>
-                            <th>Financeiro</th>
-                            <th>Atualização</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {chronologicalAgentActivity.map((entry, index) => (
-                            <tr
-                              key={`${entry.recordType}-${entry.sourceReference}-${index}`}
-                            >
-                              <td>
-                                <span className="badge text-bg-light border">
-                                  {index + 1}
-                                </span>
-                              </td>
-                              <td>
-                                <strong>{entry.agentNickname}</strong>
+                    <ol
+                      className="commercial-planning-agent-timeline"
+                      aria-label="Atuações dos agentes"
+                    >
+                      {chronologicalAgentActivity.map((entry, index) => (
+                        <li
+                          className="commercial-planning-agent-event"
+                          key={`${entry.recordType}-${entry.sourceReference}-${index}`}
+                        >
+                          <span className="commercial-planning-agent-event-order">
+                            {index + 1}
+                          </span>
+                          <article className="commercial-planning-agent-event-card">
+                            <header className="commercial-planning-agent-event-header">
+                              <div>
+                                <strong className="commercial-planning-agent-name">
+                                  {entry.agentNickname}
+                                </strong>
                                 <small className="d-block text-body-secondary">
                                   {entry.agentKey}
                                 </small>
-                              </td>
-                              <td>
-                                <strong>{entry.title}</strong>
-                                {entry.detail ? (
-                                  <small className="d-block text-body-secondary">
-                                    {entry.detail}
-                                  </small>
-                                ) : null}
-                              </td>
-                              <td>
-                                {entry.finalOpinion ? (
-                                  <span className="commercial-planning-agent-opinion">
-                                    {entry.finalOpinion}
-                                  </span>
-                                ) : (
-                                  <span className="text-body-secondary">
-                                    Ainda não gerado
-                                  </span>
-                                )}
-                              </td>
-                              <td>
+                              </div>
+                              <div className="commercial-planning-agent-event-meta">
                                 <span className="badge text-bg-light border">
                                   {entry.status}
                                 </span>
-                              </td>
-                              <td>
-                                {entry.externalDecisionRequired ? (
-                                  <span className="text-warning-emphasis">
-                                    {entry.externalDecision}
-                                  </span>
-                                ) : entry.difficulty ? (
-                                  <span className="text-danger">
-                                    {entry.difficulty}
-                                  </span>
+                                <time dateTime={entry.occurredAt ?? undefined}>
+                                  {entry.occurredAt
+                                    ? new Date(entry.occurredAt).toLocaleString(
+                                        "pt-BR",
+                                      )
+                                    : "Data não informada"}
+                                </time>
+                              </div>
+                            </header>
+
+                            <div className="commercial-planning-agent-event-content">
+                              <section>
+                                <span className="commercial-planning-agent-event-label">
+                                  Atuação
+                                </span>
+                                <h4>{entry.title}</h4>
+                                {entry.detail ? (
+                                  <p className="text-body-secondary mb-0">
+                                    {entry.detail}
+                                  </p>
+                                ) : null}
+                              </section>
+                              <section className="commercial-planning-agent-opinion-panel">
+                                <span className="commercial-planning-agent-event-label">
+                                  Parecer final
+                                </span>
+                                {entry.finalOpinion ? (
+                                  <p className="commercial-planning-agent-opinion mb-0">
+                                    {entry.finalOpinion}
+                                  </p>
                                 ) : (
-                                  <span className="text-body-secondary">
-                                    Sem bloqueio
-                                  </span>
+                                  <p className="text-body-secondary mb-0">
+                                    Ainda não gerado
+                                  </p>
                                 )}
-                              </td>
-                              <td>
-                                {entry.budgetLimitUsd != null ? (
-                                  <span>
-                                    US$ {(entry.knownCostUsd ?? 0).toFixed(2)} /
-                                    US$ {entry.budgetLimitUsd.toFixed(2)}
-                                  </span>
-                                ) : entry.knownCostUsd != null ? (
-                                  <span>
-                                    US$ {entry.knownCostUsd.toFixed(2)}
-                                  </span>
-                                ) : (
-                                  <span className="text-body-secondary">—</span>
-                                )}
-                              </td>
-                              <td>
-                                {entry.occurredAt
-                                  ? new Date(entry.occurredAt).toLocaleString(
-                                      "pt-BR",
-                                    )
-                                  : "—"}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                              </section>
+                            </div>
+
+                            <footer className="commercial-planning-agent-event-footer">
+                              <span>
+                                <strong>Bloqueio:</strong>{" "}
+                                {entry.externalDecisionRequired
+                                  ? entry.externalDecision
+                                  : entry.difficulty || "Sem bloqueio"}
+                              </span>
+                              <span>
+                                <strong>Financeiro:</strong>{" "}
+                                {entry.budgetLimitUsd != null
+                                  ? `US$ ${(entry.knownCostUsd ?? 0).toFixed(2)} / US$ ${entry.budgetLimitUsd.toFixed(2)}`
+                                  : entry.knownCostUsd != null
+                                    ? `US$ ${entry.knownCostUsd.toFixed(2)}`
+                                    : "—"}
+                              </span>
+                            </footer>
+                          </article>
+                        </li>
+                      ))}
+                    </ol>
                   </div>
                 ) : (
                   <p className="text-body-secondary mb-0">

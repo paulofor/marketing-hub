@@ -901,11 +901,14 @@ describe("CommercialPlanningPage", () => {
   });
 
   it("mostra trabalhos, decisões e finanças dos agentes dentro do plano", () => {
-    renderPage();
+    const { container } = renderPage();
 
     expect(screen.getByText("Atuação dos agentes no plano")).toBeTruthy();
     expect(screen.getByText("Histórico cronológico")).toBeTruthy();
-    expect(screen.getByText("Parecer final")).toBeTruthy();
+    expect(screen.getAllByText("Parecer final").length).toBeGreaterThan(0);
+    expect(
+      screen.getByRole("list", { name: "Atuações dos agentes" }),
+    ).toBeTruthy();
     expect(
       screen.getByText(
         "Validar a oferta com pagamento real antes de ampliar aquisição.",
@@ -919,15 +922,17 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getAllByText("US$ 0.00 / US$ 40.00").length).toBeGreaterThan(
       0,
     );
-    const chronologicalRows = screen.getAllByRole("row");
-    const plutusRow = chronologicalRows.findIndex((row) =>
-      row.textContent?.includes("Plutus"),
+    const chronologicalEvents = Array.from(
+      container.querySelectorAll(".commercial-planning-agent-event"),
     );
-    const atenaRow = chronologicalRows.findIndex((row) =>
-      row.textContent?.includes("Atena"),
+    const plutusEvent = chronologicalEvents.findIndex((event) =>
+      event.textContent?.includes("Plutus"),
     );
-    expect(plutusRow).toBeGreaterThan(-1);
-    expect(atenaRow).toBeGreaterThan(plutusRow);
+    const atenaEvent = chronologicalEvents.findIndex((event) =>
+      event.textContent?.includes("Atena"),
+    );
+    expect(plutusEvent).toBeGreaterThan(-1);
+    expect(atenaEvent).toBeGreaterThan(plutusEvent);
   });
 
   it("consolida bloqueios do plano com causa, impacto, ação e evidência", () => {

@@ -289,6 +289,9 @@ public class OpportunityDossierService {
                         item.getRationale(),
                         item.getRisks(),
                         item.getRecommendation(),
+                        item.getExecutionStatus(),
+                        item.getErrorMessage(),
+                        item.getStartedAt(),
                         item.getRequestedAt(),
                         item.getCompletedAt()))
             .toList();

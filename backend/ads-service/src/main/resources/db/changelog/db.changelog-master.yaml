@@ -1759,3 +1759,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-11-commercial-plan-financial-assumptions.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-11-opportunity-review-execution.yaml
+      relativeToChangelogFile: true

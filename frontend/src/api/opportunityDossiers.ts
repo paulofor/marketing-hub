@@ -36,7 +36,11 @@ export interface OpportunityDossier {
     agentKey: string;
     decision?: string;
     rationale?: string;
+    risks?: string;
     recommendation?: string;
+    executionStatus: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
+    errorMessage?: string;
+    startedAt?: string;
     completedAt?: string;
   }[];
 }
@@ -59,6 +63,7 @@ export function useOpportunityDossiers() {
     queryKey: ["opportunity-dossiers"],
     queryFn: async () =>
       (await axios.get<OpportunityDossier[]>("/api/opportunity-dossiers")).data,
+    refetchInterval: 15_000,
   });
 }
 export function useCreateOpportunityDossier() {

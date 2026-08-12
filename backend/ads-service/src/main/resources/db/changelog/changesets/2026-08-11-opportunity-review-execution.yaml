@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-11-opportunity-review-execution
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE opportunity_agent_review
+                ADD COLUMN execution_status VARCHAR(24) NOT NULL DEFAULT 'PENDING',
+                ADD COLUMN started_at DATETIME NULL,
+                ADD COLUMN updated_at DATETIME NULL,
+                ADD COLUMN retry_count INT NOT NULL DEFAULT 0,
+                ADD COLUMN error_message LONGTEXT NULL,
+                ADD COLUMN raw_model_response LONGTEXT NULL,
+                ADD COLUMN model_name VARCHAR(191) NULL,
+                ADD KEY idx_opportunity_review_queue (agent_key, execution_status, requested_at);
+
+              UPDATE opportunity_agent_review
+              SET execution_status = CASE WHEN completed_at IS NULL THEN 'PENDING' ELSE 'COMPLETED' END,
+                  updated_at = COALESCE(completed_at, requested_at);
+
+              ALTER TABLE opportunity_agent_review
+                MODIFY COLUMN updated_at DATETIME NOT NULL;

@@ -2,6 +2,7 @@ package com.marketinghub.opportunitydossier.service.detail;
 
 import com.marketinghub.opportunitydossier.OpportunityDossierStatus;
 import com.marketinghub.opportunitydossier.OpportunityReviewDecision;
+import com.marketinghub.opportunitydossier.OpportunityReviewExecutionStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -41,6 +42,9 @@ public record OpportunityDossierResponse(
       String rationale,
       String risks,
       String recommendation,
+      OpportunityReviewExecutionStatus executionStatus,
+      String errorMessage,
+      Instant startedAt,
       Instant requestedAt,
       Instant completedAt) {}
 }

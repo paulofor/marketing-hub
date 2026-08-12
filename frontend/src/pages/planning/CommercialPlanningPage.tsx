@@ -1250,7 +1250,11 @@ export default function CommercialPlanningPage() {
     <div className="commercial-planning-page d-flex flex-column gap-4">
       <header className="d-flex flex-column flex-xl-row justify-content-between gap-3">
         <div>
-          <PageTitle>Planejamento</PageTitle>
+          <PageTitle>Planos comerciais</PageTitle>
+          <p className="text-body-secondary mb-0">
+            Acompanhe objetivos, versões, execução financeira e tudo que os
+            agentes fizeram em cada plano.
+          </p>
         </div>
         <div className="d-flex flex-wrap gap-2 align-self-start">
           <button

@@ -518,7 +518,10 @@ describe("CommercialPlanningPage", () => {
   it("renderiza somente o planejamento superior", () => {
     renderPage();
 
-    expect(screen.getByText("Planejamento")).toBeTruthy();
+    expect(screen.getByText("Planos comerciais")).toBeTruthy();
+    expect(
+      screen.getByText(/tudo que os agentes fizeram em cada plano/i),
+    ).toBeTruthy();
     expect(screen.getByText("Plano do mês corrente")).toBeTruthy();
     expect(screen.getAllByText("Custo total").length).toBeGreaterThan(0);
     expect(screen.getByText("Receita mínima")).toBeTruthy();
@@ -893,7 +896,7 @@ describe("CommercialPlanningPage", () => {
 
     renderPage();
 
-    expect(screen.getByText("Planejamento")).toBeTruthy();
+    expect(screen.getByText("Planos comerciais")).toBeTruthy();
     expect(screen.getByText("Julho 2026")).toBeTruthy();
     expect(screen.queryByText("Plano sugerido")).toBeNull();
   });

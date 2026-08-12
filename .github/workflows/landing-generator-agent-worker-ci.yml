@@ -8,6 +8,8 @@ on:
       - "landing-generator-agent-worker/**"
       - "backend/ads-service/src/main/java/com/marketinghub/geralanding/agent/**"
       - ".github/workflows/landing-generator-agent-worker-ci.yml"
+      - "scripts/reconcile-agent-codex-auth.sh"
+      - "scripts/test-shared-agent-codex-auth.sh"
 
 concurrency:
   group: landing-generator-agent-worker-${{ github.ref }}
@@ -66,20 +68,12 @@ jobs:
           set -euo pipefail
           ssh "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}'"
           rsync -az --delete --exclude '.git/' --exclude 'target/' --exclude 'node_modules/' ./ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/"
-      - name: Preparar identidade e subir no mesmo host
+      - name: Reconciliar sessão compartilhada e subir no mesmo host
         run: |
           set -euo pipefail
           ssh "${VPS_USER}@${VPS_IP}" "
-            install -d -m 700 -o 10001 -g 10001 /opt/marketing-hub/agents/landing-generator/codex-home \
-            && if [ ! -s /opt/marketing-hub/agents/landing-generator/codex-home/auth.json ]; then \
-                 test -s /opt/growth-operator/codex-home/auth.json \
-                 && install -m 600 -o 10001 -g 10001 /opt/growth-operator/codex-home/auth.json /opt/marketing-hub/agents/landing-generator/codex-home/auth.json; \
-                 if [ -s /opt/growth-operator/codex-home/config.toml ]; then \
-                   install -m 600 -o 10001 -g 10001 /opt/growth-operator/codex-home/config.toml /opt/marketing-hub/agents/landing-generator/codex-home/config.toml; \
-                 fi; \
-               fi \
-            && test -s /opt/marketing-hub/agents/landing-generator/codex-home/auth.json \
-            && export LANDING_GENERATOR_CODEX_HOME=/opt/marketing-hub/agents/landing-generator/codex-home \
+            bash '${REPOSITORY_DIR}/scripts/reconcile-agent-codex-auth.sh' \
+            && export LANDING_GENERATOR_CODEX_HOME=/opt/growth-operator/codex-home \
                       BACKEND_URL=http://191.252.181.168 \
                       MARKETING_HUB_URL=http://191.252.181.168 \
                       MARKETING_HUB_REPOSITORY_HOST='${REPOSITORY_DIR}' \

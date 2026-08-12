@@ -934,6 +934,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Sintoma:** build e inicialização Spring passam, mas o deploy expira ao executar `codex login status`.
 - **Causa-raiz:** o Compose monta um diretório novo e vazio como `CODEX_HOME`, confundindo volume gravável com volume autenticado.
 - **Prevenção:** agentes com o mesmo UID usam o volume persistente autenticado `/opt/growth-operator/codex-home`; o workflow valida escrita e identidade Codex e informa explicitamente qual contrato de prontidão falhou.
+- **Correção complementar em 2026-08-12:** os workflows deixaram de copiar `auth.json` para diretórios isolados. As cópias faziam vários agentes renovarem o mesmo refresh token independentemente e geravam `refresh_token_reused`. O deploy reconcilia atomicamente a sessão mais recente, todos os agentes montam o mesmo `CODEX_HOME` persistente e um teste de contrato impede a clonagem de retornar.
 
 # LOOP-DEPLOY-GLOBAL-TIMEOUT — Deploy interrompido durante carga das imagens
 

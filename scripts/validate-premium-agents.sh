@@ -89,15 +89,18 @@ for agent in agents:
                 f"{agent['key']}: workflow não exporta {codex_home} para toda a sessão remota"
             )
         for marker in (
-            '/opt/growth-operator/codex-home/auth.json',
-            'install -m 600 -o 10001 -g 10001',
+            'scripts/reconcile-agent-codex-auth.sh',
+            f'{codex_home}=/opt/growth-operator/codex-home',
             'codex login status',
         ):
             if marker not in workflow_text:
                 errors.append(
                     f"{agent['key']}: workflow sem bootstrap/readiness seguro da identidade Codex ({marker})"
                 )
+        if re.search(r'install .*auth\.json .*agents/.*/codex-home/auth\.json', workflow_text):
+            errors.append(f"{agent['key']}: workflow clona refresh token para identidade isolada")
 if errors:
     print('\n'.join(f"[ARQUITETURA] {e}" for e in errors),file=sys.stderr); raise SystemExit(1)
 print(f"[ARQUITETURA] {sum(a['operational'] for a in agents)} agentes conformes; {sum(not a['operational'] for a in agents)} bloqueado(s) com causa explícita.")
 PY
+bash "$repo_root/scripts/test-shared-agent-codex-auth.sh"

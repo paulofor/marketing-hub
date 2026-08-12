@@ -33,6 +33,8 @@ printf '%s\n' '{"session":"latest"}' > "$test_root/legacy/financial/codex-home/a
 AGENT_CODEX_CANONICAL_HOME="$test_root/canonical" \
 AGENT_CODEX_LEGACY_ROOT="$test_root/legacy" \
 AGENT_CODEX_LOCK_FILE="$test_root/reconcile.lock" \
+AGENT_CODEX_OWNER_UID="$(id -u)" \
+AGENT_CODEX_OWNER_GID="$(id -g)" \
   bash "$repo_root/scripts/reconcile-agent-codex-auth.sh" >/dev/null
 grep -q '"latest"' "$test_root/canonical/auth.json"
 
@@ -41,6 +43,8 @@ printf '%s\n' '{"session":"canonical-current"}' > "$test_root/canonical/auth.jso
 AGENT_CODEX_CANONICAL_HOME="$test_root/canonical" \
 AGENT_CODEX_LEGACY_ROOT="$test_root/legacy" \
 AGENT_CODEX_LOCK_FILE="$test_root/reconcile.lock" \
+AGENT_CODEX_OWNER_UID="$(id -u)" \
+AGENT_CODEX_OWNER_GID="$(id -g)" \
   bash "$repo_root/scripts/reconcile-agent-codex-auth.sh" >/dev/null
 grep -q '"canonical-current"' "$test_root/canonical/auth.json"
 
@@ -48,6 +52,8 @@ mkdir -p "$test_root/empty-canonical" "$test_root/empty-legacy"
 if AGENT_CODEX_CANONICAL_HOME="$test_root/empty-canonical" \
   AGENT_CODEX_LEGACY_ROOT="$test_root/empty-legacy" \
   AGENT_CODEX_LOCK_FILE="$test_root/empty.lock" \
+  AGENT_CODEX_OWNER_UID="$(id -u)" \
+  AGENT_CODEX_OWNER_GID="$(id -g)" \
   bash "$repo_root/scripts/reconcile-agent-codex-auth.sh" >/dev/null 2>&1; then
   printf '%s\n' '[ARQUITETURA] Reconciliação aceitou ausência de sessão Codex.' >&2
   exit 1

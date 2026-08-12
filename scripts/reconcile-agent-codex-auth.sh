@@ -5,8 +5,10 @@ set -euo pipefail
 canonical_home=${AGENT_CODEX_CANONICAL_HOME:-/opt/growth-operator/codex-home}
 legacy_root=${AGENT_CODEX_LEGACY_ROOT:-/opt/marketing-hub/agents}
 lock_file=${AGENT_CODEX_LOCK_FILE:-/opt/growth-operator/.codex-auth-reconcile.lock}
+owner_uid=${AGENT_CODEX_OWNER_UID:-10001}
+owner_gid=${AGENT_CODEX_OWNER_GID:-10001}
 
-install -d -m 700 -o 10001 -g 10001 "$canonical_home"
+install -d -m 700 -o "$owner_uid" -g "$owner_gid" "$canonical_home"
 exec 9>"$lock_file"
 flock 9
 
@@ -40,11 +42,11 @@ fi
 if [[ "$latest" != "$canonical_home/auth.json" ]]; then
   temporary_auth=$(mktemp "$canonical_home/.auth.json.XXXXXX")
   trap 'rm -f "$temporary_auth"' EXIT
-  install -m 600 -o 10001 -g 10001 "$latest" "$temporary_auth"
+  install -m 600 -o "$owner_uid" -g "$owner_gid" "$latest" "$temporary_auth"
   mv -f "$temporary_auth" "$canonical_home/auth.json"
   trap - EXIT
 fi
 
-chown 10001:10001 "$canonical_home/auth.json"
+chown "$owner_uid:$owner_gid" "$canonical_home/auth.json"
 chmod 600 "$canonical_home/auth.json"
 printf '%s\n' 'Sessão Codex compartilhada reconciliada sem expor credenciais.'

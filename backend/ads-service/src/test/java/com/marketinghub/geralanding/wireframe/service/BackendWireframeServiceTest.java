@@ -302,6 +302,55 @@ class BackendWireframeServiceTest {
     verify(experimentRepository, never()).save(experiment);
   }
 
+  /** Não deve duplicar copy quando uma execução mais recente já foi enfileirada. */
+  @Test
+  void markCompletedFromResponseShouldNotDuplicateNewerCopyExecution() {
+    ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
+    GeraLandingStageExecutionRepository executionRepository =
+        mock(GeraLandingStageExecutionRepository.class);
+    BackendWireframeService service =
+        new BackendWireframeService(experimentRepository, executionRepository, new ObjectMapper());
+    Experiment experiment = mock(Experiment.class);
+    when(experiment.getId()).thenReturn(88L);
+    Instant wireframeRequestedAt = Instant.parse("2026-08-12T06:01:41Z");
+    GeraLandingStageExecution execution =
+        GeraLandingStageExecution.builder()
+            .experimentId(88L)
+            .experiment(experiment)
+            .stageCode("landing-page-wireframe")
+            .executionRequestedAt(wireframeRequestedAt)
+            .idJob("job-wireframe-antigo".getBytes(StandardCharsets.UTF_8))
+            .status("AGUARDANDO_RETORNO_OPENAI")
+            .build();
+    GeraLandingStageExecution newerCopy =
+        GeraLandingStageExecution.builder()
+            .experimentId(88L)
+            .stageCode("landing-page-copy")
+            .executionRequestedAt(wireframeRequestedAt.plusSeconds(60))
+            .status("INICIADO")
+            .build();
+    when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(any(byte[].class)))
+        .thenReturn(Optional.of(execution));
+    when(executionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
+            88L, "landing-page-copy"))
+        .thenReturn(Optional.of(newerCopy));
+
+    service.markCompletedFromResponse(
+        "job-wireframe-antigo",
+        88L,
+        "landing-page-wireframe",
+        "{\"landingPageWireframe\":{}}",
+        100,
+        50,
+        new BigDecimal("0.10"),
+        "openai-job",
+        null,
+        null);
+
+    verify(executionRepository, never())
+        .save(argThat(saved -> "landing-page-copy".equals(saved.getStageCode())));
+  }
+
   /** Deve marcar falha mesmo quando o callback recebe apenas detalhe técnico do erro. */
   @Test
   void markCompletedFromResponseShouldFailWhenOnlyErrorDetailIsPresent() {

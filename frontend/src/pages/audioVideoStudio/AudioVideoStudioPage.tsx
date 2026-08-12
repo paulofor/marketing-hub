@@ -37,6 +37,7 @@ import {
   type StudioCharacterOption,
 } from "../../api/salesVideo/useVideoStudioCatalog";
 import { useSalesVideoJobs } from "../../api/salesVideo/useSalesVideoJobs";
+import { useSalesVideoProfiles } from "../../api/salesVideo/useSalesVideoProfiles";
 import { useRequestVideoRender } from "../../api/salesVideo/useRequestVideoRender";
 import { useRequestSalesVideoMontage } from "../../api/salesVideo/useRequestSalesVideoMontage";
 import {
@@ -959,10 +960,12 @@ export default function AudioVideoStudioPage() {
   const createProductionCycle =
     useCreateVideoProductionCycle(editableProjectId);
   const [cycleBudgetUsd, setCycleBudgetUsd] = useState("");
+  const [salesVideoProfileId, setSalesVideoProfileId] = useState("");
   const [saveFeedback, setSaveFeedback] = useState("");
   const [selectedSceneJobIds, setSelectedSceneJobIds] = useState<number[]>([]);
   const [sourceImageAssetId, setSourceImageAssetId] = useState("1953");
   const [briefing, setBriefing] = useState<StudioBriefing>(defaultBriefing);
+  const productProfilesQuery = useSalesVideoProfiles(briefing.productId);
   const [persistedScenePlan, setPersistedScenePlan] = useState(
     defaultBriefing.scenePlan,
   );
@@ -980,6 +983,9 @@ export default function AudioVideoStudioPage() {
     if (selectedProject) {
       const projectBriefing = buildBriefingFromProject(selectedProject);
       setBriefing(projectBriefing);
+      setSalesVideoProfileId(
+        selectedProject.salesVideoProfileId?.toString() ?? "",
+      );
       setPersistedScenePlan(projectBriefing.scenePlan);
       setSaveFeedback("");
     }
@@ -1109,7 +1115,7 @@ export default function AudioVideoStudioPage() {
     productId: parseOptionalNumber(briefing.productId)!,
     commercialPlanId: parseOptionalNumber(briefing.commercialPlanId)!,
     experimentId: selectedProject?.experimentId,
-    salesVideoProfileId: selectedProject?.salesVideoProfileId,
+    salesVideoProfileId: parseOptionalNumber(salesVideoProfileId),
     campaignKey:
       briefing.campaignKey || selectedProject?.campaignKey || undefined,
     videoCategory: briefing.videoCategory || "LONG_FORM",
@@ -1159,13 +1165,8 @@ export default function AudioVideoStudioPage() {
 
   const handleSaveProject = async () => {
     setSaveFeedback("");
-    if (
-      !parseOptionalNumber(briefing.productId) ||
-      !parseOptionalNumber(briefing.commercialPlanId)
-    ) {
-      setSaveFeedback(
-        "Selecione produto e plano comercial antes de criar o projeto.",
-      );
+    if (!parseOptionalNumber(briefing.productId)) {
+      setSaveFeedback("Selecione o produto antes de criar o projeto.");
       return;
     }
     if (durationIssue) {
@@ -1461,12 +1462,30 @@ export default function AudioVideoStudioPage() {
               />
             </label>
             <label>
-              ID do plano comercial *
+              ID do plano comercial
               <input
                 value={briefing.commercialPlanId}
                 onChange={updateBriefing("commercialPlanId")}
-                required
               />
+            </label>
+            <label>
+              Perfil de vídeo para Apolo
+              <select
+                aria-label="Perfil de vídeo para Apolo"
+                value={salesVideoProfileId}
+                onChange={(event) => setSalesVideoProfileId(event.target.value)}
+              >
+                <option value="">Selecione um perfil</option>
+                {(productProfilesQuery.data ?? []).map((profile) => (
+                  <option key={profile.id} value={profile.id}>
+                    #{profile.id} · {profile.title} · {profile.status}
+                  </option>
+                ))}
+              </select>
+              <small>
+                O ciclo autônomo só é aberto depois que o projeto estiver
+                vinculado a um perfil do mesmo produto.
+              </small>
             </label>
             <label>
               Campanha
@@ -2351,8 +2370,7 @@ export default function AudioVideoStudioPage() {
               isSavingProject ||
               selectedProjectQuery.isLoading ||
               Boolean(durationIssue) ||
-              !parseOptionalNumber(briefing.productId) ||
-              !parseOptionalNumber(briefing.commercialPlanId)
+              !parseOptionalNumber(briefing.productId)
             }
           >
             <Save size={18} aria-hidden="true" />

@@ -414,4 +414,67 @@ describe("AudioVideoStudioPage", () => {
       screen.getByRole("button", { name: /montar planos aprovados/i }),
     ).toBeDisabled();
   });
+
+  it("vincula um perfil do produto antes de solicitar o ciclo de Apolo", async () => {
+    const user = userEvent.setup();
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/studio/catalog") {
+        return Promise.resolve({ data: studioCatalog });
+      }
+      if (url === "/api/sales-videos/projects/1") {
+        return Promise.resolve({
+          data: {
+            id: 1,
+            productId: 4,
+            commercialPlanId: null,
+            salesVideoProfileId: null,
+            videoCategory: "COMMERCIAL_SHORT",
+            contextType: "PDE",
+            productionMode: "STORY_FIRST_AUDIO_VIDEO",
+            targetChannel: "PDE_AND_SOCIAL",
+            format: "VERTICAL_9_16",
+            title: "Novo vídeo MUSA",
+            objective: "Explicar o mecanismo MUSA",
+            targetDurationSeconds: 30,
+            status: "READY_FOR_SCRIPT",
+          },
+        });
+      }
+      if (url === "/api/products/4/sales-videos/profiles") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 55,
+              title: "MUSA Hero cinematográfico",
+              status: "VIDEO_READY",
+            },
+          ],
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    setupProject();
+
+    await screen.findByRole("option", {
+      name: /#55 · MUSA Hero cinematográfico · VIDEO_READY/i,
+    });
+    await user.selectOptions(
+      await screen.findByLabelText("Perfil de vídeo para Apolo"),
+      "55",
+    );
+    await user.click(
+      screen.getByRole("button", { name: /salvar continuidade/i }),
+    );
+
+    await waitFor(() =>
+      expect(axios.patch).toHaveBeenCalledWith(
+        "/api/sales-videos/projects/1",
+        expect.objectContaining({
+          commercialPlanId: undefined,
+          salesVideoProfileId: 55,
+        }),
+      ),
+    );
+  });
 });

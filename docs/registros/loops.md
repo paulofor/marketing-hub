@@ -29,6 +29,13 @@
 - **Correção efetiva:** a cada polling, o backend reconcilia todos os planos não encerrados e cria ciclos idempotentes mesmo sem experimento ativo; experimentos compatíveis continuam compondo um portfólio, sem vínculo exclusivo.
 - **Prevenção:** teste do worker exige varredura global antes da reserva da fila e teste do backend deve excluir apenas planos concluídos ou cancelados.
 
+## LOOP-COMMERCIAL-PLAN-EXPERIMENT-IDENTITY-RECURSION — portfólio derruba a tela de planos
+
+- **Sintoma:** `GET /api/planning/commercial-plans` retorna HTTP 500 depois que o plano passa a expor o portfólio de experimentos.
+- **Causa-raiz confirmada em 2026-08-12:** o `LinkedHashSet` do portfólio acionava o `hashCode` gerado pelo Lombok para `Experiment`; esse método percorria associações JPA e entrava no ciclo `Hypothesis` ↔ `DeliverablePackage`, terminando em `StackOverflowError`.
+- **Correção efetiva:** igualdade e hash de `Experiment` usam somente identidade persistida e classe Hibernate, sem percorrer associações.
+- **Prevenção:** teste unitário monta um grafo bidirecional e exige que inserir o experimento em conjunto não cause recursão; entidades JPA usadas em conjuntos não podem herdar igualdade/hash baseada no grafo completo.
+
 ## LOOP-EXPERIMENTO-FAKE-CONTABILIZADO-COMO-HUMANO — Métricas de homologação
 
 - Sintoma: sessões de homologação do experimento fake apareciam como humanas para o Operador de Crescimento.

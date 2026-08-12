@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 import lombok.*;
+import org.hibernate.Hibernate;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -399,6 +400,21 @@ public class Experiment {
   @ToString.Exclude
   @EqualsAndHashCode.Exclude
   private SampleEmail selectedSampleEmail;
+
+  /** Compara experimentos persistidos somente pela identidade, sem percorrer o grafo JPA. */
+  @Override
+  public boolean equals(Object other) {
+    if (this == other) return true;
+    if (other == null || Hibernate.getClass(this) != Hibernate.getClass(other)) return false;
+    Experiment experiment = (Experiment) other;
+    return id != null && id.equals(experiment.id);
+  }
+
+  /** Mantém hash estável para entidades e proxies sem acessar associações bidirecionais. */
+  @Override
+  public int hashCode() {
+    return Hibernate.getClass(this).hashCode();
+  }
 
   @PrePersist
   void applyMetricPreset() {

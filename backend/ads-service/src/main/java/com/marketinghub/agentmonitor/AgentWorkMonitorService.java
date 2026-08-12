@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -129,7 +130,8 @@ public class AgentWorkMonitorService {
         "Correção autônoma da landing do experimento #" + execution.getExperimentId(),
         "Etapa landing-generation-agent-v1 · " + execution.getStatus(),
         failed
-            ? text(execution.getErrorMessage(), "Falha técnica registrada na execução.")
+            ? operationalBlocker(
+                agent, execution.getErrorMessage(), "Falha técnica registrada na execução.")
             : stale ? "Execução sem atividade além da janela operacional." : null,
         false,
         null,
@@ -173,7 +175,7 @@ public class AgentWorkMonitorService {
             + cycle.getBudgetLimitUsd()
             + " · custo conhecido US$ "
             + cycle.getKnownCostUsd(),
-        blocked ? text(cycle.getFinancialReason(), "Ciclo bloqueado.") : null,
+        blocked ? operationalBlocker(agent, cycle.getFinancialReason(), "Ciclo bloqueado.") : null,
         financialPending,
         financialPending
             ? "Plutus precisa aprovar ou rejeitar o teto antes de qualquer provider."
@@ -268,7 +270,11 @@ public class AgentWorkMonitorService {
         improving
             ? "Produzindo e enviando uma imagem melhor"
             : reviewing ? "Revisando o anúncio" : "Correção visual bloqueada";
-    String difficulty = blocked ? temisBlockReason(creative) : null;
+    String difficulty =
+        blocked
+            ? operationalBlocker(
+                agent, temisBlockReason(creative), "A correção do criativo está bloqueada.")
+            : null;
     return response(
         agent,
         blocked ? "BLOCKED" : "WORKING",
@@ -361,5 +367,44 @@ public class AgentWorkMonitorService {
   /** Usa o fallback somente quando o detalhe persistido estiver vazio. */
   private String text(String value, String fallback) {
     return value == null || value.isBlank() ? fallback : value;
+  }
+
+  /** Converte detalhes técnicos persistidos em um bloqueio curto e acionável para o painel. */
+  private String operationalBlocker(Agent agent, String value, String fallback) {
+    String error = text(value, fallback).trim();
+    if (isAuthenticationError(error)) {
+      return "Autenticação do executor inválida ou expirada. Reconecte a credencial usada por "
+          + agent.getNickname()
+          + " e retome a tarefa.";
+    }
+    return conciseError(error);
+  }
+
+  /** Reconhece os sinais comuns de credencial inválida sem depender de um único provedor. */
+  private boolean isAuthenticationError(String error) {
+    String normalized = error.toLowerCase(Locale.ROOT);
+    return normalized.contains("refresh_token_reused")
+        || normalized.contains("invalid_grant")
+        || normalized.contains("token expired")
+        || normalized.contains("token expirado")
+        || normalized.contains("unauthorized")
+        || normalized.contains("authentication failed")
+        || normalized.contains("invalid token")
+        || normalized.contains("invalid_token")
+        || normalized.contains("http 401")
+        || normalized.contains("status 401")
+        || normalized.contains("401 unauthorized");
+  }
+
+  /** Remove stack trace e limita o resumo exibido sem alterar a evidência persistida. */
+  private String conciseError(String error) {
+    int end = error.length();
+    for (String marker : List.of("\n", "\r", "\tat ", " Caused by:", " at com.")) {
+      int markerIndex = error.indexOf(marker);
+      if (markerIndex >= 0) end = Math.min(end, markerIndex);
+    }
+    String summary = error.substring(0, end).trim();
+    int maxLength = 280;
+    return summary.length() <= maxLength ? summary : summary.substring(0, maxLength - 1) + "…";
   }
 }

@@ -134,6 +134,88 @@ class AgentWorkMonitorServiceTest {
     assertThat(result.difficulty()).isEqualTo("Timeout registrado");
   }
 
+  /** Traduz falha de autenticação em orientação operacional sem expor o stack trace. */
+  @Test
+  void shouldExposeAuthenticationFailureAsShortActionableBlocker() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    GeraLandingStageExecutionRepository landings = mock(GeraLandingStageExecutionRepository.class);
+    VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
+    CodexAgentExecutionTelemetryRepository telemetry =
+        mock(CodexAgentExecutionTelemetryRepository.class);
+    CreativeRepository creatives = mock(CreativeRepository.class);
+    Agent dedalo =
+        Agent.builder()
+            .id(7L)
+            .agentKey("landing-generator")
+            .nickname("Dédalo")
+            .name("Landing")
+            .build();
+    GeraLandingStageExecution execution =
+        GeraLandingStageExecution.builder()
+            .experimentId(88L)
+            .stageCode("landing-generation-agent-v1")
+            .status("FAILED")
+            .errorMessage(
+                "HTTP 401: refresh_token_reused\n"
+                    + "java.lang.IllegalStateException: credencial recusada\n"
+                    + "\tat com.marketinghub.worker.Executor.run(Executor.java:42)")
+            .completedAt(Instant.parse("2026-08-12T14:00:00Z"))
+            .build();
+    when(agents.findAllByOrderByNicknameAsc()).thenReturn(List.of(dedalo));
+    when(landings.findTopByStageCodeOrderByExecutionRequestedAtDesc("landing-generation-agent-v1"))
+        .thenReturn(Optional.of(execution));
+
+    AgentWorkMonitorResponse result =
+        new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry, creatives)
+            .list()
+            .getFirst();
+
+    assertThat(result.workStatus()).isEqualTo("BLOCKED");
+    assertThat(result.difficulty())
+        .isEqualTo(
+            "Autenticação do executor inválida ou expirada. Reconecte a credencial usada por Dédalo e retome a tarefa.")
+        .doesNotContain("refresh_token_reused", "java.lang", "Executor.java");
+  }
+
+  /** Resume falha técnica desconhecida na primeira linha para proteger a tela de stack traces. */
+  @Test
+  void shouldHideStackTraceFromUnknownOperationalFailure() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    GeraLandingStageExecutionRepository landings = mock(GeraLandingStageExecutionRepository.class);
+    VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
+    CodexAgentExecutionTelemetryRepository telemetry =
+        mock(CodexAgentExecutionTelemetryRepository.class);
+    CreativeRepository creatives = mock(CreativeRepository.class);
+    Agent dedalo =
+        Agent.builder()
+            .id(7L)
+            .agentKey("landing-generator")
+            .nickname("Dédalo")
+            .name("Landing")
+            .build();
+    GeraLandingStageExecution execution =
+        GeraLandingStageExecution.builder()
+            .experimentId(88L)
+            .stageCode("landing-generation-agent-v1")
+            .status("FAILED")
+            .errorMessage(
+                "Provider indisponível temporariamente\n\tat com.example.Client.call(Client.java:20)")
+            .completedAt(Instant.parse("2026-08-12T14:00:00Z"))
+            .build();
+    when(agents.findAllByOrderByNicknameAsc()).thenReturn(List.of(dedalo));
+    when(landings.findTopByStageCodeOrderByExecutionRequestedAtDesc("landing-generation-agent-v1"))
+        .thenReturn(Optional.of(execution));
+
+    AgentWorkMonitorResponse result =
+        new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry, creatives)
+            .list()
+            .getFirst();
+
+    assertThat(result.difficulty()).isEqualTo("Provider indisponível temporariamente");
+  }
+
   /** Soma entrada e saída do dia e associa a telemetria à identidade canônica do agente. */
   @Test
   void shouldExposeDailyTokensReportedByAgentTelemetry() {

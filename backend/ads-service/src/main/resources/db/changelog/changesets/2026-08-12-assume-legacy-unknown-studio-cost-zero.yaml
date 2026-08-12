@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-12-assume-legacy-unknown-studio-cost-zero
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE studio_cost_ledger_entry
+                 SET estimated_cost_usd = 0.000000,
+                     cost_evidence = 'USER_ASSUMED_ZERO_LEGACY_20260812',
+                     updated_at = CURRENT_TIMESTAMP(6)
+               WHERE created_at < '2026-08-13 00:00:00'
+                 AND estimated_cost_usd IS NULL
+                 AND provider_cost_usd IS NULL;

@@ -73,7 +73,9 @@ class FinancialCodexRunnerTest {
     assertThat(prompt)
         .contains(
             "Não exija retorno, venda ou ROI anterior",
-            "não bloqueiam sozinhos o novo ciclo",
+            "custos históricos irrecuperavelmente desconhecidos são USD 0",
+            "custos históricos conhecidos sem plano são gastos passados",
+            "não compare o total histórico sem plano com o teto incremental",
             "US$ 20 no total",
             "no máximo US$ 10 por vídeo",
             "rastreabilidade do custo incremental novo");

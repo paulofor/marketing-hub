@@ -264,11 +264,28 @@ public class BackendWireframeService {
     }
     experiment.setLandingPageWireframe(modelResponse);
     experimentRepository.save(experiment);
-    createCopyExecution(experiment);
+    createCopyExecution(execution, experiment);
   }
 
-  /** Agenda o Gera Copy como próxima etapa automática após salvar o wireframe da landing. */
-  private void createCopyExecution(Experiment experiment) {
+  /** Agenda uma única execução de copy para o wireframe concluído mais recente. */
+  private void createCopyExecution(
+      GeraLandingStageExecution wireframeExecution, Experiment experiment) {
+    var latestCopy =
+        executionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
+            experiment.getId(), NEXT_STAGE_COPY);
+    if (latestCopy.isPresent()
+        && wireframeExecution.getExecutionRequestedAt() != null
+        && !latestCopy
+            .get()
+            .getExecutionRequestedAt()
+            .isBefore(wireframeExecution.getExecutionRequestedAt())) {
+      log.info(
+          "Copy já enfileirada para wireframe igual ou mais recente. experimentId={} wireframeRequestedAt={} copyRequestedAt={}",
+          experiment.getId(),
+          wireframeExecution.getExecutionRequestedAt(),
+          latestCopy.get().getExecutionRequestedAt());
+      return;
+    }
     Instant now = Instant.now();
     GeraLandingStageExecution copyExecution =
         GeraLandingStageExecution.builder()

@@ -1066,3 +1066,11 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o backend retornava até 20 snapshots ricos sem respeitar o limite do worker; o client desserializava o lote inteiro com o buffer padrão e ainda aceitava campos opcionais nulos em um mapa imutável.
 - **Correção:** o endpoint passou a limitar o lote solicitado, o client envia esse limite, reserva memória compatível com o teto controlado e normaliza campos opcionais antes de criar o input.
 - **Prevenção:** testes de contrato exigem o parâmetro `limit`, payload acima do buffer padrão e snapshot com campos opcionais ausentes.
+
+## LOOP-GERALANDING-WIREFRAME-COPY-DUPLICADA — backlog reabre a próxima etapa
+
+- **Data:** 2026-08-12.
+- **Sintoma:** ao drenar wireframes antigos do mesmo experimento, cada callback concluído criava uma nova `landing-page-copy`, acumulando execuções `INICIADO` e custo repetido.
+- **Causa-raiz:** o avanço automático wireframe → copy não verificava se uma copy igual ou mais recente já havia sido enfileirada para o experimento.
+- **Correção:** o backend só cria a próxima copy quando a última copy é anterior ao wireframe que acabou de concluir.
+- **Prevenção:** teste de contrato simula callback tardio de wireframe e impede duplicação da próxima etapa.

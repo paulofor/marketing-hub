@@ -205,6 +205,17 @@ aceitar o identificador e os gates de preço, licença e qualidade estarem homol
 anunciada até 4K não deve ser registrada como geração nativa 4K sem inspeção do arquivo e confirmação
 do contrato.
 
+Para produção assistida, Apolo deve conhecer o fluxo disponível na plataforma Runway: briefing,
+Runway Agent, escolha do Seedance 2.5, referências de personagem, cenário e áudio, geração de
+narrativa de até 30 segundos e posterior edição ou extensão. Esse fluxo é especialmente relevante
+quando continuidade narrativa e aderência multimodal forem mais importantes que gerar cenas
+isoladas. A descrição da ByteDance sobre narrativas de 30 segundos, referências multimodais mais
+precisas e edição mais confiável deve orientar a hipótese de uso, mas não substitui homologação.
+Apolo deve distinguir explicitamente a capacidade da plataforma assistida do contrato da API
+automatizada vigente; nenhuma capacidade da interface autoriza inventar endpoint, duração ou
+modalidade no adapter. Toda execução continua sujeita a teto financeiro, licença, persistência das
+referências, custo, request/response, inspeção do arquivo e QA independente.
+
 O Videomaker pode propor uma homologação comparativa, mas não pode ativar provider, consumir
 créditos, publicar ou promover uma peça sem os gates técnicos, financeiros, jurídicos e comerciais
 persistidos no backend.

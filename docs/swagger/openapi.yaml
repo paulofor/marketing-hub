@@ -466,6 +466,34 @@ paths:
                         requirement: {type: string}
                         acceptanceCriterion: {type: string}
                         evidenceJson: {type: string}
+  /api/internal/creatives/{id}/agent-improvement/artifact:
+    post:
+      tags: [Creatives]
+      summary: Receber a imagem melhorada produzida autonomamente por Têmis
+      description: Armazena o arquivo, cria uma nova versão auditável e a devolve para revisão independente.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: {type: integer, format: int64}
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: {type: string, format: binary}
+                model: {type: string}
+                prompt: {type: string}
+                costUsd: {type: number}
+      responses:
+        '200':
+          description: Nova versão criada e encaminhada à revisão
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Creative'}
   /api/creatives/video-review:
     get:
       tags: [Creatives]

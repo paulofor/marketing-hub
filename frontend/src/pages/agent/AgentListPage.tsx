@@ -89,10 +89,19 @@ export default function AgentListPage() {
                       </span>
                     </td>
                     <td>
-                      {item.currentWork}
+                      <div className="fw-semibold">{item.currentWork}</div>
                       <div className="small text-body-secondary">
                         {item.progressDetail}
                       </div>
+                      {item.taskId || item.executionId ? (
+                        <div className="small text-body-secondary">
+                          {item.taskId ? `Tarefa #${item.taskId}` : null}
+                          {item.taskId && item.executionId ? " · " : null}
+                          {item.executionId
+                            ? `Execução #${item.executionId}`
+                            : null}
+                        </div>
+                      ) : null}
                     </td>
                     <td>
                       {item.externalDecision ||

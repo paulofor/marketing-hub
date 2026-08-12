@@ -1,9 +1,11 @@
 package com.marketinghub.creative.convergence.v1;
 
+import com.marketinghub.agenttask.AgentTaskService;
+import com.marketinghub.agenttask.CreateAgentTaskByAgentRequest;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.creative.dto.CreativeAgentReviewResultRequest;
-import com.marketinghub.geralanding.wireframe.service.BackendWireframeService;
+import com.marketinghub.geralanding.agent.v1.LandingGenerationAgentExecutionService;
 import com.marketinghub.repository.jpa.creative.convergence.CreativeConvergenceCycleRepository;
 import com.marketinghub.repository.jpa.creative.convergence.CreativeConvergenceTaskRepository;
 import java.math.BigDecimal;
@@ -31,7 +33,8 @@ public class CreativeConvergenceService {
 
   private final CreativeConvergenceCycleRepository cycleRepository;
   private final CreativeConvergenceTaskRepository taskRepository;
-  private final BackendWireframeService landingWireframeService;
+  private final AgentTaskService agentTaskService;
+  private final LandingGenerationAgentExecutionService landingAgentExecutionService;
 
   /** Registra o parecer, distribui correções e encerra ciclos sem progresso ou acima do custo. */
   @Transactional
@@ -112,13 +115,35 @@ public class CreativeConvergenceService {
         cycle.setRepeatedIssueCount(
             Objects.requireNonNullElse(cycle.getRepeatedIssueCount(), 0) + 1);
       } else if (executor == ConvergenceTaskTarget.LANDING && !landingDispatched) {
-        landingWireframeService.registerConvergenceExecution(
-            creative.getExperiment().getId(), correctionBrief(target));
+        dispatchLandingCorrection(creative, cycle, target);
         landingDispatched = true;
       }
     }
     applyStopGates(cycle);
     cycleRepository.save(cycle);
+  }
+
+  /** Delega a causa da landing para Dédalo e abre sua execução autônoma sem permitir publicação. */
+  private void dispatchLandingCorrection(
+      Creative creative,
+      CreativeConvergenceCycle cycle,
+      CreativeAgentReviewResultRequest.ConvergenceCorrectionTarget target) {
+    String sourceReference = "creative-convergence:" + cycle.getId() + ":landing";
+    String brief = correctionBrief(target);
+    agentTaskService.createOperationalDelegationIfAbsent(
+        new CreateAgentTaskByAgentRequest(
+            "meta-ad-approver",
+            "landing-generator",
+            "Corrigir landing do experimento #" + creative.getExperiment().getId(),
+            brief,
+            "HIGH",
+            sourceReference));
+    landingAgentExecutionService.enqueueCreativeConvergenceCorrection(
+        creative.getExperiment().getId(),
+        sourceReference,
+        target.issueCode(),
+        brief,
+        target.acceptanceCriterion());
   }
 
   /** Retorna o relatório persistido mais recente da linhagem sem depender de logs. */

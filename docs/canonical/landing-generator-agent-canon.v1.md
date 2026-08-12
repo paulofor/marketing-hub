@@ -14,11 +14,16 @@ O worker usa a porta exclusiva `8100`, grava log em arquivo e expõe leitura ope
 
 O Quality Review independente produz a reprovação e o backend cria uma execução em `/api/internal/geralanding/agent/v1/stage-executions/pending`. O agente consulta apenas o snapshot segregado pelo MCP, inspeciona a landing em desktop, iPhone e Android e devolve causas, abordagem de geração, etapas e critérios de aceite. O backend inicia somente uma abordagem com executor registrado; a nova versão sempre retorna ao Quality Review e ao Aprovador de Anúncios.
 
+Uma reprovação de anúncio cujo responsável seja `LANDING` também abre automaticamente uma tarefa
+auditável de Têmis para Dédalo e uma execução nessa mesma fila. O briefing preserva código da causa,
+mudança necessária e critério de aceite. A tarefa termina ou bloqueia pelo callback real de Dédalo,
+sem depender de atualização manual e sem duplicação em callbacks repetidos.
+
 O agente pode corrigir somente rascunhos. Ele não aprova o próprio trabalho, publica, compra, gasta, muda preço, ativa campanha, avança pipeline ou altera seus contratos. Publicação e campanha permanecem sujeitas aos gates e à autorização humana.
 
 ## Autonomia orientada ao objetivo
 
-O agente deve trabalhar sem solicitar escolhas humanas de copy, layout, CTA, imagens ou responsividade quando houver contexto e evidência suficientes. Em cada execução ele audita visual e funcionalmente desktop, iPhone e Android, compara ao menos três estratégias, escolhe a de melhor aderência comercial e entrega um backlog causal ordenado para execução pelo pipeline oficial. O plano deve incluir critérios por dispositivo, métricas esperadas e condições explícitas de continuar, ajustar e parar.
+O agente deve trabalhar sem solicitar escolhas humanas de copy, layout, CTA, imagens ou responsividade quando houver contexto e evidência suficientes. Pode reconstruir livremente copy, hierarquia, imagens e HTML usando as etapas canônicas, inclusive reiniciando pelo wireframe quando uma correção localizada não resolver a causa. Em cada execução ele audita visual e funcionalmente desktop, iPhone e Android, compara ao menos três estratégias, escolhe a de melhor aderência comercial e entrega um backlog causal ordenado para execução pelo pipeline oficial. O plano deve incluir critérios por dispositivo, métricas esperadas e condições explícitas de continuar, ajustar e parar.
 
 Para **Agenda Cheia — Nail Design**, a especialização obrigatória mantém uma única promessa entre anúncio, hero, formulário e entrega: a prévia personalizada deve estar clara e ser o CTA principal. A prova visual precisa representar o trabalho real de nail designer, sem inventar depoimentos nem prometer retorno garantido de clientes. O agente decide e itera sozinho dentro desses limites; GeraLanding e Gerador de Imagens materializam as mudanças, e o Quality Review independente concede ou nega aprovação.
 

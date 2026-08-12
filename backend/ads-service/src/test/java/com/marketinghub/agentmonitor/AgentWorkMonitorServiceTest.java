@@ -6,10 +6,15 @@ import static org.mockito.Mockito.when;
 
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.creative.Creative;
+import com.marketinghub.creative.CreativeAgentReviewStatus;
+import com.marketinghub.creative.CreativeImprovementStatus;
+import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.codextelemetry.CodexAgentExecutionTelemetryRepository;
+import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository;
 import com.marketinghub.salesvideo.VideoProductionCycle;
@@ -30,6 +35,7 @@ class AgentWorkMonitorServiceTest {
     VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
     CodexAgentExecutionTelemetryRepository telemetry =
         mock(CodexAgentExecutionTelemetryRepository.class);
+    CreativeRepository creatives = mock(CreativeRepository.class);
     Agent argos =
         Agent.builder().id(5L).agentKey("market-radar").nickname("Argos").name("Radar").build();
     AgentTask completed = new AgentTask();
@@ -43,7 +49,9 @@ class AgentWorkMonitorServiceTest {
         .thenReturn(List.of(completed, obsolete));
 
     AgentWorkMonitorResponse result =
-        new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry).list().getFirst();
+        new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry, creatives)
+            .list()
+            .getFirst();
 
     assertThat(result.workStatus()).isEqualTo("IDLE");
     assertThat(result.currentWork()).isEqualTo("Sem trabalho ativo");
@@ -58,6 +66,7 @@ class AgentWorkMonitorServiceTest {
     VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
     CodexAgentExecutionTelemetryRepository telemetry =
         mock(CodexAgentExecutionTelemetryRepository.class);
+    CreativeRepository creatives = mock(CreativeRepository.class);
     Agent apolo =
         Agent.builder().id(8L).agentKey("videomaker").nickname("Apolo").name("Videomaker").build();
     Agent plutus =
@@ -76,7 +85,7 @@ class AgentWorkMonitorServiceTest {
     when(agents.findAllByOrderByNicknameAsc()).thenReturn(List.of(apolo, plutus));
     when(cycles.findTopByOrderByUpdatedAtDesc()).thenReturn(Optional.of(cycle));
     AgentWorkMonitorService service =
-        new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry);
+        new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry, creatives);
 
     List<AgentWorkMonitorResponse> result = service.list();
 
@@ -96,6 +105,7 @@ class AgentWorkMonitorServiceTest {
     VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
     CodexAgentExecutionTelemetryRepository telemetry =
         mock(CodexAgentExecutionTelemetryRepository.class);
+    CreativeRepository creatives = mock(CreativeRepository.class);
     Agent dedalo =
         Agent.builder()
             .id(7L)
@@ -116,7 +126,9 @@ class AgentWorkMonitorServiceTest {
         .thenReturn(Optional.of(execution));
 
     AgentWorkMonitorResponse result =
-        new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry).list().getFirst();
+        new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry, creatives)
+            .list()
+            .getFirst();
 
     assertThat(result.workStatus()).isEqualTo("BLOCKED");
     assertThat(result.difficulty()).isEqualTo("Timeout registrado");
@@ -131,6 +143,7 @@ class AgentWorkMonitorServiceTest {
     VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
     CodexAgentExecutionTelemetryRepository telemetry =
         mock(CodexAgentExecutionTelemetryRepository.class);
+    CreativeRepository creatives = mock(CreativeRepository.class);
     Agent temis =
         Agent.builder()
             .id(9L)
@@ -144,9 +157,60 @@ class AgentWorkMonitorServiceTest {
         .thenReturn(List.<Object[]>of(new Object[] {"META_AD_APPROVER", 12_345L}));
 
     AgentWorkMonitorResponse result =
-        new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry).list().getFirst();
+        new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry, creatives)
+            .list()
+            .getFirst();
 
     assertThat(result.dailyTokens()).isEqualTo(12_345L);
     assertThat(result.dailyTokenDate()).isNotNull();
+  }
+
+  /** Mostra a execução criativa real de Têmis em vez do bloqueio antigo da tarefa agregadora. */
+  @Test
+  void shouldExposeCurrentTemisCreativeExecutionAndTaskIdentifiers() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    GeraLandingStageExecutionRepository landings = mock(GeraLandingStageExecutionRepository.class);
+    VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
+    CodexAgentExecutionTelemetryRepository telemetry =
+        mock(CodexAgentExecutionTelemetryRepository.class);
+    CreativeRepository creatives = mock(CreativeRepository.class);
+    Agent temis =
+        Agent.builder()
+            .id(9L)
+            .agentKey("meta-ad-approver")
+            .nickname("Têmis")
+            .name("Criadora de anúncios")
+            .build();
+    AgentTask task = new AgentTask();
+    task.setId(14L);
+    task.setAssignedAgent(temis);
+    task.setTitle("Finalizar anúncios do experimento 88");
+    task.setStatus("BLOCKED");
+    task.setSourceReference("experiment:88");
+    task.setUpdatedAt(Instant.parse("2026-08-12T10:00:00Z"));
+    Creative creative =
+        Creative.builder()
+            .id(326L)
+            .experiment(Experiment.builder().id(88L).build())
+            .agentReviewStatus(CreativeAgentReviewStatus.PROCESSING)
+            .agentImprovementStatus(CreativeImprovementStatus.COMPLETED)
+            .build();
+    when(agents.findAllByOrderByNicknameAsc()).thenReturn(List.of(temis));
+    when(tasks.findByAssignedAgentAgentKeyOrderByCreatedAtDescIdDesc("meta-ad-approver"))
+        .thenReturn(List.of(task));
+    when(creatives.findTemisOpenExecutions(88L)).thenReturn(List.of(creative));
+
+    AgentWorkMonitorResponse result =
+        new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry, creatives)
+            .list()
+            .getFirst();
+
+    assertThat(result.workStatus()).isEqualTo("WORKING");
+    assertThat(result.currentWork()).contains("Tarefa #14");
+    assertThat(result.progressDetail()).contains("criativo #326");
+    assertThat(result.taskId()).isEqualTo(14L);
+    assertThat(result.executionId()).isEqualTo(326L);
+    assertThat(result.difficulty()).isNull();
   }
 }

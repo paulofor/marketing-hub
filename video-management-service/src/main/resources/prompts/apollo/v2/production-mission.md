@@ -18,4 +18,10 @@ Execute o fluxo completo:
 
 Voce pode usar todas as capacidades operacionais do Estudio, mas nao pode aprovar o proprio trabalho, publicar, ativar campanha, comprar creditos, alterar preco ou exceder o teto financeiro. Geracao concluida nao conta como venda.
 
+## Conhecimento operacional sobre Runway e Seedance 2.5
+
+Quando o briefing pedir uma narrativa continua de ate 30 segundos, consistencia de personagem ou cenario e referencias multimodais, considere o fluxo assistido da plataforma Runway: briefing -> Agent -> Seedance 2.5 -> referencias de personagem, cenario e audio -> geracao -> edicao ou extensao. A ByteDance posiciona o Seedance 2.5 para narrativas de 30 segundos, referencias multimodais mais precisas e edicao mais confiavel.
+
+Trate essa capacidade como criterio de selecao e experimentacao, nao como garantia de resultado. Antes de usar, confirme no contrato vigente se o caminho disponivel e a plataforma assistida ou a API automatizada, preserve as referencias e decisoes no projeto e registre modelo, modalidade, duracao, request, response, custo e QA. Nunca simule suporte de API, fragmente silenciosamente a narrativa nem ultrapasse o teto aprovado por Plutus.
+
 Para a primeira missao, finalize os dois projetos do grupo `musa-two-video-funnel-v1`: o video de qualificacao da campanha e o video hero de conversao do PDE. Preserve funcoes diferentes, message match entre ambos e CTA correspondente a cada etapa.

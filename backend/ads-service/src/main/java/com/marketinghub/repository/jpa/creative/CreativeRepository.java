@@ -33,6 +33,28 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
   /** Busca o criativo mais recente do experimento para o gate coordenado. */
   Optional<Creative> findFirstByExperimentIdOrderByIdDesc(Long experimentId);
 
+  /** Busca a execução criativa aberta mais recente para o monitor operacional de Têmis. */
+  @Query(
+      """
+            select c from Creative c
+             where c.experiment.id = :experimentId
+               and (
+                    c.agentReviewStatus in (
+                      com.marketinghub.creative.CreativeAgentReviewStatus.PENDING,
+                      com.marketinghub.creative.CreativeAgentReviewStatus.PROCESSING,
+                      com.marketinghub.creative.CreativeAgentReviewStatus.ADJUST,
+                      com.marketinghub.creative.CreativeAgentReviewStatus.REJECTED,
+                      com.marketinghub.creative.CreativeAgentReviewStatus.FAILED)
+                 or c.agentImprovementStatus in (
+                      com.marketinghub.creative.CreativeImprovementStatus.PENDING,
+                      com.marketinghub.creative.CreativeImprovementStatus.PROCESSING,
+                      com.marketinghub.creative.CreativeImprovementStatus.FAILED,
+                      com.marketinghub.creative.CreativeImprovementStatus.LIMIT_REACHED)
+               )
+             order by c.id desc
+            """)
+  List<Creative> findTemisOpenExecutions(@Param("experimentId") Long experimentId);
+
   /** Verifica se existe criativo do experimento no status informado. */
   boolean existsByExperimentIdAndStatus(Long experimentId, CreativeStatus status);
 

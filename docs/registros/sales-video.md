@@ -198,3 +198,10 @@
 - Evidência: Wan3.0 foi anunciado em preview com até 30 segundos, áudio e entradas multimodais, inclusive documentos e páginas; Seedance 2.5 oferece 30 segundos e controles avançados no produto Pippit.
 - Risco confirmado: o ambiente não possui adapter/credencial Alibaba, e Pippit não apresenta contrato de API homologado no Marketing Hub. O “até 4K” é uma capacidade de exportação anunciada pela Pippit, não prova de geração nativa universal.
 - Decisão: cadastrar ambos como `DRAFT`, visíveis na gestão de providers e proibidos para render até adapter, preço, licença e QA. O Videomaker passa a comparar qualidade, custo e resultado real, sem priorizar novidade ou resolução declarada.
+
+# 2026-08-12 — Conhecimento de Apolo sobre Runway Agent e Seedance 2.5
+
+- Informação incorporada: a plataforma Runway permite o fluxo assistido briefing -> Agent -> Seedance 2.5 -> referências de personagem, cenário e áudio -> geração de até 30 segundos -> edição ou extensão.
+- Aplicação comercial: Apolo deve considerar esse caminho para peças narrativas que dependam de continuidade e referências multimodais, especialmente os vídeos do MUSA.
+- Limite operacional: capacidade disponível na plataforma não comprova o mesmo contrato na API. O adapter automatizado só pode usar modalidades e durações aceitas pelo endpoint vigente, com custo, licença, evidências e QA persistidos.
+- Prevenção: o prompt operacional e o cânone agora exigem que Apolo diferencie produção assistida de automação por API antes de escolher ou executar o provider.

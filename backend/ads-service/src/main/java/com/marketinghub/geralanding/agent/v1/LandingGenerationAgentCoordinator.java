@@ -12,6 +12,7 @@ import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.copy.service.GeraLandingCopyStageService;
+import com.marketinghub.geralanding.deliverables.service.GeraLandingDeliverablesStageExecutionService;
 import com.marketinghub.geralanding.imageplanning.service.BackendImagePlanningService;
 import com.marketinghub.geralanding.presetdesign.service.BackendPresetDesignService;
 import com.marketinghub.geralanding.wireframe.service.BackendWireframeService;
@@ -44,6 +45,7 @@ public class LandingGenerationAgentCoordinator {
   private final GeraLandingCopyStageService copyService;
   private final BackendImagePlanningService imagePlanningService;
   private final BackendPresetDesignService presetDesignService;
+  private final GeraLandingDeliverablesStageExecutionService deliverablesService;
   private final AgentMemoryService memoryService;
 
   /** Inicializa o coordenador com as portas oficiais do backend para cada executor. */
@@ -55,6 +57,7 @@ public class LandingGenerationAgentCoordinator {
       GeraLandingCopyStageService copyService,
       BackendImagePlanningService imagePlanningService,
       BackendPresetDesignService presetDesignService,
+      GeraLandingDeliverablesStageExecutionService deliverablesService,
       AgentMemoryService memoryService) {
     this.objectMapper = objectMapper;
     this.executionRepository = executionRepository;
@@ -63,6 +66,7 @@ public class LandingGenerationAgentCoordinator {
     this.copyService = copyService;
     this.imagePlanningService = imagePlanningService;
     this.presetDesignService = presetDesignService;
+    this.deliverablesService = deliverablesService;
     this.memoryService = memoryService;
   }
 
@@ -294,6 +298,8 @@ public class LandingGenerationAgentCoordinator {
     } else if (stages.contains("LANDING_PAGE_DESIGN_PRESET")
         || stages.contains("LANDING_PAGE_HTML")) {
       presetDesignService.start(experimentId);
+    } else if (stages.contains("LANDING_PAGE_DELIVERABLES")) {
+      deliverablesService.registerInitialExecution(experimentId, "landing-page-deliverables");
     } else {
       throw new IllegalArgumentException(
           "Etapa não automatizável pelo Agente de Landing: " + stages);

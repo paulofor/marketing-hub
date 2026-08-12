@@ -29,6 +29,10 @@ class ModuleLogDefaultsContractTest {
             "http://191.252.120.96:18081/ops-product-discovery-observability-v1/logfile";
     private static final String PRODUCT_DISCOVERY_WORKER_HEALTH_URL =
             "http://191.252.120.96:18081/healthz";
+    private static final String GROWTH_OPERATOR_WORKER_LOG_URL =
+            "http://163.245.202.80:8094/ops-growth-operator-observability-v1/logfile";
+    private static final String GROWTH_OPERATOR_WORKER_HEALTH_URL =
+            "http://163.245.202.80:8094/ops-growth-operator-observability-v1/health";
 
     /**
      * Garante que a configuração Spring não direcione o alias backend ao log do AI Worker.
@@ -40,6 +44,21 @@ class ModuleLogDefaultsContractTest {
         assertTrue(configuration.contains("MCP_LOG_BACKEND_PATH:" + BACKEND_LOG_URL));
         assertTrue(configuration.contains("MCP_LOG_AI_WORKER_PATH:" + AI_WORKER_LOG_URL));
         assertFalse(configuration.contains("MCP_LOG_BACKEND_PATH:" + AI_WORKER_LOG_URL));
+    }
+
+    /** Garante os destinos operacionais de health e logs do Operador de Crescimento. */
+    @Test
+    void shouldPublishGrowthOperatorWorkerObservabilityEndpoints() throws IOException {
+        String configuration = Files.readString(Path.of("src/main/resources/application.yml"));
+        String localCompose = Files.readString(Path.of("docker-compose.yml"));
+        String deploymentCompose = Files.readString(Path.of("../deploy/docker-compose.mcp.yml"));
+
+        assertTrue(configuration.contains("MCP_LOG_GROWTH_OPERATOR_WORKER_PATH:" + GROWTH_OPERATOR_WORKER_LOG_URL));
+        assertTrue(configuration.contains("MCP_GROWTH_OPERATOR_WORKER_HEALTH_URL:" + GROWTH_OPERATOR_WORKER_HEALTH_URL));
+        assertTrue(localCompose.contains("MCP_LOG_GROWTH_OPERATOR_WORKER_PATH:-" + GROWTH_OPERATOR_WORKER_LOG_URL));
+        assertTrue(localCompose.contains("MCP_GROWTH_OPERATOR_WORKER_HEALTH_URL:-" + GROWTH_OPERATOR_WORKER_HEALTH_URL));
+        assertTrue(deploymentCompose.contains("MCP_LOG_GROWTH_OPERATOR_WORKER_PATH:-" + GROWTH_OPERATOR_WORKER_LOG_URL));
+        assertTrue(deploymentCompose.contains("MCP_GROWTH_OPERATOR_WORKER_HEALTH_URL:-" + GROWTH_OPERATOR_WORKER_HEALTH_URL));
     }
 
     /**

@@ -76,6 +76,7 @@ Estrategias de outro produto ou experimento nunca devem ser vinculadas automatic
 ## Imagem e operacao
 
 - A imagem de producao e criada exclusivamente pelo `Dockerfile` e pelo Compose versionados em `growth-operator-worker`.
+- O worker persiste o log operacional em arquivo e expõe somente leitura de health e logfile no caminho versionado `/ops-growth-operator-observability-v1`. O MCP disponibiliza o health em `growth_operator_worker_health` e os logs pelo alias `growth-operator-worker` de `java_module_logs`.
 - Toda execução do Codex usa limite operacional padrão de 40 minutos, configurável por ambiente, com encerramento explícito e falha auditável quando o prazo for excedido.
 - Toda alteracao na `main` deve acionar o workflow dedicado `growth-operator-worker-ci.yml`, que testa, constroi, sincroniza a revisao versionada no VPS, recria o container e confirma que ele ficou em execucao, possui `CODEX_HOME` gravavel pelo usuario do worker e reconhece a identidade ChatGPT. Assim, o agente analisa sempre a fonte mais recente do Marketing Hub. Atualizacao manual do codigo ou da imagem no VPS nao e um fluxo de publicacao valido.
 - O repositorio sincronizado pelo workflow e montado como somente leitura no container, garantindo que o diagnostico use a mesma revisao que acionou o deploy.

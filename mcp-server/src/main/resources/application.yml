@@ -61,6 +61,7 @@ mcp:
     experiment-strategist-worker-path: ${MCP_LOG_EXPERIMENT_STRATEGIST_WORKER_PATH:http://163.245.202.80:8096/ops-experiment-strategist-observability-v1/logfile}
     meta-ad-approver-worker-path: ${MCP_LOG_META_AD_APPROVER_WORKER_PATH:http://163.245.202.80:8097/ops-meta-ad-approver-observability-v1/logfile}
     product-discovery-worker-path: ${MCP_LOG_PRODUCT_DISCOVERY_WORKER_PATH:http://191.252.120.96:18081/ops-product-discovery-observability-v1/logfile}
+    growth-operator-worker-path: ${MCP_LOG_GROWTH_OPERATOR_WORKER_PATH:http://163.245.202.80:8094/ops-growth-operator-observability-v1/logfile}
     fetch-timeout-seconds: ${MCP_LOG_FETCH_TIMEOUT_SECONDS:45}
     fetch-attempts: ${MCP_LOG_FETCH_ATTEMPTS:3}
     fetch-retry-delay-millis: ${MCP_LOG_FETCH_RETRY_DELAY_MILLIS:400}
@@ -100,6 +101,7 @@ mcp:
     docker-command: ${MCP_PRODUCT_DISCOVERY_WORKER_DOCKER_COMMAND:${MCP_CHAT_LOG_DOCKER_COMMAND:docker}}
     health-url: ${MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL:http://191.252.120.96:18081/healthz}
     timeout-seconds: ${MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_TIMEOUT_SECONDS:10}
+  growth-operator-worker-health-url: ${MCP_GROWTH_OPERATOR_WORKER_HEALTH_URL:http://163.245.202.80:8094/ops-growth-operator-observability-v1/health}
   meta:
     enabled: ${MCP_META_ENABLED:true}
     graph-base-url: ${MCP_META_GRAPH_BASE_URL:https://graph.facebook.com}

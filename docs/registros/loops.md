@@ -153,6 +153,13 @@
 - **Correção efetiva:** omitir do snapshot os campos opcionais ausentes, preservando os dados disponíveis e o contrato imutável.
 - **Prevenção:** teste de contrato reserva a fila com experimento parcialmente preenchido e comprova que a ausência de HTML não bloqueia o Dédalo.
 
+## LOOP-IMAGE-PLANNING-PAYLOAD-ACIMA-DO-BUFFER — planejamento visual sem consumo
+
+- **Sintoma:** execuções `landing-page-image-planning` permanecem em `INICIADO`, enquanto o AI Worker recebe HTTP 200 e falha a cada polling com `DataBufferLimitException` em 256 KB.
+- **Causa-raiz confirmada em 2026-08-13:** o aumento de buffer aplicado à etapa de copy não alcançava o cliente HTTP específico de planejamento visual; o endpoint também devolvia até 20 contextos comerciais ricos sem respeitar o limite solicitado pelo worker.
+- **Correção efetiva:** o cliente de planejamento visual usa o buffer versionado de 50 MB, envia o limite ao endpoint e o backend restringe a resposta a no máximo três pendências antes de serializar o lote.
+- **Prevenção:** teste de contrato consome payload superior a 256 KB e confirma o parâmetro de limite; teste do backend confirma que a fila acumulada é truncada antes da resposta.
+
 Antes de implementar uma correção em tema com histórico de loop:
 
 1. Identificar se o problema pertence a algum `LOOP-*` deste documento.

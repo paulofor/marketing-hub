@@ -61,8 +61,8 @@ public class GeraLandingImagePlanningController {
    * Lista os jobs pendentes iniciados da etapa image planning para processamento pelo Worker AI.
    */
   @GetMapping("/internal/geralanding/image-prompts/stage-executions/pending")
-  public List<RecordImagePlanningPending> pending() {
-    return executionService.listPending(STAGE_CODE);
+  public List<RecordImagePlanningPending> pending(@RequestParam(defaultValue = "3") int limit) {
+    return executionService.listPending(STAGE_CODE, limit);
   }
 
   /** Recebe prompt, schema e request cru enviados para IA. */

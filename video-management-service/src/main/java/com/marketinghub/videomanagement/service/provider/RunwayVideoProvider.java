@@ -461,11 +461,20 @@ public class RunwayVideoProvider implements VideoProvider {
                 resolveBaseUrl() + path,
                 body,
                 ex);
-        String code = ex.getStatusCode().value() == 429 ? "PROVIDER_RATE_LIMIT" : "PROVIDER_RENDER_FAILED";
+        String code = ex.getStatusCode().value() == 402 || insufficientCredits(body)
+                ? "PROVIDER_CREDITS_INSUFFICIENT"
+                : ex.getStatusCode().value() == 429 ? "PROVIDER_RATE_LIMIT" : "PROVIDER_RENDER_FAILED";
         return new VideoProviderException(code,
                 "Runway retornou HTTP %d em %s: %s"
                         .formatted(ex.getStatusCode().value(), operation, body),
                 ex);
+    }
+
+    /** Classifica rejeição financeira da Runway para bloquear reconciliação sem depender da mensagem. */
+    private boolean insufficientCredits(String body) {
+        String normalized = body == null ? "" : body.toLowerCase(Locale.ROOT);
+        return normalized.contains("not enough credits")
+                || normalized.contains("insufficient credits");
     }
 
     /** Limita corpo de erro externo para log e retorno sem vazar conteúdo excessivo. */

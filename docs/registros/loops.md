@@ -179,6 +179,14 @@ Antes de implementar uma correção em tema com histórico de loop:
 - **Prevenção**: testes devem impedir geração com prompt não salvo, plano intermediário sem predecessor aprovado, substituição do quadro-ponte por imagem genérica e montagem sem todas as funções narrativas.
 - **Correção complementar em 2026-08-05**: a conclusão do provider passou a combinar o resultado técnico com os metadados comerciais originais, preservando projeto, versão, ordem e papel narrativo. A tela usa o snapshot de auditoria como recuperação somente-leitura para jobs históricos concluídos antes dessa correção.
 
+## LOOP-APOLO-PAID-CLIPS-DISCARDED — clipes pagos perdidos após falha terminal
+
+- **Severidade**: CRÍTICO.
+- **Status**: fechado localmente em 2026-08-13; aguarda publicação.
+- **Causa-raiz confirmada**: a montagem Runway podia produzir e anexar um MP4 completo, mas o gate de duração marcava o job como falho; a reconciliação tratava qualquer falha como motivo para nova geração e não encaminhava o arquivo preservado à pós-produção.
+- **Correção efetiva**: render curto com ativo persistido passa a ser fonte válida de pós-produção local; o ciclo aponta para esse novo job sem chamar provider pago, e rejeição de créditos recebe código financeiro estável que bloqueia a reconciliação na primeira ocorrência.
+- **Prevenção**: testes exigem reaproveitamento do ativo antes de qualquer `requestRender`, aceitação controlada do render curto na pós-produção e somente uma chamada à Runway quando ela responder saldo insuficiente.
+
 ## Como ler este documento
 
 ## LOOP-PRODUCT-DISCOVERY-FALSE-EMPTY-SUCCESS — falha externa tratada como pesquisa vazia

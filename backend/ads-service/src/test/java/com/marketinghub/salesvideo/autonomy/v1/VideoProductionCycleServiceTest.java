@@ -22,6 +22,7 @@ import com.marketinghub.salesvideo.SalesVideoJob;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.VideoProductionCycle;
 import com.marketinghub.salesvideo.VideoProject;
+import com.marketinghub.salesvideo.dto.RequestSalesVideoPostProductionRequest;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.service.SalesVideoService;
@@ -304,9 +305,9 @@ class VideoProductionCycleServiceTest {
     verify(salesVideoService, never()).requestRender(any(), any());
   }
 
-  /** Preserva montagem existente para avaliação em vez de pagar por outra geração. */
+  /** Reaproveita montagem existente em pós-produção sem pagar por outra geração. */
   @Test
-  void shouldBlockAutomaticReplacementWhenFailedJobAlreadyHasAsset() {
+  void shouldReuseFailedRenderAssetBeforeAnyPaidReplacement() {
     VideoProductionCycle cycle = cycle();
     cycle.setStatus("QUEUED_FOR_APOLLO");
     cycle.setFinancialDecision("APPROVED");
@@ -316,14 +317,26 @@ class VideoProductionCycleServiceTest {
     failed.setStatus(SalesVideoStatus.VIDEO_FAILED);
     failed.setFailureCode("RENDER_DURATION_SHORT");
     failed.setAsset(Asset.builder().id(2420L).build());
+    VideoProject project = project();
+    project.setCaptionPlan("Presença elegante em sete dias.");
+    SalesVideoJobDto postProduction = new SalesVideoJobDto();
+    postProduction.setId(21107L);
     when(repository.findByStatusAndFinancialDecisionOrderByCreatedAtAsc(
             "QUEUED_FOR_APOLLO", "APPROVED"))
         .thenReturn(java.util.List.of(cycle));
     when(jobRepository.findById(21105L)).thenReturn(Optional.of(failed));
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(project));
+    when(salesVideoService.requestPostProduction(any(), any())).thenReturn(postProduction);
 
     service.reconcileApolloQueue();
 
-    assertThat(cycle.getStatus()).isEqualTo("APOLLO_BLOCKED");
+    ArgumentCaptor<RequestSalesVideoPostProductionRequest> post =
+        ArgumentCaptor.forClass(RequestSalesVideoPostProductionRequest.class);
+    verify(salesVideoService)
+        .requestPostProduction(org.mockito.ArgumentMatchers.eq(21105L), post.capture());
+    assertThat(post.getValue().getCaptionText()).isEqualTo("Presença elegante em sete dias.");
+    assertThat(cycle.getStatus()).isEqualTo("REUSING_APOLLO_MATERIAL");
+    assertThat(cycle.getSalesVideoJobId()).isEqualTo(21107L);
     verify(salesVideoService, never()).requestRender(any(), any());
   }
 

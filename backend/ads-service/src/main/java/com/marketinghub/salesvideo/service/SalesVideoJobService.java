@@ -537,9 +537,10 @@ public class SalesVideoJobService {
   public SalesVideoJobDto requestPostProduction(
       Long sourceJobId, RequestSalesVideoPostProductionRequest request) {
     SalesVideoJob sourceJob = loadJob(sourceJobId);
-    if (sourceJob.getStatus() != SalesVideoStatus.VIDEO_READY) {
+    if (!isReusableRenderWithAsset(sourceJob)) {
       throw VideoModuleException.badRequest(
-          VideoModuleErrorCode.BAD_REQUEST, "Pós-produção exige um vídeo com status VIDEO_READY.");
+          VideoModuleErrorCode.BAD_REQUEST,
+          "Pós-produção exige vídeo pronto ou render curto com arquivo preservado.");
     }
     String sourceVideoUrl = resolveSourceVideoUrl(sourceJob, request.getSourceVideoUrl());
     String requestedBy = TenantContextHolder.resolveUserEmail(request.getRequestedBy());
@@ -568,6 +569,16 @@ public class SalesVideoJobService {
         "Pós-produção solicitada por " + requestedBy,
         "Job de pós-produção #" + postProductionJob.getId());
     return toDto(postProductionJob);
+  }
+
+  /** Permite reaproveitar montagem tecnicamente produzida que falhou apenas no gate de duração. */
+  private boolean isReusableRenderWithAsset(SalesVideoJob sourceJob) {
+    if (sourceJob.getStatus() == SalesVideoStatus.VIDEO_READY) {
+      return true;
+    }
+    return sourceJob.getAsset() != null
+        && sourceJob.getStatus() == SalesVideoStatus.VIDEO_FAILED
+        && SHORT_DURATION_FAILURE_CODE.equals(sourceJob.getFailureCode());
   }
 
   /** Cria job de montagem a partir de múltiplos vídeos prontos e auditáveis. */

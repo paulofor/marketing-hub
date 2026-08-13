@@ -17,6 +17,7 @@ import com.marketinghub.salesvideo.SalesVideoProviderFamily;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.VideoProductionCycle;
 import com.marketinghub.salesvideo.VideoProject;
+import com.marketinghub.salesvideo.dto.RequestSalesVideoPostProductionRequest;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.service.SalesVideoService;
@@ -161,6 +162,10 @@ public class VideoProductionCycleService {
               if (previous != null && previous.getStatus() != SalesVideoStatus.VIDEO_FAILED) return;
               if (previous != null) {
                 recordApolloFailure(cycle, previous);
+                if (reuseProducedMaterial(cycle, previous)) {
+                  repository.save(cycle);
+                  return;
+                }
                 if (mustBlockAutomaticReplacement(previous)) {
                   cycle.setStatus(APOLLO_BLOCKED);
                   cycle.setUpdatedAt(Instant.now());
@@ -171,6 +176,40 @@ public class VideoProductionCycleService {
               queueApollo(cycle, project(cycle.getVideoProjectId()), previous);
               repository.save(cycle);
             });
+  }
+
+  /** Reaproveita localmente o vídeo preservado antes de considerar qualquer nova geração paga. */
+  private boolean reuseProducedMaterial(VideoProductionCycle cycle, SalesVideoJob failedJob) {
+    if (failedJob.getAsset() == null
+        || !"RENDER_DURATION_SHORT".equals(failedJob.getFailureCode())) {
+      return false;
+    }
+    VideoProject project = project(cycle.getVideoProjectId());
+    String caption = firstText(project.getCaptionPlan(), project.getCtaText());
+    if (caption == null) {
+      cycle.setStatus(APOLLO_BLOCKED);
+      cycle.setLastApolloFailureDetail(
+          "Material preservado, mas o plano comercial não possui texto aprovado para pós-produção.");
+      cycle.setUpdatedAt(Instant.now());
+      return true;
+    }
+    RequestSalesVideoPostProductionRequest request = new RequestSalesVideoPostProductionRequest();
+    request.setRequestedBy("Apolo");
+    request.setCaptionText(caption);
+    SalesVideoJobDto postProduction =
+        salesVideoService.requestPostProduction(failedJob.getId(), request);
+    cycle.setSalesVideoJobId(postProduction.getId());
+    cycle.setStatus("REUSING_APOLLO_MATERIAL");
+    cycle.setUpdatedAt(Instant.now());
+    return true;
+  }
+
+  /** Retorna o primeiro texto comercial preenchido sem criar copy nova durante a recuperação. */
+  private String firstText(String... values) {
+    for (String value : values) {
+      if (value != null && !value.isBlank()) return value.trim();
+    }
+    return null;
   }
 
   /**

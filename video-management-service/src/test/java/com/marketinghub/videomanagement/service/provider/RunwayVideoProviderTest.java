@@ -95,6 +95,21 @@ class RunwayVideoProviderTest {
         assertThat(server.takeRequest().getPath()).isEqualTo("/download/runway-task-123.mp4");
     }
 
+    /** Deve classificar saldo insuficiente com código financeiro estável e não recuperável. */
+    @Test
+    void shouldClassifyInsufficientCreditsBeforeAnyRetry() {
+        server.enqueue(new MockResponse()
+                .setResponseCode(402)
+                .setHeader("Content-Type", "application/json")
+                .setBody("{\"error\":\"You do not have enough credits to run this task\"}"));
+        RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+        assertThatThrownBy(() -> provider.render(job(), profile(), (percent, status, message) -> { }))
+                .isInstanceOf(VideoProviderException.class)
+                .hasFieldOrPropertyWithValue("code", "PROVIDER_CREDITS_INSUFFICIENT");
+        assertThat(server.getRequestCount()).isEqualTo(1);
+    }
+
     /** Deve usar text-to-video e respeitar o limite oficial quando a cena não possui imagem-base. */
     @Test
     void shouldRenderTextToVideoWithPromptLimitedToOneThousandUtf16Units() throws Exception {

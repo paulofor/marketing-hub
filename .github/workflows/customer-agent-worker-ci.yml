@@ -94,6 +94,7 @@ jobs:
                  printf 'readiness attempt=%s container=%s codex=%s health=%s\\n' \
                    \"\${attempt}\" \"\${status:-missing}\" \"\${codex_ready}\" \"\${health_body:-unavailable}\"; \
                  if [ \"\${status}\" = running ] && [ \"\${codex_ready}\" = true ] \
+                   && docker exec customer-agent-worker-customer-agent-worker-1 node /app/agent-health-report.mjs \
                    && printf '%s' \"\${health_body}\" | grep -Eq 'status.*UP'; then exit 0; fi; \
                  sleep 5; \
                done; \

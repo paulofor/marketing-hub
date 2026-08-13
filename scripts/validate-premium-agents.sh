@@ -92,6 +92,7 @@ for agent in agents:
             'scripts/reconcile-agent-codex-auth.sh',
             f'{codex_home}=/opt/growth-operator/codex-home',
             'codex login status',
+            'node /app/agent-health-report.mjs',
         ):
             if marker not in workflow_text:
                 errors.append(
@@ -104,3 +105,4 @@ if errors:
 print(f"[ARQUITETURA] {sum(a['operational'] for a in agents)} agentes conformes; {sum(not a['operational'] for a in agents)} bloqueado(s) com causa explícita.")
 PY
 bash "$repo_root/scripts/test-shared-agent-codex-auth.sh"
+node "$repo_root/scripts/test-agent-version-deploy-gate.mjs"

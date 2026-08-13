@@ -105,6 +105,7 @@ jobs:
                  [ \"\${status}\" = running ] \
                    && docker exec meta-ad-approver-worker-meta-ad-approver-worker-1 sh -lc 'test -w /home/approver/.codex && codex login status' \
                    && curl -fsS http://127.0.0.1:8097/ops-meta-ad-approver-observability-v1/health | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' \
+                   && docker exec meta-ad-approver-worker-meta-ad-approver-worker-1 node /app/agent-health-report.mjs \
                    && exit 0; \
                  sleep 5; \
                done; \

@@ -101,6 +101,7 @@ jobs:
                    && curl -fsS http://127.0.0.1:8094/ops-growth-operator-observability-v1/health \
                         | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' \
                    && curl -fsS http://127.0.0.1:8094/ops-growth-operator-observability-v1/logfile >/dev/null \
+                   && docker exec growth-operator-worker-growth-operator-worker-1 node /app/agent-health-report.mjs \
                    && exit 0; \
                  sleep 5; \
                done; \

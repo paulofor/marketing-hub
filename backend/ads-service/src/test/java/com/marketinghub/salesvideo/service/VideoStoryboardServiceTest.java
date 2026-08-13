@@ -5,9 +5,9 @@ import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.BDDMockito.given;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.financialagent.StudioProviderTaskConsumption;
+import com.marketinghub.financialagent.service.ProviderTaskConsumptionView;
+import com.marketinghub.financialagent.service.StudioProviderTaskConsumptionQueryService;
 import com.marketinghub.media.Asset;
-import com.marketinghub.repository.jpa.financialagent.StudioProviderTaskConsumptionRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
 import com.marketinghub.salesvideo.SalesVideoJob;
@@ -19,7 +19,6 @@ import com.marketinghub.salesvideo.VideoProject;
 import com.marketinghub.salesvideo.dto.storyboard.VideoStoryboardResponse;
 import com.marketinghub.salesvideo.tenant.TenantContext;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -35,7 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class VideoStoryboardServiceTest {
   @Mock private VideoProjectRepository projectRepository;
   @Mock private SalesVideoJobRepository jobRepository;
-  @Mock private StudioProviderTaskConsumptionRepository taskRepository;
+  @Mock private StudioProviderTaskConsumptionQueryService taskConsumptionQueryService;
 
   private VideoStoryboardService service;
 
@@ -45,7 +44,7 @@ class VideoStoryboardServiceTest {
     TenantContextHolder.set(new TenantContext("tenant-musa", "editor@marketinghub.io", false));
     service =
         new VideoStoryboardService(
-            projectRepository, jobRepository, taskRepository, new ObjectMapper());
+            projectRepository, jobRepository, taskConsumptionQueryService, new ObjectMapper());
   }
 
   /** Limpa o tenant após cada cenário. */
@@ -84,21 +83,14 @@ class VideoStoryboardServiceTest {
             .status(SalesVideoStatus.VIDEO_READY)
             .metadataJson("{\"sourceJobIds\":[101]}")
             .build();
-    StudioProviderTaskConsumption task = new StudioProviderTaskConsumption();
-    task.setSalesVideoJobId(101L);
-    task.setProviderTaskId("runway-task-1");
-    task.setSceneNumber(1);
-    task.setPlannedSceneCount(2);
-    task.setDurationSeconds(10);
-    task.setEstimatedCredits(300);
-    task.setEstimatedCostUsd(new BigDecimal("3.00"));
-    task.setBilledCredits(300);
-    task.setAcceptedAt(Instant.parse("2026-08-13T12:00:00Z"));
+    ProviderTaskConsumptionView task =
+        new ProviderTaskConsumptionView(
+            101L, "runway-task-1", 1, 2, 10, 300, 300, Instant.parse("2026-08-13T12:00:00Z"));
 
     given(projectRepository.findById(7L)).willReturn(Optional.of(project));
     given(jobRepository.findByProfileIdOrderByRequestedAtDesc(55L))
         .willReturn(List.of(montage, source));
-    given(taskRepository.findBySalesVideoJobIdInOrderBySceneNumberAscAcceptedAtAsc(anyCollection()))
+    given(taskConsumptionQueryService.findBySalesVideoJobIds(anyCollection()))
         .willReturn(List.of(task));
 
     VideoStoryboardResponse storyboard = service.getStoryboard(7L);

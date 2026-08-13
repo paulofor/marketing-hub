@@ -246,6 +246,9 @@ class VideoProductionCycleServiceTest {
     failed.setId(20536L);
     failed.setStatus(SalesVideoStatus.VIDEO_FAILED);
     failed.setProviderName("LUMA_RAY_3_2");
+    failed.setFailureCode("PROVIDER_PAYMENT_REQUIRED");
+    failed.setFailureDetail("Provider respondeu HTTP 402.");
+    failed.setFinishedAt(Instant.parse("2026-08-13T10:00:00Z"));
     SalesVideoJobDto replacement = new SalesVideoJobDto();
     replacement.setId(30001L);
     when(repository.findByStatusAndFinancialDecisionOrderByCreatedAtAsc(
@@ -264,6 +267,10 @@ class VideoProductionCycleServiceTest {
     assertThat(render.getValue().getMetadataJson())
         .contains("\"sceneCount\":3", "\"replacesFailedJobId\":20536");
     assertThat(cycle.getSalesVideoJobId()).isEqualTo(30001L);
+    assertThat(cycle.getLastFailedJobId()).isEqualTo(20536L);
+    assertThat(cycle.getLastApolloFailureCode()).isEqualTo("PROVIDER_PAYMENT_REQUIRED");
+    assertThat(cycle.getLastApolloFailureDetail()).isEqualTo("Provider respondeu HTTP 402.");
+    assertThat(cycle.getLastApolloFailureAt()).isEqualTo("2026-08-13T10:00:00Z");
   }
 
   /** Cria o projeto mínimo de teste com perfil operacional. */

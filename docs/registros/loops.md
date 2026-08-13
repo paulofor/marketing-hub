@@ -1166,5 +1166,5 @@ Use este checklist quando o problema estiver em algum loop acima:
 
 - **Sintoma:** ciclo MUSA permanece `QUEUED_FOR_APOLLO` enquanto o job vinculado está `VIDEO_FAILED`, impedindo retomada após troca de provider.
 - **Causa-raiz:** o polling do executor consultava somente jobs novos e não reconciliava ciclos aprovados por Plutus com jobs terminais antigos.
-- **Correção sistêmica:** antes de cada polling, Apolo solicita reconciliação idempotente ao backend; jobs falhos são substituídos por Seedance 2.5 via Runway, com vínculo ao job anterior e plano explícito de 3 cenas para 30s ou 6 cenas para 60s. O adapter Runway gera e monta todas as cenas localmente.
-- **Prevenção:** teste do ciclo comprova provider, quantidade de cenas, rastreabilidade do job substituído e atualização do vínculo persistido.
+- **Correção sistêmica:** antes de cada polling, Apolo solicita reconciliação idempotente ao backend; jobs falhos são substituídos por Seedance 2.5 via Runway, com vínculo ao job anterior e plano explícito de 3 cenas para 30s ou 6 cenas para 60s. O ciclo preserva o identificador, código, detalhe e horário da falha anterior, e o painel diferencia essa falha do novo job enfileirado. O adapter Runway gera e monta todas as cenas localmente.
+- **Prevenção:** testes do ciclo e do painel comprovam provider, quantidade de cenas, diagnóstico da falha, rastreabilidade do job substituído e atualização do vínculo persistido.

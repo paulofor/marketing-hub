@@ -2190,13 +2190,31 @@ export default function AudioVideoStudioPage() {
                       <p role="alert">Não foi possível abrir o ciclo.</p>
                     ) : null}
                     {productionCycles.data?.[0] ? (
-                      <p>
-                        Ciclo #{productionCycles.data[0].id}:{" "}
-                        <strong>{productionCycles.data[0].status}</strong>
-                        {productionCycles.data[0].financialReason
-                          ? ` · ${productionCycles.data[0].financialReason}`
-                          : ""}
-                      </p>
+                      <div>
+                        <p>
+                          Ciclo #{productionCycles.data[0].id}:{" "}
+                          <strong>{productionCycles.data[0].status}</strong>
+                          {productionCycles.data[0].financialReason
+                            ? ` · ${productionCycles.data[0].financialReason}`
+                            : ""}
+                        </p>
+                        {productionCycles.data[0].lastFailedJobId ? (
+                          <p role="alert">
+                            Apolo falhou no job #
+                            {productionCycles.data[0].lastFailedJobId}
+                            {productionCycles.data[0].lastApolloFailureCode
+                              ? ` (${productionCycles.data[0].lastApolloFailureCode})`
+                              : ""}
+                            :{" "}
+                            {productionCycles.data[0].lastApolloFailureDetail ||
+                              "O job terminou sem detalhar a causa."}{" "}
+                            {productionCycles.data[0].salesVideoJobId !==
+                            productionCycles.data[0].lastFailedJobId
+                              ? `Uma nova tentativa foi reconciliada no job #${productionCycles.data[0].salesVideoJobId}.`
+                              : "O ciclo requer uma nova tentativa pelo fluxo oficial."}
+                          </p>
+                        ) : null}
+                      </div>
                     ) : null}
                   </div>
                 ) : null}

@@ -58,6 +58,18 @@ public class VideoProductionCycle {
   @Column(name = "sales_video_job_id")
   private Long salesVideoJobId;
 
+  @Column(name = "last_failed_job_id")
+  private Long lastFailedJobId;
+
+  @Column(name = "last_apollo_failure_code", length = 191)
+  private String lastApolloFailureCode;
+
+  @Column(name = "last_apollo_failure_detail", columnDefinition = "LONGTEXT")
+  private String lastApolloFailureDetail;
+
+  @Column(name = "last_apollo_failure_at")
+  private Instant lastApolloFailureAt;
+
   @Column(name = "agent_task_id")
   private Long agentTaskId;
 

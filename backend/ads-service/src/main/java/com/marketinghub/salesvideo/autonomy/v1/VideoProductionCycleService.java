@@ -156,9 +156,19 @@ public class VideoProductionCycleService {
                       ? null
                       : jobRepository.findById(cycle.getSalesVideoJobId()).orElse(null);
               if (previous != null && previous.getStatus() != SalesVideoStatus.VIDEO_FAILED) return;
+              if (previous != null) recordApolloFailure(cycle, previous);
               queueApollo(cycle, project(cycle.getVideoProjectId()), previous);
               repository.save(cycle);
             });
+  }
+
+  /** Persiste o diagnóstico do job terminal antes de criar uma substituição segura. */
+  private void recordApolloFailure(VideoProductionCycle cycle, SalesVideoJob failedJob) {
+    cycle.setLastFailedJobId(failedJob.getId());
+    cycle.setLastApolloFailureCode(failedJob.getFailureCode());
+    cycle.setLastApolloFailureDetail(failedJob.getFailureDetail());
+    cycle.setLastApolloFailureAt(
+        failedJob.getFinishedAt() == null ? Instant.now() : failedJob.getFinishedAt());
   }
 
   /** Cria o job canônico de Apolo com plano de cenas e rastreabilidade do job substituído. */
@@ -250,6 +260,10 @@ public class VideoProductionCycleService {
         cycle.getFinancialDecision(),
         cycle.getFinancialReason(),
         cycle.getSalesVideoJobId(),
+        cycle.getLastFailedJobId(),
+        cycle.getLastApolloFailureCode(),
+        cycle.getLastApolloFailureDetail(),
+        cycle.getLastApolloFailureAt(),
         cycle.getAgentTaskId(),
         cycle.getCreatedAt(),
         cycle.getUpdatedAt());

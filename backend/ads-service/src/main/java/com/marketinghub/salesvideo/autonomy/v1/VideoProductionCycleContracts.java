@@ -39,6 +39,10 @@ public final class VideoProductionCycleContracts {
       String financialDecision,
       String financialReason,
       Long salesVideoJobId,
+      Long lastFailedJobId,
+      String lastApolloFailureCode,
+      String lastApolloFailureDetail,
+      Instant lastApolloFailureAt,
       Long agentTaskId,
       Instant createdAt,
       Instant updatedAt) {}

@@ -147,11 +147,12 @@ public class LandingGenerationAgentExecutionService {
         repository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(STAGE, "FALHA")) {
       if (execution.getErrorDetail() == null
           && isRecoverableExecutorFailure(execution.getErrorMessage())) {
+        String recoveryMarker = recoveryMarker(execution.getErrorMessage());
         execution.setStatus(PENDING);
         execution.setProcessingStartedAt(null);
         execution.setCompletedAt(null);
         execution.setErrorMessage(null);
-        execution.setErrorDetail("EXECUTOR_FAILURE_RECOVERED_ONCE");
+        execution.setErrorDetail(recoveryMarker);
         repository.save(execution);
       }
     }
@@ -165,6 +166,15 @@ public class LandingGenerationAgentExecutionService {
         || normalized.contains("refresh token")
         || normalized.contains("oauth")
         || normalized.contains("not authenticated");
+  }
+
+  /** Preserva o marcador legado de timeout e distingue as novas falhas do executor. */
+  private String recoveryMarker(String message) {
+    if (message != null
+        && message.toLowerCase(java.util.Locale.ROOT).contains("timeout do codex")) {
+      return "LEGACY_TIMEOUT_RECOVERED_ONCE";
+    }
+    return "EXECUTOR_FAILURE_RECOVERED_ONCE";
   }
 
   /** Recupera uma lease órfã uma vez e bloqueia reincidência para evitar loop infinito. */

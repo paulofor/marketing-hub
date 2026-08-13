@@ -5,7 +5,6 @@ import java.util.Optional;
 
 /** Centraliza os limites de duração aceitos por cada provider de vídeo comercial. */
 public final class SalesVideoProviderDurationPolicy {
-  private static final int LUMA_RAY_3_2_MAX_SECONDS = 30;
   private static final int KLING_MAX_SECONDS = 10;
   private static final int RUNWAY_MAX_SECONDS = 10;
   private static final int RUNWAY_SEEDANCE_2_MAX_SECONDS = 15;
@@ -44,9 +43,9 @@ public final class SalesVideoProviderDurationPolicy {
     if (!hasText(normalized)) {
       return null;
     }
-    if (normalized.contains("LUMA") || normalized.contains("RAY_3_2")) {
-      return new ProviderLimit("Luma Ray 3.2", LUMA_RAY_3_2_MAX_SECONDS);
-    }
+    // Luma é executado pelo módulo de vídeo como montagem de cenas de dez segundos.
+    // O limite do provider vale para cada cena, não para a duração do vídeo final.
+    if (normalized.contains("LUMA") || normalized.contains("RAY_3_2")) return null;
     if (normalized.contains("KLING")) {
       return new ProviderLimit("Kling", KLING_MAX_SECONDS);
     }

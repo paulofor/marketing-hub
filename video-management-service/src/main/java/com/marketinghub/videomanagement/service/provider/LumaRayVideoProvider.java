@@ -24,6 +24,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
@@ -40,6 +42,7 @@ import reactor.netty.http.client.HttpClient;
 @Component
 @ConditionalOnProperty(prefix = "video.providers.luma", name = "enabled", havingValue = "true")
 public class LumaRayVideoProvider implements VideoProvider {
+    private static final Logger log = LoggerFactory.getLogger(LumaRayVideoProvider.class);
     private static final MediaType VIDEO_MP4 = MediaType.valueOf("video/mp4");
     private static final MediaType IMAGE_PNG = MediaType.IMAGE_PNG;
     private static final int MAX_VIDEO_DOWNLOAD_BYTES = 100 * 1024 * 1024;
@@ -104,7 +107,7 @@ public class LumaRayVideoProvider implements VideoProvider {
                                     ProgressCallback progressCallback) {
         requireApiKey();
         SalesVideoScript script = ensureScript(profile);
-        int sceneCount = resolveSceneCount(job);
+        int sceneCount = resolveSceneCount(job, profile);
         List<Path> sceneFiles = new ArrayList<>();
         List<Map<String, Object>> sceneMetadata = new ArrayList<>();
         try {
@@ -140,13 +143,36 @@ public class LumaRayVideoProvider implements VideoProvider {
     }
 
     /** Mantém jobs do Estúdio por cena em uma única geração, sem expandi-los para o vídeo final. */
-    private int resolveSceneCount(SalesVideoJob job) {
+    int resolveSceneCount(SalesVideoJob job, SalesVideoProfile profile) {
         JsonNode metadata = readMetadata(job);
         if ("SCENE_BY_SCENE_MONTAGE".equalsIgnoreCase(metadata.path("generation_strategy").asText(""))
                 && metadata.path("scene").isObject()) {
             return 1;
         }
-        return Math.max(1, properties.getProviders().getLuma().getSceneCount());
+        int configuredScenes = Math.max(1, properties.getProviders().getLuma().getSceneCount());
+        if (!metadata.path("videoProductionCycleId").canConvertToLong()) {
+            return configuredScenes;
+        }
+        int secondsPerScene = resolveSeconds(properties.getProviders().getLuma().getDuration());
+        if (profile.targetDurationSeconds() == null || profile.targetDurationSeconds() <= 0) {
+            return configuredScenes;
+        }
+        return Math.max(configuredScenes,
+                (int) Math.ceil((double) profile.targetDurationSeconds() / secondsPerScene));
+    }
+
+    /** Converte a duração configurada da cena para segundos com fallback operacional seguro. */
+    private int resolveSeconds(String duration) {
+        if (!StringUtils.hasText(duration)) {
+            return 10;
+        }
+        String digits = duration.replaceAll("[^0-9]", "");
+        try {
+            return Math.max(1, Integer.parseInt(digits));
+        } catch (NumberFormatException ex) {
+            log.error("Duração Luma inválida; duration={}", duration, ex);
+            return 10;
+        }
     }
 
     /** Cria uma geração de cena na Luma Agents API. */

@@ -93,3 +93,10 @@
 - Foi feito: o detalhe do plano passou a editar o experimento pelo contrato oficial e a solicitar uma execução auditável de Dédalo para toda a jornada.
 - Gate: a execução usa `mh_test=1`, exige evidências de landing até entrega e não autoriza publicação, mídia ou gasto.
 - Impacto esperado: remover a inconsistência de correlação e transformar o bloqueio técnico em trabalho consumível, visível no histórico do plano.
+
+## 2026-08-13 — Retomada de homologação após deploy do executor
+
+- Causa-raiz: uma homologação podia permanecer `PROCESSANDO` ou `FALHA` após o deploy que corrigia sua causa técnica, pois a fila não distinguia a versão que havia reservado a execução.
+- Decisão: Dédalo informa a referência imutável do build no endpoint `pending`; homologações novas optam explicitamente pela política `RETRY_ON_EXECUTOR_DEPLOY`, homologações legadas são reconhecidas pela origem canônica e ambas são reabertas uma única vez quando um build diferente assume a fila.
+- Proteções: o mesmo build não duplica trabalho, há carência antes da retomada, decisões funcionais concluídas não são reabertas e os gates de gasto, publicação, preço e oferta permanecem intactos.
+- Impacto esperado: após uma correção estrutural implantada, a homologação volta a produzir evidências automaticamente sem depender de uma nova ação administrativa.

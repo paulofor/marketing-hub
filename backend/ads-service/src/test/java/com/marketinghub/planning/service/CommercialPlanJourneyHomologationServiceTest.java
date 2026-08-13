@@ -50,6 +50,7 @@ class CommercialPlanJourneyHomologationServiceTest {
             argThat(
                 brief ->
                     brief.contains("\"mediaSpendAuthorized\":false")
+                        && brief.contains("\"recoveryPolicy\":\"RETRY_ON_EXECUTOR_DEPLOY\"")
                         && brief.contains("quatro exemplos finais")
                         && brief.contains("Dédalo itera na sandbox")));
   }

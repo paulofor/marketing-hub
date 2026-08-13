@@ -19,5 +19,6 @@ landing-generator-agent:
   repository-path: ${MARKETING_HUB_REPOSITORY:/workspace/marketing-hub}
   model: ${CODEX_MODEL:gpt-5.6-sol}
   reasoning-effort: ${CODEX_REASONING_EFFORT:high}
+  build-reference: ${AGENT_BUILD_REFERENCE:local}
   codex-command: ${CODEX_COMMAND:codex}
   codex-timeout: ${LANDING_GENERATOR_CODEX_TIMEOUT:PT40M}

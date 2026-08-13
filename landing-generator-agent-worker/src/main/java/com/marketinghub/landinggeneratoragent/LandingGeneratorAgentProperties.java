@@ -12,6 +12,7 @@ public class LandingGeneratorAgentProperties {
   private String codexCommand = "codex";
   private String model = "gpt-5.6-sol";
   private String reasoningEffort = "high";
+  private String buildReference = "local";
   private Duration codexTimeout = Duration.ofMinutes(40);
 
   /** Retorna a URL do backend. */
@@ -72,6 +73,16 @@ public class LandingGeneratorAgentProperties {
   /** Define o esforço de raciocínio. */
   public void setReasoningEffort(String value) {
     reasoningEffort = value;
+  }
+
+  /** Retorna a identidade imutável do deploy atual. */
+  public String getBuildReference() {
+    return buildReference;
+  }
+
+  /** Define a identidade imutável do deploy atual. */
+  public void setBuildReference(String value) {
+    buildReference = value;
   }
 
   /** Retorna o timeout. */

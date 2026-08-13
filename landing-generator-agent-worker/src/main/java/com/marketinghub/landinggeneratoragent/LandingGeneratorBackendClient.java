@@ -16,8 +16,13 @@ public class LandingGeneratorBackendClient {
   private final RestClient client;
 
   /** Configura o backend como única porta de estado. */
-  public LandingGeneratorBackendClient(LandingGeneratorAgentProperties properties) {
-    client = RestClient.builder().baseUrl(properties.getBackendUrl()).build();
+  public LandingGeneratorBackendClient(
+      LandingGeneratorAgentProperties properties, RestClient.Builder builder) {
+    client =
+        builder
+            .baseUrl(properties.getBackendUrl())
+            .defaultHeader("X-Agent-Build-Reference", properties.getBuildReference())
+            .build();
   }
 
   /** Reserva no máximo uma landing para preservar custo e isolamento. */

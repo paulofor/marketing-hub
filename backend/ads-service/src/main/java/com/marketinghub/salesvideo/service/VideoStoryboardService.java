@@ -3,8 +3,8 @@ package com.marketinghub.salesvideo.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.financialagent.StudioProviderTaskConsumption;
-import com.marketinghub.repository.jpa.financialagent.StudioProviderTaskConsumptionRepository;
+import com.marketinghub.financialagent.service.ProviderTaskConsumptionView;
+import com.marketinghub.financialagent.service.StudioProviderTaskConsumptionQueryService;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
 import com.marketinghub.salesvideo.SalesVideoJob;
@@ -30,18 +30,18 @@ import org.springframework.util.StringUtils;
 public class VideoStoryboardService {
   private final VideoProjectRepository projectRepository;
   private final SalesVideoJobRepository jobRepository;
-  private final StudioProviderTaskConsumptionRepository taskRepository;
+  private final StudioProviderTaskConsumptionQueryService taskConsumptionQueryService;
   private final ObjectMapper objectMapper;
 
   /** Inicializa a composição com projeto, jobs, consumo financeiro e parser JSON. */
   public VideoStoryboardService(
       VideoProjectRepository projectRepository,
       SalesVideoJobRepository jobRepository,
-      StudioProviderTaskConsumptionRepository taskRepository,
+      StudioProviderTaskConsumptionQueryService taskConsumptionQueryService,
       ObjectMapper objectMapper) {
     this.projectRepository = projectRepository;
     this.jobRepository = jobRepository;
-    this.taskRepository = taskRepository;
+    this.taskConsumptionQueryService = taskConsumptionQueryService;
     this.objectMapper = objectMapper;
   }
 
@@ -58,17 +58,16 @@ public class VideoStoryboardService {
     for (SalesVideoJob job : jobs) {
       if (projectId.equals(readProjectId(job))) projectJobs.put(job.getId(), job);
     }
-    List<StudioProviderTaskConsumption> tasks =
+    List<ProviderTaskConsumptionView> tasks =
         projectJobs.isEmpty()
             ? List.of()
-            : taskRepository.findBySalesVideoJobIdInOrderBySceneNumberAscAcceptedAtAsc(
-                projectJobs.keySet());
+            : taskConsumptionQueryService.findBySalesVideoJobIds(projectJobs.keySet());
     Set<Long> usedSourceJobs = usedSourceJobs(jobs, projectId);
     List<VideoStoryboardSceneResponse> scenes = new ArrayList<>();
     Set<Integer> scenesWithTask = new HashSet<>();
-    for (StudioProviderTaskConsumption task : tasks) {
-      SalesVideoJob job = projectJobs.get(task.getSalesVideoJobId());
-      int sceneNumber = positive(task.getSceneNumber(), 1);
+    for (ProviderTaskConsumptionView task : tasks) {
+      SalesVideoJob job = projectJobs.get(task.salesVideoJobId());
+      int sceneNumber = positive(task.sceneNumber(), 1);
       scenesWithTask.add(sceneNumber);
       boolean produced =
           job != null && job.getAsset() != null && StringUtils.hasText(job.getAsset().getUrl());
@@ -77,16 +76,14 @@ public class VideoStoryboardService {
           new VideoStoryboardSceneResponse(
               sceneNumber,
               commercialRole(
-                  job,
-                  sceneNumber,
-                  Math.max(plans.size(), positive(task.getPlannedSceneCount(), 1))),
+                  job, sceneNumber, Math.max(plans.size(), positive(task.plannedSceneCount(), 1))),
               planAt(plans, sceneNumber),
-              job != null ? job.getId() : task.getSalesVideoJobId(),
+              job != null ? job.getId() : task.salesVideoJobId(),
               job != null && job.getStatus() != null ? job.getStatus().name() : null,
-              task.getProviderTaskId(),
-              task.getDurationSeconds(),
-              task.getEstimatedCredits(),
-              task.getBilledCredits(),
+              task.providerTaskId(),
+              task.durationSeconds(),
+              task.estimatedCredits(),
+              task.billedCredits(),
               produced ? job.getAsset().getUrl() : null,
               produced ? (used ? 100 : 0) : null,
               produced
@@ -98,9 +95,8 @@ public class VideoStoryboardService {
         java.util.Comparator.comparingInt(VideoStoryboardSceneResponse::sceneNumber)
             .thenComparing(scene -> scene.jobId() == null ? Long.MAX_VALUE : scene.jobId()));
     int expectedCredits =
-        tasks.stream().mapToInt(task -> positive(task.getEstimatedCredits(), 0)).sum();
-    int consumedCredits =
-        tasks.stream().mapToInt(task -> positive(task.getBilledCredits(), 0)).sum();
+        tasks.stream().mapToInt(task -> positive(task.estimatedCredits(), 0)).sum();
+    int consumedCredits = tasks.stream().mapToInt(task -> positive(task.billedCredits(), 0)).sum();
     List<VideoStoryboardSceneResponse> producedScenes =
         scenes.stream().filter(scene -> scene.utilizationPercent() != null).toList();
     Integer utilization =

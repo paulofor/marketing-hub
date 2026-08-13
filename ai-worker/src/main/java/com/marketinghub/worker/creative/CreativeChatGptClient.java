@@ -1,6 +1,7 @@
 package com.marketinghub.worker.creative;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
@@ -13,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -23,6 +25,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -58,6 +61,9 @@ public class CreativeChatGptClient {
     private static final String DOMAIN = "CREATIVE_COPY";
     private static final String RESPONSES_ENDPOINT = "/responses";
     private static final String SERVICE_TIER_FLEX = "flex";
+    private static final String PROMPT_PATH = "prompts/creative/meta-ad-copy.md";
+    private static final String SCHEMA_PATH = "prompts/creative/meta-ad-copy-schema.json";
+    private static final String SCHEMA_NAME = "meta_ad_copy";
     private static final Duration DEFAULT_BATCH_POLL_INTERVAL = Duration.ofMillis(500);
     private static final Duration DEFAULT_BATCH_TIMEOUT = Duration.ofMinutes(5);
     private static final Set<String> TERMINAL_BATCH_STATUSES = Set.of("completed", "failed", "expired", "cancelled");
@@ -99,11 +105,16 @@ public class CreativeChatGptClient {
 
     /** Gera criativos textuais para um experimento usando chamada direta na Responses API em modo Flex. */
     public Generation generateCreatives(Experiment experiment, int quantity) {
+        return generateCreatives(experiment, quantity, null);
+    }
+
+    /** Gera ou reescreve a copy com a causa concreta da violação anterior incorporada ao contrato. */
+    public Generation generateCreatives(Experiment experiment, int quantity, String correctionContext) {
         if (!enabled) {
             log.warn("Skipping creative generation for experiment {} because OpenAI API key is missing", experiment != null ? experiment.getId() : "unknown");
             return Generation.empty();
         }
-        String prompt = buildPrompt(experiment, quantity);
+        String prompt = buildPrompt(experiment, quantity, correctionContext);
         List<Map<String, Object>> input = List.of(
                 OpenAiRequestUtils.message("system", "Você é um especialista em marketing."),
                 OpenAiRequestUtils.message("user", prompt)
@@ -112,6 +123,7 @@ public class CreativeChatGptClient {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", model);
         payload.put("input", input);
+        payload.put("text", Map.of("format", responseFormat()));
         payload.put("service_tier", SERVICE_TIER_FLEX);
         OpenAiRequestUtils.maybeAddReasoning(payload, model);
 
@@ -214,35 +226,54 @@ public class CreativeChatGptClient {
         }
     }
 
-    private String buildPrompt(Experiment experiment, int quantity) {
+    /** Monta o prompt versionado com contexto comercial e instrução explícita de correção. */
+    private String buildPrompt(Experiment experiment, int quantity, String correctionContext) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Gere ").append(quantity).append(" criativos em formato JSON. ");
-        String customPrompt = experiment != null ? experiment.getCreativeTextPrompt() : null;
-        if (hasText(customPrompt)) {
-            sb.append(applyTextPromptTemplate(experiment, quantity)).append(' ');
-        } else {
-            Hypothesis h = experiment != null ? experiment.getHypothesisRef() : null;
-            if (h != null) {
-                sb.append("Use a seguinte hipótese como contexto:\n");
-                if (hasText(h.getTitle())) sb.append("Título: ").append(h.getTitle()).append("\n");
-                if (hasText(h.getPromise())) sb.append("Promessa: ").append(h.getPromise()).append("\n");
-                if (hasText(h.getProblem())) sb.append("Problema: ").append(h.getProblem()).append("\n");
-                if (hasText(h.getPersona())) sb.append("Persona: ").append(h.getPersona()).append("\n");
-                if (hasText(h.getMechanism())) sb.append("Mecanismo: ").append(h.getMechanism()).append("\n");
-                if (hasText(h.getUniqueMechanism())) sb.append("Mecanismo único: ").append(h.getUniqueMechanism()).append("\n");
-                if (hasText(h.getEntrega())) sb.append("Entrega: ").append(h.getEntrega()).append("\n");
-                if (hasText(h.getSuccessRule())) sb.append("Regra de sucesso: ").append(h.getSuccessRule()).append("\n");
-                if (h.getOfferType() != null) sb.append("Tipo de oferta: ").append(h.getOfferType()).append("\n");
-                if (h.getPrice() != null) sb.append("Preço: ").append(h.getPrice()).append("\n");
-            }
+        Hypothesis h = experiment != null ? experiment.getHypothesisRef() : null;
+        if (h != null) {
+            if (hasText(h.getTitle())) sb.append("Título: ").append(h.getTitle()).append("\n");
+            if (hasText(h.getPromise())) sb.append("Promessa: ").append(h.getPromise()).append("\n");
+            if (hasText(h.getProblem())) sb.append("Problema: ").append(h.getProblem()).append("\n");
+            if (hasText(h.getPersona())) sb.append("Persona: ").append(h.getPersona()).append("\n");
+            if (hasText(h.getMechanism())) sb.append("Mecanismo: ").append(h.getMechanism()).append("\n");
+            if (hasText(h.getUniqueMechanism())) sb.append("Mecanismo único: ").append(h.getUniqueMechanism()).append("\n");
+            if (hasText(h.getEntrega())) sb.append("Entrega: ").append(h.getEntrega()).append("\n");
+            if (hasText(h.getSuccessRule())) sb.append("Regra de sucesso: ").append(h.getSuccessRule()).append("\n");
+            if (h.getOfferType() != null) sb.append("Tipo de oferta: ").append(h.getOfferType()).append("\n");
+            if (h.getPrice() != null) sb.append("Preço: ").append(h.getPrice()).append("\n");
         }
-        sb.append("Contrato completo dos campos publicáveis: \"primaryText\" (máximo 125 caracteres), ");
-        sb.append("\"headline\" (máximo 40), \"description\" (máximo 25) e ");
-        sb.append("\"cta\" (botão canônico da Meta, máximo 32). ");
-        sb.append("Conte caracteres Unicode completos, incluindo espaços, pontuação, emojis e quebras de linha. ");
-        sb.append("Reescreva semanticamente qualquer excesso; nunca trunque palavras ou frases. ");
-        sb.append("Retorne apenas um array JSON com esses objetos, sem texto adicional.");
-        return sb.toString();
+        String customPrompt = experiment != null ? experiment.getCreativeTextPrompt() : null;
+        String prompt = loadResource(PROMPT_PATH);
+        return prompt.replace("{{quantity}}", String.valueOf(quantity))
+                .replace("{{commercialContext}}", sb.toString().trim())
+                .replace("{{customPrompt}}", hasText(customPrompt) ? applyTextPromptTemplate(experiment, quantity) : "Nenhuma.")
+                .replace("{{correctionContext}}", hasText(correctionContext)
+                        ? "A resposta anterior foi rejeitada por esta causa: " + correctionContext + ". Reescreva todos os campos."
+                        : "");
+    }
+
+    /** Monta o formato estrito da Responses API usando o schema versionado da copy Meta. */
+    private Map<String, Object> responseFormat() {
+        try {
+            Object schema = objectMapper.readValue(loadResource(SCHEMA_PATH), Object.class);
+            Map<String, Object> format = new LinkedHashMap<>();
+            format.put("type", "json_schema");
+            format.put("name", SCHEMA_NAME);
+            format.put("schema", schema);
+            format.put("strict", true);
+            return format;
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException("Schema versionado de copy Meta inválido", ex);
+        }
+    }
+
+    /** Carrega um recurso versionado do classpath. */
+    private String loadResource(String path) {
+        try {
+            return new ClassPathResource(path).getContentAsString(StandardCharsets.UTF_8);
+        } catch (IOException ex) {
+            throw new IllegalStateException("Recurso de copy Meta não encontrado: " + path, ex);
+        }
     }
 
     private String applyTextPromptTemplate(Experiment experiment, int quantity) {

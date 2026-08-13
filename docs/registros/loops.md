@@ -1146,3 +1146,10 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz confirmada em 2026-08-13:** `commercial_plan.next_action`, `current_blocker` e `root_cause` permaneciam em `VARCHAR(512)`, embora o plano versionado precise transportar contexto operacional completo.
 - **Correção efetiva:** os três campos passam a `LONGTEXT` no Liquibase e no mapeamento JPA, preservando o contrato integral entre Têmis, Dédalo e o backend.
 - **Prevenção:** a validação Liquibase e o mapeamento explícito impedem o retorno do limite de 512 caracteres; decisões de gasto, preço e publicação continuam em gates separados.
+
+# LOOP-LIQUIBASE-NESTED-PRECONDITIONS — deploy bloqueado por chave YAML inválida
+
+- **Sintoma:** o workflow `Build & Deploy containers` falha na validação do changelog antes de construir o backend.
+- **Causa-raiz confirmada em 2026-08-13:** o changelog do contexto operacional usava `nestedPreconditions`, chave que o Liquibase 4.26 não reconhece, enquanto o validador estático local verificava apenas contratos de SQL e não a estrutura dessa precondição.
+- **Correção sistêmica:** a condição `dbms:mysql` passa a usar a lista direta suportada em `preConditions`, e o validador local rejeita qualquer retorno de `nestedPreconditions` antes do workflow.
+- **Prevenção:** executar o validador estático em escopo completo e a validação real do Liquibase antes de consolidar changelogs.

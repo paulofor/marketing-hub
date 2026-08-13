@@ -107,6 +107,10 @@ for agent in agents:
         module_sync = f'rsync -az --delete {agent["module"]}/'
         if module_sync not in workflow_text:
             errors.append(f"{agent['key']}: workflow não sincroniza somente o próprio módulo")
+        if "${REPOSITORY_DIR}/.deployed-revision" in workflow_text:
+            errors.append(
+                f"{agent['key']}: workflow depende de marcador global incompatível com sincronização isolada"
+            )
 if errors:
     print('\n'.join(f"[ARQUITETURA] {e}" for e in errors),file=sys.stderr); raise SystemExit(1)
 print(f"[ARQUITETURA] {sum(a['operational'] for a in agents)} agentes conformes; {sum(not a['operational'] for a in agents)} bloqueado(s) com causa explícita.")

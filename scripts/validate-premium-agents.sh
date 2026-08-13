@@ -93,7 +93,6 @@ for agent in agents:
             f'install -d -o 10001 -g 10001 {isolated_home}',
             f'{codex_home}={isolated_home}',
             'node /app/agent-health-report.mjs',
-            'group: codex-agent-host-deploy',
         ):
             if marker not in workflow_text:
                 errors.append(
@@ -103,6 +102,11 @@ for agent in agents:
             errors.append(f"{agent['key']}: workflow ainda reconcilia a sessão compartilhada legada")
         if re.search(r'install .*auth\.json .*agents/.*/codex-home/auth\.json', workflow_text):
             errors.append(f"{agent['key']}: workflow clona refresh token para identidade isolada")
+        if 'group: codex-agent-host-deploy' in workflow_text:
+            errors.append(f"{agent['key']}: workflow usa fila compartilhada que cancela deploys pendentes")
+        module_sync = f'rsync -az --delete {agent["module"]}/'
+        if module_sync not in workflow_text:
+            errors.append(f"{agent['key']}: workflow não sincroniza somente o próprio módulo")
 if errors:
     print('\n'.join(f"[ARQUITETURA] {e}" for e in errors),file=sys.stderr); raise SystemExit(1)
 print(f"[ARQUITETURA] {sum(a['operational'] for a in agents)} agentes conformes; {sum(not a['operational'] for a in agents)} bloqueado(s) com causa explícita.")

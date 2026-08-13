@@ -1,0 +1,12 @@
+services:
+  agent-executor-admin-controller:
+    build:
+      context: ../..
+      dockerfile: deploy/agent-executor-admin-controller/Dockerfile
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://191.252.181.168
+      MARKETING_HUB_REPOSITORY: /opt/marketing-hub/repo
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /opt/marketing-hub/repo:/opt/marketing-hub/repo

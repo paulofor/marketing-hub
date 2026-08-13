@@ -267,6 +267,12 @@ errors = []
 for path in files:
     text = path.read_text(encoding="utf-8", errors="replace")
 
+    if re.search(r"^\s*nestedPreconditions\s*:", text, re.MULTILINE):
+        line_no = text[: re.search(r"^\s*nestedPreconditions\s*:", text, re.MULTILINE).start()].count("\n") + 1
+        errors.append(
+            f"{path}:{line_no}: precondição Liquibase inválida: use a lista direta em preConditions, sem nestedPreconditions"
+        )
+
     for line_no, line in enumerate(text.splitlines(), start=1):
         if timestamp_without_default.search(line):
             errors.append(

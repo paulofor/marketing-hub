@@ -3,11 +3,10 @@ databaseChangeLog:
       id: 2026-08-13-commercial-plan-operational-context-longtext
       author: codex
       preConditions:
-        onFail: HALT
-        onError: HALT
-        nestedPreconditions:
-          - dbms:
-              type: mysql
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
       changes:
         - sql:
             splitStatements: true

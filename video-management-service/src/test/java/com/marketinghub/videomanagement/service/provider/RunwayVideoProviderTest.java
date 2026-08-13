@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.math.BigDecimal;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -167,13 +168,28 @@ class RunwayVideoProviderTest {
         server.enqueue(mp4Response());
         RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
 
-        provider.render(job("RUNWAY_SEEDANCE_2_5"), profile(), (percent, status, message) -> { });
+        AtomicReference<String> financialEvent = new AtomicReference<>();
+        provider.render(job("RUNWAY_SEEDANCE_2_5"), profile(), new ProgressCallback() {
+            /** Ignora progresso não financeiro neste teste. */
+            @Override
+            public void onProgress(Integer percent, SalesVideoStatus status, String message) { }
+
+            /** Captura a evidência da task cobrável aceita pelo provedor. */
+            @Override
+            public void onProgress(Integer percent, SalesVideoStatus status, String message, String detailsJson) {
+                if (detailsJson != null) financialEvent.set(detailsJson);
+            }
+        });
 
         RecordedRequest request = server.takeRequest();
         assertThat(request.getHeader("Authorization")).isEqualTo("Bearer runway-test-key");
         assertThat(request.getBody().readUtf8())
                 .contains("\"model\":\"seedance2_5\"")
                 .doesNotContain("\"model\":\"seedance2\"");
+        assertThat(financialEvent.get())
+                .contains("\"eventType\":\"PROVIDER_TASK_ACCEPTED\"")
+                .contains("\"providerTaskId\":\"seedance-25-task\"")
+                .contains("\"estimatedCredits\":300");
     }
 
     /** Deve rotear os modelos comerciais curados pelo mesmo token da Runway. */
@@ -306,6 +322,8 @@ class RunwayVideoProviderTest {
         assertThat(sceneDirective.invoke(provider, 4, 4)).asString().contains("CTA");
         assertThat((BigDecimal) estimateCost.invoke(provider, "gen4.5", 10, 3))
                 .isEqualByComparingTo("3.60");
+        assertThat((BigDecimal) estimateCost.invoke(provider, "seedance2_5", 10, 1))
+                .isEqualByComparingTo("3.00");
         assertThat(resolveDuration.invoke(
                 provider,
                 job("RUNWAY_SEEDANCE_2_5"),

@@ -31,6 +31,10 @@ export type VideoProviderCreditBalance = {
     sceneNumber: number;
     plannedSceneCount: number;
     providerTaskId: string | null;
+    model: string | null;
+    durationSeconds: number | null;
+    estimatedCredits: number | null;
+    estimatedCostUsd: number | null;
     acceptedAt: string;
   }>;
   creditsUrl: string | null;

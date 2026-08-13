@@ -28,6 +28,13 @@ function instant(value: string | null) {
   return value ? new Date(value).toLocaleString("pt-BR") : "Sem registro";
 }
 
+function usd(value: number) {
+  return value.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 /** Exibe o monitor financeiro comum a todos os produtos que usam provedores de vídeo. */
 export default function VideoProviderFinancePage() {
   const balances = useVideoProviderCreditBalances();
@@ -126,6 +133,8 @@ export default function VideoProviderFinancePage() {
                           <th scope="col">Job</th>
                           <th scope="col">Cena</th>
                           <th scope="col">Task do provedor</th>
+                          <th scope="col">Modelo/duração</th>
+                          <th scope="col">Créditos/custo</th>
                           <th scope="col">Aceita em</th>
                         </tr>
                       </thead>
@@ -138,6 +147,18 @@ export default function VideoProviderFinancePage() {
                               {request.sceneNumber}/{request.plannedSceneCount}
                             </td>
                             <td>{request.providerTaskId ?? "Legado sem ID"}</td>
+                            <td>
+                              {request.model ?? "—"}
+                              {request.durationSeconds
+                                ? ` · ${request.durationSeconds}s`
+                                : ""}
+                            </td>
+                            <td>
+                              {request.estimatedCredits ?? "Não conciliado"}
+                              {request.estimatedCostUsd !== null
+                                ? ` · US$ ${usd(request.estimatedCostUsd)}`
+                                : ""}
+                            </td>
                             <td>{instant(request.acceptedAt)}</td>
                           </tr>
                         ))}

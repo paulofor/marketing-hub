@@ -175,6 +175,11 @@ public class ProviderCreditPurchaseService {
     int total = Integer.parseInt(scene.group(2));
     Matcher task = TASK_PATTERN.matcher(message);
     String taskId = task.find() ? task.group(1) : null;
+    String details = event.getDetailsJson() == null ? "" : event.getDetailsJson();
+    String model = readJsonText(details, "model");
+    Integer duration = readJsonInteger(details, "durationSeconds");
+    Integer credits = readJsonInteger(details, "estimatedCredits");
+    BigDecimal cost = readJsonDecimal(details, "estimatedCostUsd");
     Long jobId = event.getJob().getId();
     Long cycleId = readCycleId(event.getJob().getMetadataJson());
     String key = jobId + ":" + number;
@@ -183,8 +188,37 @@ public class ProviderCreditPurchaseService {
       requests.put(
           key,
           new VideoProviderSceneRequestResponse(
-              jobId, cycleId, number, total, taskId, event.getCreatedAt()));
+              jobId,
+              cycleId,
+              number,
+              total,
+              taskId,
+              model,
+              duration,
+              credits,
+              cost,
+              event.getCreatedAt()));
     }
+  }
+
+  /** Lê texto simples do JSON financeiro sem transformar falha de exibição em falha do monitor. */
+  private String readJsonText(String json, String field) {
+    Matcher matcher =
+        Pattern.compile("\\\"" + field + "\\\"\\s*:\\s*\\\"([^\\\"]+)\\\"").matcher(json);
+    return matcher.find() ? matcher.group(1) : null;
+  }
+
+  /** Lê inteiro simples do JSON financeiro preservando eventos legados sem o campo. */
+  private Integer readJsonInteger(String json, String field) {
+    Matcher matcher = Pattern.compile("\\\"" + field + "\\\"\\s*:\\s*(\\d+)").matcher(json);
+    return matcher.find() ? Integer.valueOf(matcher.group(1)) : null;
+  }
+
+  /** Lê custo decimal simples do JSON financeiro preservando eventos legados. */
+  private BigDecimal readJsonDecimal(String json, String field) {
+    Matcher matcher =
+        Pattern.compile("\\\"" + field + "\\\"\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)").matcher(json);
+    return matcher.find() ? new BigDecimal(matcher.group(1)) : null;
   }
 
   /** Lê o ciclo de produção sem falhar o monitor quando metadados legados forem inválidos. */

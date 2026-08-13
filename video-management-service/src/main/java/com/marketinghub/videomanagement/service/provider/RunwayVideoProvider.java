@@ -1,5 +1,6 @@
 package com.marketinghub.videomanagement.service.provider;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.videomanagement.client.dto.AssetType;
@@ -106,8 +107,12 @@ public class RunwayVideoProvider implements VideoProvider {
             }
             String taskId = submitRender(job, payload);
             taskIds.add(taskId);
+            String model = String.valueOf(payload.get("model"));
+            int durationSeconds = ((Number) payload.get("duration")).intValue();
+            int estimatedCredits = estimateCredits(model, durationSeconds);
             progressCallback.onProgress(10 + (scene * 65 / sceneCount), SalesVideoStatus.VIDEO_PROCESSING,
-                    "Runway aceitou cena %d/%d; taskId=%s".formatted(scene, sceneCount, taskId));
+                    "Runway aceitou cena %d/%d; taskId=%s".formatted(scene, sceneCount, taskId),
+                    providerTaskDetails(taskId, model, scene, sceneCount, durationSeconds, estimatedCredits));
             finalStatus = waitUntilCompleted(taskId, progressCallback);
             String videoUrl = resolveVideoUrl(finalStatus);
             if (!StringUtils.hasText(videoUrl)) {
@@ -433,13 +438,46 @@ public class RunwayVideoProvider implements VideoProvider {
         return metadata;
     }
 
-    /** Calcula custo aproximado para Gen-4.5 com créditos de US$0,01. */
+    /** Calcula custo aproximado por task com créditos de US$0,01. */
     private BigDecimal estimateCostUsd(String model, int clipDurationSeconds, int sceneCount) {
-        int seconds = Math.max(1, clipDurationSeconds) * Math.max(1, sceneCount);
-        BigDecimal creditsPerSecond = "gen4_turbo".equalsIgnoreCase(model)
-                ? new BigDecimal("5")
-                : new BigDecimal("12");
-        return creditsPerSecond.multiply(BigDecimal.valueOf(seconds)).multiply(new BigDecimal("0.01"));
+        return BigDecimal.valueOf(estimateCredits(model, clipDurationSeconds))
+                .multiply(BigDecimal.valueOf(Math.max(1, sceneCount)))
+                .multiply(new BigDecimal("0.01"));
+    }
+
+    /** Calcula os créditos comprometidos quando a Runway aceita uma task. */
+    private int estimateCredits(String model, int durationSeconds) {
+        int creditsPerSecond = switch (model.toLowerCase(Locale.ROOT)) {
+            case "gen4_turbo" -> 5;
+            case "seedance2_5" -> 30;
+            default -> 12;
+        };
+        return creditsPerSecond * Math.max(1, durationSeconds);
+    }
+
+    /** Serializa o evento financeiro idempotente vinculado à task e à cena. */
+    private String providerTaskDetails(String taskId,
+                                       String model,
+                                       int scene,
+                                       int sceneCount,
+                                       int durationSeconds,
+                                       int estimatedCredits) {
+        try {
+            Map<String, Object> details = new LinkedHashMap<>();
+            details.put("eventType", "PROVIDER_TASK_ACCEPTED");
+            details.put("provider", "RUNWAY");
+            details.put("providerTaskId", taskId);
+            details.put("model", model);
+            details.put("sceneNumber", scene);
+            details.put("plannedSceneCount", sceneCount);
+            details.put("durationSeconds", durationSeconds);
+            details.put("estimatedCredits", estimatedCredits);
+            details.put("estimatedCostUsd", BigDecimal.valueOf(estimatedCredits).multiply(new BigDecimal("0.01")));
+            return objectMapper.writeValueAsString(details);
+        } catch (JsonProcessingException ex) {
+            log.error("Falha ao serializar consumo da task Runway; taskId={}", taskId, ex);
+            throw new VideoProviderException("PROVIDER_AUDIT_FAILED", "Falha ao auditar consumo da Runway", ex);
+        }
     }
 
     /** Extrai URL de vídeo do formato padrão de task output da Runway. */

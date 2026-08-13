@@ -161,6 +161,8 @@ class ProviderCreditPurchaseServiceTest {
     SalesVideoJobEvent explicit = new SalesVideoJobEvent();
     explicit.setJob(job);
     explicit.setMessage("Runway aceitou cena 1/3; taskId=task-abc");
+    explicit.setDetailsJson(
+        "{\"eventType\":\"PROVIDER_TASK_ACCEPTED\",\"model\":\"seedance2_5\",\"durationSeconds\":10,\"estimatedCredits\":300,\"estimatedCostUsd\":3.00}");
     explicit.setCreatedAt(Instant.parse("2026-08-13T18:10:36Z"));
     when(purchases.findDistinctProviders()).thenReturn(List.of());
     when(purchases.findByProviderFamily("RUNWAY")).thenReturn(List.of());
@@ -179,5 +181,7 @@ class ProviderCreditPurchaseServiceTest {
     assertThat(balance.acceptedSceneRequests()).isEqualTo(1);
     assertThat(balance.sceneRequests().getFirst().productionCycleId()).isEqualTo(6L);
     assertThat(balance.sceneRequests().getFirst().providerTaskId()).isEqualTo("task-abc");
+    assertThat(balance.sceneRequests().getFirst().estimatedCredits()).isEqualTo(300);
+    assertThat(balance.sceneRequests().getFirst().estimatedCostUsd()).isEqualByComparingTo("3.00");
   }
 }

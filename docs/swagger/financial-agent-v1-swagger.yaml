@@ -9,6 +9,33 @@ paths:
       responses:
         '200':
           description: Monitor financeiro transversal dos provedores de vídeo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    provider: {type: string}
+                    purchasedCredits: {type: integer, format: int64}
+                    estimatedConsumedCredits: {type: integer, format: int64, nullable: true}
+                    estimatedAvailableCredits: {type: integer, format: int64, nullable: true}
+                    acceptedSceneRequests: {type: integer, format: int64}
+                    sceneRequests:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          jobId: {type: integer, format: int64}
+                          productionCycleId: {type: integer, format: int64, nullable: true}
+                          sceneNumber: {type: integer}
+                          plannedSceneCount: {type: integer}
+                          providerTaskId: {type: string, nullable: true}
+                          model: {type: string, nullable: true}
+                          durationSeconds: {type: integer, nullable: true}
+                          estimatedCredits: {type: integer, nullable: true}
+                          estimatedCostUsd: {type: number, nullable: true}
+                          acceptedAt: {type: string, format: date-time}
   /api/financial-agent/v1/providers/{provider}/credit-purchases:
     parameters:
       - in: path

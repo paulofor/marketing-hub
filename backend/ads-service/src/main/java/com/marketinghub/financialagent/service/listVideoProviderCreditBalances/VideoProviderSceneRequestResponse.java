@@ -1,5 +1,6 @@
 package com.marketinghub.financialagent.service.listVideoProviderCreditBalances;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 /** Responsabilidade: expor uma cena aceita e cobrável pelo provedor de vídeo. */
@@ -9,4 +10,8 @@ public record VideoProviderSceneRequestResponse(
     int sceneNumber,
     int plannedSceneCount,
     String providerTaskId,
+    String model,
+    Integer durationSeconds,
+    Integer estimatedCredits,
+    BigDecimal estimatedCostUsd,
     Instant acceptedAt) {}

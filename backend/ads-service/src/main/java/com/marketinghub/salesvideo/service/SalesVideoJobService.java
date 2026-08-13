@@ -315,6 +315,7 @@ public class SalesVideoJobService {
       maybeUpdateProfileStatus(job, request.getStatus());
     }
     jobRepository.save(job);
+    syncProviderTaskConsumption(job, request.getDetailsJson());
     registerEvent(
         job,
         SalesVideoJobEventType.PROGRESS,
@@ -323,6 +324,35 @@ public class SalesVideoJobService {
         request.getMessage(),
         request.getDetailsJson());
     return toDto(job);
+  }
+
+  /** Concilia imediatamente uma task/cena aceita sem depender do desfecho do job final. */
+  private void syncProviderTaskConsumption(SalesVideoJob job, String detailsJson) {
+    if (studioCostLedgerService == null || !StringUtils.hasText(detailsJson)) return;
+    try {
+      JsonNode details = objectMapper.readTree(detailsJson);
+      if (!"PROVIDER_TASK_ACCEPTED".equals(details.path("eventType").asText())) return;
+      String taskId = details.path("providerTaskId").asText("").trim();
+      if (!StringUtils.hasText(taskId)) return;
+      studioCostLedgerService.recordProviderTask(
+          job.getId(),
+          readVideoProductionCycleId(job.getMetadataJson()),
+          details.path("provider").asText("UNKNOWN"),
+          taskId,
+          details.path("model").asText(job.getProviderName()),
+          details.path("sceneNumber").asInt(),
+          details.path("plannedSceneCount").asInt(),
+          details.path("durationSeconds").asInt(),
+          details.path("estimatedCredits").asInt(),
+          details.path("estimatedCostUsd").decimalValue(),
+          Instant.now(),
+          job.getStatus().name());
+    } catch (JsonProcessingException | RuntimeException ex) {
+      log.error(
+          "Falha ao conciliar task de provedor; jobId={} details={}", job.getId(), detailsJson, ex);
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST, "Evento financeiro de task inválido.");
+    }
   }
 
   /** Finaliza o job, aplica gates de duração e encadeia a pós-produção cinematográfica. */

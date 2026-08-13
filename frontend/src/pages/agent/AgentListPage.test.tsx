@@ -1,6 +1,7 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
 import AgentListPage from "./AgentListPage";
 
 vi.mock("../../api/agent/useAgents", () => ({
@@ -29,6 +30,7 @@ vi.mock("../../api/agent/useAgentMaturity", () => ({
       {
         agentId: 7,
         agentName: "Agente Gerador de Landing",
+        agentKey: "landing-generator",
         executions: 4,
         completionRate: 75,
         openTasks: 1,
@@ -48,6 +50,7 @@ vi.mock("../../api/agent/useAgentWorkMonitor", () => ({
         agentId: 7,
         nickname: "Dédalo",
         agentName: "Agente Gerador de Landing",
+        agentKey: "landing-generator",
         workStatus: "WORKING",
         currentWork: "Correção autônoma da landing do experimento #88",
         progressDetail: "Etapa em processamento",
@@ -67,7 +70,35 @@ vi.mock("../../api/agent/useAgentWorkMonitor", () => ({
           detail: "Executor pronto.",
         },
       },
+      {
+        agentId: 3,
+        nickname: "Plutus",
+        agentName: "Agente Financeiro",
+        agentKey: "financial-agent",
+        workStatus: "BLOCKED",
+        currentWork: "Avaliar ciclo MUSA #5",
+        progressDetail: "Aguardando autenticação",
+        externalDecisionRequired: false,
+        dailyTokens: 0,
+        executorHealth: {
+          status: "BLOCKED",
+          expectedVersion: 3,
+          deployedVersion: 3,
+          versionCurrent: true,
+          backendAccessible: true,
+          codexAuthenticated: false,
+        },
+      },
     ],
+  }),
+}));
+
+vi.mock("../../api/agent/useAgentExecutorOperation", () => ({
+  useAgentExecutorOperation: () => ({ data: null }),
+  useStartAgentExecutorOperation: () => ({
+    isPending: false,
+    isError: false,
+    mutate: vi.fn(),
   }),
 }));
 
@@ -108,5 +139,37 @@ describe("AgentListPage", () => {
     expect(screen.getByText("Tokens hoje")).toBeInTheDocument();
     expect(screen.getByText("12.345")).toBeInTheDocument();
     expect(screen.getByText("Tarefa #14 · Execução #326")).toBeInTheDocument();
+  });
+
+  it("oferece reconexão individual para todos os executores Codex", () => {
+    render(
+      <MemoryRouter>
+        <AgentListPage />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getAllByRole("button", { name: "Reconectar Codex" }),
+    ).toHaveLength(2);
+  });
+
+  it("conduz as sessões em sequência usando o estado informado pelo backend", async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AgentListPage />
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Preparar sessões Codex" }),
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Preparar os seis agentes Codex" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Criar sessão de Plutus" }),
+    ).toBeInTheDocument();
   });
 });

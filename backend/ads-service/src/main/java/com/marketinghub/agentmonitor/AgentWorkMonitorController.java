@@ -41,4 +41,21 @@ public class AgentWorkMonitorController {
     CodexAuthReconnectResponse response = service.currentReconnect(agentId);
     return response == null ? ResponseEntity.noContent().build() : ResponseEntity.ok(response);
   }
+
+  /** Solicita atualização ou reinício do executor por comando auditável. */
+  @PostMapping("/{agentId}/executor-operations/{operationType}")
+  public AgentExecutorAdminOperationResponse executorOperation(
+      @PathVariable Long agentId, @PathVariable String operationType, HttpServletRequest request) {
+    String operator =
+        request.getRemoteUser() == null ? "marketing-hub-admin" : request.getRemoteUser();
+    return service.requestExecutorOperation(agentId, operationType, operator);
+  }
+
+  /** Retorna o último comando de atualização ou reinício do executor. */
+  @GetMapping("/{agentId}/executor-operations/current")
+  public ResponseEntity<AgentExecutorAdminOperationResponse> currentExecutorOperation(
+      @PathVariable Long agentId) {
+    AgentExecutorAdminOperationResponse response = service.currentExecutorOperation(agentId);
+    return response == null ? ResponseEntity.noContent().build() : ResponseEntity.ok(response);
+  }
 }

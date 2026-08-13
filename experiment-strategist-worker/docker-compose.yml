@@ -15,7 +15,7 @@ services:
       LOG_FILE_NAME: /tmp/experiment-strategist-worker.log
       EXPERIMENT_STRATEGIST_MCP_URL: ${EXPERIMENT_STRATEGIST_MCP_URL:-http://backend:8000}
       AGENT_HEALTH_KEY: experiment-strategist
-      AGENT_HEALTH_VERSION: "1"
+      AGENT_HEALTH_VERSION: "3"
       AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
       CODEX_HOME: /home/strategist/.codex
       CODEX_COMMAND: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh
@@ -24,7 +24,7 @@ services:
       - "8096:8096"
     volumes:
       - ${MARKETING_HUB_REPOSITORY_HOST:-..}:/workspace/marketing-hub:ro
-      - ${EXPERIMENT_STRATEGIST_CODEX_HOME:?Defina a sessão Codex compartilhada dos agentes}:/home/strategist/.codex
+      - ${EXPERIMENT_STRATEGIST_CODEX_HOME:?Defina a sessão Codex individual da Atena}:/home/strategist/.codex
     read_only: true
     tmpfs:
       - /tmp:size=128m,noexec,nosuid

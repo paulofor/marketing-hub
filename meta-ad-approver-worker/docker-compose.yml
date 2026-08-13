@@ -14,7 +14,7 @@ services:
       CODEX_REASONING_EFFORT: ${CODEX_REASONING_EFFORT:-high}
       META_AD_APPROVER_CODEX_TIMEOUT: ${META_AD_APPROVER_CODEX_TIMEOUT:-PT40M}
       AGENT_HEALTH_KEY: meta-ad-approver
-      AGENT_HEALTH_VERSION: "1"
+      AGENT_HEALTH_VERSION: "2"
       AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
       CODEX_HOME: /home/approver/.codex
       CODEX_COMMAND: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh
@@ -22,7 +22,7 @@ services:
       - "8097:8097"
     volumes:
       - ${MARKETING_HUB_REPOSITORY_HOST:-..}:/workspace/marketing-hub:ro
-      - ${META_AD_APPROVER_CODEX_HOME:?Defina a sessão Codex compartilhada dos agentes}:/home/approver/.codex
+      - ${META_AD_APPROVER_CODEX_HOME:?Defina a sessão Codex individual da Têmis}:/home/approver/.codex
     read_only: true
     tmpfs:
       - /tmp:size=256m,noexec,nosuid

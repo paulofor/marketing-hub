@@ -8,12 +8,11 @@ on:
       - "landing-generator-agent-worker/**"
       - "backend/ads-service/src/main/java/com/marketinghub/geralanding/agent/**"
       - ".github/workflows/landing-generator-agent-worker-ci.yml"
-      - "scripts/reconcile-agent-codex-auth.sh"
-      - "scripts/test-shared-agent-codex-auth.sh"
+      - "scripts/test-isolated-agent-codex-auth.sh"
 
 concurrency:
   group: landing-generator-agent-worker-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -50,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     concurrency:
-      group: shared-growth-agents-repository-deploy
+      group: landing-generator-agent-worker-deploy
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -72,8 +71,8 @@ jobs:
         run: |
           set -euo pipefail
           ssh "${VPS_USER}@${VPS_IP}" "
-            bash '${REPOSITORY_DIR}/scripts/reconcile-agent-codex-auth.sh' \
-            && export LANDING_GENERATOR_CODEX_HOME=/opt/growth-operator/codex-home \
+            install -d -o 10001 -g 10001 /opt/growth-operator/agents/landing-generator/codex-home \
+            && export LANDING_GENERATOR_CODEX_HOME=/opt/growth-operator/agents/landing-generator/codex-home \
                       BACKEND_URL=http://191.252.181.168 \
                       MARKETING_HUB_URL=http://191.252.181.168 \
                       MARKETING_HUB_REPOSITORY_HOST='${REPOSITORY_DIR}' \

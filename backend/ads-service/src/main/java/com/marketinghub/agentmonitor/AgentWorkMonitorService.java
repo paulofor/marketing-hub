@@ -116,6 +116,17 @@ public class AgentWorkMonitorService {
     return executorHealthService.currentReconnect(agentId);
   }
 
+  /** Solicita atualização ou reinício auditável do executor selecionado. */
+  public AgentExecutorAdminOperationResponse requestExecutorOperation(
+      Long agentId, String operationType, String requestedBy) {
+    return executorHealthService.requestOperation(agentId, operationType, requestedBy);
+  }
+
+  /** Recupera o último comando administrativo apresentado no painel. */
+  public AgentExecutorAdminOperationResponse currentExecutorOperation(Long agentId) {
+    return executorHealthService.currentOperation(agentId);
+  }
+
   /** Converte a agregação persistida em totais acessíveis pela identidade da telemetria. */
   private Map<String, Long> tokenTotals(List<Object[]> rows) {
     Map<String, Long> totals = new HashMap<>();

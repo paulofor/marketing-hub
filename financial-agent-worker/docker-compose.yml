@@ -11,7 +11,7 @@ services:
       LOG_FILE_NAME: /tmp/financial-agent-worker.log
       FINANCIAL_AGENT_MCP_URL: ${FINANCIAL_AGENT_MCP_URL:-http://backend:8000}
       AGENT_HEALTH_KEY: financial-agent
-      AGENT_HEALTH_VERSION: "1"
+      AGENT_HEALTH_VERSION: "3"
       AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
       CODEX_HOME: /home/financial-agent/.codex
       CODEX_COMMAND: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh
@@ -19,7 +19,7 @@ services:
       - "${FINANCIAL_AGENT_WORKER_PORT:-8095}:8095"
     volumes:
       - ${MARKETING_HUB_REPOSITORY_PATH:-..}:/workspace/marketing-hub:ro
-      - ${FINANCIAL_AGENT_CODEX_HOME:?Defina a sessão Codex compartilhada dos agentes}:/home/financial-agent/.codex
+      - ${FINANCIAL_AGENT_CODEX_HOME:?Defina a sessão Codex individual do Plutus}:/home/financial-agent/.codex
     read_only: true
     tmpfs:
       - /tmp:size=128m,noexec,nosuid

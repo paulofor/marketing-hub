@@ -88,6 +88,15 @@
 
 ## Regra operacional de uso
 
+## LOOP-APOLO-LEGACY-LUMA-RESELECTION — plano legado reintroduz provider reprovado
+
+- **Severidade:** ALTO.
+- **Status:** fechado localmente em 2026-08-13; aguarda publicação.
+- **Sintoma:** após falha 402 e score comercial insuficiente, novos ciclos MUSA voltavam à Luma porque o seletor priorizava a menção antiga do projeto e usava Luma como padrão para vídeos longos.
+- **Causa-raiz confirmada:** a preferência estava hardcoded no backend e contradizia a decisão comercial e o conhecimento operacional de Apolo.
+- **Correção efetiva:** Luma deixa de ser selecionável pelo ciclo autônomo MUSA; Seedance 2.5 via Runway passa a ser o padrão, e a decisão é registrada no cânone e no prompt versionado de Apolo.
+- **Prevenção:** teste de contrato usa um projeto legado que ainda cita Luma e exige que o job seja criado como `RUNWAY_SEEDANCE_2_5`.
+
 ## LOOP-AGENT-DEPLOY-GLOBAL-REVISION-MARKER — deploy saudável reportado como falha
 
 - **Severidade:** ALTO.
@@ -1131,3 +1140,9 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** os DTOs REST ainda exigiam `commercialPlanId`, embora a entidade, o ledger e o ciclo autônomo já suportassem projetos legados sem plano comercial.
 - **Correção:** criação e edição de projetos aceitam plano comercial ausente, preservando o vínculo opcional e a segregação financeira já aplicada pelo serviço.
 - **Prevenção:** teste atualiza um projeto sem plano, persiste o perfil e comprova que o contrato continua aceitando o cenário legado.
+# LOOP-COMMERCIAL-PLAN-OPERATIONAL-CONTEXT-TRUNCATED — plano não aceita contrato operacional completo
+
+- **Sintoma:** a tela de planejamento retorna HTTP 500 ao salvar consenso, autonomia e critérios observáveis para os agentes.
+- **Causa-raiz confirmada em 2026-08-13:** `commercial_plan.next_action`, `current_blocker` e `root_cause` permaneciam em `VARCHAR(512)`, embora o plano versionado precise transportar contexto operacional completo.
+- **Correção efetiva:** os três campos passam a `LONGTEXT` no Liquibase e no mapeamento JPA, preservando o contrato integral entre Têmis, Dédalo e o backend.
+- **Prevenção:** a validação Liquibase e o mapeamento explícito impedem o retorno do limite de 512 caracteres; decisões de gasto, preço e publicação continuam em gates separados.

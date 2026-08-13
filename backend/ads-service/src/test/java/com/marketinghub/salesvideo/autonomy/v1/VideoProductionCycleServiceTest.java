@@ -199,13 +199,13 @@ class VideoProductionCycleServiceTest {
     verify(salesVideoService, never()).requestRender(any(), any());
   }
 
-  /** Comprova que Plutus libera vídeos longos para a montagem Luma por cenas. */
+  /** Comprova que Apolo não volta à Luma mesmo quando um plano legado ainda a menciona. */
   @Test
-  void shouldQueueApprovedLongCycleAsLumaSceneMontage() {
+  void shouldQueueApprovedCycleWithSeedanceInsteadOfLegacyLuma() {
     VideoProductionCycle cycle = cycle();
     VideoProject project = project();
     project.setTargetDurationSeconds(60);
-    project.setProviderPlan("Roteiro, storyboard e montagem em jobs auditáveis.");
+    project.setProviderPlan("LUMA_RAY_3_2 como principal no plano legado.");
     SalesVideoJobDto job = new SalesVideoJobDto();
     job.setId(321L);
     when(repository.findById(11L)).thenReturn(Optional.of(cycle));
@@ -221,7 +221,7 @@ class VideoProductionCycleServiceTest {
     ArgumentCaptor<RequestVideoRenderRequest> render =
         ArgumentCaptor.forClass(RequestVideoRenderRequest.class);
     verify(salesVideoService).requestRender(org.mockito.ArgumentMatchers.eq(13L), render.capture());
-    assertThat(render.getValue().getProviderName()).isEqualTo("LUMA_RAY_3_2");
+    assertThat(render.getValue().getProviderName()).isEqualTo("RUNWAY_SEEDANCE_2_5");
     assertThat(render.getValue().getTargetDurationSeconds()).isEqualTo(60);
     assertThat(result.status()).isEqualTo("QUEUED_FOR_APOLLO");
     assertThat(result.salesVideoJobId()).isEqualTo(321L);

@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-13-commercial-plan-operational-context-longtext
+      author: codex
+      preConditions:
+        onFail: HALT
+        onError: HALT
+        nestedPreconditions:
+          - dbms:
+              type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE commercial_plan
+                MODIFY COLUMN next_action LONGTEXT NULL,
+                MODIFY COLUMN current_blocker LONGTEXT NULL,
+                MODIFY COLUMN root_cause LONGTEXT NULL;

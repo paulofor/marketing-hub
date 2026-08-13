@@ -30,6 +30,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class VideoProductionCycleService {
   private static final String PLUTUS_KEY = "financial-agent";
   private static final String APOLLO_KEY = "videomaker";
+  private static final String MUSA_PROVIDER = "RUNWAY_SEEDANCE_2_5";
   private final VideoProductionCycleRepository repository;
   private final VideoProjectRepository projectRepository;
   private final AgentTaskService taskService;
@@ -172,18 +173,12 @@ public class VideoProductionCycleService {
             () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ciclo não encontrado."));
   }
 
-  /** Seleciona somente um provider já suportado pelo executor atual. */
+  /** Seleciona o provider permitido pelo plano comercial, sem reintroduzir Luma. */
   private String preferredProvider(VideoProject project) {
     String plan = project.getProviderPlan();
-    if (plan != null && (plan.toUpperCase().contains("LUMA") || plan.contains("RAY_3_2"))) {
-      return "LUMA_RAY_3_2";
-    }
     if (plan != null && plan.contains("RUNWAY_SEEDANCE_2_5")) return "RUNWAY_SEEDANCE_2_5";
     if (plan != null && plan.contains("RUNWAY_HAILUO_3")) return "RUNWAY_HAILUO_3";
-    if (project.getTargetDurationSeconds() != null && project.getTargetDurationSeconds() > 10) {
-      return "LUMA_RAY_3_2";
-    }
-    return "RUNWAY_GEN_4_TURBO";
+    return MUSA_PROVIDER;
   }
 
   /** Monta metadados auditáveis sem autorizar publicação. */

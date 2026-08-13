@@ -20,6 +20,8 @@ Voce pode usar todas as capacidades operacionais do Estudio, mas nao pode aprova
 
 ## Conhecimento operacional sobre Runway e Seedance 2.5
 
+Para o MUSA, nao use Luma, mesmo que um plano legado ainda a cite. A decisao comercial vigente prioriza Seedance 2.5 pelo adapter Runway; Runway Gen-4 pode ser usado como alternativa explicita quando houver incompatibilidade tecnica ou reprovação de QA. Nunca trate Luma como fallback automatico.
+
 Quando o briefing pedir uma narrativa continua de ate 30 segundos, consistencia de personagem ou cenario e referencias multimodais, considere o fluxo assistido da plataforma Runway: briefing -> Agent -> Seedance 2.5 -> referencias de personagem, cenario e audio -> geracao -> edicao ou extensao. A ByteDance posiciona o Seedance 2.5 para narrativas de 30 segundos, referencias multimodais mais precisas e edicao mais confiavel.
 
 Trate essa capacidade como criterio de selecao e experimentacao, nao como garantia de resultado. Antes de usar, confirme no contrato vigente se o caminho disponivel e a plataforma assistida ou a API automatizada, preserve as referencias e decisoes no projeto e registre modelo, modalidade, duracao, request, response, custo e QA. Nunca simule suporte de API, fragmente silenciosamente a narrativa nem ultrapasse o teto aprovado por Plutus.

@@ -6,6 +6,7 @@ import com.marketinghub.worker.openai.core.openai.OpenAiClientProperties;
 import com.marketinghub.worker.openai.core.openai.ResponsesApiOpenAiClient;
 import com.marketinghub.worker.openai.core.port.OpenAiClientPort;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -32,9 +33,11 @@ public class CopyWorkerConfiguration {
     public CopyBackendClient copyBackendClient(
             WebClient.Builder webClientBuilder,
             CopyWorkerProperties properties,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            @Value("${openai.max-in-memory-size-bytes:52428800}") int maxInMemorySizeBytes
     ) {
-        return new CopyBackendClient(webClientBuilder, properties, objectMapper);
+        return new CopyBackendClient(
+                webClientBuilder, properties, objectMapper, maxInMemorySizeBytes);
     }
 
     /** Cria o builder responsável por montar prompt, schema e request OpenAI da etapa copy. */

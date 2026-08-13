@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-13-video-cycle-apollo-reconciliation
+      author: marketinghub
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE video_production_cycle
+                ADD COLUMN last_failed_job_id BIGINT NULL AFTER sales_video_job_id,
+                ADD COLUMN last_apollo_failure_code VARCHAR(191) NULL AFTER last_failed_job_id,
+                ADD COLUMN last_apollo_failure_detail LONGTEXT NULL AFTER last_apollo_failure_code,
+                ADD COLUMN last_apollo_failure_at DATETIME NULL AFTER last_apollo_failure_detail;

@@ -15,6 +15,7 @@ Apolo é o executor criativo dos vídeos do Estúdio. Plutus é o gate financeir
 7. Apolo planeja, gera, inspeciona e devolve o candidato. O provider não decide próxima etapa.
 8. O custo conhecido deve ser conciliado no ledger. Novo consumo é bloqueado ao atingir o teto ou quando o custo do ciclo atual estiver desconhecido. Cobertura histórica incompleta deve gerar pendência de conciliação, mas não bloqueia sozinha um ciclo de descoberta com teto explícito, ledger segregado e custo incremental rastreável.
 9. QA independente decide qualidade. Apolo não aprova o próprio trabalho.
+10. Quando o job vinculado terminar em falha, o backend deve preservar no ciclo o job, código, detalhe e horário da falha antes de reconciliar uma nova tentativa. O painel deve exibir a falha anterior e o novo job separadamente; o estado `QUEUED_FOR_APOLLO` nunca pode ocultar um job terminal falho.
 
 ## Contrato financeiro da fase de descoberta
 

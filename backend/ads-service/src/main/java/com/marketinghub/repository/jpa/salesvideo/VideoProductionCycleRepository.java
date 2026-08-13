@@ -13,6 +13,10 @@ public interface VideoProductionCycleRepository extends JpaRepository<VideoProdu
   /** Lista ciclos aguardando decisão financeira. */
   List<VideoProductionCycle> findByStatusOrderByCreatedAtAsc(String status);
 
+  /** Lista ciclos liberados a Apolo para reconciliar jobs terminais antes do consumo. */
+  List<VideoProductionCycle> findByStatusAndFinancialDecisionOrderByCreatedAtAsc(
+      String status, String financialDecision);
+
   /** Busca o ciclo de vídeo atualizado mais recentemente. */
   Optional<VideoProductionCycle> findTopByOrderByUpdatedAtDesc();
 

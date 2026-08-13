@@ -8,10 +8,13 @@ import com.marketinghub.agenttask.CreateAgentTaskByAgentRequest;
 import com.marketinghub.agenttask.DecideAgentGateRequest;
 import com.marketinghub.financialagent.service.FinancialAgentService;
 import com.marketinghub.financialagent.service.StudioCostLedgerService;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
 import com.marketinghub.salesvideo.SalesVideoExecutionMode;
+import com.marketinghub.salesvideo.SalesVideoJob;
 import com.marketinghub.salesvideo.SalesVideoProviderFamily;
+import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.VideoProductionCycle;
 import com.marketinghub.salesvideo.VideoProject;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
@@ -33,6 +36,7 @@ public class VideoProductionCycleService {
   private static final String MUSA_PROVIDER = "RUNWAY_SEEDANCE_2_5";
   private final VideoProductionCycleRepository repository;
   private final VideoProjectRepository projectRepository;
+  private final SalesVideoJobRepository jobRepository;
   private final AgentTaskService taskService;
   private final SalesVideoService salesVideoService;
   private final FinancialAgentService financialAgentService;
@@ -43,6 +47,7 @@ public class VideoProductionCycleService {
   public VideoProductionCycleService(
       VideoProductionCycleRepository repository,
       VideoProjectRepository projectRepository,
+      SalesVideoJobRepository jobRepository,
       AgentTaskService taskService,
       SalesVideoService salesVideoService,
       FinancialAgentService financialAgentService,
@@ -50,6 +55,7 @@ public class VideoProductionCycleService {
       ObjectMapper objectMapper) {
     this.repository = repository;
     this.projectRepository = projectRepository;
+    this.jobRepository = jobRepository;
     this.taskService = taskService;
     this.salesVideoService = salesVideoService;
     this.financialAgentService = financialAgentService;
@@ -134,18 +140,52 @@ public class VideoProductionCycleService {
       return response(repository.save(cycle));
     }
     VideoProject project = project(cycle.getVideoProjectId());
+    queueApollo(cycle, project, null);
+    return response(repository.save(cycle));
+  }
+
+  /** Reconcilia ciclos aprovados cujo job terminal falhou, sem reabrir o gate de Plutus. */
+  @Transactional
+  public void reconcileApolloQueue() {
+    repository
+        .findByStatusAndFinancialDecisionOrderByCreatedAtAsc("QUEUED_FOR_APOLLO", "APPROVED")
+        .forEach(
+            cycle -> {
+              SalesVideoJob previous =
+                  cycle.getSalesVideoJobId() == null
+                      ? null
+                      : jobRepository.findById(cycle.getSalesVideoJobId()).orElse(null);
+              if (previous != null && previous.getStatus() != SalesVideoStatus.VIDEO_FAILED) return;
+              if (previous != null) recordApolloFailure(cycle, previous);
+              queueApollo(cycle, project(cycle.getVideoProjectId()), previous);
+              repository.save(cycle);
+            });
+  }
+
+  /** Persiste o diagnóstico do job terminal antes de criar uma substituição segura. */
+  private void recordApolloFailure(VideoProductionCycle cycle, SalesVideoJob failedJob) {
+    cycle.setLastFailedJobId(failedJob.getId());
+    cycle.setLastApolloFailureCode(failedJob.getFailureCode());
+    cycle.setLastApolloFailureDetail(failedJob.getFailureDetail());
+    cycle.setLastApolloFailureAt(
+        failedJob.getFinishedAt() == null ? Instant.now() : failedJob.getFinishedAt());
+  }
+
+  /** Cria o job canônico de Apolo com plano de cenas e rastreabilidade do job substituído. */
+  private void queueApollo(
+      VideoProductionCycle cycle, VideoProject project, SalesVideoJob previous) {
     RequestVideoRenderRequest render = new RequestVideoRenderRequest();
     render.setRequestedBy("Apolo");
     render.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
     render.setProviderName(preferredProvider(project));
     render.setExecutionMode(SalesVideoExecutionMode.TEST);
-    render.setTargetDurationSeconds(project.getTargetDurationSeconds());
-    render.setMetadataJson(metadata(cycle, project));
+    render.setTargetDurationSeconds(Math.min(10, project.getTargetDurationSeconds()));
+    render.setMetadataJson(metadata(cycle, project, previous));
     SalesVideoJobDto job =
         salesVideoService.requestRender(project.getSalesVideoProfileId(), render);
     cycle.setSalesVideoJobId(job.getId());
     cycle.setStatus("QUEUED_FOR_APOLLO");
-    return response(repository.save(cycle));
+    cycle.setUpdatedAt(Instant.now());
   }
 
   /** Lista o histórico de ciclos do projeto para a tela. */
@@ -182,15 +222,22 @@ public class VideoProductionCycleService {
   }
 
   /** Monta metadados auditáveis sem autorizar publicação. */
-  private String metadata(VideoProductionCycle cycle, VideoProject project) {
+  private String metadata(
+      VideoProductionCycle cycle, VideoProject project, SalesVideoJob previous) {
     try {
-      return objectMapper.writeValueAsString(
-          java.util.Map.of(
-              "videoProductionCycleId", cycle.getId(),
-              "videoProjectId", project.getId(),
-              "budgetLimitUsd", cycle.getBudgetLimitUsd(),
-              "financialApprovedBy", "Plutus",
-              "publicationAllowed", false));
+      java.util.LinkedHashMap<String, Object> metadata = new java.util.LinkedHashMap<>();
+      int duration = project.getTargetDurationSeconds();
+      metadata.put("videoProductionCycleId", cycle.getId());
+      metadata.put("videoProjectId", project.getId());
+      metadata.put("budgetLimitUsd", cycle.getBudgetLimitUsd());
+      metadata.put("financialApprovedBy", "Plutus");
+      metadata.put("publicationAllowed", false);
+      metadata.put("targetDurationSeconds", duration);
+      metadata.put("sceneDurationSeconds", 10);
+      metadata.put("sceneCount", (duration + 9) / 10);
+      metadata.put("assemblyRequired", duration > 10);
+      if (previous != null) metadata.put("replacesFailedJobId", previous.getId());
+      return objectMapper.writeValueAsString(metadata);
     } catch (JsonProcessingException ex) {
       throw new IllegalStateException("Não foi possível auditar o ciclo de vídeo.", ex);
     }
@@ -213,6 +260,10 @@ public class VideoProductionCycleService {
         cycle.getFinancialDecision(),
         cycle.getFinancialReason(),
         cycle.getSalesVideoJobId(),
+        cycle.getLastFailedJobId(),
+        cycle.getLastApolloFailureCode(),
+        cycle.getLastApolloFailureDetail(),
+        cycle.getLastApolloFailureAt(),
         cycle.getAgentTaskId(),
         cycle.getCreatedAt(),
         cycle.getUpdatedAt());

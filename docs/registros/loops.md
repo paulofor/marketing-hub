@@ -62,6 +62,7 @@
 - Fechamento complementar no Aprovador Meta (2026-08-09): reinício ou timeout do worker deixava revisões indefinidamente em `PROCESSING`, pois a reserva não possuía lease. O backend agora persiste início e recuperações, reenfileira leases órfãos com limite e encerra em `FAILED` com causa auditável após reincidência.
 - Fechamento complementar nas mesas e planos comerciais (2026-08-11): o limite fixo de 40 minutos encerrava Atena e Dédalo mesmo com atividade, leases antigas podiam permanecer `RUNNING` fora do item mais recente e uma falha na fila auxiliar de vídeo impedia Plutus de consumir sua fila financeira. O timeout passa a medir inatividade com teto absoluto, leases órfãs recebem uma única retomada com a entrada congelada e filas independentes falham isoladamente. Testes de contrato impedem transformar timeout recuperável em falha definitiva e impedem a fila de vídeo de causar starvation financeiro.
 - Fechamento complementar em dossiês e monitor (2026-08-11): cadastrar oportunidade não abria execução consumível por Argos e o monitor não reconhecia `FALHA` como estado terminal de Dédalo. Cada dossiê agora cria ciclo de descoberta e tarefa correlacionada; conclusão sincroniza evidências reais, falha bloqueia a mesa e o monitor trata status terminal ou inatividade como bloqueio, impedindo trabalho fantasma.
+- Fechamento complementar em pareceres de oportunidade (2026-08-13): recriar uma tarefa administrativa para Atena não alterava `opportunity_agent_review`, que é a fila realmente consumida pelo worker, deixando o dossiê sem nova execução. O painel agora reenfileira o parecer canônico vinculado ao dossiê e ao agente, impede duplicidade durante `RUNNING` ou após conclusão e expõe o identificador da execução; testes de backend e frontend preservam o vínculo ponta a ponta.
 - Fechamento complementar em Dédalo (2026-08-12): a execução do experimento #88 já havia sido gravada como `FALHA` por uma versão antiga do worker antes da política de preservar a lease em timeout. Como a recuperação consultava apenas `PROCESSANDO`, esse registro terminal nunca voltava à fila. O backend agora reconhece exclusivamente o erro legado de timeout, limpa o estado terminal e permite uma única retomada auditável; o marcador persistido impede repetição infinita.
 
 ## LOOP-CUSTOMER-AGENT-UNSTRUCTURED-EXECUTION — Avaliação sem parecer final
@@ -159,6 +160,15 @@ Antes de implementar uma correção em tema com histórico de loop:
 4. Atualizar ou criar teste de contrato que prove que o loop foi fechado.
 5. Atualizar cânone, Swagger, tela ou Worker AI quando o contrato entre módulos mudar.
 6. Registrar no documento de tema correspondente o que foi feito e, quando necessário, atualizar este arquivo.
+
+## LOOP-GERALANDING-COPY-PENDING-BUFFER — copy parada antes do processamento
+
+- **Severidade:** ALTO.
+- **Status:** fechado localmente em 2026-08-13; aguarda publicação.
+- **Sintoma:** Dédalo conclui a correção da landing, mas a etapa `landing-page-copy` permanece em `INICIADO` e Têmis não recebe novo artefato.
+- **Causa-raiz confirmada:** o endpoint devolvia até 20 pendências com artefatos auditáveis volumosos, enquanto o client de copy mantinha o buffer padrão de 256 KB e não enviava seu limite ao backend; o consumo falhava com `DataBufferLimitException` antes de reservar qualquer job.
+- **Correção efetiva:** o endpoint passou a respeitar `limit` com teto seguro e o client passou a enviar esse parâmetro e usar o limite de memória já versionado para as etapas OpenAI.
+- **Prevenção:** teste de contrato consome payload acima de 256 KB e valida que a consulta limita explicitamente a quantidade de pendências.
 
 ## LOOP-VIDEO-SCENE-PROMPT-PERSISTENCE — Estúdio substituindo decisão visual salva
 
@@ -1153,3 +1163,9 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz confirmada em 2026-08-13:** o changelog do contexto operacional usava `nestedPreconditions`, chave que o Liquibase 4.26 não reconhece, enquanto o validador estático local verificava apenas contratos de SQL e não a estrutura dessa precondição.
 - **Correção sistêmica:** a condição `dbms:mysql` passa a usar a lista direta suportada em `preConditions`, e o validador local rejeita qualquer retorno de `nestedPreconditions` antes do workflow.
 - **Prevenção:** executar o validador estático em escopo completo e a validação real do Liquibase antes de consolidar changelogs.
+## LOOP-APOLO-JOB-FALHO-DESSINCRONIZADO — ciclo aprovado preso em job terminal
+
+- **Sintoma:** ciclo MUSA permanece `QUEUED_FOR_APOLLO` enquanto o job vinculado está `VIDEO_FAILED`, impedindo retomada após troca de provider.
+- **Causa-raiz:** o polling do executor consultava somente jobs novos e não reconciliava ciclos aprovados por Plutus com jobs terminais antigos.
+- **Correção sistêmica:** antes de cada polling, Apolo solicita reconciliação idempotente ao backend; jobs falhos são substituídos por Seedance 2.5 via Runway, com vínculo ao job anterior e plano explícito de 3 cenas para 30s ou 6 cenas para 60s. O ciclo preserva o identificador, código, detalhe e horário da falha anterior, e o painel diferencia essa falha do novo job enfileirado. O adapter Runway gera e monta todas as cenas localmente.
+- **Prevenção:** testes do ciclo e do painel comprovam provider, quantidade de cenas, diagnóstico da falha, rastreabilidade do job substituído e atualização do vínculo persistido.

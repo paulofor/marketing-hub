@@ -89,6 +89,28 @@ class CopyBackendClientTest {
                 .contains("menos esforço para vender")
                 .contains("roteiro guiado")
                 .contains("[CASE_DATA_END]");
+        assertThat(server.takeRequest().getPath()).isEqualTo(
+                "/api/internal/geralanding/copy/stage-executions/pending?limit=5");
+    }
+
+    /** Deve consumir um pending maior que o limite padrão de 256 KB do WebClient. */
+    @Test
+    void listPendingShouldAcceptLargeAuditablePayload() throws Exception {
+        String largeWireframe = "x".repeat(300_000);
+        Map<String, Object> pendingExecution = Map.of(
+                "experimentId", 88,
+                "stageCode", "landing-page-copy",
+                "jobid", "job-copy-large",
+                "experiment", Map.of("landingPageWireframe", largeWireframe));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody(objectMapper.writeValueAsString(List.of(pendingExecution))));
+
+        List<StageExecution<CopyInput>> result = newClient().listPending(1);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().idJob()).isEqualTo("job-copy-large");
     }
 
     /** Deve enviar prompt, schema e request cru no callback recebe-prompt da etapa copy. */
@@ -171,6 +193,7 @@ class CopyBackendClientTest {
                         "experiment_pipeline_landing_page_copy",
                         "gpt-5.4",
                         Duration.ofSeconds(5)),
-                objectMapper);
+                objectMapper,
+                52_428_800);
     }
 }

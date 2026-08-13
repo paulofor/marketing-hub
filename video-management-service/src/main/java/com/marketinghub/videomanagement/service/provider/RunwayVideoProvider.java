@@ -15,6 +15,8 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -91,21 +93,76 @@ public class RunwayVideoProvider implements VideoProvider {
         SalesVideoScript script = ensureScript(profile);
         progressCallback.onProgress(10, SalesVideoStatus.VIDEO_PROCESSING, "Enviando prompt para Runway");
 
-        Map<String, Object> payload = buildPayload(job, profile, script);
-        String taskId = submitRender(job, payload);
-        progressCallback.onProgress(30, SalesVideoStatus.VIDEO_PROCESSING, "Runway aceitou o taskId: " + taskId);
-
-        JsonNode finalStatus = waitUntilCompleted(taskId, progressCallback);
-        String videoUrl = resolveVideoUrl(finalStatus);
-        if (!StringUtils.hasText(videoUrl)) {
-            throw new VideoProviderException("PROVIDER_RENDER_FAILED", "Runway não retornou URL do vídeo gerado");
+        JsonNode jobMetadata = readMetadata(job);
+        int sceneCount = Math.max(1, jobMetadata.path("sceneCount").asInt(1));
+        List<ProviderFile> scenes = new ArrayList<>();
+        List<String> taskIds = new ArrayList<>();
+        Map<String, Object> payload = null;
+        JsonNode finalStatus = null;
+        for (int scene = 1; scene <= sceneCount; scene++) {
+            payload = buildPayload(job, profile, script);
+            if (sceneCount > 1) {
+                payload.put("promptText", "Scene %d of %d. %s".formatted(scene, sceneCount, payload.get("promptText")));
+            }
+            String taskId = submitRender(job, payload);
+            taskIds.add(taskId);
+            progressCallback.onProgress(10 + (scene * 65 / sceneCount), SalesVideoStatus.VIDEO_PROCESSING,
+                    "Runway processando cena %d/%d".formatted(scene, sceneCount));
+            finalStatus = waitUntilCompleted(taskId, progressCallback);
+            String videoUrl = resolveVideoUrl(finalStatus);
+            if (!StringUtils.hasText(videoUrl)) {
+                throw new VideoProviderException("PROVIDER_RENDER_FAILED", "Runway não retornou URL da cena " + scene);
+            }
+            scenes.add(downloadVideo(job, videoUrl));
         }
 
-        progressCallback.onProgress(85, SalesVideoStatus.VIDEO_PROCESSING, "Baixando MP4 gerado pela Runway");
-        ProviderFile video = downloadVideo(job, videoUrl);
+        ProviderFile video = scenes.size() == 1 ? scenes.getFirst() : assembleScenes(job, scenes);
+        String taskId = String.join(",", taskIds);
         Map<String, Object> metadata = metadata(job, taskId, payload, finalStatus);
+        metadata.put("scene_count", sceneCount);
+        metadata.put("assembled_locally", sceneCount > 1);
         progressCallback.onProgress(95, SalesVideoStatus.VIDEO_PROCESSING, "Runway finalizada com MP4 disponível");
         return new ProviderArtifacts(taskId, video, null, null, metadata);
+    }
+
+    /** Concatena as cenas Runway localmente para entregar a duração integral aprovada por Plutus. */
+    private ProviderFile assembleScenes(SalesVideoJob job, List<ProviderFile> scenes) {
+        List<Path> files = new ArrayList<>();
+        try {
+            Path manifest = Files.createTempFile("runway-scenes-" + job.id(), ".txt");
+            files.add(manifest);
+            StringBuilder entries = new StringBuilder();
+            for (ProviderFile scene : scenes) {
+                Path file = Files.createTempFile("runway-scene-" + job.id(), ".mp4");
+                Files.write(file, scene.content());
+                files.add(file);
+                entries.append("file '").append(file.toAbsolutePath()).append("'\n");
+            }
+            Files.writeString(manifest, entries);
+            Path output = Files.createTempFile("runway-montage-" + job.id(), ".mp4");
+            files.add(output);
+            Process process = new ProcessBuilder(
+                    properties.getProviders().getPostProduction().getFfmpegPath(), "-y", "-f", "concat", "-safe", "0",
+                    "-i", manifest.toString(), "-c", "copy", output.toString()).redirectErrorStream(true).start();
+            if (process.waitFor() != 0) {
+                throw new VideoProviderException("VIDEO_ASSEMBLY_FAILED", "ffmpeg falhou ao montar cenas Runway");
+            }
+            return new ProviderFile("sales-video-" + job.id() + "-runway-montage.mp4", VIDEO_MP4,
+                    AssetType.VIDEO, ProviderAssetRole.VIDEO, Files.readAllBytes(output));
+        } catch (IOException ex) {
+            log.error("Falha ao montar cenas Runway; jobId={}", job.id(), ex);
+            throw new VideoProviderException("VIDEO_ASSEMBLY_FAILED", "Falha ao montar cenas Runway", ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            log.error("Montagem Runway interrompida; jobId={}", job.id(), ex);
+            throw new VideoProviderException("VIDEO_ASSEMBLY_FAILED", "Montagem Runway interrompida", ex);
+        } finally {
+            files.forEach(path -> {
+                try { Files.deleteIfExists(path); } catch (IOException ex) {
+                    log.warn("Não foi possível remover temporário Runway {}; jobId={}", path, job.id(), ex);
+                }
+            });
+        }
     }
 
     /** Cria a tarefa image-to-video ou text-to-video na Runway. */

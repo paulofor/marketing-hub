@@ -6580,3 +6580,9 @@
 - correção sistêmica: o pipeline passa a usar `gpt-5.6-sol` e o contrato de listagem filtra públicos globais ou da hipótese do experimento;
 - prevenção: testes de backend e frontend devem proteger modelo efetivo e segregação por hipótese antes do preflight.
 - a biblioteca do produto passa a permitir seleção auditável: o anúncio reutilizado preserva a origem, entra como rascunho no novo experimento e repete revisão do agente e aprovação humana.
+# 2026-08-13 — Experimento 88: desbloqueio do transporte Dédalo → copy → Têmis
+
+- Gargalo comprovado em produção: `landing-page-copy` permanecia em `INICIADO`; o AI Worker registrava `DataBufferLimitException` ao receber aproximadamente 3,7 MB de pendências com buffer padrão de 256 KB.
+- Causa-raiz: o client não informava `limit`, o backend devolvia até 20 itens e a etapa copy não aplicava o limite de memória comum às demais etapas OpenAI.
+- Correção local: parâmetro `limit` propagado e respeitado, buffer configurável aplicado ao client e teste preventivo com payload acima do limite antigo.
+- Estado comercial preservado: experimento 88 continua `PLANNED`, sem gasto ou publicação, até landing e 3/3 criativos serem aprovados pelos gates.

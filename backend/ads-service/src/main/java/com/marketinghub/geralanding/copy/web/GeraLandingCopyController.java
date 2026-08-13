@@ -52,10 +52,11 @@ public class GeraLandingCopyController {
     return ResponseEntity.ok(response);
   }
 
-  /** Lista os jobs pendentes iniciados da etapa copy para processamento pelo Worker AI. */
+  /** Lista uma quantidade limitada de jobs iniciados da etapa copy para o Worker AI. */
   @GetMapping("/internal/geralanding/copy/stage-executions/pending")
-  public List<RecordCopyPending> pending() {
-    return executionService.listPending(STAGE_CODE);
+  public List<RecordCopyPending> pending(
+      @RequestParam(value = "limit", defaultValue = "5") int limit) {
+    return executionService.listPending(STAGE_CODE, limit);
   }
 
   /** Recebe prompt, schema e request cru enviados para IA. */

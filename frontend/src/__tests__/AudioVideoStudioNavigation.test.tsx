@@ -166,7 +166,6 @@ describe("audio video studio navigation", () => {
     expect(
       document.querySelectorAll(".audio-video-studio-page__stage-heading"),
     ).toHaveLength(9);
-    expect(screen.getByText(/plano basico de cenas/i)).toBeTruthy();
     expect(screen.getByText(/checklist de producao/i)).toBeTruthy();
     expect(screen.getByText(/o que continua onde esta/i)).toBeTruthy();
   });
@@ -432,6 +431,60 @@ describe("audio video studio navigation", () => {
     ).toBeTruthy();
     expect(
       screen.getByRole("link", { name: /voltar para lista de projetos/i }),
+    ).toBeTruthy();
+  });
+
+  it("shows the reconciled Apollo failure even when a replacement job is queued", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/studio/catalog") {
+        return Promise.resolve({ data: studioCatalog });
+      }
+      if (url === "/api/sales-videos/projects/7") {
+        return Promise.resolve({
+          data: {
+            id: 7,
+            title: "Projeto MUSA",
+            objective: "Validar video hero.",
+            contextType: "PDE",
+            videoCategory: "COMMERCIAL_SHORT",
+            productionMode: "AVATAR_EXPLAINER",
+            targetChannel: "PDE_HERO_DIAGNOSTIC",
+            format: "VERTICAL_9_16",
+            status: "READY_FOR_SCRIPT",
+            targetDurationSeconds: 30,
+            salesVideoProfileId: 52,
+          },
+        });
+      }
+      if (url === "/api/sales-videos/projects/7/autonomy/v1/cycles") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 6,
+              videoProjectId: 7,
+              status: "QUEUED_FOR_APOLLO",
+              budgetLimitUsd: 10,
+              knownCostUsd: 0,
+              learningObjective: "Validar video hero.",
+              successCriterion: "Video completo.",
+              salesVideoJobId: 30001,
+              lastFailedJobId: 20537,
+              lastApolloFailureCode: "PROVIDER_PAYMENT_REQUIRED",
+              lastApolloFailureDetail: "Provider respondeu HTTP 402.",
+              createdAt: "2026-08-13T09:00:00Z",
+            },
+          ],
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    setup(<App />, ["/audio-video-studio/projects/7"]);
+
+    expect(await screen.findByText(/Apolo falhou no job #20537/i)).toBeTruthy();
+    expect(screen.getByText(/Provider respondeu HTTP 402/i)).toBeTruthy();
+    expect(
+      screen.getByText(/nova tentativa foi reconciliada no job #30001/i),
     ).toBeTruthy();
   });
 

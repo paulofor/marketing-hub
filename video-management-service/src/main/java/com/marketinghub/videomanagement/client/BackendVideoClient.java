@@ -49,7 +49,24 @@ public class BackendVideoClient {
     }
 
     public List<SalesVideoJob> fetchPendingJobs(int limit) {
+        reconcileApolloQueue();
         return fetchJobsByStatus(SalesVideoStatus.VIDEO_REQUESTED, limit);
+    }
+
+    /** Solicita ao backend a reconciliação idempotente dos ciclos aprovados antes do polling. */
+    private void reconcileApolloQueue() {
+        try {
+            executeWithRetry("reconcile Apollo queue", () -> authorized(webClient.post()
+                            .uri("/api/internal/sales-videos/autonomy/v1/apollo/reconcile"))
+                    .retrieve()
+                    .onStatus(httpStatus -> !httpStatus.is2xxSuccessful(), response ->
+                            mapError("Erro ao reconciliar fila de Apolo", response))
+                    .toBodilessEntity()
+                    .block());
+        } catch (Exception ex) {
+            log.error("Falha ao reconciliar fila de Apolo antes do polling", ex);
+            throw wrap("Falha ao reconciliar fila de Apolo", ex);
+        }
     }
 
     public List<SalesVideoJob> fetchJobsByStatus(SalesVideoStatus status,

@@ -12,6 +12,10 @@ export type VideoProductionCycle = {
   financialDecision?: string;
   financialReason?: string;
   salesVideoJobId?: number;
+  lastFailedJobId?: number;
+  lastApolloFailureCode?: string;
+  lastApolloFailureDetail?: string;
+  lastApolloFailureAt?: string;
   agentTaskId?: number;
   createdAt: string;
 };

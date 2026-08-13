@@ -272,6 +272,29 @@ export default function OpportunityDossiersPage() {
                           {r.errorMessage}
                         </small>
                       )}
+                      {(r.executionStatus === "FAILED" ||
+                        r.executionStatus === "PENDING") &&
+                        !r.completedAt && (
+                          <button
+                            className="btn btn-sm btn-outline-primary mt-2"
+                            disabled={action.isPending}
+                            onClick={() =>
+                              action.mutate({
+                                id: current.id,
+                                path: `reviews/${r.agentKey}/requeue`,
+                                payload: {},
+                              })
+                            }
+                          >
+                            {action.isPending && (
+                              <span className="spinner-border spinner-border-sm me-2" />
+                            )}
+                            Reenfileirar {r.agentKey}
+                          </button>
+                        )}
+                      <small className="d-block text-muted">
+                        Execução #{r.id}
+                      </small>
                     </div>
                   </div>
                 ))}

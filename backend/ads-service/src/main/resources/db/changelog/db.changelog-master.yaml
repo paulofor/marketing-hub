@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-13-video-cycle-apollo-reconciliation.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-12-temis-creative-responsibility.yaml
       relativeToChangelogFile: true
   - include:

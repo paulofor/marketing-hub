@@ -70,6 +70,37 @@ class OpportunityReviewExecutionServiceTest {
     verify(dossiers).submitReview(eq(10L), eq("PLUTUS"), any());
   }
 
+  /** Reenfileira a execução falha de Atena no registro realmente consumido pelo worker. */
+  @Test
+  void requeuesFailedAtenaReviewInCanonicalQueue() {
+    OpportunityAgentReview review = review("ATENA", OpportunityReviewExecutionStatus.FAILED);
+    review.setErrorMessage("Backend temporariamente indisponível");
+    review.setRetryCount(1);
+    review.setStartedAt(Instant.now());
+    when(reviews.findByDossierIdAndAgentKey(10L, "ATENA")).thenReturn(Optional.of(review));
+
+    service.requeue(10L, "atena");
+
+    assertThat(review.getExecutionStatus()).isEqualTo(OpportunityReviewExecutionStatus.PENDING);
+    assertThat(review.getErrorMessage()).isNull();
+    assertThat(review.getStartedAt()).isNull();
+    assertThat(review.getRetryCount()).isZero();
+    verify(reviews).save(review);
+  }
+
+  /** Impede duplicar um parecer que o executor já está processando. */
+  @Test
+  void refusesToRequeueRunningReview() {
+    OpportunityAgentReview review = review("ATENA", OpportunityReviewExecutionStatus.RUNNING);
+    when(reviews.findByDossierIdAndAgentKey(10L, "ATENA")).thenReturn(Optional.of(review));
+
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.requeue(10L, "ATENA"))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("execução");
+
+    verify(reviews, never()).save(any());
+  }
+
   /** Cria um parecer operacional vinculado a um dossiê em avaliação. */
   private OpportunityAgentReview review(String agent, OpportunityReviewExecutionStatus status) {
     OpportunityDossier dossier =

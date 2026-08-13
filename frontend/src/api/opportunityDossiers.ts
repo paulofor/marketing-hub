@@ -41,6 +41,7 @@ export interface OpportunityDossier {
     executionStatus: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
     errorMessage?: string;
     startedAt?: string;
+    requestedAt: string;
     completedAt?: string;
   }[];
 }

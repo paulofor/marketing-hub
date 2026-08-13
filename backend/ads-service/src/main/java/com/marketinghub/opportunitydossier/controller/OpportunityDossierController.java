@@ -66,6 +66,14 @@ public class OpportunityDossierController {
     return service.submitReview(id, agentKey, request);
   }
 
+  /** Reenfileira o parecer persistido para consumo real pelo executor do agente. */
+  @PostMapping("/{id}/reviews/{agentKey}/requeue")
+  public OpportunityDossierResponse requeueReview(
+      @PathVariable Long id, @PathVariable String agentKey) {
+    executions.requeue(id, agentKey);
+    return service.get(id);
+  }
+
   /** Converte uma oportunidade aprovada em plano. */
   @PostMapping("/{id}/convert")
   public OpportunityDossierResponse convert(

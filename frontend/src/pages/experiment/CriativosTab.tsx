@@ -57,6 +57,65 @@ interface PromptSourceField {
   markers: string[];
 }
 
+interface LandingCreativeReference {
+  key: string;
+  label: string;
+  url: string;
+  score: number;
+}
+
+const PRODUCT_PROOF_TERMS = [
+  "post",
+  "story",
+  "legenda",
+  "produto",
+  "exemplo",
+  "mockup",
+  "template",
+  "resultado",
+];
+
+const selectLandingCreativeReferences = (
+  manifest?: string | null,
+): LandingCreativeReference[] => {
+  if (!manifest?.trim()) return [];
+  try {
+    const parsed = JSON.parse(manifest) as {
+      images?: Array<Record<string, unknown>>;
+    };
+    if (!Array.isArray(parsed.images)) return [];
+    return parsed.images
+      .map((image, index) => {
+        const status = String(image.status ?? "").toUpperCase();
+        const url = String(
+          image.resolvedUrl ?? image.webUrl ?? image.sourceUrl ?? "",
+        ).trim();
+        const label = [
+          image.planningItemKey,
+          image.sectionName,
+          image.elementId,
+          image.prompt,
+        ]
+          .filter(Boolean)
+          .join(" ");
+        const normalized = label.toLocaleLowerCase("pt-BR");
+        return {
+          key: String(image.planningItemKey ?? `landing-reference-${index}`),
+          label: label || `Exemplo visual ${index + 1}`,
+          url,
+          score: PRODUCT_PROOF_TERMS.filter((term) => normalized.includes(term))
+            .length,
+          completed: ["COMPLETED", "CONCLUIDO", "READY"].includes(status),
+        };
+      })
+      .filter((image) => image.completed && image.url)
+      .sort((left, right) => right.score - left.score)
+      .slice(0, 3);
+  } catch {
+    return [];
+  }
+};
+
 const PIPELINE_PROMPT_SOURCE_FIELDS: PromptSourceField[] = [
   {
     label: "Regras de mensagem",
@@ -304,6 +363,11 @@ export default function CriativosTab({
     : 0;
   const pipelinePairs = Math.min(pipelineVariantCount, pipelineBriefingCount);
   const pipelineAvailable = pipelinePairs > 0;
+  const landingCreativeReferences = useMemo(
+    () => selectLandingCreativeReferences(experiment?.landingPageImageAssets),
+    [experiment?.landingPageImageAssets],
+  );
+  const hasLandingCreativeReferences = landingCreativeReferences.length > 0;
   const pendingCreativeRequests = experiment?.creativesToGenerate ?? 0;
   const creativeGenerationStatus =
     experiment?.creativeGenerationStatus ?? "IDLE";
@@ -329,7 +393,8 @@ export default function CriativosTab({
     pipelineRequest.isPending ||
     pipelineInProgress ||
     pendingCreativeRequests > 0 ||
-    !pipelineAvailable;
+    !pipelineAvailable ||
+    !hasLandingCreativeReferences;
   const updateExperimentMutation = useUpdateExperiment(experimentId);
   const [editing, setEditing] = useState<Creative | null>(null);
   const [versioning, setVersioning] = useState<Creative | null>(null);
@@ -1231,8 +1296,33 @@ export default function CriativosTab({
               Encontramos {pipelinePairs}{" "}
               {pipelinePairs === 1 ? "variação" : "variações"} com texto e
               briefing estruturados. O Worker AI usará o modelo gpt-image-2 para
-              gerar as imagens alinhadas ao experimento.
+              gerar as imagens alinhadas ao experimento usando obrigatoriamente
+              os exemplos reais selecionados por Têmis abaixo.
             </p>
+            {hasLandingCreativeReferences ? (
+              <div
+                className="d-flex flex-wrap gap-2 mt-2"
+                aria-label="Referências reais selecionadas por Têmis"
+              >
+                {landingCreativeReferences.map((reference) => (
+                  <a
+                    key={reference.key}
+                    href={resolveAssetUrl(reference.url)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="badge text-bg-light text-decoration-none"
+                  >
+                    {reference.label}
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <div className="alert alert-warning py-2 mt-2 mb-0" role="alert">
+                Têmis não encontrou exemplos reais concluídos por Dédalo. A
+                geração está bloqueada para não consumir uma tentativa sem prova
+                visual do produto.
+              </div>
+            )}
           </div>
           <div className="d-flex flex-column align-items-lg-end gap-2 w-100 w-lg-auto">
             <button

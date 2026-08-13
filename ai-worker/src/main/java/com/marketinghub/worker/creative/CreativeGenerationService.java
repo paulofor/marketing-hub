@@ -33,6 +33,7 @@ public class CreativeGenerationService {
     private final CreativeChatGptClient textClient;
     private final CreativeImageClient imageClient;
     private final ExperimentPipelineAdExtractor pipelineExtractor;
+    private final LandingCreativeReferenceSelector referenceSelector;
 
     /** Inicializa o serviço com clientes de backend, texto, imagem e extração dos anúncios do pipeline. */
     public CreativeGenerationService(
@@ -45,6 +46,7 @@ public class CreativeGenerationService {
         this.textClient = textClient;
         this.imageClient = imageClient;
         this.pipelineExtractor = new ExperimentPipelineAdExtractor(objectMapper);
+        this.referenceSelector = new LandingCreativeReferenceSelector(objectMapper);
     }
 
     /** Processa até o limite informado de experimentos com geração de criativos pendente. */
@@ -91,6 +93,12 @@ public class CreativeGenerationService {
     /** Gera criativos a partir dos pares de texto e briefing já produzidos pelo pipeline do experimento. */
     private List<CreateCreativeRequest> generatePipelineCreatives(ExperimentDto dto, int quantity) {
         Experiment experiment = toExperiment(dto);
+        List<LandingCreativeReferenceSelector.ReferenceImage> references =
+                referenceSelector.select(dto.getLandingPageImageAssets());
+        if (references.isEmpty()) {
+            throw new IllegalStateException(
+                    "Têmis não encontrou exemplos reais concluídos na landing; geração bloqueada antes de consumir tentativa");
+        }
         List<PipelineAdCreativePlan> plans = pipelineExtractor.extract(experiment).stream()
                 .limit(Math.max(1, quantity))
                 .toList();
@@ -107,14 +115,24 @@ public class CreativeGenerationService {
             request.setFormat(StringUtils.hasText(plan.format()) ? plan.format() : "IMAGE");
             normalizeCreativeContract(request);
             String prompt = buildPipelineImagePrompt(plan, request);
-            String imageUrl = imageClient.generateImage(prompt, null,
-                    "pipeline-creative-experiment-" + dto.getId() + "-" + plan.variantKey());
+            String imageUrl = imageClient.generateImage(
+                    prompt,
+                    referenceAudit(references),
+                    "pipeline-creative-experiment-" + dto.getId() + "-" + plan.variantKey(),
+                    references.stream().map(LandingCreativeReferenceSelector.ReferenceImage::url).toList());
             requireGeneratedImageUrl(dto.getId(), request.getHeadline(), imageUrl);
             request.setImageUrl(imageUrl);
             request.setStatus(CreativeStatus.DRAFT);
             result.add(request);
         }
         return result;
+    }
+
+    /** Monta a trilha auditável das referências escolhidas por Têmis para o asset gerado. */
+    private String referenceAudit(List<LandingCreativeReferenceSelector.ReferenceImage> references) {
+        return "Referências reais selecionadas por Têmis: " + references.stream()
+                .map(reference -> reference.url() + " [" + limitText(reference.label(), 120) + "]")
+                .toList();
     }
 
     /** Gera criativos no modo padrão usando texto gerado por IA e imagem por prompt do experimento. */

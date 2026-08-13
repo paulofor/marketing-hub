@@ -197,6 +197,42 @@ class CreativeImageClientTest {
                 isNull());
     }
 
+    /** Envia exemplos reais como imagens de entrada e força edição de alta fidelidade no GPT Image 2. */
+    @Test
+    void sendsRealProductReferencesAsMultimodalInput() {
+        String imagePayload;
+        try {
+            imagePayload = Base64.getEncoder().encodeToString(createSolidPng(64, 64));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        AtomicReference<Map<String, Object>> requestPayload = new AtomicReference<>();
+        ExchangeFunction exchange = stubOpenAiApi(
+                requestPayload,
+                "{\"output\":[{\"type\":\"image_generation_call\",\"result\":\"" + imagePayload + "\"}]}",
+                HttpStatus.OK,
+                "/responses");
+        CreativeImageClient referenceClient = new CreativeImageClient(
+                WebClient.builder().exchangeFunction(exchange), backendAssetClient, optimizer, "key", "http://openai",
+                "gpt-image-2", "gpt-5.5", "flex", 900);
+        when(backendAssetClient.uploadImage(any(), any(), any(), any(), any())).thenReturn("/uploads/reference.jpg");
+
+        String result = referenceClient.generateImage(
+                "Compor anúncio a partir das provas", "Referências selecionadas", "experiment-88",
+                List.of("https://cdn/post.png", "https://cdn/story.png"));
+
+        assertThat(result).isEqualTo("/uploads/reference.jpg");
+        List<Map<String, Object>> tools = (List<Map<String, Object>>) requestPayload.get().get("tools");
+        assertThat(tools.getFirst()).containsEntry("action", "edit");
+        List<Map<String, Object>> input = (List<Map<String, Object>>) requestPayload.get().get("input");
+        List<Map<String, Object>> content = (List<Map<String, Object>>) input.getFirst().get("content");
+        assertThat(content).contains(
+                Map.of("type", "input_image", "image_url", "https://cdn/post.png"),
+                Map.of("type", "input_image", "image_url", "https://cdn/story.png"));
+        verify(backendAssetClient).uploadImage(any(), any(), any(), any(),
+                argThat(value -> value.contains("Referências selecionadas")));
+    }
+
     /**
      * Deve tentar Flex duas vezes e cair para Standard/default na terceira tentativa quando a OpenAI retorna 429.
      */

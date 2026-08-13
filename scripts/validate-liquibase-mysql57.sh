@@ -89,6 +89,38 @@ if positions != sorted(positions):
     sys.exit(1)
 PY
 
+log "Validando dependências do consumo por tarefa do Estúdio"
+python3 - "${MASTER_CHANGELOG}" <<'PY'
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+required_order = [
+    "changesets/2026-08-13-provider-task-consumption.yaml",
+    "changesets/2026-08-13-provider-task-settlement.yaml",
+    "changesets/2026-08-13-provider-task-settlement-basis.yaml",
+]
+
+positions = []
+for changeset in required_order:
+    count = text.count(f"file: {changeset}")
+    if count != 1:
+        print(
+            f"{path}: esperado exatamente um include de {changeset}, encontrado(s): {count}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    positions.append(text.index(f"file: {changeset}"))
+
+if positions != sorted(positions):
+    print(
+        f"{path}: ordem inválida do consumo por tarefa; crie a tabela antes das colunas de liquidação",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+PY
+
 log "Validando dependências do Agente Radar"
 python3 - "${MASTER_CHANGELOG}" <<'PY'
 import sys

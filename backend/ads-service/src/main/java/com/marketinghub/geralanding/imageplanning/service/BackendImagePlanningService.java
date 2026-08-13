@@ -122,10 +122,12 @@ public class BackendImagePlanningService {
    * Lista os jobs iniciados da etapa image planning para processamento independente de experimento.
    */
   @Transactional(readOnly = true)
-  public List<RecordImagePlanningPending> listPending(String stageCode) {
+  public List<RecordImagePlanningPending> listPending(String stageCode, int requestedLimit) {
+    int limit = Math.max(1, Math.min(3, requestedLimit));
     return executionRepository
         .findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(stageCode, STATUS_STARTED)
         .stream()
+        .limit(limit)
         .map(
             execution ->
                 new RecordImagePlanningPending(

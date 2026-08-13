@@ -78,6 +78,37 @@ class ImagePlanningBackendClientTest {
                 .contains("pagina");
         assertThat(execution.input().promptData().get("NICHE_NAME"))
                 .isEqualTo("Produtores digitais");
+        assertThat(server.takeRequest().getPath()).isEqualTo(
+                "/api/internal/geralanding/image-prompts/stage-executions/pending?limit=5");
+    }
+
+    /** Deve consumir contexto comercial grande sem recair no limite padrão de 256 KB. */
+    @Test
+    void listPendingShouldAcceptPayloadLargerThanLegacyBuffer() throws Exception {
+        String richCommercialContext = "contexto-comercial-".repeat(25_000);
+        Map<String, Object> pendingExecution = Map.of(
+                "experimentId", 88,
+                "stageCode", "landing-page-image-planning",
+                "jobid", "job-image-large",
+                "executionRequestedAt", "2026-08-13T17:53:46Z",
+                "experiment", Map.of(
+                        "nicheName", "Nail designers",
+                        "singlePain", richCommercialContext,
+                        "freeReward", "Kit visual",
+                        "funnelPromise", "Perfil coerente",
+                        "primaryCta", "Comprar",
+                        "campaignObjective", "SALES"),
+                "hypothesis", Map.of("framework", Map.of()));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody(objectMapper.writeValueAsString(List.of(pendingExecution))));
+
+        List<StageExecution<ImagePlanningInput>> result = newClient().listPending(1);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().input().promptData().get("singlePain"))
+                .isEqualTo(richCommercialContext);
     }
 
     /** Deve aceitar a variação idJob do contrato pendente sem quebrar a montagem da execução. */
@@ -209,6 +240,7 @@ class ImagePlanningBackendClientTest {
                         "experiment_pipeline_landing_page_image_planning",
                         "gpt-5.4",
                         Duration.ofSeconds(5)),
-                objectMapper);
+                objectMapper,
+                1024 * 1024);
     }
 }

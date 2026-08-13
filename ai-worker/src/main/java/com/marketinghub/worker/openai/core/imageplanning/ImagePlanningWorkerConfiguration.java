@@ -11,6 +11,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /** Responsabilidade: declarar os beans Spring necessários para executar a etapa imageplanning no core OpenAI. */
@@ -32,9 +33,11 @@ public class ImagePlanningWorkerConfiguration {
     public ImagePlanningBackendClient imageplanningBackendClient(
             WebClient.Builder webClientBuilder,
             ImagePlanningWorkerProperties properties,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            @Value("${openai.max-in-memory-size-bytes:52428800}") int maxInMemorySizeBytes
     ) {
-        return new ImagePlanningBackendClient(webClientBuilder, properties, objectMapper);
+        return new ImagePlanningBackendClient(
+                webClientBuilder, properties, objectMapper, maxInMemorySizeBytes);
     }
 
     /** Cria o builder responsável por montar prompt, schema e request OpenAI da etapa imageplanning. */

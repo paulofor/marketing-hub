@@ -64,6 +64,9 @@ public class StudioProviderTaskConsumption {
   @Column(name = "settlement_status", length = 32)
   private String settlementStatus;
 
+  @Column(name = "settlement_basis", length = 32)
+  private String settlementBasis;
+
   @Column(name = "billing_evidence", length = 96)
   private String billingEvidence;
 

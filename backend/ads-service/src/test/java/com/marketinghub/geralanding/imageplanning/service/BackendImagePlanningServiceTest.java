@@ -99,9 +99,10 @@ class BackendImagePlanningServiceTest {
             .build();
     when(executionRepository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
             "landing-page-image-planning", "INICIADO"))
-        .thenReturn(List.of(execution));
+        .thenReturn(List.of(execution, execution));
 
-    List<RecordImagePlanningPending> pending = service.listPending("landing-page-image-planning");
+    List<RecordImagePlanningPending> pending =
+        service.listPending("landing-page-image-planning", 1);
 
     assertEquals(1, pending.size());
     assertEquals("job-77", pending.get(0).jobid());

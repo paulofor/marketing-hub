@@ -90,6 +90,7 @@ public class StudioCostLedgerService {
       int billedCredits,
       BigDecimal billedCostUsd,
       String settlementStatus,
+      String settlementBasis,
       String billingEvidence,
       Instant settledAt,
       String jobStatus) {
@@ -103,6 +104,7 @@ public class StudioCostLedgerService {
     task.setBilledCredits(billedCredits);
     task.setBilledCostUsd(billedCostUsd);
     task.setSettlementStatus(settlementStatus);
+    task.setSettlementBasis(settlementBasis);
     task.setBillingEvidence(billingEvidence);
     task.setSettledAt(settledAt);
     taskConsumptionRepository.save(task);

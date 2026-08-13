@@ -32,9 +32,13 @@ public class ImagePlanningBackendClient implements StageBackendPort<ImagePlannin
     public ImagePlanningBackendClient(
             WebClient.Builder builder,
             ImagePlanningWorkerProperties properties,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            int maxInMemorySizeBytes
     ) {
-        this.webClient = builder.build();
+        this.webClient = builder
+                .codecs(configurer -> configurer.defaultCodecs()
+                        .maxInMemorySize(Math.max(1, maxInMemorySizeBytes)))
+                .build();
         this.properties = properties;
         this.objectMapper = objectMapper;
     }
@@ -50,7 +54,7 @@ public class ImagePlanningBackendClient implements StageBackendPort<ImagePlannin
         );
 
         List<Map<String, Object>> payload = webClient.get()
-                .uri(uri)
+                .uri(uri + "?limit=" + effectiveLimit)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
                 .block(properties.timeout());

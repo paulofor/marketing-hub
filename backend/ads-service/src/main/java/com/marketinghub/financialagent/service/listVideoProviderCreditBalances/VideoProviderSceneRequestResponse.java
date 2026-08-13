@@ -17,5 +17,6 @@ public record VideoProviderSceneRequestResponse(
     Integer billedCredits,
     BigDecimal billedCostUsd,
     String settlementStatus,
+    String settlementBasis,
     String billingEvidence,
     Instant acceptedAt) {}

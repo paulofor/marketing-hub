@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-13-provider-task-settlement-basis
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE studio_provider_task_consumption
+                ADD COLUMN settlement_basis VARCHAR(32) NULL AFTER settlement_status;

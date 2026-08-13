@@ -44,6 +44,7 @@ import {
   useCreateVideoProductionCycle,
   useVideoProductionCycles,
 } from "../../api/salesVideo/useVideoProductionCycles";
+import { useVideoStoryboard } from "../../api/salesVideo/useVideoStoryboard";
 import { useAsset } from "../../api/media/useAsset";
 import { useTenantContext } from "../../utils/tenantContext";
 import type {
@@ -957,6 +958,7 @@ export default function AudioVideoStudioPage() {
   const createVideoProject = useCreateVideoProject();
   const updateVideoProject = useUpdateVideoProject();
   const productionCycles = useVideoProductionCycles(editableProjectId);
+  const storyboardQuery = useVideoStoryboard(editableProjectId);
   const createProductionCycle =
     useCreateVideoProductionCycle(editableProjectId);
   const [cycleBudgetUsd, setCycleBudgetUsd] = useState("");
@@ -2335,6 +2337,112 @@ export default function AudioVideoStudioPage() {
                       );
                     })}
                   </div>
+                  <section
+                    className="audio-video-studio-page__storyboard"
+                    aria-label="Storyboard de consumo e aproveitamento"
+                  >
+                    <div className="audio-video-studio-page__section-heading">
+                      <h3>Storyboard: custo e aproveitamento</h3>
+                      <p>
+                        Verdade consolidada do plano, provider, arquivo e
+                        montagem. Aproveitamento mede uso editorial real, não
+                        qualidade presumida.
+                      </p>
+                    </div>
+                    {storyboardQuery.isLoading ? (
+                      <p>Carregando storyboard…</p>
+                    ) : null}
+                    {storyboardQuery.isError ? (
+                      <p role="alert">
+                        Não foi possível carregar o storyboard.
+                      </p>
+                    ) : null}
+                    {storyboardQuery.data &&
+                    Array.isArray(storyboardQuery.data.scenes) ? (
+                      <>
+                        <div className="audio-video-studio-page__storyboard-summary">
+                          <strong>
+                            {storyboardQuery.data.plannedSceneCount} cenas
+                            planejadas
+                          </strong>
+                          <span>
+                            {storyboardQuery.data.expectedCredits} créditos
+                            previstos
+                          </span>
+                          <span>
+                            {storyboardQuery.data.consumedCredits} créditos
+                            consumidos
+                          </span>
+                          <span>
+                            {storyboardQuery.data.utilizationPercent ?? "—"}%
+                            aproveitado
+                          </span>
+                        </div>
+                        <div className="audio-video-studio-page__storyboard-grid">
+                          {storyboardQuery.data.scenes.map((scene, index) => (
+                            <article
+                              key={`${scene.sceneNumber}-${scene.jobId ?? "plan"}-${index}`}
+                            >
+                              <header>
+                                <strong>Cena {scene.sceneNumber}</strong>
+                                <span>{scene.commercialRole}</span>
+                              </header>
+                              <p>
+                                {scene.plan ||
+                                  "Plano não preservado na versão histórica."}
+                              </p>
+                              <dl>
+                                <div>
+                                  <dt>Duração</dt>
+                                  <dd>
+                                    {scene.requestedDurationSeconds
+                                      ? `${scene.requestedDurationSeconds}s`
+                                      : "Não solicitada"}
+                                  </dd>
+                                </div>
+                                <div>
+                                  <dt>Créditos previstos</dt>
+                                  <dd>
+                                    {scene.expectedCredits ?? "A calcular"}
+                                  </dd>
+                                </div>
+                                <div>
+                                  <dt>Créditos consumidos</dt>
+                                  <dd>{scene.consumedCredits ?? "Pendente"}</dd>
+                                </div>
+                                <div>
+                                  <dt>Aproveitamento</dt>
+                                  <dd>
+                                    {scene.utilizationPercent == null
+                                      ? "Sem arquivo"
+                                      : `${scene.utilizationPercent}%`}
+                                  </dd>
+                                </div>
+                              </dl>
+                              <small>
+                                {scene.jobId
+                                  ? `Job #${scene.jobId} · ${scene.jobStatus}`
+                                  : "Ainda não enviada ao provider"}
+                              </small>
+                              {scene.producedFileUrl ? (
+                                <a
+                                  href={scene.producedFileUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  Abrir arquivo produzido
+                                </a>
+                              ) : (
+                                <span className="audio-video-studio-page__storyboard-no-file">
+                                  Nenhum arquivo produzido
+                                </span>
+                              )}
+                            </article>
+                          ))}
+                        </div>
+                      </>
+                    ) : null}
+                  </section>
                 </div>
               ) : null}
             </div>

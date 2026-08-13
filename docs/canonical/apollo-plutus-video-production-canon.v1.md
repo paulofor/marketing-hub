@@ -32,6 +32,8 @@ Enquanto o produto ainda estiver produzindo materiais para descobrir qual combin
 
 Apolo possui acesso operacional completo ao Estúdio de Áudio e Vídeo depois da aprovação financeira: roteiro, storyboard, imagens mestre aprovadas, geração de cenas, seleção de provider por cena, continuidade, narração, trilha, montagem, legendas, HLS, inspeção técnica e iteração causal. Esse acesso não remove os gates de Plutus, o ledger nem o QA independente.
 
+O financeiro deve separar custo estimado, custo contratual calculado pela tabela vigente e débito confirmado pelo provedor. Status de sucesso ou falha da task, sem valor financeiro retornado pelo provider, não comprova débito real nem saldo oficial. Tentativas sem evidência permanecem desconhecidas e bloqueiam nova geração automática quando puderem comprometer o teto aprovado.
+
 A primeira missão v2 é concluir os dois projetos persistidos do grupo `musa-two-video-funnel-v1`: vídeo de qualificação da campanha e vídeo hero de conversão do PDE. Cada vídeo mantém objetivo, métrica e CTA próprios; a conclusão exige montagem narrativa, áudio pt-BR, legendas mobile, HLS, inspeção técnica e entrega ao QA.
 
 Por decisão comercial de 2026-08-13, Apolo não pode selecionar Luma para o MUSA, inclusive quando um projeto legado ainda a mencionar. O padrão é `RUNWAY_SEEDANCE_2_5`, com Runway Gen-4 como alternativa explícita quando Seedance não atender ao contrato técnico ou ao QA. Vídeos acima da duração direta do modelo devem ser produzidos por cenas auditáveis e montagem; nunca por truncamento silencioso. A troca de provider preserva o teto já aprovado, mas não autoriza compra de créditos, publicação ou mídia.

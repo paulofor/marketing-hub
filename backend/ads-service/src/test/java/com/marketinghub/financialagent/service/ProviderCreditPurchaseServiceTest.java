@@ -164,6 +164,12 @@ class ProviderCreditPurchaseServiceTest {
     explicit.setDetailsJson(
         "{\"eventType\":\"PROVIDER_TASK_ACCEPTED\",\"model\":\"seedance2_5\",\"durationSeconds\":10,\"estimatedCredits\":300,\"estimatedCostUsd\":3.00}");
     explicit.setCreatedAt(Instant.parse("2026-08-13T18:10:36Z"));
+    SalesVideoJobEvent settled = new SalesVideoJobEvent();
+    settled.setJob(job);
+    settled.setMessage("Runway liquidou cena 1/3; taskId=task-abc");
+    settled.setDetailsJson(
+        "{\"eventType\":\"PROVIDER_TASK_SETTLED\",\"model\":\"seedance2_5\",\"durationSeconds\":10,\"billedCredits\":300,\"billedCostUsd\":3.00,\"settlementStatus\":\"CHARGED\",\"billingEvidence\":\"PROVIDER_RATE_CARD_AND_TASK_SUCCESS\"}");
+    settled.setCreatedAt(Instant.parse("2026-08-13T18:11:00Z"));
     when(purchases.findDistinctProviders()).thenReturn(List.of());
     when(purchases.findByProviderFamily("RUNWAY")).thenReturn(List.of());
     when(ledger.findByProviderFamily("RUNWAY")).thenReturn(List.of());
@@ -172,6 +178,7 @@ class ProviderCreditPurchaseServiceTest {
         .thenReturn(List.of());
     when(events.findAcceptedSceneEvents("RUNWAY")).thenReturn(List.of(legacy));
     when(events.findExplicitAcceptedSceneEvents("RUNWAY")).thenReturn(List.of(explicit));
+    when(events.findSettledSceneEvents("RUNWAY")).thenReturn(List.of(settled));
 
     var balance =
         new ProviderCreditPurchaseService(purchases, ledger, jobs, events)
@@ -183,5 +190,9 @@ class ProviderCreditPurchaseServiceTest {
     assertThat(balance.sceneRequests().getFirst().providerTaskId()).isEqualTo("task-abc");
     assertThat(balance.sceneRequests().getFirst().estimatedCredits()).isEqualTo(300);
     assertThat(balance.sceneRequests().getFirst().estimatedCostUsd()).isEqualByComparingTo("3.00");
+    assertThat(balance.sceneRequests().getFirst().billedCredits()).isEqualTo(300);
+    assertThat(balance.sceneRequests().getFirst().settlementStatus()).isEqualTo("CHARGED");
+    assertThat(balance.sceneRequests().getFirst().acceptedAt())
+        .isEqualTo(Instant.parse("2026-08-13T18:10:36Z"));
   }
 }

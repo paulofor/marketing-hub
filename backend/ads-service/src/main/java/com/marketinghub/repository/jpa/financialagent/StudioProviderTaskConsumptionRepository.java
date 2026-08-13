@@ -21,4 +21,12 @@ public interface StudioProviderTaskConsumptionRepository
   @Query(
       "select coalesce(sum(t.estimatedCostUsd), 0) from StudioProviderTaskConsumption t where t.salesVideoJobId = :jobId")
   BigDecimal sumEstimatedCostUsdBySalesVideoJobId(Long jobId);
+
+  /** Soma somente custos liquidados, sem tratar tasks pendentes como custo zero. */
+  @Query(
+      "select coalesce(sum(t.billedCostUsd), 0) from StudioProviderTaskConsumption t where t.salesVideoJobId = :jobId")
+  BigDecimal sumBilledCostUsdBySalesVideoJobId(Long jobId);
+
+  /** Conta tasks ainda sem desfecho financeiro conhecido. */
+  long countBySalesVideoJobIdAndSettlementStatusIsNull(Long jobId);
 }

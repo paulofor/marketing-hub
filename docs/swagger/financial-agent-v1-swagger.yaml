@@ -35,6 +35,10 @@ paths:
                           durationSeconds: {type: integer, nullable: true}
                           estimatedCredits: {type: integer, nullable: true}
                           estimatedCostUsd: {type: number, nullable: true}
+                          billedCredits: {type: integer, nullable: true}
+                          billedCostUsd: {type: number, nullable: true}
+                          settlementStatus: {type: string, enum: [CHARGED, REFUNDED], nullable: true}
+                          billingEvidence: {type: string, nullable: true}
                           acceptedAt: {type: string, format: date-time}
   /api/financial-agent/v1/providers/{provider}/credit-purchases:
     parameters:

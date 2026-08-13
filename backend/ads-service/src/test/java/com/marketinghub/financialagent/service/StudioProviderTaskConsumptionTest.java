@@ -76,4 +76,37 @@ class StudioProviderTaskConsumptionTest {
     assertThat(jobEntry.getEstimatedCostUsd()).isEqualByComparingTo("3.00");
     assertThat(jobEntry.getCostEvidence()).isEqualTo("PROVIDER_TASK_RATE_CARD_ESTIMATE");
   }
+
+  /** Substitui a estimativa pelo débito liquidado quando a task conclui. */
+  @Test
+  void deveLiquidarCustoDaTaskPeloDesfechoDoProvider() {
+    StudioCostLedgerEntryRepository ledger = mock(StudioCostLedgerEntryRepository.class);
+    StudioProviderTaskConsumptionRepository tasks =
+        mock(StudioProviderTaskConsumptionRepository.class);
+    StudioProviderTaskConsumption task = new StudioProviderTaskConsumption();
+    StudioCostLedgerEntry jobEntry = new StudioCostLedgerEntry();
+    when(tasks.findByProviderAndProviderTaskId("RUNWAY", "task-1")).thenReturn(Optional.of(task));
+    when(tasks.sumBilledCostUsdBySalesVideoJobId(21105L)).thenReturn(new BigDecimal("3.00"));
+    when(tasks.countBySalesVideoJobIdAndSettlementStatusIsNull(21105L)).thenReturn(0L);
+    when(ledger.findBySourceTypeAndSourceId("SALES_VIDEO_JOB", "21105"))
+        .thenReturn(Optional.of(jobEntry));
+
+    new StudioCostLedgerService(ledger, tasks)
+        .settleProviderTask(
+            21105L,
+            "RUNWAY",
+            "task-1",
+            300,
+            new BigDecimal("3.00"),
+            "CHARGED",
+            "PROVIDER_RATE_CARD_AND_TASK_SUCCESS",
+            Instant.parse("2026-08-13T18:11:00Z"),
+            "VIDEO_PROCESSING");
+
+    assertThat(task.getBilledCredits()).isEqualTo(300);
+    assertThat(task.getSettlementStatus()).isEqualTo("CHARGED");
+    assertThat(jobEntry.getProviderCostUsd()).isEqualByComparingTo("3.00");
+    assertThat(jobEntry.getEstimatedCostUsd()).isNull();
+    assertThat(jobEntry.getCostEvidence()).isEqualTo("PROVIDER_TASKS_SETTLED_BY_CONTRACT");
+  }
 }

@@ -20,7 +20,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.math.BigDecimal;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -111,6 +110,34 @@ class RunwayVideoProviderTest {
         assertThat(server.getRequestCount()).isEqualTo(1);
     }
 
+    /** Deve liquidar como reembolso uma task que falha fora das hipóteses cobradas. */
+    @Test
+    void shouldSettleRefundedTaskAfterProviderFailure() {
+        server.enqueue(json("{\"id\":\"failed-task\"}"));
+        server.enqueue(json("""
+                {"id":"failed-task","status":"FAILED","failureCode":"INTERNAL","failure":"provider failed"}
+                """));
+        RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+        java.util.List<String> financialEvents = new java.util.ArrayList<>();
+
+        assertThatThrownBy(() -> provider.render(job(), profile(), new ProgressCallback() {
+            /** Ignora progresso sem contrato financeiro neste teste. */
+            @Override
+            public void onProgress(Integer percent, SalesVideoStatus status, String message) { }
+
+            /** Captura os eventos financeiros emitidos pelo adapter. */
+            @Override
+            public void onProgress(Integer percent, SalesVideoStatus status, String message, String detailsJson) {
+                if (detailsJson != null) financialEvents.add(detailsJson);
+            }
+        })).isInstanceOf(VideoProviderException.class);
+
+        assertThat(financialEvents).anySatisfy(financialEvent -> assertThat(financialEvent)
+                .contains("\"eventType\":\"PROVIDER_TASK_SETTLED\"")
+                .contains("\"settlementStatus\":\"REFUNDED\"")
+                .contains("\"billedCredits\":0"));
+    }
+
     /** Deve usar text-to-video e respeitar o limite oficial quando a cena não possui imagem-base. */
     @Test
     void shouldRenderTextToVideoWithPromptLimitedToOneThousandUtf16Units() throws Exception {
@@ -168,7 +195,7 @@ class RunwayVideoProviderTest {
         server.enqueue(mp4Response());
         RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
 
-        AtomicReference<String> financialEvent = new AtomicReference<>();
+        java.util.List<String> financialEvents = new java.util.ArrayList<>();
         provider.render(job("RUNWAY_SEEDANCE_2_5"), profile(), new ProgressCallback() {
             /** Ignora progresso não financeiro neste teste. */
             @Override
@@ -177,7 +204,7 @@ class RunwayVideoProviderTest {
             /** Captura a evidência da task cobrável aceita pelo provedor. */
             @Override
             public void onProgress(Integer percent, SalesVideoStatus status, String message, String detailsJson) {
-                if (detailsJson != null) financialEvent.set(detailsJson);
+                if (detailsJson != null) financialEvents.add(detailsJson);
             }
         });
 
@@ -186,10 +213,14 @@ class RunwayVideoProviderTest {
         assertThat(request.getBody().readUtf8())
                 .contains("\"model\":\"seedance2_5\"")
                 .doesNotContain("\"model\":\"seedance2\"");
-        assertThat(financialEvent.get())
+        assertThat(financialEvents).anySatisfy(financialEvent -> assertThat(financialEvent)
                 .contains("\"eventType\":\"PROVIDER_TASK_ACCEPTED\"")
                 .contains("\"providerTaskId\":\"seedance-25-task\"")
-                .contains("\"estimatedCredits\":300");
+                .contains("\"estimatedCredits\":300"));
+        assertThat(financialEvents).anySatisfy(financialEvent -> assertThat(financialEvent)
+                .contains("\"eventType\":\"PROVIDER_TASK_SETTLED\"")
+                .contains("\"settlementStatus\":\"CHARGED\"")
+                .contains("\"billedCredits\":300"));
     }
 
     /** Deve rotear os modelos comerciais curados pelo mesmo token da Runway. */

@@ -55,6 +55,21 @@ public class StudioProviderTaskConsumption {
   @Column(name = "estimated_cost_usd", nullable = false, precision = 14, scale = 6)
   private BigDecimal estimatedCostUsd;
 
+  @Column(name = "billed_credits")
+  private Integer billedCredits;
+
+  @Column(name = "billed_cost_usd", precision = 14, scale = 6)
+  private BigDecimal billedCostUsd;
+
+  @Column(name = "settlement_status", length = 32)
+  private String settlementStatus;
+
+  @Column(name = "billing_evidence", length = 96)
+  private String billingEvidence;
+
+  @Column(name = "settled_at")
+  private Instant settledAt;
+
   @Column(name = "accepted_at", nullable = false)
   private Instant acceptedAt;
 

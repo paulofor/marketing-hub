@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-13-provider-task-settlement
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE studio_provider_task_consumption
+                ADD COLUMN billed_credits INT NULL AFTER estimated_cost_usd,
+                ADD COLUMN billed_cost_usd DECIMAL(14,6) NULL AFTER billed_credits,
+                ADD COLUMN settlement_status VARCHAR(32) NULL AFTER billed_cost_usd,
+                ADD COLUMN billing_evidence VARCHAR(96) NULL AFTER settlement_status,
+                ADD COLUMN settled_at DATETIME NULL AFTER billing_evidence;

@@ -24,5 +24,13 @@ public interface SalesVideoJobEventRepository extends JpaRepository<SalesVideoJo
           + "and lower(e.message) like '%aceitou cena %' order by e.createdAt asc")
   List<SalesVideoJobEvent> findExplicitAcceptedSceneEvents(@Param("provider") String provider);
 
+  /** Lista liquidações financeiras emitidas por task/cena do provider. */
+  @Query(
+      "select e from SalesVideoJobEvent e join fetch e.job j "
+          + "where upper(j.providerName) like concat(upper(:provider), '%') "
+          + "and e.eventType = com.marketinghub.salesvideo.SalesVideoJobEventType.PROGRESS "
+          + "and lower(e.message) like '%liquidou cena %' order by e.createdAt asc")
+  List<SalesVideoJobEvent> findSettledSceneEvents(@Param("provider") String provider);
+
   List<SalesVideoJobEvent> findByJobIdOrderByCreatedAtAsc(Long jobId);
 }

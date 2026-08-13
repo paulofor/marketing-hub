@@ -33,7 +33,8 @@ public class ProviderCreditPurchaseService {
   private static final int RUNWAY_REFERENCE_CLIP_SECONDS = 10;
   private static final int RUNWAY_REFERENCE_CLIP_CREDITS = 50;
   private static final Pattern SCENE_PATTERN =
-      Pattern.compile("(?:processando|aceitou) cena (\\d+)/(\\d+)", Pattern.CASE_INSENSITIVE);
+      Pattern.compile(
+          "(?:processando|aceitou|liquidou) cena (\\d+)/(\\d+)", Pattern.CASE_INSENSITIVE);
   private static final Pattern TASK_PATTERN =
       Pattern.compile("taskId=([^;\\s]+)", Pattern.CASE_INSENSITIVE);
   private final StudioProviderCreditPurchaseRepository repository;
@@ -157,6 +158,7 @@ public class ProviderCreditPurchaseService {
     List<SalesVideoJobEvent> events = new java.util.ArrayList<>();
     events.addAll(videoJobEventRepository.findAcceptedSceneEvents(provider));
     events.addAll(videoJobEventRepository.findExplicitAcceptedSceneEvents(provider));
+    events.addAll(videoJobEventRepository.findSettledSceneEvents(provider));
     java.util.LinkedHashMap<String, VideoProviderSceneRequestResponse> unique =
         new java.util.LinkedHashMap<>();
     events.stream()
@@ -180,11 +182,17 @@ public class ProviderCreditPurchaseService {
     Integer duration = readJsonInteger(details, "durationSeconds");
     Integer credits = readJsonInteger(details, "estimatedCredits");
     BigDecimal cost = readJsonDecimal(details, "estimatedCostUsd");
+    Integer billedCredits = readJsonInteger(details, "billedCredits");
+    BigDecimal billedCost = readJsonDecimal(details, "billedCostUsd");
+    String settlementStatus = readJsonText(details, "settlementStatus");
+    String billingEvidence = readJsonText(details, "billingEvidence");
     Long jobId = event.getJob().getId();
     Long cycleId = readCycleId(event.getJob().getMetadataJson());
     String key = jobId + ":" + number;
     VideoProviderSceneRequestResponse previous = requests.get(key);
-    if (previous == null || (previous.providerTaskId() == null && taskId != null)) {
+    if (previous == null
+        || billedCredits != null
+        || (previous.providerTaskId() == null && taskId != null)) {
       requests.put(
           key,
           new VideoProviderSceneRequestResponse(
@@ -195,9 +203,21 @@ public class ProviderCreditPurchaseService {
               taskId,
               model,
               duration,
-              credits,
-              cost,
-              event.getCreatedAt()));
+              credits != null ? credits : previous == null ? null : previous.estimatedCredits(),
+              cost != null ? cost : previous == null ? null : previous.estimatedCostUsd(),
+              billedCredits != null
+                  ? billedCredits
+                  : previous == null ? null : previous.billedCredits(),
+              billedCost != null ? billedCost : previous == null ? null : previous.billedCostUsd(),
+              settlementStatus != null
+                  ? settlementStatus
+                  : previous == null ? null : previous.settlementStatus(),
+              billingEvidence != null
+                  ? billingEvidence
+                  : previous == null ? null : previous.billingEvidence(),
+              previous == null || (previous.providerTaskId() == null && taskId != null)
+                  ? event.getCreatedAt()
+                  : previous.acceptedAt()));
     }
   }
 
@@ -241,6 +261,9 @@ public class ProviderCreditPurchaseService {
    * Usa estimativa somente para execução concluída; tentativa recusada não vira consumo inventado.
    */
   private BigDecimal costForBalance(StudioCostLedgerEntry entry) {
+    if ("PROVIDER_TASKS_PARTIALLY_SETTLED".equals(entry.getCostEvidence())) {
+      return null;
+    }
     if (entry.getProviderCostUsd() != null) {
       return entry.getProviderCostUsd();
     }

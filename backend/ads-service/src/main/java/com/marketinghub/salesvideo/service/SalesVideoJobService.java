@@ -331,9 +331,23 @@ public class SalesVideoJobService {
     if (studioCostLedgerService == null || !StringUtils.hasText(detailsJson)) return;
     try {
       JsonNode details = objectMapper.readTree(detailsJson);
-      if (!"PROVIDER_TASK_ACCEPTED".equals(details.path("eventType").asText())) return;
+      String eventType = details.path("eventType").asText();
       String taskId = details.path("providerTaskId").asText("").trim();
       if (!StringUtils.hasText(taskId)) return;
+      if ("PROVIDER_TASK_SETTLED".equals(eventType)) {
+        studioCostLedgerService.settleProviderTask(
+            job.getId(),
+            details.path("provider").asText("UNKNOWN"),
+            taskId,
+            details.path("billedCredits").asInt(),
+            details.path("billedCostUsd").decimalValue(),
+            details.path("settlementStatus").asText(),
+            details.path("billingEvidence").asText(),
+            Instant.now(),
+            job.getStatus().name());
+        return;
+      }
+      if (!"PROVIDER_TASK_ACCEPTED".equals(eventType)) return;
       studioCostLedgerService.recordProviderTask(
           job.getId(),
           readVideoProductionCycleId(job.getMetadataJson()),

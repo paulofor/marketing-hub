@@ -81,6 +81,49 @@ public class StudioCostLedgerService {
             });
   }
 
+  /** Liquida uma task pelo desfecho do provider e substitui estimativa por custo cobrável. */
+  @Transactional
+  public void settleProviderTask(
+      Long jobId,
+      String provider,
+      String providerTaskId,
+      int billedCredits,
+      BigDecimal billedCostUsd,
+      String settlementStatus,
+      String billingEvidence,
+      Instant settledAt,
+      String jobStatus) {
+    if (taskConsumptionRepository == null) return;
+    StudioProviderTaskConsumption task =
+        taskConsumptionRepository
+            .findByProviderAndProviderTaskId(provider, providerTaskId)
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException("Task de provider não aceita: " + providerTaskId));
+    task.setBilledCredits(billedCredits);
+    task.setBilledCostUsd(billedCostUsd);
+    task.setSettlementStatus(settlementStatus);
+    task.setBillingEvidence(billingEvidence);
+    task.setSettledAt(settledAt);
+    taskConsumptionRepository.save(task);
+
+    repository
+        .findBySourceTypeAndSourceId("SALES_VIDEO_JOB", String.valueOf(jobId))
+        .ifPresent(
+            entry -> {
+              entry.setProviderCostUsd(
+                  taskConsumptionRepository.sumBilledCostUsdBySalesVideoJobId(jobId));
+              entry.setEstimatedCostUsd(null);
+              entry.setStatus(jobStatus);
+              entry.setCostEvidence(
+                  taskConsumptionRepository.countBySalesVideoJobIdAndSettlementStatusIsNull(jobId)
+                          == 0
+                      ? "PROVIDER_TASKS_SETTLED_BY_CONTRACT"
+                      : "PROVIDER_TASKS_PARTIALLY_SETTLED");
+              repository.save(entry);
+            });
+  }
+
   /** Registra ou atualiza uma tentativa de imagem sem inventar custo não informado. */
   @Transactional
   public void recordImage(

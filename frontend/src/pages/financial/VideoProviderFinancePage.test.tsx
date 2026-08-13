@@ -37,6 +37,10 @@ vi.mock("../../api/financial/useVideoProviderCreditBalances", () => ({
             durationSeconds: 10,
             estimatedCredits: 300,
             estimatedCostUsd: 3,
+            billedCredits: 300,
+            billedCostUsd: 3,
+            settlementStatus: "CHARGED",
+            billingEvidence: "PROVIDER_RATE_CARD_AND_TASK_SUCCESS",
             acceptedAt: "2026-08-13T18:10:35Z",
           },
         ],
@@ -66,7 +70,10 @@ describe("VideoProviderFinancePage", () => {
     expect(screen.getByText("1/3")).toBeInTheDocument();
     expect(screen.getByText("task-abc")).toBeInTheDocument();
     expect(screen.getByText(/seedance2_5/)).toBeInTheDocument();
-    expect(screen.getByText(/300 · US\$ 3,00/)).toBeInTheDocument();
+    expect(screen.getByText(/300 créditos · US\$ 3,00/)).toBeInTheDocument();
+    expect(
+      screen.getByText("PROVIDER_RATE_CARD_AND_TASK_SUCCESS"),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/MUSA/i)).not.toBeInTheDocument();
     const portal = screen.getByRole("link", { name: /conferir no portal/i });
     expect(portal).toHaveAttribute("target", "_blank");

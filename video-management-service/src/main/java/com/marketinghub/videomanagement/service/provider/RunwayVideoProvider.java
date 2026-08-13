@@ -113,7 +113,8 @@ public class RunwayVideoProvider implements VideoProvider {
             progressCallback.onProgress(10 + (scene * 65 / sceneCount), SalesVideoStatus.VIDEO_PROCESSING,
                     "Runway aceitou cena %d/%d; taskId=%s".formatted(scene, sceneCount, taskId),
                     providerTaskDetails(taskId, model, scene, sceneCount, durationSeconds, estimatedCredits));
-            finalStatus = waitUntilCompleted(taskId, progressCallback);
+            finalStatus = waitUntilCompleted(
+                    taskId, model, scene, sceneCount, durationSeconds, estimatedCredits, progressCallback);
             String videoUrl = resolveVideoUrl(finalStatus);
             if (!StringUtils.hasText(videoUrl)) {
                 throw new VideoProviderException("PROVIDER_RENDER_FAILED", "Runway não retornou URL da cena " + scene);
@@ -211,7 +212,13 @@ public class RunwayVideoProvider implements VideoProvider {
     }
 
     /** Aguarda a tarefa Runway chegar em sucesso ou falha objetiva. */
-    private JsonNode waitUntilCompleted(String taskId, ProgressCallback progressCallback) {
+    private JsonNode waitUntilCompleted(String taskId,
+                                        String model,
+                                        int scene,
+                                        int sceneCount,
+                                        int durationSeconds,
+                                        int estimatedCredits,
+                                        ProgressCallback progressCallback) {
         VideoManagementProperties.Runway config = properties.getProviders().getRunway();
         for (int attempt = 1; attempt <= config.getMaxPollAttempts(); attempt++) {
             String path = config.getStatusPathTemplate().replace("{taskId}", taskId);
@@ -228,9 +235,23 @@ public class RunwayVideoProvider implements VideoProvider {
             log.info("Resposta Runway status; taskId={} response={}", taskId, status);
             String taskStatus = normalize(firstText(status, "/status"));
             if (isSuccess(taskStatus)) {
+                progressCallback.onProgress(80, SalesVideoStatus.VIDEO_PROCESSING,
+                        "Runway liquidou cena %d/%d; taskId=%s".formatted(scene, sceneCount, taskId),
+                        providerTaskSettlementDetails(taskId, model, scene, sceneCount, durationSeconds,
+                                estimatedCredits, "CHARGED", "PROVIDER_RATE_CARD_AND_TASK_SUCCESS"));
                 return status;
             }
             if (isFailure(taskStatus)) {
+                String failureCode = firstText(status, "/failureCode", "/failure_code");
+                boolean charged = StringUtils.hasText(failureCode)
+                        && failureCode.toUpperCase(Locale.ROOT).startsWith("SAFETY.");
+                progressCallback.onProgress(80, SalesVideoStatus.VIDEO_PROCESSING,
+                        "Runway liquidou cena %d/%d; taskId=%s".formatted(scene, sceneCount, taskId),
+                        providerTaskSettlementDetails(taskId, model, scene, sceneCount, durationSeconds,
+                                charged ? estimatedCredits : 0,
+                                charged ? "CHARGED" : "REFUNDED",
+                                charged ? "PROVIDER_RATE_CARD_AND_SAFETY_FAILURE"
+                                        : "PROVIDER_TASK_FAILURE_REFUND_POLICY"));
                 throw new VideoProviderException("PROVIDER_RENDER_FAILED",
                         "Runway falhou: " + readFailure(status));
             }
@@ -477,6 +498,35 @@ public class RunwayVideoProvider implements VideoProvider {
         } catch (JsonProcessingException ex) {
             log.error("Falha ao serializar consumo da task Runway; taskId={}", taskId, ex);
             throw new VideoProviderException("PROVIDER_AUDIT_FAILED", "Falha ao auditar consumo da Runway", ex);
+        }
+    }
+
+    /** Serializa a liquidação financeira da task após o desfecho informado pela Runway. */
+    private String providerTaskSettlementDetails(String taskId,
+                                                 String model,
+                                                 int scene,
+                                                 int sceneCount,
+                                                 int durationSeconds,
+                                                 int billedCredits,
+                                                 String settlementStatus,
+                                                 String billingEvidence) {
+        try {
+            Map<String, Object> details = new LinkedHashMap<>();
+            details.put("eventType", "PROVIDER_TASK_SETTLED");
+            details.put("provider", "RUNWAY");
+            details.put("providerTaskId", taskId);
+            details.put("model", model);
+            details.put("sceneNumber", scene);
+            details.put("plannedSceneCount", sceneCount);
+            details.put("durationSeconds", durationSeconds);
+            details.put("billedCredits", billedCredits);
+            details.put("billedCostUsd", BigDecimal.valueOf(billedCredits).multiply(new BigDecimal("0.01")));
+            details.put("settlementStatus", settlementStatus);
+            details.put("billingEvidence", billingEvidence);
+            return objectMapper.writeValueAsString(details);
+        } catch (JsonProcessingException ex) {
+            log.error("Falha ao serializar liquidação da task Runway; taskId={}", taskId, ex);
+            throw new VideoProviderException("PROVIDER_AUDIT_FAILED", "Falha ao liquidar consumo da Runway", ex);
         }
     }
 

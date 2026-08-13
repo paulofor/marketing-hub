@@ -49,3 +49,9 @@ A duração máxima gerada pelo provider não define a duração dos cortes exib
 ## Homologação
 
 A matriz cobre: caminho feliz, projeto sem perfil, decisão por identidade indevida, rejeição, decisão duplicada, provider indisponível, custo desconhecido, teto excedido, callback idempotente, QA independente, desktop, iPhone e Android. Providers reais não devem ser chamados na homologação local.
+# Conciliação financeira por task do provider
+
+Cada cena aceita por um provider deve possuir identidade própria e liquidação financeira auditável.
+O aceite registra a estimativa; o desfecho registra créditos e custo cobrados ou reembolsados,
+com a origem da evidência. Saldo calculado por recargas menos liquidações deve ser apresentado
+como reconciliado, nunca como saldo oficial do provider quando a API externa não expuser saldo.

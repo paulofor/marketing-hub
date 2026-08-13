@@ -134,7 +134,7 @@ export default function VideoProviderFinancePage() {
                           <th scope="col">Cena</th>
                           <th scope="col">Task do provedor</th>
                           <th scope="col">Modelo/duração</th>
-                          <th scope="col">Créditos/custo</th>
+                          <th scope="col">Débito liquidado</th>
                           <th scope="col">Aceita em</th>
                         </tr>
                       </thead>
@@ -154,10 +154,16 @@ export default function VideoProviderFinancePage() {
                                 : ""}
                             </td>
                             <td>
-                              {request.estimatedCredits ?? "Não conciliado"}
-                              {request.estimatedCostUsd !== null
-                                ? ` · US$ ${usd(request.estimatedCostUsd)}`
-                                : ""}
+                              {request.settlementStatus === "CHARGED"
+                                ? `${request.billedCredits} créditos · US$ ${usd(request.billedCostUsd ?? 0)}`
+                                : request.settlementStatus === "REFUNDED"
+                                  ? "Reembolsado · 0 crédito"
+                                  : `${request.estimatedCredits ?? "?"} estimados · pendente`}
+                              {request.billingEvidence ? (
+                                <small className="d-block text-muted">
+                                  {request.billingEvidence}
+                                </small>
+                              ) : null}
                             </td>
                             <td>{instant(request.acceptedAt)}</td>
                           </tr>

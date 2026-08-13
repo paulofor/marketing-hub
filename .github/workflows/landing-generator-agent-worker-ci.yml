@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     concurrency:
-      group: landing-generator-agent-worker-deploy
+      group: codex-agent-host-deploy
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -67,7 +67,7 @@ jobs:
           set -euo pipefail
           ssh "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}'"
           rsync -az --delete --exclude '.git/' --exclude 'target/' --exclude 'node_modules/' ./ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/"
-      - name: Reconciliar sessão compartilhada e subir no mesmo host
+      - name: Subir executor com sessão individual
         run: |
           set -euo pipefail
           ssh "${VPS_USER}@${VPS_IP}" "
@@ -81,8 +81,7 @@ jobs:
             && cd '${REPOSITORY_DIR}/landing-generator-agent-worker' \
             && docker compose up -d --build --remove-orphans \
             && for attempt in \$(seq 1 24); do \
-                 docker compose exec -T landing-generator-agent-worker codex login status \
-                   && curl -fsS http://127.0.0.1:8100/ops-landing-generator-observability-v1/health | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' \
+                 curl -fsS http://127.0.0.1:8100/ops-landing-generator-observability-v1/health | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' \
                    && docker compose exec -T landing-generator-agent-worker node /app/agent-health-report.mjs \
                    && exit 0; \
                  sleep 5; \

@@ -48,6 +48,9 @@ function run(reporter) {
 
 try {
   for (const reporter of reporters) assert.equal((await run(reporter)).code, 0, reporter);
+  await writeFile(codex, "#!/usr/bin/env sh\nexit 1\n");
+  response = { status: "BLOCKED", expectedVersion: 1, deployedVersion: 1, versionCurrent: true };
+  for (const reporter of reporters) assert.equal((await run(reporter)).code, 0, reporter);
   response = { status: "BLOCKED", expectedVersion: 3, deployedVersion: 1, versionCurrent: false };
   for (const reporter of reporters) {
     const result = await run(reporter);

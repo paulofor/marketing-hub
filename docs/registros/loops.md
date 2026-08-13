@@ -97,6 +97,15 @@
 - **Correção efetiva:** o backend cria delegação idempotente Têmis → Dédalo, enfileira o mesmo briefing no executor autônomo, sincroniza o resultado da tarefa pelo callback e mantém publicação, oferta, checkout e tracking protegidos.
 - **Prevenção:** teste de contrato deve exigir tarefa, execução autônoma e correlação única para cada causa de landing do ciclo de convergência.
 
+## LOOP-TEMIS-META-COPY-WITHOUT-VISIBLE-COUNTS — reenfileiramento sem diagnóstico acionável
+
+- **Severidade:** ALTO.
+- **Status:** fechado localmente em 2026-08-13; aguarda publicação.
+- **Sintoma:** Têmis falha por limite textual da Meta, mas a mesa mostra apenas a tarefa bloqueada e permite retomá-la sem informar qual campo excedeu o contrato ou por quantos caracteres.
+- **Causa-raiz confirmada:** o AI Worker encerrava a validação na primeira violação e persistia somente o limite, sem a contagem real; o endpoint de experimentos não expunha violações estruturadas para a tela.
+- **Correção efetiva:** validar todos os campos publicáveis, contar caracteres Unicode, persistir `atual/limite`, estruturar o diagnóstico no backend e exibir motivo e contagens na tarefa bloqueada antes da retomada.
+- **Prevenção:** testes de contrato no worker, backend e frontend exigem contagem auditável e apresentação do motivo antes de reenfileirar Têmis.
+
 ## LOOP-LANDING-AGENT-DELIVERABLES-NOT-DISPATCHED — parecer correto termina em HTTP 500
 
 - **Severidade:** CRÍTICO.

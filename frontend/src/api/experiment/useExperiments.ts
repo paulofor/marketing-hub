@@ -82,6 +82,12 @@ export interface ExperimentSessionDurationSummary {
   variants?: ExperimentSessionDurationVariant[] | null;
 }
 
+export interface MetaCopyFieldViolation {
+  field: "primaryText" | "headline" | "description" | "cta";
+  actualLength: number;
+  maxLength: number;
+}
+
 export interface Experiment {
   id: string;
   nicheId: number;
@@ -173,6 +179,7 @@ export interface Experiment {
   creativeGenerationStartedAt?: string | null;
   creativeGenerationFinishedAt?: string | null;
   creativeGenerationError?: string | null;
+  creativeMetaCopyViolations?: MetaCopyFieldViolation[];
   lastStatusChangeReason?: string | null;
   lastStatusChangeAction?: string | null;
   lastStatusChangedAt?: string | null;
@@ -235,7 +242,9 @@ export function useExperimentSummary(
         const filtered = data
           .filter((item) => !finalized.has(item.status))
           .sort((left, right) => {
-            const running = Number(right.status === "RUNNING") - Number(left.status === "RUNNING");
+            const running =
+              Number(right.status === "RUNNING") -
+              Number(left.status === "RUNNING");
             if (running !== 0) return running;
             return Number(right.id) - Number(left.id);
           });

@@ -214,19 +214,29 @@ public class CreativeGenerationService {
         if (creative == null) {
             return;
         }
-        requireMetaTextLimit("primaryText", creative.getPrimaryText(), META_PRIMARY_TEXT_MAX_LENGTH);
-        requireMetaTextLimit("headline", creative.getHeadline(), META_HEADLINE_MAX_LENGTH);
-        requireMetaTextLimit("description", creative.getDescription(), META_DESCRIPTION_MAX_LENGTH);
         String normalizedCta = normalizeMetaCallToAction(creative.getCta());
-        requireMetaTextLimit("cta", normalizedCta, META_CALL_TO_ACTION_MAX_LENGTH);
+        List<String> violations = new ArrayList<>();
+        addMetaTextViolation(
+                violations, "primaryText", creative.getPrimaryText(), META_PRIMARY_TEXT_MAX_LENGTH);
+        addMetaTextViolation(violations, "headline", creative.getHeadline(), META_HEADLINE_MAX_LENGTH);
+        addMetaTextViolation(
+                violations, "description", creative.getDescription(), META_DESCRIPTION_MAX_LENGTH);
+        addMetaTextViolation(violations, "cta", normalizedCta, META_CALL_TO_ACTION_MAX_LENGTH);
+        if (!violations.isEmpty()) {
+            throw new IllegalArgumentException("Copy Meta inválida: " + String.join("; ", violations)
+                    + "; reescrita obrigatória");
+        }
         creative.setCta(normalizedCta);
     }
 
-    /** Bloqueia copy acima do contrato de exibição para exigir reescrita semântica. */
-    private void requireMetaTextLimit(String field, String value, int maxLength) {
-        if (value != null && value.codePointCount(0, value.length()) > maxLength) {
-            throw new IllegalArgumentException(
-                    "Copy Meta inválida: " + field + " excede " + maxLength + " caracteres; reescrita obrigatória");
+    /** Registra a contagem do campo que excede o contrato Meta para diagnóstico no painel. */
+    private void addMetaTextViolation(
+            List<String> violations, String field, String value, int maxLength) {
+        if (value != null) {
+            int actualLength = value.codePointCount(0, value.length());
+            if (actualLength > maxLength) {
+                violations.add(field + " excede " + maxLength + " caracteres (atual: " + actualLength + ")");
+            }
         }
     }
 

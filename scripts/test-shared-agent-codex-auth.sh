@@ -38,6 +38,8 @@ grep -q 'AGENT_CODEX_CANONICAL_HOME:-/opt/growth-operator/codex-home' "$repo_roo
 grep -q 'flock 9' "$repo_root/scripts/reconcile-agent-codex-auth.sh"
 grep -q 'flock -w' "$repo_root/scripts/codex-oauth-session-safe.sh"
 grep -q 'codex-app-server-device-login.mjs' "$repo_root/scripts/reconnect-agent-codex-device.sh"
+grep -q 'com.docker.compose.service=landing-generator-agent-worker' "$repo_root/scripts/reconnect-agent-codex-device.sh"
+grep -q 'docker exec -i.*node /workspace/marketing-hub/scripts/codex-app-server-device-login.mjs' "$repo_root/scripts/reconnect-agent-codex-device.sh"
 grep -q "account/login/start.*chatgptDeviceCode" "$repo_root/scripts/codex-app-server-device-login.mjs"
 grep -q "account/login/completed" "$repo_root/scripts/codex-app-server-device-login.mjs"
 if grep -q 'codex logout' "$repo_root/scripts/reconnect-agent-codex-device.sh"; then
@@ -88,6 +90,36 @@ CODEX_APP_SERVER_COMMAND="$test_root/bin/fake-codex-app-server" \
   node "$repo_root/scripts/codex-app-server-device-login.mjs" > "$test_root/device-login.log"
 grep -q 'SAFE-CODE' "$test_root/device-login.log"
 grep -q 'modo chatgpt' "$test_root/device-login.log"
+
+# O host de produção não precisa ter Node.js/Codex: a reconexão reutiliza o
+# runtime do container e valida o volume canônico antes de autenticar.
+cat > "$test_root/bin/docker" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+case "$1" in
+  ps) printf '%s\n' 'dedalo-container' ;;
+  inspect) printf '%s\n' "$TEST_CANONICAL_HOME" ;;
+  exec)
+    printf '%s\n' "$*" >> "$TEST_DOCKER_PROBE"
+    if [[ "$*" == *' codex login status' ]]; then
+      exit 0
+    fi
+    printf '%s\n' '{"auth_mode":"chatgpt"}' > "$TEST_CANONICAL_HOME/auth.json"
+    ;;
+  *) exit 1 ;;
+esac
+EOF
+chmod +x "$test_root/bin/docker"
+mkdir -p "$test_root/reconnect-home"
+TEST_CANONICAL_HOME="$test_root/reconnect-home" \
+TEST_DOCKER_PROBE="$test_root/docker.log" \
+AGENT_CODEX_CANONICAL_HOME="$test_root/reconnect-home" \
+AGENT_CODEX_OWNER_UID="$(id -u)" \
+AGENT_CODEX_OWNER_GID="$(id -g)" \
+PATH="$test_root/bin:/usr/bin:/bin" \
+  bash "$repo_root/scripts/reconnect-agent-codex-device.sh" >/dev/null
+grep -q 'dedalo-container node /workspace/marketing-hub/scripts/codex-app-server-device-login.mjs' "$test_root/docker.log"
+grep -q 'dedalo-container codex login status' "$test_root/docker.log"
 
 mkdir -p "$test_root/canonical" "$test_root/legacy/financial/codex-home"
 printf '%s\n' '{"session":"old"}' > "$test_root/canonical/auth.json"

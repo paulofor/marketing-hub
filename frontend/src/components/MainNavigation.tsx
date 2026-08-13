@@ -31,6 +31,7 @@ import {
   Music2,
   Megaphone,
   Bot,
+  CircleDollarSign,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../assets/icons/hypothesis-icon.svg";
@@ -77,6 +78,11 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "Produtos e Mercado",
     items: [
+      {
+        to: "/financial/video-providers",
+        label: "Financeiro de vídeo",
+        icon: CircleDollarSign,
+      },
       {
         to: "/planning",
         label: "Planos comerciais",

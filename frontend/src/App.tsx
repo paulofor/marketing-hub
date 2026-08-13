@@ -179,6 +179,7 @@ import AudioVideoStudioVideoAnalysisResultPage from "./pages/audioVideoStudio/Au
 import AudioVideoStudioVideosAnalysisPage from "./pages/audioVideoStudio/AudioVideoStudioVideosAnalysisPage";
 import PdeVideoProductionPage from "./pages/pdeVideoProduction/PdeVideoProductionPage";
 import HomePage from "./pages/HomePage";
+import VideoProviderFinancePage from "./pages/financial/VideoProviderFinancePage";
 
 function LegacyNicheRedirect() {
   const { nicheId } = useParams();
@@ -497,6 +498,10 @@ export default function App() {
               <Route
                 path="/videos/providers"
                 element={<VideoProviderManagementPage />}
+              />
+              <Route
+                path="/financial/video-providers"
+                element={<VideoProviderFinancePage />}
               />
               <Route
                 path="/creative-video-review"

@@ -23,4 +23,20 @@ describe("MainNavigation", () => {
       screen.getByRole("link", { name: "Dossiê de oportunidades" }),
     ).toHaveAttribute("href", "/opportunities");
   });
+
+  it("oferece acesso ao financeiro transversal de provedores de vídeo", () => {
+    render(
+      <MemoryRouter>
+        <MainNavigation />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen
+        .getAllByRole("link", { name: "Financeiro de vídeo" })
+        .every(
+          (link) => link.getAttribute("href") === "/financial/video-providers",
+        ),
+    ).toBe(true);
+  });
 });

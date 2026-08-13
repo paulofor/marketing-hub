@@ -23,6 +23,11 @@ public interface StudioCostLedgerEntryRepository
   /** Lista somente as tentativas novas pertencentes ao ciclo financeiro informado. */
   List<StudioCostLedgerEntry> findByVideoProductionCycleIdOrderByCreatedAtAsc(Long cycleId);
 
+  /** Lista consumos de uma família de provedor sem misturar provedores de nome parecido. */
+  @Query(
+      "select e from StudioCostLedgerEntry e where upper(e.provider) = upper(:provider) or upper(e.provider) like concat(upper(:provider), '%') order by e.createdAt asc")
+  List<StudioCostLedgerEntry> findByProviderFamily(@Param("provider") String provider);
+
   /** Soma custos conhecidos, preferindo valor reportado pelo provedor. */
   @Query(
       "select coalesce(sum(coalesce(e.providerCostUsd, e.estimatedCostUsd)), 0) from StudioCostLedgerEntry e where e.commercialPlanId = :planId")

@@ -6,6 +6,7 @@ import com.marketinghub.financialagent.service.FinancialAgentExecutionResponse;
 import com.marketinghub.financialagent.service.FinancialAgentService;
 import com.marketinghub.financialagent.service.ProviderCreditPurchaseService;
 import com.marketinghub.financialagent.service.StartRevenueProjectionRequest;
+import com.marketinghub.financialagent.service.listVideoProviderCreditBalances.VideoProviderCreditBalanceResponse;
 import com.marketinghub.financialagent.service.registerProviderCreditPurchase.ProviderCreditPurchaseResponse;
 import com.marketinghub.financialagent.service.registerProviderCreditPurchase.RegisterProviderCreditPurchaseRequest;
 import jakarta.validation.Valid;
@@ -45,6 +46,12 @@ public class FinancialAgentController {
   public List<ProviderCreditPurchaseResponse> listProviderCreditPurchases(
       @PathVariable String provider) {
     return providerCreditPurchaseService.list(provider);
+  }
+
+  /** Lista saldo e capacidade estimados dos provedores de vídeo no módulo financeiro. */
+  @GetMapping("/video-providers/credit-balances")
+  public List<VideoProviderCreditBalanceResponse> listVideoProviderCreditBalances() {
+    return providerCreditPurchaseService.listVideoProviderBalances();
   }
 
   /** Solicita uma nova conciliacao financeira somente leitura. */

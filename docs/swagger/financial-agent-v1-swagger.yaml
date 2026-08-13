@@ -3,6 +3,12 @@ info:
   title: Agente Financeiro v1
   version: 1.0.0
 paths:
+  /api/financial-agent/v1/video-providers/credit-balances:
+    get:
+      summary: Lista saldo estimado, capacidade e divergências dos provedores de vídeo
+      responses:
+        '200':
+          description: Monitor financeiro transversal dos provedores de vídeo
   /api/financial-agent/v1/providers/{provider}/credit-purchases:
     parameters:
       - in: path

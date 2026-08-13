@@ -106,6 +106,7 @@ jobs:
                  if [ \"\${status}\" = running ] \
                    && [ \"\${codex_ready}\" = true ] \
                    && [ \"\${logfile_status}\" = 200 ] \
+                   && docker exec experiment-strategist-worker-experiment-strategist-worker-1 node /app/agent-health-report.mjs \
                    && printf '%s' \"\${health_body}\" | grep -Eq 'status.*UP'; then \
                    exit 0; \
                  fi; \

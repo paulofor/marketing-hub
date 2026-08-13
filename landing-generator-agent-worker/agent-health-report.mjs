@@ -14,4 +14,8 @@ const response = await fetch(`${backend}/api/internal/agents/executor-health`, {
     detail: auth.status === 0 ? "Executor pronto." : "Reconecte a sessão Codex compartilhada.",
   }),
 });
-if (!response.ok || auth.status !== 0) process.exit(1);
+const health = response.ok ? await response.json() : null;
+if (!response.ok || auth.status !== 0 || health?.versionCurrent !== true || health?.status !== "READY") {
+  console.error(`Executor incompatível: esperado=${health?.expectedVersion ?? "?"} implantado=${health?.deployedVersion ?? process.env.AGENT_HEALTH_VERSION ?? "?"} status=${health?.status ?? response.status}.`);
+  process.exit(1);
+}

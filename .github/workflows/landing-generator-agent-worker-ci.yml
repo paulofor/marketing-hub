@@ -84,6 +84,7 @@ jobs:
             && for attempt in \$(seq 1 24); do \
                  docker compose exec -T landing-generator-agent-worker codex login status \
                    && curl -fsS http://127.0.0.1:8100/ops-landing-generator-observability-v1/health | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' \
+                   && docker compose exec -T landing-generator-agent-worker node /app/agent-health-report.mjs \
                    && exit 0; \
                  sleep 5; \
                done; \

@@ -2,12 +2,13 @@ package com.marketinghub.planning.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.geralanding.agent.v1.LandingGenerationAgentExecutionService;
+import com.marketinghub.planning.CommercialPlan;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -22,6 +23,16 @@ class CommercialPlanJourneyHomologationServiceTest {
   /** Confirma que o experimento escolhido recebe uma homologação segregada e sem gasto. */
   @Test
   void requestsIsolatedJourneyHomologationForLinkedExperiment() {
+    when(commercialPlanService.getPlan(2L))
+        .thenReturn(
+            CommercialPlan.builder()
+                .id(2L)
+                .successCriteria("Landing com quatro exemplos finais e três criativos aprovados")
+                .stopCriteria("Parar antes de gasto ou publicação externa")
+                .currentBlocker("Prova visual incompleta")
+                .rootCause("Contrato sem critério observável")
+                .nextAction("Dédalo itera na sandbox e Têmis revisa")
+                .build());
     var service =
         new CommercialPlanJourneyHomologationService(
             commercialPlanService, executionService, new ObjectMapper());
@@ -36,6 +47,10 @@ class CommercialPlanJourneyHomologationServiceTest {
         .enqueue(
             eq(88L),
             argThat(cycleId -> cycleId.startsWith("cph-2-") && cycleId.length() <= 36),
-            contains("\"mediaSpendAuthorized\":false"));
+            argThat(
+                brief ->
+                    brief.contains("\"mediaSpendAuthorized\":false")
+                        && brief.contains("quatro exemplos finais")
+                        && brief.contains("Dédalo itera na sandbox")));
   }
 }

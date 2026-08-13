@@ -181,13 +181,19 @@ public class CommercialPlan {
   @Column(name = "execution_synced_at")
   private Instant executionSyncedAt;
 
-  @Column(name = "next_action", length = 512)
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  @Column(name = "next_action", columnDefinition = "LONGTEXT")
   private String nextAction;
 
-  @Column(name = "current_blocker", length = 512)
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  @Column(name = "current_blocker", columnDefinition = "LONGTEXT")
   private String currentBlocker;
 
-  @Column(name = "root_cause", length = 512)
+  @Lob
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+  @Column(name = "root_cause", columnDefinition = "LONGTEXT")
   private String rootCause;
 
   @Column(name = "most_likely_scenario", length = 512)

@@ -3,6 +3,7 @@ package com.marketinghub.planning.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.geralanding.agent.v1.LandingGenerationAgentExecutionService;
+import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.dto.CommercialPlanJourneyHomologationDto;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -33,21 +34,27 @@ public class CommercialPlanJourneyHomologationService {
   @Transactional
   public CommercialPlanJourneyHomologationDto request(Long planId, Long experimentId) {
     commercialPlanService.requireExperiment(planId, experimentId);
+    CommercialPlan plan = commercialPlanService.getPlan(planId);
     Instant requestedAt = Instant.now();
     String cycleId = "cph-" + planId + "-" + UUID.randomUUID().toString().substring(0, 20);
-    executionService.enqueue(experimentId, cycleId, buildAuditBrief(planId, experimentId));
+    executionService.enqueue(experimentId, cycleId, buildAuditBrief(plan, experimentId));
     return new CommercialPlanJourneyHomologationDto(
         planId, experimentId, "INICIADO", requestedAt.toString());
   }
 
   /** Monta o contexto estruturado que restringe a execução à homologação sem tráfego real. */
-  private String buildAuditBrief(Long planId, Long experimentId) {
+  private String buildAuditBrief(CommercialPlan plan, Long experimentId) {
     Map<String, Object> brief = new LinkedHashMap<>();
     brief.put("approvalRecommendation", "REGENERATE_BEFORE_PUBLICATION");
     brief.put("score", 0);
     brief.put("source", "COMMERCIAL_PLAN_JOURNEY_HOMOLOGATION");
-    brief.put("commercialPlanId", planId);
+    brief.put("commercialPlanId", plan.getId());
     brief.put("experimentId", experimentId);
+    brief.put("successCriteria", plan.getSuccessCriteria());
+    brief.put("stopCriteria", plan.getStopCriteria());
+    brief.put("currentBlocker", plan.getCurrentBlocker());
+    brief.put("rootCause", plan.getRootCause());
+    brief.put("nextAction", plan.getNextAction());
     brief.put("testIsolation", "mh_test=1");
     brief.put("publicationAuthorized", false);
     brief.put("mediaSpendAuthorized", false);

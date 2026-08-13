@@ -1131,3 +1131,9 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** os DTOs REST ainda exigiam `commercialPlanId`, embora a entidade, o ledger e o ciclo autônomo já suportassem projetos legados sem plano comercial.
 - **Correção:** criação e edição de projetos aceitam plano comercial ausente, preservando o vínculo opcional e a segregação financeira já aplicada pelo serviço.
 - **Prevenção:** teste atualiza um projeto sem plano, persiste o perfil e comprova que o contrato continua aceitando o cenário legado.
+# LOOP-COMMERCIAL-PLAN-OPERATIONAL-CONTEXT-TRUNCATED — plano não aceita contrato operacional completo
+
+- **Sintoma:** a tela de planejamento retorna HTTP 500 ao salvar consenso, autonomia e critérios observáveis para os agentes.
+- **Causa-raiz confirmada em 2026-08-13:** `commercial_plan.next_action`, `current_blocker` e `root_cause` permaneciam em `VARCHAR(512)`, embora o plano versionado precise transportar contexto operacional completo.
+- **Correção efetiva:** os três campos passam a `LONGTEXT` no Liquibase e no mapeamento JPA, preservando o contrato integral entre Têmis, Dédalo e o backend.
+- **Prevenção:** a validação Liquibase e o mapeamento explícito impedem o retorno do limite de 512 caracteres; decisões de gasto, preço e publicação continuam em gates separados.

@@ -18,6 +18,8 @@ Pesquisa externa indisponível não é resultado de mercado. Se todas as consult
 
 O Plano Comercial é a fonte oficial comum para usuários e agentes atuarem sobre o mesmo objetivo de vendas e lucro. Cada criação ou alteração deve gerar uma versão imutável contendo objetivo, público, dor, desejo/oferta, canal, métricas, orçamento, receita esperada, realizado, gargalo, próxima ação e critérios de sucesso e parada.
 
+Gargalo atual, causa-raiz e próxima ação são contratos operacionais completos, não rótulos curtos. Esses campos devem aceitar contexto longo sem truncamento e permitir que especialistas iterem autonomamente na própria sandbox até devolver `APROVADO`, `BLOQUEADO` ou `AJUSTE_NECESSARIO`. Essa autonomia cobre investigação, produção e homologação local; não autoriza gasto, publicação externa, alteração de preço ou mudança de oferta.
+
 ## Separação das experiências administrativas
 
 Plano Comercial e Planejamento Mensal devem possuir itens de menu e rotas administrativas distintos. A visão de planos comerciais apresenta o contrato de negócio, seus bloqueios, decisões e histórico; a visão de planejamentos mensais apresenta metas, semanas, funil e execução temporal. As duas visões podem consumir a mesma fonte canônica persistida, mas não devem voltar a ser apresentadas como um único item de navegação. A criação de um Plano Comercial permanece na visão comercial; o planejamento mensal apenas organiza sua execução no período.

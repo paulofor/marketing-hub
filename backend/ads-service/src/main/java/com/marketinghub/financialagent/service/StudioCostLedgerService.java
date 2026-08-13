@@ -1,14 +1,17 @@
 package com.marketinghub.financialagent.service;
 
 import com.marketinghub.financialagent.StudioCostLedgerEntry;
+import com.marketinghub.financialagent.StudioProviderTaskConsumption;
 import com.marketinghub.repository.jpa.financialagent.StudioCostLedgerEntryRepository;
 import com.marketinghub.repository.jpa.financialagent.StudioProviderEfficiencyProjection;
+import com.marketinghub.repository.jpa.financialagent.StudioProviderTaskConsumptionRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,10 +19,109 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class StudioCostLedgerService {
   private final StudioCostLedgerEntryRepository repository;
+  private final StudioProviderTaskConsumptionRepository taskConsumptionRepository;
 
   /** Inicializa o serviço com a fonte canônica do ledger. */
   public StudioCostLedgerService(StudioCostLedgerEntryRepository repository) {
+    this(repository, null);
+  }
+
+  /** Inicializa o ledger com a fonte detalhada de tasks cobradas por provedores. */
+  @Autowired
+  public StudioCostLedgerService(
+      StudioCostLedgerEntryRepository repository,
+      StudioProviderTaskConsumptionRepository taskConsumptionRepository) {
     this.repository = repository;
+    this.taskConsumptionRepository = taskConsumptionRepository;
+  }
+
+  /** Registra uma task aceita e reconcilia seu custo no job mesmo se a montagem final falhar. */
+  @Transactional
+  public void recordProviderTask(
+      Long jobId,
+      Long cycleId,
+      String provider,
+      String providerTaskId,
+      String model,
+      int sceneNumber,
+      int plannedSceneCount,
+      int durationSeconds,
+      int estimatedCredits,
+      BigDecimal estimatedCostUsd,
+      Instant acceptedAt,
+      String jobStatus) {
+    if (taskConsumptionRepository == null) return;
+    StudioProviderTaskConsumption task =
+        taskConsumptionRepository
+            .findByProviderAndProviderTaskId(provider, providerTaskId)
+            .orElseGet(StudioProviderTaskConsumption::new);
+    task.setSalesVideoJobId(jobId);
+    task.setVideoProductionCycleId(cycleId);
+    task.setProvider(provider);
+    task.setProviderTaskId(providerTaskId);
+    task.setModel(model);
+    task.setSceneNumber(sceneNumber);
+    task.setPlannedSceneCount(plannedSceneCount);
+    task.setDurationSeconds(durationSeconds);
+    task.setEstimatedCredits(estimatedCredits);
+    task.setEstimatedCostUsd(estimatedCostUsd);
+    task.setAcceptedAt(acceptedAt);
+    taskConsumptionRepository.save(task);
+
+    repository
+        .findBySourceTypeAndSourceId("SALES_VIDEO_JOB", String.valueOf(jobId))
+        .ifPresent(
+            entry -> {
+              entry.setEstimatedCostUsd(
+                  taskConsumptionRepository.sumEstimatedCostUsdBySalesVideoJobId(jobId));
+              entry.setProviderCostUsd(null);
+              entry.setStatus(jobStatus);
+              entry.setCostEvidence("PROVIDER_TASK_RATE_CARD_ESTIMATE");
+              repository.save(entry);
+            });
+  }
+
+  /** Liquida uma task pelo desfecho do provider e substitui estimativa por custo cobrável. */
+  @Transactional
+  public void settleProviderTask(
+      Long jobId,
+      String provider,
+      String providerTaskId,
+      int billedCredits,
+      BigDecimal billedCostUsd,
+      String settlementStatus,
+      String billingEvidence,
+      Instant settledAt,
+      String jobStatus) {
+    if (taskConsumptionRepository == null) return;
+    StudioProviderTaskConsumption task =
+        taskConsumptionRepository
+            .findByProviderAndProviderTaskId(provider, providerTaskId)
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException("Task de provider não aceita: " + providerTaskId));
+    task.setBilledCredits(billedCredits);
+    task.setBilledCostUsd(billedCostUsd);
+    task.setSettlementStatus(settlementStatus);
+    task.setBillingEvidence(billingEvidence);
+    task.setSettledAt(settledAt);
+    taskConsumptionRepository.save(task);
+
+    repository
+        .findBySourceTypeAndSourceId("SALES_VIDEO_JOB", String.valueOf(jobId))
+        .ifPresent(
+            entry -> {
+              entry.setProviderCostUsd(
+                  taskConsumptionRepository.sumBilledCostUsdBySalesVideoJobId(jobId));
+              entry.setEstimatedCostUsd(null);
+              entry.setStatus(jobStatus);
+              entry.setCostEvidence(
+                  taskConsumptionRepository.countBySalesVideoJobIdAndSettlementStatusIsNull(jobId)
+                          == 0
+                      ? "PROVIDER_TASKS_SETTLED_BY_CONTRACT"
+                      : "PROVIDER_TASKS_PARTIALLY_SETTLED");
+              repository.save(entry);
+            });
   }
 
   /** Registra ou atualiza uma tentativa de imagem sem inventar custo não informado. */
@@ -136,13 +238,21 @@ public class StudioCostLedgerService {
     entry.setProvider(provider == null ? "UNKNOWN" : provider);
     entry.setModel(model);
     entry.setStatus(status);
-    entry.setProviderCostUsd(providerReported ? costUsd : null);
-    entry.setEstimatedCostUsd(providerReported ? null : costUsd);
-    entry.setCurrency("USD");
-    entry.setCostEvidence(
+    boolean taskCostAlreadyReconciled =
         costUsd == null
-            ? "PROVIDER_COST_NOT_REPORTED"
-            : providerReported ? "PROVIDER_REPORTED" : "PROVIDER_RATE_CARD_ESTIMATE");
+            && "PROVIDER_TASK_RATE_CARD_ESTIMATE".equals(entry.getCostEvidence())
+            && entry.getEstimatedCostUsd() != null;
+    if (!taskCostAlreadyReconciled) {
+      entry.setProviderCostUsd(providerReported ? costUsd : null);
+      entry.setEstimatedCostUsd(providerReported ? null : costUsd);
+    }
+    entry.setCurrency("USD");
+    if (!taskCostAlreadyReconciled) {
+      entry.setCostEvidence(
+          costUsd == null
+              ? "PROVIDER_COST_NOT_REPORTED"
+              : providerReported ? "PROVIDER_REPORTED" : "PROVIDER_RATE_CARD_ESTIMATE");
+    }
     entry.setStartedAt(startedAt);
     entry.setFinishedAt(finishedAt);
     repository.save(entry);

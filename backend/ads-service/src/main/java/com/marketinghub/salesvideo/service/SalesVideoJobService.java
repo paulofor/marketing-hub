@@ -315,6 +315,7 @@ public class SalesVideoJobService {
       maybeUpdateProfileStatus(job, request.getStatus());
     }
     jobRepository.save(job);
+    syncProviderTaskConsumption(job, request.getDetailsJson());
     registerEvent(
         job,
         SalesVideoJobEventType.PROGRESS,
@@ -323,6 +324,49 @@ public class SalesVideoJobService {
         request.getMessage(),
         request.getDetailsJson());
     return toDto(job);
+  }
+
+  /** Concilia imediatamente uma task/cena aceita sem depender do desfecho do job final. */
+  private void syncProviderTaskConsumption(SalesVideoJob job, String detailsJson) {
+    if (studioCostLedgerService == null || !StringUtils.hasText(detailsJson)) return;
+    try {
+      JsonNode details = objectMapper.readTree(detailsJson);
+      String eventType = details.path("eventType").asText();
+      String taskId = details.path("providerTaskId").asText("").trim();
+      if (!StringUtils.hasText(taskId)) return;
+      if ("PROVIDER_TASK_SETTLED".equals(eventType)) {
+        studioCostLedgerService.settleProviderTask(
+            job.getId(),
+            details.path("provider").asText("UNKNOWN"),
+            taskId,
+            details.path("billedCredits").asInt(),
+            details.path("billedCostUsd").decimalValue(),
+            details.path("settlementStatus").asText(),
+            details.path("billingEvidence").asText(),
+            Instant.now(),
+            job.getStatus().name());
+        return;
+      }
+      if (!"PROVIDER_TASK_ACCEPTED".equals(eventType)) return;
+      studioCostLedgerService.recordProviderTask(
+          job.getId(),
+          readVideoProductionCycleId(job.getMetadataJson()),
+          details.path("provider").asText("UNKNOWN"),
+          taskId,
+          details.path("model").asText(job.getProviderName()),
+          details.path("sceneNumber").asInt(),
+          details.path("plannedSceneCount").asInt(),
+          details.path("durationSeconds").asInt(),
+          details.path("estimatedCredits").asInt(),
+          details.path("estimatedCostUsd").decimalValue(),
+          Instant.now(),
+          job.getStatus().name());
+    } catch (JsonProcessingException | RuntimeException ex) {
+      log.error(
+          "Falha ao conciliar task de provedor; jobId={} details={}", job.getId(), detailsJson, ex);
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST, "Evento financeiro de task inválido.");
+    }
   }
 
   /** Finaliza o job, aplica gates de duração e encadeia a pós-produção cinematográfica. */
@@ -537,9 +581,10 @@ public class SalesVideoJobService {
   public SalesVideoJobDto requestPostProduction(
       Long sourceJobId, RequestSalesVideoPostProductionRequest request) {
     SalesVideoJob sourceJob = loadJob(sourceJobId);
-    if (sourceJob.getStatus() != SalesVideoStatus.VIDEO_READY) {
+    if (!isReusableRenderWithAsset(sourceJob)) {
       throw VideoModuleException.badRequest(
-          VideoModuleErrorCode.BAD_REQUEST, "Pós-produção exige um vídeo com status VIDEO_READY.");
+          VideoModuleErrorCode.BAD_REQUEST,
+          "Pós-produção exige vídeo pronto ou render curto com arquivo preservado.");
     }
     String sourceVideoUrl = resolveSourceVideoUrl(sourceJob, request.getSourceVideoUrl());
     String requestedBy = TenantContextHolder.resolveUserEmail(request.getRequestedBy());
@@ -568,6 +613,16 @@ public class SalesVideoJobService {
         "Pós-produção solicitada por " + requestedBy,
         "Job de pós-produção #" + postProductionJob.getId());
     return toDto(postProductionJob);
+  }
+
+  /** Permite reaproveitar montagem tecnicamente produzida que falhou apenas no gate de duração. */
+  private boolean isReusableRenderWithAsset(SalesVideoJob sourceJob) {
+    if (sourceJob.getStatus() == SalesVideoStatus.VIDEO_READY) {
+      return true;
+    }
+    return sourceJob.getAsset() != null
+        && sourceJob.getStatus() == SalesVideoStatus.VIDEO_FAILED
+        && SHORT_DURATION_FAILURE_CODE.equals(sourceJob.getFailureCode());
   }
 
   /** Cria job de montagem a partir de múltiplos vídeos prontos e auditáveis. */

@@ -14,6 +14,7 @@ import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.CreateAgentTaskByAgentRequest;
 import com.marketinghub.financialagent.service.FinancialAgentService;
 import com.marketinghub.financialagent.service.StudioCostLedgerService;
+import com.marketinghub.media.Asset;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
@@ -21,6 +22,7 @@ import com.marketinghub.salesvideo.SalesVideoJob;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.VideoProductionCycle;
 import com.marketinghub.salesvideo.VideoProject;
+import com.marketinghub.salesvideo.dto.RequestSalesVideoPostProductionRequest;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
 import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.service.SalesVideoService;
@@ -192,6 +194,7 @@ class VideoProductionCycleServiceTest {
   void shouldBlockRejectedCycleWithoutProviderJob() {
     VideoProductionCycle cycle = cycle();
     when(repository.findById(11L)).thenReturn(Optional.of(cycle));
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(project()));
 
     var result =
         service.decide(
@@ -228,7 +231,12 @@ class VideoProductionCycleServiceTest {
     verify(salesVideoService).requestRender(org.mockito.ArgumentMatchers.eq(13L), render.capture());
     assertThat(render.getValue().getProviderName()).isEqualTo("RUNWAY_SEEDANCE_2_5");
     assertThat(render.getValue().getTargetDurationSeconds()).isEqualTo(10);
-    assertThat(render.getValue().getMetadataJson()).contains("\"sceneCount\":6");
+    assertThat(render.getValue().getMetadataJson())
+        .contains(
+            "\"providerClipDurationSeconds\":15",
+            "\"sceneCount\":4",
+            "\"cutCount\":12",
+            "\"text_rendering\":\"DETERMINISTIC_OVERLAY\"");
     assertThat(result.status()).isEqualTo("QUEUED_FOR_APOLLO");
     assertThat(result.salesVideoJobId()).isEqualTo(321L);
   }
@@ -265,12 +273,71 @@ class VideoProductionCycleServiceTest {
     verify(salesVideoService).requestRender(org.mockito.ArgumentMatchers.eq(13L), render.capture());
     assertThat(render.getValue().getProviderName()).isEqualTo("RUNWAY_SEEDANCE_2_5");
     assertThat(render.getValue().getMetadataJson())
-        .contains("\"sceneCount\":3", "\"replacesFailedJobId\":20536");
+        .contains("\"sceneCount\":2", "\"cutCount\":8", "\"replacesFailedJobId\":20536");
     assertThat(cycle.getSalesVideoJobId()).isEqualTo(30001L);
     assertThat(cycle.getLastFailedJobId()).isEqualTo(20536L);
     assertThat(cycle.getLastApolloFailureCode()).isEqualTo("PROVIDER_PAYMENT_REQUIRED");
     assertThat(cycle.getLastApolloFailureDetail()).isEqualTo("Provider respondeu HTTP 402.");
     assertThat(cycle.getLastApolloFailureAt()).isEqualTo("2026-08-13T10:00:00Z");
+  }
+
+  /** Bloqueia o ciclo após rejeição de créditos para impedir novas tentativas a cada polling. */
+  @Test
+  void shouldBlockAutomaticReplacementAfterInsufficientCredits() {
+    VideoProductionCycle cycle = cycle();
+    cycle.setStatus("QUEUED_FOR_APOLLO");
+    cycle.setFinancialDecision("APPROVED");
+    cycle.setSalesVideoJobId(21125L);
+    SalesVideoJob failed = new SalesVideoJob();
+    failed.setId(21125L);
+    failed.setStatus(SalesVideoStatus.VIDEO_FAILED);
+    failed.setFailureCode("PROVIDER_RENDER_FAILED");
+    failed.setFailureDetail("retryable=false; You do not have enough credits to run this task");
+    when(repository.findByStatusAndFinancialDecisionOrderByCreatedAtAsc(
+            "QUEUED_FOR_APOLLO", "APPROVED"))
+        .thenReturn(java.util.List.of(cycle));
+    when(jobRepository.findById(21125L)).thenReturn(Optional.of(failed));
+
+    service.reconcileApolloQueue();
+
+    assertThat(cycle.getStatus()).isEqualTo("APOLLO_BLOCKED");
+    assertThat(cycle.getLastFailedJobId()).isEqualTo(21125L);
+    verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
+  /** Reaproveita montagem existente em pós-produção sem pagar por outra geração. */
+  @Test
+  void shouldReuseFailedRenderAssetBeforeAnyPaidReplacement() {
+    VideoProductionCycle cycle = cycle();
+    cycle.setStatus("QUEUED_FOR_APOLLO");
+    cycle.setFinancialDecision("APPROVED");
+    cycle.setSalesVideoJobId(21105L);
+    SalesVideoJob failed = new SalesVideoJob();
+    failed.setId(21105L);
+    failed.setStatus(SalesVideoStatus.VIDEO_FAILED);
+    failed.setFailureCode("RENDER_DURATION_SHORT");
+    failed.setAsset(Asset.builder().id(2420L).build());
+    VideoProject project = project();
+    project.setCaptionPlan("Presença elegante em sete dias.");
+    SalesVideoJobDto postProduction = new SalesVideoJobDto();
+    postProduction.setId(21107L);
+    when(repository.findByStatusAndFinancialDecisionOrderByCreatedAtAsc(
+            "QUEUED_FOR_APOLLO", "APPROVED"))
+        .thenReturn(java.util.List.of(cycle));
+    when(jobRepository.findById(21105L)).thenReturn(Optional.of(failed));
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(project));
+    when(salesVideoService.requestPostProduction(any(), any())).thenReturn(postProduction);
+
+    service.reconcileApolloQueue();
+
+    ArgumentCaptor<RequestSalesVideoPostProductionRequest> post =
+        ArgumentCaptor.forClass(RequestSalesVideoPostProductionRequest.class);
+    verify(salesVideoService)
+        .requestPostProduction(org.mockito.ArgumentMatchers.eq(21105L), post.capture());
+    assertThat(post.getValue().getCaptionText()).isEqualTo("Presença elegante em sete dias.");
+    assertThat(cycle.getStatus()).isEqualTo("REUSING_APOLLO_MATERIAL");
+    assertThat(cycle.getSalesVideoJobId()).isEqualTo(21107L);
+    verify(salesVideoService, never()).requestRender(any(), any());
   }
 
   /** Cria o projeto mínimo de teste com perfil operacional. */

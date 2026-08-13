@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.math.BigDecimal;
 import java.util.concurrent.atomic.AtomicInteger;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -88,9 +89,53 @@ class RunwayVideoProviderTest {
                 .contains("\"promptImage\":\"https://assets.example/musa-character.png\"")
                 .contains("REQUIRED SCENE ACTION: remover dois acessorios e escolher a peca-sinal")
                 .contains("Very sharp image, crisp focus and constant soft natural daylight")
-                .contains("Avoid embedded text");
+                .contains("Do not render letters, words, captions")
+                .contains("added only in post-production");
         assertThat(server.takeRequest().getPath()).isEqualTo("/v1/tasks/runway-task-123");
         assertThat(server.takeRequest().getPath()).isEqualTo("/download/runway-task-123.mp4");
+    }
+
+    /** Deve classificar saldo insuficiente com código financeiro estável e não recuperável. */
+    @Test
+    void shouldClassifyInsufficientCreditsBeforeAnyRetry() {
+        server.enqueue(new MockResponse()
+                .setResponseCode(402)
+                .setHeader("Content-Type", "application/json")
+                .setBody("{\"error\":\"You do not have enough credits to run this task\"}"));
+        RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+        assertThatThrownBy(() -> provider.render(job(), profile(), (percent, status, message) -> { }))
+                .isInstanceOf(VideoProviderException.class)
+                .hasFieldOrPropertyWithValue("code", "PROVIDER_CREDITS_INSUFFICIENT");
+        assertThat(server.getRequestCount()).isEqualTo(1);
+    }
+
+    /** Deve liquidar como reembolso uma task que falha fora das hipóteses cobradas. */
+    @Test
+    void shouldSettleRefundedTaskAfterProviderFailure() {
+        server.enqueue(json("{\"id\":\"failed-task\"}"));
+        server.enqueue(json("""
+                {"id":"failed-task","status":"FAILED","failureCode":"INTERNAL","failure":"provider failed"}
+                """));
+        RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+        java.util.List<String> financialEvents = new java.util.ArrayList<>();
+
+        assertThatThrownBy(() -> provider.render(job(), profile(), new ProgressCallback() {
+            /** Ignora progresso sem contrato financeiro neste teste. */
+            @Override
+            public void onProgress(Integer percent, SalesVideoStatus status, String message) { }
+
+            /** Captura os eventos financeiros emitidos pelo adapter. */
+            @Override
+            public void onProgress(Integer percent, SalesVideoStatus status, String message, String detailsJson) {
+                if (detailsJson != null) financialEvents.add(detailsJson);
+            }
+        })).isInstanceOf(VideoProviderException.class);
+
+        assertThat(financialEvents).anySatisfy(financialEvent -> assertThat(financialEvent)
+                .contains("\"eventType\":\"PROVIDER_TASK_SETTLED\"")
+                .contains("\"settlementStatus\":\"REFUNDED\"")
+                .contains("\"billedCredits\":0"));
     }
 
     /** Deve usar text-to-video e respeitar o limite oficial quando a cena não possui imagem-base. */
@@ -150,13 +195,32 @@ class RunwayVideoProviderTest {
         server.enqueue(mp4Response());
         RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
 
-        provider.render(job("RUNWAY_SEEDANCE_2_5"), profile(), (percent, status, message) -> { });
+        java.util.List<String> financialEvents = new java.util.ArrayList<>();
+        provider.render(job("RUNWAY_SEEDANCE_2_5"), profile(), new ProgressCallback() {
+            /** Ignora progresso não financeiro neste teste. */
+            @Override
+            public void onProgress(Integer percent, SalesVideoStatus status, String message) { }
+
+            /** Captura a evidência da task cobrável aceita pelo provedor. */
+            @Override
+            public void onProgress(Integer percent, SalesVideoStatus status, String message, String detailsJson) {
+                if (detailsJson != null) financialEvents.add(detailsJson);
+            }
+        });
 
         RecordedRequest request = server.takeRequest();
         assertThat(request.getHeader("Authorization")).isEqualTo("Bearer runway-test-key");
         assertThat(request.getBody().readUtf8())
                 .contains("\"model\":\"seedance2_5\"")
                 .doesNotContain("\"model\":\"seedance2\"");
+        assertThat(financialEvents).anySatisfy(financialEvent -> assertThat(financialEvent)
+                .contains("\"eventType\":\"PROVIDER_TASK_ACCEPTED\"")
+                .contains("\"providerTaskId\":\"seedance-25-task\"")
+                .contains("\"estimatedCredits\":300"));
+        assertThat(financialEvents).anySatisfy(financialEvent -> assertThat(financialEvent)
+                .contains("\"eventType\":\"PROVIDER_TASK_SETTLED\"")
+                .contains("\"settlementStatus\":\"CHARGED\"")
+                .contains("\"billedCredits\":300"));
     }
 
     /** Deve rotear os modelos comerciais curados pelo mesmo token da Runway. */
@@ -267,6 +331,36 @@ class RunwayVideoProviderTest {
 
         assertThat(server.takeRequest().getHeader("Authorization")).isEqualTo("Bearer runway-file-key");
         Files.deleteIfExists(keyFile);
+    }
+
+    /** Deve separar funções comerciais e contabilizar o custo de todas as cenas planejadas. */
+    @Test
+    void shouldPlanDistinctCommercialScenesAndFullMontageCost() throws Exception {
+        RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+        var sceneDirective = RunwayVideoProvider.class.getDeclaredMethod("sceneDirective", int.class, int.class);
+        sceneDirective.setAccessible(true);
+        var estimateCost = RunwayVideoProvider.class.getDeclaredMethod(
+                "estimateCostUsd", String.class, int.class, int.class);
+        estimateCost.setAccessible(true);
+        var resolveDuration = RunwayVideoProvider.class.getDeclaredMethod(
+                "resolveDuration", SalesVideoJob.class, VideoManagementProperties.Runway.class,
+                com.fasterxml.jackson.databind.JsonNode.class);
+        resolveDuration.setAccessible(true);
+
+        assertThat(sceneDirective.invoke(provider, 1, 4)).asString().contains("DOR");
+        assertThat(sceneDirective.invoke(provider, 2, 4)).asString().contains("RESULTADO");
+        assertThat(sceneDirective.invoke(provider, 3, 4)).asString().contains("MECANISMO");
+        assertThat(sceneDirective.invoke(provider, 4, 4)).asString().contains("CTA");
+        assertThat((BigDecimal) estimateCost.invoke(provider, "gen4.5", 10, 3))
+                .isEqualByComparingTo("3.60");
+        assertThat((BigDecimal) estimateCost.invoke(provider, "seedance2_5", 10, 1))
+                .isEqualByComparingTo("3.00");
+        assertThat(resolveDuration.invoke(
+                provider,
+                job("RUNWAY_SEEDANCE_2_5"),
+                properties().getProviders().getRunway(),
+                new ObjectMapper().readTree("{\"providerClipDurationSeconds\":15}")))
+                .isEqualTo(15);
     }
 
     /** Cria uma resposta JSON para a API Runway simulada. */

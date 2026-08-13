@@ -44,9 +44,13 @@ export function useRegisterProviderCreditPurchase(provider?: string) {
       );
       return data;
     },
-    onSuccess: () =>
+    onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["provider-credit-purchases", provider],
-      }),
+      });
+      return queryClient.invalidateQueries({
+        queryKey: ["financial-video-provider-credit-balances"],
+      });
+    },
   });
 }

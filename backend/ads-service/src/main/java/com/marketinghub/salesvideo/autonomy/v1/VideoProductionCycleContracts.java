@@ -43,6 +43,10 @@ public final class VideoProductionCycleContracts {
       String lastApolloFailureCode,
       String lastApolloFailureDetail,
       Instant lastApolloFailureAt,
+      Integer providerClipDurationSeconds,
+      Integer generationClipCount,
+      Integer editCutCount,
+      boolean textAppliedInPostProduction,
       Long agentTaskId,
       Instant createdAt,
       Instant updatedAt) {}

@@ -23,4 +23,5 @@ public record AgentWorkMonitorResponse(
     Instant lastActivityAt,
     long dailyTokens,
     LocalDate dailyTokenDate,
-    AgentExecutorHealthResponse executorHealth) {}
+    AgentExecutorHealthResponse executorHealth,
+    String combinedStatus) {}

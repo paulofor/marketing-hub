@@ -140,7 +140,7 @@ export default function AgentListPage() {
                       <span
                         className={`badge ${item.executorHealth.status === "READY" ? "text-bg-success" : item.executorHealth.status === "BLOCKED" ? "text-bg-danger" : "text-bg-warning"}`}
                       >
-                        {item.executorHealth.status}
+                        {item.combinedStatus ?? item.executorHealth.status}
                       </span>
                       <div className="small text-body-secondary mt-1">
                         versão {item.executorHealth.deployedVersion ?? "?"}/

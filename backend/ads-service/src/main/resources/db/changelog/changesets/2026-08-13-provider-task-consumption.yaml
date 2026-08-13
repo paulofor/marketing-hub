@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-13-provider-task-consumption
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE studio_provider_task_consumption (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                sales_video_job_id BIGINT NOT NULL,
+                video_production_cycle_id BIGINT NULL,
+                provider VARCHAR(64) NOT NULL,
+                provider_task_id VARCHAR(191) NOT NULL,
+                model VARCHAR(128) NOT NULL,
+                scene_number INT NOT NULL,
+                planned_scene_count INT NOT NULL,
+                duration_seconds INT NOT NULL,
+                estimated_credits INT NOT NULL,
+                estimated_cost_usd DECIMAL(14,6) NOT NULL,
+                accepted_at DATETIME NOT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_studio_provider_task (provider, provider_task_id),
+                INDEX idx_studio_provider_task_job (sales_video_job_id),
+                INDEX idx_studio_provider_task_cycle (video_production_cycle_id),
+                CONSTRAINT fk_studio_provider_task_job
+                  FOREIGN KEY (sales_video_job_id) REFERENCES sales_video_job(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

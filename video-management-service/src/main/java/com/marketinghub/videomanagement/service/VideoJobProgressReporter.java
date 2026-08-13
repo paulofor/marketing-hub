@@ -21,7 +21,13 @@ public class VideoJobProgressReporter implements ProgressCallback {
 
     @Override
     public void onProgress(Integer percent, SalesVideoStatus status, String message) {
-        backendClient.reportProgress(jobId, new JobProgressPayload(percent, status, message, null));
+        onProgress(percent, status, message, null);
+    }
+
+    /** Envia progresso e evidência estruturada ao ledger canônico do backend. */
+    @Override
+    public void onProgress(Integer percent, SalesVideoStatus status, String message, String detailsJson) {
+        backendClient.reportProgress(jobId, new JobProgressPayload(percent, status, message, detailsJson));
         backendClient.reportHeartbeat(jobId, new JobHeartbeatPayload(message, null));
     }
 }

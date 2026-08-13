@@ -63,6 +63,7 @@
 - Fechamento complementar nas mesas e planos comerciais (2026-08-11): o limite fixo de 40 minutos encerrava Atena e Dédalo mesmo com atividade, leases antigas podiam permanecer `RUNNING` fora do item mais recente e uma falha na fila auxiliar de vídeo impedia Plutus de consumir sua fila financeira. O timeout passa a medir inatividade com teto absoluto, leases órfãs recebem uma única retomada com a entrada congelada e filas independentes falham isoladamente. Testes de contrato impedem transformar timeout recuperável em falha definitiva e impedem a fila de vídeo de causar starvation financeiro.
 - Fechamento complementar em dossiês e monitor (2026-08-11): cadastrar oportunidade não abria execução consumível por Argos e o monitor não reconhecia `FALHA` como estado terminal de Dédalo. Cada dossiê agora cria ciclo de descoberta e tarefa correlacionada; conclusão sincroniza evidências reais, falha bloqueia a mesa e o monitor trata status terminal ou inatividade como bloqueio, impedindo trabalho fantasma.
 - Fechamento complementar em pareceres de oportunidade (2026-08-13): recriar uma tarefa administrativa para Atena não alterava `opportunity_agent_review`, que é a fila realmente consumida pelo worker, deixando o dossiê sem nova execução. O painel agora reenfileira o parecer canônico vinculado ao dossiê e ao agente, impede duplicidade durante `RUNNING` ou após conclusão e expõe o identificador da execução; testes de backend e frontend preservam o vínculo ponta a ponta.
+- Fechamento de observabilidade em pareceres de oportunidade (2026-08-13): o health `READY` de Atena era exibido isoladamente e mascarava a execução canônica `FAILED`. O monitor agora prioriza `opportunity_agent_review`, expõe dossiê, execução e último erro persistido, enquanto a tela apresenta `READY — parecer bloqueado` quando o executor está saudável mas o parecer não está.
 - Fechamento complementar em Dédalo (2026-08-12): a execução do experimento #88 já havia sido gravada como `FALHA` por uma versão antiga do worker antes da política de preservar a lease em timeout. Como a recuperação consultava apenas `PROCESSANDO`, esse registro terminal nunca voltava à fila. O backend agora reconhece exclusivamente o erro legado de timeout, limpa o estado terminal e permite uma única retomada auditável; o marcador persistido impede repetição infinita.
 
 ## LOOP-CUSTOMER-AGENT-UNSTRUCTURED-EXECUTION — Avaliação sem parecer final
@@ -178,6 +179,14 @@ Antes de implementar uma correção em tema com histórico de loop:
 - **Correção efetiva**: storyboard editável e salvo é a única fonte do prompt; cada plano persiste seu quadro final e o plano seguinte usa esse asset como ponte auditável; montagem e pós-produção permanecem etapas separadas e encadeadas pelo backend.
 - **Prevenção**: testes devem impedir geração com prompt não salvo, plano intermediário sem predecessor aprovado, substituição do quadro-ponte por imagem genérica e montagem sem todas as funções narrativas.
 - **Correção complementar em 2026-08-05**: a conclusão do provider passou a combinar o resultado técnico com os metadados comerciais originais, preservando projeto, versão, ordem e papel narrativo. A tela usa o snapshot de auditoria como recuperação somente-leitura para jobs históricos concluídos antes dessa correção.
+
+## LOOP-APOLO-PAID-CLIPS-DISCARDED — clipes pagos perdidos após falha terminal
+
+- **Severidade**: CRÍTICO.
+- **Status**: fechado localmente em 2026-08-13; aguarda publicação.
+- **Causa-raiz confirmada**: a montagem Runway podia produzir e anexar um MP4 completo, mas o gate de duração marcava o job como falho; a reconciliação tratava qualquer falha como motivo para nova geração e não encaminhava o arquivo preservado à pós-produção.
+- **Correção efetiva**: render curto com ativo persistido passa a ser fonte válida de pós-produção local; o ciclo aponta para esse novo job sem chamar provider pago, e rejeição de créditos recebe código financeiro estável que bloqueia a reconciliação na primeira ocorrência.
+- **Prevenção**: testes exigem reaproveitamento do ativo antes de qualquer `requestRender`, aceitação controlada do render curto na pós-produção e somente uma chamada à Runway quando ela responder saldo insuficiente.
 
 ## Como ler este documento
 
@@ -1170,6 +1179,16 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o polling do executor consultava somente jobs novos e não reconciliava ciclos aprovados por Plutus com jobs terminais antigos.
 - **Correção sistêmica:** antes de cada polling, Apolo solicita reconciliação idempotente ao backend; jobs falhos são substituídos por Seedance 2.5 via Runway, com vínculo ao job anterior e plano explícito de 3 cenas para 30s ou 6 cenas para 60s. O ciclo preserva o identificador, código, detalhe e horário da falha anterior, e o painel diferencia essa falha do novo job enfileirado. O adapter Runway gera e monta todas as cenas localmente.
 - **Prevenção:** testes do ciclo e do painel comprovam provider, quantidade de cenas, diagnóstico da falha, rastreabilidade do job substituído e atualização do vínculo persistido.
+
+## LOOP-APOLO-RECONCILIACAO-CONSOME-CREDITOS — substituição infinita e montagem rejeitada
+
+- **Data:** 2026-08-13.
+- **Sintoma:** Apolo recriava jobs MUSA a cada polling, esgotava créditos e rejeitava uma montagem de três cenas como se tivesse apenas dez segundos.
+- **Causa-raiz confirmada:** a reconciliação substituía toda falha terminal sem distinguir erro não recuperável ou substituição anterior; o adapter contabilizava duração e custo de uma cena, embora já tivesse gerado e montado todas.
+- **Correção sistêmica:** saldo insuficiente, erro não recuperável, segunda substituição ou asset existente bloqueiam o ciclo; duração e custo abrangem todas as cenas, que recebem funções comerciais distintas.
+- **Recorrência fechada em 2026-08-13:** o ciclo ainda confundia a duração máxima do clipe cobrado com a duração de cada corte editorial: fixava dez segundos no backend e repetia contexto amplo em cada geração. Apolo agora resolve a capacidade por modelo, persiste 8 cortes para 30s ou 12 para 60s, envia a cada clipe somente seu grupo de tomadas e reserva texto, legenda e CTA para pós-produção determinística. O Estúdio expõe clipes solicitados, duração por clipe e cortes planejados antes de novo consumo.
+- **Prevenção:** testes impedem novo job após bloqueio financeiro ou asset aproveitável; o contrato canônico exige avaliação do material existente e novo gate antes de qualquer gasto adicional.
+- **Fechamento financeiro complementar em 2026-08-13:** cada task/cena aceita passa a registrar imediatamente modelo, duração, créditos e custo estimado por identidade idempotente do provedor. A soma permanece no ledger do job mesmo se uma cena posterior ou a montagem falhar; a primeira recusa por saldo mantém o ciclo `APOLLO_BLOCKED`, impedindo que reconciliações automáticas criem novo consumo.
 
 ## LOOP-FRONTEND-CI-ARTIFACT-CLEANUP-TRANSIENT — build aprovado termina vermelho na limpeza
 

@@ -6,11 +6,14 @@ import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.creative.CreativeImprovementStatus;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
+import com.marketinghub.opportunitydossier.OpportunityAgentReview;
+import com.marketinghub.opportunitydossier.OpportunityReviewExecutionStatus;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.codextelemetry.CodexAgentExecutionTelemetryRepository;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.repository.jpa.opportunitydossier.OpportunityAgentReviewRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository;
 import com.marketinghub.salesvideo.VideoProductionCycle;
 import java.time.Duration;
@@ -36,6 +39,7 @@ public class AgentWorkMonitorService {
   private static final String APOLO = "videomaker";
   private static final String PLUTUS = "financial-agent";
   private static final String TEMIS = "meta-ad-approver";
+  private static final String ATENA = "experiment-strategist";
   private static final ZoneId BUSINESS_ZONE = ZoneId.of("America/Sao_Paulo");
   private static final Map<String, String> TELEMETRY_TYPE_BY_AGENT_KEY =
       Map.of(
@@ -52,6 +56,7 @@ public class AgentWorkMonitorService {
   private final CodexAgentExecutionTelemetryRepository telemetryRepository;
   private final CreativeRepository creativeRepository;
   private final AgentExecutorHealthService executorHealthService;
+  private final OpportunityAgentReviewRepository opportunityReviews;
 
   /** Configura as fontes persistidas usadas pelo monitor. */
   @Autowired
@@ -62,7 +67,8 @@ public class AgentWorkMonitorService {
       VideoProductionCycleRepository videoCycleRepository,
       CodexAgentExecutionTelemetryRepository telemetryRepository,
       CreativeRepository creativeRepository,
-      AgentExecutorHealthService executorHealthService) {
+      AgentExecutorHealthService executorHealthService,
+      OpportunityAgentReviewRepository opportunityReviews) {
     this.agentRepository = agentRepository;
     this.taskRepository = taskRepository;
     this.landingRepository = landingRepository;
@@ -70,6 +76,7 @@ public class AgentWorkMonitorService {
     this.telemetryRepository = telemetryRepository;
     this.creativeRepository = creativeRepository;
     this.executorHealthService = executorHealthService;
+    this.opportunityReviews = opportunityReviews;
   }
 
   /**
@@ -89,6 +96,7 @@ public class AgentWorkMonitorService {
         videoCycleRepository,
         telemetryRepository,
         creativeRepository,
+        null,
         null);
   }
 
@@ -139,10 +147,47 @@ public class AgentWorkMonitorService {
   /** Resolve a fonte operacional mais relevante para a identidade do agente. */
   private AgentWorkMonitorResponse monitor(Agent agent, DailyTokenSnapshot tokens) {
     if (DEDALO.equals(agent.getAgentKey())) return dedalo(agent, tokens);
+    if (ATENA.equals(agent.getAgentKey())) return atena(agent, tokens);
     if (APOLO.equals(agent.getAgentKey()) || PLUTUS.equals(agent.getAgentKey())) {
       return video(agent, tokens);
     }
     return task(agent, tokens);
+  }
+
+  /** Prioriza o parecer canônico mais recente de Atena sobre tarefas administrativas auxiliares. */
+  private AgentWorkMonitorResponse atena(Agent agent, DailyTokenSnapshot tokens) {
+    if (opportunityReviews == null) return task(agent, tokens);
+    return opportunityReviews
+        .findTopByAgentKeyOrderByUpdatedAtDescIdDesc("ATENA")
+        .map(review -> atena(agent, review, tokens))
+        .orElseGet(() -> task(agent, tokens));
+  }
+
+  /**
+   * Cruza a execução do parecer com o health sem converter prontidão técnica em sucesso funcional.
+   */
+  private AgentWorkMonitorResponse atena(
+      Agent agent, OpportunityAgentReview review, DailyTokenSnapshot tokens) {
+    OpportunityReviewExecutionStatus status = review.getExecutionStatus();
+    boolean failed = status == OpportunityReviewExecutionStatus.FAILED;
+    boolean running = status == OpportunityReviewExecutionStatus.RUNNING;
+    boolean completed = status == OpportunityReviewExecutionStatus.COMPLETED;
+    return response(
+        agent,
+        failed ? "BLOCKED" : running ? "WORKING" : completed ? "COMPLETED" : "WAITING",
+        "Parecer de Atena no dossiê #" + review.getDossier().getId(),
+        "Execução canônica " + status,
+        failed
+            ? operationalBlocker(
+                agent, review.getErrorMessage(), "Parecer bloqueado sem erro detalhado.")
+            : null,
+        false,
+        null,
+        "opportunity-dossier:" + review.getDossier().getId(),
+        null,
+        review.getId(),
+        review.getUpdatedAt(),
+        tokens);
   }
 
   /** Consolida a execução autônoma mais recente de Dédalo. */
@@ -370,6 +415,18 @@ public class AgentWorkMonitorService {
       Long executionId,
       Instant lastActivity,
       DailyTokenSnapshot tokens) {
+    AgentExecutorHealthResponse executorHealth =
+        executorHealthService == null
+            ? AgentExecutorHealthResponse.unknown(agent.getCurrentVersion())
+            : executorHealthService.current(agent);
+    String combinedStatus =
+        ATENA.equals(agent.getAgentKey())
+                && "READY".equals(executorHealth.status())
+                && "BLOCKED".equals(status)
+                && source != null
+                && source.startsWith("opportunity-dossier:")
+            ? "READY — parecer bloqueado"
+            : executorHealth.status();
     return new AgentWorkMonitorResponse(
         agent.getId(),
         agent.getAgentKey(),
@@ -387,9 +444,8 @@ public class AgentWorkMonitorService {
         lastActivity,
         dailyTokens(agent, tokens),
         tokens.date(),
-        executorHealthService == null
-            ? AgentExecutorHealthResponse.unknown(agent.getCurrentVersion())
-            : executorHealthService.current(agent));
+        executorHealth,
+        combinedStatus);
   }
 
   /** Retorna o consumo diário comprovado ou zero quando o agente ainda não reportou tokens. */

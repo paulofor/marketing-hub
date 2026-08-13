@@ -123,6 +123,8 @@ O prompt comercial de cada cena deve ser editavel no Marketing Hub e persistido 
 
 Cada clipe deve perseguir uma unica conclusao visual. Para cenas com personagem, figurino, produto ou ambiente recorrente, o fluxo deve priorizar `image_to_video` com uma imagem inicial aprovada e registrar no job o asset efetivamente enviado. A imagem fixa governa identidade, enquadramento e composicao inicial; o prompt governa principalmente movimento, camera, microacao e restricoes. Texto, legenda e CTA continuam pertencendo a pos-producao deterministica.
 
+Toda cena aceita por um provedor pago deve aparecer no modulo financeiro transversal, deduplicada por job e ordem da cena, com ciclo, horario e identificador externo quando disponivel. A contagem deve representar solicitacoes aceitas pelo provedor, nunca pollings, heartbeats ou jobs recusados antes da criacao. O clipe gerado deve permanecer sem texto embutido; copy, legenda e CTA sao aplicados somente na pos-producao deterministica para permitir correcao sem nova geracao paga.
+
 ## Primeiro escopo
 
 A primeira versao deve ser um cockpit de construcao no frontend, deixando clara a fronteira entre:
@@ -261,3 +263,4 @@ Quando existir uma playlist HLS ja publicada fora do fluxo completo de render, e
 - O monitor administrativo deve expor, por agente, trabalho atual, estado, última atividade, dificuldade e decisão externa pendente usando dados persistidos das tarefas e pipelines.
 - Apolo permanece aguardando enquanto o gate financeiro estiver pendente; Plutus aparece como responsável pela decisão do mesmo ciclo.
 - Todo novo ciclo pago deve persistir antes do gate um objetivo de aprendizado verificável e um criterio de sucesso observavel. O ledger deve ser segregado por `videoProductionCycleId`, iniciar vazio e registrar cada tentativa nova sem misturar custos historicos. Apolo deve primeiro montar com ativos existentes; somente a cena causal que continuar impedindo a qualidade pode originar novo ciclo pago.
+- Falha não recuperável do provider, saldo insuficiente, custo desconhecido ou job que já possua asset bloqueia a reconciliação automática de Apolo. Uma substituição automática pode ocorrer apenas uma vez para migrar job legado; nova tentativa exige avaliação explícita do material existente e novo gate financeiro. Montagens devem registrar duração e custo do conjunto completo, nunca apenas da última cena.

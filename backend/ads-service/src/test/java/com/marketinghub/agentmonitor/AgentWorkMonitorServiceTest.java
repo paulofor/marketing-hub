@@ -11,11 +11,15 @@ import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.creative.CreativeImprovementStatus;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
+import com.marketinghub.opportunitydossier.OpportunityAgentReview;
+import com.marketinghub.opportunitydossier.OpportunityDossier;
+import com.marketinghub.opportunitydossier.OpportunityReviewExecutionStatus;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.codextelemetry.CodexAgentExecutionTelemetryRepository;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.repository.jpa.opportunitydossier.OpportunityAgentReviewRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository;
 import com.marketinghub.salesvideo.VideoProductionCycle;
 import java.math.BigDecimal;
@@ -26,6 +30,64 @@ import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: proteger a leitura comum de paralelismo, bloqueios e decisões dos agentes. */
 class AgentWorkMonitorServiceTest {
+  /** Mantém o health saudável separado da falha canônica do parecer de Atena. */
+  @Test
+  void shouldExposeReadyExecutorWithBlockedOpportunityReview() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    GeraLandingStageExecutionRepository landings = mock(GeraLandingStageExecutionRepository.class);
+    VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
+    CodexAgentExecutionTelemetryRepository telemetry =
+        mock(CodexAgentExecutionTelemetryRepository.class);
+    CreativeRepository creatives = mock(CreativeRepository.class);
+    AgentExecutorHealthService health = mock(AgentExecutorHealthService.class);
+    OpportunityAgentReviewRepository reviews = mock(OpportunityAgentReviewRepository.class);
+    Agent atena =
+        Agent.builder()
+            .id(10L)
+            .agentKey("experiment-strategist")
+            .nickname("Atena")
+            .name("Estrategista")
+            .currentVersion(4)
+            .build();
+    OpportunityAgentReview review =
+        OpportunityAgentReview.builder()
+            .id(7L)
+            .dossier(OpportunityDossier.builder().id(6L).build())
+            .agentKey("ATENA")
+            .executionStatus(OpportunityReviewExecutionStatus.FAILED)
+            .errorMessage("HTTP 500 ao consultar pendências")
+            .updatedAt(Instant.parse("2026-08-13T16:48:00Z"))
+            .build();
+    when(agents.findAllByOrderByNicknameAsc()).thenReturn(List.of(atena));
+    when(reviews.findTopByAgentKeyOrderByUpdatedAtDescIdDesc("ATENA"))
+        .thenReturn(Optional.of(review));
+    when(health.current(atena))
+        .thenReturn(
+            new AgentExecutorHealthResponse(
+                "READY",
+                4,
+                4,
+                true,
+                true,
+                true,
+                "build",
+                "Executor pronto.",
+                review.getUpdatedAt()));
+
+    AgentWorkMonitorResponse result =
+        new AgentWorkMonitorService(
+                agents, tasks, landings, cycles, telemetry, creatives, health, reviews)
+            .list()
+            .getFirst();
+
+    assertThat(result.workStatus()).isEqualTo("BLOCKED");
+    assertThat(result.currentWork()).isEqualTo("Parecer de Atena no dossiê #6");
+    assertThat(result.executionId()).isEqualTo(7L);
+    assertThat(result.difficulty()).isEqualTo("HTTP 500 ao consultar pendências");
+    assertThat(result.executorHealth().status()).isEqualTo("READY");
+  }
+
   /** Impede que bloqueio antigo de Argos prevaleça sobre a pesquisa mais recente concluída. */
   @Test
   void shouldIgnoreObsoleteBlockedTaskWhenLatestTaskIsCompleted() {

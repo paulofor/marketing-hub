@@ -18,6 +18,9 @@ public interface OpportunityAgentReviewRepository
   /** Localiza o parecer reservado a um agente. */
   Optional<OpportunityAgentReview> findByDossierIdAndAgentKey(Long dossierId, String agentKey);
 
+  /** Localiza a execução canônica mais recente de um parecerista para o monitor operacional. */
+  Optional<OpportunityAgentReview> findTopByAgentKeyOrderByUpdatedAtDescIdDesc(String agentKey);
+
   /** Localiza a próxima execução do agente sem misturar as filas dos pareceristas. */
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   List<OpportunityAgentReview> findByAgentKeyAndExecutionStatusOrderByRequestedAtAsc(

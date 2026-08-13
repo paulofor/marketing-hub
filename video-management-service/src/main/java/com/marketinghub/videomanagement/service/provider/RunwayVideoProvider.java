@@ -1,5 +1,6 @@
 package com.marketinghub.videomanagement.service.provider;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.videomanagement.client.dto.AssetType;
@@ -100,15 +101,20 @@ public class RunwayVideoProvider implements VideoProvider {
         Map<String, Object> payload = null;
         JsonNode finalStatus = null;
         for (int scene = 1; scene <= sceneCount; scene++) {
-            payload = buildPayload(job, profile, script);
+            payload = buildPayload(job, profile, script, scene, sceneCount);
             if (sceneCount > 1) {
-                payload.put("promptText", "Scene %d of %d. %s".formatted(scene, sceneCount, payload.get("promptText")));
+                payload.put("promptText", sceneDirective(scene, sceneCount) + " " + payload.get("promptText"));
             }
             String taskId = submitRender(job, payload);
             taskIds.add(taskId);
+            String model = String.valueOf(payload.get("model"));
+            int durationSeconds = ((Number) payload.get("duration")).intValue();
+            int estimatedCredits = estimateCredits(model, durationSeconds);
             progressCallback.onProgress(10 + (scene * 65 / sceneCount), SalesVideoStatus.VIDEO_PROCESSING,
-                    "Runway processando cena %d/%d".formatted(scene, sceneCount));
-            finalStatus = waitUntilCompleted(taskId, progressCallback);
+                    "Runway aceitou cena %d/%d; taskId=%s".formatted(scene, sceneCount, taskId),
+                    providerTaskDetails(taskId, model, scene, sceneCount, durationSeconds, estimatedCredits));
+            finalStatus = waitUntilCompleted(
+                    taskId, model, scene, sceneCount, durationSeconds, estimatedCredits, progressCallback);
             String videoUrl = resolveVideoUrl(finalStatus);
             if (!StringUtils.hasText(videoUrl)) {
                 throw new VideoProviderException("PROVIDER_RENDER_FAILED", "Runway não retornou URL da cena " + scene);
@@ -118,11 +124,24 @@ public class RunwayVideoProvider implements VideoProvider {
 
         ProviderFile video = scenes.size() == 1 ? scenes.getFirst() : assembleScenes(job, scenes);
         String taskId = String.join(",", taskIds);
-        Map<String, Object> metadata = metadata(job, taskId, payload, finalStatus);
+        Map<String, Object> metadata = metadata(job, taskId, payload, finalStatus, sceneCount);
         metadata.put("scene_count", sceneCount);
         metadata.put("assembled_locally", sceneCount > 1);
         progressCallback.onProgress(95, SalesVideoStatus.VIDEO_PROCESSING, "Runway finalizada com MP4 disponível");
         return new ProviderArtifacts(taskId, video, null, null, metadata);
+    }
+
+    /** Define uma função narrativa distinta por cena para evitar clipes genéricos e repetitivos. */
+    private String sceneDirective(int scene, int sceneCount) {
+        String[] roles = {
+                "DOR: mostre uma situação cotidiana reconhecível e específica, sem texto embutido.",
+                "RESULTADO: mostre a transformação visual plausível e concreta, sem promessas absolutas.",
+                "MECANISMO: mostre a ação prática que produz o resultado e preserve personagem e ambiente.",
+                "CTA: encerre com gesto natural de decisão e espaço visual limpo para CTA em pós-produção."
+        };
+        int roleIndex = sceneCount == 1 ? 2 : Math.min(roles.length - 1,
+                (int) Math.floor((scene - 1) * roles.length / (double) sceneCount));
+        return "Cena %d de %d. FUNÇÃO COMERCIAL %s".formatted(scene, sceneCount, roles[roleIndex]);
     }
 
     /** Concatena as cenas Runway localmente para entregar a duração integral aprovada por Plutus. */
@@ -193,7 +212,13 @@ public class RunwayVideoProvider implements VideoProvider {
     }
 
     /** Aguarda a tarefa Runway chegar em sucesso ou falha objetiva. */
-    private JsonNode waitUntilCompleted(String taskId, ProgressCallback progressCallback) {
+    private JsonNode waitUntilCompleted(String taskId,
+                                        String model,
+                                        int scene,
+                                        int sceneCount,
+                                        int durationSeconds,
+                                        int estimatedCredits,
+                                        ProgressCallback progressCallback) {
         VideoManagementProperties.Runway config = properties.getProviders().getRunway();
         for (int attempt = 1; attempt <= config.getMaxPollAttempts(); attempt++) {
             String path = config.getStatusPathTemplate().replace("{taskId}", taskId);
@@ -210,9 +235,23 @@ public class RunwayVideoProvider implements VideoProvider {
             log.info("Resposta Runway status; taskId={} response={}", taskId, status);
             String taskStatus = normalize(firstText(status, "/status"));
             if (isSuccess(taskStatus)) {
+                progressCallback.onProgress(80, SalesVideoStatus.VIDEO_PROCESSING,
+                        "Runway liquidou cena %d/%d; taskId=%s".formatted(scene, sceneCount, taskId),
+                        providerTaskSettlementDetails(taskId, model, scene, sceneCount, durationSeconds,
+                                estimatedCredits, "CHARGED", "PROVIDER_RATE_CARD_AND_TASK_SUCCESS"));
                 return status;
             }
             if (isFailure(taskStatus)) {
+                String failureCode = firstText(status, "/failureCode", "/failure_code");
+                boolean charged = StringUtils.hasText(failureCode)
+                        && failureCode.toUpperCase(Locale.ROOT).startsWith("SAFETY.");
+                progressCallback.onProgress(80, SalesVideoStatus.VIDEO_PROCESSING,
+                        "Runway liquidou cena %d/%d; taskId=%s".formatted(scene, sceneCount, taskId),
+                        providerTaskSettlementDetails(taskId, model, scene, sceneCount, durationSeconds,
+                                charged ? estimatedCredits : 0,
+                                charged ? "CHARGED" : "REFUNDED",
+                                charged ? "PROVIDER_RATE_CARD_AND_SAFETY_FAILURE"
+                                        : "PROVIDER_TASK_FAILURE_REFUND_POLICY"));
                 throw new VideoProviderException("PROVIDER_RENDER_FAILED",
                         "Runway falhou: " + readFailure(status));
             }
@@ -225,14 +264,18 @@ public class RunwayVideoProvider implements VideoProvider {
     }
 
     /** Monta payload aceito pela Runway com prompt comercial e imagem de referência quando existir. */
-    private Map<String, Object> buildPayload(SalesVideoJob job, SalesVideoProfile profile, SalesVideoScript script) {
+    private Map<String, Object> buildPayload(SalesVideoJob job,
+                                             SalesVideoProfile profile,
+                                             SalesVideoScript script,
+                                             int scene,
+                                             int sceneCount) {
         VideoManagementProperties.Runway config = properties.getProviders().getRunway();
         JsonNode metadata = readMetadata(job);
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", resolveModel(job, config));
-        payload.put("promptText", limitPrompt(buildPrompt(job, profile, script, metadata), 1000));
+        payload.put("promptText", limitPrompt(buildPrompt(job, profile, script, metadata, scene, sceneCount), 1000));
         payload.put("ratio", config.getRatio());
-        payload.put("duration", resolveDuration(job, config));
+        payload.put("duration", resolveDuration(job, config, metadata));
         String promptImage = firstText(metadata,
                 "/characterImageReferenceUrl",
                 "/image_to_video/reference_image_url",
@@ -266,12 +309,18 @@ public class RunwayVideoProvider implements VideoProvider {
     }
 
     /** Resolve duração compatível com o modelo selecionado antes de consumir créditos. */
-    private int resolveDuration(SalesVideoJob job, VideoManagementProperties.Runway config) {
+    private int resolveDuration(SalesVideoJob job,
+                                VideoManagementProperties.Runway config,
+                                JsonNode metadata) {
         String providerName = normalize(job.providerName());
         if (providerName.equals("RUNWAY_VEO_3_1") || providerName.equals("RUNWAY_VEO_3_1_FAST")) {
             return Math.min(config.getDurationSeconds(), 8);
         }
-        return config.getDurationSeconds();
+        int planned = metadata.path("providerClipDurationSeconds").asInt(config.getDurationSeconds());
+        if (providerName.contains("SEEDANCE_2")) {
+            return Math.max(4, Math.min(planned, 15));
+        }
+        return Math.min(planned, 10);
     }
 
     /** Limita o prompt ao contrato oficial da Runway sem cortar um par substituto UTF-16. */
@@ -290,9 +339,14 @@ public class RunwayVideoProvider implements VideoProvider {
     private String buildPrompt(SalesVideoJob job,
                                SalesVideoProfile profile,
                                SalesVideoScript script,
-                               JsonNode metadata) {
+                               JsonNode metadata,
+                               int scene,
+                               int sceneCount) {
         String visualDirectives = visualProviderDirectives(metadata);
-        String scenePrompt = metadata.path("scene").path("prompt").asText("");
+        String scenePrompt = plannedCuts(metadata, scene, sceneCount);
+        if (!StringUtils.hasText(scenePrompt)) {
+            scenePrompt = metadata.path("scene").path("prompt").asText("");
+        }
         String scenes = StringUtils.hasText(scenePrompt)
                 ? scenePrompt
                 : metadata.path("assembly_plan").path("scenes").isMissingNode()
@@ -311,7 +365,9 @@ public class RunwayVideoProvider implements VideoProvider {
                 Approved CTA: %s.
                 Scene plan: %s.
                 Keep the scene natural, concrete and commercially useful. Show a human situation, the felt pain, a plausible mechanism and a light CTA.
-                Avoid embedded text, logos, distorted hands, haze, blur, flicker, body-focused framing, seductive posing and luxury ostentation.
+                Do not render letters, words, captions, subtitles, UI copy, logos or watermarks in the generated footage.
+                Preserve clean negative space for deterministic Portuguese copy, captions and CTA added only in post-production.
+                Avoid distorted hands, haze, blur, flicker, body-focused framing, seductive posing and luxury ostentation.
                 """.formatted(
                 scenes,
                 visualDirectives,
@@ -323,6 +379,26 @@ public class RunwayVideoProvider implements VideoProvider {
                 script.scriptText(),
                 nullToDefault(script.ctaText(), ""),
                 scenes);
+    }
+
+    /** Seleciona apenas os cortes pertencentes ao clipe atual para evitar repetição e improviso. */
+    private String plannedCuts(JsonNode metadata, int scene, int sceneCount) {
+        JsonNode cuts = metadata.path("cut_plan");
+        if (!cuts.isArray() || cuts.isEmpty()) {
+            return "";
+        }
+        int start = (scene - 1) * cuts.size() / sceneCount;
+        int end = Math.max(start + 1, scene * cuts.size() / sceneCount);
+        List<String> selected = new ArrayList<>();
+        for (int index = start; index < Math.min(end, cuts.size()); index++) {
+            JsonNode cut = cuts.get(index);
+            selected.add("Corte %d (%ds, %s): %s".formatted(
+                    cut.path("order").asInt(index + 1),
+                    cut.path("duration_seconds").asInt(3),
+                    cut.path("role").asText("MECANISMO"),
+                    cut.path("visual_objective").asText("ação visual única")));
+        }
+        return String.join(" ", selected);
     }
 
     /** Extrai diretivas visuais enviadas pelo Marketing Hub. */
@@ -362,14 +438,19 @@ public class RunwayVideoProvider implements VideoProvider {
     private Map<String, Object> metadata(SalesVideoJob job,
                                          String taskId,
                                          Map<String, Object> request,
-                                         JsonNode finalStatus) {
+                                         JsonNode finalStatus,
+                                         int sceneCount) {
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("provider", "RUNWAY");
         metadata.put("provider_job_id", taskId);
-        metadata.put("model", properties.getProviders().getRunway().getModel());
+        String model = String.valueOf(request.get("model"));
+        int clipDurationSeconds = ((Number) request.get("duration")).intValue();
+        metadata.put("model", model);
         metadata.put("ratio", properties.getProviders().getRunway().getRatio());
-        metadata.put("duration_seconds", properties.getProviders().getRunway().getDurationSeconds());
-        metadata.put("cost_usd", estimateCostUsd());
+        metadata.put("duration_seconds", clipDurationSeconds * sceneCount);
+        metadata.put("clip_duration_seconds", clipDurationSeconds);
+        metadata.put("cost_usd", estimateCostUsd(model, clipDurationSeconds, sceneCount));
+        metadata.put("cost_scope", "ALL_SCENES");
         metadata.put("pricing_source", "Runway API charges credits per second by model; see official pricing");
         metadata.put("request", request);
         metadata.put("final_status", objectMapper.convertValue(finalStatus, Map.class));
@@ -378,13 +459,75 @@ public class RunwayVideoProvider implements VideoProvider {
         return metadata;
     }
 
-    /** Calcula custo aproximado para Gen-4.5 com créditos de US$0,01. */
-    private BigDecimal estimateCostUsd() {
-        int seconds = Math.max(1, properties.getProviders().getRunway().getDurationSeconds());
-        BigDecimal creditsPerSecond = "gen4_turbo".equalsIgnoreCase(properties.getProviders().getRunway().getModel())
-                ? new BigDecimal("5")
-                : new BigDecimal("12");
-        return creditsPerSecond.multiply(BigDecimal.valueOf(seconds)).multiply(new BigDecimal("0.01"));
+    /** Calcula custo aproximado por task com créditos de US$0,01. */
+    private BigDecimal estimateCostUsd(String model, int clipDurationSeconds, int sceneCount) {
+        return BigDecimal.valueOf(estimateCredits(model, clipDurationSeconds))
+                .multiply(BigDecimal.valueOf(Math.max(1, sceneCount)))
+                .multiply(new BigDecimal("0.01"));
+    }
+
+    /** Calcula os créditos comprometidos quando a Runway aceita uma task. */
+    private int estimateCredits(String model, int durationSeconds) {
+        int creditsPerSecond = switch (model.toLowerCase(Locale.ROOT)) {
+            case "gen4_turbo" -> 5;
+            case "seedance2_5" -> 30;
+            default -> 12;
+        };
+        return creditsPerSecond * Math.max(1, durationSeconds);
+    }
+
+    /** Serializa o evento financeiro idempotente vinculado à task e à cena. */
+    private String providerTaskDetails(String taskId,
+                                       String model,
+                                       int scene,
+                                       int sceneCount,
+                                       int durationSeconds,
+                                       int estimatedCredits) {
+        try {
+            Map<String, Object> details = new LinkedHashMap<>();
+            details.put("eventType", "PROVIDER_TASK_ACCEPTED");
+            details.put("provider", "RUNWAY");
+            details.put("providerTaskId", taskId);
+            details.put("model", model);
+            details.put("sceneNumber", scene);
+            details.put("plannedSceneCount", sceneCount);
+            details.put("durationSeconds", durationSeconds);
+            details.put("estimatedCredits", estimatedCredits);
+            details.put("estimatedCostUsd", BigDecimal.valueOf(estimatedCredits).multiply(new BigDecimal("0.01")));
+            return objectMapper.writeValueAsString(details);
+        } catch (JsonProcessingException ex) {
+            log.error("Falha ao serializar consumo da task Runway; taskId={}", taskId, ex);
+            throw new VideoProviderException("PROVIDER_AUDIT_FAILED", "Falha ao auditar consumo da Runway", ex);
+        }
+    }
+
+    /** Serializa a liquidação financeira da task após o desfecho informado pela Runway. */
+    private String providerTaskSettlementDetails(String taskId,
+                                                 String model,
+                                                 int scene,
+                                                 int sceneCount,
+                                                 int durationSeconds,
+                                                 int billedCredits,
+                                                 String settlementStatus,
+                                                 String billingEvidence) {
+        try {
+            Map<String, Object> details = new LinkedHashMap<>();
+            details.put("eventType", "PROVIDER_TASK_SETTLED");
+            details.put("provider", "RUNWAY");
+            details.put("providerTaskId", taskId);
+            details.put("model", model);
+            details.put("sceneNumber", scene);
+            details.put("plannedSceneCount", sceneCount);
+            details.put("durationSeconds", durationSeconds);
+            details.put("billedCredits", billedCredits);
+            details.put("billedCostUsd", BigDecimal.valueOf(billedCredits).multiply(new BigDecimal("0.01")));
+            details.put("settlementStatus", settlementStatus);
+            details.put("billingEvidence", billingEvidence);
+            return objectMapper.writeValueAsString(details);
+        } catch (JsonProcessingException ex) {
+            log.error("Falha ao serializar liquidação da task Runway; taskId={}", taskId, ex);
+            throw new VideoProviderException("PROVIDER_AUDIT_FAILED", "Falha ao liquidar consumo da Runway", ex);
+        }
     }
 
     /** Extrai URL de vídeo do formato padrão de task output da Runway. */
@@ -406,11 +549,20 @@ public class RunwayVideoProvider implements VideoProvider {
                 resolveBaseUrl() + path,
                 body,
                 ex);
-        String code = ex.getStatusCode().value() == 429 ? "PROVIDER_RATE_LIMIT" : "PROVIDER_RENDER_FAILED";
+        String code = ex.getStatusCode().value() == 402 || insufficientCredits(body)
+                ? "PROVIDER_CREDITS_INSUFFICIENT"
+                : ex.getStatusCode().value() == 429 ? "PROVIDER_RATE_LIMIT" : "PROVIDER_RENDER_FAILED";
         return new VideoProviderException(code,
                 "Runway retornou HTTP %d em %s: %s"
                         .formatted(ex.getStatusCode().value(), operation, body),
                 ex);
+    }
+
+    /** Classifica rejeição financeira da Runway para bloquear reconciliação sem depender da mensagem. */
+    private boolean insufficientCredits(String body) {
+        String normalized = body == null ? "" : body.toLowerCase(Locale.ROOT);
+        return normalized.contains("not enough credits")
+                || normalized.contains("insufficient credits");
     }
 
     /** Limita corpo de erro externo para log e retorno sem vazar conteúdo excessivo. */

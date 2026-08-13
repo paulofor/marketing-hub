@@ -205,3 +205,18 @@
 - Aplicação comercial: Apolo deve considerar esse caminho para peças narrativas que dependam de continuidade e referências multimodais, especialmente os vídeos do MUSA.
 - Limite operacional: capacidade disponível na plataforma não comprova o mesmo contrato na API. O adapter automatizado só pode usar modalidades e durações aceitas pelo endpoint vigente, com custo, licença, evidências e QA persistidos.
 - Prevenção: o prompt operacional e o cânone agora exigem que Apolo diferencie produção assistida de automação por API antes de escolher ou executar o provider.
+
+## 2026-08-13 — Cenas pagas visíveis e texto somente na pós-produção
+
+- Evidência histórica: Apolo teve 13 cenas aceitas pela Runway nos ciclos MUSA #5 e #6; progresso e heartbeat duplicavam a aparência dos eventos, enquanto falhas anteriores à criação não consumiam créditos.
+- Causa-raiz: a tela financeira consolidava apenas saldo e ledger por job, sem expor cada solicitação aceita; o texto também podia ser sugerido no contexto visual entregue ao modelo generativo, produzindo tipografia inconsistente e difícil de corrigir.
+- Correção: o financeiro passa a deduplicar por job+cena e mostra ciclo, job, ordem, horário e task externa; o executor registra o task id imediatamente após a aceitação.
+- Prevenção: o prompt da Runway proíbe qualquer texto embutido e reserva espaço limpo para copy, legenda e CTA aplicados apenas na pós-produção determinística.
+# 2026-08-13 — liquidação financeira por task/cena
+
+- Causa-raiz: o aceite da task era persistido somente com tarifa estimada e 587 tentativas antigas
+  permaneciam sem distinção entre cobrança, reembolso e ausência de evidência.
+- Prevenção: cada task nova recebe evento de liquidação `CHARGED` ou `REFUNDED`, custo cobrável e
+  origem da evidência; a tela não apresenta estimativa como débito reportado pelo provider.
+- Limite externo: a API pública Runway não oferece endpoint documentado de saldo ou custo debitado
+  por task; a conciliação usa status da task e tabela oficial, mantendo essa natureza explícita.

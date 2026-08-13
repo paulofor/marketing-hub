@@ -47,6 +47,30 @@ vi.mock("../../api/agent/useAgentWorkMonitor", () => ({
   useAgentWorkMonitor: () => ({
     data: [
       {
+        agentId: 10,
+        nickname: "Atena",
+        agentName: "Estrategista de experimentos",
+        agentKey: "experiment-strategist",
+        workStatus: "BLOCKED",
+        currentWork: "Parecer de Atena no dossiê #6",
+        progressDetail: "Execução canônica FAILED",
+        difficulty: "Falha HTTP 500 ao consultar pendências.",
+        sourceReference: "opportunity-dossier:6",
+        executionId: 7,
+        externalDecisionRequired: false,
+        dailyTokens: 0,
+        executorHealth: {
+          status: "READY",
+          expectedVersion: 4,
+          deployedVersion: 4,
+          versionCurrent: true,
+          backendAccessible: true,
+          codexAuthenticated: true,
+          detail: "Executor pronto.",
+        },
+        combinedStatus: "READY — parecer bloqueado",
+      },
+      {
         agentId: 7,
         nickname: "Dédalo",
         agentName: "Agente Gerador de Landing",
@@ -123,6 +147,23 @@ describe("AgentListPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("distingue o health pronto do parecer canônico bloqueado de Atena", () => {
+    render(
+      <MemoryRouter>
+        <AgentListPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("READY — parecer bloqueado")).toBeInTheDocument();
+    expect(
+      screen.getByText("Parecer de Atena no dossiê #6"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Falha HTTP 500 ao consultar pendências."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Execução #7")).toBeInTheDocument();
+  });
+
   it("mostra trabalho real e necessidade de decisão no monitor", () => {
     render(
       <MemoryRouter>
@@ -150,7 +191,7 @@ describe("AgentListPage", () => {
 
     expect(
       screen.getAllByRole("button", { name: "Reconectar Codex" }),
-    ).toHaveLength(2);
+    ).toHaveLength(3);
   });
 
   it("conduz as sessões em sequência usando o estado informado pelo backend", async () => {

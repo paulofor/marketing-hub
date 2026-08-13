@@ -85,6 +85,36 @@ public class OpportunityReviewExecutionService {
     reviews.save(review);
   }
 
+  /**
+   * Recoloca um parecer técnico falho na fila real do agente, preservando seu vínculo ao dossiê.
+   */
+  @Transactional
+  public void requeue(Long dossierId, String agentKey) {
+    String agent = supported(agentKey);
+    OpportunityAgentReview review =
+        reviews
+            .findByDossierIdAndAgentKey(dossierId, agent)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    if (review.getDossier().getStatus() != OpportunityDossierStatus.UNDER_REVIEW) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Dossiê não está recebendo pareceres");
+    }
+    if (review.getCompletedAt() != null
+        || review.getExecutionStatus() == OpportunityReviewExecutionStatus.COMPLETED) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Parecer já foi concluído");
+    }
+    if (review.getExecutionStatus() == OpportunityReviewExecutionStatus.RUNNING) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Parecer ainda está em execução");
+    }
+    review.setExecutionStatus(OpportunityReviewExecutionStatus.PENDING);
+    review.setRequestedAt(Instant.now());
+    review.setStartedAt(null);
+    review.setRetryCount(0);
+    review.setErrorMessage(null);
+    review.setRawModelResponse(null);
+    review.setModelName(null);
+    reviews.save(review);
+  }
+
   /** Recupera leases inativas uma vez e encerra reincidência para impedir loop. */
   private void recoverExpired(String agent) {
     Instant cutoff = Instant.now().minusSeconds(LEASE_SECONDS);

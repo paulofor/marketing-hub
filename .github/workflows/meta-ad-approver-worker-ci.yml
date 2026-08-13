@@ -7,6 +7,7 @@ on:
       - meta-ad-approver-worker/**
       - .github/workflows/meta-ad-approver-worker-ci.yml
       - scripts/test-isolated-agent-codex-auth.sh
+      - scripts/codex-app-server-device-login.mjs
   pull_request:
     paths:
       - meta-ad-approver-worker/**
@@ -15,6 +16,7 @@ on:
       - docs/canonical/**
       - .github/workflows/meta-ad-approver-worker-ci.yml
       - scripts/test-isolated-agent-codex-auth.sh
+      - scripts/codex-app-server-device-login.mjs
   workflow_dispatch:
 
 concurrency:
@@ -79,8 +81,9 @@ jobs:
       - name: Synchronize versioned repository
         run: |
           set -euo pipefail
-          ssh "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/meta-ad-approver-worker'"
+          ssh "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/meta-ad-approver-worker' '${REPOSITORY_DIR}/scripts'"
           rsync -az --delete meta-ad-approver-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/meta-ad-approver-worker/"
+          rsync -az scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
       - name: Rebuild and restart agent
         run: |
           set -euo pipefail

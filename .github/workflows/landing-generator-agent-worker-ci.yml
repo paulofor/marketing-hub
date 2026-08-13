@@ -9,6 +9,7 @@ on:
       - "backend/ads-service/src/main/java/com/marketinghub/geralanding/agent/**"
       - ".github/workflows/landing-generator-agent-worker-ci.yml"
       - "scripts/test-isolated-agent-codex-auth.sh"
+      - "scripts/codex-app-server-device-login.mjs"
 
 concurrency:
   group: landing-generator-agent-worker-${{ github.ref }}
@@ -62,8 +63,9 @@ jobs:
       - name: Sincronizar repositório versionado
         run: |
           set -euo pipefail
-          ssh "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/landing-generator-agent-worker'"
+          ssh "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/landing-generator-agent-worker' '${REPOSITORY_DIR}/scripts'"
           rsync -az --delete landing-generator-agent-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/landing-generator-agent-worker/"
+          rsync -az scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
       - name: Subir executor com sessão individual
         run: |
           set -euo pipefail

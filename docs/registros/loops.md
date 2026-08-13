@@ -88,6 +88,15 @@
 
 ## Regra operacional de uso
 
+## LOOP-APOLO-LEGACY-LUMA-RESELECTION — plano legado reintroduz provider reprovado
+
+- **Severidade:** ALTO.
+- **Status:** fechado localmente em 2026-08-13; aguarda publicação.
+- **Sintoma:** após falha 402 e score comercial insuficiente, novos ciclos MUSA voltavam à Luma porque o seletor priorizava a menção antiga do projeto e usava Luma como padrão para vídeos longos.
+- **Causa-raiz confirmada:** a preferência estava hardcoded no backend e contradizia a decisão comercial e o conhecimento operacional de Apolo.
+- **Correção efetiva:** Luma deixa de ser selecionável pelo ciclo autônomo MUSA; Seedance 2.5 via Runway passa a ser o padrão, e a decisão é registrada no cânone e no prompt versionado de Apolo.
+- **Prevenção:** teste de contrato usa um projeto legado que ainda cita Luma e exige que o job seja criado como `RUNWAY_SEEDANCE_2_5`.
+
 ## LOOP-AGENT-DEPLOY-GLOBAL-REVISION-MARKER — deploy saudável reportado como falha
 
 - **Severidade:** ALTO.

@@ -35,6 +35,7 @@ export interface AgentWorkMonitor {
     detail?: string | null;
     checkedAt?: string | null;
   };
+  combinedStatus: string;
 }
 
 /** Consulta o estado persistido das tarefas e pipelines de todos os agentes. */

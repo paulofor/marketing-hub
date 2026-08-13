@@ -88,6 +88,15 @@
 
 ## Regra operacional de uso
 
+## LOOP-AGENT-DEPLOY-GLOBAL-REVISION-MARKER — deploy saudável reportado como falha
+
+- **Severidade:** ALTO.
+- **Status:** fechado localmente em 2026-08-13; aguarda publicação.
+- **Sintoma:** o deploy de Atena ou Hermes conclui o rebuild e confirma saúde, mas o GitHub Action falha na etapa final de relatório.
+- **Causa-raiz confirmada:** após a sincronização ser isolada por worker, os workflows ainda tentavam ler o marcador global `/opt/marketing-hub/repo/.deployed-revision`, que não é produzido pelo deploy modular.
+- **Correção efetiva:** validar diretamente a imagem em execução contra o SHA do commit e reportar imagem, início e estado do container.
+- **Prevenção:** o contrato dos agentes rejeita workflows que voltem a depender do marcador global incompatível com deploy modular.
+
 ## LOOP-TEMIS-LANDING-WITHOUT-DEDALO-DELEGATION — diagnóstico sem responsável operacional
 
 - **Severidade:** CRÍTICO.

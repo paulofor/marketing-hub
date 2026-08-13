@@ -98,8 +98,9 @@ jobs:
 
       - name: Report deployed revision
         run: |
-          ssh "${VPS_USER}@${VPS_IP}" "\
-            printf 'revision=' && cat '${REPOSITORY_DIR}/.deployed-revision' \
-            && printf 'container=' \
-            && docker inspect growth-operator-worker-growth-operator-worker-1 \
+          deployed_image="$(ssh "${VPS_USER}@${VPS_IP}" \
+            "docker inspect growth-operator-worker-growth-operator-worker-1 --format '{{.Config.Image}}'")"
+          test "${deployed_image}" = "marketing-hub/growth-operator-worker:${GITHUB_SHA}"
+          ssh "${VPS_USER}@${VPS_IP}" \
+            "docker inspect growth-operator-worker-growth-operator-worker-1 \
               --format 'image={{.Config.Image}} started={{.State.StartedAt}} status={{.State.Status}}'"

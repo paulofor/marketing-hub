@@ -28,6 +28,10 @@ for agent in "${!homes[@]}"; do
   fi
 done
 
+landing_workflow="$repo_root/.github/workflows/landing-generator-agent-worker-ci.yml"
+grep -q 'ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=10' "$landing_workflow"
+grep -q 'Aguardando saúde do executor (tentativa' "$landing_workflow"
+
 if grep -q 'group: shared-growth-agents-repository-deploy' \
   "$repo_root/.github/workflows"/*-worker-ci.yml; then
   printf '%s\n' '[ARQUITETURA] Deploys independentes ainda compartilham fila que cancela pendências intermediárias.' >&2

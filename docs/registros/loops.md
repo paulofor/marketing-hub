@@ -1178,3 +1178,11 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** a manutenção auxiliar tratava respostas transitórias HTTP 500/502 da API de artefatos do GitHub como falha do produto; execuções próximas também podiam tentar excluir o mesmo conjunto. A primeira correção alterou apenas o workflow e seu teste, mas os filtros observavam somente `frontend/**`, então o próprio Frontend CI corrigido não executou no `push` que o incorporou.
 - **Correção sistêmica:** a chamada passa a repetir falhas transitórias e, após esgotar as tentativas, registra aviso e deixa a limpeza idempotente para o próximo run. O workflow também dispara quando sua definição ou seu contrato preventivo mudam e aceita execução manual de diagnóstico. Erros permanentes continuam falhando o workflow.
 - **Prevenção:** teste de contrato exige retries, tolerância restrita a 404 e erros transitórios 5xx, proíbe tolerância ampla que esconda falhas de permissão ou contrato e confirma que mudanças no próprio mecanismo disparam sua validação.
+
+## LOOP-LANDING-GENERATOR-CI-SSH-IDLE — deploy saudável perde a sessão durante o readiness
+
+- **Data:** 2026-08-13.
+- **Sintoma:** o Landing Generator Agent Worker conclui build, recria o container e termina com `Broken pipe` após cinco minutos aguardando o readiness.
+- **Causa-raiz:** a sessão SSH do deploy não enviava keepalive e permanecia sem saída durante as tentativas de saúde, sendo encerrada por inatividade antes de o workflow obter o diagnóstico final do executor.
+- **Correção sistêmica:** o SSH passa a enviar keepalive com tolerância superior à janela de readiness, e cada tentativa produz progresso observável; indisponibilidade real continua exibindo os logs e falhando o deploy.
+- **Prevenção:** o contrato de isolamento dos agentes exige keepalive e progresso explícito no workflow de Dédalo.

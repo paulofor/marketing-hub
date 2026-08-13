@@ -69,7 +69,7 @@ jobs:
       - name: Subir executor com sessão individual
         run: |
           set -euo pipefail
-          ssh "${VPS_USER}@${VPS_IP}" "
+          ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=10 "${VPS_USER}@${VPS_IP}" "
             install -d -o 10001 -g 10001 /opt/growth-operator/agents/landing-generator/codex-home \
             && export LANDING_GENERATOR_CODEX_HOME=/opt/growth-operator/agents/landing-generator/codex-home \
                       BACKEND_URL=http://191.252.181.168 \
@@ -81,6 +81,7 @@ jobs:
             && cd '${REPOSITORY_DIR}/landing-generator-agent-worker' \
             && docker compose up -d --build --remove-orphans \
             && for attempt in \$(seq 1 24); do \
+                 echo \"Aguardando saúde do executor (tentativa \${attempt}/24)\"; \
                  curl -fsS http://127.0.0.1:8100/ops-landing-generator-observability-v1/health | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' \
                    && docker compose exec -T landing-generator-agent-worker node /app/agent-health-report.mjs \
                    && exit 0; \

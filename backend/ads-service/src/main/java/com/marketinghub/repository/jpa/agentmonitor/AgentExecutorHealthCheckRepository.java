@@ -1,5 +1,6 @@
-package com.marketinghub.agentmonitor;
+package com.marketinghub.repository.jpa.agentmonitor;
 
+import com.marketinghub.agentmonitor.AgentExecutorHealthCheck;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 

@@ -3,6 +3,7 @@ package com.marketinghub.agentmonitor;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agent.CodexAuthReconnectRepository;
+import com.marketinghub.repository.jpa.agentmonitor.AgentExecutorHealthCheckRepository;
 import java.time.Clock;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Autowired;

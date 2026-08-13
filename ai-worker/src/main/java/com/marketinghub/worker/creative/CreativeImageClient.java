@@ -108,12 +108,19 @@ public class CreativeImageClient {
      * Gera uma imagem com contexto operacional para isolar falhas de OpenAI, upload ou configuração.
      */
     public String generateImage(String prompt, String intermediatePrompt, String operationContext) {
+        return generateImage(prompt, intermediatePrompt, operationContext, List.of());
+    }
+
+    /** Gera uma imagem usando referências visuais reais como entrada multimodal obrigatória. */
+    public String generateImage(
+            String prompt, String intermediatePrompt, String operationContext, List<String> referenceImageUrls) {
         String context = normalizeContext(operationContext);
         if (!enabled) {
             log.error("Cannot generate creative image because OpenAI API key is missing. context={}", context);
             throw new IllegalStateException("OpenAI API key is required to generate creative images");
         }
-        OpenAiImageResult imageResult = callOpenAiForImage(prompt, context);
+        List<String> references = normalizeReferenceUrls(referenceImageUrls);
+        OpenAiImageResult imageResult = callOpenAiForImage(prompt, context, references);
         ImageData data = imageResult.data();
         if (data.base64() != null && !data.base64().isBlank()) {
             try {
@@ -151,14 +158,14 @@ public class CreativeImageClient {
     /**
      * Chama o endpoint de imagem da OpenAI e extrai o payload de imagem gerado.
      */
-    private OpenAiImageResult callOpenAiForImage(String prompt, String context) {
+    private OpenAiImageResult callOpenAiForImage(String prompt, String context, List<String> referenceImageUrls) {
         RuntimeException lastFailure = null;
         for (int attempt = 1; attempt <= MAX_TRANSIENT_ATTEMPTS; attempt++) {
             String effectiveTier = effectiveServiceTierForAttempt(attempt);
             try {
                 return isFlexTier(effectiveTier)
-                        ? callResponsesImageTool(prompt, context, effectiveTier, attempt)
-                        : callImageApi(prompt, context, effectiveTier, attempt);
+                        ? callResponsesImageTool(prompt, context, effectiveTier, attempt, referenceImageUrls)
+                        : callImageApi(prompt, context, effectiveTier, attempt, referenceImageUrls);
             } catch (RuntimeException ex) {
                 lastFailure = ex;
                 if (!isTransientOpenAiFailure(ex) || attempt == MAX_TRANSIENT_ATTEMPTS) {
@@ -178,15 +185,16 @@ public class CreativeImageClient {
     /**
      * Chama a ferramenta de imagem da Responses API usando o tier efetivo da tentativa.
      */
-    private OpenAiImageResult callResponsesImageTool(String prompt, String context, String effectiveTier, int attempt) {
+    private OpenAiImageResult callResponsesImageTool(
+            String prompt, String context, String effectiveTier, int attempt, List<String> referenceImageUrls) {
         Map<String, Object> imageTool = new LinkedHashMap<>();
         imageTool.put("type", "image_generation");
-        imageTool.put("action", "generate");
+        imageTool.put("action", referenceImageUrls.isEmpty() ? "generate" : "edit");
         imageTool.put("model", model);
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", responsesModel);
-        payload.put("input", prompt);
+        payload.put("input", responsesInput(prompt, referenceImageUrls));
         payload.put("tools", List.of(imageTool));
         payload.put("service_tier", effectiveTier);
 
@@ -219,7 +227,11 @@ public class CreativeImageClient {
     /**
      * Chama a Image API direta para modos de geração que não usam Flex.
      */
-    private OpenAiImageResult callImageApi(String prompt, String context, String effectiveTier, int attempt) {
+    private OpenAiImageResult callImageApi(
+            String prompt, String context, String effectiveTier, int attempt, List<String> referenceImageUrls) {
+        if (!referenceImageUrls.isEmpty()) {
+            return callResponsesImageTool(prompt, context, "default", attempt, referenceImageUrls);
+        }
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", model);
         payload.put("prompt", prompt);
@@ -252,6 +264,30 @@ public class CreativeImageClient {
 
         log.info("Parsed OpenAI image response. context={} parsedResponse={}", context, response);
         return extractImageApiImage(response);
+    }
+
+    /** Monta a entrada multimodal documentada da Responses API com texto e imagens reais. */
+    private Object responsesInput(String prompt, List<String> referenceImageUrls) {
+        if (referenceImageUrls.isEmpty()) {
+            return prompt;
+        }
+        List<Map<String, Object>> content = new java.util.ArrayList<>();
+        content.add(Map.of("type", "input_text", "text", prompt));
+        referenceImageUrls.forEach(url -> content.add(Map.of("type", "input_image", "image_url", url)));
+        return List.of(Map.of("role", "user", "content", content));
+    }
+
+    /** Remove URLs vazias e duplicadas e limita a quantidade de referências por geração. */
+    private List<String> normalizeReferenceUrls(List<String> referenceImageUrls) {
+        if (referenceImageUrls == null) {
+            return List.of();
+        }
+        return referenceImageUrls.stream()
+                .filter(value -> value != null && !value.isBlank())
+                .map(String::trim)
+                .distinct()
+                .limit(3)
+                .toList();
     }
 
     /**

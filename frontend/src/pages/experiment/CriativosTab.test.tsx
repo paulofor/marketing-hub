@@ -174,6 +174,69 @@ describe("CriativosTab", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows the real landing examples selected by Temis before image generation", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.endsWith("/products/experiments/1/ads-in-use")) {
+        return Promise.resolve({ data: [] });
+      }
+      if (url.endsWith("/experiments/1")) {
+        return Promise.resolve({
+          data: {
+            creativesToGenerate: 0,
+            adCopy: JSON.stringify({
+              adCopy: {
+                primaryTextVariants: [
+                  { label: "prova", primaryText: "Veja o produto" },
+                ],
+              },
+            }),
+            adImageBriefing: JSON.stringify({
+              adImageBriefing: {
+                briefings: [
+                  { mustMatchAdVariant: "prova", visualBriefing: "Prova real" },
+                ],
+              },
+            }),
+            landingPageImageAssets: JSON.stringify({
+              images: [
+                {
+                  planningItemKey: "exemplo-post-real",
+                  sectionName: "Exemplo de post",
+                  status: "COMPLETED",
+                  resolvedUrl: "/uploads/post-real.png",
+                },
+                {
+                  planningItemKey: "decoracao-planejada",
+                  status: "PLANNED",
+                  resolvedUrl: "/uploads/inexistente.png",
+                },
+              ],
+            }),
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <CriativosTab experimentId="1" />
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByLabelText("Referências reais selecionadas por Têmis"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Exemplo de post/)).toHaveAttribute(
+      "href",
+      expect.stringContaining("/uploads/post-real.png"),
+    );
+    expect(
+      screen.getByRole("button", { name: "Gerar anúncios do pipeline" }),
+    ).toBeEnabled();
+  });
+
   it("submits a legacy creative to the agent even when commercial editing is locked", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url.endsWith("/products/experiments/1/ads-in-use")) {
@@ -479,6 +542,15 @@ describe("CriativosTab", () => {
             adImageBriefing: JSON.stringify({
               adImageBriefing: { briefings: [{ visualBriefing: "Imagem" }] },
             }),
+            landingPageImageAssets: JSON.stringify({
+              images: [
+                {
+                  planningItemKey: "post-real",
+                  status: "COMPLETED",
+                  resolvedUrl: "/uploads/post.png",
+                },
+              ],
+            }),
           },
         });
       }
@@ -511,6 +583,15 @@ describe("CriativosTab", () => {
             }),
             adImageBriefing: JSON.stringify({
               adImageBriefing: { briefings: [{ visualBriefing: "Imagem" }] },
+            }),
+            landingPageImageAssets: JSON.stringify({
+              images: [
+                {
+                  planningItemKey: "post-real",
+                  status: "COMPLETED",
+                  resolvedUrl: "/uploads/post.png",
+                },
+              ],
             }),
           },
         });
@@ -560,6 +641,15 @@ describe("CriativosTab", () => {
             }),
             adImageBriefing: JSON.stringify({
               adImageBriefing: { briefings: [{ visualBriefing: "Imagem" }] },
+            }),
+            landingPageImageAssets: JSON.stringify({
+              images: [
+                {
+                  planningItemKey: "post-real",
+                  status: "COMPLETED",
+                  resolvedUrl: "/uploads/post.png",
+                },
+              ],
             }),
           },
         });

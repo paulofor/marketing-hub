@@ -197,6 +197,8 @@ class ExperimentServiceTest {
     exp.setAdImageBriefing(
         "{\"adImageBriefing\":{\"briefings\":[{\"mustMatchAdVariant\":\"dor\",\"visualBriefing\":\"Use"
             + " contraste simples\",\"assetType\":\"estatico\"}]}}");
+    exp.setLandingPageImageAssets(
+        "{\"version\":1,\"images\":[{\"planningItemKey\":\"post-real\",\"status\":\"COMPLETED\",\"resolvedUrl\":\"https://cdn.test/post.png\"}]}");
     experimentRepository.save(exp);
 
     Experiment requested = service.requestPipelineCreatives(exp.getId());

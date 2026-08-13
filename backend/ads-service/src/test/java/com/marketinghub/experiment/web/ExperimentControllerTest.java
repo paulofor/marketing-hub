@@ -710,6 +710,8 @@ class ExperimentControllerTest {
                     "{\"adCopy\":{\"primaryTextVariants\":[{\"primaryText\":\"Texto\",\"headline\":\"Headline\"}]}}")
                 .adImageBriefing(
                     "{\"adImageBriefing\":{\"briefings\":[{\"visualBriefing\":\"Imagem\"}]}}")
+                .landingPageImageAssets(
+                    "{\"version\":1,\"images\":[{\"planningItemKey\":\"post-real\",\"status\":\"COMPLETED\",\"resolvedUrl\":\"https://cdn.test/post.png\"}]}")
                 .build());
 
     mockMvc

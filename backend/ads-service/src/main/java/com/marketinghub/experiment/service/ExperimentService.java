@@ -1286,6 +1286,42 @@ public class ExperimentService {
           HttpStatus.BAD_REQUEST,
           "Conclua as etapas de Texto do Anúncio e Prompt da Imagem antes de gerar anúncios do pipeline.");
     }
+    if (!hasCompletedLandingReference(exp.getLandingPageImageAssets())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Dédalo precisa concluir ao menos um exemplo visual real da landing antes de Têmis gerar o criativo.");
+    }
+  }
+
+  /** Confirma que o manifesto possui ao menos um arquivo concluído e acessível para referência. */
+  private boolean hasCompletedLandingReference(String manifest) {
+    if (!StringUtils.hasText(manifest)) {
+      return false;
+    }
+    try {
+      var images = objectMapper.readTree(manifest).path("images");
+      if (!images.isArray()) {
+        return false;
+      }
+      for (var image : images) {
+        String status = image.path("status").asText("");
+        boolean completed =
+            "COMPLETED".equalsIgnoreCase(status)
+                || "CONCLUIDO".equalsIgnoreCase(status)
+                || "READY".equalsIgnoreCase(status);
+        boolean hasUrl =
+            StringUtils.hasText(image.path("resolvedUrl").asText(null))
+                || StringUtils.hasText(image.path("webUrl").asText(null))
+                || StringUtils.hasText(image.path("sourceUrl").asText(null));
+        if (completed && hasUrl) {
+          return true;
+        }
+      }
+      return false;
+    } catch (Exception ex) {
+      log.warn("Manifesto de imagens da landing inválido durante preparação de criativo", ex);
+      return false;
+    }
   }
 
   @Transactional

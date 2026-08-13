@@ -137,7 +137,9 @@ public class CreativeGenerationService {
     private List<CreateCreativeRequest> generateAndValidateCopy(Experiment experiment, int quantity) {
         IllegalArgumentException lastContractFailure = null;
         for (int attempt = 1; attempt <= 2; attempt++) {
-            List<CreateCreativeRequest> creatives = textClient.generateCreatives(experiment, quantity)
+            List<CreateCreativeRequest> creatives = (attempt == 1
+                    ? textClient.generateCreatives(experiment, quantity)
+                    : textClient.generateCreatives(experiment, quantity, lastContractFailure.getMessage()))
                     .creatives().stream()
                     .limit(Math.max(1, quantity))
                     .toList();

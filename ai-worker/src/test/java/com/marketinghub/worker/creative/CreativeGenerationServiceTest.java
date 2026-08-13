@@ -3,7 +3,6 @@ package com.marketinghub.worker.creative;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -80,6 +79,11 @@ class CreativeGenerationServiceTest {
         when(backendClient.listPending(5)).thenReturn(List.of(experiment));
         when(textClient.generateCreatives(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(1)))
                 .thenReturn(new CreativeChatGptClient.Generation(List.of(generated), null, null));
+        when(textClient.generateCreatives(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.eq(1),
+                org.mockito.ArgumentMatchers.contains("primaryText excede 125 caracteres")))
+                .thenReturn(new CreativeChatGptClient.Generation(List.of(generated), null, null));
         CreativeGenerationService.ProcessingSummary summary = service.processPending(5);
 
         assertThat(summary.failed()).isEqualTo(1);
@@ -113,7 +117,11 @@ class CreativeGenerationServiceTest {
 
         when(backendClient.listPending(5)).thenReturn(List.of(experiment));
         when(textClient.generateCreatives(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(1)))
-                .thenReturn(new CreativeChatGptClient.Generation(List.of(invalid), null, null))
+                .thenReturn(new CreativeChatGptClient.Generation(List.of(invalid), null, null));
+        when(textClient.generateCreatives(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.eq(1),
+                org.mockito.ArgumentMatchers.contains("primaryText excede 125 caracteres")))
                 .thenReturn(new CreativeChatGptClient.Generation(List.of(valid), null, null));
         when(imageClient.generateImage(
                 org.mockito.ArgumentMatchers.anyString(),
@@ -124,8 +132,12 @@ class CreativeGenerationServiceTest {
         CreativeGenerationService.ProcessingSummary summary = service.processPending(5);
 
         assertThat(summary.succeeded()).isEqualTo(1);
-        verify(textClient, times(2)).generateCreatives(
+        verify(textClient).generateCreatives(
                 org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(1));
+        verify(textClient).generateCreatives(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.eq(1),
+                org.mockito.ArgumentMatchers.contains("primaryText excede 125 caracteres"));
         verify(backendClient).createCreative(
                 org.mockito.ArgumentMatchers.eq(49L), org.mockito.ArgumentMatchers.eq(valid));
     }

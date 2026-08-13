@@ -128,7 +128,7 @@ class GeraLandingCopyControllerTest {
     GeraLandingCopyStageExecutionService executionService =
         mock(GeraLandingCopyStageExecutionService.class);
     GeraLandingCopyController controller = new GeraLandingCopyController(executionService);
-    when(executionService.listPending("landing-page-copy"))
+    when(executionService.listPending("landing-page-copy", 5))
         .thenReturn(
             List.of(
                 new RecordCopyPending(
@@ -140,7 +140,7 @@ class GeraLandingCopyControllerTest {
                     pendingExperiment(33L, "Experimento 33", "Hipótese 33"),
                     pendingHypothesis())));
 
-    JsonNode json = new ObjectMapper().valueToTree(controller.pending());
+    JsonNode json = new ObjectMapper().valueToTree(controller.pending(5));
 
     assertTrue(json.isArray());
     assertEquals(1, json.size());

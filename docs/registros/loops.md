@@ -160,6 +160,15 @@ Antes de implementar uma correção em tema com histórico de loop:
 5. Atualizar cânone, Swagger, tela ou Worker AI quando o contrato entre módulos mudar.
 6. Registrar no documento de tema correspondente o que foi feito e, quando necessário, atualizar este arquivo.
 
+## LOOP-GERALANDING-COPY-PENDING-BUFFER — copy parada antes do processamento
+
+- **Severidade:** ALTO.
+- **Status:** fechado localmente em 2026-08-13; aguarda publicação.
+- **Sintoma:** Dédalo conclui a correção da landing, mas a etapa `landing-page-copy` permanece em `INICIADO` e Têmis não recebe novo artefato.
+- **Causa-raiz confirmada:** o endpoint devolvia até 20 pendências com artefatos auditáveis volumosos, enquanto o client de copy mantinha o buffer padrão de 256 KB e não enviava seu limite ao backend; o consumo falhava com `DataBufferLimitException` antes de reservar qualquer job.
+- **Correção efetiva:** o endpoint passou a respeitar `limit` com teto seguro e o client passou a enviar esse parâmetro e usar o limite de memória já versionado para as etapas OpenAI.
+- **Prevenção:** teste de contrato consome payload acima de 256 KB e valida que a consulta limita explicitamente a quantidade de pendências.
+
 ## LOOP-VIDEO-SCENE-PROMPT-PERSISTENCE — Estúdio substituindo decisão visual salva
 
 - **Severidade**: ALTO.

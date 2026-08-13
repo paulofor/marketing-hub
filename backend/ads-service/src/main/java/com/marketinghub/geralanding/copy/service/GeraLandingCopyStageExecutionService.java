@@ -104,9 +104,10 @@ public class GeraLandingCopyStageExecutionService {
     return executions.stream().map(this::toSummaryResponse).toList();
   }
 
-  /** Lista os jobs iniciados da etapa copy para processamento independente de experimento. */
+  /** Lista até o limite seguro de jobs iniciados da etapa copy para processamento independente. */
   @Transactional(readOnly = true)
-  public List<RecordCopyPending> listPending(String stageCode) {
+  public List<RecordCopyPending> listPending(String stageCode, int limit) {
+    int effectiveLimit = Math.max(1, Math.min(limit, 20));
     return executionRepository
         .findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(stageCode, STATUS_STARTED)
         .stream()
@@ -121,6 +122,7 @@ public class GeraLandingCopyStageExecutionService {
                     toPendingExperiment(execution.getExperiment()),
                     toPendingHypothesis(execution.getExperiment()),
                     loadGeraLandingReferenceInsights()))
+        .limit(effectiveLimit)
         .toList();
   }
 

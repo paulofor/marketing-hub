@@ -116,7 +116,7 @@ class GeraLandingCopyStageExecutionServiceTest {
             "landing-page-copy", "INICIADO"))
         .thenReturn(List.of(execution));
 
-    List<RecordCopyPending> pending = service.listPending("landing-page-copy");
+    List<RecordCopyPending> pending = service.listPending("landing-page-copy", 5);
 
     assertEquals(1, pending.size());
     assertEquals(77L, pending.get(0).experimentId());

@@ -1162,3 +1162,9 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz confirmada em 2026-08-13:** o changelog do contexto operacional usava `nestedPreconditions`, chave que o Liquibase 4.26 não reconhece, enquanto o validador estático local verificava apenas contratos de SQL e não a estrutura dessa precondição.
 - **Correção sistêmica:** a condição `dbms:mysql` passa a usar a lista direta suportada em `preConditions`, e o validador local rejeita qualquer retorno de `nestedPreconditions` antes do workflow.
 - **Prevenção:** executar o validador estático em escopo completo e a validação real do Liquibase antes de consolidar changelogs.
+## LOOP-APOLO-JOB-FALHO-DESSINCRONIZADO — ciclo aprovado preso em job terminal
+
+- **Sintoma:** ciclo MUSA permanece `QUEUED_FOR_APOLLO` enquanto o job vinculado está `VIDEO_FAILED`, impedindo retomada após troca de provider.
+- **Causa-raiz:** o polling do executor consultava somente jobs novos e não reconciliava ciclos aprovados por Plutus com jobs terminais antigos.
+- **Correção sistêmica:** antes de cada polling, Apolo solicita reconciliação idempotente ao backend; jobs falhos são substituídos por Seedance 2.5 via Runway, com vínculo ao job anterior e plano explícito de 3 cenas para 30s ou 6 cenas para 60s. O adapter Runway gera e monta todas as cenas localmente.
+- **Prevenção:** teste do ciclo comprova provider, quantidade de cenas, rastreabilidade do job substituído e atualização do vínculo persistido.

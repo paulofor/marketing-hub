@@ -42,4 +42,11 @@ public class VideoProductionCycleController {
       @Valid @RequestBody VideoProductionCycleContracts.FinancialDecisionRequest request) {
     return service.decide(cycleId, request);
   }
+
+  /** Reconcilia a fila de Apolo antes de o worker consultar novos jobs. */
+  @PostMapping("/api/internal/sales-videos/autonomy/v1/apollo/reconcile")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void reconcileApollo() {
+    service.reconcileApolloQueue();
+  }
 }

@@ -14,8 +14,11 @@ import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.CreateAgentTaskByAgentRequest;
 import com.marketinghub.financialagent.service.FinancialAgentService;
 import com.marketinghub.financialagent.service.StudioCostLedgerService;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
+import com.marketinghub.salesvideo.SalesVideoJob;
+import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.VideoProductionCycle;
 import com.marketinghub.salesvideo.VideoProject;
 import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
@@ -38,6 +41,7 @@ import org.springframework.web.server.ResponseStatusException;
 class VideoProductionCycleServiceTest {
   @Mock private VideoProductionCycleRepository repository;
   @Mock private VideoProjectRepository projectRepository;
+  @Mock private SalesVideoJobRepository jobRepository;
   @Mock private AgentTaskService taskService;
   @Mock private SalesVideoService salesVideoService;
   @Mock private FinancialAgentService financialAgentService;
@@ -52,6 +56,7 @@ class VideoProductionCycleServiceTest {
         new VideoProductionCycleService(
             repository,
             projectRepository,
+            jobRepository,
             taskService,
             salesVideoService,
             financialAgentService,
@@ -222,9 +227,43 @@ class VideoProductionCycleServiceTest {
         ArgumentCaptor.forClass(RequestVideoRenderRequest.class);
     verify(salesVideoService).requestRender(org.mockito.ArgumentMatchers.eq(13L), render.capture());
     assertThat(render.getValue().getProviderName()).isEqualTo("RUNWAY_SEEDANCE_2_5");
-    assertThat(render.getValue().getTargetDurationSeconds()).isEqualTo(60);
+    assertThat(render.getValue().getTargetDurationSeconds()).isEqualTo(10);
+    assertThat(render.getValue().getMetadataJson()).contains("\"sceneCount\":6");
     assertThat(result.status()).isEqualTo("QUEUED_FOR_APOLLO");
     assertThat(result.salesVideoJobId()).isEqualTo(321L);
+  }
+
+  /** Substitui job Luma falho por Seedance sem pedir nova decisão financeira. */
+  @Test
+  void shouldReconcileFailedLegacyJobWithAuditableScenePlan() {
+    VideoProductionCycle cycle = cycle();
+    cycle.setStatus("QUEUED_FOR_APOLLO");
+    cycle.setFinancialDecision("APPROVED");
+    cycle.setSalesVideoJobId(20536L);
+    VideoProject project = project();
+    project.setTargetDurationSeconds(30);
+    SalesVideoJob failed = new SalesVideoJob();
+    failed.setId(20536L);
+    failed.setStatus(SalesVideoStatus.VIDEO_FAILED);
+    failed.setProviderName("LUMA_RAY_3_2");
+    SalesVideoJobDto replacement = new SalesVideoJobDto();
+    replacement.setId(30001L);
+    when(repository.findByStatusAndFinancialDecisionOrderByCreatedAtAsc(
+            "QUEUED_FOR_APOLLO", "APPROVED"))
+        .thenReturn(java.util.List.of(cycle));
+    when(jobRepository.findById(20536L)).thenReturn(Optional.of(failed));
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(project));
+    when(salesVideoService.requestRender(any(), any())).thenReturn(replacement);
+
+    service.reconcileApolloQueue();
+
+    ArgumentCaptor<RequestVideoRenderRequest> render =
+        ArgumentCaptor.forClass(RequestVideoRenderRequest.class);
+    verify(salesVideoService).requestRender(org.mockito.ArgumentMatchers.eq(13L), render.capture());
+    assertThat(render.getValue().getProviderName()).isEqualTo("RUNWAY_SEEDANCE_2_5");
+    assertThat(render.getValue().getMetadataJson())
+        .contains("\"sceneCount\":3", "\"replacesFailedJobId\":20536");
+    assertThat(cycle.getSalesVideoJobId()).isEqualTo(30001L);
   }
 
   /** Cria o projeto mínimo de teste com perfil operacional. */

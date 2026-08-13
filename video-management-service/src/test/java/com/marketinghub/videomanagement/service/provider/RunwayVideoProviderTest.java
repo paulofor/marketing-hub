@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.math.BigDecimal;
 import java.util.concurrent.atomic.AtomicInteger;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -267,6 +268,24 @@ class RunwayVideoProviderTest {
 
         assertThat(server.takeRequest().getHeader("Authorization")).isEqualTo("Bearer runway-file-key");
         Files.deleteIfExists(keyFile);
+    }
+
+    /** Deve separar funções comerciais e contabilizar o custo de todas as cenas planejadas. */
+    @Test
+    void shouldPlanDistinctCommercialScenesAndFullMontageCost() throws Exception {
+        RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+        var sceneDirective = RunwayVideoProvider.class.getDeclaredMethod("sceneDirective", int.class, int.class);
+        sceneDirective.setAccessible(true);
+        var estimateCost = RunwayVideoProvider.class.getDeclaredMethod(
+                "estimateCostUsd", String.class, int.class, int.class);
+        estimateCost.setAccessible(true);
+
+        assertThat(sceneDirective.invoke(provider, 1, 4)).asString().contains("DOR");
+        assertThat(sceneDirective.invoke(provider, 2, 4)).asString().contains("RESULTADO");
+        assertThat(sceneDirective.invoke(provider, 3, 4)).asString().contains("MECANISMO");
+        assertThat(sceneDirective.invoke(provider, 4, 4)).asString().contains("CTA");
+        assertThat((BigDecimal) estimateCost.invoke(provider, "gen4.5", 10, 3))
+                .isEqualByComparingTo("3.60");
     }
 
     /** Cria uma resposta JSON para a API Runway simulada. */

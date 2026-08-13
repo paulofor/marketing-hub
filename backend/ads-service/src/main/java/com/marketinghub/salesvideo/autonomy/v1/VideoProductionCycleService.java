@@ -34,6 +34,7 @@ public class VideoProductionCycleService {
   private static final String PLUTUS_KEY = "financial-agent";
   private static final String APOLLO_KEY = "videomaker";
   private static final String MUSA_PROVIDER = "RUNWAY_SEEDANCE_2_5";
+  private static final String APOLLO_BLOCKED = "APOLLO_BLOCKED";
   private final VideoProductionCycleRepository repository;
   private final VideoProjectRepository projectRepository;
   private final SalesVideoJobRepository jobRepository;
@@ -156,10 +157,40 @@ public class VideoProductionCycleService {
                       ? null
                       : jobRepository.findById(cycle.getSalesVideoJobId()).orElse(null);
               if (previous != null && previous.getStatus() != SalesVideoStatus.VIDEO_FAILED) return;
-              if (previous != null) recordApolloFailure(cycle, previous);
+              if (previous != null) {
+                recordApolloFailure(cycle, previous);
+                if (mustBlockAutomaticReplacement(previous)) {
+                  cycle.setStatus(APOLLO_BLOCKED);
+                  cycle.setUpdatedAt(Instant.now());
+                  repository.save(cycle);
+                  return;
+                }
+              }
               queueApollo(cycle, project(cycle.getVideoProjectId()), previous);
               repository.save(cycle);
             });
+  }
+
+  /**
+   * Interrompe consumo após rejeição financeira/não recuperável ou depois da primeira substituição
+   * automática; material já renderizado deve seguir para avaliação, nunca para descarte e novo
+   * gasto.
+   */
+  private boolean mustBlockAutomaticReplacement(SalesVideoJob failedJob) {
+    String code = failedJob.getFailureCode() == null ? "" : failedJob.getFailureCode();
+    String detail = failedJob.getFailureDetail() == null ? "" : failedJob.getFailureDetail();
+    String metadata = failedJob.getMetadataJson() == null ? "" : failedJob.getMetadataJson();
+    String provider = failedJob.getProviderName() == null ? "" : failedJob.getProviderName();
+    if (provider.toUpperCase(java.util.Locale.ROOT).contains("LUMA")
+        && !metadata.contains("\"replacesFailedJobId\"")) {
+      return false;
+    }
+    return failedJob.getAsset() != null
+        || metadata.contains("\"replacesFailedJobId\"")
+        || code.contains("PAYMENT")
+        || code.contains("CREDIT")
+        || detail.contains("retryable=false")
+        || detail.toLowerCase(java.util.Locale.ROOT).contains("not enough credits");
   }
 
   /** Persiste o diagnóstico do job terminal antes de criar uma substituição segura. */

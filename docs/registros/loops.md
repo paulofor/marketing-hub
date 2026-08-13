@@ -1171,6 +1171,14 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Correção sistêmica:** antes de cada polling, Apolo solicita reconciliação idempotente ao backend; jobs falhos são substituídos por Seedance 2.5 via Runway, com vínculo ao job anterior e plano explícito de 3 cenas para 30s ou 6 cenas para 60s. O ciclo preserva o identificador, código, detalhe e horário da falha anterior, e o painel diferencia essa falha do novo job enfileirado. O adapter Runway gera e monta todas as cenas localmente.
 - **Prevenção:** testes do ciclo e do painel comprovam provider, quantidade de cenas, diagnóstico da falha, rastreabilidade do job substituído e atualização do vínculo persistido.
 
+## LOOP-APOLO-RECONCILIACAO-CONSOME-CREDITOS — substituição infinita e montagem rejeitada
+
+- **Data:** 2026-08-13.
+- **Sintoma:** Apolo recriava jobs MUSA a cada polling, esgotava créditos e rejeitava uma montagem de três cenas como se tivesse apenas dez segundos.
+- **Causa-raiz confirmada:** a reconciliação substituía toda falha terminal sem distinguir erro não recuperável ou substituição anterior; o adapter contabilizava duração e custo de uma cena, embora já tivesse gerado e montado todas.
+- **Correção sistêmica:** saldo insuficiente, erro não recuperável, segunda substituição ou asset existente bloqueiam o ciclo; duração e custo abrangem todas as cenas, que recebem funções comerciais distintas.
+- **Prevenção:** testes impedem novo job após bloqueio financeiro ou asset aproveitável; o contrato canônico exige avaliação do material existente e novo gate antes de qualquer gasto adicional.
+
 ## LOOP-FRONTEND-CI-ARTIFACT-CLEANUP-TRANSIENT — build aprovado termina vermelho na limpeza
 
 - **Data:** 2026-08-13.

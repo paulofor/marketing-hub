@@ -14,6 +14,7 @@ import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.CreateAgentTaskByAgentRequest;
 import com.marketinghub.financialagent.service.FinancialAgentService;
 import com.marketinghub.financialagent.service.StudioCostLedgerService;
+import com.marketinghub.media.Asset;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
@@ -271,6 +272,53 @@ class VideoProductionCycleServiceTest {
     assertThat(cycle.getLastApolloFailureCode()).isEqualTo("PROVIDER_PAYMENT_REQUIRED");
     assertThat(cycle.getLastApolloFailureDetail()).isEqualTo("Provider respondeu HTTP 402.");
     assertThat(cycle.getLastApolloFailureAt()).isEqualTo("2026-08-13T10:00:00Z");
+  }
+
+  /** Bloqueia o ciclo após rejeição de créditos para impedir novas tentativas a cada polling. */
+  @Test
+  void shouldBlockAutomaticReplacementAfterInsufficientCredits() {
+    VideoProductionCycle cycle = cycle();
+    cycle.setStatus("QUEUED_FOR_APOLLO");
+    cycle.setFinancialDecision("APPROVED");
+    cycle.setSalesVideoJobId(21125L);
+    SalesVideoJob failed = new SalesVideoJob();
+    failed.setId(21125L);
+    failed.setStatus(SalesVideoStatus.VIDEO_FAILED);
+    failed.setFailureCode("PROVIDER_RENDER_FAILED");
+    failed.setFailureDetail("retryable=false; You do not have enough credits to run this task");
+    when(repository.findByStatusAndFinancialDecisionOrderByCreatedAtAsc(
+            "QUEUED_FOR_APOLLO", "APPROVED"))
+        .thenReturn(java.util.List.of(cycle));
+    when(jobRepository.findById(21125L)).thenReturn(Optional.of(failed));
+
+    service.reconcileApolloQueue();
+
+    assertThat(cycle.getStatus()).isEqualTo("APOLLO_BLOCKED");
+    assertThat(cycle.getLastFailedJobId()).isEqualTo(21125L);
+    verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
+  /** Preserva montagem existente para avaliação em vez de pagar por outra geração. */
+  @Test
+  void shouldBlockAutomaticReplacementWhenFailedJobAlreadyHasAsset() {
+    VideoProductionCycle cycle = cycle();
+    cycle.setStatus("QUEUED_FOR_APOLLO");
+    cycle.setFinancialDecision("APPROVED");
+    cycle.setSalesVideoJobId(21105L);
+    SalesVideoJob failed = new SalesVideoJob();
+    failed.setId(21105L);
+    failed.setStatus(SalesVideoStatus.VIDEO_FAILED);
+    failed.setFailureCode("RENDER_DURATION_SHORT");
+    failed.setAsset(Asset.builder().id(2420L).build());
+    when(repository.findByStatusAndFinancialDecisionOrderByCreatedAtAsc(
+            "QUEUED_FOR_APOLLO", "APPROVED"))
+        .thenReturn(java.util.List.of(cycle));
+    when(jobRepository.findById(21105L)).thenReturn(Optional.of(failed));
+
+    service.reconcileApolloQueue();
+
+    assertThat(cycle.getStatus()).isEqualTo("APOLLO_BLOCKED");
+    verify(salesVideoService, never()).requestRender(any(), any());
   }
 
   /** Cria o projeto mínimo de teste com perfil operacional. */

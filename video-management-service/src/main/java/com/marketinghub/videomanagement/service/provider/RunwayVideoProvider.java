@@ -102,7 +102,7 @@ public class RunwayVideoProvider implements VideoProvider {
         for (int scene = 1; scene <= sceneCount; scene++) {
             payload = buildPayload(job, profile, script);
             if (sceneCount > 1) {
-                payload.put("promptText", "Scene %d of %d. %s".formatted(scene, sceneCount, payload.get("promptText")));
+                payload.put("promptText", sceneDirective(scene, sceneCount) + " " + payload.get("promptText"));
             }
             String taskId = submitRender(job, payload);
             taskIds.add(taskId);
@@ -118,11 +118,24 @@ public class RunwayVideoProvider implements VideoProvider {
 
         ProviderFile video = scenes.size() == 1 ? scenes.getFirst() : assembleScenes(job, scenes);
         String taskId = String.join(",", taskIds);
-        Map<String, Object> metadata = metadata(job, taskId, payload, finalStatus);
+        Map<String, Object> metadata = metadata(job, taskId, payload, finalStatus, sceneCount);
         metadata.put("scene_count", sceneCount);
         metadata.put("assembled_locally", sceneCount > 1);
         progressCallback.onProgress(95, SalesVideoStatus.VIDEO_PROCESSING, "Runway finalizada com MP4 disponível");
         return new ProviderArtifacts(taskId, video, null, null, metadata);
+    }
+
+    /** Define uma função narrativa distinta por cena para evitar clipes genéricos e repetitivos. */
+    private String sceneDirective(int scene, int sceneCount) {
+        String[] roles = {
+                "DOR: mostre uma situação cotidiana reconhecível e específica, sem texto embutido.",
+                "RESULTADO: mostre a transformação visual plausível e concreta, sem promessas absolutas.",
+                "MECANISMO: mostre a ação prática que produz o resultado e preserve personagem e ambiente.",
+                "CTA: encerre com gesto natural de decisão e espaço visual limpo para CTA em pós-produção."
+        };
+        int roleIndex = sceneCount == 1 ? 2 : Math.min(roles.length - 1,
+                (int) Math.floor((scene - 1) * roles.length / (double) sceneCount));
+        return "Cena %d de %d. FUNÇÃO COMERCIAL %s".formatted(scene, sceneCount, roles[roleIndex]);
     }
 
     /** Concatena as cenas Runway localmente para entregar a duração integral aprovada por Plutus. */
@@ -362,14 +375,19 @@ public class RunwayVideoProvider implements VideoProvider {
     private Map<String, Object> metadata(SalesVideoJob job,
                                          String taskId,
                                          Map<String, Object> request,
-                                         JsonNode finalStatus) {
+                                         JsonNode finalStatus,
+                                         int sceneCount) {
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("provider", "RUNWAY");
         metadata.put("provider_job_id", taskId);
-        metadata.put("model", properties.getProviders().getRunway().getModel());
+        String model = String.valueOf(request.get("model"));
+        int clipDurationSeconds = ((Number) request.get("duration")).intValue();
+        metadata.put("model", model);
         metadata.put("ratio", properties.getProviders().getRunway().getRatio());
-        metadata.put("duration_seconds", properties.getProviders().getRunway().getDurationSeconds());
-        metadata.put("cost_usd", estimateCostUsd());
+        metadata.put("duration_seconds", clipDurationSeconds * sceneCount);
+        metadata.put("clip_duration_seconds", clipDurationSeconds);
+        metadata.put("cost_usd", estimateCostUsd(model, clipDurationSeconds, sceneCount));
+        metadata.put("cost_scope", "ALL_SCENES");
         metadata.put("pricing_source", "Runway API charges credits per second by model; see official pricing");
         metadata.put("request", request);
         metadata.put("final_status", objectMapper.convertValue(finalStatus, Map.class));
@@ -379,9 +397,9 @@ public class RunwayVideoProvider implements VideoProvider {
     }
 
     /** Calcula custo aproximado para Gen-4.5 com créditos de US$0,01. */
-    private BigDecimal estimateCostUsd() {
-        int seconds = Math.max(1, properties.getProviders().getRunway().getDurationSeconds());
-        BigDecimal creditsPerSecond = "gen4_turbo".equalsIgnoreCase(properties.getProviders().getRunway().getModel())
+    private BigDecimal estimateCostUsd(String model, int clipDurationSeconds, int sceneCount) {
+        int seconds = Math.max(1, clipDurationSeconds) * Math.max(1, sceneCount);
+        BigDecimal creditsPerSecond = "gen4_turbo".equalsIgnoreCase(model)
                 ? new BigDecimal("5")
                 : new BigDecimal("12");
         return creditsPerSecond.multiply(BigDecimal.valueOf(seconds)).multiply(new BigDecimal("0.01"));

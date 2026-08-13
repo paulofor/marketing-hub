@@ -89,7 +89,8 @@ class RunwayVideoProviderTest {
                 .contains("\"promptImage\":\"https://assets.example/musa-character.png\"")
                 .contains("REQUIRED SCENE ACTION: remover dois acessorios e escolher a peca-sinal")
                 .contains("Very sharp image, crisp focus and constant soft natural daylight")
-                .contains("Avoid embedded text");
+                .contains("Do not render letters, words, captions")
+                .contains("added only in post-production");
         assertThat(server.takeRequest().getPath()).isEqualTo("/v1/tasks/runway-task-123");
         assertThat(server.takeRequest().getPath()).isEqualTo("/download/runway-task-123.mp4");
     }

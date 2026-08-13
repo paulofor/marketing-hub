@@ -10,8 +10,10 @@ import com.marketinghub.financialagent.StudioProviderCreditPurchase;
 import com.marketinghub.financialagent.service.registerProviderCreditPurchase.RegisterProviderCreditPurchaseRequest;
 import com.marketinghub.repository.jpa.financialagent.StudioCostLedgerEntryRepository;
 import com.marketinghub.repository.jpa.financialagent.StudioProviderCreditPurchaseRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobEventRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
 import com.marketinghub.salesvideo.SalesVideoJob;
+import com.marketinghub.salesvideo.SalesVideoJobEvent;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -79,6 +81,7 @@ class ProviderCreditPurchaseServiceTest {
         mock(StudioProviderCreditPurchaseRepository.class);
     StudioCostLedgerEntryRepository ledger = mock(StudioCostLedgerEntryRepository.class);
     SalesVideoJobRepository jobs = mock(SalesVideoJobRepository.class);
+    SalesVideoJobEventRepository events = mock(SalesVideoJobEventRepository.class);
     StudioProviderCreditPurchase purchase = new StudioProviderCreditPurchase();
     purchase.setProvider("RUNWAY");
     purchase.setPurchasedAt(Instant.parse("2026-08-13T12:00:00Z"));
@@ -92,9 +95,11 @@ class ProviderCreditPurchaseServiceTest {
     when(jobs.findRecentCreditFailures(
             org.mockito.ArgumentMatchers.eq("RUNWAY"), org.mockito.ArgumentMatchers.any()))
         .thenReturn(List.of());
+    when(events.findAcceptedSceneEvents("RUNWAY")).thenReturn(List.of());
+    when(events.findExplicitAcceptedSceneEvents("RUNWAY")).thenReturn(List.of());
 
     var balance =
-        new ProviderCreditPurchaseService(purchases, ledger, jobs)
+        new ProviderCreditPurchaseService(purchases, ledger, jobs, events)
             .listVideoProviderBalances()
             .getFirst();
 
@@ -111,6 +116,7 @@ class ProviderCreditPurchaseServiceTest {
         mock(StudioProviderCreditPurchaseRepository.class);
     StudioCostLedgerEntryRepository ledger = mock(StudioCostLedgerEntryRepository.class);
     SalesVideoJobRepository jobs = mock(SalesVideoJobRepository.class);
+    SalesVideoJobEventRepository events = mock(SalesVideoJobEventRepository.class);
     StudioProviderCreditPurchase purchase = new StudioProviderCreditPurchase();
     purchase.setPurchasedAt(Instant.parse("2026-08-13T12:00:00Z"));
     purchase.setCreditsPurchased(20);
@@ -124,14 +130,54 @@ class ProviderCreditPurchaseServiceTest {
     when(jobs.findRecentCreditFailures(
             org.mockito.ArgumentMatchers.eq("RUNWAY"), org.mockito.ArgumentMatchers.any()))
         .thenReturn(List.of(failure));
+    when(events.findAcceptedSceneEvents("RUNWAY")).thenReturn(List.of());
+    when(events.findExplicitAcceptedSceneEvents("RUNWAY")).thenReturn(List.of());
 
     var balance =
-        new ProviderCreditPurchaseService(purchases, ledger, jobs)
+        new ProviderCreditPurchaseService(purchases, ledger, jobs, events)
             .listVideoProviderBalances()
             .getFirst();
 
     assertThat(balance.status()).isEqualTo("DIVERGENT_PROVIDER_REJECTION");
     assertThat(balance.lastCreditFailureJobId()).isEqualTo(20993L);
     assertThat(balance.estimatedReferenceClips()).isZero();
+  }
+
+  /** Conta uma cena uma única vez e preserva o task id explícito da Runway. */
+  @Test
+  void deveDeduplicarEExporSolicitacoesDeCena() {
+    StudioProviderCreditPurchaseRepository purchases =
+        mock(StudioProviderCreditPurchaseRepository.class);
+    StudioCostLedgerEntryRepository ledger = mock(StudioCostLedgerEntryRepository.class);
+    SalesVideoJobRepository jobs = mock(SalesVideoJobRepository.class);
+    SalesVideoJobEventRepository events = mock(SalesVideoJobEventRepository.class);
+    SalesVideoJob job = new SalesVideoJob();
+    job.setId(21105L);
+    job.setMetadataJson("{\"videoProductionCycleId\":6}");
+    SalesVideoJobEvent legacy = new SalesVideoJobEvent();
+    legacy.setJob(job);
+    legacy.setMessage("Runway processando cena 1/3");
+    legacy.setCreatedAt(Instant.parse("2026-08-13T18:10:35Z"));
+    SalesVideoJobEvent explicit = new SalesVideoJobEvent();
+    explicit.setJob(job);
+    explicit.setMessage("Runway aceitou cena 1/3; taskId=task-abc");
+    explicit.setCreatedAt(Instant.parse("2026-08-13T18:10:36Z"));
+    when(purchases.findDistinctProviders()).thenReturn(List.of());
+    when(purchases.findByProviderFamily("RUNWAY")).thenReturn(List.of());
+    when(ledger.findByProviderFamily("RUNWAY")).thenReturn(List.of());
+    when(jobs.findRecentCreditFailures(
+            org.mockito.ArgumentMatchers.eq("RUNWAY"), org.mockito.ArgumentMatchers.any()))
+        .thenReturn(List.of());
+    when(events.findAcceptedSceneEvents("RUNWAY")).thenReturn(List.of(legacy));
+    when(events.findExplicitAcceptedSceneEvents("RUNWAY")).thenReturn(List.of(explicit));
+
+    var balance =
+        new ProviderCreditPurchaseService(purchases, ledger, jobs, events)
+            .listVideoProviderBalances()
+            .getFirst();
+
+    assertThat(balance.acceptedSceneRequests()).isEqualTo(1);
+    assertThat(balance.sceneRequests().getFirst().productionCycleId()).isEqualTo(6L);
+    assertThat(balance.sceneRequests().getFirst().providerTaskId()).isEqualTo("task-abc");
   }
 }

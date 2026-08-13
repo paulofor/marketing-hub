@@ -94,6 +94,10 @@ export default function VideoProviderFinancePage() {
                 </div>
 
                 <dl className="row mb-3">
+                  <dt className="col-7">Cenas aceitas pelo provedor</dt>
+                  <dd className="col-5 text-end fw-semibold">
+                    {balance.acceptedSceneRequests.toLocaleString("pt-BR")}
+                  </dd>
                   <dt className="col-7">Créditos comprados</dt>
                   <dd className="col-5 text-end">
                     {credits(balance.purchasedCredits)}
@@ -111,6 +115,36 @@ export default function VideoProviderFinancePage() {
                     {instant(balance.lastPurchaseAt)}
                   </dd>
                 </dl>
+
+                {balance.sceneRequests.length > 0 ? (
+                  <div className="table-responsive mb-3">
+                    <table className="table table-sm align-middle">
+                      <caption>Solicitações de cena comprovadas</caption>
+                      <thead>
+                        <tr>
+                          <th scope="col">Ciclo</th>
+                          <th scope="col">Job</th>
+                          <th scope="col">Cena</th>
+                          <th scope="col">Task do provedor</th>
+                          <th scope="col">Aceita em</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {balance.sceneRequests.map((request) => (
+                          <tr key={`${request.jobId}-${request.sceneNumber}`}>
+                            <td>{request.productionCycleId ?? "—"}</td>
+                            <td>#{request.jobId}</td>
+                            <td>
+                              {request.sceneNumber}/{request.plannedSceneCount}
+                            </td>
+                            <td>{request.providerTaskId ?? "Legado sem ID"}</td>
+                            <td>{instant(request.acceptedAt)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : null}
 
                 {balance.referenceModel ? (
                   <div className="alert alert-light border">

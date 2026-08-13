@@ -2,6 +2,7 @@ package com.marketinghub.financialagent.service.listVideoProviderCreditBalances;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 /** Responsabilidade: expor saldo estimado e capacidade operacional de um provedor de vídeo. */
 public record VideoProviderCreditBalanceResponse(
@@ -21,4 +22,6 @@ public record VideoProviderCreditBalanceResponse(
     String lastCreditFailureDetail,
     BigDecimal knownConsumedCostUsd,
     long unknownCostAttempts,
+    long acceptedSceneRequests,
+    List<VideoProviderSceneRequestResponse> sceneRequests,
     String creditsUrl) {}

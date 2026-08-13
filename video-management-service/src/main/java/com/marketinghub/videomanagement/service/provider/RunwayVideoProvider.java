@@ -107,7 +107,7 @@ public class RunwayVideoProvider implements VideoProvider {
             String taskId = submitRender(job, payload);
             taskIds.add(taskId);
             progressCallback.onProgress(10 + (scene * 65 / sceneCount), SalesVideoStatus.VIDEO_PROCESSING,
-                    "Runway processando cena %d/%d".formatted(scene, sceneCount));
+                    "Runway aceitou cena %d/%d; taskId=%s".formatted(scene, sceneCount, taskId));
             finalStatus = waitUntilCompleted(taskId, progressCallback);
             String videoUrl = resolveVideoUrl(finalStatus);
             if (!StringUtils.hasText(videoUrl)) {
@@ -324,7 +324,9 @@ public class RunwayVideoProvider implements VideoProvider {
                 Approved CTA: %s.
                 Scene plan: %s.
                 Keep the scene natural, concrete and commercially useful. Show a human situation, the felt pain, a plausible mechanism and a light CTA.
-                Avoid embedded text, logos, distorted hands, haze, blur, flicker, body-focused framing, seductive posing and luxury ostentation.
+                Do not render letters, words, captions, subtitles, UI copy, logos or watermarks in the generated footage.
+                Preserve clean negative space for deterministic Portuguese copy, captions and CTA added only in post-production.
+                Avoid distorted hands, haze, blur, flicker, body-focused framing, seductive posing and luxury ostentation.
                 """.formatted(
                 scenes,
                 visualDirectives,

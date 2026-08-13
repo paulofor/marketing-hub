@@ -3,12 +3,15 @@ package com.marketinghub.financialagent.service;
 import com.marketinghub.financialagent.StudioCostLedgerEntry;
 import com.marketinghub.financialagent.StudioProviderCreditPurchase;
 import com.marketinghub.financialagent.service.listVideoProviderCreditBalances.VideoProviderCreditBalanceResponse;
+import com.marketinghub.financialagent.service.listVideoProviderCreditBalances.VideoProviderSceneRequestResponse;
 import com.marketinghub.financialagent.service.registerProviderCreditPurchase.ProviderCreditPurchaseResponse;
 import com.marketinghub.financialagent.service.registerProviderCreditPurchase.RegisterProviderCreditPurchaseRequest;
 import com.marketinghub.repository.jpa.financialagent.StudioCostLedgerEntryRepository;
 import com.marketinghub.repository.jpa.financialagent.StudioProviderCreditPurchaseRepository;
+import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobEventRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
 import com.marketinghub.salesvideo.SalesVideoJob;
+import com.marketinghub.salesvideo.SalesVideoJobEvent;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -16,6 +19,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -27,13 +32,18 @@ public class ProviderCreditPurchaseService {
   private static final BigDecimal RUNWAY_USD_PER_CREDIT = new BigDecimal("0.01");
   private static final int RUNWAY_REFERENCE_CLIP_SECONDS = 10;
   private static final int RUNWAY_REFERENCE_CLIP_CREDITS = 50;
+  private static final Pattern SCENE_PATTERN =
+      Pattern.compile("(?:processando|aceitou) cena (\\d+)/(\\d+)", Pattern.CASE_INSENSITIVE);
+  private static final Pattern TASK_PATTERN =
+      Pattern.compile("taskId=([^;\\s]+)", Pattern.CASE_INSENSITIVE);
   private final StudioProviderCreditPurchaseRepository repository;
   private final StudioCostLedgerEntryRepository ledgerRepository;
   private final SalesVideoJobRepository videoJobRepository;
+  private final SalesVideoJobEventRepository videoJobEventRepository;
 
   /** Inicializa o serviço com o repositório canônico das recargas. */
   ProviderCreditPurchaseService(StudioProviderCreditPurchaseRepository repository) {
-    this(repository, null, null);
+    this(repository, null, null, null);
   }
 
   /** Inicializa o serviço com recargas, consumos e recusas operacionais. */
@@ -41,10 +51,12 @@ public class ProviderCreditPurchaseService {
   public ProviderCreditPurchaseService(
       StudioProviderCreditPurchaseRepository repository,
       StudioCostLedgerEntryRepository ledgerRepository,
-      SalesVideoJobRepository videoJobRepository) {
+      SalesVideoJobRepository videoJobRepository,
+      SalesVideoJobEventRepository videoJobEventRepository) {
     this.repository = repository;
     this.ledgerRepository = ledgerRepository;
     this.videoJobRepository = videoJobRepository;
+    this.videoJobEventRepository = videoJobEventRepository;
   }
 
   /** Registra uma recarga idempotente com os dados comprovados pelo usuário. */
@@ -82,7 +94,7 @@ public class ProviderCreditPurchaseService {
   /** Consolida o monitor financeiro transversal dos provedores de vídeo. */
   @Transactional(readOnly = true)
   public List<VideoProviderCreditBalanceResponse> listVideoProviderBalances() {
-    if (ledgerRepository == null || videoJobRepository == null) {
+    if (ledgerRepository == null || videoJobRepository == null || videoJobEventRepository == null) {
       throw new IllegalStateException("Fontes do monitor financeiro não configuradas");
     }
     LinkedHashSet<String> providers = new LinkedHashSet<>();
@@ -116,6 +128,8 @@ public class ProviderCreditPurchaseService {
         lastFailure != null && (lastPurchase == null || !lastFailure.isBefore(lastPurchase));
     String status = statusOf(purchased, available, divergent, unknownCosts);
     boolean runway = "RUNWAY".equals(provider);
+    List<VideoProviderSceneRequestResponse> sceneRequests =
+        runway ? sceneRequests(provider) : List.of();
     return new VideoProviderCreditBalanceResponse(
         provider,
         status,
@@ -133,7 +147,52 @@ public class ProviderCreditPurchaseService {
         failure == null ? null : failure.getFailureDetail(),
         knownCost,
         unknownCosts,
+        sceneRequests.size(),
+        sceneRequests,
         runway ? "https://dev.runwayml.com/" : null);
+  }
+
+  /** Deduplica progresso e heartbeat para contar somente cenas realmente aceitas. */
+  private List<VideoProviderSceneRequestResponse> sceneRequests(String provider) {
+    List<SalesVideoJobEvent> events = new java.util.ArrayList<>();
+    events.addAll(videoJobEventRepository.findAcceptedSceneEvents(provider));
+    events.addAll(videoJobEventRepository.findExplicitAcceptedSceneEvents(provider));
+    java.util.LinkedHashMap<String, VideoProviderSceneRequestResponse> unique =
+        new java.util.LinkedHashMap<>();
+    events.stream()
+        .sorted(java.util.Comparator.comparing(SalesVideoJobEvent::getCreatedAt))
+        .forEach(event -> parseSceneRequest(event, unique));
+    return List.copyOf(unique.values());
+  }
+
+  /** Converte a evidência operacional de uma cena no contrato financeiro público. */
+  private void parseSceneRequest(
+      SalesVideoJobEvent event, java.util.Map<String, VideoProviderSceneRequestResponse> requests) {
+    String message = event.getMessage() == null ? "" : event.getMessage();
+    Matcher scene = SCENE_PATTERN.matcher(message);
+    if (!scene.find()) return;
+    int number = Integer.parseInt(scene.group(1));
+    int total = Integer.parseInt(scene.group(2));
+    Matcher task = TASK_PATTERN.matcher(message);
+    String taskId = task.find() ? task.group(1) : null;
+    Long jobId = event.getJob().getId();
+    Long cycleId = readCycleId(event.getJob().getMetadataJson());
+    String key = jobId + ":" + number;
+    VideoProviderSceneRequestResponse previous = requests.get(key);
+    if (previous == null || (previous.providerTaskId() == null && taskId != null)) {
+      requests.put(
+          key,
+          new VideoProviderSceneRequestResponse(
+              jobId, cycleId, number, total, taskId, event.getCreatedAt()));
+    }
+  }
+
+  /** Lê o ciclo de produção sem falhar o monitor quando metadados legados forem inválidos. */
+  private Long readCycleId(String metadataJson) {
+    if (metadataJson == null || metadataJson.isBlank()) return null;
+    Matcher matcher =
+        Pattern.compile("\\\"videoProductionCycleId\\\"\\s*:\\s*(\\d+)").matcher(metadataJson);
+    return matcher.find() ? Long.valueOf(matcher.group(1)) : null;
   }
 
   /** Converte custo conhecido em créditos somente quando há contrato de conversão comprovado. */

@@ -24,6 +24,15 @@ export type VideoProviderCreditBalance = {
   lastCreditFailureDetail: string | null;
   knownConsumedCostUsd: number;
   unknownCostAttempts: number;
+  acceptedSceneRequests: number;
+  sceneRequests: Array<{
+    jobId: number;
+    productionCycleId: number | null;
+    sceneNumber: number;
+    plannedSceneCount: number;
+    providerTaskId: string | null;
+    acceptedAt: string;
+  }>;
   creditsUrl: string | null;
 };
 

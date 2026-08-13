@@ -37,7 +37,13 @@ grep -q 'CUSTOMER_AGENT_CODEX_EXECUTABLE: /workspace/scripts/codex-oauth-session
 grep -q 'AGENT_CODEX_CANONICAL_HOME:-/opt/growth-operator/codex-home' "$repo_root/scripts/reconcile-agent-codex-auth.sh"
 grep -q 'flock 9' "$repo_root/scripts/reconcile-agent-codex-auth.sh"
 grep -q 'flock -w' "$repo_root/scripts/codex-oauth-session-safe.sh"
-grep -q 'codex login --device-auth' "$repo_root/scripts/reconnect-agent-codex-device.sh"
+grep -q 'codex-app-server-device-login.mjs' "$repo_root/scripts/reconnect-agent-codex-device.sh"
+grep -q "account/login/start.*chatgptDeviceCode" "$repo_root/scripts/codex-app-server-device-login.mjs"
+grep -q "account/login/completed" "$repo_root/scripts/codex-app-server-device-login.mjs"
+if grep -q 'codex logout' "$repo_root/scripts/reconnect-agent-codex-device.sh"; then
+  printf '%s\n' '[ARQUITETURA] Reconexão apaga a sessão válida antes de confirmar a nova.' >&2
+  exit 1
+fi
 
 mkdir -p "$test_root/bin" "$test_root/shared-home"
 cat > "$test_root/bin/codex" <<'EOF'
@@ -61,6 +67,27 @@ events = pathlib.Path(sys.argv[1]).read_text().splitlines()
 if len(events) != 4 or events[0].split(':')[0] != 'start' or events[1].split(':')[0] != 'finish' or events[2].split(':')[0] != 'start' or events[3].split(':')[0] != 'finish':
     raise SystemExit('[ARQUITETURA] Execuções Codex compartilharam a sessão OAuth simultaneamente.')
 PY
+
+cat > "$test_root/bin/fake-codex-app-server" <<'EOF'
+#!/usr/bin/env node
+const readline = require('node:readline');
+const rl = readline.createInterface({ input: process.stdin });
+const send = (value) => process.stdout.write(`${JSON.stringify(value)}\n`);
+rl.on('line', (line) => {
+  const message = JSON.parse(line);
+  if (message.method === 'initialize') send({ id: message.id, result: { userAgent: 'fake' } });
+  if (message.method === 'account/login/start') {
+    send({ id: message.id, result: { loginId: 'login-1', verificationUrl: 'https://example.test/device', userCode: 'SAFE-CODE' } });
+    setTimeout(() => send({ method: 'account/login/completed', params: { loginId: 'login-1', success: true } }), 10);
+  }
+  if (message.method === 'account/read') send({ id: message.id, result: { authMode: 'chatgpt', planType: 'plus' } });
+});
+EOF
+chmod +x "$test_root/bin/fake-codex-app-server"
+CODEX_APP_SERVER_COMMAND="$test_root/bin/fake-codex-app-server" \
+  node "$repo_root/scripts/codex-app-server-device-login.mjs" > "$test_root/device-login.log"
+grep -q 'SAFE-CODE' "$test_root/device-login.log"
+grep -q 'modo chatgpt' "$test_root/device-login.log"
 
 mkdir -p "$test_root/canonical" "$test_root/legacy/financial/codex-home"
 printf '%s\n' '{"session":"old"}' > "$test_root/canonical/auth.json"

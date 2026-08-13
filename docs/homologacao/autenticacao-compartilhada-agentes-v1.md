@@ -21,7 +21,10 @@ Impedir que executores clonem o mesmo refresh token OAuth e entrem em bloqueio p
 
 A validade real da sessão OAuth não é simulada localmente e será comprovada no host pelo
 `codex login status`. Se todas as cópias já estiverem revogadas, a única ação segura é uma
-reconexão interativa pelo script `scripts/reconnect-agent-codex-device.sh`. Durante o login e
-durante cada execução, um lock no `CODEX_HOME` canônico impede renovação OAuth concorrente. Uma
-sessão canônica existente nunca pode ser substituída por arquivo legado com data mais recente.
-reconexão humana; o fluxo não mascara nem tenta recriar credenciais.
+reconexão pelo script `scripts/reconnect-agent-codex-device.sh`. Durante o login e cada execução,
+um lock no `CODEX_HOME` canônico impede renovação OAuth concorrente. A reconexão usa
+`account/login/start` com `chatgptDeviceCode` no Codex App Server, aguarda a
+notificação `account/login/completed` e confirma `account/read`, sem apagar previamente uma sessão
+válida nem manipular tokens manualmente. O teste local usa um App Server simulado para validar o
+contrato sem credenciais reais. Uma sessão canônica existente nunca pode ser substituída por
+arquivo legado com data mais recente; o fluxo não mascara nem tenta recriar credenciais.

@@ -30,6 +30,10 @@ public class LandingGenerationAgentExecutionService {
   private static final String STAGE = "landing-generation-agent-v1";
   private static final String PENDING = "INICIADO";
   private static final String PROCESSING = "PROCESSANDO";
+  private static final String BUILD_MARKER_PREFIX = "CLAIMED_BY_BUILD:";
+  private static final String DEPLOY_RECOVERY_POLICY = "RETRY_ON_EXECUTOR_DEPLOY";
+  private static final String COMMERCIAL_HOMOLOGATION_SOURCE =
+      "COMMERCIAL_PLAN_JOURNEY_HOMOLOGATION";
   private final GeraLandingStageExecutionRepository repository;
   private final LandingGenerationAgentCoordinator coordinator;
   private final ExperimentRepository experimentRepository;
@@ -130,15 +134,93 @@ public class LandingGenerationAgentExecutionService {
   /** Reserva jobs de forma transacional antes de qualquer consumo do Codex. */
   @Transactional
   public List<LandingAgentPendingResponse> claimPending(int requestedLimit) {
+    return claimPending(requestedLimit, null);
+  }
+
+  /** Reconcilia homologações interrompidas por deploy e reserva a fila para a versão informada. */
+  @Transactional
+  public List<LandingAgentPendingResponse> claimPending(int requestedLimit, String buildReference) {
     recoverLegacyTimeoutFailures();
     recoverExpiredLeases();
+    recoverCommercialHomologationsAfterDeploy(buildReference);
     int limit = Math.max(1, Math.min(3, requestedLimit));
     return repository
         .findTop3ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(STAGE, PENDING)
         .stream()
         .limit(limit)
-        .map(this::claim)
+        .map(execution -> claim(execution, buildReference))
         .toList();
+  }
+
+  /**
+   * Reabre uma homologação técnica somente quando um executor realmente novo substituiu o anterior.
+   */
+  private void recoverCommercialHomologationsAfterDeploy(String buildReference) {
+    String normalizedBuild = normalizeBuildReference(buildReference);
+    if (normalizedBuild == null) return;
+    Instant graceThreshold = Instant.now().minusSeconds(2 * 60L);
+    for (GeraLandingStageExecution execution :
+        repository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(STAGE, PROCESSING)) {
+      if (isDeployRecoverableHomologation(execution, normalizedBuild, graceThreshold)) {
+        recordDeploymentRecovery(execution, normalizedBuild);
+        execution.setStatus(PENDING);
+        execution.setProcessingStartedAt(null);
+        execution.setCompletedAt(null);
+        execution.setErrorMessage(null);
+        repository.save(execution);
+      }
+    }
+    for (GeraLandingStageExecution execution :
+        repository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(STAGE, "FALHA")) {
+      if (isDeployRecoverableHomologation(execution, normalizedBuild, graceThreshold)) {
+        recordDeploymentRecovery(execution, normalizedBuild);
+        execution.setStatus(PENDING);
+        execution.setProcessingStartedAt(null);
+        execution.setCompletedAt(null);
+        execution.setErrorMessage(null);
+        repository.save(execution);
+      }
+    }
+  }
+
+  /** Confirma política comercial, troca de build e idade mínima antes de permitir retomada. */
+  private boolean isDeployRecoverableHomologation(
+      GeraLandingStageExecution execution, String currentBuild, Instant graceThreshold) {
+    String previousBuild = claimedBuild(execution);
+    return execution.getPromptContent() != null
+        && (execution.getPromptContent().contains(DEPLOY_RECOVERY_POLICY)
+            || execution.getPromptContent().contains(COMMERCIAL_HOMOLOGATION_SOURCE))
+        && execution.getExecutionRequestedAt() != null
+        && execution.getExecutionRequestedAt().isBefore(graceThreshold)
+        && !currentBuild.equals(previousBuild);
+  }
+
+  /** Extrai a versão que reservou originalmente a execução. */
+  private String claimedBuild(GeraLandingStageExecution execution) {
+    String detail = execution.getErrorDetail();
+    if (detail == null || !detail.startsWith(BUILD_MARKER_PREFIX)) return "LEGACY_OR_UNKNOWN";
+    return detail.substring(BUILD_MARKER_PREFIX.length());
+  }
+
+  /** Registra a troca de executor sem apagar auditorias anteriores da homologação. */
+  private void recordDeploymentRecovery(GeraLandingStageExecution execution, String currentBuild) {
+    String event =
+        "DEPLOY_RECOVERY|from="
+            + claimedBuild(execution)
+            + "|to="
+            + currentBuild
+            + "|at="
+            + Instant.now();
+    String currentAudit = execution.getQualityReviewAudit();
+    execution.setQualityReviewAudit(
+        currentAudit == null || currentAudit.isBlank() ? event : currentAudit + "\n" + event);
+  }
+
+  /** Normaliza a referência de build recebida sem aceitar valores vazios ou excessivos. */
+  private String normalizeBuildReference(String buildReference) {
+    if (buildReference == null || buildReference.isBlank()) return null;
+    String normalized = buildReference.trim();
+    return normalized.length() > 120 ? normalized.substring(0, 120) : normalized;
   }
 
   /** Reabre uma única vez timeouts terminais gravados por versões antigas do worker. */
@@ -232,9 +314,12 @@ public class LandingGenerationAgentExecutionService {
   }
 
   /** Marca a execução como reservada e devolve o contexto imutável. */
-  private LandingAgentPendingResponse claim(GeraLandingStageExecution execution) {
+  private LandingAgentPendingResponse claim(
+      GeraLandingStageExecution execution, String buildReference) {
     execution.setStatus(PROCESSING);
     execution.setProcessingStartedAt(Instant.now());
+    String normalizedBuild = normalizeBuildReference(buildReference);
+    if (normalizedBuild != null) execution.setErrorDetail(BUILD_MARKER_PREFIX + normalizedBuild);
     repository.save(execution);
     return response(execution);
   }

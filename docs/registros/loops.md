@@ -959,6 +959,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Sintoma:** o Quality Review conclui com `REGENERATE_BEFORE_PUBLICATION`, mas nenhuma execução `landing-generation-agent-v1` é persistida e Dédalo não inicia a correção.
 - **Causa-raiz:** o listener `AFTER_COMMIT` chamava a persistência da fila dentro da transação já concluída; a autoinvocação de `enqueue` não abria outra fronteira transacional e a gravação era descartada sem erro.
 - **Prevenção:** o listener abre transação `REQUIRES_NEW` para memória, decisão e fila do agente; teste de contrato protege explicitamente essa propagação.
+- **Fechamento complementar em 2026-08-13:** homologações comerciais interrompidas por uma versão antiga do executor passam a registrar o build que reservou a execução e podem ser retomadas uma única vez por um build novo. A política é explícita no briefing, preserva carência e idempotência e não reabre decisões funcionais concluídas.
 
 # LOOP-GROWTH-OPERATOR-REPEATED-DIAGNOSIS — Ciclos sem evidência nova
 

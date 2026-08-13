@@ -18,8 +18,10 @@ public class LandingGenerationAgentController {
 
   /** Reserva pendências para o executor independente. */
   @GetMapping("/pending")
-  public List<LandingAgentPendingResponse> pending(@RequestParam(defaultValue = "1") int limit) {
-    return service.claimPending(limit);
+  public List<LandingAgentPendingResponse> pending(
+      @RequestParam(defaultValue = "1") int limit,
+      @RequestHeader(value = "X-Agent-Build-Reference", required = false) String buildReference) {
+    return service.claimPending(limit, buildReference);
   }
 
   /** Expõe somente o snapshot da execução segregada ao MCP. */

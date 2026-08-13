@@ -56,6 +56,7 @@ public class CommercialPlanJourneyHomologationService {
     brief.put("rootCause", plan.getRootCause());
     brief.put("nextAction", plan.getNextAction());
     brief.put("testIsolation", "mh_test=1");
+    brief.put("recoveryPolicy", "RETRY_ON_EXECUTOR_DEPLOY");
     brief.put("publicationAuthorized", false);
     brief.put("mediaSpendAuthorized", false);
     brief.put(

@@ -174,6 +174,50 @@ class LandingGenerationAgentExecutionServiceTest {
     assertEquals("FALHA", timedOut.getStatus());
   }
 
+  /** Deve retomar homologação abandonada quando um build novo passa a consumir a fila. */
+  @Test
+  void shouldRecoverCommercialHomologationAfterExecutorDeploy() {
+    GeraLandingStageExecution blocked = execution("job-cph-88", "PROCESSANDO");
+    blocked.setExecutionRequestedAt(Instant.now().minusSeconds(300));
+    blocked.setAutonomousCycleId("cph-2-cycle");
+    blocked.setPromptContent(
+        "{\"source\":\"COMMERCIAL_PLAN_JOURNEY_HOMOLOGATION\","
+            + "\"recoveryPolicy\":\"RETRY_ON_EXECUTOR_DEPLOY\"}");
+    blocked.setErrorDetail("CLAIMED_BY_BUILD:build-old");
+    when(repository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+            "landing-generation-agent-v1", "PROCESSANDO"))
+        .thenReturn(List.of(blocked));
+    when(repository.findTop3ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+            "landing-generation-agent-v1", "INICIADO"))
+        .thenReturn(List.of(blocked));
+
+    List<LandingAgentPendingResponse> result = service.claimPending(1, "build-new");
+
+    assertEquals(1, result.size());
+    assertEquals("PROCESSANDO", blocked.getStatus());
+    assertEquals("CLAIMED_BY_BUILD:build-new", blocked.getErrorDetail());
+    assertEquals(null, blocked.getCompletedAt());
+    assertTrue(blocked.getQualityReviewAudit().contains("from=build-old|to=build-new"));
+  }
+
+  /** Não deve duplicar homologação que ainda pertence ao mesmo build ativo. */
+  @Test
+  void shouldNotRecoverCommercialHomologationWithinSameDeploy() {
+    GeraLandingStageExecution active = execution("job-cph-88", "PROCESSANDO");
+    active.setExecutionRequestedAt(Instant.now().minusSeconds(300));
+    active.setPromptContent("{\"recoveryPolicy\":\"RETRY_ON_EXECUTOR_DEPLOY\"}");
+    active.setErrorDetail("CLAIMED_BY_BUILD:build-current");
+    when(repository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+            "landing-generation-agent-v1", "PROCESSANDO"))
+        .thenReturn(List.of(active));
+
+    List<LandingAgentPendingResponse> result = service.claimPending(1, "build-current");
+
+    assertTrue(result.isEmpty());
+    assertEquals("PROCESSANDO", active.getStatus());
+    assertEquals("CLAIMED_BY_BUILD:build-current", active.getErrorDetail());
+  }
+
   /** Deve tornar callback repetido idempotente e não avançar novamente. */
   @Test
   void shouldIgnoreRepeatedCompletedCallback() {

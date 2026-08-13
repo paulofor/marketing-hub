@@ -11,7 +11,7 @@ const response = await fetch(`${backend}/api/internal/agents/executor-health`, {
     buildReference: process.env.AGENT_BUILD_REFERENCE || null,
     backendAccessible: true,
     codexAuthenticated: auth.status === 0,
-    detail: auth.status === 0 ? "Executor pronto." : "Reconecte a sessão Codex compartilhada.",
+    detail: auth.status === 0 ? "Executor pronto." : "Reconecte a sessão Codex individual do agente.",
   }),
 });
 const health = response.ok ? await response.json() : null;

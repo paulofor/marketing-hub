@@ -6,8 +6,7 @@ on:
     paths:
       - financial-agent-worker/**
       - .github/workflows/financial-agent-worker-ci.yml
-      - scripts/reconcile-agent-codex-auth.sh
-      - scripts/test-shared-agent-codex-auth.sh
+      - scripts/test-isolated-agent-codex-auth.sh
   workflow_dispatch:
 
 concurrency:

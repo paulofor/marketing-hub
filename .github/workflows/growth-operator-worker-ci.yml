@@ -6,13 +6,12 @@ on:
     paths:
       - growth-operator-worker/**
       - .github/workflows/growth-operator-worker-ci.yml
-      - scripts/reconcile-agent-codex-auth.sh
-      - scripts/test-shared-agent-codex-auth.sh
+      - scripts/test-isolated-agent-codex-auth.sh
   workflow_dispatch:
 
 concurrency:
   group: growth-operator-worker-production
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -51,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     concurrency:
-      group: shared-growth-agents-repository-deploy
+      group: growth-operator-worker-deploy
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4

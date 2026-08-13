@@ -126,7 +126,7 @@ export default function VideoProviderFinancePage() {
                 {balance.sceneRequests.length > 0 ? (
                   <div className="table-responsive mb-3">
                     <table className="table table-sm align-middle">
-                      <caption>Solicitações de cena comprovadas</caption>
+                      <caption>Tasks de cena registradas</caption>
                       <thead>
                         <tr>
                           <th scope="col">Ciclo</th>
@@ -134,7 +134,7 @@ export default function VideoProviderFinancePage() {
                           <th scope="col">Cena</th>
                           <th scope="col">Task do provedor</th>
                           <th scope="col">Modelo/duração</th>
-                          <th scope="col">Débito liquidado</th>
+                          <th scope="col">Conciliação financeira</th>
                           <th scope="col">Aceita em</th>
                         </tr>
                       </thead>
@@ -155,10 +155,22 @@ export default function VideoProviderFinancePage() {
                             </td>
                             <td>
                               {request.settlementStatus === "CHARGED"
-                                ? `${request.billedCredits} créditos · US$ ${usd(request.billedCostUsd ?? 0)}`
+                                ? `${request.billedCredits} créditos confirmados · US$ ${usd(request.billedCostUsd ?? 0)}`
                                 : request.settlementStatus === "REFUNDED"
-                                  ? "Reembolsado · 0 crédito"
-                                  : `${request.estimatedCredits ?? "?"} estimados · pendente`}
+                                  ? "Reembolso confirmado · 0 crédito"
+                                  : request.settlementStatus ===
+                                      "CONTRACTUAL_CHARGE"
+                                    ? `${request.billedCredits} créditos pelo contrato · US$ ${usd(request.billedCostUsd ?? 0)}`
+                                    : request.settlementStatus ===
+                                        "CONTRACTUAL_REFUND"
+                                      ? "Reembolso previsto pelo contrato · 0 crédito"
+                                      : `${request.estimatedCredits ?? "?"} estimados · pendente`}
+                              {request.settlementBasis ===
+                              "CONTRACTUAL_RATE_CARD" ? (
+                                <small className="d-block text-warning-emphasis">
+                                  Não confirmado pelo extrato do provedor
+                                </small>
+                              ) : null}
                               {request.billingEvidence ? (
                                 <small className="d-block text-muted">
                                   {request.billingEvidence}

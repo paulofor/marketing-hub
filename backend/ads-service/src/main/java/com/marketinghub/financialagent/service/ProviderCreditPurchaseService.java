@@ -185,6 +185,7 @@ public class ProviderCreditPurchaseService {
     Integer billedCredits = readJsonInteger(details, "billedCredits");
     BigDecimal billedCost = readJsonDecimal(details, "billedCostUsd");
     String settlementStatus = readJsonText(details, "settlementStatus");
+    String settlementBasis = readJsonText(details, "settlementBasis");
     String billingEvidence = readJsonText(details, "billingEvidence");
     Long jobId = event.getJob().getId();
     Long cycleId = readCycleId(event.getJob().getMetadataJson());
@@ -212,6 +213,9 @@ public class ProviderCreditPurchaseService {
               settlementStatus != null
                   ? settlementStatus
                   : previous == null ? null : previous.settlementStatus(),
+              settlementBasis != null
+                  ? settlementBasis
+                  : previous == null ? null : previous.settlementBasis(),
               billingEvidence != null
                   ? billingEvidence
                   : previous == null ? null : previous.billingEvidence(),

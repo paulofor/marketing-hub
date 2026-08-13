@@ -37,7 +37,14 @@ export type VideoProviderCreditBalance = {
     estimatedCostUsd: number | null;
     billedCredits: number | null;
     billedCostUsd: number | null;
-    settlementStatus: "CHARGED" | "REFUNDED" | null;
+    settlementStatus:
+      | "CHARGED"
+      | "REFUNDED"
+      | "CONTRACTUAL_CHARGE"
+      | "CONTRACTUAL_REFUND"
+      | null;
+    settlementBasis:
+      "PROVIDER_REPORTED" | "CONTRACTUAL_RATE_CARD" | "UNKNOWN" | null;
     billingEvidence: string | null;
     acceptedAt: string;
   }>;

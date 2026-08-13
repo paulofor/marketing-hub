@@ -98,13 +98,15 @@ class StudioProviderTaskConsumptionTest {
             "task-1",
             300,
             new BigDecimal("3.00"),
-            "CHARGED",
+            "CONTRACTUAL_CHARGE",
+            "CONTRACTUAL_RATE_CARD",
             "PROVIDER_RATE_CARD_AND_TASK_SUCCESS",
             Instant.parse("2026-08-13T18:11:00Z"),
             "VIDEO_PROCESSING");
 
     assertThat(task.getBilledCredits()).isEqualTo(300);
-    assertThat(task.getSettlementStatus()).isEqualTo("CHARGED");
+    assertThat(task.getSettlementStatus()).isEqualTo("CONTRACTUAL_CHARGE");
+    assertThat(task.getSettlementBasis()).isEqualTo("CONTRACTUAL_RATE_CARD");
     assertThat(jobEntry.getProviderCostUsd()).isEqualByComparingTo("3.00");
     assertThat(jobEntry.getEstimatedCostUsd()).isNull();
     assertThat(jobEntry.getCostEvidence()).isEqualTo("PROVIDER_TASKS_SETTLED_BY_CONTRACT");

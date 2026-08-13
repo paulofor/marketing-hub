@@ -342,6 +342,7 @@ public class SalesVideoJobService {
             details.path("billedCredits").asInt(),
             details.path("billedCostUsd").decimalValue(),
             details.path("settlementStatus").asText(),
+            details.path("settlementBasis").asText("UNKNOWN"),
             details.path("billingEvidence").asText(),
             Instant.now(),
             job.getStatus().name());

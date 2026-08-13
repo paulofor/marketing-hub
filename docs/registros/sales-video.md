@@ -221,6 +221,12 @@
 - Limite externo: a API pública Runway não oferece endpoint documentado de saldo ou custo debitado
   por task; a conciliação usa status da task e tabela oficial, mantendo essa natureza explícita.
 
+## 2026-08-13 — custo contratual não é débito confirmado
+
+- Recorrência: a tela chamava de `cobrado` o valor calculado pela tabela oficial após o sucesso da task, apesar de a Runway não retornar débito nem saldo no contrato público.
+- Correção: liquidações automáticas da Runway passam a ser `CONTRACTUAL_CHARGE` ou `CONTRACTUAL_REFUND`, com base `CONTRACTUAL_RATE_CARD`; somente evidência financeira direta poderá usar `CHARGED`, `REFUNDED` e `PROVIDER_REPORTED`.
+- Prevenção: painel e contratos distinguem valor contratual, débito confirmado e pendência, mantendo tentativas legadas sem evidência como desconhecidas.
+
 ## 2026-08-13 — storyboard auditável de custo e aproveitamento
 
 - Causa-raiz: o Estúdio mostrava plano e jobs separados, sem cruzar duração, consumo, arquivo e uso editorial por cena; assim, material caro e não utilizado podia parecer apenas produção em andamento.

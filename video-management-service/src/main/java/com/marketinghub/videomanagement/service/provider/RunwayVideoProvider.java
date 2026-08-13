@@ -238,7 +238,8 @@ public class RunwayVideoProvider implements VideoProvider {
                 progressCallback.onProgress(80, SalesVideoStatus.VIDEO_PROCESSING,
                         "Runway liquidou cena %d/%d; taskId=%s".formatted(scene, sceneCount, taskId),
                         providerTaskSettlementDetails(taskId, model, scene, sceneCount, durationSeconds,
-                                estimatedCredits, "CHARGED", "PROVIDER_RATE_CARD_AND_TASK_SUCCESS"));
+                                estimatedCredits, "CONTRACTUAL_CHARGE", "CONTRACTUAL_RATE_CARD",
+                                "PROVIDER_RATE_CARD_AND_TASK_SUCCESS"));
                 return status;
             }
             if (isFailure(taskStatus)) {
@@ -249,7 +250,8 @@ public class RunwayVideoProvider implements VideoProvider {
                         "Runway liquidou cena %d/%d; taskId=%s".formatted(scene, sceneCount, taskId),
                         providerTaskSettlementDetails(taskId, model, scene, sceneCount, durationSeconds,
                                 charged ? estimatedCredits : 0,
-                                charged ? "CHARGED" : "REFUNDED",
+                                charged ? "CONTRACTUAL_CHARGE" : "CONTRACTUAL_REFUND",
+                                "CONTRACTUAL_RATE_CARD",
                                 charged ? "PROVIDER_RATE_CARD_AND_SAFETY_FAILURE"
                                         : "PROVIDER_TASK_FAILURE_REFUND_POLICY"));
                 throw new VideoProviderException("PROVIDER_RENDER_FAILED",
@@ -509,6 +511,7 @@ public class RunwayVideoProvider implements VideoProvider {
                                                  int durationSeconds,
                                                  int billedCredits,
                                                  String settlementStatus,
+                                                 String settlementBasis,
                                                  String billingEvidence) {
         try {
             Map<String, Object> details = new LinkedHashMap<>();
@@ -522,6 +525,7 @@ public class RunwayVideoProvider implements VideoProvider {
             details.put("billedCredits", billedCredits);
             details.put("billedCostUsd", BigDecimal.valueOf(billedCredits).multiply(new BigDecimal("0.01")));
             details.put("settlementStatus", settlementStatus);
+            details.put("settlementBasis", settlementBasis);
             details.put("billingEvidence", billingEvidence);
             return objectMapper.writeValueAsString(details);
         } catch (JsonProcessingException ex) {

@@ -134,7 +134,8 @@ class RunwayVideoProviderTest {
 
         assertThat(financialEvents).anySatisfy(financialEvent -> assertThat(financialEvent)
                 .contains("\"eventType\":\"PROVIDER_TASK_SETTLED\"")
-                .contains("\"settlementStatus\":\"REFUNDED\"")
+                .contains("\"settlementStatus\":\"CONTRACTUAL_REFUND\"")
+                .contains("\"settlementBasis\":\"CONTRACTUAL_RATE_CARD\"")
                 .contains("\"billedCredits\":0"));
     }
 
@@ -219,7 +220,8 @@ class RunwayVideoProviderTest {
                 .contains("\"estimatedCredits\":300"));
         assertThat(financialEvents).anySatisfy(financialEvent -> assertThat(financialEvent)
                 .contains("\"eventType\":\"PROVIDER_TASK_SETTLED\"")
-                .contains("\"settlementStatus\":\"CHARGED\"")
+                .contains("\"settlementStatus\":\"CONTRACTUAL_CHARGE\"")
+                .contains("\"settlementBasis\":\"CONTRACTUAL_RATE_CARD\"")
                 .contains("\"billedCredits\":300"));
     }
 

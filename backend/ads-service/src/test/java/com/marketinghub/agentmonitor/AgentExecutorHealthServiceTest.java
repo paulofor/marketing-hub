@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agent.CodexAuthReconnectRepository;
+import com.marketinghub.repository.jpa.agentmonitor.AgentExecutorAdminOperationRepository;
 import com.marketinghub.repository.jpa.agentmonitor.AgentExecutorHealthCheckRepository;
 import java.time.Clock;
 import java.time.Instant;
@@ -16,6 +17,37 @@ import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: proteger a classificação central da prontidão dos executores dos agentes. */
 class AgentExecutorHealthServiceTest {
+  /** Cria comando de atualização sem executar Docker dentro do backend. */
+  @Test
+  void shouldCreateAuditableExecutorUpdateCommand() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentExecutorHealthCheckRepository checks = mock(AgentExecutorHealthCheckRepository.class);
+    CodexAuthReconnectRepository reconnects = mock(CodexAuthReconnectRepository.class);
+    AgentExecutorAdminOperationRepository operations =
+        mock(AgentExecutorAdminOperationRepository.class);
+    Agent agent = Agent.builder().id(3L).agentKey("financial-agent").nickname("Plutus").build();
+    when(agents.findById(3L)).thenReturn(Optional.of(agent));
+    when(operations.existsByAgentIdAndStatusIn(
+            org.mockito.ArgumentMatchers.eq(3L), org.mockito.ArgumentMatchers.anyList()))
+        .thenReturn(false);
+    when(operations.save(org.mockito.ArgumentMatchers.any()))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    AgentExecutorHealthService service =
+        new AgentExecutorHealthService(
+            agents,
+            checks,
+            reconnects,
+            operations,
+            Clock.fixed(Instant.parse("2026-08-13T04:00:00Z"), ZoneOffset.UTC));
+
+    AgentExecutorAdminOperationResponse response =
+        service.requestOperation(3L, "update", "operador");
+
+    assertThat(response.agentKey()).isEqualTo("financial-agent");
+    assertThat(response.operationType()).isEqualTo("UPDATE");
+    assertThat(response.status()).isEqualTo("REQUESTED");
+  }
+
   /** Persiste solicitação sem qualquer token e impede duplicação concorrente. */
   @Test
   void shouldCreateAuditableReconnectWithoutCredentials() {

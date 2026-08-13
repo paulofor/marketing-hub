@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-13-agent-executor-admin-operation
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE agent_executor_admin_operation (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                agent_id BIGINT NOT NULL,
+                operation_type VARCHAR(20) NOT NULL,
+                status VARCHAR(30) NOT NULL,
+                requested_by VARCHAR(100) NOT NULL,
+                requested_at DATETIME NOT NULL,
+                started_at DATETIME NULL,
+                completed_at DATETIME NULL,
+                detail VARCHAR(500) NULL,
+                PRIMARY KEY (id),
+                INDEX idx_agent_executor_admin_pending (status, requested_at),
+                CONSTRAINT fk_agent_executor_admin_agent FOREIGN KEY (agent_id) REFERENCES agent(id)
+              );

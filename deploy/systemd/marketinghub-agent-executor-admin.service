@@ -1,0 +1,22 @@
+[Unit]
+Description=Marketing Hub Agent Executor Admin Controller
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+Environment=BACKEND_URL=http://191.252.181.168
+Environment=MARKETING_HUB_REPOSITORY=/opt/marketing-hub/repo
+Environment=CUSTOMER_AGENT_CODEX_HOME=/opt/growth-operator/agents/customer-agent/codex-home
+Environment=FINANCIAL_AGENT_CODEX_HOME=/opt/growth-operator/agents/financial-agent/codex-home
+Environment=GROWTH_OPERATOR_CODEX_HOME=/opt/growth-operator/agents/growth-operator/codex-home
+Environment=EXPERIMENT_STRATEGIST_CODEX_HOME=/opt/growth-operator/agents/experiment-strategist/codex-home
+Environment=META_AD_APPROVER_CODEX_HOME=/opt/growth-operator/agents/meta-ad-approver/codex-home
+Environment=LANDING_GENERATOR_CODEX_HOME=/opt/growth-operator/agents/landing-generator/codex-home
+ExecStart=/usr/bin/node /opt/marketing-hub/repo/scripts/agent-executor-admin-controller.mjs
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target

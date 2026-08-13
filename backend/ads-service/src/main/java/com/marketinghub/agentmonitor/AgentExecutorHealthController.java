@@ -49,4 +49,21 @@ public class AgentExecutorHealthController {
       @PathVariable Long id, @RequestBody CodexAuthCompletionRequest request) {
     return service.complete(id, request);
   }
+
+  /** Reserva o próximo comando para o controlador de implantação instalado no host. */
+  @GetMapping("/admin-operations/pending")
+  public org.springframework.http.ResponseEntity<AgentExecutorAdminOperationResponse>
+      pendingAdminOperation() {
+    AgentExecutorAdminOperationResponse response = service.claimOperation();
+    return response == null
+        ? org.springframework.http.ResponseEntity.noContent().build()
+        : org.springframework.http.ResponseEntity.ok(response);
+  }
+
+  /** Recebe o resultado do controlador sem substituir a prova do health-check. */
+  @PostMapping("/admin-operations/{id}/completion")
+  public AgentExecutorAdminOperationResponse completeAdminOperation(
+      @PathVariable Long id, @RequestBody AgentExecutorAdminCompletionRequest request) {
+    return service.completeOperation(id, request);
+  }
 }

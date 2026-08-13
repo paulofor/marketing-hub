@@ -1,6 +1,7 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
 import AgentListPage from "./AgentListPage";
 
 vi.mock("../../api/agent/useAgents", () => ({
@@ -92,6 +93,15 @@ vi.mock("../../api/agent/useAgentWorkMonitor", () => ({
   }),
 }));
 
+vi.mock("../../api/agent/useAgentExecutorOperation", () => ({
+  useAgentExecutorOperation: () => ({ data: null }),
+  useStartAgentExecutorOperation: () => ({
+    isPending: false,
+    isError: false,
+    mutate: vi.fn(),
+  }),
+}));
+
 describe("AgentListPage", () => {
   afterEach(() => cleanup());
 
@@ -138,6 +148,28 @@ describe("AgentListPage", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getAllByRole("button", { name: "Reconectar Codex" })).toHaveLength(2);
+    expect(
+      screen.getAllByRole("button", { name: "Reconectar Codex" }),
+    ).toHaveLength(2);
+  });
+
+  it("conduz as sessões em sequência usando o estado informado pelo backend", async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AgentListPage />
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Preparar sessões Codex" }),
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Preparar os seis agentes Codex" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Criar sessão de Plutus" }),
+    ).toBeInTheDocument();
   });
 });

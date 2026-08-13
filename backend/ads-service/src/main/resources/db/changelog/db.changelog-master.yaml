@@ -1783,3 +1783,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-13-video-cycle-learning-ledger.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-13-agent-executor-admin-operation.yaml
+      relativeToChangelogFile: true

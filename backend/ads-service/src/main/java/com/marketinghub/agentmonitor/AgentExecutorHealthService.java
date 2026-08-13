@@ -3,6 +3,7 @@ package com.marketinghub.agentmonitor;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agent.CodexAuthReconnectRepository;
+import com.marketinghub.repository.jpa.agentmonitor.AgentExecutorAdminOperationRepository;
 import com.marketinghub.repository.jpa.agentmonitor.AgentExecutorHealthCheckRepository;
 import java.time.Clock;
 import java.time.Duration;
@@ -27,25 +28,35 @@ public class AgentExecutorHealthService {
   private final AgentExecutorHealthCheckRepository checks;
   private final Clock clock;
   private final CodexAuthReconnectRepository reconnects;
+  private final AgentExecutorAdminOperationRepository operations;
 
   /** Configura as fontes canônicas de agente, leitura operacional e tempo. */
   @Autowired
   public AgentExecutorHealthService(
       AgentRepository agents,
       AgentExecutorHealthCheckRepository checks,
-      CodexAuthReconnectRepository reconnects) {
-    this(agents, checks, reconnects, Clock.systemUTC());
+      CodexAuthReconnectRepository reconnects,
+      AgentExecutorAdminOperationRepository operations) {
+    this(agents, checks, reconnects, operations, Clock.systemUTC());
   }
 
   /** Mantém testes focados no health-check sem persistência de reconexão. */
   AgentExecutorHealthService(AgentRepository agents, AgentExecutorHealthCheckRepository checks) {
-    this(agents, checks, null, Clock.systemUTC());
+    this(agents, checks, null, null, Clock.systemUTC());
   }
 
   /** Mantém testes de vencimento com relógio determinístico. */
   AgentExecutorHealthService(
       AgentRepository agents, AgentExecutorHealthCheckRepository checks, Clock clock) {
-    this(agents, checks, null, clock);
+    this(agents, checks, null, null, clock);
+  }
+
+  /** Mantém testes de reconexão focados sem persistência de comandos administrativos. */
+  AgentExecutorHealthService(
+      AgentRepository agents,
+      AgentExecutorHealthCheckRepository checks,
+      CodexAuthReconnectRepository reconnects) {
+    this(agents, checks, reconnects, null, Clock.systemUTC());
   }
 
   /** Permite validar vencimento de leituras com relógio determinístico. */
@@ -54,10 +65,91 @@ public class AgentExecutorHealthService {
       AgentExecutorHealthCheckRepository checks,
       CodexAuthReconnectRepository reconnects,
       Clock clock) {
+    this(agents, checks, reconnects, null, clock);
+  }
+
+  /** Permite validar comandos administrativos com relógio determinístico. */
+  AgentExecutorHealthService(
+      AgentRepository agents,
+      AgentExecutorHealthCheckRepository checks,
+      CodexAuthReconnectRepository reconnects,
+      AgentExecutorAdminOperationRepository operations,
+      Clock clock) {
     this.agents = agents;
     this.checks = checks;
     this.clock = clock;
     this.reconnects = reconnects;
+    this.operations = operations;
+  }
+
+  /** Solicita atualização ou reinício sem conceder acesso Docker ao backend. */
+  @Transactional
+  public AgentExecutorAdminOperationResponse requestOperation(
+      Long agentId, String operationType, String requestedBy) {
+    Agent agent =
+        agents
+            .findById(agentId)
+            .orElseThrow(() -> new IllegalArgumentException("Agente não encontrado."));
+    if (!CODEX_EXECUTORS.contains(agent.getAgentKey()))
+      throw new IllegalStateException("Agente não utiliza executor Codex administrável.");
+    String normalized = operationType == null ? "" : operationType.trim().toUpperCase();
+    if (!Set.of("UPDATE", "RESTART").contains(normalized))
+      throw new IllegalArgumentException("Operação deve ser UPDATE ou RESTART.");
+    if (operations.existsByAgentIdAndStatusIn(agentId, java.util.List.of("REQUESTED", "RUNNING")))
+      return currentOperation(agentId);
+    return operationResponse(
+        operations.save(
+            new AgentExecutorAdminOperation(
+                agent, normalized, concise(requestedBy, 100), clock.instant())));
+  }
+
+  /** Consulta o último comando administrativo do agente. */
+  @Transactional(readOnly = true)
+  public AgentExecutorAdminOperationResponse currentOperation(Long agentId) {
+    return operations
+        .findTopByAgentIdOrderByRequestedAtDesc(agentId)
+        .map(this::operationResponse)
+        .orElse(null);
+  }
+
+  /** Reserva o próximo comando para o controlador externo do host. */
+  @Transactional
+  public AgentExecutorAdminOperationResponse claimOperation() {
+    return operations
+        .findTopByStatusOrderByRequestedAtAsc("REQUESTED")
+        .map(
+            item -> {
+              item.start(clock.instant());
+              return operationResponse(operations.save(item));
+            })
+        .orElse(null);
+  }
+
+  /** Finaliza o comando; a prontidão seguirá dependente do health-check real. */
+  @Transactional
+  public AgentExecutorAdminOperationResponse completeOperation(
+      Long id, AgentExecutorAdminCompletionRequest request) {
+    AgentExecutorAdminOperation item =
+        operations
+            .findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Operação não encontrada."));
+    item.complete(request.success(), concise(request.detail(), 500), clock.instant());
+    return operationResponse(operations.save(item));
+  }
+
+  /** Converte a operação persistida no contrato administrativo. */
+  private AgentExecutorAdminOperationResponse operationResponse(AgentExecutorAdminOperation item) {
+    return new AgentExecutorAdminOperationResponse(
+        item.getId(),
+        item.getAgent().getId(),
+        item.getAgent().getAgentKey(),
+        item.getOperationType(),
+        item.getStatus(),
+        item.getRequestedBy(),
+        item.getRequestedAt(),
+        item.getStartedAt(),
+        item.getCompletedAt(),
+        item.getDetail());
   }
 
   /** Solicita reconexão sem permitir duas operações concorrentes para o mesmo agente. */

@@ -1,0 +1,50 @@
+name: Agent Executor Admin Controller CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - scripts/agent-executor-admin-controller.mjs
+      - scripts/test-agent-executor-admin-controller.mjs
+      - deploy/systemd/marketinghub-agent-executor-admin.service
+      - .github/workflows/agent-executor-admin-controller-ci.yml
+  workflow_dispatch:
+
+concurrency:
+  group: agent-executor-admin-controller-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Validate restricted controller contract
+        run: node scripts/test-agent-executor-admin-controller.mjs
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add agent VPS SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.GROWTH_OPERATOR_VPS_SSH_KEY }}
+      - name: Trust agent VPS
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          ssh-keyscan -T 30 -4 -p 22 -t rsa,ecdsa,ed25519 -H 163.245.202.80 >> ~/.ssh/known_hosts
+      - name: Install and validate controller
+        run: |
+          set -euo pipefail
+          scp scripts/agent-executor-admin-controller.mjs root@163.245.202.80:/opt/marketing-hub/repo/scripts/agent-executor-admin-controller.mjs
+          scp deploy/systemd/marketinghub-agent-executor-admin.service root@163.245.202.80:/etc/systemd/system/marketinghub-agent-executor-admin.service
+          ssh root@163.245.202.80 'systemctl daemon-reload && systemctl enable --now marketinghub-agent-executor-admin.service && systemctl is-active --quiet marketinghub-agent-executor-admin.service'

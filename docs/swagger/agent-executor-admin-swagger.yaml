@@ -1,0 +1,36 @@
+openapi: 3.0.3
+info:
+  title: Agent Executor Administration
+  version: 1.0.0
+paths:
+  /api/agents/work-monitor/{agentId}/executor-operations/{operationType}:
+    post:
+      summary: Solicita atualização ou reinício auditável de um executor Codex
+      parameters:
+        - in: path
+          name: agentId
+          required: true
+          schema: { type: integer, format: int64 }
+        - in: path
+          name: operationType
+          required: true
+          schema: { type: string, enum: [UPDATE, RESTART] }
+      responses:
+        "200": { description: Operação persistida }
+  /api/agents/work-monitor/{agentId}/executor-operations/current:
+    get:
+      summary: Consulta a última operação do executor
+      responses:
+        "200": { description: Operação encontrada }
+        "204": { description: Nenhuma operação }
+  /api/internal/agents/executor-health/admin-operations/pending:
+    get:
+      summary: Reserva a próxima operação para o controlador do host
+      responses:
+        "200": { description: Operação reservada }
+        "204": { description: Nenhuma operação }
+  /api/internal/agents/executor-health/admin-operations/{id}/completion:
+    post:
+      summary: Registra o resultado técnico da operação
+      responses:
+        "200": { description: Resultado persistido }

@@ -6,6 +6,7 @@ import { useAgentWorkMonitor } from "../../api/agent/useAgentWorkMonitor";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import { useState } from "react";
 import CodexAuthReconnectPanel from "./CodexAuthReconnectPanel";
+import AgentSessionSetupWizard from "./AgentSessionSetupWizard";
 
 const CODEX_EXECUTORS = new Set([
   "customer-agent",
@@ -27,6 +28,10 @@ export default function AgentListPage() {
     id: number;
     nickname: string;
   } | null>(null);
+  const [showSetupWizard, setShowSetupWizard] = useState(false);
+  const codexAgents = (workMonitor.data ?? []).filter((item) =>
+    CODEX_EXECUTORS.has(item.agentKey),
+  );
 
   return (
     <div>
@@ -69,6 +74,13 @@ export default function AgentListPage() {
               }{" "}
               ativos
             </span>
+            <button
+              type="button"
+              className="btn btn-sm btn-primary"
+              onClick={() => setShowSetupWizard(true)}
+            >
+              Preparar sessões Codex
+            </button>
           </div>
           <div className="table-responsive mt-3">
             <table className="table table-sm align-middle mb-0">
@@ -179,6 +191,16 @@ export default function AgentListPage() {
           </div>
         </div>
       </section>
+
+      {showSetupWizard ? (
+        <AgentSessionSetupWizard
+          agents={codexAgents}
+          onAuthenticate={(item) =>
+            setReconnectAgent({ id: item.agentId, nickname: item.nickname })
+          }
+          onClose={() => setShowSetupWizard(false)}
+        />
+      ) : null}
 
       {reconnectAgent ? (
         <CodexAuthReconnectPanel

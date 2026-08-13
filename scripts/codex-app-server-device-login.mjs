@@ -70,9 +70,10 @@ lines.on('line', async (line) => {
   }
   try {
     const account = await request('account/read', { refreshToken: false });
-    if (!account.authMode) throw new Error('Codex App Server não confirmou a conta autenticada');
-    await callback('completion', { authenticated: true, detail: `Sessão confirmada pelo App Server (${account.authMode}).` });
-    stop(0, `Sessão Codex confirmada pelo App Server (modo ${account.authMode}).`);
+    const authMode = account.account?.type || account.authMode;
+    if (!authMode) throw new Error('Codex App Server não confirmou a conta autenticada');
+    await callback('completion', { authenticated: true, detail: `Sessão confirmada pelo App Server (${authMode}).` });
+    stop(0, `Sessão Codex confirmada pelo App Server (modo ${authMode}).`);
   } catch (error) {
     stop(1, error.message);
   }

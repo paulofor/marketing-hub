@@ -97,6 +97,15 @@
 - **Correção efetiva:** validar diretamente a imagem em execução contra o SHA do commit e reportar imagem, início e estado do container.
 - **Prevenção:** o contrato dos agentes rejeita workflows que voltem a depender do marcador global incompatível com deploy modular.
 
+## LOOP-CODEX-AUTH-ACCOUNT-READ-CONTRACT — OAuth concluído exibido como falha
+
+- **Severidade:** ALTO.
+- **Status:** fechado localmente em 2026-08-13; aguarda publicação.
+- **Sintoma:** o operador conclui o device code e a sessão é gravada no executor, mas o painel exibe `FAILED` com “Codex App Server encerrou com falha”.
+- **Causa-raiz confirmada:** o cliente compartilhado exigia o campo legado `authMode` na raiz da resposta de `account/read`; o App Server atual devolve a identidade em `account.type`, fazendo uma autenticação concluída terminar localmente com código de erro.
+- **Correção efetiva:** validar primeiro `account.type`, preservando compatibilidade com `authMode`, e somente confirmar o callback depois da prova retornada pelo próprio App Server.
+- **Prevenção:** o teste ponta a ponta do device code simula o contrato atual de `account/read` e exige callback autenticado sem transportar token ou refresh token.
+
 ## LOOP-TEMIS-LANDING-WITHOUT-DEDALO-DELEGATION — diagnóstico sem responsável operacional
 
 - **Severidade:** CRÍTICO.

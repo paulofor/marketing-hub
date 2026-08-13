@@ -44,5 +44,6 @@ assert.deepEqual(callbacks[0].body, {
 });
 assert.equal(callbacks[1].path, '/api/internal/agents/executor-health/codex-auth/reconnections/42/completion');
 assert.equal(callbacks[1].body.authenticated, true);
+assert.match(callbacks[1].body.detail, /chatgpt/);
 assert.equal(JSON.stringify(callbacks).includes('refresh'), false);
 console.log('Fluxo seguro de reconexão Codex validado.');

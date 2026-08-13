@@ -11,6 +11,6 @@ lines.on('line', (line) => {
     process.stdout.write(`${JSON.stringify({ id: request.id, result: { loginId: 'login-test', verificationUrl: 'https://auth.openai.com/codex/device', userCode: 'TEST-CODE' } })}\n`);
     setTimeout(() => process.stdout.write(`${JSON.stringify({ method: 'account/login/completed', params: { loginId: 'login-test', success: true } })}\n`), 50);
   } else if (request.method === 'account/read') {
-    process.stdout.write(`${JSON.stringify({ id: request.id, result: { authMode: 'chatgpt' } })}\n`);
+    process.stdout.write(`${JSON.stringify({ id: request.id, result: { account: { type: 'chatgpt', email: 'test@sandbox.local' }, requiresOpenaiAuth: true } })}\n`);
   }
 });

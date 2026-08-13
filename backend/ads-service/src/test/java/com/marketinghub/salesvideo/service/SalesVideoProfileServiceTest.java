@@ -233,9 +233,9 @@ class SalesVideoProfileServiceTest {
     assertThat(SalesVideoProviderDurationPolicy.maxSeconds("RUNWAY_SEEDANCE_2_5")).isEqualTo(15);
   }
 
-  /** Bloqueia render da Luma quando o perfil excede o limite do adapter com montagem atual. */
+  /** Aceita vídeo Luma longo porque o executor divide o alvo em cenas de até dez segundos. */
   @Test
-  void shouldRejectLumaRenderWhenProfileDurationExceedsProviderLimit() {
+  void shouldAcceptLongLumaRenderAsSceneMontage() {
     SalesVideoProfile profile = profileWithDefaults();
     profile.setTargetDurationSeconds(31);
     SalesVideoScript script = approvedScript(profile);
@@ -244,6 +244,17 @@ class SalesVideoProfileServiceTest {
     request.setExecutionMode(SalesVideoExecutionMode.TEST);
     request.setProviderFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE);
     request.setProviderName("LUMA_RAY_3_2");
+    SalesVideoJob generatedJob =
+        SalesVideoJob.builder()
+            .id(87L)
+            .profile(profile)
+            .script(script)
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .providerName("LUMA_RAY_3_2")
+            .executionMode(SalesVideoExecutionMode.TEST)
+            .jobType(SalesVideoJobType.RENDER)
+            .status(SalesVideoStatus.VIDEO_REQUESTED)
+            .build();
 
     given(profileRepository.findById(profile.getId())).willReturn(Optional.of(profile));
     given(
@@ -251,11 +262,15 @@ class SalesVideoProfileServiceTest {
                 profile.getId(), SalesVideoScriptStatus.APPROVED))
         .willReturn(Optional.of(script));
 
-    VideoModuleException ex =
-        assertThrows(
-            VideoModuleException.class, () -> service.requestRender(profile.getId(), request));
+    given(jobService.createJob(any(), any(), any(), any(), any(), any(), any()))
+        .willReturn(generatedJob);
+    given(jobRepository.save(any())).willAnswer(invocation -> invocation.getArgument(0));
+    given(profileRepository.save(any())).willAnswer(invocation -> invocation.getArgument(0));
 
-    assertThat(ex.getMessage()).contains("Luma Ray 3.2 aceita no máximo 30 segundos");
+    SalesVideoJobDto result = service.requestRender(profile.getId(), request);
+
+    assertThat(result.getProviderName()).isEqualTo("LUMA_RAY_3_2");
+    assertThat(SalesVideoProviderDurationPolicy.maxSeconds("LUMA_RAY_3_2")).isNull();
   }
 
   /** Valida um clipe curto pela duração solicitada sem confundi-lo com o vídeo final do perfil. */

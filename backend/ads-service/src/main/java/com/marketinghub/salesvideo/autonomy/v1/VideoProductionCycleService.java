@@ -175,8 +175,14 @@ public class VideoProductionCycleService {
   /** Seleciona somente um provider já suportado pelo executor atual. */
   private String preferredProvider(VideoProject project) {
     String plan = project.getProviderPlan();
+    if (plan != null && (plan.toUpperCase().contains("LUMA") || plan.contains("RAY_3_2"))) {
+      return "LUMA_RAY_3_2";
+    }
     if (plan != null && plan.contains("RUNWAY_SEEDANCE_2_5")) return "RUNWAY_SEEDANCE_2_5";
     if (plan != null && plan.contains("RUNWAY_HAILUO_3")) return "RUNWAY_HAILUO_3";
+    if (project.getTargetDurationSeconds() != null && project.getTargetDurationSeconds() > 10) {
+      return "LUMA_RAY_3_2";
+    }
     return "RUNWAY_GEN_4_TURBO";
   }
 

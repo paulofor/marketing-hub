@@ -18,6 +18,8 @@ import com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository
 import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
 import com.marketinghub.salesvideo.VideoProductionCycle;
 import com.marketinghub.salesvideo.VideoProject;
+import com.marketinghub.salesvideo.dto.RequestVideoRenderRequest;
+import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -195,6 +197,34 @@ class VideoProductionCycleServiceTest {
     assertThat(result.status()).isEqualTo("FINANCIAL_BLOCKED");
     assertThat(result.knownCostUsd()).isEqualByComparingTo(BigDecimal.ZERO);
     verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
+  /** Comprova que Plutus libera vídeos longos para a montagem Luma por cenas. */
+  @Test
+  void shouldQueueApprovedLongCycleAsLumaSceneMontage() {
+    VideoProductionCycle cycle = cycle();
+    VideoProject project = project();
+    project.setTargetDurationSeconds(60);
+    project.setProviderPlan("Roteiro, storyboard e montagem em jobs auditáveis.");
+    SalesVideoJobDto job = new SalesVideoJobDto();
+    job.setId(321L);
+    when(repository.findById(11L)).thenReturn(Optional.of(cycle));
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(project));
+    when(salesVideoService.requestRender(any(), any())).thenReturn(job);
+
+    var result =
+        service.decide(
+            11L,
+            new VideoProductionCycleContracts.FinancialDecisionRequest(
+                "APPROVED", "Teto e ledger incremental válidos.", "financial-agent"));
+
+    ArgumentCaptor<RequestVideoRenderRequest> render =
+        ArgumentCaptor.forClass(RequestVideoRenderRequest.class);
+    verify(salesVideoService).requestRender(org.mockito.ArgumentMatchers.eq(13L), render.capture());
+    assertThat(render.getValue().getProviderName()).isEqualTo("LUMA_RAY_3_2");
+    assertThat(render.getValue().getTargetDurationSeconds()).isEqualTo(60);
+    assertThat(result.status()).isEqualTo("QUEUED_FOR_APOLLO");
+    assertThat(result.salesVideoJobId()).isEqualTo(321L);
   }
 
   /** Cria o projeto mínimo de teste com perfil operacional. */

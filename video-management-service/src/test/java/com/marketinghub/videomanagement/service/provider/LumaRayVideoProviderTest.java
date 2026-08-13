@@ -98,6 +98,23 @@ class LumaRayVideoProviderTest {
         assertThat(firstDownload.getHeader("Authorization")).isNull();
     }
 
+    /** Deve ampliar a montagem para seis cenas quando o vídeo final tiver sessenta segundos. */
+    @Test
+    void shouldPlanSixScenesForSixtySecondVideo() throws Exception {
+        LumaRayVideoProvider provider = new LumaRayVideoProvider(
+                properties(),
+                new ObjectMapper(),
+                mock(VideoAssetClient.class),
+                WebClient.builder());
+        SalesVideoProfile base = profile();
+        SalesVideoProfile longProfile = new SalesVideoProfile(
+                base.id(), base.productId(), base.landingPageId(), base.videoKind(), base.title(),
+                base.personaName(), base.personaStyle(), base.voiceStyle(), base.language(), 60,
+                base.status(), base.createdAt(), base.updatedAt(), base.latestScript(), base.lastJob());
+
+        assertThat(provider.resolveSceneCount(job(), longProfile)).isEqualTo(6);
+    }
+
     /** Deve manter um job do Estúdio como clipe isolado de dez segundos. */
     @Test
     void shouldRenderStudioSceneAsSingleLumaClip() throws Exception {
@@ -289,6 +306,7 @@ class LumaRayVideoProviderTest {
                 null,
                 """
                         {
+                          "videoProductionCycleId": 5,
                           "assembly_plan": {
                             "scenes": [
                               {"role":"DOR","title":"Dor do espelho","message":"Você se arruma, mas sente que falta presença."},

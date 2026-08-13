@@ -97,6 +97,15 @@
 - **Correção efetiva:** validar diretamente a imagem em execução contra o SHA do commit e reportar imagem, início e estado do container.
 - **Prevenção:** o contrato dos agentes rejeita workflows que voltem a depender do marcador global incompatível com deploy modular.
 
+## LOOP-CODEX-AUTH-ACCOUNT-READ-CONTRACT — OAuth concluído exibido como falha
+
+- **Severidade:** ALTO.
+- **Status:** fechado localmente em 2026-08-13; aguarda publicação.
+- **Sintoma:** o operador conclui o device code e a sessão é gravada no executor, mas o painel exibe `FAILED` com “Codex App Server encerrou com falha”.
+- **Causa-raiz confirmada:** o cliente compartilhado exigia o campo legado `authMode` na raiz da resposta de `account/read`; o App Server atual devolve a identidade em `account.type`, fazendo uma autenticação concluída terminar localmente com código de erro.
+- **Correção efetiva:** validar primeiro `account.type`, preservando compatibilidade com `authMode`, e somente confirmar o callback depois da prova retornada pelo próprio App Server.
+- **Prevenção:** o teste ponta a ponta do device code simula o contrato atual de `account/read` e exige callback autenticado sem transportar token ou refresh token.
+
 ## LOOP-TEMIS-LANDING-WITHOUT-DEDALO-DELEGATION — diagnóstico sem responsável operacional
 
 - **Severidade:** CRÍTICO.
@@ -271,6 +280,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - **Correção complementar em 2026-08-06**: o snapshot e o painel financeiro passaram a cruzar ledger e revisão comercial por provedor, expondo taxa de aprovação e custo conhecido por asset aprovado. A recomendação de recarga fica bloqueada quando custos ou revisões estiverem incompletos.
 - **Diagnóstico operacional**: a tool MCP `studio_ledger_coverage` compara jobs e ativos do Estúdio com o ledger por origem, tipo e provedor, tornando ausências, custos desconhecidos e falta de atribuição comprováveis sem SQL manual.
 - **Recorrência fechada em 2026-08-11**: o ciclo Apolo–Plutus exigia `commercial_plan_id NOT NULL`, embora projetos MUSA legados e o ledger canônico permitissem custo sem plano. O ciclo agora preserva plano nulo e entrega a Plutus o snapshot segregado de custos não atribuídos, com teste que impede voltar a vincular ou inventar planejamento.
+- **Recorrência fechada em 2026-08-13**: Plutus aprovava os ciclos MUSA de 30/60 segundos, mas o backend enviava a duração final como uma única solicitação Runway de no máximo 10 segundos. A criação do job falhava dentro da mesma transação, apagava a decisão e fazia o worker repetir indefinidamente o ciclo mais antigo. O backend agora seleciona Luma para vídeos longos e o executor calcula a quantidade de cenas de dez segundos a partir da duração final, preservando montagem, ledger e teto do ciclo. Testes de contrato cobrem a aprovação de 60 segundos e o plano de seis cenas.
 - **Decisão comercial de encerramento histórico em 2026-08-12**: as tentativas anteriores a 2026-08-13 que ainda não possuem custo recuperável são classificadas uma única vez como USD 0 com evidência `USER_ASSUMED_ZERO_LEGACY_20260812`. Valores conhecidos permanecem intactos e toda tentativa nova continua obrigada a registrar custo real ou estimado; a exceção elimina dívida impossível de apurar sem reabrir o risco sistêmico para novos consumos.
 
 ---

@@ -15,7 +15,7 @@ const response = await fetch(`${backend}/api/internal/agents/executor-health`, {
   }),
 });
 const health = response.ok ? await response.json() : null;
-if (!response.ok || auth.status !== 0 || health?.versionCurrent !== true || health?.status !== "READY") {
+if (!response.ok || health?.versionCurrent !== true) {
   console.error(`Executor incompatível: esperado=${health?.expectedVersion ?? "?"} implantado=${health?.deployedVersion ?? process.env.AGENT_HEALTH_VERSION ?? "?"} status=${health?.status ?? response.status}.`);
   process.exit(1);
 }

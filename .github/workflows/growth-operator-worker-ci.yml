@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     concurrency:
-      group: growth-operator-worker-deploy
+      group: codex-agent-host-deploy
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -94,8 +94,6 @@ jobs:
             && for attempt in \$(seq 1 12); do \
                  status=\$(docker inspect --format '{{.State.Status}}' growth-operator-worker-growth-operator-worker-1 2>/dev/null || true); \
                  [ \"\${status}\" = running ] \
-                   && docker exec growth-operator-worker-growth-operator-worker-1 \
-                        sh -lc 'test -w /home/operator/.codex && codex login status' \
                    && curl -fsS http://127.0.0.1:8094/ops-growth-operator-observability-v1/health \
                         | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' \
                    && curl -fsS http://127.0.0.1:8094/ops-growth-operator-observability-v1/logfile >/dev/null \

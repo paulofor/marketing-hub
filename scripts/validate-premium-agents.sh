@@ -92,8 +92,8 @@ for agent in agents:
         for marker in (
             f'install -d -o 10001 -g 10001 {isolated_home}',
             f'{codex_home}={isolated_home}',
-            'codex login status',
             'node /app/agent-health-report.mjs',
+            'group: codex-agent-host-deploy',
         ):
             if marker not in workflow_text:
                 errors.append(

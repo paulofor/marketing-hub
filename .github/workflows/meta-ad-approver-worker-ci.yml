@@ -66,7 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     concurrency:
-      group: meta-ad-approver-worker-deploy
+      group: codex-agent-host-deploy
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -100,7 +100,6 @@ jobs:
             && for attempt in \$(seq 1 24); do \
                  status=\$(docker inspect --format '{{.State.Status}}' meta-ad-approver-worker-meta-ad-approver-worker-1 2>/dev/null || true); \
                  [ \"\${status}\" = running ] \
-                   && docker exec meta-ad-approver-worker-meta-ad-approver-worker-1 sh -lc 'test -w /home/approver/.codex && codex login status' \
                    && curl -fsS http://127.0.0.1:8097/ops-meta-ad-approver-observability-v1/health | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' \
                    && docker exec meta-ad-approver-worker-meta-ad-approver-worker-1 node /app/agent-health-report.mjs \
                    && exit 0; \

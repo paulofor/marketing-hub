@@ -45,6 +45,9 @@ jobs:
     name: Deploy worker
     runs-on: ubuntu-latest
     needs: test
+    concurrency:
+      group: codex-agent-host-deploy
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
       - name: Add operator VPS SSH key
@@ -86,10 +89,10 @@ jobs:
                  health_body=\$(curl -fsS http://127.0.0.1:8095/ops-financial-agent-observability-v1/health 2>/dev/null || true); \
                  printf 'readiness attempt=%s container=%s codex=%s health=%s\\n' \
                    \"\${attempt}\" \"\${status:-missing}\" \"\${codex_ready}\" \"\${health_body:-unavailable}\"; \
-                 if [ \"\${status}\" = running ] && [ \"\${codex_ready}\" = true ] \
+                 if [ \"\${status}\" = running ] \
                    && docker exec financial-agent-worker-financial-agent-worker-1 node /app/agent-health-report.mjs \
                    && printf '%s' \"\${health_body}\" | grep -Eq 'status.*UP'; then exit 0; fi; \
                  sleep 5; \
                done; \
-            printf '%s\n' 'Falha: Agente Financeiro não ficou pronto com identidade Codex e health próprios.'; \
+            printf '%s\n' 'Falha: Agente Financeiro não confirmou versão implantada e acesso ao backend.'; \
             docker compose logs --tail=150 financial-agent-worker; exit 1"

@@ -235,6 +235,7 @@ public class SalesVideoJobService {
     }
     studioCostLedgerService.recordVideo(
         job.getId(),
+        readVideoProductionCycleId(job.getMetadataJson()),
         productId,
         project.map(VideoProject::getCommercialPlanId).orElse(null),
         project.map(VideoProject::getExperimentId).orElse(null),
@@ -246,6 +247,18 @@ public class SalesVideoJobService {
         providerReported,
         job.getStartedAt() != null ? job.getStartedAt() : job.getRequestedAt(),
         job.getFinishedAt());
+  }
+
+  /** Extrai o ciclo financeiro explícito para segregar cada novo custo. */
+  private Long readVideoProductionCycleId(String metadataJson) {
+    if (!StringUtils.hasText(metadataJson)) return null;
+    try {
+      JsonNode value = objectMapper.readTree(metadataJson).path("videoProductionCycleId");
+      return value.canConvertToLong() && value.asLong() > 0 ? value.asLong() : null;
+    } catch (JsonProcessingException ex) {
+      log.error("Falha ao ler ciclo financeiro para ledger; metadata={}", metadataJson, ex);
+      return null;
+    }
   }
 
   /** Recupera o produto diretamente do perfil quando o projeto ainda não foi vinculado. */

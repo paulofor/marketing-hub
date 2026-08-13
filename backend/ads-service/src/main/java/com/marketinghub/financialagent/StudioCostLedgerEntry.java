@@ -34,6 +34,9 @@ public class StudioCostLedgerEntry {
   @Column(name = "experiment_id")
   private Long experimentId;
 
+  @Column(name = "video_production_cycle_id")
+  private Long videoProductionCycleId;
+
   @Column(name = "asset_type", nullable = false, length = 32)
   private String assetType;
 

@@ -13,6 +13,7 @@ import com.marketinghub.agenttask.AgentTaskResponse;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.CreateAgentTaskByAgentRequest;
 import com.marketinghub.financialagent.service.FinancialAgentService;
+import com.marketinghub.financialagent.service.StudioCostLedgerService;
 import com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
 import com.marketinghub.salesvideo.VideoProductionCycle;
@@ -38,6 +39,7 @@ class VideoProductionCycleServiceTest {
   @Mock private AgentTaskService taskService;
   @Mock private SalesVideoService salesVideoService;
   @Mock private FinancialAgentService financialAgentService;
+  @Mock private StudioCostLedgerService studioCostLedgerService;
   private VideoProductionCycleService service;
   private final AtomicLong ids = new AtomicLong(10);
 
@@ -51,7 +53,11 @@ class VideoProductionCycleServiceTest {
             taskService,
             salesVideoService,
             financialAgentService,
+            studioCostLedgerService,
             new ObjectMapper());
+    lenient()
+        .when(studioCostLedgerService.cycleLedger(any()))
+        .thenReturn(java.util.Map.of("segregated", true));
     lenient()
         .when(financialAgentService.intelligence(any()))
         .thenReturn(java.util.Map.of("coverage", "COMPLETE"));
@@ -96,9 +102,12 @@ class VideoProductionCycleServiceTest {
     var result =
         service.create(
             new VideoProductionCycleContracts.CreateRequest(
-                7L, new BigDecimal("12.50"), "usuario@mkt"));
+                7L, new BigDecimal("12.50"), "Validar gancho", "Retencao superior", "usuario@mkt"));
 
     assertThat(result.status()).isEqualTo("PENDING_FINANCIAL_REVIEW");
+    assertThat(result.learningObjective()).isEqualTo("Validar gancho");
+    assertThat(result.successCriterion()).isEqualTo("Retencao superior");
+    assertThat(result.financialSnapshot()).contains("incrementalLedger", "segregated");
     assertThat(result.salesVideoJobId()).isNull();
     ArgumentCaptor<CreateAgentTaskByAgentRequest> task =
         ArgumentCaptor.forClass(CreateAgentTaskByAgentRequest.class);
@@ -145,7 +154,11 @@ class VideoProductionCycleServiceTest {
     var result =
         service.create(
             new VideoProductionCycleContracts.CreateRequest(
-                7L, new BigDecimal("40.00"), "usuario@mkt"));
+                7L,
+                new BigDecimal("40.00"),
+                "Validar prova",
+                "Prova compreensivel",
+                "usuario@mkt"));
 
     assertThat(result.commercialPlanId()).isNull();
     assertThat(result.financialSnapshot()).contains("PARTIAL");

@@ -25,7 +25,10 @@ O monitor administrativo `GET /api/agents/work-monitor` consolida por agente os 
 O mesmo monitor deve expor a prontidão do executor por uma prova ativa e auditável. Cada
 executor reporta sua versão implantada, acesso ao backend e autenticação Codex validada por
 `codex login status`, sem executar prompt, gerar conteúdo ou consumir tokens. A leitura vence em
-dez minutos; ausência ou vencimento deve aparecer como `UNKNOWN`, nunca como executor saudável.
+dez minutos. A reconexão OAuth administrativa deve ser iniciada pelo Marketing Hub, persistida
+como comando auditável e executada no worker pelo Codex App Server. O frontend pode receber apenas
+URL, código temporário e estado; tokens e `auth.json` nunca transitam pelo backend ou pela tela.
+Ausência ou vencimento deve aparecer como `UNKNOWN`, nunca como executor saudável.
 Versão divergente, backend inacessível ou autenticação inválida deve aparecer como `BLOCKED` com
 causa acionável. O request interno canônico é
 `POST /api/internal/agents/executor-health`.

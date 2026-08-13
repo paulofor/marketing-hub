@@ -1,0 +1,37 @@
+openapi: 3.0.3
+info:
+  title: Reconexão Codex dos agentes
+  version: 1.0.0
+paths:
+  /api/agents/work-monitor/{agentId}/codex-auth/reconnections:
+    post:
+      summary: Solicita uma reconexão OAuth auditável
+      parameters:
+        - in: path
+          name: agentId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200": { description: Solicitação criada ou operação ativa já existente }
+  /api/agents/work-monitor/{agentId}/codex-auth/reconnections/current:
+    get:
+      summary: Consulta a última reconexão do agente
+      parameters:
+        - in: path
+          name: agentId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200": { description: Estado persistido da reconexão }
+        "204": { description: Nenhuma reconexão registrada }
+  /api/internal/agents/executor-health/{agentKey}/codex-auth/reconnections/pending:
+    get:
+      summary: Reserva uma reconexão pendente para o executor
+      parameters:
+        - in: path
+          name: agentKey
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Solicitação reservada }
+        "204": { description: Sem solicitação pendente }

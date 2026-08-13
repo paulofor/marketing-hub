@@ -90,6 +90,25 @@ class StudioCostLedgerServiceTest {
     assertThat(service.unassignedCoverage().get("totalAttempts")).isEqualTo(2);
   }
 
+  /** Confirma que o custo novo fica segregado pelo ciclo que o autorizou. */
+  @Test
+  void deveExporLedgerIncrementalDoCiclo() {
+    StudioCostLedgerEntry entry = new StudioCostLedgerEntry();
+    entry.setSourceType("SALES_VIDEO_JOB");
+    entry.setSourceId("77");
+    entry.setStatus("VIDEO_READY");
+    entry.setCostEvidence("PROVIDER_REPORTED");
+    entry.setProviderCostUsd(new BigDecimal("2.40"));
+    StudioCostLedgerEntryRepository repository = mock(StudioCostLedgerEntryRepository.class);
+    when(repository.findByVideoProductionCycleIdOrderByCreatedAtAsc(4L)).thenReturn(List.of(entry));
+
+    Map<String, Object> ledger = new StudioCostLedgerService(repository).cycleLedger(4L);
+
+    assertThat(ledger.get("segregated")).isEqualTo(true);
+    assertThat(ledger.get("attempts")).isEqualTo(1);
+    assertThat(ledger.get("knownCostUsd")).isEqualTo(new BigDecimal("2.40"));
+  }
+
   /** Confirma que custo-beneficio usa somente aprovacoes comerciais e explicita lacunas. */
   @Test
   void deveCalcularEficienciaPorProvedorSemInventarCobertura() {

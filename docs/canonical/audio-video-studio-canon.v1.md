@@ -260,3 +260,4 @@ Quando existir uma playlist HLS ja publicada fora do fluxo completo de render, e
 - Ausência de plano nunca autoriza atribuir custos a outro planejamento nem transformar o teto em meta de gasto.
 - O monitor administrativo deve expor, por agente, trabalho atual, estado, última atividade, dificuldade e decisão externa pendente usando dados persistidos das tarefas e pipelines.
 - Apolo permanece aguardando enquanto o gate financeiro estiver pendente; Plutus aparece como responsável pela decisão do mesmo ciclo.
+- Todo novo ciclo pago deve persistir antes do gate um objetivo de aprendizado verificável e um criterio de sucesso observavel. O ledger deve ser segregado por `videoProductionCycleId`, iniciar vazio e registrar cada tentativa nova sem misturar custos historicos. Apolo deve primeiro montar com ativos existentes; somente a cena causal que continuar impedindo a qualidade pode originar novo ciclo pago.

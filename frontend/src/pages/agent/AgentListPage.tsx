@@ -4,6 +4,8 @@ import { useAgents } from "../../api/agent/useAgents";
 import { useAgentMaturity } from "../../api/agent/useAgentMaturity";
 import { useAgentWorkMonitor } from "../../api/agent/useAgentWorkMonitor";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
+import { useState } from "react";
+import CodexAuthReconnectPanel from "./CodexAuthReconnectPanel";
 
 export default function AgentListPage() {
   const navigate = useNavigate();
@@ -12,6 +14,10 @@ export default function AgentListPage() {
   const workMonitor = useAgentWorkMonitor();
   const agents = Array.isArray(data) ? data : [];
   const agentsById = new Map(agents.map((agent) => [agent.id, agent]));
+  const [reconnectAgent, setReconnectAgent] = useState<{
+    id: number;
+    nickname: string;
+  } | null>(null);
 
   return (
     <div>
@@ -118,14 +124,30 @@ export default function AgentListPage() {
                       <div className="small text-body-secondary mt-1">
                         versão {item.executorHealth.deployedVersion ?? "?"}/
                         {item.executorHealth.expectedVersion} · backend{" "}
-                        {item.executorHealth.backendAccessible ? "ok" : "falha"} ·
-                        Codex{" "}
+                        {item.executorHealth.backendAccessible ? "ok" : "falha"}{" "}
+                        · Codex{" "}
                         {item.executorHealth.codexAuthenticated
                           ? "autenticado"
                           : "não comprovado"}
                       </div>
                       {item.executorHealth.detail ? (
-                        <div className="small">{item.executorHealth.detail}</div>
+                        <div className="small">
+                          {item.executorHealth.detail}
+                        </div>
+                      ) : null}
+                      {item.agentKey === "landing-generator" ? (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-primary mt-2"
+                          onClick={() =>
+                            setReconnectAgent({
+                              id: item.agentId,
+                              nickname: item.nickname,
+                            })
+                          }
+                        >
+                          Reconectar Codex
+                        </button>
                       ) : null}
                     </td>
                     <td className="text-end text-nowrap">
@@ -148,6 +170,14 @@ export default function AgentListPage() {
           </div>
         </div>
       </section>
+
+      {reconnectAgent ? (
+        <CodexAuthReconnectPanel
+          agentId={reconnectAgent.id}
+          nickname={reconnectAgent.nickname}
+          onClose={() => setReconnectAgent(null)}
+        />
+      ) : null}
 
       <section className="card mb-4">
         <div className="card-body">

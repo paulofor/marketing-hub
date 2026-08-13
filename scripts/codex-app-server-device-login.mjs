@@ -14,6 +14,19 @@ const pending = new Map();
 let nextId = 1;
 let loginId;
 let finished = false;
+const reconnectId = process.env.CODEX_AUTH_RECONNECT_ID;
+const callbackBaseUrl = (process.env.CODEX_AUTH_CALLBACK_BASE_URL || '').replace(/\/$/, '');
+
+async function callback(path, body) {
+  if (!reconnectId || !callbackBaseUrl) return;
+  const response = await fetch(`${callbackBaseUrl}/api/internal/agents/executor-health/codex-auth/reconnections/${reconnectId}/${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!response.ok) throw new Error(`Backend recusou callback de autenticação (${response.status})`);
+}
 
 function request(method, params) {
   const id = nextId++;
@@ -58,6 +71,7 @@ lines.on('line', async (line) => {
   try {
     const account = await request('account/read', { refreshToken: false });
     if (!account.authMode) throw new Error('Codex App Server não confirmou a conta autenticada');
+    await callback('completion', { authenticated: true, detail: `Sessão confirmada pelo App Server (${account.authMode}).` });
     stop(0, `Sessão Codex confirmada pelo App Server (modo ${account.authMode}).`);
   } catch (error) {
     stop(1, error.message);
@@ -84,6 +98,7 @@ try {
   if (!loginId || !login.verificationUrl || !login.userCode) {
     throw new Error('Codex App Server não devolveu URL e código de autenticação.');
   }
+  await callback('device-code', { verificationUrl: login.verificationUrl, userCode: login.userCode });
   console.log(`Abra ${login.verificationUrl} e informe o código ${login.userCode}.`);
   console.log('Aguardando a confirmação segura do Codex App Server...');
 } catch (error) {

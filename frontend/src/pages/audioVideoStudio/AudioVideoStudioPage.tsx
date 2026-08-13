@@ -960,6 +960,8 @@ export default function AudioVideoStudioPage() {
   const createProductionCycle =
     useCreateVideoProductionCycle(editableProjectId);
   const [cycleBudgetUsd, setCycleBudgetUsd] = useState("");
+  const [cycleLearningObjective, setCycleLearningObjective] = useState("");
+  const [cycleSuccessCriterion, setCycleSuccessCriterion] = useState("");
   const [salesVideoProfileId, setSalesVideoProfileId] = useState("");
   const [saveFeedback, setSaveFeedback] = useState("");
   const [selectedSceneJobIds, setSelectedSceneJobIds] = useState<number[]>([]);
@@ -2136,16 +2138,40 @@ export default function AudioVideoStudioPage() {
                         }
                       />
                     </label>
+                    <label>
+                      Objetivo de aprendizado *
+                      <textarea
+                        aria-label="Objetivo de aprendizado"
+                        value={cycleLearningObjective}
+                        onChange={(event) =>
+                          setCycleLearningObjective(event.target.value)
+                        }
+                      />
+                    </label>
+                    <label>
+                      Critério de sucesso *
+                      <textarea
+                        aria-label="Critério de sucesso"
+                        value={cycleSuccessCriterion}
+                        onChange={(event) =>
+                          setCycleSuccessCriterion(event.target.value)
+                        }
+                      />
+                    </label>
                     <button
                       type="button"
                       disabled={
                         createProductionCycle.isPending ||
                         !Number.isFinite(Number(cycleBudgetUsd)) ||
-                        Number(cycleBudgetUsd) <= 0
+                        Number(cycleBudgetUsd) <= 0 ||
+                        !cycleLearningObjective.trim() ||
+                        !cycleSuccessCriterion.trim()
                       }
                       onClick={() =>
                         createProductionCycle.mutate({
                           budgetLimitUsd: Number(cycleBudgetUsd),
+                          learningObjective: cycleLearningObjective.trim(),
+                          successCriterion: cycleSuccessCriterion.trim(),
                           requestedBy: "Usuário do Marketing Hub",
                         })
                       }
@@ -2157,7 +2183,8 @@ export default function AudioVideoStudioPage() {
                     </button>
                     <small>
                       O teto não é meta de gasto. Plutus avalia antes de
-                      qualquer provider; Apolo trabalha em TEST e não publica.
+                      qualquer provider; o ledger registra apenas custos novos
+                      deste ciclo. Apolo trabalha em TEST e não publica.
                     </small>
                     {createProductionCycle.isError ? (
                       <p role="alert">Não foi possível abrir o ciclo.</p>

@@ -15,6 +15,8 @@ public final class VideoProductionCycleContracts {
   public record CreateRequest(
       @NotNull Long videoProjectId,
       @NotNull @DecimalMin(value = "0.01") BigDecimal budgetLimitUsd,
+      @NotBlank String learningObjective,
+      @NotBlank String successCriterion,
       @NotBlank String requestedBy) {}
 
   /** Registra a decisão independente de Plutus. */
@@ -31,6 +33,8 @@ public final class VideoProductionCycleContracts {
       String status,
       BigDecimal budgetLimitUsd,
       BigDecimal knownCostUsd,
+      String learningObjective,
+      String successCriterion,
       String financialSnapshot,
       String financialDecision,
       String financialReason,

@@ -40,6 +40,12 @@ public class VideoProductionCycle {
   @Column(name = "known_cost_usd", nullable = false, precision = 12, scale = 4)
   private BigDecimal knownCostUsd;
 
+  @Column(name = "learning_objective", nullable = false, columnDefinition = "TEXT")
+  private String learningObjective;
+
+  @Column(name = "success_criterion", nullable = false, columnDefinition = "TEXT")
+  private String successCriterion;
+
   @Column(name = "financial_decision", length = 30)
   private String financialDecision;
 

@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-13-video-cycle-learning-ledger
+      author: marketinghub
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE video_production_cycle
+                ADD COLUMN learning_objective TEXT NULL AFTER known_cost_usd,
+                ADD COLUMN success_criterion TEXT NULL AFTER learning_objective;
+              UPDATE video_production_cycle
+                 SET learning_objective = 'Legado: objetivo de aprendizado nao informado',
+                     success_criterion = 'Legado: criterio de sucesso nao informado'
+               WHERE learning_objective IS NULL OR success_criterion IS NULL;
+              ALTER TABLE video_production_cycle
+                MODIFY COLUMN learning_objective TEXT NOT NULL,
+                MODIFY COLUMN success_criterion TEXT NOT NULL;
+              ALTER TABLE studio_cost_ledger_entry
+                ADD COLUMN video_production_cycle_id BIGINT NULL AFTER experiment_id,
+                ADD INDEX idx_studio_cost_cycle (video_production_cycle_id);

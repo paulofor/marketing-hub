@@ -7,6 +7,8 @@ export type VideoProductionCycle = {
   status: string;
   budgetLimitUsd: number;
   knownCostUsd: number;
+  learningObjective: string;
+  successCriterion: string;
   financialDecision?: string;
   financialReason?: string;
   salesVideoJobId?: number;
@@ -34,6 +36,8 @@ export function useCreateVideoProductionCycle(projectId?: number) {
   return useMutation({
     mutationFn: async (payload: {
       budgetLimitUsd: number;
+      learningObjective: string;
+      successCriterion: string;
       requestedBy: string;
     }) => {
       const { data } = await axios.post<VideoProductionCycle>(

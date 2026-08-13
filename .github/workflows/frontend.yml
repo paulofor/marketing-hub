@@ -42,6 +42,7 @@ jobs:
         if: github.event_name == 'push'
         uses: actions/github-script@v7
         with:
+          retries: 3
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
@@ -92,6 +93,10 @@ jobs:
               } catch (error) {
                 if (error.status === 404) {
                   core.warning(`Artifact ${artifact.id} was already removed. Skipping.`);
+                  continue;
+                }
+                if ([500, 502, 503, 504].includes(error.status)) {
+                  core.warning(`GitHub API remained unavailable while deleting artifact ${artifact.id} (HTTP ${error.status}). Cleanup will continue on the next run.`);
                   continue;
                 }
                 throw error;

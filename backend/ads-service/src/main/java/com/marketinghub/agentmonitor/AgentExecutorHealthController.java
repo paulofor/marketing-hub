@@ -1,6 +1,8 @@
 package com.marketinghub.agentmonitor;
 
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,5 +24,29 @@ public class AgentExecutorHealthController {
   public AgentExecutorHealthResponse report(
       @Valid @RequestBody AgentExecutorHealthReportRequest request) {
     return service.report(request);
+  }
+
+  /** Reserva uma solicitação pendente para o executor autenticador. */
+  @GetMapping("/{agentKey}/codex-auth/reconnections/pending")
+  public org.springframework.http.ResponseEntity<CodexAuthReconnectResponse> pending(
+      @PathVariable String agentKey) {
+    CodexAuthReconnectResponse response = service.claimReconnect(agentKey);
+    return response == null
+        ? org.springframework.http.ResponseEntity.noContent().build()
+        : org.springframework.http.ResponseEntity.ok(response);
+  }
+
+  /** Recebe URL e código temporários emitidos pelo App Server. */
+  @PostMapping("/codex-auth/reconnections/{id}/device-code")
+  public CodexAuthReconnectResponse deviceCode(
+      @PathVariable Long id, @Valid @RequestBody CodexAuthDeviceCodeRequest request) {
+    return service.deviceCode(id, request);
+  }
+
+  /** Recebe o resultado da validação segura account/read. */
+  @PostMapping("/codex-auth/reconnections/{id}/completion")
+  public CodexAuthReconnectResponse completion(
+      @PathVariable Long id, @RequestBody CodexAuthCompletionRequest request) {
+    return service.complete(id, request);
   }
 }

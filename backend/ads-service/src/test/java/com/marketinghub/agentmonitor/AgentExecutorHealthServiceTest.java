@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.marketinghub.agent.Agent;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
+import com.marketinghub.repository.jpa.agent.CodexAuthReconnectRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -14,6 +15,28 @@ import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: proteger a classificação central da prontidão dos executores dos agentes. */
 class AgentExecutorHealthServiceTest {
+  /** Persiste solicitação sem qualquer token e impede duplicação concorrente. */
+  @Test
+  void shouldCreateAuditableReconnectWithoutCredentials() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentExecutorHealthCheckRepository checks = mock(AgentExecutorHealthCheckRepository.class);
+    CodexAuthReconnectRepository reconnects = mock(CodexAuthReconnectRepository.class);
+    Agent agent = Agent.builder().id(7L).agentKey("landing-generator").nickname("Dédalo").build();
+    when(agents.findById(7L)).thenReturn(Optional.of(agent));
+    when(reconnects.existsByAgentIdAndStatusIn(
+            org.mockito.ArgumentMatchers.eq(7L), org.mockito.ArgumentMatchers.anyList()))
+        .thenReturn(false);
+    when(reconnects.save(org.mockito.ArgumentMatchers.any()))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    AgentExecutorHealthService service = new AgentExecutorHealthService(agents, checks, reconnects);
+
+    CodexAuthReconnectResponse response = service.requestReconnect(7L, "operador");
+
+    assertThat(response.status()).isEqualTo("REQUESTED");
+    assertThat(response.verificationUrl()).isNull();
+    assertThat(response.userCode()).isNull();
+  }
+
   /** Aprova somente quando versão, backend e autenticação estão comprovados. */
   @Test
   void shouldReportReadyOnlyWithAllThreeSignals() {

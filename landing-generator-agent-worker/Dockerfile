@@ -9,7 +9,7 @@ ARG CODEX_VERSION=0.146.0
 WORKDIR /app
 COPY package.json package-lock.json /app/
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm git ca-certificates \
+RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm git ca-certificates util-linux \
     && npm install -g @openai/codex@${CODEX_VERSION} \
     && npm ci --omit=dev \
     && npx playwright-core install --with-deps chromium \

@@ -5,6 +5,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -60,6 +61,28 @@ public class LandingGeneratorBackendClient {
             "gpt-5.6-sol",
             "error",
             rootMessage(error)));
+  }
+
+  /** Reserva uma solicitação de reconexão pelo pending canônico do executor. */
+  public CodexAuthReconnectJob claimCodexAuthReconnect() {
+    ResponseEntity<CodexAuthReconnectJob> response =
+        client
+            .get()
+            .uri(
+                "/api/internal/agents/executor-health/landing-generator/codex-auth/reconnections/pending")
+            .retrieve()
+            .toEntity(CodexAuthReconnectJob.class);
+    return response.getStatusCode().is2xxSuccessful() ? response.getBody() : null;
+  }
+
+  /** Registra uma falha local que ocorreu antes do callback do App Server. */
+  public void completeCodexAuth(Long id, boolean authenticated, String detail) {
+    client
+        .post()
+        .uri("/api/internal/agents/executor-health/codex-auth/reconnections/{id}/completion", id)
+        .body(Map.of("authenticated", authenticated, "detail", detail))
+        .retrieve()
+        .toBodilessEntity();
   }
 
   /** Extrai a causa específica preservada integralmente no log. */

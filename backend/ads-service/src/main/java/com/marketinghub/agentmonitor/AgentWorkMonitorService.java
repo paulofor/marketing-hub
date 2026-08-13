@@ -106,6 +106,16 @@ public class AgentWorkMonitorService {
         .toList();
   }
 
+  /** Solicita ao executor a reconexão Codex sem manipular tokens no backend. */
+  public CodexAuthReconnectResponse requestReconnect(Long agentId, String requestedBy) {
+    return executorHealthService.requestReconnect(agentId, requestedBy);
+  }
+
+  /** Recupera o estado auditável da reconexão para a tela administrativa. */
+  public CodexAuthReconnectResponse currentReconnect(Long agentId) {
+    return executorHealthService.currentReconnect(agentId);
+  }
+
   /** Converte a agregação persistida em totais acessíveis pela identidade da telemetria. */
   private Map<String, Long> tokenTotals(List<Object[]> rows) {
     Map<String, Long> totals = new HashMap<>();

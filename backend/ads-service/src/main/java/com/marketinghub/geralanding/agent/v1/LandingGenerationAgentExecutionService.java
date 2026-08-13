@@ -146,18 +146,25 @@ public class LandingGenerationAgentExecutionService {
     for (GeraLandingStageExecution execution :
         repository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(STAGE, "FALHA")) {
       if (execution.getErrorDetail() == null
-          && execution.getErrorMessage() != null
-          && execution
-              .getErrorMessage()
-              .contains("Timeout do Codex do Agente Gerador de Landing")) {
+          && isRecoverableExecutorFailure(execution.getErrorMessage())) {
         execution.setStatus(PENDING);
         execution.setProcessingStartedAt(null);
         execution.setCompletedAt(null);
         execution.setErrorMessage(null);
-        execution.setErrorDetail("LEGACY_TIMEOUT_RECOVERED_ONCE");
+        execution.setErrorDetail("EXECUTOR_FAILURE_RECOVERED_ONCE");
         repository.save(execution);
       }
     }
+  }
+
+  /** Reconhece somente falhas transitórias de timeout ou autenticação do executor. */
+  private boolean isRecoverableExecutorFailure(String message) {
+    if (message == null) return false;
+    String normalized = message.toLowerCase(java.util.Locale.ROOT);
+    return normalized.contains("timeout do codex")
+        || normalized.contains("refresh token")
+        || normalized.contains("oauth")
+        || normalized.contains("not authenticated");
   }
 
   /** Recupera uma lease órfã uma vez e bloqueia reincidência para evitar loop infinito. */

@@ -20,6 +20,9 @@ public interface StudioCostLedgerEntryRepository
   /** Lista tentativas ainda sem atribuição a um planejamento comercial. */
   List<StudioCostLedgerEntry> findByCommercialPlanIdIsNullOrderByCreatedAtAsc();
 
+  /** Lista somente as tentativas novas pertencentes ao ciclo financeiro informado. */
+  List<StudioCostLedgerEntry> findByVideoProductionCycleIdOrderByCreatedAtAsc(Long cycleId);
+
   /** Soma custos conhecidos, preferindo valor reportado pelo provedor. */
   @Query(
       "select coalesce(sum(coalesce(e.providerCostUsd, e.estimatedCostUsd)), 0) from StudioCostLedgerEntry e where e.commercialPlanId = :planId")

@@ -1780,3 +1780,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-13-agent-codex-auth-reconnect.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-13-video-cycle-learning-ledger.yaml
+      relativeToChangelogFile: true

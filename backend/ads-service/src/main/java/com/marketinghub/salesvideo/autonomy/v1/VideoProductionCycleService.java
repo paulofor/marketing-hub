@@ -7,6 +7,7 @@ import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.CreateAgentTaskByAgentRequest;
 import com.marketinghub.agenttask.DecideAgentGateRequest;
 import com.marketinghub.financialagent.service.FinancialAgentService;
+import com.marketinghub.financialagent.service.StudioCostLedgerService;
 import com.marketinghub.repository.jpa.salesvideo.VideoProductionCycleRepository;
 import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
 import com.marketinghub.salesvideo.SalesVideoExecutionMode;
@@ -34,6 +35,7 @@ public class VideoProductionCycleService {
   private final AgentTaskService taskService;
   private final SalesVideoService salesVideoService;
   private final FinancialAgentService financialAgentService;
+  private final StudioCostLedgerService studioCostLedgerService;
   private final ObjectMapper objectMapper;
 
   /** Configura persistência, caixas de entrada e o executor canônico de vídeo. */
@@ -43,12 +45,14 @@ public class VideoProductionCycleService {
       AgentTaskService taskService,
       SalesVideoService salesVideoService,
       FinancialAgentService financialAgentService,
+      StudioCostLedgerService studioCostLedgerService,
       ObjectMapper objectMapper) {
     this.repository = repository;
     this.projectRepository = projectRepository;
     this.taskService = taskService;
     this.salesVideoService = salesVideoService;
     this.financialAgentService = financialAgentService;
+    this.studioCostLedgerService = studioCostLedgerService;
     this.objectMapper = objectMapper;
   }
 
@@ -71,6 +75,8 @@ public class VideoProductionCycleService {
     cycle.setStatus("PENDING_FINANCIAL_REVIEW");
     cycle.setBudgetLimitUsd(request.budgetLimitUsd());
     cycle.setKnownCostUsd(BigDecimal.ZERO);
+    cycle.setLearningObjective(request.learningObjective().trim());
+    cycle.setSuccessCriterion(request.successCriterion().trim());
     cycle.setCreatedAt(now);
     cycle.setUpdatedAt(now);
     cycle = repository.save(cycle);
@@ -200,6 +206,8 @@ public class VideoProductionCycleService {
         cycle.getStatus(),
         cycle.getBudgetLimitUsd(),
         cycle.getKnownCostUsd(),
+        cycle.getLearningObjective(),
+        cycle.getSuccessCriterion(),
         financialSnapshot(cycle),
         cycle.getFinancialDecision(),
         cycle.getFinancialReason(),
@@ -212,10 +220,15 @@ public class VideoProductionCycleService {
   /** Congela para Plutus a mesma inteligência financeira oficial do planejamento. */
   private String financialSnapshot(VideoProductionCycle cycle) {
     try {
-      return objectMapper.writeValueAsString(
-          cycle.getCommercialPlanId() == null
-              ? financialAgentService.unassignedStudioIntelligence(cycle.getProductId())
-              : financialAgentService.intelligence(cycle.getCommercialPlanId()));
+      java.util.LinkedHashMap<String, Object> snapshot =
+          new java.util.LinkedHashMap<>(
+              cycle.getCommercialPlanId() == null
+                  ? financialAgentService.unassignedStudioIntelligence(cycle.getProductId())
+                  : financialAgentService.intelligence(cycle.getCommercialPlanId()));
+      snapshot.put("learningObjective", cycle.getLearningObjective());
+      snapshot.put("successCriterion", cycle.getSuccessCriterion());
+      snapshot.put("incrementalLedger", studioCostLedgerService.cycleLedger(cycle.getId()));
+      return objectMapper.writeValueAsString(snapshot);
     } catch (JsonProcessingException ex) {
       throw new IllegalStateException("Não foi possível congelar o contexto financeiro.", ex);
     }

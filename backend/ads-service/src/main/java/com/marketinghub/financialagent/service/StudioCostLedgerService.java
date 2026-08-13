@@ -110,6 +110,7 @@ public class StudioCostLedgerService {
   @Transactional
   public void recordVideo(
       Long jobId,
+      Long videoProductionCycleId,
       Long productId,
       Long commercialPlanId,
       Long experimentId,
@@ -125,6 +126,7 @@ public class StudioCostLedgerService {
         repository
             .findBySourceTypeAndSourceId("SALES_VIDEO_JOB", String.valueOf(jobId))
             .orElseGet(StudioCostLedgerEntry::new);
+    entry.setVideoProductionCycleId(videoProductionCycleId);
     entry.setCommercialPlanId(commercialPlanId);
     entry.setProductId(productId);
     entry.setExperimentId(experimentId);
@@ -144,6 +146,44 @@ public class StudioCostLedgerService {
     entry.setStartedAt(startedAt);
     entry.setFinishedAt(finishedAt);
     repository.save(entry);
+  }
+
+  /** Expõe o ledger incremental segregado de um ciclo sem misturar custos históricos. */
+  @Transactional(readOnly = true)
+  public Map<String, Object> cycleLedger(Long cycleId) {
+    List<StudioCostLedgerEntry> entries =
+        repository.findByVideoProductionCycleIdOrderByCreatedAtAsc(cycleId);
+    BigDecimal knownCost =
+        entries.stream()
+            .map(
+                e ->
+                    e.getProviderCostUsd() != null
+                        ? e.getProviderCostUsd()
+                        : e.getEstimatedCostUsd())
+            .filter(java.util.Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    LinkedHashMap<String, Object> result = new LinkedHashMap<>();
+    result.put("videoProductionCycleId", cycleId);
+    result.put("segregated", true);
+    result.put("attempts", entries.size());
+    result.put("knownCostUsd", knownCost);
+    result.put("coverage", coverageOf(entries));
+    result.put(
+        "entries",
+        entries.stream()
+            .map(
+                e ->
+                    Map.of(
+                        "sourceType",
+                        e.getSourceType(),
+                        "sourceId",
+                        e.getSourceId(),
+                        "status",
+                        e.getStatus(),
+                        "costEvidence",
+                        e.getCostEvidence()))
+            .toList());
+    return result;
   }
 
   /** Soma o custo conhecido do Estúdio no plano, sem converter moeda implicitamente. */

@@ -6,6 +6,19 @@ paths:
   /api/sales-videos/autonomy/v1/cycles:
     post:
       summary: Solicita um ciclo de produção ainda sem autorização de consumo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [videoProjectId, budgetLimitUsd, learningObjective, successCriterion, requestedBy]
+              properties:
+                videoProjectId: {type: integer, format: int64}
+                budgetLimitUsd: {type: number, minimum: 0.01}
+                learningObjective: {type: string, minLength: 1}
+                successCriterion: {type: string, minLength: 1}
+                requestedBy: {type: string, minLength: 1}
       responses:
         '201': {description: Ciclo enviado a Plutus}
   /api/sales-videos/projects/{projectId}/autonomy/v1/cycles:

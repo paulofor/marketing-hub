@@ -46,6 +46,7 @@ import com.marketinghub.salesvideo.dto.UpdateSalesVideoProviderModelRequest;
 import com.marketinghub.salesvideo.dto.UpdateVideoProjectRequest;
 import com.marketinghub.salesvideo.dto.VideoProjectDto;
 import com.marketinghub.salesvideo.dto.VideoReferenceDto;
+import com.marketinghub.salesvideo.dto.storyboard.VideoStoryboardResponse;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import jakarta.validation.Valid;
 import java.io.IOException;
@@ -113,6 +114,12 @@ public class SalesVideoController {
   @GetMapping("/api/sales-videos/projects/{projectId}")
   public VideoProjectDto getVideoProject(@PathVariable Long projectId) {
     return salesVideoService.getVideoProject(projectId);
+  }
+
+  /** Consulta o storyboard com consumo e aproveitamento por cena. */
+  @GetMapping("/api/sales-videos/projects/{projectId}/storyboard")
+  public VideoStoryboardResponse getVideoStoryboard(@PathVariable Long projectId) {
+    return salesVideoService.getVideoStoryboard(projectId);
   }
 
   /** Atualiza um projeto editável do estúdio de vídeos. */

@@ -413,6 +413,82 @@ describe("AudioVideoStudioPage", () => {
     ).toBeDisabled();
   });
 
+  it("mostra duração, créditos, arquivo e aproveitamento por cena", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/studio/catalog") {
+        return Promise.resolve({ data: studioCatalog });
+      }
+      if (url === "/api/sales-videos/projects/1") {
+        return Promise.resolve({
+          data: {
+            id: 1,
+            productId: 4,
+            salesVideoProfileId: 55,
+            videoCategory: "COMMERCIAL_SHORT",
+            contextType: "PDE",
+            productionMode: "CINEMATIC_SCENE_BLUEPRINT",
+            targetChannel: "PDE_HERO_DIAGNOSTIC",
+            format: "VERTICAL_9_16",
+            title: "MUSA storyboard",
+            objective: "Converter para diagnóstico",
+            scenePlan: "Dor visível\nResultado concreto",
+            targetDurationSeconds: 30,
+            status: "IN_PRODUCTION",
+          },
+        });
+      }
+      if (url === "/api/sales-videos/projects/1/storyboard") {
+        return Promise.resolve({
+          data: {
+            projectId: 1,
+            plannedSceneCount: 2,
+            expectedCredits: 600,
+            consumedCredits: 300,
+            utilizationPercent: 50,
+            scenes: [
+              {
+                sceneNumber: 1,
+                commercialRole: "DOR",
+                plan: "Dor visível",
+                jobId: 101,
+                jobStatus: "VIDEO_READY",
+                requestedDurationSeconds: 10,
+                expectedCredits: 300,
+                consumedCredits: 300,
+                producedFileUrl: "https://assets.example/scene-1.mp4",
+                utilizationPercent: 100,
+                utilizationEvidence: "USED_IN_READY_MONTAGE",
+              },
+              {
+                sceneNumber: 2,
+                commercialRole: "CTA",
+                plan: "Resultado concreto",
+                jobStatus: "NOT_REQUESTED",
+                utilizationEvidence: "NO_PROVIDER_TASK",
+              },
+            ],
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    setupProject();
+
+    expect(
+      await screen.findByRole("region", {
+        name: /storyboard de consumo e aproveitamento/i,
+      }),
+    ).toBeTruthy();
+    expect(screen.getByText("600 créditos previstos")).toBeTruthy();
+    expect(screen.getByText("300 créditos consumidos")).toBeTruthy();
+    expect(screen.getByText("50% aproveitado")).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: /abrir arquivo produzido/i }),
+    ).toHaveAttribute("target", "_blank");
+    expect(screen.getByText("Nenhum arquivo produzido")).toBeTruthy();
+  });
+
   it("vincula um perfil do produto antes de solicitar o ciclo de Apolo", async () => {
     const user = userEvent.setup();
     (axios.get as any).mockImplementation((url: string) => {

@@ -45,6 +45,7 @@ import com.marketinghub.salesvideo.dto.UpdateSalesVideoProviderModelRequest;
 import com.marketinghub.salesvideo.dto.UpdateVideoProjectRequest;
 import com.marketinghub.salesvideo.dto.VideoProjectDto;
 import com.marketinghub.salesvideo.dto.VideoReferenceDto;
+import com.marketinghub.salesvideo.dto.storyboard.VideoStoryboardResponse;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -61,6 +62,7 @@ public class SalesVideoService {
   private final SalesVideoCommercialInsightsService commercialInsightsService;
   private final VideoProjectService videoProjectService;
   private final VideoReferenceService videoReferenceService;
+  private final VideoStoryboardService videoStoryboardService;
   private final SalesVideoProviderCatalogService providerCatalogService;
   private final SalesVideoStudioCatalogService studioCatalogService =
       new SalesVideoStudioCatalogService();
@@ -74,6 +76,7 @@ public class SalesVideoService {
       SalesVideoCommercialInsightsService commercialInsightsService,
       VideoProjectService videoProjectService,
       VideoReferenceService videoReferenceService,
+      VideoStoryboardService videoStoryboardService,
       SalesVideoProviderModelRepository providerModelRepository) {
     this.profileService = profileService;
     this.jobService = jobService;
@@ -82,6 +85,7 @@ public class SalesVideoService {
     this.commercialInsightsService = commercialInsightsService;
     this.videoProjectService = videoProjectService;
     this.videoReferenceService = videoReferenceService;
+    this.videoStoryboardService = videoStoryboardService;
     this.providerCatalogService = new SalesVideoProviderCatalogService(providerModelRepository);
   }
 
@@ -109,6 +113,11 @@ public class SalesVideoService {
   /** Consulta um projeto editável de vídeo. */
   public VideoProjectDto getVideoProject(Long projectId) {
     return videoProjectService.getProject(projectId);
+  }
+
+  /** Consulta o storyboard produtivo e financeiro consolidado do projeto. */
+  public VideoStoryboardResponse getVideoStoryboard(Long projectId) {
+    return videoStoryboardService.getStoryboard(projectId);
   }
 
   /** Atualiza um projeto editável de vídeo. */

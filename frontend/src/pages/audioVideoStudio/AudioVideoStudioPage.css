@@ -461,6 +461,72 @@
   margin-top: 1.25rem;
 }
 
+.audio-video-studio-page__storyboard {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.audio-video-studio-page__storyboard-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.audio-video-studio-page__storyboard-summary > * {
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  background: #f8eef2;
+  color: #6f1f43;
+}
+
+.audio-video-studio-page__storyboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.audio-video-studio-page__storyboard-grid article {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color, #d9dee8);
+  border-radius: 1rem;
+  background: #fff;
+}
+
+.audio-video-studio-page__storyboard-grid header,
+.audio-video-studio-page__storyboard-grid dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.audio-video-studio-page__storyboard-grid header span {
+  color: #7c2d55;
+  font-weight: 800;
+}
+
+.audio-video-studio-page__storyboard-grid p,
+.audio-video-studio-page__storyboard-grid dl {
+  margin: 0;
+}
+
+.audio-video-studio-page__storyboard-grid dt {
+  color: #64748b;
+}
+
+.audio-video-studio-page__storyboard-grid dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+}
+
+.audio-video-studio-page__storyboard-no-file {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
 .audio-video-studio-page__scene-production-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -497,7 +563,8 @@
 }
 
 @media (max-width: 720px) {
-  .audio-video-studio-page__scene-production-grid {
+  .audio-video-studio-page__scene-production-grid,
+  .audio-video-studio-page__storyboard-grid {
     grid-template-columns: 1fr;
   }
 }

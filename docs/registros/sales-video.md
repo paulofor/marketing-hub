@@ -220,3 +220,9 @@
   origem da evidência; a tela não apresenta estimativa como débito reportado pelo provider.
 - Limite externo: a API pública Runway não oferece endpoint documentado de saldo ou custo debitado
   por task; a conciliação usa status da task e tabela oficial, mantendo essa natureza explícita.
+
+## 2026-08-13 — storyboard auditável de custo e aproveitamento
+
+- Causa-raiz: o Estúdio mostrava plano e jobs separados, sem cruzar duração, consumo, arquivo e uso editorial por cena; assim, material caro e não utilizado podia parecer apenas produção em andamento.
+- Correção: endpoint canônico do projeto compõe plano, tasks do provider, créditos previstos/liquidados, assets e fontes de montagens prontas; a tela apresenta cada tentativa e totais do storyboard em desktop e mobile.
+- Prevenção: arquivo gerado só recebe aproveitamento positivo quando estiver referenciado por montagem `VIDEO_READY`; cenas sem task, liquidação ou arquivo permanecem explicitamente pendentes e testes protegem payload incompleto.

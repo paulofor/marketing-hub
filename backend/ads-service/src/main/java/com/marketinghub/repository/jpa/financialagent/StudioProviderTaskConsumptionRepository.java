@@ -2,6 +2,7 @@ package com.marketinghub.repository.jpa.financialagent;
 
 import com.marketinghub.financialagent.StudioProviderTaskConsumption;
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,6 +17,10 @@ public interface StudioProviderTaskConsumptionRepository
 
   /** Lista as tasks aceitas de um job para auditoria e conciliação. */
   List<StudioProviderTaskConsumption> findBySalesVideoJobIdOrderBySceneNumberAsc(Long jobId);
+
+  /** Lista as tasks de vários jobs na ordem editorial e cronológica. */
+  List<StudioProviderTaskConsumption> findBySalesVideoJobIdInOrderBySceneNumberAscAcceptedAtAsc(
+      Collection<Long> jobIds);
 
   /** Soma o custo estimado das tasks aceitas, inclusive quando o job final falhar. */
   @Query(

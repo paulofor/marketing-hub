@@ -96,6 +96,9 @@ class CreativeGenerationServiceTest {
         verify(backendClient).markFailed(
                 org.mockito.ArgumentMatchers.eq(49L),
                 org.mockito.ArgumentMatchers.contains("primaryText excede 125 caracteres"));
+        verify(backendClient).markFailed(
+                org.mockito.ArgumentMatchers.eq(49L),
+                org.mockito.ArgumentMatchers.contains("(atual:"));
     }
 
     /** Garante uma reescrita semântica antes de desistir de uma copy inválida. */

@@ -13,6 +13,7 @@ import {
   useCommercialPlanVersions,
 } from "../../api/planning/useCommercialPlans";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
+import { useExperiments } from "../../api/experiment/useExperiments";
 
 const statusLabel: Record<AgentTaskStatus, string> = {
   PENDING: "Pendente",
@@ -30,6 +31,18 @@ const nextStatuses: Record<AgentTaskStatus, AgentTaskStatus[]> = {
   CANCELLED: [],
 };
 
+const metaFieldLabel: Record<string, string> = {
+  primaryText: "Texto principal",
+  headline: "Título",
+  description: "Descrição",
+  cta: "CTA",
+};
+
+function experimentIdFromTask(task: AgentTask) {
+  const match = task.sourceReference?.match(/^experiment:(\d+)$/);
+  return match?.[1];
+}
+
 export default function AgentWorkspacePage() {
   const { id } = useParams();
   const agents = useAgents();
@@ -37,6 +50,7 @@ export default function AgentWorkspacePage() {
   const inbox = useAgentTasks(agent?.agentKey);
   const create = useCreateAgentTask(agent?.agentKey);
   const updateStatus = useUpdateAgentTaskStatus(agent?.agentKey);
+  const experiments = useExperiments();
   const plans = useCommercialPlans();
   const [commercialPlanId, setCommercialPlanId] = useState<number | null>(null);
   const selectedPlanId = commercialPlanId ?? plans.data?.[0]?.id ?? null;
@@ -239,6 +253,39 @@ export default function AgentWorkspacePage() {
               <div className="d-grid gap-3">
                 {(inbox.data ?? []).map((task) => (
                   <article key={task.id} className="border rounded p-3">
+                    {(() => {
+                      const experimentId = experimentIdFromTask(task);
+                      const experiment = (experiments.data ?? []).find(
+                        (item) => item.id === experimentId,
+                      );
+                      const failureReason = experiment?.creativeGenerationError;
+                      const violations =
+                        experiment?.creativeMetaCopyViolations ?? [];
+                      if (
+                        task.assignedAgentKey !== "meta-ad-approver" ||
+                        task.status !== "BLOCKED" ||
+                        !failureReason
+                      ) {
+                        return null;
+                      }
+                      return (
+                        <div className="alert alert-danger mb-3" role="alert">
+                          <strong>Corrija antes de reenfileirar Têmis</strong>
+                          <div className="small mt-1">{failureReason}</div>
+                          {violations.length > 0 ? (
+                            <ul className="small mb-0 mt-2">
+                              {violations.map((violation) => (
+                                <li key={violation.field}>
+                                  {metaFieldLabel[violation.field]}:{" "}
+                                  {violation.actualLength}/{violation.maxLength}{" "}
+                                  caracteres
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+                        </div>
+                      );
+                    })()}
                     <div className="d-flex justify-content-between gap-3">
                       <div>
                         <h3 className="h6 mb-1">{task.title}</h3>

@@ -14,6 +14,7 @@ import com.marketinghub.productai.ProductAiSubtype;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.Data;
 
 /** Transporta os dados completos do experimento para a interface e integrações internas. */
@@ -96,6 +97,7 @@ public class ExperimentDto {
   private Instant creativeGenerationStartedAt;
   private Instant creativeGenerationFinishedAt;
   private String creativeGenerationError;
+  private List<MetaCopyFieldViolationDto> creativeMetaCopyViolations;
   private String lastStatusChangeReason;
   private String lastStatusChangeAction;
   private Instant lastStatusChangedAt;

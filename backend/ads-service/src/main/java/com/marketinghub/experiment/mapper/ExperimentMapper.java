@@ -9,8 +9,13 @@ import com.marketinghub.experiment.dto.ExperimentCampaignMetricDto;
 import com.marketinghub.experiment.dto.ExperimentDto;
 import com.marketinghub.experiment.dto.FacebookPageDto;
 import com.marketinghub.experiment.dto.InstagramAccountDto;
+import com.marketinghub.experiment.dto.MetaCopyFieldViolationDto;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
@@ -18,6 +23,10 @@ import org.mapstruct.MappingTarget;
 /** Mapeia experimentos para contratos usados pela interface. */
 @Mapper(componentModel = "spring", uses = FacebookInstantFormMapper.class)
 public interface ExperimentMapper {
+  Pattern META_COPY_VIOLATION =
+      Pattern.compile(
+          "(primaryText|headline|description|cta) excede (\\d+) caracteres \\(atual: (\\d+)\\)");
+
   @org.mapstruct.Mapping(target = "nicheId", source = "niche.id")
   @org.mapstruct.Mapping(target = "productId", source = "product.id")
   @org.mapstruct.Mapping(target = "productName", source = "product.name")
@@ -56,6 +65,7 @@ public interface ExperimentMapper {
   @org.mapstruct.Mapping(target = "unreconciledLegacyCost", ignore = true)
   @org.mapstruct.Mapping(target = "revenue", ignore = true)
   @org.mapstruct.Mapping(target = "sessionDurationSummary", ignore = true)
+  @org.mapstruct.Mapping(target = "creativeMetaCopyViolations", ignore = true)
   @org.mapstruct.Mapping(target = "unitPrice", expression = "java(experiment.getUnitPrice())")
   @org.mapstruct.Mapping(
       target = "campaignMetric",
@@ -84,6 +94,24 @@ public interface ExperimentMapper {
     dto.setLegacyTotalCost(legacyTotal);
     dto.setUnreconciledLegacyCost(
         unreconciled.compareTo(BigDecimal.ZERO) > 0 ? unreconciled : BigDecimal.ZERO);
+    dto.setCreativeMetaCopyViolations(metaCopyViolations(experiment.getCreativeGenerationError()));
+  }
+
+  /** Converte o erro persistido pelo worker em contagens estruturadas para a interface. */
+  default List<MetaCopyFieldViolationDto> metaCopyViolations(String error) {
+    if (error == null || error.isBlank()) {
+      return List.of();
+    }
+    List<MetaCopyFieldViolationDto> violations = new ArrayList<>();
+    Matcher matcher = META_COPY_VIOLATION.matcher(error);
+    while (matcher.find()) {
+      violations.add(
+          new MetaCopyFieldViolationDto(
+              matcher.group(1),
+              Integer.parseInt(matcher.group(3)),
+              Integer.parseInt(matcher.group(2))));
+    }
+    return List.copyOf(violations);
   }
 
   /** Converte valor monetário opcional para zero quando ausente. */

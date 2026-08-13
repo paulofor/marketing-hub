@@ -90,9 +90,8 @@ jobs:
         run: |
           set -euo pipefail
           ssh "${VPS_USER}@${VPS_IP}" "
-            bash '${REPOSITORY_DIR}/scripts/reconcile-agent-codex-auth.sh' \
-            || { printf '%s\\n' 'Falha: sessão Codex compartilhada dos agentes não pôde ser reconciliada.'; exit 1; }; \
-            export META_AD_APPROVER_CODEX_HOME=/opt/growth-operator/codex-home \
+            install -d -o 10001 -g 10001 /opt/growth-operator/agents/meta-ad-approver/codex-home \
+            && export META_AD_APPROVER_CODEX_HOME=/opt/growth-operator/agents/meta-ad-approver/codex-home \
                    BACKEND_URL=http://191.252.181.168 \
                    MARKETING_HUB_URL=http://191.252.181.168 \
                    MARKETING_HUB_REPOSITORY_HOST='${REPOSITORY_DIR}' \

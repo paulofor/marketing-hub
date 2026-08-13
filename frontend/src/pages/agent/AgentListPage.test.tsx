@@ -29,6 +29,7 @@ vi.mock("../../api/agent/useAgentMaturity", () => ({
       {
         agentId: 7,
         agentName: "Agente Gerador de Landing",
+        agentKey: "landing-generator",
         executions: 4,
         completionRate: 75,
         openTasks: 1,
@@ -48,6 +49,7 @@ vi.mock("../../api/agent/useAgentWorkMonitor", () => ({
         agentId: 7,
         nickname: "Dédalo",
         agentName: "Agente Gerador de Landing",
+        agentKey: "landing-generator",
         workStatus: "WORKING",
         currentWork: "Correção autônoma da landing do experimento #88",
         progressDetail: "Etapa em processamento",
@@ -65,6 +67,25 @@ vi.mock("../../api/agent/useAgentWorkMonitor", () => ({
           backendAccessible: true,
           codexAuthenticated: true,
           detail: "Executor pronto.",
+        },
+      },
+      {
+        agentId: 3,
+        nickname: "Plutus",
+        agentName: "Agente Financeiro",
+        agentKey: "financial-agent",
+        workStatus: "BLOCKED",
+        currentWork: "Avaliar ciclo MUSA #5",
+        progressDetail: "Aguardando autenticação",
+        externalDecisionRequired: false,
+        dailyTokens: 0,
+        executorHealth: {
+          status: "BLOCKED",
+          expectedVersion: 3,
+          deployedVersion: 3,
+          versionCurrent: true,
+          backendAccessible: true,
+          codexAuthenticated: false,
         },
       },
     ],
@@ -108,5 +129,15 @@ describe("AgentListPage", () => {
     expect(screen.getByText("Tokens hoje")).toBeInTheDocument();
     expect(screen.getByText("12.345")).toBeInTheDocument();
     expect(screen.getByText("Tarefa #14 · Execução #326")).toBeInTheDocument();
+  });
+
+  it("oferece reconexão individual para todos os executores Codex", () => {
+    render(
+      <MemoryRouter>
+        <AgentListPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getAllByRole("button", { name: "Reconectar Codex" })).toHaveLength(2);
   });
 });

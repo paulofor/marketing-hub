@@ -66,10 +66,10 @@ jobs:
         run: |
           set -euo pipefail
           ssh "${VPS_USER}@${VPS_IP}" "\
-            bash '${REPOSITORY_DIR}/scripts/reconcile-agent-codex-auth.sh' \
-            || { printf '%s\n' 'Falha: sessão Codex compartilhada dos agentes não pôde ser reconciliada.'; exit 1; }; \
+            install -d -o 10001 -g 10001 /opt/growth-operator/agents/financial-agent/codex-home \
+            && \
             export BACKEND_URL=http://191.252.181.168 \
-                   FINANCIAL_AGENT_CODEX_HOME=/opt/growth-operator/codex-home \
+                   FINANCIAL_AGENT_CODEX_HOME=/opt/growth-operator/agents/financial-agent/codex-home \
                    MARKETING_HUB_REPOSITORY_PATH='${REPOSITORY_DIR}' \
                    COMMERCIAL_PLAN_ID=2 \
                    CODEX_MODEL=gpt-5.6-sol \

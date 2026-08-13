@@ -38,6 +38,27 @@ class AgentExecutorHealthServiceTest {
     assertThat(response.userCode()).isNull();
   }
 
+  /** Permite que outro executor Codex crie sua própria sessão sem depender de Dédalo. */
+  @Test
+  void shouldCreateIndependentReconnectForEveryCodexExecutor() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentExecutorHealthCheckRepository checks = mock(AgentExecutorHealthCheckRepository.class);
+    CodexAuthReconnectRepository reconnects = mock(CodexAuthReconnectRepository.class);
+    Agent agent = Agent.builder().id(3L).agentKey("financial-agent").nickname("Plutus").build();
+    when(agents.findById(3L)).thenReturn(Optional.of(agent));
+    when(reconnects.existsByAgentIdAndStatusIn(
+            org.mockito.ArgumentMatchers.eq(3L), org.mockito.ArgumentMatchers.anyList()))
+        .thenReturn(false);
+    when(reconnects.save(org.mockito.ArgumentMatchers.any()))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    CodexAuthReconnectResponse response =
+        new AgentExecutorHealthService(agents, checks, reconnects).requestReconnect(3L, "operador");
+
+    assertThat(response.agentKey()).isEqualTo("financial-agent");
+    assertThat(response.status()).isEqualTo("REQUESTED");
+  }
+
   /** Aprova somente quando versão, backend e autenticação estão comprovados. */
   @Test
   void shouldReportReadyOnlyWithAllThreeSignals() {

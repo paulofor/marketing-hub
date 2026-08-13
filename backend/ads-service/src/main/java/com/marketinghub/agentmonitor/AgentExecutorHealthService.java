@@ -6,6 +6,7 @@ import com.marketinghub.repository.jpa.agent.CodexAuthReconnectRepository;
 import com.marketinghub.repository.jpa.agentmonitor.AgentExecutorHealthCheckRepository;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AgentExecutorHealthService {
   private static final Duration MAX_AGE = Duration.ofMinutes(10);
+  private static final Set<String> CODEX_EXECUTORS =
+      Set.of(
+          "customer-agent",
+          "financial-agent",
+          "growth-operator",
+          "experiment-strategist",
+          "meta-ad-approver",
+          "landing-generator");
   private final AgentRepository agents;
   private final AgentExecutorHealthCheckRepository checks;
   private final Clock clock;
@@ -60,8 +69,8 @@ public class AgentExecutorHealthService {
             .orElseThrow(() -> new IllegalArgumentException("Agente não encontrado."));
     if (agent.getAgentKey() == null || agent.getAgentKey().isBlank())
       throw new IllegalStateException("Agente não possui executor técnico configurado.");
-    if (!"landing-generator".equals(agent.getAgentKey()))
-      throw new IllegalStateException("A reconexão compartilhada deve ser executada pelo Dédalo.");
+    if (!CODEX_EXECUTORS.contains(agent.getAgentKey()))
+      throw new IllegalStateException("Agente não utiliza executor Codex com sessão individual.");
     if (reconnects.existsByAgentIdAndStatusIn(
         agentId, java.util.List.of("REQUESTED", "STARTING", "AWAITING_CONFIRMATION"))) {
       CodexAuthReconnectResponse current = currentReconnect(agentId);

@@ -7,6 +7,15 @@ import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import { useState } from "react";
 import CodexAuthReconnectPanel from "./CodexAuthReconnectPanel";
 
+const CODEX_EXECUTORS = new Set([
+  "customer-agent",
+  "financial-agent",
+  "growth-operator",
+  "experiment-strategist",
+  "meta-ad-approver",
+  "landing-generator",
+]);
+
 export default function AgentListPage() {
   const navigate = useNavigate();
   const { data, isLoading } = useAgents();
@@ -135,7 +144,7 @@ export default function AgentListPage() {
                           {item.executorHealth.detail}
                         </div>
                       ) : null}
-                      {item.agentKey === "landing-generator" ? (
+                      {CODEX_EXECUTORS.has(item.agentKey) ? (
                         <button
                           type="button"
                           className="btn btn-sm btn-outline-primary mt-2"

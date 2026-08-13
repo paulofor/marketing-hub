@@ -1169,3 +1169,11 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o polling do executor consultava somente jobs novos e não reconciliava ciclos aprovados por Plutus com jobs terminais antigos.
 - **Correção sistêmica:** antes de cada polling, Apolo solicita reconciliação idempotente ao backend; jobs falhos são substituídos por Seedance 2.5 via Runway, com vínculo ao job anterior e plano explícito de 3 cenas para 30s ou 6 cenas para 60s. O ciclo preserva o identificador, código, detalhe e horário da falha anterior, e o painel diferencia essa falha do novo job enfileirado. O adapter Runway gera e monta todas as cenas localmente.
 - **Prevenção:** testes do ciclo e do painel comprovam provider, quantidade de cenas, diagnóstico da falha, rastreabilidade do job substituído e atualização do vínculo persistido.
+
+## LOOP-FRONTEND-CI-ARTIFACT-CLEANUP-TRANSIENT — build aprovado termina vermelho na limpeza
+
+- **Data:** 2026-08-13.
+- **Sintoma:** o Frontend CI conclui instalação, type-check, build e upload, mas termina com falha ao remover artefatos antigos.
+- **Causa-raiz:** a manutenção auxiliar tratava respostas transitórias HTTP 500/502 da API de artefatos do GitHub como falha do produto; execuções próximas também podiam tentar excluir o mesmo conjunto.
+- **Correção sistêmica:** a chamada passa a repetir falhas transitórias e, após esgotar as tentativas, registra aviso e deixa a limpeza idempotente para o próximo run. Erros permanentes continuam falhando o workflow.
+- **Prevenção:** teste de contrato exige retries, tolerância restrita a 404 e erros transitórios 5xx e proíbe tolerância ampla que esconda falhas de permissão ou contrato.

@@ -6,7 +6,7 @@ on:
     paths:
       - scripts/agent-executor-admin-controller.mjs
       - scripts/test-agent-executor-admin-controller.mjs
-      - deploy/systemd/marketinghub-agent-executor-admin.service
+      - deploy/agent-executor-admin-controller/**
       - .github/workflows/agent-executor-admin-controller-ci.yml
   workflow_dispatch:
 
@@ -31,9 +31,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: test
-    concurrency:
-      group: codex-agent-host-deploy
-      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
       - name: Add agent VPS SSH key
@@ -48,7 +45,19 @@ jobs:
       - name: Install and validate controller
         run: |
           set -euo pipefail
-          ssh root@163.245.202.80 'install -d /opt/marketing-hub/repo/scripts'
+          ssh root@163.245.202.80 'install -d /opt/marketing-hub/repo/deploy/agent-executor-admin-controller /opt/marketing-hub/repo/scripts'
+          rsync -az --delete deploy/agent-executor-admin-controller/ root@163.245.202.80:/opt/marketing-hub/repo/deploy/agent-executor-admin-controller/
           scp scripts/agent-executor-admin-controller.mjs root@163.245.202.80:/opt/marketing-hub/repo/scripts/agent-executor-admin-controller.mjs
-          scp deploy/systemd/marketinghub-agent-executor-admin.service root@163.245.202.80:/etc/systemd/system/marketinghub-agent-executor-admin.service
-          ssh root@163.245.202.80 'systemctl daemon-reload && systemctl enable --now marketinghub-agent-executor-admin.service && systemctl is-active --quiet marketinghub-agent-executor-admin.service'
+          ssh root@163.245.202.80 '
+            set -euo pipefail
+            systemctl disable --now marketinghub-agent-executor-admin.service 2>/dev/null || true
+            cd /opt/marketing-hub/repo/deploy/agent-executor-admin-controller
+            docker compose up -d --build --remove-orphans
+            for attempt in $(seq 1 12); do
+              status=$(docker inspect --format "{{.State.Status}}" agent-executor-admin-controller-agent-executor-admin-controller-1 2>/dev/null || true)
+              [ "$status" = running ] && exit 0
+              sleep 5
+            done
+            docker compose ps
+            docker compose logs --tail=150 agent-executor-admin-controller
+            exit 1'

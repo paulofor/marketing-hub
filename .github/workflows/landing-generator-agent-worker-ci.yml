@@ -48,9 +48,6 @@ jobs:
     needs: test-build
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    concurrency:
-      group: codex-agent-host-deploy
-      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
       - name: Adicionar chave SSH do host dos agentes
@@ -65,8 +62,8 @@ jobs:
       - name: Sincronizar repositório versionado
         run: |
           set -euo pipefail
-          ssh "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}'"
-          rsync -az --delete --exclude '.git/' --exclude 'target/' --exclude 'node_modules/' ./ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/"
+          ssh "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/landing-generator-agent-worker'"
+          rsync -az --delete landing-generator-agent-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/landing-generator-agent-worker/"
       - name: Subir executor com sessão individual
         run: |
           set -euo pipefail

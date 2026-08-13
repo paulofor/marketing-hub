@@ -20,6 +20,8 @@ for agent in "${!homes[@]}"; do
   grep -q "${homes[$agent]}=$expected_home" "$workflow"
   grep -q "install -d -o 10001 -g 10001 $expected_home" "$workflow"
   grep -q 'cancel-in-progress: false' "$workflow"
+  grep -qE -- '- ["]?scripts/codex-app-server-device-login\.mjs["]?' "$workflow"
+  grep -q 'rsync -az scripts/codex-app-server-device-login.mjs' "$workflow"
   if grep -qE 'reconcile-agent-codex-auth|CODEX_HOME=/opt/growth-operator/codex-home|install .*auth\.json .*codex-home/auth\.json' "$workflow"; then
     printf '[ARQUITETURA] %s ainda compartilha ou clona a identidade Codex.\n' "$workflow" >&2
     exit 1

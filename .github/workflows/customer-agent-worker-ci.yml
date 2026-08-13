@@ -7,6 +7,7 @@ on:
       - customer-agent-worker/**
       - .github/workflows/customer-agent-worker-ci.yml
       - scripts/test-isolated-agent-codex-auth.sh
+      - scripts/codex-app-server-device-login.mjs
   workflow_dispatch:
 
 concurrency:
@@ -66,8 +67,9 @@ jobs:
       - name: Synchronize versioned worker
         run: |
           set -euo pipefail
-          ssh "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/customer-agent-worker'"
+          ssh "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/customer-agent-worker' '${REPOSITORY_DIR}/scripts'"
           rsync -az --delete customer-agent-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/customer-agent-worker/"
+          rsync -az scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
       - name: Rebuild, restart and validate worker
         run: |
           set -euo pipefail

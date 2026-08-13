@@ -7,6 +7,7 @@ on:
       - financial-agent-worker/**
       - .github/workflows/financial-agent-worker-ci.yml
       - scripts/test-isolated-agent-codex-auth.sh
+      - scripts/codex-app-server-device-login.mjs
   workflow_dispatch:
 
 concurrency:
@@ -59,8 +60,9 @@ jobs:
       - name: Synchronize versioned worker
         run: |
           set -euo pipefail
-          ssh "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/financial-agent-worker'"
+          ssh "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/financial-agent-worker' '${REPOSITORY_DIR}/scripts'"
           rsync -az --delete financial-agent-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/financial-agent-worker/"
+          rsync -az scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
       - name: Rebuild, restart and validate worker
         run: |
           set -euo pipefail

@@ -7,6 +7,7 @@ on:
       - growth-operator-worker/**
       - .github/workflows/growth-operator-worker-ci.yml
       - scripts/test-isolated-agent-codex-auth.sh
+      - scripts/codex-app-server-device-login.mjs
   workflow_dispatch:
 
 concurrency:
@@ -66,8 +67,9 @@ jobs:
       - name: Synchronize versioned repository
         run: |
           set -euo pipefail
-          ssh "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/growth-operator-worker'"
+          ssh "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/growth-operator-worker' '${REPOSITORY_DIR}/scripts'"
           rsync -az --delete growth-operator-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/growth-operator-worker/"
+          rsync -az scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
 
       - name: Rebuild and restart worker
         run: |

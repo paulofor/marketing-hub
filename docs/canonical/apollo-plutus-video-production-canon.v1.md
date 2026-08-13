@@ -36,6 +36,8 @@ A primeira missão v2 é concluir os dois projetos persistidos do grupo `musa-tw
 
 Por decisão comercial de 2026-08-13, Apolo não pode selecionar Luma para o MUSA, inclusive quando um projeto legado ainda a mencionar. O padrão é `RUNWAY_SEEDANCE_2_5`, com Runway Gen-4 como alternativa explícita quando Seedance não atender ao contrato técnico ou ao QA. Vídeos acima da duração direta do modelo devem ser produzidos por cenas auditáveis e montagem; nunca por truncamento silencioso. A troca de provider preserva o teto já aprovado, mas não autoriza compra de créditos, publicação ou mídia.
 
+A duração máxima gerada pelo provider não define a duração dos cortes exibidos. Antes de consumir créditos, Apolo deve persistir no Estúdio um plano de cortes com função comercial, duração e objetivo visual por tomada; o executor agrupa esses cortes em clipes compatíveis com a capacidade específica do modelo e a pós-produção realiza a montagem. Texto, legenda, interface, preço e CTA são overlays determinísticos de pós-produção e não podem ser delegados ao modelo de vídeo. A tela deve mostrar separadamente quantidade de clipes cobrados, duração máxima por clipe e quantidade de cortes editoriais.
+
 ## Autoridade e segurança
 
 - Aprovar um ciclo não autoriza publicação, campanha, mudança de preço ou compra de créditos.

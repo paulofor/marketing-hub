@@ -22,6 +22,8 @@ import com.marketinghub.salesvideo.dto.SalesVideoJobDto;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -256,17 +258,30 @@ public class VideoProductionCycleService {
   private String metadata(
       VideoProductionCycle cycle, VideoProject project, SalesVideoJob previous) {
     try {
-      java.util.LinkedHashMap<String, Object> metadata = new java.util.LinkedHashMap<>();
+      LinkedHashMap<String, Object> metadata = new LinkedHashMap<>();
       int duration = project.getTargetDurationSeconds();
+      int providerClipDuration = providerClipDurationSeconds(preferredProvider(project));
+      List<LinkedHashMap<String, Object>> cuts = cutPlan(project, duration);
       metadata.put("videoProductionCycleId", cycle.getId());
       metadata.put("videoProjectId", project.getId());
       metadata.put("budgetLimitUsd", cycle.getBudgetLimitUsd());
       metadata.put("financialApprovedBy", "Plutus");
       metadata.put("publicationAllowed", false);
       metadata.put("targetDurationSeconds", duration);
-      metadata.put("sceneDurationSeconds", 10);
-      metadata.put("sceneCount", (duration + 9) / 10);
-      metadata.put("assemblyRequired", duration > 10);
+      metadata.put("providerClipDurationSeconds", providerClipDuration);
+      metadata.put("sceneCount", (duration + providerClipDuration - 1) / providerClipDuration);
+      metadata.put("cutCount", cuts.size());
+      metadata.put("assemblyRequired", duration > providerClipDuration);
+      metadata.put("generation_strategy", "PROVIDER_CLIPS_WITH_POST_PRODUCTION_CUTS");
+      metadata.put("cut_plan", cuts);
+      metadata.put(
+          "post_production",
+          java.util.Map.of(
+              "text_rendering", "DETERMINISTIC_OVERLAY",
+              "provider_embedded_text_allowed", false,
+              "caption_plan", nullToEmpty(project.getCaptionPlan()),
+              "cta_text", nullToEmpty(project.getCtaText()),
+              "editing_notes", nullToEmpty(project.getEditingNotes())));
       if (previous != null) metadata.put("replacesFailedJobId", previous.getId());
       return objectMapper.writeValueAsString(metadata);
     } catch (JsonProcessingException ex) {
@@ -274,8 +289,61 @@ public class VideoProductionCycleService {
     }
   }
 
+  /** Resolve a duração de geração por modelo sem tratá-la como duração de cada corte editorial. */
+  private int providerClipDurationSeconds(String provider) {
+    if (provider != null && provider.contains("SEEDANCE_2")) return 15;
+    if (provider != null && provider.contains("VEO_3_1")) return 8;
+    return 10;
+  }
+
+  /** Cria cortes comerciais curtos que serão agrupados nos clipes cobrados pelo provider. */
+  private List<LinkedHashMap<String, Object>> cutPlan(VideoProject project, int duration) {
+    int cutCount = Math.max(4, Math.min(12, (int) Math.ceil(duration / 4.0)));
+    int baseDuration = duration / cutCount;
+    int remainder = duration % cutCount;
+    List<LinkedHashMap<String, Object>> cuts = new ArrayList<>();
+    for (int index = 0; index < cutCount; index++) {
+      LinkedHashMap<String, Object> cut = new LinkedHashMap<>();
+      cut.put("order", index + 1);
+      cut.put("duration_seconds", baseDuration + (index < remainder ? 1 : 0));
+      cut.put("role", cutRole(index, cutCount));
+      cut.put("visual_objective", cutObjective(index, cutCount));
+      cut.put("source_scene_plan", nullToEmpty(project.getScenePlan()));
+      cuts.add(cut);
+    }
+    return cuts;
+  }
+
+  /** Distribui dor, resultado, mecanismo, prova, oferta e CTA ao longo do plano de cortes. */
+  private String cutRole(int index, int count) {
+    if (index == 0) return "HOOK_DOR";
+    if (index == 1) return "RESULTADO";
+    if (index == count - 1) return "CTA";
+    if (index == count - 2) return "OFERTA_PROVA";
+    return "MECANISMO";
+  }
+
+  /** Define uma ação visual única para impedir clipes longos, genéricos ou repetitivos. */
+  private String cutObjective(int index, int count) {
+    if (index == 0) return "Abrir com dor reconhecível e ação imediata, sem texto embutido.";
+    if (index == 1) return "Mostrar rapidamente o resultado desejado de forma plausível.";
+    if (index == count - 1)
+      return "Encerrar com gesto de decisão e área limpa para CTA em pós-produção.";
+    if (index == count - 2)
+      return "Mostrar prova ou entregável concreto sem interface ou letras geradas.";
+    return "Demonstrar uma única microação do mecanismo, preservando continuidade visual.";
+  }
+
+  /** Normaliza campos opcionais do plano usados na auditoria de pós-produção. */
+  private String nullToEmpty(String value) {
+    return value == null ? "" : value;
+  }
+
   /** Converte a entidade no contrato externo. */
   private VideoProductionCycleContracts.Response response(VideoProductionCycle cycle) {
+    VideoProject project = project(cycle.getVideoProjectId());
+    int duration = project.getTargetDurationSeconds();
+    int providerClipDuration = providerClipDurationSeconds(preferredProvider(project));
     return new VideoProductionCycleContracts.Response(
         cycle.getId(),
         cycle.getVideoProjectId(),
@@ -295,6 +363,10 @@ public class VideoProductionCycleService {
         cycle.getLastApolloFailureCode(),
         cycle.getLastApolloFailureDetail(),
         cycle.getLastApolloFailureAt(),
+        providerClipDuration,
+        (duration + providerClipDuration - 1) / providerClipDuration,
+        cutPlan(project, duration).size(),
+        true,
         cycle.getAgentTaskId(),
         cycle.getCreatedAt(),
         cycle.getUpdatedAt());

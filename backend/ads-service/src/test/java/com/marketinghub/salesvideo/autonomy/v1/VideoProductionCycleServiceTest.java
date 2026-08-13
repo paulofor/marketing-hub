@@ -193,6 +193,7 @@ class VideoProductionCycleServiceTest {
   void shouldBlockRejectedCycleWithoutProviderJob() {
     VideoProductionCycle cycle = cycle();
     when(repository.findById(11L)).thenReturn(Optional.of(cycle));
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(project()));
 
     var result =
         service.decide(
@@ -229,7 +230,12 @@ class VideoProductionCycleServiceTest {
     verify(salesVideoService).requestRender(org.mockito.ArgumentMatchers.eq(13L), render.capture());
     assertThat(render.getValue().getProviderName()).isEqualTo("RUNWAY_SEEDANCE_2_5");
     assertThat(render.getValue().getTargetDurationSeconds()).isEqualTo(10);
-    assertThat(render.getValue().getMetadataJson()).contains("\"sceneCount\":6");
+    assertThat(render.getValue().getMetadataJson())
+        .contains(
+            "\"providerClipDurationSeconds\":15",
+            "\"sceneCount\":4",
+            "\"cutCount\":12",
+            "\"text_rendering\":\"DETERMINISTIC_OVERLAY\"");
     assertThat(result.status()).isEqualTo("QUEUED_FOR_APOLLO");
     assertThat(result.salesVideoJobId()).isEqualTo(321L);
   }
@@ -266,7 +272,7 @@ class VideoProductionCycleServiceTest {
     verify(salesVideoService).requestRender(org.mockito.ArgumentMatchers.eq(13L), render.capture());
     assertThat(render.getValue().getProviderName()).isEqualTo("RUNWAY_SEEDANCE_2_5");
     assertThat(render.getValue().getMetadataJson())
-        .contains("\"sceneCount\":3", "\"replacesFailedJobId\":20536");
+        .contains("\"sceneCount\":2", "\"cutCount\":8", "\"replacesFailedJobId\":20536");
     assertThat(cycle.getSalesVideoJobId()).isEqualTo(30001L);
     assertThat(cycle.getLastFailedJobId()).isEqualTo(20536L);
     assertThat(cycle.getLastApolloFailureCode()).isEqualTo("PROVIDER_PAYMENT_REQUIRED");

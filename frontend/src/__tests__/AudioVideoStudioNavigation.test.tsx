@@ -471,6 +471,10 @@ describe("audio video studio navigation", () => {
               lastFailedJobId: 20537,
               lastApolloFailureCode: "PROVIDER_PAYMENT_REQUIRED",
               lastApolloFailureDetail: "Provider respondeu HTTP 402.",
+              providerClipDurationSeconds: 15,
+              generationClipCount: 2,
+              editCutCount: 8,
+              textAppliedInPostProduction: true,
               createdAt: "2026-08-13T09:00:00Z",
             },
           ],
@@ -486,6 +490,8 @@ describe("audio video studio navigation", () => {
     expect(
       screen.getByText(/nova tentativa foi reconciliada no job #30001/i),
     ).toBeTruthy();
+    expect(screen.getByText(/2 clipes solicitados ao provider/i)).toBeTruthy();
+    expect(screen.getByText(/8 cortes na edição/i)).toBeTruthy();
   });
 
   it("shows rendered mp4 for review when project has ready video job", async () => {

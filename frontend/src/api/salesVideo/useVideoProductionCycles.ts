@@ -16,6 +16,10 @@ export type VideoProductionCycle = {
   lastApolloFailureCode?: string;
   lastApolloFailureDetail?: string;
   lastApolloFailureAt?: string;
+  providerClipDurationSeconds: number;
+  generationClipCount: number;
+  editCutCount: number;
+  textAppliedInPostProduction: boolean;
   agentTaskId?: number;
   createdAt: string;
 };

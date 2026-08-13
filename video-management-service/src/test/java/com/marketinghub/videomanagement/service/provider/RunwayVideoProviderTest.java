@@ -280,6 +280,10 @@ class RunwayVideoProviderTest {
         var estimateCost = RunwayVideoProvider.class.getDeclaredMethod(
                 "estimateCostUsd", String.class, int.class, int.class);
         estimateCost.setAccessible(true);
+        var resolveDuration = RunwayVideoProvider.class.getDeclaredMethod(
+                "resolveDuration", SalesVideoJob.class, VideoManagementProperties.Runway.class,
+                com.fasterxml.jackson.databind.JsonNode.class);
+        resolveDuration.setAccessible(true);
 
         assertThat(sceneDirective.invoke(provider, 1, 4)).asString().contains("DOR");
         assertThat(sceneDirective.invoke(provider, 2, 4)).asString().contains("RESULTADO");
@@ -287,6 +291,12 @@ class RunwayVideoProviderTest {
         assertThat(sceneDirective.invoke(provider, 4, 4)).asString().contains("CTA");
         assertThat((BigDecimal) estimateCost.invoke(provider, "gen4.5", 10, 3))
                 .isEqualByComparingTo("3.60");
+        assertThat(resolveDuration.invoke(
+                provider,
+                job("RUNWAY_SEEDANCE_2_5"),
+                properties().getProviders().getRunway(),
+                new ObjectMapper().readTree("{\"providerClipDurationSeconds\":15}")))
+                .isEqualTo(15);
     }
 
     /** Cria uma resposta JSON para a API Runway simulada. */

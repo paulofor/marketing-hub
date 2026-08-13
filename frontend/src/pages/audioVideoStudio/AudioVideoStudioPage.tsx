@@ -2198,6 +2198,16 @@ export default function AudioVideoStudioPage() {
                             ? ` · ${productionCycles.data[0].financialReason}`
                             : ""}
                         </p>
+                        <p>
+                          <strong>Plano de cortes:</strong>{" "}
+                          {productionCycles.data[0].generationClipCount} clipes
+                          solicitados ao provider, com até{" "}
+                          {productionCycles.data[0].providerClipDurationSeconds}
+                          s cada, transformados em{" "}
+                          {productionCycles.data[0].editCutCount} cortes na
+                          edição. Texto, legenda e CTA são aplicados na
+                          pós-produção.
+                        </p>
                         {productionCycles.data[0].lastFailedJobId ? (
                           <p role="alert">
                             Apolo falhou no job #

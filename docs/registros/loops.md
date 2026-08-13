@@ -1177,6 +1177,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Sintoma:** Apolo recriava jobs MUSA a cada polling, esgotava créditos e rejeitava uma montagem de três cenas como se tivesse apenas dez segundos.
 - **Causa-raiz confirmada:** a reconciliação substituía toda falha terminal sem distinguir erro não recuperável ou substituição anterior; o adapter contabilizava duração e custo de uma cena, embora já tivesse gerado e montado todas.
 - **Correção sistêmica:** saldo insuficiente, erro não recuperável, segunda substituição ou asset existente bloqueiam o ciclo; duração e custo abrangem todas as cenas, que recebem funções comerciais distintas.
+- **Recorrência fechada em 2026-08-13:** o ciclo ainda confundia a duração máxima do clipe cobrado com a duração de cada corte editorial: fixava dez segundos no backend e repetia contexto amplo em cada geração. Apolo agora resolve a capacidade por modelo, persiste 8 cortes para 30s ou 12 para 60s, envia a cada clipe somente seu grupo de tomadas e reserva texto, legenda e CTA para pós-produção determinística. O Estúdio expõe clipes solicitados, duração por clipe e cortes planejados antes de novo consumo.
 - **Prevenção:** testes impedem novo job após bloqueio financeiro ou asset aproveitável; o contrato canônico exige avaliação do material existente e novo gate antes de qualquer gasto adicional.
 
 ## LOOP-FRONTEND-CI-ARTIFACT-CLEANUP-TRANSIENT — build aprovado termina vermelho na limpeza

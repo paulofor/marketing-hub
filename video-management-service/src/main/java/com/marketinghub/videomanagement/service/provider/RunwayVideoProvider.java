@@ -100,7 +100,7 @@ public class RunwayVideoProvider implements VideoProvider {
         Map<String, Object> payload = null;
         JsonNode finalStatus = null;
         for (int scene = 1; scene <= sceneCount; scene++) {
-            payload = buildPayload(job, profile, script);
+            payload = buildPayload(job, profile, script, scene, sceneCount);
             if (sceneCount > 1) {
                 payload.put("promptText", sceneDirective(scene, sceneCount) + " " + payload.get("promptText"));
             }
@@ -238,14 +238,18 @@ public class RunwayVideoProvider implements VideoProvider {
     }
 
     /** Monta payload aceito pela Runway com prompt comercial e imagem de referência quando existir. */
-    private Map<String, Object> buildPayload(SalesVideoJob job, SalesVideoProfile profile, SalesVideoScript script) {
+    private Map<String, Object> buildPayload(SalesVideoJob job,
+                                             SalesVideoProfile profile,
+                                             SalesVideoScript script,
+                                             int scene,
+                                             int sceneCount) {
         VideoManagementProperties.Runway config = properties.getProviders().getRunway();
         JsonNode metadata = readMetadata(job);
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", resolveModel(job, config));
-        payload.put("promptText", limitPrompt(buildPrompt(job, profile, script, metadata), 1000));
+        payload.put("promptText", limitPrompt(buildPrompt(job, profile, script, metadata, scene, sceneCount), 1000));
         payload.put("ratio", config.getRatio());
-        payload.put("duration", resolveDuration(job, config));
+        payload.put("duration", resolveDuration(job, config, metadata));
         String promptImage = firstText(metadata,
                 "/characterImageReferenceUrl",
                 "/image_to_video/reference_image_url",
@@ -279,12 +283,18 @@ public class RunwayVideoProvider implements VideoProvider {
     }
 
     /** Resolve duração compatível com o modelo selecionado antes de consumir créditos. */
-    private int resolveDuration(SalesVideoJob job, VideoManagementProperties.Runway config) {
+    private int resolveDuration(SalesVideoJob job,
+                                VideoManagementProperties.Runway config,
+                                JsonNode metadata) {
         String providerName = normalize(job.providerName());
         if (providerName.equals("RUNWAY_VEO_3_1") || providerName.equals("RUNWAY_VEO_3_1_FAST")) {
             return Math.min(config.getDurationSeconds(), 8);
         }
-        return config.getDurationSeconds();
+        int planned = metadata.path("providerClipDurationSeconds").asInt(config.getDurationSeconds());
+        if (providerName.contains("SEEDANCE_2")) {
+            return Math.max(4, Math.min(planned, 15));
+        }
+        return Math.min(planned, 10);
     }
 
     /** Limita o prompt ao contrato oficial da Runway sem cortar um par substituto UTF-16. */
@@ -303,9 +313,14 @@ public class RunwayVideoProvider implements VideoProvider {
     private String buildPrompt(SalesVideoJob job,
                                SalesVideoProfile profile,
                                SalesVideoScript script,
-                               JsonNode metadata) {
+                               JsonNode metadata,
+                               int scene,
+                               int sceneCount) {
         String visualDirectives = visualProviderDirectives(metadata);
-        String scenePrompt = metadata.path("scene").path("prompt").asText("");
+        String scenePrompt = plannedCuts(metadata, scene, sceneCount);
+        if (!StringUtils.hasText(scenePrompt)) {
+            scenePrompt = metadata.path("scene").path("prompt").asText("");
+        }
         String scenes = StringUtils.hasText(scenePrompt)
                 ? scenePrompt
                 : metadata.path("assembly_plan").path("scenes").isMissingNode()
@@ -338,6 +353,26 @@ public class RunwayVideoProvider implements VideoProvider {
                 script.scriptText(),
                 nullToDefault(script.ctaText(), ""),
                 scenes);
+    }
+
+    /** Seleciona apenas os cortes pertencentes ao clipe atual para evitar repetição e improviso. */
+    private String plannedCuts(JsonNode metadata, int scene, int sceneCount) {
+        JsonNode cuts = metadata.path("cut_plan");
+        if (!cuts.isArray() || cuts.isEmpty()) {
+            return "";
+        }
+        int start = (scene - 1) * cuts.size() / sceneCount;
+        int end = Math.max(start + 1, scene * cuts.size() / sceneCount);
+        List<String> selected = new ArrayList<>();
+        for (int index = start; index < Math.min(end, cuts.size()); index++) {
+            JsonNode cut = cuts.get(index);
+            selected.add("Corte %d (%ds, %s): %s".formatted(
+                    cut.path("order").asInt(index + 1),
+                    cut.path("duration_seconds").asInt(3),
+                    cut.path("role").asText("MECANISMO"),
+                    cut.path("visual_objective").asText("ação visual única")));
+        }
+        return String.join(" ", selected);
     }
 
     /** Extrai diretivas visuais enviadas pelo Marketing Hub. */

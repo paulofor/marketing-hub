@@ -5,9 +5,16 @@ concurrency:
 
 on:
   push:
-    paths: ['frontend/**']
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
+      - 'scripts/test-frontend-workflow-artifact-cleanup.sh'
   pull_request:
-    paths: ['frontend/**']
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
+      - 'scripts/test-frontend-workflow-artifact-cleanup.sh'
+  workflow_dispatch:
 
 permissions:
   contents: read

@@ -1174,6 +1174,6 @@ Use este checklist quando o problema estiver em algum loop acima:
 
 - **Data:** 2026-08-13.
 - **Sintoma:** o Frontend CI conclui instalação, type-check, build e upload, mas termina com falha ao remover artefatos antigos.
-- **Causa-raiz:** a manutenção auxiliar tratava respostas transitórias HTTP 500/502 da API de artefatos do GitHub como falha do produto; execuções próximas também podiam tentar excluir o mesmo conjunto.
-- **Correção sistêmica:** a chamada passa a repetir falhas transitórias e, após esgotar as tentativas, registra aviso e deixa a limpeza idempotente para o próximo run. Erros permanentes continuam falhando o workflow.
-- **Prevenção:** teste de contrato exige retries, tolerância restrita a 404 e erros transitórios 5xx e proíbe tolerância ampla que esconda falhas de permissão ou contrato.
+- **Causa-raiz:** a manutenção auxiliar tratava respostas transitórias HTTP 500/502 da API de artefatos do GitHub como falha do produto; execuções próximas também podiam tentar excluir o mesmo conjunto. A primeira correção alterou apenas o workflow e seu teste, mas os filtros observavam somente `frontend/**`, então o próprio Frontend CI corrigido não executou no `push` que o incorporou.
+- **Correção sistêmica:** a chamada passa a repetir falhas transitórias e, após esgotar as tentativas, registra aviso e deixa a limpeza idempotente para o próximo run. O workflow também dispara quando sua definição ou seu contrato preventivo mudam e aceita execução manual de diagnóstico. Erros permanentes continuam falhando o workflow.
+- **Prevenção:** teste de contrato exige retries, tolerância restrita a 404 e erros transitórios 5xx, proíbe tolerância ampla que esconda falhas de permissão ou contrato e confirma que mudanças no próprio mecanismo disparam sua validação.

@@ -16,6 +16,12 @@ export type VideoProductionCycle = {
   lastApolloFailureCode?: string;
   lastApolloFailureDetail?: string;
   lastApolloFailureAt?: string;
+  monitoredTaskCount: number;
+  monitoredCredits: number;
+  budgetMonitorStatus: "WATCHING" | "BLOCKED";
+  budgetAlertCode?: string;
+  budgetAlertDetail?: string;
+  budgetAlertAt?: string;
   providerClipDurationSeconds: number;
   generationClipCount: number;
   editCutCount: number;
@@ -35,6 +41,7 @@ export function useVideoProductionCycles(projectId?: number) {
       return data;
     },
     enabled: Boolean(projectId),
+    refetchInterval: projectId ? 10_000 : false,
   });
 }
 

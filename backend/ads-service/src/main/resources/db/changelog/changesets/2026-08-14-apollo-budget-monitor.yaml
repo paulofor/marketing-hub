@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-14-apollo-budget-monitor
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE video_production_cycle
+                ADD COLUMN monitored_task_count BIGINT NOT NULL DEFAULT 0 AFTER last_apollo_failure_at,
+                ADD COLUMN monitored_credits BIGINT NOT NULL DEFAULT 0 AFTER monitored_task_count,
+                ADD COLUMN budget_monitor_status VARCHAR(32) NOT NULL DEFAULT 'WATCHING' AFTER monitored_credits,
+                ADD COLUMN budget_alert_code VARCHAR(64) NULL AFTER budget_monitor_status,
+                ADD COLUMN budget_alert_detail LONGTEXT NULL AFTER budget_alert_code,
+                ADD COLUMN budget_alert_at DATETIME NULL AFTER budget_alert_detail;

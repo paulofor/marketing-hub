@@ -123,6 +123,9 @@ class ProductControllerTest {
             List.of(
                 new ProductAdLibraryItemResponse(
                     12L,
+                    null,
+                    1,
+                    true,
                     74L,
                     "MUSA-H001-E009",
                     "RUNNING",
@@ -174,6 +177,9 @@ class ProductControllerTest {
             List.of(
                 new ProductAdLibraryItemResponse(
                     253L,
+                    null,
+                    1,
+                    true,
                     76L,
                     "MUSA-H001-E011",
                     "PLANNED",
@@ -205,6 +211,8 @@ class ProductControllerTest {
         .andExpect(jsonPath("$.productId").value(1L))
         .andExpect(jsonPath("$.productSlug").value("metodo-musa-7-dias"))
         .andExpect(jsonPath("$.ads[0].creativeId").value(253L))
+        .andExpect(jsonPath("$.ads[0].versionNumber").value(1))
+        .andExpect(jsonPath("$.ads[0].finalCandidate").value(true))
         .andExpect(jsonPath("$.ads[0].experimentId").value(76L))
         .andExpect(jsonPath("$.ads[0].status").value("READY"))
         .andExpect(jsonPath("$.ads[0].agentReviewStatus").value("APPROVED"))

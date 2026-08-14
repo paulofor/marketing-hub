@@ -22,7 +22,7 @@ public class GovernedAgentLearningService {
   private static final int MINIMUM_REPLAY_CASES = 10;
   private static final int MINIMUM_HOLDOUT_CASES = 5;
   private static final Set<String> GOVERNED_AGENTS =
-      Set.of("landing-generator", "meta-ad-approver");
+      Set.of("landing-generator", "meta-ad-approver", "apollo");
   private final GovernedAgentLearningExperimentRepository repository;
   private final AgentMemoryService memoryService;
   private final ObjectMapper objectMapper;
@@ -85,6 +85,13 @@ public class GovernedAgentLearningService {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "Contagens de resultado divergem dos conjuntos congelados");
     }
+    if (request.externalProviderCalled()
+        || request.spendingAuthorized()
+        || request.publicationPerformed()) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Replay sombra não permite provider externo, autorização de gasto ou publicação");
+    }
     BigDecimal gain = request.candidateHoldoutScore().subtract(request.baselineHoldoutScore());
     BigDecimal costRatio = costRatio(request.baselineCost(), request.candidateCost());
     boolean enoughCases =
@@ -113,7 +120,8 @@ public class GovernedAgentLearningService {
             + "; regressionPassed="
             + request.regressionPassed()
             + "; localValidationPassed="
-            + request.localValidationPassed());
+            + request.localValidationPassed()
+            + "; externalEffects=false");
     value.setEvaluatedAt(clock.instant());
     return response(repository.save(value));
   }
@@ -165,7 +173,7 @@ public class GovernedAgentLearningService {
         .max(BigDecimal.ZERO);
   }
 
-  /** Restringe a primeira versão aos dois agentes homologados. */
+  /** Restringe a primeira versão aos agentes com avaliador de replay homologado. */
   private void validateAgent(String agentKey) {
     if (!GOVERNED_AGENTS.contains(agentKey)) {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Agente fora da governança v1");

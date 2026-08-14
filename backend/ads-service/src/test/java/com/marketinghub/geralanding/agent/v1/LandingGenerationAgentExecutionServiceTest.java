@@ -71,10 +71,7 @@ class LandingGenerationAgentExecutionServiceTest {
   @Test
   void shouldNotDuplicateRejectedQualityReviewWhileCorrectionIsActive() {
     when(repository.existsByExperimentIdAndStageCodeAndAutonomousCycleIdAndStatusIn(
-            88L,
-            "landing-generation-agent-v1",
-            "cycle-88",
-            List.of("INICIADO", "PROCESSANDO")))
+            88L, "landing-generation-agent-v1", "cycle-88", List.of("INICIADO", "PROCESSANDO")))
         .thenReturn(true);
 
     service.onQualityReviewCompleted(

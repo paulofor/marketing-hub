@@ -138,8 +138,9 @@ public class BackendVideoClient {
         return postForJob("/internal/video/jobs/{jobId}/claim", jobId, payload);
     }
 
-    public void reportProgress(Long jobId, JobProgressPayload payload) {
-        postIgnoringBody("/internal/video/jobs/{jobId}/progress", jobId, payload);
+    /** Reporta progresso e devolve a decisão canônica atualizada do backend. */
+    public SalesVideoJob reportProgress(Long jobId, JobProgressPayload payload) {
+        return postForJob("/internal/video/jobs/{jobId}/progress", jobId, payload);
     }
 
     public void reportHeartbeat(Long jobId, JobHeartbeatPayload payload) {

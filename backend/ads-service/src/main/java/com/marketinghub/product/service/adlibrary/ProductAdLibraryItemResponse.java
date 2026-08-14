@@ -5,6 +5,9 @@ import java.time.Instant;
 /** Responsabilidade: representar um anúncio reutilizável encontrado no histórico do produto. */
 public record ProductAdLibraryItemResponse(
     Long creativeId,
+    Long sourceCreativeId,
+    Integer versionNumber,
+    boolean finalCandidate,
     Long experimentId,
     String experimentName,
     String experimentStatus,

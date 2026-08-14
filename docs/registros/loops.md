@@ -1206,6 +1206,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes impedem novo job após bloqueio financeiro ou asset aproveitável; o contrato canônico exige avaliação do material existente e novo gate antes de qualquer gasto adicional.
 - **Fechamento financeiro complementar em 2026-08-13:** cada task/cena aceita passa a registrar imediatamente modelo, duração, créditos e custo estimado por identidade idempotente do provedor. A soma permanece no ledger do job mesmo se uma cena posterior ou a montagem falhar; a primeira recusa por saldo mantém o ciclo `APOLLO_BLOCKED`, impedindo que reconciliações automáticas criem novo consumo.
 - **Fechamento editorial complementar em 2026-08-14:** o Estúdio persiste parecer, percentual aproveitável, evidência, autor e horário por task/cena; render curto com arquivo preservado é encaminhado idempotentemente a um único job de pós-produção, reutilizando o encaminhamento existente e sem abrir nova geração paga.
+- **Fechamento de monitoramento financeiro em 2026-08-14:** cada callback idempotente de task aceita ou liquidada recalcula tasks, créditos e custo do ciclo; o backend persiste alerta visível no Estúdio e muda imediatamente o ciclo para `APOLLO_BLOCKED` ao exceder o teto ou receber saldo insuficiente. A tela consulta essa verdade canônica periodicamente, sem inferir orçamento no frontend.
 
 ## LOOP-FRONTEND-CI-ARTIFACT-CLEANUP-TRANSIENT — build aprovado termina vermelho na limpeza
 

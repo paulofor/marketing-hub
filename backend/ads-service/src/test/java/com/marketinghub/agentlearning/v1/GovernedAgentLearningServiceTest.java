@@ -76,8 +76,57 @@ class GovernedAgentLearningServiceTest {
   @Test
   void shouldMarkCandidateReadyAfterCompleteLocalEvidence() {
     when(repository.findById(1L)).thenReturn(Optional.of(frozen()));
-    assertEquals(
-        "READY_FOR_PROMOTION", service.evaluate(1L, evaluation(true, true, 10, 5)).status());
+    LearningExperimentResponse response = service.evaluate(1L, evaluation(true, true, 10, 5));
+    assertEquals("READY_FOR_PROMOTION", response.status());
+    verify(repository)
+        .save(argThat(value -> value.getDecisionEvidence().contains("externalEffects=false")));
+  }
+
+  /** Deve aceitar Apolo no ambiente compartilhado após a homologação do replay de storyboard. */
+  @Test
+  void shouldFreezeApolloReplayWithoutChangingItsAuthority() {
+    CreateLearningExperimentRequest request = createRequest();
+    LearningExperimentResponse response =
+        service.create(
+            new CreateLearningExperimentRequest(
+                "apollo",
+                request.scopeType(),
+                request.scopeId(),
+                request.memoryId(),
+                request.candidateVersion(),
+                request.baselineVersion(),
+                request.frozenReplaySetJson(),
+                request.holdoutReplaySetJson(),
+                request.minimumGain(),
+                request.maximumCostIncreaseRatio()));
+
+    assertEquals("FROZEN", response.status());
+    assertEquals("apollo", response.agentKey());
+  }
+
+  /** Deve rejeitar qualquer avaliação sombra que tenha produzido efeito externo. */
+  @Test
+  void shouldRejectShadowEvaluationWithExternalEffect() {
+    when(repository.findById(1L)).thenReturn(Optional.of(frozen()));
+    EvaluateLearningExperimentRequest safe = evaluation(true, true, 10, 5);
+    EvaluateLearningExperimentRequest unsafe =
+        new EvaluateLearningExperimentRequest(
+            safe.baselineHoldoutScore(),
+            safe.candidateHoldoutScore(),
+            safe.baselineCost(),
+            safe.candidateCost(),
+            safe.replayCaseCount(),
+            safe.holdoutCaseCount(),
+            safe.regressionPassed(),
+            safe.localValidationPassed(),
+            true,
+            false,
+            false,
+            safe.baselineResultJson(),
+            safe.candidateResultJson());
+
+    assertThrows(ResponseStatusException.class, () -> service.evaluate(1L, unsafe));
+    verify(repository, never()).save(any());
   }
 
   /** Deve rejeitar melhoria aparente quando o holdout é insuficiente. */
@@ -168,6 +217,9 @@ class GovernedAgentLearningServiceTest {
         holdoutCases,
         regression,
         local,
+        false,
+        false,
+        false,
         "{\"score\":70}",
         "{\"score\":77}");
   }

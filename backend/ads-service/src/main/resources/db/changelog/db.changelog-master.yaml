@@ -1804,3 +1804,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-13-commercial-plan-operational-context-longtext.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-14-apollo-budget-monitor.yaml
+      relativeToChangelogFile: true

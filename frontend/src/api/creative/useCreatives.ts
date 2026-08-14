@@ -3,6 +3,9 @@ import axios from "axios";
 
 export interface Creative {
   id: number;
+  sourceCreativeId?: number | null;
+  versionNumber?: number;
+  finalCandidate?: boolean;
   experimentId: number;
   headline: string;
   primaryText: string;
@@ -37,6 +40,9 @@ export interface Creative {
 
 interface ExperimentProductAd {
   creativeId: number;
+  sourceCreativeId?: number | null;
+  versionNumber?: number | null;
+  finalCandidate?: boolean;
   experimentId: number;
   headline?: string | null;
   primaryText?: string | null;
@@ -64,6 +70,9 @@ interface ExperimentProductAdsResponse {
 function mapProductAdToCreative(ad: ExperimentProductAd): Creative {
   return {
     id: ad.creativeId,
+    sourceCreativeId: ad.sourceCreativeId ?? null,
+    versionNumber: ad.versionNumber ?? 1,
+    finalCandidate: ad.finalCandidate ?? false,
     experimentId: ad.experimentId,
     headline: ad.headline ?? "",
     primaryText: ad.primaryText ?? "",

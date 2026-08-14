@@ -70,6 +70,24 @@ public class VideoProductionCycle {
   @Column(name = "last_apollo_failure_at")
   private Instant lastApolloFailureAt;
 
+  @Column(name = "monitored_task_count", nullable = false)
+  private Long monitoredTaskCount = 0L;
+
+  @Column(name = "monitored_credits", nullable = false)
+  private Long monitoredCredits = 0L;
+
+  @Column(name = "budget_monitor_status", nullable = false, length = 32)
+  private String budgetMonitorStatus = "WATCHING";
+
+  @Column(name = "budget_alert_code", length = 64)
+  private String budgetAlertCode;
+
+  @Column(name = "budget_alert_detail", columnDefinition = "LONGTEXT")
+  private String budgetAlertDetail;
+
+  @Column(name = "budget_alert_at")
+  private Instant budgetAlertAt;
+
   @Column(name = "agent_task_id")
   private Long agentTaskId;
 

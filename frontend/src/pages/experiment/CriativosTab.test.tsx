@@ -16,6 +16,86 @@ describe("CriativosTab", () => {
   afterEach(() => {
     cleanup();
   });
+
+  it("separa conceitos, revisões e candidatos finais no resumo do portfólio", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.endsWith("/products/experiments/1/ads-in-use")) {
+        return Promise.resolve({
+          data: {
+            ads: [
+              {
+                creativeId: 10,
+                experimentId: 1,
+                sourceCreativeId: null,
+                versionNumber: 1,
+                finalCandidate: false,
+                headline: "Conceito A",
+                status: "DRAFT",
+              },
+              {
+                creativeId: 11,
+                experimentId: 1,
+                sourceCreativeId: 10,
+                versionNumber: 2,
+                finalCandidate: true,
+                headline: "Conceito A aprovado",
+                status: "READY",
+              },
+              {
+                creativeId: 20,
+                experimentId: 1,
+                sourceCreativeId: null,
+                versionNumber: 1,
+                finalCandidate: false,
+                headline: "Conceito B",
+                status: "DRAFT",
+              },
+              {
+                creativeId: 21,
+                experimentId: 1,
+                sourceCreativeId: 20,
+                versionNumber: 2,
+                finalCandidate: false,
+                headline: "Conceito B revisão",
+                status: "DRAFT",
+              },
+              {
+                creativeId: 22,
+                experimentId: 1,
+                sourceCreativeId: 21,
+                versionNumber: 3,
+                finalCandidate: false,
+                headline: "Conceito B ajuste",
+                status: "DRAFT",
+              },
+            ],
+          },
+        });
+      }
+      if (url.endsWith("/experiments/1")) {
+        return Promise.resolve({ data: { creativesToGenerate: 0 } });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <CriativosTab experimentId="1" />
+      </QueryClientProvider>,
+    );
+
+    const summary = await screen.findByLabelText(
+      "Resumo das linhagens criativas",
+    );
+    expect(summary).toHaveTextContent("2Conceitos originais");
+    expect(summary).toHaveTextContent("3Revisões acumuladas");
+    expect(summary).toHaveTextContent("1Candidatos finais");
+    expect(summary).toHaveTextContent(
+      "Total técnico: 5 registros = 2 conceitos + 3 revisões",
+    );
+  });
+
   it("shows preview", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url.endsWith("/products/experiments/1/ads-in-use")) {

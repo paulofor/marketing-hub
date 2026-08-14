@@ -73,6 +73,10 @@ class ProductServiceTest {
             invocation -> {
               String sql = invocation.getArgument(0);
               assertThat(sql).contains("e.niche_id = ?\nORDER BY");
+              assertThat(sql)
+                  .contains("c.source_creative_id AS source_creative_id")
+                  .contains("c.version_number AS version_number")
+                  .contains("END AS final_candidate");
               assertThat(sql).doesNotContain("?ORDER BY");
               return java.util.List.of();
             });

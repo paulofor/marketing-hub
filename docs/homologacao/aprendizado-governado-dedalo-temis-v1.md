@@ -1,4 +1,4 @@
-# Matriz de homologação — aprendizado governado de Dédalo e Têmis v1
+# Matriz de homologação — aprendizado governado de agentes v1
 
 ## Objetivo
 
@@ -16,6 +16,8 @@ sem regressão, vazamento entre experimentos ou aumento de custo acima do limite
 | Segregação | impedir leitura de estratégia de outro agente, experimento ou tenant |
 | Replay | usar falhas históricas e sucessos para prevenir regressão; holdout não participa da criação da candidata |
 | Autoridade | workers não avaliam, promovem, alteram código, publicam ou gastam |
+| Apolo | comparar storyboards congelados sem OpenAI, provider de vídeo, gasto ou publicação |
+| Efeitos externos | rejeitar a avaliação se ela relatar provider, autorização de gasto ou publicação |
 | Dispositivos | replays de Dédalo incluem desktop, iPhone e Android; Têmis inclui placements e landing mobile/desktop |
 
 Uma rodada local integral sem defeito conclui a homologação. Se surgir defeito, após a última correção

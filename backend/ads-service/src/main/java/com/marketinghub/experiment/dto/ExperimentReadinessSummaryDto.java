@@ -14,4 +14,6 @@ public record ExperimentReadinessSummaryDto(
     long geraLandingCompletedStageCount,
     long geraLandingRequiredStageCount,
     List<TargetingElementType> missingTargetingTypes,
-    List<ExperimentReadinessIssueDto> issues) {}
+    List<ExperimentReadinessIssueDto> issues,
+    boolean eligibleForRunning,
+    List<ExperimentRunningGateRequirementDto> runningGateRequirements) {}

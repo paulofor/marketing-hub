@@ -30,6 +30,7 @@ public class LandingGenerationAgentExecutionService {
   private static final String STAGE = "landing-generation-agent-v1";
   private static final String PENDING = "INICIADO";
   private static final String PROCESSING = "PROCESSANDO";
+  private static final List<String> ACTIVE_STATUSES = List.of(PENDING, PROCESSING);
   private static final String BUILD_MARKER_PREFIX = "CLAIMED_BY_BUILD:";
   private static final String DEPLOY_RECOVERY_POLICY = "RETRY_ON_EXECUTOR_DEPLOY";
   private static final String COMMERCIAL_HOMOLOGATION_SOURCE =
@@ -79,6 +80,14 @@ public class LandingGenerationAgentExecutionService {
   /** Cria uma execução segregada com o parecer que motivou a correção. */
   @Transactional
   public void enqueue(Long experimentId, String autonomousCycleId, String qualityReviewJson) {
+    if (repository.existsByExperimentIdAndStageCodeAndAutonomousCycleIdAndStatusIn(
+        experimentId, STAGE, autonomousCycleId, ACTIVE_STATUSES)) {
+      log.info(
+          "Correção de landing já ativa; nova reprovação não será duplicada. experimentId={} autonomousCycleId={}",
+          experimentId,
+          autonomousCycleId);
+      return;
+    }
     Instant now = Instant.now();
     repository.save(
         GeraLandingStageExecution.builder()

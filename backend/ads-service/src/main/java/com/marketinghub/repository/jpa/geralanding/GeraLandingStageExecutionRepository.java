@@ -98,6 +98,10 @@ public interface GeraLandingStageExecutionRepository
       findTop20ByExperimentIdAndStageCodeAndStatusNotOrderByExecutionRequestedAtDesc(
           Long experimentId, String stageCode, String status);
 
+  /** Verifica se o ciclo já possui trabalho ativo da etapa, evitando fila concorrente duplicada. */
+  boolean existsByExperimentIdAndStageCodeAndAutonomousCycleIdAndStatusIn(
+      Long experimentId, String stageCode, String autonomousCycleId, List<String> statuses);
+
   /**
    * Lê do banco os melhores insumos de páginas de venda já persistidos pelo MOIS para enriquecer
    * prompts do GeraLanding.

@@ -58,6 +58,33 @@ class BackendVideoClientTest {
                 .isEqualTo("/internal/video/sales-videos/profiles/3");
     }
 
+    /** Deve continuar buscando jobs persistidos quando a reconciliação estiver temporariamente indisponível. */
+    @Test
+    void shouldFetchPersistedJobsWhenApolloReconciliationFails() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(500).setBody("reconcile unavailable"));
+        server.enqueue(new MockResponse().setResponseCode(500).setBody("reconcile unavailable"));
+        server.enqueue(new MockResponse().setResponseCode(500).setBody("reconcile unavailable"));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("[]"));
+        BackendVideoClient client = new BackendVideoClient(
+                WebClient.builder(),
+                properties(),
+                new VideoJobObservabilityService(new SimpleMeterRegistry()));
+
+        assertThat(client.fetchPendingJobs(10)).isEmpty();
+
+        assertThat(server.takeRequest().getPath())
+                .isEqualTo("/api/internal/sales-videos/autonomy/v1/apollo/reconcile");
+        assertThat(server.takeRequest().getPath())
+                .isEqualTo("/api/internal/sales-videos/autonomy/v1/apollo/reconcile");
+        assertThat(server.takeRequest().getPath())
+                .isEqualTo("/api/internal/sales-videos/autonomy/v1/apollo/reconcile");
+        assertThat(server.takeRequest().getPath())
+                .isEqualTo("/internal/video/jobs?status=VIDEO_REQUESTED&limit=10");
+    }
+
     /** Configura o client para apontar para o backend simulado. */
     private VideoManagementProperties properties() {
         VideoManagementProperties properties = new VideoManagementProperties();

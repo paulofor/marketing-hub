@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
+/** Responsabilidade: consumir os contratos internos de jobs de vídeo expostos pelo backend. */
 @Component
 public class BackendVideoClient {
     private static final ParameterizedTypeReference<List<SalesVideoJob>> JOB_LIST_TYPE =
@@ -48,8 +49,13 @@ public class BackendVideoClient {
         this.observabilityService = observabilityService;
     }
 
+    /** Reconcilia novos ciclos e, mesmo se essa etapa falhar, consulta jobs já persistidos. */
     public List<SalesVideoJob> fetchPendingJobs(int limit) {
-        reconcileApolloQueue();
+        try {
+            reconcileApolloQueue();
+        } catch (BackendIntegrationException ex) {
+            log.warn("Reconciliação de Apolo indisponível; consultando jobs já persistidos sem criar novos jobs", ex);
+        }
         return fetchJobsByStatus(SalesVideoStatus.VIDEO_REQUESTED, limit);
     }
 

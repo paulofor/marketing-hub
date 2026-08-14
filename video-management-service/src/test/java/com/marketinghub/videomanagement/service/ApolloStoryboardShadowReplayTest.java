@@ -57,7 +57,7 @@ class ApolloStoryboardShadowReplayTest {
         return objectMapper.readTree("""
                 {"budgetLimitUsd":10.00,"targetDurationSeconds":30,"sceneCount":2,
                  "providerClipDurationSeconds":15,"expectedCredits":900,"expectedCostUsd":9.00,
-                 "cut_plan":[{},{},{},{}]}
+                 "cut_plan":[{},{},{},{},{}]}
                 """);
     }
 
@@ -65,10 +65,11 @@ class ApolloStoryboardShadowReplayTest {
     private JsonNode currentPlan() throws Exception {
         return objectMapper.readTree("""
                 {"creativeRationale":"Cenas históricas repetitivas","cuts":[
-                 {"order":1,"durationSeconds":8,"commercialRole":"HOOK_DOR","visualObjective":"Mulher no escritório com texto diagnóstico","reuseExistingMaterial":false,"postProductionText":""},
-                 {"order":2,"durationSeconds":8,"commercialRole":"HOOK_DOR","visualObjective":"Mulher no escritório com texto diagnóstico","reuseExistingMaterial":false,"postProductionText":""},
-                 {"order":3,"durationSeconds":7,"commercialRole":"RESULTADO","visualObjective":"Mulher no escritório com texto diagnóstico","reuseExistingMaterial":false,"postProductionText":""},
-                 {"order":4,"durationSeconds":7,"commercialRole":"CTA","visualObjective":"Mulher no escritório com texto diagnóstico","reuseExistingMaterial":false,"postProductionText":""}]}
+                 {"order":1,"durationSeconds":6,"commercialRole":"HOOK_DOR","narrativePhase":"HOOK","visualObjective":"Mulher no escritório com texto diagnóstico","continuityAnchor":"Mesma mulher no escritório","reuseExistingMaterial":false,"postProductionText":""},
+                 {"order":2,"durationSeconds":6,"commercialRole":"HOOK_DOR","narrativePhase":"SETUP","visualObjective":"Mulher no escritório com texto diagnóstico","continuityAnchor":"Mesma mulher no escritório","reuseExistingMaterial":false,"postProductionText":""},
+                 {"order":3,"durationSeconds":6,"commercialRole":"RESULTADO","narrativePhase":"TRANSFORMATION","visualObjective":"Mulher no escritório com texto diagnóstico","continuityAnchor":"Mesma mulher no escritório","reuseExistingMaterial":false,"postProductionText":""},
+                 {"order":4,"durationSeconds":6,"commercialRole":"PROVA","narrativePhase":"PROOF","visualObjective":"Mulher no escritório com texto diagnóstico","continuityAnchor":"Mesma mulher no escritório","reuseExistingMaterial":false,"postProductionText":""},
+                 {"order":5,"durationSeconds":6,"commercialRole":"CTA","narrativePhase":"CTA","visualObjective":"Mulher no escritório com texto diagnóstico","continuityAnchor":"Mesma mulher no escritório","reuseExistingMaterial":false,"postProductionText":""}]}
                 """);
     }
 
@@ -76,10 +77,11 @@ class ApolloStoryboardShadowReplayTest {
     private JsonNode candidatePlan() throws Exception {
         return objectMapper.readTree("""
                 {"creativeRationale":"Progressão comercial distinta com material preservado","cuts":[
-                 {"order":1,"durationSeconds":8,"commercialRole":"HOOK_DOR","visualObjective":"Cliente percebe lacunas vazias na agenda durante a manhã","reuseExistingMaterial":true,"postProductionText":"Agenda vazia custa caro"},
-                 {"order":2,"durationSeconds":8,"commercialRole":"RESULTADO","visualObjective":"Profissional atende cliente em bancada organizada e iluminada","reuseExistingMaterial":true,"postProductionText":"Previsibilidade de clientes"},
-                 {"order":3,"durationSeconds":7,"commercialRole":"MECANISMO","visualObjective":"Mãos organizam cartões físicos em sequência simples de acompanhamento","reuseExistingMaterial":false,"postProductionText":"Método em etapas"},
-                 {"order":4,"durationSeconds":7,"commercialRole":"CTA","visualObjective":"Profissional encerra o dia satisfeita com espaço visual limpo ao lado","reuseExistingMaterial":false,"postProductionText":"Comece agora"}]}
+                 {"order":1,"durationSeconds":6,"commercialRole":"HOOK_DOR","narrativePhase":"HOOK","visualObjective":"Cliente percebe lacunas vazias na agenda durante a manhã","continuityAnchor":"Mesma profissional no salão","reuseExistingMaterial":true,"postProductionText":"Agenda vazia custa caro"},
+                 {"order":2,"durationSeconds":6,"commercialRole":"MECANISMO","narrativePhase":"DISCOVERY","visualObjective":"Mãos organizam cartões físicos em sequência de acompanhamento","continuityAnchor":"Mesma bancada e luz da manhã","reuseExistingMaterial":false,"postProductionText":"Método em etapas"},
+                 {"order":3,"durationSeconds":6,"commercialRole":"RESULTADO","narrativePhase":"TRANSFORMATION","visualObjective":"Profissional atende cliente em bancada organizada e iluminada","continuityAnchor":"Mesma profissional e figurino","reuseExistingMaterial":true,"postProductionText":"Previsibilidade de clientes"},
+                 {"order":4,"durationSeconds":6,"commercialRole":"PROVA","narrativePhase":"PROOF","visualObjective":"Agenda física aberta mostra horários ocupados escritos à mão","continuityAnchor":"Mesma bancada ao fim do dia","reuseExistingMaterial":false,"postProductionText":"Rotina previsível"},
+                 {"order":5,"durationSeconds":6,"commercialRole":"CTA","narrativePhase":"CTA","visualObjective":"Profissional encerra o dia satisfeita com espaço visual limpo ao lado","continuityAnchor":"Mesma profissional conclui a história","reuseExistingMaterial":false,"postProductionText":"Comece agora"}]}
                 """);
     }
 }

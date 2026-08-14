@@ -350,7 +350,9 @@ public class VideoProductionCycleService {
       cut.put("order", index + 1);
       cut.put("duration_seconds", baseDuration + (index < remainder ? 1 : 0));
       cut.put("role", cutRole(index, cutCount));
+      cut.put("narrative_phase", narrativePhase(index, cutCount));
       cut.put("visual_objective", cutObjective(index, cutCount));
+      cut.put("continuity_anchor", "Mesma personagem, figurino, ambiente e luz do plano anterior.");
       cut.put("source_scene_plan", nullToEmpty(project.getScenePlan()));
       cuts.add(cut);
     }
@@ -360,20 +362,33 @@ public class VideoProductionCycleService {
   /** Distribui dor, resultado, mecanismo, prova, oferta e CTA ao longo do plano de cortes. */
   private String cutRole(int index, int count) {
     if (index == 0) return "HOOK_DOR";
-    if (index == 1) return "RESULTADO";
     if (index == count - 1) return "CTA";
-    if (index == count - 2) return "OFERTA_PROVA";
+    if (index >= count - 2) return "PROVA";
+    if (index >= Math.max(2, count / 2)) return "RESULTADO";
     return "MECANISMO";
+  }
+
+  /** Distribui os cortes em uma progressão que não retorna a fases narrativas anteriores. */
+  private String narrativePhase(int index, int count) {
+    if (index == 0) return "HOOK";
+    if (index == 1) return "SETUP";
+    if (index == count - 1) return "CTA";
+    if (index == count - 2) return "PROOF";
+    if (index >= Math.max(3, count / 2)) return "TRANSFORMATION";
+    if (index == 2) return "DISCOVERY";
+    return "DEMONSTRATION";
   }
 
   /** Define uma ação visual única para impedir clipes longos, genéricos ou repetitivos. */
   private String cutObjective(int index, int count) {
     if (index == 0) return "Abrir com dor reconhecível e ação imediata, sem texto embutido.";
-    if (index == 1) return "Mostrar rapidamente o resultado desejado de forma plausível.";
+    if (index == 1) return "Situar a dor no cotidiano e criar expectativa para a descoberta.";
     if (index == count - 1)
       return "Encerrar com gesto de decisão e área limpa para CTA em pós-produção.";
     if (index == count - 2)
       return "Mostrar prova ou entregável concreto sem interface ou letras geradas.";
+    if (index >= Math.max(3, count / 2))
+      return "Mostrar transformação plausível causada pelas microações já demonstradas.";
     return "Demonstrar uma única microação do mecanismo, preservando continuidade visual.";
   }
 

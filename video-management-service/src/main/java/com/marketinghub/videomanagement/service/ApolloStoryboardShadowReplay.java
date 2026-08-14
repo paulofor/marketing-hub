@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 /** Responsabilidade: comparar storyboards de Apolo em replay sem executar provider ou autorizar gasto. */
 @Service
 public class ApolloStoryboardShadowReplay {
-    private static final Set<String> REQUIRED_ROLES = Set.of("HOOK_DOR", "RESULTADO", "MECANISMO", "CTA");
+    private static final Set<String> REQUIRED_ROLES = Set.of("HOOK_DOR", "RESULTADO", "MECANISMO", "PROVA", "CTA");
     private final ApolloStoryboardPlanner planner;
 
     /** Recebe somente o validador determinístico usado pelo fluxo real de Apolo. */

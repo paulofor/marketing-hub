@@ -398,7 +398,9 @@ public class RunwayVideoProvider implements VideoProvider {
                     cut.path("order").asInt(index + 1),
                     cut.path("duration_seconds").asInt(3),
                     cut.path("role").asText("MECANISMO"),
-                    cut.path("visual_objective").asText("ação visual única")));
+                    "%s Continuidade obrigatória: %s".formatted(
+                            cut.path("visual_objective").asText("ação visual única"),
+                            cut.path("continuity_anchor").asText("mesma personagem e direção visual"))));
         }
         return String.join(" ", selected);
     }

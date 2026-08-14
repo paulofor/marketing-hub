@@ -57,7 +57,7 @@ class ApolloStoryboardPlannerTest {
     private JsonNode metadata(String budget) throws Exception {
         return objectMapper.readTree("""
                 {"budgetLimitUsd":%s,"targetDurationSeconds":30,"sceneCount":2,
-                 "providerClipDurationSeconds":15,"cut_plan":[{},{},{},{}]}
+                 "providerClipDurationSeconds":15,"cut_plan":[{},{},{},{},{}]}
                 """.formatted(budget));
     }
 
@@ -68,10 +68,11 @@ class ApolloStoryboardPlannerTest {
                 : "Mostrar pessoa reconhecendo uma dificuldade cotidiana";
         return objectMapper.readTree("""
                 {"creativeRationale":"Progressão comercial concreta e sem repetição","cuts":[
-                 {"order":1,"durationSeconds":8,"commercialRole":"HOOK_DOR","visualObjective":"%s","reuseExistingMaterial":false,"postProductionText":"Dor"},
-                 {"order":2,"durationSeconds":8,"commercialRole":"RESULTADO","visualObjective":"Mostrar mudança prática em ambiente iluminado","reuseExistingMaterial":false,"postProductionText":"Resultado"},
-                 {"order":3,"durationSeconds":7,"commercialRole":"MECANISMO","visualObjective":"Demonstrar uma ação simples do método","reuseExistingMaterial":false,"postProductionText":"Mecanismo"},
-                 {"order":4,"durationSeconds":7,"commercialRole":"CTA","visualObjective":"Encerrar com gesto de decisão e espaço limpo","reuseExistingMaterial":false,"postProductionText":"Começar agora"}]}
+                 {"order":1,"durationSeconds":6,"commercialRole":"HOOK_DOR","narrativePhase":"HOOK","visualObjective":"%s","continuityAnchor":"Mesma protagonista no espelho","reuseExistingMaterial":false,"postProductionText":"Dor"},
+                 {"order":2,"durationSeconds":6,"commercialRole":"MECANISMO","narrativePhase":"DISCOVERY","visualObjective":"Demonstrar uma ação simples do método","continuityAnchor":"Mesma protagonista e figurino","reuseExistingMaterial":false,"postProductionText":"Mecanismo"},
+                 {"order":3,"durationSeconds":6,"commercialRole":"RESULTADO","narrativePhase":"TRANSFORMATION","visualObjective":"Mostrar mudança prática em ambiente iluminado","continuityAnchor":"Mesmo figurino após o ajuste","reuseExistingMaterial":false,"postProductionText":"Resultado"},
+                 {"order":4,"durationSeconds":6,"commercialRole":"PROVA","narrativePhase":"PROOF","visualObjective":"Mostrar entregável físico como prova concreta","continuityAnchor":"Mesmo ambiente e luz natural","reuseExistingMaterial":false,"postProductionText":"Prova"},
+                 {"order":5,"durationSeconds":6,"commercialRole":"CTA","narrativePhase":"CTA","visualObjective":"Encerrar com gesto de decisão e espaço limpo","continuityAnchor":"Mesma protagonista conclui a história","reuseExistingMaterial":false,"postProductionText":"Começar agora"}]}
                 """.formatted(firstObjective));
     }
 }

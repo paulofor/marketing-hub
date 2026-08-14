@@ -149,6 +149,45 @@ class McpControllerTest {
         jdbcTemplate.update("INSERT INTO studio_cost_ledger_entry VALUES (2, 'MEDIA_ASSET', '10', NULL, NULL, 7)");
         jdbcTemplate.update("INSERT INTO image_generation_request VALUES (20, 'image-job-20')");
         jdbcTemplate.update("INSERT INTO studio_cost_ledger_entry VALUES (3, 'IMAGE_GENERATION_REQUEST', 'image-job-20', 0.10, NULL, 7)");
+        jdbcTemplate.execute("DROP TABLE IF EXISTS governed_agent_learning_experiment");
+        jdbcTemplate.execute("DROP TABLE IF EXISTS premium_agent_memory");
+        jdbcTemplate.execute("""
+                CREATE TABLE premium_agent_memory (
+                    id BIGINT PRIMARY KEY,
+                    status VARCHAR(32),
+                    specialty VARCHAR(100),
+                    content LONGVARCHAR
+                )
+                """);
+        jdbcTemplate.execute("""
+                CREATE TABLE governed_agent_learning_experiment (
+                    id BIGINT PRIMARY KEY,
+                    agent_key VARCHAR(64),
+                    scope_type VARCHAR(64),
+                    scope_id VARCHAR(96),
+                    baseline_version VARCHAR(96),
+                    candidate_version VARCHAR(96),
+                    status VARCHAR(32),
+                    baseline_result_json LONGVARCHAR,
+                    candidate_result_json LONGVARCHAR,
+                    decision_evidence LONGVARCHAR,
+                    regression_passed BOOLEAN,
+                    local_validation_passed BOOLEAN,
+                    created_at TIMESTAMP,
+                    evaluated_at TIMESTAMP,
+                    promoted_at TIMESTAMP,
+                    memory_id BIGINT
+                )
+                """);
+        jdbcTemplate.update(
+                "INSERT INTO premium_agent_memory VALUES (44, 'CANDIDATE', 'VIDEO_STORYBOARD', 'Melhorar narrativa e diversidade visual')");
+        jdbcTemplate.update("""
+                INSERT INTO governed_agent_learning_experiment
+                VALUES (7, 'apollo', 'VIDEO_STORYBOARD', '4', 'api-v1', 'codex-v2',
+                        'READY_FOR_PROMOTION', '{"score":70,"cost":1}',
+                        '{"score":82,"cost":1}', 'holdoutGain=12; externalEffects=false',
+                        TRUE, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, 44)
+                """);
         jdbcTemplate.execute("DROP TABLE IF EXISTS leads");
         jdbcTemplate.execute("CREATE TABLE leads (id BIGINT PRIMARY KEY, name VARCHAR(100), email VARCHAR(150))");
         jdbcTemplate.update("INSERT INTO leads (id, name, email) VALUES (?,?,?)", 1L, "Ana", "ana@example.com");
@@ -362,8 +401,9 @@ class McpControllerTest {
                                 {"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"db_list_tables","arguments":{}}}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.structuredContent.tableCount").value(6))
-                .andExpect(jsonPath("$.result.structuredContent.tables[2]").value("LEADS"));
+                .andExpect(jsonPath("$.result.structuredContent.tableCount").value(8))
+                .andExpect(jsonPath("$.result.structuredContent.tables")
+                        .value(org.hamcrest.Matchers.hasItem("LEADS")));
     }
 
     /**
@@ -894,6 +934,27 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.jsonrpc").value("2.0"))
                 .andExpect(jsonPath("$.id").doesNotExist())
                 .andExpect(jsonPath("$.error.code").value(-32601));
+    }
+
+    /**
+     * Garante que o MCP exponha a decisão governada de Apolo sem depender de consultas SQL manuais.
+     */
+    @Test
+    void shouldExposeApolloGovernedLearningExperiments() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":34,"method":"tools/call","params":{"name":"apollo_learning_experiments","arguments":{}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.structuredContent.agentKey").value("apollo"))
+                .andExpect(jsonPath("$.result.structuredContent.count").value(1))
+                .andExpect(jsonPath("$.result.structuredContent.experiments[0].MEMORY_STATUS")
+                        .value("CANDIDATE"))
+                .andExpect(jsonPath("$.result.structuredContent.experiments[0].REGRESSION_PASSED")
+                        .value(true))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("codex-v2")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("holdoutGain=12")));
     }
 
     /**

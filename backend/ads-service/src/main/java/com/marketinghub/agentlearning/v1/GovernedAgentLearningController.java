@@ -11,12 +11,16 @@ import org.springframework.web.bind.annotation.*;
 public class GovernedAgentLearningController {
   private final GovernedAgentLearningService service;
   private final ApolloLearningOrchestrationService apolloService;
+  private final ApolloSkillCandidateService skillService;
 
   /** Inicializa o controller com a governança central. */
   public GovernedAgentLearningController(
-      GovernedAgentLearningService service, ApolloLearningOrchestrationService apolloService) {
+      GovernedAgentLearningService service,
+      ApolloLearningOrchestrationService apolloService,
+      ApolloSkillCandidateService skillService) {
     this.service = service;
     this.apolloService = apolloService;
+    this.skillService = skillService;
   }
 
   /** Recebe um replay real de Apolo e acumula a amostra sem liberar geração paga. */
@@ -58,5 +62,30 @@ public class GovernedAgentLearningController {
   @GetMapping("/agents/{agentKey}/experiments")
   public List<LearningExperimentResponse> list(@PathVariable String agentKey) {
     return service.list(agentKey);
+  }
+
+  /** Lista skills candidatas e promovidas do piloto de Apolo. */
+  @GetMapping("/agents/apollo/skills")
+  public List<SkillCandidateResponse> skills() {
+    return skillService.list();
+  }
+
+  /** Promove explicitamente uma skill que passou replay e segurança. */
+  @PostMapping("/agents/apollo/skills/{id}/promotion")
+  public SkillCandidateResponse promoteSkill(@PathVariable Long id) {
+    return skillService.promote(id);
+  }
+
+  /** Registra o resultado real para detectar regressão pós-promoção. */
+  @PostMapping("/agents/apollo/skills/{id}/monitoring")
+  public SkillCandidateResponse monitorSkill(
+      @PathVariable Long id, @Valid @RequestBody SkillMonitoringRequest request) {
+    return skillService.monitor(id, request);
+  }
+
+  /** Reverte explicitamente uma skill promovida. */
+  @PostMapping("/agents/apollo/skills/{id}/rollback")
+  public SkillCandidateResponse rollbackSkill(@PathVariable Long id, @RequestParam String reason) {
+    return skillService.rollback(id, reason);
   }
 }

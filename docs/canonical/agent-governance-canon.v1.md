@@ -145,6 +145,14 @@ Na v1, os agentes homologados são `landing-generator`, `meta-ad-approver` e `ap
 replay de storyboard para comparar qualidade narrativa, diversidade, cobertura comercial,
 reaproveitamento e orçamento, sem chamar OpenAI ou providers de vídeo.
 
+Por decisão de 2026-08-14, Apolo é o piloto de evolução persistente de skills. Uma melhoria nasce
+como `SkillCandidate` versionada, vinculada às trajetórias reais que lhe deram origem e ao experimento
+congelado. Um crítico independente bloqueia mudanças que ampliem autoridade, gasto, publicação,
+credenciais ou removam QA. A promoção é explícita, inicia em monitoramento e preserva a baseline para
+rollback. Incidente de segurança, custo fora do teto ou regressão de aprovação reverte a candidata;
+a própria skill nunca autoriza provider pago, gasto ou publicação. A infraestrutura deve permanecer
+extensível, mas nenhum outro agente entra no piloto sem decisão canônica e avaliador próprio.
+
 ## Coordenação entre agentes
 
 Quando Estrategista, Operador de Crescimento e Especialista em Aprovação de Anúncios participarem

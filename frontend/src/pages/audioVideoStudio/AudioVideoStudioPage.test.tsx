@@ -204,6 +204,26 @@ describe("AudioVideoStudioPage", () => {
           ],
         });
       }
+      if (url === "/api/internal/agent-learning/v1/agents/apollo/skills") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 3,
+              experimentId: 7,
+              skillKey: "MUSA_COMMERCIAL_STORYBOARD",
+              baselineVersion: "api-v1",
+              candidateVersion: "codex-v2",
+              diffSummary: "Remove repeticao e demonstra o mecanismo.",
+              provenanceJson: '{"jobIds":[1,2]}',
+              safetyDecision: "APPROVED",
+              safetyEvidence: "autoridade preservada",
+              status: "READY_FOR_PROMOTION",
+              monitoredCases: 0,
+              approvedCases: 0,
+            },
+          ],
+        });
+      }
       return Promise.resolve({ data: [] });
     });
 
@@ -214,6 +234,9 @@ describe("AudioVideoStudioPage", () => {
     expect(screen.getByText(/Candidata codex-v2: nota 82/i)).toBeTruthy();
     expect(screen.getByText(/Memoria candidata #44/i)).toBeTruthy();
     expect(screen.getByText(/holdoutGain=12/i)).toBeTruthy();
+    expect(screen.getByText(/MUSA_COMMERCIAL_STORYBOARD/i)).toBeTruthy();
+    expect(screen.getByText(/seguranca APPROVED/i)).toBeTruthy();
+    expect(screen.getByText(/Remove repeticao/i)).toBeTruthy();
   });
 
   it("preenche e salva o blueprint cinematografico da MUSA v7", async () => {

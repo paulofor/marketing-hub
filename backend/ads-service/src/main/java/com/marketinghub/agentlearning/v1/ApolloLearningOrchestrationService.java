@@ -30,6 +30,7 @@ public class ApolloLearningOrchestrationService {
   private final GovernedAgentLearningExperimentRepository experiments;
   private final AgentMemoryService memoryService;
   private final GovernedAgentLearningService learningService;
+  private final ApolloSkillCandidateService skillService;
   private final ObjectMapper objectMapper;
   private final Clock clock = Clock.systemUTC();
 
@@ -39,11 +40,13 @@ public class ApolloLearningOrchestrationService {
       GovernedAgentLearningExperimentRepository experiments,
       AgentMemoryService memoryService,
       GovernedAgentLearningService learningService,
+      ApolloSkillCandidateService skillService,
       ObjectMapper objectMapper) {
     this.observations = observations;
     this.experiments = experiments;
     this.memoryService = memoryService;
     this.learningService = learningService;
+    this.skillService = skillService;
     this.objectMapper = objectMapper;
   }
 
@@ -125,8 +128,37 @@ public class ApolloLearningOrchestrationService {
                 false,
                 resultJson(frozen, false),
                 resultJson(frozen, true)));
+    skillService.createForExperiment(
+        evaluated,
+        skillContent(request.candidateVersion()),
+        "Transforma padrões do replay em regras de roteiro, diversidade visual, demonstração do mecanismo e controle de retrabalho.",
+        provenanceJson(frozen, request));
     return new ApolloLearningObservationResponse(
         observation.getId(), sample.size(), REQUIRED_CASES, evaluated.id(), evaluated.status());
+  }
+
+  /** Produz a skill operacional restrita ao planejamento criativo, sem ampliar autoridade. */
+  private String skillContent(String candidateVersion) {
+    return "# Skill "
+        + candidateVersion
+        + "\n"
+        + "- Remover linguagem interna e repetições do roteiro.\n"
+        + "- Demonstrar visualmente dor, mecanismo, transformação e CTA.\n"
+        + "- Reaproveitar ativos aprovados antes de solicitar nova geração.\n"
+        + "- Submeter storyboard ao QA independente e ao teto aprovado por Plutus.\n"
+        + "- Nunca liberar provider, gasto ou publicação por decisão desta skill.";
+  }
+
+  /** Registra as trajetórias exatas que originaram a candidata. */
+  private String provenanceJson(
+      List<ApolloLearningObservation> frozen, ApolloLearningObservationRequest request) {
+    return write(
+        java.util.Map.of(
+            "source", "APOLLO_REAL_STORYBOARD_TRAJECTORIES",
+            "baselineVersion", request.baselineVersion(),
+            "candidateVersion", request.candidateVersion(),
+            "qaReviewer", QA_REVIEWER,
+            "jobIds", frozen.stream().map(ApolloLearningObservation::getJobId).toList()));
   }
 
   /** Bloqueia qualquer relato que tente usar o replay para gastar, publicar ou chamar provider. */
@@ -223,7 +255,8 @@ public class ApolloLearningOrchestrationService {
                   try {
                     return objectMapper.readTree(value.getComparisonJson());
                   } catch (JsonProcessingException ex) {
-                    throw new IllegalStateException("Caso congelado de Apolo contém JSON inválido", ex);
+                    throw new IllegalStateException(
+                        "Caso congelado de Apolo contém JSON inválido", ex);
                   }
                 })
             .toList());

@@ -21,6 +21,8 @@ sem depender de atualização manual e sem duplicação em callbacks repetidos.
 
 O agente pode corrigir somente rascunhos. Ele não aprova o próprio trabalho, publica, compra, gasta, muda preço, ativa campanha, avança pipeline ou altera seus contratos. Publicação e campanha permanecem sujeitas aos gates e à autorização humana.
 
+Quando Têmis apontar `LANDING_PAGE_HTML`, Dédalo pode editar de forma governada a composição estrutural do HTML já gerado: reorganizar hierarquia visual dentro de seções, reordenar seções, trocar wrappers, grids e flex, remover decoração prejudicial e corrigir tags semânticas. A edição deve preservar ids funcionais, campos, checkout, CTA principal, preço, oferta, tracking, scripts, assets aprovados e todos os contratos do funil. Mudanças de promessa, copy ou imagem continuam pertencendo às respectivas etapas causais. Toda versão editada retorna obrigatoriamente ao Quality Review independente e continua sujeita aos limites de convergência, custo e idempotência por hash.
+
 ## Autonomia orientada ao objetivo
 
 O agente deve trabalhar sem solicitar escolhas humanas de copy, layout, CTA, imagens ou responsividade quando houver contexto e evidência suficientes. Pode reconstruir livremente copy, hierarquia, imagens e HTML usando as etapas canônicas, inclusive reiniciando pelo wireframe quando uma correção localizada não resolver a causa. Em cada execução ele audita visual e funcionalmente desktop, iPhone e Android, compara ao menos três estratégias, escolhe a de melhor aderência comercial e entrega um backlog causal ordenado para execução pelo pipeline oficial. O plano deve incluir critérios por dispositivo, métricas esperadas e condições explícitas de continuar, ajustar e parar.

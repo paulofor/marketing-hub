@@ -1,3 +1,4 @@
+import axios from "axios";
 import { FormEvent, useState } from "react";
 import { BarChart3, ExternalLink, PlusCircle, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -19,6 +20,28 @@ const initialForm = {
   successEvidence: "",
   createdBy: "operador@marketinghub.io",
 };
+
+const MAX_VIDEO_FILE_SIZE_BYTES = 512 * 1024 * 1024;
+
+function formatFileSize(size: number) {
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function getUploadErrorMessage(error: unknown) {
+  if (axios.isAxiosError(error)) {
+    if (error.response?.status === 413) {
+      return "O arquivo excede o limite de 512 MB. Comprima o video e tente novamente.";
+    }
+    const backendMessage = error.response?.data?.message;
+    if (typeof backendMessage === "string" && backendMessage.trim()) {
+      return backendMessage;
+    }
+    if (error.code === "ECONNABORTED" || !error.response) {
+      return "O envio foi interrompido. Verifique sua conexao e tente novamente; o arquivo nao foi cadastrado parcialmente.";
+    }
+  }
+  return "Nao foi possivel enviar o video. Revise o arquivo e tente novamente.";
+}
 
 function formatDate(value?: string | null) {
   if (!value) {
@@ -69,6 +92,12 @@ export default function AudioVideoStudioVideosAnalysisPage() {
     setFormError("");
     if (!selectedFile && !form.sourceUrl.trim()) {
       setFormError("Envie um arquivo de video ou informe uma URL publica.");
+      return;
+    }
+    if (selectedFile && selectedFile.size > MAX_VIDEO_FILE_SIZE_BYTES) {
+      setFormError(
+        `O arquivo tem ${formatFileSize(selectedFile.size)} e excede o limite de 512 MB.`,
+      );
       return;
     }
 
@@ -131,14 +160,21 @@ export default function AudioVideoStudioVideosAnalysisPage() {
               key={fileInputVersion}
               type="file"
               accept="video/mp4,video/quicktime,video/webm,video/x-m4v"
-              onChange={(event) =>
-                setSelectedFile(event.target.files?.[0] ?? null)
-              }
+              onChange={(event) => {
+                setFormError("");
+                setSelectedFile(event.target.files?.[0] ?? null);
+              }}
             />
             <small>
-              Envie MP4, MOV, WEBM ou M4V. O arquivo sera armazenado e colocado
-              na fila de aprendizado.
+              Envie MP4, MOV, WEBM ou M4V com ate 512 MB. Mantenha esta pagina
+              aberta ate a confirmacao do envio.
             </small>
+            {selectedFile ? (
+              <small>
+                Selecionado: {selectedFile.name} (
+                {formatFileSize(selectedFile.size)})
+              </small>
+            ) : null}
           </label>
 
           <label>
@@ -227,7 +263,7 @@ export default function AudioVideoStudioVideosAnalysisPage() {
               <PlusCircle size={18} aria-hidden="true" />
             )}
             {createReference.isPending
-              ? "Enviando para analise..."
+              ? "Enviando video, aguarde..."
               : "Enviar para analise"}
           </button>
         </form>
@@ -242,7 +278,7 @@ export default function AudioVideoStudioVideosAnalysisPage() {
         ) : null}
         {createReference.isError ? (
           <p className="audio-video-studio-page__duration-block">
-            Nao foi possivel enviar o video para analise agora.
+            {getUploadErrorMessage(createReference.error)}
           </p>
         ) : null}
       </section>

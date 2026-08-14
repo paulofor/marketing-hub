@@ -38,6 +38,8 @@ const metaFieldLabel: Record<string, string> = {
   cta: "CTA",
 };
 
+const RECENT_TASK_LIMIT = 5;
+
 function experimentIdFromTask(task: AgentTask) {
   const match = task.sourceReference?.match(/^experiment:(\d+)$/);
   return match?.[1];
@@ -70,6 +72,7 @@ export default function AgentWorkspacePage() {
       ).length,
     [inbox.data],
   );
+  const recentTasks = (inbox.data ?? []).slice(0, RECENT_TASK_LIMIT);
 
   if (agents.isLoading) return <p>Carregando agente...</p>;
   if (!agent) return <p>Agente não encontrado.</p>;
@@ -127,6 +130,48 @@ export default function AgentWorkspacePage() {
             <div className="small text-body-secondary">
               {openCount} tarefas abertas · status {agent.status}
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="card mb-4">
+        <div className="card-body">
+          <div className="d-flex justify-content-between align-items-center gap-3 mb-3">
+            <div>
+              <h2 className="h5 mb-1">Últimas tarefas</h2>
+              <p className="small text-body-secondary mb-0">
+                As {RECENT_TASK_LIMIT} solicitações mais recentes, incluindo
+                trabalho concluído, bloqueado ou cancelado.
+              </p>
+            </div>
+            <span className="badge text-bg-light">
+              {recentTasks.length} exibidas
+            </span>
+          </div>
+          {inbox.isLoading ? <p>Carregando histórico...</p> : null}
+          {!inbox.isLoading && recentTasks.length === 0 ? (
+            <p className="text-body-secondary mb-0">
+              Nenhuma tarefa registrada para este agente.
+            </p>
+          ) : null}
+          <div className="list-group list-group-flush">
+            {recentTasks.map((task) => (
+              <div
+                key={task.id}
+                className="list-group-item px-0 d-flex justify-content-between align-items-start gap-3"
+              >
+                <div>
+                  <div className="fw-semibold">{task.title}</div>
+                  <div className="small text-body-secondary">
+                    Tarefa #{task.id} · atualizada em{" "}
+                    {new Date(task.updatedAt).toLocaleString("pt-BR")}
+                  </div>
+                </div>
+                <span className="badge text-bg-light text-nowrap">
+                  {statusLabel[task.status]}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </section>

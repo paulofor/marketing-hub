@@ -83,7 +83,7 @@ public class ClickbankCollectorService {
     public ClickbankCollectorService(
             @Value("${collector.playwright.headless:true}") boolean headless,
             @Value("${collector.playwright.chromium-executable-path:}") String chromiumExecutablePath,
-            @Value("${collector.clickbank.search-url:https://app.clickbank.com/market/search}") String clickbankMarketUrl,
+            @Value("${collector.clickbank.search-url:https://accounts.clickbank.com/mkplSearchResult.htm}") String clickbankMarketUrl,
             @Value("${collector.clickbank.session-cookie:}") String clickbankSessionCookie,
             @Value("${collector.clickbank.username:}") String clickbankUsername,
             @Value("${collector.clickbank.password:}") String clickbankPassword,
@@ -1023,10 +1023,11 @@ public class ClickbankCollectorService {
         );
     }
 
+    /** Autentica a conta primária pela página oficial atual da ClickBank. */
     private void performLogin(Page page) {
         log.info("Iniciando login Clickbank por credenciais (username preenchido={}).",
                 clickbankUsername != null && !clickbankUsername.isBlank());
-        page.navigate("https://sso.clickbank.com/login", new Page.NavigateOptions()
+        page.navigate("https://accounts.clickbank.com/login.htm", new Page.NavigateOptions()
                 .setTimeout(PLAYWRIGHT_TIMEOUT_MS)
                 .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
 
@@ -1189,21 +1190,27 @@ public class ClickbankCollectorService {
         }
     }
 
+    /** Confirma que a autenticação saiu da página de login antes de acessar o marketplace. */
     private void ensureLoginProgressed(Page page, String passwordSelector) {
         String currentUrl = page.url();
-        if (!currentUrl.contains("sso.clickbank.com/login")) {
+        if (!isClickbankLoginUrl(currentUrl)) {
             return;
         }
-        for (int attempt = 1; attempt <= LOGIN_SUBMIT_RETRIES && page.url().contains("sso.clickbank.com/login"); attempt++) {
+        for (int attempt = 1; attempt <= LOGIN_SUBMIT_RETRIES && isClickbankLoginUrl(page.url()); attempt++) {
             log.warn("Login ainda na SSO após submit; forçando nova tentativa de progressão. tentativa={}", attempt);
             closeCookieOrConsentOverlays(page);
             page.locator(passwordSelector).first().press("Enter");
             page.waitForTimeout(1_000L * attempt);
             closeCookieOrConsentOverlays(page);
         }
-        if (page.url().contains("sso.clickbank.com/login")) {
+        if (isClickbankLoginUrl(page.url())) {
             throw new IllegalStateException("Login Clickbank não avançou após tentativas de remover banner/consentimento.");
         }
+    }
+
+    /** Identifica as variações oficiais da página de login da conta primária ClickBank. */
+    private boolean isClickbankLoginUrl(String url) {
+        return url != null && url.contains("accounts.clickbank.com/login");
     }
 
     private void waitTransientOverlaysToHide(Page page) {
@@ -1212,12 +1219,15 @@ public class ClickbankCollectorService {
         waitOverlayHidden(page, "clickbank-cookie-policy");
     }
 
+    /** Aguarda somente overlays realmente presentes, evitando acumular timeouts em seletores ausentes. */
     private void waitOverlayHidden(Page page, String selector) {
         try {
-            page.locator(selector)
-                    .waitFor(new com.microsoft.playwright.Locator.WaitForOptions()
-                            .setState(WaitForSelectorState.HIDDEN)
-                            .setTimeout(8_000));
+            var overlay = page.locator(selector);
+            if (overlay.count() > 0 && overlay.first().isVisible()) {
+                overlay.first().waitFor(new com.microsoft.playwright.Locator.WaitForOptions()
+                        .setState(WaitForSelectorState.HIDDEN)
+                        .setTimeout(8_000));
+            }
         } catch (Exception ignored) {
             log.debug("Overlay '{}' ainda visível após timeout de espera.", selector);
         }

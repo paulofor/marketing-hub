@@ -207,6 +207,14 @@ Antes de implementar uma correção em tema com histórico de loop:
 - **Correção efetiva**: render curto com ativo persistido passa a ser fonte válida de pós-produção local; o ciclo aponta para esse novo job sem chamar provider pago, e rejeição de créditos recebe código financeiro estável que bloqueia a reconciliação na primeira ocorrência.
 - **Prevenção**: testes exigem reaproveitamento do ativo antes de qualquer `requestRender`, aceitação controlada do render curto na pós-produção e somente uma chamada à Runway quando ela responder saldo insuficiente.
 
+## LOOP-MARKETPLACE-AUTH-ENDPOINT-DRIFT — coleta autenticada presa em login obsoleto
+
+- **Severidade**: ALTO.
+- **Status**: corrigido localmente em 2026-08-14; pendente de publicação.
+- **Causa-raiz confirmada**: o coletor ClickBank navegava para o host removido `sso.clickbank.com`, enquanto o login oficial passou a `accounts.clickbank.com/login.htm`; os dois coletores também acumulavam esperas de oito segundos para overlays inexistentes, fazendo a homologação Hotmart exceder 120 segundos.
+- **Correção efetiva**: ClickBank usa os endpoints oficiais atuais de login e marketplace; Hotmart e ClickBank só aguardam overlays que realmente existam e estejam visíveis.
+- **Prevenção**: os testes dos dois módulos e a homologação mínima somente leitura devem validar DNS, progressão do login e término limitado antes de ativar qualquer scheduler.
+
 ## Como ler este documento
 
 ## LOOP-PRODUCT-DISCOVERY-FALSE-EMPTY-SUCCESS — falha externa tratada como pesquisa vazia

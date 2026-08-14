@@ -23,7 +23,8 @@ public class AgentExecutorHealthService {
           "growth-operator",
           "experiment-strategist",
           "meta-ad-approver",
-          "landing-generator");
+          "landing-generator",
+          "video-maker");
   private final AgentRepository agents;
   private final AgentExecutorHealthCheckRepository checks;
   private final Clock clock;

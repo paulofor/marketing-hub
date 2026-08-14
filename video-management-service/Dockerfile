@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg curl esp
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /workspace/video-management-service/target/app.jar app.jar
+COPY scripts/codex-app-server-device-login.mjs /app/scripts/codex-app-server-device-login.mjs
 EXPOSE 8095
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD curl -fsS http://127.0.0.1:8095/actuator/health || exit 1

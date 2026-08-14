@@ -91,6 +91,26 @@ class AgentExecutorHealthServiceTest {
     assertThat(response.status()).isEqualTo("REQUESTED");
   }
 
+  /** Permite que Apolo crie a sessão Codex usada pelo planejador audiovisual híbrido. */
+  @Test
+  void shouldAllowApolloCodexReconnect() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentExecutorHealthCheckRepository checks = mock(AgentExecutorHealthCheckRepository.class);
+    CodexAuthReconnectRepository reconnects = mock(CodexAuthReconnectRepository.class);
+    Agent apollo = Agent.builder().id(2L).agentKey("video-maker").nickname("Apolo").build();
+    when(agents.findById(2L)).thenReturn(Optional.of(apollo));
+    when(reconnects.existsByAgentIdAndStatusIn(
+            org.mockito.ArgumentMatchers.eq(2L), org.mockito.ArgumentMatchers.anyList()))
+        .thenReturn(false);
+    when(reconnects.save(org.mockito.ArgumentMatchers.any()))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    CodexAuthReconnectResponse response =
+        new AgentExecutorHealthService(agents, checks, reconnects).requestReconnect(2L, "operador");
+
+    assertThat(response.agentKey()).isEqualTo("video-maker");
+  }
+
   /** Aprova somente quando versão, backend e autenticação estão comprovados. */
   @Test
   void shouldReportReadyOnlyWithAllThreeSignals() {

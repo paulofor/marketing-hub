@@ -37,7 +37,7 @@ export default function AgentSessionSetupWizard({
       <div className="card-body">
         <div className="d-flex justify-content-between gap-3">
           <div>
-            <h2 className="h5">Preparar os seis agentes Codex</h2>
+            <h2 className="h5">Preparar {agents.length} agentes Codex</h2>
             <p className="small text-body-secondary mb-0">
               O assistente usa a versão e a saúde confirmadas pelo backend e
               avança um agente por vez.
@@ -63,7 +63,7 @@ export default function AgentSessionSetupWizard({
 
         {!current ? (
           <div className="alert alert-success mb-0">
-            Os seis agentes estão na versão esperada, acessam o backend e têm
+            Todos os agentes estão na versão esperada, acessam o backend e têm
             autenticação comprovada.
           </div>
         ) : (

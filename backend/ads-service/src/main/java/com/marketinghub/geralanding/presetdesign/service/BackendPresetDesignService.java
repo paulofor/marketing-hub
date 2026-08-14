@@ -11,7 +11,6 @@ import com.marketinghub.geralanding.presetdesign.service.listStageExecutions.Ger
 import com.marketinghub.geralanding.presetdesign.service.pending.RecordPresetDesignExperiment;
 import com.marketinghub.geralanding.presetdesign.service.pending.RecordPresetDesignHypothesis;
 import com.marketinghub.geralanding.presetdesign.service.pending.RecordPresetDesignPending;
-import com.marketinghub.geralanding.qualityreview.service.BackendQualityReviewService;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -25,6 +24,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -45,7 +45,7 @@ public class BackendPresetDesignService {
   private final GeraLandingStageExecutionRepository executionRepository;
   private final ObjectMapper objectMapper;
   private final DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler;
-  private final BackendQualityReviewService qualityReviewService;
+  private final ApplicationEventPublisher eventPublisher;
 
   /**
    * Inicializa o serviço com os repositórios e montador necessários para consultar e finalizar
@@ -57,12 +57,12 @@ public class BackendPresetDesignService {
       GeraLandingStageExecutionRepository executionRepository,
       ObjectMapper objectMapper,
       DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler,
-      BackendQualityReviewService qualityReviewService) {
+      ApplicationEventPublisher eventPublisher) {
     this.experimentRepository = experimentRepository;
     this.executionRepository = executionRepository;
     this.objectMapper = objectMapper;
     this.designPresetProvisionalHtmlAssembler = designPresetProvisionalHtmlAssembler;
-    this.qualityReviewService = qualityReviewService;
+    this.eventPublisher = eventPublisher;
   }
 
   /** Registra a execução inicial da etapa convertendo para o DTO local de início. */
@@ -293,7 +293,7 @@ public class BackendPresetDesignService {
 
   /** Agenda a revisão visual de qualidade como próxima etapa após a montagem do HTML final. */
   private void createQualityReviewExecution(Experiment experiment) {
-    qualityReviewService.reviewAfterHtmlGeneration(experiment);
+    eventPublisher.publishEvent(new PresetDesignCompletedEvent(experiment.getId()));
   }
 
   /** Monta o HTML final do GeraLanding usando os artefatos canônicos disponíveis no experimento. */

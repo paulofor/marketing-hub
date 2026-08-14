@@ -62,6 +62,7 @@ public class HotmartCollectorService {
     private final String defaultMarketTheme;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /** Configura o coletor e resolve as credenciais dedicadas sem expor seus valores. */
     public HotmartCollectorService(
             @Value("${collector.playwright.headless:true}") boolean headless,
             @Value("${collector.playwright.chromium-executable-path:}") String chromiumExecutablePath,
@@ -69,6 +70,8 @@ public class HotmartCollectorService {
             @Value("${collector.hotmart.session-cookie:}") String hotmartSessionCookie,
             @Value("${collector.hotmart.username:}") String hotmartUsername,
             @Value("${collector.hotmart.password:}") String hotmartPassword,
+            @Value("${collector.hotmart.username-file:}") String hotmartUsernameFile,
+            @Value("${collector.hotmart.password-file:}") String hotmartPasswordFile,
             @Value("${collector.hotmart.username-fallback:}") String hotmartUsernameFallback,
             @Value("${collector.hotmart.password-fallback:}") String hotmartPasswordFallback,
             @Value("${collector.hotmart.log-full-token:false}") boolean logFullToken,
@@ -82,8 +85,10 @@ public class HotmartCollectorService {
         this.chromiumExecutablePath = chromiumExecutablePath;
         this.hotmartMarketUrl = hotmartMarketUrl;
         this.hotmartSessionCookie = hotmartSessionCookie;
-        this.hotmartUsername = pickFirstNonBlank(hotmartUsername, hotmartUsernameFallback);
-        this.hotmartPassword = pickFirstNonBlank(hotmartPassword, hotmartPasswordFallback);
+        this.hotmartUsername = MarketplaceCredentialFileReader.resolve(
+                hotmartUsernameFile, hotmartUsername, hotmartUsernameFallback, "HOTMART", "usuario");
+        this.hotmartPassword = MarketplaceCredentialFileReader.resolve(
+                hotmartPasswordFile, hotmartPassword, hotmartPasswordFallback, "HOTMART", "senha");
         this.logFullToken = logFullToken;
         this.backendBaseUrl = backendBaseUrl;
         this.hotmartJwtSettingKey = hotmartJwtSettingKey;

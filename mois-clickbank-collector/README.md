@@ -52,9 +52,9 @@ Crie/edite um arquivo `.env` no mesmo diretório do compose em uso:
 Exemplo:
 
 ```env
-# Autenticação Clickbank (opção 1: login/senha)
-COLLECTOR_CLICKBANK_USERNAME=seu_usuario
-COLLECTOR_CLICKBANK_PASSWORD=sua_senha
+# Conta dedicada ClickBank: informe apenas os caminhos; nunca coloque os valores no .env
+COLLECTOR_CLICKBANK_USERNAME_HOST_FILE=/root/infra/marketplace-credentials/clickbank/username
+COLLECTOR_CLICKBANK_PASSWORD_HOST_FILE=/root/infra/marketplace-credentials/clickbank/password
 
 # Autenticação Clickbank (opção 2: cookie de sessão)
 COLLECTOR_CLICKBANK_SESSION_COOKIE=
@@ -82,7 +82,7 @@ O script `run-local-jar.sh` executa via `java -jar`, evitando dependência de pe
 - A coleta autenticada usa:
   - `collector.clickbank.search-url` (default: `https://app.clickbank.com/market/search`)
   - `collector.clickbank.session-cookie` (opção 1 para área logada)
-  - `collector.clickbank.username` + `collector.clickbank.password` (opção 2 para login automático)
+  - `collector.clickbank.username-file` + `collector.clickbank.password-file` para a conta dedicada somente leitura
 - Agendamento automático:
   - `collector.scheduler.enabled=false`
   - `collector.scheduler.cron=0 0 */2 * * *` (**executa em horas pares**)
@@ -97,6 +97,10 @@ O script `run-local-jar.sh` executa via `java -jar`, evitando dependência de pe
 | `COLLECTOR_CLICKBANK_SESSION_COOKIE` | Cookie de sessão Clickbank (alternativa ao login/senha) | vazio |
 | `COLLECTOR_CLICKBANK_USERNAME` | Usuário Clickbank para login automatizado | vazio |
 | `COLLECTOR_CLICKBANK_PASSWORD` | Senha Clickbank para login automatizado | vazio |
+| `COLLECTOR_CLICKBANK_USERNAME_FILE` | Arquivo interno com o usuário dedicado | vazio |
+| `COLLECTOR_CLICKBANK_PASSWORD_FILE` | Arquivo interno com a senha dedicada | vazio |
+| `COLLECTOR_CLICKBANK_USERNAME_HOST_FILE` | Arquivo do host montado como usuário dedicado | `/root/infra/marketplace-credentials/clickbank/username` |
+| `COLLECTOR_CLICKBANK_PASSWORD_HOST_FILE` | Arquivo do host montado como senha dedicada | `/root/infra/marketplace-credentials/clickbank/password` |
 | `COLLECTOR_SCHEDULER_ENABLED` | Habilita/desabilita execução automática | `false` |
 | `COLLECTOR_SCHEDULER_CRON` | Expressão cron da execução automática | `0 0 */2 * * *` |
 | `COLLECTOR_SCHEDULER_SOURCE` | Identificador da fonte usada no job agendado | `clickbank-market` |

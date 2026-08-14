@@ -21,6 +21,8 @@ class ClickbankCollectorServiceTest {
                 "",
                 "",
                 "",
+                "",
+                "",
                 "http://127.0.0.1:1/unreachable-top-offers",
                 "",
                 "",
@@ -61,7 +63,7 @@ class ClickbankCollectorServiceTest {
         String topOffersUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/top-offers";
         try {
             ClickbankCollectorService service = new ClickbankCollectorService(
-                    true, "", "https://app.clickbank.com/market/search", "", "", "",
+                    true, "", "https://app.clickbank.com/market/search", "", "", "", "", "",
                     topOffersUrl, "", "", false, "http://127.0.0.1:1",
                     "clickbank_access_token_jwt", "https://accounts.clickbank.com/graphql",
                     "workspace-001", "marketing-digital", "ofertas-clickbank"
@@ -85,7 +87,7 @@ class ClickbankCollectorServiceTest {
     @Test
     void shouldReturnSkippedWithJwtAbsentReasonOnThirdCycle() {
         ClickbankCollectorService service = new ClickbankCollectorService(
-                true, "", "https://app.clickbank.com/market/search", "", "", "",
+                true, "", "https://app.clickbank.com/market/search", "", "", "", "", "",
                 "http://127.0.0.1:1", "", "", false, "http://127.0.0.1:1",
                 "clickbank_access_token_jwt", "https://accounts.clickbank.com/graphql",
                 "workspace-001", "marketing-digital", "ofertas-clickbank"
@@ -122,7 +124,7 @@ class ClickbankCollectorServiceTest {
         String base = "http://127.0.0.1:" + server.getAddress().getPort();
         try {
             ClickbankCollectorService service = new ClickbankCollectorService(
-                    true, "", "https://app.clickbank.com/market/search", "", "", "",
+                    true, "", "https://app.clickbank.com/market/search", "", "", "", "", "",
                     "http://127.0.0.1:1", "", "", false, base,
                     "clickbank_access_token_jwt", base + "/graphql",
                     "workspace-001", "marketing-digital", "ofertas-clickbank"

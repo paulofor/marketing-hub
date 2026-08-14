@@ -191,11 +191,11 @@ Em resumo: o erro normalmente não está na UI; ele nasce na qualidade do campo 
 
 ## 9) Execução vigente
 
-As rotinas e os schedulers Hotmart do Marketing Hub estão desativados. O sistema não recebe nem persiste usuário, senha, JWT, cookie ou sessão Hotmart.
+As rotinas e os schedulers Hotmart do Marketing Hub permanecem desativados até homologação explícita. O coletor pode receber uma conta dedicada e restrita exclusivamente por arquivos montados em `/run/secrets`, sem persistir, expor em endpoint ou registrar usuário, senha, JWT, cookie ou sessão.
 
-O Agente Radar é o único responsável pela pesquisa diária autenticada, usando navegador no ambiente isolado do agente e permissão somente de leitura. Cada pesquisa deve registrar no Radar a fonte, data, URLs, evidências comerciais observadas e lacunas, sem registrar credenciais.
+O coletor MOIS é responsável pela navegação autenticada e somente leitura; Argos/Radar recebe apenas as evidências estruturadas para análise. Cada pesquisa deve registrar fonte, data, URLs, evidências comerciais observadas e lacunas, sem registrar credenciais.
 
-O agente não pode afiliar, comprar, alterar produto, conta, configuração ou qualquer outro dado na Hotmart. Os endpoints e dados dos antigos ciclos permanecem somente para leitura histórica e compatibilidade de auditoria.
+Nenhum agente ou coletor pode afiliar, comprar, alterar produto, conta, configuração ou qualquer outro dado na Hotmart. A conta deve ser dedicada, com o menor privilégio disponível, e a coleta deve parar diante de MFA ou desafio sem tentar contorná-lo.
 
 ## 10) Tratamento de falhas (pesquisa do agente)
 

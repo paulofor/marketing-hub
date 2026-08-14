@@ -1,10 +1,11 @@
 services:
   mois-hotmart-collector:
     image: ${MOIS_HOTMART_COLLECTOR_IMAGE}
-    build: null
     container_name: mois-hotmart-collector
     restart: unless-stopped
     environment:
+      - COLLECTOR_HOTMART_USERNAME_FILE=/run/secrets/hotmart_username
+      - COLLECTOR_HOTMART_PASSWORD_FILE=/run/secrets/hotmart_password
       - COLLECTOR_SCHEDULER_ENABLED=false
       - COLLECTOR_SCHEDULER_CRON=${COLLECTOR_SCHEDULER_CRON:-0 0 * * * *}
       - COLLECTOR_SCHEDULER_SOURCE=${COLLECTOR_SCHEDULER_SOURCE:-hotmart-market}
@@ -14,6 +15,8 @@ services:
       - "8096:8096"
     volumes:
       - ${MOIS_HOTMART_LOG_DIR:-/opt/marketinghub/mois-hotmart-collector/logs}:/app/logs
+      - ${COLLECTOR_HOTMART_USERNAME_HOST_FILE:-/root/infra/marketplace-credentials/hotmart/username}:/run/secrets/hotmart_username:ro
+      - ${COLLECTOR_HOTMART_PASSWORD_HOST_FILE:-/root/infra/marketplace-credentials/hotmart/password}:/run/secrets/hotmart_password:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8096/api/v1/mois-hotmart/health | grep -q ok"]
       interval: 30s

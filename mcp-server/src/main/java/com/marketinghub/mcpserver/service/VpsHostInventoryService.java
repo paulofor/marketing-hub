@@ -7,12 +7,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 
 /**
  * Consulta inventário físico e operacional dos VPS permitidos usando SSH restrito.
@@ -24,14 +31,161 @@ public class VpsHostInventoryService {
     private static final String LEAD_PORTAL_PAYMENTS_PROXY = "lead-portal-payments-proxy";
     private static final List<String> ALLOWED_DOCKER_LOG_TARGETS =
             List.of(LEAD_PORTAL_STACK, LEAD_PORTAL_PAYMENTS_PROXY);
+    private static final String BACKEND_MODULE = "backend";
+    private static final String RESTART_CONFIRMATION = "RESTART_BACKEND";
+    private static final Pattern SAFE_CONTAINER_NAME = Pattern.compile("[A-Za-z0-9][A-Za-z0-9_.-]{0,127}");
 
     private final McpProperties properties;
+    private final HttpClient httpClient;
+    private final AtomicReference<Instant> lastBackendRestart = new AtomicReference<>();
 
     /**
      * Inicializa o serviço com allowlist de hosts e parâmetros SSH do MCP.
      */
     public VpsHostInventoryService(McpProperties properties) {
         this.properties = properties;
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(properties.vpsHostInventory().timeoutSeconds()))
+                .build();
+    }
+
+    /**
+     * Recupera exclusivamente o backend canônico quando ele estiver indisponível e confirma o health posterior.
+     */
+    public synchronized Map<String, Object> recoverBackend(String module, String confirmation, String reason) {
+        McpProperties.VpsHostInventory config = properties.vpsHostInventory();
+        validateBackendRecovery(config, module, confirmation, reason);
+
+        Map<String, Object> healthBefore = readBackendHealth(config);
+        if (Boolean.TRUE.equals(healthBefore.get("healthy"))) {
+            return recoveryResult("not_required", reason, healthBefore, healthBefore, List.of());
+        }
+
+        enforceRecoveryCooldown(config);
+        List<String> restartOutput = executeSshBackendRestart(config);
+        lastBackendRestart.set(Instant.now());
+        Map<String, Object> healthAfter = awaitBackendHealth(config);
+        String status = Boolean.TRUE.equals(healthAfter.get("healthy")) ? "recovered" : "restart_unhealthy";
+        logger.info("MCP backend recovery completed module={} host={} container={} status={} reason={}",
+                BACKEND_MODULE, config.backendHost(), config.backendContainer(), status, reason);
+        return recoveryResult(status, reason, healthBefore, healthAfter, restartOutput);
+    }
+
+    /**
+     * Valida habilitação, confirmação, justificativa e alvos fixos da recuperação.
+     */
+    private void validateBackendRecovery(McpProperties.VpsHostInventory config, String module,
+                                         String confirmation, String reason) {
+        if (!config.enabled() || !config.backendRecoveryEnabled()) {
+            throw new IllegalArgumentException("backend recovery is disabled");
+        }
+        if (!BACKEND_MODULE.equals(module)) {
+            throw new IllegalArgumentException("module must be backend");
+        }
+        if (!RESTART_CONFIRMATION.equals(confirmation)) {
+            throw new IllegalArgumentException("confirmation must be " + RESTART_CONFIRMATION);
+        }
+        if (!StringUtils.hasText(reason) || reason.trim().length() < 10 || reason.trim().length() > 300
+                || reason.chars().anyMatch(Character::isISOControl)) {
+            throw new IllegalArgumentException("reason must contain between 10 and 300 characters");
+        }
+        normalizeHost(config.backendHost());
+        if (!SAFE_CONTAINER_NAME.matcher(config.backendContainer()).matches()) {
+            throw new IllegalArgumentException("configured backend container is invalid");
+        }
+    }
+
+    /**
+     * Impede reinícios repetidos durante a janela de estabilização do backend.
+     */
+    private void enforceRecoveryCooldown(McpProperties.VpsHostInventory config) {
+        Instant previous = lastBackendRestart.get();
+        if (previous == null) {
+            return;
+        }
+        long remaining = Duration.between(Instant.now(),
+                previous.plusSeconds(config.backendRecoveryCooldownSeconds())).toSeconds();
+        if (remaining > 0) {
+            throw new IllegalArgumentException("backend recovery cooldown active for " + remaining + " seconds");
+        }
+    }
+
+    /**
+     * Executa via SSH somente o restart do container de backend configurado e previamente validado.
+     */
+    private List<String> executeSshBackendRestart(McpProperties.VpsHostInventory config) {
+        String destination = config.user() + "@" + config.backendHost();
+        List<String> command = List.of(
+                config.sshCommand(), "-i", config.identityFile(), "-o", "BatchMode=yes",
+                "-o", "IdentitiesOnly=yes", "-o", "StrictHostKeyChecking=accept-new",
+                "-o", "UserKnownHostsFile=" + config.knownHostsFile(),
+                "-o", "ConnectTimeout=" + config.timeoutSeconds(), destination,
+                "docker restart " + config.backendContainer());
+        return executeCommand(command, "ssh backend restart", config.backendHost());
+    }
+
+    /**
+     * Aguarda o backend responder com sucesso após o restart, respeitando tentativas configuradas.
+     */
+    private Map<String, Object> awaitBackendHealth(McpProperties.VpsHostInventory config) {
+        Map<String, Object> result = Map.of("healthy", false, "detail", "health check not attempted");
+        for (int attempt = 1; attempt <= config.backendHealthAttempts(); attempt++) {
+            result = readBackendHealth(config);
+            if (Boolean.TRUE.equals(result.get("healthy"))) {
+                return result;
+            }
+            if (attempt < config.backendHealthAttempts()) {
+                try {
+                    Thread.sleep(config.backendHealthDelayMillis());
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalArgumentException("backend health verification interrupted");
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Consulta o endpoint de saúde canônico sem expor conteúdo sensível da resposta.
+     */
+    private Map<String, Object> readBackendHealth(McpProperties.VpsHostInventory config) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder(URI.create(config.backendHealthUrl()))
+                    .timeout(Duration.ofSeconds(config.timeoutSeconds())).GET().build();
+            HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+            return Map.of("healthy", response.statusCode() >= 200 && response.statusCode() < 300,
+                    "httpStatus", response.statusCode());
+        } catch (IOException ex) {
+            logger.warn("MCP backend health check failed url={} reason={}",
+                    config.backendHealthUrl(), ex.getMessage());
+            return Map.of("healthy", false, "detail", "connection_failed");
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            return Map.of("healthy", false, "detail", "interrupted");
+        } catch (IllegalArgumentException ex) {
+            logger.error("MCP backend health URL is invalid url={}", config.backendHealthUrl(), ex);
+            return Map.of("healthy", false, "detail", "invalid_health_url");
+        }
+    }
+
+    /**
+     * Monta a evidência estruturada e auditável da tentativa de recuperação.
+     */
+    private Map<String, Object> recoveryResult(String status, String reason, Map<String, Object> healthBefore,
+                                               Map<String, Object> healthAfter, List<String> restartOutput) {
+        McpProperties.VpsHostInventory config = properties.vpsHostInventory();
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("module", BACKEND_MODULE);
+        result.put("host", config.backendHost());
+        result.put("container", config.backendContainer());
+        result.put("status", status);
+        result.put("reason", reason.trim());
+        result.put("healthBefore", healthBefore);
+        result.put("healthAfter", healthAfter);
+        result.put("restartOutput", restartOutput);
+        result.put("checkedAt", Instant.now().toString());
+        return result;
     }
 
     /**

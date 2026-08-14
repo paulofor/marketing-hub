@@ -109,7 +109,8 @@ class MetaDiagnosticsServiceTest {
                 new McpProperties.BuildInfo(true, List.of("pde-platform-backend"),
                         Map.of("pde-platform-backend", "http://127.0.0.1:8096/actuator/info"), 5),
                 new McpProperties.VpsHostInventory(false, List.of("191.252.210.83"), "ssh", "root",
-                        "/tmp/id_ed25519", "/tmp/known_hosts", 5),
+                        "/tmp/id_ed25519", "/tmp/known_hosts", 5, false, "191.252.181.168",
+                        "marketinghub-backend", "http://191.252.181.168/actuator/health", 300, 6, 2000),
                 new McpProperties.ProductDiscoveryWorker(true, "product-discovery-worker", "docker",
                         "http://127.0.0.1:8080/healthz", 10),
                 new McpProperties.Meta(

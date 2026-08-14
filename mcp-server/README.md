@@ -34,6 +34,7 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 - `github_actions_get_run_logs`: baixa os logs compactados de uma execução e retorna um trecho em texto.
 - `chat_container_logs`: retorna logs Docker dos containers operacionais permitidos no host do MCP. Por padrão, `marketinghub-fashion-chat` e `product-discovery-worker`.
 - `docker_ops`: executa operações Docker restritas no host do MCP (`ps`, `logs`, `restart`) para containers permitidos.
+- `backend_controlled_restart`: recupera exclusivamente o backend remoto quando o health estiver indisponível, com confirmação, cooldown e verificação posterior.
 - `runtime_build_info`: consulta a identidade de build publicada em runtime por módulos permitidos, incluindo version, commit, branch e build time quando o Actuator expõe esses campos.
 - `vps_host_inventory`: consulta CPU, memória, disco, sistema operacional, portas e containers Docker de VPS permitidos via SSH restrito, sem liberar shell genérico.
 - `product_discovery_worker_health`: consulta o health do `product-discovery-worker` e retorna provider ativo, status da chave Brave, último polling, último erro e último ciclo processado.
@@ -124,6 +125,22 @@ Configuração:
 - `MCP_DOCKER_OPS_RESTART_ENABLED` (default `false`).
 
 Para operação produtiva, mantenha a allowlist com nomes exatos dos containers que o MCP pode diagnosticar. Habilite `restart` apenas quando o compose/deploy do MCP montar o socket Docker com permissão compatível e quando o host aceitar que o MCP seja usado como ferramenta operacional de recuperação.
+
+## Recuperação controlada do backend remoto
+
+O tool `backend_controlled_restart` não aceita host, container ou comando livres. Ele consulta primeiro o health canônico; se o backend já estiver saudável, retorna `not_required`. Quando indisponível, executa por SSH somente `docker restart` no container configurado, aplica cooldown e confirma o health após a inicialização. A chamada exige `module=backend`, `confirmation=RESTART_BACKEND` e uma justificativa auditável de 10 a 300 caracteres.
+
+Configuração:
+
+- `MCP_BACKEND_RECOVERY_ENABLED` (default da aplicação `false`; deploy MCP `true`);
+- `MCP_BACKEND_RECOVERY_HOST` (default `191.252.181.168`);
+- `MCP_BACKEND_RECOVERY_CONTAINER` (default `marketinghub-backend`);
+- `MCP_BACKEND_RECOVERY_HEALTH_URL` (default `http://191.252.181.168/actuator/health`);
+- `MCP_BACKEND_RECOVERY_COOLDOWN_SECONDS` (default `300`);
+- `MCP_BACKEND_RECOVERY_HEALTH_ATTEMPTS` (default `6`);
+- `MCP_BACKEND_RECOVERY_HEALTH_DELAY_MILLIS` (default `2000`).
+
+Essa recuperação reutiliza a chave SSH restrita do inventário de VPS. Ela não publica código, não troca imagem e não substitui deploy ou Pull Request.
 
 ## Identidade de build/runtime dos módulos
 

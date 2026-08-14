@@ -341,6 +341,19 @@ public class McpController {
                                     "additionalProperties", false)
                     ),
                     Map.of(
+                            "name", "backend_controlled_restart",
+                            "description", "Recupera somente o backend canônico quando o health estiver indisponível, com confirmação explícita, cooldown, auditoria e verificação posterior.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "module", Map.of("type", "string", "enum", List.of("backend")),
+                                            "confirmation", Map.of("type", "string", "enum", List.of("RESTART_BACKEND")),
+                                            "reason", Map.of("type", "string", "minLength", 10, "maxLength", 300,
+                                                    "description", "Justificativa operacional auditável para a recuperação.")),
+                                    "required", List.of("module", "confirmation", "reason"),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
                             "name", "vps_docker_logs",
                             "description", "Retorna status e logs Docker de alvos remotos permitidos, incluindo a stack do Lead Portal, sem executar comandos arbitrários.",
                             "inputSchema", Map.of(
@@ -506,6 +519,7 @@ public class McpController {
                 case "docker_ops" -> callDockerOpsTool(id, arguments);
                 case "runtime_build_info" -> callRuntimeBuildInfoTool(id, arguments);
                 case "vps_host_inventory" -> callVpsHostInventoryTool(id, arguments);
+                case "backend_controlled_restart" -> callBackendControlledRestartTool(id, arguments);
                 case "vps_docker_logs" -> callVpsDockerLogsTool(id, arguments);
                 case "product_discovery_worker_health" -> callProductDiscoveryWorkerHealthTool(id);
                 case "growth_operator_worker_health" -> callGrowthOperatorWorkerHealthTool(id);
@@ -825,6 +839,27 @@ public class McpController {
         } catch (Exception ex) {
             logger.error("Falha ao executar vps_host_inventory: requestId={} host={}", id, host, ex);
             return error(id, -32603, "Failed to inspect VPS host: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Solicita recuperação restrita do backend e devolve a evidência do health antes e depois.
+     */
+    private Map<String, Object> callBackendControlledRestartTool(Object id, Map<String, Object> arguments) {
+        String module = stringArgument(arguments, "module");
+        String confirmation = stringArgument(arguments, "confirmation");
+        String reason = stringArgument(arguments, "reason");
+        try {
+            Map<String, Object> result = vpsHostInventoryService.recoverBackend(module, confirmation, reason);
+            return successToolResult(id, result,
+                    "Backend controlled recovery completed with status " + result.get("status"));
+        } catch (IllegalArgumentException ex) {
+            logger.warn("MCP backend_controlled_restart inválido: requestId={} module={} motivo={}",
+                    id, module, ex.getMessage());
+            return error(id, -32602, ex.getMessage());
+        } catch (Exception ex) {
+            logger.error("Falha ao executar backend_controlled_restart: requestId={} module={}", id, module, ex);
+            return error(id, -32603, "Failed to recover backend: " + ex.getMessage());
         }
     }
 

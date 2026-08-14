@@ -95,6 +95,13 @@ mcp:
     identity-file: ${MCP_VPS_HOST_INVENTORY_IDENTITY_FILE:/opt/marketinghub/mcp/ssh/id_ed25519}
     known-hosts-file: ${MCP_VPS_HOST_INVENTORY_KNOWN_HOSTS_FILE:/opt/marketinghub/mcp/ssh/known_hosts}
     timeout-seconds: ${MCP_VPS_HOST_INVENTORY_TIMEOUT_SECONDS:20}
+    backend-recovery-enabled: ${MCP_BACKEND_RECOVERY_ENABLED:false}
+    backend-host: ${MCP_BACKEND_RECOVERY_HOST:191.252.181.168}
+    backend-container: ${MCP_BACKEND_RECOVERY_CONTAINER:marketinghub-backend}
+    backend-health-url: ${MCP_BACKEND_RECOVERY_HEALTH_URL:http://191.252.181.168/actuator/health}
+    backend-recovery-cooldown-seconds: ${MCP_BACKEND_RECOVERY_COOLDOWN_SECONDS:300}
+    backend-health-attempts: ${MCP_BACKEND_RECOVERY_HEALTH_ATTEMPTS:6}
+    backend-health-delay-millis: ${MCP_BACKEND_RECOVERY_HEALTH_DELAY_MILLIS:2000}
   product-discovery-worker:
     enabled: ${MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_ENABLED:true}
     container: ${MCP_PRODUCT_DISCOVERY_WORKER_CONTAINER:product-discovery-worker}

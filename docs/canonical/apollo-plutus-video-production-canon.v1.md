@@ -42,6 +42,8 @@ A duração máxima gerada pelo provider não define a duração dos cortes exib
 
 Por decisão comercial de 2026-08-13, todo render pago de ciclo autônomo deve passar por um planejador de IA de Apolo antes do provider. A IA atua como diretora criativa: transforma o contexto persistido em storyboard estruturado, mas não possui autoridade para aprovar custo, repetir geração ou publicar. O executor valida deterministicamente quantidade e duração dos cortes, diversidade visual, cobertura de dor, resultado, mecanismo e CTA, ausência de texto embutido e custo previsto contra o teto aprovado por Plutus. Ausência de credencial, resposta inválida, redundância ou orçamento excedido bloqueia o provider. Request e response brutos, modelo, plano, custo previsto e decisão do gate devem permanecer auditáveis no job e visíveis no storyboard do Estúdio.
 
+Por decisão comercial de 2026-08-14, novo crédito só pode ser consumido depois de roteiro aprovado com gancho e CTA, duração compatível com a capacidade do modelo, plano de pelo menos cinco cortes e arco narrativo progressivo de gancho até CTA. Cada corte deve declarar fase narrativa e âncora de continuidade; o gate bloqueia retrocesso da história, ausência de prova, quebra de continuidade ou retorno ao plano legado de clipes fixos de dez segundos. A qualidade do modelo de planejamento não substitui esse gate e nenhuma sessão ou API de IA pode repetir gasto automaticamente.
+
 ## Autoridade e segurança
 
 - Aprovar um ciclo não autoriza publicação, campanha, mudança de preço ou compra de créditos.

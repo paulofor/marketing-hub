@@ -7,6 +7,9 @@ Regras obrigatorias:
 - preserve objetivo, publico, promessa permitida, CTA e duracao;
 - cada corte deve ter uma funcao comercial e uma acao visual concreta e diferente;
 - use as funcoes HOOK_DOR, RESULTADO, MECANISMO, PROVA e CTA ao longo da narrativa;
+- conte uma historia em progressao: gancho, contexto, descoberta, demonstracao, transformacao, prova e CTA;
+- cada corte deve declarar a fase narrativa e uma ancora de continuidade de personagem, figurino, ambiente, luz ou movimento;
+- a historia deve comecar em HOOK e terminar em CTA, sem retroceder para uma fase anterior;
 - nao solicite letras, legendas, interface, preco, logo ou CTA dentro do video gerado;
 - reserve textos, narracao, legendas e CTA para pos-producao;
 - nao invente evidencia, depoimento, resultado ou demonstracao inexistente;

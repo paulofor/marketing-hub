@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.videomanagement.client.dto.SalesVideoJob;
 import com.marketinghub.videomanagement.client.dto.SalesVideoJobType;
 import com.marketinghub.videomanagement.client.dto.SalesVideoProfile;
+import com.marketinghub.videomanagement.client.dto.SalesVideoScript;
+import com.marketinghub.videomanagement.client.dto.SalesVideoScriptStatus;
 import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import com.marketinghub.videomanagement.client.ApolloPlanningAiClient;
@@ -29,7 +31,10 @@ import org.springframework.util.StringUtils;
 public class ApolloStoryboardPlanner {
     private static final String PROMPT_PATH = "prompts/apollo/v2/storyboard-planner.md";
     private static final String SCHEMA_PATH = "prompts/apollo/v2/storyboard-planner-schema.json";
-    private static final Set<String> REQUIRED_ROLES = Set.of("HOOK_DOR", "RESULTADO", "MECANISMO", "CTA");
+    private static final Set<String> REQUIRED_ROLES = Set.of("HOOK_DOR", "RESULTADO", "MECANISMO", "PROVA", "CTA");
+    private static final Map<String, Integer> NARRATIVE_PHASES = Map.of(
+            "HOOK", 1, "SETUP", 2, "DISCOVERY", 3, "DEMONSTRATION", 4,
+            "TRANSFORMATION", 5, "PROOF", 6, "CTA", 7);
     private final VideoManagementProperties properties;
     private final ObjectMapper objectMapper;
     private final ApolloPlanningAiClient aiClient;
@@ -54,6 +59,7 @@ public class ApolloStoryboardPlanner {
         if (!properties.getApolloPlanner().isEnabled()) {
             throw blocked("Planejador de IA de Apolo está desabilitado; provider pago não foi chamado.");
         }
+        validatePrerequisites(profile, metadata);
         progressCallback.onProgress(5, SalesVideoStatus.VIDEO_PROCESSING,
                 "Apolo está planejando o storyboard antes do gate de orçamento");
         ObjectNode request = buildRequest(job, profile, metadata);
@@ -115,23 +121,37 @@ public class ApolloStoryboardPlanner {
     GateDecision validate(JsonNode metadata, JsonNode plan, String providerName) {
         JsonNode cuts = plan.path("cuts");
         int originalCount = metadata.path("cut_plan").size();
-        if (!cuts.isArray() || cuts.size() < 4 || cuts.size() != originalCount) {
+        if (!cuts.isArray() || cuts.size() < 5 || cuts.size() != originalCount) {
             return GateDecision.blocked("quantidade de cortes diferente do plano aprovado");
         }
         int targetDuration = metadata.path("targetDurationSeconds").asInt(0);
         int totalDuration = 0;
         Set<String> roles = new HashSet<>();
         Set<String> objectives = new HashSet<>();
+        int previousPhase = 0;
         for (int index = 0; index < cuts.size(); index++) {
             JsonNode cut = cuts.get(index);
             if (cut.path("order").asInt() != index + 1) return GateDecision.blocked("ordem de cortes inválida");
             totalDuration += cut.path("durationSeconds").asInt();
             roles.add(cut.path("commercialRole").asText());
             String objective = normalize(cut.path("visualObjective").asText());
+            String phase = cut.path("narrativePhase").asText();
+            int phaseOrder = NARRATIVE_PHASES.getOrDefault(phase, 0);
+            if (phaseOrder == 0 || phaseOrder < previousPhase) {
+                return GateDecision.blocked("sequência narrativa inválida");
+            }
+            previousPhase = phaseOrder;
+            if (!StringUtils.hasText(cut.path("continuityAnchor").asText())) {
+                return GateDecision.blocked("continuidade visual não definida");
+            }
             if (!objectives.add(objective)) return GateDecision.blocked("cenas visualmente repetidas");
             if (containsEmbeddedTextInstruction(objective)) {
                 return GateDecision.blocked("texto solicitado dentro do vídeo do provider");
             }
+        }
+        if (!"HOOK".equals(cuts.get(0).path("narrativePhase").asText())
+                || !"CTA".equals(cuts.get(cuts.size() - 1).path("narrativePhase").asText())) {
+            return GateDecision.blocked("história deve começar no gancho e terminar no CTA");
         }
         if (totalDuration != targetDuration) return GateDecision.blocked("duração total diferente do projeto");
         if (!roles.containsAll(REQUIRED_ROLES)) return GateDecision.blocked("funções comerciais incompletas");
@@ -146,6 +166,25 @@ public class ApolloStoryboardPlanner {
         return new GateDecision(true, "aprovado", credits, cost, limit);
     }
 
+    /** Bloqueia a IA e o provider quando roteiro, duração ou plano-base ainda não estão prontos. */
+    private void validatePrerequisites(SalesVideoProfile profile, JsonNode metadata) {
+        SalesVideoScript script = profile.latestScript();
+        if (script == null || script.status() != SalesVideoScriptStatus.APPROVED
+                || !StringUtils.hasText(script.scriptText())
+                || !StringUtils.hasText(script.hookText())
+                || !StringUtils.hasText(script.ctaText())) {
+            throw blocked("roteiro aprovado, gancho e CTA são obrigatórios antes do planejamento");
+        }
+        int target = metadata.path("targetDurationSeconds").asInt(0);
+        int clipDuration = metadata.path("providerClipDurationSeconds").asInt(0);
+        int sceneCount = metadata.path("sceneCount").asInt(0);
+        int cutCount = metadata.path("cut_plan").size();
+        if (target < 15 || clipDuration < 1 || sceneCount != (target + clipDuration - 1) / clipDuration
+                || cutCount < 5 || cutCount > 12) {
+            throw blocked("duração, clipes do provider e plano de cortes ainda não estão consistentes");
+        }
+    }
+
     /** Converte o contrato da IA para o contrato de cortes já consumido pelos providers. */
     private ArrayNode toCanonicalCuts(JsonNode cuts) {
         ArrayNode result = objectMapper.createArrayNode();
@@ -154,7 +193,9 @@ public class ApolloStoryboardPlanner {
             canonical.put("order", cut.path("order").asInt());
             canonical.put("duration_seconds", cut.path("durationSeconds").asInt());
             canonical.put("role", cut.path("commercialRole").asText());
+            canonical.put("narrative_phase", cut.path("narrativePhase").asText());
             canonical.put("visual_objective", cut.path("visualObjective").asText());
+            canonical.put("continuity_anchor", cut.path("continuityAnchor").asText());
             canonical.put("reuse_existing_material", cut.path("reuseExistingMaterial").asBoolean());
             canonical.put("post_production_text", cut.path("postProductionText").asText());
         });

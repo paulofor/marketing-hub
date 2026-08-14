@@ -6,17 +6,19 @@
     "creativeRationale": {"type": "string", "minLength": 10},
     "cuts": {
       "type": "array",
-      "minItems": 4,
+      "minItems": 5,
       "maxItems": 12,
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["order", "durationSeconds", "commercialRole", "visualObjective", "reuseExistingMaterial", "postProductionText"],
+        "required": ["order", "durationSeconds", "commercialRole", "narrativePhase", "visualObjective", "continuityAnchor", "reuseExistingMaterial", "postProductionText"],
         "properties": {
           "order": {"type": "integer", "minimum": 1},
           "durationSeconds": {"type": "integer", "minimum": 1},
           "commercialRole": {"type": "string", "enum": ["HOOK_DOR", "RESULTADO", "MECANISMO", "PROVA", "CTA"]},
+          "narrativePhase": {"type": "string", "enum": ["HOOK", "SETUP", "DISCOVERY", "DEMONSTRATION", "TRANSFORMATION", "PROOF", "CTA"]},
           "visualObjective": {"type": "string", "minLength": 12},
+          "continuityAnchor": {"type": "string", "minLength": 8},
           "reuseExistingMaterial": {"type": "boolean"},
           "postProductionText": {"type": "string"}
         }

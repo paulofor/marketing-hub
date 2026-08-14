@@ -8,6 +8,7 @@ WORKDIR /app
 COPY package.json ./
 COPY src ./src
 COPY prompts ./prompts
+COPY scripts ./scripts
 
 ENV NODE_ENV=production
 

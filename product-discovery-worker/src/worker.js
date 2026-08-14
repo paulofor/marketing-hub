@@ -17,6 +17,7 @@ import {
   recentOperationalLogLines,
 } from "./operational-log.js";
 import { planDirectedResearch } from "./argos-codex.js";
+import { startCodexAuthReconnectConsumer } from "./codex-auth-reconnect.js";
 
 const backendBaseUrl = process.env.BACKEND_BASE_URL || "http://191.252.181.168";
 const pollIntervalMs = Number(
@@ -52,6 +53,10 @@ async function main() {
     maxSearchResults,
     logger: operationalLogger,
     logLines: recentOperationalLogLines,
+  });
+  startCodexAuthReconnectConsumer({
+    backendBaseUrl,
+    logger: operationalLogger,
   });
   await runCycle();
   setInterval(runCycle, pollIntervalMs);
@@ -90,12 +95,12 @@ async function processJob(job) {
     const results = await searchInternet(
       { ...job, directedQueries: directed.plan.publicQueries },
       {
-      config: searchConfig,
-      maxSearchResults,
-      minSearchQueries,
-      maxSearchQueries,
-      maxResultsPerQuery,
-      logger: operationalLogger,
+        config: searchConfig,
+        maxSearchResults,
+        minSearchQueries,
+        maxSearchQueries,
+        maxResultsPerQuery,
+        logger: operationalLogger,
       },
     );
     const report = analyzeSearchResults(job, results);

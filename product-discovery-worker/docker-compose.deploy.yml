@@ -14,7 +14,7 @@ services:
       ARGOS_CODEX_MODEL: ${ARGOS_CODEX_MODEL:-gpt-5.6-sol}
       CODEX_HOME: /home/node/.codex
     volumes:
-      - ${ARGOS_CODEX_HOME:-/root/infra/argos/codex-home}:/home/node/.codex:ro
+      - ${ARGOS_CODEX_HOME:-/root/infra/argos/codex-home}:/home/node/.codex
     secrets:
       - brave_search_api_key
 

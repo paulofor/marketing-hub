@@ -26,4 +26,4 @@ services:
       - "${PRODUCT_DISCOVERY_HEALTH_BIND_ADDRESS:-0.0.0.0}:${PRODUCT_DISCOVERY_HEALTH_PUBLISHED_PORT:-18081}:8080"
     restart: unless-stopped
     volumes:
-      - ${ARGOS_CODEX_HOME:-./.codex-empty}:/home/node/.codex:ro
+      - ${ARGOS_CODEX_HOME:-./.codex-empty}:/home/node/.codex

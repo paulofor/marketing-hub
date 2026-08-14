@@ -16,6 +16,7 @@ const CODEX_EXECUTORS = new Set([
   "meta-ad-approver",
   "landing-generator",
   "video-maker",
+  "market-radar",
 ]);
 
 export default function AgentListPage() {

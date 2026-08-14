@@ -66,6 +66,25 @@ vi.mock("../../api/agent/useAgentWorkMonitor", () => ({
         },
       },
       {
+        agentId: 11,
+        nickname: "Argos",
+        agentName: "Radar de mercado",
+        agentKey: "market-radar",
+        workStatus: "IDLE",
+        currentWork: "Aguardando pesquisa dirigida",
+        progressDetail: "Sem ciclo pendente",
+        externalDecisionRequired: false,
+        dailyTokens: 0,
+        executorHealth: {
+          status: "BLOCKED",
+          expectedVersion: 1,
+          deployedVersion: 1,
+          versionCurrent: true,
+          backendAccessible: true,
+          codexAuthenticated: false,
+        },
+      },
+      {
         agentId: 10,
         nickname: "Atena",
         agentName: "Estrategista de experimentos",
@@ -210,7 +229,7 @@ describe("AgentListPage", () => {
 
     expect(
       screen.getAllByRole("button", { name: "Reconectar Codex" }),
-    ).toHaveLength(4);
+    ).toHaveLength(5);
   });
 
   it("conduz as sessões em sequência usando o estado informado pelo backend", async () => {
@@ -226,7 +245,7 @@ describe("AgentListPage", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Preparar 4 agentes Codex" }),
+      screen.getByRole("heading", { name: "Preparar 5 agentes Codex" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Criar sessão de Apolo" }),

@@ -41,6 +41,7 @@ public class BackendQualityReviewService {
   private static final String STATUS_WAITING_OPENAI_DISPATCH = "AGUARDANDO_RETORNO_OPENAI";
   private static final String STATUS_COMPLETED = "CONCLUIDO";
   private static final String STATUS_FAILED = "FALHA";
+  private static final int MAX_QUALITY_REVIEWS_PER_CYCLE = 4;
 
   private final ExperimentRepository experimentRepository;
   private final GeraLandingStageExecutionRepository executionRepository;
@@ -71,7 +72,7 @@ public class BackendQualityReviewService {
             .orElseThrow(
                 () -> new EntityNotFoundException("Experiment not found: " + experimentId));
     GeraLandingStageExecution execution =
-        createExecution(experiment, "manual/start", UUID.randomUUID().toString());
+        createExecution(experiment, "manual/start", resolveCurrentCycle(experiment.getId()));
     return new GeraLandingQualityReviewStartResponse(
         fromDatabaseIdJob(execution.getIdJob()), execution.getStatus(), null);
   }
@@ -247,7 +248,36 @@ public class BackendQualityReviewService {
   /** Cria o registro inicial da execução de Quality Gate visual com status pendente. */
   private GeraLandingStageExecution createExecution(
       Experiment experiment, String promptTemplateId, String autonomousCycleId) {
+    String htmlHash = sha256Hex(experiment.getHtmlGeraLanding());
+    List<GeraLandingStageExecution> cycleReviews =
+        executionRepository
+            .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
+                experiment.getId(), STAGE_CODE, autonomousCycleId);
+    if (cycleReviews == null) {
+      cycleReviews = List.of();
+    }
+    for (GeraLandingStageExecution previous : cycleReviews) {
+      if (htmlHash != null
+          && htmlHash.equals(
+              parseAudit(previous.getQualityReviewAudit()).get("landingHtmlSha256"))) {
+        log.info(
+            "Quality Review não duplicado porque o HTML não mudou. experimentId={} autonomousCycleId={} previousJobId={}",
+            experiment.getId(),
+            autonomousCycleId,
+            fromDatabaseIdJob(previous.getIdJob()));
+        return previous;
+      }
+    }
+    if (cycleReviews.size() >= MAX_QUALITY_REVIEWS_PER_CYCLE) {
+      throw new IllegalStateException(
+          "Limite de convergência da landing atingido para o ciclo; exige decisão humana");
+    }
     Instant now = Instant.now();
+    Map<String, Object> initialAudit = new LinkedHashMap<>();
+    initialAudit.put("auditSchemaVersion", "quality-review-audit/v1");
+    initialAudit.put("landingHtmlSha256", htmlHash);
+    initialAudit.put("convergenceReviewNumber", cycleReviews.size() + 1);
+    initialAudit.put("convergenceReviewLimit", MAX_QUALITY_REVIEWS_PER_CYCLE);
     GeraLandingStageExecution execution =
         GeraLandingStageExecution.builder()
             .experimentId(experiment.getId())
@@ -258,6 +288,7 @@ public class BackendQualityReviewService {
             .createdAt(now)
             .promptTemplateId(promptTemplateId)
             .promptContent("Quality Gate visual da landing final via modelo de visão OpenAI.")
+            .qualityReviewAudit(serializeAudit(initialAudit))
             .status(STATUS_STARTED)
             .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
             .build();

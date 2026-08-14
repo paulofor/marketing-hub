@@ -2,10 +2,12 @@ package com.marketinghub.geralanding.qualityreview.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -56,6 +58,78 @@ class BackendQualityReviewServiceTest {
                     execution.getStageCode().equals("landing-page-quality-review")
                         && execution.getStatus().equals("INICIADO")
                         && execution.getIdJob() != null));
+  }
+
+  /** Não deve consumir uma nova revisão quando a versão do HTML já foi revisada no mesmo ciclo. */
+  @Test
+  void reviewAfterHtmlGenerationShouldReuseReviewWhenHtmlDidNotChange() {
+    ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
+    GeraLandingStageExecutionRepository executionRepository =
+        mock(GeraLandingStageExecutionRepository.class);
+    BackendQualityReviewService service =
+        new BackendQualityReviewService(
+            experimentRepository,
+            executionRepository,
+            new ObjectMapper(),
+            mock(ApplicationEventPublisher.class));
+    Experiment experiment = mock(Experiment.class);
+    when(experiment.getId()).thenReturn(88L);
+    when(experiment.getHtmlGeraLanding()).thenReturn("<html>versao-a</html>");
+    GeraLandingStageExecution previous =
+        GeraLandingStageExecution.builder()
+            .experimentId(88L)
+            .stageCode("landing-page-quality-review")
+            .autonomousCycleId("cycle-88")
+            .status("CONCLUIDO")
+            .idJob("review-existing".getBytes(StandardCharsets.UTF_8))
+            .qualityReviewAudit(
+                "{\"landingHtmlSha256\":\"6ed7a018f3979a8dc9188bddf73a9f7518cf9973732275aa0a20d74947091dfe\"}")
+            .build();
+    when(executionRepository
+            .findTopByExperimentIdAndAutonomousCycleIdIsNotNullOrderByExecutionRequestedAtDesc(88L))
+        .thenReturn(Optional.of(previous));
+    when(executionRepository
+            .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
+                88L, "landing-page-quality-review", "cycle-88"))
+        .thenReturn(List.of(previous));
+
+    String jobId = service.reviewAfterHtmlGeneration(experiment);
+
+    assertEquals("review-existing", jobId);
+    verify(executionRepository, never()).save(any(GeraLandingStageExecution.class));
+  }
+
+  /** Deve bloquear uma quinta revisão mesmo quando o HTML muda no mesmo ciclo autônomo. */
+  @Test
+  void reviewAfterHtmlGenerationShouldEnforceConvergenceLimitPerCycle() {
+    ExperimentRepository experimentRepository = mock(ExperimentRepository.class);
+    GeraLandingStageExecutionRepository executionRepository =
+        mock(GeraLandingStageExecutionRepository.class);
+    BackendQualityReviewService service =
+        new BackendQualityReviewService(
+            experimentRepository,
+            executionRepository,
+            new ObjectMapper(),
+            mock(ApplicationEventPublisher.class));
+    Experiment experiment = mock(Experiment.class);
+    when(experiment.getId()).thenReturn(88L);
+    when(experiment.getHtmlGeraLanding()).thenReturn("<html>versao-nova</html>");
+    GeraLandingStageExecution cycle =
+        GeraLandingStageExecution.builder()
+            .experimentId(88L)
+            .autonomousCycleId("cycle-88")
+            .idJob("review-4".getBytes(StandardCharsets.UTF_8))
+            .build();
+    when(executionRepository
+            .findTopByExperimentIdAndAutonomousCycleIdIsNotNullOrderByExecutionRequestedAtDesc(88L))
+        .thenReturn(Optional.of(cycle));
+    when(executionRepository
+            .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
+                88L, "landing-page-quality-review", "cycle-88"))
+        .thenReturn(List.of(cycle, cycle, cycle, cycle));
+
+    assertThrows(IllegalStateException.class, () -> service.reviewAfterHtmlGeneration(experiment));
+    verify(executionRepository, never()).save(any(GeraLandingStageExecution.class));
   }
 
   /**

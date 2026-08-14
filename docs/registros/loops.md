@@ -60,6 +60,7 @@
 - Fechamento complementar em planos legados (2026-08-08): quando hipotese e nicho nao estao gravados diretamente no plano, a reconciliacao usa o contexto do experimento ja vinculado; teste de contrato cobre o caso real do plano 2 com troca do experimento 84 para o 85.
 - Fechamento complementar no Aprovador Meta (2026-08-09): o worker reservava três criativos de uma vez, marcava todos como `PROCESSING`, mas executava o Codex sequencialmente. Um item lento multiplicava o tempo do lote e ocultava quais revisões realmente estavam em execução. O lote agora usa tarefas virtuais concorrentes, mantendo timeout, telemetria, callback e falha isolados por criativo; teste de contrato exige início simultâneo dos três itens.
 - Fechamento complementar no Aprovador Meta (2026-08-09): reinício ou timeout do worker deixava revisões indefinidamente em `PROCESSING`, pois a reserva não possuía lease. O backend agora persiste início e recuperações, reenfileira leases órfãos com limite e encerra em `FAILED` com causa auditável após reincidência.
+- Fechamento complementar no MCP do Aprovador Meta (2026-08-14): a telemetria genérica existia, mas exigia conhecer que a execução era correlacionada pelo `creativeId` e não cruzava o heartbeat com o parecer canônico nem com a memória governada. A tool `meta_ad_approver_execution_telemetry` passa a consolidar parecer, processo, atividade, bloqueio e contagens separadas de memórias confirmadas e candidatas; testes preservam o contrato e impedem tratar memória candidata como consenso.
 - Fechamento complementar nas mesas e planos comerciais (2026-08-11): o limite fixo de 40 minutos encerrava Atena e Dédalo mesmo com atividade, leases antigas podiam permanecer `RUNNING` fora do item mais recente e uma falha na fila auxiliar de vídeo impedia Plutus de consumir sua fila financeira. O timeout passa a medir inatividade com teto absoluto, leases órfãs recebem uma única retomada com a entrada congelada e filas independentes falham isoladamente. Testes de contrato impedem transformar timeout recuperável em falha definitiva e impedem a fila de vídeo de causar starvation financeiro.
 - Fechamento complementar em dossiês e monitor (2026-08-11): cadastrar oportunidade não abria execução consumível por Argos e o monitor não reconhecia `FALHA` como estado terminal de Dédalo. Cada dossiê agora cria ciclo de descoberta e tarefa correlacionada; conclusão sincroniza evidências reais, falha bloqueia a mesa e o monitor trata status terminal ou inatividade como bloqueio, impedindo trabalho fantasma.
 - Fechamento complementar em pareceres de oportunidade (2026-08-13): recriar uma tarefa administrativa para Atena não alterava `opportunity_agent_review`, que é a fila realmente consumida pelo worker, deixando o dossiê sem nova execução. O painel agora reenfileira o parecer canônico vinculado ao dossiê e ao agente, impede duplicidade durante `RUNNING` ou após conclusão e expõe o identificador da execução; testes de backend e frontend preservam o vínculo ponta a ponta.
@@ -119,6 +120,15 @@
 - **Causa-raiz confirmada:** o cliente compartilhado exigia o campo legado `authMode` na raiz da resposta de `account/read`; o App Server atual devolve a identidade em `account.type`, fazendo uma autenticação concluída terminar localmente com código de erro.
 - **Correção efetiva:** validar primeiro `account.type`, preservando compatibilidade com `authMode`, e somente confirmar o callback depois da prova retornada pelo próprio App Server.
 - **Prevenção:** o teste ponta a ponta do device code simula o contrato atual de `account/read` e exige callback autenticado sem transportar token ou refresh token.
+
+## LOOP-ARGOS-CODEX-AUTH-GENERIC-FAILURE — falha real apagada na reconexão
+
+- **Severidade:** ALTO.
+- **Status:** fechado localmente em 2026-08-14; aguarda publicação.
+- **Sintoma:** Argos reserva o pedido de reconexão, encerra antes de exibir o device code e o painel informa apenas que o App Server não confirmou a sessão.
+- **Causa-raiz confirmada:** o coordenador herdava o `stderr` do processo sem capturá-lo e substituía qualquer falha do App Server ou callback por uma mensagem genérica; uma indisponibilidade transitória do backend também encerrava todo o OAuth na primeira tentativa.
+- **Correção efetiva:** capturar e sanitizar a causa operacional, persistir o último diagnóstico no pedido e repetir somente o callback ao backend até três vezes, sem reiniciar nem duplicar o fluxo OAuth.
+- **Prevenção:** teste contratual exige que uma falha anterior ao device code preserve a causa segura no backend, sem token, cookie ou credencial.
 
 ## LOOP-TEMIS-LANDING-WITHOUT-DEDALO-DELEGATION — diagnóstico sem responsável operacional
 

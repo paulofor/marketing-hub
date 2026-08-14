@@ -123,6 +123,80 @@ public class DatabaseDiagnosticsService {
     }
 
     /**
+     * Consolida o parecer canônico de Têmis com a atividade Codex e a memória governada usada para
+     * acelerar consenso sem transformar lembranças candidatas em aprovação.
+     */
+    public Map<String, Object> metaAdApproverTelemetry(long creativeId) {
+        List<Map<String, Object>> reviews = jdbcTemplate.queryForList(
+                """
+                        SELECT c.id AS creative_id, c.experiment_id, c.agent_review_status,
+                               c.agent_review_started_at, c.agent_reviewed_at,
+                               c.agent_review_recovery_count, c.agent_review_response_json,
+                               c.agent_review_model
+                        FROM creative c
+                        WHERE c.id = ?
+                        """,
+                creativeId);
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("creativeId", creativeId);
+        response.put("found", !reviews.isEmpty());
+        if (reviews.isEmpty()) {
+            response.put("review", null);
+            response.put("telemetry", null);
+            response.put("memory", Map.of("confirmed", 0, "candidates", 0));
+            return response;
+        }
+
+        Map<String, Object> review = reviews.getFirst();
+        long experimentId = ((Number) review.get("EXPERIMENT_ID")).longValue();
+        Map<String, Object> telemetry = codexAgentTelemetry("META_AD_APPROVER", creativeId);
+        List<Map<String, Object>> memoryRows = jdbcTemplate.queryForList(
+                """
+                        SELECT status, COUNT(*) AS total, COALESCE(SUM(retrieval_count), 0) AS retrievals
+                        FROM premium_agent_memory
+                        WHERE agent_key = 'meta-ad-approver'
+                          AND scope_type = 'EXPERIMENT'
+                          AND scope_id = ?
+                          AND (valid_until IS NULL OR valid_until > UTC_TIMESTAMP())
+                          AND status <> 'REJECTED'
+                        GROUP BY status
+                        """,
+                String.valueOf(experimentId));
+        int confirmed = memoryCount(memoryRows, "CONFIRMED");
+        int candidates = memoryCount(memoryRows, "CANDIDATE");
+        boolean processing = "PROCESSING".equals(String.valueOf(review.get("AGENT_REVIEW_STATUS")));
+        Object telemetryValue = telemetry.get("telemetry");
+        boolean stale = telemetryValue instanceof Map<?, ?> row
+                && number(row.get("STALE")) != null
+                && number(row.get("STALE")).intValue() == 1;
+
+        response.put("experimentId", experimentId);
+        response.put("review", review);
+        response.put("telemetry", telemetryValue);
+        response.put("blocked", processing && (telemetryValue == null || stale));
+        response.put("memory", Map.of(
+                "confirmed", confirmed,
+                "candidates", candidates,
+                "policy", "Candidatas orientam investigação; somente feedback independente confirma memória."));
+        return response;
+    }
+
+    /** Soma memórias de um estado sem depender da capitalização do driver JDBC. */
+    private int memoryCount(List<Map<String, Object>> rows, String status) {
+        return rows.stream()
+                .filter(row -> status.equalsIgnoreCase(String.valueOf(row.get("STATUS"))))
+                .map(row -> number(row.get("TOTAL")))
+                .filter(java.util.Objects::nonNull)
+                .mapToInt(Number::intValue)
+                .sum();
+    }
+
+    /** Converte um valor numérico retornado pelo driver. */
+    private Number number(Object value) {
+        return value instanceof Number number ? number : null;
+    }
+
+    /**
      * Valida o nome de tabela para impedir injeção em leitura dinâmica.
      */
     private void validateTableName(String tableName) {

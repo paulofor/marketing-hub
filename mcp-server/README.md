@@ -24,6 +24,7 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 - `java_module_logs`: retorna logs operacionais com filtros opcionais por texto/intervalo e paginação (`lines`, `contains`, `from`, `to`, `offset`, `cursor`), incluindo `meta-ad-approver-worker`, `landing-generator-agent-worker`, `product-discovery-worker` e `growth-operator-worker`.
 - `studio_ledger_coverage`: compara todas as tentativas conhecidas de vídeo, áudio e imagem do Estúdio com o ledger financeiro, agrupadas por origem, tipo e provedor; evidencia entradas ausentes, custos desconhecidos e custos sem plano, sem interpretá-los como zero.
 - `codex_agent_execution_telemetry`: consulta heartbeat, processo ativo, eventos, bytes de saída e tokens realmente informados de uma execução dos agentes Cliente, Financeiro, Operador, Estrategista ou Aprovador Meta.
+- `meta_ad_approver_execution_telemetry`: recebe `creativeId` e cruza o parecer canônico de Têmis com heartbeat, processo, atividade, bloqueio e contagens separadas de memórias confirmadas e candidatas do experimento.
 - `meta_docs_get`: busca páginas de documentação da Meta em hosts aprovados.
 - `meta_graph_get`: executa leitura (`GET`) da Graph API com token configurado no MCP.
 - `meta_graph_debug_token`: executa `debug_token` para validar tokens.

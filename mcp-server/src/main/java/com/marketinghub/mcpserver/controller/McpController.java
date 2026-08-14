@@ -194,6 +194,16 @@ public class McpController {
                                     "additionalProperties", false)
                     ),
                     Map.of(
+                            "name", "meta_ad_approver_execution_telemetry",
+                            "description", "Consulta o parecer canônico de Têmis, heartbeat Codex, bloqueio e memória governada pelo criativo.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(
+                                            "creativeId", Map.of("type", "integer", "minimum", 1)),
+                                    "required", List.of("creativeId"),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
                             "name", "pde_db_health",
                             "description", "Valida conectividade com o schema efetivo do PDE em produção e retorna o alvo JDBC sanitizado para auditoria de host/schema.",
                             "inputSchema", Map.of(
@@ -470,6 +480,10 @@ public class McpController {
                         databaseDiagnosticsService.codexAgentTelemetry(
                                 requiredString(arguments, "agentType"), requiredLong(arguments, "executionId")),
                         "Codex agent execution telemetry");
+                case "meta_ad_approver_execution_telemetry" -> successToolResult(id,
+                        databaseDiagnosticsService.metaAdApproverTelemetry(
+                                requiredLong(arguments, "creativeId")),
+                        "Meta ad approver canonical execution telemetry");
                 case "pde_db_health" -> successToolResult(id, pdeDatabaseDiagnosticsService.checkConnection(),
                         "PDE database connectivity status");
                 case "pde_db_list_tables" -> successToolResult(id, pdeDatabaseDiagnosticsService.listTables(),

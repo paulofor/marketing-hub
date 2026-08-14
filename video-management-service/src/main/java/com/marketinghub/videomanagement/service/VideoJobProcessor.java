@@ -39,6 +39,7 @@ public class VideoJobProcessor {
     private final VideoManagementProperties properties;
     private final ObjectMapper objectMapper;
     private final ApolloStoryboardPlanner apolloStoryboardPlanner;
+    private final ApolloGovernedLearningReporter learningReporter;
 
     /** Configura dependências de execução, observabilidade e planejamento prévio. */
     public VideoJobProcessor(BackendVideoClient backendClient,
@@ -47,7 +48,8 @@ public class VideoJobProcessor {
                              VideoJobObservabilityService observabilityService,
                              VideoManagementProperties properties,
                              ObjectMapper objectMapper,
-                             ApolloStoryboardPlanner apolloStoryboardPlanner) {
+                             ApolloStoryboardPlanner apolloStoryboardPlanner,
+                             ApolloGovernedLearningReporter learningReporter) {
         this.backendClient = backendClient;
         this.providerRegistry = providerRegistry;
         this.assetUploader = assetUploader;
@@ -55,6 +57,7 @@ public class VideoJobProcessor {
         this.properties = properties;
         this.objectMapper = objectMapper;
         this.apolloStoryboardPlanner = apolloStoryboardPlanner;
+        this.learningReporter = learningReporter;
     }
 
     /** Executa um job e impede o provider quando o planejamento ou gate prévio falhar. */
@@ -68,8 +71,10 @@ public class VideoJobProcessor {
             backendClient.reportHeartbeat(job.id(), new JobHeartbeatPayload(
                     "Job em execução pelo worker " + properties.getWorkerId(), null));
             SalesVideoProfile profile = loadProfile(job);
+            SalesVideoJob originalJob = job;
             job = apolloStoryboardPlanner.planAndApprove(job, profile,
                     new VideoJobProgressReporter(backendClient, job.id()));
+            learningReporter.observe(originalJob, job);
             VideoProvider provider = providerRegistry.resolve(job)
                     .orElseThrow(() -> new VideoProviderException("Nenhum provider configurado para o job"));
             ProviderArtifacts artifacts = provider.render(job, profile,

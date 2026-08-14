@@ -173,6 +173,49 @@ describe("AudioVideoStudioPage", () => {
     expect(screen.getByText(/anúncio de exportação 4k/i)).toBeTruthy();
   });
 
+  it("mostra baseline, candidata, custo, memoria e decisao do piloto de Apolo", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/studio/catalog") {
+        return Promise.resolve({ data: studioCatalog });
+      }
+      if (url === "/api/internal/agent-learning/v1/agents/apollo/experiments") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 7,
+              agentKey: "apollo",
+              scopeType: "VIDEO_STORYBOARD",
+              scopeId: "4",
+              candidateVersion: "codex-v2",
+              baselineVersion: "api-v1",
+              status: "READY_FOR_PROMOTION",
+              memoryId: 44,
+              baselineResultJson:
+                '{"score":70,"cost":1,"reviewer":"BACKEND_DETERMINISTIC_QA_V1"}',
+              candidateResultJson:
+                '{"score":82,"cost":1,"reviewer":"BACKEND_DETERMINISTIC_QA_V1"}',
+              decisionEvidence: "holdoutGain=12; externalEffects=false",
+              minimumGain: 1,
+              maximumCostIncreaseRatio: 0,
+              regressionPassed: true,
+              localValidationPassed: true,
+              createdAt: "2026-08-14T19:00:00Z",
+            },
+          ],
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    setup();
+
+    expect(await screen.findByText(/#7 · READY_FOR_PROMOTION/i)).toBeTruthy();
+    expect(screen.getByText(/Baseline api-v1: nota 70/i)).toBeTruthy();
+    expect(screen.getByText(/Candidata codex-v2: nota 82/i)).toBeTruthy();
+    expect(screen.getByText(/Memoria candidata #44/i)).toBeTruthy();
+    expect(screen.getByText(/holdoutGain=12/i)).toBeTruthy();
+  });
+
   it("preenche e salva o blueprint cinematografico da MUSA v7", async () => {
     const user = userEvent.setup();
     setup();

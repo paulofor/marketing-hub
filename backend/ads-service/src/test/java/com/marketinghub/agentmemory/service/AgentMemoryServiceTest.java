@@ -38,6 +38,21 @@ class AgentMemoryServiceTest {
     assertThat(captor.getValue().getAgentKey()).isEqualTo("meta-ad-approver");
   }
 
+  /** Confirma que Apolo pode registrar hipótese sem se autoaprovar. */
+  @Test
+  void registersApolloLearningOnlyAsCandidate() {
+    when(repository.findByAgentKeyAndTenantKeyAndScopeTypeAndScopeIdAndContentSha256(
+            any(), any(), any(), any(), any()))
+        .thenReturn(Optional.empty());
+    when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    assertThat(service.register("apollo", request()).status()).isEqualTo("CANDIDATE");
+    verify(repository)
+        .save(
+            argThat(
+                value ->
+                    "apollo".equals(value.getAgentKey()) && "CANDIDATE".equals(value.getStatus())));
+  }
+
   /** Confirma que recuperacao fixa agente, escopo e teto de doze itens. */
   @Test
   void retrievesOnlyBoundedScopedMemory() {

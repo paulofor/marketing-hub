@@ -256,8 +256,18 @@ public class GovernedAgentLearningExperiment {
     evaluatedAt = value;
   }
 
+  /** Retorna a avaliação. */
+  public Instant getEvaluatedAt() {
+    return evaluatedAt;
+  }
+
   /** Define a promoção. */
   public void setPromotedAt(Instant value) {
     promotedAt = value;
+  }
+
+  /** Retorna a promoção. */
+  public Instant getPromotedAt() {
+    return promotedAt;
   }
 }

@@ -44,6 +44,7 @@ import {
   useCreateVideoProductionCycle,
   useVideoProductionCycles,
 } from "../../api/salesVideo/useVideoProductionCycles";
+import { useApolloLearningExperiments } from "../../api/salesVideo/useApolloLearningExperiments";
 import {
   useEvaluateStoryboardScene,
   useVideoStoryboard,
@@ -58,6 +59,19 @@ import type {
 import PageTitle from "../../components/PageTitle";
 import { getStudioCommercialLabel } from "./audioVideoStudioLabels";
 import "./AudioVideoStudioPage.css";
+
+function learningMetrics(value?: string) {
+  if (!value) return undefined;
+  try {
+    return JSON.parse(value) as {
+      score?: number;
+      cost?: number;
+      reviewer?: string;
+    };
+  } catch {
+    return undefined;
+  }
+}
 
 type StudioBriefing = {
   productId: string;
@@ -961,6 +975,7 @@ export default function AudioVideoStudioPage() {
   const createVideoProject = useCreateVideoProject();
   const updateVideoProject = useUpdateVideoProject();
   const productionCycles = useVideoProductionCycles(editableProjectId);
+  const apolloLearning = useApolloLearningExperiments();
   const storyboardQuery = useVideoStoryboard(editableProjectId);
   const evaluateStoryboardScene = useEvaluateStoryboardScene(editableProjectId);
   const createProductionCycle =
@@ -1884,6 +1899,55 @@ export default function AudioVideoStudioPage() {
                 ))}
               </div>
               <div className="audio-video-studio-page__columns">
+                <div className="audio-video-studio-page__panel">
+                  <h2>Piloto de autoaperfeicoamento de Apolo</h2>
+                  {apolloLearning.isLoading ? (
+                    <p>Carregando experimentos governados...</p>
+                  ) : apolloLearning.isError ? (
+                    <p>Nao foi possivel consultar o piloto de Apolo.</p>
+                  ) : apolloLearning.data?.length ? (
+                    <ol>
+                      {apolloLearning.data.slice(0, 5).map((experiment) => {
+                        const baseline = learningMetrics(
+                          experiment.baselineResultJson,
+                        );
+                        const candidate = learningMetrics(
+                          experiment.candidateResultJson,
+                        );
+                        return (
+                          <li key={experiment.id}>
+                            <strong>
+                              #{experiment.id} · {experiment.status}
+                            </strong>
+                            <div>
+                              Baseline {experiment.baselineVersion}: nota{" "}
+                              {baseline?.score ?? "—"}, custo US${" "}
+                              {baseline?.cost ?? "—"}
+                            </div>
+                            <div>
+                              Candidata {experiment.candidateVersion}: nota{" "}
+                              {candidate?.score ?? "—"}, custo US${" "}
+                              {candidate?.cost ?? "—"}
+                            </div>
+                            <div>
+                              Memoria candidata #{experiment.memoryId} · QA{" "}
+                              {candidate?.reviewer ?? "pendente"}
+                            </div>
+                            <div>
+                              {experiment.decisionEvidence ??
+                                "Aguardando amostra e decisao independente."}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  ) : (
+                    <p>
+                      Nenhum experimento concluido. O piloto aguarda 10 casos de
+                      replay e 5 de holdout sem provider pago.
+                    </p>
+                  )}
+                </div>
                 <div className="audio-video-studio-page__panel">
                   <fieldset>
                     <legend>Prompts editaveis e persistidos por cena</legend>

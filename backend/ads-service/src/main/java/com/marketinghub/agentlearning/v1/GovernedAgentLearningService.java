@@ -162,6 +162,13 @@ public class GovernedAgentLearningService {
         .toList();
   }
 
+  /** Lista os experimentos auditáveis do agente sem permitir mutação pelo painel. */
+  @Transactional(readOnly = true)
+  public List<LearningExperimentResponse> list(String agentKey) {
+    validateAgent(agentKey);
+    return repository.findByAgentKeyOrderByIdDesc(agentKey).stream().map(this::response).toList();
+  }
+
   /** Calcula aumento relativo de custo e bloqueia baseline zero com candidata onerosa. */
   private BigDecimal costRatio(BigDecimal baseline, BigDecimal candidate) {
     if (baseline.signum() == 0) {
@@ -218,9 +225,21 @@ public class GovernedAgentLearningService {
     return new LearningExperimentResponse(
         value.getId(),
         value.getAgentKey(),
+        value.getScopeType(),
+        value.getScopeId(),
         value.getCandidateVersion(),
         value.getBaselineVersion(),
         value.getStatus(),
-        value.getDecisionEvidence());
+        value.getMemoryId(),
+        value.getBaselineResultJson(),
+        value.getCandidateResultJson(),
+        value.getDecisionEvidence(),
+        value.getMinimumGain(),
+        value.getMaximumCostIncreaseRatio(),
+        value.isRegressionPassed(),
+        value.isLocalValidationPassed(),
+        value.getCreatedAt(),
+        value.getEvaluatedAt(),
+        value.getPromotedAt());
   }
 }

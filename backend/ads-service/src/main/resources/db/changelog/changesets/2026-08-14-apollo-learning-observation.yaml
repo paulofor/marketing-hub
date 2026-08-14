@@ -1,0 +1,33 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-14-apollo-learning-observation-001
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE apollo_learning_observation (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                job_id BIGINT NOT NULL,
+                scope_id VARCHAR(120) NOT NULL,
+                baseline_version VARCHAR(80) NOT NULL,
+                candidate_version VARCHAR(80) NOT NULL,
+                baseline_score DECIMAL(8,4) NOT NULL,
+                candidate_score DECIMAL(8,4) NOT NULL,
+                baseline_cost DECIMAL(12,4) NOT NULL,
+                candidate_cost DECIMAL(12,4) NOT NULL,
+                comparison_json LONGTEXT NOT NULL,
+                qa_reviewer VARCHAR(80) NOT NULL,
+                qa_passed BIT NOT NULL DEFAULT 0,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_apollo_learning_observation_job (job_id),
+                INDEX idx_apollo_learning_observation_sample (scope_id, baseline_version, candidate_version, id),
+                CONSTRAINT fk_apollo_learning_observation_job FOREIGN KEY (job_id) REFERENCES sales_video_job(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

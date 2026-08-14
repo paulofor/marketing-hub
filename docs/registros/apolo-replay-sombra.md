@@ -13,6 +13,15 @@ replay e holdout, versões, métricas e decisão passam a ser persistidos pelo m
 pelos demais agentes homologados. O backend rejeita a avaliação se houver chamada a provider,
 autorização de gasto ou publicação.
 
+Ainda em 2026-08-14, o replay foi ligado ao fluxo real de storyboard. Cada job registra no backend
+uma observação idempotente com baseline, candidata, nota, custo previsto e resposta bruta. O backend,
+e não Apolo, aplica o QA determinístico. Ao acumular uma amostra homogênea de 10 casos de replay e
+5 de holdout, cria automaticamente uma memória `CANDIDATE`, congela o experimento e calcula a decisão.
+A confirmação da memória continua exigindo promoção explícita posterior; o replay não muda o job,
+não chama provider, não autoriza gasto e não publica. O Estúdio expõe baseline, candidata, pontuação,
+custo, memória, QA e decisão sem recomputar os dados no frontend. A ferramenta MCP
+`apollo_learning_experiments` oferece a mesma leitura auditável para diagnóstico operacional.
+
 ## Matriz de homologação
 
 | Cenário | Resultado esperado |

@@ -10,10 +10,20 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/internal/agent-learning/v1")
 public class GovernedAgentLearningController {
   private final GovernedAgentLearningService service;
+  private final ApolloLearningOrchestrationService apolloService;
 
   /** Inicializa o controller com a governança central. */
-  public GovernedAgentLearningController(GovernedAgentLearningService service) {
+  public GovernedAgentLearningController(
+      GovernedAgentLearningService service, ApolloLearningOrchestrationService apolloService) {
     this.service = service;
+    this.apolloService = apolloService;
+  }
+
+  /** Recebe um replay real de Apolo e acumula a amostra sem liberar geração paga. */
+  @PostMapping("/agents/apollo/observations")
+  public ApolloLearningObservationResponse observeApollo(
+      @Valid @RequestBody ApolloLearningObservationRequest request) {
+    return apolloService.observe(request);
   }
 
   /** Congela uma candidata e os casos de replay antes dos testes. */
@@ -42,5 +52,11 @@ public class GovernedAgentLearningController {
   public List<LearningExperimentResponse> promoted(
       @PathVariable String agentKey, @RequestParam String scopeType, @RequestParam String scopeId) {
     return service.promoted(agentKey, scopeType, scopeId);
+  }
+
+  /** Lista o histórico completo do agente para acompanhamento no Estúdio. */
+  @GetMapping("/agents/{agentKey}/experiments")
+  public List<LearningExperimentResponse> list(@PathVariable String agentKey) {
+    return service.list(agentKey);
   }
 }

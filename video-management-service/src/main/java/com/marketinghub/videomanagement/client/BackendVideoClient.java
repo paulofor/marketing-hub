@@ -8,6 +8,7 @@ import com.marketinghub.videomanagement.client.payload.JobCompletionPayload;
 import com.marketinghub.videomanagement.client.payload.JobExpirationPayload;
 import com.marketinghub.videomanagement.client.payload.JobFailurePayload;
 import com.marketinghub.videomanagement.client.payload.JobHeartbeatPayload;
+import com.marketinghub.videomanagement.client.payload.ApolloLearningObservationPayload;
 import com.marketinghub.videomanagement.client.payload.JobProgressPayload;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import com.marketinghub.videomanagement.exception.BackendIntegrationException;
@@ -145,6 +146,24 @@ public class BackendVideoClient {
 
     public void reportHeartbeat(Long jobId, JobHeartbeatPayload payload) {
         postIgnoringBody("/internal/video/jobs/{jobId}/heartbeat", jobId, payload);
+    }
+
+    /** Envia uma comparação sombra para a governança central sem alterar o job ou liberar gasto. */
+    public void reportApolloLearning(ApolloLearningObservationPayload payload) {
+        try {
+            executeWithRetry("report Apollo learning", () -> authorized(webClient.post()
+                            .uri("/api/internal/agent-learning/v1/agents/apollo/observations")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(payload))
+                    .retrieve()
+                    .onStatus(status -> !status.is2xxSuccessful(), response ->
+                            mapError("Erro ao registrar aprendizado sombra de Apolo", response))
+                    .toBodilessEntity()
+                    .block());
+        } catch (Exception ex) {
+            log.error("Falha ao registrar aprendizado sombra de Apolo. jobId={}", payload.jobId(), ex);
+            throw wrap("Falha ao registrar aprendizado sombra de Apolo", ex);
+        }
     }
 
     public void completeJob(Long jobId, JobCompletionPayload payload) {

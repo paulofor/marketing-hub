@@ -44,7 +44,10 @@ import {
   useCreateVideoProductionCycle,
   useVideoProductionCycles,
 } from "../../api/salesVideo/useVideoProductionCycles";
-import { useApolloLearningExperiments } from "../../api/salesVideo/useApolloLearningExperiments";
+import {
+  useApolloLearningExperiments,
+  useApolloSkillCandidates,
+} from "../../api/salesVideo/useApolloLearningExperiments";
 import {
   useEvaluateStoryboardScene,
   useVideoStoryboard,
@@ -976,6 +979,7 @@ export default function AudioVideoStudioPage() {
   const updateVideoProject = useUpdateVideoProject();
   const productionCycles = useVideoProductionCycles(editableProjectId);
   const apolloLearning = useApolloLearningExperiments();
+  const apolloSkills = useApolloSkillCandidates();
   const storyboardQuery = useVideoStoryboard(editableProjectId);
   const evaluateStoryboardScene = useEvaluateStoryboardScene(editableProjectId);
   const createProductionCycle =
@@ -1946,6 +1950,34 @@ export default function AudioVideoStudioPage() {
                       Nenhum experimento concluido. O piloto aguarda 10 casos de
                       replay e 5 de holdout sem provider pago.
                     </p>
+                  )}
+                  <h3>Skills versionadas</h3>
+                  {apolloSkills.isError ? (
+                    <p>Nao foi possivel consultar as skills de Apolo.</p>
+                  ) : apolloSkills.data?.length ? (
+                    <ol>
+                      {apolloSkills.data.slice(0, 5).map((skill) => (
+                        <li key={skill.id}>
+                          <strong>
+                            {skill.skillKey} · {skill.status}
+                          </strong>
+                          <div>
+                            {skill.baselineVersion} → {skill.candidateVersion} ·
+                            seguranca {skill.safetyDecision}
+                          </div>
+                          <div>{skill.diffSummary}</div>
+                          <div>
+                            Monitoramento: {skill.approvedCases}/
+                            {skill.monitoredCases} aprovados
+                          </div>
+                          <div>
+                            {skill.rollbackReason ?? skill.safetyEvidence}
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p>Nenhuma skill candidata foi materializada.</p>
                   )}
                 </div>
                 <div className="audio-video-studio-page__panel">

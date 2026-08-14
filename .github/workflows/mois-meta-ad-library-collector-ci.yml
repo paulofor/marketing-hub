@@ -42,6 +42,14 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Package application
+        working-directory: mois-meta-ad-library-collector
+        run: mvn -B -DskipTests package
       - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}

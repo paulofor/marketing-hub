@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-14-apollo-skill-candidate
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE governed_agent_skill_candidate (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                experiment_id BIGINT NOT NULL,
+                agent_key VARCHAR(80) NOT NULL,
+                skill_key VARCHAR(120) NOT NULL,
+                baseline_version VARCHAR(80) NOT NULL,
+                candidate_version VARCHAR(80) NOT NULL,
+                content LONGTEXT NOT NULL,
+                diff_summary LONGTEXT NOT NULL,
+                provenance_json LONGTEXT NOT NULL,
+                safety_decision VARCHAR(40) NOT NULL,
+                safety_evidence LONGTEXT NOT NULL,
+                status VARCHAR(40) NOT NULL,
+                promoted_at DATETIME NULL,
+                rolled_back_at DATETIME NULL,
+                rollback_reason LONGTEXT NULL,
+                monitored_cases INT NOT NULL DEFAULT 0,
+                approved_cases INT NOT NULL DEFAULT 0,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_agent_skill_experiment (experiment_id),
+                UNIQUE KEY uk_agent_skill_version (agent_key, skill_key, candidate_version),
+                INDEX idx_agent_skill_active (agent_key, skill_key, status),
+                CONSTRAINT fk_agent_skill_experiment FOREIGN KEY (experiment_id)
+                  REFERENCES governed_agent_learning_experiment(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

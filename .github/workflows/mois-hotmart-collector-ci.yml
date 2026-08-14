@@ -94,6 +94,7 @@ jobs:
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_CHAVE != '' && secrets.VPS_SSH_CHAVE || secrets.VPS_SSH_KEY != '' && secrets.VPS_SSH_KEY || secrets.SSH_PRIVATE_KEY }}
         run: |
+          test -n "${VPS_SSH_KEY}" || { echo "Chave SSH de deploy ausente." >&2; exit 1; }
           install -m 700 -d ~/.ssh
           printf '%s\n' "${VPS_SSH_KEY}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
@@ -108,12 +109,14 @@ jobs:
 
       - name: Deploy with Docker Compose
         run: |
-          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
+          printf '%s\n' '${{ secrets.GITHUB_TOKEN }}' | ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "read -r GHCR_TOKEN && set -euo pipefail \
             && cd ${REMOTE_PATH} \
             && export MOIS_HOTMART_COLLECTOR_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${GITHUB_SHA} \
             && export COMPOSE_PROJECT_NAME=marketinghub-mois-hotmart-collector \
-            && docker login ${{ env.REGISTRY }} -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} \
-            && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
+            && printf '%s' \"\${GHCR_TOKEN}\" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin \
+            && (docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
+              || (docker image rm -f \"\${MOIS_HOTMART_COLLECTOR_IMAGE}\" 2>/dev/null || true; sleep 10; docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull) \
+              || (docker image rm -f \"\${MOIS_HOTMART_COLLECTOR_IMAGE}\" 2>/dev/null || true; sleep 20; docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull)) \
             && (docker rm -f mois-hotmart-collector 2>/dev/null || true) \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --remove-orphans \
             && docker image prune -af"

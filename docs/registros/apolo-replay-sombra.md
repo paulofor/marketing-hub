@@ -22,6 +22,12 @@ não chama provider, não autoriza gasto e não publica. O Estúdio expõe basel
 custo, memória, QA e decisão sem recomputar os dados no frontend. A ferramenta MCP
 `apollo_learning_experiments` oferece a mesma leitura auditável para diagnóstico operacional.
 
+Em 2026-08-14, o piloto passou a materializar também uma `SkillCandidate` de roteiro e storyboard.
+A candidata preserva procedência das 15 trajetórias, diff, versão e decisão de segurança. Ela somente
+pode ser promovida explicitamente depois do replay/holdout, entra em janela monitorada de cinco casos
+e sofre rollback diante de incidente, custo fora do teto ou taxa de aprovação inferior a 60%. A
+baseline permanece disponível e a skill não recebe autoridade para provider, gasto ou publicação.
+
 ## Matriz de homologação
 
 | Cenário | Resultado esperado |

@@ -26,6 +26,7 @@ class ApolloLearningOrchestrationServiceTest {
   private GovernedAgentLearningExperimentRepository experiments;
   private AgentMemoryService memoryService;
   private GovernedAgentLearningService learningService;
+  private ApolloSkillCandidateService skillService;
   private ApolloLearningOrchestrationService service;
 
   /** Prepara contratos isolados para validar a orquestração sem banco ou provider. */
@@ -35,9 +36,15 @@ class ApolloLearningOrchestrationServiceTest {
     experiments = mock(GovernedAgentLearningExperimentRepository.class);
     memoryService = mock(AgentMemoryService.class);
     learningService = mock(GovernedAgentLearningService.class);
+    skillService = mock(ApolloSkillCandidateService.class);
     service =
         new ApolloLearningOrchestrationService(
-            observations, experiments, memoryService, learningService, new ObjectMapper());
+            observations,
+            experiments,
+            memoryService,
+            learningService,
+            skillService,
+            new ObjectMapper());
     when(observations.findByJobId(anyLong())).thenReturn(Optional.empty());
     when(observations.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
     when(experiments.findByAgentKeyAndCandidateVersion(anyString(), anyString()))
@@ -83,6 +90,12 @@ class ApolloLearningOrchestrationServiceTest {
     ApolloLearningObservationResponse result = service.observe(request());
 
     assertEquals(77L, result.experimentId());
+    verify(skillService)
+        .createForExperiment(
+            argThat(value -> value.id().equals(77L)),
+            contains("QA independente"),
+            contains("diversidade visual"),
+            contains("jobIds"));
     assertEquals("READY_FOR_PROMOTION", result.status());
     verify(memoryService)
         .register(eq("apollo"), argThat(value -> value.sourceExecutionId().equals("job/99")));

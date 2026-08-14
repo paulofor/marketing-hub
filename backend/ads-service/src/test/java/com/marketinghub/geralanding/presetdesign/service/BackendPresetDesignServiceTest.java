@@ -16,7 +16,6 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.presetdesign.provisorio.DesignPresetProvisionalHtmlAssembler;
 import com.marketinghub.geralanding.presetdesign.service.pending.RecordPresetDesignPending;
-import com.marketinghub.geralanding.qualityreview.service.BackendQualityReviewService;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import java.math.BigDecimal;
@@ -26,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 
 /** Valida as consultas de execução específicas da etapa design preset. */
 class BackendPresetDesignServiceTest {
@@ -42,7 +42,7 @@ class BackendPresetDesignServiceTest {
             executionRepository,
             new ObjectMapper(),
             mock(DesignPresetProvisionalHtmlAssembler.class),
-            mock(BackendQualityReviewService.class));
+            mock(ApplicationEventPublisher.class));
     Experiment experiment = mock(Experiment.class);
     when(experiment.getId()).thenReturn(91L);
     when(experimentRepository.findById(91L)).thenReturn(Optional.of(experiment));
@@ -78,7 +78,7 @@ class BackendPresetDesignServiceTest {
             executionRepository,
             new ObjectMapper(),
             mock(DesignPresetProvisionalHtmlAssembler.class),
-            mock(BackendQualityReviewService.class));
+            mock(ApplicationEventPublisher.class));
     Experiment experiment = mock(Experiment.class);
     when(experiment.getId()).thenReturn(77L);
     when(experiment.getName()).thenReturn("Experimento DesignPreset");
@@ -161,7 +161,7 @@ class BackendPresetDesignServiceTest {
             executionRepository,
             new ObjectMapper(),
             mock(DesignPresetProvisionalHtmlAssembler.class),
-            mock(BackendQualityReviewService.class));
+            mock(ApplicationEventPublisher.class));
     GeraLandingStageExecution execution =
         GeraLandingStageExecution.builder()
             .idJob("job-design-preset".getBytes(StandardCharsets.UTF_8))
@@ -200,14 +200,14 @@ class BackendPresetDesignServiceTest {
         mock(GeraLandingStageExecutionRepository.class);
     DesignPresetProvisionalHtmlAssembler htmlAssembler =
         mock(DesignPresetProvisionalHtmlAssembler.class);
-    BackendQualityReviewService qualityReviewService = mock(BackendQualityReviewService.class);
+    ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     BackendPresetDesignService service =
         new BackendPresetDesignService(
             experimentRepository,
             executionRepository,
             new ObjectMapper(),
             htmlAssembler,
-            qualityReviewService);
+            eventPublisher);
     Experiment experiment = mock(Experiment.class);
     when(experiment.getLandingPageWireframe()).thenReturn("{\"landingPageWireframe\":{}}");
     when(experiment.getLandingPageCopy()).thenReturn("{\"landingPageCopy\":{}}");
@@ -258,7 +258,12 @@ class BackendPresetDesignServiceTest {
     verify(experiment).setHtmlGeraLanding("<html>GeraLanding Design Preset</html>");
     assertEquals("<html>GeraLanding Design Preset</html>", execution.getProvisionalHtml());
     verify(experimentRepository, times(2)).save(experiment);
-    verify(qualityReviewService).reviewAfterHtmlGeneration(experiment);
+    verify(eventPublisher)
+        .publishEvent(
+            argThat(
+                (Object event) ->
+                    event instanceof PresetDesignCompletedEvent completed
+                        && completed.experimentId().equals(experiment.getId())));
   }
 
   /** Deve marcar falha sem sobrescrever o artefato final de design preset no experimento. */
@@ -273,7 +278,7 @@ class BackendPresetDesignServiceTest {
             executionRepository,
             new ObjectMapper(),
             mock(DesignPresetProvisionalHtmlAssembler.class),
-            mock(BackendQualityReviewService.class));
+            mock(ApplicationEventPublisher.class));
     Experiment experiment = mock(Experiment.class);
     GeraLandingStageExecution execution =
         GeraLandingStageExecution.builder()

@@ -68,6 +68,19 @@ export default function VideoProviderManagementPage() {
   const bestProvider = rows
     .filter((row) => row.score)
     .sort((a, b) => (b.score?.score ?? 0) - (a.score?.score ?? 0))[0];
+  const comparablePrices = rows
+    .filter(
+      ({ model }) =>
+        model.pricingResearchStatus === "VERIFIED" &&
+        !model.pricingStale &&
+        model.normalizedCostPerSecondUsd != null,
+    )
+    .sort(
+      (a, b) =>
+        (a.model.normalizedCostPerSecondUsd ?? Infinity) -
+        (b.model.normalizedCostPerSecondUsd ?? Infinity),
+    );
+  const lowestComparablePrice = comparablePrices[0];
 
   return (
     <div className="video-provider-page">
@@ -103,6 +116,15 @@ export default function VideoProviderManagementPage() {
         <Metric
           label="Fornecedor líder"
           value={bestProvider?.option.label ?? "Sem dados"}
+        />
+        <Metric label="Preços vigentes" value={comparablePrices.length} />
+        <Metric
+          label="Menor custo comparável"
+          value={
+            lowestComparablePrice
+              ? `${formatUsd(lowestComparablePrice.model.normalizedCostPerSecondUsd)} / s`
+              : "Sem evidência"
+          }
         />
       </section>
 
@@ -154,6 +176,19 @@ export default function VideoProviderManagementPage() {
             <p className="video-provider-page__use">{option.recommendedUse}</p>
 
             <dl className="video-provider-page__facts">
+              <Fact
+                label="Preço pesquisado"
+                value={formatProviderPrice(model)}
+              />
+              <Fact
+                label="Custo normalizado"
+                value={
+                  model.normalizedCostPerSecondUsd != null
+                    ? `${formatUsd(model.normalizedCostPerSecondUsd)} / s`
+                    : "Não comparável"
+                }
+              />
+              <Fact label="Pesquisa Plutus" value={pricingStatus(model)} />
               <Fact label="Prontos" value={score?.readyJobs ?? 0} />
               <Fact label="Falhas" value={score?.failedJobs ?? 0} />
               <Fact
@@ -176,6 +211,11 @@ export default function VideoProviderManagementPage() {
             {score?.riskMessage ? (
               <p className="video-provider-page__risk">{score.riskMessage}</p>
             ) : null}
+            {model.pricingResearchNotes ? (
+              <p className="video-provider-page__risk">
+                {model.pricingResearchNotes}
+              </p>
+            ) : null}
 
             <div className="video-provider-page__capabilities">
               <Capability active={option.supportsHeroVideo} label="Hero PDE" />
@@ -197,6 +237,16 @@ export default function VideoProviderManagementPage() {
               >
                 Documentação <ExternalLink size={15} aria-hidden="true" />
               </a>
+              {model.pricingSourceUrl ? (
+                <a
+                  className="btn btn-outline-primary"
+                  href={model.pricingSourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Fonte do preço <ExternalLink size={15} aria-hidden="true" />
+                </a>
+              ) : null}
               <button
                 type="button"
                 className="btn btn-outline-primary"
@@ -619,6 +669,33 @@ function recommendationClass(recommendation?: string) {
     return "is-warning";
   }
   return "";
+}
+
+function formatUsd(value?: number | null) {
+  if (value == null) return "N/D";
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: value < 0.01 ? 4 : 2,
+    maximumFractionDigits: 6,
+  }).format(value);
+}
+
+function formatProviderPrice(model: SalesVideoProviderModel) {
+  if (model.pricingAmountUsd == null || !model.pricingUnit) return "Pendente";
+  const labels = { SECOND: "segundo", VIDEO: "vídeo", CREDIT: "crédito" };
+  return `${formatUsd(model.pricingAmountUsd)} / ${model.pricingQuantity ?? 1} ${labels[model.pricingUnit]}`;
+}
+
+function pricingStatus(model: SalesVideoProviderModel) {
+  if (model.pricingStale) return "Preço vencido";
+  const labels = {
+    PENDING: "Pendente",
+    VERIFIED: "Verificado",
+    INCOMPARABLE: "Não comparável",
+    BLOCKED: "Bloqueado",
+  };
+  return labels[model.pricingResearchStatus ?? "PENDING"];
 }
 
 export function compareProviderRows(

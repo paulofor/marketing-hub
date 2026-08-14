@@ -44,6 +44,9 @@ public interface SalesVideoJobRepository
   /** Verifica se um job já originou outro job de retry. */
   boolean existsByRetryOfJob_Id(Long jobId);
 
+  /** Recupera o encaminhamento já criado para impedir pós-produção duplicada. */
+  Optional<SalesVideoJob> findFirstByRetryOfJob_IdOrderByRequestedAtDesc(Long jobId);
+
   /** Localiza recusas recentes de crédito emitidas por uma família de provedor. */
   @Query(
       "select j from SalesVideoJob j where upper(j.providerName) like concat('%', upper(:provider), '%') and (lower(j.failureDetail) like '%credit%' or lower(j.failureDetail) like '%saldo%') order by j.finishedAt desc, j.updatedAt desc")

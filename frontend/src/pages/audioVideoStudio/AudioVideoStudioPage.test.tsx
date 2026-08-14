@@ -447,6 +447,7 @@ describe("AudioVideoStudioPage", () => {
             utilizationPercent: 50,
             scenes: [
               {
+                consumptionId: 501,
                 sceneNumber: 1,
                 commercialRole: "DOR",
                 plan: "Dor visível",
@@ -458,6 +459,8 @@ describe("AudioVideoStudioPage", () => {
                 producedFileUrl: "https://assets.example/scene-1.mp4",
                 utilizationPercent: 100,
                 utilizationEvidence: "USED_IN_READY_MONTAGE",
+                commercialEvaluationStatus: "PARTIAL",
+                commercialEvaluationNotes: "Usar apenas como plano de apoio.",
               },
               {
                 sceneNumber: 2,
@@ -487,6 +490,12 @@ describe("AudioVideoStudioPage", () => {
       screen.getByRole("link", { name: /abrir arquivo produzido/i }),
     ).toHaveAttribute("target", "_blank");
     expect(screen.getByText("Nenhum arquivo produzido")).toBeTruthy();
+    expect(
+      screen.getByRole("form", { name: /avaliação comercial da cena 1/i }),
+    ).toBeTruthy();
+    expect(
+      screen.getByDisplayValue("Usar apenas como plano de apoio."),
+    ).toBeTruthy();
   });
 
   it("vincula um perfil do produto antes de solicitar o ciclo de Apolo", async () => {

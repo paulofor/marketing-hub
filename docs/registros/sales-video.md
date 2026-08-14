@@ -231,6 +231,7 @@
 
 - Causa-raiz: o Estúdio mostrava plano e jobs separados, sem cruzar duração, consumo, arquivo e uso editorial por cena; assim, material caro e não utilizado podia parecer apenas produção em andamento.
 - Correção: endpoint canônico do projeto compõe plano, tasks do provider, créditos previstos/liquidados, assets e fontes de montagens prontas; a tela apresenta cada tentativa e totais do storyboard em desktop e mobile.
+- Evolução em 2026-08-14: a avaliação comercial por cena passa a persistir decisão, percentual aproveitável, evidência, autor e horário; a recuperação de montagem curta reutiliza um único job de pós-produção e nunca solicita novo render pago.
 
 ## 2026-08-13 — planejamento de IA e gate determinístico de Apolo
 

@@ -1,5 +1,6 @@
 package com.marketinghub.salesvideo.service;
 
+import com.marketinghub.financialagent.service.CommercialSceneEvaluationRequest;
 import com.marketinghub.media.Asset;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.media.MediaProvider;
@@ -118,6 +119,12 @@ public class SalesVideoService {
   /** Consulta o storyboard produtivo e financeiro consolidado do projeto. */
   public VideoStoryboardResponse getVideoStoryboard(Long projectId) {
     return videoStoryboardService.getStoryboard(projectId);
+  }
+
+  /** Persiste a avaliação comercial de uma cena pelo fluxo canônico do Estúdio. */
+  public VideoStoryboardResponse evaluateStoryboardScene(
+      Long projectId, Long consumptionId, CommercialSceneEvaluationRequest request) {
+    return videoStoryboardService.evaluateScene(projectId, consumptionId, request);
   }
 
   /** Atualiza um projeto editável de vídeo. */

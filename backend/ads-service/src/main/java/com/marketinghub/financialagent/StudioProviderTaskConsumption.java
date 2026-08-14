@@ -76,6 +76,21 @@ public class StudioProviderTaskConsumption {
   @Column(name = "accepted_at", nullable = false)
   private Instant acceptedAt;
 
+  @Column(name = "commercial_evaluation_status", length = 24)
+  private String commercialEvaluationStatus;
+
+  @Column(name = "commercial_utilization_percent")
+  private Integer commercialUtilizationPercent;
+
+  @Column(name = "commercial_evaluation_notes", columnDefinition = "LONGTEXT")
+  private String commercialEvaluationNotes;
+
+  @Column(name = "commercial_evaluated_by", length = 191)
+  private String commercialEvaluatedBy;
+
+  @Column(name = "commercial_evaluated_at")
+  private Instant commercialEvaluatedAt;
+
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;

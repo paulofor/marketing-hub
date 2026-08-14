@@ -3,8 +3,10 @@ package com.marketinghub.salesvideo.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.financialagent.service.CommercialSceneEvaluationRequest;
 import com.marketinghub.financialagent.service.ProviderTaskConsumptionView;
 import com.marketinghub.financialagent.service.StudioProviderTaskConsumptionQueryService;
 import com.marketinghub.media.Asset;
@@ -85,7 +87,20 @@ class VideoStoryboardServiceTest {
             .build();
     ProviderTaskConsumptionView task =
         new ProviderTaskConsumptionView(
-            101L, "runway-task-1", 1, 2, 10, 300, 300, Instant.parse("2026-08-13T12:00:00Z"));
+            501L,
+            101L,
+            "runway-task-1",
+            1,
+            2,
+            10,
+            300,
+            300,
+            "PARTIAL",
+            30,
+            "Plano de apoio sem texto.",
+            "Estúdio",
+            Instant.parse("2026-08-13T12:05:00Z"),
+            Instant.parse("2026-08-13T12:00:00Z"));
 
     given(projectRepository.findById(7L)).willReturn(Optional.of(project));
     given(jobRepository.findByProfileIdOrderByRequestedAtDesc(55L))
@@ -97,11 +112,41 @@ class VideoStoryboardServiceTest {
 
     assertThat(storyboard.expectedCredits()).isEqualTo(300);
     assertThat(storyboard.consumedCredits()).isEqualTo(300);
-    assertThat(storyboard.utilizationPercent()).isEqualTo(100);
+    assertThat(storyboard.utilizationPercent()).isEqualTo(30);
     assertThat(storyboard.scenes()).hasSize(2);
     assertThat(storyboard.scenes().get(0).producedFileUrl())
         .isEqualTo("https://assets.example/scene-1.mp4");
     assertThat(storyboard.scenes().get(0).utilizationEvidence()).isEqualTo("USED_IN_READY_MONTAGE");
+    assertThat(storyboard.scenes().get(0).commercialEvaluationStatus()).isEqualTo("PARTIAL");
     assertThat(storyboard.scenes().get(1).jobStatus()).isEqualTo("NOT_REQUESTED");
+  }
+
+  /** Persiste a avaliação apenas quando a task pertence ao projeto acessível. */
+  @Test
+  void shouldPersistCommercialSceneEvaluation() {
+    VideoProject project =
+        VideoProject.builder().id(7L).tenantId("tenant-musa").salesVideoProfileId(55L).build();
+    SalesVideoJob job =
+        SalesVideoJob.builder()
+            .id(101L)
+            .profile(SalesVideoProfile.builder().id(55L).build())
+            .providerFamily(SalesVideoProviderFamily.EXTERNAL_VIDEO_MODULE)
+            .jobType(SalesVideoJobType.RENDER)
+            .status(SalesVideoStatus.VIDEO_READY)
+            .metadataJson("{\"studio_project_id\":7}")
+            .build();
+    ProviderTaskConsumptionView task =
+        new ProviderTaskConsumptionView(
+            501L, 101L, "task", 1, 1, 10, 300, 300, null, null, null, null, null, Instant.now());
+    given(projectRepository.findById(7L)).willReturn(Optional.of(project));
+    given(jobRepository.findByProfileIdOrderByRequestedAtDesc(55L)).willReturn(List.of(job));
+    given(taskConsumptionQueryService.findBySalesVideoJobIds(anyCollection()))
+        .willReturn(List.of(task));
+
+    CommercialSceneEvaluationRequest request =
+        new CommercialSceneEvaluationRequest("PARTIAL", 30, "Plano de apoio", "Estúdio");
+    service.evaluateScene(7L, 501L, request);
+
+    verify(taskConsumptionQueryService).evaluate(501L, request);
   }
 }

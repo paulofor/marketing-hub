@@ -2,6 +2,7 @@ package com.marketinghub.salesvideo.dto.storyboard;
 
 /** Responsabilidade: expor uma cena planejada e suas tentativas produtivas e financeiras. */
 public record VideoStoryboardSceneResponse(
+    Long consumptionId,
     int sceneNumber,
     String commercialRole,
     String plan,
@@ -13,4 +14,8 @@ public record VideoStoryboardSceneResponse(
     Integer consumedCredits,
     String producedFileUrl,
     Integer utilizationPercent,
-    String utilizationEvidence) {}
+    String utilizationEvidence,
+    String commercialEvaluationStatus,
+    String commercialEvaluationNotes,
+    String commercialEvaluatedBy,
+    java.time.Instant commercialEvaluatedAt) {}

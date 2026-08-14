@@ -3,6 +3,7 @@ package com.marketinghub.salesvideo.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.financialagent.service.CommercialSceneEvaluationRequest;
 import com.marketinghub.financialagent.service.ProviderTaskConsumptionView;
 import com.marketinghub.financialagent.service.StudioProviderTaskConsumptionQueryService;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
@@ -74,6 +75,7 @@ public class VideoStoryboardService {
       boolean used = produced && usedSourceJobs.contains(job.getId());
       scenes.add(
           new VideoStoryboardSceneResponse(
+              task.id(),
               sceneNumber,
               commercialRole(
                   job, sceneNumber, Math.max(plans.size(), positive(task.plannedSceneCount(), 1))),
@@ -85,10 +87,16 @@ public class VideoStoryboardService {
               task.estimatedCredits(),
               task.billedCredits(),
               produced ? job.getAsset().getUrl() : null,
-              produced ? (used ? 100 : 0) : null,
+              task.commercialUtilizationPercent() != null
+                  ? task.commercialUtilizationPercent()
+                  : produced ? (used ? 100 : 0) : null,
               produced
                   ? used ? "USED_IN_READY_MONTAGE" : "PRODUCED_NOT_USED_IN_READY_MONTAGE"
-                  : "NO_PRODUCED_FILE"));
+                  : "NO_PRODUCED_FILE",
+              task.commercialEvaluationStatus(),
+              task.commercialEvaluationNotes(),
+              task.commercialEvaluatedBy(),
+              task.commercialEvaluatedAt()));
     }
     appendUnrequestedPlans(plans, scenesWithTask, scenes);
     scenes.sort(
@@ -120,6 +128,31 @@ public class VideoStoryboardService {
         scenes);
   }
 
+  /** Valida o vínculo da task ao projeto antes de persistir sua avaliação comercial. */
+  @Transactional
+  public VideoStoryboardResponse evaluateScene(
+      Long projectId, Long consumptionId, CommercialSceneEvaluationRequest request) {
+    VideoProject project = loadAccessibleProject(projectId);
+    List<Long> jobIds =
+        project.getSalesVideoProfileId() == null
+            ? List.of()
+            : jobRepository
+                .findByProfileIdOrderByRequestedAtDesc(project.getSalesVideoProfileId())
+                .stream()
+                .filter(job -> projectId.equals(readProjectId(job)))
+                .map(SalesVideoJob::getId)
+                .toList();
+    boolean belongs =
+        taskConsumptionQueryService.findBySalesVideoJobIds(jobIds).stream()
+            .anyMatch(task -> consumptionId.equals(task.id()));
+    if (!belongs) {
+      throw VideoModuleException.notFound(
+          VideoModuleErrorCode.BAD_REQUEST, "Cena do storyboard não encontrada.");
+    }
+    taskConsumptionQueryService.evaluate(consumptionId, request);
+    return getStoryboard(projectId);
+  }
+
   /** Localiza o planejamento de IA mais recente preservado em um job do projeto. */
   private JsonNode latestPlanning(java.util.Collection<SalesVideoJob> jobs) {
     return jobs.stream()
@@ -141,6 +174,7 @@ public class VideoStoryboardService {
       if (scenesWithTask.contains(sceneNumber)) continue;
       scenes.add(
           new VideoStoryboardSceneResponse(
+              null,
               sceneNumber,
               fallbackRole(sceneNumber, plans.size()),
               plans.get(index),
@@ -152,7 +186,11 @@ public class VideoStoryboardService {
               null,
               null,
               null,
-              "NO_PROVIDER_TASK"));
+              "NO_PROVIDER_TASK",
+              null,
+              null,
+              null,
+              null));
     }
   }
 

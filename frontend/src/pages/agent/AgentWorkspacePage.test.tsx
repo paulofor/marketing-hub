@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AgentWorkspacePage from "./AgentWorkspacePage";
@@ -10,6 +10,7 @@ const testState = vi.hoisted(() => ({
   taskStatus: "PENDING",
   sourceReference: undefined as string | undefined,
   experiments: [] as Array<Record<string, unknown>>,
+  taskCount: 1,
 }));
 
 vi.mock("../../api/agent/useAgents", () => ({
@@ -30,23 +31,21 @@ vi.mock("../../api/agent/useAgents", () => ({
 vi.mock("../../api/agentTask/useAgentTasks", () => ({
   useAgentTasks: () => ({
     isLoading: false,
-    data: [
-      {
-        id: 41,
-        assignedAgentId: 7,
-        assignedAgentKey: testState.agentKey,
-        assignedAgentNickname: testState.nickname,
-        requestedByType: "AGENT",
-        requestedByName: "Têmis",
-        title: "Aprimorar hero",
-        description: "Melhorar a clareza da promessa no celular.",
-        priority: "HIGH",
-        status: testState.taskStatus,
-        sourceReference: testState.sourceReference,
-        createdAt: "2026-08-11T15:00:00Z",
-        updatedAt: "2026-08-11T15:00:00Z",
-      },
-    ],
+    data: Array.from({ length: testState.taskCount }, (_, index) => ({
+      id: 41 - index,
+      assignedAgentId: 7,
+      assignedAgentKey: testState.agentKey,
+      assignedAgentNickname: testState.nickname,
+      requestedByType: "AGENT",
+      requestedByName: "Têmis",
+      title: index === 0 ? "Aprimorar hero" : `Tarefa histórica ${index}`,
+      description: "Melhorar a clareza da promessa no celular.",
+      priority: "HIGH",
+      status: testState.taskStatus,
+      sourceReference: testState.sourceReference,
+      createdAt: "2026-08-11T15:00:00Z",
+      updatedAt: "2026-08-11T15:00:00Z",
+    })),
   }),
   useCreateAgentTask: () => ({ mutate: vi.fn(), isPending: false }),
   useUpdateAgentTaskStatus: () => ({ mutate: vi.fn(), isPending: false }),
@@ -69,11 +68,39 @@ vi.mock("../../api/experiment/useExperiments", () => ({
 
 describe("AgentWorkspacePage", () => {
   beforeEach(() => {
+    cleanup();
     testState.agentKey = "landing-generator";
     testState.nickname = "Dédalo";
     testState.taskStatus = "PENDING";
     testState.sourceReference = undefined;
     testState.experiments = [];
+    testState.taskCount = 1;
+  });
+
+  it("destaca somente as cinco tarefas mais recentes do agente", () => {
+    testState.taskCount = 7;
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={["/agents/7"]}>
+          <Routes>
+            <Route path="/agents/:id" element={<AgentWorkspacePage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText("Últimas tarefas")).toBeInTheDocument();
+    expect(screen.getByText("5 exibidas")).toBeInTheDocument();
+    expect(
+      screen.getByText("Tarefa #41", { exact: false }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Tarefa #37", { exact: false }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Tarefa #36", { exact: false }),
+    ).not.toBeInTheDocument();
   });
 
   it("exibe a identidade, a caixa de entrada e a autoria de outro agente", () => {
@@ -88,7 +115,7 @@ describe("AgentWorkspacePage", () => {
     );
 
     expect(screen.getByText("Mesa de Dédalo")).toBeInTheDocument();
-    expect(screen.getByText("Aprimorar hero")).toBeInTheDocument();
+    expect(screen.getAllByText("Aprimorar hero")).toHaveLength(2);
     expect(screen.getByText(/Solicitado por Têmis/)).toBeInTheDocument();
     expect(screen.getByLabelText("Plano comercial *")).toHaveValue("9");
     expect(screen.getByText(/contexto v3/)).toBeInTheDocument();

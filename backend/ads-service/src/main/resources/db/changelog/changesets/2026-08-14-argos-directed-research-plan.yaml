@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-08-14-argos-directed-research-plan.yaml
+  - changeSet:
+      id: 2026-08-14-argos-directed-research-plan-001
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product_discovery_cycle
+        - not:
+            columnExists:
+              tableName: product_discovery_cycle
+              columnName: research_plan_json
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_discovery_cycle
+                ADD COLUMN research_plan_json LONGTEXT NULL,
+                ADD COLUMN research_plan_raw_response LONGTEXT NULL,
+                ADD COLUMN research_plan_model VARCHAR(120) NULL;

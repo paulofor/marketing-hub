@@ -26,7 +26,8 @@ class OpportunityDossierResearchSyncServiceTest {
     OpportunityDossier dossier = OpportunityDossier.builder().id(1L).build();
     ProductDiscoveryOpportunity opportunity = new ProductDiscoveryOpportunity();
     opportunity.setName("Produto melhorado por IA");
-    opportunity.setEvidenceJson("[{\"url\":\"https://example.test/evidencia\"}]");
+    opportunity.setEvidenceJson(
+        "{\"publicEvidence\":[{\"url\":\"https://example.test/evidencia\",\"snippet\":\"Preço e avaliações verificáveis\"}]}");
     AgentTask task = new AgentTask();
     task.setStatus("IN_PROGRESS");
     when(dossiers.findByProductDiscoveryCycleId(42L)).thenReturn(Optional.of(dossier));

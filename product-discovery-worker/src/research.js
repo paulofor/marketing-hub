@@ -220,6 +220,7 @@ export function buildSearchQueries(job) {
   );
 
   return deduplicateQueries([
+    ...(Array.isArray(job.directedQueries) ? job.directedQueries : []),
     ...domainQueries.slice(0, 2),
     ...commercialSignalQueries.slice(0, 2),
     ...scientificResearchQueries.slice(0, 2),

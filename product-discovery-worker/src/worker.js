@@ -16,6 +16,7 @@ import {
   operationalLogger,
   recentOperationalLogLines,
 } from "./operational-log.js";
+import { planDirectedResearch } from "./argos-codex.js";
 
 const backendBaseUrl = process.env.BACKEND_BASE_URL || "http://191.252.181.168";
 const pollIntervalMs = Number(
@@ -77,14 +78,26 @@ async function processJob(job) {
     `[product-discovery-worker] processing cycle=${job.cycleId} theme=${job.theme}`,
   );
   try {
-    const results = await searchInternet(job, {
+    const directed = await planDirectedResearch(job);
+    await postJson(
+      `${backendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${job.cycleId}/plan`,
+      {
+        planJson: JSON.stringify(directed.plan),
+        rawResponse: directed.rawResponse,
+        model: directed.model,
+      },
+    );
+    const results = await searchInternet(
+      { ...job, directedQueries: directed.plan.publicQueries },
+      {
       config: searchConfig,
       maxSearchResults,
       minSearchQueries,
       maxSearchQueries,
       maxResultsPerQuery,
       logger: operationalLogger,
-    });
+      },
+    );
     const report = analyzeSearchResults(job, results);
     await postJson(
       `${backendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${job.cycleId}/complete`,

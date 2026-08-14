@@ -90,6 +90,23 @@ da dor. A prova da dor deve vir preferencialmente da linguagem do publico.
 
 ## Busca dedicada
 
+## Argos híbrido e pesquisa dirigida
+
+Argos atua como investigador Codex, mas não recebe login, senha, cookie ou token de
+marketplace. Antes da coleta, ele deve persistir um plano versionado com perguntas,
+consultas públicas, marketplaces autorizados, limite de produtos e condições de parada.
+
+Hotmart e ClickBank permanecem como coletores autenticados isolados. O plano de Argos
+funciona como solicitação dirigida; os coletores são responsáveis por autenticação e
+captura estruturada. Toda conclusão comercial deve preservar fonte, data, snapshot bruto
+e correlação com o ciclo. Uma observação isolada ou uma posição momentânea no ranking não
+comprova vendas.
+
+O plano deve exigir ao menos dez ofertas comparáveis e bloquear qualquer tentativa de
+compra, afiliação, publicação, acesso a credenciais ou ampliação autônoma do limite.
+Enquanto a sessão Codex individual estiver desabilitada, o worker pode usar o plano
+determinístico seguro, sem alterar os gates comerciais.
+
 O worker de descoberta deve usar API de busca dedicada quando houver chave operacional
 configurada. A ordem preferencial inicial e:
 

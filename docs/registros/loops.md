@@ -1299,3 +1299,17 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** a sessão SSH do deploy não enviava keepalive e permanecia sem saída durante as tentativas de saúde, sendo encerrada por inatividade antes de o workflow obter o diagnóstico final do executor.
 - **Correção sistêmica:** o SSH passa a enviar keepalive com tolerância superior à janela de readiness, e cada tentativa produz progresso observável; indisponibilidade real continua exibindo os logs e falhando o deploy.
 - **Prevenção:** o contrato de isolamento dos agentes exige keepalive e progresso explícito no workflow de Dédalo.
+
+## LOOP-LANDING-GENERATOR-CHECKOUT-PROTEGIDO-QUEBRADO — gate preserva âncora sem destino
+
+- **Data:** 2026-08-14.
+- **Sintoma:** Dédalo produz HTML integral para corrigir o checkout, mas o backend rejeita a troca porque compara literalmente com a âncora quebrada anterior.
+- **Causa-raiz:** o gate comercial confundia preservação do destino aprovado com preservação do valor técnico defeituoso presente no HTML.
+- **Correção sistêmica:** o snapshot entrega a URL de checkout da publicação canônica mais recente e o gate aceita substituir uma âncora quebrada somente por essa URL persistida.
+- **Prevenção:** testes bloqueiam destinos inventados e comprovam a troca segura da âncora pelo checkout canônico.
+# 2026-08-14 — Dédalo: reconexão Codex bloqueava a produção da landing
+
+- **Sintoma:** uma correção integral de HTML permanecia iniciada sem ser reservada pelo executor.
+- **Causa-raiz:** produção, reconexão Codex e telemetria disputavam o scheduler padrão de uma única thread; o device code podia ocupar essa thread por até 16 minutos.
+- **Correção sistêmica:** o `landing-generator-agent-worker` passa a manter ao menos três threads agendadas independentes, com teste de contrato que impede regressão.
+- **Critério preventivo:** qualquer nova rotina bloqueante de Dédalo deve possuir capacidade independente sem impedir o consumo do endpoint `pending` canônico.

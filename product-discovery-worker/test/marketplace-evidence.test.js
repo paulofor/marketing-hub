@@ -31,6 +31,11 @@ test("executa pedidos dirigidos e remove ofertas duplicadas", async () => {
                   productUrl: `https://example.test/${marketplace}`,
                   price: "97.00",
                   tractionSignal: 85,
+                  rating: 4.8,
+                  reviewCount: 120,
+                  observations: 3,
+                  previousTractionSignal: 82,
+                  evidenceConfidence: "HIGH",
                 },
               ],
             };
@@ -42,4 +47,7 @@ test("executa pedidos dirigidos e remove ofertas duplicadas", async () => {
   assert.equal(calls.length, 2);
   assert.equal(offers.length, 2);
   assert.equal(offers[0].collectionJobId, "job-HOTMART");
+  assert.equal(offers[0].observations, 3);
+  assert.equal(offers[0].previousTractionSignal, 82);
+  assert.equal(offers[0].evidenceConfidence, "HIGH");
 });

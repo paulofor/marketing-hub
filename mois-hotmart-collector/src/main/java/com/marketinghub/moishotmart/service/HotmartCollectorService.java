@@ -151,7 +151,7 @@ public class HotmartCollectorService {
         StringBuilder apiFailureMessage = new StringBuilder();
         boolean[] tokenUpdateRequired = new boolean[] {false};
         try (Playwright ignored = Playwright.create()) {
-            int apiCollected = collectProductsViaMarketApi(hotmartAccessToken, boundedMax, products, apiFailureMessage, tokenUpdateRequired);
+            int apiCollected = collectProductsViaMarketApi(hotmartAccessToken, boundedMax, request.query(), request.category(), products, apiFailureMessage, tokenUpdateRequired);
             log.info("Coleta API Hotmart finalizada. produtosColetadosViaApi={}, produtosNaLista={}", apiCollected, products.size());
             if (apiFailureMessage.isEmpty()) {
                 if (products.isEmpty()) {
@@ -481,6 +481,7 @@ public class HotmartCollectorService {
             rawMetadata.put("description", product.description());
             rawMetadata.put("producerName", product.producerName());
             rawMetadata.put("hotmartProducer", product.producerName());
+            rawMetadata.put("commission", product.commission());
             rawMetadata.put("collectedAt", product.collectedAt() == null ? Instant.now().toString() : product.collectedAt().toString());
 
             Map<String, Object> reference = new HashMap<>();
@@ -493,9 +494,10 @@ public class HotmartCollectorService {
             reference.put("status", "COLLECTED");
             reference.put("favorite", false);
             reference.put("importedReferenceId", null);
-            reference.put("successScore", 80);
-            reference.put("successSignal", "HOTMART_TRENDING");
-            reference.put("confidenceLevel", "MEDIUM");
+            int evidenceScore = calculateCommercialEvidenceScore(product);
+            reference.put("successScore", evidenceScore);
+            reference.put("successSignal", "HOTMART_COMMERCIAL_SIGNALS");
+            reference.put("confidenceLevel", evidenceScore >= 70 ? "HIGH" : evidenceScore >= 45 ? "MEDIUM" : "LOW");
             reference.put("rankingPosition", position);
             reference.put("engagementRelative", 0.0);
             reference.put("recurrenceScore", 0.0);
@@ -506,6 +508,21 @@ public class HotmartCollectorService {
             position++;
         }
         return references;
+    }
+
+    /** Calcula completude comercial sem converter temperatura ou ranking em venda comprovada. */
+    static int calculateCommercialEvidenceScore(HotmartProductSnapshot product) {
+        if (product == null) return 0;
+        int score = 0;
+        if (product.priceValue() != null) score += 15;
+        if (product.temperature() != null) score += 15;
+        if (product.rating() != null && !product.rating().isBlank() && !"N/A".equals(product.rating())) score += 15;
+        if (product.totalAnswers() != null && product.totalAnswers() > 0) score += 15;
+        if (product.blueprint() != null) score += 10;
+        if (product.commission() != null && !product.commission().isBlank() && !"N/A".equals(product.commission())) score += 10;
+        if (product.description() != null && !product.description().isBlank()) score += 10;
+        if (product.salesPageUrl() != null && !product.salesPageUrl().isBlank()) score += 10;
+        return score;
     }
 
     /**
@@ -630,6 +647,8 @@ public class HotmartCollectorService {
     private int collectProductsViaMarketApi(
             String accessToken,
             int boundedMax,
+            String query,
+            String category,
             List<HotmartProductSnapshot> products,
             StringBuilder apiFailureMessage,
             boolean[] tokenUpdateRequired
@@ -651,12 +670,14 @@ public class HotmartCollectorService {
                         rows,
                         collectedBeforePage,
                         targetProducts);
-                String payload = objectMapper.writeValueAsString(java.util.Map.of(
-                        "page", page,
-                        "rows", rows,
-                        "userLocale", "PT_BR",
-                        "name", "hottest"
-                ));
+                Map<String, Object> search = new HashMap<>();
+                search.put("page", page);
+                search.put("rows", rows);
+                search.put("userLocale", "PT_BR");
+                search.put("name", "hottest");
+                if (query != null && !query.isBlank()) search.put("query", query.trim());
+                if (category != null && !category.isBlank()) search.put("category", category.trim());
+                String payload = objectMapper.writeValueAsString(search);
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(HOTMART_MARKET_API_URL))
                         .header("accept", "application/json, text/plain, */*")

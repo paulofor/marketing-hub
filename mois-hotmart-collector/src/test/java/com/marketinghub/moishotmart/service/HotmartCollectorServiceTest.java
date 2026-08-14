@@ -37,7 +37,7 @@ class HotmartCollectorServiceTest {
                 "ofertas-hotmart"
         );
 
-        var response = service.collect(new HotmartCollectionRequest("hotmart-market", 10));
+        var response = service.collect(new HotmartCollectionRequest("hotmart-market", 10, null, null));
 
         assertEquals("COLLECTION_SKIPPED", response.status());
     }
@@ -133,6 +133,22 @@ class HotmartCollectorServiceTest {
         );
 
         assertEquals("hotmart-abc-123", HotmartCollectorService.buildStableHotmartReferenceId(1, product));
+    }
+
+    /** Garante que a confiança comercial derive dos sinais presentes e nunca de uma constante. */
+    @Test
+    void shouldCalculateCommercialEvidenceCompletenessFromCollectedSignals() {
+        HotmartProductSnapshot complete = new HotmartProductSnapshot(
+                "ABC-123", "Produto", null, "4.8", 100, 90.0, "50%", 199.0,
+                "Negócios", "Curso", "Descrição", "Produtor", "https://hotmart.test/produto",
+                88.5, "https://example.test/vendas", Instant.parse("2026-08-14T12:00:00Z"));
+        HotmartProductSnapshot sparse = new HotmartProductSnapshot(
+                "ABC-124", "Produto", null, "N/A", null, null, "N/A", null,
+                null, null, null, null, "https://hotmart.test/produto", null, null,
+                Instant.parse("2026-08-14T12:00:00Z"));
+
+        assertEquals(100, HotmartCollectorService.calculateCommercialEvidenceScore(complete));
+        assertEquals(0, HotmartCollectorService.calculateCommercialEvidenceScore(sparse));
     }
 
 }

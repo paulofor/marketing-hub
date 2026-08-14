@@ -267,6 +267,98 @@ describe("audio video studio navigation", () => {
     expect(videoLink.getAttribute("href")).toBe("https://social.example/video");
   });
 
+  it("uploads a video reference as multipart and confirms the queue", async () => {
+    (axios.post as any).mockResolvedValue({
+      data: {
+        id: 23,
+        title: "Video MUSA",
+        sourceUrl: "https://cdn.example/musa.mp4",
+        primaryLearningGoal: "Aprender o gancho.",
+        status: "QUEUED",
+      },
+    });
+
+    setup(<App />, ["/audio-video-studio/videos-analysis"]);
+
+    const file = new File(["video-local"], "musa.mp4", { type: "video/mp4" });
+    fireEvent.change(screen.getByLabelText(/arquivo do video/i), {
+      target: { files: [file] },
+    });
+    fireEvent.change(screen.getByLabelText(/titulo do video/i), {
+      target: { value: "Video MUSA" },
+    });
+    fireEvent.change(screen.getByLabelText(/o que queremos aprender/i), {
+      target: { value: "Aprender o gancho." },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /enviar para analise/i }),
+    );
+
+    await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(1));
+    const [url, body] = (axios.post as any).mock.calls[0];
+    expect(url).toBe("/api/sales-videos/reference-videos");
+    expect(body).toBeInstanceOf(FormData);
+    expect(body.get("file")).toBe(file);
+    expect(await screen.findByText(/video enviado para a fila/i)).toBeTruthy();
+  });
+
+  it("shows the backend upload failure instead of a generic message", async () => {
+    (axios.post as any).mockRejectedValue({
+      isAxiosError: true,
+      response: {
+        status: 400,
+        data: {
+          message:
+            "O upload do arquivo foi interrompido antes do envio completo.",
+        },
+      },
+    });
+    (axios.isAxiosError as any).mockReturnValue(true);
+
+    setup(<App />, ["/audio-video-studio/videos-analysis"]);
+
+    fireEvent.change(screen.getByLabelText(/arquivo do video/i), {
+      target: {
+        files: [new File(["video-local"], "musa.mp4", { type: "video/mp4" })],
+      },
+    });
+    fireEvent.change(screen.getByLabelText(/titulo do video/i), {
+      target: { value: "Video MUSA" },
+    });
+    fireEvent.change(screen.getByLabelText(/o que queremos aprender/i), {
+      target: { value: "Aprender o gancho." },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /enviar para analise/i }),
+    );
+
+    expect(
+      await screen.findByText(/upload do arquivo foi interrompido/i),
+    ).toBeTruthy();
+  });
+
+  it("blocks a video larger than the supported limit before upload", async () => {
+    setup(<App />, ["/audio-video-studio/videos-analysis"]);
+
+    const file = new File(["video-local"], "musa.mp4", { type: "video/mp4" });
+    Object.defineProperty(file, "size", { value: 513 * 1024 * 1024 });
+    fireEvent.change(screen.getByLabelText(/arquivo do video/i), {
+      target: { files: [file] },
+    });
+    fireEvent.change(screen.getByLabelText(/titulo do video/i), {
+      target: { value: "Video MUSA" },
+    });
+    fireEvent.change(screen.getByLabelText(/o que queremos aprender/i), {
+      target: { value: "Aprender o gancho." },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /enviar para analise/i }),
+    );
+
+    expect(await screen.findByText(/excede o limite de 512 MB/i)).toBeTruthy();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
   it("renders video analysis result page as studio stages", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url === "/api/sales-videos/reference-videos/22") {

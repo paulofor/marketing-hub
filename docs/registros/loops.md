@@ -138,6 +138,7 @@
 - **Causa-raiz confirmada:** o deploy informava somente `VIDEO_BACKEND_BASE_URL`, enquanto o consumidor de reconexão lia `BACKEND_URL` e tentava o host inexistente `backend:8000`; o mesmo descritor não montava o `CODEX_HOME` persistente de Apolo.
 - **Correção efetiva:** o Compose publicado usa a mesma URL canônica para vídeo e reconexão, fixa a identidade `videomaker` e monta o diretório Codex individual e persistente.
 - **Prevenção:** o contrato de deploy valida URL compartilhada, identidade, caminho do cliente e volume individual antes de permitir nova publicação do serviço de vídeo.
+- **Correção complementar em 2026-08-14:** o runtime publicado ainda recebeu apenas `VIDEO_BACKEND_BASE_URL`; o resolver de configuração agora reutiliza essa URL canônica quando `BACKEND_URL` estiver ausente. O contrato local bloqueia regressão para o host interno inexistente `backend:8000` nesse cenário.
 
 ## LOOP-TEMIS-LANDING-WITHOUT-DEDALO-DELEGATION — diagnóstico sem responsável operacional
 

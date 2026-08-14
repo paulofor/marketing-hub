@@ -47,6 +47,11 @@ if grep -q 'video-management-image.tar.*VIDEO_VPS_IP\|scp.*video-management-imag
   exit 1
 fi
 
+if ! grep -Fq 'backend-url: ${BACKEND_URL:${VIDEO_BACKEND_BASE_URL:http://backend:8000}}' ../video-management-service/src/main/resources/application.yml; then
+  echo "[ARQUITETURA] A reconexão Codex de Apolo deve reutilizar VIDEO_BACKEND_BASE_URL quando BACKEND_URL não estiver disponível." >&2
+  exit 1
+fi
+
 grep -q 'docker/build-push-action@v6' ../.github/workflows/deploy-containers.yml
 grep -q 'cache-to: type=registry' ../.github/workflows/deploy-containers.yml
 grep -q 'docker compose -f docker-compose.mcp.yml up' bin/apply-mcp-only.sh

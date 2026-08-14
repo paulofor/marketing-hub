@@ -156,7 +156,9 @@ class RuntimeBuildInfoServiceTest {
                 "root",
                 "/tmp/id_ed25519",
                 "/tmp/known_hosts",
-                5
+                5,
+                false, "191.252.181.168", "marketinghub-backend",
+                "http://191.252.181.168/actuator/health", 300, 6, 2000
         );
         McpProperties.ProductDiscoveryWorker productDiscoveryWorker = new McpProperties.ProductDiscoveryWorker(
                 true,

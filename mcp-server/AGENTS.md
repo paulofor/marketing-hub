@@ -42,6 +42,8 @@ Quando precisar descobrir CPU, memória, disco, portas ou containers dos VPS, pr
 
 Não criar shell genérico no MCP para esse caso. A consulta deve usar host em allowlist e comando remoto fixo. A chave privada SSH do MCP deve ficar somente no host do MCP, fora do Git, montada no container em `/opt/marketinghub/mcp/ssh/id_ed25519`.
 
+Para recuperação do backend principal, usar somente a tool `backend_controlled_restart`. Ela deve manter módulo, host e container em allowlist fixa, exigir confirmação literal e justificativa, consultar o health antes, aplicar cooldown e confirmar o health depois. Nunca ampliar essa tool para shell, host ou container informados livremente pelo chamador.
+
 Para o Lead Portal público, usar `vps_docker_logs` com host `191.252.120.96` e alvo fixo
 `lead-portal-stack`; esse contrato retorna estado e logs dos containers canônicos backend,
 frontend e proxy sem aceitar nomes ou comandos arbitrários.

@@ -7,8 +7,12 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import com.sun.net.httpserver.HttpServer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -114,6 +118,65 @@ class VpsHostInventoryServiceTest {
     }
 
     /**
+     * Garante que a recuperação reinicia somente o backend indisponível e confirma o health posterior.
+     */
+    @Test
+    void shouldRecoverUnavailableBackendAndReturnHealthEvidence() throws Exception {
+        AtomicInteger healthCalls = new AtomicInteger();
+        HttpServer healthServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        healthServer.createContext("/actuator/health", exchange -> {
+            int status = healthCalls.incrementAndGet() == 1 ? 503 : 200;
+            exchange.sendResponseHeaders(status, -1);
+            exchange.close();
+        });
+        healthServer.start();
+        try {
+            McpProperties properties = buildRecoveryProperties(
+                    fakeSshCommand(), healthServer.getAddress().getPort());
+            VpsHostInventoryService service = new VpsHostInventoryService(properties);
+
+            Map<String, Object> result = service.recoverBackend(
+                    "backend", "RESTART_BACKEND", "Health do backend indisponível durante o fluxo Argos");
+
+            assertEquals("recovered", result.get("status"));
+            assertEquals(List.of("marketinghub-backend"), result.get("restartOutput"));
+            @SuppressWarnings("unchecked")
+            Map<String, Object> healthAfter = (Map<String, Object>) result.get("healthAfter");
+            assertEquals(true, healthAfter.get("healthy"));
+        } finally {
+            healthServer.stop(0);
+        }
+    }
+
+    /**
+     * Garante confirmação literal antes de qualquer tentativa de recuperação remota.
+     */
+    @Test
+    void shouldRejectBackendRecoveryWithoutExplicitConfirmation() throws Exception {
+        McpProperties properties = buildRecoveryProperties(fakeSshCommand(), 1);
+        VpsHostInventoryService service = new VpsHostInventoryService(properties);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.recoverBackend("backend", "yes", "Backend indisponível no health canônico"));
+
+        assertEquals("confirmation must be RESTART_BACKEND", exception.getMessage());
+    }
+
+    /**
+     * Garante que a justificativa não permita quebra de linha na auditoria operacional.
+     */
+    @Test
+    void shouldRejectBackendRecoveryReasonWithControlCharacters() throws Exception {
+        McpProperties properties = buildRecoveryProperties(fakeSshCommand(), 1);
+        VpsHostInventoryService service = new VpsHostInventoryService(properties);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.recoverBackend("backend", "RESTART_BACKEND", "Backend indisponível\nstatus falso"));
+
+        assertEquals("reason must contain between 10 and 300 characters", exception.getMessage());
+    }
+
+    /**
      * Cria um executável falso para simular o SSH durante os testes.
      */
     private String fakeSshCommand() throws Exception {
@@ -121,6 +184,10 @@ class VpsHostInventoryServiceTest {
         Files.writeString(script, """
                 #!/usr/bin/env sh
                 case "$*" in
+                  *"docker restart marketinghub-backend"*)
+                    echo "marketinghub-backend"
+                    exit 0
+                    ;;
                   *"lead-portal-backend lead-portal-frontend lead-portal-proxy"*)
                     echo "__MCP_CONTAINER__"
                     echo "lead-portal-backend"
@@ -212,7 +279,8 @@ class VpsHostInventoryServiceTest {
                 "root",
                 tempDir.resolve("id_ed25519").toString(),
                 tempDir.resolve("known_hosts").toString(),
-                5
+                5, false, "191.252.181.168", "marketinghub-backend",
+                "http://191.252.181.168/actuator/health", 300, 6, 2000
         );
         McpProperties.ProductDiscoveryWorker productDiscoveryWorker = new McpProperties.ProductDiscoveryWorker(
                 true,
@@ -238,5 +306,20 @@ class VpsHostInventoryServiceTest {
         );
         return new McpProperties("marketing-hub-mcp", "1.0.0", logs, chatLogs, dockerOps,
                 buildInfo, vpsHostInventory, productDiscoveryWorker, meta, github);
+    }
+
+    /**
+     * Monta configuração isolada com recuperação do backend habilitada para testes.
+     */
+    private McpProperties buildRecoveryProperties(String sshCommand, int healthPort) {
+        McpProperties base = buildProperties(sshCommand, true);
+        McpProperties.VpsHostInventory recovery = new McpProperties.VpsHostInventory(
+                true, List.of("127.0.0.1"), sshCommand, "root",
+                tempDir.resolve("id_ed25519").toString(), tempDir.resolve("known_hosts").toString(), 2,
+                true, "127.0.0.1", "marketinghub-backend",
+                "http://127.0.0.1:" + healthPort + "/actuator/health", 300, 2, 1);
+        return new McpProperties(base.serverName(), base.serverVersion(), base.logs(), base.chatLogs(),
+                base.dockerOps(), base.buildInfo(), recovery, base.productDiscoveryWorker(), base.meta(),
+                base.github());
     }
 }

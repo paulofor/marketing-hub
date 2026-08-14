@@ -105,7 +105,14 @@ public record McpProperties(
             @NotBlank String user,
             @NotBlank String identityFile,
             @NotBlank String knownHostsFile,
-            @Positive int timeoutSeconds
+            @Positive int timeoutSeconds,
+            boolean backendRecoveryEnabled,
+            @NotBlank String backendHost,
+            @NotBlank String backendContainer,
+            @NotBlank String backendHealthUrl,
+            @Positive int backendRecoveryCooldownSeconds,
+            @Positive int backendHealthAttempts,
+            @Positive int backendHealthDelayMillis
     ) {
     }
 

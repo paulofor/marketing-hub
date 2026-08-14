@@ -8,6 +8,8 @@ import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryLegacyCleanu
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMarketplaceEvidenceService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMarketplaceOfferListResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMaturityRankingResponse;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdEvidenceListResponse;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdEvidenceService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryPendingResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryResearchPlanRequest;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryResearchPlanResponse;
@@ -32,13 +34,16 @@ public class ProductDiscoveryController {
 
   private final ProductDiscoveryService service;
   private final ProductDiscoveryMarketplaceEvidenceService marketplaceEvidenceService;
+  private final ProductDiscoveryMetaAdEvidenceService metaAdEvidenceService;
 
   /** Inicializa o controller com o serviço canônico do módulo. */
   public ProductDiscoveryController(
       ProductDiscoveryService service,
-      ProductDiscoveryMarketplaceEvidenceService marketplaceEvidenceService) {
+      ProductDiscoveryMarketplaceEvidenceService marketplaceEvidenceService,
+      ProductDiscoveryMetaAdEvidenceService metaAdEvidenceService) {
     this.service = service;
     this.marketplaceEvidenceService = marketplaceEvidenceService;
+    this.metaAdEvidenceService = metaAdEvidenceService;
   }
 
   /** Lista ciclos recentes de descoberta para a tela administrativa. */
@@ -95,6 +100,15 @@ public class ProductDiscoveryController {
       @RequestParam String query,
       @RequestParam(defaultValue = "10") Integer limit) {
     return ResponseEntity.ok(marketplaceEvidenceService.search(marketplace, query, limit));
+  }
+
+  /** Entrega a Argos sinais históricos da Biblioteca Meta sem declarar vendas comprovadas. */
+  @GetMapping("/internal/product-discovery/productdiscovery/v1/meta-ad-evidence")
+  public ResponseEntity<ProductDiscoveryMetaAdEvidenceListResponse> metaAdEvidence(
+      @RequestParam String query,
+      @RequestParam(defaultValue = "BR") String country,
+      @RequestParam(defaultValue = "25") Integer limit) {
+    return ResponseEntity.ok(metaAdEvidenceService.search(query, country, limit));
   }
 
   /** Expõe o plano dirigido sem expor cookies, senhas ou tokens dos coletores. */

@@ -10,6 +10,7 @@ test("plano seguro direciona Hotmart e ClickBank sem credenciais", () => {
     result.plan.marketplaceRequests.map((item) => item.marketplace),
     ["HOTMART", "CLICKBANK"],
   );
+  assert.equal(result.plan.metaAdRequests[0].country, "BR");
   assert.doesNotMatch(result.rawResponse, /password|senha|token|cookie/i);
 });
 

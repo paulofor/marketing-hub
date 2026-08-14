@@ -28,6 +28,7 @@ class ApolloBudgetMonitorServiceTest {
     when(ledger.cycleProviderConsumption(6L))
         .thenReturn(
             java.util.Map.of("taskCount", 2L, "credits", 600L, "costUsd", new BigDecimal("6.00")));
+    when(ledger.cycleKnownLedgerCostUsd(6L)).thenReturn(new BigDecimal("6.00"));
 
     new ApolloBudgetMonitorService(cycles, ledger, jobs).reconcile(6L, 21105L, "task-2");
 
@@ -52,6 +53,7 @@ class ApolloBudgetMonitorServiceTest {
     when(ledger.cycleProviderConsumption(6L))
         .thenReturn(
             java.util.Map.of("taskCount", 2L, "credits", 600L, "costUsd", new BigDecimal("6.00")));
+    when(ledger.cycleKnownLedgerCostUsd(6L)).thenReturn(new BigDecimal("6.00"));
     when(jobs.findById(21105L)).thenReturn(Optional.of(job));
 
     new ApolloBudgetMonitorService(cycles, ledger, jobs).reconcile(6L, 21105L, "task-2");
@@ -63,6 +65,24 @@ class ApolloBudgetMonitorServiceTest {
         .isEqualTo(com.marketinghub.salesvideo.SalesVideoStatus.VIDEO_FAILED);
     assertThat(job.getFailureCode()).isEqualTo("APOLLO_BUDGET_EXCEEDED");
     verify(cycles).save(cycle);
+  }
+
+  /** Preserva custo conhecido no ledger legado quando a tabela nova de tasks ainda está vazia. */
+  @Test
+  void deveConciliarCustoLegadoSemDuplicarConsumo() {
+    VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
+    StudioCostLedgerService ledger = mock(StudioCostLedgerService.class);
+    SalesVideoJobRepository jobs = mock(SalesVideoJobRepository.class);
+    VideoProductionCycle cycle = cycle("10.00");
+    when(cycles.findById(6L)).thenReturn(Optional.of(cycle));
+    when(ledger.cycleProviderConsumption(6L))
+        .thenReturn(java.util.Map.of("taskCount", 0L, "credits", 0L, "costUsd", BigDecimal.ZERO));
+    when(ledger.cycleKnownLedgerCostUsd(6L)).thenReturn(new BigDecimal("1.20"));
+
+    new ApolloBudgetMonitorService(cycles, ledger, jobs).reconcile(6L, 21105L, "legacy-job");
+
+    assertThat(cycle.getKnownCostUsd()).isEqualByComparingTo("1.20");
+    assertThat(cycle.getBudgetMonitorStatus()).isEqualTo("WATCHING");
   }
 
   /** Bloqueia imediatamente a geração quando o provider recusa por saldo insuficiente. */

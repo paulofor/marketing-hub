@@ -66,7 +66,9 @@ public class ApolloBudgetMonitorService {
         ledgerService.cycleProviderConsumption(cycle.getId());
     long taskCount = ((Number) consumption.get("taskCount")).longValue();
     Long credits = ((Number) consumption.get("credits")).longValue();
-    BigDecimal cost = (BigDecimal) consumption.get("costUsd");
+    BigDecimal taskCost = (BigDecimal) consumption.get("costUsd");
+    BigDecimal ledgerCost = ledgerService.cycleKnownLedgerCostUsd(cycle.getId());
+    BigDecimal cost = greatest(taskCost, ledgerCost);
     cycle.setMonitoredTaskCount(taskCount);
     cycle.setMonitoredCredits(credits == null ? 0L : credits);
     cycle.setKnownCostUsd(cost == null ? BigDecimal.ZERO : cost);
@@ -111,6 +113,13 @@ public class ApolloBudgetMonitorService {
     cycle.setBudgetAlertAt(observedAt);
     cycle.setUpdatedAt(observedAt);
     cycleRepository.save(cycle);
+  }
+
+  /** Usa a maior fotografia reconciliada para não duplicar nem ocultar o mesmo consumo. */
+  private BigDecimal greatest(BigDecimal taskCost, BigDecimal ledgerCost) {
+    BigDecimal tasks = taskCost == null ? BigDecimal.ZERO : taskCost;
+    BigDecimal ledger = ledgerCost == null ? BigDecimal.ZERO : ledgerCost;
+    return tasks.max(ledger);
   }
 
   /** Evita texto nulo no alerta persistido. */

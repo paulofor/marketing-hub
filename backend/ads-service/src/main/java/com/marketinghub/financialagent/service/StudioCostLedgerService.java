@@ -313,6 +313,19 @@ public class StudioCostLedgerService {
         "costUsd", cost == null ? BigDecimal.ZERO : cost);
   }
 
+  /** Soma o custo conhecido do ledger associado ao ciclo para conciliar tasks antigas e novas. */
+  @Transactional(readOnly = true)
+  public BigDecimal cycleKnownLedgerCostUsd(Long cycleId) {
+    return repository.findByVideoProductionCycleIdOrderByCreatedAtAsc(cycleId).stream()
+        .map(
+            entry ->
+                entry.getProviderCostUsd() != null
+                    ? entry.getProviderCostUsd()
+                    : entry.getEstimatedCostUsd())
+        .filter(java.util.Objects::nonNull)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+  }
+
   /** Soma o custo conhecido do Estúdio no plano, sem converter moeda implicitamente. */
   @Transactional(readOnly = true)
   public BigDecimal totalKnownCostUsd(Long planId) {

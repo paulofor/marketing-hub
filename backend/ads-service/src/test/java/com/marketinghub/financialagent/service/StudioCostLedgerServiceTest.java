@@ -109,6 +109,23 @@ class StudioCostLedgerServiceTest {
     assertThat(ledger.get("knownCostUsd")).isEqualTo(new BigDecimal("2.40"));
   }
 
+  /** Reconcilia estimativa e custo informado sem transformar lacunas em custo zero. */
+  @Test
+  void deveSomarSomenteCustosConhecidosDoCiclo() {
+    StudioCostLedgerEntry reported = new StudioCostLedgerEntry();
+    reported.setProviderCostUsd(new BigDecimal("1.20"));
+    StudioCostLedgerEntry estimated = new StudioCostLedgerEntry();
+    estimated.setEstimatedCostUsd(new BigDecimal("0.80"));
+    StudioCostLedgerEntry unknown = new StudioCostLedgerEntry();
+    StudioCostLedgerEntryRepository repository = mock(StudioCostLedgerEntryRepository.class);
+    when(repository.findByVideoProductionCycleIdOrderByCreatedAtAsc(6L))
+        .thenReturn(List.of(reported, estimated, unknown));
+
+    BigDecimal cost = new StudioCostLedgerService(repository).cycleKnownLedgerCostUsd(6L);
+
+    assertThat(cost).isEqualByComparingTo("2.00");
+  }
+
   /** Confirma que custo-beneficio usa somente aprovacoes comerciais e explicita lacunas. */
   @Test
   void deveCalcularEficienciaPorProvedorSemInventarCobertura() {

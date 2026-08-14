@@ -82,11 +82,11 @@ class LandingGeneratorCodexRunnerTest {
             new LandingGeneratorAgentProperties(),
             new ObjectMapper(),
             mock(CodexTelemetryReporter.class));
-    String decision =
+    String decisionTemplate =
         """
         {"approvalRecommendation":"REGENERATE_BEFORE_PUBLICATION","recommendedRegeneration":["LANDING_PAGE_HTML"],"acceptanceCriteria":["Quality Review independente"],"score":70,"strategyOptions":[{},{},{}],"selectedStrategy":{"name":"premium"},"autonomousBacklog":[{}],"generationApproachOptions":[{"approachCode":"GERALANDING_PIPELINE","available":true},{"approachCode":"COMPONENT_TEMPLATE_COMPOSER","available":true},{"approachCode":"CODEX_CODE_IMPLEMENTATION","available":true}],"selectedGenerationApproach":{"approachCode":"CODEX_CODE_IMPLEMENTATION"},"generatedHtml":"<!doctype html><html><body>%s</body></html>","expectedMetrics":[{}],"stopConditions":{"continueWhen":["evolução"],"adjustWhen":["estagnação"],"stopWhen":["risco"]}}
         """;
-    decision = decision.formatted("conteúdo ".repeat(80));
+    String decision = decisionTemplate.formatted("conteúdo ".repeat(80));
     LandingAgentJob job =
         new LandingAgentJob(
             "job-88",

@@ -76,6 +76,40 @@ public class ProductDiscoveryService {
     return new ProductDiscoveryCycleDetailResponse(toCycleResponse(cycle), opportunities);
   }
 
+  /** Persiste o plano dirigido do Argos antes de qualquer coleta autenticada ou busca pública. */
+  @Transactional
+  public ProductDiscoveryResearchPlanResponse registerResearchPlan(
+      Long cycleId, ProductDiscoveryResearchPlanRequest request) {
+    ProductDiscoveryCycle cycle = findCycle(cycleId);
+    if (cycle.getStatus() != ProductDiscoveryCycleStatus.RESEARCHING) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "O plano só pode ser registrado durante a pesquisa");
+    }
+    cycle.setResearchPlanJson(requiredText(request.planJson(), "planJson"));
+    cycle.setResearchPlanRawResponse(requiredText(request.rawResponse(), "rawResponse"));
+    cycle.setResearchPlanModel(requiredText(request.model(), "model"));
+    ProductDiscoveryCycle saved = cycleRepository.save(cycle);
+    return new ProductDiscoveryResearchPlanResponse(
+        saved.getId(),
+        saved.getResearchPlanJson(),
+        saved.getResearchPlanModel(),
+        saved.getUpdatedAt());
+  }
+
+  /** Retorna o plano dirigido persistido para auditoria e acompanhamento administrativo. */
+  @Transactional(readOnly = true)
+  public ProductDiscoveryResearchPlanResponse getResearchPlan(Long cycleId) {
+    ProductDiscoveryCycle cycle = findCycle(cycleId);
+    if (!StringUtils.hasText(cycle.getResearchPlanJson())) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Plano de pesquisa ainda não criado");
+    }
+    return new ProductDiscoveryResearchPlanResponse(
+        cycle.getId(),
+        cycle.getResearchPlanJson(),
+        cycle.getResearchPlanModel(),
+        cycle.getUpdatedAt());
+  }
+
   /** Retorna o ranking gerencial atual por maturidade comercial para orientar novos ciclos PDE. */
   @Transactional(readOnly = true)
   public ProductDiscoveryMaturityRankingResponse getMaturityRanking() {

@@ -91,6 +91,47 @@ class AgentExecutorHealthServiceTest {
     assertThat(response.status()).isEqualTo("REQUESTED");
   }
 
+  /** Permite que Apolo crie a sessão Codex usada pelo planejador audiovisual híbrido. */
+  @Test
+  void shouldAllowApolloCodexReconnect() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentExecutorHealthCheckRepository checks = mock(AgentExecutorHealthCheckRepository.class);
+    CodexAuthReconnectRepository reconnects = mock(CodexAuthReconnectRepository.class);
+    Agent apollo = Agent.builder().id(2L).agentKey("video-maker").nickname("Apolo").build();
+    when(agents.findById(2L)).thenReturn(Optional.of(apollo));
+    when(reconnects.existsByAgentIdAndStatusIn(
+            org.mockito.ArgumentMatchers.eq(2L), org.mockito.ArgumentMatchers.anyList()))
+        .thenReturn(false);
+    when(reconnects.save(org.mockito.ArgumentMatchers.any()))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    CodexAuthReconnectResponse response =
+        new AgentExecutorHealthService(agents, checks, reconnects).requestReconnect(2L, "operador");
+
+    assertThat(response.agentKey()).isEqualTo("video-maker");
+  }
+
+  /** Permite que Argos crie uma sessão Codex sem receber credenciais dos marketplaces. */
+  @Test
+  void shouldAllowMarketRadarCodexReconnect() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentExecutorHealthCheckRepository checks = mock(AgentExecutorHealthCheckRepository.class);
+    CodexAuthReconnectRepository reconnects = mock(CodexAuthReconnectRepository.class);
+    Agent argos = Agent.builder().id(11L).agentKey("market-radar").nickname("Argos").build();
+    when(agents.findById(11L)).thenReturn(Optional.of(argos));
+    when(reconnects.existsByAgentIdAndStatusIn(
+            org.mockito.ArgumentMatchers.eq(11L), org.mockito.ArgumentMatchers.anyList()))
+        .thenReturn(false);
+    when(reconnects.save(org.mockito.ArgumentMatchers.any()))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    CodexAuthReconnectResponse response =
+        new AgentExecutorHealthService(agents, checks, reconnects)
+            .requestReconnect(11L, "operador");
+
+    assertThat(response.agentKey()).isEqualTo("market-radar");
+  }
+
   /** Aprova somente quando versão, backend e autenticação estão comprovados. */
   @Test
   void shouldReportReadyOnlyWithAllThreeSignals() {

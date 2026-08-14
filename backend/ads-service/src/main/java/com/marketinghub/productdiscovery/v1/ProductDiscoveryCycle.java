@@ -58,6 +58,15 @@ public class ProductDiscoveryCycle {
   @Column(name = "error_message", columnDefinition = "LONGTEXT")
   private String errorMessage;
 
+  @Column(name = "research_plan_json", columnDefinition = "LONGTEXT")
+  private String researchPlanJson;
+
+  @Column(name = "research_plan_raw_response", columnDefinition = "LONGTEXT")
+  private String researchPlanRawResponse;
+
+  @Column(name = "research_plan_model", length = 120)
+  private String researchPlanModel;
+
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 
@@ -212,6 +221,36 @@ public class ProductDiscoveryCycle {
   /** Define a mensagem de erro do ciclo. */
   public void setErrorMessage(String errorMessage) {
     this.errorMessage = errorMessage;
+  }
+
+  /** Retorna o plano dirigido e auditável definido por Argos. */
+  public String getResearchPlanJson() {
+    return researchPlanJson;
+  }
+
+  /** Persiste o plano dirigido definido antes da coleta. */
+  public void setResearchPlanJson(String researchPlanJson) {
+    this.researchPlanJson = researchPlanJson;
+  }
+
+  /** Retorna a resposta bruta que originou o plano. */
+  public String getResearchPlanRawResponse() {
+    return researchPlanRawResponse;
+  }
+
+  /** Preserva a resposta bruta para auditoria do agente. */
+  public void setResearchPlanRawResponse(String researchPlanRawResponse) {
+    this.researchPlanRawResponse = researchPlanRawResponse;
+  }
+
+  /** Retorna o modelo responsável pelo plano de investigação. */
+  public String getResearchPlanModel() {
+    return researchPlanModel;
+  }
+
+  /** Registra o modelo responsável pelo plano de investigação. */
+  public void setResearchPlanModel(String researchPlanModel) {
+    this.researchPlanModel = researchPlanModel;
   }
 
   /** Retorna a data de criação. */

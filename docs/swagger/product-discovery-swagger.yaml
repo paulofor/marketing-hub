@@ -4,6 +4,41 @@ info:
   version: 1.0.0
   description: Endpoints administrativos e internos da descoberta de produtos PDE.
 paths:
+  /api/product-discovery/v1/cycles/{cycleId}/research-plan:
+    get:
+      tags: [Product Discovery]
+      summary: Consulta o plano auditável de pesquisa dirigida de Argos
+      parameters:
+        - in: path
+          name: cycleId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: Plano persistido sem credenciais dos marketplaces
+  /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/{cycleId}/plan:
+    post:
+      tags: [Product Discovery]
+      summary: Registra o plano dirigido antes da coleta
+      parameters:
+        - in: path
+          name: cycleId
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [planJson, rawResponse, model]
+              properties:
+                planJson: { type: string }
+                rawResponse: { type: string }
+                model: { type: string }
+      responses:
+        '200':
+          description: Plano auditado
   /api/product-discovery/v1/maturity-ranking:
     get:
       tags:

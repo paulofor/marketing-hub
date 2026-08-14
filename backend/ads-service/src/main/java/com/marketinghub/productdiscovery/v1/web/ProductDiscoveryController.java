@@ -7,6 +7,8 @@ import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryFailureReque
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryLegacyCleanupResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMaturityRankingResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryPendingResponse;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryResearchPlanRequest;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryResearchPlanResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryResultRequest;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryService;
 import jakarta.validation.Valid;
@@ -69,6 +71,21 @@ public class ProductDiscoveryController {
   @GetMapping("/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending")
   public ResponseEntity<List<ProductDiscoveryPendingResponse>> pending() {
     return ResponseEntity.ok(service.pending());
+  }
+
+  /** Persiste o plano de perguntas, fontes e coletores escolhido por Argos. */
+  @PostMapping(
+      "/internal/product-discovery/productdiscovery/v1/research/stage-executions/{cycleId}/plan")
+  public ResponseEntity<ProductDiscoveryResearchPlanResponse> registerResearchPlan(
+      @PathVariable Long cycleId, @Valid @RequestBody ProductDiscoveryResearchPlanRequest request) {
+    return ResponseEntity.ok(service.registerResearchPlan(cycleId, request));
+  }
+
+  /** Expõe o plano dirigido sem expor cookies, senhas ou tokens dos coletores. */
+  @GetMapping("/product-discovery/v1/cycles/{cycleId}/research-plan")
+  public ResponseEntity<ProductDiscoveryResearchPlanResponse> getResearchPlan(
+      @PathVariable Long cycleId) {
+    return ResponseEntity.ok(service.getResearchPlan(cycleId));
   }
 
   /** Recebe resultado funcional de pesquisa do worker. */

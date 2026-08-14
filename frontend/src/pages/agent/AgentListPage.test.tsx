@@ -47,6 +47,44 @@ vi.mock("../../api/agent/useAgentWorkMonitor", () => ({
   useAgentWorkMonitor: () => ({
     data: [
       {
+        agentId: 2,
+        nickname: "Apolo",
+        agentName: "Agente Videomaker",
+        agentKey: "video-maker",
+        workStatus: "WORKING",
+        currentWork: "Produção audiovisual do ciclo #5",
+        progressDetail: "Execução em modo sombra",
+        externalDecisionRequired: false,
+        dailyTokens: 0,
+        executorHealth: {
+          status: "BLOCKED",
+          expectedVersion: 2,
+          deployedVersion: 2,
+          versionCurrent: true,
+          backendAccessible: true,
+          codexAuthenticated: false,
+        },
+      },
+      {
+        agentId: 11,
+        nickname: "Argos",
+        agentName: "Radar de mercado",
+        agentKey: "market-radar",
+        workStatus: "IDLE",
+        currentWork: "Aguardando pesquisa dirigida",
+        progressDetail: "Sem ciclo pendente",
+        externalDecisionRequired: false,
+        dailyTokens: 0,
+        executorHealth: {
+          status: "BLOCKED",
+          expectedVersion: 1,
+          deployedVersion: 1,
+          versionCurrent: true,
+          backendAccessible: true,
+          codexAuthenticated: false,
+        },
+      },
+      {
         agentId: 10,
         nickname: "Atena",
         agentName: "Estrategista de experimentos",
@@ -176,7 +214,7 @@ describe("AgentListPage", () => {
     expect(
       screen.getByText("Correção autônoma da landing do experimento #88"),
     ).toBeInTheDocument();
-    expect(screen.getByText("WORKING")).toBeInTheDocument();
+    expect(screen.getAllByText("WORKING")).toHaveLength(2);
     expect(screen.getByText("Tokens hoje")).toBeInTheDocument();
     expect(screen.getByText("12.345")).toBeInTheDocument();
     expect(screen.getByText("Tarefa #14 · Execução #326")).toBeInTheDocument();
@@ -191,7 +229,7 @@ describe("AgentListPage", () => {
 
     expect(
       screen.getAllByRole("button", { name: "Reconectar Codex" }),
-    ).toHaveLength(3);
+    ).toHaveLength(5);
   });
 
   it("conduz as sessões em sequência usando o estado informado pelo backend", async () => {
@@ -207,10 +245,10 @@ describe("AgentListPage", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Preparar os seis agentes Codex" }),
+      screen.getByRole("heading", { name: "Preparar 5 agentes Codex" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Criar sessão de Plutus" }),
+      screen.getByRole("button", { name: "Criar sessão de Apolo" }),
     ).toBeInTheDocument();
   });
 });

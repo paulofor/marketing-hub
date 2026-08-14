@@ -28,6 +28,31 @@ class ProductDiscoveryServiceTest {
 
   @Mock private OpportunityDossierResearchSyncService dossierResearchSyncService;
 
+  /** Deve preservar plano, resposta bruta e modelo sem credenciais de marketplace. */
+  @Test
+  void registerDirectedResearchPlan() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(20L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    when(cycleRepository.findById(20L)).thenReturn(Optional.of(cycle));
+    when(cycleRepository.save(cycle)).thenReturn(cycle);
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService);
+
+    ProductDiscoveryResearchPlanResponse response =
+        service.registerResearchPlan(
+            20L,
+            new ProductDiscoveryResearchPlanRequest(
+                "{\"marketplaceRequests\":[{\"marketplace\":\"HOTMART\"}]}",
+                "{\"questions\":[\"Quais produtos vendem?\"]}",
+                "gpt-5.6-sol"));
+
+    assertThat(response.cycleId()).isEqualTo(20L);
+    assertThat(response.model()).isEqualTo("gpt-5.6-sol");
+    assertThat(cycle.getResearchPlanRawResponse()).contains("Quais produtos vendem?");
+  }
+
   /** Deve concluir sem oportunidade quando a busca real não trouxer evidência suficiente. */
   @Test
   void completeWithoutArtificialOpportunityWhenResearchIsEmpty() {

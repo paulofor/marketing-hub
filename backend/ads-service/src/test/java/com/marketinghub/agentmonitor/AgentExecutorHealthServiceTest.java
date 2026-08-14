@@ -97,7 +97,7 @@ class AgentExecutorHealthServiceTest {
     AgentRepository agents = mock(AgentRepository.class);
     AgentExecutorHealthCheckRepository checks = mock(AgentExecutorHealthCheckRepository.class);
     CodexAuthReconnectRepository reconnects = mock(CodexAuthReconnectRepository.class);
-    Agent apollo = Agent.builder().id(2L).agentKey("video-maker").nickname("Apolo").build();
+    Agent apollo = Agent.builder().id(2L).agentKey("videomaker").nickname("Apolo").build();
     when(agents.findById(2L)).thenReturn(Optional.of(apollo));
     when(reconnects.existsByAgentIdAndStatusIn(
             org.mockito.ArgumentMatchers.eq(2L), org.mockito.ArgumentMatchers.anyList()))
@@ -108,7 +108,7 @@ class AgentExecutorHealthServiceTest {
     CodexAuthReconnectResponse response =
         new AgentExecutorHealthService(agents, checks, reconnects).requestReconnect(2L, "operador");
 
-    assertThat(response.agentKey()).isEqualTo("video-maker");
+    assertThat(response.agentKey()).isEqualTo("videomaker");
   }
 
   /** Permite que Argos crie uma sessão Codex sem receber credenciais dos marketplaces. */

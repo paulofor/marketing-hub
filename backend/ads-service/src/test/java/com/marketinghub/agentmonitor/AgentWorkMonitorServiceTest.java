@@ -227,6 +227,35 @@ class AgentWorkMonitorServiceTest {
     assertThat(result.get(1).sourceReference()).isEqualTo("video-production-cycle:21");
   }
 
+  /** Impede que um ciclo bloqueado de Apolo seja apresentado como geração de vídeo ativa. */
+  @Test
+  void shouldExposeApolloBlockedCycleAsBlocked() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    GeraLandingStageExecutionRepository landings = mock(GeraLandingStageExecutionRepository.class);
+    VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
+    CodexAgentExecutionTelemetryRepository telemetry =
+        mock(CodexAgentExecutionTelemetryRepository.class);
+    CreativeRepository creatives = mock(CreativeRepository.class);
+    Agent apolo =
+        Agent.builder().id(8L).agentKey("videomaker").nickname("Apolo").name("Videomaker").build();
+    VideoProductionCycle cycle = new VideoProductionCycle();
+    cycle.setId(6L);
+    cycle.setStatus("APOLLO_BLOCKED");
+    cycle.setBudgetLimitUsd(new BigDecimal("10.00"));
+    cycle.setKnownCostUsd(BigDecimal.ZERO);
+    cycle.setUpdatedAt(Instant.parse("2026-08-14T00:36:47Z"));
+    when(agents.findAllByOrderByNicknameAsc()).thenReturn(List.of(apolo));
+    when(cycles.findTopByOrderByUpdatedAtDesc()).thenReturn(Optional.of(cycle));
+    AgentWorkMonitorService service =
+        new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry, creatives);
+
+    AgentWorkMonitorResponse result = service.list().getFirst();
+
+    assertThat(result.workStatus()).isEqualTo("BLOCKED");
+    assertThat(result.difficulty()).isEqualTo("Ciclo bloqueado.");
+  }
+
   /** Impede que a falha canônica de Dédalo continue aparecendo como trabalho ativo. */
   @Test
   void shouldExposeDedaloFailureAsBlocked() {

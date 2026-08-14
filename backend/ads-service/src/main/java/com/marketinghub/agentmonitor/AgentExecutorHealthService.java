@@ -24,7 +24,7 @@ public class AgentExecutorHealthService {
           "experiment-strategist",
           "meta-ad-approver",
           "landing-generator",
-          "video-maker",
+          "videomaker",
           "market-radar");
   private final AgentRepository agents;
   private final AgentExecutorHealthCheckRepository checks;

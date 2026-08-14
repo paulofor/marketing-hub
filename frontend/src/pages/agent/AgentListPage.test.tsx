@@ -50,7 +50,7 @@ vi.mock("../../api/agent/useAgentWorkMonitor", () => ({
         agentId: 2,
         nickname: "Apolo",
         agentName: "Agente Videomaker",
-        agentKey: "video-maker",
+        agentKey: "videomaker",
         workStatus: "WORKING",
         currentWork: "Produção audiovisual do ciclo #5",
         progressDetail: "Execução em modo sombra",

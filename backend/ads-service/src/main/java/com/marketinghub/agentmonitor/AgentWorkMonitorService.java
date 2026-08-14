@@ -265,7 +265,10 @@ public class AgentWorkMonitorService {
     boolean plutus = PLUTUS.equals(agent.getAgentKey());
     String status = cycle.getStatus();
     boolean financialPending = "PENDING_FINANCIAL_REVIEW".equals(status);
-    boolean blocked = "FINANCIAL_BLOCKED".equals(status) || "FAILED".equals(status);
+    boolean blocked =
+        "FINANCIAL_BLOCKED".equals(status)
+            || "APOLLO_BLOCKED".equals(status)
+            || "FAILED".equals(status);
     String work =
         plutus
             ? "Controle financeiro do ciclo de vídeo #" + cycle.getId()

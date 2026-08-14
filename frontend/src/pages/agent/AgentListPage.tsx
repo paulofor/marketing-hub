@@ -15,7 +15,7 @@ const CODEX_EXECUTORS = new Set([
   "experiment-strategist",
   "meta-ad-approver",
   "landing-generator",
-  "video-maker",
+  "videomaker",
   "market-radar",
 ]);
 

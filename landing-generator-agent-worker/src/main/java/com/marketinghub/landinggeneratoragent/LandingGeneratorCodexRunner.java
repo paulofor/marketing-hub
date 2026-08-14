@@ -187,6 +187,13 @@ public class LandingGeneratorCodexRunner {
     }
     if (!selectedDeclaredAvailable || !selectedContractAvailable)
       throw new IllegalArgumentException("Abordagem selecionada não possui executor disponível");
+    if ("CODEX_CODE_IMPLEMENTATION".equals(selectedApproach)
+        && (value.path("generatedHtml").isNull()
+            || value.path("generatedHtml").asText("").length() < 500))
+      throw new IllegalArgumentException("Implementação por código sem HTML completo");
+    if (!"CODEX_CODE_IMPLEMENTATION".equals(selectedApproach)
+        && !value.path("generatedHtml").isNull())
+      throw new IllegalArgumentException("HTML completo informado fora da abordagem por código");
     if (value.path("expectedMetrics").isEmpty()
         || value.path("stopConditions").path("continueWhen").isEmpty()
         || value.path("stopConditions").path("adjustWhen").isEmpty()

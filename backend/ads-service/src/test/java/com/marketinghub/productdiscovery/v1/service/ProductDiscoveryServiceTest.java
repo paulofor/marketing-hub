@@ -1,6 +1,7 @@
 package com.marketinghub.productdiscovery.v1.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.opportunitydossier.service.OpportunityDossierResearchSyncService;
@@ -75,6 +76,40 @@ class ProductDiscoveryServiceTest {
     assertThat(response.cycle().status()).isEqualTo(ProductDiscoveryCycleStatus.COMPLETED);
     assertThat(response.opportunities()).isEmpty();
     assertThat(cycle.getDecisionSummary()).contains("pesquisar mais");
+  }
+
+  /** Deve bloquear a conclusao dirigida quando faltarem dez ofertas reais comparaveis. */
+  @Test
+  void blocksDirectedResearchWithoutMinimumMarketplaceEvidence() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(21L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setResearchPlanJson("{\"marketplaceRequests\":[{\"marketplace\":\"HOTMART\"}]}");
+    when(cycleRepository.findById(21L)).thenReturn(Optional.of(cycle));
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService);
+    ProductDiscoveryOpportunityResultRequest opportunity =
+        new ProductDiscoveryOpportunityResultRequest(
+            "Teste",
+            "Publico",
+            "Dor",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "{\"marketplaceOffers\":[{\"marketplace\":\"HOTMART\",\"referenceId\":\"1\"}]}",
+            new BigDecimal("50"),
+            ProductDiscoveryOpportunityDecision.RESEARCH_MORE);
+
+    assertThatThrownBy(
+            () ->
+                service.complete(
+                    21L, new ProductDiscoveryResultRequest("Pesquisar mais", List.of(opportunity))))
+        .hasMessageContaining("10 ofertas reais comparaveis");
   }
 
   /** Deve manter renda extra como primeira trilha de pesquisa recomendada com travas comerciais. */

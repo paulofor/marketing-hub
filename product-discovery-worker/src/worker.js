@@ -19,6 +19,7 @@ import {
 import { planDirectedResearch } from "./argos-codex.js";
 import { startCodexAuthReconnectConsumer } from "./codex-auth-reconnect.js";
 import { startAgentHealthReporter } from "./agent-health-reporter.js";
+import { collectMarketplaceEvidence } from "./marketplace-evidence.js";
 
 const backendBaseUrl = process.env.BACKEND_BASE_URL || "http://191.252.181.168";
 const pollIntervalMs = Number(
@@ -105,7 +106,13 @@ async function processJob(job) {
         logger: operationalLogger,
       },
     );
-    const report = analyzeSearchResults(job, results);
+    const marketplaceOffers = await collectMarketplaceEvidence(directed.plan, {
+      backendBaseUrl,
+      logger: operationalLogger,
+    });
+    const report = analyzeSearchResults(job, results, marketplaceOffers, {
+      minimumComparableOffers: directed.plan.minimumComparableOffers,
+    });
     await postJson(
       `${backendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${job.cycleId}/complete`,
       report,

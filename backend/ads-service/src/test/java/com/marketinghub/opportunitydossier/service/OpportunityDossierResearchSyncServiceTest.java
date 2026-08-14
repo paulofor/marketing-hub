@@ -27,7 +27,8 @@ class OpportunityDossierResearchSyncServiceTest {
     ProductDiscoveryOpportunity opportunity = new ProductDiscoveryOpportunity();
     opportunity.setName("Produto melhorado por IA");
     opportunity.setEvidenceJson(
-        "{\"publicEvidence\":[{\"url\":\"https://example.test/evidencia\",\"snippet\":\"Preço e avaliações verificáveis\"}]}");
+        "{\"publicEvidence\":[{\"url\":\"https://example.test/evidencia\",\"snippet\":\"Preço e avaliações verificáveis\"}],"
+            + "\"marketplaceOffers\":[{\"marketplace\":\"HOTMART\",\"url\":\"https://hotmart.test/oferta\",\"title\":\"Oferta real\",\"price\":\"97\",\"tractionSignal\":85,\"collectedAt\":\"2026-08-14T10:00:00Z\"}]}");
     AgentTask task = new AgentTask();
     task.setStatus("IN_PROGRESS");
     when(dossiers.findByProductDiscoveryCycleId(42L)).thenReturn(Optional.of(dossier));
@@ -38,7 +39,7 @@ class OpportunityDossierResearchSyncServiceTest {
         .synchronize(42L, List.of(opportunity));
 
     assertThat(task.getStatus()).isEqualTo("COMPLETED");
-    verify(evidence).save(org.mockito.ArgumentMatchers.any());
+    verify(evidence, org.mockito.Mockito.times(2)).save(org.mockito.ArgumentMatchers.any());
     verify(tasks).save(task);
   }
 }

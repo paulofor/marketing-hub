@@ -1,5 +1,7 @@
 package com.marketinghub.productdiscovery.v1.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.opportunitydossier.service.OpportunityDossierResearchSyncService;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycle;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycleStatus;
@@ -19,6 +21,8 @@ import org.springframework.web.server.ResponseStatusException;
 public class ProductDiscoveryService {
 
   private static final String PIPELINE_CODE = "productdiscovery.v1";
+  private static final ObjectMapper JSON = new ObjectMapper();
+  private static final int MINIMUM_COMPARABLE_MARKETPLACE_OFFERS = 10;
   private static final String STAGE_CODE = "research";
   private static final List<String> LEGACY_ARTIFICIAL_EVIDENCE_MARKERS =
       List.of(
@@ -301,6 +305,7 @@ public class ProductDiscoveryService {
   public ProductDiscoveryCycleDetailResponse complete(
       Long cycleId, ProductDiscoveryResultRequest request) {
     ProductDiscoveryCycle cycle = findCycle(cycleId);
+    validateMarketplaceEvidenceGate(cycle, request);
     opportunityRepository.deleteAllByCycleId(cycleId);
     for (ProductDiscoveryOpportunityResultRequest item : request.opportunities()) {
       ProductDiscoveryOpportunity opportunity = new ProductDiscoveryOpportunity();
@@ -328,6 +333,41 @@ public class ProductDiscoveryService {
     dossierResearchSyncService.synchronize(
         cycleId, opportunityRepository.findAllByCycleIdOrderByScoreDesc(cycleId));
     return getCycle(cycleId);
+  }
+
+  /** Bloqueia conclusao dirigida quando Argos nao recebeu ofertas reais comparaveis suficientes. */
+  private void validateMarketplaceEvidenceGate(
+      ProductDiscoveryCycle cycle, ProductDiscoveryResultRequest request) {
+    if (!StringUtils.hasText(cycle.getResearchPlanJson())
+        || !cycle.getResearchPlanJson().contains("marketplaceRequests")) {
+      return;
+    }
+    long comparableOffers =
+        request.opportunities().stream()
+            .map(ProductDiscoveryOpportunityResultRequest::evidenceJson)
+            .filter(StringUtils::hasText)
+            .flatMap(
+                evidenceJson -> {
+                  try {
+                    JsonNode offers = JSON.readTree(evidenceJson).path("marketplaceOffers");
+                    return offers.isArray()
+                        ? java.util.stream.StreamSupport.stream(offers.spliterator(), false)
+                        : java.util.stream.Stream.empty();
+                  } catch (Exception ignored) {
+                    return java.util.stream.Stream.empty();
+                  }
+                })
+            .map(
+                node -> node.path("marketplace").asText() + ":" + node.path("referenceId").asText())
+            .filter(key -> !key.endsWith(":"))
+            .distinct()
+            .count();
+    if (comparableOffers < MINIMUM_COMPARABLE_MARKETPLACE_OFFERS) {
+      throw new ResponseStatusException(
+          HttpStatus.UNPROCESSABLE_ENTITY,
+          "Dossie bloqueado: sao necessarias ao menos 10 ofertas reais comparaveis; recebidas "
+              + comparableOffers);
+    }
   }
 
   /** Arquiva ciclos legados compostos exclusivamente por páginas de busca sem resultados reais. */

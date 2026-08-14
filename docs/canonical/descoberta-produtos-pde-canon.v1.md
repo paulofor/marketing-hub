@@ -102,6 +102,16 @@ captura estruturada. Toda conclusão comercial deve preservar fonte, data, snaps
 e correlação com o ciclo. Uma observação isolada ou uma posição momentânea no ranking não
 comprova vendas.
 
+O Product Discovery Worker deve executar cada solicitação dirigida pelo contrato interno
+do próprio domínio no backend. O backend consulta os snapshots persistidos, filtra por
+termos da investigação e devolve um contrato normalizado; o worker nunca acessa banco,
+credencial ou controller de outro módulo. As ofertas usadas devem entrar no dossiê com
+marketplace, referência, URL, coleta, preço e sinal de tração disponíveis.
+
+Um ciclo dirigido não pode concluir nem marcar a tarefa do dossiê como concluída com menos
+de dez ofertas únicas comparáveis. Dados ausentes devem bloquear o ciclo com a lacuna
+explícita, sem fabricar evidência e sem transformar temperatura, score ou ranking em venda.
+
 O plano deve exigir ao menos dez ofertas comparáveis e bloquear qualquer tentativa de
 compra, afiliação, publicação, acesso a credenciais ou ampliação autônoma do limite.
 Enquanto a sessão Codex individual estiver desabilitada, o worker pode usar o plano

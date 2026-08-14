@@ -531,6 +531,25 @@ test("analyzeSearchResults blocks approval without commercial intent", () => {
   assert.match(report.opportunities[0].commercialRisk, /intenção de compra/);
 });
 
+test("analyzeSearchResults bloqueia dossie sem dez ofertas comparaveis", () => {
+  const report = analyzeSearchResults(
+    { theme: "leads", targetAudience: "manicures" },
+    [
+      { title: "Preço curso leads", url: "https://example.com/a", snippet: "curso comprar preço" },
+      { title: "Estudo", url: "https://pubmed.ncbi.nlm.nih.gov/1", snippet: "scientific study" },
+    ],
+    Array.from({ length: 9 }, (_, index) => ({
+      marketplace: "HOTMART",
+      referenceId: String(index),
+      title: `Oferta ${index}`,
+      url: `https://hotmart.com/${index}`,
+    })),
+  );
+  assert.match(report.decisionSummary, /9 ofertas comparáveis/);
+  assert.ok(report.opportunities.every((item) => item.decision === "RESEARCH_MORE"));
+  assert.equal(JSON.parse(report.opportunities[0].evidenceJson).marketplaceOffers.length, 9);
+});
+
 test("scientific and commercial queries are inside the operational query limit", () => {
   const queries = buildSearchQueries({
     theme: "tema novo",

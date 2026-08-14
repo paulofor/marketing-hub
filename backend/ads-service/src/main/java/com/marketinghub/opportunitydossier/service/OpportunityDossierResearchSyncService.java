@@ -57,23 +57,9 @@ public class OpportunityDossierResearchSyncService {
       Long cycleId) {
     try {
       JsonNode root = JSON.readTree(opportunity.getEvidenceJson());
-      JsonNode sources = root.path("publicEvidence");
-      if (!sources.isArray()) return;
-      for (JsonNode source : sources) {
-        String url = source.path("url").asText("").trim();
-        if (url.isBlank() || evidenceRepository.existsByDossierIdAndSourceUrl(dossierId, url)) {
-          continue;
-        }
-        String summary = source.path("snippet").asText(source.path("title").asText("")).trim();
-        if (summary.isBlank()) continue;
-        evidenceRepository.save(
-            OpportunityEvidence.builder()
-                .dossier(dossier)
-                .sourceUrl(url)
-                .summary(opportunity.getName() + " — " + summary)
-                .createdBy("ARGOS:product-discovery-cycle:" + cycleId)
-                .build());
-      }
+      persistPublicSources(dossierId, dossier, opportunity, cycleId, root.path("publicEvidence"));
+      persistMarketplaceOffers(
+          dossierId, dossier, opportunity, cycleId, root.path("marketplaceOffers"));
     } catch (Exception ex) {
       log.error(
           "Falha ao persistir evidências de Argos cycleId={} dossierId={} opportunity={}",
@@ -81,6 +67,62 @@ public class OpportunityDossierResearchSyncService {
           dossierId,
           opportunity.getName(),
           ex);
+    }
+  }
+
+  /** Persiste fontes publicas individualmente sem perder a URL original. */
+  private void persistPublicSources(
+      Long dossierId,
+      com.marketinghub.opportunitydossier.OpportunityDossier dossier,
+      ProductDiscoveryOpportunity opportunity,
+      Long cycleId,
+      JsonNode sources) {
+    if (!sources.isArray()) return;
+    for (JsonNode source : sources) {
+      String url = source.path("url").asText("").trim();
+      if (url.isBlank() || evidenceRepository.existsByDossierIdAndSourceUrl(dossierId, url)) {
+        continue;
+      }
+      String summary = source.path("snippet").asText(source.path("title").asText("")).trim();
+      if (summary.isBlank()) continue;
+      evidenceRepository.save(
+          OpportunityEvidence.builder()
+              .dossier(dossier)
+              .sourceUrl(url)
+              .summary(opportunity.getName() + " — " + summary)
+              .createdBy("ARGOS:product-discovery-cycle:" + cycleId)
+              .build());
+    }
+  }
+
+  /** Persiste ofertas autenticadas com marketplace, preco, tracao e coleta auditaveis. */
+  private void persistMarketplaceOffers(
+      Long dossierId,
+      com.marketinghub.opportunitydossier.OpportunityDossier dossier,
+      ProductDiscoveryOpportunity opportunity,
+      Long cycleId,
+      JsonNode offers) {
+    if (!offers.isArray()) return;
+    for (JsonNode offer : offers) {
+      String url = offer.path("url").asText("").trim();
+      if (url.isBlank() || evidenceRepository.existsByDossierIdAndSourceUrl(dossierId, url)) {
+        continue;
+      }
+      String summary =
+          "%s — %s | preco=%s | tracao=%s | coleta=%s"
+              .formatted(
+                  offer.path("marketplace").asText("MARKETPLACE"),
+                  offer.path("title").asText("Oferta sem titulo"),
+                  offer.path("price").asText("nao informado"),
+                  offer.path("tractionSignal").asText("nao informado"),
+                  offer.path("collectedAt").asText("nao informada"));
+      evidenceRepository.save(
+          OpportunityEvidence.builder()
+              .dossier(dossier)
+              .sourceUrl(url)
+              .summary(opportunity.getName() + " — " + summary)
+              .createdBy("ARGOS:marketplace:product-discovery-cycle:" + cycleId)
+              .build());
     }
   }
 

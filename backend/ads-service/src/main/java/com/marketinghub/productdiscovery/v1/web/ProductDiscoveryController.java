@@ -5,6 +5,8 @@ import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryCycleDetailR
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryCycleResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryFailureRequest;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryLegacyCleanupResponse;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMarketplaceEvidenceService;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMarketplaceOfferListResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMaturityRankingResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryPendingResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryResearchPlanRequest;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Expõe os contratos backend da descoberta de produtos PDE v1. */
@@ -28,10 +31,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProductDiscoveryController {
 
   private final ProductDiscoveryService service;
+  private final ProductDiscoveryMarketplaceEvidenceService marketplaceEvidenceService;
 
   /** Inicializa o controller com o serviço canônico do módulo. */
-  public ProductDiscoveryController(ProductDiscoveryService service) {
+  public ProductDiscoveryController(
+      ProductDiscoveryService service,
+      ProductDiscoveryMarketplaceEvidenceService marketplaceEvidenceService) {
     this.service = service;
+    this.marketplaceEvidenceService = marketplaceEvidenceService;
   }
 
   /** Lista ciclos recentes de descoberta para a tela administrativa. */
@@ -79,6 +86,15 @@ public class ProductDiscoveryController {
   public ResponseEntity<ProductDiscoveryResearchPlanResponse> registerResearchPlan(
       @PathVariable Long cycleId, @Valid @RequestBody ProductDiscoveryResearchPlanRequest request) {
     return ResponseEntity.ok(service.registerResearchPlan(cycleId, request));
+  }
+
+  /** Entrega snapshots autenticados normalizados sem expor credenciais dos coletores. */
+  @GetMapping("/internal/product-discovery/productdiscovery/v1/marketplace-offers")
+  public ResponseEntity<ProductDiscoveryMarketplaceOfferListResponse> marketplaceOffers(
+      @RequestParam String marketplace,
+      @RequestParam String query,
+      @RequestParam(defaultValue = "10") Integer limit) {
+    return ResponseEntity.ok(marketplaceEvidenceService.search(marketplace, query, limit));
   }
 
   /** Expõe o plano dirigido sem expor cookies, senhas ou tokens dos coletores. */

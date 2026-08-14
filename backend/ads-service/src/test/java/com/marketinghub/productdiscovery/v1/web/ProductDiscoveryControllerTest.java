@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMarketplaceEvidenceService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMaturityItemResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMaturityRankingResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryResearchTrackResponse;
@@ -25,11 +26,15 @@ class ProductDiscoveryControllerTest {
   private MockMvc mockMvc;
 
   @Mock private ProductDiscoveryService service;
+  @Mock private ProductDiscoveryMarketplaceEvidenceService marketplaceEvidenceService;
 
   /** Monta o controller isolado para testar as rotas do módulo. */
   @BeforeEach
   void setUp() {
-    mockMvc = MockMvcBuilders.standaloneSetup(new ProductDiscoveryController(service)).build();
+    mockMvc =
+        MockMvcBuilders.standaloneSetup(
+                new ProductDiscoveryController(service, marketplaceEvidenceService))
+            .build();
   }
 
   /** Deve expor o ranking por maturidade comercial para a tela administrativa. */

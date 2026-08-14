@@ -353,8 +353,8 @@ public class LandingGenerationAgentExecutionService {
                   "executorContract", "NOT_REGISTERED"),
               Map.of(
                   "approachCode", "CODEX_CODE_IMPLEMENTATION",
-                  "available", false,
-                  "executorContract", "NOT_REGISTERED")));
+                  "available", true,
+                  "executorContract", "governed-full-html-v1")));
       experimentRepository
           .findById(execution.getExperimentId())
           .ifPresent(

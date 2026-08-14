@@ -14,6 +14,8 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -99,6 +101,28 @@ class OpportunityReviewExecutionServiceTest {
         .hasMessageContaining("execução");
 
     verify(reviews, never()).save(any());
+  }
+
+  /** Retoma uma lease órfã para qualquer parecerista após indisponibilidade do backend. */
+  @ParameterizedTest
+  @ValueSource(strings = {"ATENA", "PSIQUE", "PLUTUS", "HERMES"})
+  void recoversExpiredLeaseForEveryReviewer(String agent) {
+    OpportunityAgentReview expired = review(agent, OpportunityReviewExecutionStatus.RUNNING);
+    expired.setStartedAt(Instant.now().minusSeconds(3000));
+    expired.setUpdatedAt(Instant.now().minusSeconds(3000));
+    OpportunityAgentReview pending = review(agent, OpportunityReviewExecutionStatus.PENDING);
+    when(reviews.findByAgentKeyAndExecutionStatusAndUpdatedAtBefore(
+            eq(agent), eq(OpportunityReviewExecutionStatus.RUNNING), any()))
+        .thenReturn(List.of(expired));
+    when(reviews.findByAgentKeyAndExecutionStatusOrderByRequestedAtAsc(any(), any(), any()))
+        .thenReturn(List.of(pending));
+    when(evidence.findByDossierIdOrderByCreatedAtAsc(10L)).thenReturn(List.of());
+
+    service.claim(agent);
+
+    assertThat(expired.getExecutionStatus()).isEqualTo(OpportunityReviewExecutionStatus.PENDING);
+    assertThat(expired.getErrorMessage()).isEqualTo("LEASE_RECOVERED_ONCE");
+    assertThat(expired.getRetryCount()).isEqualTo(1);
   }
 
   /** Cria um parecer operacional vinculado a um dossiê em avaliação. */

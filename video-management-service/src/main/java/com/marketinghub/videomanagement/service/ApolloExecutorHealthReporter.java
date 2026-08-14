@@ -1,11 +1,15 @@
 package com.marketinghub.videomanagement.service;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.event.EventListener;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -14,6 +18,7 @@ import org.springframework.web.client.RestClient;
 @Component
 public class ApolloExecutorHealthReporter {
     private static final Logger log = LoggerFactory.getLogger(ApolloExecutorHealthReporter.class);
+    private static final Duration BACKEND_TIMEOUT = Duration.ofSeconds(5);
     private final RestClient backend;
     private final String agentKey;
     private final int deployedVersion;
@@ -25,10 +30,19 @@ public class ApolloExecutorHealthReporter {
             @Value("${apollo.codex-auth.agent-key}") String agentKey,
             @Value("${apollo.executor-health.deployed-version}") int deployedVersion,
             @Value("${apollo.executor-health.build-reference}") String buildReference) {
-        this.backend = RestClient.builder().baseUrl(backendUrl).build();
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(BACKEND_TIMEOUT);
+        requestFactory.setReadTimeout(BACKEND_TIMEOUT);
+        this.backend = RestClient.builder().baseUrl(backendUrl).requestFactory(requestFactory).build();
         this.agentKey = agentKey;
         this.deployedVersion = deployedVersion;
         this.buildReference = buildReference;
+    }
+
+    /** Publica a primeira prova de prontidão assim que a aplicação termina de iniciar. */
+    @EventListener(ApplicationReadyEvent.class)
+    public void reportOnStartup() {
+        report();
     }
 
     /** Comprova acesso ao backend e autenticação Codex sem expor credenciais. */

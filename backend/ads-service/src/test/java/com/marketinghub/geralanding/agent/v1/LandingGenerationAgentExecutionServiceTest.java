@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -64,6 +65,25 @@ class LandingGenerationAgentExecutionServiceTest {
             "{\"approvalRecommendation\":\"REGENERATE_BEFORE_PUBLICATION\",\"score\":70}"));
 
     verify(repository).save(any(GeraLandingStageExecution.class));
+  }
+
+  /** Não deve acumular outra correção quando o mesmo ciclo já possui trabalho ativo. */
+  @Test
+  void shouldNotDuplicateRejectedQualityReviewWhileCorrectionIsActive() {
+    when(repository.existsByExperimentIdAndStageCodeAndAutonomousCycleIdAndStatusIn(
+            88L,
+            "landing-generation-agent-v1",
+            "cycle-88",
+            List.of("INICIADO", "PROCESSANDO")))
+        .thenReturn(true);
+
+    service.onQualityReviewCompleted(
+        new LandingQualityReviewedEvent(
+            88L,
+            "cycle-88",
+            "{\"approvalRecommendation\":\"REGENERATE_BEFORE_PUBLICATION\",\"score\":78}"));
+
+    verify(repository, never()).save(any(GeraLandingStageExecution.class));
   }
 
   /** Deve transformar a causa de Têmis em contexto explícito para a autonomia de Dédalo. */

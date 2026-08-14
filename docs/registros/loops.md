@@ -1161,6 +1161,14 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Correção:** o backend só cria a próxima copy quando a última copy é anterior ao wireframe que acabou de concluir.
 - **Prevenção:** teste de contrato simula callback tardio de wireframe e impede duplicação da próxima etapa.
 
+## LOOP-GERALANDING-QUALITY-REVIEW-AGENT-BACKLOG — revisões concorrentes duplicam correções
+
+- **Data:** 2026-08-14.
+- **Sintoma:** o experimento #88 permaneceu `PLANNED` enquanto revisões de versões antigas concluíam em paralelo e criavam dezenas de execuções `landing-generation-agent-v1` para o mesmo ciclo.
+- **Causa-raiz:** cada callback reprovado do Quality Review enfileirava Dédalo sem verificar se já existia correção `INICIADO` ou `PROCESSANDO` para o mesmo experimento e ciclo autônomo.
+- **Correção:** a fila do agente passou a ser idempotente por experimento, etapa, ciclo e status ativo; uma reprovação posterior permanece auditada, mas não abre trabalho concorrente.
+- **Prevenção:** teste de contrato simula callbacks reprovados repetidos e exige uma única correção ativa antes de nova revisão.
+
 ## LOOP-MUSA-PROJETO-LEGADO-PLANO-OBRIGATORIO — perfil de Apolo não é salvo
 
 - **Data:** 2026-08-12.

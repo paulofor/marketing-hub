@@ -47,6 +47,7 @@ public class LandingGenerationAgentCoordinator {
   private final BackendPresetDesignService presetDesignService;
   private final GeraLandingDeliverablesStageExecutionService deliverablesService;
   private final AgentMemoryService memoryService;
+  private final GovernedLandingHtmlService governedLandingHtmlService;
 
   /** Inicializa o coordenador com as portas oficiais do backend para cada executor. */
   public LandingGenerationAgentCoordinator(
@@ -58,7 +59,8 @@ public class LandingGenerationAgentCoordinator {
       BackendImagePlanningService imagePlanningService,
       BackendPresetDesignService presetDesignService,
       GeraLandingDeliverablesStageExecutionService deliverablesService,
-      AgentMemoryService memoryService) {
+      AgentMemoryService memoryService,
+      GovernedLandingHtmlService governedLandingHtmlService) {
     this.objectMapper = objectMapper;
     this.executionRepository = executionRepository;
     this.creativeRepository = creativeRepository;
@@ -68,6 +70,7 @@ public class LandingGenerationAgentCoordinator {
     this.presetDesignService = presetDesignService;
     this.deliverablesService = deliverablesService;
     this.memoryService = memoryService;
+    this.governedLandingHtmlService = governedLandingHtmlService;
   }
 
   /** Interpreta o Quality Review e agenda a correção causal ou uma nova revisão dos anúncios. */
@@ -86,6 +89,11 @@ public class LandingGenerationAgentCoordinator {
       }
       enforceIterationAndProgressGates(experimentId, autonomousCycleId, review);
       enforceRegisteredGenerationApproach(review);
+      if ("CODEX_CODE_IMPLEMENTATION"
+          .equals(review.path("selectedGenerationApproach").path("approachCode").asText())) {
+        governedLandingHtmlService.apply(experimentId, review.path("generatedHtml").asText());
+        return;
+      }
       Set<String> stages = readRecommendedStages(review);
       registerLearningCandidate(experimentId, review, stages);
       String memoryAwareBrief = enrichWithMemory(experimentId, review);
@@ -112,7 +120,8 @@ public class LandingGenerationAgentCoordinator {
     if (selected.isMissingNode() || selected.isEmpty()) {
       throw new IllegalArgumentException("Decisão sem abordagem de geração selecionada");
     }
-    if (!"GERALANDING_PIPELINE".equals(selected.path("approachCode").asText())) {
+    if (!Set.of("GERALANDING_PIPELINE", "CODEX_CODE_IMPLEMENTATION")
+        .contains(selected.path("approachCode").asText())) {
       throw new IllegalArgumentException("Abordagem de geração sem executor registrado no backend");
     }
   }

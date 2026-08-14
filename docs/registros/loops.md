@@ -94,6 +94,13 @@
 - **Correção efetiva**: criar versão v2 idempotente em novo changeset, ativar explicitamente o contrato e proteger modelo, schema e inclusão relativa com teste preventivo.
 - **Prevenção**: nunca editar changeset já executado para recuperar template ausente; criar nova versão idempotente e manter a ausência do contrato como bloqueio explícito, sem fallback genérico.
 
+## LOOP-GERALANDING-PRESET-NAO-CONVERGE-HTML — Dédalo repete falha estrutural do preset
+
+- **Sintoma:** Têmis reprova versões sucessivas porque classes flex posteriores sobrescrevem grids desktop, embora Dédalo recomende corrigir o HTML.
+- **Causa-raiz confirmada em 2026-08-14:** `LANDING_PAGE_HTML` era encaminhado novamente ao preset; a autoridade declarada de reconstrução integral não possuía executor registrado nem contrato de resultado.
+- **Correção efetiva:** `CODEX_CODE_IMPLEMENTATION` passa a aceitar HTML completo de Dédalo, validado e persistido pelo backend como rascunho, preservando CTA e checkout e retornando automaticamente a Têmis.
+- **Prevenção:** schema e validações do worker exigem HTML integral somente nessa abordagem; o backend bloqueia scripts e mudança do contrato comercial.
+
 ## Regra operacional de uso
 
 ## LOOP-APOLO-LEGACY-LUMA-RESELECTION — plano legado reintroduz provider reprovado

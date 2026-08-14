@@ -60,7 +60,8 @@ class LandingGenerationAgentCoordinatorTest {
             imagePlanningService,
             presetDesignService,
             deliverablesService,
-            memoryService);
+            memoryService,
+            mock(GovernedLandingHtmlService.class));
     when(executionRepository
             .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
                 88L, "landing-page-quality-review", CYCLE_ID))

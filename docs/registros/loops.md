@@ -130,6 +130,15 @@
 - **Correção efetiva:** capturar e sanitizar a causa operacional, persistir o último diagnóstico no pedido e repetir somente o callback ao backend até três vezes, sem reiniciar nem duplicar o fluxo OAuth.
 - **Prevenção:** teste contratual exige que uma falha anterior ao device code preserve a causa segura no backend, sem token, cookie ou credencial.
 
+## LOOP-APOLO-CODEX-AUTH-DEPLOY-CONTRACT — reconexão permanece em REQUESTED
+
+- **Severidade:** ALTO.
+- **Status:** fechado localmente em 2026-08-14; aguarda publicação.
+- **Sintoma:** o painel cria a reconexão de Apolo, mas ela permanece em `REQUESTED` e não exibe o device code.
+- **Causa-raiz confirmada:** o deploy informava somente `VIDEO_BACKEND_BASE_URL`, enquanto o consumidor de reconexão lia `BACKEND_URL` e tentava o host inexistente `backend:8000`; o mesmo descritor não montava o `CODEX_HOME` persistente de Apolo.
+- **Correção efetiva:** o Compose publicado usa a mesma URL canônica para vídeo e reconexão, fixa a identidade `videomaker` e monta o diretório Codex individual e persistente.
+- **Prevenção:** o contrato de deploy valida URL compartilhada, identidade, caminho do cliente e volume individual antes de permitir nova publicação do serviço de vídeo.
+
 ## LOOP-TEMIS-LANDING-WITHOUT-DEDALO-DELEGATION — diagnóstico sem responsável operacional
 
 - **Severidade:** CRÍTICO.

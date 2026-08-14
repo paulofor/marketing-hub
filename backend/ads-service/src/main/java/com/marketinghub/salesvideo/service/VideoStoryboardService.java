@@ -106,8 +106,31 @@ public class VideoStoryboardService {
                     .mapToInt(VideoStoryboardSceneResponse::utilizationPercent)
                     .sum()
                 / producedScenes.size();
+    JsonNode planning = latestPlanning(projectJobs.values());
     return new VideoStoryboardResponse(
-        projectId, plans.size(), expectedCredits, consumedCredits, utilization, scenes);
+        projectId,
+        plans.size(),
+        expectedCredits,
+        consumedCredits,
+        utilization,
+        planning.path("apollo_planner_status").asText(null),
+        planning.path("apollo_planner_model").asText(null),
+        planning.path("budgetGate").asText(null),
+        planning.has("expectedCostUsd") ? planning.path("expectedCostUsd").decimalValue() : null,
+        scenes);
+  }
+
+  /** Localiza o planejamento de IA mais recente preservado em um job do projeto. */
+  private JsonNode latestPlanning(java.util.Collection<SalesVideoJob> jobs) {
+    return jobs.stream()
+        .sorted(
+            java.util.Comparator.comparing(
+                SalesVideoJob::getRequestedAt,
+                java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
+        .map(this::effectiveMetadata)
+        .filter(metadata -> metadata.has("apollo_planner_status"))
+        .findFirst()
+        .orElse(objectMapper.createObjectNode());
   }
 
   /** Acrescenta cenas planejadas que ainda não chegaram a um provider. */

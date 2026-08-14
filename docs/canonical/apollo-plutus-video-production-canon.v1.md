@@ -40,6 +40,8 @@ Por decisão comercial de 2026-08-13, Apolo não pode selecionar Luma para o MUS
 
 A duração máxima gerada pelo provider não define a duração dos cortes exibidos. Antes de consumir créditos, Apolo deve persistir no Estúdio um plano de cortes com função comercial, duração e objetivo visual por tomada; o executor agrupa esses cortes em clipes compatíveis com a capacidade específica do modelo e a pós-produção realiza a montagem. Texto, legenda, interface, preço e CTA são overlays determinísticos de pós-produção e não podem ser delegados ao modelo de vídeo. A tela deve mostrar separadamente quantidade de clipes cobrados, duração máxima por clipe e quantidade de cortes editoriais.
 
+Por decisão comercial de 2026-08-13, todo render pago de ciclo autônomo deve passar por um planejador de IA de Apolo antes do provider. A IA atua como diretora criativa: transforma o contexto persistido em storyboard estruturado, mas não possui autoridade para aprovar custo, repetir geração ou publicar. O executor valida deterministicamente quantidade e duração dos cortes, diversidade visual, cobertura de dor, resultado, mecanismo e CTA, ausência de texto embutido e custo previsto contra o teto aprovado por Plutus. Ausência de credencial, resposta inválida, redundância ou orçamento excedido bloqueia o provider. Request e response brutos, modelo, plano, custo previsto e decisão do gate devem permanecer auditáveis no job e visíveis no storyboard do Estúdio.
+
 ## Autoridade e segurança
 
 - Aprovar um ciclo não autoriza publicação, campanha, mudança de preço ou compra de créditos.

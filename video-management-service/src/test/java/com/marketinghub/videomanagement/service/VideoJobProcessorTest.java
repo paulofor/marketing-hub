@@ -57,6 +57,9 @@ class VideoJobProcessorTest {
     @Mock
     private VideoJobObservabilityService observabilityService;
 
+    @Mock
+    private ApolloStoryboardPlanner apolloStoryboardPlanner;
+
     @Captor
     private ArgumentCaptor<JobCompletionPayload> completionCaptor;
 
@@ -75,12 +78,14 @@ class VideoJobProcessorTest {
                 assetUploader,
                 observabilityService,
                 properties,
-                new ObjectMapper());
+                new ObjectMapper(),
+                apolloStoryboardPlanner);
     }
 
     @Test
     void shouldCompleteJobWhenProviderSucceeds() {
         SalesVideoJob job = job();
+        when(apolloStoryboardPlanner.planAndApprove(any(), any(), any())).thenReturn(job);
         SalesVideoProfile profile = profile();
         ProviderFile videoFile = new ProviderFile("video.mp4", MediaType.valueOf("video/mp4"), AssetType.VIDEO,
                 ProviderAssetRole.VIDEO, new byte[]{1});
@@ -104,6 +109,7 @@ class VideoJobProcessorTest {
     @Test
     void shouldFailJobWhenNoProviderIsFound() {
         SalesVideoJob job = job();
+        when(apolloStoryboardPlanner.planAndApprove(any(), any(), any())).thenReturn(job);
         when(backendClient.fetchProfile(2L)).thenReturn(profile());
         when(providerRegistry.resolve(job)).thenReturn(Optional.empty());
 

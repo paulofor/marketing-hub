@@ -26,8 +26,10 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.LinkedHashMap;
 
 @Service
+/** Responsabilidade: executar um job de vídeo com claim, preflight, provider e callback auditável. */
 public class VideoJobProcessor {
     private final Logger log = LoggerFactory.getLogger(VideoJobProcessor.class);
     private final BackendVideoClient backendClient;
@@ -36,21 +38,26 @@ public class VideoJobProcessor {
     private final VideoJobObservabilityService observabilityService;
     private final VideoManagementProperties properties;
     private final ObjectMapper objectMapper;
+    private final ApolloStoryboardPlanner apolloStoryboardPlanner;
 
+    /** Configura dependências de execução, observabilidade e planejamento prévio. */
     public VideoJobProcessor(BackendVideoClient backendClient,
                              ProviderRegistry providerRegistry,
                              VideoAssetUploader assetUploader,
                              VideoJobObservabilityService observabilityService,
                              VideoManagementProperties properties,
-                             ObjectMapper objectMapper) {
+                             ObjectMapper objectMapper,
+                             ApolloStoryboardPlanner apolloStoryboardPlanner) {
         this.backendClient = backendClient;
         this.providerRegistry = providerRegistry;
         this.assetUploader = assetUploader;
         this.observabilityService = observabilityService;
         this.properties = properties;
         this.objectMapper = objectMapper;
+        this.apolloStoryboardPlanner = apolloStoryboardPlanner;
     }
 
+    /** Executa um job e impede o provider quando o planejamento ou gate prévio falhar. */
     public void process(SalesVideoJob job) {
         try (AutoCloseable ignored = putMdc(job)) {
             log.info("Processando job {} para profile {}", job.id(), job.profileId());
@@ -61,6 +68,8 @@ public class VideoJobProcessor {
             backendClient.reportHeartbeat(job.id(), new JobHeartbeatPayload(
                     "Job em execução pelo worker " + properties.getWorkerId(), null));
             SalesVideoProfile profile = loadProfile(job);
+            job = apolloStoryboardPlanner.planAndApprove(job, profile,
+                    new VideoJobProgressReporter(backendClient, job.id()));
             VideoProvider provider = providerRegistry.resolve(job)
                     .orElseThrow(() -> new VideoProviderException("Nenhum provider configurado para o job"));
             ProviderArtifacts artifacts = provider.render(job, profile,
@@ -70,7 +79,7 @@ public class VideoJobProcessor {
             }
             UploadedAssets uploadedAssets = assetUploader.uploadAssets(job, artifacts);
             BigDecimal costUsd = readCostUsd(artifacts.metadata());
-            String metadataJson = serializeMetadata(artifacts.metadata());
+            String metadataJson = serializeMetadata(mergeAuditMetadata(job, artifacts.metadata()));
             backendClient.completeJob(job.id(), new JobCompletionPayload(
                     SalesVideoStatus.VIDEO_READY,
                     uploadedAssets.videoAssetId(),
@@ -224,6 +233,22 @@ public class VideoJobProcessor {
         } catch (JsonProcessingException ex) {
             throw new VideoProviderException("Falha ao serializar metadata do provider", ex);
         }
+    }
+
+    /** Preserva o planejamento aprovado junto ao retorno do provider para auditoria no Estúdio. */
+    private Map<String, Object> mergeAuditMetadata(SalesVideoJob job, Map<String, Object> providerMetadata) {
+        Map<String, Object> merged = new LinkedHashMap<>();
+        if (job.metadataJson() != null && !job.metadataJson().isBlank()) {
+            try {
+                merged.putAll(objectMapper.readValue(job.metadataJson(), Map.class));
+            } catch (JsonProcessingException ex) {
+                log.error("Falha ao preservar metadata de planejamento; jobId={}", job.id(), ex);
+                throw new VideoProviderException("APOLLO_AUDIT_METADATA_INVALID",
+                        "Metadata aprovada não pôde ser preservada", ex);
+            }
+        }
+        if (providerMetadata != null) merged.putAll(providerMetadata);
+        return merged;
     }
 
     private BigDecimal readCostUsd(Map<String, Object> metadata) {

@@ -22,6 +22,10 @@ export type VideoStoryboard = {
   expectedCredits: number;
   consumedCredits: number;
   utilizationPercent?: number | null;
+  plannerStatus?: string | null;
+  plannerModel?: string | null;
+  budgetGate?: string | null;
+  expectedCostUsd?: number | null;
   scenes: VideoStoryboardScene[];
 };
 

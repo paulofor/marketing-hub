@@ -2377,6 +2377,21 @@ export default function AudioVideoStudioPage() {
                             {storyboardQuery.data.utilizationPercent ?? "—"}%
                             aproveitado
                           </span>
+                          <span>
+                            IA:{" "}
+                            {storyboardQuery.data.plannerStatus ??
+                              "Aguardando plano"}
+                            {storyboardQuery.data.plannerModel
+                              ? ` · ${storyboardQuery.data.plannerModel}`
+                              : ""}
+                          </span>
+                          <span>
+                            Orçamento:{" "}
+                            {storyboardQuery.data.budgetGate ?? "Não aprovado"}
+                            {storyboardQuery.data.expectedCostUsd != null
+                              ? ` · US$ ${storyboardQuery.data.expectedCostUsd.toFixed(2)}`
+                              : ""}
+                          </span>
                         </div>
                         <div className="audio-video-studio-page__storyboard-grid">
                           {storyboardQuery.data.scenes.map((scene, index) => (

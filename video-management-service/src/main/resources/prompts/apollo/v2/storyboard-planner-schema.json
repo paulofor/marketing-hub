@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["creativeRationale", "cuts"],
+  "properties": {
+    "creativeRationale": {"type": "string", "minLength": 10},
+    "cuts": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["order", "durationSeconds", "commercialRole", "visualObjective", "reuseExistingMaterial", "postProductionText"],
+        "properties": {
+          "order": {"type": "integer", "minimum": 1},
+          "durationSeconds": {"type": "integer", "minimum": 1},
+          "commercialRole": {"type": "string", "enum": ["HOOK_DOR", "RESULTADO", "MECANISMO", "PROVA", "CTA"]},
+          "visualObjective": {"type": "string", "minLength": 12},
+          "reuseExistingMaterial": {"type": "boolean"},
+          "postProductionText": {"type": "string"}
+        }
+      }
+    }
+  }
+}

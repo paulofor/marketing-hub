@@ -36,6 +36,21 @@ public class VideoManagementProperties {
     @NotNull
     private Providers providers = new Providers();
 
+    @NotNull
+    private ApolloPlanner apolloPlanner = new ApolloPlanner();
+
+    /** Configura o planejador criativo que antecede qualquer render pago de Apolo. */
+    @Getter
+    @Setter
+    public static class ApolloPlanner {
+        private boolean enabled = true;
+        @NotNull
+        private URI openAiBaseUrl = URI.create("https://api.openai.com/v1");
+        private String apiKey;
+        private String apiKeyFile;
+        private String model = "gpt-5.6";
+    }
+
     @Getter
     @Setter
     public static class Jobs {

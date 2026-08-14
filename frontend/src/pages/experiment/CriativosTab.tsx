@@ -343,6 +343,16 @@ export default function CriativosTab({
 }: Props) {
   const { data, isLoading } = useCreatives(experimentId);
   const creatives = Array.isArray(data) ? data : [];
+  const creativePortfolioSummary = useMemo(() => {
+    const concepts = creatives.filter(
+      (creative) => creative.sourceCreativeId == null,
+    ).length;
+    const revisions = creatives.length - concepts;
+    const finalCandidates = creatives.filter(
+      (creative) => creative.finalCandidate === true,
+    ).length;
+    return { concepts, revisions, finalCandidates };
+  }, [creatives]);
   const { data: experiment } = useExperiment(experimentId);
   const pipelineRequest = useRequestPipelineCreatives(experimentId);
   const adCopyContent = useMemo(
@@ -1136,6 +1146,56 @@ export default function CriativosTab({
           </button>
         </div>
       )}
+      {!isLoading && creatives.length > 0 ? (
+        <section
+          className="card border-0 shadow-sm mb-3"
+          aria-label="Resumo das linhagens criativas"
+        >
+          <div className="card-body">
+            <h2 className="h6 mb-3">Portfólio criativo do experimento</h2>
+            <div className="row g-2">
+              <div className="col-12 col-md-4">
+                <div className="border rounded p-3 h-100">
+                  <strong className="d-block fs-4">
+                    {creativePortfolioSummary.concepts}
+                  </strong>
+                  <span>Conceitos originais</span>
+                  <small className="d-block text-muted">
+                    Linhas criativas distintas que iniciaram uma evolução.
+                  </small>
+                </div>
+              </div>
+              <div className="col-12 col-md-4">
+                <div className="border rounded p-3 h-100">
+                  <strong className="d-block fs-4">
+                    {creativePortfolioSummary.revisions}
+                  </strong>
+                  <span>Revisões acumuladas</span>
+                  <small className="d-block text-muted">
+                    Versões técnicas; não representam novas peças finais.
+                  </small>
+                </div>
+              </div>
+              <div className="col-12 col-md-4">
+                <div className="border rounded p-3 h-100">
+                  <strong className="d-block fs-4">
+                    {creativePortfolioSummary.finalCandidates}
+                  </strong>
+                  <span>Candidatos finais</span>
+                  <small className="d-block text-muted">
+                    Últimas versões aprovadas e sem revisão posterior.
+                  </small>
+                </div>
+              </div>
+            </div>
+            <p className="small text-muted mb-0 mt-3">
+              Total técnico: {creatives.length} registros ={" "}
+              {creativePortfolioSummary.concepts} conceitos +{" "}
+              {creativePortfolioSummary.revisions} revisões.
+            </p>
+          </div>
+        </section>
+      ) : null}
       <div className="mb-4">
         {alterationLocked ? (
           <div className="alert alert-secondary" role="status">

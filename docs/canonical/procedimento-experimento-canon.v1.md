@@ -511,6 +511,8 @@ A criação, geração por IA, edição, aprovação e exclusão de criativos pe
 
 O módulo Facebook pode apenas consumir criativos já aprovados para publicação. Para isso, o backend deve expor contratos de leitura exclusivos no módulo Facebook, começando por `GET /api/facebook-campaigns/experiments/{experimentId}/creatives-ready`, que retorna somente criativos `READY` do experimento no formato necessário ao `facebook-ads-worker`. É proibido usar endpoints do módulo Facebook para criar, editar, aprovar ou excluir criativos.
 
+Decisão canônica de 2026-08-14: toda contagem operacional de criativos no painel do experimento deve separar `conceitos originais`, `revisões acumuladas` e `candidatos finais`. Conceito original é a raiz sem `source_creative_id`; revisão é qualquer versão derivada; candidato final é a última versão da linhagem que está `READY` e não possui revisão posterior. O total de registros técnicos pode ser exibido apenas como reconciliação entre conceitos e revisões, nunca como quantidade de peças finais disponíveis para campanha.
+
 Essa separação evita acoplamento indevido: Experimentos mantém a responsabilidade pelo artefato e Facebook mantém a responsabilidade pela publicação e consumo operacional.
 
 ## 8. Regras de integração com OpenAI

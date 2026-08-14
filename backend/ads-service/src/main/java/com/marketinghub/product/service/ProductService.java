@@ -487,6 +487,14 @@ public class ProductService {
     String sql =
         """
         SELECT c.id AS creative_id,
+               c.source_creative_id AS source_creative_id,
+               c.version_number AS version_number,
+               CASE WHEN c.status = 'READY'
+                          AND NOT EXISTS (
+                              SELECT 1 FROM creative newer
+                              WHERE newer.source_creative_id = c.id
+                          )
+                    THEN 1 ELSE 0 END AS final_candidate,
                c.experiment_id AS experiment_id,
                e.name AS experiment_name,
                e.status AS experiment_status,
@@ -519,38 +527,7 @@ public class ProductService {
                  c.id DESC
         """;
     List<ProductAdLibraryItemResponse> ads =
-        jdbcTemplate.query(
-            sql,
-            (rs, rowNum) ->
-                new ProductAdLibraryItemResponse(
-                    rs.getLong("creative_id"),
-                    rs.getLong("experiment_id"),
-                    rs.getString("experiment_name"),
-                    rs.getString("experiment_status"),
-                    rs.getString("format"),
-                    rs.getString("creative_status"),
-                    rs.getString("headline"),
-                    rs.getString("primary_text"),
-                    rs.getString("description"),
-                    rs.getString("cta"),
-                    rs.getString("destination_url"),
-                    rs.getString("image_url"),
-                    rs.getString("video_url"),
-                    rs.getString("video_id"),
-                    recommendAdReuse(rs.getString("creative_status"), rs.getString("format")),
-                    rs.getTimestamp("reviewed_at") != null
-                        ? rs.getTimestamp("reviewed_at").toInstant()
-                        : null,
-                    rs.getString("agent_review_status"),
-                    rs.getString("agent_review_json"),
-                    rs.getString("agent_review_model"),
-                    rs.getTimestamp("agent_reviewed_at") != null
-                        ? rs.getTimestamp("agent_reviewed_at").toInstant()
-                        : null,
-                    rs.getString("agent_improvement_status"),
-                    rs.getInt("agent_improvement_attempts"),
-                    rs.getString("agent_improvement_error")),
-            scope.params().toArray());
+        jdbcTemplate.query(sql, (rs, rowNum) -> mapAdLibraryItem(rs), scope.params().toArray());
     return new ProductAdLibraryResponse(
         product.getId(),
         product.getName(),
@@ -612,6 +589,14 @@ public class ProductService {
     return jdbcTemplate.query(
         """
         SELECT c.id AS creative_id,
+               c.source_creative_id AS source_creative_id,
+               c.version_number AS version_number,
+               CASE WHEN c.status = 'READY'
+                          AND NOT EXISTS (
+                              SELECT 1 FROM creative newer
+                              WHERE newer.source_creative_id = c.id
+                          )
+                    THEN 1 ELSE 0 END AS final_candidate,
                c.experiment_id AS experiment_id,
                e.name AS experiment_name,
                e.status AS experiment_status,
@@ -706,6 +691,9 @@ public class ProductService {
       throws java.sql.SQLException {
     return new ProductAdLibraryItemResponse(
         rs.getLong("creative_id"),
+        nullableLong(rs, "source_creative_id"),
+        rs.getInt("version_number"),
+        rs.getBoolean("final_candidate"),
         rs.getLong("experiment_id"),
         rs.getString("experiment_name"),
         rs.getString("experiment_status"),
@@ -730,6 +718,12 @@ public class ProductService {
         rs.getString("agent_improvement_status"),
         rs.getInt("agent_improvement_attempts"),
         rs.getString("agent_improvement_error"));
+  }
+
+  /** Lê um identificador opcional sem converter SQL NULL em zero. */
+  private Long nullableLong(java.sql.ResultSet rs, String column) throws java.sql.SQLException {
+    long value = rs.getLong(column);
+    return rs.wasNull() ? null : value;
   }
 
   /** Escopo SQL seguro para consultar experimentos relacionados ao produto. */

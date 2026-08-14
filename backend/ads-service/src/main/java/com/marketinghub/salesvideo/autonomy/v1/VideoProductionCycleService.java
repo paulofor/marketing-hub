@@ -196,9 +196,13 @@ public class VideoProductionCycleService {
     RequestSalesVideoPostProductionRequest request = new RequestSalesVideoPostProductionRequest();
     request.setRequestedBy("Apolo");
     request.setCaptionText(caption);
-    SalesVideoJobDto postProduction =
-        salesVideoService.requestPostProduction(failedJob.getId(), request);
-    cycle.setSalesVideoJobId(postProduction.getId());
+    Long postProductionJobId =
+        jobRepository
+            .findFirstByRetryOfJob_IdOrderByRequestedAtDesc(failedJob.getId())
+            .map(SalesVideoJob::getId)
+            .orElseGet(
+                () -> salesVideoService.requestPostProduction(failedJob.getId(), request).getId());
+    cycle.setSalesVideoJobId(postProductionJobId);
     cycle.setStatus("REUSING_APOLLO_MATERIAL");
     cycle.setUpdatedAt(Instant.now());
     return true;

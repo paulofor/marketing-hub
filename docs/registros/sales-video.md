@@ -231,4 +231,11 @@
 
 - Causa-raiz: o Estúdio mostrava plano e jobs separados, sem cruzar duração, consumo, arquivo e uso editorial por cena; assim, material caro e não utilizado podia parecer apenas produção em andamento.
 - Correção: endpoint canônico do projeto compõe plano, tasks do provider, créditos previstos/liquidados, assets e fontes de montagens prontas; a tela apresenta cada tentativa e totais do storyboard em desktop e mobile.
+- Evolução em 2026-08-14: a avaliação comercial por cena passa a persistir decisão, percentual aproveitável, evidência, autor e horário; a recuperação de montagem curta reutiliza um único job de pós-produção e nunca solicita novo render pago.
+
+## 2026-08-13 — planejamento de IA e gate determinístico de Apolo
+
+- Causa-raiz: Apolo recebia cortes genéricos fixos e podia alcançar o provider sem uma revisão criativa por IA nem uma revalidação final do custo previsto.
+- Correção: o executor usa prompt e schema versionados para planejar o storyboard, preserva request/response e bloqueia o provider se duração, diversidade, funções comerciais, pós-produção ou teto financeiro não forem aprovados deterministicamente.
+- Prevenção: testes de contrato cobrem caminho aprovado, orçamento excedido e texto indevidamente delegado ao gerador de vídeo; o Estúdio expõe modelo, estado do planejador, gate e custo previsto.
 - Prevenção: arquivo gerado só recebe aproveitamento positivo quando estiver referenciado por montagem `VIDEO_READY`; cenas sem task, liquidação ou arquivo permanecem explicitamente pendentes e testes protegem payload incompleto.

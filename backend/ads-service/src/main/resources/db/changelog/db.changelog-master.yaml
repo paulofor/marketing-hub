@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-14-storyboard-scene-commercial-evaluation.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-13-provider-task-consumption.yaml
       relativeToChangelogFile: true
   - include:

@@ -1,5 +1,6 @@
 package com.marketinghub.salesvideo.controller;
 
+import com.marketinghub.financialagent.service.CommercialSceneEvaluationRequest;
 import com.marketinghub.media.Asset;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.media.MediaProvider;
@@ -120,6 +121,16 @@ public class SalesVideoController {
   @GetMapping("/api/sales-videos/projects/{projectId}/storyboard")
   public VideoStoryboardResponse getVideoStoryboard(@PathVariable Long projectId) {
     return salesVideoService.getVideoStoryboard(projectId);
+  }
+
+  /** Persiste a avaliação comercial de uma cena e devolve o storyboard atualizado. */
+  @PatchMapping(
+      "/api/sales-videos/projects/{projectId}/storyboard/scenes/{consumptionId}/evaluation")
+  public VideoStoryboardResponse evaluateStoryboardScene(
+      @PathVariable Long projectId,
+      @PathVariable Long consumptionId,
+      @Valid @RequestBody CommercialSceneEvaluationRequest request) {
+    return salesVideoService.evaluateStoryboardScene(projectId, consumptionId, request);
   }
 
   /** Atualiza um projeto editável do estúdio de vídeos. */

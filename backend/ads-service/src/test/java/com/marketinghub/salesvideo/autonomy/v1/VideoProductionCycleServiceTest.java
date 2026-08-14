@@ -325,6 +325,8 @@ class VideoProductionCycleServiceTest {
             "QUEUED_FOR_APOLLO", "APPROVED"))
         .thenReturn(java.util.List.of(cycle));
     when(jobRepository.findById(21105L)).thenReturn(Optional.of(failed));
+    when(jobRepository.findFirstByRetryOfJob_IdOrderByRequestedAtDesc(21105L))
+        .thenReturn(Optional.empty());
     when(projectRepository.findById(7L)).thenReturn(Optional.of(project));
     when(salesVideoService.requestPostProduction(any(), any())).thenReturn(postProduction);
 
@@ -337,6 +339,38 @@ class VideoProductionCycleServiceTest {
     assertThat(post.getValue().getCaptionText()).isEqualTo("Presença elegante em sete dias.");
     assertThat(cycle.getStatus()).isEqualTo("REUSING_APOLLO_MATERIAL");
     assertThat(cycle.getSalesVideoJobId()).isEqualTo(21107L);
+    verify(salesVideoService, never()).requestRender(any(), any());
+  }
+
+  /** Reutiliza o job de pós-produção existente sem duplicar encaminhamento nem geração paga. */
+  @Test
+  void shouldReuseExistingPostProductionJobIdempotently() {
+    VideoProductionCycle cycle = cycle();
+    cycle.setStatus("QUEUED_FOR_APOLLO");
+    cycle.setFinancialDecision("APPROVED");
+    cycle.setSalesVideoJobId(21105L);
+    SalesVideoJob failed = new SalesVideoJob();
+    failed.setId(21105L);
+    failed.setStatus(SalesVideoStatus.VIDEO_FAILED);
+    failed.setFailureCode("RENDER_DURATION_SHORT");
+    failed.setAsset(Asset.builder().id(2420L).build());
+    SalesVideoJob existingPostProduction = new SalesVideoJob();
+    existingPostProduction.setId(21107L);
+    VideoProject project = project();
+    project.setCaptionPlan("Presença elegante em sete dias.");
+    when(repository.findByStatusAndFinancialDecisionOrderByCreatedAtAsc(
+            "QUEUED_FOR_APOLLO", "APPROVED"))
+        .thenReturn(java.util.List.of(cycle));
+    when(jobRepository.findById(21105L)).thenReturn(Optional.of(failed));
+    when(jobRepository.findFirstByRetryOfJob_IdOrderByRequestedAtDesc(21105L))
+        .thenReturn(Optional.of(existingPostProduction));
+    when(projectRepository.findById(7L)).thenReturn(Optional.of(project));
+
+    service.reconcileApolloQueue();
+
+    assertThat(cycle.getSalesVideoJobId()).isEqualTo(21107L);
+    assertThat(cycle.getStatus()).isEqualTo("REUSING_APOLLO_MATERIAL");
+    verify(salesVideoService, never()).requestPostProduction(any(), any());
     verify(salesVideoService, never()).requestRender(any(), any());
   }
 

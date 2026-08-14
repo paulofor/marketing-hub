@@ -2,10 +2,13 @@ package com.marketinghub.financialagent.service;
 
 import com.marketinghub.financialagent.StudioProviderTaskConsumption;
 import com.marketinghub.repository.jpa.financialagent.StudioProviderTaskConsumptionRepository;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: oferecer consultas de consumo de providers por contratos imutáveis. */
 @Service
@@ -29,6 +32,7 @@ public class StudioProviderTaskConsumptionQueryService {
   /** Converte uma entidade financeira no contrato mínimo necessário aos consumidores. */
   private ProviderTaskConsumptionView toView(StudioProviderTaskConsumption task) {
     return new ProviderTaskConsumptionView(
+        task.getId(),
         task.getSalesVideoJobId(),
         task.getProviderTaskId(),
         task.getSceneNumber(),
@@ -36,6 +40,38 @@ public class StudioProviderTaskConsumptionQueryService {
         task.getDurationSeconds(),
         task.getEstimatedCredits(),
         task.getBilledCredits(),
+        task.getCommercialEvaluationStatus(),
+        task.getCommercialUtilizationPercent(),
+        task.getCommercialEvaluationNotes(),
+        task.getCommercialEvaluatedBy(),
+        task.getCommercialEvaluatedAt(),
         task.getAcceptedAt());
+  }
+
+  /** Persiste a avaliação comercial editorial de uma task produzida. */
+  @Transactional
+  public ProviderTaskConsumptionView evaluate(
+      Long taskId, CommercialSceneEvaluationRequest request) {
+    StudioProviderTaskConsumption task =
+        repository
+            .findById(taskId)
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Cena do storyboard não encontrada."));
+    String status = request.status().trim().toUpperCase(java.util.Locale.ROOT);
+    if (!java.util.Set.of("APPROVED", "PARTIAL", "REJECTED").contains(status)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Avaliação comercial inválida.");
+    }
+    if (request.utilizationPercent() < 0 || request.utilizationPercent() > 100) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Aproveitamento deve ficar entre 0 e 100.");
+    }
+    task.setCommercialEvaluationStatus(status);
+    task.setCommercialUtilizationPercent(request.utilizationPercent());
+    task.setCommercialEvaluationNotes(request.notes() == null ? null : request.notes().trim());
+    task.setCommercialEvaluatedBy(request.evaluatedBy().trim());
+    task.setCommercialEvaluatedAt(Instant.now());
+    return toView(repository.save(task));
   }
 }

@@ -13,6 +13,12 @@ video:
     batch-size: 10
     backend-call-backoff: PT2S
     backend-call-max-attempts: 3
+  apollo-planner:
+    enabled: ${APOLLO_PLANNER_ENABLED:true}
+    open-ai-base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    api-key: ${OPENAI_API_KEY:}
+    api-key-file: ${OPENAI_API_KEY_FILE:}
+    model: ${APOLLO_PLANNER_MODEL:gpt-5.6}
   providers:
     luma:
       enabled: false

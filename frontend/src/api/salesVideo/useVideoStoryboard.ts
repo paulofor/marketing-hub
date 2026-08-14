@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
 export type VideoStoryboardScene = {
+  consumptionId?: number | null;
   sceneNumber: number;
   commercialRole: string;
   plan?: string | null;
@@ -14,6 +16,10 @@ export type VideoStoryboardScene = {
   producedFileUrl?: string | null;
   utilizationPercent?: number | null;
   utilizationEvidence: string;
+  commercialEvaluationStatus?: string | null;
+  commercialEvaluationNotes?: string | null;
+  commercialEvaluatedBy?: string | null;
+  commercialEvaluatedAt?: string | null;
 };
 
 export type VideoStoryboard = {
@@ -22,6 +28,10 @@ export type VideoStoryboard = {
   expectedCredits: number;
   consumedCredits: number;
   utilizationPercent?: number | null;
+  plannerStatus?: string | null;
+  plannerModel?: string | null;
+  budgetGate?: string | null;
+  expectedCostUsd?: number | null;
   scenes: VideoStoryboardScene[];
 };
 
@@ -36,5 +46,29 @@ export function useVideoStoryboard(projectId?: number) {
       return data;
     },
     enabled: Boolean(projectId),
+  });
+}
+
+/** Persiste a avaliação comercial de uma cena sem solicitar nova geração. */
+export function useEvaluateStoryboardScene(projectId?: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      consumptionId: number;
+      status: string;
+      utilizationPercent: number;
+      notes: string;
+      evaluatedBy: string;
+    }) => {
+      const { consumptionId, ...payload } = input;
+      const { data } = await axios.patch<VideoStoryboard>(
+        `/api/sales-videos/projects/${projectId}/storyboard/scenes/${consumptionId}/evaluation`,
+        payload,
+      );
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["video-storyboard", projectId], data);
+    },
   });
 }

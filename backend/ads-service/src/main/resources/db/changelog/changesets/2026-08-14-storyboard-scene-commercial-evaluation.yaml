@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-14-storyboard-scene-commercial-evaluation
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE studio_provider_task_consumption
+                ADD COLUMN commercial_evaluation_status VARCHAR(24) NULL,
+                ADD COLUMN commercial_utilization_percent INT NULL,
+                ADD COLUMN commercial_evaluation_notes LONGTEXT NULL,
+                ADD COLUMN commercial_evaluated_by VARCHAR(191) NULL,
+                ADD COLUMN commercial_evaluated_at DATETIME NULL;

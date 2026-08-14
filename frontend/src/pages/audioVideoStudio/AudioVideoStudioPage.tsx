@@ -44,7 +44,10 @@ import {
   useCreateVideoProductionCycle,
   useVideoProductionCycles,
 } from "../../api/salesVideo/useVideoProductionCycles";
-import { useVideoStoryboard } from "../../api/salesVideo/useVideoStoryboard";
+import {
+  useEvaluateStoryboardScene,
+  useVideoStoryboard,
+} from "../../api/salesVideo/useVideoStoryboard";
 import { useAsset } from "../../api/media/useAsset";
 import { useTenantContext } from "../../utils/tenantContext";
 import type {
@@ -959,6 +962,7 @@ export default function AudioVideoStudioPage() {
   const updateVideoProject = useUpdateVideoProject();
   const productionCycles = useVideoProductionCycles(editableProjectId);
   const storyboardQuery = useVideoStoryboard(editableProjectId);
+  const evaluateStoryboardScene = useEvaluateStoryboardScene(editableProjectId);
   const createProductionCycle =
     useCreateVideoProductionCycle(editableProjectId);
   const [cycleBudgetUsd, setCycleBudgetUsd] = useState("");
@@ -2377,6 +2381,21 @@ export default function AudioVideoStudioPage() {
                             {storyboardQuery.data.utilizationPercent ?? "—"}%
                             aproveitado
                           </span>
+                          <span>
+                            IA:{" "}
+                            {storyboardQuery.data.plannerStatus ??
+                              "Aguardando plano"}
+                            {storyboardQuery.data.plannerModel
+                              ? ` · ${storyboardQuery.data.plannerModel}`
+                              : ""}
+                          </span>
+                          <span>
+                            Orçamento:{" "}
+                            {storyboardQuery.data.budgetGate ?? "Não aprovado"}
+                            {storyboardQuery.data.expectedCostUsd != null
+                              ? ` · US$ ${storyboardQuery.data.expectedCostUsd.toFixed(2)}`
+                              : ""}
+                          </span>
                         </div>
                         <div className="audio-video-studio-page__storyboard-grid">
                           {storyboardQuery.data.scenes.map((scene, index) => (
@@ -2437,6 +2456,72 @@ export default function AudioVideoStudioPage() {
                                   Nenhum arquivo produzido
                                 </span>
                               )}
+                              {scene.consumptionId ? (
+                                <form
+                                  aria-label={`Avaliação comercial da cena ${scene.sceneNumber}`}
+                                  onSubmit={(event) => {
+                                    event.preventDefault();
+                                    const form = new FormData(
+                                      event.currentTarget,
+                                    );
+                                    evaluateStoryboardScene.mutate({
+                                      consumptionId: scene.consumptionId!,
+                                      status: String(form.get("status")),
+                                      utilizationPercent: Number(
+                                        form.get("utilizationPercent"),
+                                      ),
+                                      notes: String(form.get("notes") ?? ""),
+                                      evaluatedBy: "Estúdio",
+                                    });
+                                  }}
+                                >
+                                  <label>
+                                    Parecer comercial
+                                    <select
+                                      name="status"
+                                      defaultValue={
+                                        scene.commercialEvaluationStatus ??
+                                        "PARTIAL"
+                                      }
+                                    >
+                                      <option value="APPROVED">Aprovada</option>
+                                      <option value="PARTIAL">
+                                        Aproveitamento parcial
+                                      </option>
+                                      <option value="REJECTED">
+                                        Reprovada
+                                      </option>
+                                    </select>
+                                  </label>
+                                  <label>
+                                    Aproveitamento (%)
+                                    <input
+                                      name="utilizationPercent"
+                                      type="number"
+                                      min="0"
+                                      max="100"
+                                      defaultValue={
+                                        scene.utilizationPercent ?? 0
+                                      }
+                                    />
+                                  </label>
+                                  <label>
+                                    Evidência editorial
+                                    <textarea
+                                      name="notes"
+                                      defaultValue={
+                                        scene.commercialEvaluationNotes ?? ""
+                                      }
+                                    />
+                                  </label>
+                                  <button
+                                    type="submit"
+                                    disabled={evaluateStoryboardScene.isPending}
+                                  >
+                                    Salvar avaliação
+                                  </button>
+                                </form>
+                              ) : null}
                             </article>
                           ))}
                         </div>

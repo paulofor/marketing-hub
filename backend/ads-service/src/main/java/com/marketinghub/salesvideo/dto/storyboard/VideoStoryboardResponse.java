@@ -9,4 +9,8 @@ public record VideoStoryboardResponse(
     int expectedCredits,
     int consumedCredits,
     Integer utilizationPercent,
+    String plannerStatus,
+    String plannerModel,
+    String budgetGate,
+    java.math.BigDecimal expectedCostUsd,
     List<VideoStoryboardSceneResponse> scenes) {}

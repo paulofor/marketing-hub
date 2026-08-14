@@ -35,7 +35,10 @@ public class MoisMetaAdInvestigationService {
   private final JdbcTemplate jdbcTemplate;
   private final ObjectMapper objectMapper;
 
-  /** Cria um acompanhamento supervisionado sem depender da API restrita da Meta. */
+  /**
+   * Cria uma investigação recorrente para a API oficial, mantendo o cadastro supervisionado como
+   * complemento.
+   */
   public MoisMetaAdDtos.InvestigationResponse create(
       MoisMetaAdDtos.CreateInvestigationRequest request) {
     Instant now = Instant.now();
@@ -48,7 +51,7 @@ public class MoisMetaAdInvestigationService {
                   INSERT INTO mois_meta_ad_investigation
                     (workspace_id, search_terms, country_code, status, gate_decision, evidence_json,
                      gaps_json, ethical_modeling_json, created_at, updated_at)
-                  VALUES (?, ?, ?, 'ACTIVE_SUPERVISED', 'INVESTIGAR', '[]', ?, ?, ?, ?)
+                  VALUES (?, ?, ?, 'PENDING', 'INVESTIGAR', '[]', ?, ?, ?, ?)
                   """,
                   java.sql.Statement.RETURN_GENERATED_KEYS);
           statement.setString(1, request.workspaceId());
@@ -58,7 +61,7 @@ public class MoisMetaAdInvestigationService {
               4,
               json(
                   List.of(
-                      "Cadastrar anúncios comerciais observados na Biblioteca pública",
+                      "Aguardar a primeira coleta pela API oficial da Meta",
                       "Reobservar o mesmo anúncio em datas distintas para comprovar longevidade")));
           statement.setString(5, json(MoisMetaAdDtos.EthicalModelingCard.empty()));
           statement.setTimestamp(6, Timestamp.from(now));

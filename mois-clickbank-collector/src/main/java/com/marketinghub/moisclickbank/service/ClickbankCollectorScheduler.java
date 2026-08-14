@@ -34,7 +34,7 @@ public class ClickbankCollectorScheduler {
     }
 
     /** Executa o ciclo Clickbank correspondente ao horário atual quando o scheduler está ativo. */
-    @Scheduled(cron = "${collector.scheduler.cron:0 0 * * * *}")
+    @Scheduled(cron = "0 0 * * * *")
     public void collectHourly() {
         log.info("Iniciando execução agendada do Clickbank Collector source={} maxProducts={}", source, maxProducts);
         if (!enabled) {

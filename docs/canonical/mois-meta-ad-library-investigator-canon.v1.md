@@ -4,19 +4,20 @@
 
 Encontrar padrões comerciais já expostos ao mercado sem afirmar venda, sucesso ou validação a partir de sinais artificiais. O módulo modela princípios e estruturas; nunca copia marca, texto, personagem, mídia ou criativo.
 
-## Fonte e coleta supervisionada
+## Fonte e coleta recorrente
 
-- Para anúncios comerciais no Brasil, o fluxo canônico é supervisionado pela tela do MOIS e não depende de `ads_archive`.
-- A pessoa abre a Biblioteca pública, seleciona um anúncio e cadastra ID, anunciante, URL pública, texto visível e sinais comerciais verificáveis.
+- Para anúncios comerciais no Brasil, o fluxo canônico consulta recorrentemente a API oficial da Meta e aceita cadastro supervisionado como complemento.
+- A investigação criada no Marketing Hub entra em `PENDING`; o executor isolado consome o endpoint canônico, consulta `ads_archive`, persiste o payload bruto e agenda nova observação diária.
+- A pessoa também pode abrir a Biblioteca pública, selecionar um anúncio e cadastrar ID, anunciante, URL pública, texto visível e sinais comerciais verificáveis.
 - O backend valida, normaliza, deduplica, persiste observações e decide o gate. A tela nunca publica campanha ou consome orçamento.
-- O antigo `mois-meta-ad-library-collector` permanece apenas como histórico técnico e não deve ser implantado nem receber credencial enquanto a cobertura comercial oficial for insuficiente.
+- O `mois-meta-ad-library-collector` é o executor canônico e recebe somente token dedicado por variável protegida de deploy; Argos nunca recebe a credencial.
 - Cada cadastro bruto recebido deve ser persistido e correlacionado à investigação.
 - O mesmo anúncio observado novamente na mesma investigação não aumenta sua contagem temporal.
 - Cada observação supervisionada recebe identificador próprio para construir histórico sem inflar retries.
 
 ## Assistência por agente
 
-- Um agente pode analisar e estruturar apenas evidências que o usuário cadastrou explicitamente no Marketing Hub.
+- Um agente pode analisar e estruturar evidências persistidas pela API oficial ou cadastradas explicitamente no Marketing Hub.
 - O agente não pode autenticar-se como usuário, raspar a interface da Meta, contornar limitação regional, CAPTCHA, rate limit ou controle de acesso.
 - Toda extração assistida deve preservar a fonte, separar fato observado de inferência e exigir revisão humana antes de `MODELAR`.
 
@@ -47,4 +48,4 @@ Toda decisão deve expor evidências e lacunas. O score mínimo de uma consulta 
 
 ## Fontes na tela
 
-Fontes sem coletor real devem aparecer desabilitadas e identificadas como `em implantação`. O Radar Meta comercial usa cadastro supervisionado dedicado e não o coletor genérico legado.
+Fontes sem coletor real devem aparecer desabilitadas e identificadas como `em implantação`. O Radar Meta comercial usa o executor oficial recorrente e cadastro supervisionado complementar.

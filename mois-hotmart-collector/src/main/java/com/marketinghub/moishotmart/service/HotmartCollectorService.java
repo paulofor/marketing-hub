@@ -1426,12 +1426,15 @@ public class HotmartCollectorService {
         waitOverlayHidden(page, "hotmart-cookie-policy");
     }
 
+    /** Aguarda somente overlays realmente presentes, evitando acumular timeouts em seletores ausentes. */
     private void waitOverlayHidden(Page page, String selector) {
         try {
-            page.locator(selector)
-                    .waitFor(new com.microsoft.playwright.Locator.WaitForOptions()
-                            .setState(WaitForSelectorState.HIDDEN)
-                            .setTimeout(8_000));
+            var overlay = page.locator(selector);
+            if (overlay.count() > 0 && overlay.first().isVisible()) {
+                overlay.first().waitFor(new com.microsoft.playwright.Locator.WaitForOptions()
+                        .setState(WaitForSelectorState.HIDDEN)
+                        .setTimeout(8_000));
+            }
         } catch (Exception ignored) {
             log.debug("Overlay '{}' ainda visível após timeout de espera.", selector);
         }

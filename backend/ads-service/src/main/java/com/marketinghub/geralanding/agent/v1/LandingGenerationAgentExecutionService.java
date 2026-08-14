@@ -7,6 +7,7 @@ import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.qualityreview.service.LandingQualityReviewedEvent;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -38,6 +39,7 @@ public class LandingGenerationAgentExecutionService {
   private final GeraLandingStageExecutionRepository repository;
   private final LandingGenerationAgentCoordinator coordinator;
   private final ExperimentRepository experimentRepository;
+  private final GeraSalesPagePublicationAuditRepository publicationRepository;
   private final ObjectMapper objectMapper;
   private final AgentTaskService agentTaskService;
 
@@ -46,11 +48,13 @@ public class LandingGenerationAgentExecutionService {
       GeraLandingStageExecutionRepository repository,
       LandingGenerationAgentCoordinator coordinator,
       ExperimentRepository experimentRepository,
+      GeraSalesPagePublicationAuditRepository publicationRepository,
       ObjectMapper objectMapper,
       AgentTaskService agentTaskService) {
     this.repository = repository;
     this.coordinator = coordinator;
     this.experimentRepository = experimentRepository;
+    this.publicationRepository = publicationRepository;
     this.objectMapper = objectMapper;
     this.agentTaskService = agentTaskService;
   }
@@ -364,6 +368,11 @@ public class LandingGenerationAgentExecutionService {
                 putWhenPresent(context, "promise", experiment.getFunnelPromise());
                 putWhenPresent(context, "primaryCta", experiment.getPrimaryCta());
                 putWhenPresent(context, "landingHtml", experiment.getHtmlGeraLanding());
+                publicationRepository
+                    .findTopByExperimentIdOrderByPublishedAtDesc(experiment.getId())
+                    .ifPresent(
+                        publication ->
+                            putWhenPresent(context, "checkoutUrl", publication.getCheckoutUrl()));
               });
       return new LandingAgentPendingResponse(
           textId(execution),

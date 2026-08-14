@@ -3,6 +3,7 @@ package com.marketinghub.geralanding.agent.v1;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.qualityreview.service.BackendQualityReviewService;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -22,12 +23,16 @@ public class GovernedLandingHtmlService {
           "id=[\"']checkout-cta-primary[\"'][^>]*href=[\"']([^\"']+)[\"']",
           Pattern.CASE_INSENSITIVE);
   private final ExperimentRepository experimentRepository;
+  private final GeraSalesPagePublicationAuditRepository publicationRepository;
   private final BackendQualityReviewService qualityReviewService;
 
   /** Inicializa o aplicador com a fonte canônica do experimento e o revisor independente. */
   public GovernedLandingHtmlService(
-      ExperimentRepository experimentRepository, BackendQualityReviewService qualityReviewService) {
+      ExperimentRepository experimentRepository,
+      GeraSalesPagePublicationAuditRepository publicationRepository,
+      BackendQualityReviewService qualityReviewService) {
     this.experimentRepository = experimentRepository;
+    this.publicationRepository = publicationRepository;
     this.qualityReviewService = qualityReviewService;
   }
 
@@ -73,8 +78,18 @@ public class GovernedLandingHtmlService {
     }
     String currentCheckout = checkoutHref(currentHtml);
     String generatedCheckout = checkoutHref(generatedHtml);
+    String canonicalCheckout =
+        publicationRepository
+            .findTopByExperimentIdOrderByPublishedAtDesc(experiment.getId())
+            .map(publication -> publication.getCheckoutUrl())
+            .filter(StringUtils::hasText)
+            .orElse(null);
     if (!StringUtils.hasText(generatedCheckout)
-        || (StringUtils.hasText(currentCheckout) && !currentCheckout.equals(generatedCheckout))) {
+        || (StringUtils.hasText(currentCheckout)
+            && !currentCheckout.equals(generatedCheckout)
+            && !(currentCheckout.startsWith("#")
+                && StringUtils.hasText(canonicalCheckout)
+                && canonicalCheckout.equals(generatedCheckout)))) {
       throw new IllegalArgumentException("HTML integral alterou o destino protegido do checkout");
     }
   }

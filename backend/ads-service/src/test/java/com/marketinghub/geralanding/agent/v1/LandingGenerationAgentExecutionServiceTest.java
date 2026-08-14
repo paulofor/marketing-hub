@@ -16,6 +16,7 @@ import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.qualityreview.service.LandingQualityReviewedEvent;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
@@ -31,6 +32,7 @@ class LandingGenerationAgentExecutionServiceTest {
   private LandingGenerationAgentCoordinator coordinator;
   private ExperimentRepository experimentRepository;
   private AgentTaskService agentTaskService;
+  private GeraSalesPagePublicationAuditRepository publicationRepository;
   private LandingGenerationAgentExecutionService service;
 
   /** Prepara dependências isoladas antes de cada cenário. */
@@ -40,9 +42,15 @@ class LandingGenerationAgentExecutionServiceTest {
     coordinator = mock(LandingGenerationAgentCoordinator.class);
     experimentRepository = mock(ExperimentRepository.class);
     agentTaskService = mock(AgentTaskService.class);
+    publicationRepository = mock(GeraSalesPagePublicationAuditRepository.class);
     service =
         new LandingGenerationAgentExecutionService(
-            repository, coordinator, experimentRepository, new ObjectMapper(), agentTaskService);
+            repository,
+            coordinator,
+            experimentRepository,
+            publicationRepository,
+            new ObjectMapper(),
+            agentTaskService);
     when(experimentRepository.findById(88L)).thenReturn(Optional.empty());
     when(repository
             .findTop20ByStageCodeAndStatusAndExecutionRequestedAtBeforeOrderByExecutionRequestedAtAsc(

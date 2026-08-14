@@ -151,6 +151,15 @@
 - **Prevenção:** o contrato de deploy valida URL compartilhada, identidade, caminho do cliente e volume individual antes de permitir nova publicação do serviço de vídeo.
 - **Correção complementar em 2026-08-14:** o runtime publicado ainda recebeu apenas `VIDEO_BACKEND_BASE_URL`; o resolver de configuração agora reutiliza essa URL canônica quando `BACKEND_URL` estiver ausente. O contrato local bloqueia regressão para o host interno inexistente `backend:8000` nesse cenário.
 
+## LOOP-APOLO-HEALTH-BLOCKED-BY-SINGLE-SCHEDULER — Apolo autenticado permanece sem READY
+
+- **Severidade:** ALTO.
+- **Status:** fechado localmente em 2026-08-14; aguarda publicação.
+- **Sintoma:** o executor inicia e a sessão Codex está autenticada, mas nenhum health-check de Apolo é persistido e a Mesa não apresenta `READY`.
+- **Causa-raiz confirmada:** polling de jobs, reconexão Codex e health-check compartilhavam a única thread padrão do scheduler; uma chamada lenta ao backend impedia indefinidamente a telemetria e as demais rotinas.
+- **Correção efetiva:** o serviço de vídeo passa a usar pool dedicado com no mínimo três threads, isolando produção, autenticação e telemetria.
+- **Prevenção:** teste contratual exige o mínimo de três threads e prefixo próprio; jobs legados e créditos permanecem bloqueados até existir health-check recente, storyboard Codex aprovado e teto financeiro auditável.
+
 ## LOOP-TEMIS-LANDING-WITHOUT-DEDALO-DELEGATION — diagnóstico sem responsável operacional
 
 - **Severidade:** CRÍTICO.

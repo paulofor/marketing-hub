@@ -57,6 +57,9 @@ Preset design anterior gerado, quando existir:
 Diagnóstico do Quality Review anterior, quando existir:
 {{landingPageQualityReview}}
 
+HTML GeraLanding atual, quando existir:
+{{htmlGeraLanding}}
+
 Insumos MOIS de páginas vencedoras, para referência visual abstrata sem cópia de terceiros:
 {{geralandingReferenceInsights}}
 
@@ -64,7 +67,13 @@ Insumos MOIS de páginas vencedoras, para referência visual abstrata sem cópia
 
 Retornar um JSON válido no mesmo formato estrutural do wireframe, com objeto raiz contendo `definicoes` e `pagina`.
 
-Use `landingPageWireframe.pagina` como base. Preserve ids, tags, hierarquia, assets, interações, contratos de campo e intenção comercial. Altere somente `definicoes` e as listas `estilos[]` para transformar o wireframe em uma landing page comercial, premium, confiável, responsiva e visualmente menos monótona.
+Use `landingPageWireframe.pagina` como base. No primeiro ciclo, preserve ids, tags, hierarquia, assets, interações, contratos de campo e intenção comercial. Altere `definicoes` e as listas `estilos[]` para transformar o wireframe em uma landing page comercial, premium, confiável, responsiva e visualmente menos monótona.
+
+## Edição governada do HTML existente
+
+Quando `landingPageQualityReview.recommendedRegeneration` contiver `LANDING_PAGE_HTML`, trate `landingPageDesignPreset` e o HTML atual do contexto como uma versão editável, não como um wireframe imutável. Você pode reorganizar a hierarquia visual dentro de uma seção, reordenar seções, trocar wrappers e composição de grid/flex, remover blocos puramente decorativos que prejudiquem a conversão e ajustar tags semânticas para corrigir responsividade, overflow, corte, dobra, contraste ou prioridade do CTA.
+
+Essa liberdade é estritamente visual e estrutural. Preserve os ids funcionais, `contratoCampo`, inputs, ação e destino do formulário/checkout, CTA principal, preço, oferta, tracking, scripts e assets aprovados. Não invente prova, depoimento, desconto, promessa, campo de captura, URL, pixel ou nova interação. Aplique somente mudanças ligadas aos `blockingIssues`, declare toda apresentação pelo JSON do preset e devolva a página completa já corrigida. Se o problema exigir mudar promessa, copy ou imagem, preserve esse conteúdo e deixe a correção para a etapa causal indicada por Têmis.
 
 O assembler final é determinístico e não inventa estilos. Tudo que a página precisa visualmente deve estar declarado neste JSON. Se um botão, input, label, grid, card, imagem ou container precisa de altura, padding, alinhamento, largura, coluna ou quebra mobile, esses estilos precisam existir em `definicoes` e também precisam estar aplicados em `estilos[]` do elemento correto.
 
@@ -89,8 +98,8 @@ Aplique estas correções como prioridade máxima sobre escolhas estéticas gen�
 0.1. Se `campaignObjective` for `SALES`, trate a página como venda direta low-ticket: CTAs de compra/checkout fortes, prova/preview visual da oferta, sem dar destaque a formulário ou captura antes do checkout.
 
 1. Responda somente JSON válido.
-2. Não crie, remova ou renomeie seções e elementos.
-3. Não altere `id`, `tag`, `texto`, `briefingVisual`, `interacao`, `asset`, `contratoCampo` ou `componente`, exceto para preservar exatamente o que veio do wireframe.
+2. Não crie, remova ou renomeie seções e elementos, exceto na edição governada acionada explicitamente por `LANDING_PAGE_HTML`; nessa condição, mudanças estruturais são permitidas apenas para resolver os bloqueios visuais informados, preservando todos os elementos funcionais e contratos protegidos.
+3. Não altere `id`, `texto`, `briefingVisual`, `interacao`, `asset`, `contratoCampo` ou `componente`. `tag` pode mudar somente na edição governada por `LANDING_PAGE_HTML`, quando a semântica ou o layout renderizado exigirem, sem alterar a função ou a interação do elemento.
 4. Em `pagina.head.texto`, gere um título final publicável, curto e comercial para a landing; é proibido devolver “Wireframe provisório”, “HTML provisório”, “rascunho”, “debug” ou qualquer marcador técnico.
 5. Em `pagina`, é proibido criar o campo `body`. Classes globais do `<body>` ficam somente em `pagina.corpo.estilos`.
 6. Em `pagina.corpo.estilos`, use exatamente: `["bgBody", "fontBase", "textPrimary", "marginReset"]`.

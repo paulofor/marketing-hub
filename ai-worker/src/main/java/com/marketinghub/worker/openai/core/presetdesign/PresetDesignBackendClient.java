@@ -204,6 +204,7 @@ public class PresetDesignBackendClient implements StageBackendPort<PresetDesignI
         payload.put("landingPageWireframe", normalizeJsonArtifact(experiment.get("landingPageWireframe")));
         payload.put("landingPageDesignPreset", normalizeJsonArtifact(experiment.get("landingPageDesignPreset")));
         payload.put("landingPageQualityReview", normalizeJsonArtifact(experiment.get("landingPageQualityReview")));
+        payload.put("htmlGeraLanding", emptyWhenNull(experiment.get("htmlGeraLanding")));
         payload.put("NICHE_NAME", firstText(experiment.get("nicheName"), experiment.get("niche"), experiment.get("name")));
         payload.put("PAIN_JSON", normalizeJsonArtifact(framework.get("pain")));
         payload.put("RESULT_JSON", normalizeJsonArtifact(framework.get("result")));

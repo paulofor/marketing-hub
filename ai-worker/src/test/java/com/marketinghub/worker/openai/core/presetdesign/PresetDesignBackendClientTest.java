@@ -328,7 +328,8 @@ class PresetDesignBackendClientTest {
                                 "landingPageQualityReview", Map.of(
                                         "score", 72,
                                         "blockingIssues", List.of(Map.of("rootCause", "CTA sem contraste")),
-                                        "recommendedRegeneration", List.of("LANDING_PAGE_DESIGN_PRESET")))));
+                                        "recommendedRegeneration", List.of("LANDING_PAGE_HTML")),
+                                "htmlGeraLanding", "<main id=\"oferta\">versao-atual</main>")));
 
         var request = builder.build(execution);
         JsonNode body = objectMapper.readTree(request.requestBodyJson());
@@ -340,7 +341,8 @@ class PresetDesignBackendClientTest {
                 .contains("ctaAntigo")
                 .contains("Diagnóstico do Quality Review anterior")
                 .contains("CTA sem contraste")
-                .contains("LANDING_PAGE_DESIGN_PRESET");
+                .contains("LANDING_PAGE_HTML")
+                .contains("<main id=\"oferta\">versao-atual</main>");
         assertThat(body.path("model").asText()).isEqualTo("gpt-5.5");
         assertThat(body.path("text").path("format").path("name").asText())
                 .isEqualTo("experiment_pipeline_landing_page_design_preset");
@@ -422,6 +424,23 @@ class PresetDesignBackendClientTest {
                 .contains("{{landingPageQualityReview}}")
                 .contains("blockingIssues")
                 .contains("recommendedRegeneration");
+    }
+
+    /** Deve permitir correção estrutural do HTML sem liberar contratos comerciais protegidos. */
+    @Test
+    void presetDesignPromptShouldAllowGovernedHtmlEditingAfterQualityReview() throws Exception {
+        String prompt = new ClassPathResource("prompts/geralanding/landing-page-design-preset.md")
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        assertThat(prompt)
+                .contains("Edição governada do HTML existente")
+                .contains("recommendedRegeneration` contiver `LANDING_PAGE_HTML")
+                .contains("HTML GeraLanding atual")
+                .contains("{{htmlGeraLanding}}")
+                .contains("reordenar seções")
+                .contains("preservando todos os elementos funcionais e contratos protegidos")
+                .contains("destino do formulário/checkout")
+                .contains("Não invente prova, depoimento, desconto, promessa");
     }
 
     /** Percorre recursivamente o schema e lista objetos que não bloqueiam propriedades extras. */

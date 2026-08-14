@@ -210,6 +210,7 @@ Antes de implementar uma correção em tema com histórico de loop:
 - **Causa-raiz confirmada:** o teto de quatro revisões era validado somente depois do parecer, e o design preset criava a próxima revisão por um caminho direto que não aplicava idempotência por versão.
 - **Correção efetiva:** o serviço canônico registra o hash do HTML antes da fila, reutiliza a execução da mesma versão e bloqueia o quinto HTML distinto no ciclo; design preset não cria mais a revisão diretamente.
 - **Prevenção:** testes de contrato exigem zero nova persistência para HTML idêntico, aceitam revisão após mudança real e bloqueiam a quinta versão do ciclo.
+- **Correção complementar em 2026-08-14:** quando Têmis classifica a causa como `LANDING_PAGE_HTML`, o preset deixa de tratar a estrutura anterior como totalmente imutável e permite edição estrutural governada, preservando checkout, tracking, oferta e demais contratos funcionais. Um teste de prompt impede a regressão para simples reestilização incapaz de corrigir layout e responsividade.
 
 ## LOOP-GERALANDING-COPY-PENDING-BUFFER — copy parada antes do processamento
 

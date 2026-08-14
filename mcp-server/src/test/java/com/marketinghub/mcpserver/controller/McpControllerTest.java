@@ -323,6 +323,21 @@ class McpControllerTest {
     }
 
     /**
+     * Garante que o MCP anuncia a leitura consolidada do parecer longo de Têmis.
+     */
+    @Test
+    void shouldListMetaAdApproverExecutionTelemetryTool() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":32,"method":"tools/list","params":{}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.tools[?(@.name == 'meta_ad_approver_execution_telemetry')].name")
+                        .value(org.hamcrest.Matchers.contains("meta_ad_approver_execution_telemetry")));
+    }
+
+    /**
      * Garante que a tool db_health retorna status operacional do banco.
      */
     @Test

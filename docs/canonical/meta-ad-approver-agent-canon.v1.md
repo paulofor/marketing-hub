@@ -42,6 +42,14 @@ consultar `META_AD_APPROVER` na telemetria persistida. Os logs devem registrar i
 falha com `experimentId` e `creativeId`, stack trace completo em falhas e sanitização de segredos.
 Logs vivos e telemetria são evidências complementares; nenhum deles substitui o callback funcional.
 
+O MCP central também deve expor uma leitura consolidada pelo `creativeId`, cruzando o parecer
+canônico, heartbeat, processo vivo, atividade, detecção de bloqueio e memória vigente de Têmis. A
+consulta deve distinguir memórias confirmadas de candidatas: candidatas orientam a investigação,
+mas somente feedback posterior e independente pode confirmá-las. Dédalo e Têmis devem recuperar
+suas memórias governadas antes de decidir; nenhum dos dois pode usar a própria memória como prova de
+aprovação nem promover sozinho um aprendizado. O consenso é comprovado pelo novo artefato e pelo
+parecer persistido, nunca pela concordância textual entre memórias.
+
 Cada lote reservado deve executar seus criativos concorrentemente e com isolamento de falha. Um
 processo Codex lento ou bloqueado não pode manter os demais itens do mesmo lote em `PROCESSING` sem
 execução real nem multiplicar o tempo total pelo tamanho do lote. O limite individual, a telemetria

@@ -30,6 +30,8 @@ grep -Fq 'MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL: ${MCP_PRODUCT_DISCOVERY_WORKE
 grep -Fq 'MCP_BACKEND_RECOVERY_ENABLED: ${MCP_BACKEND_RECOVERY_ENABLED:-true}' docker-compose.mcp.yml
 grep -Fq 'MCP_BACKEND_RECOVERY_HOST: ${MCP_BACKEND_RECOVERY_HOST:-191.252.181.168}' docker-compose.mcp.yml
 grep -Fq 'MCP_BACKEND_RECOVERY_CONTAINER: ${MCP_BACKEND_RECOVERY_CONTAINER:-marketinghub-backend}' docker-compose.mcp.yml
+grep -Fq 'MCP_BACKEND_RECOVERY_HEALTH_URL: ${MCP_BACKEND_RECOVERY_HEALTH_URL:-http://191.252.181.168/ops-mh-observability-v2/health}' docker-compose.mcp.yml
+grep -Fq 'JAVA_OPTS: ${BACKEND_JAVA_OPTS:--XX:InitialRAMPercentage=25 -XX:MaxRAMPercentage=60 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/logs/backend-oom.hprof}' docker-compose.yml
 
 if grep -q 'docker compose up' bin/apply-video-only.sh; then
   echo "[CONTRATO] apply-video-only.sh deve informar explicitamente docker-compose.video.yml." >&2

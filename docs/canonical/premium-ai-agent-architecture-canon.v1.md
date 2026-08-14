@@ -41,6 +41,26 @@ Um agente só pode usar status `TEST` ou `ACTIVE` quando possuir simultaneamente
     escopo, procedência, versão, confiança, feedback e uso; S3 privado guarda somente evidências
     grandes e imutáveis, referenciadas por chave e checksum. Cada MCP deve oferecer recuperação
     limitada e registro de candidatos para o `agentKey` fixo do próprio módulo.
+15. sessão Codex individual como padrão para raciocínio operacional. Integrações determinísticas,
+    execução de mídia, gasto e publicação continuam fora da autoridade autônoma do agente. Todo
+    agente Codex atual ou futuro deve publicar no contrato canônico de saúde, no máximo a cada 60
+    segundos, a identidade, versão implantada, referência de build, acesso ao backend e resultado
+    real de `codex login status`. Confirmação isolada de OAuth não equivale a `READY`: heartbeat
+    vencido, backend inacessível, versão divergente ou sessão inválida devem resultar em estado
+    bloqueado ou desconhecido com causa explícita no painel.
+
+## Prontidão obrigatória da sessão Codex
+
+O cadastro versionado `config/agents/codex-agent-health-compliance.json` é a fonte de verdade dos
+executores que usam Codex. Um novo agente deve entrar nesse cadastro no mesmo conjunto de mudanças
+que cria seu executor. O gate global deve falhar quando faltar o reporter, a ativação periódica, a
+consulta real da autenticação, o endpoint canônico ou quando o intervalo padrão superar 60 segundos.
+
+O health-check não pode compartilhar a única thread usada por autenticação, polling ou trabalho
+longo. Falha ao publicar um heartbeat deve ser registrada com contexto e stack trace, sem encerrar
+o processamento já persistido; contudo, o backend não pode apresentar `READY` sem prova recente.
+Apolo (`videomaker`) e Argos (`market-radar`) passam a integrar o baseline obrigatório junto aos
+demais agentes Codex.
 
 ## Memória premium e aprendizagem protegida
 

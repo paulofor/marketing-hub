@@ -6,6 +6,9 @@ apollo:
     backend-url: ${BACKEND_URL:${VIDEO_BACKEND_BASE_URL:http://backend:8000}}
     repository-path: ${MARKETING_HUB_REPOSITORY:/app}
     agent-key: ${AGENT_HEALTH_KEY:videomaker}
+  executor-health:
+    deployed-version: ${AGENT_HEALTH_VERSION:2}
+    build-reference: ${AGENT_BUILD_REFERENCE:local}
 
 video:
   backend-base-url: http://191.252.181.168

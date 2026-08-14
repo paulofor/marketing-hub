@@ -298,6 +298,21 @@ public class StudioCostLedgerService {
     return result;
   }
 
+  /** Consolida tasks, créditos e custo efetivo estimado do ciclo para o gate de Apolo. */
+  @Transactional(readOnly = true)
+  public Map<String, Object> cycleProviderConsumption(Long cycleId) {
+    if (taskConsumptionRepository == null) {
+      return Map.of("taskCount", 0L, "credits", 0L, "costUsd", BigDecimal.ZERO);
+    }
+    Long credits = taskConsumptionRepository.sumEstimatedCreditsByVideoProductionCycleId(cycleId);
+    BigDecimal cost =
+        taskConsumptionRepository.sumMonitoredCostUsdByVideoProductionCycleId(cycleId);
+    return Map.of(
+        "taskCount", taskConsumptionRepository.countByVideoProductionCycleId(cycleId),
+        "credits", credits == null ? 0L : credits,
+        "costUsd", cost == null ? BigDecimal.ZERO : cost);
+  }
+
   /** Soma o custo conhecido do Estúdio no plano, sem converter moeda implicitamente. */
   @Transactional(readOnly = true)
   public BigDecimal totalKnownCostUsd(Long planId) {

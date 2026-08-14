@@ -471,6 +471,12 @@ describe("audio video studio navigation", () => {
               lastFailedJobId: 20537,
               lastApolloFailureCode: "PROVIDER_PAYMENT_REQUIRED",
               lastApolloFailureDetail: "Provider respondeu HTTP 402.",
+              monitoredTaskCount: 2,
+              monitoredCredits: 600,
+              budgetMonitorStatus: "WATCHING",
+              budgetAlertCode: "NEW_PROVIDER_TASK",
+              budgetAlertDetail:
+                "Nova task task-2 detectada. Total: 2 tasks, 600 créditos e US$ 6.00 monitorados.",
               providerClipDurationSeconds: 15,
               generationClipCount: 2,
               editCutCount: 8,
@@ -492,6 +498,8 @@ describe("audio video studio navigation", () => {
     ).toBeTruthy();
     expect(screen.getByText(/2 clipes solicitados ao provider/i)).toBeTruthy();
     expect(screen.getByText(/8 cortes na edição/i)).toBeTruthy();
+    expect(screen.getByText(/Monitor financeiro:.*WATCHING/i)).toBeTruthy();
+    expect(screen.getByText(/2 tasks.*600 créditos/i)).toBeTruthy();
   });
 
   it("shows rendered mp4 for review when project has ready video job", async () => {

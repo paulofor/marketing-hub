@@ -58,6 +58,7 @@ public class SalesVideoJobService {
   private final ObjectMapper objectMapper;
   private final VideoProjectRepository videoProjectRepository;
   private final StudioCostLedgerService studioCostLedgerService;
+  private final ApolloBudgetMonitorService apolloBudgetMonitorService;
 
   /** Cria o serviço com repositórios, política de reprocessamento e porta de sincronizacao. */
   @Autowired
@@ -72,6 +73,7 @@ public class SalesVideoJobService {
       SalesVideoJobCostMetadataService jobCostMetadataService,
       VideoProjectRepository videoProjectRepository,
       StudioCostLedgerService studioCostLedgerService,
+      ApolloBudgetMonitorService apolloBudgetMonitorService,
       ObjectMapper objectMapper) {
     this.jobRepository = jobRepository;
     this.eventRepository = eventRepository;
@@ -83,6 +85,7 @@ public class SalesVideoJobService {
     this.jobCostMetadataService = jobCostMetadataService;
     this.videoProjectRepository = videoProjectRepository;
     this.studioCostLedgerService = studioCostLedgerService;
+    this.apolloBudgetMonitorService = apolloBudgetMonitorService;
     this.objectMapper = objectMapper;
   }
 
@@ -106,6 +109,7 @@ public class SalesVideoJobService {
         reprocessPolicy,
         completedRenderAssetSync,
         jobCostMetadataService,
+        null,
         null,
         null,
         objectMapper);
@@ -346,6 +350,7 @@ public class SalesVideoJobService {
             details.path("billingEvidence").asText(),
             Instant.now(),
             job.getStatus().name());
+        monitorApolloBudget(job, taskId);
         return;
       }
       if (!"PROVIDER_TASK_ACCEPTED".equals(eventType)) return;
@@ -362,12 +367,20 @@ public class SalesVideoJobService {
           details.path("estimatedCostUsd").decimalValue(),
           Instant.now(),
           job.getStatus().name());
+      monitorApolloBudget(job, taskId);
     } catch (JsonProcessingException | RuntimeException ex) {
       log.error(
           "Falha ao conciliar task de provedor; jobId={} details={}", job.getId(), detailsJson, ex);
       throw VideoModuleException.badRequest(
           VideoModuleErrorCode.BAD_REQUEST, "Evento financeiro de task inválido.");
     }
+  }
+
+  /** Atualiza o alerta financeiro canônico imediatamente após o callback da task. */
+  private void monitorApolloBudget(SalesVideoJob job, String providerTaskId) {
+    if (apolloBudgetMonitorService == null) return;
+    apolloBudgetMonitorService.reconcile(
+        readVideoProductionCycleId(job.getMetadataJson()), job.getId(), providerTaskId);
   }
 
   /** Finaliza o job, aplica gates de duração e encadeia a pós-produção cinematográfica. */
@@ -420,6 +433,15 @@ public class SalesVideoJobService {
         completionDetails(request, durationValidation));
     enqueuePremiumFinalization(job, requestedJobMetadata);
     return toDto(job);
+  }
+
+  /** Reconhece recusas financeiras sem depender do código textual de um único provider. */
+  private boolean isInsufficientCredits(String detail) {
+    if (!StringUtils.hasText(detail)) return false;
+    String normalized = detail.toLowerCase(java.util.Locale.ROOT);
+    return normalized.contains("insufficient credits")
+        || normalized.contains("not enough credits")
+        || normalized.contains("saldo insuficiente");
   }
 
   /** Preserva o contrato comercial solicitado e acrescenta o resultado técnico do provider. */
@@ -506,6 +528,12 @@ public class SalesVideoJobService {
     job.setFailureDetail(request.getFailureDetail());
     job.setFinishedAt(Instant.now());
     jobRepository.save(job);
+    if (apolloBudgetMonitorService != null && isInsufficientCredits(request.getFailureDetail())) {
+      apolloBudgetMonitorService.blockForInsufficientCredits(
+          readVideoProductionCycleId(job.getMetadataJson()),
+          job.getId(),
+          request.getFailureDetail());
+    }
     syncStudioCostLedger(job, null, false);
     syncFailedExperimentVideoAsset(job, request);
     maybeUpdateProfileStatus(job, newStatus);

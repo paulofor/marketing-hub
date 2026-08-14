@@ -2214,6 +2214,28 @@ export default function AudioVideoStudioPage() {
                           edição. Texto, legenda e CTA são aplicados na
                           pós-produção.
                         </p>
+                        <p
+                          role={
+                            productionCycles.data[0].budgetMonitorStatus ===
+                            "BLOCKED"
+                              ? "alert"
+                              : "status"
+                          }
+                        >
+                          <strong>
+                            Monitor financeiro:{" "}
+                            {productionCycles.data[0].budgetMonitorStatus}
+                          </strong>
+                          {" · "}
+                          {productionCycles.data[0].monitoredTaskCount} tasks ·{" "}
+                          {productionCycles.data[0].monitoredCredits} créditos ·{" "}
+                          US$ {productionCycles.data[0].knownCostUsd.toFixed(2)}{" "}
+                          / US${" "}
+                          {productionCycles.data[0].budgetLimitUsd.toFixed(2)}
+                          {productionCycles.data[0].budgetAlertDetail
+                            ? ` · ${productionCycles.data[0].budgetAlertDetail}`
+                            : " · Aguardando a primeira task do provider."}
+                        </p>
                         {productionCycles.data[0].lastFailedJobId ? (
                           <p role="alert">
                             Apolo falhou no job #

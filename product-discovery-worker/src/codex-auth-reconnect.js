@@ -62,9 +62,9 @@ export function createCodexAuthReconnectCoordinator(options = {}) {
         CODEX_AUTH_RECONNECT_ID: String(job.id),
         CODEX_AUTH_CALLBACK_BASE_URL: backendBaseUrl,
       },
-      stdio: "inherit",
+      stdio: ["ignore", "inherit", "pipe"],
     });
-    const result = await waitForChild(child);
+    const result = await waitForChild(child, logger);
     if (result.error) {
       logger.error(
         `[product-discovery-worker] failed to start Argos Codex reconnect id=${job.id}`,
@@ -74,7 +74,8 @@ export function createCodexAuthReconnectCoordinator(options = {}) {
     } else if (result.code !== 0) {
       await complete(
         job.id,
-        "Codex App Server encerrou sem confirmar a sessão de Argos.",
+        result.detail ||
+          "Codex App Server encerrou sem confirmar a sessão de Argos.",
       );
     }
   }
@@ -109,11 +110,27 @@ export function createCodexAuthReconnectCoordinator(options = {}) {
 }
 
 /** Aguarda o processo de device code sem interpretar ou transportar credenciais. */
-function waitForChild(child) {
+function waitForChild(child, logger) {
   return new Promise((resolve) => {
+    let detail = "";
+    child.stderr?.on?.("data", (chunk) => {
+      const line = String(chunk).trim();
+      if (!line) return;
+      logger.error(
+        `[product-discovery-worker] Argos Codex App Server: ${line}`,
+      );
+      detail = sanitizeDetail(line);
+    });
     child.once("error", (error) => resolve({ code: -1, error }));
-    child.once("exit", (code) => resolve({ code: code ?? 1 }));
+    child.once("exit", (code) => resolve({ code: code ?? 1, detail }));
   });
+}
+
+/** Reduz a mensagem operacional sem permitir que credenciais cheguem ao backend. */
+function sanitizeDetail(value) {
+  return String(value)
+    .replace(/(?:sk-|sess-|eyJ)[A-Za-z0-9._-]+/g, "[SEGREDO_REMOVIDO]")
+    .slice(-1000);
 }
 
 /** Envia somente estado operacional ao contrato canônico do backend. */

@@ -120,6 +120,15 @@
 - **Correção efetiva:** validar primeiro `account.type`, preservando compatibilidade com `authMode`, e somente confirmar o callback depois da prova retornada pelo próprio App Server.
 - **Prevenção:** o teste ponta a ponta do device code simula o contrato atual de `account/read` e exige callback autenticado sem transportar token ou refresh token.
 
+## LOOP-ARGOS-CODEX-AUTH-GENERIC-FAILURE — falha real apagada na reconexão
+
+- **Severidade:** ALTO.
+- **Status:** fechado localmente em 2026-08-14; aguarda publicação.
+- **Sintoma:** Argos reserva o pedido de reconexão, encerra antes de exibir o device code e o painel informa apenas que o App Server não confirmou a sessão.
+- **Causa-raiz confirmada:** o coordenador herdava o `stderr` do processo sem capturá-lo e substituía qualquer falha do App Server ou callback por uma mensagem genérica; uma indisponibilidade transitória do backend também encerrava todo o OAuth na primeira tentativa.
+- **Correção efetiva:** capturar e sanitizar a causa operacional, persistir o último diagnóstico no pedido e repetir somente o callback ao backend até três vezes, sem reiniciar nem duplicar o fluxo OAuth.
+- **Prevenção:** teste contratual exige que uma falha anterior ao device code preserve a causa segura no backend, sem token, cookie ou credencial.
+
 ## LOOP-TEMIS-LANDING-WITHOUT-DEDALO-DELEGATION — diagnóstico sem responsável operacional
 
 - **Severidade:** CRÍTICO.

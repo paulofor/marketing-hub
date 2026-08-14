@@ -14,6 +14,7 @@ test("consome somente a fila market-radar e executa o cliente de device code", a
     },
     spawnFn: (command, args, options) => {
       const child = new EventEmitter();
+      child.stderr = new EventEmitter();
       children.push({ command, args, options });
       queueMicrotask(() => child.emit("exit", 0));
       return child;
@@ -30,6 +31,36 @@ test("consome somente a fila market-radar e executa o cliente de device code", a
   assert.equal(
     children[0].options.env.CODEX_AUTH_CALLBACK_BASE_URL,
     "http://backend",
+  );
+});
+
+test("persiste a causa real quando o App Server encerra antes do device code", async () => {
+  const payloads = [];
+  const coordinator = createCodexAuthReconnectCoordinator({
+    backendBaseUrl: "http://backend",
+    fetchFn: async (url, options = {}) => {
+      if (options.method === "POST") {
+        payloads.push(JSON.parse(options.body));
+        return { ok: true, status: 200 };
+      }
+      return { ok: true, status: 200, json: async () => ({ id: 43 }) };
+    },
+    spawnFn: () => {
+      const child = new EventEmitter();
+      child.stderr = new EventEmitter();
+      queueMicrotask(() => {
+        child.stderr.emit("data", "CODEX_HOME não possui permissão de escrita");
+        child.emit("exit", 1);
+      });
+      return child;
+    },
+    logger: { error() {} },
+  });
+
+  assert.equal(await coordinator.poll(), true);
+  assert.equal(
+    payloads[0].detail,
+    "CODEX_HOME não possui permissão de escrita",
   );
 });
 

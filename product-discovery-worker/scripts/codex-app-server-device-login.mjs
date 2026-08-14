@@ -22,19 +22,33 @@ let loginId;
 let finished = false;
 
 async function callback(path, body) {
-  const response = await fetch(
-    `${callbackBaseUrl}/api/internal/agents/executor-health/codex-auth/reconnections/${reconnectId}/${path}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(30000),
-    },
+  const url = `${callbackBaseUrl}/api/internal/agents/executor-health/codex-auth/reconnections/${reconnectId}/${path}`;
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(30000),
+      });
+      if (response.ok) return;
+      lastError = new Error(
+        `Backend recusou callback ${path} (${response.status})`,
+      );
+    } catch (error) {
+      lastError = error;
+    }
+    if (attempt < 3) await delay(attempt * 1000);
+  }
+  throw new Error(
+    `Falha ao registrar ${path} no backend após 3 tentativas: ${lastError?.message || "erro desconhecido"}`,
   );
-  if (!response.ok)
-    throw new Error(
-      `Backend recusou callback de autenticação (${response.status})`,
-    );
+}
+
+/** Aguarda entre retentativas transitórias sem reiniciar o fluxo OAuth. */
+function delay(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 function request(method, params) {

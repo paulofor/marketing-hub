@@ -15,6 +15,23 @@ import org.springframework.jdbc.core.JdbcTemplate;
 /** Valida os diagnósticos consolidados expostos pelo MCP. */
 class DatabaseDiagnosticsServiceTest {
 
+    /** Expõe o piloto de Apolo sem promover a memória candidata. */
+    @Test
+    void shouldExposeApolloLearningExperiment() {
+        JdbcTemplate jdbc = Mockito.mock(JdbcTemplate.class);
+        DatabaseDiagnosticsService service = new DatabaseDiagnosticsService(jdbc);
+        when(jdbc.queryForList(anyString())).thenReturn(List.of(Map.of(
+                "ID", 7L,
+                "STATUS", "READY_FOR_PROMOTION",
+                "MEMORY_STATUS", "CANDIDATE")));
+
+        Map<String, Object> result = service.apolloLearningExperiments();
+
+        assertThat(result.get("agentKey")).isEqualTo("apollo");
+        assertThat(result.get("count")).isEqualTo(1);
+        assertThat(result.get("policy").toString()).contains("não autoriza provider");
+    }
+
     /** Consolida parecer, heartbeat vencido e memória sem promover candidatos. */
     @Test
     void shouldExposeBlockedMetaReviewWithGovernedMemory() {

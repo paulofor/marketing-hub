@@ -60,6 +60,9 @@ class VideoJobProcessorTest {
     @Mock
     private ApolloStoryboardPlanner apolloStoryboardPlanner;
 
+    @Mock
+    private ApolloGovernedLearningReporter learningReporter;
+
     @Captor
     private ArgumentCaptor<JobCompletionPayload> completionCaptor;
 
@@ -79,7 +82,8 @@ class VideoJobProcessorTest {
                 observabilityService,
                 properties,
                 new ObjectMapper(),
-                apolloStoryboardPlanner);
+                apolloStoryboardPlanner,
+                learningReporter);
     }
 
     @Test
@@ -103,6 +107,7 @@ class VideoJobProcessorTest {
         JobCompletionPayload payload = completionCaptor.getValue();
         assertThat(payload.assetId()).isEqualTo(20L);
         assertThat(payload.status()).isEqualTo(SalesVideoStatus.VIDEO_READY);
+        verify(learningReporter).observe(job, job);
         verify(backendClient, never()).failJob(any(), any());
     }
 

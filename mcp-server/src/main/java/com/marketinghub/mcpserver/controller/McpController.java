@@ -204,6 +204,14 @@ public class McpController {
                                     "additionalProperties", false)
                     ),
                     Map.of(
+                            "name", "apollo_learning_experiments",
+                            "description", "Consulta baseline, candidata, pontuação, custo, memória, QA e decisão dos experimentos governados de Apolo.",
+                            "inputSchema", Map.of(
+                                    "type", "object",
+                                    "properties", Map.of(),
+                                    "additionalProperties", false)
+                    ),
+                    Map.of(
                             "name", "pde_db_health",
                             "description", "Valida conectividade com o schema efetivo do PDE em produção e retorna o alvo JDBC sanitizado para auditoria de host/schema.",
                             "inputSchema", Map.of(
@@ -484,6 +492,9 @@ public class McpController {
                         databaseDiagnosticsService.metaAdApproverTelemetry(
                                 requiredLong(arguments, "creativeId")),
                         "Meta ad approver canonical execution telemetry");
+                case "apollo_learning_experiments" -> successToolResult(id,
+                        databaseDiagnosticsService.apolloLearningExperiments(),
+                        "Apollo governed learning experiments");
                 case "pde_db_health" -> successToolResult(id, pdeDatabaseDiagnosticsService.checkConnection(),
                         "PDE database connectivity status");
                 case "pde_db_list_tables" -> successToolResult(id, pdeDatabaseDiagnosticsService.listTables(),

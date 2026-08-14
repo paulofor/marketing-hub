@@ -181,6 +181,33 @@ public class DatabaseDiagnosticsService {
         return response;
     }
 
+    /**
+     * Lista os experimentos de Apolo com memória e decisão, sem consultar logs ou recomputar notas.
+     */
+    public Map<String, Object> apolloLearningExperiments() {
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                """
+                        SELECT e.id, e.scope_type, e.scope_id, e.baseline_version,
+                               e.candidate_version, e.status, e.baseline_result_json,
+                               e.candidate_result_json, e.decision_evidence,
+                               e.regression_passed, e.local_validation_passed,
+                               e.created_at, e.evaluated_at, e.promoted_at,
+                               e.memory_id, m.status AS memory_status,
+                               m.specialty AS memory_specialty, m.content AS memory_content
+                        FROM governed_agent_learning_experiment e
+                        JOIN premium_agent_memory m ON m.id = e.memory_id
+                        WHERE e.agent_key = 'apollo'
+                        ORDER BY e.id DESC
+                        LIMIT 20
+                        """);
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("agentKey", "apollo");
+        response.put("count", rows.size());
+        response.put("experiments", rows);
+        response.put("policy", "Memória candidata não autoriza provider, gasto, publicação ou promoção automática.");
+        return response;
+    }
+
     /** Soma memórias de um estado sem depender da capitalização do driver JDBC. */
     private int memoryCount(List<Map<String, Object>> rows, String status) {
         return rows.stream()

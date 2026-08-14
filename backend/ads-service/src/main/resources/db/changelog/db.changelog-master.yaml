@@ -1814,3 +1814,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-14-apollo-budget-monitor.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-14-apollo-learning-observation.yaml
+      relativeToChangelogFile: true

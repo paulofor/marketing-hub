@@ -167,6 +167,14 @@ public class ClickbankCollectorService {
             GraphqlCollectionOutcome outcome = collectProductsFromGraphql(accessToken, boundedMax, products);
             int apiCollected = outcome.collectedProducts();
             if (apiCollected == 0) {
+                if ((outcome.skipReason() == GraphqlSkipReason.JWT_ABSENT
+                                || outcome.skipReason() == GraphqlSkipReason.JWT_EXPIRED_OR_INVALID)
+                        && hasDedicatedCredentials()) {
+                    log.info("ClickBank ciclo 3 usando conta dedicada. motivo={}", outcome.skipReason());
+                    ClickbankCollectionResponse fallback = legacyCollect(request);
+                    persistCollectedProductsOnBackend(request, fallback.status(), fallback.products());
+                    return fallback;
+                }
                 status = "COLLECTION_SKIPPED";
                 message = "Ciclo 3 não coletou produtos via GraphQL. motivo=" + outcome.skipReason();
                 log.warn("Ciclo 3 GraphQL sem dados coletados. produtosColetados={} motivo={}", apiCollected, outcome.skipReason());
@@ -181,6 +189,12 @@ public class ClickbankCollectorService {
 
         persistCollectedProductsOnBackend(request, status, products);
         return new ClickbankCollectionResponse(status, message, products);
+    }
+
+    /** Informa se a conta dedicada está completa para autenticação segura. */
+    private boolean hasDedicatedCredentials() {
+        return clickbankUsername != null && !clickbankUsername.isBlank()
+                && clickbankPassword != null && !clickbankPassword.isBlank();
     }
 
     private GraphqlCollectionOutcome collectProductsFromGraphql(String accessToken, int boundedMax, List<ClickbankProductSnapshot> products) {

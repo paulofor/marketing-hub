@@ -6586,3 +6586,10 @@
 - Causa-raiz: o client não informava `limit`, o backend devolvia até 20 itens e a etapa copy não aplicava o limite de memória comum às demais etapas OpenAI.
 - Correção local: parâmetro `limit` propagado e respeitado, buffer configurável aplicado ao client e teste preventivo com payload acima do limite antigo.
 - Estado comercial preservado: experimento 88 continua `PLANNED`, sem gasto ou publicação, até landing e 3/3 criativos serem aprovados pelos gates.
+
+# 2026-08-14 — Experimento 88: limite de convergência Dédalo → Têmis
+
+- Evidência: o experimento acumulou revisões de qualidade sem alteração funcional do HTML consolidado.
+- Causa-raiz: o teto do agente era tardio e o design preset contornava o serviço canônico ao criar diretamente a revisão seguinte.
+- Correção: hash do HTML persistido antes do consumo, idempotência por versão e teto de quatro versões distintas por ciclo, com bloqueio para decisão humana ao atingir o limite.
+- Critério operacional: HTML idêntico não gera novo parecer; HTML alterado pode ser revisado até o teto; aprovação, gasto e publicação continuam sujeitos aos gates comerciais existentes.

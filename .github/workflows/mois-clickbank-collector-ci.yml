@@ -116,7 +116,9 @@ jobs:
             && cd ${REMOTE_PATH} \
             && export MOIS_CLICKBANK_COLLECTOR_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${GITHUB_SHA} \
             && export COMPOSE_PROJECT_NAME=marketinghub-mois-clickbank-collector \
-            && docker login ${{ env.REGISTRY }} -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} \
-            && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
+            && printf '%s' '${{ secrets.GITHUB_TOKEN }}' | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin \
+            && (docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
+              || (sleep 10 && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull) \
+              || (sleep 20 && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull)) \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --remove-orphans \
             && docker image prune -af"

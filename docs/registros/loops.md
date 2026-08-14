@@ -172,6 +172,15 @@ Antes de implementar uma correção em tema com histórico de loop:
 5. Atualizar cânone, Swagger, tela ou Worker AI quando o contrato entre módulos mudar.
 6. Registrar no documento de tema correspondente o que foi feito e, quando necessário, atualizar este arquivo.
 
+## LOOP-DEDALO-TEMIS-REVISAO-SEM-MUDANCA — revisão repetida do mesmo HTML
+
+- **Severidade:** ALTO.
+- **Status:** fechado localmente em 2026-08-14; aguarda publicação.
+- **Sintoma:** Dédalo e Têmis acumulam execuções e custo de revisão embora o HTML consolidado permaneça idêntico.
+- **Causa-raiz confirmada:** o teto de quatro revisões era validado somente depois do parecer, e o design preset criava a próxima revisão por um caminho direto que não aplicava idempotência por versão.
+- **Correção efetiva:** o serviço canônico registra o hash do HTML antes da fila, reutiliza a execução da mesma versão e bloqueia o quinto HTML distinto no ciclo; design preset não cria mais a revisão diretamente.
+- **Prevenção:** testes de contrato exigem zero nova persistência para HTML idêntico, aceitam revisão após mudança real e bloqueiam a quinta versão do ciclo.
+
 ## LOOP-GERALANDING-COPY-PENDING-BUFFER — copy parada antes do processamento
 
 - **Severidade:** ALTO.

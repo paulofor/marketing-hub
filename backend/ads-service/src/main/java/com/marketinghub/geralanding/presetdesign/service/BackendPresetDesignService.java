@@ -11,6 +11,7 @@ import com.marketinghub.geralanding.presetdesign.service.listStageExecutions.Ger
 import com.marketinghub.geralanding.presetdesign.service.pending.RecordPresetDesignExperiment;
 import com.marketinghub.geralanding.presetdesign.service.pending.RecordPresetDesignHypothesis;
 import com.marketinghub.geralanding.presetdesign.service.pending.RecordPresetDesignPending;
+import com.marketinghub.geralanding.qualityreview.service.BackendQualityReviewService;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -44,6 +45,7 @@ public class BackendPresetDesignService {
   private final GeraLandingStageExecutionRepository executionRepository;
   private final ObjectMapper objectMapper;
   private final DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler;
+  private final BackendQualityReviewService qualityReviewService;
 
   /**
    * Inicializa o serviço com os repositórios e montador necessários para consultar e finalizar
@@ -54,11 +56,13 @@ public class BackendPresetDesignService {
       ExperimentRepository experimentRepository,
       GeraLandingStageExecutionRepository executionRepository,
       ObjectMapper objectMapper,
-      DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler) {
+      DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler,
+      BackendQualityReviewService qualityReviewService) {
     this.experimentRepository = experimentRepository;
     this.executionRepository = executionRepository;
     this.objectMapper = objectMapper;
     this.designPresetProvisionalHtmlAssembler = designPresetProvisionalHtmlAssembler;
+    this.qualityReviewService = qualityReviewService;
   }
 
   /** Registra a execução inicial da etapa convertendo para o DTO local de início. */
@@ -289,30 +293,7 @@ public class BackendPresetDesignService {
 
   /** Agenda a revisão visual de qualidade como próxima etapa após a montagem do HTML final. */
   private void createQualityReviewExecution(Experiment experiment) {
-    Instant now = Instant.now();
-    GeraLandingStageExecution qualityExecution =
-        GeraLandingStageExecution.builder()
-            .experimentId(experiment.getId())
-            .experiment(experiment)
-            .stageCode("landing-page-quality-review")
-            .autonomousCycleId(resolveCurrentAutonomousCycle(experiment.getId()))
-            .executionRequestedAt(now)
-            .createdAt(now)
-            .promptTemplateId("auto/html-geralanding")
-            .promptContent("Quality Gate visual da landing final via modelo de visão OpenAI.")
-            .status(STATUS_STARTED)
-            .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
-            .build();
-    executionRepository.save(qualityExecution);
-  }
-
-  /** Mantém a revisão automática ligada ao ciclo que originou a regeneração. */
-  private String resolveCurrentAutonomousCycle(Long experimentId) {
-    return executionRepository
-        .findTopByExperimentIdAndAutonomousCycleIdIsNotNullOrderByExecutionRequestedAtDesc(
-            experimentId)
-        .map(GeraLandingStageExecution::getAutonomousCycleId)
-        .orElseGet(() -> UUID.randomUUID().toString());
+    qualityReviewService.reviewAfterHtmlGeneration(experiment);
   }
 
   /** Monta o HTML final do GeraLanding usando os artefatos canônicos disponíveis no experimento. */

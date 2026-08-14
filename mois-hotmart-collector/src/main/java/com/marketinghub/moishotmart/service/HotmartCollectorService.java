@@ -129,11 +129,11 @@ public class HotmartCollectorService {
         );
         String hotmartAccessToken = fetchHotmartJwtFromGeneralSettings();
         if (hotmartAccessToken.isBlank()) {
+            if (hasDedicatedCredentials()) {
+                return collectFirstCycleWithDedicatedAccount(request, "JWT ausente");
+            }
             status = "COLLECTION_SKIPPED";
-            message = "Token JWT da Hotmart ausente. Configure a chave '" + hotmartJwtSettingKey + "' em /api/settings/{name}.";
-            log.warn("Hotmart ciclo 1 ignorado: token JWT não encontrado em configurações gerais. settingKey={}, workspaceId={}",
-                    hotmartJwtSettingKey,
-                    workspaceId);
+            message = "Token JWT da Hotmart ausente e conta dedicada indisponível.";
             persistCollectedProductsOnBackend(request, status, message, products);
             return new HotmartCollectionResponse(status, message, products);
         }
@@ -168,8 +168,9 @@ public class HotmartCollectorService {
             } else {
                 status = "COLLECTION_ERROR";
                 message = apiFailureMessage.toString();
-                if (tokenUpdateRequired[0]) {
+                if (tokenUpdateRequired[0] && hasDedicatedCredentials()) {
                     log.warn("Hotmart ciclo 1 requer atualização do token JWT pelo usuário. mensagem={}", message);
+                    return collectFirstCycleWithDedicatedAccount(request, "JWT expirado ou inválido");
                 }
             }
         } catch (Exception ex) {
@@ -184,6 +185,20 @@ public class HotmartCollectorService {
         persistCollectedProductsOnBackend(request, status, message, products);
         log.info("Hotmart ciclo 1: execução encerrada. status={}, produtos={}, mensagem={}", status, products.size(), message);
         return new HotmartCollectionResponse(status, message, products);
+    }
+
+    /** Executa o fallback autenticado com a conta dedicada sem depender de token copiado manualmente. */
+    private HotmartCollectionResponse collectFirstCycleWithDedicatedAccount(HotmartCollectionRequest request, String reason) {
+        log.info("Hotmart ciclo 1 usando conta dedicada. motivo={}, workspaceId={}", reason, workspaceId);
+        HotmartCollectionResponse response = legacyCollect(request);
+        persistCollectedProductsOnBackend(request, response.status(), response.message(), response.products());
+        return response;
+    }
+
+    /** Informa se a conta dedicada está completa para autenticação segura. */
+    private boolean hasDedicatedCredentials() {
+        return hotmartUsername != null && !hotmartUsername.isBlank()
+                && hotmartPassword != null && !hotmartPassword.isBlank();
     }
 
     /**

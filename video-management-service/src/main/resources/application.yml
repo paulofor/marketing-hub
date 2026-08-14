@@ -19,6 +19,13 @@ video:
     api-key: ${OPENAI_API_KEY:}
     api-key-file: ${OPENAI_API_KEY_FILE:}
     model: ${APOLLO_PLANNER_MODEL:gpt-5.6}
+    codex-shadow:
+      enabled: ${APOLLO_CODEX_SHADOW_ENABLED:false}
+      command: ${APOLLO_CODEX_COMMAND:codex}
+      model: ${APOLLO_CODEX_MODEL:gpt-5.6-sol}
+      reasoning-effort: ${APOLLO_CODEX_REASONING_EFFORT:high}
+      working-directory: ${APOLLO_CODEX_WORKING_DIRECTORY:/app}
+      timeout: ${APOLLO_CODEX_TIMEOUT:PT10M}
   providers:
     luma:
       enabled: false

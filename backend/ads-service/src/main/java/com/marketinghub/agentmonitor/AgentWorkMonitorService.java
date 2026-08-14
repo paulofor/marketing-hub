@@ -35,11 +35,17 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AgentWorkMonitorService {
   private static final Duration DEDALO_STALE_AFTER = Duration.ofMinutes(45);
+  private static final Duration OPPORTUNITY_REVIEW_PENDING_ALERT_AFTER = Duration.ofMinutes(3);
   private static final String DEDALO = "landing-generator";
   private static final String APOLO = "videomaker";
   private static final String PLUTUS = "financial-agent";
   private static final String TEMIS = "meta-ad-approver";
-  private static final String ATENA = "experiment-strategist";
+  private static final Map<String, String> OPPORTUNITY_REVIEW_AGENT_BY_EXECUTOR =
+      Map.of(
+          "experiment-strategist", "ATENA",
+          "customer-agent", "PSIQUE",
+          "financial-agent", "PLUTUS",
+          "growth-operator", "HERMES");
   private static final ZoneId BUSINESS_ZONE = ZoneId.of("America/Sao_Paulo");
   private static final Map<String, String> TELEMETRY_TYPE_BY_AGENT_KEY =
       Map.of(
@@ -146,41 +152,53 @@ public class AgentWorkMonitorService {
 
   /** Resolve a fonte operacional mais relevante para a identidade do agente. */
   private AgentWorkMonitorResponse monitor(Agent agent, DailyTokenSnapshot tokens) {
+    AgentWorkMonitorResponse opportunityReview = opportunityReview(agent, tokens);
+    if (opportunityReview != null) return opportunityReview;
     if (DEDALO.equals(agent.getAgentKey())) return dedalo(agent, tokens);
-    if (ATENA.equals(agent.getAgentKey())) return atena(agent, tokens);
     if (APOLO.equals(agent.getAgentKey()) || PLUTUS.equals(agent.getAgentKey())) {
       return video(agent, tokens);
     }
     return task(agent, tokens);
   }
 
-  /** Prioriza o parecer canônico mais recente de Atena sobre tarefas administrativas auxiliares. */
-  private AgentWorkMonitorResponse atena(Agent agent, DailyTokenSnapshot tokens) {
-    if (opportunityReviews == null) return task(agent, tokens);
+  /** Prioriza pareceres canônicos ativos dos quatro especialistas sobre tarefas auxiliares. */
+  private AgentWorkMonitorResponse opportunityReview(Agent agent, DailyTokenSnapshot tokens) {
+    if (opportunityReviews == null) return null;
+    String reviewAgent = OPPORTUNITY_REVIEW_AGENT_BY_EXECUTOR.get(agent.getAgentKey());
+    if (reviewAgent == null) return null;
     return opportunityReviews
-        .findTopByAgentKeyOrderByUpdatedAtDescIdDesc("ATENA")
-        .map(review -> atena(agent, review, tokens))
-        .orElseGet(() -> task(agent, tokens));
+        .findTopByAgentKeyOrderByUpdatedAtDescIdDesc(reviewAgent)
+        .filter(review -> review.getExecutionStatus() != OpportunityReviewExecutionStatus.COMPLETED)
+        .map(review -> opportunityReview(agent, review, tokens))
+        .orElse(null);
   }
 
-  /**
-   * Cruza a execução do parecer com o health sem converter prontidão técnica em sucesso funcional.
-   */
-  private AgentWorkMonitorResponse atena(
+  /** Cruza o parecer com o health e alerta quando a fila permaneceu pendente sem sequer iniciar. */
+  private AgentWorkMonitorResponse opportunityReview(
       Agent agent, OpportunityAgentReview review, DailyTokenSnapshot tokens) {
     OpportunityReviewExecutionStatus status = review.getExecutionStatus();
     boolean failed = status == OpportunityReviewExecutionStatus.FAILED;
     boolean running = status == OpportunityReviewExecutionStatus.RUNNING;
-    boolean completed = status == OpportunityReviewExecutionStatus.COMPLETED;
+    boolean pendingWithoutStart =
+        status == OpportunityReviewExecutionStatus.PENDING
+            && review.getStartedAt() == null
+            && review.getRequestedAt() != null
+            && review
+                .getRequestedAt()
+                .plus(OPPORTUNITY_REVIEW_PENDING_ALERT_AFTER)
+                .isBefore(Instant.now());
+    boolean blocked = failed || pendingWithoutStart;
     return response(
         agent,
-        failed ? "BLOCKED" : running ? "WORKING" : completed ? "COMPLETED" : "WAITING",
-        "Parecer de Atena no dossiê #" + review.getDossier().getId(),
+        blocked ? "BLOCKED" : running ? "WORKING" : "WAITING",
+        "Parecer de " + agent.getNickname() + " no dossiê #" + review.getDossier().getId(),
         "Execução canônica " + status,
         failed
             ? operationalBlocker(
                 agent, review.getErrorMessage(), "Parecer bloqueado sem erro detalhado.")
-            : null,
+            : pendingWithoutStart
+                ? "Parecer pendente sem início há mais de 3 minutos. O executor retomará o consumo automaticamente quando o backend estiver disponível."
+                : null,
         false,
         null,
         "opportunity-dossier:" + review.getDossier().getId(),
@@ -420,8 +438,7 @@ public class AgentWorkMonitorService {
             ? AgentExecutorHealthResponse.unknown(agent.getCurrentVersion())
             : executorHealthService.current(agent);
     String combinedStatus =
-        ATENA.equals(agent.getAgentKey())
-                && "READY".equals(executorHealth.status())
+        "READY".equals(executorHealth.status())
                 && "BLOCKED".equals(status)
                 && source != null
                 && source.startsWith("opportunity-dossier:")

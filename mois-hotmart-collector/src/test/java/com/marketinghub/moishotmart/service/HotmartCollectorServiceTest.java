@@ -27,6 +27,8 @@ class HotmartCollectorServiceTest {
                 "",
                 "",
                 "",
+                "",
+                "",
                 false,
                 "http://localhost:8000",
                 "hotmart_access_token_jwt",

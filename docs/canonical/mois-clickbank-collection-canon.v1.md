@@ -99,6 +99,9 @@ Principais chaves:
 - `collector.scheduler.enabled` (default `false` na operação Hotmart-only; reativar explicitamente apenas quando ClickBank voltar a ser fonte ativa)
 - `collector.scheduler.cron` (default `0 0 * * * *`)
 - `collector.scheduler.max-products` (default `25`)
+- `collector.clickbank.username-file` e `collector.clickbank.password-file`: arquivos de uma conta dedicada e restrita, montados somente para leitura; quando configurados, prevalecem sobre variáveis legadas.
+
+As credenciais nunca são entregues a Argos, persistidas no backend ou registradas em logs. O coletor fornece somente evidências estruturadas e não pode promover, comprar ou alterar ofertas. MFA ou desafio de acesso bloqueia a homologação sem contorno automático.
 
 Porta e app:
 - `server.port` default `9096`

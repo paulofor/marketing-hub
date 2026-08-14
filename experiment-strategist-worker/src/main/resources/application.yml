@@ -12,6 +12,10 @@ management:
 spring:
   application:
     name: experiment-strategist-worker
+  task:
+    scheduling:
+      pool:
+        size: 3
 logging:
   file:
     name: ${LOG_FILE_NAME:/tmp/experiment-strategist-worker.log}

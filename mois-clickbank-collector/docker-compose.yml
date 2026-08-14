@@ -7,8 +7,8 @@ services:
     container_name: mois-clickbank-collector
     environment:
       - MOIS_CLICKBANK_PORT=9096
-      - COLLECTOR_CLICKBANK_USERNAME=${COLLECTOR_CLICKBANK_USERNAME:-}
-      - COLLECTOR_CLICKBANK_PASSWORD=${COLLECTOR_CLICKBANK_PASSWORD:-}
+      - COLLECTOR_CLICKBANK_USERNAME_FILE=/run/secrets/clickbank_username
+      - COLLECTOR_CLICKBANK_PASSWORD_FILE=/run/secrets/clickbank_password
       - COLLECTOR_CLICKBANK_SESSION_COOKIE=${COLLECTOR_CLICKBANK_SESSION_COOKIE:-}
       - COLLECTOR_SCHEDULER_ENABLED=${COLLECTOR_SCHEDULER_ENABLED:-false}
       - COLLECTOR_SCHEDULER_CRON=${COLLECTOR_SCHEDULER_CRON:-0 0 * * * *}
@@ -16,3 +16,6 @@ services:
       - COLLECTOR_SCHEDULER_MAX_PRODUCTS=${COLLECTOR_SCHEDULER_MAX_PRODUCTS:-25}
     ports:
       - "9096:9096"
+    volumes:
+      - ${COLLECTOR_CLICKBANK_USERNAME_HOST_FILE:-/root/infra/marketplace-credentials/clickbank/username}:/run/secrets/clickbank_username:ro
+      - ${COLLECTOR_CLICKBANK_PASSWORD_HOST_FILE:-/root/infra/marketplace-credentials/clickbank/password}:/run/secrets/clickbank_password:ro

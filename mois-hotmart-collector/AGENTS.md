@@ -3,7 +3,7 @@ Leia o documento `/docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
 ## Hotmart — regra operacional
 
 - As rotinas automáticas deste módulo permanecem desativadas.
-- A pesquisa autenticada é responsabilidade exclusiva do Agente Radar, usando navegador no ambiente isolado do agente e acesso somente de leitura.
+- A navegação autenticada é executada pelo coletor MOIS isolado, com conta dedicada e acesso somente de leitura; o Agente Radar recebe apenas evidências estruturadas.
 - Nunca persistir ou versionar usuário, senha, JWT, cookies ou dados de sessão.
 - Nunca registrar credenciais em logs, exemplos, testes ou documentação.
 - O agente não pode escrever, afiliar, comprar, alterar produto, conta ou configuração na Hotmart.

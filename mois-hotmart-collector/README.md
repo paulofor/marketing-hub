@@ -52,9 +52,9 @@ Crie/edite um arquivo `.env` no mesmo diretório do compose em uso:
 Exemplo:
 
 ```env
-# Autenticação Hotmart (opção 1: login/senha)
-COLLECTOR_HOTMART_USERNAME=seu_usuario
-COLLECTOR_HOTMART_PASSWORD=sua_senha
+# Conta dedicada Hotmart: informe apenas os caminhos; nunca coloque os valores no .env
+COLLECTOR_HOTMART_USERNAME_HOST_FILE=/root/infra/marketplace-credentials/hotmart/username
+COLLECTOR_HOTMART_PASSWORD_HOST_FILE=/root/infra/marketplace-credentials/hotmart/password
 
 # Autenticação Hotmart (opção 2: cookie de sessão)
 COLLECTOR_HOTMART_SESSION_COOKIE=
@@ -66,7 +66,7 @@ COLLECTOR_SCHEDULER_SOURCE=hotmart-market
 COLLECTOR_SCHEDULER_MAX_PRODUCTS=400
 ```
 
-> Observação: o padrão operacional é execução **agendada** (não manual), de hora em hora.
+> Observação: a rotina automática permanece desativada até a homologação explícita da conta dedicada.
 
 
 ## Compatibilidade Linux
@@ -82,7 +82,7 @@ O script `run-local-jar.sh` executa via `java -jar`, evitando dependência de pe
 - A coleta autenticada usa:
   - `collector.hotmart.search-url` (default: `https://app.hotmart.com/market/search`)
   - `collector.hotmart.session-cookie` (opção 1 para área logada)
-  - credenciais de login não são aceitas neste módulo; o Agente Radar usa navegador isolado
+  - `collector.hotmart.username-file` + `collector.hotmart.password-file` para a conta dedicada somente leitura
 - Agendamento automático:
   - `collector.scheduler.enabled=false` (bloqueado pela regra operacional atual)
   - `collector.scheduler.cron=0 0 * * * *` (**executa de hora em hora**)
@@ -97,6 +97,10 @@ O script `run-local-jar.sh` executa via `java -jar`, evitando dependência de pe
 | `COLLECTOR_HOTMART_SESSION_COOKIE` | Cookie de sessão Hotmart (alternativa ao login/senha) | vazio |
 | `COLLECTOR_HOTMART_USERNAME` | Usuário Hotmart para login automatizado | vazio |
 | `COLLECTOR_HOTMART_PASSWORD` | Senha Hotmart para login automatizado | vazio |
+| `COLLECTOR_HOTMART_USERNAME_FILE` | Arquivo interno com o usuário dedicado | vazio |
+| `COLLECTOR_HOTMART_PASSWORD_FILE` | Arquivo interno com a senha dedicada | vazio |
+| `COLLECTOR_HOTMART_USERNAME_HOST_FILE` | Arquivo do host montado como usuário dedicado | `/root/infra/marketplace-credentials/hotmart/username` |
+| `COLLECTOR_HOTMART_PASSWORD_HOST_FILE` | Arquivo do host montado como senha dedicada | `/root/infra/marketplace-credentials/hotmart/password` |
 | `COLLECTOR_SCHEDULER_ENABLED` | Execução automática, mantida desativada | `false` |
 | `COLLECTOR_SCHEDULER_CRON` | Expressão cron da execução automática | `0 0 * * * *` |
 | `COLLECTOR_SCHEDULER_SOURCE` | Identificador da fonte usada no job agendado | `hotmart-market` |

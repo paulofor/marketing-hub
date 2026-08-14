@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+/** Responsável por coletar e persistir evidências comerciais da ClickBank pelos ciclos oficiais do MOIS. */
 @Service
 public class ClickbankCollectorService {
     private static final Logger log = LoggerFactory.getLogger(ClickbankCollectorService.class);
@@ -78,6 +79,7 @@ public class ClickbankCollectorService {
     private final String defaultMarketTheme;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /** Configura o coletor e resolve as credenciais dedicadas sem expor seus valores. */
     public ClickbankCollectorService(
             @Value("${collector.playwright.headless:true}") boolean headless,
             @Value("${collector.playwright.chromium-executable-path:}") String chromiumExecutablePath,
@@ -85,6 +87,8 @@ public class ClickbankCollectorService {
             @Value("${collector.clickbank.session-cookie:}") String clickbankSessionCookie,
             @Value("${collector.clickbank.username:}") String clickbankUsername,
             @Value("${collector.clickbank.password:}") String clickbankPassword,
+            @Value("${collector.clickbank.username-file:}") String clickbankUsernameFile,
+            @Value("${collector.clickbank.password-file:}") String clickbankPasswordFile,
             @Value("${collector.clickbank.top-offers-url:https://www.clickbank.com/blog/clickbank-top-offers/}") String clickbankTopOffersUrl,
             @Value("${collector.clickbank.username-fallback:}") String clickbankUsernameFallback,
             @Value("${collector.clickbank.password-fallback:}") String clickbankPasswordFallback,
@@ -100,8 +104,10 @@ public class ClickbankCollectorService {
         this.chromiumExecutablePath = chromiumExecutablePath;
         this.clickbankMarketUrl = clickbankMarketUrl;
         this.clickbankSessionCookie = clickbankSessionCookie;
-        this.clickbankUsername = pickFirstNonBlank(clickbankUsername, clickbankUsernameFallback);
-        this.clickbankPassword = pickFirstNonBlank(clickbankPassword, clickbankPasswordFallback);
+        this.clickbankUsername = MarketplaceCredentialFileReader.resolve(
+                clickbankUsernameFile, clickbankUsername, clickbankUsernameFallback, "CLICKBANK", "usuario");
+        this.clickbankPassword = MarketplaceCredentialFileReader.resolve(
+                clickbankPasswordFile, clickbankPassword, clickbankPasswordFallback, "CLICKBANK", "senha");
         this.clickbankTopOffersUrl = clickbankTopOffersUrl;
         this.logFullToken = logFullToken;
         this.backendBaseUrl = backendBaseUrl;

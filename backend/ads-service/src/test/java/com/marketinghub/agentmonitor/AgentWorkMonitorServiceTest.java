@@ -25,6 +25,7 @@ import com.marketinghub.salesvideo.VideoProductionCycle;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -86,6 +87,74 @@ class AgentWorkMonitorServiceTest {
     assertThat(result.executionId()).isEqualTo(7L);
     assertThat(result.difficulty()).isEqualTo("HTTP 500 ao consultar pendências");
     assertThat(result.executorHealth().status()).isEqualTo("READY");
+  }
+
+  /** Alerta qualquer especialista cujo parecer canônico permaneça pendente sem início. */
+  @Test
+  void shouldExposePendingWithoutStartForEveryOpportunityReviewer() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    GeraLandingStageExecutionRepository landings = mock(GeraLandingStageExecutionRepository.class);
+    VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
+    CodexAgentExecutionTelemetryRepository telemetry =
+        mock(CodexAgentExecutionTelemetryRepository.class);
+    CreativeRepository creatives = mock(CreativeRepository.class);
+    AgentExecutorHealthService health = mock(AgentExecutorHealthService.class);
+    OpportunityAgentReviewRepository reviews = mock(OpportunityAgentReviewRepository.class);
+    List<Agent> reviewers =
+        List.of(
+            reviewer(1L, "experiment-strategist", "Atena"),
+            reviewer(2L, "customer-agent", "Psique"),
+            reviewer(3L, "financial-agent", "Plutus"),
+            reviewer(4L, "growth-operator", "Hermes"));
+    when(agents.findAllByOrderByNicknameAsc()).thenReturn(reviewers);
+    Map<String, String> canonicalKeys =
+        Map.of(
+            "experiment-strategist", "ATENA",
+            "customer-agent", "PSIQUE",
+            "financial-agent", "PLUTUS",
+            "growth-operator", "HERMES");
+    for (Agent reviewer : reviewers) {
+      OpportunityAgentReview review =
+          OpportunityAgentReview.builder()
+              .id(reviewer.getId() + 10)
+              .dossier(OpportunityDossier.builder().id(6L).build())
+              .agentKey(canonicalKeys.get(reviewer.getAgentKey()))
+              .executionStatus(OpportunityReviewExecutionStatus.PENDING)
+              .requestedAt(Instant.now().minusSeconds(240))
+              .updatedAt(Instant.now().minusSeconds(240))
+              .build();
+      when(reviews.findTopByAgentKeyOrderByUpdatedAtDescIdDesc(review.getAgentKey()))
+          .thenReturn(Optional.of(review));
+      when(health.current(reviewer))
+          .thenReturn(
+              new AgentExecutorHealthResponse(
+                  "READY", 1, 1, true, true, true, "build", "Executor pronto.", Instant.now()));
+    }
+
+    List<AgentWorkMonitorResponse> result =
+        new AgentWorkMonitorService(
+                agents, tasks, landings, cycles, telemetry, creatives, health, reviews)
+            .list();
+
+    assertThat(result).extracting(AgentWorkMonitorResponse::workStatus).containsOnly("BLOCKED");
+    assertThat(result)
+        .extracting(AgentWorkMonitorResponse::combinedStatus)
+        .containsOnly("READY — parecer bloqueado");
+    assertThat(result)
+        .extracting(AgentWorkMonitorResponse::difficulty)
+        .allMatch(message -> message.contains("pendente sem início"));
+  }
+
+  /** Cria um especialista mínimo para cenários transversais do monitor. */
+  private Agent reviewer(Long id, String key, String nickname) {
+    return Agent.builder()
+        .id(id)
+        .agentKey(key)
+        .nickname(nickname)
+        .name("Especialista")
+        .currentVersion(1)
+        .build();
   }
 
   /** Impede que bloqueio antigo de Argos prevaleça sobre a pesquisa mais recente concluída. */

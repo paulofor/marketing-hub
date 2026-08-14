@@ -37,6 +37,7 @@ class LandingGenerationAgentCoordinatorTest {
   private BackendPresetDesignService presetDesignService;
   private GeraLandingDeliverablesStageExecutionService deliverablesService;
   private AgentMemoryService memoryService;
+  private GovernedLandingHtmlService governedLandingHtmlService;
   private LandingGenerationAgentCoordinator coordinator;
 
   /** Prepara portas isoladas para cada cenário da matriz de convergência. */
@@ -50,6 +51,7 @@ class LandingGenerationAgentCoordinatorTest {
     presetDesignService = mock(BackendPresetDesignService.class);
     deliverablesService = mock(GeraLandingDeliverablesStageExecutionService.class);
     memoryService = mock(AgentMemoryService.class);
+    governedLandingHtmlService = mock(GovernedLandingHtmlService.class);
     coordinator =
         new LandingGenerationAgentCoordinator(
             new ObjectMapper(),
@@ -61,7 +63,7 @@ class LandingGenerationAgentCoordinatorTest {
             presetDesignService,
             deliverablesService,
             memoryService,
-            mock(GovernedLandingHtmlService.class));
+            governedLandingHtmlService);
     when(executionRepository
             .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
                 88L, "landing-page-quality-review", CYCLE_ID))
@@ -135,21 +137,21 @@ class LandingGenerationAgentCoordinatorTest {
     verify(deliverablesService).registerInitialExecution(88L, "landing-page-deliverables");
   }
 
-  /** Deve bloquear uma abordagem ainda sem executor registrado no backend. */
+  /** Deve encaminhar a criação integral de HTML ao executor governado registrado no backend. */
   @Test
-  void shouldRejectGenerationApproachWithoutRegisteredExecutor() {
-    assertThrows(
-        IllegalArgumentException.class,
-        () ->
-            coordinator.continueAfterQualityReview(
-                88L,
-                CYCLE_ID,
-                reviewWithApproach(
-                    "REGENERATE_BEFORE_PUBLICATION",
-                    78,
-                    "CODEX_CODE_IMPLEMENTATION",
-                    "LANDING_PAGE_HTML")));
+  void shouldDispatchFullHtmlToRegisteredGovernedExecutor() {
+    coordinator.continueAfterQualityReview(
+        88L,
+        CYCLE_ID,
+        reviewWithGeneratedHtml(
+            "REGENERATE_BEFORE_PUBLICATION",
+            78,
+            "CODEX_CODE_IMPLEMENTATION",
+            "<html><body><main>Oferta</main></body></html>",
+            "LANDING_PAGE_HTML"));
 
+    verify(governedLandingHtmlService)
+        .apply(88L, "<html><body><main>Oferta</main></body></html>");
     verify(presetDesignService, never()).start(88L);
   }
 
@@ -247,5 +249,17 @@ class LandingGenerationAgentCoordinatorTest {
         + "\"},\"recommendedRegeneration\":["
         + regeneration
         + "]}";
+  }
+
+  /** Monta uma resposta com HTML integral para validar o executor governado. */
+  private String reviewWithGeneratedHtml(
+      String recommendation, int score, String approach, String html, String... stages) {
+    com.fasterxml.jackson.databind.node.ObjectNode review = new ObjectMapper().createObjectNode();
+    review.put("score", score);
+    review.put("approvalRecommendation", recommendation);
+    review.putObject("selectedGenerationApproach").put("approachCode", approach);
+    review.put("generatedHtml", html);
+    java.util.Arrays.stream(stages).forEach(review.putArray("recommendedRegeneration")::add);
+    return review.toString();
   }
 }

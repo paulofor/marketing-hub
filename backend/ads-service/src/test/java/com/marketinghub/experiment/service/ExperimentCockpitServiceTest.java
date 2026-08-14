@@ -93,7 +93,7 @@ class ExperimentCockpitServiceTest {
     when(readinessService.summarize(77L))
         .thenReturn(
             new ExperimentReadinessSummaryDto(
-                false, 0, false, 0, false, false, 0, 0, List.of(), List.of()));
+                false, 0, false, 0, false, false, 0, 0, List.of(), List.of(), false, List.of()));
     when(diagnosticsService.diagnose(77L))
         .thenReturn(
             new ExperimentDiagnosticsDto(
@@ -177,7 +177,7 @@ class ExperimentCockpitServiceTest {
     when(readinessService.summarize(experimentId))
         .thenReturn(
             new ExperimentReadinessSummaryDto(
-                false, 0, false, 0, false, false, 0, 0, List.of(), List.of()));
+                false, 0, false, 0, false, false, 0, 0, List.of(), List.of(), false, List.of()));
     when(diagnosticsService.diagnose(experimentId))
         .thenReturn(
             new ExperimentDiagnosticsDto(

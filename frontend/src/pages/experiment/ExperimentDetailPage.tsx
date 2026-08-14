@@ -128,18 +128,6 @@ function formatGeneratedAssetType(value?: string | null) {
   }
 }
 
-type ChecklistItem = {
-  id: string;
-  title: string;
-  isMet: boolean;
-  hint?: string;
-  isLoading?: boolean;
-  action?: () => void;
-  actionLabel?: string;
-  actionDisabled?: boolean;
-  actionLoading?: boolean;
-};
-
 type PipelineContentCard = {
   key: string;
   title: string;
@@ -1772,8 +1760,6 @@ export default function ExperimentDetailPage() {
       : null);
   const salesPagePublications = geraSalesPagePublications.data ?? [];
   const latestSalesPagePublication = salesPagePublications[0];
-  const hasCreativesReady =
-    readinessSummary?.hasCreatives ?? data.creativeApproved;
   const readinessCreativeCount = readinessSummary?.creativeCount ?? 0;
   const hasPublisherTargeting = readinessSummary?.hasCompleteTargeting ?? false;
   const openExperimentTab = (targetTab: string) => {
@@ -1787,51 +1773,7 @@ export default function ExperimentDetailPage() {
   };
   const openLandingActions = () => openExperimentTab("landing");
 
-  const blockingChecklist: ChecklistItem[] = [
-    {
-      id: "creatives",
-      title: "Criativos aprovados",
-      isMet: hasCreativesReady,
-      isLoading: isLoadingReadiness,
-      hint: isLoadingReadiness
-        ? "Verificando criativos aprovados..."
-        : hasCreativesReady
-          ? readinessCreativeCount > 0
-            ? `${readinessCreativeCount} criativo${readinessCreativeCount === 1 ? "" : "s"} pronto${readinessCreativeCount === 1 ? "" : "s"} para o Meta.`
-            : "Os criativos já estão aprovados e prontos para o Meta."
-          : "Revise e aprove pelo menos um criativo na aba Criativos.",
-      action: hasCreativesReady ? undefined : () => setTab("creatives"),
-      actionLabel: hasCreativesReady ? undefined : "Ir para Criativos",
-    },
-    {
-      id: "landing-destination",
-      title: "Landing criada e aprovada",
-      isMet: Boolean(data.followUpActionUrl),
-      isLoading: isLoadingReadiness,
-      hint: data.followUpActionUrl
-        ? `Landing aprovada e URL de destino ativa: ${data.followUpActionUrl}.`
-        : "Aprove uma landing na aba Landing para definir a URL de destino da campanha.",
-      action: data.followUpActionUrl ? undefined : openLandingActions,
-      actionLabel: data.followUpActionUrl ? undefined : "Ir para Landing",
-    },
-    {
-      id: "publisher-targeting",
-      title: "Público salvo para publicação",
-      isMet: hasPublisherTargeting,
-      isLoading: isLoadingReadiness,
-      hint: isLoadingReadiness
-        ? "Verificando público salvo para o publicador..."
-        : hasPublisherTargeting
-          ? "Público salvo atende a regra do Facebook Ads Worker."
-          : "Salve na aba Público pelo menos um interesse, cargo ou comportamento válido para este experimento.",
-      action: hasPublisherTargeting
-        ? undefined
-        : () => openExperimentTab("publico"),
-      actionLabel: hasPublisherTargeting ? undefined : "Ir para Público",
-    },
-  ];
-
-  const isReadyForFacebook = blockingChecklist.every((c) => c.isMet);
+  const isReadyForFacebook = readinessSummary?.eligibleForRunning ?? false;
   const releaseInProgress = releaseExperiment.isPending;
   const lastReleaseAt = data.facebookReleaseRequestedAt;
   const lastReleaseLabel = lastReleaseAt
@@ -2506,6 +2448,69 @@ export default function ExperimentDetailPage() {
           </div>
         </div>
       ) : null}
+      <div className="card border-0 shadow-sm rounded-3 mt-3">
+        <div className="card-body">
+          <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+            <div>
+              <h5 className="card-title mb-1">
+                Gate para iniciar o experimento
+              </h5>
+              <p className="text-muted small mb-0">
+                Fonte canônica dos requisitos para a transição segura de PLANNED
+                para RUNNING.
+              </p>
+            </div>
+            <span
+              className={`badge ${readinessSummary?.eligibleForRunning ? "text-bg-success" : "text-bg-warning"}`}
+            >
+              {readinessSummary?.eligibleForRunning
+                ? "PRONTO PARA RUNNING"
+                : "PLANNED — requisitos pendentes"}
+            </span>
+          </div>
+          {isLoadingReadiness ? (
+            <div
+              className="d-flex align-items-center gap-2 mt-3 text-muted"
+              role="status"
+            >
+              <span
+                className="spinner-border spinner-border-sm"
+                aria-hidden="true"
+              />
+              <span>Consolidando requisitos...</span>
+            </div>
+          ) : (
+            <div className="list-group list-group-flush mt-3">
+              {(readinessSummary?.runningGateRequirements ?? []).map(
+                (requirement) => (
+                  <div
+                    key={requirement.code}
+                    className="list-group-item px-0 d-flex gap-3 align-items-start"
+                  >
+                    <span
+                      className={`badge mt-1 ${requirement.ready ? "text-bg-success" : "text-bg-danger"}`}
+                    >
+                      {requirement.ready ? "OK" : "PENDENTE"}
+                    </span>
+                    <div>
+                      <div className="fw-semibold">{requirement.title}</div>
+                      <div className="small text-body-secondary">
+                        {requirement.detail}
+                      </div>
+                      {!requirement.ready ? (
+                        <div className="small mt-1">
+                          <strong>Próxima ação:</strong>{" "}
+                          {requirement.recommendation}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                ),
+              )}
+            </div>
+          )}
+        </div>
+      </div>
       <div className="card border-0 shadow-sm rounded-3 mt-3">
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-start">

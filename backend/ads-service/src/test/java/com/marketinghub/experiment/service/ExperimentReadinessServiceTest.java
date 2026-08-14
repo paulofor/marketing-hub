@@ -103,6 +103,11 @@ class ExperimentReadinessServiceTest {
             TargetingElementType.JOB_TITLE,
             TargetingElementType.BEHAVIOR);
     assertThat(summary.issues()).hasSize(4);
+    assertThat(summary.eligibleForRunning()).isFalse();
+    assertThat(summary.runningGateRequirements())
+        .filteredOn(requirement -> !requirement.ready())
+        .extracting(requirement -> requirement.code())
+        .contains("LANDING_APPROVED", "CREATIVE_APPROVED", "TARGETING_READY", "NO_BLOCKING_STAGES");
     assertThat(summary.issues())
         .extracting(ExperimentReadinessIssueDto::type)
         .containsExactlyInAnyOrder(
@@ -125,6 +130,9 @@ class ExperimentReadinessServiceTest {
     when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(
             experimentId, CreativeStatus.READY))
         .thenReturn(2L);
+    when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(true);
     mockPublishableSelection(
         experimentId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
     mockCompletedGeraLandingStages(experimentId);
@@ -138,6 +146,8 @@ class ExperimentReadinessServiceTest {
         .isEqualTo(summary.geraLandingRequiredStageCount());
     assertThat(summary.missingTargetingTypes()).isEmpty();
     assertThat(summary.issues()).isEmpty();
+    assertThat(summary.eligibleForRunning()).isTrue();
+    assertThat(summary.runningGateRequirements()).allMatch(requirement -> requirement.ready());
   }
 
   @Test
@@ -443,6 +453,9 @@ class ExperimentReadinessServiceTest {
     when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(
             experimentId, CreativeStatus.READY))
         .thenReturn(1L);
+    when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(true);
     mockPublishableSelection(
         experimentId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
     mockCompletedGeraSalesPagePublication(experimentId);
@@ -470,6 +483,9 @@ class ExperimentReadinessServiceTest {
     when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(
             experimentId, CreativeStatus.READY))
         .thenReturn(1L);
+    when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(true);
     mockPublishableSelection(
         experimentId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
 
@@ -588,6 +604,9 @@ class ExperimentReadinessServiceTest {
     when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(
             experimentId, CreativeStatus.READY))
         .thenReturn(1L);
+    when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(true);
     mockPublishableSelection(
         experimentId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
 

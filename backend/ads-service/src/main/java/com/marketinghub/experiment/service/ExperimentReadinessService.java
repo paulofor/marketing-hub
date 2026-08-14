@@ -7,6 +7,7 @@ import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
+import com.marketinghub.experiment.dto.ExperimentRunningGateRequirementDto;
 import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
 import com.marketinghub.experiment.video.service.ExperimentVideoAssetService;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
@@ -108,7 +109,7 @@ public class ExperimentReadinessService {
     long creativeCount =
         creativeRepository.countByExperimentIdAndStatusAndUsableImage(
             experimentId, CreativeStatus.READY);
-    boolean hasCreatives = creativeCount > 0;
+    boolean hasCreatives = creativeCount > 0 && hasApprovedCreative(experiment);
 
     long leadPortalFlowCount = hasReadyLeadPortalFlow(experiment) ? 1L : 0L;
     boolean hasLeadPortalFlow = leadPortalFlowCount > 0;
@@ -282,6 +283,77 @@ public class ExperimentReadinessService {
               List.of()));
     }
 
+    boolean landingReady =
+        hasLandingReadyForRunning(
+            purchaseIntent,
+            pdeMembershipFunnel,
+            personalizedSampleProductAi,
+            hasGeraLandingPipeline,
+            hasGeraSalesPagePipeline,
+            salesPagePublication);
+    boolean checkoutReady =
+        hasCheckoutReadyForRunning(
+            purchaseIntent, pdeMembershipFunnel, salesPagePublication, hasPdeMembershipDestination);
+    boolean instrumentationReady =
+        hasInstrumentationReadyForRunning(
+            purchaseIntent, pdeMembershipFunnel, salesPagePublication);
+    boolean blockingStagesCompleted = hasNoBlockingStageIssue(issues);
+    List<ExperimentRunningGateRequirementDto> runningGateRequirements =
+        List.of(
+            runningRequirement(
+                "LANDING_APPROVED",
+                "Landing aprovada",
+                landingReady,
+                landingReady
+                    ? "A página e seu pipeline canônico estão concluídos."
+                    : "A página ainda não concluiu o pipeline ou a aprovação necessária.",
+                "Conclua a geração, a revisão de qualidade e a publicação auditada da página."),
+            runningRequirement(
+                "CREATIVE_APPROVED",
+                "Criativo aprovado",
+                hasCreatives,
+                hasCreatives
+                    ? creativeCount + " criativo(s) publicável(is)."
+                    : "Nenhum criativo publicável foi aprovado.",
+                "Aprove ao menos um criativo com mídia e copy válidas."),
+            runningRequirement(
+                "CHECKOUT_READY",
+                "Checkout configurado",
+                checkoutReady,
+                checkoutReady
+                    ? "O destino de conversão está configurado."
+                    : "O checkout ou destino de conversão ainda não está configurado.",
+                "Configure e audite o checkout antes de liberar tráfego."),
+            runningRequirement(
+                "INSTRUMENTATION_READY",
+                "Instrumentação pronta",
+                instrumentationReady,
+                instrumentationReady
+                    ? "Os eventos obrigatórios estão instalados na página."
+                    : "Faltam coletores obrigatórios para medir visita, carregamento, seção e checkout.",
+                "Publique a página com page_view, page_load_metric, section_view_time e checkout_click."),
+            runningRequirement(
+                "TARGETING_READY",
+                "Público pronto",
+                hasCompleteTargeting,
+                hasCompleteTargeting
+                    ? "Existe público aprovado com ID oficial da Meta."
+                    : "Não existe público publicável salvo.",
+                "Salve ao menos um interesse, cargo ou comportamento aprovado."),
+            runningRequirement(
+                "NO_BLOCKING_STAGES",
+                "Sem etapas bloqueantes",
+                blockingStagesCompleted,
+                blockingStagesCompleted
+                    ? "Nenhuma etapa comercial obrigatória está pendente ou reprovada."
+                    : issues.stream()
+                        .map(ExperimentReadinessIssueDto::title)
+                        .distinct()
+                        .collect(java.util.stream.Collectors.joining("; ")),
+                "Resolva todas as pendências canônicas antes de alterar o status."));
+    boolean eligibleForRunning =
+        runningGateRequirements.stream().allMatch(ExperimentRunningGateRequirementDto::ready);
+
     return new ExperimentReadinessSummaryDto(
         hasCreatives,
         creativeCount,
@@ -292,7 +364,64 @@ public class ExperimentReadinessService {
         geraLandingCompletedStageCount,
         GERA_LANDING_REQUIRED_STAGES.size(),
         List.copyOf(missingTypes),
-        List.copyOf(issues));
+        List.copyOf(issues),
+        eligibleForRunning,
+        runningGateRequirements);
+  }
+
+  /** Cria um requisito imutável do gate consolidado de transição para RUNNING. */
+  private ExperimentRunningGateRequirementDto runningRequirement(
+      String code, String title, boolean ready, String detail, String recommendation) {
+    return new ExperimentRunningGateRequirementDto(code, title, ready, detail, recommendation);
+  }
+
+  /** Confirma que a página exigida pelo desenho comercial está concluída e auditada. */
+  private boolean hasLandingReadyForRunning(
+      boolean purchaseIntent,
+      boolean pdeMembershipFunnel,
+      boolean personalizedSampleProductAi,
+      boolean hasGeraLandingPipeline,
+      boolean hasGeraSalesPagePipeline,
+      Optional<GeraSalesPagePublicationAudit> publication) {
+    if (purchaseIntent || personalizedSampleProductAi) {
+      return hasGeraSalesPagePipeline && publication.isPresent();
+    }
+    return pdeMembershipFunnel || hasGeraLandingPipeline;
+  }
+
+  /** Confirma que o checkout ou destino interno de conversão está configurado. */
+  private boolean hasCheckoutReadyForRunning(
+      boolean purchaseIntent,
+      boolean pdeMembershipFunnel,
+      Optional<GeraSalesPagePublicationAudit> publication,
+      boolean hasPdeMembershipDestination) {
+    if (pdeMembershipFunnel) {
+      return hasPdeMembershipDestination;
+    }
+    return !purchaseIntent
+        || publication
+            .map(GeraSalesPagePublicationAudit::getCheckoutUrl)
+            .filter(StringUtils::hasText)
+            .isPresent();
+  }
+
+  /** Confirma que a página de venda possui os coletores mínimos para aprendizado comercial. */
+  private boolean hasInstrumentationReadyForRunning(
+      boolean purchaseIntent,
+      boolean pdeMembershipFunnel,
+      Optional<GeraSalesPagePublicationAudit> publication) {
+    if (pdeMembershipFunnel) {
+      return true;
+    }
+    return !purchaseIntent
+        || publication
+            .map(campaignDestinationPolicy::hasRequiredSalesPageAnalyticsCollectors)
+            .orElse(false);
+  }
+
+  /** Confirma que nenhuma pendência canônica permanece aberta no experimento. */
+  private boolean hasNoBlockingStageIssue(List<ExperimentReadinessIssueDto> issues) {
+    return issues.isEmpty();
   }
 
   /** Verifica se o experimento já pode entrar na fila de campanha paga. */

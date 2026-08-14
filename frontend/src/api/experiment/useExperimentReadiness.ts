@@ -3,10 +3,7 @@ import axios from "axios";
 import type { TargetingElementType } from "../targeting/types";
 
 export type ExperimentReadinessIssueType =
-  | "CREATIVE"
-  | "LEAD_PORTAL_FLOW"
-  | "TARGETING"
-  | "GERA_LANDING";
+  "CREATIVE" | "LEAD_PORTAL_FLOW" | "TARGETING" | "GERA_LANDING";
 
 export interface ExperimentReadinessIssue {
   type: ExperimentReadinessIssueType;
@@ -27,6 +24,14 @@ export interface ExperimentReadinessSummary {
   geraLandingRequiredStageCount: number;
   missingTargetingTypes: TargetingElementType[];
   issues: ExperimentReadinessIssue[];
+  eligibleForRunning: boolean;
+  runningGateRequirements: Array<{
+    code: string;
+    title: string;
+    ready: boolean;
+    detail: string;
+    recommendation: string;
+  }>;
 }
 
 export function useExperimentReadiness(experimentId?: string) {

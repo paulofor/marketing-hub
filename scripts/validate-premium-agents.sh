@@ -117,3 +117,4 @@ print(f"[ARQUITETURA] {sum(a['operational'] for a in agents)} agentes conformes;
 PY
 bash "$repo_root/scripts/test-isolated-agent-codex-auth.sh"
 node "$repo_root/scripts/test-agent-version-deploy-gate.mjs"
+node "$repo_root/scripts/test-codex-agent-health-standard.mjs"

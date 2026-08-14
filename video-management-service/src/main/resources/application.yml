@@ -3,7 +3,7 @@ server:
 
 apollo:
   codex-auth:
-    backend-url: ${BACKEND_URL:http://backend:8000}
+    backend-url: ${BACKEND_URL:${VIDEO_BACKEND_BASE_URL:http://backend:8000}}
     repository-path: ${MARKETING_HUB_REPOSITORY:/app}
     agent-key: ${AGENT_HEALTH_KEY:videomaker}
 

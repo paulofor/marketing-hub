@@ -61,6 +61,10 @@ services:
       - backend
     environment:
       VIDEO_BACKEND_BASE_URL: ${VIDEO_BACKEND_BASE_URL:-http://backend:8000}
+      BACKEND_URL: ${VIDEO_BACKEND_BASE_URL:-http://backend:8000}
+      AGENT_HEALTH_KEY: videomaker
+      MARKETING_HUB_REPOSITORY: /app
+      CODEX_HOME: /root/.codex
       VIDEO_AUTH_TOKEN: ${VIDEO_AUTH_TOKEN:-}
       VIDEO_JOBS_POLLING_ENABLED: ${VIDEO_JOBS_POLLING_ENABLED:-true}
       VIDEO_JOBS_POLL_INTERVAL: ${VIDEO_JOBS_POLL_INTERVAL:-PT30S}
@@ -101,6 +105,7 @@ services:
       - ${KLING_API_KEY_HOST_FILE:-/root/infra/kling-token/kling_api_key}:/run/secrets/kling_api_key:ro
       - ${HEYGEN_API_KEY_HOST_FILE:-/root/infra/heygen-token/heygen_api_key}:/run/secrets/heygen_api_key:ro
       - ${RUNWAY_API_KEY_HOST_FILE:-/root/infra/runaway-token/runaway_api_key}:/run/secrets/runway_api_key:ro
+      - ${APOLLO_CODEX_HOME_HOST_DIR:-/root/infra/apollo-codex-home}:/root/.codex
       - ./volumes/video-management/logs:/app/logs
 
   oprm-worker:

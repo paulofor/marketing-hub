@@ -200,12 +200,20 @@ public class MetaAdApproverCodexRunner {
     return path;
   }
 
-  /** Materializa o MCP junto a um vínculo somente leitura para as dependências do navegador. */
+  /** Materializa o MCP junto às dependências disponíveis na imagem ou no módulo local. */
   Path materializeMcp() throws IOException {
     Path directory = Files.createTempDirectory("meta-ad-approver-mcp-");
     Path server = directory.resolve("meta-ad-approver.mjs");
     Files.writeString(server, read("mcp/meta-ad-approver.mjs"));
-    Files.createSymbolicLink(directory.resolve("node_modules"), Path.of("/app/node_modules"));
+    Path imageDependencies = Path.of("/app/node_modules/@modelcontextprotocol/sdk");
+    Path dependencies =
+        Files.isDirectory(imageDependencies)
+            ? imageDependencies.getParent().getParent()
+            : Path.of("node_modules").toAbsolutePath();
+    if (!Files.isDirectory(dependencies.resolve("@modelcontextprotocol/sdk"))) {
+      throw new IOException("Dependências do MCP do Aprovador Meta não estão disponíveis");
+    }
+    Files.createSymbolicLink(directory.resolve("node_modules"), dependencies);
     return server;
   }
 

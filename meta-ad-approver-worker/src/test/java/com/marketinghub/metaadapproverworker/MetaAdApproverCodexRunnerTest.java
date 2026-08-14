@@ -41,7 +41,7 @@ class MetaAdApproverCodexRunnerTest {
     assertThat(command).doesNotContain("--dangerously-bypass-approvals-and-sandbox");
   }
 
-  /** Confirma que o MCP temporário consegue resolver o Playwright instalado no container. */
+  /** Confirma que o MCP temporário resolve as dependências na imagem ou no módulo local. */
   @Test
   void linksMcpToVersionedBrowserRuntime() throws Exception {
     MetaAdApproverCodexRunner runner =
@@ -51,8 +51,8 @@ class MetaAdApproverCodexRunnerTest {
     try {
       assertThat(Files.readString(server)).contains("from 'playwright-core'");
       assertThat(Files.isSymbolicLink(server.getParent().resolve("node_modules"))).isTrue();
-      assertThat(Files.readSymbolicLink(server.getParent().resolve("node_modules")))
-          .isEqualTo(Path.of("/app/node_modules"));
+      Path dependencies = Files.readSymbolicLink(server.getParent().resolve("node_modules"));
+      assertThat(dependencies.resolve("@modelcontextprotocol/sdk")).isDirectory();
     } finally {
       Files.deleteIfExists(server);
       Files.deleteIfExists(server.getParent().resolve("node_modules"));

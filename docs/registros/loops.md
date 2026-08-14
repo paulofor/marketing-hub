@@ -61,6 +61,7 @@
 - Fechamento complementar no Aprovador Meta (2026-08-09): o worker reservava três criativos de uma vez, marcava todos como `PROCESSING`, mas executava o Codex sequencialmente. Um item lento multiplicava o tempo do lote e ocultava quais revisões realmente estavam em execução. O lote agora usa tarefas virtuais concorrentes, mantendo timeout, telemetria, callback e falha isolados por criativo; teste de contrato exige início simultâneo dos três itens.
 - Fechamento complementar no Aprovador Meta (2026-08-09): reinício ou timeout do worker deixava revisões indefinidamente em `PROCESSING`, pois a reserva não possuía lease. O backend agora persiste início e recuperações, reenfileira leases órfãos com limite e encerra em `FAILED` com causa auditável após reincidência.
 - Fechamento complementar no MCP do Aprovador Meta (2026-08-14): a telemetria genérica existia, mas exigia conhecer que a execução era correlacionada pelo `creativeId` e não cruzava o heartbeat com o parecer canônico nem com a memória governada. A tool `meta_ad_approver_execution_telemetry` passa a consolidar parecer, processo, atividade, bloqueio e contagens separadas de memórias confirmadas e candidatas; testes preservam o contrato e impedem tratar memória candidata como consenso.
+- Fechamento complementar no Aprovador Meta (2026-08-14): a reconexão Codex por device code podia ocupar por até 16 minutos a única thread do agendador Spring e impedir Têmis de consumir pareceres pendentes. O executor agora mantém pool mínimo de duas threads, com teste contratual que preserva a independência entre autenticação e revisão.
 - Fechamento complementar nas mesas e planos comerciais (2026-08-11): o limite fixo de 40 minutos encerrava Atena e Dédalo mesmo com atividade, leases antigas podiam permanecer `RUNNING` fora do item mais recente e uma falha na fila auxiliar de vídeo impedia Plutus de consumir sua fila financeira. O timeout passa a medir inatividade com teto absoluto, leases órfãs recebem uma única retomada com a entrada congelada e filas independentes falham isoladamente. Testes de contrato impedem transformar timeout recuperável em falha definitiva e impedem a fila de vídeo de causar starvation financeiro.
 - Fechamento complementar em dossiês e monitor (2026-08-11): cadastrar oportunidade não abria execução consumível por Argos e o monitor não reconhecia `FALHA` como estado terminal de Dédalo. Cada dossiê agora cria ciclo de descoberta e tarefa correlacionada; conclusão sincroniza evidências reais, falha bloqueia a mesa e o monitor trata status terminal ou inatividade como bloqueio, impedindo trabalho fantasma.
 - Fechamento complementar em pareceres de oportunidade (2026-08-13): recriar uma tarefa administrativa para Atena não alterava `opportunity_agent_review`, que é a fila realmente consumida pelo worker, deixando o dossiê sem nova execução. O painel agora reenfileira o parecer canônico vinculado ao dossiê e ao agente, impede duplicidade durante `RUNNING` ou após conclusão e expõe o identificador da execução; testes de backend e frontend preservam o vínculo ponta a ponta.
@@ -129,6 +130,25 @@
 - **Causa-raiz confirmada:** o coordenador herdava o `stderr` do processo sem capturá-lo e substituía qualquer falha do App Server ou callback por uma mensagem genérica; uma indisponibilidade transitória do backend também encerrava todo o OAuth na primeira tentativa.
 - **Correção efetiva:** capturar e sanitizar a causa operacional, persistir o último diagnóstico no pedido e repetir somente o callback ao backend até três vezes, sem reiniciar nem duplicar o fluxo OAuth.
 - **Prevenção:** teste contratual exige que uma falha anterior ao device code preserve a causa segura no backend, sem token, cookie ou credencial.
+
+## LOOP-ARGOS-CODEX-AUTH-MISSING-ROOT-CERTIFICATES — device code falha antes de gerar link
+
+- **Severidade:** ALTO.
+- **Status:** fechado localmente em 2026-08-14; aguarda publicação.
+- **Sintoma:** Argos reserva a reconexão, mas o App Server falha ao acessar `auth.openai.com` e nenhum link ou código aparece no painel.
+- **Causa-raiz confirmada:** a imagem `node:20-bookworm-slim` de Argos instalava o cliente Codex sem instalar o trust store `ca-certificates`; a pesquisa Brave continuava saudável porque o runtime Node usa sua própria cadeia, mascarando a deficiência exclusiva do binário Codex.
+- **Correção efetiva:** instalar e atualizar os certificados raiz antes do cliente Codex na imagem versionada do Product Discovery Worker.
+- **Prevenção:** teste de contrato do Dockerfile exige `ca-certificates` antes da instalação do cliente Codex, alinhando Argos às imagens dos demais agentes autenticados.
+
+## LOOP-APOLO-CODEX-AUTH-DEPLOY-CONTRACT — reconexão permanece em REQUESTED
+
+- **Severidade:** ALTO.
+- **Status:** fechado localmente em 2026-08-14; aguarda publicação.
+- **Sintoma:** o painel cria a reconexão de Apolo, mas ela permanece em `REQUESTED` e não exibe o device code.
+- **Causa-raiz confirmada:** o deploy informava somente `VIDEO_BACKEND_BASE_URL`, enquanto o consumidor de reconexão lia `BACKEND_URL` e tentava o host inexistente `backend:8000`; o mesmo descritor não montava o `CODEX_HOME` persistente de Apolo.
+- **Correção efetiva:** o Compose publicado usa a mesma URL canônica para vídeo e reconexão, fixa a identidade `videomaker` e monta o diretório Codex individual e persistente.
+- **Prevenção:** o contrato de deploy valida URL compartilhada, identidade, caminho do cliente e volume individual antes de permitir nova publicação do serviço de vídeo.
+- **Correção complementar em 2026-08-14:** o runtime publicado ainda recebeu apenas `VIDEO_BACKEND_BASE_URL`; o resolver de configuração agora reutiliza essa URL canônica quando `BACKEND_URL` estiver ausente. O contrato local bloqueia regressão para o host interno inexistente `backend:8000` nesse cenário.
 
 ## LOOP-TEMIS-LANDING-WITHOUT-DEDALO-DELEGATION — diagnóstico sem responsável operacional
 
@@ -253,33 +273,33 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 
 ## Índice dos loops identificados
 
-| Loop | Severidade | Status inicial | Tema | Correção efetiva principal |
-| --- | --- | --- | --- | --- |
-| `LOOP-FB-PUBLICATION` | CRÍTICO | Aberto/recorrente | Publicação Facebook Ads | contrato enxuto + protocolo `jobid` + validação com payload final |
-| `LOOP-GL-PUBLICATION-LEADPORTAL` | CRÍTICO | Estabilizado com risco | GeraLanding → Lead Portal | separação `html_geralanding` puro vs `landing_page_html` publicável |
-| `LOOP-OPENAI-SCHEMA-CONTRACT` | ALTO | Recorrente | Prompts, schemas e Structured Outputs | prompt + schema + parser + consumer test por etapa |
-| `LOOP-GL-ARCHITECTURE-STAGES` | ALTO | Parcialmente estabilizado | Arquitetura por etapas | padrão por etapa backend e `openai.core.<etapa>` no Worker AI |
-| `LOOP-GL-AUTOMATION-CHAIN` | ALTO | Recorrente | Encadeamento automático de etapas | orquestração no backend após callback de sucesso |
-| `LOOP-QUALITY-REVIEW-VISION` | ALTO | Parcialmente estabilizado | Quality Review visual | screenshot renderizado mobile-first + auditoria por hash |
-| `LOOP-LANDING-ANALYTICS-FUNNEL` | CRÍTICO | Recorrente | Analytics, funil e submissão | contrato Lead Portal → backend → evento bruto + evento normalizado + UI |
-| `LOOP-LEAD-PORTAL-STALE-FRONTEND` | CRÍTICO | Prevenido | Deploy do Lead Portal | upstream canônico + asset do HTML validado após deploy |
-| `LOOP-PIPELINE-ADMIN-CONTRACT` | MÉDIO | Estabilizado com risco | Tela `/pipelines` e contrato persistente | registry oficial + sincronizador + definição/configuração separadas |
-| `LOOP-HYPOTHESIS-PIPELINE` | ALTO | Em formação | Pipeline Dor → Resultado → Mecanismo → Prova → Oferta | etapas completas + pré-requisitos + finalização separada + lease |
-| `LOOP-ARTIFACT-CONTAMINATION` | ALTO | Estabilizado com risco | Metadado técnico em artefato final | separação auditoria vs artefato publicável + whitelist de DTO final |
-| `LOOP-COST-MODEL-AUDIT` | MÉDIO | Em observação | Custos OpenAI e modelo por etapa | preço vindo do catálogo backend + modelo efetivo auditado por etapa |
-| `LOOP-LOW-TICKET-SALES-PAGE-BYPASS` | CRÍTICO | Fechado em 2026-07-01 | Low-ticket/GeraSalesPage | campanha bloqueada sem etapa final do pipeline concluída |
-| `LOOP-GERASALESPAGE-VISUAL-TRANSFORMATION` | ALTO | Fechado em 2026-07-07 | GeraSalesPage | prompts v5 + quality review + auditoria bloqueiam pagina sem cenas visuais |
-| `LOOP-GERASALESPAGE-PER-PAGE-CUSTOMIZATION` | ALTO | Fechado em 2026-08-09 | GeraSalesPage | blueprint + componentes/tokens versionados + processor único com gates |
-| `LOOP-CREATIVE-REVIEW-WITHOUT-DESTINATION-EVIDENCE` | CRÍTICO | Fechado localmente em 2026-08-09 | Aprovador Meta | copy + evidência visual do anúncio e da landing + continuidade auditável |
-| `LOOP-VIDEO-SCENE-PROMPT-PERSISTENCE` | ALTO | Fechado em 2026-08-05 | Estudio de Audio e Video | storyboard editavel + persistencia unica + teste impede prompt fixo de substituir cena salva |
-| `LOOP-DEPLOY-COMPOSE-CROSS-SERVICE-SECRETS` | ALTO | Fechado em 2026-08-04 | Deploy por serviço | descritor Compose isolado por destino + teste sem secrets alheios |
-| `LOOP-DEPLOY-STALE-IMAGE` | ALTO | Fechado em 2026-08-04 | Detecção de mudanças do deploy | alteração de publicador/workflow força rebuild e teste do artefato |
-| `LOOP-DEPLOY-GLOBAL-TIMEOUT` | ALTO | Fechado em 2026-08-06 | Deploy backend/frontend | limites próprios por operação + saúde obrigatória do backend |
-| `LOOP-CUSTOMER-AGENT-OBSERVABILITY` | ALTO | Fechado em 2026-08-06 | Agente Cliente | logfile canônico do worker + alias MCP + teste ponta a ponta |
-| `LOOP-CUSTOMER-AGENT-EVALUATION-TIMEOUT` | ALTO | Fechado em 2026-08-06 | Agente Cliente | timeout adequado + erro persistido e integralmente visível no frontend + retry controlado |
-| `LOOP-FINANCIAL-AGENT-OBSERVABILITY` | ALTO | Fechado em 2026-08-06 | Agente Financeiro | logfile canônico do worker + alias MCP + teste ponta a ponta |
-| `LOOP-BACKEND-LOGS-DEPENDENT-ON-BACKEND` | ALTO | Fechado em 2026-08-06 | Backend / MCP | leitor independente no volume persistente + erro de rede explícito |
-| `LOOP-STUDIO-COST-ATTRIBUTION` | CRÍTICO | Fechado em 2026-08-06 | Estúdio / Agente Financeiro | ledger em todo estado terminal + custos sem plano visíveis e bloqueantes |
+| Loop                                                | Severidade | Status inicial                   | Tema                                                  | Correção efetiva principal                                                                   |
+| --------------------------------------------------- | ---------- | -------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `LOOP-FB-PUBLICATION`                               | CRÍTICO    | Aberto/recorrente                | Publicação Facebook Ads                               | contrato enxuto + protocolo `jobid` + validação com payload final                            |
+| `LOOP-GL-PUBLICATION-LEADPORTAL`                    | CRÍTICO    | Estabilizado com risco           | GeraLanding → Lead Portal                             | separação `html_geralanding` puro vs `landing_page_html` publicável                          |
+| `LOOP-OPENAI-SCHEMA-CONTRACT`                       | ALTO       | Recorrente                       | Prompts, schemas e Structured Outputs                 | prompt + schema + parser + consumer test por etapa                                           |
+| `LOOP-GL-ARCHITECTURE-STAGES`                       | ALTO       | Parcialmente estabilizado        | Arquitetura por etapas                                | padrão por etapa backend e `openai.core.<etapa>` no Worker AI                                |
+| `LOOP-GL-AUTOMATION-CHAIN`                          | ALTO       | Recorrente                       | Encadeamento automático de etapas                     | orquestração no backend após callback de sucesso                                             |
+| `LOOP-QUALITY-REVIEW-VISION`                        | ALTO       | Parcialmente estabilizado        | Quality Review visual                                 | screenshot renderizado mobile-first + auditoria por hash                                     |
+| `LOOP-LANDING-ANALYTICS-FUNNEL`                     | CRÍTICO    | Recorrente                       | Analytics, funil e submissão                          | contrato Lead Portal → backend → evento bruto + evento normalizado + UI                      |
+| `LOOP-LEAD-PORTAL-STALE-FRONTEND`                   | CRÍTICO    | Prevenido                        | Deploy do Lead Portal                                 | upstream canônico + asset do HTML validado após deploy                                       |
+| `LOOP-PIPELINE-ADMIN-CONTRACT`                      | MÉDIO      | Estabilizado com risco           | Tela `/pipelines` e contrato persistente              | registry oficial + sincronizador + definição/configuração separadas                          |
+| `LOOP-HYPOTHESIS-PIPELINE`                          | ALTO       | Em formação                      | Pipeline Dor → Resultado → Mecanismo → Prova → Oferta | etapas completas + pré-requisitos + finalização separada + lease                             |
+| `LOOP-ARTIFACT-CONTAMINATION`                       | ALTO       | Estabilizado com risco           | Metadado técnico em artefato final                    | separação auditoria vs artefato publicável + whitelist de DTO final                          |
+| `LOOP-COST-MODEL-AUDIT`                             | MÉDIO      | Em observação                    | Custos OpenAI e modelo por etapa                      | preço vindo do catálogo backend + modelo efetivo auditado por etapa                          |
+| `LOOP-LOW-TICKET-SALES-PAGE-BYPASS`                 | CRÍTICO    | Fechado em 2026-07-01            | Low-ticket/GeraSalesPage                              | campanha bloqueada sem etapa final do pipeline concluída                                     |
+| `LOOP-GERASALESPAGE-VISUAL-TRANSFORMATION`          | ALTO       | Fechado em 2026-07-07            | GeraSalesPage                                         | prompts v5 + quality review + auditoria bloqueiam pagina sem cenas visuais                   |
+| `LOOP-GERASALESPAGE-PER-PAGE-CUSTOMIZATION`         | ALTO       | Fechado em 2026-08-09            | GeraSalesPage                                         | blueprint + componentes/tokens versionados + processor único com gates                       |
+| `LOOP-CREATIVE-REVIEW-WITHOUT-DESTINATION-EVIDENCE` | CRÍTICO    | Fechado localmente em 2026-08-09 | Aprovador Meta                                        | copy + evidência visual do anúncio e da landing + continuidade auditável                     |
+| `LOOP-VIDEO-SCENE-PROMPT-PERSISTENCE`               | ALTO       | Fechado em 2026-08-05            | Estudio de Audio e Video                              | storyboard editavel + persistencia unica + teste impede prompt fixo de substituir cena salva |
+| `LOOP-DEPLOY-COMPOSE-CROSS-SERVICE-SECRETS`         | ALTO       | Fechado em 2026-08-04            | Deploy por serviço                                    | descritor Compose isolado por destino + teste sem secrets alheios                            |
+| `LOOP-DEPLOY-STALE-IMAGE`                           | ALTO       | Fechado em 2026-08-04            | Detecção de mudanças do deploy                        | alteração de publicador/workflow força rebuild e teste do artefato                           |
+| `LOOP-DEPLOY-GLOBAL-TIMEOUT`                        | ALTO       | Fechado em 2026-08-06            | Deploy backend/frontend                               | limites próprios por operação + saúde obrigatória do backend                                 |
+| `LOOP-CUSTOMER-AGENT-OBSERVABILITY`                 | ALTO       | Fechado em 2026-08-06            | Agente Cliente                                        | logfile canônico do worker + alias MCP + teste ponta a ponta                                 |
+| `LOOP-CUSTOMER-AGENT-EVALUATION-TIMEOUT`            | ALTO       | Fechado em 2026-08-06            | Agente Cliente                                        | timeout adequado + erro persistido e integralmente visível no frontend + retry controlado    |
+| `LOOP-FINANCIAL-AGENT-OBSERVABILITY`                | ALTO       | Fechado em 2026-08-06            | Agente Financeiro                                     | logfile canônico do worker + alias MCP + teste ponta a ponta                                 |
+| `LOOP-BACKEND-LOGS-DEPENDENT-ON-BACKEND`            | ALTO       | Fechado em 2026-08-06            | Backend / MCP                                         | leitor independente no volume persistente + erro de rede explícito                           |
+| `LOOP-STUDIO-COST-ATTRIBUTION`                      | CRÍTICO    | Fechado em 2026-08-06            | Estúdio / Agente Financeiro                           | ledger em todo estado terminal + custos sem plano visíveis e bloqueantes                     |
 
 ---
 
@@ -958,7 +978,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 Use este checklist quando o problema estiver em algum loop acima:
 
 ```md
-- O problema reabre qual LOOP-*?
+- O problema reabre qual LOOP-\*?
 - Qual contrato está divergindo?
 - Qual correção efetiva já resolveu esse tipo de loop antes?
 - Estou repetindo uma solução antiga que já foi superada?
@@ -972,6 +992,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 ## Registros deste documento
 
 ## 2026-06-17 00:01:07 UTC-3
+
 - solicitação: criar um arquivo de registro de loops operacionais a partir da análise de `docs/registros/experimentos.md` e revisar o `AGENTS.md` para melhoria preventiva.
 - causa-raiz observada: o histórico mostra recorrência de problemas por contratos instáveis entre frontend, backend, workers, OpenAI, Lead Portal e Meta Ads.
 - registro do que foi feito: criado este documento com os principais loops, causa-raiz sistêmica, fechamento mínimo e regra preventiva por tema; incluída sugestão objetiva de melhoria para o `AGENTS.md`.
@@ -980,12 +1001,14 @@ Use este checklist quando o problema estiver em algum loop acima:
   - docs/registros/experimentos.md
 
 ## 2026-06-17 00:12:41 UTC-3
+
 - solicitação: melhorar este arquivo identificando, para cada loop, o que resolveu efetivamente o problema no histórico real do projeto.
 - causa-raiz observada: a primeira versão registrava sintomas, causas e prevenção, mas ainda não destacava claramente quais correções concretas estabilizaram cada ciclo.
 - registro do que foi feito: adicionado o bloco **O que resolveu efetivamente no histórico** em cada `LOOP-*`, diferenciando correção efetiva de prevenção futura.
 - documentos lidos para pesquisar e resolver o problema:
   - AGENTS.md
   - docs/registros/experimentos.md
+
 # LOOP-LANDING-DYNAMIC-CRITICAL-PATH — Landing comercial dependente de shell React e API lenta
 
 - **Sintoma:** clique abre um shell vazio e o conteúdo comercial aparece vários segundos depois.
@@ -1079,6 +1102,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o runtime gerenciado interceptava o evento `submit` e montava o contrato antes de executar a validação HTML do formulário; templates ou scripts que disparassem o evento diretamente contornavam a barreira nativa do navegador.
 - **Prevenção:** o runtime executa `checkValidity()` e `reportValidity()` antes de marcar o formulário como em submissão ou chamar a API; o contrato do frontend exige que essa validação permaneça antes do início da submissão.
 - **Correção complementar em 2026-08-07:** a homologação produtiva revelou que bridges antigas do mesmo documento podiam permanecer concorrendo pelo evento, consumir a resposta `201` com callback desmontado e impedir a confirmação visual. O runtime agora mantém uma única bridge ativa por documento, entrega o sucesso ao React antes de eventos auxiliares e aplica a contenção horizontal no `body` durante páginas standalone. O contrato do frontend protege a exclusividade da bridge e a ativação da contenção.
+
 # LOOP-2026-08-07 — Homologação `mh_test=1` classificada como tráfego humano
 
 - **Sintoma:** sessões mobile e envios técnicos do experimento comercial apareciam nos eventos do funil após testes com `mh_test=1`.
@@ -1175,6 +1199,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** `premium_agent_memory.content_text` usava `TEXT`; o parecer enriquecido de 21.406 caracteres excedeu a capacidade efetiva em `utf8mb4` e o MySQL 5.7 retornou erro 1406.
 - **Correção sistêmica:** conteúdo e evidências da memória premium e de seus feedbacks passam a `LONGTEXT`, com mapeamento JPA explícito e sem truncamento silencioso.
 - **Prevenção:** teste de contrato valida conjuntamente entidade, changelog e include relativo do Liquibase.
+
 ## LOOP-GERALANDING-WIREFRAME-PENDING-PAYLOAD — lote rico bloqueia o scheduler
 
 - **Data:** 2026-08-12.
@@ -1206,6 +1231,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** os DTOs REST ainda exigiam `commercialPlanId`, embora a entidade, o ledger e o ciclo autônomo já suportassem projetos legados sem plano comercial.
 - **Correção:** criação e edição de projetos aceitam plano comercial ausente, preservando o vínculo opcional e a segregação financeira já aplicada pelo serviço.
 - **Prevenção:** teste atualiza um projeto sem plano, persiste o perfil e comprova que o contrato continua aceitando o cenário legado.
+
 # LOOP-COMMERCIAL-PLAN-OPERATIONAL-CONTEXT-TRUNCATED — plano não aceita contrato operacional completo
 
 - **Sintoma:** a tela de planejamento retorna HTTP 500 ao salvar consenso, autonomia e critérios observáveis para os agentes.
@@ -1219,6 +1245,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz confirmada em 2026-08-13:** o changelog do contexto operacional usava `nestedPreconditions`, chave que o Liquibase 4.26 não reconhece, enquanto o validador estático local verificava apenas contratos de SQL e não a estrutura dessa precondição.
 - **Correção sistêmica:** a condição `dbms:mysql` passa a usar a lista direta suportada em `preConditions`, e o validador local rejeita qualquer retorno de `nestedPreconditions` antes do workflow.
 - **Prevenção:** executar o validador estático em escopo completo e a validação real do Liquibase antes de consolidar changelogs.
+
 ## LOOP-APOLO-JOB-FALHO-DESSINCRONIZADO — ciclo aprovado preso em job terminal
 
 - **Sintoma:** ciclo MUSA permanece `QUEUED_FOR_APOLLO` enquanto o job vinculado está `VIDEO_FAILED`, impedindo retomada após troca de provider.

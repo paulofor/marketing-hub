@@ -128,6 +128,23 @@ podem justificar a passagem posterior para `ACTIVE`.
 A qualidade de um agente é medida por pendências resolvidas e resultados posteriores comprovados,
 não por quantidade de ciclos, relatórios, estimativas ou recomendações.
 
+## Avaliação em modo sombra
+
+Versões candidatas de agentes devem ser avaliadas com replay de execuções reais congeladas e um
+holdout separado antes de qualquer promoção. O backend persiste versões, amostras, resultados,
+qualidade, custo e evidências; o módulo executor aplica o avaliador específico do agente usando o
+mesmo contrato determinístico do fluxo real.
+
+O replay sombra é obrigatoriamente sem efeitos externos: não pode chamar provider pago, autorizar
+gasto, publicar, enviar comunicação ou alterar a execução operacional reproduzida. Qualquer relato
+de um desses efeitos invalida a avaliação. A candidata somente fica elegível após superar o
+baseline no holdout, passar regressão e validação local e respeitar o limite de custo. Promoção
+continua explícita e externa ao executor avaliado.
+
+Na v1, os agentes homologados são `landing-generator`, `meta-ad-approver` e `apollo`. Apolo usa o
+replay de storyboard para comparar qualidade narrativa, diversidade, cobertura comercial,
+reaproveitamento e orçamento, sem chamar OpenAI ou providers de vídeo.
+
 ## Coordenação entre agentes
 
 Quando Estrategista, Operador de Crescimento e Especialista em Aprovação de Anúncios participarem

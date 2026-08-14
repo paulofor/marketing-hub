@@ -13,5 +13,8 @@ public record EvaluateLearningExperimentRequest(
     @Positive int holdoutCaseCount,
     boolean regressionPassed,
     boolean localValidationPassed,
+    boolean externalProviderCalled,
+    boolean spendingAuthorized,
+    boolean publicationPerformed,
     @NotBlank @Size(max = 100000) String baselineResultJson,
     @NotBlank @Size(max = 100000) String candidateResultJson) {}

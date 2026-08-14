@@ -8,6 +8,11 @@ Comparar o planejador atual e uma versão candidata usando execuções congelada
 
 O executor calcula uma comparação pura e reutiliza o mesmo gate determinístico do fluxo real. O relatório identifica explicitamente `providerCalled=false` e `spendingAuthorized=false`. Uma candidata aprovada em replay pode avançar apenas para sombra online; nunca para geração paga automática.
 
+Em 2026-08-14, Apolo foi integrado ao ambiente governado compartilhado do backend. Os conjuntos de
+replay e holdout, versões, métricas e decisão passam a ser persistidos pelo mesmo contrato usado
+pelos demais agentes homologados. O backend rejeita a avaliação se houver chamada a provider,
+autorização de gasto ou publicação.
+
 ## Matriz de homologação
 
 | Cenário | Resultado esperado |

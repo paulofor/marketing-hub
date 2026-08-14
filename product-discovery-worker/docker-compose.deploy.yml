@@ -12,6 +12,10 @@ services:
       BRAVE_SEARCH_API_KEY_FILE: ${BRAVE_SEARCH_API_KEY_FILE:-/run/secrets/brave_search_api_key}
       ARGOS_CODEX_ENABLED: ${ARGOS_CODEX_ENABLED:-false}
       ARGOS_CODEX_MODEL: ${ARGOS_CODEX_MODEL:-gpt-5.6-sol}
+      BACKEND_BASE_URL: ${BACKEND_BASE_URL:-http://191.252.181.168}
+      AGENT_HEALTH_KEY: market-radar
+      AGENT_HEALTH_VERSION: ${ARGOS_AGENT_VERSION:-1}
+      AGENT_BUILD_REFERENCE: ${PRODUCT_DISCOVERY_WORKER_IMAGE}
       CODEX_HOME: /home/node/.codex
     volumes:
       - ${ARGOS_CODEX_HOME:-/root/infra/argos/codex-home}:/home/node/.codex

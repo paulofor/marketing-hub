@@ -148,6 +148,8 @@ services:
       VIDEO_BACKEND_BASE_URL: ${VIDEO_BACKEND_BASE_URL:-http://marketinghub-backend:8000}
       BACKEND_URL: ${VIDEO_BACKEND_BASE_URL:-http://marketinghub-backend:8000}
       AGENT_HEALTH_KEY: videomaker
+      AGENT_HEALTH_VERSION: ${APOLLO_AGENT_VERSION:-2}
+      AGENT_BUILD_REFERENCE: ${VIDEO_MANAGEMENT_IMAGE:-marketinghub/video-management-service:latest}
       MARKETING_HUB_REPOSITORY: /app
       VIDEO_AUTH_TOKEN: ${VIDEO_AUTH_TOKEN:-}
       VIDEO_JOBS_POLLING_ENABLED: ${VIDEO_JOBS_POLLING_ENABLED:-true}

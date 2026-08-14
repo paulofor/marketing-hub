@@ -18,6 +18,7 @@ import {
 } from "./operational-log.js";
 import { planDirectedResearch } from "./argos-codex.js";
 import { startCodexAuthReconnectConsumer } from "./codex-auth-reconnect.js";
+import { startAgentHealthReporter } from "./agent-health-reporter.js";
 
 const backendBaseUrl = process.env.BACKEND_BASE_URL || "http://191.252.181.168";
 const pollIntervalMs = Number(
@@ -58,6 +59,7 @@ async function main() {
     backendBaseUrl,
     logger: operationalLogger,
   });
+  startAgentHealthReporter({ backendBaseUrl, logger: operationalLogger });
   await runCycle();
   setInterval(runCycle, pollIntervalMs);
 }

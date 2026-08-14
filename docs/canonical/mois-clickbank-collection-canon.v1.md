@@ -96,7 +96,7 @@ Principais chaves:
 - `collector.clickbank.top-offers-url` (default `https://www.clickbank.com/blog/clickbank-top-offers/`)
 - `collector.backend.base-url` (default `http://191.252.181.168:8000`)
 - `collector.clickbank.jwt-setting-key` (default `clickbank_access_token_jwt`)
-- `collector.scheduler.enabled` (default `false` na operação Hotmart-only; reativar explicitamente apenas quando ClickBank voltar a ser fonte ativa)
+- `collector.scheduler.enabled` (default `true`; ClickBank voltou a ser fonte ativa recorrente de Argos em 2026-08-14)
 - `collector.scheduler.cron` (default `0 0 * * * *`)
 - `collector.scheduler.max-products` (default `25`)
 - `collector.clickbank.username-file` e `collector.clickbank.password-file`: arquivos de uma conta dedicada e restrita, montados somente para leitura; quando configurados, prevalecem sobre variáveis legadas.
@@ -116,7 +116,7 @@ Para diagnóstico e rastreabilidade, manter logging do payload bruto recebido da
 
 ## 6.1 Cadência diária do Radar
 
-Quando `collector.scheduler.enabled=true`, o executor alterna os três ciclos a cada hora, entregando cobertura diária superior ao mínimo do Radar. Token ausente ou inválido mantém o ciclo como `COLLECTION_SKIPPED`; não gera sinal negativo de mercado.
+O scheduler permanece ativo e alterna os três ciclos a cada hora, entregando cobertura diária superior ao mínimo do Radar. Token ausente ou inválido mantém o ciclo como `COLLECTION_SKIPPED`; não gera sinal negativo de mercado.
 
 Este documento substitui, como referência operacional principal, os conteúdos antes espalhados em:
 - `docs/mois-clickbank-coletor.md`

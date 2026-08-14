@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-14-plutus-provider-pricing-monitor
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE sales_video_provider_model
+                ADD COLUMN pricing_amount_usd DECIMAL(12,6) NULL,
+                ADD COLUMN pricing_unit VARCHAR(24) NULL,
+                ADD COLUMN pricing_quantity DECIMAL(12,4) NULL,
+                ADD COLUMN pricing_resolution VARCHAR(40) NULL,
+                ADD COLUMN pricing_includes_audio TINYINT(1) NULL,
+                ADD COLUMN pricing_source_url VARCHAR(500) NULL,
+                ADD COLUMN pricing_observed_at DATETIME NULL,
+                ADD COLUMN pricing_research_status VARCHAR(24) NOT NULL DEFAULT 'PENDING',
+                ADD COLUMN pricing_research_notes VARCHAR(1000) NULL,
+                ADD COLUMN pricing_research_raw_response LONGTEXT NULL,
+                ADD COLUMN pricing_research_model VARCHAR(120) NULL;

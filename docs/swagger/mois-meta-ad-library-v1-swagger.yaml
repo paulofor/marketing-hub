@@ -5,7 +5,7 @@ info:
 paths:
   /api/v1/mois/meta-ad-investigations:
     post:
-      summary: Cria uma investigação de anúncios Meta
+      summary: Cria uma investigação recorrente de anúncios pela API oficial da Meta
       responses:
         '201': { description: Investigação criada }
     get:

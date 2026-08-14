@@ -42,6 +42,7 @@ import com.marketinghub.salesvideo.dto.SalesVideoStudioCatalogDto;
 import com.marketinghub.salesvideo.dto.UpdateLandingVideoSlotRequest;
 import com.marketinghub.salesvideo.dto.UpdateSalesVideoComplianceRequest;
 import com.marketinghub.salesvideo.dto.UpdateSalesVideoProviderModelRequest;
+import com.marketinghub.salesvideo.dto.UpdateSalesVideoProviderPricingRequest;
 import com.marketinghub.salesvideo.dto.UpdateVideoProjectRequest;
 import com.marketinghub.salesvideo.dto.VideoProjectDto;
 import com.marketinghub.salesvideo.dto.VideoReferenceDto;
@@ -99,6 +100,12 @@ public class SalesVideoService {
   public SalesVideoProviderModelDto updateProviderModel(
       Long modelId, UpdateSalesVideoProviderModelRequest request) {
     return providerCatalogService.update(modelId, request);
+  }
+
+  /** Persiste a evidência de preço produzida por Plutus sem autorizar consumo. */
+  public SalesVideoProviderModelDto updateProviderPricing(
+      Long modelId, UpdateSalesVideoProviderPricingRequest request) {
+    return providerCatalogService.updatePricing(modelId, request);
   }
 
   /** Lista projetos editáveis de vídeo do tenant atual. */

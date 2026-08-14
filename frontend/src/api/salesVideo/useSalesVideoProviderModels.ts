@@ -23,6 +23,17 @@ export type SalesVideoProviderModel = {
   commercialLicenseVerified: boolean;
   qualityGateVerified: boolean;
   notes?: string | null;
+  pricingAmountUsd?: number | null;
+  pricingUnit?: "SECOND" | "VIDEO" | "CREDIT" | null;
+  pricingQuantity?: number | null;
+  pricingResolution?: string | null;
+  pricingIncludesAudio?: boolean | null;
+  pricingSourceUrl?: string | null;
+  pricingObservedAt?: string | null;
+  pricingResearchStatus?: "PENDING" | "VERIFIED" | "INCOMPARABLE" | "BLOCKED";
+  pricingResearchNotes?: string | null;
+  normalizedCostPerSecondUsd?: number | null;
+  pricingStale?: boolean;
 };
 
 export type UpdateSalesVideoProviderModel = Pick<

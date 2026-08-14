@@ -167,6 +167,47 @@ public class FinancialCodexRunner {
     }
   }
 
+  /** Pesquisa somente fontes oficiais e devolve preço comparável com resposta bruta auditável. */
+  public Map<String, Object> researchProviderPricing(ProviderPricingCandidate candidate)
+      throws IOException, InterruptedException {
+    Path output = Files.createTempFile("financial-provider-pricing-", ".json");
+    Path processOutput = Files.createTempFile("financial-provider-pricing-process-", ".log");
+    Path schema = materialize("prompts/financial-agent/v1/provider-pricing-schema.json", ".json");
+    try {
+      List<String> command = new ArrayList<>(buildCommand(output, schema));
+      Process process =
+          new ProcessBuilder(command)
+              .redirectErrorStream(true)
+              .redirectOutput(processOutput.toFile())
+              .start();
+      String prompt =
+          read("prompts/financial-agent/v1/provider-pricing.md")
+              .replace("{{MODEL}}", objectMapper.writeValueAsString(candidate));
+      process.getOutputStream().write(prompt.getBytes(StandardCharsets.UTF_8));
+      process.getOutputStream().close();
+      if (!process.waitFor(properties.getCodexTimeout().toMillis(), TimeUnit.MILLISECONDS)) {
+        process.destroyForcibly();
+        throw new IllegalStateException("Timeout na pesquisa de preço de provider.");
+      }
+      if (process.exitValue() != 0) {
+        throw new IllegalStateException(
+            "Pesquisa de preço falhou: " + Files.readString(processOutput));
+      }
+      String raw = Files.readString(output);
+      JsonNode result = objectMapper.readTree(raw);
+      LinkedHashMap<String, Object> payload =
+          objectMapper.convertValue(
+              result, new com.fasterxml.jackson.core.type.TypeReference<>() {});
+      payload.put("rawResponse", raw);
+      payload.put("researchModel", properties.getModel());
+      return payload;
+    } finally {
+      Files.deleteIfExists(output);
+      Files.deleteIfExists(processOutput);
+      Files.deleteIfExists(schema);
+    }
+  }
+
   /** Monta o comando Codex preservando sandbox e repositorio somente leitura. */
   List<String> buildCommand(Path output, Path schema) {
     return buildCommand(output, schema, Path.of("financial-agent.mjs"));

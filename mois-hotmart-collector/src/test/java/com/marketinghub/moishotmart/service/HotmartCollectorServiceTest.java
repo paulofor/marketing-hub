@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.marketinghub.moishotmart.dto.HotmartDtos.HotmartCollectionRequest;
 import com.marketinghub.moishotmart.dto.HotmartDtos.HotmartProductSnapshot;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
@@ -149,6 +150,21 @@ class HotmartCollectorServiceTest {
 
         assertEquals(100, HotmartCollectorService.calculateCommercialEvidenceScore(complete));
         assertEquals(0, HotmartCollectorService.calculateCommercialEvidenceScore(sparse));
+    }
+
+    /** Garante que mudanças de agrupamento no payload não apaguem os sinais comerciais de Argos. */
+    @Test
+    void shouldExtractCommercialSignalsFromNestedHotmartPayload() throws Exception {
+        var payload = new ObjectMapper().readTree("""
+                {"productDetails":{"commercial":{"priceValue":197.0,"reviewRating":"4.7",
+                "totalAnswers":321,"commissionPercentage":"50%","categoryName":"Negócios"}}}
+                """);
+
+        assertEquals(197.0, HotmartCollectorService.extractProductNumber(payload, "priceValue"));
+        assertEquals("4.7", HotmartCollectorService.extractProductText(payload, "reviewRating"));
+        assertEquals(321, HotmartCollectorService.extractProductInteger(payload, "totalAnswers"));
+        assertEquals("50%", HotmartCollectorService.extractProductText(payload, "commissionPercentage"));
+        assertEquals("Negócios", HotmartCollectorService.extractProductText(payload, "categoryName"));
     }
 
 }

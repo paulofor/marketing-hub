@@ -22,6 +22,34 @@ tags:
     description: Endpoints de leitura de perfil usados pelo módulo de vídeo.
 
 paths:
+  /api/internal/sales-videos/provider-models/{modelId}/pricing:
+    patch:
+      summary: Registra evidência oficial de preço pesquisada por Plutus
+      parameters:
+        - in: path
+          name: modelId
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [unit, sourceUrl, observedAt, status]
+              properties:
+                amountUsd: { type: number, nullable: true }
+                unit: { type: string, enum: [SECOND, VIDEO, CREDIT] }
+                quantity: { type: number, nullable: true }
+                resolution: { type: string, nullable: true }
+                includesAudio: { type: boolean, nullable: true }
+                sourceUrl: { type: string, format: uri }
+                observedAt: { type: string, format: date-time }
+                status: { type: string, enum: [VERIFIED, INCOMPARABLE, BLOCKED] }
+                notes: { type: string, nullable: true }
+      responses:
+        '200':
+          description: Pesquisa persistida sem autorização de gasto
   /api/sales-videos/provider-models:
     get:
       tags: [PublicVideoProfiles]

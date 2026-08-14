@@ -66,7 +66,7 @@ COLLECTOR_SCHEDULER_SOURCE=clickbank-market
 COLLECTOR_SCHEDULER_MAX_PRODUCTS=25
 ```
 
-> Observação: o padrão operacional atual é execução automática **desabilitada**. Reative apenas quando ClickBank voltar a ser fonte ativa.
+> Observação: o padrão operacional atual mantém a execução automática **habilitada** para fornecer evidências recorrentes a Argos.
 
 
 ## Compatibilidade Linux
@@ -84,7 +84,7 @@ O script `run-local-jar.sh` executa via `java -jar`, evitando dependência de pe
   - `collector.clickbank.session-cookie` (opção 1 para área logada)
   - `collector.clickbank.username-file` + `collector.clickbank.password-file` para a conta dedicada somente leitura
 - Agendamento automático:
-  - `collector.scheduler.enabled=false`
+  - `collector.scheduler.enabled=true`
   - `collector.scheduler.cron=0 0 */2 * * *` (**executa em horas pares**)
   - `collector.scheduler.max-products=25`
 

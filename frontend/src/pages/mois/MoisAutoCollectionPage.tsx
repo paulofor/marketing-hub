@@ -442,12 +442,11 @@ export default function MoisAutoCollectionPage() {
       <article className="card shadow-sm">
         <div className="card-body d-flex flex-column gap-3">
           <div>
-            <h2 className="h5 mb-1">
-              Radar supervisionado de anúncios comerciais
-            </h2>
+            <h2 className="h5 mb-1">Radar recorrente de anúncios comerciais</h2>
             <p className="text-secondary mb-0">
-              Cadastre evidências vistas na Biblioteca pública. O MOIS cria o
-              histórico e só libera modelagem após sinais comprovados.
+              Crie uma investigação para coleta pela API oficial da Meta. O
+              cadastro supervisionado complementa o histórico, e a modelagem só
+              é liberada após sinais comprovados.
             </p>
           </div>
           <form
@@ -478,7 +477,7 @@ export default function MoisAutoCollectionPage() {
               >
                 {createMetaInvestigation.isPending
                   ? "Criando..."
-                  : "Criar acompanhamento"}
+                  : "Iniciar coleta recorrente"}
               </button>
             </div>
           </form>
@@ -509,7 +508,7 @@ export default function MoisAutoCollectionPage() {
               }}
             >
               <div className="col-12">
-                <h3 className="h6 mb-1">Registrar observação real</h3>
+                <h3 className="h6 mb-1">Complementar com observação real</h3>
                 <p className="small text-secondary mb-0">
                   Abra o anúncio na Meta e transcreva apenas o que estiver
                   visível. Uma nova observação do mesmo ID atualiza a

@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -70,6 +71,39 @@ public class SalesVideoProviderModel {
 
   @Column(name = "pricing_verified", nullable = false)
   private boolean pricingVerified;
+
+  @Column(name = "pricing_amount_usd", precision = 12, scale = 6)
+  private BigDecimal pricingAmountUsd;
+
+  @Column(name = "pricing_unit", length = 24)
+  private String pricingUnit;
+
+  @Column(name = "pricing_quantity", precision = 12, scale = 4)
+  private BigDecimal pricingQuantity;
+
+  @Column(name = "pricing_resolution", length = 40)
+  private String pricingResolution;
+
+  @Column(name = "pricing_includes_audio")
+  private Boolean pricingIncludesAudio;
+
+  @Column(name = "pricing_source_url", length = 500)
+  private String pricingSourceUrl;
+
+  @Column(name = "pricing_observed_at")
+  private Instant pricingObservedAt;
+
+  @Column(name = "pricing_research_status", nullable = false, length = 24)
+  private String pricingResearchStatus = "PENDING";
+
+  @Column(name = "pricing_research_notes", length = 1000)
+  private String pricingResearchNotes;
+
+  @Column(name = "pricing_research_raw_response", columnDefinition = "LONGTEXT")
+  private String pricingResearchRawResponse;
+
+  @Column(name = "pricing_research_model", length = 120)
+  private String pricingResearchModel;
 
   @Column(name = "commercial_license_verified", nullable = false)
   private boolean commercialLicenseVerified;

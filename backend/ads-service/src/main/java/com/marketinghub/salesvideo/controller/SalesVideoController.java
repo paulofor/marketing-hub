@@ -43,6 +43,7 @@ import com.marketinghub.salesvideo.dto.SalesVideoStudioCatalogDto;
 import com.marketinghub.salesvideo.dto.UpdateLandingVideoSlotRequest;
 import com.marketinghub.salesvideo.dto.UpdateSalesVideoComplianceRequest;
 import com.marketinghub.salesvideo.dto.UpdateSalesVideoProviderModelRequest;
+import com.marketinghub.salesvideo.dto.UpdateSalesVideoProviderPricingRequest;
 import com.marketinghub.salesvideo.dto.UpdateVideoProjectRequest;
 import com.marketinghub.salesvideo.dto.VideoProjectDto;
 import com.marketinghub.salesvideo.dto.VideoReferenceDto;
@@ -96,6 +97,14 @@ public class SalesVideoController {
       @PathVariable Long modelId,
       @Valid @RequestBody UpdateSalesVideoProviderModelRequest request) {
     return salesVideoService.updateProviderModel(modelId, request);
+  }
+
+  /** Recebe a pesquisa oficial de preço de Plutus sem autorizar compra ou geração. */
+  @PatchMapping("/api/internal/sales-videos/provider-models/{modelId}/pricing")
+  public SalesVideoProviderModelDto updateProviderPricing(
+      @PathVariable Long modelId,
+      @Valid @RequestBody UpdateSalesVideoProviderPricingRequest request) {
+    return salesVideoService.updateProviderPricing(modelId, request);
   }
 
   /** Lista projetos editáveis do estúdio de vídeos. */

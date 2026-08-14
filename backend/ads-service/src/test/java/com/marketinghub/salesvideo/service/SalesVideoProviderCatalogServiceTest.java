@@ -8,12 +8,45 @@ import static org.mockito.Mockito.when;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoProviderModelRepository;
 import com.marketinghub.salesvideo.SalesVideoProviderModel;
 import com.marketinghub.salesvideo.dto.UpdateSalesVideoProviderModelRequest;
+import com.marketinghub.salesvideo.dto.UpdateSalesVideoProviderPricingRequest;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: proteger os gates de homologação do catálogo de modelos de vídeo. */
 class SalesVideoProviderCatalogServiceTest {
+
+  /** Normaliza preço oficial por vídeo sem confundir evidência com autorização de gasto. */
+  @Test
+  void shouldPersistAuditableProviderPricing() {
+    SalesVideoProviderModelRepository repository = mock(SalesVideoProviderModelRepository.class);
+    SalesVideoProviderModel model = model("VEO");
+    when(repository.findById(10L)).thenReturn(Optional.of(model));
+    when(repository.save(model)).thenReturn(model);
+    SalesVideoProviderCatalogService service = new SalesVideoProviderCatalogService(repository);
+
+    var result =
+        service.updatePricing(
+            10L,
+            new UpdateSalesVideoProviderPricingRequest(
+                new BigDecimal("1.20"),
+                "VIDEO",
+                BigDecimal.ONE,
+                "1080p",
+                true,
+                "https://example.com/official-pricing",
+                Instant.now(),
+                "VERIFIED",
+                "Preço oficial da plataforma",
+                "raw",
+                "codex"));
+
+    assertThat(result.normalizedCostPerSecondUsd()).isEqualByComparingTo("0.120000");
+    assertThat(result.pricingStale()).isFalse();
+    assertThat(result.pricingVerified()).isTrue();
+    assertThat(result.lifecycleStatus()).isEqualTo("DRAFT");
+  }
 
   /** Impede ativar Hailuo enquanto o QA comercial ainda não estiver concluído. */
   @Test

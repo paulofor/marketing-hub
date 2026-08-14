@@ -728,7 +728,9 @@ public class HotmartCollectorService {
                                 previewFieldNames(item),
                                 truncateForLog(item.toString(), 600));
                     }
-                    String producerName = firstText(item.path("producer"), "name");
+                    String producerName = pickFirstNonBlank(
+                            extractProductText(item, "producerName", "producer_name"),
+                            firstText(item.path("producer"), "name"));
                     String productKey = buildHotmartProductDeduplicationKey(
                             extractProductText(item, "ucode"),
                             title,
@@ -747,13 +749,13 @@ public class HotmartCollectorService {
                             extractProductText(item, "ucode"),
                             title == null || title.isBlank() ? "Produto sem título" : title,
                             extractProductText(item, "image"),
-                            pickFirstNonBlank(extractProductText(item, "reviewRating"), "N/A"),
-                            extractProductInteger(item, "totalAnswers"),
-                            extractProductNumber(item, "blueprint"),
-                            "N/A",
-                            extractProductNumber(item, "value"),
-                            extractProductText(item, "category"),
-                            extractProductText(item, "format"),
+                            pickFirstNonBlank(extractProductText(item, "reviewRating", "rating", "review_rate"), "N/A"),
+                            extractProductInteger(item, "totalAnswers", "reviewCount", "reviewsCount", "totalReviews"),
+                            extractProductNumber(item, "blueprint", "blueprintScore"),
+                            pickFirstNonBlank(extractProductText(item, "commission", "commissionValue", "commissionPercentage"), "N/A"),
+                            extractProductNumber(item, "priceValue", "value", "price", "minimumPrice"),
+                            extractProductText(item, "category", "categoryName"),
+                            extractProductText(item, "format", "productFormat", "formatName"),
                             extractHotmartDescription(item),
                             producerName,
                             url,
@@ -1130,7 +1132,8 @@ public class HotmartCollectorService {
     }
 
 
-    private Double extractProductNumber(JsonNode item, String... keys) {
+    /** Localiza um sinal numérico mesmo quando a Hotmart altera o agrupamento interno do payload. */
+    static Double extractProductNumber(JsonNode item, String... keys) {
         if (item == null || keys == null) {
             return null;
         }
@@ -1152,12 +1155,14 @@ public class HotmartCollectorService {
         return null;
     }
 
-    private Integer extractProductInteger(JsonNode item, String... keys) {
+    /** Converte um sinal numérico de contagem para inteiro sem inventar zero quando ausente. */
+    static Integer extractProductInteger(JsonNode item, String... keys) {
         Double number = extractProductNumber(item, keys);
         return number == null ? null : number.intValue();
     }
 
-    private JsonNode findNode(JsonNode item, String key) {
+    /** Procura um campo comercial em qualquer nível do snapshot bruto recebido da Hotmart. */
+    private static JsonNode findNode(JsonNode item, String key) {
         JsonNode direct = item.path(key);
         if (!direct.isMissingNode() && !direct.isNull()) {
             return direct;
@@ -1172,34 +1177,17 @@ public class HotmartCollectorService {
         if (!sourceNested.isMissingNode() && !sourceNested.isNull()) {
             return sourceNested;
         }
-        return null;
+        return item.findValue(key);
     }
 
-    private String extractProductText(JsonNode item, String... keys) {
-        String direct = firstText(item, keys);
-        if (direct != null && !direct.isBlank()) {
-            return direct;
-        }
-        JsonNode productNode = item.path("product");
-        if (!productNode.isMissingNode() && !productNode.isNull()) {
-            String nested = firstText(productNode, keys);
-            if (nested != null && !nested.isBlank()) {
-                return nested;
-            }
-        }
-        JsonNode productDetailsNode = item.path("productDetails");
-        if (!productDetailsNode.isMissingNode() && !productDetailsNode.isNull()) {
-            String detailsText = firstText(productDetailsNode, keys);
-            if (detailsText != null && !detailsText.isBlank()) {
-                return detailsText;
-            }
-        }
-        JsonNode sourceObjectNode = item.path("sourceObject");
-        if (!sourceObjectNode.isMissingNode() && !sourceObjectNode.isNull()) {
-            String sourceObject = firstText(sourceObjectNode, keys);
-            if (sourceObject != null && !sourceObject.isBlank()) {
-                return sourceObject;
-            }
+    /** Localiza texto comercial em qualquer agrupamento do snapshot bruto recebido da Hotmart. */
+    static String extractProductText(JsonNode item, String... keys) {
+        if (item == null || keys == null) return null;
+        for (String key : keys) {
+            JsonNode value = findNode(item, key);
+            if (value == null || value.isNull() || value.isContainerNode()) continue;
+            String text = value.asText();
+            if (!text.isBlank()) return text;
         }
         return null;
     }

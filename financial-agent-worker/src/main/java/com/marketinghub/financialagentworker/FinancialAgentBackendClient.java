@@ -85,4 +85,35 @@ public class FinancialAgentBackendClient {
         .retrieve()
         .toBodilessEntity();
   }
+
+  /**
+   * Seleciona o primeiro modelo com pesquisa ausente ou vencida sem consultar o banco diretamente.
+   */
+  public ProviderPricingCandidate pendingProviderPricing() {
+    List<ProviderPricingCandidate> models =
+        client
+            .get()
+            .uri("/api/sales-videos/provider-models")
+            .retrieve()
+            .body(new org.springframework.core.ParameterizedTypeReference<>() {});
+    if (models == null) return null;
+    return models.stream()
+        .filter(
+            model ->
+                "PENDING".equals(model.pricingResearchStatus()) || model.pricingStale())
+        .findFirst()
+        .orElse(null);
+  }
+
+  /**
+   * Entrega ao backend a evidência pesquisada; o callback não compra créditos nem ativa modelos.
+   */
+  public void updateProviderPricing(Long modelId, Map<String, Object> result) {
+    client
+        .patch()
+        .uri("/api/internal/sales-videos/provider-models/{modelId}/pricing", modelId)
+        .body(result)
+        .retrieve()
+        .toBodilessEntity();
+  }
 }

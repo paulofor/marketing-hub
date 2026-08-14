@@ -403,10 +403,16 @@ export function analyzeSearchResults(job, results, marketplaceOffers = null, opt
   );
   const directedMarketplaceResearch = Array.isArray(marketplaceOffers);
   const normalizedMarketplaceOffers = marketplaceOffers || [];
+  const comparableMarketplaceOffers = normalizedMarketplaceOffers.filter(
+    (offer) => offer.marketplace !== "META_AD_LIBRARY",
+  );
+  const metaAdEvidence = normalizedMarketplaceOffers.filter(
+    (offer) => offer.marketplace === "META_AD_LIBRARY",
+  );
   const minimumComparableOffers = Number(options.minimumComparableOffers || 10);
   const marketplaceGatePassed =
     !directedMarketplaceResearch ||
-    normalizedMarketplaceOffers.length >= minimumComparableOffers;
+    comparableMarketplaceOffers.length >= minimumComparableOffers;
   const independentDomains = new Set(
     evidence.map((item) => safeDomain(item.url)).filter(Boolean),
   ).size;
@@ -487,7 +493,7 @@ export function analyzeSearchResults(job, results, marketplaceOffers = null, opt
         ];
   const commercialRisk =
     !marketplaceGatePassed
-      ? `Foram encontradas ${normalizedMarketplaceOffers.length} de ${minimumComparableOffers} ofertas comparáveis; o dossiê deve permanecer bloqueado para enriquecimento.`
+      ? `Foram encontradas ${comparableMarketplaceOffers.length} de ${minimumComparableOffers} ofertas comparáveis; o dossiê deve permanecer bloqueado para enriquecimento.`
       : highRiskHits > 0
       ? "Tema contém sinais sensíveis e exige revisão humana antes de qualquer experimento."
       : scientificArticles.length === 0
@@ -497,7 +503,7 @@ export function analyzeSearchResults(job, results, marketplaceOffers = null, opt
           : "Evitar extrapolar evidência científica para promessa absoluta e validar disposição de compra em experimento controlado.";
 
   return {
-    decisionSummary: `Ciclo pesquisado com ${evidence.length} evidências públicas, ${normalizedMarketplaceOffers.length} ofertas comparáveis, ${independentDomains} domínios independentes, ${scientificArticles.length} artigos científicos candidatos e ${commercialIntentHits} sinais de intenção comercial. Principal decisão: ${decision}.`,
+    decisionSummary: `Ciclo pesquisado com ${evidence.length} evidências públicas, ${comparableMarketplaceOffers.length} ofertas comparáveis, ${metaAdEvidence.length} anúncios Meta observados, ${independentDomains} domínios independentes, ${scientificArticles.length} artigos científicos candidatos e ${commercialIntentHits} sinais de intenção comercial. Principal decisão: ${decision}.`,
     opportunities: opportunityBlueprints.map((blueprint, index) => ({
       ...blueprint,
       scaleEvidence: `${independentDomains} domínios independentes e ${painHits} sinais de dor recorrente foram encontrados nos resultados públicos.`,
@@ -507,6 +513,9 @@ export function analyzeSearchResults(job, results, marketplaceOffers = null, opt
       evidenceJson: JSON.stringify({
         publicEvidence: evidence,
         marketplaceOffers: normalizedMarketplaceOffers,
+        metaAdEvidence,
+        metaAdInterpretation:
+          "Atividade e longevidade sugerem investimento sustentado, mas não comprovam vendas isoladamente.",
         scientificArticles,
         commercialIntentHits,
       }),

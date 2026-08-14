@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMarketplaceEvidenceService;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdEvidenceService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMaturityItemResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMaturityRankingResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryResearchTrackResponse;
@@ -27,13 +28,15 @@ class ProductDiscoveryControllerTest {
 
   @Mock private ProductDiscoveryService service;
   @Mock private ProductDiscoveryMarketplaceEvidenceService marketplaceEvidenceService;
+  @Mock private ProductDiscoveryMetaAdEvidenceService metaAdEvidenceService;
 
   /** Monta o controller isolado para testar as rotas do módulo. */
   @BeforeEach
   void setUp() {
     mockMvc =
         MockMvcBuilders.standaloneSetup(
-                new ProductDiscoveryController(service, marketplaceEvidenceService))
+                new ProductDiscoveryController(
+                    service, marketplaceEvidenceService, metaAdEvidenceService))
             .build();
   }
 

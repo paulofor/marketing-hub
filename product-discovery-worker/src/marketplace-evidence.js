@@ -25,7 +25,54 @@ export async function collectMarketplaceEvidence(plan, options = {}) {
     );
     collected.push(...normalizeMarketplaceOffers(payload));
   }
+  for (const request of plan.metaAdRequests || []) {
+    const url = new URL(
+      "/api/internal/product-discovery/productdiscovery/v1/meta-ad-evidence",
+      backendBaseUrl,
+    );
+    url.searchParams.set("query", request.query);
+    url.searchParams.set("country", request.country);
+    url.searchParams.set("limit", String(request.maxAds));
+    const response = await fetchFn(url, { headers: { Accept: "application/json" } });
+    if (!response.ok) {
+      logger.warn?.(
+        `[product-discovery-worker] Meta Ad Library evidence failed status=${response.status}`,
+      );
+      continue;
+    }
+    const payload = await response.json();
+    logger.info?.(
+      `[product-discovery-worker] Meta Ad Library evidence ads=${payload.items?.length || 0}`,
+    );
+    collected.push(...normalizeMetaAdEvidence(payload));
+  }
   return deduplicateMarketplaceOffers(collected);
+}
+
+/** Normaliza anuncios Meta como sinais comerciais sem declara-los vendas comprovadas. */
+export function normalizeMetaAdEvidence(payload) {
+  return (Array.isArray(payload?.items) ? payload.items : [])
+    .map((item) => ({
+      marketplace: "META_AD_LIBRARY",
+      referenceId: item.metaAdId,
+      title: item.advertiserName || `Anúncio Meta ${item.metaAdId}`,
+      url: item.snapshotUrl || item.destinationUrl,
+      description: item.adText || "",
+      producer: item.advertiserName || "",
+      category: "PAID_AD",
+      format: item.formatTypes || null,
+      observations: item.observations ?? 1,
+      firstObservedAt: item.firstObservedAt || null,
+      collectedAt: item.lastObservedAt || null,
+      longevityDays: item.longevityDays ?? 0,
+      active: Boolean(item.active),
+      commercialSignal: Boolean(item.commercialSignal),
+      sustainedInvestmentSignal: Boolean(item.sustainedInvestmentSignal),
+      evidenceConfidence: item.evidenceConfidence || "LOW",
+      signalDisclaimer:
+        "Longevidade e atividade indicam investimento sustentado, não venda comprovada.",
+    }))
+    .filter((item) => item.referenceId && item.title && item.url);
 }
 
 /** Normaliza o contrato do backend para evidencia comercial usada no dossie. */

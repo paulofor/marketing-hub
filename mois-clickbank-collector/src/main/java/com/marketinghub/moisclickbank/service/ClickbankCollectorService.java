@@ -546,11 +546,14 @@ public class ClickbankCollectorService {
             rawMetadata.put("productCategory", product.commission());
             if (product.temperature() != null) {
                 rawMetadata.put("clickbankTemperature", String.valueOf(product.temperature()));
+                rawMetadata.put("hotmartTemperature", String.valueOf(product.temperature()));
             }
+            rawMetadata.put("category", product.commission());
+            rawMetadata.put("format", "DIGITAL_PRODUCT");
             rawMetadata.put("producerName", null);
 
             Map<String, Object> reference = new HashMap<>();
-            reference.put("referenceId", "clickbank-" + position + "-" + UUID.randomUUID().toString().substring(0, 8));
+            reference.put("referenceId", stableClickbankReference(product));
             reference.put("jobId", jobId);
             reference.put("source", "CLICKBANK");
             reference.put("title", product.title());
@@ -559,9 +562,9 @@ public class ClickbankCollectorService {
             reference.put("status", "COLLECTED");
             reference.put("favorite", false);
             reference.put("importedReferenceId", null);
-            reference.put("successScore", 80);
-            reference.put("successSignal", "CLICKBANK_TRENDING");
-            reference.put("confidenceLevel", "MEDIUM");
+            reference.put("successScore", 0);
+            reference.put("successSignal", product.temperature() == null ? "CLICKBANK_LISTED" : "CLICKBANK_GRAVITY_OBSERVED");
+            reference.put("confidenceLevel", product.temperature() == null ? "LOW" : "MEDIUM");
             reference.put("rankingPosition", position);
             reference.put("engagementRelative", 0.0);
             reference.put("recurrenceScore", 0.0);
@@ -572,6 +575,13 @@ public class ClickbankCollectorService {
             position++;
         }
         return references;
+    }
+
+    /** Gera identidade estável para preservar o histórico do mesmo produto entre coletas. */
+    private String stableClickbankReference(ClickbankProductSnapshot product) {
+        String identity = coalesceNotBlank(
+                coalesceNotBlank(product.detailsUrl(), product.salesPageUrl()), product.title());
+        return "clickbank-" + Integer.toUnsignedString(identity.toLowerCase(java.util.Locale.ROOT).hashCode(), 36);
     }
 
     private String fetchClickbankJwtFromGeneralSettings() {

@@ -63,6 +63,7 @@ export function deterministicPlan(job) {
       { marketplace: "HOTMART", query: theme, maxProducts: 10 },
       { marketplace: "CLICKBANK", query: theme, maxProducts: 10 },
     ],
+    metaAdRequests: [{ query: theme, country: "BR", maxAds: 25 }],
     minimumComparableOffers: 10,
     stopConditions: [
       "menos de duas fontes independentes",
@@ -87,6 +88,8 @@ export function validatePlan(plan) {
     plan.publicQueries.length < 3 ||
     !Array.isArray(plan.marketplaceRequests) ||
     plan.marketplaceRequests.length === 0 ||
+    !Array.isArray(plan.metaAdRequests) ||
+    plan.metaAdRequests.length === 0 ||
     plan.minimumComparableOffers < 10
   ) {
     throw new Error("Plano dirigido de Argos fora do contrato v1");
@@ -99,12 +102,17 @@ export function validatePlan(plan) {
       throw new Error("Limite inválido de pesquisa dirigida no marketplace");
     }
   }
+  for (const request of plan.metaAdRequests) {
+    if (!request.query || !request.country || request.maxAds < 1 || request.maxAds > 50) {
+      throw new Error("Limite inválido de pesquisa dirigida na Biblioteca Meta");
+    }
+  }
 }
 
 function buildPrompt(job) {
   return `Você é Argos, investigador comercial do Marketing Hub. Crie somente um plano de pesquisa estruturado para o ciclo ${job.cycleId}.
 Tema: ${job.theme}. Público: ${job.targetAudience || "não informado"}. Objetivo: ${job.objective || "não informado"}.
-Formule perguntas, buscas públicas e pedidos direcionados aos coletores HOTMART/CLICKBANK. Exija ao menos 10 ofertas comparáveis. Não navegue em áreas autenticadas, não solicite credenciais, não invente vendas e não publique nem compre nada.`;
+Formule perguntas, buscas públicas, pedidos direcionados aos coletores HOTMART/CLICKBANK e consultas à Biblioteca Meta. Anúncio ativo e longevo é apenas sinal de investimento sustentado, nunca prova isolada de vendas. Exija ao menos 10 ofertas comparáveis. Não navegue em áreas autenticadas, não solicite credenciais, não invente vendas e não publique nem compre nada.`;
 }
 
 const RESEARCH_PLAN_SCHEMA = {
@@ -114,6 +122,7 @@ const RESEARCH_PLAN_SCHEMA = {
     "questions",
     "publicQueries",
     "marketplaceRequests",
+    "metaAdRequests",
     "minimumComparableOffers",
     "stopConditions",
   ],
@@ -131,6 +140,20 @@ const RESEARCH_PLAN_SCHEMA = {
           marketplace: { type: "string", enum: ["HOTMART", "CLICKBANK"] },
           query: { type: "string" },
           maxProducts: { type: "integer", minimum: 1, maximum: 25 },
+        },
+      },
+    },
+    metaAdRequests: {
+      type: "array",
+      minItems: 1,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["query", "country", "maxAds"],
+        properties: {
+          query: { type: "string" },
+          country: { type: "string", minLength: 2, maxLength: 2 },
+          maxAds: { type: "integer", minimum: 1, maximum: 50 },
         },
       },
     },

@@ -49,6 +49,21 @@ public class VideoManagementProperties {
         private String apiKey;
         private String apiKeyFile;
         private String model = "gpt-5.6";
+        @NotNull
+        private CodexShadow codexShadow = new CodexShadow();
+    }
+
+    /** Configura a candidata Codex que participa apenas do replay sombra de Apolo. */
+    @Getter
+    @Setter
+    public static class CodexShadow {
+        private boolean enabled = false;
+        private String command = "codex";
+        private String model = "gpt-5.6-sol";
+        private String reasoningEffort = "high";
+        private String workingDirectory = "/app";
+        @NotNull
+        private Duration timeout = Duration.ofMinutes(10);
     }
 
     @Getter

@@ -175,6 +175,10 @@ services:
       VIDEO_PROVIDERS_VEO_MODEL: ${VIDEO_PROVIDERS_VEO_MODEL:-veo-3.1-generate-preview}
       VIDEO_PROVIDERS_KLING_MODEL: ${VIDEO_PROVIDERS_KLING_MODEL:-kling-v2-1-master}
       VIDEO_PROVIDERS_RUNWAY_MODEL: ${VIDEO_PROVIDERS_RUNWAY_MODEL:-gen4.5}
+      APOLLO_CODEX_SHADOW_ENABLED: ${APOLLO_CODEX_SHADOW_ENABLED:-false}
+      APOLLO_CODEX_MODEL: ${APOLLO_CODEX_MODEL:-gpt-5.6-sol}
+      APOLLO_CODEX_REASONING_EFFORT: ${APOLLO_CODEX_REASONING_EFFORT:-high}
+      CODEX_HOME: /root/.codex
     ports:
       - "${VIDEO_MANAGEMENT_PORT:-8095}:8095"
     volumes:
@@ -184,6 +188,7 @@ services:
       - ${KLING_API_KEY_HOST_FILE:-/root/infra/kling-token/kling_api_key}:/run/secrets/kling_api_key:ro
       - ${HEYGEN_API_KEY_HOST_FILE:-/root/infra/heygen-token/heygen_api_key}:/run/secrets/heygen_api_key:ro
       - ${RUNWAY_API_KEY_HOST_FILE:-/root/infra/runway-token/runway_api_key}:/run/secrets/runway_api_key:ro
+      - ${APOLLO_CODEX_HOME_HOST_DIR:-/root/infra/apollo-codex-home}:/root/.codex
 
   mcp-server:
     build:

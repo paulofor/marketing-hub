@@ -11,7 +11,10 @@ RUN mvn -B -f video-management-service/pom.xml package -DskipTests && \
     mv video-management-service/target/video-management-service-0.0.1-SNAPSHOT.jar video-management-service/target/app.jar
 
 FROM eclipse-temurin:21-jre
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg curl espeak-ng fonts-dejavu-core && rm -rf /var/lib/apt/lists/*
+ARG CODEX_VERSION=0.146.0
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg curl espeak-ng fonts-dejavu-core nodejs npm git ca-certificates \
+    && npm install -g @openai/codex@${CODEX_VERSION} \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /workspace/video-management-service/target/app.jar app.jar
 EXPOSE 8095

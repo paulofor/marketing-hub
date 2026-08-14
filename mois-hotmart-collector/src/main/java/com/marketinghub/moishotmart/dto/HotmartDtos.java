@@ -14,7 +14,9 @@ public final class HotmartDtos {
     /** Representa o pedido operacional para executar um ciclo de coleta Hotmart. */
     public record HotmartCollectionRequest(
             @NotBlank String source,
-            int maxProducts
+            int maxProducts,
+            String query,
+            String category
     ) {
     }
 

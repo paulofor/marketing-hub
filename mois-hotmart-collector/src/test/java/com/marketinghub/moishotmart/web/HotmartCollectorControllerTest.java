@@ -20,6 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+/** Valida os contratos HTTP públicos do coletor Hotmart. */
 class HotmartCollectorControllerTest {
 
     @Autowired
@@ -28,11 +29,13 @@ class HotmartCollectorControllerTest {
     @MockBean
     private HotmartCollectorService collectorService;
 
+    /** Confirma a disponibilidade do endpoint de saúde. */
     @Test
     void healthShouldReturnOk() throws Exception {
         mockMvc.perform(get("/api/v1/mois-hotmart/health")).andExpect(status().isOk());
     }
 
+    /** Confirma o aceite de uma coleta dirigida sem expor credenciais. */
     @Test
     void collectShouldReturnCollectionResponse() throws Exception {
         when(collectorService.collect(any())).thenReturn(new HotmartCollectionResponse(
@@ -46,7 +49,9 @@ class HotmartCollectorControllerTest {
                         .content("""
                                 {
                                   "source": "hotmart-market",
-                                  "maxProducts": 20
+                                  "maxProducts": 20,
+                                  "query": "agenda para manicure",
+                                  "category": "Negócios e Carreira"
                                 }
                                 """))
                 .andExpect(status().isOk())

@@ -129,8 +129,9 @@ public class MoisCollectionPersistenceService {
                           job_id, workspace_id, reference_id, source, title, url, niche, status, favorite,
                           imported_reference_id, success_score, success_signal, confidence_level, ranking_position,
                           engagement_relative, recurrence_score, evidence_score, hotmart_description,
-                          hotmart_producer, hotmart_image_url, hotmart_highlight, product_name, product_url, producer_name, sales_page_url, hotmart_temperature, hotmart_price, collected_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                          hotmart_producer, hotmart_image_url, hotmart_highlight, product_name, product_url, producer_name, sales_page_url, hotmart_temperature, hotmart_price,
+                          hotmart_rating, hotmart_review_count, hotmart_blueprint, hotmart_commission, hotmart_category, hotmart_format, collected_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
         references,
         references.size(),
@@ -185,9 +186,15 @@ public class MoisCollectionPersistenceService {
           ps.setString(
               27,
               coalesceNotBlank(metadataValue(item, "priceValue"), metadataValue(item, "price")));
+          ps.setBigDecimal(28, parseDecimal(metadataValue(item, "reviewRating")));
+          ps.setObject(29, parseInteger(metadataValue(item, "totalAnswers")));
+          ps.setBigDecimal(30, parseDecimal(metadataValue(item, "blueprint")));
+          ps.setString(31, metadataValue(item, "commission"));
+          ps.setString(32, metadataValue(item, "category"));
+          ps.setString(33, metadataValue(item, "format"));
           ps.setTimestamp(
-              28, item.collectedAt() == null ? null : Timestamp.from(item.collectedAt()));
-          ps.setTimestamp(29, Timestamp.from(Instant.now()));
+              34, item.collectedAt() == null ? null : Timestamp.from(item.collectedAt()));
+          ps.setTimestamp(35, Timestamp.from(Instant.now()));
         });
   }
 
@@ -209,6 +216,16 @@ public class MoisCollectionPersistenceService {
     if (value == null || value.isBlank()) return null;
     try {
       return new java.math.BigDecimal(value.trim());
+    } catch (NumberFormatException ex) {
+      return null;
+    }
+  }
+
+  /** Converte inteiro vindo de metadados sem interromper a persistência. */
+  private Integer parseInteger(String value) {
+    if (value == null || value.isBlank()) return null;
+    try {
+      return Integer.valueOf(value.trim());
     } catch (NumberFormatException ex) {
       return null;
     }

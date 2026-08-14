@@ -5,6 +5,14 @@
 
 Este documento mapeia, de forma explícita, quais dados são obtidos no **ciclo 1** e no **ciclo 2** do coletor Hotmart e para quais campos eles são persistidos na tabela `mois_collected_reference`.
 
+## Pesquisa comercial dirigida por Argos (2026-08-14)
+
+- A coleta aceita `query` e `category` opcionais, definidos pela investigação de Argos.
+- Temperatura, ranking e score de completude são sinais de tração; nenhum deles comprova venda.
+- O `successScore` deixa de ser constante e passa a representar somente a completude dos sinais comerciais coletados.
+- O histórico preserva avaliação, quantidade de avaliações, Blueprint, comissão, categoria, formato, posição e datas de observação.
+- Argos compara múltiplas observações do mesmo produto e bloqueia a conclusão quando houver menos de dez ofertas comparáveis.
+
 ## Visão geral do fluxo
 
 - **Ciclo 1 (listagem):** consulta produtos no endpoint de busca da Hotmart e monta o snapshot base.

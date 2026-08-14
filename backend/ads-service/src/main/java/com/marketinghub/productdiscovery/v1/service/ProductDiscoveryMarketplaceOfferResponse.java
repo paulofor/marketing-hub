@@ -12,4 +12,15 @@ public record ProductDiscoveryMarketplaceOfferResponse(
     String producer,
     String price,
     Double tractionSignal,
-    Instant collectedAt) {}
+    Double rating,
+    Integer reviewCount,
+    Double blueprint,
+    String commission,
+    String category,
+    String format,
+    Integer rankingPosition,
+    Integer observations,
+    Double previousTractionSignal,
+    Instant firstObservedAt,
+    Instant collectedAt,
+    String evidenceConfidence) {}

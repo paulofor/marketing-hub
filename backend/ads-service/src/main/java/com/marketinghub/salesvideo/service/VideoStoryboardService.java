@@ -3,7 +3,6 @@ package com.marketinghub.salesvideo.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.financialagent.service.CommercialSceneEvaluationRequest;
 import com.marketinghub.financialagent.service.ProviderTaskConsumptionView;
 import com.marketinghub.financialagent.service.StudioProviderTaskConsumptionQueryService;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoJobRepository;
@@ -11,6 +10,7 @@ import com.marketinghub.repository.jpa.salesvideo.VideoProjectRepository;
 import com.marketinghub.salesvideo.SalesVideoJob;
 import com.marketinghub.salesvideo.SalesVideoJobType;
 import com.marketinghub.salesvideo.VideoProject;
+import com.marketinghub.salesvideo.dto.storyboard.CommercialSceneEvaluationRequest;
 import com.marketinghub.salesvideo.dto.storyboard.VideoStoryboardResponse;
 import com.marketinghub.salesvideo.dto.storyboard.VideoStoryboardSceneResponse;
 import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
@@ -149,7 +149,12 @@ public class VideoStoryboardService {
       throw VideoModuleException.notFound(
           VideoModuleErrorCode.BAD_REQUEST, "Cena do storyboard não encontrada.");
     }
-    taskConsumptionQueryService.evaluate(consumptionId, request);
+    taskConsumptionQueryService.evaluate(
+        consumptionId,
+        request.status(),
+        request.utilizationPercent(),
+        request.notes(),
+        request.evaluatedBy());
     return getStoryboard(projectId);
   }
 

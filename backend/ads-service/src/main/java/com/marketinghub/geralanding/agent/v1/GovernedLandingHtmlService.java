@@ -18,10 +18,12 @@ import org.springframework.util.StringUtils;
  */
 @Service
 public class GovernedLandingHtmlService {
-  private static final Pattern PRIMARY_CHECKOUT_HREF =
-      Pattern.compile(
-          "id=[\"']checkout-cta-primary[\"'][^>]*href=[\"']([^\"']+)[\"']",
-          Pattern.CASE_INSENSITIVE);
+  private static final Pattern ANCHOR_TAG =
+      Pattern.compile("<a\\b[^>]*>", Pattern.CASE_INSENSITIVE);
+  private static final Pattern PRIMARY_CHECKOUT_ID =
+      Pattern.compile("\\bid\\s*=\\s*[\"']checkout-cta-primary[\"']", Pattern.CASE_INSENSITIVE);
+  private static final Pattern HREF_ATTRIBUTE =
+      Pattern.compile("\\bhref\\s*=\\s*[\"']([^\"']+)[\"']", Pattern.CASE_INSENSITIVE);
   private final ExperimentRepository experimentRepository;
   private final GeraSalesPagePublicationAuditRepository publicationRepository;
   private final BackendQualityReviewService qualityReviewService;
@@ -97,7 +99,13 @@ public class GovernedLandingHtmlService {
   /** Extrai o destino do CTA de checkout canônico. */
   private String checkoutHref(String html) {
     if (!StringUtils.hasText(html)) return null;
-    Matcher matcher = PRIMARY_CHECKOUT_HREF.matcher(html);
-    return matcher.find() ? matcher.group(1) : null;
+    Matcher anchors = ANCHOR_TAG.matcher(html);
+    while (anchors.find()) {
+      String anchor = anchors.group();
+      if (!PRIMARY_CHECKOUT_ID.matcher(anchor).find()) continue;
+      Matcher href = HREF_ATTRIBUTE.matcher(anchor);
+      return href.find() ? href.group(1) : null;
+    }
+    return null;
   }
 }

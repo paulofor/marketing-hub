@@ -53,6 +53,26 @@ class GovernedLandingHtmlServiceTest {
         .setHtmlGeraLanding(html(canonicalCheckout, "Comprar o kit por R$ 67").trim());
   }
 
+  /** Aceita o CTA protegido quando um gerador válido escreve href antes de id. */
+  @Test
+  void acceptsCheckoutAttributesInAnyHtmlOrder() {
+    String canonicalCheckout = "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=88";
+    GeraSalesPagePublicationAudit publication = new GeraSalesPagePublicationAudit();
+    publication.setCheckoutUrl(canonicalCheckout);
+    when(publicationRepository.findTopByExperimentIdOrderByPublishedAtDesc(88L))
+        .thenReturn(Optional.of(publication));
+    String candidate =
+        html(canonicalCheckout, "Comprar o kit por R$ 67")
+            .replace(
+                "id=\"checkout-cta-primary\" href=\"" + canonicalCheckout + "\"",
+                "href=\"" + canonicalCheckout + "\" id=\"checkout-cta-primary\"");
+
+    service.apply(88L, candidate);
+
+    verify(experiment).setHtmlGeraLanding(candidate.trim());
+    verify(qualityReviewService).reviewAfterHtmlGeneration(experiment);
+  }
+
   /** Persiste o documento seguro e abre revisão independente. */
   @Test
   void appliesFullHtmlAndRequestsIndependentReview() {

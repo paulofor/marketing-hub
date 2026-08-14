@@ -1307,6 +1307,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o gate comercial confundia preservação do destino aprovado com preservação do valor técnico defeituoso presente no HTML.
 - **Correção sistêmica:** o snapshot entrega a URL de checkout da publicação canônica mais recente e o gate aceita substituir uma âncora quebrada somente por essa URL persistida.
 - **Prevenção:** testes bloqueiam destinos inventados e comprovam a troca segura da âncora pelo checkout canônico.
+- **Fechamento complementar em 2026-08-14:** o extrator do CTA protegido deixa de depender da ordem textual dos atributos HTML. Dédalo pode produzir tanto `id` antes de `href` quanto `href` antes de `id`; o backend continua exigindo o mesmo identificador e a URL canônica, com teste de contrato para ambas as ordens.
 # 2026-08-14 — Dédalo: reconexão Codex bloqueava a produção da landing
 
 - **Sintoma:** uma correção integral de HTML permanecia iniciada sem ser reservada pelo executor.

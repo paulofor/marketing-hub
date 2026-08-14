@@ -1,6 +1,5 @@
 package com.marketinghub.salesvideo.controller;
 
-import com.marketinghub.financialagent.service.CommercialSceneEvaluationRequest;
 import com.marketinghub.media.Asset;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.media.MediaProvider;
@@ -47,6 +46,7 @@ import com.marketinghub.salesvideo.dto.UpdateSalesVideoProviderModelRequest;
 import com.marketinghub.salesvideo.dto.UpdateVideoProjectRequest;
 import com.marketinghub.salesvideo.dto.VideoProjectDto;
 import com.marketinghub.salesvideo.dto.VideoReferenceDto;
+import com.marketinghub.salesvideo.dto.storyboard.CommercialSceneEvaluationRequest;
 import com.marketinghub.salesvideo.dto.storyboard.VideoStoryboardResponse;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import jakarta.validation.Valid;

@@ -51,7 +51,11 @@ public class StudioProviderTaskConsumptionQueryService {
   /** Persiste a avaliação comercial editorial de uma task produzida. */
   @Transactional
   public ProviderTaskConsumptionView evaluate(
-      Long taskId, CommercialSceneEvaluationRequest request) {
+      Long taskId,
+      String requestedStatus,
+      Integer utilizationPercent,
+      String notes,
+      String evaluatedBy) {
     StudioProviderTaskConsumption task =
         repository
             .findById(taskId)
@@ -59,18 +63,18 @@ public class StudioProviderTaskConsumptionQueryService {
                 () ->
                     new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Cena do storyboard não encontrada."));
-    String status = request.status().trim().toUpperCase(java.util.Locale.ROOT);
+    String status = requestedStatus.trim().toUpperCase(java.util.Locale.ROOT);
     if (!java.util.Set.of("APPROVED", "PARTIAL", "REJECTED").contains(status)) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Avaliação comercial inválida.");
     }
-    if (request.utilizationPercent() < 0 || request.utilizationPercent() > 100) {
+    if (utilizationPercent < 0 || utilizationPercent > 100) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "Aproveitamento deve ficar entre 0 e 100.");
     }
     task.setCommercialEvaluationStatus(status);
-    task.setCommercialUtilizationPercent(request.utilizationPercent());
-    task.setCommercialEvaluationNotes(request.notes() == null ? null : request.notes().trim());
-    task.setCommercialEvaluatedBy(request.evaluatedBy().trim());
+    task.setCommercialUtilizationPercent(utilizationPercent);
+    task.setCommercialEvaluationNotes(notes == null ? null : notes.trim());
+    task.setCommercialEvaluatedBy(evaluatedBy.trim());
     task.setCommercialEvaluatedAt(Instant.now());
     return toView(repository.save(task));
   }

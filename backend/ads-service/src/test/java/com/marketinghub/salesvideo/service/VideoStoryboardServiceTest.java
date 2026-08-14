@@ -6,7 +6,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.financialagent.service.CommercialSceneEvaluationRequest;
 import com.marketinghub.financialagent.service.ProviderTaskConsumptionView;
 import com.marketinghub.financialagent.service.StudioProviderTaskConsumptionQueryService;
 import com.marketinghub.media.Asset;
@@ -18,6 +17,7 @@ import com.marketinghub.salesvideo.SalesVideoProfile;
 import com.marketinghub.salesvideo.SalesVideoProviderFamily;
 import com.marketinghub.salesvideo.SalesVideoStatus;
 import com.marketinghub.salesvideo.VideoProject;
+import com.marketinghub.salesvideo.dto.storyboard.CommercialSceneEvaluationRequest;
 import com.marketinghub.salesvideo.dto.storyboard.VideoStoryboardResponse;
 import com.marketinghub.salesvideo.tenant.TenantContext;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
@@ -147,6 +147,6 @@ class VideoStoryboardServiceTest {
         new CommercialSceneEvaluationRequest("PARTIAL", 30, "Plano de apoio", "Estúdio");
     service.evaluateScene(7L, 501L, request);
 
-    verify(taskConsumptionQueryService).evaluate(501L, request);
+    verify(taskConsumptionQueryService).evaluate(501L, "PARTIAL", 30, "Plano de apoio", "Estúdio");
   }
 }

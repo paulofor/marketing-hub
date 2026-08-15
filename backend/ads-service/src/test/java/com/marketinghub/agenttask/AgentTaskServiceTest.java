@@ -395,6 +395,40 @@ class AgentTaskServiceTest {
     assertThat(service.claimEligibleProcessTask("customer-agent")).isPresent();
   }
 
+  /** Expõe atividade liberada, bloqueio por predecessora e tarefa legada substituída. */
+  @Test
+  void buildsProcessInstanceOperationalView() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    BusinessProcessDefinition process = process("PUBLISHED", "Dédalo");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"html\",\"type\":\"TASK\"},{\"id\":\"customer\",\"type\":\"TASK\"}],"
+            + "\"edges\":[{\"source\":\"html\",\"target\":\"customer\"}]}");
+    AgentTask html =
+        processTask(30L, agent(7L, "landing-generator", "Dédalo"), process, "html", "PENDING");
+    AgentTask customer =
+        processTask(31L, agent(2L, "customer-agent", "Psique"), process, "customer", "PENDING");
+    AgentTask legacy =
+        processTask(27L, agent(7L, "landing-generator", "Dédalo"), process, "legacy", "PENDING");
+    legacy.setProcessDefinition(null);
+    when(repository.findBySourceReferenceOrderByCreatedAtAscIdAsc("commercial-plan:2@v4"))
+        .thenReturn(List.of(legacy, html, customer));
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            9L, "commercial-plan:2@v4"))
+        .thenReturn(List.of(html, customer));
+
+    ProcessInstanceResponse instance =
+        service(repository, mock(AgentRepository.class), Clock.systemUTC())
+            .processInstances("commercial-plan:2@v4")
+            .get(0);
+
+    assertThat(instance.tasks())
+        .extracting(ProcessInstanceTaskResponse::operationalState)
+        .containsExactly("RELEASED", "WAITING_PREDECESSOR");
+    assertThat(instance.supersededLegacyTasks())
+        .extracting(ProcessInstanceTaskResponse::taskId)
+        .containsExactly(27L);
+  }
+
   /** Persiste saída e evidência antes de concluir a atividade reservada. */
   @Test
   void completesClaimedTaskWithAuditableResult() {

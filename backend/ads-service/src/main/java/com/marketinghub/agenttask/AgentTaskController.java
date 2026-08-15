@@ -28,6 +28,12 @@ public class AgentTaskController {
     return service.activeTasks();
   }
 
+  /** Exibe as instâncias BPM vinculadas a uma entidade operacional. */
+  @GetMapping("/process-instances")
+  public List<ProcessInstanceResponse> processInstances(@RequestParam String sourceReference) {
+    return service.processInstances(sourceReference);
+  }
+
   /** Permite que uma pessoa abra uma solicitação pela tela. */
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)

@@ -23,6 +23,9 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
   /** Busca a tarefa mais recente pela referência exata, sem confundir ids com prefixo comum. */
   Optional<AgentTask> findTopBySourceReferenceOrderByUpdatedAtDescIdDesc(String sourceReference);
 
+  /** Lista todo o histórico operacional de uma entidade para montar a instância BPM. */
+  List<AgentTask> findBySourceReferenceOrderByCreatedAtAscIdAsc(String sourceReference);
+
   /** Busca a delegação mais recente de um agente para uma origem operacional exata. */
   Optional<AgentTask> findTopByAssignedAgentAgentKeyAndSourceReferenceOrderByUpdatedAtDescIdDesc(
       String agentKey, String sourceReference);

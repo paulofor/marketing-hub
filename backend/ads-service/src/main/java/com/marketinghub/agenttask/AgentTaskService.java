@@ -520,7 +520,7 @@ public class AgentTaskService {
   }
 
   /**
-   * Retoma uma única vez tarefas bloqueadas exclusivamente por falha HTTP transitória do callback.
+   * Retoma uma única vez callbacks interrompidos ou rejeições corrigíveis do contrato de landing.
    */
   private Optional<AgentTask> recoverInterruptedCallbackOnce(
       String agentKey, String processCode, String activityId) {
@@ -535,7 +535,7 @@ public class AgentTaskService {
         .map(
             task -> {
               task.setStatus("IN_PROGRESS");
-              task.setExecutionError("AUTO_RETRY_CALLBACK_ONCE|" + task.getExecutionError());
+              task.setExecutionError("AUTO_RETRY_ONCE|" + task.getExecutionError());
               task.setUpdatedAt(Instant.now(clock));
               return repository.save(task);
             });
@@ -544,8 +544,11 @@ public class AgentTaskService {
   /** Distingue indisponibilidade transitória do backend de falha funcional do agente. */
   private boolean isRetryableCallbackFailure(String error) {
     return error != null
+        && !error.startsWith("AUTO_RETRY_ONCE|")
         && !error.startsWith("AUTO_RETRY_CALLBACK_ONCE|")
-        && (error.startsWith("500 :") || error.contains("Internal Server Error"));
+        && (error.startsWith("500 :")
+            || error.contains("Internal Server Error")
+            || error.contains("HTML integral alterou o destino protegido do checkout"));
   }
 
   /** Reexpõe a lease ativa ao mesmo executor para permitir retomada após interrupção. */

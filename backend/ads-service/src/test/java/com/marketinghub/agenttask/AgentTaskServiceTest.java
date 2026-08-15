@@ -412,7 +412,33 @@ class AgentTaskServiceTest {
 
     assertThat(recovered.taskId()).isEqualTo(30L);
     assertThat(blocked.getStatus()).isEqualTo("IN_PROGRESS");
-    assertThat(blocked.getExecutionError()).startsWith("AUTO_RETRY_CALLBACK_ONCE|");
+    assertThat(blocked.getExecutionError()).startsWith("AUTO_RETRY_ONCE|");
+  }
+
+  /** Retoma uma vez a candidata bloqueada pelo contrato de checkout corrigido no backend. */
+  @Test
+  void retriesCorrectedCheckoutValidationOnlyOnce() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    AgentTask blocked = processTask(30L, dedalo, process("PUBLISHED", "Dédalo"), "html", "BLOCKED");
+    blocked.setExecutionError(
+        "Dédalo produziu a candidata, mas o backend não conseguiu aplicá-la: "
+            + "HTML integral alterou o destino protegido do checkout");
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "landing-generator", "WORK", "BLOCKED"))
+        .thenReturn(List.of(blocked));
+    when(repository.save(blocked)).thenReturn(blocked);
+
+    AgentTaskPendingResponse recovered =
+        service(repository, agents, Clock.systemUTC())
+            .claimEligibleProcessTask("landing-generator", "landing-page-generation", "html")
+            .orElseThrow();
+
+    assertThat(recovered.taskId()).isEqualTo(30L);
+    assertThat(blocked.getStatus()).isEqualTo("IN_PROGRESS");
+    assertThat(blocked.getExecutionError()).startsWith("AUTO_RETRY_ONCE|");
   }
 
   /** Mantém a atividade seguinte bloqueada enquanto sua predecessora não foi entregue. */

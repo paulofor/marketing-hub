@@ -73,6 +73,50 @@ class GovernedLandingHtmlServiceTest {
     verify(qualityReviewService).reviewAfterHtmlGeneration(experiment);
   }
 
+  /** Aceita os múltiplos CTAs semânticos gerados por Dédalo quando todos preservam o checkout. */
+  @Test
+  void acceptsSemanticCheckoutRoleWithCanonicalDestination() {
+    String canonicalCheckout = "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=88";
+    GeraSalesPagePublicationAudit publication = new GeraSalesPagePublicationAudit();
+    publication.setCheckoutUrl(canonicalCheckout);
+    when(publicationRepository.findTopByExperimentIdOrderByPublishedAtDesc(88L))
+        .thenReturn(Optional.of(publication));
+    String candidate =
+        html(canonicalCheckout, "Comprar o kit por R$ 67")
+            .replace(
+                "id=\"checkout-cta-primary\"",
+                "data-analytics-role=\"primary-checkout\" data-cta-location=\"hero\"")
+            .replace(
+                "</body>",
+                "<a data-analytics-role=\"primary-checkout\" href=\""
+                    + canonicalCheckout
+                    + "\">Comprar o kit por R$ 67</a></body>");
+
+    service.apply(88L, candidate);
+
+    verify(experiment).setHtmlGeraLanding(candidate.trim());
+  }
+
+  /** Bloqueia um CTA secundário que tente desviar o checkout apesar do CTA principal válido. */
+  @Test
+  void rejectsAnySemanticCheckoutWithDifferentDestination() {
+    String canonicalCheckout = "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=88";
+    GeraSalesPagePublicationAudit publication = new GeraSalesPagePublicationAudit();
+    publication.setCheckoutUrl(canonicalCheckout);
+    when(publicationRepository.findTopByExperimentIdOrderByPublishedAtDesc(88L))
+        .thenReturn(Optional.of(publication));
+    String candidate =
+        html(canonicalCheckout, "Comprar o kit por R$ 67")
+            .replace(
+                "</body>",
+                "<a data-analytics-role=\"primary-checkout\" href=\"https://outro\">"
+                    + "Comprar o kit por R$ 67</a></body>");
+
+    assertThatThrownBy(() -> service.apply(88L, candidate))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("checkout");
+  }
+
   /** Persiste o documento seguro e abre revisão independente. */
   @Test
   void appliesFullHtmlAndRequestsIndependentReview() {

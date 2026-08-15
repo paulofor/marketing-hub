@@ -9,6 +9,22 @@ import org.junit.jupiter.api.Test;
 /** Valida a seleção das provas visuais reais produzidas para a landing. */
 class LandingCreativeReferenceSelectorTest {
 
+    /** Prioriza referências explicitamente aprovadas e entregues pelo Kit Visual do plano. */
+    @Test
+    void selectsApprovedCommercialKitReferences() {
+        String manifest = """
+                {"assets":[
+                  {"url":"https://cdn/product-post.png","label":"Post final do kit","purpose":"ADS"},
+                  {"url":"https://cdn/product-story.png","label":"Story final do kit","purpose":"SOCIAL"}
+                ]}
+                """;
+
+        var selected = new LandingCreativeReferenceSelector(new ObjectMapper()).selectCommercialKit(manifest);
+
+        assertThat(selected).extracting(LandingCreativeReferenceSelector.ReferenceImage::url)
+                .containsExactly("https://cdn/product-post.png", "https://cdn/product-story.png");
+    }
+
     /** Prioriza post, story e legenda concluídos e ignora itens sem arquivo materializado. */
     @Test
     void selectsCompletedProductProofBeforeDecorativeImages() {

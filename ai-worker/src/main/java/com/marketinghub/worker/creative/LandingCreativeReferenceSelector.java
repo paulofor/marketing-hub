@@ -53,6 +53,34 @@ final class LandingCreativeReferenceSelector {
         }
     }
 
+    /** Seleciona referências aprovadas do kit visual canônico do plano comercial. */
+    List<ReferenceImage> selectCommercialKit(String manifest) {
+        if (!StringUtils.hasText(manifest)) {
+            return List.of();
+        }
+        try {
+            JsonNode assets = objectMapper.readTree(manifest).path("assets");
+            if (!assets.isArray()) {
+                return List.of();
+            }
+            List<ReferenceImage> references = new ArrayList<>();
+            for (JsonNode asset : assets) {
+                String url = asset.path("url").asText(null);
+                if (!StringUtils.hasText(url)) {
+                    continue;
+                }
+                String label = String.join(" ", asset.path("label").asText(""), asset.path("purpose").asText(""));
+                references.add(new ReferenceImage(url.trim(), label.trim(), proofScore(label) + 10));
+            }
+            return references.stream()
+                    .sorted(Comparator.comparingInt(ReferenceImage::proofScore).reversed())
+                    .limit(MAX_REFERENCES)
+                    .toList();
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Kit visual do plano comercial inválido", ex);
+        }
+    }
+
     /** Reconhece estados que comprovam a existência efetiva do arquivo visual. */
     private boolean isCompleted(String status) {
         return "COMPLETED".equalsIgnoreCase(status)

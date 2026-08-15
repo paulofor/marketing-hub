@@ -51,6 +51,7 @@ public class ExperimentDto {
   private String landingPageWireframe;
   private String landingPageImagePlanning;
   private String landingPageImageAssets;
+  private String commercialPlanVisualAssets;
   private String landingPageDesignPreset;
   private String htmlGeraLanding;
   private String landingPageQualityReview;

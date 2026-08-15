@@ -407,6 +407,19 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
       isError: false,
       isSuccess: false,
     }),
+    useCommercialPlanVisualAssets: () => ({
+      data: [],
+      isLoading: false,
+      isError: false,
+    }),
+    useCreateCommercialPlanVisualAsset: () => ({
+      mutate: vi.fn(),
+      isPending: false,
+    }),
+    useUpdateCommercialPlanVisualAssetStatus: () => ({
+      mutate: vi.fn(),
+      isPending: false,
+    }),
   };
 });
 

@@ -25,6 +25,7 @@ import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
+import com.marketinghub.planning.CommercialPlanVisualAssetStatus;
 import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.productai.service.ProductAiExperimentPreparationService;
 import com.marketinghub.repository.jpa.ads.FacebookInstantFormRepository;
@@ -46,6 +47,8 @@ import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
 import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
+import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
+import com.marketinghub.repository.jpa.planning.CommercialPlanVisualAssetRepository;
 import com.marketinghub.sampleemail.SampleEmail;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
@@ -99,6 +102,8 @@ public class ExperimentService {
   private final ProductAiExperimentPreparationService productAiExperimentPreparationService;
   private final ExperimentFunnelStandbyService experimentFunnelStandbyService;
   private final PdeProductionSlotRepository pdeProductionSlotRepository;
+  private final CommercialPlanRepository commercialPlanRepository;
+  private final CommercialPlanVisualAssetRepository commercialPlanVisualAssetRepository;
   private static final String VALIDATION_OK = "OK";
 
   /** Inicializa o serviço com repositórios, integrações e validadores usados pelos experimentos. */
@@ -131,7 +136,9 @@ public class ExperimentService {
       ExperimentAiPromptSchemaUsageService promptSchemaUsageService,
       ProductAiExperimentPreparationService productAiExperimentPreparationService,
       ExperimentFunnelStandbyService experimentFunnelStandbyService,
-      PdeProductionSlotRepository pdeProductionSlotRepository) {
+      PdeProductionSlotRepository pdeProductionSlotRepository,
+      CommercialPlanRepository commercialPlanRepository,
+      CommercialPlanVisualAssetRepository commercialPlanVisualAssetRepository) {
     this.repository = repository;
     this.statusChangeRepository = statusChangeRepository;
     this.promiseGenerationRequestRepository = promiseGenerationRequestRepository;
@@ -161,6 +168,8 @@ public class ExperimentService {
     this.productAiExperimentPreparationService = productAiExperimentPreparationService;
     this.experimentFunnelStandbyService = experimentFunnelStandbyService;
     this.pdeProductionSlotRepository = pdeProductionSlotRepository;
+    this.commercialPlanRepository = commercialPlanRepository;
+    this.commercialPlanVisualAssetRepository = commercialPlanVisualAssetRepository;
   }
 
   /**
@@ -1720,8 +1729,39 @@ public class ExperimentService {
                 experiment.getCreativeGenerationStatus() == CreativeGenerationStatus.REQUESTED
                     || experiment.getCreativeGenerationStatus()
                         == CreativeGenerationStatus.PROCESSING)
+        .peek(this::attachApprovedCommercialVisualAssets)
         .limit(effectiveLimit)
         .toList();
+  }
+
+  /** Anexa somente referências aprovadas do plano ao contrato operacional do AI Worker. */
+  private void attachApprovedCommercialVisualAssets(Experiment experiment) {
+    commercialPlanRepository.findByExperimentReference(experiment.getId()).stream()
+        .findFirst()
+        .ifPresent(
+            plan -> {
+              var assets =
+                  commercialPlanVisualAssetRepository
+                      .findByCommercialPlanIdAndStatusOrderByCreatedAtAsc(
+                          plan.getId(), CommercialPlanVisualAssetStatus.APPROVED)
+                      .stream()
+                      .map(
+                          asset ->
+                              java.util.Map.of(
+                                  "url", asset.getAssetUrl(),
+                                  "label", asset.getLabel(),
+                                  "purpose", asset.getPurpose(),
+                                  "origin", asset.getOrigin(),
+                                  "version", asset.getVersionNumber()))
+                      .toList();
+              try {
+                experiment.setCommercialPlanVisualAssets(
+                    objectMapper.writeValueAsString(java.util.Map.of("assets", assets)));
+              } catch (JsonProcessingException ex) {
+                throw new IllegalStateException(
+                    "Falha ao montar kit visual aprovado do experimento " + experiment.getId(), ex);
+              }
+            });
   }
 
   /** Marca a solicitação de criativos como em processamento pelo worker. */

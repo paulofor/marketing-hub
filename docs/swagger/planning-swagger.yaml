@@ -3,6 +3,61 @@ info:
   title: Marketing Hub Planning API
   version: v1
 paths:
+  /api/planning/commercial-plans/{id}/visual-assets:
+    get:
+      summary: Lista o Kit Visual versionado do plano comercial
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200': { description: Kit visual completo }
+    post:
+      summary: Anexa uma referência visual como rascunho
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [assetUrl, label, purpose, origin, rightsStatement]
+              properties:
+                assetUrl: { type: string }
+                label: { type: string }
+                purpose: { type: string, enum: [ADS, LANDING, SOCIAL, DELIVERY] }
+                origin: { type: string }
+                rightsStatement: { type: string }
+      responses:
+        '200': { description: Referência criada como DRAFT }
+  /api/planning/commercial-plans/{id}/visual-assets/{assetId}/status:
+    patch:
+      summary: Aprova ou retira uma referência do Kit Visual
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+        - in: path
+          name: assetId
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [APPROVED, RETIRED] }
+      responses:
+        '200': { description: Estado atualizado }
   /api/planning/commercial-plans:
     post:
       tags: [planning]

@@ -1835,3 +1835,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-15-agent-task-operational-execution.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-15-commercial-plan-visual-kit.yaml
+      relativeToChangelogFile: true

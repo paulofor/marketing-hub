@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-15-commercial-plan-visual-kit
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: commercial_plan_visual_asset
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE commercial_plan_visual_asset (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                commercial_plan_id BIGINT NOT NULL,
+                asset_url VARCHAR(2048) NOT NULL,
+                media_type VARCHAR(16) NOT NULL,
+                label VARCHAR(191) NOT NULL,
+                purpose VARCHAR(64) NOT NULL,
+                origin VARCHAR(191) NOT NULL,
+                rights_statement VARCHAR(512) NOT NULL,
+                version_number INT NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                CONSTRAINT fk_commercial_plan_visual_asset_plan
+                  FOREIGN KEY (commercial_plan_id) REFERENCES commercial_plan(id),
+                INDEX idx_commercial_plan_visual_asset_plan_status (commercial_plan_id, status)
+              );

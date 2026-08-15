@@ -560,7 +560,7 @@ jobs:
     name: Deploy video management
     runs-on: ubuntu-latest
     needs: [detect-changes, video-management-image]
-    if: always() && needs.detect-changes.outputs.video_deploy == 'true'
+    if: always() && needs.detect-changes.outputs.video_deploy == 'true' && (needs.detect-changes.outputs.video != 'true' || needs.video-management-image.result == 'success')
     steps:
       - uses: actions/checkout@v4
 

@@ -64,9 +64,19 @@ grep -q 'docker compose -f docker-compose.mcp.yml up' bin/apply-mcp-only.sh
 # Alterar o publicador isolado exige reconstruir a imagem para que um deploy
 # recuperado não termine verde mantendo código antigo no container de vídeo.
 grep -Fq 'deploy/bin/apply-video-only.sh) video=true; video_deploy_descriptor=true ;;' \
-  ../.github/workflows/deploy-containers.yml
+  ../scripts/detect-deployment-changes.sh
 
 # Alterar o próprio workflow pode modificar qualquer contrato de build/deploy.
 # Todos os artefatos devem ser reconstruídos para validar a revisão publicada.
 grep -Fq '.github/workflows/deploy-containers.yml) backend=true; frontend=true; video=true; app_deploy_descriptor=true; video_deploy_descriptor=true ;;' \
+  ../scripts/detect-deployment-changes.sh
+
+# O workflow deve consumir a fonte canônica de detecção em vez de manter uma
+# segunda lista de módulos que possa divergir silenciosamente.
+grep -Fq 'bash scripts/detect-deployment-changes.sh "${base}" "${GITHUB_SHA}" "${GITHUB_OUTPUT}"' \
+  ../.github/workflows/deploy-containers.yml
+
+# Código de vídeo só pode chegar ao host quando a imagem do mesmo SHA tiver
+# sido construída e publicada. Mudanças apenas de descritor continuam válidas.
+grep -Fq "needs.detect-changes.outputs.video != 'true' || needs.video-management-image.result == 'success'" \
   ../.github/workflows/deploy-containers.yml

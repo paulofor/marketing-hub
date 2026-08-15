@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import {
   useBusinessProcesses,
   useCreateBusinessProcess,
+  useDeleteBusinessProcess,
   usePublishBusinessProcess,
   useUpdateBusinessProcess,
 } from "../../api/businessProcess/useBusinessProcesses";
@@ -52,6 +53,7 @@ function linearDiagram(activities: string): ProcessDiagram {
 export default function BusinessProcessesPage() {
   const query = useBusinessProcesses();
   const create = useCreateBusinessProcess();
+  const remove = useDeleteBusinessProcess();
   const publish = usePublishBusinessProcess();
   const update = useUpdateBusinessProcess();
   const [selectedId, setSelectedId] = useState<number>();
@@ -354,21 +356,41 @@ export default function BusinessProcessesPage() {
                           : "Criar versão editável"}
                       </button>
                       {selected.status === "DRAFT" ? (
-                        <button
-                          type="button"
-                          className="btn btn-success"
-                          disabled={publish.isPending}
-                          onClick={async () => {
-                            await publish.mutateAsync(selected.id);
-                            toast.success(
-                              "Versão publicada como fonte de verdade.",
-                            );
-                          }}
-                        >
-                          {publish.isPending
-                            ? "Publicando..."
-                            : "Publicar definição"}
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            className="btn btn-outline-danger"
+                            disabled={remove.isPending}
+                            onClick={async () => {
+                              if (
+                                !window.confirm(
+                                  `Excluir o rascunho "${selected.name}" v${selected.versionNumber}?`,
+                                )
+                              )
+                                return;
+                              await remove.mutateAsync(selected.id);
+                              setSelectedId(undefined);
+                              toast.success("Rascunho excluído com segurança.");
+                            }}
+                          >
+                            {remove.isPending ? "Excluindo..." : "Excluir rascunho"}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-success"
+                            disabled={publish.isPending}
+                            onClick={async () => {
+                              await publish.mutateAsync(selected.id);
+                              toast.success(
+                                "Versão publicada como fonte de verdade.",
+                              );
+                            }}
+                          >
+                            {publish.isPending
+                              ? "Publicando..."
+                              : "Publicar definição"}
+                          </button>
+                        </>
                       ) : null}
                     </div>
                   </div>

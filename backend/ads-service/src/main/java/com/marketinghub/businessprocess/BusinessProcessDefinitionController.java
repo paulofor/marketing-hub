@@ -48,4 +48,11 @@ public class BusinessProcessDefinitionController {
   public BusinessProcessDefinitionResponse publish(@PathVariable Long id) {
     return service.publish(id);
   }
+
+  /** Exclui um rascunho sem uso operacional. */
+  @DeleteMapping("/{id}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteDraft(@PathVariable Long id) {
+    service.deleteDraft(id);
+  }
 }

@@ -7,6 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 /** Responsabilidade: persistir e consultar as caixas de entrada dos agentes. */
 public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
+  /** Informa se uma definição de processo já possui trabalho operacional vinculado. */
+  boolean existsByProcessDefinitionId(Long processDefinitionId);
+
   /** Lista a caixa do agente com as solicitações mais recentes primeiro. */
   List<AgentTask> findByAssignedAgentAgentKeyOrderByCreatedAtDescIdDesc(String agentKey);
 

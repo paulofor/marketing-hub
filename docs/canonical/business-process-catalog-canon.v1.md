@@ -15,6 +15,10 @@ faz polling, não consome filas e não avança execuções operacionais.
 
 - Cada processo possui código estável e versões imutáveis depois de publicadas.
 - Uma versão nasce `DRAFT`; somente publicação explícita a torna `PUBLISHED`.
+- Nomes equivalentes, desconsiderando caixa, acentos, espaços e pontuação, não podem criar processos
+  com códigos diferentes; o usuário deve criar uma versão do processo canônico já existente.
+- Uma versão `DRAFT` pode ser excluída somente quando não possui tarefa operacional vinculada.
+  Versões publicadas, aposentadas ou utilizadas nunca podem ser excluídas pelo cadastro.
 - Todos os metadados, elementos BPM e fluxos de uma versão `DRAFT` podem ser editados no Marketing
   Hub. Editar uma versão publicada cria uma nova versão em rascunho; versões `PUBLISHED` e `RETIRED`
   nunca são alteradas diretamente.

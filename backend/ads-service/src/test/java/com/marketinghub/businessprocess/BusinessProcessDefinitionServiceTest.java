@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import java.time.Clock;
 import java.time.Instant;
@@ -18,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: comprovar validação, versionamento e publicação dos processos de negócio. */
 class BusinessProcessDefinitionServiceTest {
   private final ObjectMapper mapper = new ObjectMapper();
+  private final AgentTaskRepository tasks = mock(AgentTaskRepository.class);
 
   /** Cadastra um grafo íntegro como rascunho auditável. */
   @Test
@@ -34,7 +36,8 @@ class BusinessProcessDefinitionServiceTest {
             });
     Instant now = Instant.parse("2026-08-14T20:00:00Z");
     var service =
-        new BusinessProcessDefinitionService(repository, mapper, Clock.fixed(now, ZoneOffset.UTC));
+        new BusinessProcessDefinitionService(
+            repository, tasks, mapper, Clock.fixed(now, ZoneOffset.UTC));
 
     var result = service.create(request(validDiagram()));
 
@@ -48,7 +51,7 @@ class BusinessProcessDefinitionServiceTest {
   void rejectsBrokenFlow() throws Exception {
     var repository = mock(BusinessProcessDefinitionRepository.class);
     when(repository.findByProcessCodeAndVersionNumber("landing", 2)).thenReturn(Optional.empty());
-    var service = new BusinessProcessDefinitionService(repository, mapper);
+    var service = new BusinessProcessDefinitionService(repository, tasks, mapper);
     var diagram =
         mapper.readTree(
             "{\"nodes\":[{\"id\":\"start\",\"type\":\"START\",\"label\":\"Início\"},{\"id\":\"task\",\"type\":\"TASK\",\"label\":\"Fazer\"},{\"id\":\"end\",\"type\":\"END\",\"label\":\"Fim\"}],\"flows\":[{\"from\":\"start\",\"to\":\"unknown\"}]}");
@@ -68,7 +71,7 @@ class BusinessProcessDefinitionServiceTest {
     when(repository.findAllByProcessCodeOrderByVersionNumberDesc("landing"))
         .thenReturn(List.of(candidate, previous));
     when(repository.save(candidate)).thenReturn(candidate);
-    var service = new BusinessProcessDefinitionService(repository, mapper);
+    var service = new BusinessProcessDefinitionService(repository, tasks, mapper);
 
     var result = service.publish(2L);
 
@@ -83,7 +86,7 @@ class BusinessProcessDefinitionServiceTest {
     BusinessProcessDefinition draft = entity(2L, 2, "DRAFT", validDiagram().toString());
     when(repository.findById(2L)).thenReturn(Optional.of(draft));
     when(repository.save(draft)).thenReturn(draft);
-    var service = new BusinessProcessDefinitionService(repository, mapper);
+    var service = new BusinessProcessDefinitionService(repository, tasks, mapper);
 
     var result = service.updateDraft(2L, request(validDiagram()));
 
@@ -97,11 +100,69 @@ class BusinessProcessDefinitionServiceTest {
     var repository = mock(BusinessProcessDefinitionRepository.class);
     BusinessProcessDefinition published = entity(1L, 2, "PUBLISHED", validDiagram().toString());
     when(repository.findById(1L)).thenReturn(Optional.of(published));
-    var service = new BusinessProcessDefinitionService(repository, mapper);
+    var service = new BusinessProcessDefinitionService(repository, tasks, mapper);
 
     assertThatThrownBy(() -> service.updateDraft(1L, request(validDiagram())))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("Somente versões em rascunho");
+  }
+
+  /** Rejeita processo equivalente mesmo quando outro código tenta contornar a identidade. */
+  @Test
+  void rejectsEquivalentNameWithDifferentCode() throws Exception {
+    var repository = mock(BusinessProcessDefinitionRepository.class);
+    BusinessProcessDefinition existing = entity(5L, 1, "DRAFT", validDiagram().toString());
+    existing.setName("Operação e otimização de experimento");
+    existing.setProcessCode("experiment-optimization");
+    when(repository.findByProcessCodeAndVersionNumber("other-code", 2))
+        .thenReturn(Optional.empty());
+    when(repository.findAllByOrderByNameAscVersionNumberDesc()).thenReturn(List.of(existing));
+    var service = new BusinessProcessDefinitionService(repository, tasks, mapper);
+    BusinessProcessDefinitionRequest duplicate =
+        new BusinessProcessDefinitionRequest(
+            "other-code",
+            "OPERACAO  E OTIMIZAÇÃO DE EXPERIMENTO",
+            "Vender",
+            "Operação",
+            "Início",
+            "Fim",
+            2,
+            null,
+            validDiagram());
+
+    assertThatThrownBy(() -> service.create(duplicate))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("processo equivalente");
+    verify(repository, never()).save(any());
+  }
+
+  /** Exclui rascunho sem tarefa e preserva qualquer definição utilizada. */
+  @Test
+  void deletesOnlyUnusedDraft() throws Exception {
+    var repository = mock(BusinessProcessDefinitionRepository.class);
+    BusinessProcessDefinition draft = entity(7L, 1, "DRAFT", validDiagram().toString());
+    when(repository.findById(7L)).thenReturn(Optional.of(draft));
+    when(tasks.existsByProcessDefinitionId(7L)).thenReturn(false);
+    var service = new BusinessProcessDefinitionService(repository, tasks, mapper);
+
+    service.deleteDraft(7L);
+
+    verify(repository).delete(draft);
+  }
+
+  /** Bloqueia a exclusão quando o rascunho já possui tarefa operacional vinculada. */
+  @Test
+  void rejectsDeletionOfUsedDraft() throws Exception {
+    var repository = mock(BusinessProcessDefinitionRepository.class);
+    BusinessProcessDefinition draft = entity(7L, 1, "DRAFT", validDiagram().toString());
+    when(repository.findById(7L)).thenReturn(Optional.of(draft));
+    when(tasks.existsByProcessDefinitionId(7L)).thenReturn(true);
+    var service = new BusinessProcessDefinitionService(repository, tasks, mapper);
+
+    assertThatThrownBy(() -> service.deleteDraft(7L))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("tarefas vinculadas");
+    verify(repository, never()).delete(any());
   }
 
   /** Monta uma requisição mínima para concentrar os cenários no comportamento governado. */

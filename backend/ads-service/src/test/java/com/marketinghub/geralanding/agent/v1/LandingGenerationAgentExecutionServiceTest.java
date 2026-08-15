@@ -34,6 +34,7 @@ class LandingGenerationAgentExecutionServiceTest {
   private LandingGenerationAgentCoordinator coordinator;
   private ExperimentRepository experimentRepository;
   private AgentTaskService agentTaskService;
+  private LandingGenerationResultApplicationService resultApplicationService;
   private GeraSalesPagePublicationAuditRepository publicationRepository;
   private LandingGenerationAgentExecutionService service;
 
@@ -44,6 +45,7 @@ class LandingGenerationAgentExecutionServiceTest {
     coordinator = mock(LandingGenerationAgentCoordinator.class);
     experimentRepository = mock(ExperimentRepository.class);
     agentTaskService = mock(AgentTaskService.class);
+    resultApplicationService = mock(LandingGenerationResultApplicationService.class);
     publicationRepository = mock(GeraSalesPagePublicationAuditRepository.class);
     service =
         new LandingGenerationAgentExecutionService(
@@ -52,7 +54,8 @@ class LandingGenerationAgentExecutionServiceTest {
             experimentRepository,
             publicationRepository,
             new ObjectMapper(),
-            agentTaskService);
+            agentTaskService,
+            resultApplicationService);
     when(experimentRepository.findById(88L)).thenReturn(Optional.empty());
     when(repository
             .findTop20ByStageCodeAndStatusAndExecutionRequestedAtBeforeOrderByExecutionRequestedAtAsc(
@@ -190,8 +193,8 @@ class LandingGenerationAgentExecutionServiceTest {
             "job-apply-failure".getBytes(StandardCharsets.UTF_8)))
         .thenReturn(Optional.of(execution));
     doThrow(new IllegalArgumentException("Checkout divergente do briefing"))
-        .when(coordinator)
-        .continueAfterQualityReview(88L, "agent-task:30", "{\"decision\":\"generated\"}");
+        .when(resultApplicationService)
+        .apply(88L, "agent-task:30", "{\"decision\":\"generated\"}");
 
     service.complete(
         "job-apply-failure",
@@ -220,6 +223,17 @@ class LandingGenerationAgentExecutionServiceTest {
     Transactional transactional =
         LandingGenerationAgentExecutionService.class
             .getMethod("onQualityReviewCompleted", LandingQualityReviewedEvent.class)
+            .getAnnotation(Transactional.class);
+
+    assertEquals(Propagation.REQUIRES_NEW, transactional.propagation());
+  }
+
+  /** Deve isolar a aplicação da landing para que sua rejeição não reverta o callback auditável. */
+  @Test
+  void shouldApplyGeneratedLandingInIndependentTransaction() throws NoSuchMethodException {
+    Transactional transactional =
+        LandingGenerationResultApplicationService.class
+            .getMethod("apply", Long.class, String.class, String.class)
             .getAnnotation(Transactional.class);
 
     assertEquals(Propagation.REQUIRES_NEW, transactional.propagation());

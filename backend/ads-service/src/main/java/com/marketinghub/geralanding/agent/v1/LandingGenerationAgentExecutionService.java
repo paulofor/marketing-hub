@@ -101,13 +101,36 @@ public class LandingGenerationAgentExecutionService {
         "landing-generator",
         taskId,
         new com.marketinghub.agenttask.CompleteAgentTaskRequest(
-            event.reviewJson(),
-            objectMapper
-                .createObjectNode()
-                .put("experimentId", event.experimentId())
-                .put("stageCode", "landing-page-quality-review")
-                .put("approvalRecommendation", "APPROVE_FOR_PUBLICATION")
-                .toString()));
+            event.reviewJson(), bpmEvidence(event)));
+  }
+
+  /** Entrega à próxima atividade a candidata visual, anúncio e checkout realmente avaliados. */
+  private String bpmEvidence(LandingQualityReviewedEvent event) {
+    com.fasterxml.jackson.databind.node.ObjectNode evidence = objectMapper.createObjectNode();
+    evidence.put("experimentId", event.experimentId());
+    evidence.put("stageCode", "landing-page-quality-review");
+    evidence.put("approvalRecommendation", "APPROVE_FOR_PUBLICATION");
+    experimentRepository
+        .findById(event.experimentId())
+        .ifPresent(
+            experiment -> {
+              evidence.put("landingHtml", experiment.getHtmlGeraLanding());
+              evidence.put("adCopy", experiment.getAdCopy());
+              evidence.put("adImageBriefing", experiment.getAdImageBriefing());
+              evidence.put("checkoutUrl", experiment.getFollowUpActionUrl());
+              if (experiment.getUnitPrice() != null)
+                evidence.put("unitPriceBrl", experiment.getUnitPrice());
+            });
+    repository
+        .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
+            event.experimentId(), "landing-page-quality-review", event.autonomousCycleId())
+        .stream()
+        .map(GeraLandingStageExecution::getQualityReviewAudit)
+        .filter(java.util.Objects::nonNull)
+        .filter(audit -> !audit.isBlank())
+        .findFirst()
+        .ifPresent(audit -> evidence.put("qualityReviewAudit", audit));
+    return evidence.toString();
   }
 
   /** Cria uma execução segregada com o parecer que motivou a correção. */
@@ -191,6 +214,13 @@ public class LandingGenerationAgentExecutionService {
   private void activateProcessTask(com.marketinghub.agenttask.AgentTaskPendingResponse task) {
     Long taskId = task.taskId();
     Long experimentId = experimentId(task.title() + "\n" + task.description());
+    if (hasMaterializedBpmAttempt(experimentId, taskId)) {
+      log.info(
+          "Tarefa BPM já foi materializada e aguarda gate ou correção causal. taskId={} experimentId={}",
+          taskId,
+          experimentId);
+      return;
+    }
     try {
       Map<String, Object> review = new LinkedHashMap<>();
       review.put("approvalRecommendation", "REGENERATE_BEFORE_PUBLICATION");
@@ -216,6 +246,15 @@ public class LandingGenerationAgentExecutionService {
           ex);
       throw new IllegalStateException("Não foi possível ativar a tarefa BPM de Dédalo", ex);
     }
+  }
+
+  /** Impede que o polling recrie o briefing original enquanto o Quality Review decide o avanço. */
+  private boolean hasMaterializedBpmAttempt(Long experimentId, Long taskId) {
+    return repository
+        .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
+            experimentId, STAGE, BPM_TASK_PREFIX + taskId)
+        .stream()
+        .anyMatch(execution -> !"FALHA".equals(execution.getStatus()));
   }
 
   /** Extrai a entidade operacional explicitamente declarada no título ou briefing da tarefa. */

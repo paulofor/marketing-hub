@@ -645,6 +645,8 @@ public class AgentTaskService {
     try {
       JsonNode diagram = objectMapper.readTree(candidate.getProcessDefinition().getDiagramJson());
       Map<String, List<String>> incoming = new HashMap<>();
+      Map<String, List<String>> outgoing = new HashMap<>();
+      Set<String> graphNodes = new HashSet<>();
       JsonNode connections =
           diagram.path("flows").isArray() ? diagram.path("flows") : diagram.path("edges");
       for (JsonNode edge : connections) {
@@ -653,7 +655,12 @@ public class AgentTaskService {
         String source =
             edge.hasNonNull("from") ? edge.path("from").asText() : edge.path("source").asText();
         incoming.computeIfAbsent(target, ignored -> new ArrayList<>()).add(source);
+        outgoing.computeIfAbsent(source, ignored -> new ArrayList<>()).add(target);
+        graphNodes.add(source);
+        graphNodes.add(target);
       }
+      Map<String, Integer> distanceFromStart =
+          shortestDistancesFromStart(incoming, outgoing, graphNodes);
       List<AgentTask> siblings =
           repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
               candidate.getProcessDefinition().getId(), candidate.getSourceReference());
@@ -671,6 +678,8 @@ public class AgentTaskService {
       while (!queue.isEmpty()) {
         String current = queue.removeFirst();
         for (String source : incoming.getOrDefault(current, List.of())) {
+          if (distanceFromStart.getOrDefault(source, Integer.MAX_VALUE)
+              >= distanceFromStart.getOrDefault(current, Integer.MAX_VALUE)) continue;
           if (!visited.add(source)) continue;
           if (taskNodes.contains(source)) predecessors.add(source);
           else queue.addLast(source);
@@ -681,5 +690,33 @@ public class AgentTaskService {
       throw new IllegalStateException(
           "Não foi possível avaliar a sequência BPM da tarefa " + candidate.getId(), ex);
     }
+  }
+
+  /**
+   * Calcula a progressão inicial do processo sem transformar laços de retrabalho em dependências.
+   */
+  private Map<String, Integer> shortestDistancesFromStart(
+      Map<String, List<String>> incoming,
+      Map<String, List<String>> outgoing,
+      Set<String> graphNodes) {
+    Map<String, Integer> distances = new HashMap<>();
+    ArrayDeque<String> queue = new ArrayDeque<>();
+    graphNodes.stream()
+        .filter(node -> incoming.getOrDefault(node, List.of()).isEmpty())
+        .forEach(
+            node -> {
+              distances.put(node, 0);
+              queue.addLast(node);
+            });
+    while (!queue.isEmpty()) {
+      String source = queue.removeFirst();
+      int nextDistance = distances.get(source) + 1;
+      for (String target : outgoing.getOrDefault(source, List.of())) {
+        if (nextDistance >= distances.getOrDefault(target, Integer.MAX_VALUE)) continue;
+        distances.put(target, nextDistance);
+        queue.addLast(target);
+      }
+    }
+    return distances;
   }
 }

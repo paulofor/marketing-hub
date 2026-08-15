@@ -1322,6 +1322,22 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Correção sistêmica:** decisão e materialização passam a ser interações estruturadas separadas; quando a escolha for código e o artefato estiver ausente, o worker gera imediatamente o HTML integral em contrato dedicado, soma a telemetria e valida checkout antes do callback.
 - **Prevenção:** teste de contrato exige schema e prompt dedicados ao artefato e mantém descrições de alteração inválidas como substituto do HTML.
 
+## LOOP-BPM-RETRABALHO-INVERTE-PREDECESSORA — laço bloqueia a próxima agente
+
+- **Data:** 2026-08-15.
+- **Sintoma:** após Dédalo concluir a tarefa #30, Psique continuava bloqueada porque o caminho de retrabalho fazia Têmis aparecer como predecessora de Psique.
+- **Causa-raiz:** a busca de predecessoras caminhava por todas as arestas reversas de um grafo cíclico, sem distinguir progressão inicial de retorno para ajuste.
+- **Correção sistêmica:** o backend calcula a menor distância desde o início e considera predecessoras somente ao caminhar para níveis anteriores do fluxo; arestas de retrabalho deixam de criar dependência invertida.
+- **Prevenção:** teste de contrato reproduz o ciclo Dédalo → Psique → Têmis → ajuste → Dédalo e exige a liberação de Psique após a entrega de Dédalo.
+
+## LOOP-BPM-DEDALO-REMATERIALIZA-ENQUANTO-AGUARDA-GATE — polling duplica geração
+
+- **Data:** 2026-08-15.
+- **Sintoma:** a mesma tarefa BPM de Dédalo era materializada novamente enquanto uma candidata já aguardava o Quality Review, gerando trabalho e consumo de tokens repetidos.
+- **Causa-raiz:** o endpoint de ativação aceitava novamente a tarefa `IN_PROGRESS` e o materializador não reconhecia a tentativa BPM ativa do mesmo ciclo.
+- **Correção sistêmica:** Dédalo reutiliza a tentativa materializada enquanto ela não estiver em falha e entrega à próxima atividade HTML, anúncio, checkout, preço e auditoria visual avaliados.
+- **Prevenção:** testes de contrato impedem nova materialização durante o gate e comprovam a propagação das evidências comerciais para Psique e Têmis.
+
 # 2026-08-14 — Dédalo: reconexão Codex bloqueava a produção da landing
 
 - **Sintoma:** uma correção integral de HTML permanecia iniciada sem ser reservada pelo executor.

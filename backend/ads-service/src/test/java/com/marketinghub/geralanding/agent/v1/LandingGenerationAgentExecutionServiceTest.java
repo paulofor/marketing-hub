@@ -98,6 +98,46 @@ class LandingGenerationAgentExecutionServiceTest {
     verify(coordinator, never()).continueAfterQualityReview(any(), any(), any());
   }
 
+  /**
+   * Deve propagar landing, screenshots, anúncio e checkout para Psique avaliar evidências reais.
+   */
+  @Test
+  void shouldIncludeCommercialEvidenceWhenCompletingBpmTask() {
+    Experiment experiment = new Experiment();
+    experiment.setHtmlGeraLanding("<!doctype html><html><body>Agenda Cheia</body></html>");
+    experiment.setAdCopy("{\"headline\":\"Feed profissional\"}");
+    experiment.setAdImageBriefing("{\"proof\":\"antes e depois\"}");
+    experiment.setFollowUpActionUrl("https://checkout.example/agenda-cheia");
+    experiment.setUnitPrice(java.math.BigDecimal.valueOf(67));
+    GeraLandingStageExecution qualityReview = execution("quality-review-88", "CONCLUIDO");
+    qualityReview.setQualityReviewAudit(
+        "{\"screenshots\":[{\"viewport\":\"mobile\",\"publicUrl\":\"https://evidence/mobile.jpg\"}]}");
+    when(experimentRepository.findById(88L)).thenReturn(Optional.of(experiment));
+    when(repository
+            .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
+                88L, "landing-page-quality-review", "agent-task:30"))
+        .thenReturn(List.of(qualityReview));
+
+    service.onQualityReviewCompleted(
+        new LandingQualityReviewedEvent(
+            88L,
+            "agent-task:30",
+            "{\"approvalRecommendation\":\"APPROVE_FOR_PUBLICATION\",\"score\":90}"));
+
+    org.mockito.ArgumentCaptor<com.marketinghub.agenttask.CompleteAgentTaskRequest> request =
+        org.mockito.ArgumentCaptor.forClass(
+            com.marketinghub.agenttask.CompleteAgentTaskRequest.class);
+    verify(agentTaskService)
+        .completeClaimedProcessTask(
+            org.mockito.ArgumentMatchers.eq("landing-generator"),
+            org.mockito.ArgumentMatchers.eq(30L),
+            request.capture());
+    assertTrue(request.getValue().evidenceJson().contains("Agenda Cheia"));
+    assertTrue(request.getValue().evidenceJson().contains("mobile.jpg"));
+    assertTrue(request.getValue().evidenceJson().contains("checkout.example"));
+    assertTrue(request.getValue().evidenceJson().contains("Feed profissional"));
+  }
+
   /** Não deve acumular outra correção quando o mesmo ciclo já possui trabalho ativo. */
   @Test
   void shouldNotDuplicateRejectedQualityReviewWhileCorrectionIsActive() {
@@ -185,6 +225,36 @@ class LandingGenerationAgentExecutionServiceTest {
         org.mockito.ArgumentCaptor.forClass(GeraLandingStageExecution.class);
     verify(repository).save(execution.capture());
     assertEquals("agent-task:30", execution.getValue().getAutonomousCycleId());
+  }
+
+  /** Não deve recriar o briefing original enquanto a entrega concluída aguarda o Quality Review. */
+  @Test
+  void shouldNotRematerializeClaimedBpmTaskAwaitingQualityReview() {
+    AgentTaskPendingResponse task =
+        new AgentTaskPendingResponse(
+            30L,
+            "landing-generator",
+            "landing-page-generation",
+            2,
+            "html",
+            "Construir HTML com autonomia",
+            "Experimento 88 — construir landing",
+            "Criar candidata responsiva sem publicar.",
+            "commercial-plan:2@v4",
+            Instant.parse("2026-08-15T05:10:37Z"),
+            "{\"completedActivities\":[]}");
+    GeraLandingStageExecution completed = execution("completed-before-review", "CONCLUIDO");
+    completed.setAutonomousCycleId("agent-task:30");
+    when(agentTaskService.claimEligibleProcessTask("landing-generator"))
+        .thenReturn(Optional.of(task));
+    when(repository
+            .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
+                88L, "landing-generation-agent-v1", "agent-task:30"))
+        .thenReturn(List.of(completed));
+
+    service.activateNextProcessTask();
+
+    verify(repository, never()).save(any(GeraLandingStageExecution.class));
   }
 
   /** Deve persistir e bloquear uma falha de aplicação sem devolver erro técnico ao executor. */

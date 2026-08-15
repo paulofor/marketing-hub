@@ -529,6 +529,38 @@ class AgentTaskServiceTest {
         .isPresent();
   }
 
+  /** Ignora sucessoras alcançáveis somente pelo laço de retrabalho ao liberar Psique. */
+  @Test
+  void ignoresDownstreamTasksInsideReworkLoop() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent psique = agent(2L, "customer-agent", "Psique");
+    BusinessProcessDefinition process = process("PUBLISHED", "Psique");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"start\",\"type\":\"START\"},{\"id\":\"html\",\"type\":\"TASK\"},{\"id\":\"technical\",\"type\":\"TASK\"},{\"id\":\"technicalGate\",\"type\":\"GATEWAY\"},{\"id\":\"customer\",\"type\":\"TASK\"},{\"id\":\"customerGate\",\"type\":\"GATEWAY\"},{\"id\":\"commercial\",\"type\":\"TASK\"},{\"id\":\"commercialGate\",\"type\":\"GATEWAY\"},{\"id\":\"adjust\",\"type\":\"TASK\"}],"
+            + "\"flows\":[{\"from\":\"start\",\"to\":\"html\"},{\"from\":\"html\",\"to\":\"technical\"},{\"from\":\"technical\",\"to\":\"technicalGate\"},{\"from\":\"technicalGate\",\"to\":\"customer\"},{\"from\":\"customer\",\"to\":\"customerGate\"},{\"from\":\"customerGate\",\"to\":\"commercial\"},{\"from\":\"commercial\",\"to\":\"commercialGate\"},{\"from\":\"commercialGate\",\"to\":\"adjust\"},{\"from\":\"adjust\",\"to\":\"technical\"}]}");
+    AgentTask html =
+        processTask(30L, agent(7L, "landing-generator", "Dédalo"), process, "html", "COMPLETED");
+    AgentTask customer = processTask(31L, psique, process, "customer", "PENDING");
+    AgentTask commercial =
+        processTask(32L, agent(6L, "meta-ad-approver", "Têmis"), process, "commercial", "PENDING");
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of());
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "PENDING"))
+        .thenReturn(List.of(customer));
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            9L, "commercial-plan:2@v4"))
+        .thenReturn(List.of(html, customer, commercial));
+
+    assertThat(
+            service(repository, agents, Clock.systemUTC())
+                .claimEligibleProcessTask("customer-agent"))
+        .isPresent();
+  }
+
   /** Expõe atividade liberada, bloqueio por predecessora e tarefa legada substituída. */
   @Test
   void buildsProcessInstanceOperationalView() {

@@ -52,6 +52,30 @@ vi.mock("../../api/agentTask/useAgentTasks", () => ({
   useUpdateAgentTaskStatus: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
+vi.mock("../../api/agent/useAgentWorkMonitor", () => ({
+  useAgentWorkMonitor: () => ({
+    isLoading: false,
+    data: [
+      {
+        agentId: 7,
+        agentKey: testState.agentKey,
+        nickname: testState.nickname,
+        agentName: "Agente em teste",
+        workStatus: "WORKING",
+        currentWork: "Construção da landing do experimento #88",
+        progressDetail: "Etapa landing-generation-agent-v1 · PROCESSANDO",
+        difficulty: null,
+        externalDecisionRequired: false,
+        lastActivityAt: "2026-08-15T13:01:00Z",
+        dailyTokens: 12345,
+        dailyTokenDate: "2026-08-15",
+        executorHealth: { status: "READY" },
+        combinedStatus: "ATUANDO",
+      },
+    ],
+  }),
+}));
+
 vi.mock("../../api/planning/useCommercialPlans", () => ({
   useCommercialPlans: () => ({
     data: [{ id: 9, name: "MUSA v7" }],
@@ -102,6 +126,25 @@ describe("AgentWorkspacePage", () => {
     expect(
       screen.queryByText("Tarefa #36", { exact: false }),
     ).not.toBeInTheDocument();
+  });
+
+  it("mostra sinais persistidos de atuação sem estimar consumo ausente", () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={["/agents/7"]}>
+          <Routes>
+            <Route path="/agents/:id" element={<AgentWorkspacePage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText("Atuação observável")).toBeInTheDocument();
+    expect(screen.getByText("12.345")).toBeInTheDocument();
+    expect(
+      screen.getByText("Consumo reportado pelo Codex"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/confirmam execução técnica/)).toBeInTheDocument();
   });
 
   it("exibe a identidade, a caixa de entrada e a autoria de outro agente", () => {

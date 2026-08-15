@@ -27,8 +27,9 @@ class CreativeImprovementServiceTest {
                 "revisedImagePrompt", "Crie anúncio premium para manicures.",
                 "mandatoryVisualRequirements", List.of("Headline Agenda Cheia legível", "CTA Saiba mais legível"),
                 "forbiddenVisualElements", List.of("Texto simulado", "Botão vazio"),
-                "visualAcceptanceCriteria", List.of("Headline pode ser lida em tela mobile"))));
-        when(imageClient.generateImage(any(), any(), any())).thenReturn("https://cdn.test/revision.png");
+                "visualAcceptanceCriteria", List.of("Headline pode ser lida em tela mobile"),
+                "referenceImageUrls", List.of("https://cdn.test/post.png", "https://cdn.test/story.png"))));
+        when(imageClient.generateImage(any(), any(), any(), any())).thenReturn("https://cdn.test/revision.png");
 
         CreativeImprovementService.Summary result = service.processPending(3);
 
@@ -36,13 +37,14 @@ class CreativeImprovementServiceTest {
         verify(imageClient).generateImage(
                 contains("1. Headline Agenda Cheia legível"),
                 eq("Revisão visual solicitada pelo backend"),
-                eq("creative-improvement-88"));
-        verify(imageClient).generateImage(contains("ELEMENTOS PROIBIDOS"), any(), any());
-        verify(imageClient).generateImage(contains("CRITÉRIOS DE ACEITAÇÃO"), any(), any());
+                eq("creative-improvement-88"),
+                eq(List.of("https://cdn.test/post.png", "https://cdn.test/story.png")));
+        verify(imageClient).generateImage(contains("ELEMENTOS PROIBIDOS"), any(), any(), any());
+        verify(imageClient).generateImage(contains("CRITÉRIOS DE ACEITAÇÃO"), any(), any(), any());
         verify(imageClient).generateImage(
-                contains("Não suponha arquivos, telas, templates ou pós-produção"), any(), any());
+                contains("Não suponha arquivos, telas, templates ou pós-produção"), any(), any(), any());
         verify(imageClient).generateImage(
-                contains("não pode parecer a oferta de outro produto ou serviço"), any(), any());
+                contains("não pode parecer a oferta de outro produto ou serviço"), any(), any(), any());
         verify(backend).report(eq(88L), any());
     }
 
@@ -60,6 +62,6 @@ class CreativeImprovementServiceTest {
 
         assertThat(result.failed()).isEqualTo(1);
         verify(backend).report(eq(89L), any());
-        verify(imageClient, org.mockito.Mockito.never()).generateImage(any(), any(), any());
+        verify(imageClient, org.mockito.Mockito.never()).generateImage(any(), any(), any(), any());
     }
 }

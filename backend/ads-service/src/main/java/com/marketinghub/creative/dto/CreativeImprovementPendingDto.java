@@ -17,4 +17,5 @@ public record CreativeImprovementPendingDto(
     List<String> mandatoryVisualRequirements,
     List<String> forbiddenVisualElements,
     List<String> visualAcceptanceCriteria,
+    List<String> referenceImageUrls,
     String agentReviewJson) {}

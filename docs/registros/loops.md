@@ -1261,6 +1261,14 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Correção:** a fila do agente passou a ser idempotente por experimento, etapa, ciclo e status ativo; uma reprovação posterior permanece auditada, mas não abre trabalho concorrente.
 - **Prevenção:** teste de contrato simula callbacks reprovados repetidos e exige uma única correção ativa antes de nova revisão.
 
+## LOOP-CREATIVE-IMPROVEMENT-WITHOUT-PRODUCT-REFERENCES — correção visual repete fotos genéricas
+
+- **Data:** 2026-08-15.
+- **Sintoma:** no experimento #88, Têmis pedia que o anúncio demonstrasse posts e stories finalizados, mas cada nova versão voltava a mostrar somente fotografias de unhas em dispositivos.
+- **Causa-raiz:** a geração inicial `PIPELINE_ADS` recebia a Biblioteca Audiovisual aprovada do plano comercial, enquanto a fila posterior de `agent-improvement` enviava apenas o prompt textual da revisão. O GPT Image 2 não recebia as provas reais já aprovadas e reconstruía o mesmo território genérico.
+- **Correção:** o backend inclui no contrato de retrabalho até três imagens `APPROVED` com finalidade `ADS` do plano que governa o experimento; o AI Worker encaminha essas referências ao GPT Image 2 pela entrada multimodal.
+- **Prevenção:** testes de contrato no backend e no AI Worker exigem que as URLs aprovadas atravessem a fila e cheguem à chamada multimodal de geração.
+
 ## LOOP-MUSA-PROJETO-LEGADO-PLANO-OBRIGATORIO — perfil de Apolo não é salvo
 
 - **Data:** 2026-08-12.

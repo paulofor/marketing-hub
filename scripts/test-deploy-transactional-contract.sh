@@ -44,4 +44,12 @@ if ! grep -Fq "if: needs.detect-changes.outputs.backend == 'true'" "${WORKFLOW_F
   exit 1
 fi
 
+if ! grep -Fq '.deployed-app-revision' "${WORKFLOW_FILE}" \
+  || ! grep -Fq 'scripts/detect-deployment-changes.sh' "${WORKFLOW_FILE}" \
+  || ! grep -Fq 'Mark successful APP revision' "${WORKFLOW_FILE}" \
+  || ! grep -Fq 'abortando para não perder módulos pendentes' "${WORKFLOW_FILE}"; then
+  printf '[ARQUITETURA] workflow deve detectar mudanças desde a última revisão APP realmente publicada.\n' >&2
+  exit 1
+fi
+
 printf 'Contrato de deploy transacional validado.\n'

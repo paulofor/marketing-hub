@@ -58,6 +58,9 @@ class LandingGeneratorCodexRunnerTest {
     assertTrue(schema.contains("generationApproachOptions"));
     assertTrue(schema.contains("selectedGenerationApproach"));
     assertTrue(prompt.contains("recuperar_estrategias_promovidas"));
+    assertTrue(
+        prompt.contains("não selecione essa abordagem se não puder entregar o HTML integral"));
+    assertTrue(prompt.contains("começando em `<!doctype html>` e terminando em `</html>`"));
     assertTrue(mcp.contains("/api/internal/agent-learning/v1/agents/landing-generator/promoted"));
     assertFalse(mcp.contains("/promotion"));
   }

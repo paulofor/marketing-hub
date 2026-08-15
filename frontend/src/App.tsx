@@ -96,6 +96,7 @@ import AgentWorkspacePage from "./pages/agent/AgentWorkspacePage";
 import ActiveAgentTasksPage from "./pages/agent/ActiveAgentTasksPage";
 import AgentThemePage from "./pages/agent/AgentThemePage";
 import SystemImprovementsPage from "./pages/systemImprovement/SystemImprovementsPage";
+import BusinessProcessesPage from "./pages/businessProcess/BusinessProcessesPage";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import MainNavigation from "./components/MainNavigation";
@@ -419,6 +420,10 @@ export default function App() {
               />
               <Route path="/agents" element={<AgentListPage />} />
               <Route path="/agent-tasks" element={<ActiveAgentTasksPage />} />
+              <Route
+                path="/business-processes"
+                element={<BusinessProcessesPage />}
+              />
               <Route path="/agents/personas" element={<PersonaLibraryPage />} />
               <Route path="/agents/new" element={<NewAgentPage />} />
               <Route path="/agents/:id" element={<AgentWorkspacePage />} />

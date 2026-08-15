@@ -1,0 +1,171 @@
+package com.marketinghub.businessprocess;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+/** Responsabilidade: governar cadastro, validação, versionamento e publicação de processos. */
+@Service
+public class BusinessProcessDefinitionService {
+  private final BusinessProcessDefinitionRepository repository;
+  private final ObjectMapper objectMapper;
+  private final Clock clock;
+
+  /** Configura persistência, serialização e relógio operacional. */
+  public BusinessProcessDefinitionService(
+      BusinessProcessDefinitionRepository repository, ObjectMapper objectMapper) {
+    this(repository, objectMapper, Clock.systemUTC());
+  }
+
+  /** Permite testes determinísticos do ciclo de publicação. */
+  BusinessProcessDefinitionService(
+      BusinessProcessDefinitionRepository repository, ObjectMapper objectMapper, Clock clock) {
+    this.repository = repository;
+    this.objectMapper = objectMapper;
+    this.clock = clock;
+  }
+
+  /** Lista todas as versões cadastradas sem inferir estado no frontend. */
+  @Transactional(readOnly = true)
+  public List<BusinessProcessDefinitionResponse> list() {
+    return repository.findAllByOrderByNameAscVersionNumberDesc().stream()
+        .map(this::response)
+        .toList();
+  }
+
+  /** Busca uma versão pelo identificador auditável. */
+  @Transactional(readOnly = true)
+  public BusinessProcessDefinitionResponse get(Long id) {
+    return response(required(id));
+  }
+
+  /** Cadastra uma versão inicialmente em rascunho após validar o grafo. */
+  @Transactional
+  public BusinessProcessDefinitionResponse create(BusinessProcessDefinitionRequest request) {
+    String code = request.processCode().trim();
+    if (repository.findByProcessCodeAndVersionNumber(code, request.versionNumber()).isPresent()) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Esta versão do processo já existe.");
+    }
+    validateDiagram(request.diagram());
+    BusinessProcessDefinition value = new BusinessProcessDefinition();
+    value.setProcessCode(code);
+    value.setName(request.name().trim());
+    value.setPurpose(request.purpose().trim());
+    value.setOwnerName(request.ownerName().trim());
+    value.setTriggerDescription(request.triggerDescription().trim());
+    value.setOutcomeDescription(request.outcomeDescription().trim());
+    value.setVersionNumber(request.versionNumber());
+    value.setStatus("DRAFT");
+    value.setTechnicalReference(trimToNull(request.technicalReference()));
+    value.setDiagramJson(write(request.diagram()));
+    value.setCreatedAt(Instant.now(clock));
+    return response(repository.save(value));
+  }
+
+  /** Publica uma versão válida e aposenta a versão anteriormente vigente. */
+  @Transactional
+  public BusinessProcessDefinitionResponse publish(Long id) {
+    BusinessProcessDefinition selected = required(id);
+    if ("PUBLISHED".equals(selected.getStatus())) {
+      return response(selected);
+    }
+    validateDiagram(read(selected.getDiagramJson()));
+    Instant now = Instant.now(clock);
+    repository.findAllByProcessCodeOrderByVersionNumberDesc(selected.getProcessCode()).stream()
+        .filter(item -> "PUBLISHED".equals(item.getStatus()))
+        .forEach(item -> item.setStatus("RETIRED"));
+    selected.setStatus("PUBLISHED");
+    selected.setPublishedAt(now);
+    return response(repository.save(selected));
+  }
+
+  /** Valida integridade BPM mínima: eventos únicos e fluxos apontando para nós existentes. */
+  private void validateDiagram(JsonNode diagram) {
+    JsonNode nodes = diagram.path("nodes");
+    JsonNode flows = diagram.path("flows");
+    if (!nodes.isArray() || nodes.size() < 3 || !flows.isArray() || flows.isEmpty()) {
+      throw invalid("O diagrama deve ter ao menos início, atividade, fim e seus fluxos.");
+    }
+    Set<String> ids = new HashSet<>();
+    int starts = 0;
+    int ends = 0;
+    for (JsonNode node : nodes) {
+      String id = node.path("id").asText("").trim();
+      String type = node.path("type").asText("").trim();
+      if (id.isEmpty() || node.path("label").asText("").isBlank() || !ids.add(id)) {
+        throw invalid("Cada elemento precisa de id e nome únicos.");
+      }
+      starts += "START".equals(type) ? 1 : 0;
+      ends += "END".equals(type) ? 1 : 0;
+    }
+    if (starts != 1 || ends != 1) {
+      throw invalid("O processo deve ter exatamente um início e um fim.");
+    }
+    for (JsonNode flow : flows) {
+      if (!ids.contains(flow.path("from").asText()) || !ids.contains(flow.path("to").asText())) {
+        throw invalid("Todo fluxo deve conectar elementos existentes.");
+      }
+    }
+  }
+
+  /** Converte uma entidade no contrato oficial da tela. */
+  private BusinessProcessDefinitionResponse response(BusinessProcessDefinition value) {
+    return new BusinessProcessDefinitionResponse(
+        value.getId(),
+        value.getProcessCode(),
+        value.getName(),
+        value.getPurpose(),
+        value.getOwnerName(),
+        value.getTriggerDescription(),
+        value.getOutcomeDescription(),
+        value.getVersionNumber(),
+        value.getStatus(),
+        value.getTechnicalReference(),
+        read(value.getDiagramJson()),
+        value.getCreatedAt(),
+        value.getPublishedAt());
+  }
+
+  /** Obtém uma versão existente ou responde 404. */
+  private BusinessProcessDefinition required(Long id) {
+    return repository
+        .findById(id)
+        .orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Processo não encontrado."));
+  }
+
+  /** Serializa o diagrama estruturado para persistência auditável. */
+  private String write(JsonNode value) {
+    try {
+      return objectMapper.writeValueAsString(value);
+    } catch (JsonProcessingException ex) {
+      throw invalid("Diagrama inválido.");
+    }
+  }
+
+  /** Lê o diagrama persistido sem ocultar corrupção do contrato. */
+  private JsonNode read(String value) {
+    try {
+      return objectMapper.readTree(value);
+    } catch (JsonProcessingException ex) {
+      throw new IllegalStateException("Diagrama persistido inválido.", ex);
+    }
+  }
+
+  /** Produz erro de validação consistente para a API administrativa. */
+  private ResponseStatusException invalid(String message) {
+    return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+  }
+
+  /** Normaliza referência técnica opcional. */
+  private String trimToNull(String value) {
+    return value == null || value.isBlank() ? null : value.trim();
+  }
+}

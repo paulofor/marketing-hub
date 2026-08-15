@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-14-business-process-catalog.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-14-hotmart-commercial-evidence-history.yaml
       relativeToChangelogFile: true
 

@@ -1,0 +1,110 @@
+.business-process-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 1rem;
+}
+.business-process-list {
+  align-self: start;
+  position: sticky;
+  top: 1rem;
+}
+.process-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+.process-summary > div {
+  padding: 0.8rem;
+  border-radius: 0.65rem;
+  background: var(--bs-tertiary-bg);
+}
+.process-summary strong,
+.process-summary span {
+  display: block;
+}
+.process-summary span {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+}
+.process-diagram {
+  max-height: 70vh;
+  overflow: auto;
+  padding: 0.5rem;
+}
+.process-diagram__row {
+  display: grid;
+  justify-items: center;
+}
+.process-diagram__incoming {
+  min-height: 2.3rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  color: var(--bs-secondary-color);
+  font-size: 0.8rem;
+}
+.process-diagram__incoming span {
+  white-space: nowrap;
+}
+.process-node {
+  width: min(100%, 620px);
+  border: 2px solid #395886;
+  border-radius: 0.85rem;
+  padding: 0.85rem 1rem;
+  background: var(--bs-body-bg);
+  box-shadow: 0 0.2rem 0.7rem rgba(25, 50, 80, 0.08);
+}
+.process-node h3 {
+  font-size: 1rem;
+  margin: 0.2rem 0;
+}
+.process-node p {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+  color: var(--bs-secondary-color);
+}
+.process-node__type {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #395886;
+}
+.process-node__owner {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.process-node--start,
+.process-node--end {
+  width: min(100%, 420px);
+  border-radius: 999px;
+  text-align: center;
+  border-color: #198754;
+}
+.process-node--gateway {
+  width: min(100%, 420px);
+  border-color: #d39100;
+  background: color-mix(
+    in srgb,
+    var(--bs-warning-bg-subtle) 45%,
+    var(--bs-body-bg)
+  );
+}
+@media (max-width: 767px) {
+  .business-process-layout {
+    grid-template-columns: 1fr;
+  }
+  .business-process-list {
+    position: static;
+  }
+  .process-summary {
+    grid-template-columns: 1fr;
+  }
+  .process-diagram {
+    max-height: none;
+    padding-inline: 0;
+  }
+  .process-node {
+    width: 100%;
+  }
+}

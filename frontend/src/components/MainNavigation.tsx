@@ -242,6 +242,11 @@ const NAV_SECTIONS: NavSection[] = [
         icon: ClipboardCheck,
       },
       {
+        to: "/business-processes",
+        label: "Processos",
+        icon: Workflow,
+      },
+      {
         to: "/whatsapp",
         label: "WhatsApp",
         icon: MessageSquare,

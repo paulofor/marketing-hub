@@ -1,0 +1,64 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-14-business-process-catalog-1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE business_process_definition (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                process_code VARCHAR(100) NOT NULL,
+                name VARCHAR(160) NOT NULL,
+                purpose TEXT NOT NULL,
+                owner_name VARCHAR(120) NOT NULL,
+                trigger_description VARCHAR(500) NOT NULL,
+                outcome_description VARCHAR(500) NOT NULL,
+                version_number INT NOT NULL,
+                status VARCHAR(20) NOT NULL,
+                technical_reference VARCHAR(200) NULL,
+                diagram_json LONGTEXT NOT NULL,
+                created_at DATETIME NOT NULL,
+                published_at DATETIME NULL,
+                PRIMARY KEY (id),
+                CONSTRAINT uk_business_process_code_version UNIQUE (process_code, version_number),
+                INDEX idx_business_process_status (process_code, status)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+  - changeSet:
+      id: 2026-08-14-business-process-landing-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description, version_number, status, technical_reference, diagram_json, created_at, published_at)
+              SELECT
+                'landing-page-generation',
+                'Geração de landing page',
+                'Produzir uma landing clara, confiável, tecnicamente válida e comercialmente aprovada antes de qualquer publicação.',
+                'Operação de Experimentos',
+                'Briefing comercial congelado e experimento apto a iniciar a produção da landing.',
+                'Landing aprovada, versionada e pronta para publicação humana controlada.',
+                1,
+                'PUBLISHED',
+                'experiment-pipeline / GeraLanding',
+                '{"nodes":[{"id":"start","type":"START","label":"Briefing pronto","owner":"Backend do experimento","description":"Oferta, público, promessa, mecanismo, prova, entregáveis e checkout congelados."},{"id":"wireframe","type":"TASK","label":"Criar wireframe","owner":"Dédalo","description":"Define estrutura e hierarquia comercial."},{"id":"copy","type":"TASK","label":"Produzir copy","owner":"Dédalo","description":"Materializa promessa, mecanismo, valor, prova, objeções e CTA."},{"id":"images","type":"TASK","label":"Planejar e gerar imagens","owner":"Dédalo","description":"Cria ativos coerentes com a oferta e o público."},{"id":"html","type":"TASK","label":"Montar HTML responsivo","owner":"Dédalo / GeraLanding","description":"Consolida o artefato visual puro, desktop e mobile."},{"id":"technical","type":"TASK","label":"Validação técnica","owner":"Quality Review","description":"Valida HTML, responsividade, links, checkout, placeholders e tracking."},{"id":"technicalGate","type":"GATEWAY","label":"Técnico aprovado?","owner":"Backend","description":"Gate objetivo e persistido."},{"id":"customer","type":"TASK","label":"Avaliação da cliente","owner":"Psique","description":"Avalia clareza, desejo, confiança, objeções e esforço percebido."},{"id":"customerGate","type":"GATEWAY","label":"Cliente aprova?","owner":"Backend","description":"Bloqueia percepção ambígua ou fraca."},{"id":"commercial","type":"TASK","label":"Revisão comercial final","owner":"Têmis","description":"Verifica coerência entre anúncio, landing, checkout, produto e compliance."},{"id":"commercialGate","type":"GATEWAY","label":"Comercial aprovado?","owner":"Backend","description":"Emite APPROVED, ADJUST ou BLOCKED."},{"id":"adjust","type":"TASK","label":"Corrigir causa reprovada","owner":"Dédalo","description":"Cria nova versão sem alterar oferta, preço ou publicação sem decisão humana."},{"id":"approval","type":"TASK","label":"Aprovação humana para publicar","owner":"Operador humano","description":"Compara versões e autoriza publicação explícita."},{"id":"end","type":"END","label":"Landing pronta para publicação","owner":"Backend","description":"Versão aprovada preservada com rollback."}],"flows":[{"from":"start","to":"wireframe"},{"from":"wireframe","to":"copy"},{"from":"copy","to":"images"},{"from":"images","to":"html"},{"from":"html","to":"technical"},{"from":"technical","to":"technicalGate"},{"from":"technicalGate","to":"customer","label":"Sim"},{"from":"technicalGate","to":"adjust","label":"Não"},{"from":"customer","to":"customerGate"},{"from":"customerGate","to":"commercial","label":"Sim"},{"from":"customerGate","to":"adjust","label":"Não"},{"from":"commercial","to":"commercialGate"},{"from":"commercialGate","to":"approval","label":"Sim"},{"from":"commercialGate","to":"adjust","label":"Não"},{"from":"adjust","to":"technical","label":"Nova versão"},{"from":"approval","to":"end"}]}',
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'landing-page-generation' AND version_number = 1
+              );

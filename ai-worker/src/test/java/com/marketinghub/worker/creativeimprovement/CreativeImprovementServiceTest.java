@@ -39,6 +39,10 @@ class CreativeImprovementServiceTest {
                 eq("creative-improvement-88"));
         verify(imageClient).generateImage(contains("ELEMENTOS PROIBIDOS"), any(), any());
         verify(imageClient).generateImage(contains("CRITÉRIOS DE ACEITAÇÃO"), any(), any());
+        verify(imageClient).generateImage(
+                contains("Não suponha arquivos, telas, templates ou pós-produção"), any(), any());
+        verify(imageClient).generateImage(
+                contains("não pode parecer a oferta de outro produto ou serviço"), any(), any());
         verify(backend).report(eq(88L), any());
     }
 

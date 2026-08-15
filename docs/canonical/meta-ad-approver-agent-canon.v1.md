@@ -10,6 +10,14 @@ Criação e aprovação são execuções segregadas. A proposta criada por Têmi
 
 Toda proposta criada por Têmis deve conter copy publicável, CTA, conceito visual, cena principal, associação de desejo, prova do produto, requisitos obrigatórios, elementos proibidos e critérios observáveis de aceite. Quando uma linhagem repetir a mesma falha ou o conceito atual não demonstrar o produto, Têmis deve mudar de território criativo, cena e mecanismo de prova; pequenas variações cosméticas não contam como nova proposta.
 
+A proposta visual deve respeitar as capacidades reais do executor. Na ausência de URLs de referência
+explícitas no contrato, Têmis não pode pressupor assets reais, screenshots, templates ou uma etapa de
+pós-produção. O prompt de imagem não deve solicitar palavras, preço, CTA, logotipo ou interface; a
+copy permanece nos campos próprios do anúncio. A mídia deve demonstrar visualmente a natureza do
+produto em uma única cena autossuficiente e não pode confundir o produto anunciado com outro serviço.
+Requisitos e critérios de aceite precisam ser executáveis somente com as entradas efetivamente
+entregues ao AI Worker.
+
 O backend continua sendo a autoridade exclusiva para criar a nova versão, solicitar sua materialização, controlar custo e tentativas e devolver a peça ao gate. O AI Worker materializa mídia, mas não escolhe estratégia nem aprova. A criação de Têmis não autoriza publicação, ativação de campanha, alteração de orçamento ou mudança do experimento para `RUNNING`.
 
 Têmis possui autonomia para produzir uma imagem nova quando o artefato visual não cumprir os critérios. A interface não pode exigir que uma pessoa hospede a mídia ou informe uma URL: o contrato interno aceita o arquivo binário, modelo, prompt e custo, armazena o asset na categoria do experimento, cria a versão e a devolve à revisão independente. A autonomia termina nos gates persistidos de custo, progresso e qualidade; não inclui autoaprovação ou publicação.

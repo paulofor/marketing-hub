@@ -40,73 +40,55 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Add SSH key to read deployed revision
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_CHAVE }}
+
+      - name: Add APP VPS to known_hosts
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          ssh-keyscan -T 30 -4 -p 22 -t rsa,ecdsa,ed25519 -H "${APP_VPS_IP}" >> ~/.ssh/known_hosts
+
       - id: filter
         name: Detect affected deployment targets
         shell: bash
+        env:
+          EVENT_BEFORE: ${{ github.event.before }}
+          SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o ConnectTimeout=30 -o TCPKeepAlive=yes
         run: |
           set -euo pipefail
 
-          before="${{ github.event.before }}"
-          if [[ -z "${before}" || "${before}" =~ ^0+$ ]]; then
+          deployed_revision=""
+          for attempt in 1 2 3; do
+            if deployed_revision="$(ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} "if test -f ${DEPLOY_DIR}/.deployed-app-revision; then cat ${DEPLOY_DIR}/.deployed-app-revision; else printf MISSING; fi")"; then
+              break
+            fi
+            if [[ "${attempt}" -eq 3 ]]; then
+              echo "Não foi possível consultar a revisão publicada; abortando para não perder módulos pendentes." >&2
+              exit 1
+            fi
+            sleep $((attempt * 10))
+          done
+
+          if [[ "${deployed_revision}" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "${deployed_revision}^{commit}" 2>/dev/null; then
+            base="${deployed_revision}"
+          elif [[ "${deployed_revision}" == "MISSING" ]] && { [[ -z "${EVENT_BEFORE}" ]] || [[ "${EVENT_BEFORE}" =~ ^0+$ ]]; }; then
             base="$(git rev-list --max-parents=0 HEAD)"
+          elif [[ "${deployed_revision}" == "MISSING" ]]; then
+            base="${EVENT_BEFORE}"
           else
-            base="${before}"
+            echo "Marcador de revisão publicada inválido: ${deployed_revision}" >&2
+            exit 1
           fi
 
-          changed_files="$(git diff --name-only "${base}" "${GITHUB_SHA}")"
-          printf 'Changed files:\n%s\n' "${changed_files}"
-
-          backend=false
-          frontend=false
-          video=false
-          app_deploy_descriptor=false
-          app_deploy_sync=false
-          video_deploy_descriptor=false
-
-          while IFS= read -r file; do
-            [[ -z "${file}" ]] && continue
-            case "${file}" in
-              .github/workflows/deploy-containers.yml) backend=true; frontend=true; video=true; app_deploy_descriptor=true; video_deploy_descriptor=true ;;
-              .dockerignore) backend=true; frontend=true; video=true ;;
-              backend/settings.xml) backend=true ;;
-              backend/ads-service/*) backend=true ;;
-              frontend/*) frontend=true ;;
-              video-management-service/*) video=true ;;
-              deploy/bin/apply-video-only.sh) video=true; video_deploy_descriptor=true ;;
-              deploy/bin/*) app_deploy_sync=true ;;
-              deploy/docker-compose.yml) app_deploy_descriptor=true ;;
-              deploy/nginx/*) app_deploy_descriptor=true ;;
-            esac
-          done <<< "${changed_files}"
-
-          app_deploy=false
-          app_image=false
-          video_deploy=false
-
-          if [[ "${backend}" == "true" || "${frontend}" == "true" ]]; then
-            app_image=true
-          fi
-
-          if [[ "${backend}" == "true" || "${frontend}" == "true" || "${app_deploy_descriptor}" == "true" ]]; then
-            app_deploy=true
-          fi
-
-          if [[ "${video}" == "true" || "${video_deploy_descriptor}" == "true" ]]; then
-            video_deploy=true
-          fi
-
-          {
-            echo "backend=${backend}"
-            echo "frontend=${frontend}"
-            echo "video=${video}"
-            echo "app_image=${app_image}"
-            echo "app_deploy=${app_deploy}"
-            echo "app_deploy_sync=${app_deploy_sync}"
-            echo "video_deploy=${video_deploy}"
-          } >> "${GITHUB_OUTPUT}"
+          bash scripts/detect-deployment-changes.sh "${base}" "${GITHUB_SHA}" "${GITHUB_OUTPUT}"
 
       - name: Validate transactional app deploy contract
-        run: bash scripts/test-deploy-transactional-contract.sh
+        run: |
+          bash scripts/test-deploy-transactional-contract.sh
+          bash scripts/test-deployment-change-resume.sh
 
   sync-app-deploy-descriptors:
     name: Sync app deployment descriptors
@@ -529,6 +511,14 @@ jobs:
           docker logs --tail 200 marketinghub-backend >&2 || true
           exit 1
           REMOTE
+
+      - name: Mark successful APP revision
+        env:
+          GIT_SHA: ${{ github.sha }}
+          SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
+        run: |
+          ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} \
+            "printf '%s\\n' '${GIT_SHA}' > '${DEPLOY_DIR}/.deployed-app-revision.tmp' && mv '${DEPLOY_DIR}/.deployed-app-revision.tmp' '${DEPLOY_DIR}/.deployed-app-revision'"
 
   deploy-video-management:
     name: Deploy video management

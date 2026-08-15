@@ -47,4 +47,11 @@ public class AgentTaskController {
       @PathVariable Long taskId, @Valid @RequestBody UpdateAgentTaskStatusRequest request) {
     return service.updateStatus(taskId, request);
   }
+
+  /** Vincula uma tarefa excepcional pendente a uma atividade regular publicada. */
+  @PatchMapping("/{taskId}/process-binding")
+  public AgentTaskResponse bindProcess(
+      @PathVariable Long taskId, @Valid @RequestBody BindAgentTaskProcessRequest request) {
+    return service.bindProcess(taskId, request);
+  }
 }

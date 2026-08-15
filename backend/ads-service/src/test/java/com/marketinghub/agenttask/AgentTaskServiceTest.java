@@ -64,6 +64,68 @@ class AgentTaskServiceTest {
     assertThat(response.exceptional()).isFalse();
   }
 
+  /** Vincula uma tarefa excepcional pendente sem perder sua identidade e seu histórico. */
+  @Test
+  void bindsPendingExceptionalTaskToPublishedActivity() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    BusinessProcessDefinitionRepository processes = mock(BusinessProcessDefinitionRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    BusinessProcessDefinition process = process("PUBLISHED", "Dédalo");
+    AgentTask task = new AgentTask();
+    task.setId(40L);
+    task.setAssignedAgent(dedalo);
+    task.setRequestedByType("HUMAN");
+    task.setRequestedByName("Operador de Crescimento");
+    task.setTitle("Cadastrar exemplos reais");
+    task.setDescription("Cadastrar referências auditáveis.");
+    task.setPriority("HIGH");
+    task.setStatus("PENDING");
+    task.setTaskKind("WORK");
+    task.setExceptional(true);
+    task.setExceptionReason("Processo ainda não possuía a atividade.");
+    task.setCreatedAt(Instant.parse("2026-08-15T21:30:22Z"));
+    task.setUpdatedAt(task.getCreatedAt());
+    when(repository.findById(40L)).thenReturn(Optional.of(task));
+    when(processes.findById(9L)).thenReturn(Optional.of(process));
+    when(repository.save(task)).thenReturn(task);
+    AgentTaskService service =
+        new AgentTaskService(
+            repository,
+            mock(AgentRepository.class),
+            processes,
+            new ObjectMapper(),
+            Clock.fixed(Instant.parse("2026-08-15T21:40:00Z"), ZoneOffset.UTC));
+
+    AgentTaskResponse response =
+        service.bindProcess(40L, new BindAgentTaskProcessRequest(9L, "html"));
+
+    assertThat(response.id()).isEqualTo(40L);
+    assertThat(response.processDefinitionId()).isEqualTo(9L);
+    assertThat(response.processActivityName()).isEqualTo("Montar HTML");
+    assertThat(response.exceptional()).isFalse();
+    assertThat(response.exceptionReason()).isNull();
+  }
+
+  /** Impede migrar tarefa que um executor já recebeu. */
+  @Test
+  void rejectsBindingAfterTaskWasReceived() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task = new AgentTask();
+    task.setId(40L);
+    task.setExceptional(true);
+    task.setStatus("IN_PROGRESS");
+    task.setReceivedAt(Instant.parse("2026-08-15T21:35:00Z"));
+    when(repository.findById(40L)).thenReturn(Optional.of(task));
+
+    assertThatThrownBy(
+            () ->
+                service(repository, mock(AgentRepository.class), Clock.systemUTC())
+                    .bindProcess(40L, new BindAgentTaskProcessRequest(9L, "html")))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("pendente e ainda não recebida");
+    verify(repository, never()).save(any());
+  }
+
   /** Bloqueia tarefa sem processo quando ela não foi declarada como exceção. */
   @Test
   void rejectsHumanTaskWithoutProcess() {

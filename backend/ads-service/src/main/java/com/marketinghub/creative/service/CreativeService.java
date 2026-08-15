@@ -25,6 +25,7 @@ import com.marketinghub.media.AssetStatus;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.media.MediaProvider;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.planning.CommercialPlanVisualAssetStatus;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.creative.label.AngleRepository;
@@ -33,6 +34,8 @@ import com.marketinghub.repository.jpa.creative.label.VisualProofRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.media.AssetRepository;
+import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
+import com.marketinghub.repository.jpa.planning.CommercialPlanVisualAssetRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.storage.AssetStorageService;
 import com.marketinghub.storage.AssetUploadCategory;
@@ -89,6 +92,8 @@ public class CreativeService {
   private final ObjectMapper objectMapper;
   private final ProductRepository productRepository;
   private final CreativeConvergenceService convergenceService;
+  private final CommercialPlanRepository commercialPlanRepository;
+  private final CommercialPlanVisualAssetRepository commercialPlanVisualAssetRepository;
 
   /** Cria e persiste um criativo para o experimento informado. */
   @Transactional
@@ -561,9 +566,33 @@ public class CreativeService {
                   stringList(correction.path("mandatoryVisualRequirements")),
                   stringList(correction.path("forbiddenVisualElements")),
                   stringList(correction.path("visualAcceptanceCriteria")),
+                  approvedCreativeReferenceUrls(creative.getExperiment().getId()),
                   creative.getAgentReviewJson());
             })
         .toList();
+  }
+
+  /**
+   * Entrega ao retrabalho somente imagens aprovadas do plano comercial que governa o experimento.
+   */
+  private List<String> approvedCreativeReferenceUrls(Long experimentId) {
+    return commercialPlanRepository.findByExperimentReference(experimentId).stream()
+        .findFirst()
+        .map(
+            plan ->
+                commercialPlanVisualAssetRepository
+                    .findByCommercialPlanIdAndStatusOrderByCreatedAtAsc(
+                        plan.getId(), CommercialPlanVisualAssetStatus.APPROVED)
+                    .stream()
+                    .filter(asset -> "IMAGE".equalsIgnoreCase(asset.getMediaType()))
+                    .filter(asset -> "ADS".equalsIgnoreCase(asset.getPurpose()))
+                    .map(com.marketinghub.planning.CommercialPlanVisualAsset::getAssetUrl)
+                    .filter(StringUtils::hasText)
+                    .map(String::trim)
+                    .distinct()
+                    .limit(3)
+                    .toList())
+        .orElseGet(List::of);
   }
 
   /** Cria a nova versão gerada e a devolve automaticamente ao gate do agente. */

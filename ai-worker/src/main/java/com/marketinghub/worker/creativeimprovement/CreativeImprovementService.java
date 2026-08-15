@@ -36,7 +36,8 @@ public class CreativeImprovementService {
                 String imageUrl = imageClient.generateImage(
                         prompt,
                         "Revisão visual solicitada pelo backend",
-                        "creative-improvement-" + creativeId);
+                        "creative-improvement-" + creativeId,
+                        stringList(correction.get("referenceImageUrls")));
                 Map<String, Object> result = new LinkedHashMap<>();
                 result.put("imageUrl", imageUrl);
                 result.put("requestJson", prompt);

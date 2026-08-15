@@ -26,6 +26,10 @@ import com.marketinghub.media.Asset;
 import com.marketinghub.media.AssetStatus;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.planning.CommercialPlan;
+import com.marketinghub.planning.CommercialPlanStatus;
+import com.marketinghub.planning.CommercialPlanVisualAsset;
+import com.marketinghub.planning.CommercialPlanVisualAssetStatus;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.creative.convergence.CreativeConvergenceCycleRepository;
 import com.marketinghub.repository.jpa.creative.convergence.CreativeConvergenceTaskRepository;
@@ -35,6 +39,8 @@ import com.marketinghub.repository.jpa.creative.label.VisualProofRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.media.AssetRepository;
+import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
+import com.marketinghub.repository.jpa.planning.CommercialPlanVisualAssetRepository;
 import com.marketinghub.storage.AssetStorageService;
 import com.marketinghub.storage.AssetUploadCategory;
 import java.net.http.HttpClient;
@@ -70,6 +76,8 @@ class CreativeServiceTest {
   @Autowired ExperimentVideoAssetRepository experimentVideoAssetRepository;
   @Autowired CreativeConvergenceCycleRepository convergenceCycleRepository;
   @Autowired CreativeConvergenceTaskRepository convergenceTaskRepository;
+  @Autowired CommercialPlanRepository commercialPlanRepository;
+  @Autowired CommercialPlanVisualAssetRepository commercialPlanVisualAssetRepository;
 
   @Autowired CreativeService service;
 
@@ -81,6 +89,8 @@ class CreativeServiceTest {
   void setup() {
     experimentVideoAssetRepository.deleteAll();
     assetRepository.deleteAll();
+    commercialPlanVisualAssetRepository.deleteAll();
+    commercialPlanRepository.deleteAll();
   }
 
   @Test
@@ -434,6 +444,22 @@ class CreativeServiceTest {
     create.setFormat("IMAGE");
     create.setImageUrl("https://cdn.test/ad.png");
     Creative creative = service.create(exp.getId(), create);
+    CommercialPlan plan = new CommercialPlan();
+    plan.setName("Plano do experimento");
+    plan.setStatus(CommercialPlanStatus.IN_PROGRESS);
+    plan.setExperiment(exp);
+    plan = commercialPlanRepository.save(plan);
+    CommercialPlanVisualAsset reference = new CommercialPlanVisualAsset();
+    reference.setCommercialPlan(plan);
+    reference.setAssetUrl("https://cdn.test/product-proof.png");
+    reference.setMediaType("IMAGE");
+    reference.setLabel("Prova real do kit");
+    reference.setPurpose("ADS");
+    reference.setOrigin("Entrega homologada");
+    reference.setRightsStatement("Uso comercial autorizado");
+    reference.setVersionNumber(1);
+    reference.setStatus(CommercialPlanVisualAssetStatus.APPROVED);
+    commercialPlanVisualAssetRepository.save(reference);
 
     service.applyAgentReview(
         creative.getId(),
@@ -449,6 +475,8 @@ class CreativeServiceTest {
     assertThat(pending.getFirst().forbiddenVisualElements()).containsExactly("Texto simulado");
     assertThat(pending.getFirst().visualAcceptanceCriteria())
         .containsExactly("Headline legível em mobile");
+    assertThat(pending.getFirst().referenceImageUrls())
+        .containsExactly("https://cdn.test/product-proof.png");
   }
 
   /** Bloqueia correção vaga antes de consumir geração visual. */

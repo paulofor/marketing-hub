@@ -29,6 +29,8 @@ public record AgentTaskResponse(
     String gateStatus,
     String gateDecisionReason,
     Instant gateDecidedAt,
+    Instant receivedAt,
+    Instant deliveredAt,
     Instant createdAt,
     Instant updatedAt) {
 
@@ -80,6 +82,8 @@ public record AgentTaskResponse(
         gateStatus,
         gateDecisionReason,
         gateDecidedAt,
+        createdAt,
+        null,
         createdAt,
         updatedAt);
   }

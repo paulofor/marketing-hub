@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-15-agent-task-delivery-timestamps
+      author: marketinghub
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent_task
+                ADD COLUMN received_at DATETIME NULL AFTER gate_decided_at,
+                ADD COLUMN delivered_at DATETIME NULL AFTER received_at;
+
+              UPDATE agent_task
+              SET received_at = created_at
+              WHERE received_at IS NULL;
+
+              UPDATE agent_task
+              SET delivered_at = updated_at
+              WHERE status = 'COMPLETED'
+                AND delivered_at IS NULL;
+
+              ALTER TABLE agent_task
+                MODIFY COLUMN received_at DATETIME NOT NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent_task
+                DROP COLUMN delivered_at,
+                DROP COLUMN received_at;

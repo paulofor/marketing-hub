@@ -59,7 +59,7 @@ export default function ActiveAgentTasksPage() {
                 <th>Situação / bloqueio</th>
                 <th>Origem</th>
                 <th>Processo / atividade</th>
-                <th>Atualizada</th>
+                <th>Recebimento / entrega</th>
               </tr>
             </thead>
             <tbody>
@@ -104,7 +104,15 @@ export default function ActiveAgentTasksPage() {
                         : "Legada"}
                   </td>
                   <td className="text-nowrap small">
-                    {new Date(task.updatedAt).toLocaleString("pt-BR")}
+                    <div>
+                      Recebida: {new Date(task.receivedAt).toLocaleString("pt-BR")}
+                    </div>
+                    <div>
+                      Entregue:{" "}
+                      {task.deliveredAt
+                        ? new Date(task.deliveredAt).toLocaleString("pt-BR")
+                        : "—"}
+                    </div>
                   </td>
                 </tr>
               ))}

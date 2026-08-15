@@ -77,6 +77,12 @@ public class AgentTask {
   @Column(name = "gate_decided_at")
   private Instant gateDecidedAt;
 
+  @Column(name = "received_at", nullable = false)
+  private Instant receivedAt;
+
+  @Column(name = "delivered_at")
+  private Instant deliveredAt;
+
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 

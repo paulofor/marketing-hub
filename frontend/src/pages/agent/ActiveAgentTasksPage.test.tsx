@@ -21,6 +21,7 @@ vi.mock("../../api/agentTask/useAgentTasks", () => ({
         status: "BLOCKED",
         sourceReference: "experiment:88",
         taskKind: "WORK",
+        receivedAt: "2026-08-12T10:00:00Z",
         createdAt: "2026-08-12T10:00:00Z",
         updatedAt: "2026-08-12T10:05:00Z",
       },
@@ -48,5 +49,7 @@ describe("ActiveAgentTasksPage", () => {
       screen.getByText("Demonstrar o produto digital na página."),
     ).toBeInTheDocument();
     expect(screen.getByText("Têmis")).toBeInTheDocument();
+    expect(screen.getByText(/Recebida:/)).toBeInTheDocument();
+    expect(screen.getByText("Entregue: —")).toBeInTheDocument();
   });
 });

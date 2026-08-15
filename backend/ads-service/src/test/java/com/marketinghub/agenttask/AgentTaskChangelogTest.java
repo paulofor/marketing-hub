@@ -48,4 +48,19 @@ class AgentTaskChangelogTest {
         .contains("exceptional TINYINT(1) NOT NULL DEFAULT 0")
         .contains("fk_agent_task_process_definition");
   }
+
+  /** Confirma os marcos temporais de recebimento e entrega compatíveis com MySQL 5.7. */
+  @Test
+  void addsCanonicalReceiptAndDeliveryTimestamps() throws IOException {
+    String yaml =
+        Files.readString(
+            Path.of(
+                "src/main/resources/db/changelog/changesets/2026-08-15-agent-task-delivery-timestamps.yaml"));
+    assertThat(yaml)
+        .contains("received_at DATETIME NULL")
+        .contains("delivered_at DATETIME NULL")
+        .contains("MODIFY COLUMN received_at DATETIME NOT NULL")
+        .contains("SET received_at = created_at")
+        .contains("SET delivered_at = updated_at");
+  }
 }

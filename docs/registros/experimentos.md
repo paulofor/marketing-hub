@@ -6593,3 +6593,4 @@
 - Causa-raiz: o teto do agente era tardio e o design preset contornava o serviço canônico ao criar diretamente a revisão seguinte.
 - Correção: hash do HTML persistido antes do consumo, idempotência por versão e teto de quatro versões distintas por ciclo, com bloqueio para decisão humana ao atingir o limite.
 - Critério operacional: HTML idêntico não gera novo parecer; HTML alterado pode ser revisado até o teto; aprovação, gasto e publicação continuam sujeitos aos gates comerciais existentes.
+- 2026-08-15 — Experimento #88: Dédalo, Psique e Têmis foram isolados do host final e executados na sandbox contra o backend canônico. A revisão real confirmou que a URL pública ainda apresenta prova visual esquemática do kit, apesar de candidatas mais novas persistidas. Corrigida localmente a descoberta configurável do Chromium no MCP de Têmis; o gate permaneceu fechado corretamente, sem forçar aprovação, `RUNNING`, publicação ou gasto.

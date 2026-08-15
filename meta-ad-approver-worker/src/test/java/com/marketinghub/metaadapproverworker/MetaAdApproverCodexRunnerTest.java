@@ -37,7 +37,7 @@ class MetaAdApproverCodexRunnerTest {
     assertThat(command).anyMatch(value -> value.startsWith("mcp_servers.meta_ad_approver.args="));
     assertThat(command)
         .contains(
-            "mcp_servers.meta_ad_approver.env={MCP_MARKETING_HUB_URL=\"http://backend:8000\",MCP_CREATIVE_ID=\"273\",MCP_EXPERIMENT_ID=\"88\",PLAYWRIGHT_BROWSERS_PATH=\"/ms-playwright\"}");
+            "mcp_servers.meta_ad_approver.env={MCP_MARKETING_HUB_URL=\"http://backend:8000\",MCP_CREATIVE_ID=\"273\",MCP_EXPERIMENT_ID=\"88\",PLAYWRIGHT_BROWSERS_PATH=\"/ms-playwright\",PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=\"/usr/bin/chromium\"}");
     assertThat(command).doesNotContain("--dangerously-bypass-approvals-and-sandbox");
   }
 

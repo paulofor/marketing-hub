@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -133,13 +134,18 @@ public class MetaAdApproverCodexRunner {
 
   /** Declara ao Codex as variáveis não sensíveis permitidas no processo MCP deste job. */
   private String mcpEnvironment(MetaAdReviewJob job) {
+    String chromiumExecutable =
+        Objects.requireNonNullElse(
+            System.getenv("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH"), "");
     return "mcp_servers.meta_ad_approver.env={MCP_MARKETING_HUB_URL=\""
         + properties.getMarketingHubUrl()
         + "\",MCP_CREATIVE_ID=\""
         + job.creativeId()
         + "\",MCP_EXPERIMENT_ID=\""
         + job.experimentId()
-        + "\",PLAYWRIGHT_BROWSERS_PATH=\"/ms-playwright\"}";
+        + "\",PLAYWRIGHT_BROWSERS_PATH=\"/ms-playwright\",PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=\""
+        + chromiumExecutable
+        + "\"}";
   }
 
   /** Resolve o prompt versionado com o snapshot congelado pelo backend. */

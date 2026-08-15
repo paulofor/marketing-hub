@@ -4,21 +4,15 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/frontend.yml'
-      - 'scripts/test-frontend-workflow-artifact-cleanup.sh'
   pull_request:
     paths:
       - 'frontend/**'
       - '.github/workflows/frontend.yml'
-      - 'scripts/test-frontend-workflow-artifact-cleanup.sh'
+      - 'scripts/test-frontend-workflow-efficiency.sh'
   workflow_dispatch:
 
 permissions:
   contents: read
-  actions: write
 
 jobs:
   build:
@@ -44,88 +38,4 @@ jobs:
         with:
           name: frontend-build
           path: frontend/dist
-          retention-days: 7
-      - name: Cleanup old frontend artifacts
-        if: github.event_name == 'push'
-        uses: actions/github-script@v7
-        with:
-          retries: 3
-          script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const artifactName = 'frontend-build';
-            const maxArtifactsToKeep = 3;
-            const pageSize = 100;
-
-            const activeArtifacts = [];
-            for (let page = 1; ; page++) {
-              const { data } = await github.rest.actions.listArtifactsForRepo({
-                owner,
-                repo,
-                per_page: pageSize,
-                page,
-              });
-
-              if (!data.artifacts.length) {
-                break;
-              }
-
-              for (const artifact of data.artifacts) {
-                if (artifact.expired) {
-                  continue;
-                }
-
-                if (artifact.name === artifactName) {
-                  activeArtifacts.push(artifact);
-                }
-              }
-            }
-
-            if (activeArtifacts.length <= maxArtifactsToKeep) {
-              core.info(`Found ${activeArtifacts.length} active artifacts. Nothing to delete.`);
-              return;
-            }
-
-            activeArtifacts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-            const artifactsToDelete = activeArtifacts.slice(maxArtifactsToKeep);
-
-            for (const artifact of artifactsToDelete) {
-              try {
-                await github.rest.actions.deleteArtifact({
-                  owner,
-                  repo,
-                  artifact_id: artifact.id,
-                });
-                core.info(`Deleted artifact ${artifact.name} (${artifact.id}) created at ${artifact.created_at}.`);
-              } catch (error) {
-                if (error.status === 404) {
-                  core.warning(`Artifact ${artifact.id} was already removed. Skipping.`);
-                  continue;
-                }
-                if ([500, 502, 503, 504].includes(error.status)) {
-                  core.warning(`GitHub API remained unavailable while deleting artifact ${artifact.id} (HTTP ${error.status}). Cleanup will continue on the next run.`);
-                  continue;
-                }
-                throw error;
-              }
-            }
-
-            core.info(`Kept the ${maxArtifactsToKeep} most recent artifacts.`);
-
-
-  build-debug:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: Setup Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-      - name: Build debug and preview
-        run: |
-          cd frontend
-          npm ci
-          npm run build:debug
-          npx vite preview --port 5000 --host & sleep 5
+          retention-days: 1

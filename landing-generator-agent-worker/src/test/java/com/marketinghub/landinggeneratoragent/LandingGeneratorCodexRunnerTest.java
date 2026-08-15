@@ -30,6 +30,7 @@ class LandingGeneratorCodexRunnerTest {
             new LandingAgentJob("job-88", 88L, Map.of()));
 
     assertTrue(command.contains("--search"));
+    assertTrue(command.contains("--json"));
     assertTrue(command.contains("read-only"));
     assertTrue(command.contains("gpt-5.6-sol"));
     assertTrue(command.stream().anyMatch(value -> value.contains("mcp_servers.landing_generator")));

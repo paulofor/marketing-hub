@@ -70,14 +70,15 @@ public class LandingGeneratorCodexRunner {
         String raw = Files.readString(output);
         JsonNode decision = objectMapper.readTree(raw);
         validate(decision, job);
+        CodexTelemetryReporter.TokenUsage usage = session.tokenUsage();
         session.success();
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("decisionJson", raw);
         result.put("requestJson", request);
         result.put("responseJson", raw);
         result.put("model", properties.getModel());
-        result.put("inputTokens", null);
-        result.put("outputTokens", null);
+        result.put("inputTokens", usage.inputTokens());
+        result.put("outputTokens", usage.outputTokens());
         result.put("costUsd", null);
         return result;
       }
@@ -130,6 +131,7 @@ public class LandingGeneratorCodexRunner {
                 output.toString(),
                 "--color",
                 "never",
+                "--json",
                 "--config",
                 "approval_policy=\"never\"",
                 "--config",

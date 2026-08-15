@@ -93,7 +93,7 @@ components:
   schemas:
     HumanTaskRequest:
       type: object
-      required: [assignedAgentKey, requestedByName, title, description, priority]
+      required: [assignedAgentKey, requestedByName, title, description, priority, exceptional]
       properties:
         assignedAgentKey: {type: string, maxLength: 100}
         requestedByName: {type: string, maxLength: 100}
@@ -101,6 +101,21 @@ components:
         description: {type: string}
         priority: {type: string, enum: [LOW, NORMAL, HIGH, URGENT]}
         sourceReference: {type: string, maxLength: 200}
+        processDefinitionId:
+          type: integer
+          format: int64
+          description: Versão publicada do processo; obrigatória quando exceptional=false.
+        processActivityId:
+          type: string
+          maxLength: 100
+          description: Atividade TASK atribuída ao agente no processo publicado.
+        exceptional:
+          type: boolean
+          description: Indica demanda governada fora do catálogo de processos.
+        exceptionReason:
+          type: string
+          maxLength: 500
+          description: Obrigatória quando exceptional=true.
     AgentTaskRequest:
       type: object
       required: [requestedByAgentKey, assignedAgentKey, title, description, priority]

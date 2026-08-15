@@ -94,7 +94,11 @@ public class FinancialAgentService {
                 "Produzir cenários conservador, base e otimista, com premissas, margem, CAC, ROAS, ponto de equilíbrio, teto recomendado e critérios de continuar, ajustar ou parar."
                     + (context == null ? "" : " Contexto de decisão: " + context),
                 "HIGH",
-                "commercial-plan:" + planId + "@v" + version + ":revenue-projection"));
+                "commercial-plan:" + planId + "@v" + version + ":revenue-projection",
+                null,
+                null,
+                true,
+                "Automação financeira ainda não cadastrada como processo BPM."));
     FinancialAgentExecution execution = new FinancialAgentExecution();
     execution.setCommercialPlan(plan);
     execution.setStatus(FinancialAgentExecutionStatus.PENDING);
@@ -125,7 +129,11 @@ public class FinancialAgentService {
                     + "@v"
                     + version
                     + ":assumptions:"
-                    + strategistExecutionId));
+                    + strategistExecutionId,
+                null,
+                null,
+                true,
+                "Automação financeira ainda não cadastrada como processo BPM."));
     FinancialAgentExecution execution = new FinancialAgentExecution();
     execution.setCommercialPlan(plan);
     execution.setStatus(FinancialAgentExecutionStatus.PENDING);

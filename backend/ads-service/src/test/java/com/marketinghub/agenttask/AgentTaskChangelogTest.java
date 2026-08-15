@@ -34,4 +34,18 @@ class AgentTaskChangelogTest {
             "file: changesets/2026-08-11-agent-task-inbox.yaml\n"
                 + "      relativeToChangelogFile: true");
   }
+
+  /** Protege o vínculo auditável sem tornar tarefas históricas inválidas. */
+  @Test
+  void addsOptionalPublishedProcessBindingAndGovernedException() throws IOException {
+    String yaml =
+        Files.readString(
+            Path.of(
+                "src/main/resources/db/changelog/changesets/2026-08-15-agent-task-business-process.yaml"));
+    assertThat(yaml)
+        .contains("process_definition_id BIGINT NULL")
+        .contains("process_activity_id VARCHAR(100) NULL")
+        .contains("exceptional TINYINT(1) NOT NULL DEFAULT 0")
+        .contains("fk_agent_task_process_definition");
+  }
 }

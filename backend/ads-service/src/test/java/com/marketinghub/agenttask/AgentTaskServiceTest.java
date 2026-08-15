@@ -6,9 +6,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agent.Agent;
+import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -19,6 +22,97 @@ import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: comprovar autoria, segregação e ciclo de vida das tarefas dos agentes. */
 class AgentTaskServiceTest {
+
+  /** Vincula a nova tarefa humana a uma atividade publicada do responsável correto. */
+  @Test
+  void createsHumanTaskBoundToPublishedActivity() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    BusinessProcessDefinitionRepository processes = mock(BusinessProcessDefinitionRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    BusinessProcessDefinition process = process("PUBLISHED", "Dédalo");
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
+    when(processes.findById(9L)).thenReturn(Optional.of(process));
+    when(repository.save(any(AgentTask.class)))
+        .thenAnswer(
+            invocation -> {
+              AgentTask task = invocation.getArgument(0);
+              task.setId(71L);
+              return task;
+            });
+    AgentTaskService service =
+        new AgentTaskService(repository, agents, processes, new ObjectMapper(), Clock.systemUTC());
+
+    AgentTaskResponse response =
+        service.createByHuman(
+            new CreateAgentTaskRequest(
+                "landing-generator",
+                "Operador",
+                "Montar landing",
+                "Entregar HTML responsivo.",
+                "HIGH",
+                "experiment:88",
+                9L,
+                "html",
+                false,
+                null));
+
+    assertThat(response.processDefinitionId()).isEqualTo(9L);
+    assertThat(response.processActivityName()).isEqualTo("Montar HTML");
+    assertThat(response.exceptional()).isFalse();
+  }
+
+  /** Bloqueia tarefa sem processo quando ela não foi declarada como exceção. */
+  @Test
+  void rejectsHumanTaskWithoutProcess() {
+    AgentRepository agents = mock(AgentRepository.class);
+    when(agents.findByAgentKey("landing-generator"))
+        .thenReturn(Optional.of(agent(7L, "landing-generator", "Dédalo")));
+    AgentTaskService service = service(mock(AgentTaskRepository.class), agents, Clock.systemUTC());
+
+    assertThatThrownBy(
+            () ->
+                service.createByHuman(
+                    new CreateAgentTaskRequest(
+                        "landing-generator",
+                        "Operador",
+                        "Montar landing",
+                        "Entregar HTML.",
+                        "HIGH",
+                        null,
+                        null,
+                        null,
+                        false,
+                        null)))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Selecione um processo publicado");
+  }
+
+  /** Exige causa auditável para trabalho excepcional fora do catálogo. */
+  @Test
+  void rejectsExceptionalTaskWithoutReason() {
+    AgentRepository agents = mock(AgentRepository.class);
+    when(agents.findByAgentKey("landing-generator"))
+        .thenReturn(Optional.of(agent(7L, "landing-generator", "Dédalo")));
+    AgentTaskService service = service(mock(AgentTaskRepository.class), agents, Clock.systemUTC());
+
+    assertThatThrownBy(
+            () ->
+                service.createByHuman(
+                    new CreateAgentTaskRequest(
+                        "landing-generator",
+                        "Operador",
+                        "Incidente",
+                        "Corrigir incidente.",
+                        "URGENT",
+                        null,
+                        null,
+                        null,
+                        true,
+                        " ")))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("exige justificativa");
+  }
 
   /** Registra delegação entre agentes preservando as duas identidades. */
   @Test
@@ -37,8 +131,7 @@ class AgentTaskServiceTest {
               return task;
             });
     Instant now = Instant.parse("2026-08-11T15:00:00Z");
-    AgentTaskService service =
-        new AgentTaskService(repository, agents, Clock.fixed(now, ZoneOffset.UTC));
+    AgentTaskService service = service(repository, agents, Clock.fixed(now, ZoneOffset.UTC));
 
     AgentTaskResponse response =
         service.createByAgent(
@@ -91,7 +184,7 @@ class AgentTaskServiceTest {
               task.setUpdatedAt(task.getCreatedAt());
               return Optional.of(task);
             });
-    AgentTaskService service = new AgentTaskService(repository, agents, Clock.systemUTC());
+    AgentTaskService service = service(repository, agents, Clock.systemUTC());
 
     AgentTaskResponse gate =
         service.createGateByAgent(
@@ -118,7 +211,7 @@ class AgentTaskServiceTest {
     when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(assignee));
     when(repository.findByAssignedAgentAgentKeyOrderByCreatedAtDescIdDesc("landing-generator"))
         .thenReturn(List.of());
-    AgentTaskService service = new AgentTaskService(repository, agents, Clock.systemUTC());
+    AgentTaskService service = service(repository, agents, Clock.systemUTC());
 
     assertThat(service.inbox("landing-generator")).isEmpty();
   }
@@ -143,8 +236,7 @@ class AgentTaskServiceTest {
     when(repository.findByStatusInOrderByUpdatedAtDescIdDesc(
             List.of("IN_PROGRESS", "BLOCKED", "PENDING")))
         .thenReturn(List.of(task));
-    AgentTaskService service =
-        new AgentTaskService(repository, mock(AgentRepository.class), Clock.systemUTC());
+    AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
 
     assertThat(service.activeTasks())
         .singleElement()
@@ -163,8 +255,7 @@ class AgentTaskServiceTest {
     task.setId(5L);
     task.setStatus("PENDING");
     when(repository.findById(5L)).thenReturn(Optional.of(task));
-    AgentTaskService service =
-        new AgentTaskService(repository, mock(AgentRepository.class), Clock.systemUTC());
+    AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
 
     assertThatThrownBy(
             () -> service.updateStatus(5L, new UpdateAgentTaskStatusRequest("COMPLETED")))
@@ -188,8 +279,7 @@ class AgentTaskServiceTest {
     task.setUpdatedAt(task.getCreatedAt());
     when(repository.findById(51L)).thenReturn(Optional.of(task));
     when(repository.save(task)).thenReturn(task);
-    AgentTaskService service =
-        new AgentTaskService(repository, mock(AgentRepository.class), Clock.systemUTC());
+    AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
 
     assertThatThrownBy(
             () -> service.updateStatus(51L, new UpdateAgentTaskStatusRequest("COMPLETED")))
@@ -221,5 +311,30 @@ class AgentTaskServiceTest {
     value.setAgentKey(key);
     value.setNickname(nickname);
     return value;
+  }
+
+  /** Cria uma definição mínima com atividade atribuída para validar o vínculo. */
+  private BusinessProcessDefinition process(String status, String owner) {
+    BusinessProcessDefinition value = new BusinessProcessDefinition();
+    value.setId(9L);
+    value.setProcessCode("landing-page-generation");
+    value.setVersionNumber(1);
+    value.setStatus(status);
+    value.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"html\",\"type\":\"TASK\",\"label\":\"Montar HTML\",\"owner\":\""
+            + owner
+            + "\"}]}");
+    return value;
+  }
+
+  /** Monta o serviço com as dependências do vínculo BPM para testes isolados. */
+  private AgentTaskService service(
+      AgentTaskRepository repository, AgentRepository agents, Clock clock) {
+    return new AgentTaskService(
+        repository,
+        agents,
+        mock(BusinessProcessDefinitionRepository.class),
+        new ObjectMapper(),
+        clock);
   }
 }

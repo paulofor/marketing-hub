@@ -565,6 +565,90 @@ class AgentTaskServiceTest {
     assertThat(task.getEvidenceJson()).contains("htmlVersion");
   }
 
+  /** Preserva o parecer funcional quando o agente bloqueia a atividade por qualidade. */
+  @Test
+  void blocksClaimedTaskWithAuditableReview() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task =
+        processTask(
+            31L,
+            agent(2L, "customer-agent", "Psique"),
+            process("PUBLISHED", "Psique"),
+            "customer",
+            "IN_PROGRESS");
+    when(repository.findById(31L)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+
+    service(repository, mock(AgentRepository.class), Clock.systemUTC())
+        .failClaimedProcessTask(
+            "customer-agent",
+            31L,
+            new FailAgentTaskRequest(
+                "Clareza insuficiente", "{\"decision\":\"ADJUST\"}", "{\"reviewer\":\"Psique\"}"));
+
+    assertThat(task.getStatus()).isEqualTo("BLOCKED");
+    assertThat(task.getResultJson()).contains("ADJUST");
+    assertThat(task.getEvidenceJson()).contains("Psique");
+  }
+
+  /** Entrega a Psique as evidências concluídas de Dédalo sem depender de logs técnicos. */
+  @Test
+  void exposesCompletedPredecessorEvidenceInPendingContext() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent psique = agent(2L, "customer-agent", "Psique");
+    BusinessProcessDefinition process = process("PUBLISHED", "Psique");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"html\",\"type\":\"TASK\"},{\"id\":\"customer\",\"type\":\"TASK\"}],"
+            + "\"flows\":[{\"from\":\"html\",\"to\":\"customer\"}]}");
+    AgentTask html =
+        processTask(30L, agent(7L, "landing-generator", "Dédalo"), process, "html", "COMPLETED");
+    html.setResultJson("{\"approvalRecommendation\":\"APPROVE_FOR_PUBLICATION\"}");
+    html.setEvidenceJson("{\"desktopScreenshot\":\"draft://desktop.png\"}");
+    AgentTask customer = processTask(31L, psique, process, "customer", "PENDING");
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of());
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "PENDING"))
+        .thenReturn(List.of(customer));
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            9L, "commercial-plan:2@v4"))
+        .thenReturn(List.of(html, customer));
+
+    AgentTaskPendingResponse pending =
+        service(repository, agents, Clock.systemUTC())
+            .claimEligibleProcessTask("customer-agent")
+            .orElseThrow();
+
+    assertThat(pending.processContextJson()).contains("APPROVE_FOR_PUBLICATION", "desktop.png");
+  }
+
+  /** Não deixa o consumidor de landing reservar uma tarefa de outro processo de Psique. */
+  @Test
+  void filtersPendingTaskByExecutorContract() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent psique = agent(2L, "customer-agent", "Psique");
+    AgentTask unrelated =
+        processTask(40L, psique, process("PUBLISHED", "Psique"), "research", "PENDING");
+    unrelated.getProcessDefinition().setProcessCode("product-research");
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of());
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "PENDING"))
+        .thenReturn(List.of(unrelated));
+
+    assertThat(
+            service(repository, agents, Clock.systemUTC())
+                .claimEligibleProcessTask("customer-agent", "landing-page-generation", "customer"))
+        .isEmpty();
+    verify(repository, never()).save(any());
+  }
+
   /** Cria um agente mínimo para os cenários do serviço. */
   private Agent agent(Long id, String key, String nickname) {
     Agent value = new Agent();

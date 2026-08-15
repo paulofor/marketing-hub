@@ -13,4 +13,5 @@ public record AgentTaskPendingResponse(
     String title,
     String description,
     String sourceReference,
-    Instant receivedAt) {}
+    Instant receivedAt,
+    String processContextJson) {}

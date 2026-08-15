@@ -472,6 +472,13 @@ public class AgentTaskService {
   /** Reserva atomicamente a primeira atividade liberada pelo grafo do processo. */
   @Transactional
   public Optional<AgentTaskPendingResponse> claimEligibleProcessTask(String agentKey) {
+    return claimEligibleProcessTask(agentKey, null, null);
+  }
+
+  /** Reserva somente a atividade suportada pelo executor especializado informado. */
+  @Transactional
+  public Optional<AgentTaskPendingResponse> claimEligibleProcessTask(
+      String agentKey, String processCode, String activityId) {
     agent(agentKey);
     Optional<AgentTask> alreadyClaimed =
         repository
@@ -479,14 +486,18 @@ public class AgentTaskService {
                 agentKey.trim(), "WORK", "IN_PROGRESS")
             .stream()
             .filter(task -> task.getProcessDefinition() != null)
+            .filter(task -> matchesExecutionContract(task, processCode, activityId))
             .findFirst();
     if (alreadyClaimed.isPresent()) return Optional.of(pendingResponse(alreadyClaimed.get()));
-    Optional<AgentTask> recovered = recoverInterruptedCallbackOnce(agentKey);
+    Optional<AgentTask> recovered =
+        recoverInterruptedCallbackOnce(agentKey, processCode, activityId);
     if (recovered.isPresent()) return Optional.of(pendingResponse(recovered.get()));
     for (AgentTask task :
         repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
             agentKey.trim(), "WORK", "PENDING")) {
-      if (task.getProcessDefinition() == null || !predecessorsCompleted(task)) continue;
+      if (task.getProcessDefinition() == null
+          || !matchesExecutionContract(task, processCode, activityId)
+          || !predecessorsCompleted(task)) continue;
       Instant now = Instant.now(clock);
       task.setStatus("IN_PROGRESS");
       if (task.getReceivedAt() == null) task.setReceivedAt(now);
@@ -497,15 +508,28 @@ public class AgentTaskService {
     return Optional.empty();
   }
 
+  /** Impede que um prompt especializado reserve atividade de outro processo ou responsabilidade. */
+  private boolean matchesExecutionContract(
+      AgentTask task, String expectedProcessCode, String expectedActivityId) {
+    return (expectedProcessCode == null
+            || expectedProcessCode.isBlank()
+            || expectedProcessCode.trim().equals(task.getProcessDefinition().getProcessCode()))
+        && (expectedActivityId == null
+            || expectedActivityId.isBlank()
+            || expectedActivityId.trim().equals(task.getProcessActivityId()));
+  }
+
   /**
    * Retoma uma única vez tarefas bloqueadas exclusivamente por falha HTTP transitória do callback.
    */
-  private Optional<AgentTask> recoverInterruptedCallbackOnce(String agentKey) {
+  private Optional<AgentTask> recoverInterruptedCallbackOnce(
+      String agentKey, String processCode, String activityId) {
     return repository
         .findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
             agentKey.trim(), "WORK", "BLOCKED")
         .stream()
         .filter(task -> task.getProcessDefinition() != null)
+        .filter(task -> matchesExecutionContract(task, processCode, activityId))
         .filter(task -> isRetryableCallbackFailure(task.getExecutionError()))
         .findFirst()
         .map(
@@ -543,7 +567,35 @@ public class AgentTaskService {
         task.getTitle(),
         task.getDescription(),
         task.getSourceReference(),
-        task.getReceivedAt());
+        task.getReceivedAt(),
+        processContext(task));
+  }
+
+  /** Consolida resultados predecessores para o próximo agente avaliar evidências reais. */
+  private String processContext(AgentTask task) {
+    List<Map<String, Object>> completedActivities =
+        repository
+            .findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+                task.getProcessDefinition().getId(), task.getSourceReference())
+            .stream()
+            .filter(sibling -> "COMPLETED".equals(sibling.getStatus()))
+            .map(
+                sibling -> {
+                  Map<String, Object> context = new java.util.LinkedHashMap<>();
+                  context.put("taskId", sibling.getId());
+                  context.put("activityId", sibling.getProcessActivityId());
+                  context.put("activityName", sibling.getProcessActivityName());
+                  context.put("resultJson", sibling.getResultJson());
+                  context.put("evidenceJson", sibling.getEvidenceJson());
+                  context.put("deliveredAt", sibling.getDeliveredAt());
+                  return context;
+                })
+            .toList();
+    try {
+      return objectMapper.writeValueAsString(Map.of("completedActivities", completedActivities));
+    } catch (Exception ex) {
+      throw new IllegalStateException("Não foi possível consolidar o contexto do processo", ex);
+    }
   }
 
   /** Conclui trabalho reservado com saída e evidências persistidas. */
@@ -566,6 +618,8 @@ public class AgentTaskService {
   public void failClaimedProcessTask(String agentKey, Long taskId, FailAgentTaskRequest request) {
     AgentTask task = claimedBy(agentKey, taskId);
     task.setExecutionError(request.error());
+    task.setResultJson(request.resultJson());
+    task.setEvidenceJson(request.evidenceJson());
     task.setStatus("BLOCKED");
     task.setUpdatedAt(Instant.now(clock));
     repository.save(task);

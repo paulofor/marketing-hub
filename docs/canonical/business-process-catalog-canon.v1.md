@@ -40,6 +40,11 @@ lease `IN_PROGRESS` sem resultado deve ser reoferecida ao mesmo executor após r
 ou falha técnica atualiza a própria tarefa BPM antes de qualquer sucessora ficar elegível; é proibido
 liberar Psique ou Têmis apenas pelo recebimento da tarefa de Dédalo.
 
+Os executores de Psique e Têmis devem consumir as atividades liberadas pela fila BPM canônica,
+produzir parecer estruturado e reportar resultado e evidências na própria tarefa. Psique não pode
+liberar Têmis, e Têmis não pode alterar o experimento ou publicar ativos; somente o backend calcula
+as predecessoras concluídas e libera a próxima atividade.
+
 Reprovações técnicas, de percepção da cliente ou comerciais retornam a Dédalo com causa persistida e
 geram nova versão. O backend do experimento continua sendo a autoridade das transições operacionais.
 A aprovação humana continua obrigatória antes da publicação. A referência técnica vigente é o bloco

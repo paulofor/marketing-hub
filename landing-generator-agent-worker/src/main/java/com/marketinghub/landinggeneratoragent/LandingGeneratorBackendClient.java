@@ -39,22 +39,9 @@ public class LandingGeneratorBackendClient {
 
   /** Reserva e materializa a atividade BPM liberada antes de consultar a fila técnica. */
   void activatePendingProcessTask() {
-    List<Map<String, Object>> tasks =
-        client
-            .get()
-            .uri("/api/internal/agent-tasks/landing-generator/stage-executions/pending")
-            .retrieve()
-            .body(new ParameterizedTypeReference<>() {});
-    if (tasks == null || tasks.isEmpty()) return;
-    Object taskId = tasks.get(0).get("taskId");
-    if (!(taskId instanceof Number number)) {
-      throw new IllegalArgumentException("Atividade BPM de Dédalo sem identificador");
-    }
     client
         .post()
-        .uri(
-            "/api/internal/geralanding/agent/v1/stage-executions/process-tasks/{taskId}/activation",
-            number.longValue())
+        .uri("/api/internal/geralanding/agent/v1/stage-executions/process-tasks/pending/activation")
         .retrieve()
         .toBodilessEntity();
   }

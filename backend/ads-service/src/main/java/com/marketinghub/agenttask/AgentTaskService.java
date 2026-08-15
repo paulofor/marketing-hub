@@ -577,9 +577,7 @@ public class AgentTaskService {
           .map(AgentTask::getProcessActivityId)
           .forEach(completed::add);
       Set<String> taskNodes = new HashSet<>();
-      for (JsonNode node : diagram.path("nodes")) {
-        if ("TASK".equals(node.path("type").asText())) taskNodes.add(node.path("id").asText());
-      }
+      siblings.stream().map(AgentTask::getProcessActivityId).forEach(taskNodes::add);
       Set<String> predecessors = new HashSet<>();
       Set<String> visited = new HashSet<>();
       ArrayDeque<String> queue = new ArrayDeque<>();

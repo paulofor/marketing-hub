@@ -23,8 +23,8 @@ class LandingGeneratorBackendClientTest {
     server
         .expect(
             requestTo(
-                "http://backend.test/api/internal/agent-tasks/landing-generator/stage-executions/pending"))
-        .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
+                "http://backend.test/api/internal/geralanding/agent/v1/stage-executions/process-tasks/pending/activation"))
+        .andRespond(withSuccess());
     server
         .expect(
             requestTo(
@@ -48,12 +48,7 @@ class LandingGeneratorBackendClientTest {
     server
         .expect(
             requestTo(
-                "http://backend.test/api/internal/agent-tasks/landing-generator/stage-executions/pending"))
-        .andRespond(withSuccess("[{\"taskId\":30}]", MediaType.APPLICATION_JSON));
-    server
-        .expect(
-            requestTo(
-                "http://backend.test/api/internal/geralanding/agent/v1/stage-executions/process-tasks/30/activation"))
+                "http://backend.test/api/internal/geralanding/agent/v1/stage-executions/process-tasks/pending/activation"))
         .andRespond(withSuccess());
     server
         .expect(

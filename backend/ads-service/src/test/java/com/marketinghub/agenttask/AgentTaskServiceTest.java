@@ -449,6 +449,36 @@ class AgentTaskServiceTest {
         .isEmpty();
   }
 
+  /** Ignora atividades automáticas sem tarefa própria ao ordenar as tarefas dos agentes. */
+  @Test
+  void traversesAutomaticActivityBetweenAgentTasks() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent psique = agent(2L, "customer-agent", "Psique");
+    BusinessProcessDefinition process = process("PUBLISHED", "Psique");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"html\",\"type\":\"TASK\"},{\"id\":\"technical\",\"type\":\"TASK\"},{\"id\":\"gate\",\"type\":\"GATEWAY\"},{\"id\":\"customer\",\"type\":\"TASK\"}],"
+            + "\"flows\":[{\"from\":\"html\",\"to\":\"technical\"},{\"from\":\"technical\",\"to\":\"gate\"},{\"from\":\"gate\",\"to\":\"customer\"}]}");
+    AgentTask html =
+        processTask(30L, agent(7L, "landing-generator", "Dédalo"), process, "html", "COMPLETED");
+    AgentTask customer = processTask(31L, psique, process, "customer", "PENDING");
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of());
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "PENDING"))
+        .thenReturn(List.of(customer));
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            9L, "commercial-plan:2@v4"))
+        .thenReturn(List.of(html, customer));
+
+    assertThat(
+            service(repository, agents, Clock.systemUTC())
+                .claimEligibleProcessTask("customer-agent"))
+        .isPresent();
+  }
+
   /** Expõe atividade liberada, bloqueio por predecessora e tarefa legada substituída. */
   @Test
   void buildsProcessInstanceOperationalView() {

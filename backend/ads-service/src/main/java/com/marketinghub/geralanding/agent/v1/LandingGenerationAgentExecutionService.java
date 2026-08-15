@@ -73,6 +73,10 @@ public class LandingGenerationAgentExecutionService {
       Map<String, Object> review =
           objectMapper.readValue(event.reviewJson(), new TypeReference<>() {});
       if ("APPROVE_FOR_PUBLICATION".equals(review.get("approvalRecommendation"))) {
+        if (isBpmTask(event.autonomousCycleId())) {
+          completeBpmTaskAfterQualityApproval(event);
+          return;
+        }
         coordinator.continueAfterQualityReview(
             event.experimentId(), event.autonomousCycleId(), event.reviewJson());
       } else {
@@ -84,6 +88,22 @@ public class LandingGenerationAgentExecutionService {
           event.experimentId(),
           ex);
     }
+  }
+
+  /** Conclui a atividade de Dédalo somente depois do Quality Review independente aprovado. */
+  private void completeBpmTaskAfterQualityApproval(LandingQualityReviewedEvent event) {
+    Long taskId = bpmTaskId(event.autonomousCycleId());
+    agentTaskService.completeClaimedProcessTask(
+        "landing-generator",
+        taskId,
+        new com.marketinghub.agenttask.CompleteAgentTaskRequest(
+            event.reviewJson(),
+            objectMapper
+                .createObjectNode()
+                .put("experimentId", event.experimentId())
+                .put("stageCode", "landing-page-quality-review")
+                .put("approvalRecommendation", "APPROVE_FOR_PUBLICATION")
+                .toString()));
   }
 
   /** Cria uma execução segregada com o parecer que motivou a correção. */
@@ -152,7 +172,20 @@ public class LandingGenerationAgentExecutionService {
   /** Converte a atividade BPM reservada em uma execução técnica idempotente do GeraLanding. */
   @Transactional
   public void activateProcessTask(Long taskId) {
-    var task = agentTaskService.claimedProcessTask("landing-generator", taskId);
+    activateProcessTask(agentTaskService.claimedProcessTask("landing-generator", taskId));
+  }
+
+  /** Reserva e materializa a próxima atividade de Dédalo na mesma transação do backend. */
+  @Transactional
+  public void activateNextProcessTask() {
+    agentTaskService
+        .claimEligibleProcessTask("landing-generator")
+        .ifPresent(this::activateProcessTask);
+  }
+
+  /** Materializa o snapshot BPM já validado sem criar uma segunda fronteira HTTP. */
+  private void activateProcessTask(com.marketinghub.agenttask.AgentTaskPendingResponse task) {
+    Long taskId = task.taskId();
     Long experimentId = experimentId(task.title() + "\n" + task.description());
     try {
       Map<String, Object> review = new LinkedHashMap<>();
@@ -358,19 +391,31 @@ public class LandingGenerationAgentExecutionService {
     execution.setErrorMessage(request.error());
     execution.setStatus(request.error() == null ? "CONCLUIDO" : "FALHA");
     repository.save(execution);
-    finishRelatedTask(execution, request);
+    if (request.error() != null || !isBpmTask(execution.getAutonomousCycleId())) {
+      finishRelatedTask(execution, request);
+    }
     if (request.error() == null) {
       coordinator.continueAfterQualityReview(
           execution.getExperimentId(), execution.getAutonomousCycleId(), request.decisionJson());
     }
   }
 
+  /** Identifica correlações originadas por uma atividade do processo de negócio. */
+  private boolean isBpmTask(String reference) {
+    return reference != null && reference.startsWith(BPM_TASK_PREFIX);
+  }
+
+  /** Extrai o identificador da tarefa de uma correlação BPM já validada. */
+  private Long bpmTaskId(String reference) {
+    return Long.parseLong(reference.substring(BPM_TASK_PREFIX.length()));
+  }
+
   /** Sincroniza a conclusão técnica com a atividade BPM ou delegação operacional de origem. */
   private void finishRelatedTask(
       GeraLandingStageExecution execution, LandingAgentResultRequest request) {
     String reference = execution.getAutonomousCycleId();
-    if (reference != null && reference.startsWith(BPM_TASK_PREFIX)) {
-      Long taskId = Long.parseLong(reference.substring(BPM_TASK_PREFIX.length()));
+    if (isBpmTask(reference)) {
+      Long taskId = bpmTaskId(reference);
       if (request.error() == null) {
         agentTaskService.completeClaimedProcessTask(
             "landing-generator",

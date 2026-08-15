@@ -481,6 +481,8 @@ public class AgentTaskService {
             .filter(task -> task.getProcessDefinition() != null)
             .findFirst();
     if (alreadyClaimed.isPresent()) return Optional.of(pendingResponse(alreadyClaimed.get()));
+    Optional<AgentTask> recovered = recoverInterruptedCallbackOnce(agentKey);
+    if (recovered.isPresent()) return Optional.of(pendingResponse(recovered.get()));
     for (AgentTask task :
         repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
             agentKey.trim(), "WORK", "PENDING")) {
@@ -493,6 +495,33 @@ public class AgentTaskService {
       return Optional.of(pendingResponse(task));
     }
     return Optional.empty();
+  }
+
+  /**
+   * Retoma uma única vez tarefas bloqueadas exclusivamente por falha HTTP transitória do callback.
+   */
+  private Optional<AgentTask> recoverInterruptedCallbackOnce(String agentKey) {
+    return repository
+        .findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            agentKey.trim(), "WORK", "BLOCKED")
+        .stream()
+        .filter(task -> task.getProcessDefinition() != null)
+        .filter(task -> isRetryableCallbackFailure(task.getExecutionError()))
+        .findFirst()
+        .map(
+            task -> {
+              task.setStatus("IN_PROGRESS");
+              task.setExecutionError("AUTO_RETRY_CALLBACK_ONCE|" + task.getExecutionError());
+              task.setUpdatedAt(Instant.now(clock));
+              return repository.save(task);
+            });
+  }
+
+  /** Distingue indisponibilidade transitória do backend de falha funcional do agente. */
+  private boolean isRetryableCallbackFailure(String error) {
+    return error != null
+        && !error.startsWith("AUTO_RETRY_CALLBACK_ONCE|")
+        && (error.startsWith("500 :") || error.contains("Internal Server Error"));
   }
 
   /** Reexpõe a lease ativa ao mesmo executor para permitir retomada após interrupção. */

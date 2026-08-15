@@ -283,7 +283,8 @@ public class LandingGenerationAgentExecutionService {
       GeraLandingStageExecution execution, String currentBuild, Instant graceThreshold) {
     String previousBuild = claimedBuild(execution);
     return execution.getPromptContent() != null
-        && (execution.getPromptContent().contains(DEPLOY_RECOVERY_POLICY)
+        && (isBpmTask(execution.getAutonomousCycleId())
+            || execution.getPromptContent().contains(DEPLOY_RECOVERY_POLICY)
             || execution.getPromptContent().contains(COMMERCIAL_HOMOLOGATION_SOURCE))
         && execution.getExecutionRequestedAt() != null
         && execution.getExecutionRequestedAt().isBefore(graceThreshold)

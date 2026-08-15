@@ -344,6 +344,29 @@ class LandingGenerationAgentExecutionServiceTest {
     assertTrue(blocked.getQualityReviewAudit().contains("from=build-old|to=build-new"));
   }
 
+  /** Deve retomar tarefa BPM reservada por um executor substituído durante o deploy. */
+  @Test
+  void shouldRecoverBpmTaskAfterExecutorDeploy() {
+    GeraLandingStageExecution blocked = execution("job-bpm-30", "PROCESSANDO");
+    blocked.setExecutionRequestedAt(Instant.now().minusSeconds(300));
+    blocked.setAutonomousCycleId("agent-task:30");
+    blocked.setPromptContent("{\"agentTaskId\":30}");
+    blocked.setErrorDetail("CLAIMED_BY_BUILD:build-old");
+    when(repository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+            "landing-generation-agent-v1", "PROCESSANDO"))
+        .thenReturn(List.of(blocked));
+    when(repository.findTop3ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+            "landing-generation-agent-v1", "INICIADO"))
+        .thenReturn(List.of(blocked));
+
+    List<LandingAgentPendingResponse> result = service.claimPending(1, "build-new");
+
+    assertEquals(1, result.size());
+    assertEquals("PROCESSANDO", blocked.getStatus());
+    assertEquals("CLAIMED_BY_BUILD:build-new", blocked.getErrorDetail());
+    assertTrue(blocked.getQualityReviewAudit().contains("from=build-old|to=build-new"));
+  }
+
   /** Não deve duplicar homologação que ainda pertence ao mesmo build ativo. */
   @Test
   void shouldNotRecoverCommercialHomologationWithinSameDeploy() {

@@ -105,7 +105,9 @@ export default function ActiveAgentTasksPage() {
                   </td>
                   <td className="text-nowrap small">
                     <div>
-                      Recebida: {new Date(task.receivedAt).toLocaleString("pt-BR")}
+                      {task.receivedAt
+                        ? `Recebida: ${new Date(task.receivedAt).toLocaleString("pt-BR")}`
+                        : "Aguardando recebimento pelo executor"}
                     </div>
                     <div>
                       Entregue:{" "}

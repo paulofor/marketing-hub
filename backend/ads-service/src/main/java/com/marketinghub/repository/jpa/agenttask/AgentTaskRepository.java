@@ -27,4 +27,12 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
   /** Lista tarefas operacionais da Têmis nos estados que ainda exigem execução. */
   List<AgentTask> findByAssignedAgentAgentKeyAndTaskKindAndStatusInOrderByCreatedAtAscIdAsc(
       String agentKey, String taskKind, List<String> statuses);
+
+  /** Lista o trabalho ainda não reservado de um executor na ordem em que entrou no processo. */
+  List<AgentTask> findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+      String agentKey, String taskKind, String status);
+
+  /** Lista as tarefas da mesma execução de processo para validar predecessoras e gates. */
+  List<AgentTask> findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+      Long processDefinitionId, String sourceReference);
 }

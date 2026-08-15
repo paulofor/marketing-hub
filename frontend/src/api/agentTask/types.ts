@@ -27,7 +27,10 @@ export interface AgentTask {
   gateStatus?: "PENDING" | "APPROVED" | "REJECTED";
   gateDecisionReason?: string;
   gateDecidedAt?: string;
-  receivedAt: string;
+  resultJson?: string;
+  evidenceJson?: string;
+  executionError?: string;
+  receivedAt?: string;
   deliveredAt?: string;
   createdAt: string;
   updatedAt: string;

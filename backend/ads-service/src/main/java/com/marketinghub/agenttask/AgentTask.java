@@ -77,11 +77,20 @@ public class AgentTask {
   @Column(name = "gate_decided_at")
   private Instant gateDecidedAt;
 
-  @Column(name = "received_at", nullable = false)
+  @Column(name = "received_at")
   private Instant receivedAt;
 
   @Column(name = "delivered_at")
   private Instant deliveredAt;
+
+  @Column(name = "result_json", columnDefinition = "LONGTEXT")
+  private String resultJson;
+
+  @Column(name = "evidence_json", columnDefinition = "LONGTEXT")
+  private String evidenceJson;
+
+  @Column(name = "execution_error", columnDefinition = "LONGTEXT")
+  private String executionError;
 
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;

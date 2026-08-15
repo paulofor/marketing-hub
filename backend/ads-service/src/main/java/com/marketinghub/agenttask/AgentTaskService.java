@@ -9,8 +9,14 @@ import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -248,7 +254,7 @@ public class AgentTaskService {
     task.setProcessActivityName(binding == null ? null : binding.activityName());
     task.setExceptional(binding != null && binding.exceptional());
     task.setExceptionReason(binding == null ? null : binding.exceptionReason());
-    task.setReceivedAt(now);
+    task.setReceivedAt(null);
     task.setCreatedAt(now);
     task.setUpdatedAt(now);
     return response(repository.save(task));
@@ -292,6 +298,9 @@ public class AgentTaskService {
         task.getGateStatus(),
         task.getGateDecisionReason(),
         task.getGateDecidedAt(),
+        task.getResultJson(),
+        task.getEvidenceJson(),
+        task.getExecutionError(),
         task.getReceivedAt(),
         task.getDeliveredAt(),
         task.getCreatedAt(),
@@ -377,4 +386,112 @@ public class AgentTaskService {
       String activityName,
       boolean exceptional,
       String exceptionReason) {}
+
+  /** Reserva atomicamente a primeira atividade liberada pelo grafo do processo. */
+  @Transactional
+  public Optional<AgentTaskPendingResponse> claimEligibleProcessTask(String agentKey) {
+    agent(agentKey);
+    for (AgentTask task :
+        repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            agentKey.trim(), "WORK", "PENDING")) {
+      if (task.getProcessDefinition() == null || !predecessorsCompleted(task)) continue;
+      Instant now = Instant.now(clock);
+      task.setStatus("IN_PROGRESS");
+      if (task.getReceivedAt() == null) task.setReceivedAt(now);
+      task.setUpdatedAt(now);
+      repository.save(task);
+      BusinessProcessDefinition process = task.getProcessDefinition();
+      return Optional.of(
+          new AgentTaskPendingResponse(
+              task.getId(),
+              agentKey.trim(),
+              process.getProcessCode(),
+              process.getVersionNumber(),
+              task.getProcessActivityId(),
+              task.getProcessActivityName(),
+              task.getTitle(),
+              task.getDescription(),
+              task.getSourceReference(),
+              task.getReceivedAt()));
+    }
+    return Optional.empty();
+  }
+
+  /** Conclui trabalho reservado com saída e evidências persistidas. */
+  @Transactional
+  public void completeClaimedProcessTask(
+      String agentKey, Long taskId, CompleteAgentTaskRequest request) {
+    AgentTask task = claimedBy(agentKey, taskId);
+    Instant now = Instant.now(clock);
+    task.setResultJson(request.resultJson());
+    task.setEvidenceJson(request.evidenceJson());
+    task.setExecutionError(null);
+    task.setStatus("COMPLETED");
+    if (task.getDeliveredAt() == null) task.setDeliveredAt(now);
+    task.setUpdatedAt(now);
+    repository.save(task);
+  }
+
+  /** Bloqueia trabalho reservado preservando a causa técnica completa. */
+  @Transactional
+  public void failClaimedProcessTask(String agentKey, Long taskId, FailAgentTaskRequest request) {
+    AgentTask task = claimedBy(agentKey, taskId);
+    task.setExecutionError(request.error());
+    task.setStatus("BLOCKED");
+    task.setUpdatedAt(Instant.now(clock));
+    repository.save(task);
+  }
+
+  /** Confirma identidade e lease antes de aceitar callback operacional. */
+  private AgentTask claimedBy(String agentKey, Long taskId) {
+    AgentTask task = task(taskId);
+    if (!task.getAssignedAgent().getAgentKey().equals(agentKey.trim())) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tarefa pertence a outro agente.");
+    }
+    if (!"IN_PROGRESS".equals(task.getStatus())) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Tarefa não está reservada.");
+    }
+    return task;
+  }
+
+  /** Verifica no grafo se todas as atividades imediatamente anteriores foram concluídas. */
+  private boolean predecessorsCompleted(AgentTask candidate) {
+    try {
+      JsonNode diagram = objectMapper.readTree(candidate.getProcessDefinition().getDiagramJson());
+      Map<String, List<String>> incoming = new HashMap<>();
+      for (JsonNode edge : diagram.path("edges")) {
+        incoming
+            .computeIfAbsent(edge.path("target").asText(), ignored -> new ArrayList<>())
+            .add(edge.path("source").asText());
+      }
+      List<AgentTask> siblings =
+          repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+              candidate.getProcessDefinition().getId(), candidate.getSourceReference());
+      Set<String> completed = new HashSet<>();
+      siblings.stream()
+          .filter(task -> "COMPLETED".equals(task.getStatus()))
+          .map(AgentTask::getProcessActivityId)
+          .forEach(completed::add);
+      Set<String> taskNodes = new HashSet<>();
+      for (JsonNode node : diagram.path("nodes")) {
+        if ("TASK".equals(node.path("type").asText())) taskNodes.add(node.path("id").asText());
+      }
+      Set<String> predecessors = new HashSet<>();
+      Set<String> visited = new HashSet<>();
+      ArrayDeque<String> queue = new ArrayDeque<>();
+      queue.add(candidate.getProcessActivityId());
+      while (!queue.isEmpty()) {
+        String current = queue.removeFirst();
+        for (String source : incoming.getOrDefault(current, List.of())) {
+          if (!visited.add(source)) continue;
+          if (taskNodes.contains(source)) predecessors.add(source);
+          else queue.addLast(source);
+        }
+      }
+      return completed.containsAll(predecessors);
+    } catch (Exception ex) {
+      throw new IllegalStateException(
+          "Não foi possível avaliar a sequência BPM da tarefa " + candidate.getId(), ex);
+    }
+  }
 }

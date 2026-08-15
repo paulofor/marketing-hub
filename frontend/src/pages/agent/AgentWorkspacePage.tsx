@@ -496,7 +496,9 @@ export default function AgentWorkspacePage() {
                     ) : null}
                     <div className="small text-body-secondary mb-3">
                       <div>
-                        Recebida em: {new Date(task.receivedAt).toLocaleString("pt-BR")}
+                        {task.receivedAt
+                          ? `Recebida em: ${new Date(task.receivedAt).toLocaleString("pt-BR")}`
+                          : "Aguardando recebimento pelo executor"}
                       </div>
                       <div>
                         Resultado entregue em:{" "}

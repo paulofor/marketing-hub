@@ -148,7 +148,7 @@ class AgentTaskServiceTest {
     assertThat(response.requestedByType()).isEqualTo("AGENT");
     assertThat(response.status()).isEqualTo("PENDING");
     assertThat(response.createdAt()).isEqualTo(now);
-    assertThat(response.receivedAt()).isEqualTo(now);
+    assertThat(response.receivedAt()).isNull();
     assertThat(response.deliveredAt()).isNull();
   }
 
@@ -337,6 +337,92 @@ class AgentTaskServiceTest {
         .hasMessageContaining("não pode ser reaberto");
   }
 
+  /** Reserva somente a primeira atividade do processo e registra o recebimento real. */
+  @Test
+  void claimsFirstEligibleProcessTask() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    BusinessProcessDefinition process = process("PUBLISHED", "Dédalo");
+    AgentTask task = processTask(30L, dedalo, process, "html", "PENDING");
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "landing-generator", "WORK", "PENDING"))
+        .thenReturn(List.of(task));
+    when(repository.save(task)).thenReturn(task);
+    Instant received = Instant.parse("2026-08-15T12:00:00Z");
+    AgentTaskService service =
+        new AgentTaskService(
+            repository,
+            agents,
+            mock(BusinessProcessDefinitionRepository.class),
+            new ObjectMapper(),
+            Clock.fixed(received, ZoneOffset.UTC));
+
+    AgentTaskPendingResponse pending =
+        service.claimEligibleProcessTask("landing-generator").orElseThrow();
+
+    assertThat(pending.taskId()).isEqualTo(30L);
+    assertThat(pending.receivedAt()).isEqualTo(received);
+    assertThat(task.getStatus()).isEqualTo("IN_PROGRESS");
+  }
+
+  /** Mantém a atividade seguinte bloqueada enquanto sua predecessora não foi entregue. */
+  @Test
+  void blocksNextProcessTaskUntilPredecessorCompletes() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent psique = agent(2L, "customer-agent", "Psique");
+    BusinessProcessDefinition process = process("PUBLISHED", "Psique");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"html\",\"type\":\"TASK\"},{\"id\":\"customer\",\"type\":\"TASK\"}],"
+            + "\"edges\":[{\"source\":\"html\",\"target\":\"customer\"}]}");
+    AgentTask customer = processTask(31L, psique, process, "customer", "PENDING");
+    AgentTask html =
+        processTask(30L, agent(7L, "landing-generator", "Dédalo"), process, "html", "IN_PROGRESS");
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "PENDING"))
+        .thenReturn(List.of(customer));
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            9L, "commercial-plan:2@v4"))
+        .thenReturn(List.of(html, customer));
+    AgentTaskService service = service(repository, agents, Clock.systemUTC());
+
+    assertThat(service.claimEligibleProcessTask("customer-agent")).isEmpty();
+
+    html.setStatus("COMPLETED");
+    assertThat(service.claimEligibleProcessTask("customer-agent")).isPresent();
+  }
+
+  /** Persiste saída e evidência antes de concluir a atividade reservada. */
+  @Test
+  void completesClaimedTaskWithAuditableResult() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task =
+        processTask(
+            30L,
+            agent(7L, "landing-generator", "Dédalo"),
+            process("PUBLISHED", "Dédalo"),
+            "html",
+            "IN_PROGRESS");
+    when(repository.findById(30L)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    Instant delivered = Instant.parse("2026-08-15T13:00:00Z");
+    AgentTaskService service =
+        service(repository, mock(AgentRepository.class), Clock.fixed(delivered, ZoneOffset.UTC));
+
+    service.completeClaimedProcessTask(
+        "landing-generator",
+        30L,
+        new CompleteAgentTaskRequest("{\"decision\":\"READY\"}", "{\"htmlVersion\":2}"));
+
+    assertThat(task.getStatus()).isEqualTo("COMPLETED");
+    assertThat(task.getDeliveredAt()).isEqualTo(delivered);
+    assertThat(task.getResultJson()).contains("READY");
+    assertThat(task.getEvidenceJson()).contains("htmlVersion");
+  }
+
   /** Cria um agente mínimo para os cenários do serviço. */
   private Agent agent(Long id, String key, String nickname) {
     Agent value = new Agent();
@@ -356,7 +442,29 @@ class AgentTaskServiceTest {
     value.setDiagramJson(
         "{\"nodes\":[{\"id\":\"html\",\"type\":\"TASK\",\"label\":\"Montar HTML\",\"owner\":\""
             + owner
-            + "\"}]}");
+            + "\"}],\"edges\":[]}");
+    return value;
+  }
+
+  /** Cria uma tarefa vinculada a uma execução comercial para validar a sequência. */
+  private AgentTask processTask(
+      Long id, Agent agent, BusinessProcessDefinition process, String activityId, String status) {
+    AgentTask value = new AgentTask();
+    value.setId(id);
+    value.setAssignedAgent(agent);
+    value.setRequestedByType("HUMAN");
+    value.setRequestedByName("Operador");
+    value.setTitle("Executar atividade");
+    value.setDescription("Entregar resultado auditável.");
+    value.setPriority("HIGH");
+    value.setStatus(status);
+    value.setTaskKind("WORK");
+    value.setProcessDefinition(process);
+    value.setProcessActivityId(activityId);
+    value.setProcessActivityName(activityId);
+    value.setSourceReference("commercial-plan:2@v4");
+    value.setCreatedAt(Instant.parse("2026-08-15T04:12:00Z"));
+    value.setUpdatedAt(value.getCreatedAt());
     return value;
   }
 

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.codextelemetry.CodexAgentExecutionTelemetry;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.creative.CreativeImprovementStatus;
@@ -405,6 +406,61 @@ class AgentWorkMonitorServiceTest {
 
     assertThat(result.dailyTokens()).isEqualTo(12_345L);
     assertThat(result.dailyTokenDate()).isNotNull();
+  }
+
+  /** Expõe o heartbeat real de Dédalo para diferenciar trabalho ativo de estado nominal. */
+  @Test
+  void shouldExposeLatestExecutionActivityForAgent() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    GeraLandingStageExecutionRepository landings = mock(GeraLandingStageExecutionRepository.class);
+    VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
+    CodexAgentExecutionTelemetryRepository telemetry =
+        mock(CodexAgentExecutionTelemetryRepository.class);
+    CreativeRepository creatives = mock(CreativeRepository.class);
+    Agent dedalo =
+        Agent.builder()
+            .id(7L)
+            .agentKey("landing-generator")
+            .nickname("Dédalo")
+            .name("Landing")
+            .build();
+    GeraLandingStageExecution landing =
+        GeraLandingStageExecution.builder()
+            .experimentId(88L)
+            .stageCode("landing-generation-agent-v1")
+            .status("PROCESSANDO")
+            .processingStartedAt(Instant.parse("2026-08-15T13:27:56Z"))
+            .build();
+    CodexAgentExecutionTelemetry signal = new CodexAgentExecutionTelemetry();
+    signal.setAgentType("LANDING_GENERATOR");
+    signal.setStatus("RUNNING");
+    signal.setProcessAlive(true);
+    signal.setEventCount(18L);
+    signal.setOutputBytes(4096L);
+    signal.setInputTokens(1200L);
+    signal.setOutputTokens(350L);
+    signal.setLastEventType("OUTPUT");
+    signal.setStartedAt(Instant.parse("2026-08-15T13:27:56Z"));
+    signal.setLastActivityAt(Instant.now());
+    when(agents.findAllByOrderByNicknameAsc()).thenReturn(List.of(dedalo));
+    when(landings.findTopByStageCodeOrderByExecutionRequestedAtDesc("landing-generation-agent-v1"))
+        .thenReturn(Optional.of(landing));
+    when(telemetry.findTopByAgentTypeOrderByUpdatedAtDescIdDesc("LANDING_GENERATOR"))
+        .thenReturn(Optional.of(signal));
+
+    AgentWorkMonitorResponse result =
+        new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry, creatives)
+            .list()
+            .getFirst();
+
+    assertThat(result.executionActivity()).isNotNull();
+    assertThat(result.executionActivity().processAlive()).isTrue();
+    assertThat(result.executionActivity().eventCount()).isEqualTo(18L);
+    assertThat(result.executionActivity().outputBytes()).isEqualTo(4096L);
+    assertThat(result.executionActivity().inputTokens()).isEqualTo(1200L);
+    assertThat(result.executionActivity().outputTokens()).isEqualTo(350L);
+    assertThat(result.executionActivity().stale()).isFalse();
   }
 
   /** Mostra a execução criativa real de Têmis em vez do bloqueio antigo da tarefa agregadora. */

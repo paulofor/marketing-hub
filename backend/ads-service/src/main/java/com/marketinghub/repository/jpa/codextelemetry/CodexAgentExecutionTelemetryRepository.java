@@ -15,6 +15,10 @@ public interface CodexAgentExecutionTelemetryRepository
   Optional<CodexAgentExecutionTelemetry> findByAgentTypeAndExecutionId(
       String agentType, Long executionId);
 
+  /** Localiza o sinal mais recente do executor para o painel operacional do agente. */
+  Optional<CodexAgentExecutionTelemetry> findTopByAgentTypeOrderByUpdatedAtDescIdDesc(
+      String agentType);
+
   /** Soma os tokens das execuções iniciadas dentro da janela diária solicitada. */
   @Query(
       "SELECT telemetry.agentType, "

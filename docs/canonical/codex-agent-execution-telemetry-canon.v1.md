@@ -20,6 +20,12 @@ Distinguir um job apenas reservado de um processo Codex efetivamente ativo, sem 
 
 Os painéis dos agentes exibem última atividade, processo ativo, eventos, bytes e tokens disponíveis. A API canônica é `GET /api/codex-agent-telemetry/v1/{agentType}/executions/{executionId}`. Para o Aprovador Meta, `agentType=META_AD_APPROVER`; para o Gerador de Landing, `agentType=LANDING_GENERATOR` e a correlação operacional é o experimento reservado.
 
+A Mesa do Agente deve apresentar separadamente estado do processo, início, último heartbeat,
+quantidade de eventos, bytes produzidos, tipo do último evento e atraso superior a dois minutos.
+Esses sinais comprovam atividade técnica sem expor raciocínio interno, prompts, credenciais ou logs
+brutos. Zero tokens só pode ser apresentado como consumo quando o provedor tiver informado a
+medição; ausência continua explicitamente desconhecida.
+
 O monitor administrativo `GET /api/agents/work-monitor` consolida por agente os tokens de entrada e saída das execuções iniciadas no dia comercial (`America/Sao_Paulo`). O contador é recalculado a cada consulta e a tela o atualiza no mesmo polling de 15 segundos do estado operacional. Ausência de telemetria reportada é exibida como zero, sem estimativa local.
 
 O mesmo monitor deve expor a prontidão do executor por uma prova ativa e auditável. Cada

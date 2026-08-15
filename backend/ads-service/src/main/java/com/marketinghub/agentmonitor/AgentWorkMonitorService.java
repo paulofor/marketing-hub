@@ -2,6 +2,7 @@ package com.marketinghub.agentmonitor;
 
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.codextelemetry.CodexAgentExecutionTelemetry;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.creative.CreativeImprovementStatus;
@@ -447,6 +448,7 @@ public class AgentWorkMonitorService {
                 && source.startsWith("opportunity-dossier:")
             ? "READY — parecer bloqueado"
             : executorHealth.status();
+    AgentWorkMonitorResponse.ExecutionActivity executionActivity = executionActivity(agent);
     return new AgentWorkMonitorResponse(
         agent.getId(),
         agent.getAgentKey(),
@@ -464,8 +466,41 @@ public class AgentWorkMonitorService {
         lastActivity,
         dailyTokens(agent, tokens),
         tokens.date(),
+        executionActivity,
         executorHealth,
         combinedStatus);
+  }
+
+  /** Recupera o último heartbeat do executor associado à identidade canônica do agente. */
+  private AgentWorkMonitorResponse.ExecutionActivity executionActivity(Agent agent) {
+    String telemetryType = TELEMETRY_TYPE_BY_AGENT_KEY.get(agent.getAgentKey());
+    if (telemetryType == null) return null;
+    return telemetryRepository
+        .findTopByAgentTypeOrderByUpdatedAtDescIdDesc(telemetryType)
+        .map(this::executionActivity)
+        .orElse(null);
+  }
+
+  /** Traduz contadores técnicos persistidos em um contrato somente de leitura para a tela. */
+  private AgentWorkMonitorResponse.ExecutionActivity executionActivity(
+      CodexAgentExecutionTelemetry telemetry) {
+    Instant heartbeat = telemetry.getLastActivityAt();
+    boolean stale =
+        "RUNNING".equals(telemetry.getStatus())
+            && heartbeat != null
+            && heartbeat.plus(Duration.ofMinutes(2)).isBefore(Instant.now());
+    return new AgentWorkMonitorResponse.ExecutionActivity(
+        telemetry.getStatus(),
+        Boolean.TRUE.equals(telemetry.getProcessAlive()),
+        telemetry.getEventCount() == null ? 0 : telemetry.getEventCount(),
+        telemetry.getOutputBytes() == null ? 0 : telemetry.getOutputBytes(),
+        telemetry.getInputTokens(),
+        telemetry.getOutputTokens(),
+        telemetry.getLastEventType(),
+        telemetry.getStartedAt(),
+        heartbeat,
+        telemetry.getFinishedAt(),
+        stale);
   }
 
   /** Retorna o consumo diário comprovado ou zero quando o agente ainda não reportou tokens. */

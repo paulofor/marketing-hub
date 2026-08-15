@@ -69,6 +69,19 @@ vi.mock("../../api/agent/useAgentWorkMonitor", () => ({
         lastActivityAt: "2026-08-15T13:01:00Z",
         dailyTokens: 12345,
         dailyTokenDate: "2026-08-15",
+        executionActivity: {
+          status: "RUNNING",
+          processAlive: true,
+          eventCount: 18,
+          outputBytes: 4096,
+          inputTokens: 1200,
+          outputTokens: 350,
+          lastEventType: "OUTPUT",
+          startedAt: "2026-08-15T13:27:56Z",
+          lastHeartbeatAt: "2026-08-15T13:28:30Z",
+          finishedAt: null,
+          stale: false,
+        },
         executorHealth: { status: "READY" },
         combinedStatus: "ATUANDO",
       },
@@ -141,10 +154,17 @@ describe("AgentWorkspacePage", () => {
 
     expect(screen.getByText("Atuação observável")).toBeInTheDocument();
     expect(screen.getByText("12.345")).toBeInTheDocument();
-    expect(
-      screen.getByText("Consumo reportado pelo Codex"),
-    ).toBeInTheDocument();
     expect(screen.getByText(/confirmam execução técnica/)).toBeInTheDocument();
+    expect(screen.getByText("Execução atual")).toBeInTheDocument();
+    expect(screen.getByText("Ativo agora")).toBeInTheDocument();
+    expect(screen.getByText("18 eventos")).toBeInTheDocument();
+    expect(screen.getByText("4.096 bytes produzidos")).toBeInTheDocument();
+    expect(
+      screen.getByText("1.550 tokens na execução atual"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Sinal dentro da janela esperada"),
+    ).toBeInTheDocument();
   });
 
   it("exibe a identidade, a caixa de entrada e a autoria de outro agente", () => {

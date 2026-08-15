@@ -34,6 +34,12 @@ A versão 1 formaliza o ciclo:
 
 `briefing → Dédalo → validação técnica → Psique → Têmis → aprovação humana`.
 
+Na execução operacional, o worker de Dédalo deve reservar primeiro a atividade liberada pelo
+endpoint BPM canônico e materializá-la, de forma idempotente, na fila técnica do GeraLanding. Uma
+lease `IN_PROGRESS` sem resultado deve ser reoferecida ao mesmo executor após reinício. A conclusão
+ou falha técnica atualiza a própria tarefa BPM antes de qualquer sucessora ficar elegível; é proibido
+liberar Psique ou Têmis apenas pelo recebimento da tarefa de Dédalo.
+
 Reprovações técnicas, de percepção da cliente ou comerciais retornam a Dédalo com causa persistida e
 geram nova versão. O backend do experimento continua sendo a autoridade das transições operacionais.
 A aprovação humana continua obrigatória antes da publicação. A referência técnica vigente é o bloco

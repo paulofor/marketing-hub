@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agenttask.AgentTaskPendingResponse;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
@@ -107,6 +108,33 @@ class LandingGenerationAgentExecutionServiceTest {
     assertEquals("creative-convergence:14:landing", execution.getValue().getAutonomousCycleId());
     assertTrue(execution.getValue().getPromptContent().contains("PRODUCT_PROOF_MISSING"));
     assertTrue(execution.getValue().getPromptContent().contains("não pode publicar"));
+  }
+
+  /** Deve materializar a tarefa BPM de Dédalo na fila técnica sem perder a correlação. */
+  @Test
+  void shouldActivateClaimedBpmTask() {
+    when(agentTaskService.claimedProcessTask("landing-generator", 30L))
+        .thenReturn(
+            new AgentTaskPendingResponse(
+                30L,
+                "landing-generator",
+                "landing-page-generation",
+                2,
+                "html",
+                "Construir HTML com autonomia",
+                "Experimento 88 — construir landing",
+                "Criar candidata responsiva sem publicar.",
+                "commercial-plan:2@v4",
+                Instant.parse("2026-08-15T05:10:37Z")));
+
+    service.activateProcessTask(30L);
+
+    org.mockito.ArgumentCaptor<GeraLandingStageExecution> execution =
+        org.mockito.ArgumentCaptor.forClass(GeraLandingStageExecution.class);
+    verify(repository).save(execution.capture());
+    assertEquals(88L, execution.getValue().getExperimentId());
+    assertEquals("agent-task:30", execution.getValue().getAutonomousCycleId());
+    assertTrue(execution.getValue().getPromptContent().contains("Construir HTML com autonomia"));
   }
 
   /** Deve abrir nova transação ao persistir a fila depois do commit do Quality Review. */

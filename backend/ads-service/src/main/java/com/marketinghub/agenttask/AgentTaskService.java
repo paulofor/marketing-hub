@@ -473,6 +473,14 @@ public class AgentTaskService {
   @Transactional
   public Optional<AgentTaskPendingResponse> claimEligibleProcessTask(String agentKey) {
     agent(agentKey);
+    Optional<AgentTask> alreadyClaimed =
+        repository
+            .findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+                agentKey.trim(), "WORK", "IN_PROGRESS")
+            .stream()
+            .filter(task -> task.getProcessDefinition() != null)
+            .findFirst();
+    if (alreadyClaimed.isPresent()) return Optional.of(pendingResponse(alreadyClaimed.get()));
     for (AgentTask task :
         repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
             agentKey.trim(), "WORK", "PENDING")) {
@@ -482,21 +490,31 @@ public class AgentTaskService {
       if (task.getReceivedAt() == null) task.setReceivedAt(now);
       task.setUpdatedAt(now);
       repository.save(task);
-      BusinessProcessDefinition process = task.getProcessDefinition();
-      return Optional.of(
-          new AgentTaskPendingResponse(
-              task.getId(),
-              agentKey.trim(),
-              process.getProcessCode(),
-              process.getVersionNumber(),
-              task.getProcessActivityId(),
-              task.getProcessActivityName(),
-              task.getTitle(),
-              task.getDescription(),
-              task.getSourceReference(),
-              task.getReceivedAt()));
+      return Optional.of(pendingResponse(task));
     }
     return Optional.empty();
+  }
+
+  /** Reexpõe a lease ativa ao mesmo executor para permitir retomada após interrupção. */
+  @Transactional(readOnly = true)
+  public AgentTaskPendingResponse claimedProcessTask(String agentKey, Long taskId) {
+    return pendingResponse(claimedBy(agentKey, taskId));
+  }
+
+  /** Converte uma tarefa reservada no contrato estável entregue ao executor. */
+  private AgentTaskPendingResponse pendingResponse(AgentTask task) {
+    BusinessProcessDefinition process = task.getProcessDefinition();
+    return new AgentTaskPendingResponse(
+        task.getId(),
+        task.getAssignedAgent().getAgentKey(),
+        process.getProcessCode(),
+        process.getVersionNumber(),
+        task.getProcessActivityId(),
+        task.getProcessActivityName(),
+        task.getTitle(),
+        task.getDescription(),
+        task.getSourceReference(),
+        task.getReceivedAt());
   }
 
   /** Conclui trabalho reservado com saída e evidências persistidas. */
@@ -541,10 +559,14 @@ public class AgentTaskService {
     try {
       JsonNode diagram = objectMapper.readTree(candidate.getProcessDefinition().getDiagramJson());
       Map<String, List<String>> incoming = new HashMap<>();
-      for (JsonNode edge : diagram.path("edges")) {
-        incoming
-            .computeIfAbsent(edge.path("target").asText(), ignored -> new ArrayList<>())
-            .add(edge.path("source").asText());
+      JsonNode connections =
+          diagram.path("flows").isArray() ? diagram.path("flows") : diagram.path("edges");
+      for (JsonNode edge : connections) {
+        String target =
+            edge.hasNonNull("to") ? edge.path("to").asText() : edge.path("target").asText();
+        String source =
+            edge.hasNonNull("from") ? edge.path("from").asText() : edge.path("source").asText();
+        incoming.computeIfAbsent(target, ignored -> new ArrayList<>()).add(source);
       }
       List<AgentTask> siblings =
           repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(

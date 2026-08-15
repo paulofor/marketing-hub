@@ -47,6 +47,7 @@ public class LandingGenerationAgentExecutionService {
   private final GeraSalesPagePublicationAuditRepository publicationRepository;
   private final ObjectMapper objectMapper;
   private final AgentTaskService agentTaskService;
+  private final LandingGenerationResultApplicationService resultApplicationService;
 
   /** Inicializa a fila usando a persistência canônica do GeraLanding. */
   public LandingGenerationAgentExecutionService(
@@ -55,13 +56,15 @@ public class LandingGenerationAgentExecutionService {
       ExperimentRepository experimentRepository,
       GeraSalesPagePublicationAuditRepository publicationRepository,
       ObjectMapper objectMapper,
-      AgentTaskService agentTaskService) {
+      AgentTaskService agentTaskService,
+      LandingGenerationResultApplicationService resultApplicationService) {
     this.repository = repository;
     this.coordinator = coordinator;
     this.experimentRepository = experimentRepository;
     this.publicationRepository = publicationRepository;
     this.objectMapper = objectMapper;
     this.agentTaskService = agentTaskService;
+    this.resultApplicationService = resultApplicationService;
   }
 
   /** Converte o parecer independente em trabalho do agente ou conclui a jornada aprovada. */
@@ -403,7 +406,7 @@ public class LandingGenerationAgentExecutionService {
   private void continueOrBlockWithAuditableCause(
       GeraLandingStageExecution execution, LandingAgentResultRequest request) {
     try {
-      coordinator.continueAfterQualityReview(
+      resultApplicationService.apply(
           execution.getExperimentId(), execution.getAutonomousCycleId(), request.decisionJson());
     } catch (RuntimeException ex) {
       String cause = rootMessage(ex);

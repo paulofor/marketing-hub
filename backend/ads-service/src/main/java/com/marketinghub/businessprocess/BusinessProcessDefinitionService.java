@@ -3,9 +3,11 @@ package com.marketinghub.businessprocess;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +21,7 @@ public class BusinessProcessDefinitionService {
   private final Clock clock;
 
   /** Configura persistência, serialização e relógio operacional. */
+  @Autowired
   public BusinessProcessDefinitionService(
       BusinessProcessDefinitionRepository repository, ObjectMapper objectMapper) {
     this(repository, objectMapper, Clock.systemUTC());

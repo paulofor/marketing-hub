@@ -1,5 +1,6 @@
-package com.marketinghub.businessprocess;
+package com.marketinghub.repository.jpa.businessprocess;
 
+import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;

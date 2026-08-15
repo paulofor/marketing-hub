@@ -94,10 +94,10 @@ public class CreativeGenerationService {
     private List<CreateCreativeRequest> generatePipelineCreatives(ExperimentDto dto, int quantity) {
         Experiment experiment = toExperiment(dto);
         List<LandingCreativeReferenceSelector.ReferenceImage> references =
-                referenceSelector.select(dto.getLandingPageImageAssets());
+                referenceSelector.selectCommercialKit(dto.getCommercialPlanVisualAssets());
         if (references.isEmpty()) {
             throw new IllegalStateException(
-                    "Têmis não encontrou exemplos reais concluídos na landing; geração bloqueada antes de consumir tentativa");
+                    "Têmis não encontrou exemplos APPROVED no Kit Visual do plano comercial; geração bloqueada antes de consumir tentativa");
         }
         List<PipelineAdCreativePlan> plans = pipelineExtractor.extract(experiment).stream()
                 .limit(Math.max(1, quantity))
@@ -130,7 +130,7 @@ public class CreativeGenerationService {
 
     /** Monta a trilha auditável das referências escolhidas por Têmis para o asset gerado. */
     private String referenceAudit(List<LandingCreativeReferenceSelector.ReferenceImage> references) {
-        return "Referências reais selecionadas por Têmis: " + references.stream()
+        return "Kit Visual aprovado selecionado por Têmis: " + references.stream()
                 .map(reference -> reference.url() + " [" + limitText(reference.label(), 120) + "]")
                 .toList();
     }

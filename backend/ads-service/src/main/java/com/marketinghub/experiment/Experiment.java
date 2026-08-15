@@ -307,6 +307,9 @@ public class Experiment {
   @Column(name = "landing_page_image_assets", columnDefinition = "LONGTEXT")
   private String landingPageImageAssets;
 
+  /** Kit visual aprovado do plano, anexado apenas ao contrato operacional dos executores. */
+  @Transient private String commercialPlanVisualAssets;
+
   @Column(name = "landing_page_design_preset", columnDefinition = "LONGTEXT")
   private String landingPageDesignPreset;
 

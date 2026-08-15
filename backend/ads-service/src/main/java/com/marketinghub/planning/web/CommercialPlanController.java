@@ -8,12 +8,15 @@ import com.marketinghub.planning.dto.CommercialPlanMilestoneDto;
 import com.marketinghub.planning.dto.CommercialPlanOperationalFlowDto;
 import com.marketinghub.planning.dto.CommercialPlanSimulationDto;
 import com.marketinghub.planning.dto.CommercialPlanVersionDto;
+import com.marketinghub.planning.dto.CommercialPlanVisualAssetDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekObjectiveDto;
 import com.marketinghub.planning.dto.CreateCommercialPlanRequest;
 import com.marketinghub.planning.dto.CreateCommercialPlanSimulationRequest;
+import com.marketinghub.planning.dto.CreateCommercialPlanVisualAssetRequest;
 import com.marketinghub.planning.dto.UpdateCommercialPlanMilestoneRequest;
 import com.marketinghub.planning.dto.UpdateCommercialPlanRequest;
+import com.marketinghub.planning.dto.UpdateCommercialPlanVisualAssetStatusRequest;
 import com.marketinghub.planning.dto.UpdateCommercialPlanWeekCommitmentStatusRequest;
 import com.marketinghub.planning.dto.UpdateCommercialPlanWeekObjectivesRequest;
 import com.marketinghub.planning.mapper.CommercialPlanMapper;
@@ -22,6 +25,7 @@ import com.marketinghub.planning.service.CommercialPlanJourneyHomologationServic
 import com.marketinghub.planning.service.CommercialPlanOperationalFlowService;
 import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.planning.service.CommercialPlanVersionService;
+import com.marketinghub.planning.service.CommercialPlanVisualAssetService;
 import com.marketinghub.planning.service.CommercialPlanWeeklyExperimentService;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,6 +49,7 @@ public class CommercialPlanController {
   private final CommercialPlanAgentActivityService agentActivityService;
   private final CommercialPlanJourneyHomologationService journeyHomologationService;
   private final CommercialPlanOperationalFlowService operationalFlowService;
+  private final CommercialPlanVisualAssetService visualAssetService;
 
   public CommercialPlanController(
       CommercialPlanService service,
@@ -53,7 +58,8 @@ public class CommercialPlanController {
       CommercialPlanVersionService versionService,
       CommercialPlanAgentActivityService agentActivityService,
       CommercialPlanJourneyHomologationService journeyHomologationService,
-      CommercialPlanOperationalFlowService operationalFlowService) {
+      CommercialPlanOperationalFlowService operationalFlowService,
+      CommercialPlanVisualAssetService visualAssetService) {
     this.service = service;
     this.weeklyExperimentService = weeklyExperimentService;
     this.mapper = mapper;
@@ -61,6 +67,29 @@ public class CommercialPlanController {
     this.agentActivityService = agentActivityService;
     this.journeyHomologationService = journeyHomologationService;
     this.operationalFlowService = operationalFlowService;
+    this.visualAssetService = visualAssetService;
+  }
+
+  /** Lista o kit visual versionado do plano comercial. */
+  @GetMapping("/{id}/visual-assets")
+  public List<CommercialPlanVisualAssetDto> listVisualAssets(@PathVariable Long id) {
+    return visualAssetService.list(id);
+  }
+
+  /** Anexa uma referência ao kit visual como rascunho auditável. */
+  @PostMapping("/{id}/visual-assets")
+  public CommercialPlanVisualAssetDto createVisualAsset(
+      @PathVariable Long id, @RequestBody CreateCommercialPlanVisualAssetRequest request) {
+    return visualAssetService.create(id, request);
+  }
+
+  /** Aprova ou retira uma referência visual sem apagar seu histórico. */
+  @PatchMapping("/{id}/visual-assets/{assetId}/status")
+  public CommercialPlanVisualAssetDto updateVisualAssetStatus(
+      @PathVariable Long id,
+      @PathVariable Long assetId,
+      @RequestBody UpdateCommercialPlanVisualAssetStatusRequest request) {
+    return visualAssetService.updateStatus(id, assetId, request.status());
   }
 
   /** Cria um plano comercial de primeira venda. */

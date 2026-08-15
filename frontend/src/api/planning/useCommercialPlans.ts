@@ -113,6 +113,27 @@ export interface CommercialPlan {
   updatedAt?: string | null;
 }
 
+export interface CommercialPlanVisualAsset {
+  id: number;
+  assetUrl: string;
+  label: string;
+  purpose: string;
+  origin: string;
+  rightsStatement: string;
+  versionNumber: number;
+  status: "DRAFT" | "APPROVED" | "RETIRED";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCommercialPlanVisualAssetPayload {
+  assetUrl: string;
+  label: string;
+  purpose: string;
+  origin: string;
+  rightsStatement: string;
+}
+
 export interface CommercialPlanVersion {
   id: number;
   commercialPlanId: number;
@@ -364,6 +385,48 @@ export function useCommercialPlans() {
       );
       return data;
     },
+  });
+}
+
+/** Consulta o Kit Visual canônico do plano comercial. */
+export function useCommercialPlanVisualAssets(planId?: number | null) {
+  return useQuery({
+    queryKey: ["commercial-plan-visual-assets", planId],
+    enabled: !!planId,
+    queryFn: async () => {
+      const { data } = await axios.get<CommercialPlanVisualAsset[]>(
+        `/api/planning/commercial-plans/${planId}/visual-assets`,
+      );
+      return data;
+    },
+  });
+}
+
+/** Anexa uma referência como rascunho para revisão independente. */
+export function useCreateCommercialPlanVisualAsset(planId?: number | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: CreateCommercialPlanVisualAssetPayload) => {
+      const { data } = await axios.post<CommercialPlanVisualAsset>(
+        `/api/planning/commercial-plans/${planId}/visual-assets`, payload,
+      );
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["commercial-plan-visual-assets", planId] }),
+  });
+}
+
+/** Aprova ou retira uma referência sem apagar o histórico. */
+export function useUpdateCommercialPlanVisualAssetStatus(planId?: number | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ assetId, status }: { assetId: number; status: "APPROVED" | "RETIRED" }) => {
+      const { data } = await axios.patch<CommercialPlanVisualAsset>(
+        `/api/planning/commercial-plans/${planId}/visual-assets/${assetId}/status`, { status },
+      );
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["commercial-plan-visual-assets", planId] }),
   });
 }
 

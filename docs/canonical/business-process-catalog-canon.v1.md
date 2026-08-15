@@ -47,6 +47,8 @@ com resultado comercial.
 
 Toda nova tarefa humana enviada pela Mesa de Entrada deve apontar para uma atividade `TASK` de uma versão `PUBLISHED` e para o agente responsável definido nessa atividade. O backend valida a versão, o tipo do elemento e o responsável; rascunhos não podem orientar trabalho operacional.
 
-Cada tarefa deve preservar dois marcos temporais canônicos: `received_at`, registrado quando o trabalho entra na caixa do agente, e `delivered_at`, registrado uma única vez quando o resultado é concluído. Atualizações, bloqueios e cancelamentos não podem sobrescrever esses marcos. Tarefas históricas usam `created_at` como recebimento e, quando já concluídas, `updated_at` como melhor evidência disponível da entrega.
+Cada tarefa deve preservar dois marcos temporais canônicos: `received_at`, registrado somente quando o executor reserva a atividade pelo endpoint `pending`, e `delivered_at`, registrado uma única vez quando o callback entrega resultado e evidências. Criação, atualizações, bloqueios e cancelamentos não podem fabricar ou sobrescrever esses marcos.
+
+O contrato operacional canônico é `/api/internal/agent-tasks/<agentKey>/stage-executions/pending`. O backend libera somente atividades cujas predecessoras `TASK` da mesma versão de processo e referência de execução estejam concluídas. O executor reporta resultado ou falha pelos callbacks da execução; resultado e evidências ficam persistidos na tarefa. O executor nunca escolhe nem dispara a próxima atividade.
 
 Uma demanda fora do catálogo pode ser registrada como `Atividade excepcional`, sem vínculo regular e com justificativa obrigatória auditável. A exceção não cria nem altera processo automaticamente; recorrências devem orientar revisão ou criação de processo. Tarefas históricas anteriores a esta regra permanecem legíveis como legadas.

@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-15-agent-task-operational-execution
+      author: codex
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent_task MODIFY received_at DATETIME NULL;
+              ALTER TABLE agent_task ADD COLUMN result_json LONGTEXT NULL AFTER delivered_at;
+              ALTER TABLE agent_task ADD COLUMN evidence_json LONGTEXT NULL AFTER result_json;
+              ALTER TABLE agent_task ADD COLUMN execution_error LONGTEXT NULL AFTER evidence_json;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE agent_task SET received_at = created_at WHERE received_at IS NULL;
+              ALTER TABLE agent_task DROP COLUMN execution_error;
+              ALTER TABLE agent_task DROP COLUMN evidence_json;
+              ALTER TABLE agent_task DROP COLUMN result_json;
+              ALTER TABLE agent_task MODIFY received_at DATETIME NOT NULL;

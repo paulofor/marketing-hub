@@ -128,6 +128,16 @@ podem justificar a passagem posterior para `ACTIVE`.
 A qualidade de um agente é medida por pendências resolvidas e resultados posteriores comprovados,
 não por quantidade de ciclos, relatórios, estimativas ou recomendações.
 
+## Supervisão do aprendizado persistente
+
+Por decisão de 2026-08-15, o Marketing Hub deve expor um painel administrativo de Aprendizado dos
+Agentes baseado na memória persistida canônica. O painel mostra, por agente, memórias candidatas,
+confirmadas, contraditas e retiradas, procedência, confiança e quantidade real de recuperações.
+Decisões humanas de confirmação, contradição ou retirada exigem evidência e usam a trilha append-only
+existente. Memória armazenada, confirmada ou reutilizada não pode ser apresentada como ganho de
+qualidade, economia, conversão ou venda enquanto não houver resultado oficial atribuível persistido.
+Skills versionadas permanecem sob seus gates próprios de segurança, replay, promoção e rollback.
+
 ## Avaliação em modo sombra
 
 Versões candidatas de agentes devem ser avaliadas com replay de execuções reais congeladas e um

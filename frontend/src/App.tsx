@@ -97,6 +97,7 @@ import ActiveAgentTasksPage from "./pages/agent/ActiveAgentTasksPage";
 import AgentThemePage from "./pages/agent/AgentThemePage";
 import SystemImprovementsPage from "./pages/systemImprovement/SystemImprovementsPage";
 import BusinessProcessesPage from "./pages/businessProcess/BusinessProcessesPage";
+import AgentLearningDashboardPage from "./pages/agentLearning/AgentLearningDashboardPage";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import MainNavigation from "./components/MainNavigation";
@@ -420,6 +421,10 @@ export default function App() {
               />
               <Route path="/agents" element={<AgentListPage />} />
               <Route path="/agent-tasks" element={<ActiveAgentTasksPage />} />
+              <Route
+                path="/agent-learning"
+                element={<AgentLearningDashboardPage />}
+              />
               <Route
                 path="/business-processes"
                 element={<BusinessProcessesPage />}

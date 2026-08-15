@@ -150,8 +150,7 @@ class LandingGenerationAgentCoordinatorTest {
             "<html><body><main>Oferta</main></body></html>",
             "LANDING_PAGE_HTML"));
 
-    verify(governedLandingHtmlService)
-        .apply(88L, "<html><body><main>Oferta</main></body></html>");
+    verify(governedLandingHtmlService).apply(88L, "<html><body><main>Oferta</main></body></html>");
     verify(presetDesignService, never()).start(88L);
   }
 

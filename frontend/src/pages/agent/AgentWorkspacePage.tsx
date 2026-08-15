@@ -101,6 +101,11 @@ export default function AgentWorkspacePage() {
   const activity = (workMonitor.data ?? []).find(
     (item) => item.agentId === Number(id),
   );
+  const execution = activity?.executionActivity;
+  const executionTokens =
+    execution?.inputTokens != null || execution?.outputTokens != null
+      ? (execution.inputTokens ?? 0) + (execution.outputTokens ?? 0)
+      : null;
 
   if (agents.isLoading) return <p>Carregando agente...</p>;
   if (!agent) return <p>Agente não encontrado.</p>;
@@ -226,11 +231,84 @@ export default function AgentWorkspacePage() {
                   {activity.dailyTokens.toLocaleString("pt-BR")}
                 </div>
                 <div className="small text-body-secondary">
-                  {activity.dailyTokens > 0
-                    ? "Consumo reportado pelo Codex"
-                    : "Nenhum consumo informado; não é uma estimativa"}
+                  {executionTokens != null
+                    ? `${executionTokens.toLocaleString("pt-BR")} tokens na execução atual`
+                    : "O Codex ainda não informou o consumo desta execução"}
                 </div>
               </div>
+              {execution ? (
+                <div className="col-12">
+                  <div className="border rounded p-3 bg-body-tertiary">
+                    <h3 className="h6 mb-3">Execução atual</h3>
+                    <div className="row g-3">
+                      <div className="col-sm-6 col-lg-3">
+                        <div className="small text-body-secondary">
+                          Processo
+                        </div>
+                        <div className="fw-semibold">
+                          {execution.processAlive
+                            ? "Ativo agora"
+                            : "Sem processo ativo"}
+                        </div>
+                        <div className="small">Estado {execution.status}</div>
+                      </div>
+                      <div className="col-sm-6 col-lg-3">
+                        <div className="small text-body-secondary">
+                          Progresso técnico
+                        </div>
+                        <div className="fw-semibold">
+                          {execution.eventCount.toLocaleString("pt-BR")} eventos
+                        </div>
+                        <div className="small">
+                          {execution.outputBytes.toLocaleString("pt-BR")} bytes
+                          produzidos
+                        </div>
+                      </div>
+                      <div className="col-sm-6 col-lg-3">
+                        <div className="small text-body-secondary">Início</div>
+                        <div className="fw-semibold">
+                          {execution.startedAt
+                            ? new Date(execution.startedAt).toLocaleString(
+                                "pt-BR",
+                              )
+                            : "Não informado"}
+                        </div>
+                        <div className="small">
+                          Último evento:{" "}
+                          {execution.lastEventType ?? "heartbeat"}
+                        </div>
+                      </div>
+                      <div className="col-sm-6 col-lg-3">
+                        <div className="small text-body-secondary">
+                          Último heartbeat
+                        </div>
+                        <div className="fw-semibold">
+                          {execution.lastHeartbeatAt
+                            ? new Date(
+                                execution.lastHeartbeatAt,
+                              ).toLocaleString("pt-BR")
+                            : "Não informado"}
+                        </div>
+                        <div
+                          className={
+                            execution.stale
+                              ? "small text-danger"
+                              : "small text-success"
+                          }
+                        >
+                          {execution.stale
+                            ? "Sem sinal há mais de 2 minutos"
+                            : "Sinal dentro da janela esperada"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="col-12 small text-body-secondary">
+                  Ainda não há telemetria detalhada vinculada a esta execução.
+                </div>
+              )}
               {activity.difficulty ? (
                 <div className="col-12">
                   <div className="alert alert-warning py-2 mb-0">

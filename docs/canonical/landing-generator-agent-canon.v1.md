@@ -27,6 +27,8 @@ Quando o HTML atual contiver somente uma âncora de checkout quebrada, Dédalo d
 
 A definição da atividade registra a regra estável de preservar o checkout, mas o valor operacional deve vir sempre do `checkoutContract` congelado pelo backend para cada execução. Dédalo deve copiar literalmente `canonicalUrl` em todo CTA marcado por `checkout-cta-primary` ou `primary-checkout`. O worker valida localmente todos esses links antes do callback e bloqueia `#`, placeholders, URLs inferidas ou destinos alternativos, evitando consumir uma nova rodada do backend para descobrir a mesma divergência.
 
+Quando Dédalo selecionar implementação por código, a decisão estratégica e a materialização do artefato são interações separadas. Se a primeira resposta não contiver o documento integral, o worker executa imediatamente uma interação estruturada dedicada somente ao HTML, soma a telemetria das duas interações e valida o checkout antes do callback. Descrições de alterações nunca substituem o artefato.
+
 ## Autonomia orientada ao objetivo
 
 O agente deve trabalhar sem solicitar escolhas humanas de copy, layout, CTA, imagens ou responsividade quando houver contexto e evidência suficientes. Pode reconstruir livremente copy, hierarquia, imagens e HTML usando as etapas canônicas, inclusive reiniciando pelo wireframe quando uma correção localizada não resolver a causa. Em cada execução ele audita visual e funcionalmente desktop, iPhone e Android, compara ao menos três estratégias, escolhe a de melhor aderência comercial e entrega um backlog causal ordenado para execução pelo pipeline oficial. O plano deve incluir critérios por dispositivo, métricas esperadas e condições explícitas de continuar, ajustar e parar.

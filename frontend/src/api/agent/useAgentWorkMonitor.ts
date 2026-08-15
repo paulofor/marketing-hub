@@ -24,6 +24,19 @@ export interface AgentWorkMonitor {
   lastActivityAt?: string | null;
   dailyTokens: number;
   dailyTokenDate: string;
+  executionActivity?: {
+    status: string;
+    processAlive: boolean;
+    eventCount: number;
+    outputBytes: number;
+    inputTokens?: number | null;
+    outputTokens?: number | null;
+    lastEventType?: string | null;
+    startedAt?: string | null;
+    lastHeartbeatAt?: string | null;
+    finishedAt?: string | null;
+    stale: boolean;
+  } | null;
   executorHealth: {
     status: "READY" | "BLOCKED" | "UNKNOWN";
     expectedVersion: number;

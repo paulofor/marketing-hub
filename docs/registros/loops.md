@@ -74,6 +74,7 @@
 - Fechamento complementar no BPM de Dédalo (2026-08-15): a tarefa #30 era reservada pela fila genérica e materializada em GeraLanding por uma segunda chamada HTTP; durante publicação parcial, a primeira chamada funcionou e a segunda retornou 404, deixando a atividade `IN_PROGRESS` sem execução técnica. Reserva e materialização passam a ocorrer em uma única transação e endpoint do backend, que também retoma de forma idempotente a lease já reservada.
 - Fechamento complementar de retomada do BPM de Dédalo (2026-08-15): depois de um deploy, a execução técnica `agent-task:30` permanecia `PROCESSANDO` porque a recuperação por troca de build reconhecia somente homologações comerciais legadas. A política agora inclui explicitamente ciclos BPM `agent-task:*`, preserva a tarefa e a entrada congelada e permite que somente o novo build retome a lease; teste unitário impede que uma tarefa BPM volte a aguardar o timeout genérico de 45 minutos.
 - Fechamento complementar de qualidade no BPM de landing (2026-08-15): concluir a geração de HTML liberava Psique antes do Quality Review, e atividades automáticas do diagrama sem tarefa persistida podiam bloquear sucessoras para sempre. A tarefa de Dédalo agora permanece ativa durante correções e só termina após aprovação técnica independente; o sequenciador atravessa atividades automáticas sem tarefa própria e continua exigindo a conclusão das tarefas humanas/agentes realmente cadastradas.
+- Fechamento complementar da Mesa do Agente (2026-08-15): a telemetria persistia processo vivo, heartbeat, eventos, bytes e tokens, mas o monitor descartava esses sinais e mostrava apenas `PROCESSANDO` e um total diário igual a zero, sem distinguir ausência de medição. O monitor passa a associar a telemetria mais recente à identidade canônica do agente e a tela expõe atividade, atraso e consumo informado da execução sem publicar logs brutos ou raciocínio interno.
 
 ## LOOP-CUSTOMER-AGENT-UNSTRUCTURED-EXECUTION — Avaliação sem parecer final
 
@@ -1312,6 +1313,15 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes bloqueiam destinos inventados e comprovam a troca segura da âncora pelo checkout canônico.
 - **Fechamento complementar em 2026-08-14:** o extrator do CTA protegido deixa de depender da ordem textual dos atributos HTML. Dédalo pode produzir tanto `id` antes de `href` quanto `href` antes de `id`; o backend continua exigindo o mesmo identificador e a URL canônica, com teste de contrato para ambas as ordens.
 - **Fechamento complementar em 2026-08-15:** o HTML autônomo do experimento #88 preservou a URL oficial em quatro CTAs, mas usou o hook semântico `data-analytics-role="primary-checkout"` em vez do identificador legado. O gate passa a reconhecer os dois contratos e valida todos os CTAs marcados contra o checkout canônico; qualquer destino divergente continua bloqueado. A tarefa BPM recebe uma única retomada automática após essa rejeição corrigível, sem liberar Psique ou Têmis antes da aprovação técnica.
+
+## LOOP-LANDING-GENERATOR-DECISAO-SEM-ARTEFATO — Dédalo descreve código sem entregar HTML
+
+- **Data:** 2026-08-15.
+- **Sintoma:** Dédalo seleciona `CODEX_CODE_IMPLEMENTATION`, descreve corretamente a reconstrução, mas retorna `generatedHtml` nulo e bloqueia a tarefa BPM #30.
+- **Causa-raiz:** uma única interação acumulava comparação estratégica, auditoria e um documento HTML grande; o schema permitia nulo para suportar outras abordagens e não garantia a materialização após a escolha por código.
+- **Correção sistêmica:** decisão e materialização passam a ser interações estruturadas separadas; quando a escolha for código e o artefato estiver ausente, o worker gera imediatamente o HTML integral em contrato dedicado, soma a telemetria e valida checkout antes do callback.
+- **Prevenção:** teste de contrato exige schema e prompt dedicados ao artefato e mantém descrições de alteração inválidas como substituto do HTML.
+
 # 2026-08-14 — Dédalo: reconexão Codex bloqueava a produção da landing
 
 - **Sintoma:** uma correção integral de HTML permanecia iniciada sem ser reservada pelo executor.

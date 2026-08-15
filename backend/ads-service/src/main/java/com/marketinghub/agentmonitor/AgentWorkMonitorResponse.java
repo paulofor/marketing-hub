@@ -23,5 +23,21 @@ public record AgentWorkMonitorResponse(
     Instant lastActivityAt,
     long dailyTokens,
     LocalDate dailyTokenDate,
+    ExecutionActivity executionActivity,
     AgentExecutorHealthResponse executorHealth,
-    String combinedStatus) {}
+    String combinedStatus) {
+
+  /** Responsabilidade: expor sinais técnicos compreensíveis sem revelar conteúdo interno. */
+  public record ExecutionActivity(
+      String status,
+      boolean processAlive,
+      long eventCount,
+      long outputBytes,
+      Long inputTokens,
+      Long outputTokens,
+      String lastEventType,
+      Instant startedAt,
+      Instant lastHeartbeatAt,
+      Instant finishedAt,
+      boolean stale) {}
+}

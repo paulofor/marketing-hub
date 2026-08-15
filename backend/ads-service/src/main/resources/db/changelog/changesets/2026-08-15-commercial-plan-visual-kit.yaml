@@ -19,6 +19,7 @@ databaseChangeLog:
                 id BIGINT NOT NULL AUTO_INCREMENT,
                 commercial_plan_id BIGINT NOT NULL,
                 asset_url VARCHAR(2048) NOT NULL,
+                media_type VARCHAR(16) NOT NULL,
                 label VARCHAR(191) NOT NULL,
                 purpose VARCHAR(64) NOT NULL,
                 origin VARCHAR(191) NOT NULL,

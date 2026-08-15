@@ -3,10 +3,11 @@ package com.marketinghub.planning.dto;
 import com.marketinghub.planning.CommercialPlanVisualAssetStatus;
 import java.time.Instant;
 
-/** Responsabilidade: expor um item governado do kit visual do plano comercial. */
+/** Responsabilidade: expor um item governado da biblioteca audiovisual do plano comercial. */
 public record CommercialPlanVisualAssetDto(
     Long id,
     String assetUrl,
+    String mediaType,
     String label,
     String purpose,
     String origin,

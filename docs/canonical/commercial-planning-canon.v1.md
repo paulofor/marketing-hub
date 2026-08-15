@@ -188,8 +188,8 @@ Um Plano Comercial pode e deve reunir varios experimentos independentes que test
 O detalhe do plano deve listar todos os experimentos vinculados e permitir adicionar novos testes sem apagar os anteriores. Toda acao operacional, inclusive homologacao, deve exigir a escolha explicita do experimento alvo. O campo legado singular `commercial_plan.experiment_id` existe apenas para migracao e compatibilidade temporaria e nao pode ser usado como fonte unica de verdade ou como criterio para descartar evidencias de outros experimentos do mesmo plano.
 
 A homologacao deve usar dados segregados (`mh_test=1`), cobrir landing, eventos, amostra, e-mail, checkout, pagamento de teste, briefing, producao e entrega, e registrar as evidencias produzidas. Esse comando nao autoriza publicacao, ativacao de midia ou gasto. Aquisicao somente pode avancar quando os gates essenciais estiverem comprovados.
-## Kit Visual do Produto
+## Biblioteca de Imagens e Vídeos do Produto
 
-Todo plano comercial pode manter referências visuais reutilizáveis do produto sem duplicar o arquivo no JSON do plano. Cada vínculo registra URL persistida, descrição, finalidade (`ADS`, `LANDING`, `SOCIAL` ou `DELIVERY`), origem, direitos de uso, versão e estado (`DRAFT`, `APPROVED` ou `RETIRED`).
+Todo plano comercial pode manter imagens e vídeos reutilizáveis do produto sem duplicar o arquivo no JSON do plano. Cada vínculo registra URL persistida, tipo (`IMAGE` ou `VIDEO`), descrição, finalidade (`ADS`, `LANDING`, `SOCIAL` ou `DELIVERY`), origem, direitos de uso, versão e estado (`DRAFT`, `APPROVED` ou `RETIRED`).
 
-Têmis dirige e revisa a estratégia visual; o AI Worker materializa a imagem. Apenas itens `APPROVED` podem ser entregues aos executores como referência. Geração comercial `PIPELINE_ADS` sem ao menos uma referência aprovada deve bloquear antes de consumir uma tentativa, preservando a independência entre geração e aprovação.
+Têmis dirige e revisa a estratégia audiovisual; o executor compatível materializa a imagem ou o vídeo. Apenas itens `APPROVED` podem ser entregues aos executores como referência. Geração comercial sem ao menos uma referência aprovada e compatível com a mídia solicitada deve bloquear antes de consumir uma tentativa, preservando a independência entre geração e aprovação.

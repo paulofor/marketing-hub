@@ -12,7 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
-/** Responsabilidade: governar o cadastro, aprovação e consumo do kit visual comercial. */
+/**
+ * Responsabilidade: governar o cadastro, aprovação e consumo da biblioteca audiovisual comercial.
+ */
 @Service
 public class CommercialPlanVisualAssetService {
   private final CommercialPlanService planService;
@@ -39,6 +41,7 @@ public class CommercialPlanVisualAssetService {
   public CommercialPlanVisualAssetDto create(
       Long planId, CreateCommercialPlanVisualAssetRequest request) {
     require(request.assetUrl(), "assetUrl");
+    require(request.mediaType(), "mediaType");
     require(request.label(), "label");
     require(request.purpose(), "purpose");
     require(request.origin(), "origin");
@@ -46,6 +49,7 @@ public class CommercialPlanVisualAssetService {
     CommercialPlanVisualAsset asset = new CommercialPlanVisualAsset();
     asset.setCommercialPlan(planService.getPlan(planId));
     asset.setAssetUrl(request.assetUrl().trim());
+    asset.setMediaType(normalizeMediaType(request.mediaType()));
     asset.setLabel(request.label().trim());
     asset.setPurpose(request.purpose().trim().toUpperCase());
     asset.setOrigin(request.origin().trim());
@@ -88,6 +92,7 @@ public class CommercialPlanVisualAssetService {
     return new CommercialPlanVisualAssetDto(
         asset.getId(),
         asset.getAssetUrl(),
+        asset.getMediaType(),
         asset.getLabel(),
         asset.getPurpose(),
         asset.getOrigin(),
@@ -103,5 +108,14 @@ public class CommercialPlanVisualAssetService {
     if (!StringUtils.hasText(value)) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, field + " is required");
     }
+  }
+
+  /** Normaliza e restringe o tipo às mídias que os executores conseguem consumir. */
+  private String normalizeMediaType(String mediaType) {
+    String normalized = mediaType.trim().toUpperCase();
+    if (!normalized.equals("IMAGE") && !normalized.equals("VIDEO")) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "mediaType must be IMAGE or VIDEO");
+    }
+    return normalized;
   }
 }

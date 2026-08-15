@@ -18,7 +18,10 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-/** Responsabilidade: vincular uma referência visual reutilizável e governada ao plano comercial. */
+/**
+ * Responsabilidade: vincular uma referência audiovisual reutilizável e governada ao plano
+ * comercial.
+ */
 @Entity
 @Table(name = "commercial_plan_visual_asset")
 @Getter
@@ -35,6 +38,9 @@ public class CommercialPlanVisualAsset {
 
   @Column(name = "asset_url", nullable = false, length = 2048)
   private String assetUrl;
+
+  @Column(name = "media_type", nullable = false, length = 16)
+  private String mediaType;
 
   @Column(name = "label", nullable = false, length = 191)
   private String label;

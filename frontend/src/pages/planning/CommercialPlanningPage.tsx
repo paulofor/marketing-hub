@@ -41,25 +41,182 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
   const query = useCommercialPlanVisualAssets(planId);
   const createAsset = useCreateCommercialPlanVisualAsset(planId);
   const updateStatus = useUpdateCommercialPlanVisualAssetStatus(planId);
-  const [draft, setDraft] = useState({ assetUrl: "", label: "", purpose: "ADS", origin: "Produto", rightsStatement: "Uso autorizado para este produto" });
+  const [draft, setDraft] = useState<{
+    assetUrl: string;
+    mediaType: "IMAGE" | "VIDEO";
+    label: string;
+    purpose: string;
+    origin: string;
+    rightsStatement: string;
+  }>({
+    assetUrl: "",
+    mediaType: "IMAGE",
+    label: "",
+    purpose: "ADS",
+    origin: "Produto",
+    rightsStatement: "Uso autorizado para este produto",
+  });
   const assets = query.data ?? [];
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
-    createAsset.mutate(draft, { onSuccess: () => setDraft({ ...draft, assetUrl: "", label: "" }) });
+    createAsset.mutate(draft, {
+      onSuccess: () => setDraft({ ...draft, assetUrl: "", label: "" }),
+    });
   };
   return (
     <section className="card" aria-labelledby="visual-kit-title">
       <div className="card-body d-flex flex-column gap-3">
-        <div><h2 id="visual-kit-title" className="h5 mb-1">Kit Visual do Produto</h2><p className="text-body-secondary mb-0">Referências aprovadas orientam Têmis e o AI Worker em anúncios, landing e social.</p></div>
+        <div>
+          <h2 id="visual-kit-title" className="h5 mb-1">
+            Biblioteca de Imagens e Vídeos
+          </h2>
+          <p className="text-body-secondary mb-0">
+            Mídias aprovadas do produto orientam Têmis e os executores em
+            anúncios, landing, social e entrega.
+          </p>
+        </div>
         <form className="row g-2" onSubmit={submit}>
-          <div className="col-lg-4"><label className="form-label">URL do asset *</label><input className="form-control" required value={draft.assetUrl} onChange={(e) => setDraft({ ...draft, assetUrl: e.target.value })} /></div>
-          <div className="col-lg-3"><label className="form-label">Descrição *</label><input className="form-control" required value={draft.label} onChange={(e) => setDraft({ ...draft, label: e.target.value })} /></div>
-          <div className="col-lg-2"><label className="form-label">Finalidade *</label><select className="form-select" value={draft.purpose} onChange={(e) => setDraft({ ...draft, purpose: e.target.value })}><option>ADS</option><option>LANDING</option><option>SOCIAL</option><option>DELIVERY</option></select></div>
-          <div className="col-lg-3"><label className="form-label">Origem *</label><input className="form-control" required value={draft.origin} onChange={(e) => setDraft({ ...draft, origin: e.target.value })} /></div>
-          <div className="col-lg-9"><label className="form-label">Direitos de uso *</label><input className="form-control" required value={draft.rightsStatement} onChange={(e) => setDraft({ ...draft, rightsStatement: e.target.value })} /></div>
-          <div className="col-lg-3 d-flex align-items-end"><button className="btn btn-primary w-100" disabled={createAsset.isPending}>{createAsset.isPending ? <><span className="spinner-border spinner-border-sm me-2" />Anexando...</> : "Anexar ao kit"}</button></div>
+          <div className="col-lg-3">
+            <label className="form-label">URL da mídia *</label>
+            <input
+              className="form-control"
+              required
+              value={draft.assetUrl}
+              onChange={(e) => setDraft({ ...draft, assetUrl: e.target.value })}
+            />
+          </div>
+          <div className="col-lg-1">
+            <label className="form-label">Tipo *</label>
+            <select
+              className="form-select"
+              value={draft.mediaType}
+              onChange={(e) =>
+                setDraft({
+                  ...draft,
+                  mediaType: e.target.value as "IMAGE" | "VIDEO",
+                })
+              }
+            >
+              <option value="IMAGE">Imagem</option>
+              <option value="VIDEO">Vídeo</option>
+            </select>
+          </div>
+          <div className="col-lg-3">
+            <label className="form-label">Descrição *</label>
+            <input
+              className="form-control"
+              required
+              value={draft.label}
+              onChange={(e) => setDraft({ ...draft, label: e.target.value })}
+            />
+          </div>
+          <div className="col-lg-2">
+            <label className="form-label">Finalidade *</label>
+            <select
+              className="form-select"
+              value={draft.purpose}
+              onChange={(e) => setDraft({ ...draft, purpose: e.target.value })}
+            >
+              <option>ADS</option>
+              <option>LANDING</option>
+              <option>SOCIAL</option>
+              <option>DELIVERY</option>
+            </select>
+          </div>
+          <div className="col-lg-3">
+            <label className="form-label">Origem *</label>
+            <input
+              className="form-control"
+              required
+              value={draft.origin}
+              onChange={(e) => setDraft({ ...draft, origin: e.target.value })}
+            />
+          </div>
+          <div className="col-lg-9">
+            <label className="form-label">Direitos de uso *</label>
+            <input
+              className="form-control"
+              required
+              value={draft.rightsStatement}
+              onChange={(e) =>
+                setDraft({ ...draft, rightsStatement: e.target.value })
+              }
+            />
+          </div>
+          <div className="col-lg-3 d-flex align-items-end">
+            <button
+              className="btn btn-primary w-100"
+              disabled={createAsset.isPending}
+            >
+              {createAsset.isPending ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" />
+                  Anexando...
+                </>
+              ) : (
+                "Anexar ao kit"
+              )}
+            </button>
+          </div>
         </form>
-        <div className="row g-3">{assets.map((asset) => <div className="col-md-4" key={asset.id}><div className="border rounded p-2 h-100"><img src={asset.assetUrl} alt={asset.label} className="img-fluid rounded mb-2" /><strong className="d-block">{asset.label}</strong><small>{asset.purpose} · v{asset.versionNumber} · {asset.status}</small><div className="d-flex gap-2 mt-2">{asset.status !== "APPROVED" && <button className="btn btn-sm btn-success" disabled={updateStatus.isPending} onClick={() => updateStatus.mutate({ assetId: asset.id, status: "APPROVED" })}>Aprovar</button>}{asset.status !== "RETIRED" && <button className="btn btn-sm btn-outline-secondary" disabled={updateStatus.isPending} onClick={() => updateStatus.mutate({ assetId: asset.id, status: "RETIRED" })}>Retirar</button>}</div></div></div>)}</div>
+        <div className="row g-3">
+          {assets.map((asset) => (
+            <div className="col-md-4" key={asset.id}>
+              <div className="border rounded p-2 h-100">
+                {asset.mediaType === "VIDEO" ? (
+                  <video
+                    src={asset.assetUrl}
+                    aria-label={asset.label}
+                    className="img-fluid rounded mb-2"
+                    controls
+                    preload="metadata"
+                  />
+                ) : (
+                  <img
+                    src={asset.assetUrl}
+                    alt={asset.label}
+                    className="img-fluid rounded mb-2"
+                  />
+                )}
+                <strong className="d-block">{asset.label}</strong>
+                <small>
+                  {asset.mediaType === "VIDEO" ? "Vídeo" : "Imagem"} ·{" "}
+                  {asset.purpose} · v{asset.versionNumber} · {asset.status}
+                </small>
+                <div className="d-flex gap-2 mt-2">
+                  {asset.status !== "APPROVED" && (
+                    <button
+                      className="btn btn-sm btn-success"
+                      disabled={updateStatus.isPending}
+                      onClick={() =>
+                        updateStatus.mutate({
+                          assetId: asset.id,
+                          status: "APPROVED",
+                        })
+                      }
+                    >
+                      Aprovar
+                    </button>
+                  )}
+                  {asset.status !== "RETIRED" && (
+                    <button
+                      className="btn btn-sm btn-outline-secondary"
+                      disabled={updateStatus.isPending}
+                      onClick={() =>
+                        updateStatus.mutate({
+                          assetId: asset.id,
+                          status: "RETIRED",
+                        })
+                      }
+                    >
+                      Retirar
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

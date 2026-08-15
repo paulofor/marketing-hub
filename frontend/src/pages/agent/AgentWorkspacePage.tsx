@@ -15,6 +15,7 @@ import {
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import { useExperiments } from "../../api/experiment/useExperiments";
 import { useBusinessProcesses } from "../../api/businessProcess/useBusinessProcesses";
+import { useAgentWorkMonitor } from "../../api/agent/useAgentWorkMonitor";
 
 const statusLabel: Record<AgentTaskStatus, string> = {
   PENDING: "Pendente",
@@ -51,6 +52,7 @@ export default function AgentWorkspacePage() {
   const agents = useAgents();
   const agent = (agents.data ?? []).find((item) => item.id === Number(id));
   const inbox = useAgentTasks(agent?.agentKey);
+  const workMonitor = useAgentWorkMonitor();
   const create = useCreateAgentTask(agent?.agentKey);
   const updateStatus = useUpdateAgentTaskStatus(agent?.agentKey);
   const experiments = useExperiments();
@@ -81,8 +83,12 @@ export default function AgentWorkspacePage() {
     (node) =>
       node.type === "TASK" &&
       (!node.owner ||
-        node.owner.toLowerCase().includes(agent?.nickname.toLowerCase() ?? "") ||
-        node.owner.toLowerCase().includes(agent?.agentKey?.toLowerCase() ?? "")),
+        node.owner
+          .toLowerCase()
+          .includes(agent?.nickname.toLowerCase() ?? "") ||
+        node.owner
+          .toLowerCase()
+          .includes(agent?.agentKey?.toLowerCase() ?? "")),
   );
   const openCount = useMemo(
     () =>
@@ -92,6 +98,9 @@ export default function AgentWorkspacePage() {
     [inbox.data],
   );
   const recentTasks = (inbox.data ?? []).slice(0, RECENT_TASK_LIMIT);
+  const activity = (workMonitor.data ?? []).find(
+    (item) => item.agentId === Number(id),
+  );
 
   if (agents.isLoading) return <p>Carregando agente...</p>;
   if (!agent) return <p>Agente não encontrado.</p>;
@@ -161,6 +170,80 @@ export default function AgentWorkspacePage() {
               {openCount} tarefas abertas · status {agent.status}
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="card mb-4" aria-labelledby="agent-activity-title">
+        <div className="card-body">
+          <div className="d-flex justify-content-between align-items-start gap-3">
+            <div>
+              <h2 id="agent-activity-title" className="h5 mb-1">
+                Atuação observável
+              </h2>
+              <p className="small text-body-secondary mb-0">
+                Sinais técnicos persistidos pelo executor, atualizados a cada 15
+                segundos.
+              </p>
+            </div>
+            {activity ? (
+              <span className="badge text-bg-light">
+                {activity.combinedStatus}
+              </span>
+            ) : null}
+          </div>
+          {workMonitor.isLoading ? (
+            <p className="mt-3 mb-0">Carregando atividade...</p>
+          ) : null}
+          {!workMonitor.isLoading && !activity ? (
+            <p className="text-body-secondary mt-3 mb-0">
+              O executor ainda não publicou sinais de atividade para este
+              agente.
+            </p>
+          ) : null}
+          {activity ? (
+            <div className="row g-3 mt-1">
+              <div className="col-md-4">
+                <div className="small text-body-secondary">Trabalho atual</div>
+                <div className="fw-semibold">{activity.currentWork}</div>
+                {activity.progressDetail ? (
+                  <div className="small">{activity.progressDetail}</div>
+                ) : null}
+              </div>
+              <div className="col-md-4">
+                <div className="small text-body-secondary">Último sinal</div>
+                <div className="fw-semibold">
+                  {activity.lastActivityAt
+                    ? new Date(activity.lastActivityAt).toLocaleString("pt-BR")
+                    : "Ainda não informado"}
+                </div>
+                <div className="small">
+                  Executor {activity.executorHealth.status.toLowerCase()}
+                </div>
+              </div>
+              <div className="col-md-4">
+                <div className="small text-body-secondary">Tokens hoje</div>
+                <div className="fw-semibold">
+                  {activity.dailyTokens.toLocaleString("pt-BR")}
+                </div>
+                <div className="small text-body-secondary">
+                  {activity.dailyTokens > 0
+                    ? "Consumo reportado pelo Codex"
+                    : "Nenhum consumo informado; não é uma estimativa"}
+                </div>
+              </div>
+              {activity.difficulty ? (
+                <div className="col-12">
+                  <div className="alert alert-warning py-2 mb-0">
+                    <strong>Bloqueio:</strong> {activity.difficulty}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          <p className="small text-body-secondary mt-3 mb-0">
+            Atividade e tokens confirmam execução técnica; a entrega e os gates
+            do processo continuam sendo os critérios de qualidade.
+          </p>
         </div>
       </section>
 
@@ -278,7 +361,10 @@ export default function AgentWorkspacePage() {
                     disabled={form.exceptional || !selectedProcess}
                     value={form.processActivityId}
                     onChange={(event) =>
-                      setForm({ ...form, processActivityId: event.target.value })
+                      setForm({
+                        ...form,
+                        processActivityId: event.target.value,
+                      })
                     }
                   >
                     <option value="">Selecione a atividade</option>
@@ -290,7 +376,8 @@ export default function AgentWorkspacePage() {
                   </select>
                   {selectedProcess && availableActivities.length === 0 ? (
                     <small className="text-danger">
-                      Este agente não é responsável por atividades desse processo.
+                      Este agente não é responsável por atividades desse
+                      processo.
                     </small>
                   ) : null}
                 </div>
@@ -309,13 +396,19 @@ export default function AgentWorkspacePage() {
                       })
                     }
                   />
-                  <label className="form-check-label" htmlFor="task-exceptional">
+                  <label
+                    className="form-check-label"
+                    htmlFor="task-exceptional"
+                  >
                     Atividade excepcional fora de processo
                   </label>
                 </div>
                 {form.exceptional ? (
                   <div>
-                    <label className="form-label" htmlFor="task-exception-reason">
+                    <label
+                      className="form-label"
+                      htmlFor="task-exception-reason"
+                    >
                       Justificativa da exceção *
                     </label>
                     <textarea
@@ -325,7 +418,10 @@ export default function AgentWorkspacePage() {
                       required
                       value={form.exceptionReason}
                       onChange={(event) =>
-                        setForm({ ...form, exceptionReason: event.target.value })
+                        setForm({
+                          ...form,
+                          exceptionReason: event.target.value,
+                        })
                       }
                     />
                   </div>
@@ -471,10 +567,13 @@ export default function AgentWorkspacePage() {
                             </span>
                           ) : task.processActivityName ? (
                             <span>
-                              {task.processCode} v{task.processVersionNumber} · {task.processActivityName}
+                              {task.processCode} v{task.processVersionNumber} ·{" "}
+                              {task.processActivityName}
                             </span>
                           ) : (
-                            <span className="text-body-secondary">Tarefa legada sem processo</span>
+                            <span className="text-body-secondary">
+                              Tarefa legada sem processo
+                            </span>
                           )}
                         </div>
                       </div>

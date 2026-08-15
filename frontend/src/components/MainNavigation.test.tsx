@@ -39,4 +39,18 @@ describe("MainNavigation", () => {
         ),
     ).toBe(true);
   });
+
+  it("oferece acesso ao aprendizado governado dos agentes", () => {
+    render(
+      <MemoryRouter>
+        <MainNavigation />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen
+        .getAllByRole("link", { name: "Aprendizado dos agentes" })
+        .every((link) => link.getAttribute("href") === "/agent-learning"),
+    ).toBe(true);
+  });
 });

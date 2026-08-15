@@ -237,6 +237,11 @@ const NAV_SECTIONS: NavSection[] = [
         icon: List,
       },
       {
+        to: "/agent-learning",
+        label: "Aprendizado dos agentes",
+        icon: BadgeCheck,
+      },
+      {
         to: "/system-improvements",
         label: "Melhorias do Sistema",
         icon: ClipboardCheck,

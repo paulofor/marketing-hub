@@ -11,6 +11,9 @@ import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: persistir e recuperar memórias premium segregadas dos agentes. */
 public interface PremiumAgentMemoryRepository extends JpaRepository<PremiumAgentMemory, Long> {
+  /** Lista a memória auditável para o painel administrativo, priorizando alterações recentes. */
+  List<PremiumAgentMemory> findAllByOrderByUpdatedAtDesc();
+
   /** Localiza conteúdo idêntico no mesmo escopo para deduplicação. */
   Optional<PremiumAgentMemory> findByAgentKeyAndTenantKeyAndScopeTypeAndScopeIdAndContentSha256(
       String agentKey, String tenantKey, String scopeType, String scopeId, String contentSha256);

@@ -3,7 +3,9 @@ package com.marketinghub.businessprocess;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
+import java.text.Normalizer;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.*;
@@ -17,20 +19,27 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class BusinessProcessDefinitionService {
   private final BusinessProcessDefinitionRepository repository;
+  private final AgentTaskRepository agentTaskRepository;
   private final ObjectMapper objectMapper;
   private final Clock clock;
 
   /** Configura persistência, serialização e relógio operacional. */
   @Autowired
   public BusinessProcessDefinitionService(
-      BusinessProcessDefinitionRepository repository, ObjectMapper objectMapper) {
-    this(repository, objectMapper, Clock.systemUTC());
+      BusinessProcessDefinitionRepository repository,
+      AgentTaskRepository agentTaskRepository,
+      ObjectMapper objectMapper) {
+    this(repository, agentTaskRepository, objectMapper, Clock.systemUTC());
   }
 
   /** Permite testes determinísticos do ciclo de publicação. */
   BusinessProcessDefinitionService(
-      BusinessProcessDefinitionRepository repository, ObjectMapper objectMapper, Clock clock) {
+      BusinessProcessDefinitionRepository repository,
+      AgentTaskRepository agentTaskRepository,
+      ObjectMapper objectMapper,
+      Clock clock) {
     this.repository = repository;
+    this.agentTaskRepository = agentTaskRepository;
     this.objectMapper = objectMapper;
     this.clock = clock;
   }
@@ -56,6 +65,7 @@ public class BusinessProcessDefinitionService {
     if (repository.findByProcessCodeAndVersionNumber(code, request.versionNumber()).isPresent()) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Esta versão do processo já existe.");
     }
+    validateEquivalentProcess(request.name(), code, null);
     validateDiagram(request.diagram());
     BusinessProcessDefinition value = new BusinessProcessDefinition();
     value.setProcessCode(code);
@@ -86,6 +96,7 @@ public class BusinessProcessDefinitionService {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "Código e número da versão não podem ser alterados.");
     }
+    validateEquivalentProcess(request.name(), value.getProcessCode(), value.getId());
     validateDiagram(request.diagram());
     applyEditableFields(value, request);
     return response(repository.save(value));
@@ -106,6 +117,44 @@ public class BusinessProcessDefinitionService {
     selected.setStatus("PUBLISHED");
     selected.setPublishedAt(now);
     return response(repository.save(selected));
+  }
+
+  /** Exclui somente rascunho sem tarefas vinculadas, preservando histórico operacional. */
+  @Transactional
+  public void deleteDraft(Long id) {
+    BusinessProcessDefinition value = required(id);
+    if (!"DRAFT".equals(value.getStatus())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Somente versões em rascunho podem ser excluídas.");
+    }
+    if (agentTaskRepository.existsByProcessDefinitionId(id)) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "O rascunho possui tarefas vinculadas e não pode ser excluído.");
+    }
+    repository.delete(value);
+  }
+
+  /** Impede que códigos diferentes cadastrem processos com nomes semanticamente equivalentes. */
+  private void validateEquivalentProcess(String name, String processCode, Long ignoredId) {
+    String normalizedName = normalizeName(name);
+    boolean duplicate =
+        repository.findAllByOrderByNameAscVersionNumberDesc().stream()
+            .filter(item -> !Objects.equals(item.getId(), ignoredId))
+            .filter(item -> !item.getProcessCode().equals(processCode))
+            .anyMatch(item -> normalizeName(item.getName()).equals(normalizedName));
+    if (duplicate) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "Já existe um processo equivalente. Crie uma nova versão do processo existente.");
+    }
+  }
+
+  /** Normaliza acentos, caixa e pontuação para comparar a identidade comercial do processo. */
+  private String normalizeName(String value) {
+    String withoutAccents =
+        Normalizer.normalize(value.trim().toLowerCase(Locale.ROOT), Normalizer.Form.NFD)
+            .replaceAll("\\p{M}+", "");
+    return withoutAccents.replaceAll("[^a-z0-9]+", " ").trim();
   }
 
   /** Valida integridade BPM mínima: eventos únicos e fluxos apontando para nós existentes. */

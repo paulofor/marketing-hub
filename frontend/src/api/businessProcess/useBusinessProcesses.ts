@@ -54,3 +54,11 @@ export function useUpdateBusinessProcess() {
     onSuccess: () => client.invalidateQueries({ queryKey: key }),
   });
 }
+
+export function useDeleteBusinessProcess() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => axios.delete(`/api/business-processes/${id}`),
+    onSuccess: () => client.invalidateQueries({ queryKey: key }),
+  });
+}

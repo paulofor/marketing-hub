@@ -1365,3 +1365,4 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o cliente HTTP do Aprovador Meta não limitava conexão nem leitura; um callback iniciado durante deploy podia bloquear a thread do lote indefinidamente.
 - **Prevenção:** timeouts explícitos de conexão e leitura no cliente do backend, isolamento das revisões do lote e recuperação auditável pela lease canônica.
 - **Evidência real:** experimento 88, criativos 339 e 341, em 2026-08-15.
+- **Fechamento complementar no Aprovador Meta (2026-08-15):** a inspeção multimodal da landing assumia implicitamente o caminho de browsers da imagem Docker. Ao executar Têmis fora do container, o Chromium instalado na sandbox não era descoberto e o gate reprovava por ausência de evidência. O MCP agora aceita `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`, mantendo o fallback da imagem, e o teste de contrato preserva a propagação explícita do executável.

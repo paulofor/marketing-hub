@@ -127,7 +127,12 @@ async function waitForCommercialLanding(page) {
 }
 
 async function withBrowser(action) {
-  const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'] });
+  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?.trim();
+  const browser = await chromium.launch({
+    headless: true,
+    ...(executablePath ? { executablePath } : {}),
+    args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+  });
   try { return await action(browser); } finally { await browser.close(); }
 }
 

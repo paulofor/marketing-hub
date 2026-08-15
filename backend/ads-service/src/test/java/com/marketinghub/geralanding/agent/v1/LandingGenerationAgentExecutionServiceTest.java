@@ -146,7 +146,8 @@ class LandingGenerationAgentExecutionServiceTest {
                 "Experimento 88 — construir landing",
                 "Criar candidata responsiva sem publicar.",
                 "commercial-plan:2@v4",
-                Instant.parse("2026-08-15T05:10:37Z")));
+                Instant.parse("2026-08-15T05:10:37Z"),
+                "{\"completedActivities\":[]}"));
 
     service.activateProcessTask(30L);
 
@@ -172,7 +173,8 @@ class LandingGenerationAgentExecutionServiceTest {
             "Experimento 88 — construir landing",
             "Criar candidata responsiva sem publicar.",
             "commercial-plan:2@v4",
-            Instant.parse("2026-08-15T05:10:37Z"));
+            Instant.parse("2026-08-15T05:10:37Z"),
+            "{\"completedActivities\":[]}");
     when(agentTaskService.claimEligibleProcessTask("landing-generator"))
         .thenReturn(Optional.of(task));
 

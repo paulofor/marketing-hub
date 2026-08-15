@@ -18,8 +18,14 @@ public class InternalAgentTaskExecutionController {
 
   /** Reserva no máximo uma atividade cuja predecessora já foi concluída. */
   @GetMapping("/pending")
-  public List<AgentTaskPendingResponse> pending(@PathVariable String agentKey) {
-    return service.claimEligibleProcessTask(agentKey).map(List::of).orElseGet(List::of);
+  public List<AgentTaskPendingResponse> pending(
+      @PathVariable String agentKey,
+      @RequestParam(required = false) String processCode,
+      @RequestParam(required = false) String activityId) {
+    return service
+        .claimEligibleProcessTask(agentKey, processCode, activityId)
+        .map(List::of)
+        .orElseGet(List::of);
   }
 
   /** Recebe resultado e evidências antes de liberar a atividade seguinte. */

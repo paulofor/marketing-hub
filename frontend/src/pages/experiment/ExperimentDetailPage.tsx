@@ -33,6 +33,7 @@ import ExperimentHistoryTab from "./ExperimentHistoryTab";
 import ExperimentRunPanel from "./ExperimentRunPanel";
 import LandingTab from "./LandingTab";
 import ExperimentVideoTab from "./ExperimentVideoTab";
+import ExperimentProcessInstanceTab from "./ExperimentProcessInstanceTab";
 import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
 import { useExperimentFacebookRelease } from "../../api/experiment/useExperimentFacebookRelease";
 import {
@@ -71,6 +72,7 @@ export const experimentDetailTabs = [
   { value: "construction", label: "Construção", manualOnly: true },
   { value: "funnel", label: "Funil de vendas" },
   { value: "history", label: "Histórico" },
+  { value: "process", label: "Processo" },
   { value: "post-deploy", label: "Pós-deploy" },
   { value: "ab-test", label: "Páginas de venda" },
   { value: "analytics", label: "Analytics" },
@@ -2755,6 +2757,9 @@ export default function ExperimentDetailPage() {
           </Tabs.Content>
           <Tabs.Content value="history" asChild>
             <ExperimentHistoryTab experimentId={expId} />
+          </Tabs.Content>
+          <Tabs.Content value="process" asChild>
+            <ExperimentProcessInstanceTab experimentId={expId} />
           </Tabs.Content>
           <Tabs.Content value="post-deploy" asChild>
             <ExperimentPostDeployMonitorTab experimentId={expId} />

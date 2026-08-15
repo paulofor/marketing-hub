@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agenttask.AgentTaskPendingResponse;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
@@ -75,6 +76,23 @@ class LandingGenerationAgentExecutionServiceTest {
     verify(repository).save(any(GeraLandingStageExecution.class));
   }
 
+  /** Deve manter Dédalo responsável até o Quality Review independente aprovar a candidata BPM. */
+  @Test
+  void shouldCompleteBpmTaskOnlyAfterIndependentQualityApproval() {
+    service.onQualityReviewCompleted(
+        new LandingQualityReviewedEvent(
+            88L,
+            "agent-task:30",
+            "{\"approvalRecommendation\":\"APPROVE_FOR_PUBLICATION\",\"score\":91}"));
+
+    verify(agentTaskService)
+        .completeClaimedProcessTask(
+            org.mockito.ArgumentMatchers.eq("landing-generator"),
+            org.mockito.ArgumentMatchers.eq(30L),
+            any(com.marketinghub.agenttask.CompleteAgentTaskRequest.class));
+    verify(coordinator, never()).continueAfterQualityReview(any(), any(), any());
+  }
+
   /** Não deve acumular outra correção quando o mesmo ciclo já possui trabalho ativo. */
   @Test
   void shouldNotDuplicateRejectedQualityReviewWhileCorrectionIsActive() {
@@ -107,6 +125,59 @@ class LandingGenerationAgentExecutionServiceTest {
     assertEquals("creative-convergence:14:landing", execution.getValue().getAutonomousCycleId());
     assertTrue(execution.getValue().getPromptContent().contains("PRODUCT_PROOF_MISSING"));
     assertTrue(execution.getValue().getPromptContent().contains("não pode publicar"));
+  }
+
+  /** Deve materializar a tarefa BPM de Dédalo na fila técnica sem perder a correlação. */
+  @Test
+  void shouldActivateClaimedBpmTask() {
+    when(agentTaskService.claimedProcessTask("landing-generator", 30L))
+        .thenReturn(
+            new AgentTaskPendingResponse(
+                30L,
+                "landing-generator",
+                "landing-page-generation",
+                2,
+                "html",
+                "Construir HTML com autonomia",
+                "Experimento 88 — construir landing",
+                "Criar candidata responsiva sem publicar.",
+                "commercial-plan:2@v4",
+                Instant.parse("2026-08-15T05:10:37Z")));
+
+    service.activateProcessTask(30L);
+
+    org.mockito.ArgumentCaptor<GeraLandingStageExecution> execution =
+        org.mockito.ArgumentCaptor.forClass(GeraLandingStageExecution.class);
+    verify(repository).save(execution.capture());
+    assertEquals(88L, execution.getValue().getExperimentId());
+    assertEquals("agent-task:30", execution.getValue().getAutonomousCycleId());
+    assertTrue(execution.getValue().getPromptContent().contains("Construir HTML com autonomia"));
+  }
+
+  /** Deve reservar e materializar a atividade BPM em uma única transação do backend. */
+  @Test
+  void shouldClaimAndActivateBpmTaskAtomically() {
+    AgentTaskPendingResponse task =
+        new AgentTaskPendingResponse(
+            30L,
+            "landing-generator",
+            "landing-page-generation",
+            2,
+            "html",
+            "Construir HTML com autonomia",
+            "Experimento 88 — construir landing",
+            "Criar candidata responsiva sem publicar.",
+            "commercial-plan:2@v4",
+            Instant.parse("2026-08-15T05:10:37Z"));
+    when(agentTaskService.claimEligibleProcessTask("landing-generator"))
+        .thenReturn(Optional.of(task));
+
+    service.activateNextProcessTask();
+
+    org.mockito.ArgumentCaptor<GeraLandingStageExecution> execution =
+        org.mockito.ArgumentCaptor.forClass(GeraLandingStageExecution.class);
+    verify(repository).save(execution.capture());
+    assertEquals("agent-task:30", execution.getValue().getAutonomousCycleId());
   }
 
   /** Deve abrir nova transação ao persistir a fila depois do commit do Quality Review. */

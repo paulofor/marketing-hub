@@ -199,6 +199,88 @@ public class AgentTaskService {
         .toList();
   }
 
+  /** Monta as instâncias BPM de uma entidade com liberação, bloqueios e legado substituído. */
+  @Transactional(readOnly = true)
+  public List<ProcessInstanceResponse> processInstances(String sourceReference) {
+    String reference = trimToNull(sourceReference);
+    if (reference == null) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Informe a referência da entidade.");
+    }
+    List<AgentTask> history = repository.findBySourceReferenceOrderByCreatedAtAscIdAsc(reference);
+    Map<Long, List<AgentTask>> grouped = new java.util.LinkedHashMap<>();
+    history.stream()
+        .filter(task -> task.getProcessDefinition() != null)
+        .forEach(
+            task ->
+                grouped
+                    .computeIfAbsent(
+                        task.getProcessDefinition().getId(), ignored -> new ArrayList<>())
+                    .add(task));
+    List<AgentTask> legacy =
+        history.stream().filter(task -> task.getProcessDefinition() == null).toList();
+    return grouped.values().stream()
+        .map(tasks -> processInstance(reference, tasks, legacy))
+        .toList();
+  }
+
+  /** Calcula uma única instância sem persistir estado derivado concorrente. */
+  private ProcessInstanceResponse processInstance(
+      String sourceReference, List<AgentTask> tasks, List<AgentTask> legacy) {
+    BusinessProcessDefinition process = tasks.get(0).getProcessDefinition();
+    List<ProcessInstanceTaskResponse> items =
+        tasks.stream().map(task -> processInstanceTask(task, false)).toList();
+    List<ProcessInstanceTaskResponse> superseded =
+        legacy.stream().map(task -> processInstanceTask(task, true)).toList();
+    return new ProcessInstanceResponse(
+        process.getId(),
+        process.getProcessCode(),
+        process.getVersionNumber(),
+        sourceReference,
+        items,
+        superseded);
+  }
+
+  /** Traduz o status persistido e a elegibilidade do grafo em situação legível. */
+  private ProcessInstanceTaskResponse processInstanceTask(
+      AgentTask task, boolean supersededLegacy) {
+    String state;
+    String reason;
+    if (supersededLegacy) {
+      state = "SUPERSEDED_LEGACY";
+      reason = "Tarefa legada substituída pela instância BPM vinculada à mesma entidade.";
+    } else if ("PENDING".equals(task.getStatus()) && predecessorsCompleted(task)) {
+      state = "RELEASED";
+      reason = "Atividade liberada para consumo pelo executor responsável.";
+    } else if ("PENDING".equals(task.getStatus())) {
+      state = "WAITING_PREDECESSOR";
+      reason = "Aguardando a conclusão das atividades predecessoras do processo.";
+    } else if ("IN_PROGRESS".equals(task.getStatus())) {
+      state = "IN_PROGRESS";
+      reason = "Atividade recebida e em execução pelo agente.";
+    } else if ("BLOCKED".equals(task.getStatus())) {
+      state = "BLOCKED";
+      reason =
+          task.getExecutionError() == null
+              ? "Atividade bloqueada pelo executor."
+              : task.getExecutionError();
+    } else {
+      state = task.getStatus();
+      reason = "Estado final registrado na tarefa.";
+    }
+    return new ProcessInstanceTaskResponse(
+        task.getId(),
+        task.getProcessActivityId(),
+        task.getProcessActivityName() == null ? task.getTitle() : task.getProcessActivityName(),
+        task.getAssignedAgent().getAgentKey(),
+        task.getAssignedAgent().getNickname(),
+        task.getStatus(),
+        state,
+        reason,
+        task.getReceivedAt(),
+        task.getDeliveredAt());
+  }
+
   /** Atualiza o estado sem permitir saltos que eliminem a rastreabilidade do trabalho. */
   @Transactional
   public AgentTaskResponse updateStatus(Long taskId, UpdateAgentTaskStatusRequest request) {
@@ -391,6 +473,14 @@ public class AgentTaskService {
   @Transactional
   public Optional<AgentTaskPendingResponse> claimEligibleProcessTask(String agentKey) {
     agent(agentKey);
+    Optional<AgentTask> alreadyClaimed =
+        repository
+            .findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+                agentKey.trim(), "WORK", "IN_PROGRESS")
+            .stream()
+            .filter(task -> task.getProcessDefinition() != null)
+            .findFirst();
+    if (alreadyClaimed.isPresent()) return Optional.of(pendingResponse(alreadyClaimed.get()));
     for (AgentTask task :
         repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
             agentKey.trim(), "WORK", "PENDING")) {
@@ -400,21 +490,31 @@ public class AgentTaskService {
       if (task.getReceivedAt() == null) task.setReceivedAt(now);
       task.setUpdatedAt(now);
       repository.save(task);
-      BusinessProcessDefinition process = task.getProcessDefinition();
-      return Optional.of(
-          new AgentTaskPendingResponse(
-              task.getId(),
-              agentKey.trim(),
-              process.getProcessCode(),
-              process.getVersionNumber(),
-              task.getProcessActivityId(),
-              task.getProcessActivityName(),
-              task.getTitle(),
-              task.getDescription(),
-              task.getSourceReference(),
-              task.getReceivedAt()));
+      return Optional.of(pendingResponse(task));
     }
     return Optional.empty();
+  }
+
+  /** Reexpõe a lease ativa ao mesmo executor para permitir retomada após interrupção. */
+  @Transactional(readOnly = true)
+  public AgentTaskPendingResponse claimedProcessTask(String agentKey, Long taskId) {
+    return pendingResponse(claimedBy(agentKey, taskId));
+  }
+
+  /** Converte uma tarefa reservada no contrato estável entregue ao executor. */
+  private AgentTaskPendingResponse pendingResponse(AgentTask task) {
+    BusinessProcessDefinition process = task.getProcessDefinition();
+    return new AgentTaskPendingResponse(
+        task.getId(),
+        task.getAssignedAgent().getAgentKey(),
+        process.getProcessCode(),
+        process.getVersionNumber(),
+        task.getProcessActivityId(),
+        task.getProcessActivityName(),
+        task.getTitle(),
+        task.getDescription(),
+        task.getSourceReference(),
+        task.getReceivedAt());
   }
 
   /** Conclui trabalho reservado com saída e evidências persistidas. */
@@ -459,10 +559,14 @@ public class AgentTaskService {
     try {
       JsonNode diagram = objectMapper.readTree(candidate.getProcessDefinition().getDiagramJson());
       Map<String, List<String>> incoming = new HashMap<>();
-      for (JsonNode edge : diagram.path("edges")) {
-        incoming
-            .computeIfAbsent(edge.path("target").asText(), ignored -> new ArrayList<>())
-            .add(edge.path("source").asText());
+      JsonNode connections =
+          diagram.path("flows").isArray() ? diagram.path("flows") : diagram.path("edges");
+      for (JsonNode edge : connections) {
+        String target =
+            edge.hasNonNull("to") ? edge.path("to").asText() : edge.path("target").asText();
+        String source =
+            edge.hasNonNull("from") ? edge.path("from").asText() : edge.path("source").asText();
+        incoming.computeIfAbsent(target, ignored -> new ArrayList<>()).add(source);
       }
       List<AgentTask> siblings =
           repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
@@ -473,9 +577,7 @@ public class AgentTaskService {
           .map(AgentTask::getProcessActivityId)
           .forEach(completed::add);
       Set<String> taskNodes = new HashSet<>();
-      for (JsonNode node : diagram.path("nodes")) {
-        if ("TASK".equals(node.path("type").asText())) taskNodes.add(node.path("id").asText());
-      }
+      siblings.stream().map(AgentTask::getProcessActivityId).forEach(taskNodes::add);
       Set<String> predecessors = new HashSet<>();
       Set<String> visited = new HashSet<>();
       ArrayDeque<String> queue = new ArrayDeque<>();

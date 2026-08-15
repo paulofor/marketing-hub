@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { AgentTask, AgentTaskStatus, CreateAgentTaskPayload } from "./types";
+import {
+  AgentTask,
+  AgentTaskStatus,
+  CreateAgentTaskPayload,
+  ProcessInstance,
+} from "./types";
 
 /** Consulta a caixa de entrada segregada pela identidade técnica do agente. */
 export function useAgentTasks(agentKey?: string) {
@@ -22,6 +27,22 @@ export function useActiveAgentTasks() {
     queryKey: ["agent-tasks", "active"],
     queryFn: async () =>
       (await axios.get<AgentTask[]>("/api/agent-tasks/active")).data,
+    refetchInterval: 15_000,
+  });
+}
+
+/** Consulta a visão canônica das instâncias BPM de uma entidade. */
+export function useProcessInstances(sourceReference?: string) {
+  return useQuery({
+    queryKey: ["agent-tasks", "process-instances", sourceReference],
+    enabled: Boolean(sourceReference),
+    queryFn: async () =>
+      (
+        await axios.get<ProcessInstance[]>(
+          "/api/agent-tasks/process-instances",
+          { params: { sourceReference } },
+        )
+      ).data,
     refetchInterval: 15_000,
   });
 }

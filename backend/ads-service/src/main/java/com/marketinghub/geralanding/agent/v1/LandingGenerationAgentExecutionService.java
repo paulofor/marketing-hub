@@ -15,6 +15,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -36,6 +38,9 @@ public class LandingGenerationAgentExecutionService {
   private static final String DEPLOY_RECOVERY_POLICY = "RETRY_ON_EXECUTOR_DEPLOY";
   private static final String COMMERCIAL_HOMOLOGATION_SOURCE =
       "COMMERCIAL_PLAN_JOURNEY_HOMOLOGATION";
+  private static final Pattern EXPERIMENT_REFERENCE =
+      Pattern.compile("(?i)experimento\\s*#?\\s*(\\d+)");
+  private static final String BPM_TASK_PREFIX = "agent-task:";
   private final GeraLandingStageExecutionRepository repository;
   private final LandingGenerationAgentCoordinator coordinator;
   private final ExperimentRepository experimentRepository;
@@ -68,6 +73,10 @@ public class LandingGenerationAgentExecutionService {
       Map<String, Object> review =
           objectMapper.readValue(event.reviewJson(), new TypeReference<>() {});
       if ("APPROVE_FOR_PUBLICATION".equals(review.get("approvalRecommendation"))) {
+        if (isBpmTask(event.autonomousCycleId())) {
+          completeBpmTaskAfterQualityApproval(event);
+          return;
+        }
         coordinator.continueAfterQualityReview(
             event.experimentId(), event.autonomousCycleId(), event.reviewJson());
       } else {
@@ -79,6 +88,22 @@ public class LandingGenerationAgentExecutionService {
           event.experimentId(),
           ex);
     }
+  }
+
+  /** Conclui a atividade de Dédalo somente depois do Quality Review independente aprovado. */
+  private void completeBpmTaskAfterQualityApproval(LandingQualityReviewedEvent event) {
+    Long taskId = bpmTaskId(event.autonomousCycleId());
+    agentTaskService.completeClaimedProcessTask(
+        "landing-generator",
+        taskId,
+        new com.marketinghub.agenttask.CompleteAgentTaskRequest(
+            event.reviewJson(),
+            objectMapper
+                .createObjectNode()
+                .put("experimentId", event.experimentId())
+                .put("stageCode", "landing-page-quality-review")
+                .put("approvalRecommendation", "APPROVE_FOR_PUBLICATION")
+                .toString()));
   }
 
   /** Cria uma execução segregada com o parecer que motivou a correção. */
@@ -142,6 +167,60 @@ public class LandingGenerationAgentExecutionService {
           ex);
       throw new IllegalStateException("Briefing de correção da landing inválido", ex);
     }
+  }
+
+  /** Converte a atividade BPM reservada em uma execução técnica idempotente do GeraLanding. */
+  @Transactional
+  public void activateProcessTask(Long taskId) {
+    activateProcessTask(agentTaskService.claimedProcessTask("landing-generator", taskId));
+  }
+
+  /** Reserva e materializa a próxima atividade de Dédalo na mesma transação do backend. */
+  @Transactional
+  public void activateNextProcessTask() {
+    agentTaskService
+        .claimEligibleProcessTask("landing-generator")
+        .ifPresent(this::activateProcessTask);
+  }
+
+  /** Materializa o snapshot BPM já validado sem criar uma segunda fronteira HTTP. */
+  private void activateProcessTask(com.marketinghub.agenttask.AgentTaskPendingResponse task) {
+    Long taskId = task.taskId();
+    Long experimentId = experimentId(task.title() + "\n" + task.description());
+    try {
+      Map<String, Object> review = new LinkedHashMap<>();
+      review.put("approvalRecommendation", "REGENERATE_BEFORE_PUBLICATION");
+      review.put("score", 0);
+      review.put("summary", task.description());
+      review.put("blockingIssues", List.of());
+      review.put("acceptanceCriteria", List.of(task.description()));
+      review.put("processCode", task.processCode());
+      review.put("processVersion", task.processVersion());
+      review.put("processActivityId", task.activityId());
+      review.put("processActivityName", task.activityName());
+      review.put("agentTaskId", task.taskId());
+      review.put(
+          "authority",
+          "Dédalo pode reconstruir arquitetura, narrativa, copy, imagens e HTML; não pode publicar, alterar preço, oferta, checkout ou tracking.");
+      enqueue(
+          experimentId, BPM_TASK_PREFIX + task.taskId(), objectMapper.writeValueAsString(review));
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao ativar tarefa BPM de Dédalo. taskId={} experimentId={}",
+          taskId,
+          experimentId,
+          ex);
+      throw new IllegalStateException("Não foi possível ativar a tarefa BPM de Dédalo", ex);
+    }
+  }
+
+  /** Extrai a entidade operacional explicitamente declarada no título ou briefing da tarefa. */
+  private Long experimentId(String taskText) {
+    Matcher matcher = EXPERIMENT_REFERENCE.matcher(taskText == null ? "" : taskText);
+    if (!matcher.find()) {
+      throw new IllegalArgumentException("Tarefa BPM de Dédalo sem experimento explícito");
+    }
+    return Long.parseLong(matcher.group(1));
   }
 
   /** Reserva jobs de forma transacional antes de qualquer consumo do Codex. */
@@ -312,12 +391,52 @@ public class LandingGenerationAgentExecutionService {
     execution.setErrorMessage(request.error());
     execution.setStatus(request.error() == null ? "CONCLUIDO" : "FALHA");
     repository.save(execution);
-    agentTaskService.finishOperationalDelegation(
-        "landing-generator", execution.getAutonomousCycleId(), request.error() == null);
+    if (request.error() != null || !isBpmTask(execution.getAutonomousCycleId())) {
+      finishRelatedTask(execution, request);
+    }
     if (request.error() == null) {
       coordinator.continueAfterQualityReview(
           execution.getExperimentId(), execution.getAutonomousCycleId(), request.decisionJson());
     }
+  }
+
+  /** Identifica correlações originadas por uma atividade do processo de negócio. */
+  private boolean isBpmTask(String reference) {
+    return reference != null && reference.startsWith(BPM_TASK_PREFIX);
+  }
+
+  /** Extrai o identificador da tarefa de uma correlação BPM já validada. */
+  private Long bpmTaskId(String reference) {
+    return Long.parseLong(reference.substring(BPM_TASK_PREFIX.length()));
+  }
+
+  /** Sincroniza a conclusão técnica com a atividade BPM ou delegação operacional de origem. */
+  private void finishRelatedTask(
+      GeraLandingStageExecution execution, LandingAgentResultRequest request) {
+    String reference = execution.getAutonomousCycleId();
+    if (isBpmTask(reference)) {
+      Long taskId = bpmTaskId(reference);
+      if (request.error() == null) {
+        agentTaskService.completeClaimedProcessTask(
+            "landing-generator",
+            taskId,
+            new com.marketinghub.agenttask.CompleteAgentTaskRequest(
+                request.decisionJson(),
+                objectMapper
+                    .createObjectNode()
+                    .put("executionId", textId(execution))
+                    .put("experimentId", execution.getExperimentId())
+                    .toString()));
+      } else {
+        agentTaskService.failClaimedProcessTask(
+            "landing-generator",
+            taskId,
+            new com.marketinghub.agenttask.FailAgentTaskRequest(request.error()));
+      }
+      return;
+    }
+    agentTaskService.finishOperationalDelegation(
+        "landing-generator", reference, request.error() == null);
   }
 
   /** Recupera o snapshot congelado usado pelo MCP exclusivo. */

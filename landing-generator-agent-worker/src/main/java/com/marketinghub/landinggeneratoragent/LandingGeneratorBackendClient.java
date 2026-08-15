@@ -27,6 +27,7 @@ public class LandingGeneratorBackendClient {
 
   /** Reserva no máximo uma landing para preservar custo e isolamento. */
   public List<LandingAgentJob> claimPending() {
+    activatePendingProcessTask();
     List<Map<String, Object>> values =
         client
             .get()
@@ -34,6 +35,15 @@ public class LandingGeneratorBackendClient {
             .retrieve()
             .body(new ParameterizedTypeReference<>() {});
     return values == null ? List.of() : values.stream().map(LandingAgentJob::from).toList();
+  }
+
+  /** Reserva e materializa a atividade BPM liberada antes de consultar a fila técnica. */
+  void activatePendingProcessTask() {
+    client
+        .post()
+        .uri("/api/internal/geralanding/agent/v1/stage-executions/process-tasks/pending/activation")
+        .retrieve()
+        .toBodilessEntity();
   }
 
   /** Persiste o resultado sem decidir a próxima etapa localmente. */

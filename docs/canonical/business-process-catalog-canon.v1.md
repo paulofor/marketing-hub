@@ -34,6 +34,12 @@ A versão 1 formaliza o ciclo:
 
 `briefing → Dédalo → validação técnica → Psique → Têmis → aprovação humana`.
 
+Na execução operacional, o worker de Dédalo deve reservar primeiro a atividade liberada pelo
+endpoint BPM canônico e materializá-la, de forma idempotente, na fila técnica do GeraLanding. Uma
+lease `IN_PROGRESS` sem resultado deve ser reoferecida ao mesmo executor após reinício. A conclusão
+ou falha técnica atualiza a própria tarefa BPM antes de qualquer sucessora ficar elegível; é proibido
+liberar Psique ou Têmis apenas pelo recebimento da tarefa de Dédalo.
+
 Reprovações técnicas, de percepção da cliente ou comerciais retornam a Dédalo com causa persistida e
 geram nova versão. O backend do experimento continua sendo a autoridade das transições operacionais.
 A aprovação humana continua obrigatória antes da publicação. A referência técnica vigente é o bloco
@@ -56,3 +62,9 @@ Cada tarefa deve preservar dois marcos temporais canônicos: `received_at`, regi
 O contrato operacional canônico é `/api/internal/agent-tasks/<agentKey>/stage-executions/pending`. O backend libera somente atividades cujas predecessoras `TASK` da mesma versão de processo e referência de execução estejam concluídas. O executor reporta resultado ou falha pelos callbacks da execução; resultado e evidências ficam persistidos na tarefa. O executor nunca escolhe nem dispara a próxima atividade.
 
 Uma demanda fora do catálogo pode ser registrada como `Atividade excepcional`, sem vínculo regular e com justificativa obrigatória auditável. A exceção não cria nem altera processo automaticamente; recorrências devem orientar revisão ou criação de processo. Tarefas históricas anteriores a esta regra permanecem legíveis como legadas.
+
+A tela do experimento deve expor a instância do processo vinculada à referência da entidade. A situação
+de cada atividade é calculada pelo backend com o mesmo grafo usado pelo endpoint `pending`, distinguindo
+atividade liberada, atividade em execução, bloqueio por predecessora, falha e conclusão. Quando já existe
+uma instância BPM para a entidade, tarefas sem vínculo de processo da mesma referência são apresentadas
+como legado substituído e não competem visualmente com o trabalho canônico.

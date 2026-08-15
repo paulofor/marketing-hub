@@ -48,3 +48,34 @@ export interface CreateAgentTaskPayload {
   exceptional: boolean;
   exceptionReason?: string;
 }
+
+export type ProcessInstanceOperationalState =
+  | "RELEASED"
+  | "WAITING_PREDECESSOR"
+  | "IN_PROGRESS"
+  | "BLOCKED"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "SUPERSEDED_LEGACY";
+
+export interface ProcessInstanceTask {
+  taskId: number;
+  activityId?: string;
+  activityName: string;
+  agentKey: string;
+  agentNickname: string;
+  taskStatus: AgentTaskStatus;
+  operationalState: ProcessInstanceOperationalState;
+  stateReason: string;
+  receivedAt?: string;
+  deliveredAt?: string;
+}
+
+export interface ProcessInstance {
+  processDefinitionId: number;
+  processCode: string;
+  processVersionNumber: number;
+  sourceReference: string;
+  tasks: ProcessInstanceTask[];
+  supersededLegacyTasks: ProcessInstanceTask[];
+}

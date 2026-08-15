@@ -30,6 +30,20 @@ public class LandingGenerationAgentController {
     return service.context(executionId);
   }
 
+  /** Materializa uma atividade BPM já reservada na fila técnica canônica de Dédalo. */
+  @PostMapping("/process-tasks/{taskId}/activation")
+  public ResponseEntity<Void> activateProcessTask(@PathVariable Long taskId) {
+    service.activateProcessTask(taskId);
+    return ResponseEntity.noContent().build();
+  }
+
+  /** Reserva e materializa atomicamente a próxima atividade BPM liberada para Dédalo. */
+  @PostMapping("/process-tasks/pending/activation")
+  public ResponseEntity<Void> activateNextProcessTask() {
+    service.activateNextProcessTask();
+    return ResponseEntity.noContent().build();
+  }
+
   /** Recebe o resultado auditável sem conceder autoridade de publicação ao worker. */
   @PostMapping("/{executionId}/result")
   public ResponseEntity<Void> result(

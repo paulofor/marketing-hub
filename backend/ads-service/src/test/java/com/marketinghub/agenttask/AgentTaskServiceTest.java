@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -367,6 +369,28 @@ class AgentTaskServiceTest {
     assertThat(task.getStatus()).isEqualTo("IN_PROGRESS");
   }
 
+  /** Reoferece a lease ativa ao mesmo agente após reinício sem liberar sucessoras. */
+  @Test
+  void resumesClaimedProcessTaskBeforeClaimingAnother() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    AgentTask claimed =
+        processTask(30L, dedalo, process("PUBLISHED", "Dédalo"), "html", "IN_PROGRESS");
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "landing-generator", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of(claimed));
+
+    AgentTaskPendingResponse resumed =
+        service(repository, agents, Clock.systemUTC())
+            .claimEligibleProcessTask("landing-generator")
+            .orElseThrow();
+
+    assertThat(resumed.taskId()).isEqualTo(30L);
+    verify(repository, never()).save(any());
+  }
+
   /** Mantém a atividade seguinte bloqueada enquanto sua predecessora não foi entregue. */
   @Test
   void blocksNextProcessTaskUntilPredecessorCompletes() {
@@ -393,6 +417,100 @@ class AgentTaskServiceTest {
 
     html.setStatus("COMPLETED");
     assertThat(service.claimEligibleProcessTask("customer-agent")).isPresent();
+  }
+
+  /** Respeita o formato flows/from/to usado pelas definições publicadas no editor BPM. */
+  @Test
+  void blocksSuccessorUsingPublishedFlowSchema() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent psique = agent(2L, "customer-agent", "Psique");
+    BusinessProcessDefinition process = process("PUBLISHED", "Psique");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"html\",\"type\":\"TASK\"},{\"id\":\"gate\",\"type\":\"GATEWAY\"},{\"id\":\"customer\",\"type\":\"TASK\"}],"
+            + "\"flows\":[{\"from\":\"html\",\"to\":\"gate\"},{\"from\":\"gate\",\"to\":\"customer\"}]}");
+    AgentTask customer = processTask(31L, psique, process, "customer", "PENDING");
+    AgentTask html =
+        processTask(30L, agent(7L, "landing-generator", "Dédalo"), process, "html", "IN_PROGRESS");
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of());
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "PENDING"))
+        .thenReturn(List.of(customer));
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            9L, "commercial-plan:2@v4"))
+        .thenReturn(List.of(html, customer));
+
+    assertThat(
+            service(repository, agents, Clock.systemUTC())
+                .claimEligibleProcessTask("customer-agent"))
+        .isEmpty();
+  }
+
+  /** Ignora atividades automáticas sem tarefa própria ao ordenar as tarefas dos agentes. */
+  @Test
+  void traversesAutomaticActivityBetweenAgentTasks() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent psique = agent(2L, "customer-agent", "Psique");
+    BusinessProcessDefinition process = process("PUBLISHED", "Psique");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"html\",\"type\":\"TASK\"},{\"id\":\"technical\",\"type\":\"TASK\"},{\"id\":\"gate\",\"type\":\"GATEWAY\"},{\"id\":\"customer\",\"type\":\"TASK\"}],"
+            + "\"flows\":[{\"from\":\"html\",\"to\":\"technical\"},{\"from\":\"technical\",\"to\":\"gate\"},{\"from\":\"gate\",\"to\":\"customer\"}]}");
+    AgentTask html =
+        processTask(30L, agent(7L, "landing-generator", "Dédalo"), process, "html", "COMPLETED");
+    AgentTask customer = processTask(31L, psique, process, "customer", "PENDING");
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of());
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "PENDING"))
+        .thenReturn(List.of(customer));
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            9L, "commercial-plan:2@v4"))
+        .thenReturn(List.of(html, customer));
+
+    assertThat(
+            service(repository, agents, Clock.systemUTC())
+                .claimEligibleProcessTask("customer-agent"))
+        .isPresent();
+  }
+
+  /** Expõe atividade liberada, bloqueio por predecessora e tarefa legada substituída. */
+  @Test
+  void buildsProcessInstanceOperationalView() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    BusinessProcessDefinition process = process("PUBLISHED", "Dédalo");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"html\",\"type\":\"TASK\"},{\"id\":\"customer\",\"type\":\"TASK\"}],"
+            + "\"edges\":[{\"source\":\"html\",\"target\":\"customer\"}]}");
+    AgentTask html =
+        processTask(30L, agent(7L, "landing-generator", "Dédalo"), process, "html", "PENDING");
+    AgentTask customer =
+        processTask(31L, agent(2L, "customer-agent", "Psique"), process, "customer", "PENDING");
+    AgentTask legacy =
+        processTask(27L, agent(7L, "landing-generator", "Dédalo"), process, "legacy", "PENDING");
+    legacy.setProcessDefinition(null);
+    when(repository.findBySourceReferenceOrderByCreatedAtAscIdAsc("commercial-plan:2@v4"))
+        .thenReturn(List.of(legacy, html, customer));
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            9L, "commercial-plan:2@v4"))
+        .thenReturn(List.of(html, customer));
+
+    ProcessInstanceResponse instance =
+        service(repository, mock(AgentRepository.class), Clock.systemUTC())
+            .processInstances("commercial-plan:2@v4")
+            .get(0);
+
+    assertThat(instance.tasks())
+        .extracting(ProcessInstanceTaskResponse::operationalState)
+        .containsExactly("RELEASED", "WAITING_PREDECESSOR");
+    assertThat(instance.supersededLegacyTasks())
+        .extracting(ProcessInstanceTaskResponse::taskId)
+        .containsExactly(27L);
   }
 
   /** Persiste saída e evidência antes de concluir a atividade reservada. */

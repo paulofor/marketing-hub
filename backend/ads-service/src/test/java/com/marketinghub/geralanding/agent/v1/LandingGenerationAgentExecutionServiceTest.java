@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -178,6 +179,39 @@ class LandingGenerationAgentExecutionServiceTest {
         org.mockito.ArgumentCaptor.forClass(GeraLandingStageExecution.class);
     verify(repository).save(execution.capture());
     assertEquals("agent-task:30", execution.getValue().getAutonomousCycleId());
+  }
+
+  /** Deve persistir e bloquear uma falha de aplicação sem devolver erro técnico ao executor. */
+  @Test
+  void shouldBlockBpmTaskWhenApplyingGeneratedLandingFails() {
+    GeraLandingStageExecution execution = execution("job-apply-failure", "PROCESSANDO");
+    execution.setAutonomousCycleId("agent-task:30");
+    when(repository.findTopByIdJobOrderByExecutionRequestedAtDesc(
+            "job-apply-failure".getBytes(StandardCharsets.UTF_8)))
+        .thenReturn(Optional.of(execution));
+    doThrow(new IllegalArgumentException("Checkout divergente do briefing"))
+        .when(coordinator)
+        .continueAfterQualityReview(88L, "agent-task:30", "{\"decision\":\"generated\"}");
+
+    service.complete(
+        "job-apply-failure",
+        new LandingAgentResultRequest(
+            "{\"decision\":\"generated\"}",
+            "request",
+            "response",
+            "gpt-5.6-sol",
+            null,
+            null,
+            null,
+            null));
+
+    assertEquals("FALHA", execution.getStatus());
+    assertTrue(execution.getErrorMessage().contains("Checkout divergente"));
+    verify(agentTaskService)
+        .failClaimedProcessTask(
+            org.mockito.ArgumentMatchers.eq("landing-generator"),
+            org.mockito.ArgumentMatchers.eq(30L),
+            any(com.marketinghub.agenttask.FailAgentTaskRequest.class));
   }
 
   /** Deve abrir nova transação ao persistir a fila depois do commit do Quality Review. */

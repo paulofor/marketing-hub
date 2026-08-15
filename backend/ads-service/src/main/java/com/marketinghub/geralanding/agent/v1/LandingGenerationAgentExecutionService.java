@@ -395,9 +395,41 @@ public class LandingGenerationAgentExecutionService {
       finishRelatedTask(execution, request);
     }
     if (request.error() == null) {
+      continueOrBlockWithAuditableCause(execution, request);
+    }
+  }
+
+  /** Converte falha de aplicação/orquestração em bloqueio auditável sem provocar callback 500. */
+  private void continueOrBlockWithAuditableCause(
+      GeraLandingStageExecution execution, LandingAgentResultRequest request) {
+    try {
       coordinator.continueAfterQualityReview(
           execution.getExperimentId(), execution.getAutonomousCycleId(), request.decisionJson());
+    } catch (RuntimeException ex) {
+      String cause = rootMessage(ex);
+      log.error(
+          "Falha ao aplicar resultado do Agente Gerador de Landing. experimentId={} executionId={}",
+          execution.getExperimentId(),
+          textId(execution),
+          ex);
+      execution.setStatus("FALHA");
+      execution.setErrorMessage("Falha ao aplicar resultado: " + cause);
+      repository.save(execution);
+      if (isBpmTask(execution.getAutonomousCycleId())) {
+        agentTaskService.failClaimedProcessTask(
+            "landing-generator",
+            bpmTaskId(execution.getAutonomousCycleId()),
+            new com.marketinghub.agenttask.FailAgentTaskRequest(
+                "Dédalo produziu a candidata, mas o backend não conseguiu aplicá-la: " + cause));
+      }
     }
+  }
+
+  /** Extrai a causa mais específica sem perder o stack trace registrado no log. */
+  private String rootMessage(Throwable error) {
+    Throwable current = error;
+    while (current.getCause() != null) current = current.getCause();
+    return current.getMessage() == null ? current.getClass().getSimpleName() : current.getMessage();
   }
 
   /** Identifica correlações originadas por uma atividade do processo de negócio. */

@@ -101,4 +101,64 @@ class LandingGeneratorCodexRunnerTest {
         IllegalArgumentException.class,
         () -> runner.validate(new ObjectMapper().readTree(decision), job));
   }
+
+  /** Deve aceitar somente a URL canônica literal em todos os CTAs marcados. */
+  @Test
+  void shouldRejectGeneratedHtmlWithDivergentCheckoutBeforeCallback() throws Exception {
+    LandingGeneratorCodexRunner runner = runner();
+    String canonical = "https://checkout.example/agenda-cheia?ref=88";
+    LandingAgentJob job = checkoutJob(canonical);
+    String invalidHtml =
+        "<a id=\"checkout-cta-primary\" href=\"#checkout\">Comprar</a>" + " conteúdo".repeat(80);
+
+    assertThrows(IllegalArgumentException.class, () -> runner.validate(decision(invalidHtml), job));
+  }
+
+  /** Deve permitir múltiplos CTAs quando todos copiam literalmente o contrato congelado. */
+  @Test
+  void shouldAcceptGeneratedHtmlWithCanonicalCheckoutOnEveryMarkedCta() throws Exception {
+    LandingGeneratorCodexRunner runner = runner();
+    String canonical = "https://checkout.example/agenda-cheia?ref=88";
+    String html =
+        "<a id=\"checkout-cta-primary\" href=\""
+            + canonical
+            + "\">Comprar</a><a href=\""
+            + canonical
+            + "\" data-analytics-role=\"primary-checkout\">Quero agora</a>"
+            + " conteúdo".repeat(80);
+
+    runner.validate(decision(html), checkoutJob(canonical));
+  }
+
+  /** Cria o runner isolado para os contratos de saída do Codex. */
+  private LandingGeneratorCodexRunner runner() {
+    return new LandingGeneratorCodexRunner(
+        new LandingGeneratorAgentProperties(),
+        new ObjectMapper(),
+        mock(CodexTelemetryReporter.class));
+  }
+
+  /** Cria um job com catálogo disponível e checkout canônico congelado. */
+  private LandingAgentJob checkoutJob(String canonical) {
+    return new LandingAgentJob(
+        "job-88",
+        88L,
+        Map.of(
+            "generationApproachCatalog",
+            List.of(Map.of("approachCode", "CODEX_CODE_IMPLEMENTATION", "available", true)),
+            "checkoutContract",
+            Map.of("canonicalUrl", canonical)));
+  }
+
+  /** Cria uma decisão mínima válida para exercitar o contrato de checkout. */
+  private com.fasterxml.jackson.databind.JsonNode decision(String html) throws Exception {
+    String value =
+        """
+        {"approvalRecommendation":"REGENERATE_BEFORE_PUBLICATION","recommendedRegeneration":["LANDING_PAGE_HTML"],"acceptanceCriteria":["Quality Review independente"],"score":70,"strategyOptions":[{},{},{}],"selectedStrategy":{"name":"premium"},"autonomousBacklog":[{}],"generationApproachOptions":[{"approachCode":"CODEX_CODE_IMPLEMENTATION","available":true},{"approachCode":"GERALANDING_PIPELINE","available":true},{"approachCode":"COMPONENT_TEMPLATE_COMPOSER","available":false}],"selectedGenerationApproach":{"approachCode":"CODEX_CODE_IMPLEMENTATION"},"generatedHtml":%s,"expectedMetrics":[{}],"stopConditions":{"continueWhen":["evolução comprovada"],"adjustWhen":["estagnação comprovada"],"stopWhen":["risco comercial"]}}
+        """
+            .formatted(
+                new ObjectMapper()
+                    .writeValueAsString("<!doctype html><html><body>" + html + "</body></html>"));
+    return new ObjectMapper().readTree(value);
+  }
 }

@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.util.StringUtils;
 
 /** Responsabilidade: persistir a fila e os callbacks do Agente Gerador de Landing. */
 @Service
@@ -525,9 +526,21 @@ public class LandingGenerationAgentExecutionService {
                 putWhenPresent(context, "landingHtml", experiment.getHtmlGeraLanding());
                 publicationRepository
                     .findTopByExperimentIdOrderByPublishedAtDesc(experiment.getId())
+                    .filter(publication -> StringUtils.hasText(publication.getCheckoutUrl()))
                     .ifPresent(
-                        publication ->
-                            putWhenPresent(context, "checkoutUrl", publication.getCheckoutUrl()));
+                        publication -> {
+                          String checkoutUrl = publication.getCheckoutUrl();
+                          context.put("checkoutUrl", checkoutUrl);
+                          context.put(
+                              "checkoutContract",
+                              Map.of(
+                                  "canonicalUrl",
+                                  checkoutUrl,
+                                  "requiredMarkers",
+                                  List.of("checkout-cta-primary", "primary-checkout"),
+                                  "rule",
+                                  "Todo CTA de compra deve usar literalmente canonicalUrl; são proibidos #, placeholders e destinos alternativos."));
+                        });
               });
       return new LandingAgentPendingResponse(
           textId(execution),

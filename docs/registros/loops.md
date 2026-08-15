@@ -1313,6 +1313,15 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes bloqueiam destinos inventados e comprovam a troca segura da âncora pelo checkout canônico.
 - **Fechamento complementar em 2026-08-14:** o extrator do CTA protegido deixa de depender da ordem textual dos atributos HTML. Dédalo pode produzir tanto `id` antes de `href` quanto `href` antes de `id`; o backend continua exigindo o mesmo identificador e a URL canônica, com teste de contrato para ambas as ordens.
 - **Fechamento complementar em 2026-08-15:** o HTML autônomo do experimento #88 preservou a URL oficial em quatro CTAs, mas usou o hook semântico `data-analytics-role="primary-checkout"` em vez do identificador legado. O gate passa a reconhecer os dois contratos e valida todos os CTAs marcados contra o checkout canônico; qualquer destino divergente continua bloqueado. A tarefa BPM recebe uma única retomada automática após essa rejeição corrigível, sem liberar Psique ou Têmis antes da aprovação técnica.
+
+## LOOP-LANDING-GENERATOR-DECISAO-SEM-ARTEFATO — Dédalo descreve código sem entregar HTML
+
+- **Data:** 2026-08-15.
+- **Sintoma:** Dédalo seleciona `CODEX_CODE_IMPLEMENTATION`, descreve corretamente a reconstrução, mas retorna `generatedHtml` nulo e bloqueia a tarefa BPM #30.
+- **Causa-raiz:** uma única interação acumulava comparação estratégica, auditoria e um documento HTML grande; o schema permitia nulo para suportar outras abordagens e não garantia a materialização após a escolha por código.
+- **Correção sistêmica:** decisão e materialização passam a ser interações estruturadas separadas; quando a escolha for código e o artefato estiver ausente, o worker gera imediatamente o HTML integral em contrato dedicado, soma a telemetria e valida checkout antes do callback.
+- **Prevenção:** teste de contrato exige schema e prompt dedicados ao artefato e mantém descrições de alteração inválidas como substituto do HTML.
+
 # 2026-08-14 — Dédalo: reconexão Codex bloqueava a produção da landing
 
 - **Sintoma:** uma correção integral de HTML permanecia iniciada sem ser reservada pelo executor.

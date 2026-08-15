@@ -29,15 +29,18 @@ public class LandingGeneratorCodexRunner {
   private final LandingGeneratorAgentProperties properties;
   private final ObjectMapper objectMapper;
   private final CodexTelemetryReporter telemetry;
+  private final LandingHtmlCodexGenerator htmlGenerator;
 
   /** Inicializa o runner com configuração, JSON e telemetria. */
   public LandingGeneratorCodexRunner(
       LandingGeneratorAgentProperties properties,
       ObjectMapper objectMapper,
-      CodexTelemetryReporter telemetry) {
+      CodexTelemetryReporter telemetry,
+      LandingHtmlCodexGenerator htmlGenerator) {
     this.properties = properties;
     this.objectMapper = objectMapper;
     this.telemetry = telemetry;
+    this.htmlGenerator = htmlGenerator;
   }
 
   /** Executa o agente em sandbox read-only e devolve auditoria integral. */
@@ -69,6 +72,8 @@ public class LandingGeneratorCodexRunner {
               "Codex encerrou com código " + process.exitValue() + ": " + Files.readString(log));
         String raw = Files.readString(output);
         JsonNode decision = objectMapper.readTree(raw);
+        CodexTelemetryReporter.TokenUsage htmlUsage = materializeHtmlIfNeeded(decision, job);
+        raw = objectMapper.writeValueAsString(decision);
         validate(decision, job);
         CodexTelemetryReporter.TokenUsage usage = session.tokenUsage();
         session.success();
@@ -77,8 +82,8 @@ public class LandingGeneratorCodexRunner {
         result.put("requestJson", request);
         result.put("responseJson", raw);
         result.put("model", properties.getModel());
-        result.put("inputTokens", usage.inputTokens());
-        result.put("outputTokens", usage.outputTokens());
+        result.put("inputTokens", sum(usage.inputTokens(), htmlUsage, true));
+        result.put("outputTokens", sum(usage.outputTokens(), htmlUsage, false));
         result.put("costUsd", null);
         return result;
       }
@@ -88,6 +93,33 @@ public class LandingGeneratorCodexRunner {
       Files.deleteIfExists(schema);
       Files.deleteIfExists(mcp);
     }
+  }
+
+  /** Materializa o artefato em interação dedicada quando a decisão por código vier sem HTML. */
+  CodexTelemetryReporter.TokenUsage materializeHtmlIfNeeded(JsonNode decision, LandingAgentJob job)
+      throws IOException, InterruptedException {
+    if (!requiresIntegralHtml(decision)) return null;
+    LandingHtmlCodexGenerator.GeneratedHtml generated = htmlGenerator.generate(job, decision);
+    ((com.fasterxml.jackson.databind.node.ObjectNode) decision)
+        .put("generatedHtml", generated.html());
+    return generated.usage();
+  }
+
+  /** Identifica quando a decisão por código ainda não materializou o HTML obrigatório. */
+  private boolean requiresIntegralHtml(JsonNode decision) {
+    return "CODEX_CODE_IMPLEMENTATION"
+            .equals(decision.path("selectedGenerationApproach").path("approachCode").asText())
+        && (decision.path("generatedHtml").isNull()
+            || decision.path("generatedHtml").asText("").length() < 500);
+  }
+
+  /** Soma a telemetria das duas interações sem transformar ausência de medição em zero. */
+  private Long sum(
+      Long planningTokens, CodexTelemetryReporter.TokenUsage htmlUsage, boolean input) {
+    Long htmlTokens =
+        htmlUsage == null ? null : (input ? htmlUsage.inputTokens() : htmlUsage.outputTokens());
+    if (planningTokens == null && htmlTokens == null) return null;
+    return (planningTokens == null ? 0 : planningTokens) + (htmlTokens == null ? 0 : htmlTokens);
   }
 
   /**

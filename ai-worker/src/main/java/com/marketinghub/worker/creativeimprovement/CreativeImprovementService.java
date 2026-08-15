@@ -60,6 +60,11 @@ public class CreativeImprovementService {
             throw new IllegalArgumentException("Correção sem contrato visual obrigatório completo");
         }
         StringBuilder prompt = new StringBuilder(basePrompt.trim());
+        prompt.append("\n\nCONTRATO TÉCNICO DO EXECUTOR — obrigatório:")
+                .append("\n1. Gere uma única imagem final autossuficiente usando somente este prompt.")
+                .append("\n2. Não suponha arquivos, telas, templates ou pós-produção que não foram fornecidos como referência multimodal.")
+                .append("\n3. Não renderize palavras, letras, números, preço, CTA, logotipo, botão ou interface; a copy será aplicada fora da mídia.")
+                .append("\n4. A cena deve comunicar visualmente o produto anunciado e não pode parecer a oferta de outro produto ou serviço.");
         appendSection(prompt, "REQUISITOS OBRIGATÓRIOS — cumpra todos", mandatory);
         appendSection(prompt, "ELEMENTOS PROIBIDOS — não inclua nenhum", stringList(correction.get("forbiddenVisualElements")));
         appendSection(prompt, "CRITÉRIOS DE ACEITAÇÃO — a arte final deve permitir verificar todos", acceptance);

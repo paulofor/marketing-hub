@@ -200,6 +200,19 @@ class MetaAdApproverCodexRunnerTest {
             "nunca aprove na mesma execução aquilo que você acabou de criar");
   }
 
+  /** Impede que Têmis proponha pós-produção ou referências ausentes do executor visual. */
+  @Test
+  void declaresExecutableMediaCapabilities() throws Exception {
+    String prompt = resource("prompts/meta-ad-approver/v1/review.md");
+
+    assertThat(prompt)
+        .contains(
+            "não recebe automaticamente arquivos reais do produto",
+            "nunca peça ao modelo de imagem para renderizar palavras",
+            "sem depender de texto dentro da imagem",
+            "satisfeitos exclusivamente pela geração descrita no prompt");
+  }
+
   /** Confirma que o job preserva o snapshot e os identificadores do experimento. */
   @Test
   void preservesJobSegregation() {

@@ -107,6 +107,13 @@
 
 ## Regra operacional de uso
 
+## LOOP-TEMIS-PROMPT-NAO-EXECUTAVEL — correção visual repete produto errado
+
+- **Sintoma:** o experimento #88 acumulou versões reprovadas; a mídia parecia anúncio de serviço de manicure em vez de demonstrar o kit digital.
+- **Causa-raiz confirmada em 2026-08-15:** Têmis solicitava assets reais e tipografia em pós-produção, mas o AI Worker recebia somente texto. O gerador improvisava telas e palavras, preservando a confusão entre produto e serviço.
+- **Correção efetiva:** o contrato de Têmis passa a proibir referências e pós-produção inexistentes; o executor reforça imagem autossuficiente, sem tipografia gerada, com demonstração visual inequívoca do produto.
+- **Prevenção:** testes do Aprovador e do AI Worker exigem que proposta e prompt reflitam as capacidades reais da etapa de materialização.
+
 ## LOOP-APOLO-LEGACY-LUMA-RESELECTION — plano legado reintroduz provider reprovado
 
 - **Severidade:** ALTO.

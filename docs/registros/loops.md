@@ -1359,3 +1359,9 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** produção, reconexão Codex e telemetria disputavam o scheduler padrão de uma única thread; o device code podia ocupar essa thread por até 16 minutos.
 - **Correção sistêmica:** o `landing-generator-agent-worker` passa a manter ao menos três threads agendadas independentes, com teste de contrato que impede regressão.
 - **Critério preventivo:** qualquer nova rotina bloqueante de Dédalo deve possuir capacidade independente sem impedir o consumo do endpoint `pending` canônico.
+# LOOP-META-APPROVER-CALLBACK-SEM-TIMEOUT — Fila de revisão trava após indisponibilidade do backend
+
+- **Sintoma:** criativos permanecem `PROCESSING` sem processo Codex ativo e novos criativos ficam `PENDING`.
+- **Causa-raiz:** o cliente HTTP do Aprovador Meta não limitava conexão nem leitura; um callback iniciado durante deploy podia bloquear a thread do lote indefinidamente.
+- **Prevenção:** timeouts explícitos de conexão e leitura no cliente do backend, isolamento das revisões do lote e recuperação auditável pela lease canônica.
+- **Evidência real:** experimento 88, criativos 339 e 341, em 2026-08-15.

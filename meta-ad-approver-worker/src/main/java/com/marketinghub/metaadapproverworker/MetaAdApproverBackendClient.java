@@ -16,7 +16,7 @@ public class MetaAdApproverBackendClient {
 
   /** Configura o cliente do backend como única porta de dados. */
   public MetaAdApproverBackendClient(MetaAdApproverProperties properties) {
-    client = RestClient.builder().baseUrl(properties.getBackendUrl()).build();
+    client = BackendRestClientFactory.create(properties);
   }
 
   /** Reserva revisões no endpoint pending canônico. */

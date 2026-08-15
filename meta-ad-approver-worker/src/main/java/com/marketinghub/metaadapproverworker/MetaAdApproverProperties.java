@@ -13,6 +13,8 @@ public class MetaAdApproverProperties {
   private String model = "gpt-5.6-sol";
   private String reasoningEffort = "high";
   private Duration codexTimeout = Duration.ofMinutes(40);
+  private Duration backendConnectTimeout = Duration.ofSeconds(10);
+  private Duration backendReadTimeout = Duration.ofSeconds(30);
   private int pendingLimit = 3;
 
   /** Retorna a URL do backend. */
@@ -83,6 +85,26 @@ public class MetaAdApproverProperties {
   /** Define o timeout da sandbox. */
   public void setCodexTimeout(Duration value) {
     codexTimeout = value;
+  }
+
+  /** Retorna o limite para abrir conexão com o backend. */
+  public Duration getBackendConnectTimeout() {
+    return backendConnectTimeout;
+  }
+
+  /** Define o limite para abrir conexão com o backend. */
+  public void setBackendConnectTimeout(Duration value) {
+    backendConnectTimeout = value;
+  }
+
+  /** Retorna o limite de espera por resposta do backend. */
+  public Duration getBackendReadTimeout() {
+    return backendReadTimeout;
+  }
+
+  /** Define o limite de espera por resposta do backend. */
+  public void setBackendReadTimeout(Duration value) {
+    backendReadTimeout = value;
   }
 
   /** Retorna o limite do lote. */

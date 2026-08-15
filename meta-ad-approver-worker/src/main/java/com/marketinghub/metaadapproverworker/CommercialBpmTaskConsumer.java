@@ -37,7 +37,7 @@ public class CommercialBpmTaskConsumer {
       @Value("${CODEX_MODEL:gpt-5.6-sol}") String model,
       @Value("${MARKETING_HUB_REPOSITORY:/workspace/marketing-hub}") String repositoryPath,
       ObjectMapper json) {
-    this.backend = RestClient.builder().baseUrl(properties.getBackendUrl()).build();
+    this.backend = BackendRestClientFactory.create(properties);
     this.codex = codex;
     this.model = model;
     this.repositoryPath = repositoryPath;

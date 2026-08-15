@@ -49,6 +49,29 @@ class MetaAdApproverSchedulerTest {
     verify(backend).report(280L, Map.of("decision", "APPROVED"));
   }
 
+  /**
+   * Confirma que uma falha de callback não impede o tratamento independente do restante do lote.
+   */
+  @Test
+  void isolatesCallbackFailureWithinClaimedBatch() throws Exception {
+    MetaAdApproverBackendClient backend = mock(MetaAdApproverBackendClient.class);
+    MetaAdApproverCodexRunner runner = mock(MetaAdApproverCodexRunner.class);
+    MetaAdApproverProperties properties = new MetaAdApproverProperties();
+    List<MetaAdReviewJob> jobs = List.of(job(339L), job(342L));
+    Map<String, Object> approved = Map.of("decision", "APPROVED");
+
+    when(backend.claimPending(3)).thenReturn(jobs);
+    when(runner.run(any())).thenReturn(approved);
+    org.mockito.Mockito.doThrow(new IllegalStateException("backend indisponível"))
+        .when(backend)
+        .report(339L, approved);
+
+    new MetaAdApproverScheduler(backend, runner, properties).processPending();
+
+    verify(backend).fail(any(Long.class), any(IllegalStateException.class));
+    verify(backend).report(342L, approved);
+  }
+
   /** Cria um job mínimo segregado pelo experimento homologado. */
   private MetaAdReviewJob job(Long creativeId) {
     return new MetaAdReviewJob(creativeId, 88L, Map.of());

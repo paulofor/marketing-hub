@@ -92,7 +92,7 @@ public class TemisCreativeTaskOrchestrationService {
   /** Solicita exatamente uma alternativa sem substituir criativos ou histórico existentes. */
   private void requestOneCreative(Experiment experiment) {
     experiment.setCreativesToGenerate(1);
-    experiment.setCreativeGenerationMode(CreativeGenerationMode.DEFAULT);
+    experiment.setCreativeGenerationMode(CreativeGenerationMode.PIPELINE_ADS);
     experiment.setCreativeGenerationStatus(CreativeGenerationStatus.REQUESTED);
     experiment.setCreativeGenerationRequestedAt(Instant.now(clock));
     experiment.setCreativeGenerationStartedAt(null);

@@ -495,7 +495,15 @@ export default function AgentWorkspacePage() {
                       </div>
                     ) : null}
                     <div className="small text-body-secondary mb-3">
-                      {new Date(task.createdAt).toLocaleString("pt-BR")}
+                      <div>
+                        Recebida em: {new Date(task.receivedAt).toLocaleString("pt-BR")}
+                      </div>
+                      <div>
+                        Resultado entregue em:{" "}
+                        {task.deliveredAt
+                          ? new Date(task.deliveredAt).toLocaleString("pt-BR")
+                          : "Ainda não entregue"}
+                      </div>
                     </div>
                     <div className="d-flex flex-wrap gap-2">
                       {(task.taskKind === "GATE_DECISION" &&

@@ -47,4 +47,6 @@ com resultado comercial.
 
 Toda nova tarefa humana enviada pela Mesa de Entrada deve apontar para uma atividade `TASK` de uma versão `PUBLISHED` e para o agente responsável definido nessa atividade. O backend valida a versão, o tipo do elemento e o responsável; rascunhos não podem orientar trabalho operacional.
 
+Cada tarefa deve preservar dois marcos temporais canônicos: `received_at`, registrado quando o trabalho entra na caixa do agente, e `delivered_at`, registrado uma única vez quando o resultado é concluído. Atualizações, bloqueios e cancelamentos não podem sobrescrever esses marcos. Tarefas históricas usam `created_at` como recebimento e, quando já concluídas, `updated_at` como melhor evidência disponível da entrega.
+
 Uma demanda fora do catálogo pode ser registrada como `Atividade excepcional`, sem vínculo regular e com justificativa obrigatória auditável. A exceção não cria nem altera processo automaticamente; recorrências devem orientar revisão ou criação de processo. Tarefas históricas anteriores a esta regra permanecem legíveis como legadas.

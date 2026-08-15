@@ -122,8 +122,12 @@ public class AgentTaskService {
         .ifPresent(
             task -> {
               if (List.of("COMPLETED", "CANCELLED").contains(task.getStatus())) return;
+              Instant now = Instant.now(clock);
               task.setStatus(successful ? "COMPLETED" : "BLOCKED");
-              task.setUpdatedAt(Instant.now(clock));
+              if (successful && task.getDeliveredAt() == null) {
+                task.setDeliveredAt(now);
+              }
+              task.setUpdatedAt(now);
               repository.save(task);
             });
   }
@@ -161,6 +165,9 @@ public class AgentTaskService {
     task.setGateDecisionReason(request.reason().trim());
     task.setGateDecidedAt(now);
     task.setStatus("APPROVED".equals(request.decision()) ? "COMPLETED" : "BLOCKED");
+    if ("APPROVED".equals(request.decision()) && task.getDeliveredAt() == null) {
+      task.setDeliveredAt(now);
+    }
     task.setUpdatedAt(now);
     return response(repository.save(task));
   }
@@ -204,8 +211,12 @@ public class AgentTaskService {
         && !ALLOWED_TRANSITIONS.contains(task.getStatus() + ":" + next)) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Transição de status inválida.");
     }
+    Instant now = Instant.now(clock);
     task.setStatus(next);
-    task.setUpdatedAt(Instant.now(clock));
+    if ("COMPLETED".equals(next) && task.getDeliveredAt() == null) {
+      task.setDeliveredAt(now);
+    }
+    task.setUpdatedAt(now);
     return response(repository.save(task));
   }
 
@@ -237,6 +248,7 @@ public class AgentTaskService {
     task.setProcessActivityName(binding == null ? null : binding.activityName());
     task.setExceptional(binding != null && binding.exceptional());
     task.setExceptionReason(binding == null ? null : binding.exceptionReason());
+    task.setReceivedAt(now);
     task.setCreatedAt(now);
     task.setUpdatedAt(now);
     return response(repository.save(task));
@@ -280,6 +292,8 @@ public class AgentTaskService {
         task.getGateStatus(),
         task.getGateDecisionReason(),
         task.getGateDecidedAt(),
+        task.getReceivedAt(),
+        task.getDeliveredAt(),
         task.getCreatedAt(),
         task.getUpdatedAt());
   }

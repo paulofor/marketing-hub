@@ -148,6 +148,39 @@ class AgentTaskServiceTest {
     assertThat(response.requestedByType()).isEqualTo("AGENT");
     assertThat(response.status()).isEqualTo("PENDING");
     assertThat(response.createdAt()).isEqualTo(now);
+    assertThat(response.receivedAt()).isEqualTo(now);
+    assertThat(response.deliveredAt()).isNull();
+  }
+
+  /** Registra a entrega no instante da primeira conclusão da tarefa. */
+  @Test
+  void recordsResultDeliveryWhenTaskCompletes() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task = new AgentTask();
+    task.setId(52L);
+    task.setAssignedAgent(agent(8L, "videomaker", "Apolo"));
+    task.setRequestedByType("HUMAN");
+    task.setRequestedByName("Operador");
+    task.setTitle("Entregar storyboard");
+    task.setDescription("Entregar resultado auditável.");
+    task.setPriority("HIGH");
+    task.setStatus("IN_PROGRESS");
+    task.setTaskKind("WORK");
+    Instant receivedAt = Instant.parse("2026-08-15T10:00:00Z");
+    Instant deliveredAt = Instant.parse("2026-08-15T10:30:00Z");
+    task.setReceivedAt(receivedAt);
+    task.setCreatedAt(receivedAt);
+    task.setUpdatedAt(receivedAt);
+    when(repository.findById(52L)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    AgentTaskService service =
+        service(repository, mock(AgentRepository.class), Clock.fixed(deliveredAt, ZoneOffset.UTC));
+
+    AgentTaskResponse response =
+        service.updateStatus(52L, new UpdateAgentTaskStatusRequest("COMPLETED"));
+
+    assertThat(response.receivedAt()).isEqualTo(receivedAt);
+    assertThat(response.deliveredAt()).isEqualTo(deliveredAt);
   }
 
   /** Registra gate pendente na mesa sem conceder aprovação ao solicitante. */

@@ -76,6 +76,34 @@ class BusinessProcessDefinitionServiceTest {
     assertThat(previous.getStatus()).isEqualTo("RETIRED");
   }
 
+  /** Permite alterar conteúdo e grafo do rascunho preservando sua identidade versionada. */
+  @Test
+  void updatesDraft() throws Exception {
+    var repository = mock(BusinessProcessDefinitionRepository.class);
+    BusinessProcessDefinition draft = entity(2L, 2, "DRAFT", validDiagram().toString());
+    when(repository.findById(2L)).thenReturn(Optional.of(draft));
+    when(repository.save(draft)).thenReturn(draft);
+    var service = new BusinessProcessDefinitionService(repository, mapper);
+
+    var result = service.updateDraft(2L, request(validDiagram()));
+
+    assertThat(result.purpose()).isEqualTo("Vender");
+    assertThat(result.status()).isEqualTo("DRAFT");
+  }
+
+  /** Impede edição silenciosa da fonte de verdade já publicada. */
+  @Test
+  void rejectsPublishedEdition() throws Exception {
+    var repository = mock(BusinessProcessDefinitionRepository.class);
+    BusinessProcessDefinition published = entity(1L, 2, "PUBLISHED", validDiagram().toString());
+    when(repository.findById(1L)).thenReturn(Optional.of(published));
+    var service = new BusinessProcessDefinitionService(repository, mapper);
+
+    assertThatThrownBy(() -> service.updateDraft(1L, request(validDiagram())))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Somente versões em rascunho");
+  }
+
   /** Monta uma requisição mínima para concentrar os cenários no comportamento governado. */
   private BusinessProcessDefinitionRequest request(
       com.fasterxml.jackson.databind.JsonNode diagram) {

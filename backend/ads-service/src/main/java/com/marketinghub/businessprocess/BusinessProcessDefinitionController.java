@@ -36,6 +36,13 @@ public class BusinessProcessDefinitionController {
     return service.create(request);
   }
 
+  /** Salva alterações em uma versão que ainda está em rascunho. */
+  @PutMapping("/{id}")
+  public BusinessProcessDefinitionResponse updateDraft(
+      @PathVariable Long id, @Valid @RequestBody BusinessProcessDefinitionRequest request) {
+    return service.updateDraft(id, request);
+  }
+
   /** Promove explicitamente uma versão válida a fonte de verdade vigente. */
   @PostMapping("/{id}/publish")
   public BusinessProcessDefinitionResponse publish(@PathVariable Long id) {

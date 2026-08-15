@@ -72,6 +72,25 @@ public class BusinessProcessDefinitionService {
     return response(repository.save(value));
   }
 
+  /** Atualiza uma versão em rascunho sem alterar versões publicadas ou aposentadas. */
+  @Transactional
+  public BusinessProcessDefinitionResponse updateDraft(
+      Long id, BusinessProcessDefinitionRequest request) {
+    BusinessProcessDefinition value = required(id);
+    if (!"DRAFT".equals(value.getStatus())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Somente versões em rascunho podem ser editadas.");
+    }
+    if (!value.getProcessCode().equals(request.processCode().trim())
+        || !Objects.equals(value.getVersionNumber(), request.versionNumber())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Código e número da versão não podem ser alterados.");
+    }
+    validateDiagram(request.diagram());
+    applyEditableFields(value, request);
+    return response(repository.save(value));
+  }
+
   /** Publica uma versão válida e aposenta a versão anteriormente vigente. */
   @Transactional
   public BusinessProcessDefinitionResponse publish(Long id) {
@@ -107,6 +126,9 @@ public class BusinessProcessDefinitionService {
       }
       starts += "START".equals(type) ? 1 : 0;
       ends += "END".equals(type) ? 1 : 0;
+      if (!Set.of("START", "TASK", "GATEWAY", "END").contains(type)) {
+        throw invalid("Todo elemento deve possuir um tipo BPM reconhecido.");
+      }
     }
     if (starts != 1 || ends != 1) {
       throw invalid("O processo deve ter exatamente um início e um fim.");
@@ -116,6 +138,18 @@ public class BusinessProcessDefinitionService {
         throw invalid("Todo fluxo deve conectar elementos existentes.");
       }
     }
+  }
+
+  /** Copia os campos que podem mudar enquanto a definição ainda é rascunho. */
+  private void applyEditableFields(
+      BusinessProcessDefinition value, BusinessProcessDefinitionRequest request) {
+    value.setName(request.name().trim());
+    value.setPurpose(request.purpose().trim());
+    value.setOwnerName(request.ownerName().trim());
+    value.setTriggerDescription(request.triggerDescription().trim());
+    value.setOutcomeDescription(request.outcomeDescription().trim());
+    value.setTechnicalReference(trimToNull(request.technicalReference()));
+    value.setDiagramJson(write(request.diagram()));
   }
 
   /** Converte uma entidade no contrato oficial da tela. */

@@ -4,6 +4,7 @@ import {
   useBusinessProcesses,
   useCreateBusinessProcess,
   usePublishBusinessProcess,
+  useUpdateBusinessProcess,
 } from "../../api/businessProcess/useBusinessProcesses";
 import type {
   BusinessProcess,
@@ -11,6 +12,7 @@ import type {
 } from "../../api/businessProcess/types";
 import PageTitle from "../../components/PageTitle";
 import BusinessProcessDiagram from "./BusinessProcessDiagram";
+import BusinessProcessEditor from "./BusinessProcessEditor";
 import "./BusinessProcessesPage.css";
 
 const initial = {
@@ -51,7 +53,9 @@ export default function BusinessProcessesPage() {
   const query = useBusinessProcesses();
   const create = useCreateBusinessProcess();
   const publish = usePublishBusinessProcess();
+  const update = useUpdateBusinessProcess();
   const [selectedId, setSelectedId] = useState<number>();
+  const [editing, setEditing] = useState<"draft" | "new-version">();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(initial);
   const processes = query.data ?? [];
@@ -62,6 +66,27 @@ export default function BusinessProcessesPage() {
       processes[0],
     [processes, selectedId],
   );
+
+  const editableValue = selected
+    ? {
+        processCode: selected.processCode,
+        name: selected.name,
+        purpose: selected.purpose,
+        ownerName: selected.ownerName,
+        triggerDescription: selected.triggerDescription,
+        outcomeDescription: selected.outcomeDescription,
+        versionNumber:
+          editing === "new-version"
+            ? Math.max(
+                ...processes
+                  .filter((item) => item.processCode === selected.processCode)
+                  .map((item) => item.versionNumber),
+              ) + 1
+            : selected.versionNumber,
+        technicalReference: selected.technicalReference,
+        diagram: structuredClone(selected.diagram),
+      }
+    : undefined;
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -272,72 +297,110 @@ export default function BusinessProcessesPage() {
 
         <main>
           {selected ? (
-            <>
-              <section className="card card-body mb-3">
-                <div className="d-flex flex-wrap justify-content-between gap-3">
-                  <div>
-                    <span
-                      className={`badge ${selected.status === "PUBLISHED" ? "text-bg-success" : "text-bg-secondary"}`}
-                    >
-                      {selected.status}
-                    </span>
-                    <h2 className="h4 mt-2 mb-1">
-                      {selected.name} · v{selected.versionNumber}
-                    </h2>
-                    <p className="mb-2">{selected.purpose}</p>
-                    <div className="small text-body-secondary">
-                      Dono: {selected.ownerName}
-                      {selected.technicalReference
-                        ? ` · Contrato: ${selected.technicalReference}`
-                        : ""}
+            editing && editableValue ? (
+              <BusinessProcessEditor
+                key={`${selected.id}-${editing}`}
+                initial={editableValue}
+                identityLocked
+                saving={create.isPending || update.isPending}
+                onCancel={() => setEditing(undefined)}
+                onSave={async (value) => {
+                  const saved =
+                    editing === "draft"
+                      ? await update.mutateAsync({ id: selected.id, value })
+                      : await create.mutateAsync(value);
+                  setSelectedId(saved.id);
+                  setEditing(undefined);
+                  toast.success(
+                    "Rascunho salvo com todos os elementos do processo.",
+                  );
+                }}
+              />
+            ) : (
+              <>
+                <section className="card card-body mb-3">
+                  <div className="d-flex flex-wrap justify-content-between gap-3">
+                    <div>
+                      <span
+                        className={`badge ${selected.status === "PUBLISHED" ? "text-bg-success" : "text-bg-secondary"}`}
+                      >
+                        {selected.status}
+                      </span>
+                      <h2 className="h4 mt-2 mb-1">
+                        {selected.name} · v{selected.versionNumber}
+                      </h2>
+                      <p className="mb-2">{selected.purpose}</p>
+                      <div className="small text-body-secondary">
+                        Dono: {selected.ownerName}
+                        {selected.technicalReference
+                          ? ` · Contrato: ${selected.technicalReference}`
+                          : ""}
+                      </div>
+                    </div>
+                    <div className="d-flex gap-2 align-self-start">
+                      <button
+                        type="button"
+                        className="btn btn-outline-primary"
+                        onClick={() =>
+                          setEditing(
+                            selected.status === "DRAFT"
+                              ? "draft"
+                              : "new-version",
+                          )
+                        }
+                      >
+                        {selected.status === "DRAFT"
+                          ? "Editar rascunho"
+                          : "Criar versão editável"}
+                      </button>
+                      {selected.status === "DRAFT" ? (
+                        <button
+                          type="button"
+                          className="btn btn-success"
+                          disabled={publish.isPending}
+                          onClick={async () => {
+                            await publish.mutateAsync(selected.id);
+                            toast.success(
+                              "Versão publicada como fonte de verdade.",
+                            );
+                          }}
+                        >
+                          {publish.isPending
+                            ? "Publicando..."
+                            : "Publicar definição"}
+                        </button>
+                      ) : null}
                     </div>
                   </div>
-                  {selected.status === "DRAFT" ? (
-                    <button
-                      type="button"
-                      className="btn btn-success align-self-start"
-                      disabled={publish.isPending}
-                      onClick={async () => {
-                        await publish.mutateAsync(selected.id);
-                        toast.success(
-                          "Versão publicada como fonte de verdade.",
-                        );
-                      }}
-                    >
-                      {publish.isPending
-                        ? "Publicando..."
-                        : "Publicar definição"}
-                    </button>
-                  ) : null}
-                </div>
-                <div className="process-summary mt-3">
-                  <div>
-                    <strong>Início</strong>
-                    <span>{selected.triggerDescription}</span>
+                  <div className="process-summary mt-3">
+                    <div>
+                      <strong>Início</strong>
+                      <span>{selected.triggerDescription}</span>
+                    </div>
+                    <div>
+                      <strong>Resultado</strong>
+                      <span>{selected.outcomeDescription}</span>
+                    </div>
+                    <div>
+                      <strong>Elementos</strong>
+                      <span>
+                        {selected.diagram.nodes.length} etapas ·{" "}
+                        {
+                          selected.diagram.nodes.filter(
+                            (n) => n.type === "GATEWAY",
+                          ).length
+                        }{" "}
+                        gates
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <strong>Resultado</strong>
-                    <span>{selected.outcomeDescription}</span>
-                  </div>
-                  <div>
-                    <strong>Elementos</strong>
-                    <span>
-                      {selected.diagram.nodes.length} etapas ·{" "}
-                      {
-                        selected.diagram.nodes.filter(
-                          (n) => n.type === "GATEWAY",
-                        ).length
-                      }{" "}
-                      gates
-                    </span>
-                  </div>
-                </div>
-              </section>
-              <section className="card card-body">
-                <h2 className="h5">Diagrama BPM</h2>
-                <BusinessProcessDiagram diagram={selected.diagram} />
-              </section>
-            </>
+                </section>
+                <section className="card card-body">
+                  <h2 className="h5">Diagrama BPM</h2>
+                  <BusinessProcessDiagram diagram={selected.diagram} />
+                </section>
+              </>
+            )
           ) : (
             <div className="card card-body text-body-secondary">
               {query.isLoading

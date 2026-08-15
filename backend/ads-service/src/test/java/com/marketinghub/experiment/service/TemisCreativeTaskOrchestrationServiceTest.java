@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.experiment.CreativeGenerationMode;
 import com.marketinghub.experiment.CreativeGenerationStatus;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
@@ -44,6 +45,8 @@ class TemisCreativeTaskOrchestrationServiceTest {
     assertThat(experiment.getCreativesToGenerate()).isEqualTo(1);
     assertThat(experiment.getCreativeGenerationStatus())
         .isEqualTo(CreativeGenerationStatus.REQUESTED);
+    assertThat(experiment.getCreativeGenerationMode())
+        .isEqualTo(CreativeGenerationMode.PIPELINE_ADS);
     assertThat(experiment.getCreativeGenerationRequestedAt()).isEqualTo(now);
   }
 

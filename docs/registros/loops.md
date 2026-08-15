@@ -113,6 +113,7 @@
 - **Causa-raiz confirmada em 2026-08-15:** Têmis solicitava assets reais e tipografia em pós-produção, mas o AI Worker recebia somente texto. O gerador improvisava telas e palavras, preservando a confusão entre produto e serviço.
 - **Correção efetiva:** o contrato de Têmis passa a proibir referências e pós-produção inexistentes; o executor reforça imagem autossuficiente, sem tipografia gerada, com demonstração visual inequívoca do produto.
 - **Prevenção:** testes do Aprovador e do AI Worker exigem que proposta e prompt reflitam as capacidades reais da etapa de materialização.
+- **Recorrência fechada em 2026-08-15:** mesmo após corrigir o contrato do Aprovador, a ponte BPM de Têmis ainda solicitava `DEFAULT`; assim, a primeira geração ignorava copy, briefing e referências reais já aprovados no pipeline e voltava a produzir marketing genérico. A orquestração agora solicita `PIPELINE_ADS`, e o teste preventivo exige esse modo para toda tarefa de Têmis.
 
 ## LOOP-CRIATIVO-RESPONSES-SCHEMA-ROOT-ARRAY — geração falha antes da materialização
 

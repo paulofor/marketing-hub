@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -134,9 +133,11 @@ public class MetaAdApproverCodexRunner {
 
   /** Declara ao Codex as variáveis não sensíveis permitidas no processo MCP deste job. */
   private String mcpEnvironment(MetaAdReviewJob job) {
+    String configuredChromiumExecutable = System.getenv("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH");
     String chromiumExecutable =
-        Objects.requireNonNullElse(
-            System.getenv("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH"), "");
+        configuredChromiumExecutable == null || configuredChromiumExecutable.isBlank()
+            ? "/usr/bin/chromium"
+            : configuredChromiumExecutable;
     return "mcp_servers.meta_ad_approver.env={MCP_MARKETING_HUB_URL=\""
         + properties.getMarketingHubUrl()
         + "\",MCP_CREATIVE_ID=\""

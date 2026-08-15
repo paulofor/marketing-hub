@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import type { BusinessProcess, CreateBusinessProcess } from "./types";
+import type {
+  BusinessProcess,
+  CreateBusinessProcess,
+  SaveBusinessProcess,
+} from "./types";
 
 const key = ["business-processes"];
 
@@ -31,6 +35,22 @@ export function usePublishBusinessProcess() {
           `/api/business-processes/${id}/publish`,
         )
       ).data,
+    onSuccess: () => client.invalidateQueries({ queryKey: key }),
+  });
+}
+
+export function useUpdateBusinessProcess() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      value,
+    }: {
+      id: number;
+      value: SaveBusinessProcess;
+    }) =>
+      (await axios.put<BusinessProcess>(`/api/business-processes/${id}`, value))
+        .data,
     onSuccess: () => client.invalidateQueries({ queryKey: key }),
   });
 }

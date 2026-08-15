@@ -15,6 +15,9 @@ faz polling, não consome filas e não avança execuções operacionais.
 
 - Cada processo possui código estável e versões imutáveis depois de publicadas.
 - Uma versão nasce `DRAFT`; somente publicação explícita a torna `PUBLISHED`.
+- Todos os metadados, elementos BPM e fluxos de uma versão `DRAFT` podem ser editados no Marketing
+  Hub. Editar uma versão publicada cria uma nova versão em rascunho; versões `PUBLISHED` e `RETIRED`
+  nunca são alteradas diretamente.
 - Ao publicar uma nova versão, a anterior passa a `RETIRED`, preservando histórico e auditoria.
 - O diagrama é persistido como grafo estruturado, não como imagem ou XML livre.
 - Todo grafo precisa de exatamente um evento inicial, um final e fluxos entre elementos existentes.

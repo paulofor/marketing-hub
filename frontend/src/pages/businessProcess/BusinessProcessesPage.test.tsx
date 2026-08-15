@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import axios from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import BusinessProcessesPage from "./BusinessProcessesPage";
@@ -61,5 +61,9 @@ describe("BusinessProcessesPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Responsável: Psique")).toBeInTheDocument();
     expect(screen.getByText("3 etapas · 0 gates")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Criar versão editável" }));
+    expect(screen.getByText("Editar definição do processo")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Psique")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("2")).toBeDisabled();
   });
 });

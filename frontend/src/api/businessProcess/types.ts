@@ -36,3 +36,5 @@ export type CreateBusinessProcess = Omit<
   BusinessProcess,
   "id" | "status" | "createdAt" | "publishedAt"
 >;
+
+export type SaveBusinessProcess = CreateBusinessProcess;

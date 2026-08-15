@@ -90,6 +90,31 @@
     var(--bs-body-bg)
   );
 }
+.process-editor__items,
+.process-editor__flows {
+  display: grid;
+  gap: 0.75rem;
+}
+.process-editor__item {
+  display: grid;
+  grid-template-columns: 130px 150px minmax(180px, 1fr) minmax(
+      150px,
+      0.8fr
+    ) minmax(190px, 1.2fr) auto;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.65rem;
+}
+.process-editor__flow {
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) auto minmax(170px, 1fr) minmax(
+      180px,
+      1fr
+    ) auto;
+  align-items: center;
+  gap: 0.5rem;
+}
 @media (max-width: 767px) {
   .business-process-layout {
     grid-template-columns: 1fr;
@@ -106,5 +131,12 @@
   }
   .process-node {
     width: 100%;
+  }
+  .process-editor__item,
+  .process-editor__flow {
+    grid-template-columns: 1fr;
+  }
+  .process-editor__flow > span {
+    display: none;
   }
 }

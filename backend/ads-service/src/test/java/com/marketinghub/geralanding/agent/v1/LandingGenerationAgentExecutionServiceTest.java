@@ -16,6 +16,7 @@ import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.qualityreview.service.LandingQualityReviewedEvent;
+import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
@@ -280,6 +281,30 @@ class LandingGenerationAgentExecutionServiceTest {
     assertEquals("MAQA-H002-E001", result.context().get("experimentName"));
     assertFalse(result.context().containsKey("landingHtml"));
     assertEquals("PROCESSANDO", execution.getStatus());
+  }
+
+  /** Deve entregar a Dédalo a URL exata e a regra operacional do checkout congelado. */
+  @Test
+  void shouldExposeExplicitCheckoutContractInSnapshot() {
+    GeraLandingStageExecution execution = execution("job-checkout-88", "INICIADO");
+    Experiment experiment = new Experiment();
+    experiment.setId(88L);
+    GeraSalesPagePublicationAudit publication = new GeraSalesPagePublicationAudit();
+    publication.setCheckoutUrl("https://checkout.example/agenda-cheia?ref=88");
+    when(experimentRepository.findById(88L)).thenReturn(Optional.of(experiment));
+    when(publicationRepository.findTopByExperimentIdOrderByPublishedAtDesc(88L))
+        .thenReturn(Optional.of(publication));
+    when(repository.findTop3ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+            "landing-generation-agent-v1", "INICIADO"))
+        .thenReturn(List.of(execution));
+
+    LandingAgentPendingResponse result = service.claimPending(1).getFirst();
+
+    @SuppressWarnings("unchecked")
+    java.util.Map<String, Object> contract =
+        (java.util.Map<String, Object>) result.context().get("checkoutContract");
+    assertEquals("https://checkout.example/agenda-cheia?ref=88", contract.get("canonicalUrl"));
+    assertTrue(contract.get("rule").toString().contains("Todo CTA"));
   }
 
   /** Deve reabrir uma única vez o timeout terminal deixado por uma versão antiga do worker. */

@@ -25,6 +25,8 @@ Quando Têmis apontar `LANDING_PAGE_HTML`, Dédalo pode selecionar `CODEX_CODE_I
 
 Quando o HTML atual contiver somente uma âncora de checkout quebrada, Dédalo deve receber no snapshot a URL de checkout da publicação canônica mais recente. O gate pode substituir a âncora exclusivamente por essa URL persistida; qualquer outro destino continua bloqueado. Assim, preservar o contrato comercial não significa preservar um defeito que impeça a compra.
 
+A definição da atividade registra a regra estável de preservar o checkout, mas o valor operacional deve vir sempre do `checkoutContract` congelado pelo backend para cada execução. Dédalo deve copiar literalmente `canonicalUrl` em todo CTA marcado por `checkout-cta-primary` ou `primary-checkout`. O worker valida localmente todos esses links antes do callback e bloqueia `#`, placeholders, URLs inferidas ou destinos alternativos, evitando consumir uma nova rodada do backend para descobrir a mesma divergência.
+
 ## Autonomia orientada ao objetivo
 
 O agente deve trabalhar sem solicitar escolhas humanas de copy, layout, CTA, imagens ou responsividade quando houver contexto e evidência suficientes. Pode reconstruir livremente copy, hierarquia, imagens e HTML usando as etapas canônicas, inclusive reiniciando pelo wireframe quando uma correção localizada não resolver a causa. Em cada execução ele audita visual e funcionalmente desktop, iPhone e Android, compara ao menos três estratégias, escolhe a de melhor aderência comercial e entrega um backlog causal ordenado para execução pelo pipeline oficial. O plano deve incluir critérios por dispositivo, métricas esperadas e condições explícitas de continuar, ajustar e parar.

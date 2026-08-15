@@ -11,6 +11,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +20,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class LandingGeneratorCodexRunner {
   private static final long ACTIVITY_POLL_SECONDS = 15L;
+  private static final Pattern CHECKOUT_ANCHOR =
+      Pattern.compile(
+          "<a\\b(?=[^>]*(?:id\\s*=\\s*[\\\"']checkout-cta-primary[\\\"']|data-analytics-role\\s*=\\s*[\\\"']primary-checkout[\\\"']))[^>]*>",
+          Pattern.CASE_INSENSITIVE);
+  private static final Pattern HREF =
+      Pattern.compile("\\bhref\\s*=\\s*[\\\"']([^\\\"']+)[\\\"']", Pattern.CASE_INSENSITIVE);
   private final LandingGeneratorAgentProperties properties;
   private final ObjectMapper objectMapper;
   private final CodexTelemetryReporter telemetry;
@@ -194,11 +202,29 @@ public class LandingGeneratorCodexRunner {
     if (!"CODEX_CODE_IMPLEMENTATION".equals(selectedApproach)
         && !value.path("generatedHtml").isNull())
       throw new IllegalArgumentException("HTML completo informado fora da abordagem por código");
+    if ("CODEX_CODE_IMPLEMENTATION".equals(selectedApproach))
+      validateCheckoutContract(value.path("generatedHtml").asText(), context);
     if (value.path("expectedMetrics").isEmpty()
         || value.path("stopConditions").path("continueWhen").isEmpty()
         || value.path("stopConditions").path("adjustWhen").isEmpty()
         || value.path("stopConditions").path("stopWhen").isEmpty())
       throw new IllegalArgumentException("Plano autônomo sem métricas e condições de controle");
+  }
+
+  /** Impede callback quando Dédalo não preserva literalmente o checkout congelado. */
+  private void validateCheckoutContract(String html, JsonNode context) {
+    String canonicalUrl = context.path("checkoutContract").path("canonicalUrl").asText();
+    if (canonicalUrl.isBlank())
+      throw new IllegalArgumentException("Contrato canônico de checkout ausente no snapshot");
+    Matcher anchors = CHECKOUT_ANCHOR.matcher(html);
+    boolean found = false;
+    while (anchors.find()) {
+      found = true;
+      Matcher href = HREF.matcher(anchors.group());
+      if (!href.find() || !canonicalUrl.equals(href.group(1)))
+        throw new IllegalArgumentException("Dédalo alterou o destino canônico do checkout");
+    }
+    if (!found) throw new IllegalArgumentException("HTML sem CTA marcado para o checkout canônico");
   }
 
   /** Materializa um recurso versionado somente no diretório temporário. */

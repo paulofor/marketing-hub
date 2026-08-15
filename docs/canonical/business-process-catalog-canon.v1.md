@@ -42,3 +42,9 @@ O catálogo deve permitir medir cobertura de responsáveis, quantidade de gates 
 cadastro for vinculado a execuções reais, deverá medir também tempo por etapa, retrabalho, custo por
 landing aprovada, reincidência de causa, CTA, checkout e vendas, sem confundir publicação da definição
 com resultado comercial.
+
+# Vínculo operacional com a Mesa de Entrada
+
+Toda nova tarefa humana enviada pela Mesa de Entrada deve apontar para uma atividade `TASK` de uma versão `PUBLISHED` e para o agente responsável definido nessa atividade. O backend valida a versão, o tipo do elemento e o responsável; rascunhos não podem orientar trabalho operacional.
+
+Uma demanda fora do catálogo pode ser registrada como `Atividade excepcional`, sem vínculo regular e com justificativa obrigatória auditável. A exceção não cria nem altera processo automaticamente; recorrências devem orientar revisão ou criação de processo. Tarefas históricas anteriores a esta regra permanecem legíveis como legadas.

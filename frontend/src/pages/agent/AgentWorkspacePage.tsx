@@ -14,6 +14,7 @@ import {
 } from "../../api/planning/useCommercialPlans";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import { useExperiments } from "../../api/experiment/useExperiments";
+import { useBusinessProcesses } from "../../api/businessProcess/useBusinessProcesses";
 
 const statusLabel: Record<AgentTaskStatus, string> = {
   PENDING: "Pendente",
@@ -54,6 +55,7 @@ export default function AgentWorkspacePage() {
   const updateStatus = useUpdateAgentTaskStatus(agent?.agentKey);
   const experiments = useExperiments();
   const plans = useCommercialPlans();
+  const processes = useBusinessProcesses();
   const [commercialPlanId, setCommercialPlanId] = useState<number | null>(null);
   const selectedPlanId = commercialPlanId ?? plans.data?.[0]?.id ?? null;
   const planVersions = useCommercialPlanVersions(selectedPlanId);
@@ -64,7 +66,24 @@ export default function AgentWorkspacePage() {
     description: "",
     priority: "NORMAL" as AgentTask["priority"],
     sourceReference: "",
+    processDefinitionId: "",
+    processActivityId: "",
+    exceptional: false,
+    exceptionReason: "",
   });
+  const publishedProcesses = (processes.data ?? []).filter(
+    (process) => process.status === "PUBLISHED",
+  );
+  const selectedProcess = publishedProcesses.find(
+    (process) => process.id === Number(form.processDefinitionId),
+  );
+  const availableActivities = (selectedProcess?.diagram.nodes ?? []).filter(
+    (node) =>
+      node.type === "TASK" &&
+      (!node.owner ||
+        node.owner.toLowerCase().includes(agent?.nickname.toLowerCase() ?? "") ||
+        node.owner.toLowerCase().includes(agent?.agentKey?.toLowerCase() ?? "")),
+  );
   const openCount = useMemo(
     () =>
       (inbox.data ?? []).filter((task) =>
@@ -83,6 +102,13 @@ export default function AgentWorkspacePage() {
     create.mutate(
       {
         ...form,
+        processDefinitionId: form.exceptional
+          ? undefined
+          : Number(form.processDefinitionId),
+        processActivityId: form.exceptional
+          ? undefined
+          : form.processActivityId,
+        exceptionReason: form.exceptional ? form.exceptionReason : undefined,
         sourceReference: `commercial-plan:${selectedPlanId}@v${currentPlanVersion}`,
         assignedAgentKey: agent.agentKey!,
       },
@@ -93,6 +119,10 @@ export default function AgentWorkspacePage() {
             title: "",
             description: "",
             sourceReference: "",
+            processDefinitionId: "",
+            processActivityId: "",
+            exceptional: false,
+            exceptionReason: "",
           }),
       },
     );
@@ -211,6 +241,95 @@ export default function AgentWorkspacePage() {
                     </small>
                   ) : null}
                 </div>
+                <div>
+                  <label className="form-label" htmlFor="task-process">
+                    Processo publicado *
+                  </label>
+                  <select
+                    id="task-process"
+                    className="form-select"
+                    required={!form.exceptional}
+                    disabled={form.exceptional}
+                    value={form.processDefinitionId}
+                    onChange={(event) =>
+                      setForm({
+                        ...form,
+                        processDefinitionId: event.target.value,
+                        processActivityId: "",
+                      })
+                    }
+                  >
+                    <option value="">Selecione o processo</option>
+                    {publishedProcesses.map((process) => (
+                      <option key={process.id} value={process.id}>
+                        {process.name} · v{process.versionNumber}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="form-label" htmlFor="task-activity">
+                    Atividade do processo *
+                  </label>
+                  <select
+                    id="task-activity"
+                    className="form-select"
+                    required={!form.exceptional}
+                    disabled={form.exceptional || !selectedProcess}
+                    value={form.processActivityId}
+                    onChange={(event) =>
+                      setForm({ ...form, processActivityId: event.target.value })
+                    }
+                  >
+                    <option value="">Selecione a atividade</option>
+                    {availableActivities.map((activity) => (
+                      <option key={activity.id} value={activity.id}>
+                        {activity.label}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedProcess && availableActivities.length === 0 ? (
+                    <small className="text-danger">
+                      Este agente não é responsável por atividades desse processo.
+                    </small>
+                  ) : null}
+                </div>
+                <div className="form-check">
+                  <input
+                    id="task-exceptional"
+                    className="form-check-input"
+                    type="checkbox"
+                    checked={form.exceptional}
+                    onChange={(event) =>
+                      setForm({
+                        ...form,
+                        exceptional: event.target.checked,
+                        processDefinitionId: "",
+                        processActivityId: "",
+                      })
+                    }
+                  />
+                  <label className="form-check-label" htmlFor="task-exceptional">
+                    Atividade excepcional fora de processo
+                  </label>
+                </div>
+                {form.exceptional ? (
+                  <div>
+                    <label className="form-label" htmlFor="task-exception-reason">
+                      Justificativa da exceção *
+                    </label>
+                    <textarea
+                      id="task-exception-reason"
+                      className="form-control"
+                      maxLength={500}
+                      required
+                      value={form.exceptionReason}
+                      onChange={(event) =>
+                        setForm({ ...form, exceptionReason: event.target.value })
+                      }
+                    />
+                  </div>
+                ) : null}
                 <div>
                   <label className="form-label" htmlFor="requester-name">
                     Solicitante
@@ -344,6 +463,19 @@ export default function AgentWorkspacePage() {
                           {task.requestedByType === "AGENT"
                             ? "agente"
                             : "usuário"}
+                        </div>
+                        <div className="small mt-1">
+                          {task.exceptional ? (
+                            <span className="badge text-bg-warning">
+                              Exceção · {task.exceptionReason}
+                            </span>
+                          ) : task.processActivityName ? (
+                            <span>
+                              {task.processCode} v{task.processVersionNumber} · {task.processActivityName}
+                            </span>
+                          ) : (
+                            <span className="text-body-secondary">Tarefa legada sem processo</span>
+                          )}
                         </div>
                       </div>
                       <div className="text-end">

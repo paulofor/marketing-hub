@@ -1,11 +1,16 @@
 package com.marketinghub.agenttask;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agent.Agent;
+import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -28,33 +33,49 @@ public class AgentTaskService {
 
   private final AgentTaskRepository repository;
   private final AgentRepository agentRepository;
+  private final BusinessProcessDefinitionRepository processRepository;
+  private final ObjectMapper objectMapper;
   private final Clock clock;
 
   /** Configura persistência, catálogo e relógio operacional. */
   @Autowired
-  public AgentTaskService(AgentTaskRepository repository, AgentRepository agentRepository) {
-    this(repository, agentRepository, Clock.systemUTC());
+  public AgentTaskService(
+      AgentTaskRepository repository,
+      AgentRepository agentRepository,
+      BusinessProcessDefinitionRepository processRepository,
+      ObjectMapper objectMapper) {
+    this(repository, agentRepository, processRepository, objectMapper, Clock.systemUTC());
   }
 
   /** Permite testes determinísticos do histórico temporal. */
-  AgentTaskService(AgentTaskRepository repository, AgentRepository agentRepository, Clock clock) {
+  AgentTaskService(
+      AgentTaskRepository repository,
+      AgentRepository agentRepository,
+      BusinessProcessDefinitionRepository processRepository,
+      ObjectMapper objectMapper,
+      Clock clock) {
     this.repository = repository;
     this.agentRepository = agentRepository;
+    this.processRepository = processRepository;
+    this.objectMapper = objectMapper;
     this.clock = clock;
   }
 
   /** Abre uma solicitação humana na caixa do agente informado. */
   @Transactional
   public AgentTaskResponse createByHuman(CreateAgentTaskRequest request) {
+    Agent assignee = agent(request.assignedAgentKey());
+    ProcessBinding binding = validateProcessBinding(request, assignee);
     return save(
-        agent(request.assignedAgentKey()),
+        assignee,
         null,
         "HUMAN",
         request.requestedByName(),
         request.title(),
         request.description(),
         request.priority(),
-        request.sourceReference());
+        request.sourceReference(),
+        binding);
   }
 
   /** Abre uma delegação entre agentes preservando remetente e destinatário. */
@@ -70,7 +91,8 @@ public class AgentTaskService {
         request.title(),
         request.description(),
         request.priority(),
-        request.sourceReference());
+        request.sourceReference(),
+        null);
   }
 
   /**
@@ -196,7 +218,8 @@ public class AgentTaskService {
       String title,
       String description,
       String priority,
-      String sourceReference) {
+      String sourceReference,
+      ProcessBinding binding) {
     Instant now = Instant.now(clock);
     AgentTask task = new AgentTask();
     task.setAssignedAgent(assignee);
@@ -209,6 +232,11 @@ public class AgentTaskService {
     task.setStatus("PENDING");
     task.setSourceReference(trimToNull(sourceReference));
     task.setTaskKind("WORK");
+    task.setProcessDefinition(binding == null ? null : binding.definition());
+    task.setProcessActivityId(binding == null ? null : binding.activityId());
+    task.setProcessActivityName(binding == null ? null : binding.activityName());
+    task.setExceptional(binding != null && binding.exceptional());
+    task.setExceptionReason(binding == null ? null : binding.exceptionReason());
     task.setCreatedAt(now);
     task.setUpdatedAt(now);
     return response(repository.save(task));
@@ -240,6 +268,13 @@ public class AgentTaskService {
         task.getPriority(),
         task.getStatus(),
         task.getSourceReference(),
+        task.getProcessDefinition() == null ? null : task.getProcessDefinition().getId(),
+        task.getProcessDefinition() == null ? null : task.getProcessDefinition().getProcessCode(),
+        task.getProcessDefinition() == null ? null : task.getProcessDefinition().getVersionNumber(),
+        task.getProcessActivityId(),
+        task.getProcessActivityName(),
+        task.isExceptional(),
+        task.getExceptionReason(),
         task.getTaskKind(),
         task.getGateCode(),
         task.getGateStatus(),
@@ -261,4 +296,71 @@ public class AgentTaskService {
   private String trimToNull(String value) {
     return value == null || value.isBlank() ? null : value.trim();
   }
+
+  /** Valida a atividade publicada ou a justificativa obrigatória da tarefa excepcional. */
+  private ProcessBinding validateProcessBinding(CreateAgentTaskRequest request, Agent assignee) {
+    if (request.exceptional()) {
+      String reason = trimToNull(request.exceptionReason());
+      if (reason == null) {
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST, "Tarefa excepcional exige justificativa.");
+      }
+      if (request.processDefinitionId() != null
+          || trimToNull(request.processActivityId()) != null) {
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST, "Tarefa excepcional não pode apontar para atividade regular.");
+      }
+      return new ProcessBinding(null, null, "Atividade excepcional", true, reason);
+    }
+    if (request.processDefinitionId() == null || trimToNull(request.processActivityId()) == null) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Selecione um processo publicado e uma atividade.");
+    }
+    BusinessProcessDefinition definition =
+        processRepository
+            .findById(request.processDefinitionId())
+            .orElseThrow(
+                () ->
+                    new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Processo não encontrado."));
+    if (!"PUBLISHED".equals(definition.getStatus())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "A tarefa só pode usar uma versão publicada do processo.");
+    }
+    try {
+      JsonNode nodes = objectMapper.readTree(definition.getDiagramJson()).path("nodes");
+      for (JsonNode node : nodes) {
+        if (request.processActivityId().trim().equals(node.path("id").asText())
+            && "TASK".equals(node.path("type").asText())) {
+          String owner = node.path("owner").asText("").trim();
+          if (!owner.isEmpty()
+              && !owner
+                  .toLowerCase(Locale.ROOT)
+                  .contains(assignee.getNickname().toLowerCase(Locale.ROOT))
+              && !owner
+                  .toLowerCase(Locale.ROOT)
+                  .contains(assignee.getAgentKey().toLowerCase(Locale.ROOT))) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT, "A atividade selecionada pertence a outro responsável.");
+          }
+          return new ProcessBinding(
+              definition, node.path("id").asText(), node.path("label").asText(), false, null);
+        }
+      }
+    } catch (ResponseStatusException ex) {
+      throw ex;
+    } catch (Exception ex) {
+      throw new IllegalStateException("Não foi possível validar o processo da tarefa.", ex);
+    }
+    throw new ResponseStatusException(
+        HttpStatus.BAD_REQUEST, "Atividade do processo não encontrada.");
+  }
+
+  /** Mantém os dados validados do vínculo antes da persistência da tarefa. */
+  private record ProcessBinding(
+      BusinessProcessDefinition definition,
+      String activityId,
+      String activityName,
+      boolean exceptional,
+      String exceptionReason) {}
 }

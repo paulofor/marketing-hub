@@ -15,6 +15,13 @@ export interface AgentTask {
   priority: "LOW" | "NORMAL" | "HIGH" | "URGENT";
   status: AgentTaskStatus;
   sourceReference?: string;
+  processDefinitionId?: number;
+  processCode?: string;
+  processVersionNumber?: number;
+  processActivityId?: string;
+  processActivityName?: string;
+  exceptional: boolean;
+  exceptionReason?: string;
   taskKind: "WORK" | "GATE_DECISION";
   gateCode?: string;
   gateStatus?: "PENDING" | "APPROVED" | "REJECTED";
@@ -31,4 +38,8 @@ export interface CreateAgentTaskPayload {
   description: string;
   priority: AgentTask["priority"];
   sourceReference?: string;
+  processDefinitionId?: number;
+  processActivityId?: string;
+  exceptional: boolean;
+  exceptionReason?: string;
 }

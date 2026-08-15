@@ -1,6 +1,7 @@
 package com.marketinghub.agenttask;
 
 import com.marketinghub.agent.Agent;
+import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import jakarta.persistence.*;
 import java.time.Instant;
 import lombok.Getter;
@@ -44,6 +45,22 @@ public class AgentTask {
 
   @Column(name = "source_reference", length = 200)
   private String sourceReference;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "process_definition_id")
+  private BusinessProcessDefinition processDefinition;
+
+  @Column(name = "process_activity_id", length = 100)
+  private String processActivityId;
+
+  @Column(name = "process_activity_name", length = 160)
+  private String processActivityName;
+
+  @Column(name = "exceptional", nullable = false)
+  private boolean exceptional;
+
+  @Column(name = "exception_reason", length = 500)
+  private String exceptionReason;
 
   @Column(name = "task_kind", nullable = false, length = 30)
   private String taskKind;

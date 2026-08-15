@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-15-agent-task-business-process-1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent_task
+                ADD COLUMN process_definition_id BIGINT NULL AFTER source_reference,
+                ADD COLUMN process_activity_id VARCHAR(100) NULL AFTER process_definition_id,
+                ADD COLUMN process_activity_name VARCHAR(160) NULL AFTER process_activity_id,
+                ADD COLUMN exceptional TINYINT(1) NOT NULL DEFAULT 0 AFTER process_activity_name,
+                ADD COLUMN exception_reason VARCHAR(500) NULL AFTER exceptional,
+                ADD INDEX idx_agent_task_process_activity (process_definition_id, process_activity_id),
+                ADD CONSTRAINT fk_agent_task_process_definition
+                  FOREIGN KEY (process_definition_id) REFERENCES business_process_definition(id);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent_task
+                DROP FOREIGN KEY fk_agent_task_process_definition,
+                DROP INDEX idx_agent_task_process_activity,
+                DROP COLUMN exception_reason,
+                DROP COLUMN exceptional,
+                DROP COLUMN process_activity_name,
+                DROP COLUMN process_activity_id,
+                DROP COLUMN process_definition_id;

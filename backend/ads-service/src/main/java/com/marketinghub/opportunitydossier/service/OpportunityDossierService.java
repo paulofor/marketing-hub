@@ -101,7 +101,11 @@ public class OpportunityDossierService {
             "Pesquisar oportunidade: " + saved.getTitle(),
             "Produzir evidências auditáveis de demanda, lacunas, referência e vantagem por IA.",
             "HIGH",
-            "opportunity-dossier:" + saved.getId()));
+            "opportunity-dossier:" + saved.getId(),
+            null,
+            null,
+            true,
+            "Automação operacional do dossiê ainda não cadastrada como processo BPM."));
     return response(saved);
   }
 

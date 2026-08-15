@@ -11,4 +11,8 @@ public record CreateAgentTaskRequest(
     @NotBlank @Size(max = 160) String title,
     @NotBlank String description,
     @NotBlank @Pattern(regexp = "LOW|NORMAL|HIGH|URGENT") String priority,
-    @Size(max = 200) String sourceReference) {}
+    @Size(max = 200) String sourceReference,
+    Long processDefinitionId,
+    @Size(max = 100) String processActivityId,
+    boolean exceptional,
+    @Size(max = 500) String exceptionReason) {}

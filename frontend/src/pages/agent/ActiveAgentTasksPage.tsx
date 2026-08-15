@@ -58,6 +58,7 @@ export default function ActiveAgentTasksPage() {
                 <th>Prioridade</th>
                 <th>Situação / bloqueio</th>
                 <th>Origem</th>
+                <th>Processo / atividade</th>
                 <th>Atualizada</th>
               </tr>
             </thead>
@@ -95,6 +96,13 @@ export default function ActiveAgentTasksPage() {
                       : task.description}
                   </td>
                   <td>{task.requestedByName}</td>
+                  <td>
+                    {task.exceptional
+                      ? `Exceção: ${task.exceptionReason}`
+                      : task.processActivityName
+                        ? `${task.processCode} v${task.processVersionNumber} · ${task.processActivityName}`
+                        : "Legada"}
+                  </td>
                   <td className="text-nowrap small">
                     {new Date(task.updatedAt).toLocaleString("pt-BR")}
                   </td>

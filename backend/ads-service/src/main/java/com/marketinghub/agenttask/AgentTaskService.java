@@ -308,6 +308,40 @@ public class AgentTaskService {
     return response(repository.save(task));
   }
 
+  /** Migra uma tarefa excepcional ainda não recebida para uma atividade BPM publicada. */
+  @Transactional
+  public AgentTaskResponse bindProcess(Long taskId, BindAgentTaskProcessRequest request) {
+    AgentTask task = task(taskId);
+    if (!task.isExceptional() || task.getProcessDefinition() != null) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Somente tarefa excepcional sem processo pode ser vinculada.");
+    }
+    if (!"PENDING".equals(task.getStatus()) || task.getReceivedAt() != null) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Somente tarefa pendente e ainda não recebida pode ser vinculada.");
+    }
+    CreateAgentTaskRequest bindingRequest =
+        new CreateAgentTaskRequest(
+            task.getAssignedAgent().getAgentKey(),
+            task.getRequestedByName(),
+            task.getTitle(),
+            task.getDescription(),
+            task.getPriority(),
+            task.getSourceReference(),
+            request.processDefinitionId(),
+            request.processActivityId(),
+            false,
+            null);
+    ProcessBinding binding = validateProcessBinding(bindingRequest, task.getAssignedAgent());
+    task.setProcessDefinition(binding.definition());
+    task.setProcessActivityId(binding.activityId());
+    task.setProcessActivityName(binding.activityName());
+    task.setExceptional(false);
+    task.setExceptionReason(null);
+    task.setUpdatedAt(Instant.now(clock));
+    return response(repository.save(task));
+  }
+
   /** Persiste a tarefa normalizada com o primeiro estado auditável. */
   private AgentTaskResponse save(
       Agent assignee,

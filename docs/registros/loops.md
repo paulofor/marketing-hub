@@ -114,6 +114,13 @@
 - **Correção efetiva:** o contrato de Têmis passa a proibir referências e pós-produção inexistentes; o executor reforça imagem autossuficiente, sem tipografia gerada, com demonstração visual inequívoca do produto.
 - **Prevenção:** testes do Aprovador e do AI Worker exigem que proposta e prompt reflitam as capacidades reais da etapa de materialização.
 
+## LOOP-CRIATIVO-RESPONSES-SCHEMA-ROOT-ARRAY — geração falha antes da materialização
+
+- **Sintoma:** a solicitação de criativo entra em `PROCESSING` e falha imediatamente com HTTP 400 da Responses API, sem produzir uma nova peça.
+- **Causa-raiz confirmada em 2026-08-15:** o schema versionado `meta-ad-copy-schema.json` declarava um array na raiz; o formato estruturado da Responses API exige um objeto como raiz.
+- **Correção efetiva:** envolver a lista no objeto `{ "creatives": [...] }` e adaptar o parser ao mesmo contrato versionado.
+- **Prevenção:** teste de contrato exige raiz `object`, propriedade obrigatória `creatives` e desserialização do envelope antes de aceitar publicação do AI Worker.
+
 ## LOOP-APOLO-LEGACY-LUMA-RESELECTION — plano legado reintroduz provider reprovado
 
 - **Severidade:** ALTO.

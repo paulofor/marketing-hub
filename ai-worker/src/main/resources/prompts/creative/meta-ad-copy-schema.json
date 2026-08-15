@@ -1,16 +1,23 @@
 {
-  "type": "array",
-  "minItems": 1,
-  "maxItems": 20,
-  "items": {
-    "type": "object",
-    "additionalProperties": false,
-    "required": ["headline", "primaryText", "description", "cta"],
-    "properties": {
-      "headline": { "type": "string", "maxLength": 40 },
-      "primaryText": { "type": "string", "maxLength": 125 },
-      "description": { "type": "string", "maxLength": 25 },
-      "cta": { "type": "string", "maxLength": 32 }
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["creatives"],
+  "properties": {
+    "creatives": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["headline", "primaryText", "description", "cta"],
+        "properties": {
+          "headline": { "type": "string", "maxLength": 40 },
+          "primaryText": { "type": "string", "maxLength": 125 },
+          "description": { "type": "string", "maxLength": 25 },
+          "cta": { "type": "string", "maxLength": 32 }
+        }
+      }
     }
   }
 }

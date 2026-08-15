@@ -32,7 +32,6 @@ import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -329,14 +328,18 @@ public class CreativeChatGptClient {
     }
 
     private List<CreateCreativeRequest> parseContent(String content) throws Exception {
-        CreateCreativeRequest[] arr = objectMapper.readValue(content, CreateCreativeRequest[].class);
-        for (CreateCreativeRequest req : arr) {
+        CreativeResponse response = objectMapper.readValue(content, CreativeResponse.class);
+        List<CreateCreativeRequest> creatives = response.creatives() == null ? List.of() : response.creatives();
+        for (CreateCreativeRequest req : creatives) {
             if (req.getStatus() == null) {
                 req.setStatus(CreativeStatus.DRAFT);
             }
         }
-        return Arrays.asList(arr);
+        return creatives;
     }
+
+    /** Representa o objeto-raiz exigido pelo formato estruturado da Responses API. */
+    private record CreativeResponse(List<CreateCreativeRequest> creatives) {}
 
     private record RequestContext(Experiment experiment,
                                   String prompt,

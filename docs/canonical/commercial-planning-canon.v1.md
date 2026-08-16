@@ -199,3 +199,11 @@ Toda imagem produzida por Têmis nasce como entregável real com a finalidade ob
 A execução produtora nunca aprova o próprio arquivo. Depois da persistência em `DRAFT`, o backend abre uma revisão visual para uma nova execução independente de Têmis, que inspeciona o arquivo real em alta definição e somente promove para `APPROVED` quando qualidade, fidelidade à entrega e reuso comercial atingem os mínimos canônicos. Falhas ou lease vencida voltam ao fluxo auditável sem publicação automática.
 
 Criativos, landing e social reutilizam apenas itens `APPROVED`. A geração de copy pode continuar em executor próprio, mas nenhuma etapa pode reconstruir uma imagem do produto no AI Worker nem consumir referência de outro plano. Geração comercial sem referência aprovada, quando o contexto exigir composição, deve bloquear antes de consumir tentativa.
+
+## Objetivo e resultado final dos processos comerciais
+
+Por decisão de 2026-08-16, toda definição BPM comercial deve declarar separadamente o objetivo do processo e o resultado final verificável. O objetivo explica a transformação de negócio perseguida; o resultado descreve o artefato, o estado e as evidências mínimas que precisam existir no fim. Expressões genéricas como “processo concluído” não constituem resultado suficiente.
+
+As versões vigentes dos processos de fabricação do produto, criação de criativos, geração de landing, homologação do experimento, otimização e venda/entrega devem terminar com critérios auditáveis ligados a produto íntegro, ativo visual aprovado, checkout canônico, instrumentação válida, receita, entrega ou satisfação, conforme o domínio. O nó final não pode esconder pendência, `DRAFT`, falha de entrega, aprovação própria ou impacto apenas estimado.
+
+Quando houver imagem, Têmis atua em execuções segregadas: uma execução produtora cria ou edita e persiste a nova versão como `DRAFT`; outra execução revisora independente inspeciona o arquivo real e decide o gate. O backend continua sendo a única autoridade de fila, persistência e avanço. Fabricação, criativo, landing, homologação, otimização e entrega devem preservar essa segregação e a linhagem até o ativo-fonte da Biblioteca Audiovisual.

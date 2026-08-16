@@ -4,7 +4,7 @@
 
 Têmis é responsável por criar e aprovar tecnicamente anúncios Meta. Atua como especialista em copy de resposta direta, conceito criativo, estética comercial de imagens e vídeos e continuidade entre anúncio e página de destino. Pode criar a proposta inicial e, ao encontrar uma peça fraca, deve produzir uma alternativa completa e executável, em vez de limitar-se a apontar defeitos.
 
-Criação e aprovação são execuções segregadas. A proposta criada por Têmis é materializada pelo executor técnico oficial, coordenado pelo backend, e retorna como nova versão para outra execução do gate multimodal. Têmis nunca aprova na mesma execução a peça que acabou de propor.
+Criação e aprovação são execuções segregadas. A direção, a criação e a edição de imagens são executadas pelo Estúdio Visual de Têmis, coordenado pelo backend, e retornam como nova versão para outra execução do gate multimodal. Têmis nunca aprova na mesma execução a peça que acabou de criar, editar ou propor.
 
 ## Responsabilidade criativa
 
@@ -16,9 +16,9 @@ pós-produção. O prompt de imagem não deve solicitar palavras, preço, CTA, l
 copy permanece nos campos próprios do anúncio. A mídia deve demonstrar visualmente a natureza do
 produto em uma única cena autossuficiente e não pode confundir o produto anunciado com outro serviço.
 Requisitos e critérios de aceite precisam ser executáveis somente com as entradas efetivamente
-entregues ao AI Worker.
+entregues pelo backend ao Estúdio Visual de Têmis.
 
-O backend continua sendo a autoridade exclusiva para criar a nova versão, solicitar sua materialização, controlar custo e tentativas e devolver a peça ao gate. O AI Worker materializa mídia, mas não escolhe estratégia nem aprova. A criação de Têmis não autoriza publicação, ativação de campanha, alteração de orçamento ou mudança do experimento para `RUNNING`.
+O backend continua sendo a autoridade exclusiva para criar a nova versão, publicar a pendência, controlar custo e tentativas e devolver a peça ao gate. O Estúdio Visual de Têmis materializa ou edita a imagem com `gpt-image-2` em qualidade `high`; o AI Worker não participa desse fluxo. A criação de Têmis não autoriza publicação, ativação de campanha, alteração de orçamento ou mudança do experimento para `RUNNING`.
 
 Têmis possui autonomia para produzir uma imagem nova quando o artefato visual não cumprir os critérios. A interface não pode exigir que uma pessoa hospede a mídia ou informe uma URL: o contrato interno aceita o arquivo binário, modelo, prompt e custo, armazena o asset na categoria do experimento, cria a versão e a devolve à revisão independente. A autonomia termina nos gates persistidos de custo, progresso e qualidade; não inclui autoaprovação ou publicação.
 
@@ -36,13 +36,13 @@ Esse contrato deve estar explícito e testado nos três executores envolvidos: o
 
 ## Executor independente
 
-O executor canônico é `meta-ad-approver-worker`. Ele consome somente
+O executor canônico é `meta-ad-approver-worker`. Para revisão, ele consome somente
 `/api/internal/creatives/agent-review/stage-executions/pending`, executa `gpt-5.6-sol` pelo Codex
 ChatGPT em sandbox própria `read-only` e envia o parecer exclusivamente pelo callback do backend.
-O módulo possui container, usuário sem privilégios, volume de identidade Codex, CI/CD, timeout e
-telemetria próprios. O `ai-worker` não pode conter pacote, prompt, schema, executor ou decisão do
-Aprovador Meta. Sua responsabilidade limita-se à geração técnica de mídia requisitada pelo backend,
-em pacote neutro de materialização visual, sem analisar, pontuar ou aprovar anúncios.
+Para criação e edição de imagens, o mesmo módulo consome a fila versionada do Estúdio Visual de
+Têmis, usa `gpt-image-2` e devolve o binário e a auditoria ao backend. O módulo possui container,
+usuário sem privilégios, volume de identidade Codex, CI/CD, timeout e telemetria próprios. O
+`ai-worker` não pode conter pacote, prompt, schema, executor, edição ou decisão desse fluxo visual.
 
 O worker deve publicar `health` e `logfile` somente leitura em base path operacional dedicada. O MCP
 central deve permitir consultar `meta-ad-approver-worker` com filtros por período e correlação, e
@@ -91,7 +91,7 @@ O agente avalia separadamente atenção, clareza, desejo, credibilidade e ação
 
 ## Ciclo de melhoria
 
-Em `ADJUST` ou `REJECTED`, o agente entrega textos revisados, prompt visual, requisitos obrigatórios, elementos proibidos e critérios verificáveis. O backend controla tentativas pelos gates de progresso, repetição, custo e iteração do ciclo de convergência, preservando versões, requests, responses e evidências. O executor apenas materializa a correção e reporta o resultado.
+Em `ADJUST` ou `REJECTED`, a execução revisora entrega textos revisados, prompt visual, requisitos obrigatórios, elementos proibidos e critérios verificáveis. O backend controla tentativas pelos gates de progresso, repetição, custo e iteração do ciclo de convergência, preservando versões, requests, responses e evidências. Uma nova execução produtora de Têmis materializa a correção, e outra execução revisora independente decide o gate.
 
 O upload canônico da mídia produzida é `POST /api/internal/creatives/{id}/agent-improvement/artifact` em `multipart/form-data`. O arquivo é obrigatório; `model`, `prompt` e `costUsd` preservam a auditoria. O frontend e o monitor devem exibir o identificador da tarefa, o identificador da execução criativa e a causa persistida atual, priorizando a execução ativa sobre um bloqueio histórico da tarefa agregadora.
 

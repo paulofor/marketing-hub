@@ -35,20 +35,27 @@ public class MetaAdApproverScheduler {
     this.libraryReview = libraryReview;
   }
 
-  /** Processa um lote pequeno e isola falhas por criativo. */
+  /** Processa revisões e filas visuais em paralelo pela entrada operacional única de Têmis. */
   @Scheduled(cron = "30 */1 * * * *")
   public void processPending() {
-    List<MetaAdReviewJob> jobs = backend.claimPending(properties.getPendingLimit());
     try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+      executor.submit(
+          () ->
+              runSafely(
+                  "estúdio de imagens", imageStudio == null ? null : imageStudio::processPending));
+      executor.submit(
+          () ->
+              runSafely(
+                  "retrabalho de criativos",
+                  creativeImprovement == null ? null : creativeImprovement::processPending));
+      executor.submit(
+          () ->
+              runSafely(
+                  "revisão independente da biblioteca",
+                  libraryReview == null ? null : libraryReview::processPending));
+      List<MetaAdReviewJob> jobs = backend.claimPending(properties.getPendingLimit());
       jobs.forEach(job -> executor.submit(() -> process(job)));
     }
-    runSafely("estúdio de imagens", imageStudio == null ? null : imageStudio::processPending);
-    runSafely(
-        "retrabalho de criativos",
-        creativeImprovement == null ? null : creativeImprovement::processPending);
-    runSafely(
-        "revisão independente da biblioteca",
-        libraryReview == null ? null : libraryReview::processPending);
     log.debug("Ciclo do Aprovador Meta concluído");
   }
 

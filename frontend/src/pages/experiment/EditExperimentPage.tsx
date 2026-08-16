@@ -20,6 +20,7 @@ import { useAllFacebookPages } from "../../api/useAllFacebookPages";
 import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
+import { salesPageDestinationCopy } from "./experimentDestinationCopy";
 import { experimentStageLabels } from "./stageLabels";
 
 const productAiSubtypeLabels: Record<ProductAiSubtype, string> = {
@@ -953,7 +954,7 @@ export default function EditExperimentPage() {
                   </div>
                   <div>
                     <label className="form-label" htmlFor="followUpActionUrl">
-                      URL do checkout comercial
+                      {salesPageDestinationCopy.label}
                     </label>
                     <input
                       id="followUpActionUrl"
@@ -963,8 +964,7 @@ export default function EditExperimentPage() {
                       {...register("followUpActionUrl")}
                     />
                     <div className="form-text">
-                      Destino de pagamento usado para criar a página. Informar a
-                      URL não publica a página nem libera mídia.
+                      {salesPageDestinationCopy.help}
                     </div>
                   </div>
                   <div>

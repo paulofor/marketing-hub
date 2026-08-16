@@ -520,6 +520,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - nunca liberar campanha low-ticket apenas porque existe URL pública; a URL deve ser resultado auditável do GeraSalesPage v1 concluído.
   - templates globais do GeraSalesPage nunca podem fixar marca, URL, arquivo ou entrega de um experimento específico; conteúdo específico deve vir apenas do contrato persistido do experimento atual.
   - a revisão de qualidade deve bloquear contaminação cruzada entre produtos antes do pacote de publicação.
+- **Recorrência de orientação fechada em 2026-08-16:** a tela chamava `followUpActionUrl` de “URL do checkout comercial”, embora o gate e o Facebook Ads Worker exijam a página de venda auditada. Isso manteve o experimento #88 apontado para uma landing legada. A tela passa a orientar explicitamente para a página de venda e mantém o checkout apenas nos CTAs; teste de contrato protege essa separação.
 
 ## LOOP-FB-PUBLICATION — Publicação Facebook Ads
 
@@ -1279,6 +1280,8 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** o teste de arquitetura exige exatamente um scheduler no módulo e a lease do backend recupera produção ou revisão interrompida após 50 minutos.
 - **Falha de bootstrap observada em 2026-08-16:** ao centralizar os processors, foi mantido um segundo construtor reduzido apenas para testes; com dois construtores sem seleção explícita, o Spring tentou instanciar `MetaAdApproverScheduler` por um construtor padrão inexistente e Têmis não iniciou após o deploy.
 - **Correção da recorrência:** o scheduler passou a ter somente o construtor canônico completo, os testes usam esse mesmo contrato de produção e a arquitetura exige exatamente um construtor, impedindo que atalhos de teste voltem a tornar a injeção ambígua.
+- **Recorrência operacional em 2026-08-16:** a entrada única executava primeiro todo o lote bloqueante de revisão Codex e somente depois consultava Estúdio, retrabalho e revisão da Biblioteca. Um único anúncio lento manteve o job visual #1 parado mesmo com Têmis saudável. A entrada continua única, porém cada fila interna passa a executar em tarefa virtual independente; teste de contrato exige que o Estúdio avance antes da conclusão de uma revisão lenta.
+- **Falha de credencial observada em 2026-08-16:** o bind mount apontou para um caminho inexistente no host; o Docker criou um diretório no lugar do arquivo e o health permaneceu verde até a primeira chamada ao GPT Image 2. O deploy passa a materializar o segredo como arquivo regular de acesso restrito, validar tipo, leitura e conteúdo dentro do container e o actuator derruba o health quando modelo ou credencial visual não permitem produção.
 
 ## LOOP-MUSA-PROJETO-LEGADO-PLANO-OBRIGATORIO — perfil de Apolo não é salvo
 

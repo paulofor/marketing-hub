@@ -420,6 +420,15 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
       mutate: vi.fn(),
       isPending: false,
     }),
+    useCommercialPlanImageStudioJobs: () => ({
+      data: [],
+      isLoading: false,
+      isError: false,
+    }),
+    useCreateCommercialPlanImageStudioJob: () => ({
+      mutate: vi.fn(),
+      isPending: false,
+    }),
   };
 });
 
@@ -647,6 +656,15 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getByText("Direcionamento de verbas")).toBeTruthy();
     expect(screen.getByText("Detalhe abaixo do custo mensal")).toBeTruthy();
     expect(screen.getByText("Vídeos e criativos")).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: "Estúdio de Imagens de Têmis" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Solicitar criação" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByLabelText("Orientação de criação/edição *"),
+    ).toBeTruthy();
     expect(screen.getByText("Sem classificação")).toBeTruthy();
     expect(screen.getByText("Funil acumulado do mês")).toBeTruthy();
     expect(

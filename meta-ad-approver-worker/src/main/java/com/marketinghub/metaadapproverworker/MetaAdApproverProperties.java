@@ -16,6 +16,12 @@ public class MetaAdApproverProperties {
   private Duration backendConnectTimeout = Duration.ofSeconds(10);
   private Duration backendReadTimeout = Duration.ofSeconds(30);
   private int pendingLimit = 3;
+  private String openAiBaseUrl = "https://api.openai.com/v1";
+  private String openAiApiKey;
+  private String openAiApiKeyFile = "/run/secrets/openai_api_key";
+  private String imageModel = "gpt-image-2";
+  private Duration imageTimeout = Duration.ofMinutes(3);
+  private int imageStudioPendingLimit = 2;
 
   /** Retorna a URL do backend. */
   public String getBackendUrl() {
@@ -115,5 +121,65 @@ public class MetaAdApproverProperties {
   /** Define o limite do lote. */
   public void setPendingLimit(int value) {
     pendingLimit = Math.max(1, value);
+  }
+
+  /** Retorna a URL base oficial ou compatível da API OpenAI. */
+  public String getOpenAiBaseUrl() {
+    return openAiBaseUrl;
+  }
+
+  /** Define a URL base da API OpenAI. */
+  public void setOpenAiBaseUrl(String value) {
+    openAiBaseUrl = value;
+  }
+
+  /** Retorna a chave direta quando explicitamente configurada. */
+  public String getOpenAiApiKey() {
+    return openAiApiKey;
+  }
+
+  /** Define a chave direta da API OpenAI. */
+  public void setOpenAiApiKey(String value) {
+    openAiApiKey = value;
+  }
+
+  /** Retorna o arquivo seguro que contém a chave da OpenAI. */
+  public String getOpenAiApiKeyFile() {
+    return openAiApiKeyFile;
+  }
+
+  /** Define o arquivo seguro da chave da OpenAI. */
+  public void setOpenAiApiKeyFile(String value) {
+    openAiApiKeyFile = value;
+  }
+
+  /** Retorna o modelo visual obrigatório do estúdio. */
+  public String getImageModel() {
+    return imageModel;
+  }
+
+  /** Define o modelo visual do estúdio. */
+  public void setImageModel(String value) {
+    imageModel = value;
+  }
+
+  /** Retorna o limite de espera de uma criação ou edição. */
+  public Duration getImageTimeout() {
+    return imageTimeout;
+  }
+
+  /** Define o limite de espera de uma criação ou edição. */
+  public void setImageTimeout(Duration value) {
+    imageTimeout = value;
+  }
+
+  /** Retorna o lote máximo de produções e revisões visuais. */
+  public int getImageStudioPendingLimit() {
+    return imageStudioPendingLimit;
+  }
+
+  /** Define o lote máximo de produções e revisões visuais. */
+  public void setImageStudioPendingLimit(int value) {
+    imageStudioPendingLimit = Math.max(1, value);
   }
 }

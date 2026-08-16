@@ -5,9 +5,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 /** Responsabilidade: acionar periodicamente a materialização de revisões visuais. */
 @Component
+@ConditionalOnProperty(name = "creative-improvement.worker.enabled", havingValue = "true")
 public class CreativeImprovementScheduler {
     private static final Logger log = LoggerFactory.getLogger(CreativeImprovementScheduler.class);
     private final CreativeImprovementService service;

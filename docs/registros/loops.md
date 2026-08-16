@@ -1266,8 +1266,17 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Data:** 2026-08-15.
 - **Sintoma:** no experimento #88, Têmis pedia que o anúncio demonstrasse posts e stories finalizados, mas cada nova versão voltava a mostrar somente fotografias de unhas em dispositivos.
 - **Causa-raiz:** a geração inicial `PIPELINE_ADS` recebia a Biblioteca Audiovisual aprovada do plano comercial, enquanto a fila posterior de `agent-improvement` enviava apenas o prompt textual da revisão. O GPT Image 2 não recebia as provas reais já aprovadas e reconstruía o mesmo território genérico.
-- **Correção:** o backend inclui no contrato de retrabalho até três imagens `APPROVED` com finalidade `ADS` do plano que governa o experimento; o AI Worker encaminha essas referências ao GPT Image 2 pela entrada multimodal.
-- **Prevenção:** testes de contrato no backend e no AI Worker exigem que as URLs aprovadas atravessem a fila e cheguem à chamada multimodal de geração.
+- **Correção inicial:** o backend passou a incluir no contrato de retrabalho até três imagens `APPROVED` com finalidade `ADS` do plano que governa o experimento.
+- **Correção sistêmica em 2026-08-16:** a materialização visual saiu do AI Worker e passou ao Estúdio de Imagens de Têmis. Têmis cria ou edita com GPT Image 2, referências reais e composição híbrida; o backend persiste a nova versão como entregável `DRAFT`; uma execução separada inspeciona e aprova. O AI Worker limita-se à copy e ao reuso de arquivos já aprovados.
+- **Prevenção:** testes de contrato exigem que criação e edição ocorram em Têmis, que o AI Worker nunca chame seu cliente de imagem para criativos, que `DELIVERY` seja finalidade obrigatória, que referências pertençam ao plano e que produtor e revisor tenham execuções diferentes.
+
+## LOOP-TEMIS-IMAGE-STUDIO-MULTIPLE-SCHEDULERS — filas visuais concorrentes sem entrada única
+
+- **Data:** 2026-08-16.
+- **Sintoma:** a primeira implementação do estúdio adicionava schedulers separados para produção, retrabalho e revisão, violando o ponto operacional único de Têmis.
+- **Causa-raiz:** cada capacidade nova foi tratada como rotina autônoma, embora todas pertençam ao mesmo ciclo do agente e compartilhem limites, telemetria e backend.
+- **Correção sistêmica:** somente `MetaAdApproverScheduler` mantém `@Scheduled`; criação, edição, retrabalho e revisão são processors internos isolados, acionados pelo ciclo canônico e protegidos individualmente contra falhas.
+- **Prevenção:** o teste de arquitetura exige exatamente um scheduler no módulo e a lease do backend recupera produção ou revisão interrompida após 50 minutos.
 
 ## LOOP-MUSA-PROJETO-LEGADO-PLANO-OBRIGATORIO — perfil de Apolo não é salvo
 

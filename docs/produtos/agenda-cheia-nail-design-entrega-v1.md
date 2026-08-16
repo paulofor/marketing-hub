@@ -1,6 +1,6 @@
 # Agenda Cheia Nail Design — entrega personalizada v1
 
-**STATUS: IMPLEMENTADO**
+**STATUS: IMPLEMENTADO E HOMOLOGADO**
 
 ## Objetivo comercial
 
@@ -48,3 +48,28 @@ Texto sempre é aplicado pelo compositor, nunca incorporado pela geração livre
 O fluxo precisa passar pelo PR e deploy. Depois deve ser reprocessado com o pagamento de teste
 existente e validado ponta a ponta: briefing, geração, gate, e-mail, download, conteúdo do ZIP e
 leitura mobile dos posts e stories.
+
+## Homologação da fabricação do produto v2
+
+Em 2026-08-16, a fabricação do produto foi homologada no plano comercial 2 para o experimento 88
+com uma identidade sintética segregada (`Studio Aurora Nails`), usada somente como prova do produto.
+O conjunto canônico contém dez posts e dez stories, todos aprovados por uma execução independente
+de Têmis e liberados conjuntamente para `DELIVERY`, `LANDING`, `ADS` e `SOCIAL`.
+
+- Posts canônicos: assets `155`, `133`, `134`, `135`, `136`, `137`, `138`, `139`, `140` e `141`.
+- Stories canônicos: assets `156`, `143`, `159`, `147`, `149`, `150`, `151`, `152`, `153` e `154`.
+- O post `155` passou pela simulação comportamental de Psique na avaliação `13` com decisão
+  `APROVAR_TESTE`.
+- Os stories usam proporção nativa `9:16` em `1152 × 2048`; os posts usam a saída quadrada premium
+  do modelo e são renderizados em `1080 × 1080` pelo compositor da entrega.
+- As provas legadas `5` a `12` e as versões substituídas `131`, `132`, `142`, `144`, `145`,
+  `146`, `148`, `157` e `158` estão `RETIRED` e não podem voltar ao pacote, à landing ou aos
+  criativos. Assim, o plano mantém exatamente os vinte assets canônicos em `APPROVED`.
+- Os 118 rascunhos de lotes anteriores também foram aposentados depois da homologação; a biblioteca
+  ficou sem itens `DRAFT`, evitando seleção acidental e carregamento desnecessário na tela.
+- O pacote não visual foi validado com nota automática `100`, 24 arquivos e bloqueio de biblioteca
+  insuficiente, repetida ou fora do manifesto aprovado.
+
+Essa aprovação comprova fabricação e percepção da amostra, mas não representa venda, depoimento
+real ou autorização de mídia. A ativação do experimento continua dependente dos processos próprios
+de criativo, landing e homologação ponta a ponta.

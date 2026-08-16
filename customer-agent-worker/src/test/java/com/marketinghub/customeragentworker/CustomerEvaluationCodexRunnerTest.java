@@ -19,7 +19,7 @@ class CustomerEvaluationCodexRunnerTest {
   void shouldUseStructuredOutputContract() {
     CustomerEvaluationCodexRunner runner =
         new CustomerEvaluationCodexRunner(
-            "codex", "gpt-test", 40, "/workspace", new ObjectMapper(), null);
+            "codex", "gpt-test", 40, "/workspace", "read-only", new ObjectMapper(), null);
 
     List<String> command =
         runner.buildCommand(Path.of("/tmp/answer.json"), Path.of("/tmp/schema.json"));
@@ -33,6 +33,39 @@ class CustomerEvaluationCodexRunnerTest {
         .containsSubsequence("--model", "gpt-test");
   }
 
+  /** Permite execução sem sandbox interna somente quando o ambiente externo já está isolado. */
+  @Test
+  void shouldUseExternallySandboxedModeWhenExplicitlyConfigured() {
+    CustomerEvaluationCodexRunner runner =
+        new CustomerEvaluationCodexRunner(
+            "codex", "gpt-test", 40, "/workspace", "danger-full-access", new ObjectMapper(), null);
+
+    List<String> command =
+        runner.buildCommand(Path.of("/tmp/answer.json"), Path.of("/tmp/schema.json"));
+
+    assertThat(command)
+        .contains("--dangerously-bypass-approvals-and-sandbox")
+        .doesNotContain("--sandbox", "read-only");
+  }
+
+  /** Anexa a evidência visual validada ao Codex sem expor acesso interno. */
+  @Test
+  void shouldAttachVisualEvidenceToStructuredEvaluation() {
+    CustomerEvaluationCodexRunner runner =
+        new CustomerEvaluationCodexRunner(
+            "codex", "gpt-test", 40, "/workspace", "read-only", new ObjectMapper(), null);
+    Path image = Path.of("/tmp/approved-product.png");
+
+    List<String> command =
+        runner.buildCommand(
+            Path.of("/tmp/answer.json"),
+            Path.of("/tmp/schema.json"),
+            Path.of("/tmp/customer-agent.mjs"),
+            List.of(image));
+
+    assertThat(command).containsSubsequence("--image", image.toString());
+  }
+
   /** Confirma pesquisa pública auditável e navegador somente leitura no contrato da avaliação. */
   @Test
   void shouldRequireExternalSourcesAndBrowserInspection() throws Exception {
@@ -44,6 +77,11 @@ class CustomerEvaluationCodexRunnerTest {
 
     assertThat(prompt)
         .contains("node /app/browser/public-research.mjs")
+        .contains("evidência visual primária")
+        .contains("o CTA interno deve orientar as clientes dela")
+        .contains("não exija fotografia exclusiva da compradora")
+        .contains("CTA de captura de tela, salvar, compartilhar ou responder")
+        .contains("não reprove a peça isolada por não exibir todo o pacote")
         .contains("padrões sociais/econômicos")
         .contains("nunca como prova de venda");
     assertThat(schema).contains("sources", "collectionMethod", "learning");
@@ -78,7 +116,8 @@ class CustomerEvaluationCodexRunnerTest {
   void shouldRejectBehavioralProbabilitiesThatDoNotSumOneHundred() throws Exception {
     ObjectMapper mapper = new ObjectMapper();
     CustomerEvaluationCodexRunner runner =
-        new CustomerEvaluationCodexRunner("codex", "gpt-test", 40, "/workspace", mapper, null);
+        new CustomerEvaluationCodexRunner(
+            "codex", "gpt-test", 40, "/workspace", "read-only", mapper, null);
     var result =
         mapper.readTree(
             """

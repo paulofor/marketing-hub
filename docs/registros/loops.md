@@ -1269,6 +1269,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** a geração inicial `PIPELINE_ADS` recebia a Biblioteca Audiovisual aprovada do plano comercial, enquanto a fila posterior de `agent-improvement` enviava apenas o prompt textual da revisão. O GPT Image 2 não recebia as provas reais já aprovadas e reconstruía o mesmo território genérico.
 - **Correção inicial:** o backend passou a incluir no contrato de retrabalho até três imagens `APPROVED` com finalidade `ADS` do plano que governa o experimento.
 - **Correção sistêmica em 2026-08-16:** a materialização visual saiu do AI Worker e passou ao Estúdio de Imagens de Têmis. Têmis cria ou edita com GPT Image 2, referências reais e composição híbrida; o backend persiste a nova versão como entregável `DRAFT`; uma execução separada inspeciona e aprova. O AI Worker limita-se à copy e ao reuso de arquivos já aprovados.
+- **Recorrência fechada em 2026-08-16:** o Estúdio enviava simultaneamente o PNG no multipart e novamente dentro do `responseJson` como `b64_json`. Em dois jobs paralelos, as cópias do binário esgotaram o heap do backend durante a persistência. O executor agora remove o base64 do JSON auditável, registra hash e tamanho, usa callback visual com timeout dedicado e serializa as filas produtivas com lote padrão 1. Testes de contrato bloqueiam a volta da duplicação e da concorrência de uploads grandes.
 - **Prevenção:** testes de contrato exigem que criação e edição ocorram em Têmis, que o AI Worker nunca chame seu cliente de imagem para criativos, que `DELIVERY` seja finalidade obrigatória, que referências pertençam ao plano e que produtor e revisor tenham execuções diferentes.
 
 ## LOOP-TEMIS-IMAGE-STUDIO-MULTIPLE-SCHEDULERS — filas visuais concorrentes sem entrada única
@@ -1392,3 +1393,16 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Evidência real:** experimento 88, criativos 339 e 341, em 2026-08-15.
 - **Fechamento complementar no Aprovador Meta (2026-08-15):** a inspeção multimodal da landing assumia implicitamente o caminho de browsers da imagem Docker. Ao executar Têmis fora do container, o Chromium instalado na sandbox não era descoberto e o gate reprovava por ausência de evidência. O MCP agora aceita `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`, mantendo o fallback da imagem, e o teste de contrato preserva a propagação explícita do executável.
 - **Prevenção complementar no CI (2026-08-15):** a variável pode existir com valor vazio no runner; valor ausente ou em branco agora resolve explicitamente para `/usr/bin/chromium`, evitando que o teste passe localmente e bloqueie a publicação no workflow.
+## LOOP-IMAGE-STUDIO-LEGACY-BASE64-HEAP — histórico visual esgota o backend
+
+- **Data:** 2026-08-16.
+
+- **Sintoma:** abrir o Plano Comercial com histórico de imagens antigo esgota o heap do backend e
+  torna endpoints e health indisponíveis.
+- **Causa-raiz:** jobs legados guardaram o PNG completo em base64 no `response_json`; a listagem
+  administrativa materializava a entidade inteira mesmo sem devolver esse campo no DTO.
+- **Prevenção:** callbacks novos persistem somente hash/tamanho no response resumido; listagem e
+  deduplicação usam projeção explícita que não seleciona `request_json`, `response_json` nem
+  `usage_json`.
+- **Contrato:** o teste do Estúdio deve comprovar que o histórico usa a projeção leve; payload bruto
+  continua auditável somente nos fluxos específicos que realmente o necessitam.

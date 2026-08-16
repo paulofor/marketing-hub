@@ -2,8 +2,10 @@ package com.marketinghub.metaadapproverworker;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -38,6 +40,11 @@ public class TemisImageStudioOpenAiClient {
   private static final Logger log = LoggerFactory.getLogger(TemisImageStudioOpenAiClient.class);
   private static final int MAX_REFERENCE_BYTES = 20 * 1024 * 1024;
   private static final String PRODUCTION_PROMPT = "prompts/image-studio/v1/production.md";
+  private static final BigDecimal TOKENS_PER_MILLION = BigDecimal.valueOf(1_000_000);
+  private static final BigDecimal IMAGE_INPUT_USD_PER_MILLION = BigDecimal.valueOf(8);
+  private static final BigDecimal TEXT_INPUT_USD_PER_MILLION = BigDecimal.valueOf(5);
+  private static final BigDecimal IMAGE_OUTPUT_USD_PER_MILLION = BigDecimal.valueOf(30);
+  private static final BigDecimal TEXT_OUTPUT_USD_PER_MILLION = BigDecimal.valueOf(10);
   private final MetaAdApproverProperties properties;
   private final ObjectMapper objectMapper;
   private final HttpClient downloadClient;
@@ -78,12 +85,6 @@ public class TemisImageStudioOpenAiClient {
         references.size(),
         requestJson);
     String raw = references.isEmpty() ? generate(job, model) : edit(job, model, references);
-    log.info(
-        "Têmis recebeu response de imagem. jobId={} url={} responseBytes={} response={}",
-        job.jobId(),
-        normalizeBaseUrl(properties.getOpenAiBaseUrl()) + endpoint,
-        raw.getBytes(StandardCharsets.UTF_8).length,
-        responseAuditForLog(raw));
     try {
       JsonNode response = objectMapper.readTree(raw);
       String encoded = response.path("data").path(0).path("b64_json").asText();
@@ -92,7 +93,15 @@ public class TemisImageStudioOpenAiClient {
       }
       byte[] image = Base64.getDecoder().decode(encoded);
       String usage = response.has("usage") ? response.path("usage").toString() : null;
-      return new Result(image, model, requestJson, raw, usage, null);
+      BigDecimal costUsd = calculateCost(response.path("usage"));
+      String responseAudit = responseAudit(response, image);
+      log.info(
+          "Têmis recebeu response de imagem. jobId={} url={} responseBytes={} response={}",
+          job.jobId(),
+          normalizeBaseUrl(properties.getOpenAiBaseUrl()) + endpoint,
+          raw.getBytes(StandardCharsets.UTF_8).length,
+          responseAudit);
+      return new Result(image, model, requestJson, responseAudit, usage, costUsd);
     } catch (IOException | IllegalArgumentException ex) {
       throw new IllegalStateException("Resposta do GPT Image 2 inválida", ex);
     }
@@ -150,6 +159,11 @@ public class TemisImageStudioOpenAiClient {
       return new String(input.readAllBytes(), StandardCharsets.UTF_8)
           .replace("{{JOB_PROMPT}}", job.prompt().trim())
           .replace("{{PURPOSES}}", String.join(", ", job.purposes()))
+          .replace(
+              "{{FORMAT_CONSTRAINT}}",
+              job.label().toLowerCase(java.util.Locale.ROOT).contains("story")
+                  ? "- Formato Story obrigatório: componha todo o quadro nativo 9:16. Quando a referência tiver outra proporção, expanda organicamente fundo e fotografia e reorganize somente o necessário; nunca acrescente barras, áreas vazias ou preenchimento artificial."
+                  : "- Preserve a proporção e o enquadramento funcional solicitados pelo job.")
           .replace(
               "{{EDIT_CONSTRAINT}}",
               "EDIT".equalsIgnoreCase(job.operation())
@@ -221,11 +235,38 @@ public class TemisImageStudioOpenAiClient {
     }
   }
 
-  /** Remove somente o binário base64 do log e preserva metadados e usage da resposta. */
-  private String responseAuditForLog(String raw) {
-    return raw.replaceAll(
-        "\\\"b64_json\\\"\\s*:\\s*\\\"[^\\\"]*\\\"",
-        "\\\"b64_json\\\":\\\"[BINÁRIO PERSISTIDO SEPARADAMENTE]\\\"");
+  /** Separa o binário do JSON e preserva metadados, tamanho e hash para auditoria. */
+  private String responseAudit(JsonNode response, byte[] image) throws IOException {
+    JsonNode audit = response.deepCopy();
+    JsonNode firstImage = audit.path("data").path(0);
+    if (firstImage instanceof ObjectNode imageNode) {
+      imageNode.put("b64_json", "[BINÁRIO PERSISTIDO SEPARADAMENTE]");
+      imageNode.put("image_sha256", sha256(image));
+      imageNode.put("image_bytes", image.length);
+    }
+    return objectMapper.writeValueAsString(audit);
+  }
+
+  /** Calcula o custo auditável pelas modalidades detalhadas retornadas pelo GPT Image 2. */
+  private BigDecimal calculateCost(JsonNode usage) {
+    JsonNode input = usage.path("input_tokens_details");
+    JsonNode output = usage.path("output_tokens_details");
+    if (!input.isObject() || !output.isObject()) {
+      return null;
+    }
+    BigDecimal total =
+        tokenCost(input.path("image_tokens").asLong(0), IMAGE_INPUT_USD_PER_MILLION)
+            .add(tokenCost(input.path("text_tokens").asLong(0), TEXT_INPUT_USD_PER_MILLION))
+            .add(tokenCost(output.path("image_tokens").asLong(0), IMAGE_OUTPUT_USD_PER_MILLION))
+            .add(tokenCost(output.path("text_tokens").asLong(0), TEXT_OUTPUT_USD_PER_MILLION));
+    return total.setScale(8, RoundingMode.HALF_UP);
+  }
+
+  /** Converte tokens de uma modalidade em dólares pela tabela canônica por milhão. */
+  private BigDecimal tokenCost(long tokens, BigDecimal ratePerMillion) {
+    return BigDecimal.valueOf(Math.max(0, tokens))
+        .multiply(ratePerMillion)
+        .divide(TOKENS_PER_MILLION, 12, RoundingMode.HALF_UP);
   }
 
   /** Resolve a chave direta ou o arquivo secreto sem expor o valor. */

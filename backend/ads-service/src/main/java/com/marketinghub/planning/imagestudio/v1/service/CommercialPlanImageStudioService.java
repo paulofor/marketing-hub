@@ -17,6 +17,7 @@ import com.marketinghub.planning.imagestudio.v1.CommercialPlanImageStudioStatus;
 import com.marketinghub.planning.imagestudio.v1.CommercialPlanVisualAssetReviewStatus;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanImageStudioJobRepository;
+import com.marketinghub.repository.jpa.planning.CommercialPlanImageStudioJobSummary;
 import com.marketinghub.repository.jpa.planning.CommercialPlanVisualAssetRepository;
 import com.marketinghub.storage.AssetStorageService;
 import com.marketinghub.storage.AssetUploadCategory;
@@ -46,7 +47,7 @@ public class CommercialPlanImageStudioService {
   private static final Logger log = LoggerFactory.getLogger(CommercialPlanImageStudioService.class);
   private static final Set<String> PURPOSES = Set.of("DELIVERY", "LANDING", "ADS", "SOCIAL");
   private static final Set<String> SIZES =
-      Set.of("1024x1024", "1024x1536", "1536x1024", "2048x2048", "2048x1152");
+      Set.of("1024x1024", "1024x1536", "1536x1024", "2048x2048", "2048x1152", "1152x2048");
   private static final Set<String> QUALITIES = Set.of("medium", "high");
   private static final Duration EXECUTION_LEASE = Duration.ofMinutes(50);
   private final com.marketinghub.planning.service.CommercialPlanService planService;
@@ -87,6 +88,20 @@ public class CommercialPlanImageStudioService {
     List<String> purposes = normalizePurposes(request.purposes());
     CommercialPlanVisualAsset source = resolveSource(planId, operation, request.sourceAssetId());
     List<Long> references = normalizeReferences(planId, source, request.referenceAssetIds());
+    Optional<CommercialPlanImageStudioJobSummary> equivalent =
+        jobRepository
+            .findEquivalentSummaries(
+                planId,
+                source == null ? null : source.getId(),
+                operation,
+                label,
+                prompt,
+                CommercialPlanImageStudioStatus.FAILED)
+            .stream()
+            .findFirst();
+    if (equivalent.isPresent()) {
+      return dto(equivalent.get());
+    }
     CommercialPlanImageStudioJob job = new CommercialPlanImageStudioJob();
     job.setCommercialPlan(plan);
     job.setSourceVisualAsset(source);
@@ -105,9 +120,7 @@ public class CommercialPlanImageStudioService {
   @Transactional(readOnly = true)
   public List<CommercialPlanImageStudioJobDto> list(Long planId) {
     planService.getPlan(planId);
-    return jobRepository.findByCommercialPlanIdOrderByCreatedAtDesc(planId).stream()
-        .map(this::dto)
-        .toList();
+    return jobRepository.findSummariesByCommercialPlanId(planId).stream().map(this::dto).toList();
   }
 
   /** Reserva jobs para Têmis e entrega apenas referências autorizadas do próprio plano. */
@@ -505,6 +518,28 @@ public class CommercialPlanImageStudioService {
         job.getStartedAt(),
         job.getFinishedAt(),
         job.getCreatedAt());
+  }
+
+  /** Converte a projeção leve sem materializar payloads brutos antigos no heap. */
+  private CommercialPlanImageStudioJobDto dto(CommercialPlanImageStudioJobSummary job) {
+    return new CommercialPlanImageStudioJobDto(
+        job.id(),
+        job.commercialPlanId(),
+        job.sourceAssetId(),
+        job.resultAssetId(),
+        job.operation(),
+        job.status(),
+        job.label(),
+        job.prompt(),
+        readStrings(job.purposesJson()),
+        job.size(),
+        job.quality(),
+        job.model(),
+        job.costUsd(),
+        job.error(),
+        job.startedAt(),
+        job.finishedAt(),
+        job.createdAt());
   }
 
   /** Serializa dados estruturados preservando o contrato auditável. */

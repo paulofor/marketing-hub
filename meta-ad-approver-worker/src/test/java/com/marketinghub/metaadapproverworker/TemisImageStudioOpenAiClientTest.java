@@ -50,6 +50,10 @@ class TemisImageStudioOpenAiClientTest {
     assertThat(result.imageBytes()).isEqualTo("premium-image".getBytes(StandardCharsets.UTF_8));
     assertThat(result.model()).isEqualTo("gpt-image-2");
     assertThat(result.requestJson()).contains("DELIVERY", "gpt-image-2", "produza");
+    assertThat(result.responseJson())
+        .contains("BINÁRIO PERSISTIDO SEPARADAMENTE", "image_sha256", "image_bytes")
+        .doesNotContain(Base64.getEncoder().encodeToString(result.imageBytes()));
+    assertThat(result.costUsd()).isEqualByComparingTo("0.00034000");
     assertThat(result.usageJson()).contains("input_tokens");
     assertThat(requestContentType.get()).startsWith("application/json");
     assertThat(requestBody.get()).contains("\"model\":\"gpt-image-2\"");
@@ -69,6 +73,30 @@ class TemisImageStudioOpenAiClientTest {
         .contains("mantenha todas as regiões");
     assertThat(requestContentType.get()).startsWith("multipart/form-data");
     assertThat(requestBody.get()).contains("name=\"image[]\"").contains("reference-bytes");
+  }
+
+  /** Confirma que um Story ocupa o quadro 9:16 sem completar a referência com barras. */
+  @Test
+  void expandsStoryReferenceAcrossNativeCanvas() {
+    String referenceUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/reference.png";
+    TemisImageStudioJob story =
+        new TemisImageStudioJob(
+            22L,
+            2L,
+            "EDIT",
+            "preserve o conteúdo útil",
+            "Agenda Cheia - story-05",
+            List.of("DELIVERY", "LANDING", "ADS", "SOCIAL"),
+            "1152x2048",
+            "high",
+            List.of(referenceUrl),
+            "producer-22");
+
+    TemisImageStudioOpenAiClient.Result result = client().execute(story);
+
+    assertThat(result.requestJson())
+        .contains("componha todo o quadro nativo 9:16")
+        .contains("nunca acrescente barras, áreas vazias ou preenchimento artificial");
   }
 
   /** Cria o cliente exercitado contra a API de homologação. */
@@ -109,7 +137,7 @@ class TemisImageStudioOpenAiClientTest {
     byte[] response =
         ("{\"data\":[{\"b64_json\":\""
                 + encoded
-                + "\"}],\"usage\":{\"input_tokens\":12,\"output_tokens\":8}}")
+                + "\"}],\"usage\":{\"input_tokens\":12,\"input_tokens_details\":{\"image_tokens\":10,\"text_tokens\":2},\"output_tokens\":8,\"output_tokens_details\":{\"image_tokens\":8,\"text_tokens\":1}}}")
             .getBytes(StandardCharsets.UTF_8);
     exchange.getResponseHeaders().add("Content-Type", "application/json");
     exchange.sendResponseHeaders(200, response.length);

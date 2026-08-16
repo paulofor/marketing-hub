@@ -220,6 +220,7 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
               >
                 <option value="1024x1024">Quadrado</option>
                 <option value="1024x1536">Vertical</option>
+                <option value="1152x2048">Story 9:16 2K</option>
                 <option value="1536x1024">Horizontal</option>
                 <option value="2048x2048">Quadrado 2K</option>
                 <option value="2048x1152">Horizontal 2K</option>

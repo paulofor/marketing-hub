@@ -3,6 +3,10 @@ package com.marketinghub.customeragentworker;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
@@ -18,10 +23,14 @@ import org.springframework.stereotype.Component;
 /** Responsabilidade: executar e validar a resposta estruturada do Codex para uma avaliação. */
 @Component
 public class CustomerEvaluationCodexRunner {
+  private static final Pattern PUBLIC_URL =
+      Pattern.compile("https?://[^\\s]+", Pattern.CASE_INSENSITIVE);
+  private static final int MAX_IMAGE_BYTES = 10 * 1024 * 1024;
   private final String executable;
   private final String model;
   private final long timeoutMinutes;
   private final String repositoryPath;
+  private final String sandboxMode;
   private final ObjectMapper objectMapper;
   private final CodexTelemetryReporter telemetry;
 
@@ -31,12 +40,14 @@ public class CustomerEvaluationCodexRunner {
       @Value("${CUSTOMER_AGENT_MODEL:gpt-5.6-sol}") String model,
       @Value("${CUSTOMER_AGENT_EVALUATION_TIMEOUT_MINUTES:40}") long timeoutMinutes,
       @Value("${CUSTOMER_AGENT_REPOSITORY_PATH:/workspace}") String repositoryPath,
+      @Value("${CUSTOMER_AGENT_CODEX_SANDBOX:read-only}") String sandboxMode,
       ObjectMapper objectMapper,
       CodexTelemetryReporter telemetry) {
     this.executable = executable;
     this.model = model;
     this.timeoutMinutes = timeoutMinutes;
     this.repositoryPath = repositoryPath;
+    this.sandboxMode = sandboxMode;
     this.objectMapper = objectMapper;
     this.telemetry = telemetry;
   }
@@ -44,53 +55,65 @@ public class CustomerEvaluationCodexRunner {
   /** Executa a avaliação por stdin e retorna somente uma resposta compatível com o schema. */
   Map<String, String> run(long evaluationId, Map<?, ?> job)
       throws IOException, InterruptedException {
-    String baselinePrompt = buildBaselinePrompt(job);
-    JsonNode baseline =
-        execute(
-            evaluationId,
-            baselinePrompt,
-            "prompts/customer-agent/v1/evaluation-schema.json",
-            false);
-    if (!"BEHAVIORAL_V1".equals(String.valueOf(job.get("simulationVersion")))) {
-      return baselinePayload(baseline, baselinePrompt);
-    }
+    List<Path> visualEvidence = downloadVisualEvidence(String.valueOf(job.get("assetReference")));
+    try {
+      String baselinePrompt = buildBaselinePrompt(job);
+      JsonNode baseline =
+          execute(
+              evaluationId,
+              baselinePrompt,
+              "prompts/customer-agent/v1/evaluation-schema.json",
+              false,
+              visualEvidence);
+      if (!"BEHAVIORAL_V1".equals(String.valueOf(job.get("simulationVersion")))) {
+        return baselinePayload(baseline, baselinePrompt);
+      }
 
-    String behavioralPrompt = buildBehavioralPrompt(job, baseline);
-    JsonNode behavioral =
-        execute(
-            evaluationId,
-            behavioralPrompt,
-            "prompts/customer-agent/behavioral-v1/evaluation-schema.json",
-            true);
-    LinkedHashMap<String, String> payload = new LinkedHashMap<>();
-    payload.put("assessment", behavioral.get("assessment").asText());
-    payload.put("hypothesisJson", objectMapper.writeValueAsString(behavioral.get("hypotheses")));
-    payload.put(
-        "rawModelResponse",
-        "BASELINE_V1_REQUEST\n"
-            + baselinePrompt
-            + "\nBASELINE_V1_RESPONSE\n"
-            + objectMapper.writeValueAsString(baseline)
-            + "\nBEHAVIORAL_V1_REQUEST\n"
-            + behavioralPrompt
-            + "\nBEHAVIORAL_V1_RESPONSE\n"
-            + objectMapper.writeValueAsString(behavioral));
-    payload.put("model", model);
-    payload.put("baselineResultJson", objectMapper.writeValueAsString(baseline));
-    payload.put("behavioralResultJson", objectMapper.writeValueAsString(behavioral));
-    return payload;
+      String behavioralPrompt = buildBehavioralPrompt(job, baseline);
+      JsonNode behavioral =
+          execute(
+              evaluationId,
+              behavioralPrompt,
+              "prompts/customer-agent/behavioral-v1/evaluation-schema.json",
+              true,
+              visualEvidence);
+      LinkedHashMap<String, String> payload = new LinkedHashMap<>();
+      payload.put("assessment", behavioral.get("assessment").asText());
+      payload.put("hypothesisJson", objectMapper.writeValueAsString(behavioral.get("hypotheses")));
+      payload.put(
+          "rawModelResponse",
+          "BASELINE_V1_REQUEST\n"
+              + baselinePrompt
+              + "\nBASELINE_V1_RESPONSE\n"
+              + objectMapper.writeValueAsString(baseline)
+              + "\nBEHAVIORAL_V1_REQUEST\n"
+              + behavioralPrompt
+              + "\nBEHAVIORAL_V1_RESPONSE\n"
+              + objectMapper.writeValueAsString(behavioral));
+      payload.put("model", model);
+      payload.put("baselineResultJson", objectMapper.writeValueAsString(baseline));
+      payload.put("behavioralResultJson", objectMapper.writeValueAsString(behavioral));
+      return payload;
+    } finally {
+      for (Path image : visualEvidence) Files.deleteIfExists(image);
+    }
   }
 
   /** Executa uma fase versionada e valida o contrato correspondente. */
   private JsonNode execute(
-      long evaluationId, String prompt, String schemaResource, boolean behavioral)
+      long evaluationId,
+      String prompt,
+      String schemaResource,
+      boolean behavioral,
+      List<Path> visualEvidence)
       throws IOException, InterruptedException {
     Path answer = Files.createTempFile("customer-agent-evaluation-answer-", ".json");
     Path processLog = Files.createTempFile("customer-agent-evaluation-process-", ".log");
     Path schema = materialize(schemaResource, ".json");
     Path mcp = materialize("mcp/customer-agent.mjs", ".mjs");
     try {
-      ProcessBuilder builder = new ProcessBuilder(buildCommand(answer, schema, mcp));
+      ProcessBuilder builder =
+          new ProcessBuilder(buildCommand(answer, schema, mcp, visualEvidence));
       builder.redirectErrorStream(true).redirectOutput(processLog.toFile());
       builder
           .environment()
@@ -148,6 +171,11 @@ public class CustomerEvaluationCodexRunner {
 
   /** Monta o comando com o MCP exclusivo do Agente Cliente. */
   List<String> buildCommand(Path answer, Path schema, Path mcp) {
+    return buildCommand(answer, schema, mcp, List.of());
+  }
+
+  /** Monta o comando anexando somente evidências visuais já baixadas e validadas. */
+  List<String> buildCommand(Path answer, Path schema, Path mcp, List<Path> visualEvidence) {
     List<String> command =
         new ArrayList<>(
             List.of(
@@ -156,8 +184,6 @@ public class CustomerEvaluationCodexRunner {
                 "exec",
                 "-",
                 "--skip-git-repo-check",
-                "--sandbox",
-                "read-only",
                 "--cd",
                 repositoryPath,
                 "--output-schema",
@@ -170,17 +196,69 @@ public class CustomerEvaluationCodexRunner {
                 "mcp_servers.customer_agent.command=\"node\"",
                 "--config",
                 "mcp_servers.customer_agent.args=[\"" + mcp.toAbsolutePath() + "\"]"));
+    if ("danger-full-access".equals(sandboxMode)) {
+      command.add(4, "--dangerously-bypass-approvals-and-sandbox");
+    } else {
+      command.addAll(4, List.of("--sandbox", "read-only"));
+    }
     if (model != null && !model.isBlank()) {
       command.add("--model");
       command.add(model);
     }
+    for (Path image : visualEvidence) {
+      command.add("--image");
+      command.add(image.toAbsolutePath().toString());
+    }
     return command;
+  }
+
+  /** Baixa até três imagens públicas citadas no ativo para inspeção multimodal direta. */
+  List<Path> downloadVisualEvidence(String assetReference)
+      throws IOException, InterruptedException {
+    HttpClient client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+    List<Path> result = new ArrayList<>();
+    var matcher = PUBLIC_URL.matcher(assetReference == null ? "" : assetReference);
+    while (matcher.find() && result.size() < 3) {
+      URI uri = URI.create(matcher.group().replaceAll("[),.;]+$", ""));
+      if (!publicHost(uri.getHost())) continue;
+      HttpResponse<byte[]> response =
+          client.send(
+              HttpRequest.newBuilder(uri).timeout(java.time.Duration.ofSeconds(45)).GET().build(),
+              HttpResponse.BodyHandlers.ofByteArray());
+      String contentType = response.headers().firstValue("Content-Type").orElse("");
+      if (response.statusCode() < 200
+          || response.statusCode() >= 300
+          || !contentType.toLowerCase(java.util.Locale.ROOT).startsWith("image/")
+          || response.body().length == 0
+          || response.body().length > MAX_IMAGE_BYTES) continue;
+      String suffix =
+          contentType.toLowerCase(java.util.Locale.ROOT).contains("jpeg") ? ".jpg" : ".png";
+      Path image = Files.createTempFile("customer-agent-visual-evidence-", suffix);
+      Files.write(image, response.body());
+      result.add(image);
+    }
+    return result;
+  }
+
+  /** Bloqueia loopback e redes privadas para impedir que a evidência vire acesso interno. */
+  private boolean publicHost(String host) {
+    if (host == null) return false;
+    String value = host.toLowerCase(java.util.Locale.ROOT);
+    return !value.equals("localhost")
+        && !value.equals("0.0.0.0")
+        && !value.equals("::1")
+        && !value.startsWith("127.")
+        && !value.startsWith("10.")
+        && !value.startsWith("192.168.")
+        && !value.startsWith("169.254.")
+        && !value.matches("172\\.(1[6-9]|2\\d|3[01])\\..*");
   }
 
   /** Resolve o prompt versionado usando o contexto congelado e pesquisa pública auditável. */
   private String buildBaselinePrompt(Map<?, ?> job) throws IOException {
     return read("prompts/customer-agent/v1/evaluation.md")
         .replace("{{PERSONA_JSON}}", String.valueOf(job.get("persona")))
+        .replace("{{ASSET_TYPE}}", String.valueOf(job.get("assetType")))
         .replace("{{ASSET_REFERENCE}}", String.valueOf(job.get("assetReference")));
   }
 
@@ -188,6 +266,7 @@ public class CustomerEvaluationCodexRunner {
   private String buildBehavioralPrompt(Map<?, ?> job, JsonNode baseline) throws IOException {
     return read("prompts/customer-agent/behavioral-v1/evaluation.md")
         .replace("{{PERSONA_JSON}}", String.valueOf(job.get("persona")))
+        .replace("{{ASSET_TYPE}}", String.valueOf(job.get("assetType")))
         .replace("{{ASSET_REFERENCE}}", String.valueOf(job.get("assetReference")))
         .replace("{{BASELINE_JSON}}", objectMapper.writeValueAsString(baseline));
   }

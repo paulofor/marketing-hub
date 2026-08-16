@@ -27,6 +27,8 @@ class TemisContainerIsolationContractTest {
             "TEMIS_EXECUTION_ROLE: image-studio",
             "Dockerfile.image-studio",
             "OPENAI_API_KEY_FILE",
+            "TEMIS_IMAGE_BACKEND_READ_TIMEOUT",
+            "TEMIS_IMAGE_STUDIO_PENDING_LIMIT: ${TEMIS_IMAGE_STUDIO_PENDING_LIMIT:-1}",
             "mem_limit: 2g",
             "cpus: 2.0")
         .doesNotContain("CODEX_HOME", "MARKETING_HUB_REPOSITORY");
@@ -71,5 +73,21 @@ class TemisContainerIsolationContractTest {
     assertThat(prompt)
         .contains("{{JOB_PROMPT}}", "{{PURPOSES}}", "{{EDIT_CONSTRAINT}}")
         .contains("não redesenhe o produto");
+  }
+
+  /** Impede que o gate confunda o conteúdo entregue com a publicidade que vende o kit. */
+  @Test
+  void reviewsPersonalizedDeliverablesInTheirRealCustomerContext() throws Exception {
+    String prompt =
+        Files.readString(Path.of("src/main/resources/prompts/image-studio/v1/review.md"));
+
+    assertThat(prompt)
+        .contains(
+            "não exija que esse arquivo venda o kit Agenda Cheia",
+            "demonstração enquadrada do que o comprador recebe",
+            "homologação sintética",
+            "proporção nativa `9:16`",
+            "campo `issues` deve ser obrigatoriamente um array vazio",
+            "nunca como depoimento ou cliente real");
   }
 }

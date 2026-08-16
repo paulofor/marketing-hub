@@ -1,7 +1,6 @@
 package com.marketinghub.metaadapproverworker;
 
 import java.util.List;
-import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -24,14 +23,11 @@ public class TemisImageStudioScheduler {
     this.creativeImprovement = creativeImprovement;
   }
 
-  /** Executa as duas filas produtivas em paralelo e isola falhas entre capacidades. */
+  /** Executa as filas em série para impedir uploads simultâneos de artefatos grandes. */
   @Scheduled(cron = "30 */1 * * * *")
   public void processPending() {
-    try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-      executor.submit(() -> runSafely("estúdio de imagens", imageStudio::processPending));
-      executor.submit(
-          () -> runSafely("retrabalho de criativos", creativeImprovement::processPending));
-    }
+    runSafely("estúdio de imagens", imageStudio::processPending);
+    runSafely("retrabalho de criativos", creativeImprovement::processPending);
     log.debug("Ciclo produtivo do Estúdio Visual de Têmis concluído");
   }
 
@@ -64,12 +60,10 @@ class TemisImageStudioProcessor {
     this.properties = properties;
   }
 
-  /** Processa produções em paralelo limitado e isola falhas por job. */
+  /** Processa produções em série para preservar a capacidade do backend compartilhado. */
   public void processPending() {
     List<TemisImageStudioJob> jobs = backend.claimPending(properties.getImageStudioPendingLimit());
-    try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-      jobs.forEach(job -> executor.submit(() -> process(job)));
-    }
+    jobs.forEach(this::process);
     log.debug("Ciclo do Estúdio de Imagens de Têmis concluído");
   }
 

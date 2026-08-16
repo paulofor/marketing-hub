@@ -15,13 +15,14 @@ public class MetaAdApproverProperties {
   private Duration codexTimeout = Duration.ofMinutes(40);
   private Duration backendConnectTimeout = Duration.ofSeconds(10);
   private Duration backendReadTimeout = Duration.ofSeconds(30);
+  private Duration imageStudioBackendReadTimeout = Duration.ofMinutes(5);
   private int pendingLimit = 3;
   private String openAiBaseUrl = "https://api.openai.com/v1";
   private String openAiApiKey;
   private String openAiApiKeyFile = "/run/secrets/openai_api_key";
   private String imageModel = "gpt-image-2";
   private Duration imageTimeout = Duration.ofMinutes(3);
-  private int imageStudioPendingLimit = 2;
+  private int imageStudioPendingLimit = 1;
 
   /** Retorna a URL do backend. */
   public String getBackendUrl() {
@@ -111,6 +112,16 @@ public class MetaAdApproverProperties {
   /** Define o limite de espera por resposta do backend. */
   public void setBackendReadTimeout(Duration value) {
     backendReadTimeout = value;
+  }
+
+  /** Retorna o limite dedicado ao envio de artefatos visuais grandes. */
+  public Duration getImageStudioBackendReadTimeout() {
+    return imageStudioBackendReadTimeout;
+  }
+
+  /** Define o limite dedicado ao envio de artefatos visuais grandes. */
+  public void setImageStudioBackendReadTimeout(Duration value) {
+    imageStudioBackendReadTimeout = value;
   }
 
   /** Retorna o limite do lote. */

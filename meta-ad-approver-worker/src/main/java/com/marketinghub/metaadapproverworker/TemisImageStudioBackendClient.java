@@ -18,9 +18,10 @@ public class TemisImageStudioBackendClient {
   private static final Logger log = LoggerFactory.getLogger(TemisImageStudioBackendClient.class);
   private final RestClient client;
 
-  /** Inicializa a porta de backend com os mesmos limites operacionais de Têmis. */
+  /** Inicializa a porta com timeout próprio para persistir artefatos visuais grandes. */
   public TemisImageStudioBackendClient(MetaAdApproverProperties properties) {
-    client = BackendRestClientFactory.create(properties);
+    client =
+        BackendRestClientFactory.create(properties, properties.getImageStudioBackendReadTimeout());
   }
 
   /** Reserva produções de imagem pelo endpoint pending canônico. */

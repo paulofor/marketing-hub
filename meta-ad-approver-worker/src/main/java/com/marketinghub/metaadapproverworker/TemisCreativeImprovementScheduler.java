@@ -3,7 +3,6 @@ package com.marketinghub.metaadapproverworker;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -28,7 +27,8 @@ class TemisCreativeImprovementProcessor {
   /** Inicializa o consumidor usando o backend como fila e autoridade de avanço. */
   TemisCreativeImprovementProcessor(
       MetaAdApproverProperties properties, TemisImageStudioOpenAiClient openAi) {
-    this.backend = BackendRestClientFactory.create(properties);
+    this.backend =
+        BackendRestClientFactory.create(properties, properties.getImageStudioBackendReadTimeout());
     this.openAi = openAi;
     this.properties = properties;
   }
@@ -44,9 +44,7 @@ class TemisCreativeImprovementProcessor {
             .retrieve()
             .body(new ParameterizedTypeReference<>() {});
     List<Map<String, Object>> jobs = pending == null ? List.of() : pending;
-    try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-      jobs.forEach(job -> executor.submit(() -> process(job)));
-    }
+    jobs.forEach(this::process);
   }
 
   /** Edita o produto real, envia a nova versão e nunca aprova o próprio resultado. */

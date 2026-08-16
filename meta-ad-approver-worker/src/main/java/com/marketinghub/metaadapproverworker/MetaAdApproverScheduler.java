@@ -5,18 +5,21 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /** Responsabilidade: consumir a fila do Aprovador Meta em seu executor independente. */
 @Component
+@ConditionalOnProperty(
+    name = "meta-ad-approver.execution-role",
+    havingValue = "review",
+    matchIfMissing = true)
 public class MetaAdApproverScheduler {
   private static final Logger log = LoggerFactory.getLogger(MetaAdApproverScheduler.class);
   private final MetaAdApproverBackendClient backend;
   private final MetaAdApproverCodexRunner runner;
   private final MetaAdApproverProperties properties;
-  private final TemisImageStudioProcessor imageStudio;
-  private final TemisCreativeImprovementProcessor creativeImprovement;
   private final TemisLibraryImageReviewProcessor libraryReview;
 
   /** Configura o ciclo sem delegar avanço de gate ao worker. */
@@ -24,36 +27,29 @@ public class MetaAdApproverScheduler {
       MetaAdApproverBackendClient backend,
       MetaAdApproverCodexRunner runner,
       MetaAdApproverProperties properties,
-      TemisImageStudioProcessor imageStudio,
-      TemisCreativeImprovementProcessor creativeImprovement,
       TemisLibraryImageReviewProcessor libraryReview) {
     this.backend = backend;
     this.runner = runner;
     this.properties = properties;
-    this.imageStudio = imageStudio;
-    this.creativeImprovement = creativeImprovement;
     this.libraryReview = libraryReview;
   }
 
-  /** Processa revisões e filas visuais em paralelo pela entrada operacional única de Têmis. */
+  /** Processa somente revisões independentes, sem executar produção ou edição de imagens. */
   @Scheduled(cron = "30 */1 * * * *")
   public void processPending() {
     try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
       executor.submit(
           () ->
               runSafely(
-                  "estúdio de imagens", imageStudio == null ? null : imageStudio::processPending));
-      executor.submit(
-          () ->
-              runSafely(
-                  "retrabalho de criativos",
-                  creativeImprovement == null ? null : creativeImprovement::processPending));
-      executor.submit(
-          () ->
-              runSafely(
                   "revisão independente da biblioteca",
                   libraryReview == null ? null : libraryReview::processPending));
-      List<MetaAdReviewJob> jobs = backend.claimPending(properties.getPendingLimit());
+      List<MetaAdReviewJob> jobs;
+      try {
+        jobs = backend.claimPending(properties.getPendingLimit());
+      } catch (RuntimeException ex) {
+        log.error("Falha ao reservar revisões do Aprovador Meta. operation=claimPending", ex);
+        return;
+      }
       jobs.forEach(job -> executor.submit(() -> process(job)));
     }
     log.debug("Ciclo do Aprovador Meta concluído");

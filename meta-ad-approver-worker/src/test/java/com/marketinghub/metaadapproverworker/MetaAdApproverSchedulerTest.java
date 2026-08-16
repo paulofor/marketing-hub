@@ -1,6 +1,7 @@
 package com.marketinghub.metaadapproverworker;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -72,40 +73,45 @@ class MetaAdApproverSchedulerTest {
     verify(backend).report(342L, approved);
   }
 
-  /** Confirma que uma revisão Codex lenta não impede o Estúdio de consumir sua própria fila. */
+  /** Confirma que indisponibilidade da fila não escapa do ciclo nem afeta o health do revisor. */
   @Test
-  void processesVisualQueuesWithoutWaitingForCreativeReviews() throws Exception {
+  void containsFailureWhileClaimingReviewQueue() {
     MetaAdApproverBackendClient backend = mock(MetaAdApproverBackendClient.class);
     MetaAdApproverCodexRunner runner = mock(MetaAdApproverCodexRunner.class);
     MetaAdApproverProperties properties = new MetaAdApproverProperties();
-    TemisImageStudioProcessor imageStudio = mock(TemisImageStudioProcessor.class);
-    CountDownLatch studioProcessed = new CountDownLatch(1);
+    when(backend.claimPending(3)).thenThrow(new IllegalStateException("backend indisponível"));
+
+    assertThatCode(() -> scheduler(backend, runner, properties).processPending())
+        .doesNotThrowAnyException();
+  }
+
+  /** Confirma que a revisão da Biblioteca continua paralela ao gate dos criativos. */
+  @Test
+  void processesLibraryReviewWithoutWaitingForCreativeReviews() throws Exception {
+    MetaAdApproverBackendClient backend = mock(MetaAdApproverBackendClient.class);
+    MetaAdApproverCodexRunner runner = mock(MetaAdApproverCodexRunner.class);
+    MetaAdApproverProperties properties = new MetaAdApproverProperties();
+    TemisLibraryImageReviewProcessor libraryReview = mock(TemisLibraryImageReviewProcessor.class);
+    CountDownLatch libraryProcessed = new CountDownLatch(1);
 
     when(backend.claimPending(3)).thenReturn(List.of(job(506L)));
     org.mockito.Mockito.doAnswer(
             invocation -> {
-              studioProcessed.countDown();
+              libraryProcessed.countDown();
               return null;
             })
-        .when(imageStudio)
+        .when(libraryReview)
         .processPending();
     when(runner.run(any()))
         .thenAnswer(
             invocation -> {
-              assertThat(studioProcessed.await(2, TimeUnit.SECONDS)).isTrue();
+              assertThat(libraryProcessed.await(2, TimeUnit.SECONDS)).isTrue();
               return Map.of("decision", "APPROVED");
             });
 
-    new MetaAdApproverScheduler(
-            backend,
-            runner,
-            properties,
-            imageStudio,
-            mock(TemisCreativeImprovementProcessor.class),
-            mock(TemisLibraryImageReviewProcessor.class))
-        .processPending();
+    new MetaAdApproverScheduler(backend, runner, properties, libraryReview).processPending();
 
-    verify(imageStudio).processPending();
+    verify(libraryReview).processPending();
     verify(backend).report(506L, Map.of("decision", "APPROVED"));
   }
 
@@ -120,11 +126,6 @@ class MetaAdApproverSchedulerTest {
       MetaAdApproverCodexRunner runner,
       MetaAdApproverProperties properties) {
     return new MetaAdApproverScheduler(
-        backend,
-        runner,
-        properties,
-        mock(TemisImageStudioProcessor.class),
-        mock(TemisCreativeImprovementProcessor.class),
-        mock(TemisLibraryImageReviewProcessor.class));
+        backend, runner, properties, mock(TemisLibraryImageReviewProcessor.class));
   }
 }

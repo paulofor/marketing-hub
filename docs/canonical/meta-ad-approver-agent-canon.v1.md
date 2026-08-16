@@ -36,12 +36,15 @@ Esse contrato deve estar explícito e testado nos três executores envolvidos: o
 
 ## Executor independente
 
-O executor canônico é `meta-ad-approver-worker`. Para revisão, ele consome somente
+O executor canônico de revisão é `meta-ad-approver-worker`. Para revisão, ele consome somente
 `/api/internal/creatives/agent-review/stage-executions/pending`, executa `gpt-5.6-sol` pelo Codex
 ChatGPT em sandbox própria `read-only` e envia o parecer exclusivamente pelo callback do backend.
-Para criação e edição de imagens, o mesmo módulo consome a fila versionada do Estúdio Visual de
-Têmis, usa `gpt-image-2` e devolve o binário e a auditoria ao backend. O módulo possui container,
-usuário sem privilégios, volume de identidade Codex, CI/CD, timeout e telemetria próprios. O
+Para criação, edição e retrabalho de imagens, o container isolado `themis-image-studio` consome as
+filas versionadas do backend, usa `gpt-image-2` e devolve o binário e a auditoria ao backend. Os dois
+containers são construídos pelo mesmo módulo e workflow, mas ativam papéis Spring mutuamente
+exclusivos: o revisor não recebe a chave OpenAI e o Estúdio não recebe Codex, repositório, browser ou
+ferramentas de aprovação. Cada container possui usuário sem privilégios, filesystem somente leitura,
+health, log e limites operacionais próprios. O
 `ai-worker` não pode conter pacote, prompt, schema, executor, edição ou decisão desse fluxo visual.
 
 O worker deve publicar `health` e `logfile` somente leitura em base path operacional dedicada. O MCP

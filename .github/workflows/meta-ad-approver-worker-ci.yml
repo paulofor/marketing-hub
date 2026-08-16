@@ -61,7 +61,12 @@ jobs:
           node --check src/main/resources/mcp/temis-library-review.mjs
           npm run test:mcp-handshake
       - name: Validate container build
-        run: docker build -t marketing-hub/meta-ad-approver-worker:${{ github.sha }} meta-ad-approver-worker
+        run: |
+          docker build -t marketing-hub/meta-ad-approver-worker:${{ github.sha }} meta-ad-approver-worker
+          docker build -f meta-ad-approver-worker/Dockerfile.image-studio -t marketing-hub/themis-image-studio:${{ github.sha }} meta-ad-approver-worker
+          touch /tmp/openai_api_key
+          mkdir -p /tmp/codex-home
+          META_AD_APPROVER_CODEX_HOME=/tmp/codex-home OPENAI_API_KEY_HOST_FILE=/tmp/openai_api_key docker compose -f meta-ad-approver-worker/docker-compose.yml config --quiet
 
   deploy:
     name: Deploy independent agent
@@ -125,15 +130,19 @@ jobs:
                    OPENAI_API_KEY_HOST_FILE=/root/infra/openai-token/openai_api_key \
                    OPENAI_IMAGE_MODEL=gpt-image-2 \
                    META_AD_APPROVER_IMAGE=marketing-hub/meta-ad-approver-worker:${GITHUB_SHA} \
+                   THEMIS_IMAGE_STUDIO_IMAGE=marketing-hub/themis-image-studio:${GITHUB_SHA} \
             && cd '${REPOSITORY_DIR}/meta-ad-approver-worker' \
             && docker compose up -d --build --remove-orphans \
             && for attempt in \$(seq 1 24); do \
-                 status=\$(docker inspect --format '{{.State.Status}}' meta-ad-approver-worker-meta-ad-approver-worker-1 2>/dev/null || true); \
-                 [ \"\${status}\" = running ] \
+                 running=\$(docker compose ps --status running --services); \
+                 printf '%s\n' \"\${running}\" | grep -Fxq meta-ad-approver-worker \
+                   && printf '%s\n' \"\${running}\" | grep -Fxq themis-image-studio \
                    && curl -fsS http://127.0.0.1:8097/ops-meta-ad-approver-observability-v1/health | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' \
-                   && docker exec meta-ad-approver-worker-meta-ad-approver-worker-1 sh -c 'test -f /run/secrets/openai_api_key && test -r /run/secrets/openai_api_key && test -s /run/secrets/openai_api_key' \
-                   && docker exec meta-ad-approver-worker-meta-ad-approver-worker-1 node /app/agent-health-report.mjs \
+                   && curl -fsS http://127.0.0.1:8098/ops-meta-ad-approver-observability-v1/health | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' \
+                   && docker compose exec -T themis-image-studio sh -c 'test -f /run/secrets/openai_api_key && test -r /run/secrets/openai_api_key && test -s /run/secrets/openai_api_key' \
+                   && docker compose exec -T meta-ad-approver-worker sh -c 'test ! -e /run/secrets/openai_api_key' \
+                   && docker compose exec -T meta-ad-approver-worker node /app/agent-health-report.mjs \
                    && exit 0; \
                  sleep 5; \
                done; \
-            docker compose logs --tail=150 meta-ad-approver-worker; exit 1"
+            docker compose logs --tail=150 meta-ad-approver-worker themis-image-studio; exit 1"

@@ -22,6 +22,7 @@ services:
       MCP_LOG_CUSTOMER_AGENT_WORKER_PATH: ${MCP_LOG_CUSTOMER_AGENT_WORKER_PATH:-http://163.245.202.80:8099/ops-customer-agent-observability-v1/customer-agent-worker-log}
       MCP_LOG_FINANCIAL_AGENT_WORKER_PATH: ${MCP_LOG_FINANCIAL_AGENT_WORKER_PATH:-http://163.245.202.80:8095/ops-financial-agent-observability-v1/financial-agent-worker-log}
       MCP_LOG_META_AD_APPROVER_WORKER_PATH: ${MCP_LOG_META_AD_APPROVER_WORKER_PATH:-http://163.245.202.80:8097/ops-meta-ad-approver-observability-v1/logfile}
+      MCP_LOG_THEMIS_IMAGE_STUDIO_PATH: ${MCP_LOG_THEMIS_IMAGE_STUDIO_PATH:-http://163.245.202.80:8098/ops-meta-ad-approver-observability-v1/logfile}
       MCP_LOG_LANDING_GENERATOR_AGENT_WORKER_PATH: ${MCP_LOG_LANDING_GENERATOR_AGENT_WORKER_PATH:-http://163.245.202.80:8100/ops-landing-generator-observability-v1/logfile}
       MCP_LOG_PRODUCT_DISCOVERY_WORKER_PATH: ${MCP_LOG_PRODUCT_DISCOVERY_WORKER_PATH:-http://191.252.120.96:18081/ops-product-discovery-observability-v1/logfile}
       MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL: ${MCP_PRODUCT_DISCOVERY_WORKER_HEALTH_URL:-http://191.252.120.96:18081/healthz}

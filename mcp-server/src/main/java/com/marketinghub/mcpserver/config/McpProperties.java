@@ -51,6 +51,7 @@ public record McpProperties(
             @NotBlank String financialAgentWorkerPath,
             @NotBlank String experimentStrategistWorkerPath,
             @NotBlank String metaAdApproverWorkerPath,
+            @NotBlank String themisImageStudioPath,
             @Positive int fetchTimeoutSeconds,
             @Positive int fetchAttempts,
             @Positive int fetchRetryDelayMillis,

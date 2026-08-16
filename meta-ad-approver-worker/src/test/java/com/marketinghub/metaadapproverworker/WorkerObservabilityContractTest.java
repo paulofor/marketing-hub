@@ -23,6 +23,10 @@ class WorkerObservabilityContractTest {
     assertThat(application).contains("name: ${LOG_FILE_NAME:/tmp/meta-ad-approver-worker.log}");
     assertThat(workflow)
         .contains("http://127.0.0.1:8097/ops-meta-ad-approver-observability-v1/health");
+    assertThat(workflow).contains("Provision OpenAI credential for Têmis");
+    assertThat(workflow).contains("test -f /run/secrets/openai_api_key");
+    assertThat(workflow).contains("test -r /run/secrets/openai_api_key");
+    assertThat(workflow).contains("test -s /run/secrets/openai_api_key");
     assertThat(workflow).doesNotContain("http://127.0.0.1:8097/actuator/health");
   }
 }

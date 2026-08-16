@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
-/** Responsabilidade: validar o consumo concorrente e isolado do lote do Aprovador Meta. */
+/** Responsabilidade: validar concorrência e isolamento entre as filas da entrada única de Têmis. */
 class MetaAdApproverSchedulerTest {
   /** Confirma que três revisões reservadas começam juntas e recebem callback independente. */
   @Test
@@ -70,6 +70,43 @@ class MetaAdApproverSchedulerTest {
 
     verify(backend).fail(any(Long.class), any(IllegalStateException.class));
     verify(backend).report(342L, approved);
+  }
+
+  /** Confirma que uma revisão Codex lenta não impede o Estúdio de consumir sua própria fila. */
+  @Test
+  void processesVisualQueuesWithoutWaitingForCreativeReviews() throws Exception {
+    MetaAdApproverBackendClient backend = mock(MetaAdApproverBackendClient.class);
+    MetaAdApproverCodexRunner runner = mock(MetaAdApproverCodexRunner.class);
+    MetaAdApproverProperties properties = new MetaAdApproverProperties();
+    TemisImageStudioProcessor imageStudio = mock(TemisImageStudioProcessor.class);
+    CountDownLatch studioProcessed = new CountDownLatch(1);
+
+    when(backend.claimPending(3)).thenReturn(List.of(job(506L)));
+    org.mockito.Mockito.doAnswer(
+            invocation -> {
+              studioProcessed.countDown();
+              return null;
+            })
+        .when(imageStudio)
+        .processPending();
+    when(runner.run(any()))
+        .thenAnswer(
+            invocation -> {
+              assertThat(studioProcessed.await(2, TimeUnit.SECONDS)).isTrue();
+              return Map.of("decision", "APPROVED");
+            });
+
+    new MetaAdApproverScheduler(
+            backend,
+            runner,
+            properties,
+            imageStudio,
+            mock(TemisCreativeImprovementProcessor.class),
+            mock(TemisLibraryImageReviewProcessor.class))
+        .processPending();
+
+    verify(imageStudio).processPending();
+    verify(backend).report(506L, Map.of("decision", "APPROVED"));
   }
 
   /** Cria um job mínimo segregado pelo experimento homologado. */

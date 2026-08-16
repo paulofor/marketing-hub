@@ -68,6 +68,8 @@ jobs:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: test
+    env:
+      OPENAI_API_KEY: ${{ secrets.PDE_OPENAI_API_KEY != '' && secrets.PDE_OPENAI_API_KEY || secrets.OPENAI_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - name: Add agent VPS SSH key
@@ -79,6 +81,26 @@ jobs:
           set -euo pipefail
           mkdir -p ~/.ssh
           ssh-keyscan -T 30 -4 -p 22 -t rsa,ecdsa,ed25519 -H "${VPS_IP}" >> ~/.ssh/known_hosts
+      - name: Provision OpenAI credential for Têmis
+        run: |
+          set -euo pipefail
+          test "${#OPENAI_API_KEY}" -ge 20
+          printf '%s' "${OPENAI_API_KEY}" | ssh "${VPS_USER}@${VPS_IP}" '
+            set -euo pipefail
+            secret_dir=/root/infra/openai-token
+            secret_file="${secret_dir}/openai_api_key"
+            install -m 700 -d "${secret_dir}"
+            if [ -d "${secret_file}" ]; then
+              rmdir "${secret_file}"
+            fi
+            temporary_file="${secret_dir}/.openai_api_key.tmp"
+            umask 077
+            cat > "${temporary_file}"
+            test -s "${temporary_file}"
+            chown 10001:10001 "${temporary_file}"
+            chmod 600 "${temporary_file}"
+            mv "${temporary_file}" "${secret_file}"
+          '
       - name: Synchronize versioned repository
         run: |
           set -euo pipefail
@@ -90,6 +112,8 @@ jobs:
           set -euo pipefail
           ssh "${VPS_USER}@${VPS_IP}" "
             install -d -o 10001 -g 10001 /opt/growth-operator/agents/meta-ad-approver/codex-home \
+            && test -f /root/infra/openai-token/openai_api_key \
+            && test -s /root/infra/openai-token/openai_api_key \
             && docker builder prune -af \
             && docker image prune -af \
             && export META_AD_APPROVER_CODEX_HOME=/opt/growth-operator/agents/meta-ad-approver/codex-home \
@@ -107,6 +131,7 @@ jobs:
                  status=\$(docker inspect --format '{{.State.Status}}' meta-ad-approver-worker-meta-ad-approver-worker-1 2>/dev/null || true); \
                  [ \"\${status}\" = running ] \
                    && curl -fsS http://127.0.0.1:8097/ops-meta-ad-approver-observability-v1/health | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' \
+                   && docker exec meta-ad-approver-worker-meta-ad-approver-worker-1 sh -c 'test -f /run/secrets/openai_api_key && test -r /run/secrets/openai_api_key && test -s /run/secrets/openai_api_key' \
                    && docker exec meta-ad-approver-worker-meta-ad-approver-worker-1 node /app/agent-health-report.mjs \
                    && exit 0; \
                  sleep 5; \

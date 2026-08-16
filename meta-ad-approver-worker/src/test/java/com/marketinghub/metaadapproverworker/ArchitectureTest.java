@@ -46,4 +46,12 @@ class ArchitectureTest {
         .as("[ARQUITETURA] deve existir um único runner Codex canônico")
         .isEqualTo(1);
   }
+
+  /** Impede construtores concorrentes de tornarem ambígua a injeção do scheduler pelo Spring. */
+  @Test
+  void schedulerHasSingleCanonicalConstructor() {
+    assertThat(MetaAdApproverScheduler.class.getDeclaredConstructors())
+        .as("[ARQUITETURA] o scheduler deve possuir um único construtor canônico para o Spring")
+        .hasSize(1);
+  }
 }

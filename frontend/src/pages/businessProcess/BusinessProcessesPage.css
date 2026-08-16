@@ -3,6 +3,9 @@
   grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
   gap: 1rem;
 }
+.business-process-layout > * {
+  min-width: 0;
+}
 .business-process-list {
   align-self: start;
   position: sticky;
@@ -117,7 +120,7 @@
 }
 @media (max-width: 767px) {
   .business-process-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .business-process-list {
     position: static;

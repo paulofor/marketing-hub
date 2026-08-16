@@ -41,7 +41,7 @@ class MetaAdApproverSchedulerTest {
               return Map.of("decision", "APPROVED");
             });
 
-    new MetaAdApproverScheduler(backend, runner, properties).processPending();
+    scheduler(backend, runner, properties).processPending();
 
     assertThat(maximumActive).hasValue(3);
     verify(backend).report(278L, Map.of("decision", "APPROVED"));
@@ -66,7 +66,7 @@ class MetaAdApproverSchedulerTest {
         .when(backend)
         .report(339L, approved);
 
-    new MetaAdApproverScheduler(backend, runner, properties).processPending();
+    scheduler(backend, runner, properties).processPending();
 
     verify(backend).fail(any(Long.class), any(IllegalStateException.class));
     verify(backend).report(342L, approved);
@@ -75,5 +75,19 @@ class MetaAdApproverSchedulerTest {
   /** Cria um job mínimo segregado pelo experimento homologado. */
   private MetaAdReviewJob job(Long creativeId) {
     return new MetaAdReviewJob(creativeId, 88L, Map.of());
+  }
+
+  /** Monta o scheduler pelo mesmo construtor canônico usado pelo Spring em produção. */
+  private MetaAdApproverScheduler scheduler(
+      MetaAdApproverBackendClient backend,
+      MetaAdApproverCodexRunner runner,
+      MetaAdApproverProperties properties) {
+    return new MetaAdApproverScheduler(
+        backend,
+        runner,
+        properties,
+        mock(TemisImageStudioProcessor.class),
+        mock(TemisCreativeImprovementProcessor.class),
+        mock(TemisLibraryImageReviewProcessor.class));
   }
 }

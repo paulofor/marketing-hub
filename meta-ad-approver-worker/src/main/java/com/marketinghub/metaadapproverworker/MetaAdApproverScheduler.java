@@ -35,14 +35,6 @@ public class MetaAdApproverScheduler {
     this.libraryReview = libraryReview;
   }
 
-  /** Mantém construtor reduzido para testes isolados do gate histórico. */
-  MetaAdApproverScheduler(
-      MetaAdApproverBackendClient backend,
-      MetaAdApproverCodexRunner runner,
-      MetaAdApproverProperties properties) {
-    this(backend, runner, properties, null, null, null);
-  }
-
   /** Processa um lote pequeno e isola falhas por criativo. */
   @Scheduled(cron = "30 */1 * * * *")
   public void processPending() {

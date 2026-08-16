@@ -196,6 +196,10 @@ Têmis dirige e materializa imagens do produto com o modelo visual canônico, po
 
 Toda imagem produzida por Têmis nasce como entregável real com a finalidade obrigatória `DELIVERY` e pode acumular `LANDING`, `ADS` e `SOCIAL` no mesmo vínculo, sem duplicar o arquivo. Edição sempre cria nova versão e preserva a origem. Com referências, Têmis pode alterar cenário, enquadramento e contexto, mas não pode redesenhar o produto nem inventar conteúdo, texto, tela ou recurso inexistente.
 
+Em produto personalizado, o conteúdo `DELIVERY` promove o negócio da cliente final e não deve ser forçado a vender o próprio produto digital, repetir o preço da oferta ou funcionar isoladamente como anúncio do Marketing Hub. O reuso em `LANDING`, `ADS` e `SOCIAL` significa exibir o arquivo real e íntegro como prova enquadrada do que o comprador recebe. Persona, marca e contato sintéticos são aceitos apenas em homologação segregada explicitamente identificada; nunca podem ser apresentados como cliente ou depoimento real.
+
+Entregável que declare formato Story deve ser produzido e aprovado em proporção nativa `9:16`; o Estúdio usa `1152x2048` para a prova premium em 2K. Saída `2:3`, barras adicionadas ou corte posterior não substituem a homologação do Story real. Reenvio idêntico do comando da tela deve devolver o job vigente em vez de criar nova geração, custo ou artefato.
+
 A execução produtora nunca aprova o próprio arquivo. Depois da persistência em `DRAFT`, o backend abre uma revisão visual para uma nova execução independente de Têmis, que inspeciona o arquivo real em alta definição e somente promove para `APPROVED` quando qualidade, fidelidade à entrega e reuso comercial atingem os mínimos canônicos. Falhas ou lease vencida voltam ao fluxo auditável sem publicação automática.
 
 Criativos, landing e social reutilizam apenas itens `APPROVED`. A geração de copy pode continuar em executor próprio, mas nenhuma etapa pode reconstruir uma imagem do produto no AI Worker nem consumir referência de outro plano. Geração comercial sem referência aprovada, quando o contexto exigir composição, deve bloquear antes de consumir tentativa.

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -20,8 +21,10 @@ import com.marketinghub.planning.imagestudio.v1.CommercialPlanVisualAssetReviewS
 import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanImageStudioJobRepository;
+import com.marketinghub.repository.jpa.planning.CommercialPlanImageStudioJobSummary;
 import com.marketinghub.repository.jpa.planning.CommercialPlanVisualAssetRepository;
 import com.marketinghub.storage.AssetStorageService;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -54,6 +57,42 @@ class CommercialPlanImageStudioServiceTest {
             new ObjectMapper(),
             creativeService);
     when(jobRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+  }
+
+  /** Lista o histórico pela projeção que não materializa os payloads brutos legados. */
+  @Test
+  void listsJobsWithoutLoadingRawModelPayloads() {
+    CommercialPlan plan = plan(2L);
+    Instant createdAt = Instant.parse("2026-08-16T18:00:00Z");
+    when(planService.getPlan(2L)).thenReturn(plan);
+    when(jobRepository.findSummariesByCommercialPlanId(2L))
+        .thenReturn(
+            List.of(
+                new CommercialPlanImageStudioJobSummary(
+                    36L,
+                    2L,
+                    null,
+                    159L,
+                    CommercialPlanImageStudioOperation.CREATE,
+                    CommercialPlanImageStudioStatus.COMPLETED,
+                    "Story premium",
+                    "Produzir story 9:16",
+                    "[\"DELIVERY\",\"LANDING\",\"ADS\",\"SOCIAL\"]",
+                    "1152x2048",
+                    "high",
+                    "gpt-image-2",
+                    new BigDecimal("0.1836"),
+                    null,
+                    createdAt,
+                    createdAt,
+                    createdAt)));
+
+    CommercialPlanImageStudioJobDto result = service.list(2L).getFirst();
+
+    assertThat(result.id()).isEqualTo(36L);
+    assertThat(result.resultAssetId()).isEqualTo(159L);
+    assertThat(result.purposes()).containsExactly("DELIVERY", "LANDING", "ADS", "SOCIAL");
+    verify(jobRepository).findSummariesByCommercialPlanId(2L);
   }
 
   /** Exige que toda produção seja um entregável antes de poder servir landing ou anúncio. */
@@ -96,16 +135,70 @@ class CommercialPlanImageStudioServiceTest {
                 "Ajustar contraste sem redesenhar o produto",
                 "Post principal premium",
                 List.of("DELIVERY", "LANDING", "ADS", "SOCIAL"),
-                "2048x2048",
+                "1152x2048",
                 "high"));
 
     assertThat(result.operation()).isEqualTo(CommercialPlanImageStudioOperation.EDIT);
     assertThat(result.sourceAssetId()).isEqualTo(10L);
+    assertThat(result.size()).isEqualTo("1152x2048");
     assertThat(result.purposes()).containsExactly("DELIVERY", "LANDING", "ADS", "SOCIAL");
     ArgumentCaptor<CommercialPlanImageStudioJob> captor =
         ArgumentCaptor.forClass(CommercialPlanImageStudioJob.class);
     verify(jobRepository).save(captor.capture());
     assertThat(captor.getValue().getReferenceAssetIdsJson()).isEqualTo("[10]");
+  }
+
+  /** Reaproveita o job vigente quando a tela repete o mesmo comando após timeout. */
+  @Test
+  void returnsEquivalentJobWithoutDuplicatingCost() {
+    CommercialPlan plan = plan(2L);
+    CommercialPlanVisualAsset source = asset(10L, plan, "/assets/source.png");
+    Instant createdAt = Instant.parse("2026-08-16T17:00:00Z");
+    CommercialPlanImageStudioJobSummary existing =
+        new CommercialPlanImageStudioJobSummary(
+            21L,
+            2L,
+            10L,
+            null,
+            CommercialPlanImageStudioOperation.EDIT,
+            CommercialPlanImageStudioStatus.PENDING,
+            "Story premium",
+            "Preservar produto real",
+            "[\"DELIVERY\",\"LANDING\"]",
+            "1152x2048",
+            "high",
+            null,
+            null,
+            null,
+            null,
+            null,
+            createdAt);
+    when(planService.getPlan(2L)).thenReturn(plan);
+    when(visualAssetRepository.findById(10L)).thenReturn(Optional.of(source));
+    when(jobRepository.findEquivalentSummaries(
+            2L,
+            10L,
+            CommercialPlanImageStudioOperation.EDIT,
+            "Story premium",
+            "Preservar produto real",
+            CommercialPlanImageStudioStatus.FAILED))
+        .thenReturn(List.of(existing));
+
+    CommercialPlanImageStudioJobDto result =
+        service.create(
+            2L,
+            new CreateCommercialPlanImageStudioJobRequest(
+                CommercialPlanImageStudioOperation.EDIT,
+                10L,
+                List.of(),
+                "Preservar produto real",
+                "Story premium",
+                List.of("DELIVERY", "LANDING"),
+                "1152x2048",
+                "high"));
+
+    assertThat(result.id()).isEqualTo(21L);
+    verify(jobRepository, never()).save(any());
   }
 
   /** Bloqueia referência auxiliar ainda não aprovada para preservar a fonte premium do produto. */

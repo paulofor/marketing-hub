@@ -148,7 +148,15 @@ public class TemisLibraryImageReviewRunner {
             || result.path("deliveryFidelityScore").asInt(-1) < 90
             || result.path("commercialReuseScore").asInt(-1) < 85
             || !result.path("issues").isEmpty())) {
-      throw new IllegalArgumentException("Aprovação da Biblioteca abaixo do padrão premium");
+      throw new IllegalArgumentException(
+          "Aprovação da Biblioteca abaixo do padrão premium: qualityScore=%d,"
+                  .formatted(result.path("qualityScore").asInt(-1))
+              + " deliveryFidelityScore="
+              + result.path("deliveryFidelityScore").asInt(-1)
+              + " commercialReuseScore="
+              + result.path("commercialReuseScore").asInt(-1)
+              + " issues="
+              + result.path("issues"));
     }
   }
 

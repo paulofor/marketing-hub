@@ -2,15 +2,19 @@
 
 **STATUS: OPERACIONAL**  
 **FONTE CANÔNICA:** `docs/canonical/image-generation-model-canon.v1.md` e pipeline de entrega do `lead-portal-payments-service`
-**ÚLTIMA VALIDAÇÃO:** 2026-08-03
+**ÚLTIMA VALIDAÇÃO:** 2026-08-16
 
 ## Decisão
 
-O Agenda Cheia Nail Design usa uma biblioteca persistente de fotografias premium aprovadas antes da venda. O pedido não gera fotografias novas enquanto a compradora espera.
+O Agenda Cheia Nail Design usa duas camadas persistentes e aprovadas antes da venda: fotografias
+premium reutilizáveis, sem texto, e amostras completas do entregável fabricadas no Estúdio Visual de
+Têmis. O pedido não improvisa fotografias enquanto a compradora espera; ele usa o acervo aprovado e
+aplica a personalização contratada. Têmis pode criar ou editar novas versões fora da jornada da
+compradora, sempre com revisão independente antes de promovê-las.
 
 ## Fluxo comercial
 
-`briefing → seleção de 10 fotos aprovadas → personalização → gate → ZIP → e-mail`
+`Estúdio de Têmis → revisão independente → biblioteca aprovada → briefing → seleção de fotos → personalização → gate → ZIP → e-mail`
 
 São personalizados por compra: nome profissional, região, WhatsApp, serviços, cores, objetivo, textos, legendas, mensagens e composição. As fotografias podem ser reutilizadas em combinações diferentes porque a promessa comercial é personalização do kit, não exclusividade fotográfica.
 
@@ -31,16 +35,35 @@ São personalizados por compra: nome profissional, região, WhatsApp, serviços,
 - A geração acontece antes das vendas. Durante a compra, o pipeline apenas seleciona fotografias aprovadas e personaliza o material da cliente.
 - A troca para um modelo de ponta mais novo exige novo lote comparativo e aprovação visual humana mínima 9/10 antes de substituir fotografias do acervo comercial.
 
-## Operação versionada
+## Operação versionada da biblioteca fotográfica
 
-O script `lead-portal-payments-service/scripts/agenda-cheia-photo-library.sh` é o único fluxo de promoção do acervo:
+O script `lead-portal-payments-service/scripts/agenda-cheia-photo-library.sh` é o fluxo canônico de
+promoção do acervo fotográfico sem texto usado pelo compositor:
 
 1. `generate <batch-id>` cria dez candidatas limpas com GPT Image 2 e registra hashes/modelo em `candidate-manifest.tsv`.
 2. A revisão humana registra em TSV: arquivo, nota, presença de texto, decisão e observação.
 3. `promote <batch-id> <review.tsv>` aceita somente dez ou mais imagens com nota mínima 9, sem texto e com hash intacto.
 4. A promoção é atômica e arquiva o acervo anterior para rollback.
 
-É proibido copiar manualmente imagens para `approved` ou promover fotos que já contenham nome, telefone, cidade, marca ou CTA de uma cliente. Esses dados são aplicados somente pelo compositor depois da seleção.
+É proibido copiar manualmente imagens para `approved` ou promover fotos que já contenham nome,
+telefone, cidade, marca ou CTA de uma cliente. Esses dados são aplicados somente pelo compositor
+depois da seleção.
+
+## Operação versionada dos entregáveis visuais
+
+O container `themis-image-studio` é o único produtor de imagens completas na Biblioteca Audiovisual
+do plano comercial. Ele consome a fila `pending` do backend, cria ou edita a imagem, registra modelo,
+prompt, custo, hash, dimensões e linhagem e devolve o arquivo como `DRAFT`. Outra execução de Têmis,
+sem credencial do provedor visual, inspeciona o arquivo real e decide `APPROVED` ou `RETIRED`.
+
+Uma imagem completa aprovada pode acumular `DELIVERY`, `LANDING`, `ADS` e `SOCIAL`; os consumidores
+devem reutilizar o arquivo íntegro em vez de redesenharem o produto. Para personalização por compra,
+o compositor combina a fotografia aprovada com os dados do briefing. Novas artes-modelo entram em
+lote segregado de homologação e nunca substituem silenciosamente a coleção canônica.
+
+Para o experimento 88, a coleção homologada em 2026-08-16 é a lista de vinte assets registrada em
+`docs/produtos/agenda-cheia-nail-design-entrega-v1.md`. Somente esses assets e versões posteriores
+explicitamente homologadas podem representar o produto em criativos ou landing.
 
 ## Razão comercial
 

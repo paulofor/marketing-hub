@@ -6,5 +6,4 @@ import jakarta.validation.constraints.Size;
 
 /** Responsabilidade: validar o vínculo tardio de uma tarefa excepcional a uma atividade BPM. */
 public record BindAgentTaskProcessRequest(
-    @NotNull Long processDefinitionId,
-    @NotBlank @Size(max = 100) String processActivityId) {}
+    @NotNull Long processDefinitionId, @NotBlank @Size(max = 100) String processActivityId) {}

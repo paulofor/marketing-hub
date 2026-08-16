@@ -40,7 +40,7 @@ paths:
                   type: array
                   minItems: 1
                   items: { type: string, enum: [DELIVERY, LANDING, ADS, SOCIAL] }
-                size: { type: string, enum: [1024x1024, 1024x1536, 1536x1024, 2048x2048, 2048x1152] }
+                size: { type: string, enum: [1024x1024, 1024x1536, 1536x1024, 2048x2048, 2048x1152, 1152x2048] }
                 quality: { type: string, enum: [medium, high], default: high }
       responses:
         '200': { description: Job criado como PENDING; não aprova nem publica o resultado }

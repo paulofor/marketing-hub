@@ -7,4 +7,5 @@ CONTRATO DE PRODUÇÃO PREMIUM OBRIGATÓRIO:
 - Em composição híbrida, altere somente cenário, enquadramento e contexto; não redesenhe o produto.
 - Não invente textos, logotipos, telas, botões ou recursos que não existam nas referências.
 - Entregue uma única imagem final, nítida, premium e pronta para uso comercial e pelo cliente.
+{{FORMAT_CONSTRAINT}}
 {{EDIT_CONSTRAINT}}

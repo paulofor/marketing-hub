@@ -1751,6 +1751,7 @@ public class ExperimentService {
                                   "url", asset.getAssetUrl(),
                                   "label", asset.getLabel(),
                                   "purpose", asset.getPurpose(),
+                                  "purposesJson", Objects.toString(asset.getPurposesJson(), "[]"),
                                   "origin", asset.getOrigin(),
                                   "version", asset.getVersionNumber()))
                       .toList();
@@ -1758,6 +1759,11 @@ public class ExperimentService {
                 experiment.setCommercialPlanVisualAssets(
                     objectMapper.writeValueAsString(java.util.Map.of("assets", assets)));
               } catch (JsonProcessingException ex) {
+                log.error(
+                    "Falha ao montar Biblioteca Audiovisual aprovada. experimentId={} planId={}",
+                    experiment.getId(),
+                    plan.getId(),
+                    ex);
                 throw new IllegalStateException(
                     "Falha ao montar kit visual aprovado do experimento " + experiment.getId(), ex);
               }

@@ -2,7 +2,9 @@ package com.marketinghub.creative.dto;
 
 import java.util.List;
 
-/** Responsabilidade: transportar uma correção de anúncio decidida pelo agente ao AI Worker. */
+/**
+ * Responsabilidade: transportar uma correção de anúncio decidida pelo backend ao executor Têmis.
+ */
 public record CreativeImprovementPendingDto(
     Long creativeId,
     Long experimentId,

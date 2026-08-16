@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "inspected", "qualityScore", "deliveryFidelityScore", "commercialReuseScore", "summary", "issues"],
+  "properties": {
+    "decision": { "type": "string", "enum": ["APPROVED", "ADJUST"] },
+    "inspected": { "type": "boolean" },
+    "qualityScore": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "deliveryFidelityScore": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "commercialReuseScore": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "summary": { "type": "string", "minLength": 10 },
+    "issues": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 5 }
+    }
+  }
+}

@@ -26,25 +26,19 @@ public class CreativeGenerationService {
     private static final int META_DESCRIPTION_MAX_LENGTH = 25;
     private static final int META_CALL_TO_ACTION_MAX_LENGTH = 32;
     private static final String DEFAULT_META_CALL_TO_ACTION = "LEARN_MORE";
-    private static final String IMAGE_TEXT_GUARD =
-            "Nao incluir texto, letras, numeros, palavras, logotipos ou interface legivel dentro da imagem.";
-
     private final CreativeGenerationBackendClient backendClient;
     private final CreativeChatGptClient textClient;
-    private final CreativeImageClient imageClient;
     private final ExperimentPipelineAdExtractor pipelineExtractor;
     private final LandingCreativeReferenceSelector referenceSelector;
 
-    /** Inicializa o serviço com clientes de backend, texto, imagem e extração dos anúncios do pipeline. */
+    /** Inicializa o serviço com backend, texto e seleção dos entregáveis produzidos por Têmis. */
     public CreativeGenerationService(
             CreativeGenerationBackendClient backendClient,
             CreativeChatGptClient textClient,
-            CreativeImageClient imageClient,
             com.fasterxml.jackson.databind.ObjectMapper objectMapper
     ) {
         this.backendClient = backendClient;
         this.textClient = textClient;
-        this.imageClient = imageClient;
         this.pipelineExtractor = new ExperimentPipelineAdExtractor(objectMapper);
         this.referenceSelector = new LandingCreativeReferenceSelector(objectMapper);
     }
@@ -106,7 +100,8 @@ public class CreativeGenerationService {
             throw new IllegalStateException("Nenhum anúncio válido encontrado no pipeline do experimento");
         }
         List<CreateCreativeRequest> result = new ArrayList<>();
-        for (PipelineAdCreativePlan plan : plans) {
+        for (int index = 0; index < plans.size(); index++) {
+            PipelineAdCreativePlan plan = plans.get(index);
             CreateCreativeRequest request = new CreateCreativeRequest();
             request.setHeadline(plan.headline());
             request.setPrimaryText(plan.primaryText());
@@ -114,12 +109,7 @@ public class CreativeGenerationService {
             request.setCta(normalizeMetaCallToAction(plan.ctaText()));
             request.setFormat(StringUtils.hasText(plan.format()) ? plan.format() : "IMAGE");
             normalizeCreativeContract(request);
-            String prompt = buildPipelineImagePrompt(plan, request);
-            String imageUrl = imageClient.generateImage(
-                    prompt,
-                    referenceAudit(references),
-                    "pipeline-creative-experiment-" + dto.getId() + "-" + plan.variantKey(),
-                    references.stream().map(LandingCreativeReferenceSelector.ReferenceImage::url).toList());
+            String imageUrl = references.get(index % references.size()).url();
             requireGeneratedImageUrl(dto.getId(), request.getHeadline(), imageUrl);
             request.setImageUrl(imageUrl);
             request.setStatus(CreativeStatus.DRAFT);
@@ -128,20 +118,19 @@ public class CreativeGenerationService {
         return result;
     }
 
-    /** Monta a trilha auditável das referências escolhidas por Têmis para o asset gerado. */
-    private String referenceAudit(List<LandingCreativeReferenceSelector.ReferenceImage> references) {
-        return "Kit Visual aprovado selecionado por Têmis: " + references.stream()
-                .map(reference -> reference.url() + " [" + limitText(reference.label(), 120) + "]")
-                .toList();
-    }
-
     /** Gera criativos no modo padrão usando texto gerado por IA e imagem por prompt do experimento. */
     private List<CreateCreativeRequest> generateDefaultCreatives(ExperimentDto dto, int quantity) {
         Experiment experiment = toExperiment(dto);
+        List<LandingCreativeReferenceSelector.ReferenceImage> references =
+                referenceSelector.selectCommercialKit(dto.getCommercialPlanVisualAssets());
+        if (references.isEmpty()) {
+            throw new IllegalStateException(
+                    "Geração bloqueada: o plano não possui entregável visual APPROVED produzido por Têmis");
+        }
         List<CreateCreativeRequest> creatives = generateAndValidateCopy(experiment, quantity);
-        for (CreateCreativeRequest creative : creatives) {
-            String prompt = defaultImagePrompt(dto, creative);
-            String imageUrl = imageClient.generateImage(prompt, null, "creative-experiment-" + dto.getId());
+        for (int index = 0; index < creatives.size(); index++) {
+            CreateCreativeRequest creative = creatives.get(index);
+            String imageUrl = references.get(index % references.size()).url();
             requireGeneratedImageUrl(dto.getId(), creative.getHeadline(), imageUrl);
             creative.setImageUrl(imageUrl);
             if (creative.getStatus() == null) {
@@ -192,23 +181,6 @@ public class CreativeGenerationService {
         return experiment;
     }
 
-    /** Monta o prompt visual final de um criativo do pipeline. */
-    private String buildPipelineImagePrompt(PipelineAdCreativePlan plan, CreateCreativeRequest creative) {
-        StringBuilder prompt = new StringBuilder();
-        prompt.append("Crie uma imagem de anúncio para Meta Ads. ");
-        if (plan.imageBriefing() != null && StringUtils.hasText(plan.imageBriefing().visualBriefing())) {
-            prompt.append(plan.imageBriefing().visualBriefing()).append(' ');
-        }
-        if (StringUtils.hasText(creative.getPrimaryText())) {
-            prompt.append("Mensagem do anúncio: ").append(creative.getPrimaryText()).append(' ');
-        }
-        if (StringUtils.hasText(creative.getHeadline())) {
-            prompt.append("Headline: ").append(creative.getHeadline()).append(' ');
-        }
-        prompt.append(IMAGE_TEXT_GUARD);
-        return prompt.toString().trim();
-    }
-
     /** Valida todos os campos textuais publicáveis sem truncamento e normaliza apenas o CTA técnico. */
     private void normalizeCreativeContract(CreateCreativeRequest creative) {
         if (creative == null) {
@@ -238,17 +210,6 @@ public class CreativeGenerationService {
                 violations.add(field + " excede " + maxLength + " caracteres (atual: " + actualLength + ")");
             }
         }
-    }
-
-    /** Define o prompt de imagem do modo padrão usando prompt customizado ou texto do criativo. */
-    private String defaultImagePrompt(ExperimentDto dto, CreateCreativeRequest creative) {
-        if (StringUtils.hasText(dto.getCreativeImagePrompt())) {
-            return dto.getCreativeImagePrompt().trim() + " " + IMAGE_TEXT_GUARD;
-        }
-        return "Crie uma imagem de anúncio para Meta Ads alinhada ao texto: "
-                + creative.getPrimaryText()
-                + " "
-                + IMAGE_TEXT_GUARD;
     }
 
     /** Normaliza CTA livre para o tipo canônico aceito pelo backend e pela Meta. */

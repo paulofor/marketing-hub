@@ -1,0 +1,72 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-16-temis-image-studio-v1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: commercial_plan_image_studio_job
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE commercial_plan_image_studio_job (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                commercial_plan_id BIGINT NOT NULL,
+                source_visual_asset_id BIGINT NULL,
+                result_visual_asset_id BIGINT NULL,
+                source_creative_id BIGINT NULL,
+                operation VARCHAR(16) NOT NULL,
+                status VARCHAR(24) NOT NULL,
+                label VARCHAR(191) NOT NULL,
+                prompt LONGTEXT NOT NULL,
+                purposes_json LONGTEXT NOT NULL,
+                reference_asset_ids_json LONGTEXT NULL,
+                size VARCHAR(32) NOT NULL,
+                quality VARCHAR(16) NOT NULL,
+                model VARCHAR(100) NULL,
+                producer_execution_id VARCHAR(64) NULL,
+                request_json LONGTEXT NULL,
+                response_json LONGTEXT NULL,
+                usage_json LONGTEXT NULL,
+                cost_usd DECIMAL(12,4) NULL,
+                error LONGTEXT NULL,
+                started_at DATETIME NULL,
+                finished_at DATETIME NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                CONSTRAINT fk_commercial_plan_image_studio_plan
+                  FOREIGN KEY (commercial_plan_id) REFERENCES commercial_plan(id),
+                CONSTRAINT fk_commercial_plan_image_studio_source
+                  FOREIGN KEY (source_visual_asset_id) REFERENCES commercial_plan_visual_asset(id),
+                CONSTRAINT fk_commercial_plan_image_studio_result
+                  FOREIGN KEY (result_visual_asset_id) REFERENCES commercial_plan_visual_asset(id),
+                CONSTRAINT fk_commercial_plan_image_studio_creative
+                  FOREIGN KEY (source_creative_id) REFERENCES creative(id),
+                INDEX idx_commercial_plan_image_studio_queue (status, created_at),
+                INDEX idx_commercial_plan_image_studio_plan (commercial_plan_id, created_at)
+              );
+
+              ALTER TABLE commercial_plan_visual_asset
+                ADD COLUMN purposes_json LONGTEXT NULL AFTER purpose,
+                ADD COLUMN source_visual_asset_id BIGINT NULL AFTER status,
+                ADD COLUMN agent_review_status VARCHAR(24) NULL AFTER source_visual_asset_id,
+                ADD COLUMN agent_review_started_at DATETIME NULL AFTER agent_review_status,
+                ADD COLUMN reviewer_execution_id VARCHAR(64) NULL AFTER agent_review_started_at,
+                ADD COLUMN agent_review_json LONGTEXT NULL AFTER reviewer_execution_id,
+                ADD COLUMN agent_review_request_json LONGTEXT NULL AFTER agent_review_json,
+                ADD COLUMN agent_review_response_json LONGTEXT NULL AFTER agent_review_request_json,
+                ADD CONSTRAINT fk_commercial_plan_visual_asset_source
+                  FOREIGN KEY (source_visual_asset_id) REFERENCES commercial_plan_visual_asset(id),
+                ADD INDEX idx_commercial_plan_visual_asset_agent_review
+                  (agent_review_status, created_at);
+
+              UPDATE commercial_plan_visual_asset
+              SET purposes_json = CONCAT('["', purpose, '"]')
+              WHERE purposes_json IS NULL;

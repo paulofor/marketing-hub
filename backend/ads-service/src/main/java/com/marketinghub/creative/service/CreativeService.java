@@ -25,7 +25,12 @@ import com.marketinghub.media.AssetStatus;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.media.MediaProvider;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.planning.CommercialPlanVisualAsset;
 import com.marketinghub.planning.CommercialPlanVisualAssetStatus;
+import com.marketinghub.planning.imagestudio.v1.CommercialPlanImageStudioJob;
+import com.marketinghub.planning.imagestudio.v1.CommercialPlanImageStudioOperation;
+import com.marketinghub.planning.imagestudio.v1.CommercialPlanImageStudioStatus;
+import com.marketinghub.planning.imagestudio.v1.CommercialPlanVisualAssetReviewStatus;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.creative.label.AngleRepository;
@@ -34,6 +39,7 @@ import com.marketinghub.repository.jpa.creative.label.VisualProofRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.media.AssetRepository;
+import com.marketinghub.repository.jpa.planning.CommercialPlanImageStudioJobRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanVisualAssetRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
@@ -94,6 +100,7 @@ public class CreativeService {
   private final CreativeConvergenceService convergenceService;
   private final CommercialPlanRepository commercialPlanRepository;
   private final CommercialPlanVisualAssetRepository commercialPlanVisualAssetRepository;
+  private final CommercialPlanImageStudioJobRepository commercialPlanImageStudioJobRepository;
 
   /** Cria e persiste um criativo para o experimento informado. */
   @Transactional
@@ -585,7 +592,7 @@ public class CreativeService {
                         plan.getId(), CommercialPlanVisualAssetStatus.APPROVED)
                     .stream()
                     .filter(asset -> "IMAGE".equalsIgnoreCase(asset.getMediaType()))
-                    .filter(asset -> "ADS".equalsIgnoreCase(asset.getPurpose()))
+                    .filter(asset -> assetHasPurpose(asset, "ADS"))
                     .map(com.marketinghub.planning.CommercialPlanVisualAsset::getAssetUrl)
                     .filter(StringUtils::hasText)
                     .map(String::trim)
@@ -593,6 +600,35 @@ public class CreativeService {
                     .limit(3)
                     .toList())
         .orElseGet(List::of);
+  }
+
+  /** Reconhece finalidades múltiplas preservando compatibilidade com o campo singular legado. */
+  private boolean assetHasPurpose(CommercialPlanVisualAsset asset, String purpose) {
+    if (purpose.equalsIgnoreCase(asset.getPurpose())) {
+      return true;
+    }
+    if (!StringUtils.hasText(asset.getPurposesJson())) {
+      return false;
+    }
+    try {
+      JsonNode values = objectMapper.readTree(asset.getPurposesJson());
+      if (!values.isArray()) {
+        return false;
+      }
+      for (JsonNode value : values) {
+        if (purpose.equalsIgnoreCase(value.asText())) {
+          return true;
+        }
+      }
+      return false;
+    } catch (JsonProcessingException ex) {
+      log.error(
+          "Falha ao ler finalidades da Biblioteca Audiovisual. assetId={} purpose={}",
+          asset.getId(),
+          purpose,
+          ex);
+      return false;
+    }
   }
 
   /** Cria a nova versão gerada e a devolve automaticamente ao gate do agente. */
@@ -629,23 +665,166 @@ public class CreativeService {
   /** Recebe a arte produzida pelo agente, armazena-a e conclui a melhoria pela fila canônica. */
   @Transactional
   public Creative uploadAgentImprovementArtifact(
-      Long id, MultipartFile file, String model, String prompt, BigDecimal costUsd)
+      Long id,
+      MultipartFile file,
+      String model,
+      String producerExecutionId,
+      String requestJson,
+      String responseJson,
+      String usageJson,
+      BigDecimal costUsd)
       throws IOException {
     Creative source = repository.findByIdWithExperiment(id).orElseThrow();
+    com.marketinghub.planning.CommercialPlan plan =
+        commercialPlanRepository.findByExperimentReference(source.getExperiment().getId()).stream()
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "Retrabalho visual exige plano comercial vinculado ao experimento"));
+    if (!StringUtils.hasText(producerExecutionId)) {
+      throw new IllegalArgumentException("Retrabalho visual exige execução produtora de Têmis");
+    }
     AssetUploadResponse asset =
         uploadImage(
             file,
             model,
-            prompt,
+            requestJson,
             "Arte produzida autonomamente por Têmis para a correção do criativo #" + id,
             AssetUploadCategory.EXPERIMENT_CREATIVE,
             source.getExperiment().getId(),
             null,
             null);
-    return completeAgentImprovement(
-        id,
-        new CreativeImprovementResultRequest(
-            asset.url(), costUsd, prompt, "Arte binária enviada e persistida pelo backend", null));
+    assetRepository.findByUrlIn(List.of(asset.url())).stream()
+        .findFirst()
+        .ifPresent(
+            media -> {
+              media.setProvider(MediaProvider.OPENAI);
+              assetRepository.save(media);
+            });
+
+    CommercialPlanVisualAsset visual = new CommercialPlanVisualAsset();
+    visual.setCommercialPlan(plan);
+    visual.setSourceVisualAsset(findLibrarySource(plan.getId(), source.getImageUrl()));
+    visual.setAssetUrl(asset.url());
+    visual.setMediaType("IMAGE");
+    visual.setLabel("Entregável premium para o criativo #" + id);
+    visual.setPurpose("DELIVERY");
+    visual.setPurposesJson("[\"DELIVERY\",\"LANDING\",\"ADS\",\"SOCIAL\"]");
+    visual.setOrigin("Têmis / GPT Image 2");
+    visual.setRightsStatement("Gerado para uso comercial e entrega deste produto");
+    visual.setVersionNumber(
+        visual.getSourceVisualAsset() == null
+            ? 1
+            : Objects.requireNonNullElse(visual.getSourceVisualAsset().getVersionNumber(), 1) + 1);
+    visual.setStatus(CommercialPlanVisualAssetStatus.DRAFT);
+    visual.setAgentReviewStatus(CommercialPlanVisualAssetReviewStatus.PENDING);
+    commercialPlanVisualAssetRepository.save(visual);
+
+    CommercialPlanImageStudioJob job = new CommercialPlanImageStudioJob();
+    job.setCommercialPlan(plan);
+    job.setSourceVisualAsset(visual.getSourceVisualAsset());
+    job.setResultVisualAsset(visual);
+    job.setSourceCreative(source);
+    job.setOperation(CommercialPlanImageStudioOperation.EDIT);
+    job.setStatus(CommercialPlanImageStudioStatus.COMPLETED);
+    job.setLabel(visual.getLabel());
+    job.setPrompt(requestJson == null ? "Retrabalho visual de Têmis" : requestJson);
+    job.setPurposesJson(visual.getPurposesJson());
+    job.setReferenceAssetIdsJson("[]");
+    job.setSize("1024x1536");
+    job.setQuality("high");
+    job.setModel(model);
+    job.setProducerExecutionId(producerExecutionId.trim());
+    job.setRequestJson(requestJson);
+    job.setResponseJson(responseJson);
+    job.setUsageJson(usageJson);
+    job.setCostUsd(costUsd);
+    job.setStartedAt(Instant.now());
+    job.setFinishedAt(Instant.now());
+    commercialPlanImageStudioJobRepository.save(job);
+    repository.save(source);
+    return source;
+  }
+
+  /** Localiza na biblioteca a imagem original do criativo sem cruzar planos. */
+  private CommercialPlanVisualAsset findLibrarySource(Long planId, String imageUrl) {
+    if (!StringUtils.hasText(imageUrl)) {
+      return null;
+    }
+    return commercialPlanVisualAssetRepository
+        .findByCommercialPlanIdOrderByCreatedAtAsc(planId)
+        .stream()
+        .filter(asset -> imageUrl.trim().equals(asset.getAssetUrl()))
+        .findFirst()
+        .orElse(null);
+  }
+
+  /** Promove o arquivo aprovado pela Biblioteca para uma nova versão do criativo. */
+  @Transactional
+  public Creative completeApprovedLibraryImprovement(
+      Long creativeId,
+      CreativeImprovementResultRequest result,
+      String usageJson,
+      String reviewSummary) {
+    Creative revision = completeAgentImprovement(creativeId, result);
+    Creative source = repository.findByIdWithExperiment(creativeId).orElseThrow();
+    source.setAgentImprovementJson(
+        improvementAuditJson(
+            readImprovementJson(source), result, usageJson, reviewSummary, "APPROVED"));
+    repository.save(source);
+    return revision;
+  }
+
+  /** Devolve à fila o retrabalho reprovado com a causa visual acrescentada ao prompt. */
+  @Transactional
+  public void requeueLibraryImprovement(Long creativeId, String reviewSummary) {
+    Creative source = repository.findByIdWithExperiment(creativeId).orElseThrow();
+    JsonNode correction = readImprovementJson(source);
+    if (correction instanceof com.fasterxml.jackson.databind.node.ObjectNode object) {
+      String prior = correction.path("imagePrompt").asText("");
+      object.put(
+          "imagePrompt",
+          prior + "\n\nCORREÇÃO OBRIGATÓRIA DA REVISÃO DA BIBLIOTECA: " + reviewSummary);
+    }
+    source.setAgentImprovementJson(correction.toString());
+    source.setAgentImprovementStatus(CreativeImprovementStatus.PENDING);
+    source.setAgentImprovementError(reviewSummary);
+    repository.save(source);
+  }
+
+  /** Encerra uma revisão técnica falha sem liberar o criativo ou apagar o diagnóstico. */
+  @Transactional
+  public void failLibraryImprovement(Long creativeId, String error) {
+    Creative source = repository.findByIdWithExperiment(creativeId).orElseThrow();
+    source.setAgentImprovementStatus(CreativeImprovementStatus.FAILED);
+    source.setAgentImprovementError(
+        StringUtils.hasText(error) ? error.trim() : "Revisão da Biblioteca falhou tecnicamente");
+    repository.save(source);
+  }
+
+  /** Preserva o contrato funcional, interação bruta e parecer no mesmo ciclo. */
+  private String improvementAuditJson(
+      JsonNode correction,
+      CreativeImprovementResultRequest result,
+      String usageJson,
+      String reviewSummary,
+      String status) {
+    try {
+      Map<String, Object> audit = new LinkedHashMap<>();
+      audit.put("correction", correction);
+      audit.put("executor", "TEMIS");
+      audit.put("status", status);
+      audit.put("requestJson", Objects.toString(result.requestJson(), ""));
+      audit.put("responseJson", Objects.toString(result.responseJson(), ""));
+      audit.put("usageJson", Objects.toString(usageJson, ""));
+      audit.put("costUsd", result.costUsd());
+      audit.put("reviewSummary", Objects.toString(reviewSummary, ""));
+      return objectMapper.writeValueAsString(audit);
+    } catch (JsonProcessingException ex) {
+      log.error("Falha ao auditar melhoria visual de Têmis. status={}", status, ex);
+      throw new IllegalStateException("Falha ao auditar melhoria visual de Têmis", ex);
+    }
   }
 
   /** Agenda uma correção quando o parecer reprova e ainda existe orçamento de tentativas. */

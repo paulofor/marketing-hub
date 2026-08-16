@@ -30,6 +30,9 @@ import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.CommercialPlanStatus;
 import com.marketinghub.planning.CommercialPlanVisualAsset;
 import com.marketinghub.planning.CommercialPlanVisualAssetStatus;
+import com.marketinghub.planning.imagestudio.v1.CommercialPlanVisualAssetReviewStatus;
+import com.marketinghub.planning.imagestudio.v1.service.CommercialPlanImageStudioService;
+import com.marketinghub.planning.imagestudio.v1.service.CommercialPlanVisualAssetReviewResultRequest;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.creative.convergence.CreativeConvergenceCycleRepository;
 import com.marketinghub.repository.jpa.creative.convergence.CreativeConvergenceTaskRepository;
@@ -39,6 +42,7 @@ import com.marketinghub.repository.jpa.creative.label.VisualProofRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.video.ExperimentVideoAssetRepository;
 import com.marketinghub.repository.jpa.media.AssetRepository;
+import com.marketinghub.repository.jpa.planning.CommercialPlanImageStudioJobRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanVisualAssetRepository;
 import com.marketinghub.storage.AssetStorageService;
@@ -78,6 +82,8 @@ class CreativeServiceTest {
   @Autowired CreativeConvergenceTaskRepository convergenceTaskRepository;
   @Autowired CommercialPlanRepository commercialPlanRepository;
   @Autowired CommercialPlanVisualAssetRepository commercialPlanVisualAssetRepository;
+  @Autowired CommercialPlanImageStudioJobRepository commercialPlanImageStudioJobRepository;
+  @Autowired CommercialPlanImageStudioService imageStudioService;
 
   @Autowired CreativeService service;
 
@@ -89,6 +95,7 @@ class CreativeServiceTest {
   void setup() {
     experimentVideoAssetRepository.deleteAll();
     assetRepository.deleteAll();
+    commercialPlanImageStudioJobRepository.deleteAll();
     commercialPlanVisualAssetRepository.deleteAll();
     commercialPlanRepository.deleteAll();
   }
@@ -128,6 +135,79 @@ class CreativeServiceTest {
     assertThat(saved.getPrompt()).isEqualTo("prompt text");
     assertThat(saved.getPromptIntermediate()).isEqualTo("intermediate prompt");
     assertThat(saved.getPayload()).contains("EXPERIMENT_CREATIVE");
+  }
+
+  /** Garante que retrabalho de Têmis vira entregável revisado antes de originar novo criativo. */
+  @Test
+  void routesTemisImprovementThroughCommercialPlanLibrary() throws Exception {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment experiment = fixtures.createAndSaveExperiment(niche);
+    Creative source = fixtures.createAndSaveCreative(experiment);
+    source.setImageUrl("https://cdn.test/assets/original.png");
+    source.setAgentImprovementStatus(
+        com.marketinghub.creative.CreativeImprovementStatus.PROCESSING);
+    source.setAgentImprovementJson(
+        "{\"headline\":\"Agenda cheia\",\"primaryText\":\"Veja o kit\","
+            + "\"description\":\"Produto real\",\"cta\":\"LEARN_MORE\","
+            + "\"imagePrompt\":\"Mostrar posts e stories reais\","
+            + "\"mandatoryVisualRequirements\":[\"produto real\"],"
+            + "\"forbiddenVisualElements\":[],"
+            + "\"visualAcceptanceCriteria\":[\"kit inequívoco\"]}");
+    repository.saveAndFlush(source);
+    long creativeCountBeforeArtifact = repository.count();
+    CommercialPlan plan = new CommercialPlan();
+    plan.setName("Agenda Cheia");
+    plan.setStatus(CommercialPlanStatus.IN_PROGRESS);
+    plan.setExperiment(experiment);
+    commercialPlanRepository.saveAndFlush(plan);
+    MultipartFile file =
+        new org.springframework.mock.web.MockMultipartFile(
+            "file", "temis.png", "image/png", new byte[] {1, 2, 3});
+    when(assetStorageService.store(any(), any()))
+        .thenReturn(
+            new AssetStorageService.StoredObject(
+                "commercial-plans/deliverables/temis.png",
+                "https://cdn.test/assets/temis.png",
+                file.getSize(),
+                "image/png",
+                true));
+
+    Creative waiting =
+        service.uploadAgentImprovementArtifact(
+            source.getId(),
+            file,
+            "gpt-image-2",
+            "producer-88",
+            "{\"prompt\":\"produto real\"}",
+            "{\"data\":[{\"b64_json\":\"auditado\"}]}",
+            "{\"input_tokens\":12}",
+            new java.math.BigDecimal("0.15"));
+
+    assertThat(waiting.getId()).isEqualTo(source.getId());
+    assertThat(repository.count()).isEqualTo(creativeCountBeforeArtifact);
+    CommercialPlanVisualAsset draft = commercialPlanVisualAssetRepository.findAll().getFirst();
+    assertThat(draft.getStatus()).isEqualTo(CommercialPlanVisualAssetStatus.DRAFT);
+    assertThat(draft.getPurposesJson()).contains("DELIVERY", "LANDING", "ADS", "SOCIAL");
+    var job = commercialPlanImageStudioJobRepository.findAll().getFirst();
+    assertThat(job.getSourceCreative().getId()).isEqualTo(source.getId());
+    assertThat(job.getProducerExecutionId()).isEqualTo("producer-88");
+
+    imageStudioService.review(
+        draft.getId(),
+        new CommercialPlanVisualAssetReviewResultRequest(
+            CommercialPlanVisualAssetReviewStatus.APPROVED,
+            "reviewer-89",
+            "Entrega fiel, premium e pronta para reuso",
+            "{\"assetId\":" + draft.getId() + "}",
+            "{\"decision\":\"APPROVED\"}",
+            null));
+
+    assertThat(
+            commercialPlanVisualAssetRepository.findById(draft.getId()).orElseThrow().getStatus())
+        .isEqualTo(CommercialPlanVisualAssetStatus.APPROVED);
+    assertThat(repository.count()).isEqualTo(creativeCountBeforeArtifact + 1);
+    assertThat(repository.findById(source.getId()).orElseThrow().getAgentImprovementStatus())
+        .isEqualTo(com.marketinghub.creative.CreativeImprovementStatus.COMPLETED);
   }
 
   /** Recupera revisão órfã, preserva auditoria e entrega um novo lease ao worker. */

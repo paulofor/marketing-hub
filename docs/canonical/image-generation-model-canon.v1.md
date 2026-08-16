@@ -1,7 +1,7 @@
 # Modelo canônico para geração de imagens
 
 > STATUS: CANÔNICO
-> ÚLTIMA VALIDAÇÃO: 2026-08-09
+> ÚLTIMA VALIDAÇÃO: 2026-08-16
 
 ## Decisão
 
@@ -31,7 +31,15 @@ Usar o modelo de ponta não substitui revisão. Imagens destinadas a produção 
 - consistência com a oferta e com a experiência prometida ao cliente;
 - direito de uso e rastreabilidade da origem.
 
-Para bibliotecas reutilizadas em entregas comerciais, a aprovação humana deve acontecer antes da promoção do asset ao acervo de produção.
+Para bibliotecas reutilizadas em entregas comerciais, uma revisão visual independente da execução produtora deve acontecer antes da promoção do asset ao acervo de produção. Aprovação humana adicional continua possível quando o risco comercial ou os direitos de uso exigirem.
+
+## Estúdio visual de Têmis
+
+Por decisão de 2026-08-16, imagens que constituem entregáveis do plano comercial são criadas ou editadas por Têmis com `gpt-image-2` e qualidade `high`. O backend publica a fila `pending`, entrega referências autorizadas do mesmo plano, recebe o binário e persiste request, response, usage, custo, modelo e linhagem. O AI Worker não materializa imagens nesse fluxo.
+
+Criação sem referência usa a Image API. Edição e composição híbrida usam o endpoint de edições com os arquivos reais da Biblioteca Audiovisual. Uma edição pode evoluir seu arquivo de origem ainda em `DRAFT`, mas referências adicionais de composição precisam estar `APPROVED`, ser imagens ativas e pertencer ao mesmo plano comercial. O backend revalida essas condições ao entregar a fila: referência removida, aposentada ou reprovada falha o job antes do consumo e nunca transforma silenciosamente uma edição em geração livre. Cada edição gera uma nova versão; o arquivo anterior permanece íntegro. Uma segunda execução independente de Têmis revisa o resultado já persistido e a execução produtora é tecnicamente impedida de aprovar o próprio trabalho.
+
+O contrato permite as dimensões homologadas `1024x1024`, `1024x1536`, `1536x1024`, `2048x2048` e `2048x1152`. O parâmetro `input_fidelity` deve ser omitido com `gpt-image-2`, pois o modelo já trata todas as referências em alta fidelidade. Requests, responses e URL externa são auditados; o binário base64 é persistido no registro técnico, mas redigido do log para não ampliar desnecessariamente o volume operacional.
 
 ## Exceções e fallback
 

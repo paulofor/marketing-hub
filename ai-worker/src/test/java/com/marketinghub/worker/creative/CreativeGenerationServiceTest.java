@@ -22,7 +22,7 @@ import org.mockito.ArgumentCaptor;
 class CreativeGenerationServiceTest {
 
     /**
-     * Garante que o serviço consome a fila, gera imagem, cria o criativo e conclui a pendência.
+     * Garante que o serviço consome a fila, reutiliza a entrega de Têmis e conclui a pendência.
      */
     @Test
     void shouldProcessDefaultPendingCreativeGeneration() {
@@ -30,7 +30,7 @@ class CreativeGenerationServiceTest {
         CreativeChatGptClient textClient = mock(CreativeChatGptClient.class);
         CreativeImageClient imageClient = mock(CreativeImageClient.class);
         CreativeGenerationService service =
-                new CreativeGenerationService(backendClient, textClient, imageClient, new ObjectMapper());
+                new CreativeGenerationService(backendClient, textClient, new ObjectMapper());
         ExperimentDto experiment = pendingExperiment();
         CreateCreativeRequest generated = new CreateCreativeRequest();
         generated.setHeadline("Headline");
@@ -41,12 +41,6 @@ class CreativeGenerationServiceTest {
         when(backendClient.listPending(5)).thenReturn(List.of(experiment));
         when(textClient.generateCreatives(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(1)))
                 .thenReturn(new CreativeChatGptClient.Generation(List.of(generated), null, null));
-        when(imageClient.generateImage(
-                org.mockito.ArgumentMatchers.anyString(),
-                org.mockito.ArgumentMatchers.isNull(),
-                org.mockito.ArgumentMatchers.anyString()))
-                .thenReturn("/assets/creative.jpg");
-
         CreativeGenerationService.ProcessingSummary summary = service.processPending(5);
 
         assertThat(summary.total()).isEqualTo(1);
@@ -55,8 +49,12 @@ class CreativeGenerationServiceTest {
         verify(backendClient).markStarted(49L);
         ArgumentCaptor<CreateCreativeRequest> captor = ArgumentCaptor.forClass(CreateCreativeRequest.class);
         verify(backendClient).createCreative(org.mockito.ArgumentMatchers.eq(49L), captor.capture());
-        assertThat(captor.getValue().getImageUrl()).isEqualTo("/assets/creative.jpg");
+        assertThat(captor.getValue().getImageUrl()).isEqualTo("/assets/product-deliverable.png");
         assertThat(captor.getValue().getCta()).isEqualTo("LEARN_MORE");
+        verify(imageClient, never()).generateImage(
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.anyString());
         verify(backendClient).markCompleted(49L);
     }
 
@@ -67,7 +65,7 @@ class CreativeGenerationServiceTest {
         CreativeChatGptClient textClient = mock(CreativeChatGptClient.class);
         CreativeImageClient imageClient = mock(CreativeImageClient.class);
         CreativeGenerationService service =
-                new CreativeGenerationService(backendClient, textClient, imageClient, new ObjectMapper());
+                new CreativeGenerationService(backendClient, textClient, new ObjectMapper());
         ExperimentDto experiment = pendingExperiment();
         experiment.setCreativeImagePrompt(null);
         CreateCreativeRequest generated = new CreateCreativeRequest();
@@ -108,7 +106,7 @@ class CreativeGenerationServiceTest {
         CreativeChatGptClient textClient = mock(CreativeChatGptClient.class);
         CreativeImageClient imageClient = mock(CreativeImageClient.class);
         CreativeGenerationService service =
-                new CreativeGenerationService(backendClient, textClient, imageClient, new ObjectMapper());
+                new CreativeGenerationService(backendClient, textClient, new ObjectMapper());
         ExperimentDto experiment = pendingExperiment();
         CreateCreativeRequest invalid = new CreateCreativeRequest();
         invalid.setPrimaryText(repeat("Texto principal persuasivo", 30));
@@ -126,12 +124,6 @@ class CreativeGenerationServiceTest {
                 org.mockito.ArgumentMatchers.eq(1),
                 org.mockito.ArgumentMatchers.contains("primaryText excede 125 caracteres")))
                 .thenReturn(new CreativeChatGptClient.Generation(List.of(valid), null, null));
-        when(imageClient.generateImage(
-                org.mockito.ArgumentMatchers.anyString(),
-                org.mockito.ArgumentMatchers.isNull(),
-                org.mockito.ArgumentMatchers.anyString()))
-                .thenReturn("/assets/creative-rewritten.jpg");
-
         CreativeGenerationService.ProcessingSummary summary = service.processPending(5);
 
         assertThat(summary.succeeded()).isEqualTo(1);
@@ -152,7 +144,7 @@ class CreativeGenerationServiceTest {
         CreativeChatGptClient textClient = mock(CreativeChatGptClient.class);
         CreativeImageClient imageClient = mock(CreativeImageClient.class);
         CreativeGenerationService service =
-                new CreativeGenerationService(backendClient, textClient, imageClient, new ObjectMapper());
+                new CreativeGenerationService(backendClient, textClient, new ObjectMapper());
         ExperimentDto experiment = pendingExperiment();
         CreateCreativeRequest generated = new CreateCreativeRequest();
         generated.setHeadline("Agenda cheia");
@@ -163,27 +155,22 @@ class CreativeGenerationServiceTest {
         when(backendClient.listPending(5)).thenReturn(List.of(experiment));
         when(textClient.generateCreatives(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(1)))
                 .thenReturn(new CreativeChatGptClient.Generation(List.of(generated), null, null));
-        when(imageClient.generateImage(
-                org.mockito.ArgumentMatchers.anyString(),
-                org.mockito.ArgumentMatchers.isNull(),
-                org.mockito.ArgumentMatchers.anyString()))
-                .thenReturn("/assets/unicode-creative.jpg");
-
         CreativeGenerationService.ProcessingSummary summary = service.processPending(5);
 
         assertThat(summary.succeeded()).isEqualTo(1);
         verify(backendClient).createCreative(49L, generated);
     }
 
-    /** Garante que o worker não cria criativo quando a imagem não foi gerada. */
+    /** Garante que o worker não cria criativo sem entregável visual aprovado produzido por Têmis. */
     @Test
     void shouldFailPendingGenerationWhenImageUrlIsEmpty() {
         CreativeGenerationBackendClient backendClient = mock(CreativeGenerationBackendClient.class);
         CreativeChatGptClient textClient = mock(CreativeChatGptClient.class);
         CreativeImageClient imageClient = mock(CreativeImageClient.class);
         CreativeGenerationService service =
-                new CreativeGenerationService(backendClient, textClient, imageClient, new ObjectMapper());
+                new CreativeGenerationService(backendClient, textClient, new ObjectMapper());
         ExperimentDto experiment = pendingExperiment();
+        experiment.setCommercialPlanVisualAssets(null);
         CreateCreativeRequest generated = new CreateCreativeRequest();
         generated.setHeadline("Headline");
         generated.setPrimaryText("Texto principal");
@@ -192,12 +179,6 @@ class CreativeGenerationServiceTest {
         when(backendClient.listPending(5)).thenReturn(List.of(experiment));
         when(textClient.generateCreatives(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(1)))
                 .thenReturn(new CreativeChatGptClient.Generation(List.of(generated), null, null));
-        when(imageClient.generateImage(
-                org.mockito.ArgumentMatchers.anyString(),
-                org.mockito.ArgumentMatchers.isNull(),
-                org.mockito.ArgumentMatchers.anyString()))
-                .thenReturn(" ");
-
         CreativeGenerationService.ProcessingSummary summary = service.processPending(5);
 
         assertThat(summary.succeeded()).isZero();
@@ -207,7 +188,7 @@ class CreativeGenerationServiceTest {
                 org.mockito.ArgumentMatchers.any());
         verify(backendClient).markFailed(
                 org.mockito.ArgumentMatchers.eq(49L),
-                org.mockito.ArgumentMatchers.contains("Imagem do criativo não foi gerada"));
+                org.mockito.ArgumentMatchers.contains("entregável visual APPROVED produzido por Têmis"));
     }
 
     /** Cria um experimento pendente mínimo para o cenário de teste. */
@@ -220,6 +201,9 @@ class CreativeGenerationServiceTest {
         dto.setCreativeGenerationStatus(CreativeGenerationStatus.REQUESTED);
         dto.setCreativesToGenerate(1);
         dto.setCreativeImagePrompt("Prompt visual");
+        dto.setCommercialPlanVisualAssets(
+                "{\"assets\":[{\"url\":\"/assets/product-deliverable.png\","
+                        + "\"label\":\"Kit real do produto\",\"purpose\":\"DELIVERY\"}]}");
         return dto;
     }
 

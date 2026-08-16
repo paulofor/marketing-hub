@@ -58,6 +58,7 @@ jobs:
         run: |
           npm ci --omit=dev
           node --check src/main/resources/mcp/meta-ad-approver.mjs
+          node --check src/main/resources/mcp/temis-library-review.mjs
           npm run test:mcp-handshake
       - name: Validate container build
         run: docker build -t marketing-hub/meta-ad-approver-worker:${{ github.sha }} meta-ad-approver-worker
@@ -96,6 +97,9 @@ jobs:
                    MARKETING_HUB_URL=http://191.252.181.168 \
                    MARKETING_HUB_REPOSITORY_HOST='${REPOSITORY_DIR}' \
                    CODEX_MODEL=gpt-5.6-sol \
+                   OPENAI_API_KEY_FILE=/run/secrets/openai_api_key \
+                   OPENAI_API_KEY_HOST_FILE=/root/infra/openai-token/openai_api_key \
+                   OPENAI_IMAGE_MODEL=gpt-image-2 \
                    META_AD_APPROVER_IMAGE=marketing-hub/meta-ad-approver-worker:${GITHUB_SHA} \
             && cd '${REPOSITORY_DIR}/meta-ad-approver-worker' \
             && docker compose up -d --build --remove-orphans \

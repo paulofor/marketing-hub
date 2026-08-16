@@ -114,7 +114,10 @@ class CreativeControllerCorsTest {
             multipart("/api/internal/creatives/326/agent-improvement/artifact")
                 .file(file)
                 .param("model", "gpt-image-2")
-                .param("prompt", "Demonstre o produto digital")
+                .param("producerExecutionId", "temis-producer-326")
+                .param("requestJson", "{\"prompt\":\"Demonstre o produto digital\"}")
+                .param("responseJson", "{\"data\":[{\"b64_json\":\"auditado\"}]}")
+                .param("usageJson", "{\"input_tokens\":12}")
                 .param("costUsd", "0.15"))
         .andExpect(status().isOk());
 
@@ -123,7 +126,10 @@ class CreativeControllerCorsTest {
             org.mockito.ArgumentMatchers.eq(326L),
             any(),
             org.mockito.ArgumentMatchers.eq("gpt-image-2"),
-            org.mockito.ArgumentMatchers.eq("Demonstre o produto digital"),
+            org.mockito.ArgumentMatchers.eq("temis-producer-326"),
+            org.mockito.ArgumentMatchers.contains("Demonstre o produto digital"),
+            org.mockito.ArgumentMatchers.contains("b64_json"),
+            org.mockito.ArgumentMatchers.contains("input_tokens"),
             org.mockito.ArgumentMatchers.eq(new java.math.BigDecimal("0.15")));
   }
 }

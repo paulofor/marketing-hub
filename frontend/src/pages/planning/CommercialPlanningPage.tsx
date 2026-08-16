@@ -27,6 +27,8 @@ import {
   useCommercialPlanVisualAssets,
   useCreateCommercialPlanVisualAsset,
   useUpdateCommercialPlanVisualAssetStatus,
+  useCommercialPlanImageStudioJobs,
+  useCreateCommercialPlanImageStudioJob,
 } from "../../api/planning/useCommercialPlans";
 import "./CommercialPlanningPage.css";
 import GrowthOperatorPanel from "./GrowthOperatorPanel";
@@ -41,6 +43,8 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
   const query = useCommercialPlanVisualAssets(planId);
   const createAsset = useCreateCommercialPlanVisualAsset(planId);
   const updateStatus = useUpdateCommercialPlanVisualAssetStatus(planId);
+  const imageStudioJobs = useCommercialPlanImageStudioJobs(planId);
+  const createImageStudioJob = useCreateCommercialPlanImageStudioJob(planId);
   const [draft, setDraft] = useState<{
     assetUrl: string;
     mediaType: "IMAGE" | "VIDEO";
@@ -57,11 +61,71 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
     rightsStatement: "Uso autorizado para este produto",
   });
   const assets = query.data ?? [];
+  const imageAssets = assets.filter(
+    (asset) => asset.mediaType === "IMAGE" && asset.status !== "RETIRED",
+  );
+  const [studioDraft, setStudioDraft] = useState<{
+    operation: "CREATE" | "EDIT";
+    sourceAssetId: string;
+    referenceAssetIds: number[];
+    prompt: string;
+    label: string;
+    purposes: string[];
+    size: string;
+    quality: string;
+  }>({
+    operation: "CREATE",
+    sourceAssetId: "",
+    referenceAssetIds: [],
+    prompt: "",
+    label: "",
+    purposes: ["DELIVERY", "LANDING", "ADS", "SOCIAL"],
+    size: "1024x1536",
+    quality: "high",
+  });
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
     createAsset.mutate(draft, {
       onSuccess: () => setDraft({ ...draft, assetUrl: "", label: "" }),
     });
+  };
+  const submitStudio = (event: React.FormEvent) => {
+    event.preventDefault();
+    createImageStudioJob.mutate(
+      {
+        ...studioDraft,
+        sourceAssetId: studioDraft.sourceAssetId
+          ? Number(studioDraft.sourceAssetId)
+          : null,
+      },
+      {
+        onSuccess: () =>
+          setStudioDraft({
+            ...studioDraft,
+            prompt: "",
+            label: "",
+            sourceAssetId: "",
+            referenceAssetIds: [],
+          }),
+      },
+    );
+  };
+  const togglePurpose = (purpose: string) => {
+    if (purpose === "DELIVERY") return;
+    setStudioDraft((current) => ({
+      ...current,
+      purposes: current.purposes.includes(purpose)
+        ? current.purposes.filter((value) => value !== purpose)
+        : [...current.purposes, purpose],
+    }));
+  };
+  const toggleReference = (assetId: number) => {
+    setStudioDraft((current) => ({
+      ...current,
+      referenceAssetIds: current.referenceAssetIds.includes(assetId)
+        ? current.referenceAssetIds.filter((value) => value !== assetId)
+        : [...current.referenceAssetIds, assetId].slice(0, 4),
+    }));
   };
   return (
     <section className="card" aria-labelledby="visual-kit-title">
@@ -74,6 +138,178 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
             Mídias aprovadas do produto orientam Têmis e os executores em
             anúncios, landing, social e entrega.
           </p>
+        </div>
+        <div className="border rounded p-3 bg-body-tertiary">
+          <h3 className="h6">Estúdio de Imagens de Têmis</h3>
+          <p className="small text-body-secondary">
+            Crie ou edite entregáveis reais com GPT Image 2. O resultado entra
+            como rascunho e só é aprovado por uma execução independente.
+          </p>
+          <form className="row g-2" onSubmit={submitStudio}>
+            <div className="col-md-2">
+              <label className="form-label" htmlFor="temis-image-operation">
+                Operação *
+              </label>
+              <select
+                id="temis-image-operation"
+                className="form-select"
+                value={studioDraft.operation}
+                onChange={(event) =>
+                  setStudioDraft({
+                    ...studioDraft,
+                    operation: event.target.value as "CREATE" | "EDIT",
+                    sourceAssetId: "",
+                  })
+                }
+              >
+                <option value="CREATE">Criar</option>
+                <option value="EDIT">Editar</option>
+              </select>
+            </div>
+            {studioDraft.operation === "EDIT" && (
+              <div className="col-md-4">
+                <label className="form-label" htmlFor="temis-image-source">
+                  Imagem de origem *
+                </label>
+                <select
+                  id="temis-image-source"
+                  className="form-select"
+                  required
+                  value={studioDraft.sourceAssetId}
+                  onChange={(event) =>
+                    setStudioDraft({
+                      ...studioDraft,
+                      sourceAssetId: event.target.value,
+                    })
+                  }
+                >
+                  <option value="">Selecione</option>
+                  {imageAssets.map((asset) => (
+                    <option key={asset.id} value={asset.id}>
+                      #{asset.id} · {asset.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="col-md-4">
+              <label className="form-label" htmlFor="temis-image-label">
+                Nome do entregável *
+              </label>
+              <input
+                id="temis-image-label"
+                className="form-control"
+                required
+                value={studioDraft.label}
+                onChange={(event) =>
+                  setStudioDraft({ ...studioDraft, label: event.target.value })
+                }
+              />
+            </div>
+            <div className="col-md-2">
+              <label className="form-label" htmlFor="temis-image-size">
+                Formato *
+              </label>
+              <select
+                id="temis-image-size"
+                className="form-select"
+                value={studioDraft.size}
+                onChange={(event) =>
+                  setStudioDraft({ ...studioDraft, size: event.target.value })
+                }
+              >
+                <option value="1024x1024">Quadrado</option>
+                <option value="1024x1536">Vertical</option>
+                <option value="1536x1024">Horizontal</option>
+                <option value="2048x2048">Quadrado 2K</option>
+                <option value="2048x1152">Horizontal 2K</option>
+              </select>
+            </div>
+            <div className="col-12">
+              <label className="form-label" htmlFor="temis-image-prompt">
+                Orientação de criação/edição *
+              </label>
+              <textarea
+                id="temis-image-prompt"
+                className="form-control"
+                rows={3}
+                required
+                value={studioDraft.prompt}
+                onChange={(event) =>
+                  setStudioDraft({ ...studioDraft, prompt: event.target.value })
+                }
+              />
+            </div>
+            <fieldset className="col-md-6">
+              <legend className="form-label mb-1">Finalidades *</legend>
+              {["DELIVERY", "LANDING", "ADS", "SOCIAL"].map((purpose) => (
+                <label className="form-check form-check-inline" key={purpose}>
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    checked={studioDraft.purposes.includes(purpose)}
+                    disabled={purpose === "DELIVERY"}
+                    onChange={() => togglePurpose(purpose)}
+                  />
+                  <span className="form-check-label">{purpose}</span>
+                </label>
+              ))}
+            </fieldset>
+            <div className="col-md-6">
+              <span className="form-label d-block">Referências (até 4)</span>
+              <div className="d-flex flex-wrap gap-2">
+                {imageAssets.length === 0 && (
+                  <small className="text-body-secondary">
+                    Nenhuma imagem disponível; Têmis criará do zero.
+                  </small>
+                )}
+                {imageAssets.map((asset) => (
+                  <label className="form-check" key={asset.id}>
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      checked={studioDraft.referenceAssetIds.includes(asset.id)}
+                      disabled={
+                        !studioDraft.referenceAssetIds.includes(asset.id) &&
+                        studioDraft.referenceAssetIds.length >= 4
+                      }
+                      onChange={() => toggleReference(asset.id)}
+                    />
+                    <span className="form-check-label small">#{asset.id}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="col-12 d-flex justify-content-end">
+              <button
+                className="btn btn-primary"
+                disabled={createImageStudioJob.isPending}
+              >
+                {createImageStudioJob.isPending ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" />
+                    Enviando a Têmis...
+                  </>
+                ) : studioDraft.operation === "EDIT" ? (
+                  "Solicitar edição"
+                ) : (
+                  "Solicitar criação"
+                )}
+              </button>
+            </div>
+          </form>
+          {(imageStudioJobs.data ?? []).length > 0 && (
+            <div className="mt-3">
+              <strong className="small">Execuções recentes</strong>
+              {(imageStudioJobs.data ?? []).slice(0, 5).map((job) => (
+                <div className="small mt-1" key={job.id}>
+                  #{job.id} · {job.operation} · {job.label} · {job.status}
+                  {job.model ? ` · ${job.model}` : ""}
+                  {job.error ? ` · ${job.error}` : ""}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         <form className="row g-2" onSubmit={submit}>
           <div className="col-lg-3">
@@ -181,10 +417,22 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
                 <strong className="d-block">{asset.label}</strong>
                 <small>
                   {asset.mediaType === "VIDEO" ? "Vídeo" : "Imagem"} ·{" "}
-                  {asset.purpose} · v{asset.versionNumber} · {asset.status}
+                  {(asset.purposes?.length
+                    ? asset.purposes
+                    : [asset.purpose]
+                  ).join(", ")}{" "}
+                  · v{asset.versionNumber} · {asset.status}
                 </small>
+                {asset.agentReviewStatus && (
+                  <small className="d-block text-body-secondary">
+                    Revisão independente: {asset.agentReviewStatus}
+                    {asset.agentReviewSummary
+                      ? ` · ${asset.agentReviewSummary}`
+                      : ""}
+                  </small>
+                )}
                 <div className="d-flex gap-2 mt-2">
-                  {asset.status !== "APPROVED" && (
+                  {asset.status !== "APPROVED" && !asset.agentReviewStatus && (
                     <button
                       className="btn btn-sm btn-success"
                       disabled={updateStatus.isPending}

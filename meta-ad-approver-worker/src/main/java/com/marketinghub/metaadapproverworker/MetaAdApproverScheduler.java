@@ -15,15 +15,32 @@ public class MetaAdApproverScheduler {
   private final MetaAdApproverBackendClient backend;
   private final MetaAdApproverCodexRunner runner;
   private final MetaAdApproverProperties properties;
+  private final TemisImageStudioProcessor imageStudio;
+  private final TemisCreativeImprovementProcessor creativeImprovement;
+  private final TemisLibraryImageReviewProcessor libraryReview;
 
   /** Configura o ciclo sem delegar avanço de gate ao worker. */
   public MetaAdApproverScheduler(
       MetaAdApproverBackendClient backend,
       MetaAdApproverCodexRunner runner,
-      MetaAdApproverProperties properties) {
+      MetaAdApproverProperties properties,
+      TemisImageStudioProcessor imageStudio,
+      TemisCreativeImprovementProcessor creativeImprovement,
+      TemisLibraryImageReviewProcessor libraryReview) {
     this.backend = backend;
     this.runner = runner;
     this.properties = properties;
+    this.imageStudio = imageStudio;
+    this.creativeImprovement = creativeImprovement;
+    this.libraryReview = libraryReview;
+  }
+
+  /** Mantém construtor reduzido para testes isolados do gate histórico. */
+  MetaAdApproverScheduler(
+      MetaAdApproverBackendClient backend,
+      MetaAdApproverCodexRunner runner,
+      MetaAdApproverProperties properties) {
+    this(backend, runner, properties, null, null, null);
   }
 
   /** Processa um lote pequeno e isola falhas por criativo. */
@@ -33,7 +50,24 @@ public class MetaAdApproverScheduler {
     try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
       jobs.forEach(job -> executor.submit(() -> process(job)));
     }
+    runSafely("estúdio de imagens", imageStudio == null ? null : imageStudio::processPending);
+    runSafely(
+        "retrabalho de criativos",
+        creativeImprovement == null ? null : creativeImprovement::processPending);
+    runSafely(
+        "revisão independente da biblioteca",
+        libraryReview == null ? null : libraryReview::processPending);
     log.debug("Ciclo do Aprovador Meta concluído");
+  }
+
+  /** Isola cada operação interna para uma fila indisponível não paralisar as demais. */
+  private void runSafely(String operation, Runnable action) {
+    if (action == null) return;
+    try {
+      action.run();
+    } catch (RuntimeException ex) {
+      log.error("Falha no ciclo interno de Têmis. operation={}", operation, ex);
+    }
   }
 
   /** Executa um criativo isoladamente para que um Codex lento não bloqueie o restante do lote. */

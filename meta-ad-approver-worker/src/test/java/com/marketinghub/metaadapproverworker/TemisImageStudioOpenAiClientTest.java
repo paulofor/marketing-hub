@@ -1,0 +1,119 @@
+package com.marketinghub.metaadapproverworker;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+/** Responsabilidade: homologar os contratos HTTP de criação e edição visual de Têmis. */
+class TemisImageStudioOpenAiClientTest {
+  private HttpServer server;
+  private MetaAdApproverProperties properties;
+  private final AtomicReference<String> requestBody = new AtomicReference<>();
+  private final AtomicReference<String> requestContentType = new AtomicReference<>();
+
+  /** Inicia uma API local segregada sem consumir a OpenAI real. */
+  @BeforeEach
+  void setUp() throws IOException {
+    server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    server.createContext("/reference.png", this::reference);
+    server.createContext("/v1/images/generations", this::openAi);
+    server.createContext("/v1/images/edits", this::openAi);
+    server.start();
+    properties = new MetaAdApproverProperties();
+    properties.setOpenAiBaseUrl("http://127.0.0.1:" + server.getAddress().getPort() + "/v1");
+    properties.setOpenAiApiKey("test-only-key");
+    properties.setImageModel("gpt-image-2");
+  }
+
+  /** Encerra a API de homologação após cada cenário. */
+  @AfterEach
+  void tearDown() {
+    server.stop(0);
+  }
+
+  /** Confirma criação direta, modelo canônico e auditoria da entrega. */
+  @Test
+  void createsPremiumDeliverableWithGptImage2() {
+    TemisImageStudioOpenAiClient.Result result = client().execute(job(List.of(), "CREATE"));
+
+    assertThat(result.imageBytes()).isEqualTo("premium-image".getBytes(StandardCharsets.UTF_8));
+    assertThat(result.model()).isEqualTo("gpt-image-2");
+    assertThat(result.requestJson()).contains("DELIVERY", "gpt-image-2", "produza");
+    assertThat(result.usageJson()).contains("input_tokens");
+    assertThat(requestContentType.get()).startsWith("application/json");
+    assertThat(requestBody.get()).contains("\"model\":\"gpt-image-2\"");
+  }
+
+  /** Confirma edição multipart usando a imagem real como referência, sem redesenho silencioso. */
+  @Test
+  void editsExistingDeliverableWithMultipartReference() {
+    String referenceUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/reference.png";
+
+    TemisImageStudioOpenAiClient.Result result =
+        client().execute(job(List.of(referenceUrl), "EDIT"));
+
+    assertThat(result.requestJson())
+        .contains("\"operation\":\"edit\"")
+        .contains("sha256")
+        .contains("mantenha todas as regiões");
+    assertThat(requestContentType.get()).startsWith("multipart/form-data");
+    assertThat(requestBody.get()).contains("name=\"image[]\"").contains("reference-bytes");
+  }
+
+  /** Cria o cliente exercitado contra a API de homologação. */
+  private TemisImageStudioOpenAiClient client() {
+    return new TemisImageStudioOpenAiClient(properties, new ObjectMapper());
+  }
+
+  /** Cria um job com segregação de plano e finalidades de reuso. */
+  private TemisImageStudioJob job(List<String> references, String operation) {
+    return new TemisImageStudioJob(
+        21L,
+        2L,
+        operation,
+        "produza uma peça premium do Agenda Cheia",
+        "Post premium",
+        List.of("DELIVERY", "LANDING", "ADS", "SOCIAL"),
+        "1024x1536",
+        "high",
+        references,
+        "producer-21");
+  }
+
+  /** Entrega uma referência visual local válida para o cenário de edição. */
+  private void reference(HttpExchange exchange) throws IOException {
+    byte[] response = "reference-bytes".getBytes(StandardCharsets.UTF_8);
+    exchange.getResponseHeaders().add("Content-Type", "image/png");
+    exchange.sendResponseHeaders(200, response.length);
+    exchange.getResponseBody().write(response);
+    exchange.close();
+  }
+
+  /** Registra o request e devolve uma imagem base64 com usage auditável. */
+  private void openAi(HttpExchange exchange) throws IOException {
+    requestContentType.set(exchange.getRequestHeaders().getFirst("Content-Type"));
+    requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+    String encoded =
+        Base64.getEncoder().encodeToString("premium-image".getBytes(StandardCharsets.UTF_8));
+    byte[] response =
+        ("{\"data\":[{\"b64_json\":\""
+                + encoded
+                + "\"}],\"usage\":{\"input_tokens\":12,\"output_tokens\":8}}")
+            .getBytes(StandardCharsets.UTF_8);
+    exchange.getResponseHeaders().add("Content-Type", "application/json");
+    exchange.sendResponseHeaders(200, response.length);
+    exchange.getResponseBody().write(response);
+    exchange.close();
+  }
+}

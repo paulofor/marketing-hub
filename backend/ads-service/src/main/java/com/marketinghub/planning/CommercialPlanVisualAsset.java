@@ -1,5 +1,6 @@
 package com.marketinghub.planning;
 
+import com.marketinghub.planning.imagestudio.v1.CommercialPlanVisualAssetReviewStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -48,6 +49,10 @@ public class CommercialPlanVisualAsset {
   @Column(name = "purpose", nullable = false, length = 64)
   private String purpose;
 
+  /** Finalidades reutilizáveis do mesmo arquivo, preservadas sem duplicar a mídia. */
+  @Column(name = "purposes_json", columnDefinition = "LONGTEXT")
+  private String purposesJson;
+
   @Column(name = "origin", nullable = false, length = 191)
   private String origin;
 
@@ -60,6 +65,36 @@ public class CommercialPlanVisualAsset {
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 32)
   private CommercialPlanVisualAssetStatus status;
+
+  /** Asset anterior usado como base para uma edição não destrutiva. */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "source_visual_asset_id")
+  private CommercialPlanVisualAsset sourceVisualAsset;
+
+  /** Estado da revisão independente obrigatória para imagens produzidas por Têmis. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "agent_review_status", length = 24)
+  private CommercialPlanVisualAssetReviewStatus agentReviewStatus;
+
+  /** Horário da reserva usado para recuperar revisão interrompida sem ação manual. */
+  @Column(name = "agent_review_started_at")
+  private Instant agentReviewStartedAt;
+
+  /** Execução de revisão, necessariamente diferente da execução que produziu a imagem. */
+  @Column(name = "reviewer_execution_id", length = 64)
+  private String reviewerExecutionId;
+
+  /** Parecer funcional persistido para explicar aprovação ou necessidade de ajuste. */
+  @Column(name = "agent_review_json", columnDefinition = "LONGTEXT")
+  private String agentReviewJson;
+
+  /** Request bruto da revisão independente. */
+  @Column(name = "agent_review_request_json", columnDefinition = "LONGTEXT")
+  private String agentReviewRequestJson;
+
+  /** Response bruta da revisão independente. */
+  @Column(name = "agent_review_response_json", columnDefinition = "LONGTEXT")
+  private String agentReviewResponseJson;
 
   @CreationTimestamp
   @Column(name = "created_at", nullable = false)

@@ -1838,3 +1838,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-15-commercial-plan-visual-kit.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-16-temis-image-studio-v1.yaml
+      relativeToChangelogFile: true

@@ -192,4 +192,10 @@ A homologacao deve usar dados segregados (`mh_test=1`), cobrir landing, eventos,
 
 Todo plano comercial pode manter imagens e vídeos reutilizáveis do produto sem duplicar o arquivo no JSON do plano. Cada vínculo registra URL persistida, tipo (`IMAGE` ou `VIDEO`), descrição, finalidade (`ADS`, `LANDING`, `SOCIAL` ou `DELIVERY`), origem, direitos de uso, versão e estado (`DRAFT`, `APPROVED` ou `RETIRED`).
 
-Têmis dirige e revisa a estratégia audiovisual; o executor compatível materializa a imagem ou o vídeo. Apenas itens `APPROVED` podem ser entregues aos executores como referência. Geração comercial sem ao menos uma referência aprovada e compatível com a mídia solicitada deve bloquear antes de consumir uma tentativa, preservando a independência entre geração e aprovação.
+Têmis dirige e materializa imagens do produto com o modelo visual canônico, por ferramentas versionadas no próprio módulo. A capacidade inclui criação do zero, edição não destrutiva e composição híbrida com até quatro referências da biblioteca. O backend permanece como autoridade da fila, segregação por plano, storage, orçamento, auditoria e avanço; o AI Worker não gera nem edita imagens desse fluxo.
+
+Toda imagem produzida por Têmis nasce como entregável real com a finalidade obrigatória `DELIVERY` e pode acumular `LANDING`, `ADS` e `SOCIAL` no mesmo vínculo, sem duplicar o arquivo. Edição sempre cria nova versão e preserva a origem. Com referências, Têmis pode alterar cenário, enquadramento e contexto, mas não pode redesenhar o produto nem inventar conteúdo, texto, tela ou recurso inexistente.
+
+A execução produtora nunca aprova o próprio arquivo. Depois da persistência em `DRAFT`, o backend abre uma revisão visual para uma nova execução independente de Têmis, que inspeciona o arquivo real em alta definição e somente promove para `APPROVED` quando qualidade, fidelidade à entrega e reuso comercial atingem os mínimos canônicos. Falhas ou lease vencida voltam ao fluxo auditável sem publicação automática.
+
+Criativos, landing e social reutilizam apenas itens `APPROVED`. A geração de copy pode continuar em executor próprio, mas nenhuma etapa pode reconstruir uma imagem do produto no AI Worker nem consumir referência de outro plano. Geração comercial sem referência aprovada, quando o contexto exigir composição, deve bloquear antes de consumir tentativa.

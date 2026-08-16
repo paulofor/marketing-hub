@@ -119,12 +119,48 @@ export interface CommercialPlanVisualAsset {
   mediaType: "IMAGE" | "VIDEO";
   label: string;
   purpose: string;
+  purposes: string[];
   origin: string;
   rightsStatement: string;
   versionNumber: number;
   status: "DRAFT" | "APPROVED" | "RETIRED";
+  sourceAssetId?: number | null;
+  agentReviewStatus?:
+    "PENDING" | "PROCESSING" | "APPROVED" | "ADJUST" | "FAILED" | null;
+  agentReviewSummary?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CommercialPlanImageStudioJob {
+  id: number;
+  commercialPlanId: number;
+  sourceAssetId?: number | null;
+  resultAssetId?: number | null;
+  operation: "CREATE" | "EDIT";
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+  label: string;
+  prompt: string;
+  purposes: string[];
+  size: string;
+  quality: string;
+  model?: string | null;
+  costUsd?: number | null;
+  error?: string | null;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+  createdAt: string;
+}
+
+export interface CreateCommercialPlanImageStudioJobPayload {
+  operation: "CREATE" | "EDIT";
+  sourceAssetId?: number | null;
+  referenceAssetIds: number[];
+  prompt: string;
+  label: string;
+  purposes: string[];
+  size: string;
+  quality: string;
 }
 
 export interface CreateCommercialPlanVisualAssetPayload {
@@ -449,6 +485,43 @@ export function useUpdateCommercialPlanVisualAssetStatus(
       queryClient.invalidateQueries({
         queryKey: ["commercial-plan-visual-assets", planId],
       }),
+  });
+}
+
+/** Consulta a fila auditável de criação e edição executada por Têmis. */
+export function useCommercialPlanImageStudioJobs(planId?: number | null) {
+  return useQuery({
+    queryKey: ["commercial-plan-image-studio-jobs", planId],
+    enabled: !!planId,
+    refetchInterval: 10_000,
+    queryFn: async () => {
+      const { data } = await axios.get<CommercialPlanImageStudioJob[]>(
+        `/api/planning/commercial-plans/${planId}/image-studio/jobs`,
+      );
+      return data;
+    },
+  });
+}
+
+/** Solicita a Têmis uma nova versão sem publicar ou aprovar automaticamente. */
+export function useCreateCommercialPlanImageStudioJob(planId?: number | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: CreateCommercialPlanImageStudioJobPayload) => {
+      const { data } = await axios.post<CommercialPlanImageStudioJob>(
+        `/api/planning/commercial-plans/${planId}/image-studio/jobs`,
+        payload,
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["commercial-plan-image-studio-jobs", planId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["commercial-plan-visual-assets", planId],
+      });
+    },
   });
 }
 

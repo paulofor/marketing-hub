@@ -18,11 +18,16 @@ services:
       AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
       CODEX_HOME: /home/approver/.codex
       CODEX_COMMAND: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_API_KEY_FILE: ${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_IMAGE_MODEL: ${OPENAI_IMAGE_MODEL:-gpt-image-2}
     ports:
       - "8097:8097"
     volumes:
       - ${MARKETING_HUB_REPOSITORY_HOST:-..}:/workspace/marketing-hub:ro
       - ${META_AD_APPROVER_CODEX_HOME:?Defina a sessão Codex individual da Têmis}:/home/approver/.codex
+      - ${OPENAI_API_KEY_HOST_FILE:-/root/infra/openai-token/openai_api_key}:/run/secrets/openai_api_key:ro
     read_only: true
     tmpfs:
       - /tmp:size=256m,noexec,nosuid

@@ -203,10 +203,15 @@ public class CreativeController {
       @PathVariable Long id,
       @RequestParam("file") MultipartFile file,
       @RequestParam(value = "model", required = false) String model,
-      @RequestParam(value = "prompt", required = false) String prompt,
+      @RequestParam("producerExecutionId") String producerExecutionId,
+      @RequestParam(value = "requestJson", required = false) String requestJson,
+      @RequestParam(value = "responseJson", required = false) String responseJson,
+      @RequestParam(value = "usageJson", required = false) String usageJson,
       @RequestParam(value = "costUsd", required = false) BigDecimal costUsd)
       throws IOException {
-    return mapper.toDto(service.uploadAgentImprovementArtifact(id, file, model, prompt, costUsd));
+    return mapper.toDto(
+        service.uploadAgentImprovementArtifact(
+            id, file, model, producerExecutionId, requestJson, responseJson, usageJson, costUsd));
   }
 
   /** Remove um criativo existente. */

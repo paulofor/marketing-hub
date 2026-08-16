@@ -12,11 +12,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 /** Responsabilidade: executar o gate independente dos entregáveis visuais produzidos por Têmis. */
 @Component
+@ConditionalOnProperty(
+    name = "meta-ad-approver.execution-role",
+    havingValue = "review",
+    matchIfMissing = true)
 public class TemisLibraryImageReviewRunner {
   private final MetaAdApproverProperties properties;
   private final ObjectMapper objectMapper;

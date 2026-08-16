@@ -1,8 +1,8 @@
 server:
-  port: 8097
+  port: ${SERVER_PORT:8097}
 spring:
   application:
-    name: meta-ad-approver-worker
+    name: ${SPRING_APPLICATION_NAME:meta-ad-approver-worker}
 management:
   endpoints:
     web:
@@ -16,6 +16,7 @@ logging:
   file:
     name: ${LOG_FILE_NAME:/tmp/meta-ad-approver-worker.log}
 meta-ad-approver:
+  execution-role: ${TEMIS_EXECUTION_ROLE:review}
   backend-url: ${BACKEND_URL:http://backend:8000}
   marketing-hub-url: ${MARKETING_HUB_URL:http://backend:8000}
   repository-path: ${MARKETING_HUB_REPOSITORY:/workspace/marketing-hub}

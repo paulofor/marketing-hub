@@ -120,6 +120,7 @@ class RuntimeBuildInfoServiceTest {
                 "/tmp/financial-agent-worker.log",
                 "/tmp/experiment-strategist-worker.log",
                 "/tmp/meta-ad-approver-worker.log",
+                "/tmp/themis-image-studio.log",
                 2,
                 3,
                 1,

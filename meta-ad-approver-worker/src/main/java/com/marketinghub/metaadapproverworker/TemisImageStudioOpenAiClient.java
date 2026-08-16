@@ -20,7 +20,9 @@ import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -31,9 +33,11 @@ import org.springframework.web.client.RestClient;
 
 /** Responsabilidade: criar e editar imagens premium com GPT Image 2 dentro de Têmis. */
 @Component
+@ConditionalOnProperty(name = "meta-ad-approver.execution-role", havingValue = "image-studio")
 public class TemisImageStudioOpenAiClient {
   private static final Logger log = LoggerFactory.getLogger(TemisImageStudioOpenAiClient.class);
   private static final int MAX_REFERENCE_BYTES = 20 * 1024 * 1024;
+  private static final String PRODUCTION_PROMPT = "prompts/image-studio/v1/production.md";
   private final MetaAdApproverProperties properties;
   private final ObjectMapper objectMapper;
   private final HttpClient downloadClient;
@@ -140,27 +144,24 @@ public class TemisImageStudioOpenAiClient {
         .body(String.class);
   }
 
-  /** Reforça a regra comercial de preservar o entregável e editar sem substituição destrutiva. */
+  /** Resolve o prompt versionado com o contrato específico do job reservado pelo backend. */
   private String productionPrompt(TemisImageStudioJob job) {
-    StringBuilder prompt = new StringBuilder(job.prompt().trim());
-    prompt
-        .append("\n\nCONTRATO DE PRODUÇÃO PREMIUM OBRIGATÓRIO:")
-        .append("\n- Finalidades aprovadas do arquivo: ")
-        .append(String.join(", ", job.purposes()))
-        .append('.')
-        .append("\n- Este arquivo é um entregável real do produto, não um mockup fictício.")
-        .append("\n- Preserve fielmente identidade, conteúdo útil e elementos das referências.")
-        .append(
-            "\n- Em composição híbrida, altere somente cenário, enquadramento e contexto; não redesenhe o produto.")
-        .append(
-            "\n- Não invente textos, logotipos, telas, botões ou recursos que não existam nas referências.")
-        .append(
-            "\n- Entregue uma única imagem final, nítida, premium e pronta para uso comercial e pelo cliente.");
-    if ("EDIT".equalsIgnoreCase(job.operation())) {
-      prompt.append(
-          "\n- Esta é uma edição: mantenha todas as regiões não citadas sem mudanças perceptíveis.");
+    try (var input = new ClassPathResource(PRODUCTION_PROMPT).getInputStream()) {
+      return new String(input.readAllBytes(), StandardCharsets.UTF_8)
+          .replace("{{JOB_PROMPT}}", job.prompt().trim())
+          .replace("{{PURPOSES}}", String.join(", ", job.purposes()))
+          .replace(
+              "{{EDIT_CONSTRAINT}}",
+              "EDIT".equalsIgnoreCase(job.operation())
+                  ? "- Esta é uma edição: mantenha todas as regiões não citadas sem mudanças perceptíveis."
+                  : "- Esta é uma criação sem arquivo-base; não simule uma referência inexistente.");
+    } catch (IOException ex) {
+      log.error(
+          "Falha ao carregar prompt versionado do Estúdio Visual. resource={}",
+          PRODUCTION_PROMPT,
+          ex);
+      throw new IllegalStateException("Prompt do Estúdio Visual indisponível", ex);
     }
-    return prompt.toString();
   }
 
   /** Baixa referências autorizadas e bloqueia payloads fora do contrato de imagem. */

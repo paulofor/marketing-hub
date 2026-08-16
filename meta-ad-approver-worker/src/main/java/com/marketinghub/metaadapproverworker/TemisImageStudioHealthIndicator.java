@@ -6,11 +6,13 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 /** Responsabilidade: impedir que Têmis pareça saudável sem credencial e modelo visual válidos. */
 @Component("temisImageStudio")
+@ConditionalOnProperty(name = "meta-ad-approver.execution-role", havingValue = "image-studio")
 public class TemisImageStudioHealthIndicator implements HealthIndicator {
   private final MetaAdApproverProperties properties;
 

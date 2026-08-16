@@ -133,7 +133,7 @@ sem alterar antes este cânone e os testes de contrato.
 | Cliente | `customer-agent-worker` | `customer-agent.mjs` | obrigatórios | browser, emulação de jornada e memória comportamental |
 | Financeiro | `financial-agent-worker` | `financial-agent.mjs` | obrigatórios | snapshots financeiros congelados; browser dispensado |
 | Estrategista | `experiment-strategist-worker` | `experiment-strategist.mjs` | obrigatórios | browser e pesquisa de mercado auditável |
-| Aprovador Meta | `meta-ad-approver-worker` | `meta-ad-approver.mjs` | obrigatórios | Chromium/Playwright, visão, imagem original, frames de vídeo e landing desktop/mobile |
+| Aprovador Meta | `meta-ad-approver-worker` + executor produtivo `themis-image-studio` | `meta-ad-approver.mjs` somente no revisor | obrigatórios somente no revisor | Chromium/Playwright, visão, imagem original, frames de vídeo e landing desktop/mobile no revisor; GPT Image 2 e segredo visual somente no Estúdio |
 | Gerador de Landing | `landing-generator-agent-worker` | `landing-generator.mjs` | obrigatórios | Codex `gpt-5.6-sol`, Chromium/Playwright, visão desktop/iPhone/Android, memória premium e solicitação de imagens pelo fluxo oficial `gpt-image-2` |
 
 O Agente Radar permanece `BLOCKED` até possuir executor, identidade Codex, sandbox, MCP,

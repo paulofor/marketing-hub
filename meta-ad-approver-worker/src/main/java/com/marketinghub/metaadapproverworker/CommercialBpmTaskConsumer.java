@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -21,6 +22,10 @@ import org.springframework.web.client.RestClient;
 
 /** Responsabilidade: executar os gates comerciais BPM atribuídos à Têmis. */
 @Component
+@ConditionalOnProperty(
+    name = "meta-ad-approver.execution-role",
+    havingValue = "review",
+    matchIfMissing = true)
 public class CommercialBpmTaskConsumer {
   private static final Logger log = LoggerFactory.getLogger(CommercialBpmTaskConsumer.class);
   private static final String AGENT_KEY = "meta-ad-approver";

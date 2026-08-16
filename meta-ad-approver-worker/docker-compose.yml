@@ -16,18 +16,14 @@ services:
       AGENT_HEALTH_KEY: meta-ad-approver
       AGENT_HEALTH_VERSION: "2"
       AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
+      TEMIS_EXECUTION_ROLE: review
       CODEX_HOME: /home/approver/.codex
       CODEX_COMMAND: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_API_KEY_FILE: ${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
-      OPENAI_IMAGE_MODEL: ${OPENAI_IMAGE_MODEL:-gpt-image-2}
     ports:
       - "8097:8097"
     volumes:
       - ${MARKETING_HUB_REPOSITORY_HOST:-..}:/workspace/marketing-hub:ro
       - ${META_AD_APPROVER_CODEX_HOME:?Defina a sessão Codex individual da Têmis}:/home/approver/.codex
-      - ${OPENAI_API_KEY_HOST_FILE:-/root/infra/openai-token/openai_api_key}:/run/secrets/openai_api_key:ro
     read_only: true
     tmpfs:
       - /tmp:size=256m,noexec,nosuid
@@ -39,3 +35,39 @@ services:
       timeout: 20s
       retries: 2
       start_period: 30s
+
+  themis-image-studio:
+    image: ${THEMIS_IMAGE_STUDIO_IMAGE:-marketing-hub/themis-image-studio:local}
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile.image-studio
+    environment:
+      BACKEND_URL: ${BACKEND_URL:-http://backend:8000}
+      TEMIS_EXECUTION_ROLE: image-studio
+      SPRING_APPLICATION_NAME: themis-image-studio
+      SERVER_PORT: "8098"
+      LOG_FILE_NAME: /tmp/themis-image-studio.log
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_API_KEY_FILE: ${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_IMAGE_MODEL: ${OPENAI_IMAGE_MODEL:-gpt-image-2}
+      TEMIS_IMAGE_TIMEOUT: ${TEMIS_IMAGE_TIMEOUT:-PT3M}
+      TEMIS_IMAGE_STUDIO_PENDING_LIMIT: ${TEMIS_IMAGE_STUDIO_PENDING_LIMIT:-2}
+    ports:
+      - "8098:8098"
+    volumes:
+      - ${OPENAI_API_KEY_HOST_FILE:-/root/infra/openai-token/openai_api_key}:/run/secrets/openai_api_key:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 2g
+    cpus: 2.0
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8098/ops-meta-ad-approver-observability-v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s

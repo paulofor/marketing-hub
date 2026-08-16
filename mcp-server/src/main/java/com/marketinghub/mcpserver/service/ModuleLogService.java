@@ -420,6 +420,7 @@ public class ModuleLogService {
                     "MCP_LOG_PRODUCT_DISCOVERY_WORKER_PATH",
                     "http://191.252.120.96:18081/ops-product-discovery-observability-v1/logfile");
             case "meta-ad-approver-worker" -> properties.logs().metaAdApproverWorkerPath();
+            case "themis-image-studio" -> properties.logs().themisImageStudioPath();
             case "growth-operator-worker" -> System.getenv().getOrDefault(
                     "MCP_LOG_GROWTH_OPERATOR_WORKER_PATH",
                     "http://163.245.202.80:8094/ops-growth-operator-observability-v1/logfile");
@@ -443,13 +444,14 @@ public class ModuleLogService {
                     "mds", "mois", "mois-sales-library-worker", "mois-hotmart", "clickbank-coletor-mois",
                     "oprm-coletor-receita", "ops-monitor-worker", "pde-platform-backend",
                     "video-management-service", "customer-agent-worker", "financial-agent-worker",
-                    "experiment-strategist-worker", "meta-ad-approver-worker",
+                    "experiment-strategist-worker", "meta-ad-approver-worker", "themis-image-studio",
                     "landing-generator-agent-worker", "product-discovery-worker", "growth-operator-worker" -> normalized;
             default -> throw new IllegalArgumentException("module must be one of: backend, ai-worker, lead-portal, "
                     + "facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, "
                     + "mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, "
                     + "pde-platform-backend, video-management-service, customer-agent-worker, financial-agent-worker, "
-                    + "experiment-strategist-worker, meta-ad-approver-worker, landing-generator-agent-worker, "
+                    + "experiment-strategist-worker, meta-ad-approver-worker, themis-image-studio, "
+                    + "landing-generator-agent-worker, "
                     + "product-discovery-worker, growth-operator-worker");
         };
     }

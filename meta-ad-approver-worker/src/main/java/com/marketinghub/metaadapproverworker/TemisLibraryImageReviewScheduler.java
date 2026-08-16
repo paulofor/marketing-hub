@@ -7,10 +7,15 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /** Responsabilidade: acionar a execução independente que revisa entregáveis produzidos. */
 @Component
+@ConditionalOnProperty(
+    name = "meta-ad-approver.execution-role",
+    havingValue = "review",
+    matchIfMissing = true)
 class TemisLibraryImageReviewProcessor {
   private static final Logger log = LoggerFactory.getLogger(TemisLibraryImageReviewProcessor.class);
   private final TemisImageStudioBackendClient backend;

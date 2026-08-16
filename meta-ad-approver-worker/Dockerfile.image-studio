@@ -1,0 +1,16 @@
+FROM maven:3.9.9-eclipse-temurin-21 AS build
+WORKDIR /build
+COPY pom.xml .
+COPY src src
+RUN mvn -q -DskipTests package
+
+FROM eclipse-temurin:21-jre-noble
+WORKDIR /app
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --gid 10001 image-studio \
+    && useradd --create-home --uid 10001 --gid image-studio image-studio
+COPY --from=build /build/target/app.jar /app/app.jar
+USER image-studio
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

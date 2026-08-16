@@ -6,6 +6,7 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
@@ -16,6 +17,7 @@ import org.springframework.web.client.RestClient;
 
 /** Responsabilidade: materializar em Têmis as correções visuais de criativos reprovados. */
 @Component
+@ConditionalOnProperty(name = "meta-ad-approver.execution-role", havingValue = "image-studio")
 class TemisCreativeImprovementProcessor {
   private static final Logger log =
       LoggerFactory.getLogger(TemisCreativeImprovementProcessor.class);

@@ -1277,6 +1277,8 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** cada capacidade nova foi tratada como rotina autônoma, embora todas pertençam ao mesmo ciclo do agente e compartilhem limites, telemetria e backend.
 - **Correção sistêmica:** somente `MetaAdApproverScheduler` mantém `@Scheduled`; criação, edição, retrabalho e revisão são processors internos isolados, acionados pelo ciclo canônico e protegidos individualmente contra falhas.
 - **Prevenção:** o teste de arquitetura exige exatamente um scheduler no módulo e a lease do backend recupera produção ou revisão interrompida após 50 minutos.
+- **Falha de bootstrap observada em 2026-08-16:** ao centralizar os processors, foi mantido um segundo construtor reduzido apenas para testes; com dois construtores sem seleção explícita, o Spring tentou instanciar `MetaAdApproverScheduler` por um construtor padrão inexistente e Têmis não iniciou após o deploy.
+- **Correção da recorrência:** o scheduler passou a ter somente o construtor canônico completo, os testes usam esse mesmo contrato de produção e a arquitetura exige exatamente um construtor, impedindo que atalhos de teste voltem a tornar a injeção ambígua.
 
 ## LOOP-MUSA-PROJETO-LEGADO-PLANO-OBRIGATORIO — perfil de Apolo não é salvo
 

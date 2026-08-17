@@ -26,4 +26,15 @@ class CommercialBpmTaskConsumerTest {
     assertThatThrownBy(() -> CommercialBpmTaskConsumer.validate(result))
         .isInstanceOf(IllegalArgumentException.class);
   }
+
+  /** Exige prompt e schema próprios para o gate comercial do criativo. */
+  @Test
+  void selectsVersionedCreativeContract() {
+    org.assertj.core.api.Assertions.assertThat(
+            CommercialBpmTaskConsumer.promptResourceFor("creative-production-approval"))
+        .isEqualTo("prompts/bpm/creative-commercial-review.md");
+    org.assertj.core.api.Assertions.assertThat(
+            CommercialBpmTaskConsumer.schemaResourceFor("creative-production-approval"))
+        .isEqualTo("prompts/bpm/creative-commercial-review-schema.json");
+  }
 }

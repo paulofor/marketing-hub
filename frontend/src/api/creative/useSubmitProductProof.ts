@@ -29,7 +29,7 @@ export function useSubmitProductProof(experimentId: string) {
       const { data: version } = await axios.post<Creative>(
         `/api/creatives/${source.id}/versions`,
         {
-          format: "IMAGE",
+          format: source.format || "IMAGE",
           headline: source.headline,
           primaryText: source.primaryText,
           imageUrl: asset.url,

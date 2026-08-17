@@ -194,23 +194,23 @@ class MetaAdApproverCodexRunnerTest {
 
     assertThat(prompt)
         .contains(
-            "responsável por criar e aprovar tecnicamente anúncios Meta",
+            "execução independente responsável por revisar tecnicamente anúncios Meta",
             "proposta completa de anúncio pronta para materialização",
             "outro território criativo, outra cena e outra forma verdadeira de provar o produto",
             "nunca aprove na mesma execução aquilo que você acabou de criar");
   }
 
-  /** Impede que Têmis proponha pós-produção ou referências ausentes do executor visual. */
+  /** Garante que Têmis preserve os entregáveis reais na composição híbrida executável. */
   @Test
   void declaresExecutableMediaCapabilities() throws Exception {
     String prompt = resource("prompts/meta-ad-approver/v1/review.md");
 
     assertThat(prompt)
         .contains(
-            "não recebe automaticamente arquivos reais do produto",
-            "nunca peça ao modelo de imagem para renderizar palavras",
-            "sem depender de texto dentro da imagem",
-            "satisfeitos exclusivamente pela geração descrita no prompt");
+            "até três imagens aprovadas da Biblioteca Audiovisual",
+            "preservadas sem redesenho",
+            "preserve somente o texto já existente nos entregáveis",
+            "composição híbrida e pelas referências efetivamente entregues pelo backend");
   }
 
   /** Confirma que o job preserva o snapshot e os identificadores do experimento. */

@@ -29,6 +29,13 @@ import org.springframework.web.client.RestClient;
 public class CommercialBpmTaskConsumer {
   private static final Logger log = LoggerFactory.getLogger(CommercialBpmTaskConsumer.class);
   private static final String AGENT_KEY = "meta-ad-approver";
+  private static final List<BpmContract> CONTRACTS =
+      List.of(
+          new BpmContract("creative-production-approval", "library"),
+          new BpmContract("creative-production-approval", "brief"),
+          new BpmContract("creative-production-approval", "generate"),
+          new BpmContract("creative-production-approval", "commercial"),
+          new BpmContract("landing-page-generation", "commercial"));
   private final RestClient backend;
   private final ObjectMapper json;
   private final String codex;
@@ -54,16 +61,8 @@ public class CommercialBpmTaskConsumer {
   public void processOne() {
     Map<String, Object> task = null;
     try {
-      List<Map<String, Object>> pending =
-          backend
-              .get()
-              .uri(
-                  "/api/internal/agent-tasks/{agent}/stage-executions/pending?processCode=landing-page-generation&activityId=commercial",
-                  AGENT_KEY)
-              .retrieve()
-              .body(new ParameterizedTypeReference<>() {});
-      if (pending == null || pending.isEmpty()) return;
-      task = pending.get(0);
+      task = claimNext();
+      if (task == null) return;
       JsonNode result = execute(task);
       if ("APPROVED".equals(result.path("decision").asText())) report(task, result);
       else block(task, result);
@@ -73,11 +72,29 @@ public class CommercialBpmTaskConsumer {
     }
   }
 
+  /** Reserva primeiro criativos e depois landings sem cruzar gates independentes. */
+  private Map<String, Object> claimNext() {
+    for (BpmContract contract : CONTRACTS) {
+      List<Map<String, Object>> pending =
+          backend
+              .get()
+              .uri(
+                  "/api/internal/agent-tasks/{agent}/stage-executions/pending?processCode={processCode}&activityId={activityId}",
+                  AGENT_KEY,
+                  contract.processCode(),
+                  contract.activityId())
+              .retrieve()
+              .body(new ParameterizedTypeReference<>() {});
+      if (pending != null && !pending.isEmpty()) return pending.get(0);
+    }
+    return null;
+  }
+
   /** Executa o prompt versionado e valida coerência, compliance e prontidão comercial. */
   JsonNode execute(Map<String, Object> task) throws IOException, InterruptedException {
     Path output = Files.createTempFile("temis-bpm-result-", ".json");
     Path processLog = Files.createTempFile("temis-bpm-process-", ".log");
-    Path schema = materialize("prompts/bpm/landing-commercial-review-schema.json", ".json");
+    Path schema = materialize(schemaResourceFor(processCode(task)), ".json");
     try {
       List<String> command =
           new ArrayList<>(
@@ -181,8 +198,28 @@ public class CommercialBpmTaskConsumer {
 
   /** Resolve o contexto congelado da tarefa no prompt versionado. */
   private String prompt(Map<String, Object> task) throws IOException {
-    return read("prompts/bpm/landing-commercial-review.md")
+    return read(promptResourceFor(processCode(task)))
         .replace("{{TASK_CONTEXT}}", json.writeValueAsString(task));
+  }
+
+  /** Seleciona o prompt versionado específico do gate avaliado. */
+  static String promptResourceFor(String processCode) {
+    return "creative-production-approval".equals(processCode)
+        ? "prompts/bpm/creative-commercial-review.md"
+        : "prompts/bpm/landing-commercial-review.md";
+  }
+
+  /** Seleciona o schema versionado específico do gate avaliado. */
+  static String schemaResourceFor(String processCode) {
+    return "creative-production-approval".equals(processCode)
+        ? "prompts/bpm/creative-commercial-review-schema.json"
+        : "prompts/bpm/landing-commercial-review-schema.json";
+  }
+
+  /** Lê o processo congelado no contrato da tarefa reservada. */
+  private String processCode(Map<String, Object> task) {
+    Object value = task.get("processCode");
+    return value == null ? "" : value.toString();
   }
 
   /** Exige decisão, evidências e coerência explícita com o plano comercial. */
@@ -215,4 +252,7 @@ public class CommercialBpmTaskConsumer {
       return new String(input.readAllBytes(), StandardCharsets.UTF_8);
     }
   }
+
+  /** Define uma fronteira BPM suportada pelo executor revisor de Têmis. */
+  private record BpmContract(String processCode, String activityId) {}
 }

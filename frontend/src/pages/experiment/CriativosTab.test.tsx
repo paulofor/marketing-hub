@@ -193,6 +193,7 @@ describe("CriativosTab", () => {
               primaryText: "Conheça o Agenda Cheia",
               imageUrl: "generated.jpg",
               destinationUrl: "https://agenda-cheia.test",
+              format: "STORY",
               status: "DRAFT",
               agentReviewStatus: "REJECTED",
               agentImprovementStatus: "LIMIT_REACHED",
@@ -243,7 +244,10 @@ describe("CriativosTab", () => {
     await waitFor(() =>
       expect(axios.post).toHaveBeenCalledWith(
         "/api/creatives/311/versions",
-        expect.objectContaining({ imageUrl: "/uploads/product-proof.png" }),
+        expect.objectContaining({
+          format: "STORY",
+          imageUrl: "/uploads/product-proof.png",
+        }),
       ),
     );
     expect(axios.post).toHaveBeenCalledWith(
@@ -416,6 +420,57 @@ describe("CriativosTab", () => {
       ),
     );
     expect(await screen.findByText("Nova versão criada")).toBeInTheDocument();
+  });
+
+  it("edits an unlocked creative by creating an auditable version", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.endsWith("/products/experiments/1/ads-in-use"))
+        return Promise.resolve({
+          data: [
+            {
+              id: 260,
+              headline: "Oferta antiga",
+              primaryText: "Amostra antiga",
+              imageUrl: "produto-real.jpg",
+              destinationUrl: "https://agenda-cheia.test/venda",
+              status: "DRAFT",
+              agentReviewStatus: "FAILED",
+            },
+          ],
+        });
+      if (url.endsWith("/experiments/1"))
+        return Promise.resolve({ data: { creativesToGenerate: 0 } });
+      return Promise.resolve({ data: [] });
+    });
+    (axios.post as any).mockResolvedValue({
+      data: { id: 301, sourceCreativeId: 260, status: "DRAFT" },
+    });
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <CriativosTab experimentId="1" />
+      </QueryClientProvider>,
+    );
+
+    await userEvent.click(await screen.findByRole("button", { name: "Editar" }));
+    await userEvent.clear(screen.getByLabelText("Headline"));
+    await userEvent.type(
+      screen.getByLabelText("Headline"),
+      "10 posts + 10 stories prontos",
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Salvar nova versão" }),
+    );
+
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/creatives/260/versions",
+        expect.objectContaining({
+          headline: "10 posts + 10 stories prontos",
+          status: "DRAFT",
+        }),
+      ),
+    );
   });
 
   it("shows image prompt below ad card when toggled", async () => {
@@ -799,7 +854,7 @@ describe("CriativosTab", () => {
       return Promise.resolve({ data: [] });
     });
     let rejectUpdate: (error: Error) => void = () => {};
-    (axios.put as any).mockImplementation(
+    (axios.patch as any).mockImplementation(
       () =>
         new Promise((_, reject) => {
           rejectUpdate = reject;
@@ -820,6 +875,12 @@ describe("CriativosTab", () => {
 
     await userEvent.click(
       await screen.findByRole("button", { name: "Aprovar" }),
+    );
+
+    expect(axios.patch).toHaveBeenCalledWith(
+      "/api/creatives/80/status",
+      { status: "READY" },
+      { timeout: 30000 },
     );
 
     expect(await screen.findByText("Aprovando...")).toBeInTheDocument();

@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm git 
     && npm install -g @openai/codex@${CODEX_VERSION} \
     && npm ci --omit=dev \
     && npx playwright-core install --with-deps chromium \
+    && ln -s "$(find /ms-playwright -type f -path '*/chrome-linux/chrome' | sort | tail -n 1)" /usr/bin/chromium \
     && chmod -R a+rX /ms-playwright \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid 10001 approver \

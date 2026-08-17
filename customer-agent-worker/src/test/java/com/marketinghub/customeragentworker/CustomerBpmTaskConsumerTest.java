@@ -26,4 +26,15 @@ class CustomerBpmTaskConsumerTest {
     assertThatThrownBy(() -> CustomerBpmTaskConsumer.validate(result))
         .isInstanceOf(IllegalArgumentException.class);
   }
+
+  /** Exige prompt e schema próprios para a percepção do criativo. */
+  @Test
+  void selectsVersionedCreativeContract() {
+    org.assertj.core.api.Assertions.assertThat(
+            CustomerBpmTaskConsumer.promptResourceFor("creative-production-approval"))
+        .isEqualTo("prompts/bpm/creative-customer-review.md");
+    org.assertj.core.api.Assertions.assertThat(
+            CustomerBpmTaskConsumer.schemaResourceFor("creative-production-approval"))
+        .isEqualTo("prompts/bpm/creative-customer-review-schema.json");
+  }
 }

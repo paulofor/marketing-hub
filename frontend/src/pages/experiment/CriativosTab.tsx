@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Creative, useCreatives } from "../../api/creative/useCreatives";
-import { useUpdateCreative } from "../../api/creative/useUpdateCreative";
+import { useUpdateCreativeStatus } from "../../api/creative/useUpdateCreativeStatus";
 import { useDeleteCreative } from "../../api/creative/useDeleteCreative";
 import { useExperiment } from "../../api/experiment/useExperiment";
 import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
@@ -417,7 +417,7 @@ export default function CriativosTab({
   const closeEdit = () => {
     setEditing(null);
   };
-  const update = useUpdateCreative(experimentId);
+  const updateStatus = useUpdateCreativeStatus(experimentId);
   const del = useDeleteCreative(experimentId);
   const requestAgentReview = useRequestCreativeAgentReview(experimentId);
   const createVersion = useCreateCreativeVersion(experimentId);
@@ -587,8 +587,7 @@ export default function CriativosTab({
   const isSavingPageId = updateExperimentMutation.isPending;
 
   const openEdit = (c: Creative) => {
-    setEditing(c);
-    setShowPreview(true);
+    setVersioning({ ...c });
   };
 
   const saveVersion = async () => {
@@ -652,21 +651,7 @@ export default function CriativosTab({
   const approve = async (c: Creative) => {
     setProcessingCreativeId(c.id);
     try {
-      await update.mutateAsync({
-        id: c.id,
-        format: c.format || "LINK",
-        headline: c.headline,
-        primaryText: c.primaryText,
-        imageUrl: c.imageUrl,
-        videoId: c.videoId || "",
-        videoUrl: c.videoUrl || "",
-        description: c.description || "",
-        cta: c.cta || "LEARN_MORE",
-        destinationUrl: c.destinationUrl || "",
-        leadGenFormId: c.leadGenFormId || "",
-        instagramUserId: c.instagramUserId || "",
-        status: "READY",
-      });
+      await updateStatus.mutateAsync({ id: c.id, status: "READY" });
     } catch {
       setFeedback({
         variant: "error",

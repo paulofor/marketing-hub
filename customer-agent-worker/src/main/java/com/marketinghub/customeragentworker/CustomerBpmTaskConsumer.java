@@ -24,6 +24,10 @@ import org.springframework.web.client.RestClient;
 public class CustomerBpmTaskConsumer {
   private static final Logger log = LoggerFactory.getLogger(CustomerBpmTaskConsumer.class);
   private static final String AGENT_KEY = "customer-agent";
+  private static final List<BpmContract> CONTRACTS =
+      List.of(
+          new BpmContract("creative-production-approval", "customer"),
+          new BpmContract("landing-page-generation", "customer"));
   private final RestClient backend;
   private final ObjectMapper json;
   private final String codex;
@@ -49,16 +53,8 @@ public class CustomerBpmTaskConsumer {
   public void processOne() {
     Map<String, Object> task = null;
     try {
-      List<Map<String, Object>> pending =
-          backend
-              .get()
-              .uri(
-                  "/api/internal/agent-tasks/{agent}/stage-executions/pending?processCode=landing-page-generation&activityId=customer",
-                  AGENT_KEY)
-              .retrieve()
-              .body(new ParameterizedTypeReference<>() {});
-      if (pending == null || pending.isEmpty()) return;
-      task = pending.get(0);
+      task = claimNext();
+      if (task == null) return;
       JsonNode result = execute(task);
       if ("APPROVED".equals(result.path("decision").asText())) report(task, result);
       else block(task, result);
@@ -68,11 +64,29 @@ public class CustomerBpmTaskConsumer {
     }
   }
 
+  /** Reserva primeiro criativos e depois landings sem misturar contratos de avaliação. */
+  private Map<String, Object> claimNext() {
+    for (BpmContract contract : CONTRACTS) {
+      List<Map<String, Object>> pending =
+          backend
+              .get()
+              .uri(
+                  "/api/internal/agent-tasks/{agent}/stage-executions/pending?processCode={processCode}&activityId={activityId}",
+                  AGENT_KEY,
+                  contract.processCode(),
+                  contract.activityId())
+              .retrieve()
+              .body(new ParameterizedTypeReference<>() {});
+      if (pending != null && !pending.isEmpty()) return pending.get(0);
+    }
+    return null;
+  }
+
   /** Executa o prompt versionado e exige um parecer estruturado sobre a experiência da cliente. */
   JsonNode execute(Map<String, Object> task) throws IOException, InterruptedException {
     Path output = Files.createTempFile("psique-bpm-result-", ".json");
     Path processLog = Files.createTempFile("psique-bpm-process-", ".log");
-    Path schema = materialize("prompts/bpm/landing-customer-review-schema.json", ".json");
+    Path schema = materialize(schemaResourceFor(processCode(task)), ".json");
     try {
       List<String> command =
           new ArrayList<>(
@@ -176,8 +190,28 @@ public class CustomerBpmTaskConsumer {
 
   /** Resolve o contexto da atividade sem consultar banco ou decidir o avanço do processo. */
   private String prompt(Map<String, Object> task) throws IOException {
-    return read("prompts/bpm/landing-customer-review.md")
+    return read(promptResourceFor(processCode(task)))
         .replace("{{TASK_CONTEXT}}", json.writeValueAsString(task));
+  }
+
+  /** Seleciona o prompt versionado específico da entidade avaliada. */
+  static String promptResourceFor(String processCode) {
+    return "creative-production-approval".equals(processCode)
+        ? "prompts/bpm/creative-customer-review.md"
+        : "prompts/bpm/landing-customer-review.md";
+  }
+
+  /** Seleciona o schema versionado específico da entidade avaliada. */
+  static String schemaResourceFor(String processCode) {
+    return "creative-production-approval".equals(processCode)
+        ? "prompts/bpm/creative-customer-review-schema.json"
+        : "prompts/bpm/landing-customer-review-schema.json";
+  }
+
+  /** Lê o processo congelado no contrato da tarefa reservada. */
+  private String processCode(Map<String, Object> task) {
+    Object value = task.get("processCode");
+    return value == null ? "" : value.toString();
   }
 
   /** Valida que clareza, confiança, valor e objeções receberam decisão explícita. */
@@ -210,4 +244,7 @@ public class CustomerBpmTaskConsumer {
       return new String(input.readAllBytes(), StandardCharsets.UTF_8);
     }
   }
+
+  /** Define uma fronteira BPM suportada pelo executor de Psique. */
+  private record BpmContract(String processCode, String activityId) {}
 }

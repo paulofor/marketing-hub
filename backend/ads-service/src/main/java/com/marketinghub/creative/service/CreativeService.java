@@ -57,6 +57,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -338,6 +339,7 @@ public class CreativeService {
       creative.setRejectionReason(normalizedRejectionReason);
       applyCreativeReviewTimestamp(creative, status);
       Creative saved = repository.save(creative);
+      cancelSupersededAncestorImprovements(saved, status);
       refreshExperimentApproval(saved.getExperiment());
       return saved;
     } catch (RuntimeException ex) {
@@ -351,6 +353,27 @@ public class CreativeService {
           ex.getMessage(),
           ex);
       throw ex;
+    }
+  }
+
+  /**
+   * Encerra retrabalhos antigos da mesma linhagem quando a versão final recebe aprovação humana.
+   */
+  private void cancelSupersededAncestorImprovements(Creative creative, CreativeStatus status) {
+    if (status != CreativeStatus.READY) {
+      return;
+    }
+    java.util.Set<Long> visited = new java.util.HashSet<>();
+    Creative ancestor = creative.getSourceCreative();
+    while (ancestor != null && ancestor.getId() != null && visited.add(ancestor.getId())) {
+      if (ancestor.getAgentImprovementStatus() == CreativeImprovementStatus.PENDING
+          || ancestor.getAgentImprovementStatus() == CreativeImprovementStatus.PROCESSING) {
+        ancestor.setAgentImprovementStatus(CreativeImprovementStatus.FAILED);
+        ancestor.setAgentImprovementError(
+            "Ciclo encerrado pela aprovação da versão final #" + creative.getId());
+        repository.save(ancestor);
+      }
+      ancestor = ancestor.getSourceCreative();
     }
   }
 
@@ -586,20 +609,48 @@ public class CreativeService {
     return commercialPlanRepository.findByExperimentReference(experimentId).stream()
         .findFirst()
         .map(
-            plan ->
-                commercialPlanVisualAssetRepository
-                    .findByCommercialPlanIdAndStatusOrderByCreatedAtAsc(
-                        plan.getId(), CommercialPlanVisualAssetStatus.APPROVED)
-                    .stream()
-                    .filter(asset -> "IMAGE".equalsIgnoreCase(asset.getMediaType()))
-                    .filter(asset -> assetHasPurpose(asset, "ADS"))
-                    .map(com.marketinghub.planning.CommercialPlanVisualAsset::getAssetUrl)
-                    .filter(StringUtils::hasText)
-                    .map(String::trim)
-                    .distinct()
-                    .limit(3)
-                    .toList())
+            plan -> {
+              List<com.marketinghub.planning.CommercialPlanVisualAsset> approved =
+                  commercialPlanVisualAssetRepository
+                      .findByCommercialPlanIdAndStatusOrderByCreatedAtAsc(
+                          plan.getId(), CommercialPlanVisualAssetStatus.APPROVED)
+                      .stream()
+                      .filter(asset -> "IMAGE".equalsIgnoreCase(asset.getMediaType()))
+                      .filter(asset -> assetHasPurpose(asset, "ADS"))
+                      .filter(
+                          asset ->
+                              asset.getAgentReviewStatus()
+                                  == CommercialPlanVisualAssetReviewStatus.APPROVED)
+                      .toList();
+              List<com.marketinghub.planning.CommercialPlanVisualAsset> balanced =
+                  new ArrayList<>();
+              approved.stream()
+                  .filter(asset -> assetLabelContains(asset, "post"))
+                  .findFirst()
+                  .ifPresent(balanced::add);
+              approved.stream()
+                  .filter(asset -> assetLabelContains(asset, "story"))
+                  .findFirst()
+                  .ifPresent(balanced::add);
+              approved.stream()
+                  .filter(asset -> !balanced.contains(asset))
+                  .limit(Math.max(0, 3 - balanced.size()))
+                  .forEach(balanced::add);
+              return balanced.stream()
+                  .map(com.marketinghub.planning.CommercialPlanVisualAsset::getAssetUrl)
+                  .filter(StringUtils::hasText)
+                  .map(String::trim)
+                  .distinct()
+                  .limit(3)
+                  .toList();
+            })
         .orElseGet(List::of);
+  }
+
+  /** Identifica o formato funcional documentado no rótulo sem inferir pelo arquivo remoto. */
+  private boolean assetLabelContains(CommercialPlanVisualAsset asset, String marker) {
+    return StringUtils.hasText(asset.getLabel())
+        && asset.getLabel().toLowerCase(java.util.Locale.ROOT).contains(marker);
   }
 
   /** Reconhece finalidades múltiplas preservando compatibilidade com o campo singular legado. */

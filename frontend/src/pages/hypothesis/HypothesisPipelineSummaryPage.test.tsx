@@ -62,7 +62,7 @@ describe("HypothesisPipelineSummaryPage", () => {
     expect(
       await screen.findByText("Etapa 1 — Dor do nicho"),
     ).toBeInTheDocument();
-    expect(screen.getByText("dor final")).toBeInTheDocument();
+    expect(screen.getByText('"dor final"')).toBeInTheDocument();
     expect(
       screen.getAllByText("hypothesis_pain_stage_execution")[0],
     ).toBeInTheDocument();

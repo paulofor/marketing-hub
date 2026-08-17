@@ -10,6 +10,7 @@ import com.marketinghub.FixtureUtils;
 import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
+import com.marketinghub.creative.CreativeImprovementStatus;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.creative.CreativeVideoReviewSourceType;
 import com.marketinghub.creative.convergence.v1.ConvergenceCycleStatus;
@@ -297,6 +298,27 @@ class CreativeServiceTest {
     assertThat(afterApproval.isCreativeApproved()).isTrue();
   }
 
+  /** Impede que retrabalhos ancestrais continuem gerando imagens após a aprovação final. */
+  @Test
+  void approvingFinalVersionCancelsAncestorImprovementCycles() {
+    MarketNiche niche = fixtures.createAndSaveNiche();
+    Experiment experiment = fixtures.createAndSaveExperiment(niche);
+    Creative source = fixtures.createAndSaveCreative(experiment);
+    source.setAgentImprovementStatus(CreativeImprovementStatus.PROCESSING);
+    repository.saveAndFlush(source);
+    Creative finalVersion = fixtures.createAndSaveCreative(experiment);
+    finalVersion.setSourceCreative(source);
+    finalVersion.setAgentReviewStatus(CreativeAgentReviewStatus.APPROVED);
+    repository.saveAndFlush(finalVersion);
+
+    service.updateStatus(finalVersion.getId(), CreativeStatus.READY);
+
+    Creative cancelled = repository.findById(source.getId()).orElseThrow();
+    assertThat(cancelled.getAgentImprovementStatus()).isEqualTo(CreativeImprovementStatus.FAILED);
+    assertThat(cancelled.getAgentImprovementError())
+        .isEqualTo("Ciclo encerrado pela aprovação da versão final #" + finalVersion.getId());
+  }
+
   /** Garante que criativo de vídeo aprovado por status libera o experimento para campanha. */
   @Test
   void approvingVideoCreativeByStatusMarksExperimentAsReady() {
@@ -533,13 +555,29 @@ class CreativeServiceTest {
     reference.setCommercialPlan(plan);
     reference.setAssetUrl("https://cdn.test/product-proof.png");
     reference.setMediaType("IMAGE");
-    reference.setLabel("Prova real do kit");
+    reference.setLabel("Post real do kit");
     reference.setPurpose("ADS");
     reference.setOrigin("Entrega homologada");
     reference.setRightsStatement("Uso comercial autorizado");
     reference.setVersionNumber(1);
     reference.setStatus(CommercialPlanVisualAssetStatus.APPROVED);
+    reference.setAgentReviewStatus(
+        com.marketinghub.planning.imagestudio.v1.CommercialPlanVisualAssetReviewStatus.APPROVED);
     commercialPlanVisualAssetRepository.save(reference);
+    CommercialPlanVisualAsset storyReference = new CommercialPlanVisualAsset();
+    storyReference.setCommercialPlan(plan);
+    storyReference.setAssetUrl("https://cdn.test/story-product-proof.png");
+    storyReference.setMediaType("IMAGE");
+    storyReference.setLabel("Story real do kit");
+    storyReference.setPurpose("DELIVERY");
+    storyReference.setPurposesJson("[\"DELIVERY\",\"ADS\"]");
+    storyReference.setOrigin("Entrega homologada");
+    storyReference.setRightsStatement("Uso comercial autorizado");
+    storyReference.setVersionNumber(1);
+    storyReference.setStatus(CommercialPlanVisualAssetStatus.APPROVED);
+    storyReference.setAgentReviewStatus(
+        com.marketinghub.planning.imagestudio.v1.CommercialPlanVisualAssetReviewStatus.APPROVED);
+    commercialPlanVisualAssetRepository.save(storyReference);
 
     service.applyAgentReview(
         creative.getId(),
@@ -556,7 +594,8 @@ class CreativeServiceTest {
     assertThat(pending.getFirst().visualAcceptanceCriteria())
         .containsExactly("Headline legível em mobile");
     assertThat(pending.getFirst().referenceImageUrls())
-        .containsExactly("https://cdn.test/product-proof.png");
+        .containsExactly(
+            "https://cdn.test/product-proof.png", "https://cdn.test/story-product-proof.png");
   }
 
   /** Bloqueia correção vaga antes de consumir geração visual. */

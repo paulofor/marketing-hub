@@ -1,0 +1,90 @@
+services:
+  backend-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+    ports:
+      - "18080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/local-health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  temis-reviewer:
+    build:
+      context: ../../../meta-ad-approver-worker
+    environment:
+      BACKEND_URL: http://backend-proxy:8080
+      MARKETING_HUB_URL: http://backend-proxy:8080
+      MARKETING_HUB_REPOSITORY: /workspace/marketing-hub
+      TEMIS_EXECUTION_ROLE: review
+      CODEX_HOME: /home/approver/.codex
+      CODEX_COMMAND: ${TEMIS_CODEX_COMMAND:-/workspace/marketing-hub/scripts/codex-oauth-session-safe.sh}
+      CODEX_MODEL: ${CODEX_MODEL:-gpt-5.6-sol}
+      CODEX_REASONING_EFFORT: ${CODEX_REASONING_EFFORT:-high}
+      LOG_FILE_NAME: /tmp/temis-reviewer.log
+    volumes:
+      - ../../..:/workspace/marketing-hub:ro
+      - ${TEMIS_CODEX_HOME:?Defina TEMIS_CODEX_HOME}:/home/approver/.codex
+    ports:
+      - "18097:8097"
+    depends_on:
+      backend-proxy:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+
+  psique:
+    build:
+      context: ../../../customer-agent-worker
+    environment:
+      BACKEND_URL: http://backend-proxy:8080
+      CUSTOMER_AGENT_REPOSITORY_PATH: /workspace
+      CUSTOMER_AGENT_CODEX_EXECUTABLE: ${PSIQUE_CODEX_COMMAND:-/workspace/scripts/codex-oauth-session-safe.sh}
+      CUSTOMER_AGENT_MODEL: ${CODEX_MODEL:-gpt-5.6-sol}
+      CODEX_HOME: /home/operator/.codex
+      LOG_FILE_NAME: /tmp/psique.log
+    volumes:
+      - ../../..:/workspace:ro
+      - ${PSIQUE_CODEX_HOME:?Defina PSIQUE_CODEX_HOME}:/home/operator/.codex
+    ports:
+      - "18099:8099"
+    depends_on:
+      backend-proxy:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+
+  themis-image-studio:
+    profiles: ["studio"]
+    build:
+      context: ../../../meta-ad-approver-worker
+      dockerfile: Dockerfile.image-studio
+    environment:
+      BACKEND_URL: http://backend-proxy:8080
+      TEMIS_EXECUTION_ROLE: image-studio
+      SPRING_APPLICATION_NAME: themis-image-studio
+      SERVER_PORT: "8098"
+      LOG_FILE_NAME: /tmp/themis-image-studio.log
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Defina OPENAI_API_KEY}
+      OPENAI_IMAGE_MODEL: gpt-image-2
+      TEMIS_IMAGE_STUDIO_PENDING_LIMIT: "1"
+    ports:
+      - "18098:8098"
+    depends_on:
+      backend-proxy:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:size=768m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 2g
+    cpus: 2

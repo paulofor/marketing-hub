@@ -14,4 +14,5 @@ public record CommercialPlanImageStudioPendingDto(
     String size,
     String quality,
     List<String> referenceImageUrls,
-    String producerExecutionId) {}
+    String producerExecutionId,
+    TemisVisualPlaybookDto visualPlaybook) {}

@@ -12,15 +12,64 @@ public class GovernedAgentLearningController {
   private final GovernedAgentLearningService service;
   private final ApolloLearningOrchestrationService apolloService;
   private final ApolloSkillCandidateService skillService;
+  private final TemisVisualLearningService temisVisualLearningService;
 
   /** Inicializa o controller com a governança central. */
   public GovernedAgentLearningController(
       GovernedAgentLearningService service,
       ApolloLearningOrchestrationService apolloService,
-      ApolloSkillCandidateService skillService) {
+      ApolloSkillCandidateService skillService,
+      TemisVisualLearningService temisVisualLearningService) {
     this.service = service;
     this.apolloService = apolloService;
     this.skillService = skillService;
+    this.temisVisualLearningService = temisVisualLearningService;
+  }
+
+  /** Reserva consolidações visuais de Têmis no endpoint pending canônico. */
+  @GetMapping("/agents/meta-ad-approver/visual-learning/stage-executions/pending")
+  public List<TemisVisualLearningPendingDto> pendingTemisVisualLearning(
+      @RequestParam(defaultValue = "1") int limit) {
+    return temisVisualLearningService.claimPending(limit);
+  }
+
+  /** Recebe replay e holdout sem promover a candidata automaticamente. */
+  @PostMapping("/agents/meta-ad-approver/visual-learning/stage-executions/{id}/result")
+  public TemisVisualLearningRunResponse completeTemisVisualLearning(
+      @PathVariable Long id, @RequestBody TemisVisualLearningResultRequest request) {
+    return temisVisualLearningService.complete(id, request);
+  }
+
+  /** Registra falha do consolidador mantendo a amostra auditável e o playbook vigente. */
+  @PostMapping("/agents/meta-ad-approver/visual-learning/stage-executions/{id}/failure")
+  public TemisVisualLearningRunResponse failTemisVisualLearning(
+      @PathVariable Long id, @RequestBody TemisVisualLearningFailureRequest request) {
+    return temisVisualLearningService.fail(id, request);
+  }
+
+  /** Lista as consolidações visuais de Têmis para supervisão. */
+  @GetMapping("/agents/meta-ad-approver/visual-learning/runs")
+  public List<TemisVisualLearningRunResponse> temisVisualLearningRuns() {
+    return temisVisualLearningService.listRuns();
+  }
+
+  /** Lista métricas reais de retrabalho, qualidade e custo por playbook. */
+  @GetMapping("/agents/meta-ad-approver/visual-learning/metrics")
+  public List<TemisVisualLearningMetricResponse> temisVisualLearningMetrics() {
+    return temisVisualLearningService.metrics();
+  }
+
+  /** Incorpora de forma idempotente os pareceres antigos do experimento informado. */
+  @PostMapping("/agents/meta-ad-approver/visual-learning/history/{experimentId}/backfill")
+  public TemisVisualLearningBackfillResponse backfillTemisVisualLearning(
+      @PathVariable Long experimentId) {
+    return temisVisualLearningService.backfillExperiment(experimentId);
+  }
+
+  /** Promove explicitamente uma candidata que passou todos os gates locais. */
+  @PostMapping("/agents/meta-ad-approver/visual-learning/runs/{id}/promotion")
+  public TemisVisualLearningRunResponse promoteTemisVisualLearning(@PathVariable Long id) {
+    return temisVisualLearningService.promote(id);
   }
 
   /** Recebe um replay real de Apolo e acumula a amostra sem liberar geração paga. */

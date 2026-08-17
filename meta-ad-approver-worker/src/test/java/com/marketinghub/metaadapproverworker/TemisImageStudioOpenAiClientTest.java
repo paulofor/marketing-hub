@@ -75,6 +75,19 @@ class TemisImageStudioOpenAiClientTest {
     assertThat(requestBody.get()).contains("name=\"image[]\"").contains("reference-bytes");
   }
 
+  /** Usa exemplos aprovados como orientação sem afirmar que a criação não recebeu referências. */
+  @Test
+  void explainsApprovedExamplesInNewCreation() {
+    String referenceUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/reference.png";
+
+    TemisImageStudioOpenAiClient.Result result =
+        client().execute(job(List.of(referenceUrl), "CREATE"));
+
+    assertThat(result.requestJson())
+        .contains("criação orientada por exemplos premium aprovados")
+        .doesNotContain("criação sem arquivo-base");
+  }
+
   /** Confirma que um Story ocupa o quadro 9:16 sem completar a referência com barras. */
   @Test
   void expandsStoryReferenceAcrossNativeCanvas() {
@@ -90,7 +103,8 @@ class TemisImageStudioOpenAiClientTest {
             "1152x2048",
             "high",
             List.of(referenceUrl),
-            "producer-22");
+            "producer-22",
+            playbook());
 
     TemisImageStudioOpenAiClient.Result result = client().execute(story);
 
@@ -116,7 +130,19 @@ class TemisImageStudioOpenAiClientTest {
         "1024x1536",
         "high",
         references,
-        "producer-21");
+        "producer-21",
+        playbook());
+  }
+
+  /** Cria um playbook governado mínimo para comprovar sua injeção na produção. */
+  private TemisVisualPlaybook playbook() {
+    return new TemisVisualPlaybook(
+        "temis-visual-playbook-v1",
+        "agenda-cheia-feed",
+        "CANONICAL_BASELINE",
+        List.of("Preservar o produto real"),
+        List.of("Não usar fotos genéricas de unhas"),
+        List.of());
   }
 
   /** Entrega uma referência visual local válida para o cenário de edição. */

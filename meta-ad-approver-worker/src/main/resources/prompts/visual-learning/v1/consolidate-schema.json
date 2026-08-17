@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "rules", "avoid", "baselineReplayScore", "candidateReplayScore",
+    "baselineHoldoutScore", "candidateHoldoutScore", "regressionPassed",
+    "localValidationPassed", "externalProviderCalled", "spendingAuthorized",
+    "publicationPerformed", "caseAssessments"
+  ],
+  "properties": {
+    "rules": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "type": "string", "minLength": 10, "maxLength": 500 } },
+    "avoid": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "type": "string", "minLength": 5, "maxLength": 300 } },
+    "baselineReplayScore": { "type": "number", "minimum": 0, "maximum": 100 },
+    "candidateReplayScore": { "type": "number", "minimum": 0, "maximum": 100 },
+    "baselineHoldoutScore": { "type": "number", "minimum": 0, "maximum": 100 },
+    "candidateHoldoutScore": { "type": "number", "minimum": 0, "maximum": 100 },
+    "regressionPassed": { "type": "boolean" },
+    "localValidationPassed": { "type": "boolean" },
+    "externalProviderCalled": { "type": "boolean" },
+    "spendingAuthorized": { "type": "boolean" },
+    "publicationPerformed": { "type": "boolean" },
+    "caseAssessments": {
+      "type": "array",
+      "minItems": 15,
+      "maxItems": 15,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["caseId", "set", "actualDecision", "baselineAssessment", "candidateAssessment", "candidateWouldPreventRecurrence", "candidatePreservesApproved"],
+        "properties": {
+          "caseId": { "type": "integer", "minimum": 1 },
+          "set": { "type": "string", "enum": ["REPLAY", "HOLDOUT"] },
+          "actualDecision": { "type": "string", "enum": ["APPROVED", "BLOCKED"] },
+          "baselineAssessment": { "type": "string", "minLength": 5, "maxLength": 500 },
+          "candidateAssessment": { "type": "string", "minLength": 5, "maxLength": 500 },
+          "candidateWouldPreventRecurrence": { "type": "boolean" },
+          "candidatePreservesApproved": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

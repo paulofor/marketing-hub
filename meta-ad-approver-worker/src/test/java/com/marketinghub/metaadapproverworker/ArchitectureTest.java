@@ -42,8 +42,8 @@ class ArchitectureTest {
         classes.stream().filter(type -> type.getSimpleName().endsWith("CodexRunner")).count();
 
     assertThat(schedulers)
-        .as("[ARQUITETURA] devem existir apenas os schedulers de revisão e produção")
-        .isEqualTo(2);
+        .as("[ARQUITETURA] devem existir apenas os schedulers de revisão, aprendizado e produção")
+        .isEqualTo(3);
     assertThat(runners)
         .as("[ARQUITETURA] deve existir um único runner Codex canônico")
         .isEqualTo(1);
@@ -58,6 +58,9 @@ class ArchitectureTest {
     assertThat(TemisImageStudioScheduler.class.getDeclaredConstructors())
         .as("[ARQUITETURA] o scheduler produtor deve possuir um único construtor canônico")
         .hasSize(1);
+    assertThat(TemisVisualLearningScheduler.class.getDeclaredConstructors())
+        .as("[ARQUITETURA] o scheduler de aprendizado deve possuir um único construtor canônico")
+        .hasSize(1);
   }
 
   /** Garante que cada scheduler seja ativado somente no papel do seu próprio container. */
@@ -67,11 +70,17 @@ class ArchitectureTest {
         MetaAdApproverScheduler.class.getAnnotation(ConditionalOnProperty.class);
     ConditionalOnProperty studio =
         TemisImageStudioScheduler.class.getAnnotation(ConditionalOnProperty.class);
+    ConditionalOnProperty learning =
+        TemisVisualLearningScheduler.class.getAnnotation(ConditionalOnProperty.class);
 
     assertThat(review).as("[ARQUITETURA] o revisor deve declarar condição de papel").isNotNull();
     assertThat(review.havingValue()).isEqualTo("review");
     assertThat(studio).as("[ARQUITETURA] o produtor deve declarar condição de papel").isNotNull();
     assertThat(studio.havingValue()).isEqualTo("image-studio");
+    assertThat(learning)
+        .as("[ARQUITETURA] o aprendizado deve executar somente no revisor")
+        .isNotNull();
+    assertThat(learning.havingValue()).isEqualTo("review");
     assertThat(Arrays.stream(MetaAdApproverScheduler.class.getDeclaredFields()))
         .as("[ARQUITETURA] o revisor não pode receber processors produtivos")
         .noneMatch(

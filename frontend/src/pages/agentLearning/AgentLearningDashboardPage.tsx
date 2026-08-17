@@ -3,7 +3,11 @@ import { toast } from "react-toastify";
 import {
   AgentLearningMemory,
   useAgentLearningDashboard,
+  useBackfillTemisVisualLearningHistory,
+  usePromoteTemisVisualLearningRun,
   useReviewAgentMemory,
+  useTemisVisualLearningMetrics,
+  useTemisVisualLearningRuns,
 } from "../../api/agentLearning/useAgentLearningDashboard";
 import PageTitle from "../../components/PageTitle";
 import { useApolloSkillCandidates } from "../../api/salesVideo/useApolloLearningExperiments";
@@ -18,9 +22,14 @@ const statusLabel: Record<string, string> = {
 export default function AgentLearningDashboardPage() {
   const query = useAgentLearningDashboard();
   const skillsQuery = useApolloSkillCandidates();
+  const temisRunsQuery = useTemisVisualLearningRuns();
+  const temisMetricsQuery = useTemisVisualLearningMetrics();
+  const promoteTemis = usePromoteTemisVisualLearningRun();
+  const backfillTemis = useBackfillTemisVisualLearningHistory();
   const review = useReviewAgentMemory();
   const [agentFilter, setAgentFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [historicalExperimentId, setHistoricalExperimentId] = useState("");
   const [selected, setSelected] = useState<AgentLearningMemory>();
   const [evidence, setEvidence] = useState("");
   const [outcome, setOutcome] = useState<
@@ -49,6 +58,33 @@ export default function AgentLearningDashboardPage() {
     toast.success("Decisão registrada com evidência.");
     setSelected(undefined);
     setEvidence("");
+  };
+
+  const promoteTemisRun = async (runId: number) => {
+    if (
+      !window.confirm(
+        "Promover este playbook para orientar novas imagens no mesmo contexto?",
+      )
+    )
+      return;
+    await promoteTemis.mutateAsync(runId);
+    toast.success("Playbook visual promovido para o contexto aprovado.");
+  };
+
+  const backfillTemisHistory = async (event: FormEvent) => {
+    event.preventDefault();
+    const experimentId = Number(historicalExperimentId);
+    if (!Number.isInteger(experimentId) || experimentId <= 0) return;
+    if (
+      !window.confirm(
+        `Incorporar os pareceres históricos do experimento #${experimentId} sem reexecutar providers?`,
+      )
+    )
+      return;
+    const result = await backfillTemis.mutateAsync(experimentId);
+    toast.success(
+      `${result.ingestedCases} casos históricos incorporados; ${result.generatedRuns} replays criados.`,
+    );
   };
 
   if (query.isLoading) return <p>Carregando aprendizados...</p>;
@@ -147,6 +183,154 @@ export default function AgentLearningDashboardPage() {
               <tr>
                 <td colSpan={6} className="text-body-secondary">
                   Nenhuma skill candidata registrada.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+
+      <h2 className="h5">Aprendizado visual de Têmis</h2>
+      <p className="text-body-secondary">
+        Replays com 10 casos históricos e 5 casos de holdout. A candidata só
+        orienta novas imagens depois de promoção humana.
+      </p>
+      <form className="card card-body mb-3" onSubmit={backfillTemisHistory}>
+        <label className="form-label" htmlFor="temis-history-experiment-id">
+          Incorporar tentativas anteriores
+        </label>
+        <div className="d-flex flex-column flex-sm-row gap-2">
+          <input
+            id="temis-history-experiment-id"
+            className="form-control"
+            type="number"
+            min="1"
+            inputMode="numeric"
+            placeholder="ID do experimento, por exemplo 88"
+            value={historicalExperimentId}
+            onChange={(event) => setHistoricalExperimentId(event.target.value)}
+          />
+          <button
+            type="submit"
+            className="btn btn-outline-primary text-nowrap"
+            disabled={
+              backfillTemis.isPending ||
+              !Number.isInteger(Number(historicalExperimentId)) ||
+              Number(historicalExperimentId) <= 0
+            }
+          >
+            {backfillTemis.isPending ? (
+              <span
+                className="spinner-border spinner-border-sm me-2"
+                aria-hidden="true"
+              />
+            ) : null}
+            Incorporar histórico
+          </button>
+        </div>
+        <small className="text-body-secondary mt-2">
+          A operação é idempotente, não chama modelos e não promove regras.
+        </small>
+        {backfillTemis.data ? (
+          <div className="alert alert-success mt-3 mb-0" role="status">
+            Experimento #{backfillTemis.data.experimentId}:{" "}
+            {backfillTemis.data.ingestedCases} novos casos e{" "}
+            {backfillTemis.data.generatedRuns} consolidações criadas.
+          </div>
+        ) : null}
+      </form>
+      {temisRunsQuery.isError || temisMetricsQuery.isError ? (
+        <div className="alert alert-warning">
+          Não foi possível carregar a governança visual de Têmis.
+        </div>
+      ) : null}
+      <div className="table-responsive mb-4">
+        <table className="table align-middle">
+          <thead>
+            <tr>
+              <th>Contexto</th>
+              <th>Baseline</th>
+              <th>Candidata</th>
+              <th>Estado</th>
+              <th>Decisão</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(temisRunsQuery.data ?? []).map((run) => (
+              <tr key={run.id}>
+                <td className="text-break">{run.contextKey}</td>
+                <td>{run.baselineVersion}</td>
+                <td>{run.candidateVersion}</td>
+                <td>{run.status}</td>
+                <td>
+                  {run.status === "READY_FOR_PROMOTION" ? (
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm"
+                      disabled={promoteTemis.isPending}
+                      onClick={() => promoteTemisRun(run.id)}
+                    >
+                      {promoteTemis.isPending ? (
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          aria-hidden="true"
+                        />
+                      ) : null}
+                      Promover playbook
+                    </button>
+                  ) : (
+                    <span className="text-body-secondary">
+                      Sem ação disponível
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {!temisRunsQuery.isLoading &&
+            (temisRunsQuery.data ?? []).length === 0 ? (
+              <tr>
+                <td colSpan={5} className="text-body-secondary">
+                  Nenhuma amostra de 15 casos foi consolidada ainda.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+
+      <h3 className="h6">Resultado por versão</h3>
+      <div className="table-responsive mb-4">
+        <table className="table align-middle">
+          <thead>
+            <tr>
+              <th>Versão</th>
+              <th>Casos</th>
+              <th>Aprovação na 1ª</th>
+              <th>Aprovação até 3 tentativas</th>
+              <th>Erro repetido</th>
+              <th>Custo/aprovado</th>
+              <th>Menor qualidade</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(temisMetricsQuery.data ?? []).map((metric) => (
+              <tr key={`${metric.contextKey}-${metric.playbookVersion}`}>
+                <td>{metric.playbookVersion}</td>
+                <td>{metric.cases}</td>
+                <td>{Math.round(metric.firstPassApprovalRate * 100)}%</td>
+                <td>{Math.round(metric.approvalWithinThreeRate * 100)}%</td>
+                <td>{Math.round(metric.recurringIssueRate * 100)}%</td>
+                <td>
+                  US$ {Number(metric.averageCostPerApprovedAsset).toFixed(4)}
+                </td>
+                <td>{Number(metric.minimumPremiumScore).toFixed(0)}</td>
+              </tr>
+            ))}
+            {!temisMetricsQuery.isLoading &&
+            (temisMetricsQuery.data ?? []).length === 0 ? (
+              <tr>
+                <td colSpan={7} className="text-body-secondary">
+                  As métricas aparecerão após os primeiros pareceres auditados.
                 </td>
               </tr>
             ) : null}
@@ -294,6 +478,12 @@ export default function AgentLearningDashboardPage() {
                   className="btn btn-primary"
                   disabled={review.isPending}
                 >
+                  {review.isPending ? (
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      aria-hidden="true"
+                    />
+                  ) : null}
                   Registrar decisão
                 </button>
               </div>

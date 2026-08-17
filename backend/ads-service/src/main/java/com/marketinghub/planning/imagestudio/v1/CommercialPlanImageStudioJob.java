@@ -81,6 +81,18 @@ public class CommercialPlanImageStudioJob {
   @Column(name = "model", length = 100)
   private String model;
 
+  /** Versão do playbook governado congelada antes do consumo do modelo visual. */
+  @Column(name = "playbook_version", length = 80)
+  private String playbookVersion;
+
+  /** Contexto segregado usado para recuperar somente aprendizados compatíveis. */
+  @Column(name = "playbook_context_key", length = 120)
+  private String playbookContextKey;
+
+  /** Snapshot do playbook e dos exemplos aprovados efetivamente entregues ao executor. */
+  @Column(name = "playbook_json", columnDefinition = "LONGTEXT")
+  private String playbookJson;
+
   @Column(name = "producer_execution_id", length = 64)
   private String producerExecutionId;
 

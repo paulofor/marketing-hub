@@ -1,0 +1,150 @@
+openapi: 3.0.3
+info:
+  title: Aprendizado visual governado de Têmis
+  version: 1.0.0
+paths:
+  /api/internal/agent-learning/v1/agents/meta-ad-approver/visual-learning/stage-executions/pending:
+    get:
+      summary: Reserva amostras congeladas de replay visual
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 3
+      responses:
+        "200":
+          description: Amostras pendentes
+  /api/internal/agent-learning/v1/agents/meta-ad-approver/visual-learning/stage-executions/{id}/result:
+    post:
+      summary: Persiste o resultado de replay e holdout sem autopromoção
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VisualLearningResult"
+      responses:
+        "200":
+          description: Candidata avaliada
+        "400":
+          description: Amostra ou autoridade inválida
+  /api/internal/agent-learning/v1/agents/meta-ad-approver/visual-learning/stage-executions/{id}/failure:
+    post:
+      summary: Registra falha técnica da consolidação
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: Falha auditada
+  /api/internal/agent-learning/v1/agents/meta-ad-approver/visual-learning/runs:
+    get:
+      summary: Lista consolidações auditáveis
+      responses:
+        "200":
+          description: Histórico de consolidações
+  /api/internal/agent-learning/v1/agents/meta-ad-approver/visual-learning/metrics:
+    get:
+      summary: Lista métricas reais por contexto e versão
+      responses:
+        "200":
+          description: Qualidade, retrabalho, recorrência e custo
+  /api/internal/agent-learning/v1/agents/meta-ad-approver/visual-learning/history/{experimentId}/backfill:
+    post:
+      summary: Incorpora pareceres históricos sem reexecutar providers
+      parameters:
+        - $ref: "#/components/parameters/ExperimentId"
+      responses:
+        "200":
+          description: Quantidades auditáveis de casos incorporados e replays criados
+        "404":
+          description: Experimento sem plano comercial
+  /api/internal/agent-learning/v1/agents/meta-ad-approver/visual-learning/runs/{id}/promotion:
+    post:
+      summary: Promove humanamente uma candidata elegível
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          description: Playbook promovido
+        "409":
+          description: Evidência insuficiente para promoção
+components:
+  parameters:
+    RunId:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+        format: int64
+    ExperimentId:
+      in: path
+      name: experimentId
+      required: true
+      schema:
+        type: integer
+        format: int64
+  schemas:
+    VisualLearningResult:
+      type: object
+      required:
+        - producerExecutionId
+        - rules
+        - avoid
+        - baselineReplayScore
+        - candidateReplayScore
+        - baselineHoldoutScore
+        - candidateHoldoutScore
+        - regressionPassed
+        - localValidationPassed
+        - externalProviderCalled
+        - spendingAuthorized
+        - publicationPerformed
+        - caseAssessments
+      properties:
+        producerExecutionId:
+          type: string
+        rules:
+          type: array
+          minItems: 1
+          maxItems: 8
+          items:
+            type: string
+        avoid:
+          type: array
+          minItems: 1
+          maxItems: 8
+          items:
+            type: string
+        baselineReplayScore:
+          type: number
+        candidateReplayScore:
+          type: number
+        baselineHoldoutScore:
+          type: number
+        candidateHoldoutScore:
+          type: number
+        regressionPassed:
+          type: boolean
+        localValidationPassed:
+          type: boolean
+        externalProviderCalled:
+          type: boolean
+        spendingAuthorized:
+          type: boolean
+        publicationPerformed:
+          type: boolean
+        caseAssessments:
+          type: array
+          minItems: 15
+          maxItems: 15
+          items:
+            type: object
+        requestJson:
+          type: string
+        responseJson:
+          type: string

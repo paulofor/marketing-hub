@@ -1,7 +1,7 @@
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["decision", "inspected", "qualityScore", "deliveryFidelityScore", "commercialReuseScore", "summary", "issues"],
+  "required": ["decision", "inspected", "qualityScore", "deliveryFidelityScore", "commercialReuseScore", "summary", "issues", "issueCodes"],
   "properties": {
     "decision": { "type": "string", "enum": ["APPROVED", "ADJUST"] },
     "inspected": { "type": "boolean" },
@@ -12,6 +12,11 @@
     "issues": {
       "type": "array",
       "items": { "type": "string", "minLength": 5 }
+    },
+    "issueCodes": {
+      "type": "array",
+      "maxItems": 8,
+      "items": { "type": "string", "minLength": 3, "maxLength": 80 }
     }
   }
 }

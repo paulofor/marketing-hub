@@ -44,6 +44,39 @@ export type AgentLearningDashboard = {
   memories: AgentLearningMemory[];
 };
 
+export type TemisVisualLearningRun = {
+  id: number;
+  contextKey: string;
+  status: string;
+  baselineVersion: string;
+  candidateVersion: string;
+  memoryId?: number;
+  learningExperimentId?: number;
+  error?: string;
+  startedAt?: string;
+  finishedAt?: string;
+  createdAt: string;
+};
+
+export type TemisVisualLearningMetric = {
+  contextKey: string;
+  playbookVersion: string;
+  cases: number;
+  firstPassApprovalRate: number;
+  approvalWithinThreeRate: number;
+  recurringIssueRate: number;
+  averageCostPerApprovedAsset: number;
+  minimumPremiumScore: number;
+};
+
+export type TemisVisualLearningBackfill = {
+  experimentId: number;
+  scannedAssets: number;
+  scannedCreatives: number;
+  ingestedCases: number;
+  generatedRuns: number;
+};
+
 /** Consulta somente evidências persistidas de aprendizado e reutilização. */
 export function useAgentLearningDashboard() {
   return useQuery({
@@ -74,5 +107,79 @@ export function useReviewAgentMemory() {
     },
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["agent-learning-dashboard"] }),
+  });
+}
+
+/** Consulta as consolidações visuais auditáveis de Têmis. */
+export function useTemisVisualLearningRuns() {
+  return useQuery({
+    queryKey: ["temis-visual-learning-runs"],
+    queryFn: async () => {
+      const { data } = await axios.get<TemisVisualLearningRun[]>(
+        "/api/internal/agent-learning/v1/agents/meta-ad-approver/visual-learning/runs",
+      );
+      return data;
+    },
+  });
+}
+
+/** Consulta métricas reais por contexto e versão de playbook. */
+export function useTemisVisualLearningMetrics() {
+  return useQuery({
+    queryKey: ["temis-visual-learning-metrics"],
+    queryFn: async () => {
+      const { data } = await axios.get<TemisVisualLearningMetric[]>(
+        "/api/internal/agent-learning/v1/agents/meta-ad-approver/visual-learning/metrics",
+      );
+      return data;
+    },
+  });
+}
+
+/** Promove uma candidata somente após a decisão humana explícita no painel. */
+export function usePromoteTemisVisualLearningRun() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (runId: number) => {
+      await axios.post(
+        `/api/internal/agent-learning/v1/agents/meta-ad-approver/visual-learning/runs/${runId}/promotion`,
+      );
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["temis-visual-learning-runs"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["temis-visual-learning-metrics"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["agent-learning-dashboard"],
+        }),
+      ]);
+    },
+  });
+}
+
+/** Incorpora pareceres históricos sem reexecutar provider, geração ou aprovação. */
+export function useBackfillTemisVisualLearningHistory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (experimentId: number) => {
+      const { data } = await axios.post<TemisVisualLearningBackfill>(
+        `/api/internal/agent-learning/v1/agents/meta-ad-approver/visual-learning/history/${experimentId}/backfill`,
+      );
+      return data;
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["temis-visual-learning-runs"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["temis-visual-learning-metrics"],
+        }),
+      ]);
+    },
   });
 }

@@ -72,18 +72,29 @@ class TemisCreativeImprovementProcessor {
     prompt += section("REQUISITOS OBRIGATÓRIOS", strings(value.get("mandatoryVisualRequirements")));
     prompt += section("ELEMENTOS PROIBIDOS", strings(value.get("forbiddenVisualElements")));
     prompt += section("CRITÉRIOS DE ACEITAÇÃO", strings(value.get("visualAcceptanceCriteria")));
-    List<String> references = strings(value.get("referenceImageUrls"));
+    TemisVisualPlaybook playbook = TemisVisualPlaybook.from(value.get("visualPlaybook"));
+    List<String> references = new java.util.ArrayList<>(strings(value.get("referenceImageUrls")));
+    playbook.exampleUrls().stream()
+        .filter(url -> !references.contains(url))
+        .forEach(references::add);
+    String format = text(value.get("format"));
+    String size =
+        format.toLowerCase(java.util.Locale.ROOT).contains("story")
+                || format.toLowerCase(java.util.Locale.ROOT).contains("9:16")
+            ? "1152x2048"
+            : "2048x2048";
     return new TemisImageStudioJob(
         creativeId,
         number(value.get("experimentId")),
         references.isEmpty() ? "CREATE" : "EDIT",
         prompt,
-        "Correção do criativo #" + creativeId,
+        "Correção " + (format.isBlank() ? "" : format + " ") + "do criativo #" + creativeId,
         List.of("DELIVERY", "LANDING", "ADS", "SOCIAL"),
-        "1024x1536",
+        size,
         "high",
-        references,
-        UUID.randomUUID().toString());
+        references.stream().limit(4).toList(),
+        UUID.randomUUID().toString(),
+        playbook);
   }
 
   /** Envia o binário ao endpoint canônico já preparado para Têmis. */

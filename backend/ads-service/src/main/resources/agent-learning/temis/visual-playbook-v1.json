@@ -1,0 +1,17 @@
+{
+  "version": "temis-visual-playbook-v1",
+  "rules": [
+    "Preservar os pixels e a identidade dos entregáveis aprovados; o modelo pode criar apenas cenário, enquadramento e contexto.",
+    "Fazer o produto real dominar a leitura nos primeiros dois segundos, sem confundi-lo com serviço, portfólio ou inspiração genérica.",
+    "Usar composição nativa do placement e manter os entregáveis completos, distintos e legíveis em mobile.",
+    "Manter textos comerciais nos campos do anúncio; não inventar palavras, preço, CTA, logotipo, interface ou recursos dentro da imagem.",
+    "Quando uma falha reaparecer, mudar território, cena e mecanismo de prova em vez de produzir variação cosmética."
+  ],
+  "avoid": [
+    "fotografias genéricas do nicho em dispositivos sem prova do produto",
+    "mosaico de miniaturas ilegíveis",
+    "mockup vazio, interface simulada ou controles falsos",
+    "texto gerado ou dados pessoais fictícios fora de homologação sintética declarada",
+    "redesenho aproximado de entregável aprovado"
+  ]
+}

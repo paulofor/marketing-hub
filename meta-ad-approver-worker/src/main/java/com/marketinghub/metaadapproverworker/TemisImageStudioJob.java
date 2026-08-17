@@ -14,9 +14,15 @@ public record TemisImageStudioJob(
     String size,
     String quality,
     List<String> referenceImageUrls,
-    String producerExecutionId) {
+    String producerExecutionId,
+    TemisVisualPlaybook visualPlaybook) {
   /** Converte o contrato genérico do backend em job validado do executor. */
   public static TemisImageStudioJob from(Map<String, Object> value) {
+    TemisVisualPlaybook playbook = TemisVisualPlaybook.from(value.get("visualPlaybook"));
+    List<String> references = new java.util.ArrayList<>(strings(value.get("referenceImageUrls")));
+    playbook.exampleUrls().stream()
+        .filter(url -> !references.contains(url))
+        .forEach(references::add);
     return new TemisImageStudioJob(
         number(value.get("jobId")),
         number(value.get("commercialPlanId")),
@@ -26,8 +32,9 @@ public record TemisImageStudioJob(
         strings(value.get("purposes")),
         text(value.get("size")),
         text(value.get("quality")),
-        strings(value.get("referenceImageUrls")),
-        text(value.get("producerExecutionId")));
+        references.stream().limit(4).toList(),
+        text(value.get("producerExecutionId")),
+        playbook);
   }
 
   /** Converte um identificador numérico obrigatório. */

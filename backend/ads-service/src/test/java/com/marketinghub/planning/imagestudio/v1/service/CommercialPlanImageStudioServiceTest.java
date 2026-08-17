@@ -9,6 +9,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agentlearning.v1.TemisVisualLearningService;
+import com.marketinghub.agentlearning.v1.TemisVisualPlaybookService;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.service.CreativeService;
 import com.marketinghub.planning.CommercialPlan;
@@ -39,6 +41,8 @@ class CommercialPlanImageStudioServiceTest {
   private CommercialPlanVisualAssetRepository visualAssetRepository;
   private CommercialPlanImageStudioService service;
   private CreativeService creativeService;
+  private TemisVisualPlaybookService playbookService;
+  private TemisVisualLearningService learningService;
 
   /** Inicializa mocks isolados sem storage ou banco reais. */
   @BeforeEach
@@ -47,6 +51,17 @@ class CommercialPlanImageStudioServiceTest {
     jobRepository = mock(CommercialPlanImageStudioJobRepository.class);
     visualAssetRepository = mock(CommercialPlanVisualAssetRepository.class);
     creativeService = mock(CreativeService.class);
+    playbookService = mock(TemisVisualPlaybookService.class);
+    learningService = mock(TemisVisualLearningService.class);
+    when(playbookService.resolve(any(), any(), any(), any()))
+        .thenReturn(
+            new TemisVisualPlaybookDto(
+                "temis-visual-playbook-v1",
+                "n=none|p=unknown|u=delivery|pl=feed|f=1024x1536",
+                "CANONICAL_BASELINE",
+                List.of("Preservar o produto real"),
+                List.of("Não redesenhar o entregável"),
+                List.of()));
     service =
         new CommercialPlanImageStudioService(
             planService,
@@ -55,7 +70,9 @@ class CommercialPlanImageStudioServiceTest {
             mock(AssetStorageService.class),
             mock(AssetRepository.class),
             new ObjectMapper(),
-            creativeService);
+            creativeService,
+            playbookService,
+            learningService);
     when(jobRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
   }
 
@@ -81,6 +98,8 @@ class CommercialPlanImageStudioServiceTest {
                     "1152x2048",
                     "high",
                     "gpt-image-2",
+                    "temis-visual-playbook-v1",
+                    "contexto",
                     new BigDecimal("0.1836"),
                     null,
                     createdAt,
@@ -168,6 +187,8 @@ class CommercialPlanImageStudioServiceTest {
             "1152x2048",
             "high",
             null,
+            "temis-visual-playbook-v1",
+            "contexto",
             null,
             null,
             null,
@@ -181,6 +202,7 @@ class CommercialPlanImageStudioServiceTest {
             CommercialPlanImageStudioOperation.EDIT,
             "Story premium",
             "Preservar produto real",
+            "temis-visual-playbook-v1",
             CommercialPlanImageStudioStatus.FAILED))
         .thenReturn(List.of(existing));
 
@@ -388,6 +410,12 @@ class CommercialPlanImageStudioServiceTest {
     job.setReferenceAssetIdsJson("[]");
     job.setSize("1024x1536");
     job.setQuality("high");
+    job.setPlaybookVersion("temis-visual-playbook-v1");
+    job.setPlaybookContextKey("contexto");
+    job.setPlaybookJson(
+        "{\"version\":\"temis-visual-playbook-v1\",\"contextKey\":\"contexto\","
+            + "\"status\":\"CANONICAL_BASELINE\",\"promotedRules\":[],\"avoid\":[],"
+            + "\"approvedExamples\":[]}");
     job.setProducerExecutionId(producer);
     return job;
   }

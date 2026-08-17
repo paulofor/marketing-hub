@@ -2,6 +2,7 @@ package com.marketinghub.repository.jpa.planning;
 
 import com.marketinghub.planning.imagestudio.v1.CommercialPlanImageStudioJob;
 import com.marketinghub.planning.imagestudio.v1.CommercialPlanImageStudioStatus;
+import com.marketinghub.repository.jpa.agentlearning.TemisVisualLearningAssetHistory;
 import jakarta.persistence.LockModeType;
 import java.time.Instant;
 import java.util.List;
@@ -18,7 +19,8 @@ public interface CommercialPlanImageStudioJobRepository
   @Query(
       "select new com.marketinghub.repository.jpa.planning.CommercialPlanImageStudioJobSummary("
           + "j.id, j.commercialPlan.id, source.id, result.id, j.operation, j.status, j.label, "
-          + "j.prompt, j.purposesJson, j.size, j.quality, j.model, j.costUsd, j.error, "
+          + "j.prompt, j.purposesJson, j.size, j.quality, j.model, j.playbookVersion, "
+          + "j.playbookContextKey, j.costUsd, j.error, "
           + "j.startedAt, j.finishedAt, j.createdAt) "
           + "from CommercialPlanImageStudioJob j "
           + "left join j.sourceVisualAsset source left join j.resultVisualAsset result "
@@ -30,7 +32,8 @@ public interface CommercialPlanImageStudioJobRepository
   @Query(
       "select new com.marketinghub.repository.jpa.planning.CommercialPlanImageStudioJobSummary("
           + "j.id, j.commercialPlan.id, source.id, result.id, j.operation, j.status, j.label, "
-          + "j.prompt, j.purposesJson, j.size, j.quality, j.model, j.costUsd, j.error, "
+          + "j.prompt, j.purposesJson, j.size, j.quality, j.model, j.playbookVersion, "
+          + "j.playbookContextKey, j.costUsd, j.error, "
           + "j.startedAt, j.finishedAt, j.createdAt) "
           + "from CommercialPlanImageStudioJob j "
           + "left join j.sourceVisualAsset source left join j.resultVisualAsset result "
@@ -38,6 +41,7 @@ public interface CommercialPlanImageStudioJobRepository
           + " and ((:sourceId is null and j.sourceVisualAsset is null)"
           + " or j.sourceVisualAsset.id = :sourceId)"
           + " and j.operation = :operation and j.label = :label and j.prompt = :prompt"
+          + " and j.playbookVersion = :playbookVersion"
           + " and j.status <> :failed order by j.createdAt desc")
   List<CommercialPlanImageStudioJobSummary> findEquivalentSummaries(
       @Param("planId") Long planId,
@@ -46,6 +50,7 @@ public interface CommercialPlanImageStudioJobRepository
           com.marketinghub.planning.imagestudio.v1.CommercialPlanImageStudioOperation operation,
       @Param("label") String label,
       @Param("prompt") String prompt,
+      @Param("playbookVersion") String playbookVersion,
       @Param("failed") CommercialPlanImageStudioStatus failed);
 
   /** Lista a fila de produção na ordem canônica. */
@@ -67,4 +72,17 @@ public interface CommercialPlanImageStudioJobRepository
 
   /** Localiza o job produtor pelo entregável resultante. */
   Optional<CommercialPlanImageStudioJob> findByResultVisualAssetId(Long assetId);
+
+  /** Lista histórico revisado sem carregar payloads base64 de produção armazenados em LONGTEXT. */
+  @Query(
+      "select new com.marketinghub.repository.jpa.agentlearning.TemisVisualLearningAssetHistory("
+          + "a.id, a.commercialPlan.id, a.label, a.versionNumber, a.status, a.agentReviewStatus, "
+          + "a.reviewerExecutionId, a.agentReviewJson, a.agentReviewRequestJson, "
+          + "a.agentReviewResponseJson, j.id, j.purposesJson, j.size, j.playbookVersion, "
+          + "j.playbookContextKey, j.costUsd) "
+          + "from CommercialPlanImageStudioJob j join j.resultVisualAsset a "
+          + "where j.commercialPlan.id = :planId and a.agentReviewStatus is not null "
+          + "order by a.id")
+  List<TemisVisualLearningAssetHistory> findVisualLearningHistoryByPlanId(
+      @Param("planId") Long planId);
 }

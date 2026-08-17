@@ -20,6 +20,8 @@ public record CommercialPlanImageStudioJobDto(
     String size,
     String quality,
     String model,
+    String playbookVersion,
+    String playbookContextKey,
     BigDecimal costUsd,
     String error,
     Instant startedAt,

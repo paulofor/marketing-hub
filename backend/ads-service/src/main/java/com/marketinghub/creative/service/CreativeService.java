@@ -3,6 +3,8 @@ package com.marketinghub.creative.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agentlearning.v1.TemisVisualLearningService;
+import com.marketinghub.agentlearning.v1.TemisVisualPlaybookService;
 import com.marketinghub.cost.CostAttributionService;
 import com.marketinghub.creative.*;
 import com.marketinghub.creative.convergence.v1.CreativeConvergenceReport;
@@ -31,6 +33,7 @@ import com.marketinghub.planning.imagestudio.v1.CommercialPlanImageStudioJob;
 import com.marketinghub.planning.imagestudio.v1.CommercialPlanImageStudioOperation;
 import com.marketinghub.planning.imagestudio.v1.CommercialPlanImageStudioStatus;
 import com.marketinghub.planning.imagestudio.v1.CommercialPlanVisualAssetReviewStatus;
+import com.marketinghub.planning.imagestudio.v1.service.TemisVisualPlaybookDto;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.creative.label.AngleRepository;
@@ -102,6 +105,8 @@ public class CreativeService {
   private final CommercialPlanRepository commercialPlanRepository;
   private final CommercialPlanVisualAssetRepository commercialPlanVisualAssetRepository;
   private final CommercialPlanImageStudioJobRepository commercialPlanImageStudioJobRepository;
+  private final TemisVisualPlaybookService temisVisualPlaybookService;
+  private final TemisVisualLearningService temisVisualLearningService;
 
   /** Cria e persiste um criativo para o experimento informado. */
   @Transactional
@@ -545,6 +550,7 @@ public class CreativeService {
       creative.setReviewedAt(null);
     }
     Creative saved = repository.save(creative);
+    temisVisualLearningService.recordCreativeReview(saved, request);
     refreshExperimentApproval(saved.getExperiment());
     return saved;
   }
@@ -582,6 +588,31 @@ public class CreativeService {
               creative.setAgentImprovementStatus(CreativeImprovementStatus.PROCESSING);
               repository.save(creative);
               JsonNode correction = readImprovementJson(creative);
+              com.marketinghub.planning.CommercialPlan plan =
+                  commercialPlanRepository
+                      .findByExperimentReference(creative.getExperiment().getId())
+                      .stream()
+                      .findFirst()
+                      .orElseThrow(
+                          () ->
+                              new IllegalStateException(
+                                  "Retrabalho visual exige plano comercial vinculado"));
+              String size =
+                  Objects.toString(creative.getFormat(), "")
+                          .toLowerCase(java.util.Locale.ROOT)
+                          .contains("story")
+                      ? "1152x2048"
+                      : "2048x2048";
+              TemisVisualPlaybookDto playbook =
+                  temisVisualPlaybookService.resolve(
+                      plan, creative.getFormat(), List.of("ADS"), size);
+              if (correction instanceof com.fasterxml.jackson.databind.node.ObjectNode object) {
+                object.put("playbookVersion", playbook.version());
+                object.put("playbookContextKey", playbook.contextKey());
+                object.set("visualPlaybook", objectMapper.valueToTree(playbook));
+                creative.setAgentImprovementJson(object.toString());
+                repository.save(creative);
+              }
               return new CreativeImprovementPendingDto(
                   creative.getId(),
                   creative.getExperiment().getId(),
@@ -597,7 +628,8 @@ public class CreativeService {
                   stringList(correction.path("forbiddenVisualElements")),
                   stringList(correction.path("visualAcceptanceCriteria")),
                   approvedCreativeReferenceUrls(creative.getExperiment().getId()),
-                  creative.getAgentReviewJson());
+                  creative.getAgentReviewJson(),
+                  playbook);
             })
         .toList();
   }
@@ -783,9 +815,25 @@ public class CreativeService {
     job.setPrompt(requestJson == null ? "Retrabalho visual de Têmis" : requestJson);
     job.setPurposesJson(visual.getPurposesJson());
     job.setReferenceAssetIdsJson("[]");
-    job.setSize("1024x1536");
+    String improvementSize =
+        Objects.toString(source.getFormat(), "")
+                .toLowerCase(java.util.Locale.ROOT)
+                .contains("story")
+            ? "1152x2048"
+            : "2048x2048";
+    job.setSize(improvementSize);
     job.setQuality("high");
     job.setModel(model);
+    JsonNode frozenCorrection = readImprovementJson(source);
+    job.setPlaybookVersion(
+        frozenCorrection.path("playbookVersion").asText("temis-visual-playbook-v1"));
+    job.setPlaybookContextKey(
+        frozenCorrection
+            .path("playbookContextKey")
+            .asText(
+                temisVisualPlaybookService.contextKey(
+                    plan, source.getFormat(), List.of("ADS"), improvementSize)));
+    job.setPlaybookJson(frozenCorrection.path("visualPlaybook").toString());
     job.setProducerExecutionId(producerExecutionId.trim());
     job.setRequestJson(requestJson);
     job.setResponseJson(responseJson);

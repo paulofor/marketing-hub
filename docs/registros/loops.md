@@ -1386,6 +1386,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** produção, reconexão Codex e telemetria disputavam o scheduler padrão de uma única thread; o device code podia ocupar essa thread por até 16 minutos.
 - **Correção sistêmica:** o `landing-generator-agent-worker` passa a manter ao menos três threads agendadas independentes, com teste de contrato que impede regressão.
 - **Critério preventivo:** qualquer nova rotina bloqueante de Dédalo deve possuir capacidade independente sem impedir o consumo do endpoint `pending` canônico.
+
 # LOOP-META-APPROVER-CALLBACK-SEM-TIMEOUT — Fila de revisão trava após indisponibilidade do backend
 
 - **Sintoma:** criativos permanecem `PROCESSING` sem processo Codex ativo e novos criativos ficam `PENDING`.
@@ -1398,6 +1399,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Fechamento na revisão de produto digital (2026-08-17):** o prompt de Têmis ainda afirmava que o retrabalho não recebia arquivos reais e proibia qualquer composição com formatos complementares. Isso contradizia a decisão canônica da Biblioteca Audiovisual e fazia o agente rejeitar exatamente a prova híbrida requerida. O contrato agora informa as referências aprovadas entregues pelo backend, exige preservação sem redesenho e diferencia composição editorial auditável de colagem genérica.
 - **Fechamento de retrabalhos supersedidos (2026-08-17):** ao aprovar uma versão final, ciclos `PENDING` ou `PROCESSING` dos ancestrais continuavam materializando imagens descartadas na Biblioteca. A aprovação humana agora encerra automaticamente somente os retrabalhos da mesma linhagem, preserva conceitos paralelos e registra qual criativo final supersedeu cada ciclo.
 - **Prevenção complementar no CI (2026-08-15):** a variável pode existir com valor vazio no runner; valor ausente ou em branco agora resolve explicitamente para `/usr/bin/chromium`, evitando que o teste passe localmente e bloqueie a publicação no workflow.
+
 ## LOOP-IMAGE-STUDIO-LEGACY-BASE64-HEAP — histórico visual esgota o backend
 
 - **Data:** 2026-08-16.
@@ -1411,3 +1413,12 @@ Use este checklist quando o problema estiver em algum loop acima:
   `usage_json`.
 - **Contrato:** o teste do Estúdio deve comprovar que o histórico usa a projeção leve; payload bruto
   continua auditável somente nos fluxos específicos que realmente o necessitam.
+
+## LOOP-TEMIS-MEMORIA-SEM-PROMOCAO — tentativas se repetem apesar do histórico acumulado
+
+- **Data:** 2026-08-17.
+- **Sintoma:** no experimento #88, Têmis acumulou dezenas de memórias e muitas tentativas de produto e criativo, mas os mesmos erros visuais reapareceram porque todas as memórias permaneciam candidatas e o Estúdio não recebia um playbook validado.
+- **Causa-raiz:** o sistema registrava pareceres, porém não congelava replay e holdout, não comparava uma candidata com a baseline e não havia promoção humana contextual antes da próxima produção.
+- **Correção sistêmica:** cada parecer independente gera um caso auditável; quinze casos homogêneos abrem consolidação 10+5 em modo sombra, sem efeitos externos. Apenas uma candidata que supera os gates pode ser promovida humanamente e injetada, junto de dois exemplos aprovados, em jobs novos do mesmo contexto.
+- **Prevenção:** testes de backend, worker e tela exigem segregação contextual, snapshot versionado, quinze IDs congelados, bloqueio de provider/gasto/publicação e ausência de autopromoção. As métricas expõem primeira tentativa, até três versões, recorrência, custo e qualidade premium.
+- **Fechamento do legado:** um comando administrativo idempotente incorpora pareceres já persistidos por experimento usando projeções leves, sem carregar imagens base64 e sem repetir provider, revisão ou gasto.

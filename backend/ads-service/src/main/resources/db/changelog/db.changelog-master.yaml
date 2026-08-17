@@ -1841,3 +1841,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-16-temis-image-studio-v1.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-17-temis-visual-learning-v1.yaml
+      relativeToChangelogFile: true

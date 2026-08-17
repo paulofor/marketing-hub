@@ -159,6 +159,7 @@ public class TemisImageStudioOpenAiClient {
       return new String(input.readAllBytes(), StandardCharsets.UTF_8)
           .replace("{{JOB_PROMPT}}", job.prompt().trim())
           .replace("{{PURPOSES}}", String.join(", ", job.purposes()))
+          .replace("{{LEARNING_PLAYBOOK}}", playbookText(job.visualPlaybook()))
           .replace(
               "{{FORMAT_CONSTRAINT}}",
               job.label().toLowerCase(java.util.Locale.ROOT).contains("story")
@@ -168,7 +169,9 @@ public class TemisImageStudioOpenAiClient {
               "{{EDIT_CONSTRAINT}}",
               "EDIT".equalsIgnoreCase(job.operation())
                   ? "- Esta é uma edição: mantenha todas as regiões não citadas sem mudanças perceptíveis."
-                  : "- Esta é uma criação sem arquivo-base; não simule uma referência inexistente.");
+                  : job.referenceImageUrls().isEmpty()
+                      ? "- Esta é uma criação sem arquivo-base; não simule uma referência inexistente."
+                      : "- Esta é uma criação orientada por exemplos premium aprovados: use-os como prova e linguagem visual, preserve o produto real e não os apresente como um arquivo-base fictício.");
     } catch (IOException ex) {
       log.error(
           "Falha ao carregar prompt versionado do Estúdio Visual. resource={}",
@@ -223,6 +226,7 @@ public class TemisImageStudioOpenAiClient {
       value.put("size", job.size());
       value.put("quality", job.quality());
       value.put("purposes", job.purposes());
+      value.put("visualPlaybook", job.visualPlaybook().audit());
       value.put("output_format", "png");
       value.put(
           "references",
@@ -319,6 +323,31 @@ public class TemisImageStudioOpenAiClient {
     } catch (java.security.NoSuchAlgorithmException ex) {
       throw new IllegalStateException("SHA-256 indisponível", ex);
     }
+  }
+
+  /** Formata somente regras promovidas e exemplos aprovados para o prompt operacional. */
+  private String playbookText(TemisVisualPlaybook playbook) {
+    StringBuilder value = new StringBuilder();
+    value.append("Versão: ").append(playbook.version()).append('\n');
+    value.append("Contexto: ").append(playbook.contextKey()).append('\n');
+    value.append("Regras válidas:\n");
+    playbook.promotedRules().forEach(rule -> value.append("- ").append(rule).append('\n'));
+    value.append("Evitar:\n");
+    playbook.avoid().forEach(rule -> value.append("- ").append(rule).append('\n'));
+    value.append("Exemplos premium aprovados:\n");
+    playbook
+        .approvedExamples()
+        .forEach(
+            example ->
+                value
+                    .append("- assetId=")
+                    .append(example.assetId())
+                    .append("; formato=")
+                    .append(example.format())
+                    .append("; rótulo=")
+                    .append(example.label())
+                    .append('\n'));
+    return value.toString().trim();
   }
 
   /** Resultado técnico da chamada visual entregue ao backend. */

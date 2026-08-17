@@ -2,6 +2,8 @@ package com.marketinghub.planning.imagestudio.v1.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agentlearning.v1.TemisVisualLearningService;
+import com.marketinghub.agentlearning.v1.TemisVisualPlaybookService;
 import com.marketinghub.creative.dto.CreativeImprovementResultRequest;
 import com.marketinghub.creative.service.CreativeService;
 import com.marketinghub.media.Asset;
@@ -57,6 +59,8 @@ public class CommercialPlanImageStudioService {
   private final AssetRepository assetRepository;
   private final ObjectMapper objectMapper;
   private final CreativeService creativeService;
+  private final TemisVisualPlaybookService playbookService;
+  private final TemisVisualLearningService learningService;
 
   /** Inicializa o estúdio com as fontes de verdade de plano, fila, biblioteca e storage. */
   public CommercialPlanImageStudioService(
@@ -66,7 +70,9 @@ public class CommercialPlanImageStudioService {
       AssetStorageService assetStorageService,
       AssetRepository assetRepository,
       ObjectMapper objectMapper,
-      CreativeService creativeService) {
+      CreativeService creativeService,
+      TemisVisualPlaybookService playbookService,
+      TemisVisualLearningService learningService) {
     this.planService = planService;
     this.jobRepository = jobRepository;
     this.visualAssetRepository = visualAssetRepository;
@@ -74,6 +80,8 @@ public class CommercialPlanImageStudioService {
     this.assetRepository = assetRepository;
     this.objectMapper = objectMapper;
     this.creativeService = creativeService;
+    this.playbookService = playbookService;
+    this.learningService = learningService;
   }
 
   /** Cria uma pendência sem consumir modelo e sem substituir qualquer arquivo existente. */
@@ -86,6 +94,8 @@ public class CommercialPlanImageStudioService {
     String prompt = requireText(request.prompt(), "prompt");
     String label = requireText(request.label(), "label");
     List<String> purposes = normalizePurposes(request.purposes());
+    String size = normalizeOption(request.size(), SIZES, "1024x1536", "size");
+    TemisVisualPlaybookDto playbook = playbookService.resolve(plan, label, purposes, size);
     CommercialPlanVisualAsset source = resolveSource(planId, operation, request.sourceAssetId());
     List<Long> references = normalizeReferences(planId, source, request.referenceAssetIds());
     Optional<CommercialPlanImageStudioJobSummary> equivalent =
@@ -96,6 +106,7 @@ public class CommercialPlanImageStudioService {
                 operation,
                 label,
                 prompt,
+                playbook.version(),
                 CommercialPlanImageStudioStatus.FAILED)
             .stream()
             .findFirst();
@@ -111,8 +122,9 @@ public class CommercialPlanImageStudioService {
     job.setLabel(label);
     job.setPurposesJson(writeJson(purposes));
     job.setReferenceAssetIdsJson(writeJson(references));
-    job.setSize(normalizeOption(request.size(), SIZES, "1024x1536", "size"));
+    job.setSize(size);
     job.setQuality(normalizeOption(request.quality(), QUALITIES, "high", "quality"));
+    freezePlaybook(job, playbook);
     return dto(jobRepository.save(job));
   }
 
@@ -279,6 +291,8 @@ public class CommercialPlanImageStudioService {
             ? CommercialPlanVisualAssetStatus.APPROVED
             : CommercialPlanVisualAssetStatus.DRAFT);
     visualAssetRepository.save(asset);
+    resolveFrozenPlaybook(job);
+    learningService.recordLibraryReview(asset, job, request);
     if (decision == CommercialPlanVisualAssetReviewStatus.APPROVED
         && job.getSourceCreative() != null) {
       creativeService.completeApprovedLibraryImprovement(
@@ -303,6 +317,7 @@ public class CommercialPlanImageStudioService {
   /** Converte um job reservado em contrato executável do módulo Têmis. */
   private CommercialPlanImageStudioPendingDto claim(CommercialPlanImageStudioJob job) {
     List<String> references = referenceUrls(job);
+    TemisVisualPlaybookDto playbook = resolveFrozenPlaybook(job);
     job.setStatus(CommercialPlanImageStudioStatus.PROCESSING);
     job.setProducerExecutionId(UUID.randomUUID().toString());
     job.setStartedAt(Instant.now());
@@ -318,7 +333,8 @@ public class CommercialPlanImageStudioService {
         job.getSize(),
         job.getQuality(),
         references,
-        job.getProducerExecutionId());
+        job.getProducerExecutionId(),
+        playbook);
   }
 
   /** Falha uma reserva cuja referência perdeu validade sem degradar edição para geração livre. */
@@ -513,6 +529,8 @@ public class CommercialPlanImageStudioService {
         job.getSize(),
         job.getQuality(),
         job.getModel(),
+        job.getPlaybookVersion(),
+        job.getPlaybookContextKey(),
         job.getCostUsd(),
         job.getError(),
         job.getStartedAt(),
@@ -535,6 +553,8 @@ public class CommercialPlanImageStudioService {
         job.size(),
         job.quality(),
         job.model(),
+        job.playbookVersion(),
+        job.playbookContextKey(),
         job.costUsd(),
         job.error(),
         job.startedAt(),
@@ -600,5 +620,32 @@ public class CommercialPlanImageStudioService {
       current = current.getCause();
     }
     return Objects.toString(current.getMessage(), current.getClass().getSimpleName());
+  }
+
+  /** Congela o playbook resolvido para auditoria e reprodutibilidade da tentativa. */
+  private void freezePlaybook(CommercialPlanImageStudioJob job, TemisVisualPlaybookDto playbook) {
+    job.setPlaybookVersion(playbook.version());
+    job.setPlaybookContextKey(playbook.contextKey());
+    job.setPlaybookJson(writeJson(playbook));
+  }
+
+  /** Recupera o snapshot ou preenche jobs pendentes criados antes do aprendizado governado. */
+  private TemisVisualPlaybookDto resolveFrozenPlaybook(CommercialPlanImageStudioJob job) {
+    if (StringUtils.hasText(job.getPlaybookJson())) {
+      try {
+        return objectMapper.readValue(job.getPlaybookJson(), TemisVisualPlaybookDto.class);
+      } catch (JsonProcessingException ex) {
+        log.error("Falha ao ler playbook congelado. jobId={}", job.getId(), ex);
+        throw new IllegalStateException("Playbook congelado do Estúdio é inválido", ex);
+      }
+    }
+    TemisVisualPlaybookDto playbook =
+        playbookService.resolve(
+            job.getCommercialPlan(),
+            job.getLabel(),
+            readStrings(job.getPurposesJson()),
+            job.getSize());
+    freezePlaybook(job, playbook);
+    return playbook;
   }
 }

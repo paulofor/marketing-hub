@@ -1,5 +1,6 @@
 package com.marketinghub.creative.dto;
 
+import com.marketinghub.planning.imagestudio.v1.service.TemisVisualPlaybookDto;
 import java.util.List;
 
 /**
@@ -20,4 +21,5 @@ public record CreativeImprovementPendingDto(
     List<String> forbiddenVisualElements,
     List<String> visualAcceptanceCriteria,
     List<String> referenceImageUrls,
-    String agentReviewJson) {}
+    String agentReviewJson,
+    TemisVisualPlaybookDto visualPlaybook) {}

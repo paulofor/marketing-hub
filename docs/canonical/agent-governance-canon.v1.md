@@ -161,13 +161,40 @@ congelado. Um crítico independente bloqueia mudanças que ampliem autoridade, g
 credenciais ou removam QA. A promoção é explícita, inicia em monitoramento e preserva a baseline para
 rollback. Incidente de segurança, custo fora do teto ou regressão de aprovação reverte a candidata;
 a própria skill nunca autoriza provider pago, gasto ou publicação. A infraestrutura deve permanecer
-extensível, mas nenhum outro agente entra no piloto sem decisão canônica e avaliador próprio.
+extensível. Por decisão de 2026-08-17, Têmis entra na governança somente para evolução do playbook
+visual contextual, com avaliador próprio; isso não a inclui no piloto de evolução de skills de Apolo
+nem amplia sua autoridade.
+
+## Aprendizado visual governado de Têmis
+
+Tentativas de produto e criativo revisadas independentemente formam casos auditáveis de Têmis. O
+backend segrega cada caso por nicho, tipo de produto, finalidade, placement e formato, congela dez
+casos de replay e cinco de holdout e publica a consolidação pelo endpoint `pending` canônico. O
+consolidador roda no container revisor, em sandbox somente leitura, sem provider de imagem, gasto,
+publicação ou mutação da execução comercial.
+
+Pareceres persistidos antes da implantação deste ciclo devem ser incorporados por comando
+administrativo idempotente por experimento. A leitura histórica usa projeções leves, exclui payloads
+base64 de produção e nunca reexecuta geração, revisão, provider ou aprovação.
+
+Toda consolidação cria apenas memória `CANDIDATE` e um playbook candidato. Ela fica elegível somente
+quando superar a baseline em pelo menos cinco pontos no holdout, preservar os casos aprovados, passar
+regressão e validação local e não elevar o custo. A promoção é uma decisão humana explícita no painel
+de Aprendizado dos Agentes. Antes dela, a candidata não orienta produção; depois dela, somente jobs
+novos do mesmo contexto recebem a versão promovida. Jobs existentes preservam seu snapshot.
+
+O Estúdio recebe o playbook promovido, no máximo dois exemplos positivos `APPROVED` do mesmo plano e
+uma lista objetiva do que evitar. O revisor independente continua decidindo qualidade. As métricas
+obrigatórias são aprovação na primeira tentativa, aprovação em até três tentativas, reincidência do
+mesmo erro, custo por ativo aprovado e menor score premium. Preferência visual e memória não contam
+como venda; CTR, checkout e vendas passam a ser evidências superiores quando existirem.
 
 ## Coordenação entre agentes
 
 Quando Estrategista, Operador de Crescimento e Especialista em Aprovação de Anúncios participarem
 do mesmo experimento, a coordenação deve seguir `orquestrador-agentes-canon.v1.md`. O Orquestrador
 é determinístico, persiste evidências e nunca amplia a autoridade individual dos agentes.
+
 # Painel de maturidade e ciclo compartilhado
 
 O Cadastro de Agentes deve consolidar execuções, pendências e resultados confirmados dos executores Operador, Financeiro, Cliente e Aprovador de Anúncios Meta sem criar uma fila paralela. Cada executor permanece responsável por sua execução; o backend normaliza os indicadores. Simulação, hipótese, relatório ou impacto estimado nunca contam como resultado confirmado. A maturidade deve priorizar taxa de conclusão, pendências encerradas com evidência posterior e dez resultados confirmados antes de qualquer ampliação de autonomia.

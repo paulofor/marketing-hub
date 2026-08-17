@@ -4,6 +4,7 @@ import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.creative.CreativeImprovementStatus;
 import com.marketinghub.creative.CreativeStatus;
+import com.marketinghub.repository.jpa.agentlearning.TemisVisualLearningCreativeHistory;
 import jakarta.persistence.LockModeType;
 import java.time.Instant;
 import java.util.List;
@@ -215,4 +216,15 @@ public interface CreativeRepository extends JpaRepository<Creative, Long> {
             """)
   long countByExperimentIdAndStatusAndUsableImage(
       @Param("experimentId") Long experimentId, @Param("status") CreativeStatus status);
+
+  /** Lista pareceres históricos sem carregar relações e campos alheios ao aprendizado visual. */
+  @Query(
+      "select new com.marketinghub.repository.jpa.agentlearning.TemisVisualLearningCreativeHistory("
+          + "c.id, c.experiment.id, c.versionNumber, c.format, c.costUsd, c.agentReviewStatus, "
+          + "c.agentReviewJson, c.agentReviewRequestJson, c.agentReviewResponseJson, "
+          + "c.agentImprovementJson) from Creative c "
+          + "where c.experiment.id = :experimentId and c.agentReviewStatus is not null "
+          + "order by c.id")
+  List<TemisVisualLearningCreativeHistory> findVisualLearningHistoryByExperimentId(
+      @Param("experimentId") Long experimentId);
 }

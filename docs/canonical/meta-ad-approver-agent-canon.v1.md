@@ -105,6 +105,21 @@ nos mesmos replays congelados, em holdout fora da amostra, sem regressão e dent
 O mínimo é de dez replays e cinco casos de holdout. O agente pode consultar estratégias promovidas
 pelo MCP, mas não avaliar, promover ou alterar sozinho prompt, schema, código ou critérios de gate.
 
+Por decisão de 2026-08-17, esse ciclo também governa a produção visual. Cada parecer independente de
+entregável ou criativo registra tentativa, placement, formato, versão do playbook, custo, menor score,
+códigos estáveis de falha e evidência. Ao completar quinze casos homogêneos, o backend congela os dez
+primeiros para replay e os cinco restantes para holdout. Uma rotina assíncrona do container revisor
+consolida regras sem chamar gerador de imagem, provider, campanha ou publicação. O resultado é sempre
+candidato e exige promoção humana explícita.
+
+Todo job novo do Estúdio ou retrabalho de criativo congela a versão do playbook, sua chave contextual,
+as regras promovidas e até dois exemplos `APPROVED` da Biblioteca Audiovisual do mesmo plano. Nicho,
+tipo de produto, finalidade, placement e formato compõem a chave; aprendizado de outro contexto não
+pode vazar. Regras canônicas de segurança não podem ser substituídas por uma candidata, apenas
+complementadas. A meta operacional é aprovação mínima de 70% na primeira tentativa, peça aprovada em
+até três versões, reincidência inferior a 10%, redução mínima de 30% do custo por ativo aprovado e
+nenhuma queda do score premium.
+
 O backend é o coordenador exclusivo da convergência anúncio → landing. Cada falha bloqueante do
 Aprovador deve declarar um código estável, requisito, critério de aceite e exatamente um responsável:
 `CREATIVE_COPY`, `CREATIVE_MEDIA` ou `LANDING`. O backend persiste ciclo, versão, score, custo,
@@ -128,7 +143,9 @@ O agente não substitui aprovação humana, não publica, não ativa mídia, nã
 
 A migração de executor não cria nova tabela nem reinicia criativos. Pareceres, versões, tentativas,
 custos e estados já persistidos — inclusive os do experimento #88 — permanecem sob os mesmos
-contratos do backend. Apenas novas reservas são processadas pelo módulo independente.
+contratos do backend. O painel de Aprendizado permite incorporar esses pareceres uma única vez por
+identidade de ativo ou criativo, sem carregar payloads visuais brutos nem repetir providers; chamadas
+posteriores são idempotentes. Apenas novas reservas são processadas pelo módulo independente.
 A reserva de cada revisão deve ser um lease auditável controlado pelo backend, com horário de início,
 contador de recuperações e horário da última recuperação. Uma revisão `PROCESSING` sem lease ou com
 lease vencido deve voltar automaticamente à fila, no máximo duas vezes; depois disso deve encerrar em

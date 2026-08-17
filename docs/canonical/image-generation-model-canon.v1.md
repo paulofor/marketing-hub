@@ -45,6 +45,13 @@ Criação sem referência usa a Image API. Edição e composição híbrida usam
 
 Em criativos que demonstram uma entrega visual, o backend deve selecionar referências complementares por formato, no mínimo um post e um story quando ambos fizerem parte da promessa. O cenário pode ser gerado pelo GPT Image 2, mas os entregáveis aprovados são sobrepostos pelo compositor determinístico versionado, sem redesenho. A peça final precisa preservar pixels, proporções e legibilidade dos arquivos reais, registrar seus IDs/versões e voltar aos gates independentes de Psique e Têmis antes de ficar `READY`.
 
+Por decisão de 2026-08-17, cada criação ou edição congela um playbook visual governado. O backend
+resolve apenas a baseline canônica ou a versão promovida no mesmo nicho, tipo de produto, finalidade,
+placement e formato, persiste versão, contexto e conteúdo no job e entrega até dois exemplos positivos
+`APPROVED` do próprio plano. Memória candidata não entra no prompt. A geração seguinte pode aprender
+com padrões confirmados, mas nunca altera jobs em curso, redesenha a entrega, elimina a revisão
+independente ou amplia autorização de provider, gasto e publicação.
+
 O contrato permite as dimensões homologadas `1024x1024`, `1024x1536`, `1536x1024`, `2048x2048` e `2048x1152`. O parâmetro `input_fidelity` deve ser omitido com `gpt-image-2`, pois o modelo já trata todas as referências em alta fidelidade. Requests, responses e URL externa são auditados; o binário base64 é persistido no registro técnico, mas redigido do log para não ampliar desnecessariamente o volume operacional.
 
 ## Exceções e fallback

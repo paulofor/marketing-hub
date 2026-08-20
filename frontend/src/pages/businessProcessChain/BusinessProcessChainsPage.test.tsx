@@ -71,7 +71,7 @@ describe("BusinessProcessChainsPage", () => {
                 triggerDescription: "Oportunidade aprovada.",
                 outcomeDescription: "Plano Comercial aprovado.",
                 versionNumber: 1,
-                status: "PUBLISHED",
+                status: "RETIRED",
               },
             ],
           },
@@ -112,7 +112,7 @@ describe("BusinessProcessChainsPage", () => {
       screen.getByRole("link", {
         name: "Abrir atividades de Plano Comercial e oferta PDE no diagrama BPM",
       }),
-    ).toHaveAttribute("href", "/business-processes?processId=12");
+    ).toHaveAttribute("href", "/business-processes/retired?processId=12");
     expect(axios.get).toHaveBeenCalledWith("/api/business-process-chains/1");
   });
 

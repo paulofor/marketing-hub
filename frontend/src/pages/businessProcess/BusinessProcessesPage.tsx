@@ -1,5 +1,5 @@
 import { FormEvent, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   useBusinessProcesses,
@@ -53,8 +53,15 @@ function linearDiagram(activities: string): ProcessDiagram {
   };
 }
 
-export default function BusinessProcessesPage() {
+type BusinessProcessesPageProps = {
+  catalogMode?: "current" | "retired";
+};
+
+export default function BusinessProcessesPage({
+  catalogMode = "current",
+}: BusinessProcessesPageProps) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const query = useBusinessProcesses();
   const executionResourcesQuery = useBusinessProcessExecutionResources();
   const create = useCreateBusinessProcess();
@@ -64,7 +71,14 @@ export default function BusinessProcessesPage() {
   const [editing, setEditing] = useState<"draft" | "new-version">();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(initial);
-  const processes = query.data ?? [];
+  const allProcesses = query.data ?? [];
+  const retiredProcesses = allProcesses.filter(
+    (item) => item.status === "RETIRED",
+  );
+  const processes =
+    catalogMode === "retired"
+      ? retiredProcesses
+      : allProcesses.filter((item) => item.status !== "RETIRED");
   const requestedId = Number(searchParams.get("processId"));
   const selectedId =
     Number.isSafeInteger(requestedId) && requestedId > 0
@@ -130,22 +144,43 @@ export default function BusinessProcessesPage() {
     <div className="business-process-page">
       <header className="d-flex flex-wrap justify-content-between gap-3 align-items-start mb-4">
         <div>
-          <PageTitle>Processos do Marketing Hub</PageTitle>
+          <PageTitle>
+            {catalogMode === "retired"
+              ? "Processos aposentados"
+              : "Processos do Marketing Hub"}
+          </PageTitle>
           <p className="text-body-secondary mb-0">
-            Fonte de verdade versionada para responsabilidades, decisões e
-            fluxos de negócio.
+            {catalogMode === "retired"
+              ? "Histórico preservado para consulta, auditoria e criação de uma nova versão."
+              : "Fonte de verdade vigente para responsabilidades, decisões e fluxos de negócio."}
           </p>
         </div>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => setShowForm((value) => !value)}
-        >
-          {showForm ? "Cancelar cadastro" : "Cadastrar processo"}
-        </button>
+        <div className="d-flex flex-wrap gap-2">
+          {catalogMode === "retired" ? (
+            <Link className="btn btn-outline-primary" to="/business-processes">
+              Voltar aos processos atuais
+            </Link>
+          ) : (
+            <>
+              <Link
+                className="btn btn-outline-secondary"
+                to="/business-processes/retired"
+              >
+                Processos aposentados ({retiredProcesses.length})
+              </Link>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setShowForm((value) => !value)}
+              >
+                {showForm ? "Cancelar cadastro" : "Cadastrar processo"}
+              </button>
+            </>
+          )}
+        </div>
       </header>
 
-      {showForm ? (
+      {catalogMode === "current" && showForm ? (
         <form className="card card-body mb-4" onSubmit={submit}>
           <h2 className="h5">Nova versão de processo</h2>
           <p className="small text-body-secondary">
@@ -294,9 +329,15 @@ export default function BusinessProcessesPage() {
       <div className="business-process-layout">
         <aside
           className="card business-process-list"
-          aria-label="Catálogo de processos"
+          aria-label={
+            catalogMode === "retired"
+              ? "Histórico de processos aposentados"
+              : "Catálogo de processos atuais"
+          }
         >
-          <div className="card-header fw-semibold">Catálogo</div>
+          <div className="card-header fw-semibold">
+            {catalogMode === "retired" ? "Histórico" : "Catálogo atual"}
+          </div>
           <div className="list-group list-group-flush">
             {processes.map((item) => (
               <button
@@ -331,7 +372,11 @@ export default function BusinessProcessesPage() {
                     editing === "draft"
                       ? await update.mutateAsync({ id: selected.id, value })
                       : await create.mutateAsync(value);
-                  selectProcess(saved.id);
+                  if (catalogMode === "retired") {
+                    navigate(`/business-processes?processId=${saved.id}`);
+                  } else {
+                    selectProcess(saved.id);
+                  }
                   setEditing(undefined);
                   toast.success(
                     "Rascunho salvo com todos os elementos do processo.",
@@ -478,7 +523,9 @@ export default function BusinessProcessesPage() {
             <div className="card card-body text-body-secondary">
               {query.isLoading
                 ? "Carregando processos..."
-                : "Nenhum processo cadastrado."}
+                : catalogMode === "retired"
+                  ? "Nenhum processo aposentado."
+                  : "Nenhum processo atual cadastrado."}
             </div>
           )}
         </main>

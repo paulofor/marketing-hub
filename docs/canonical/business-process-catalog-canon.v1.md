@@ -49,6 +49,9 @@ consulta reversa canônica é `GET /api/business-process-chains/by-process/{proc
   Hub. Editar uma versão publicada cria uma nova versão em rascunho; versões `PUBLISHED` e `RETIRED`
   nunca são alteradas diretamente.
 - Ao publicar uma nova versão, a anterior passa a `RETIRED`, preservando histórico e auditoria.
+- O catálogo operacional em `/business-processes` mostra somente versões `DRAFT` e `PUBLISHED`.
+  Versões `RETIRED` ficam na tela histórica `/business-processes/retired`, acessível pelo catálogo,
+  para não competir visualmente com os processos atuais sem apagar sua rastreabilidade.
 - O diagrama é persistido como grafo estruturado, não como imagem ou XML livre.
 - Todo grafo precisa de exatamente um evento inicial, um final e fluxos entre elementos existentes.
 - A tela renderiza o grafo persistido pelo backend e não infere status ou regra de negócio.

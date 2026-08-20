@@ -123,7 +123,11 @@ export default function BusinessProcessChainsPage() {
                             </span>
                             <Link
                               className="btn btn-sm btn-outline-primary"
-                              to={`/business-processes?processId=${process.processDefinitionId}`}
+                              to={`${
+                                process.status === "RETIRED"
+                                  ? "/business-processes/retired"
+                                  : "/business-processes"
+                              }?processId=${process.processDefinitionId}`}
                               aria-label={`Abrir atividades de ${process.name} no diagrama BPM`}
                             >
                               Abrir BPM

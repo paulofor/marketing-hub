@@ -108,6 +108,149 @@ describe("BusinessProcessesPage", () => {
     expect(screen.getByDisplayValue("2")).toBeDisabled();
   });
 
+  it("mantém aposentados fora do catálogo atual e oferece acesso ao histórico", async () => {
+    mockCatalog([
+      {
+        id: 1,
+        processCode: "current-process",
+        name: "Processo vigente",
+        purpose: "Gerar valor agora.",
+        ownerName: "Operação",
+        triggerDescription: "Entrada atual",
+        outcomeDescription: "Resultado atual",
+        versionNumber: 2,
+        status: "PUBLISHED",
+        createdAt: "2026-08-20T10:00:00Z",
+        diagram: {
+          nodes: [
+            { id: "start", type: "START", label: "Início" },
+            { id: "task", type: "TASK", label: "Executar" },
+            { id: "end", type: "END", label: "Fim" },
+          ],
+          flows: [
+            { from: "start", to: "task" },
+            { from: "task", to: "end" },
+          ],
+        },
+      },
+      {
+        id: 2,
+        processCode: "current-process",
+        name: "Processo aposentado",
+        purpose: "Preservar o histórico.",
+        ownerName: "Operação",
+        triggerDescription: "Entrada antiga",
+        outcomeDescription: "Resultado antigo",
+        versionNumber: 1,
+        status: "RETIRED",
+        createdAt: "2026-08-19T10:00:00Z",
+        diagram: {
+          nodes: [
+            { id: "start", type: "START", label: "Início antigo" },
+            { id: "task", type: "TASK", label: "Executar versão antiga" },
+            { id: "end", type: "END", label: "Fim antigo" },
+          ],
+          flows: [
+            { from: "start", to: "task" },
+            { from: "task", to: "end" },
+          ],
+        },
+      },
+    ]);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={client}>
+          <BusinessProcessesPage />
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByText("Processo vigente · v2"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Processo aposentado")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Processos aposentados (1)" }),
+    ).toHaveAttribute("href", "/business-processes/retired");
+  });
+
+  it("mostra somente versões aposentadas na tela histórica", async () => {
+    mockCatalog([
+      {
+        id: 1,
+        processCode: "current-process",
+        name: "Processo vigente",
+        purpose: "Gerar valor agora.",
+        ownerName: "Operação",
+        triggerDescription: "Entrada atual",
+        outcomeDescription: "Resultado atual",
+        versionNumber: 2,
+        status: "PUBLISHED",
+        createdAt: "2026-08-20T10:00:00Z",
+        diagram: {
+          nodes: [
+            { id: "start", type: "START", label: "Início" },
+            { id: "task", type: "TASK", label: "Executar" },
+            { id: "end", type: "END", label: "Fim" },
+          ],
+          flows: [
+            { from: "start", to: "task" },
+            { from: "task", to: "end" },
+          ],
+        },
+      },
+      {
+        id: 2,
+        processCode: "current-process",
+        name: "Processo aposentado",
+        purpose: "Preservar o histórico.",
+        ownerName: "Operação",
+        triggerDescription: "Entrada antiga",
+        outcomeDescription: "Resultado antigo",
+        versionNumber: 1,
+        status: "RETIRED",
+        createdAt: "2026-08-19T10:00:00Z",
+        diagram: {
+          nodes: [
+            { id: "start", type: "START", label: "Início antigo" },
+            { id: "task", type: "TASK", label: "Executar versão antiga" },
+            { id: "end", type: "END", label: "Fim antigo" },
+          ],
+          flows: [
+            { from: "start", to: "task" },
+            { from: "task", to: "end" },
+          ],
+        },
+      },
+    ]);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/business-processes/retired"]}>
+        <QueryClientProvider client={client}>
+          <BusinessProcessesPage catalogMode="retired" />
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByText("Processo aposentado · v1"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Processo vigente")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Voltar aos processos atuais" }),
+    ).toHaveAttribute("href", "/business-processes");
+    expect(
+      screen.queryByRole("button", { name: "Cadastrar processo" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("abre diretamente o processo indicado pelo link da cadeia de valor", async () => {
     const process = (id: number, name: string) => ({
       id,

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   useBusinessProcessChain,
   useBusinessProcessChains,
@@ -107,9 +108,18 @@ export default function BusinessProcessChainsPage() {
                               {process.ownerName} · v{process.versionNumber}
                             </div>
                           </div>
-                          <span className="badge text-bg-success align-self-start">
-                            {process.status}
-                          </span>
+                          <div className="d-flex flex-wrap align-items-center gap-2">
+                            <span className="badge text-bg-success">
+                              {process.status}
+                            </span>
+                            <Link
+                              className="btn btn-sm btn-outline-primary"
+                              to={`/business-processes?processId=${process.processDefinitionId}`}
+                              aria-label={`Abrir atividades de ${process.name} no diagrama BPM`}
+                            >
+                              Abrir BPM
+                            </Link>
+                          </div>
                         </div>
                         <p className="mt-3 mb-3">{process.purpose}</p>
                         <div className="business-process-chain-process-grid">

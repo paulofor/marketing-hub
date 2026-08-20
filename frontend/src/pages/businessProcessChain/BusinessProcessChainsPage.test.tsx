@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import axios from "axios";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import BusinessProcessChainsPage from "./BusinessProcessChainsPage";
 
@@ -83,9 +84,11 @@ describe("BusinessProcessChainsPage", () => {
     });
 
     render(
-      <QueryClientProvider client={client}>
-        <BusinessProcessChainsPage />
-      </QueryClientProvider>,
+      <MemoryRouter>
+        <QueryClientProvider client={client}>
+          <BusinessProcessChainsPage />
+        </QueryClientProvider>
+      </MemoryRouter>,
     );
 
     expect(
@@ -100,6 +103,16 @@ describe("BusinessProcessChainsPage", () => {
       "Plano Comercial e oferta PDE",
     ]);
     expect(screen.getByText("2 em sequência")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", {
+        name: "Abrir atividades de Descoberta da oportunidade PDE no diagrama BPM",
+      }),
+    ).toHaveAttribute("href", "/business-processes?processId=11");
+    expect(
+      screen.getByRole("link", {
+        name: "Abrir atividades de Plano Comercial e oferta PDE no diagrama BPM",
+      }),
+    ).toHaveAttribute("href", "/business-processes?processId=12");
     expect(axios.get).toHaveBeenCalledWith("/api/business-process-chains/1");
   });
 });

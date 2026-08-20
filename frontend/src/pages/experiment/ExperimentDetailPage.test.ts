@@ -84,6 +84,13 @@ describe("buildPdeInternalPreviewUrl", () => {
 });
 
 describe("ExperimentDetailPage", () => {
+  it("mantém o run e o preflight acessíveis pela navegação", () => {
+    expect(experimentDetailTabs).toContainEqual({
+      value: "execucao",
+      label: "Execução",
+    });
+  });
+
   it("mantém o painel operacional do GeraLanding acessível pela navegação", () => {
     expect(experimentDetailTabs).toContainEqual({
       value: "gera-landing",

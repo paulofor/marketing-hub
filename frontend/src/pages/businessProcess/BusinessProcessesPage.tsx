@@ -1,4 +1,5 @@
 import { FormEvent, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   useBusinessProcesses,
@@ -52,17 +53,22 @@ function linearDiagram(activities: string): ProcessDiagram {
 }
 
 export default function BusinessProcessesPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const query = useBusinessProcesses();
   const executionResourcesQuery = useBusinessProcessExecutionResources();
   const create = useCreateBusinessProcess();
   const remove = useDeleteBusinessProcess();
   const publish = usePublishBusinessProcess();
   const update = useUpdateBusinessProcess();
-  const [selectedId, setSelectedId] = useState<number>();
   const [editing, setEditing] = useState<"draft" | "new-version">();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(initial);
   const processes = query.data ?? [];
+  const requestedId = Number(searchParams.get("processId"));
+  const selectedId =
+    Number.isSafeInteger(requestedId) && requestedId > 0
+      ? requestedId
+      : undefined;
   const selected = useMemo<BusinessProcess | undefined>(
     () =>
       processes.find((item) => item.id === selectedId) ??
@@ -70,6 +76,13 @@ export default function BusinessProcessesPage() {
       processes[0],
     [processes, selectedId],
   );
+
+  const selectProcess = (id?: number) => {
+    const next = new URLSearchParams(searchParams);
+    if (id === undefined) next.delete("processId");
+    else next.set("processId", String(id));
+    setSearchParams(next, { replace: true });
+  };
 
   const editableValue = selected
     ? {
@@ -105,7 +118,7 @@ export default function BusinessProcessesPage() {
       technicalReference: form.technicalReference || undefined,
       diagram: linearDiagram(form.activities),
     });
-    setSelectedId(saved.id);
+    selectProcess(saved.id);
     setForm(initial);
     setShowForm(false);
     toast.success("Processo cadastrado como rascunho.");
@@ -288,7 +301,7 @@ export default function BusinessProcessesPage() {
                 key={item.id}
                 type="button"
                 className={`list-group-item list-group-item-action ${selected?.id === item.id ? "active" : ""}`}
-                onClick={() => setSelectedId(item.id)}
+                onClick={() => selectProcess(item.id)}
               >
                 <span className="d-block fw-semibold">{item.name}</span>
                 <span className="small">
@@ -316,7 +329,7 @@ export default function BusinessProcessesPage() {
                     editing === "draft"
                       ? await update.mutateAsync({ id: selected.id, value })
                       : await create.mutateAsync(value);
-                  setSelectedId(saved.id);
+                  selectProcess(saved.id);
                   setEditing(undefined);
                   toast.success(
                     "Rascunho salvo com todos os elementos do processo.",
@@ -374,7 +387,7 @@ export default function BusinessProcessesPage() {
                               )
                                 return;
                               await remove.mutateAsync(selected.id);
-                              setSelectedId(undefined);
+                              selectProcess();
                               toast.success("Rascunho excluído com segurança.");
                             }}
                           >

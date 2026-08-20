@@ -3,6 +3,8 @@ package com.marketinghub.metaadapproverworker;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: proteger o contrato funcional do gate BPM de Têmis. */
@@ -36,5 +38,25 @@ class CommercialBpmTaskConsumerTest {
     org.assertj.core.api.Assertions.assertThat(
             CommercialBpmTaskConsumer.schemaResourceFor("creative-production-approval"))
         .isEqualTo("prompts/bpm/creative-commercial-review-schema.json");
+  }
+
+  /** Lê entrada, cache e saída cumulativos do gate executado pelo Codex. */
+  @Test
+  void readsTaskTokenUsageFromCodexJsonl() throws Exception {
+    Path output = Files.createTempFile("temis-bpm-usage-", ".jsonl");
+    Files.writeString(
+        output,
+        """
+        mensagem operacional
+        {"type":"turn.completed","usage":{"input_tokens":2400,"cached_input_tokens":1500,"output_tokens":450}}
+        """);
+
+    CommercialBpmTaskConsumer.TokenUsage usage =
+        CommercialBpmTaskConsumer.readTokenUsage(json, output);
+
+    org.assertj.core.api.Assertions.assertThat(usage.inputTokens()).isEqualTo(2400L);
+    org.assertj.core.api.Assertions.assertThat(usage.cachedInputTokens()).isEqualTo(1500L);
+    org.assertj.core.api.Assertions.assertThat(usage.outputTokens()).isEqualTo(450L);
+    Files.deleteIfExists(output);
   }
 }

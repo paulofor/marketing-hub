@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useActiveAgentTasks } from "../../api/agentTask/useAgentTasks";
 import { AgentTaskStatus } from "../../api/agentTask/types";
+import AgentTaskModelUsage from "../../components/AgentTaskModelUsage";
 import PageTitle from "../../components/PageTitle";
 
 const statusLabel: Record<AgentTaskStatus, string> = {
@@ -59,6 +60,7 @@ export default function ActiveAgentTasksPage() {
                 <th>Situação / bloqueio</th>
                 <th>Origem</th>
                 <th>Processo / atividade</th>
+                <th>IA / custo</th>
                 <th>Recebimento / entrega</th>
               </tr>
             </thead>
@@ -102,6 +104,9 @@ export default function ActiveAgentTasksPage() {
                       : task.processActivityName
                         ? `${task.processCode} v${task.processVersionNumber} · ${task.processActivityName}`
                         : "Legada"}
+                  </td>
+                  <td className="text-nowrap">
+                    <AgentTaskModelUsage usage={task} />
                   </td>
                   <td className="text-nowrap small">
                     <div>

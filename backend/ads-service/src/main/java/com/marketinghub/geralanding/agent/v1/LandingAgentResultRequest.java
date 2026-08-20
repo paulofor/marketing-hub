@@ -10,6 +10,30 @@ public record LandingAgentResultRequest(
     @NotBlank String responseJson,
     @NotBlank String model,
     Integer inputTokens,
+    Integer cachedInputTokens,
     Integer outputTokens,
     BigDecimal costUsd,
-    String error) {}
+    String error) {
+
+  /** Mantém compatibilidade com callbacks anteriores à medição de cache por tarefa. */
+  public LandingAgentResultRequest(
+      String decisionJson,
+      String requestJson,
+      String responseJson,
+      String model,
+      Integer inputTokens,
+      Integer outputTokens,
+      BigDecimal costUsd,
+      String error) {
+    this(
+        decisionJson,
+        requestJson,
+        responseJson,
+        model,
+        inputTokens,
+        null,
+        outputTokens,
+        costUsd,
+        error);
+  }
+}

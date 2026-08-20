@@ -22,6 +22,11 @@ vi.mock("../../api/agentTask/useAgentTasks", () => ({
             operationalState: "RELEASED",
             stateReason:
               "Atividade liberada para consumo pelo executor responsável.",
+            inputTokens: 2000,
+            cachedInputTokens: 800,
+            outputTokens: 500,
+            estimatedCostUsd: 0.04,
+            costEstimationStatus: "ESTIMATED",
           },
           {
             taskId: 31,
@@ -32,6 +37,7 @@ vi.mock("../../api/agentTask/useAgentTasks", () => ({
             operationalState: "WAITING_PREDECESSOR",
             stateReason:
               "Aguardando a conclusão das atividades predecessoras do processo.",
+            costEstimationStatus: "NOT_REPORTED",
           },
         ],
         supersededLegacyTasks: [
@@ -43,6 +49,7 @@ vi.mock("../../api/agentTask/useAgentTasks", () => ({
             taskStatus: "PENDING",
             operationalState: "SUPERSEDED_LEGACY",
             stateReason: "Tarefa legada substituída.",
+            costEstimationStatus: "NOT_REPORTED",
           },
         ],
       },
@@ -58,6 +65,9 @@ describe("ExperimentProcessInstanceTab", () => {
     expect(screen.getByText("Aguardando predecessora")).toBeInTheDocument();
     expect(
       screen.getByText(/1 tarefa\(s\) legada\(s\) substituída\(s\)/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Tokens: entrada 2.000 · saída 500 · cache 800"),
     ).toBeInTheDocument();
   });
 });

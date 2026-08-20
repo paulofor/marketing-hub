@@ -3,6 +3,8 @@ package com.marketinghub.customeragentworker;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: proteger o contrato funcional da revisão BPM de Psique. */
@@ -36,5 +38,24 @@ class CustomerBpmTaskConsumerTest {
     org.assertj.core.api.Assertions.assertThat(
             CustomerBpmTaskConsumer.schemaResourceFor("creative-production-approval"))
         .isEqualTo("prompts/bpm/creative-customer-review-schema.json");
+  }
+
+  /** Lê os contadores cumulativos e a parcela de cache informados pelo Codex. */
+  @Test
+  void readsTaskTokenUsageFromCodexJsonl() throws Exception {
+    Path output = Files.createTempFile("psique-bpm-usage-", ".jsonl");
+    Files.writeString(
+        output,
+        """
+        WARN inicialização
+        {"type":"turn.completed","usage":{"input_tokens":1200,"input_tokens_details":{"cached_tokens":700},"output_tokens":300}}
+        """);
+
+    CustomerBpmTaskConsumer.TokenUsage usage = CustomerBpmTaskConsumer.readTokenUsage(json, output);
+
+    org.assertj.core.api.Assertions.assertThat(usage.inputTokens()).isEqualTo(1200L);
+    org.assertj.core.api.Assertions.assertThat(usage.cachedInputTokens()).isEqualTo(700L);
+    org.assertj.core.api.Assertions.assertThat(usage.outputTokens()).isEqualTo(300L);
+    Files.deleteIfExists(output);
   }
 }

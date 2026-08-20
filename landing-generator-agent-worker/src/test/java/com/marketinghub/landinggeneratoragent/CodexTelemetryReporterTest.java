@@ -18,7 +18,7 @@ class CodexTelemetryReporterTest {
         """
         WARN mensagem operacional emitida no stderr
         {"type":"item.completed","item":{"type":"agent_message"}}
-        {"type":"turn.completed","usage":{"input_tokens":1234,"output_tokens":321}}
+        {"type":"turn.completed","usage":{"input_tokens":1234,"input_tokens_details":{"cached_tokens":700},"output_tokens":321}}
         """);
     CodexTelemetryReporter reporter =
         new CodexTelemetryReporter(new LandingGeneratorAgentProperties(), new ObjectMapper());
@@ -26,6 +26,7 @@ class CodexTelemetryReporterTest {
     CodexTelemetryReporter.TokenUsage usage = reporter.readTokenUsage(output);
 
     assertThat(usage.inputTokens()).isEqualTo(1234);
+    assertThat(usage.cachedInputTokens()).isEqualTo(700);
     assertThat(usage.outputTokens()).isEqualTo(321);
     Files.deleteIfExists(output);
   }

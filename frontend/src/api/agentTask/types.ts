@@ -30,6 +30,17 @@ export interface AgentTask {
   resultJson?: string;
   evidenceJson?: string;
   executionError?: string;
+  inputTokens?: number;
+  cachedInputTokens?: number;
+  outputTokens?: number;
+  estimatedCostUsd?: number;
+  costEstimationStatus:
+    | "NOT_REPORTED"
+    | "NOT_APPLICABLE"
+    | "ESTIMATED"
+    | "PARTIALLY_ESTIMATED"
+    | "PRICING_UNAVAILABLE";
+  modelUsageUpdatedAt?: string;
   receivedAt?: string;
   deliveredAt?: string;
   createdAt: string;
@@ -67,6 +78,11 @@ export interface ProcessInstanceTask {
   taskStatus: AgentTaskStatus;
   operationalState: ProcessInstanceOperationalState;
   stateReason: string;
+  inputTokens?: number;
+  cachedInputTokens?: number;
+  outputTokens?: number;
+  estimatedCostUsd?: number;
+  costEstimationStatus: AgentTask["costEstimationStatus"];
   receivedAt?: string;
   deliveredAt?: string;
 }

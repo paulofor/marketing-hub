@@ -21,6 +21,11 @@ vi.mock("../../api/agentTask/useAgentTasks", () => ({
         status: "BLOCKED",
         sourceReference: "experiment:88",
         taskKind: "WORK",
+        inputTokens: 1234,
+        cachedInputTokens: 900,
+        outputTokens: 321,
+        estimatedCostUsd: 0.01234567,
+        costEstimationStatus: "ESTIMATED",
         receivedAt: "2026-08-12T10:00:00Z",
         createdAt: "2026-08-12T10:00:00Z",
         updatedAt: "2026-08-12T10:05:00Z",
@@ -51,5 +56,11 @@ describe("ActiveAgentTasksPage", () => {
     expect(screen.getByText("Têmis")).toBeInTheDocument();
     expect(screen.getByText(/Recebida:/)).toBeInTheDocument();
     expect(screen.getByText("Entregue: —")).toBeInTheDocument();
+    expect(
+      screen.getByText("Tokens: entrada 1.234 · saída 321 · cache 900"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Custo estimado: US\$ 0,01234567/),
+    ).toBeInTheDocument();
   });
 });

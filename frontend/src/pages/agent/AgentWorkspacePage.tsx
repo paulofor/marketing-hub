@@ -7,6 +7,7 @@ import {
   useUpdateAgentTaskStatus,
 } from "../../api/agentTask/useAgentTasks";
 import { AgentTask, AgentTaskStatus } from "../../api/agentTask/types";
+import AgentTaskModelUsage from "../../components/AgentTaskModelUsage";
 import PageTitle from "../../components/PageTitle";
 import {
   useCommercialPlans,
@@ -663,6 +664,9 @@ export default function AgentWorkspacePage() {
                       </div>
                     </div>
                     <p className="mt-3 mb-2 text-break">{task.description}</p>
+                    <div className="border rounded bg-body-tertiary p-2 mb-2">
+                      <AgentTaskModelUsage usage={task} />
+                    </div>
                     {task.gateStatus ? (
                       <div className="small mb-2">
                         Decisão do gate: <strong>{task.gateStatus}</strong>

@@ -1,5 +1,6 @@
 package com.marketinghub.agenttask;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 /** Responsabilidade: expor uma tarefa com identidades legíveis e técnicas dos agentes. */
@@ -32,6 +33,12 @@ public record AgentTaskResponse(
     String resultJson,
     String evidenceJson,
     String executionError,
+    Long inputTokens,
+    Long cachedInputTokens,
+    Long outputTokens,
+    BigDecimal estimatedCostUsd,
+    String costEstimationStatus,
+    Instant modelUsageUpdatedAt,
     Instant receivedAt,
     Instant deliveredAt,
     Instant createdAt,
@@ -87,6 +94,12 @@ public record AgentTaskResponse(
         gateDecidedAt,
         null,
         null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "NOT_REPORTED",
         null,
         createdAt,
         null,

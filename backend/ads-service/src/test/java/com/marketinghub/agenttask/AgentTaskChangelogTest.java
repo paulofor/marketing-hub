@@ -63,4 +63,27 @@ class AgentTaskChangelogTest {
         .contains("SET received_at = created_at")
         .contains("SET delivered_at = updated_at");
   }
+
+  /** Confirma os contadores e custo estimado sem campos temporais incompatíveis com MySQL 5.7. */
+  @Test
+  void addsPersistentModelCostToTask() throws IOException {
+    String yaml =
+        Files.readString(
+            Path.of(
+                "src/main/resources/db/changelog/changesets/2026-08-20-agent-task-model-cost.yaml"));
+    assertThat(yaml)
+        .contains("input_tokens BIGINT NULL")
+        .contains("cached_input_tokens BIGINT NULL")
+        .contains("output_tokens BIGINT NULL")
+        .contains("estimated_cost_usd DECIMAL(18,8) NULL")
+        .contains("ALTER TABLE gera_landing_stage_execution")
+        .contains("cached_input_tokens INT NULL")
+        .contains("model_usage_updated_at DATETIME NULL");
+    String master =
+        Files.readString(Path.of("src/main/resources/db/changelog/db.changelog-master.yaml"));
+    assertThat(master)
+        .contains(
+            "file: changesets/2026-08-20-agent-task-model-cost.yaml\n"
+                + "      relativeToChangelogFile: true");
+  }
 }

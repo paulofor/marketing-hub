@@ -40,6 +40,35 @@ class OpenAiPricingServiceTest {
     assertThat(cost).isEqualByComparingTo("17.5000");
   }
 
+  /** Deve descontar a parcela em cache da entrada comum e aplicar sua tarifa própria. */
+  @Test
+  void estimateTaskCostShouldSeparateCachedInput() {
+    when(repository.findByCode("gpt-test")).thenReturn(Optional.of(model()));
+
+    BigDecimal cost =
+        service.estimateTaskCost("gpt-test", "FLEX", 1_000_000L, 600_000L, 200_000L).orElseThrow();
+
+    assertThat(cost).isEqualByComparingTo("2.15000000");
+  }
+
+  /** Deve deixar o custo indisponível sem inventar tarifa para modelo desconhecido. */
+  @Test
+  void estimateTaskCostShouldRemainUnavailableWithoutCatalogPrice() {
+    when(repository.findByCode("missing-model")).thenReturn(Optional.empty());
+
+    assertThat(service.estimateTaskCost("missing-model", "FLEX", 100L, 20L, 30L)).isEmpty();
+  }
+
+  /** Mantém precisão econômica para tarefas com poucos tokens. */
+  @Test
+  void estimateTaskCostShouldNotRoundSmallUsageToZero() {
+    when(repository.findByCode("gpt-test")).thenReturn(Optional.of(model()));
+
+    BigDecimal cost = service.estimateTaskCost("gpt-test", "FLEX", 1L, 0L, 0L).orElseThrow();
+
+    assertThat(cost).isEqualByComparingTo("0.00000125");
+  }
+
   /** Deve falhar claramente quando o modelo não existe no catálogo. */
   @Test
   void estimateCostFailsWhenModelIsMissingFromCatalog() {
@@ -61,8 +90,10 @@ class OpenAiPricingServiceTest {
         .code("gpt-test")
         .name("GPT Test")
         .priceInputStandard(new BigDecimal("2.50"))
+        .priceInputCachedStandard(new BigDecimal("0.50"))
         .priceOutputStandard(new BigDecimal("15.00"))
         .priceInputBatch(new BigDecimal("1.25"))
+        .priceInputCachedBatch(new BigDecimal("0.25"))
         .priceOutputBatch(new BigDecimal("7.50"))
         .build();
   }

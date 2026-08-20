@@ -101,7 +101,9 @@ public class LandingGenerationAgentExecutionService {
         "landing-generator",
         taskId,
         new com.marketinghub.agenttask.CompleteAgentTaskRequest(
-            event.reviewJson(), bpmEvidence(event)));
+            event.reviewJson(),
+            bpmEvidence(event),
+            latestBpmModelUsage(event.experimentId(), taskId)));
   }
 
   /** Entrega à próxima atividade a candidata visual, anúncio e checkout realmente avaliados. */
@@ -429,6 +431,7 @@ public class LandingGenerationAgentExecutionService {
     execution.setOpenAiModel(request.model());
     execution.setModelResponse(request.responseJson());
     execution.setInputTokens(request.inputTokens());
+    execution.setCachedInputTokens(request.cachedInputTokens());
     execution.setOutputTokens(request.outputTokens());
     execution.setCostUsd(request.costUsd());
     execution.setCompletedAt(Instant.now());
@@ -464,7 +467,10 @@ public class LandingGenerationAgentExecutionService {
             "landing-generator",
             bpmTaskId(execution.getAutonomousCycleId()),
             new com.marketinghub.agenttask.FailAgentTaskRequest(
-                "Dédalo produziu a candidata, mas o backend não conseguiu aplicá-la: " + cause));
+                "Dédalo produziu a candidata, mas o backend não conseguiu aplicá-la: " + cause,
+                null,
+                null,
+                modelUsage(execution)));
       }
     }
   }
@@ -502,17 +508,50 @@ public class LandingGenerationAgentExecutionService {
                     .createObjectNode()
                     .put("executionId", textId(execution))
                     .put("experimentId", execution.getExperimentId())
-                    .toString()));
+                    .toString(),
+                modelUsage(execution)));
       } else {
         agentTaskService.failClaimedProcessTask(
             "landing-generator",
             taskId,
-            new com.marketinghub.agenttask.FailAgentTaskRequest(request.error()));
+            new com.marketinghub.agenttask.FailAgentTaskRequest(
+                request.error(), null, null, modelUsage(execution)));
       }
       return;
     }
     agentTaskService.finishOperationalDelegation(
         "landing-generator", reference, request.error() == null);
+  }
+
+  /**
+   * Recupera somente a execução aprovada mais recente para não duplicar tentativas já reportadas.
+   */
+  private List<com.marketinghub.agenttask.AgentTaskModelUsageRequest> latestBpmModelUsage(
+      Long experimentId, Long taskId) {
+    return repository
+        .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
+            experimentId, STAGE, BPM_TASK_PREFIX + taskId)
+        .stream()
+        .filter(execution -> "CONCLUIDO".equals(execution.getStatus()))
+        .findFirst()
+        .map(this::modelUsage)
+        .orElseGet(List::of);
+  }
+
+  /** Converte a medição persistida da execução técnica no contrato econômico da tarefa. */
+  private List<com.marketinghub.agenttask.AgentTaskModelUsageRequest> modelUsage(
+      GeraLandingStageExecution execution) {
+    if (execution.getOpenAiModel() == null
+        || execution.getOpenAiModel().isBlank()
+        || (execution.getInputTokens() == null && execution.getOutputTokens() == null)) {
+      return List.of();
+    }
+    long input = execution.getInputTokens() == null ? 0 : execution.getInputTokens();
+    long cached = execution.getCachedInputTokens() == null ? 0 : execution.getCachedInputTokens();
+    long output = execution.getOutputTokens() == null ? 0 : execution.getOutputTokens();
+    return List.of(
+        new com.marketinghub.agenttask.AgentTaskModelUsageRequest(
+            execution.getOpenAiModel(), "STANDARD", input, cached, output));
   }
 
   /** Recupera o snapshot congelado usado pelo MCP exclusivo. */

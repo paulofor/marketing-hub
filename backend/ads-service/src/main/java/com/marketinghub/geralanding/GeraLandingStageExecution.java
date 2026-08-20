@@ -100,6 +100,9 @@ public class GeraLandingStageExecution {
   @Column(name = "input_tokens")
   private Integer inputTokens;
 
+  @Column(name = "cached_input_tokens")
+  private Integer cachedInputTokens;
+
   @Column(name = "output_tokens")
   private Integer outputTokens;
 

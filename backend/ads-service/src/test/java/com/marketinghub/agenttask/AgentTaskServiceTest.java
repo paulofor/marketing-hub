@@ -11,9 +11,11 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -683,6 +685,152 @@ class AgentTaskServiceTest {
     assertThat(task.getDeliveredAt()).isEqualTo(delivered);
     assertThat(task.getResultJson()).contains("READY");
     assertThat(task.getEvidenceJson()).contains("htmlVersion");
+  }
+
+  /** Persiste tokens e acumula o custo calculado pelo backend em tentativas da mesma tarefa. */
+  @Test
+  void accumulatesModelUsageAndBackendEstimatedCost() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    OpenAiPricingService pricing = mock(OpenAiPricingService.class);
+    AgentTask task =
+        processTask(
+            30L,
+            agent(7L, "landing-generator", "Dédalo"),
+            process("PUBLISHED", "Dédalo"),
+            "html",
+            "IN_PROGRESS");
+    task.setInputTokens(100L);
+    task.setCachedInputTokens(20L);
+    task.setOutputTokens(30L);
+    task.setEstimatedCostUsd(new BigDecimal("0.01000000"));
+    task.setCostEstimationStatus("ESTIMATED");
+    when(repository.findById(30L)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    when(pricing.estimateTaskCost("gpt-test", "FLEX", 900L, 400L, 200L))
+        .thenReturn(Optional.of(new BigDecimal("0.02000000")));
+    Instant delivered = Instant.parse("2026-08-20T13:00:00Z");
+    AgentTaskService service =
+        new AgentTaskService(
+            repository,
+            mock(AgentRepository.class),
+            mock(BusinessProcessDefinitionRepository.class),
+            new ObjectMapper(),
+            pricing,
+            Clock.fixed(delivered, ZoneOffset.UTC));
+
+    service.completeClaimedProcessTask(
+        "landing-generator",
+        30L,
+        new CompleteAgentTaskRequest(
+            "{\"decision\":\"READY\"}",
+            "{\"htmlVersion\":2}",
+            List.of(new AgentTaskModelUsageRequest("gpt-test", "FLEX", 900L, 400L, 200L))));
+
+    assertThat(task.getInputTokens()).isEqualTo(1_000L);
+    assertThat(task.getCachedInputTokens()).isEqualTo(420L);
+    assertThat(task.getOutputTokens()).isEqualTo(230L);
+    assertThat(task.getEstimatedCostUsd()).isEqualByComparingTo("0.03000000");
+    assertThat(task.getCostEstimationStatus()).isEqualTo("ESTIMATED");
+    assertThat(task.getModelUsageUpdatedAt()).isEqualTo(delivered);
+  }
+
+  /** Preserva os tokens e sinaliza preço ausente quando o catálogo não conhece o modelo. */
+  @Test
+  void preservesTokensWhenPricingIsUnavailable() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    OpenAiPricingService pricing = mock(OpenAiPricingService.class);
+    AgentTask task =
+        processTask(
+            31L,
+            agent(2L, "customer-agent", "Psique"),
+            process("PUBLISHED", "Psique"),
+            "customer",
+            "IN_PROGRESS");
+    when(repository.findById(31L)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    when(pricing.estimateTaskCost("unknown", "FLEX", 500L, 100L, 80L)).thenReturn(Optional.empty());
+    AgentTaskService service =
+        new AgentTaskService(
+            repository,
+            mock(AgentRepository.class),
+            mock(BusinessProcessDefinitionRepository.class),
+            new ObjectMapper(),
+            pricing,
+            Clock.systemUTC());
+
+    service.failClaimedProcessTask(
+        "customer-agent",
+        31L,
+        new FailAgentTaskRequest(
+            "Ajuste necessário",
+            "{\"decision\":\"ADJUST\"}",
+            "{\"reviewer\":\"Psique\"}",
+            List.of(new AgentTaskModelUsageRequest("unknown", "FLEX", 500L, 100L, 80L))));
+
+    assertThat(task.getInputTokens()).isEqualTo(500L);
+    assertThat(task.getCachedInputTokens()).isEqualTo(100L);
+    assertThat(task.getOutputTokens()).isEqualTo(80L);
+    assertThat(task.getEstimatedCostUsd()).isNull();
+    assertThat(task.getCostEstimationStatus()).isEqualTo("PRICING_UNAVAILABLE");
+  }
+
+  /** Rejeita cache maior que a entrada total antes de persistir um custo impossível. */
+  @Test
+  void rejectsCachedTokensGreaterThanInput() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task =
+        processTask(
+            31L,
+            agent(2L, "customer-agent", "Psique"),
+            process("PUBLISHED", "Psique"),
+            "customer",
+            "IN_PROGRESS");
+    when(repository.findById(31L)).thenReturn(Optional.of(task));
+    AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+
+    assertThatThrownBy(
+            () ->
+                service.completeClaimedProcessTask(
+                    "customer-agent",
+                    31L,
+                    new CompleteAgentTaskRequest(
+                        "{}",
+                        "{}",
+                        List.of(
+                            new AgentTaskModelUsageRequest("gpt-test", "FLEX", 100L, 101L, 20L)))))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Consumo de modelo inválido");
+    verify(repository, never()).save(any());
+  }
+
+  /** Rejeita tier sem política de preço mesmo quando o serviço é chamado fora do controller. */
+  @Test
+  void rejectsUnsupportedServiceTier() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task =
+        processTask(
+            31L,
+            agent(2L, "customer-agent", "Psique"),
+            process("PUBLISHED", "Psique"),
+            "customer",
+            "IN_PROGRESS");
+    when(repository.findById(31L)).thenReturn(Optional.of(task));
+    AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+
+    assertThatThrownBy(
+            () ->
+                service.completeClaimedProcessTask(
+                    "customer-agent",
+                    31L,
+                    new CompleteAgentTaskRequest(
+                        "{}",
+                        "{}",
+                        List.of(
+                            new AgentTaskModelUsageRequest(
+                                "gpt-test", "UNMETERED", 100L, 0L, 20L)))))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Consumo de modelo inválido");
+    verify(repository, never()).save(any());
   }
 
   /** Preserva o parecer funcional quando o agente bloqueia a atividade por qualidade. */

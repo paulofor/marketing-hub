@@ -1,0 +1,76 @@
+services:
+  mysql:
+    build:
+      context: mysql-init
+      dockerfile: Dockerfile
+    environment:
+      MYSQL_DATABASE: marketinghub_task_cost
+      MYSQL_ROOT_PASSWORD: local-task-cost
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-plocal-task-cost"]
+      interval: 5s
+      timeout: 3s
+      retries: 40
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  backend:
+    build:
+      context: ../../..
+      dockerfile: backend/ads-service/Dockerfile
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: marketinghub_task_cost
+      DB_USERNAME: root
+      DB_PASSWORD: local-task-cost
+      DB_MAX_POOL_SIZE: 4
+      DB_MIN_IDLE: 1
+      JAVA_OPTS: -Xms256m -Xmx1536m
+      SPRING_LIQUIBASE_ENABLED: "true"
+      SPRING_LIQUIBASE_CHANGE_LOG: classpath:db/changelog/changesets/2026-08-20-agent-task-model-cost.yaml
+      OPENAI_API_KEY: local-homologation-only
+      OPENAI_BASE_URL: http://openai-test-double/v1
+      INTEGRATIONS_LEAD_PORTAL_ENABLED: "false"
+      INTEGRATIONS_LEAD_PORTAL_PAYMENTS_ENABLED: "false"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      openai-test-double:
+        condition: service_started
+    ports:
+      - "80:8000"
+      - "18021:8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-fsS",
+          "--connect-timeout",
+          "2",
+          "--max-time",
+          "4",
+          "http://127.0.0.1:8000/ops-mh-observability-v2/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+
+  openai-test-double:
+    build:
+      context: openai-test-double
+      dockerfile: Dockerfile
+
+  frontend:
+    build:
+      context: ../../..
+      dockerfile: frontend/Dockerfile
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "15183:5173"
+
+volumes:
+  mysql-data:

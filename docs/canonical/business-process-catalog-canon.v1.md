@@ -77,6 +77,20 @@ Cada tarefa deve preservar dois marcos temporais canônicos: `received_at`, regi
 
 O contrato operacional canônico é `/api/internal/agent-tasks/<agentKey>/stage-executions/pending`. O backend libera somente atividades cujas predecessoras `TASK` da mesma versão de processo e referência de execução estejam concluídas. O executor reporta resultado ou falha pelos callbacks da execução; resultado e evidências ficam persistidos na tarefa. O executor nunca escolhe nem dispara a próxima atividade.
 
+Toda tarefa que consumir modelo de IA deve persistir, no callback de resultado ou falha, o consumo
+real informado pelo provedor: tokens totais de entrada, parcela da entrada atendida por cache e
+tokens de saída. O executor informa modelo, tier e contadores; o backend é a autoridade do preço e
+calcula o custo estimado em USD com o catálogo canônico vigente naquele instante. Como tokens de
+cache fazem parte da entrada total, somente a parcela `entrada - cache` usa a tarifa de entrada
+normal e a parcela em cache usa a tarifa própria. A tarefa preserva o custo calculado como histórico,
+sem recalculá-lo retroativamente quando o catálogo mudar.
+
+A ausência de preço para um modelo não pode apagar os tokens nem transformar falha de
+instrumentação em sucesso econômico: a tarefa deve ficar com o consumo persistido, custo
+indisponível e status explícito de preço ausente. Tarefas sem modelo podem registrar custo zero;
+tarefas legadas que não reportaram consumo permanecem identificadas como não informadas. A tela da
+tarefa deve mostrar entrada, saída, cache e custo estimado vindos do backend, sem estimativa local.
+
 Uma tarefa excepcional pode ser vinculada posteriormente a uma atividade regular somente enquanto estiver `PENDING`, ainda não tiver sido recebida e a definição estiver `PUBLISHED`. O vínculo preserva o mesmo identificador e histórico da tarefa, remove a excepcionalidade e valida se a atividade pertence ao agente responsável. Tarefas recebidas, concluídas ou já vinculadas não podem ser migradas por esse contrato.
 
 Uma demanda fora do catálogo pode ser registrada como `Atividade excepcional`, sem vínculo regular e com justificativa obrigatória auditável. A exceção não cria nem altera processo automaticamente; recorrências devem orientar revisão ou criação de processo. Tarefas históricas anteriores a esta regra permanecem legíveis como legadas.

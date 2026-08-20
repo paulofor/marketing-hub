@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayDeque;
@@ -41,6 +43,7 @@ public class AgentTaskService {
   private final AgentRepository agentRepository;
   private final BusinessProcessDefinitionRepository processRepository;
   private final ObjectMapper objectMapper;
+  private final OpenAiPricingService pricingService;
   private final Clock clock;
 
   /** Configura persistência, catálogo e relógio operacional. */
@@ -49,8 +52,15 @@ public class AgentTaskService {
       AgentTaskRepository repository,
       AgentRepository agentRepository,
       BusinessProcessDefinitionRepository processRepository,
-      ObjectMapper objectMapper) {
-    this(repository, agentRepository, processRepository, objectMapper, Clock.systemUTC());
+      ObjectMapper objectMapper,
+      OpenAiPricingService pricingService) {
+    this(
+        repository,
+        agentRepository,
+        processRepository,
+        objectMapper,
+        pricingService,
+        Clock.systemUTC());
   }
 
   /** Permite testes determinísticos do histórico temporal. */
@@ -60,10 +70,22 @@ public class AgentTaskService {
       BusinessProcessDefinitionRepository processRepository,
       ObjectMapper objectMapper,
       Clock clock) {
+    this(repository, agentRepository, processRepository, objectMapper, null, clock);
+  }
+
+  /** Permite testes determinísticos do custo calculado pelo catálogo. */
+  AgentTaskService(
+      AgentTaskRepository repository,
+      AgentRepository agentRepository,
+      BusinessProcessDefinitionRepository processRepository,
+      ObjectMapper objectMapper,
+      OpenAiPricingService pricingService,
+      Clock clock) {
     this.repository = repository;
     this.agentRepository = agentRepository;
     this.processRepository = processRepository;
     this.objectMapper = objectMapper;
+    this.pricingService = pricingService;
     this.clock = clock;
   }
 
@@ -277,6 +299,11 @@ public class AgentTaskService {
         task.getStatus(),
         state,
         reason,
+        task.getInputTokens(),
+        task.getCachedInputTokens(),
+        task.getOutputTokens(),
+        task.getEstimatedCostUsd(),
+        task.getCostEstimationStatus(),
         task.getReceivedAt(),
         task.getDeliveredAt());
   }
@@ -417,6 +444,12 @@ public class AgentTaskService {
         task.getResultJson(),
         task.getEvidenceJson(),
         task.getExecutionError(),
+        task.getInputTokens(),
+        task.getCachedInputTokens(),
+        task.getOutputTokens(),
+        task.getEstimatedCostUsd(),
+        task.getCostEstimationStatus(),
+        task.getModelUsageUpdatedAt(),
         task.getReceivedAt(),
         task.getDeliveredAt(),
         task.getCreatedAt(),
@@ -643,6 +676,7 @@ public class AgentTaskService {
     Instant now = Instant.now(clock);
     task.setResultJson(request.resultJson());
     task.setEvidenceJson(request.evidenceJson());
+    applyModelUsage(task, request.modelUsages());
     task.setExecutionError(null);
     task.setStatus("COMPLETED");
     if (task.getDeliveredAt() == null) task.setDeliveredAt(now);
@@ -657,9 +691,93 @@ public class AgentTaskService {
     task.setExecutionError(request.error());
     task.setResultJson(request.resultJson());
     task.setEvidenceJson(request.evidenceJson());
+    applyModelUsage(task, request.modelUsages());
     task.setStatus("BLOCKED");
     task.setUpdatedAt(Instant.now(clock));
     repository.save(task);
+  }
+
+  /** Acumula tokens reais e custo estimado sem permitir que o executor escolha as tarifas. */
+  private void applyModelUsage(AgentTask task, List<AgentTaskModelUsageRequest> usages) {
+    if (usages == null) return;
+    Instant now = Instant.now(clock);
+    if (usages.isEmpty()) {
+      if (task.getInputTokens() == null) {
+        task.setInputTokens(0L);
+        task.setCachedInputTokens(0L);
+        task.setOutputTokens(0L);
+        task.setEstimatedCostUsd(BigDecimal.ZERO.setScale(8));
+        task.setCostEstimationStatus("NOT_APPLICABLE");
+        task.setModelUsageUpdatedAt(now);
+      }
+      return;
+    }
+    long input = task.getInputTokens() == null ? 0 : task.getInputTokens();
+    long cached = task.getCachedInputTokens() == null ? 0 : task.getCachedInputTokens();
+    long output = task.getOutputTokens() == null ? 0 : task.getOutputTokens();
+    BigDecimal knownCost =
+        task.getEstimatedCostUsd() == null
+            ? BigDecimal.ZERO.setScale(8)
+            : task.getEstimatedCostUsd();
+    boolean hasKnownCost = task.getEstimatedCostUsd() != null;
+    boolean missingPrice =
+        "PRICING_UNAVAILABLE".equals(task.getCostEstimationStatus())
+            || "PARTIALLY_ESTIMATED".equals(task.getCostEstimationStatus());
+    for (AgentTaskModelUsageRequest usage : usages) {
+      validateModelUsage(usage);
+      input = Math.addExact(input, usage.inputTokens());
+      cached = Math.addExact(cached, usage.cachedInputTokens());
+      output = Math.addExact(output, usage.outputTokens());
+      Optional<BigDecimal> estimated =
+          pricingService == null
+              ? Optional.empty()
+              : pricingService.estimateTaskCost(
+                  usage.modelCode(),
+                  usage.serviceTier(),
+                  usage.inputTokens(),
+                  usage.cachedInputTokens(),
+                  usage.outputTokens());
+      if (estimated.isPresent()) {
+        knownCost = knownCost.add(estimated.get());
+        hasKnownCost = true;
+      } else {
+        missingPrice = true;
+      }
+    }
+    task.setInputTokens(input);
+    task.setCachedInputTokens(cached);
+    task.setOutputTokens(output);
+    task.setEstimatedCostUsd(hasKnownCost ? knownCost.setScale(8) : null);
+    task.setCostEstimationStatus(
+        missingPrice
+            ? (hasKnownCost ? "PARTIALLY_ESTIMATED" : "PRICING_UNAVAILABLE")
+            : "ESTIMATED");
+    task.setModelUsageUpdatedAt(now);
+  }
+
+  /** Revalida contadores para chamadas internas que não passam pela validação HTTP. */
+  private void validateModelUsage(AgentTaskModelUsageRequest usage) {
+    if (usage == null
+        || usage.modelCode() == null
+        || usage.modelCode().isBlank()
+        || !supportedServiceTier(usage.serviceTier())
+        || usage.inputTokens() == null
+        || usage.cachedInputTokens() == null
+        || usage.outputTokens() == null
+        || usage.inputTokens() < 0
+        || usage.cachedInputTokens() < 0
+        || usage.outputTokens() < 0
+        || usage.cachedInputTokens() > usage.inputTokens()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Consumo de modelo inválido.");
+    }
+  }
+
+  /** Aceita somente os tiers para os quais o catálogo possui política de preço definida. */
+  private boolean supportedServiceTier(String serviceTier) {
+    return serviceTier != null
+        && ("STANDARD".equalsIgnoreCase(serviceTier)
+            || "FLEX".equalsIgnoreCase(serviceTier)
+            || "BATCH".equalsIgnoreCase(serviceTier));
   }
 
   /** Confirma identidade e lease antes de aceitar callback operacional. */

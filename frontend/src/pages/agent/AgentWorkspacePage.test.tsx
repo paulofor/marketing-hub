@@ -43,6 +43,11 @@ vi.mock("../../api/agentTask/useAgentTasks", () => ({
       priority: "HIGH",
       status: testState.taskStatus,
       sourceReference: testState.sourceReference,
+      inputTokens: 1500,
+      cachedInputTokens: 500,
+      outputTokens: 400,
+      estimatedCostUsd: 0.025,
+      costEstimationStatus: "ESTIMATED",
       receivedAt: "2026-08-11T15:00:00Z",
       createdAt: "2026-08-11T15:00:00Z",
       updatedAt: "2026-08-11T15:00:00Z",
@@ -185,6 +190,9 @@ describe("AgentWorkspacePage", () => {
     expect(screen.getByText(/contexto v3/)).toBeInTheDocument();
     expect(screen.getByText(/Recebida em:/)).toBeInTheDocument();
     expect(screen.getByText(/Ainda não entregue/)).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Tokens: entrada 1.500 · saída 400 · cache 500"),
+    ).not.toHaveLength(0);
     expect(
       screen.getByRole("button", { name: "Em andamento" }),
     ).toBeInTheDocument();

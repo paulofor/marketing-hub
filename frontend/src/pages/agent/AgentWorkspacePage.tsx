@@ -17,6 +17,7 @@ import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import { useExperiments } from "../../api/experiment/useExperiments";
 import { useBusinessProcesses } from "../../api/businessProcess/useBusinessProcesses";
 import { useAgentWorkMonitor } from "../../api/agent/useAgentWorkMonitor";
+import "./AgentWorkspacePage.css";
 
 const statusLabel: Record<AgentTaskStatus, string> = {
   PENDING: "Pendente",
@@ -591,7 +592,10 @@ export default function AgentWorkspacePage() {
               {inbox.isLoading ? <p>Carregando tarefas...</p> : null}
               <div className="d-grid gap-3">
                 {(inbox.data ?? []).map((task) => (
-                  <article key={task.id} className="border rounded p-3">
+                  <article
+                    key={task.id}
+                    className="agent-task-card border rounded p-3"
+                  >
                     {(() => {
                       const experimentId = experimentIdFromTask(task);
                       const experiment = (experiments.data ?? []).find(
@@ -625,8 +629,8 @@ export default function AgentWorkspacePage() {
                         </div>
                       );
                     })()}
-                    <div className="d-flex justify-content-between gap-3">
-                      <div>
+                    <div className="agent-task-card__header d-flex justify-content-between gap-3">
+                      <div className="agent-task-card__identity">
                         <h3 className="h6 mb-1">{task.title}</h3>
                         {task.taskKind === "GATE_DECISION" ? (
                           <span className="badge text-bg-warning mb-1">
@@ -641,7 +645,7 @@ export default function AgentWorkspacePage() {
                         </div>
                         <div className="small mt-1">
                           {task.exceptional ? (
-                            <span className="badge text-bg-warning">
+                            <span className="agent-task-card__exception badge text-bg-warning">
                               Exceção · {task.exceptionReason}
                             </span>
                           ) : task.processActivityName ? (

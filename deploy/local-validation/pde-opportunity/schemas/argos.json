@@ -1,0 +1,51 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "signalPattern", "audience", "rootPain", "desiredOutcome", "currentFailedAttempts", "independentEvidence", "alternatives", "recommendedOpportunity", "validationGaps", "confidence"],
+  "properties": {
+    "decision": { "type": "string", "enum": ["APPROVE", "RESEARCH_MORE", "REJECT"] },
+    "signalPattern": { "type": "string" },
+    "audience": { "type": "string" },
+    "rootPain": { "type": "string" },
+    "desiredOutcome": { "type": "string" },
+    "currentFailedAttempts": { "type": "array", "items": { "type": "string" } },
+    "independentEvidence": {
+      "type": "array",
+      "minItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sourceUrl", "sourceType", "observedSignal", "supports"],
+        "properties": {
+          "sourceUrl": { "type": "string" },
+          "sourceType": { "type": "string", "enum": ["HUMAN_SIGNAL", "SURVEY", "COMMERCIAL_OFFER", "COMMUNITY", "SPECIALIST_CONTENT"] },
+          "observedSignal": { "type": "string" },
+          "supports": { "type": "array", "items": { "type": "string", "enum": ["RECURRENCE", "UNMETNESS", "PURCHASE_INTENT", "RISK"] } }
+        }
+      }
+    },
+    "alternatives": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "targetSegment", "jobToBeDone", "pdeExperience", "demandEvidence", "commercialSignal", "risk", "score"],
+        "properties": {
+          "name": { "type": "string" },
+          "targetSegment": { "type": "string" },
+          "jobToBeDone": { "type": "string" },
+          "pdeExperience": { "type": "string" },
+          "demandEvidence": { "type": "string" },
+          "commercialSignal": { "type": "string" },
+          "risk": { "type": "string" },
+          "score": { "type": "integer", "minimum": 0, "maximum": 100 }
+        }
+      }
+    },
+    "recommendedOpportunity": { "type": "string" },
+    "validationGaps": { "type": "array", "items": { "type": "string" } },
+    "confidence": { "type": "integer", "minimum": 0, "maximum": 100 }
+  }
+}

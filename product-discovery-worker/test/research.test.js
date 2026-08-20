@@ -352,6 +352,31 @@ test("searchInternet limits Brave query while preserving the research intent", a
   assert.match(query, /cliente pergunta preço e some$/);
 });
 
+test("searchInternet sends the canonical Brazilian locale accepted by Brave", async () => {
+  const calls = [];
+
+  await searchInternet(
+    { theme: "solução pronta de IA", targetAudience: "profissionais brasileiros" },
+    {
+      maxSearchResults: 1,
+      minSearchQueries: 1,
+      maxSearchQueries: 1,
+      config: resolveSearchConfig({
+        PRODUCT_DISCOVERY_SEARCH_PROVIDER: "brave",
+        PRODUCT_DISCOVERY_SEARCH_LANGUAGE: "pt-br",
+        BRAVE_SEARCH_API_KEY: "brave-test-key",
+      }),
+      logger: { info() {} },
+      fetchFn: async (url) => {
+        calls.push(url);
+        return { ok: true, json: async () => ({ web: { results: [] } }) };
+      },
+    },
+  );
+
+  assert.equal(new URL(calls[0]).searchParams.get("search_lang"), "pt-br");
+});
+
 test("searchInternet retries Brave 422 with the documented minimal contract", async () => {
   const calls = [];
   const warnings = [];

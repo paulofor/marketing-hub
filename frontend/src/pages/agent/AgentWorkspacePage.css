@@ -1,0 +1,16 @@
+.agent-task-card,
+.agent-task-card__header,
+.agent-task-card__identity {
+  min-width: 0;
+}
+
+.agent-task-card {
+  overflow-wrap: anywhere;
+}
+
+.agent-task-card__exception {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: left;
+  white-space: normal;
+}

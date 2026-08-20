@@ -577,7 +577,7 @@ async function searchBrave(query, config, fetchFn, logger) {
   const url = new URL(config.braveEndpoint);
   url.searchParams.set("q", normalizedQuery);
   url.searchParams.set("country", config.country.toUpperCase());
-  url.searchParams.set("search_lang", config.language.split("-")[0]);
+  url.searchParams.set("search_lang", normalizeBraveSearchLanguage(config.language));
   url.searchParams.set("count", "10");
   const headers = {
     Accept: "application/json",
@@ -616,6 +616,14 @@ async function searchBrave(query, config, fetchFn, logger) {
     );
   }
   return normalizeBraveResponse(payload);
+}
+
+/** Preserva os locales aceitos pela Brave, principalmente o contrato brasileiro pt-br. */
+function normalizeBraveSearchLanguage(language) {
+  const normalized = String(language || "pt-br")
+    .trim()
+    .toLowerCase();
+  return normalized === "pt" ? "pt-br" : normalized;
 }
 
 export function normalizeBraveQuery(query) {

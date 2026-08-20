@@ -215,7 +215,13 @@ public class CustomerBpmTaskConsumer {
   /** Resolve o contexto da atividade sem consultar banco ou decidir o avanço do processo. */
   private String prompt(Map<String, Object> task) throws IOException {
     return read(promptResourceFor(processCode(task)))
+        .replace("{{PSIQUE_BEHAVIORAL_CORE_V2}}", behavioralCoreV2())
         .replace("{{TASK_CONTEXT}}", json.writeValueAsString(task));
+  }
+
+  /** Lê a mesma constituição comportamental usada por todas as atividades de Psique. */
+  private String behavioralCoreV2() throws IOException {
+    return read("prompts/psique/behavioral-core-v2.md");
   }
 
   /** Seleciona o prompt versionado específico da entidade avaliada. */
@@ -238,12 +244,15 @@ public class CustomerBpmTaskConsumer {
     return value == null ? "" : value.toString();
   }
 
-  /** Valida que clareza, confiança, valor e objeções receberam decisão explícita. */
+  /** Valida que a decisão inclui evidência e uma resposta humana não plenamente racional. */
   static void validate(JsonNode result) {
     if (!List.of("APPROVED", "ADJUST", "BLOCKED").contains(result.path("decision").asText())) {
       throw new IllegalArgumentException("Parecer de Psique sem decisão válida");
     }
     if (result.path("customerPerspective").asText().isBlank()
+        || !result.path("behavioralResponse").isObject()
+        || result.path("behavioralResponse").path("firstImpulse").asText().isBlank()
+        || result.path("behavioralResponse").path("belongingAdmirationLove").asText().isBlank()
         || result.path("evidence").isEmpty()
         || result.path("requiredChanges").isMissingNode()) {
       throw new IllegalArgumentException("Parecer de Psique sem evidências suficientes");

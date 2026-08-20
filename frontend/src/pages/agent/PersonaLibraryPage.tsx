@@ -32,7 +32,7 @@ type CustomerEvaluation = {
   persona: Persona;
   assetType: string;
   assetReference: string;
-  simulationVersion: "BASELINE_V1" | "BEHAVIORAL_V1";
+  simulationVersion: "BASELINE_V1" | "BEHAVIORAL_V1" | "BEHAVIORAL_V2";
   status: string;
   simulatedAssessment?: string;
   hypothesisJson?: string;
@@ -89,8 +89,8 @@ export default function PersonaLibraryPage() {
   const [evaluationAssetType, setEvaluationAssetType] = useState("PAGE");
   const [evaluationAssetReference, setEvaluationAssetReference] = useState("");
   const [simulationVersion, setSimulationVersion] = useState<
-    "BASELINE_V1" | "BEHAVIORAL_V1"
-  >("BEHAVIORAL_V1");
+    "BASELINE_V1" | "BEHAVIORAL_V1" | "BEHAVIORAL_V2"
+  >("BEHAVIORAL_V2");
   const [evidencePersonaId, setEvidencePersonaId] = useState("");
   const [memoryLayer, setMemoryLayer] = useState("EXTERNAL_OBSERVATION");
   const [memorySourceUrl, setMemorySourceUrl] = useState("");
@@ -344,10 +344,14 @@ export default function PersonaLibraryPage() {
               value={simulationVersion}
               onChange={(event) =>
                 setSimulationVersion(
-                  event.target.value as "BASELINE_V1" | "BEHAVIORAL_V1",
+                  event.target.value as
+                    "BASELINE_V1" | "BEHAVIORAL_V1" | "BEHAVIORAL_V2",
                 )
               }
             >
+              <option value="BEHAVIORAL_V2">
+                Psique humana v2 (recomendado)
+              </option>
               <option value="BEHAVIORAL_V1">Comportamental v1</option>
               <option value="BASELINE_V1">Baseline atual</option>
             </select>
@@ -397,9 +401,11 @@ export default function PersonaLibraryPage() {
                   {evaluation.assetType}: {evaluation.assetReference}
                 </div>
                 <div className="small text-muted">
-                  {evaluation.simulationVersion === "BEHAVIORAL_V1"
-                    ? "Comportamental v1 comparado ao baseline"
-                    : "Baseline v1"}
+                  {evaluation.simulationVersion === "BEHAVIORAL_V2"
+                    ? "Psique humana v2 comparada ao baseline"
+                    : evaluation.simulationVersion === "BEHAVIORAL_V1"
+                      ? "Comportamental v1 comparado ao baseline"
+                      : "Baseline v1"}
                 </div>
                 <CodexExecutionTelemetry
                   agentType="CUSTOMER_AGENT"

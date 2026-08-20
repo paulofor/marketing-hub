@@ -16,9 +16,15 @@
     "simulatedReaction": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["summary", "frictions", "trustSignals", "abandonmentRisk"],
+      "required": ["summary", "firstAffectiveImpulse", "pleasureAndEffort", "noveltyAndFamiliarity", "riskAndLoss", "relationalValue", "postHocRationalization", "frictions", "trustSignals", "abandonmentRisk"],
       "properties": {
         "summary": { "type": "string", "minLength": 1 },
+        "firstAffectiveImpulse": { "type": "string", "minLength": 1 },
+        "pleasureAndEffort": { "type": "string", "minLength": 1 },
+        "noveltyAndFamiliarity": { "type": "string", "minLength": 1 },
+        "riskAndLoss": { "type": "string", "minLength": 1 },
+        "relationalValue": { "type": "string", "minLength": 1 },
+        "postHocRationalization": { "type": "string", "minLength": 1 },
         "frictions": { "type": "array", "items": { "type": "string" } },
         "trustSignals": { "type": "array", "items": { "type": "string" } },
         "abandonmentRisk": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] }

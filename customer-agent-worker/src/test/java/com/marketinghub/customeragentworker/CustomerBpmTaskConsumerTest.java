@@ -16,7 +16,18 @@ class CustomerBpmTaskConsumerTest {
   void acceptsCompleteCustomerReview() throws Exception {
     CustomerBpmTaskConsumer.validate(
         json.readTree(
-            "{\"decision\":\"APPROVED\",\"customerPerspective\":\"Oferta clara\",\"evidence\":[\"CTA visível\"],\"requiredChanges\":[]}"));
+            """
+            {
+              "decision":"APPROVED",
+              "customerPerspective":"Oferta clara",
+              "behavioralResponse":{
+                "firstImpulse":"Curiosidade e alívio",
+                "belongingAdmirationLove":"Promete reconhecimento profissional sem pressionar insegurança"
+              },
+              "evidence":["CTA visível"],
+              "requiredChanges":[]
+            }
+            """));
   }
 
   /** Rejeita aprovação vazia que liberaria Têmis sem avaliação real da cliente. */
@@ -25,6 +36,24 @@ class CustomerBpmTaskConsumerTest {
     var result =
         json.readTree(
             "{\"decision\":\"APPROVED\",\"customerPerspective\":\"\",\"evidence\":[],\"requiredChanges\":[]}");
+    assertThatThrownBy(() -> CustomerBpmTaskConsumer.validate(result))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  /** Rejeita um parecer racionalmente correto que omita impulso e valor relacional. */
+  @Test
+  void rejectsFullyRationalReviewWithoutHumanBehavior() throws Exception {
+    var result =
+        json.readTree(
+            """
+            {
+              "decision":"APPROVED",
+              "customerPerspective":"Oferta clara",
+              "evidence":["CTA visível"],
+              "requiredChanges":[]
+            }
+            """);
+
     assertThatThrownBy(() -> CustomerBpmTaskConsumer.validate(result))
         .isInstanceOf(IllegalArgumentException.class);
   }
@@ -38,6 +67,30 @@ class CustomerBpmTaskConsumerTest {
     org.assertj.core.api.Assertions.assertThat(
             CustomerBpmTaskConsumer.schemaResourceFor("creative-production-approval"))
         .isEqualTo("prompts/bpm/creative-customer-review-schema.json");
+  }
+
+  /** Exige o núcleo afetivo, a surpresa segura e o desejo de amor nos contratos BPM. */
+  @Test
+  void requiresSharedBehavioralCoreInEveryBpmReview() throws Exception {
+    String core =
+        Files.readString(Path.of("src/main/resources/prompts/psique/behavioral-core-v2.md"));
+    String creative =
+        Files.readString(
+            Path.of("src/main/resources/prompts/bpm/creative-customer-review-schema.json"));
+    String landing =
+        Files.readString(
+            Path.of("src/main/resources/prompts/bpm/landing-customer-review-schema.json"));
+
+    org.assertj.core.api.Assertions.assertThat(core)
+        .contains("reação afetiva rápida")
+        .contains("faixa de novidade segura")
+        .contains("amada")
+        .contains("Não recomende explorar vergonha");
+    org.assertj.core.api.Assertions.assertThat(java.util.List.of(creative, landing))
+        .allSatisfy(
+            schema ->
+                org.assertj.core.api.Assertions.assertThat(schema)
+                    .contains("behavioralResponse", "belongingAdmirationLove"));
   }
 
   /** Lê os contadores cumulativos e a parcela de cache informados pelo Codex. */

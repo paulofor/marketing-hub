@@ -88,8 +88,8 @@ components:
         assetReference: { type: string, maxLength: 255 }
         simulationVersion:
           type: string
-          enum: [BASELINE_V1, BEHAVIORAL_V1]
-          default: BASELINE_V1
+          enum: [BASELINE_V1, BEHAVIORAL_V1, BEHAVIORAL_V2]
+          default: BEHAVIORAL_V2
     MotivationalVector:
       type: object
       required: [motivationalDirection, painIntensity, pleasureIntensity, fearWeight, frustrationWeight, effortWeight, reliefWeight, desireWeight, trustWeight, belongingWeight, evidenceStrength, confidenceScore, sourceReference, rationale]

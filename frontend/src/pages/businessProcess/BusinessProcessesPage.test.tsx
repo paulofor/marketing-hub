@@ -7,6 +7,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import axios from "axios";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import BusinessProcessesPage from "./BusinessProcessesPage";
 
@@ -79,9 +80,11 @@ describe("BusinessProcessesPage", () => {
     });
 
     render(
-      <QueryClientProvider client={client}>
-        <BusinessProcessesPage />
-      </QueryClientProvider>,
+      <MemoryRouter>
+        <QueryClientProvider client={client}>
+          <BusinessProcessesPage />
+        </QueryClientProvider>
+      </MemoryRouter>,
     );
 
     expect(
@@ -97,6 +100,58 @@ describe("BusinessProcessesPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByDisplayValue("Psique")).toBeInTheDocument();
     expect(screen.getByDisplayValue("2")).toBeDisabled();
+  });
+
+  it("abre diretamente o processo indicado pelo link da cadeia de valor", async () => {
+    const process = (id: number, name: string) => ({
+      id,
+      processCode: `process-${id}`,
+      name,
+      purpose: `Objetivo de ${name}`,
+      ownerName: "Operação",
+      triggerDescription: "Entrada aprovada",
+      outcomeDescription: "Resultado aprovado",
+      versionNumber: 1,
+      status: "PUBLISHED",
+      createdAt: "2026-08-20T10:00:00Z",
+      publishedAt: "2026-08-20T10:00:00Z",
+      diagram: {
+        nodes: [
+          { id: "start", type: "START", label: "Início" },
+          { id: "task", type: "TASK", label: `Atividade de ${name}` },
+          { id: "end", type: "END", label: "Fim" },
+        ],
+        flows: [
+          { from: "start", to: "task" },
+          { from: "task", to: "end" },
+        ],
+      },
+    });
+    mockCatalog([
+      process(11, "Descoberta da oportunidade PDE"),
+      process(12, "Plano Comercial e oferta PDE"),
+    ]);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/business-processes?processId=12"]}>
+        <QueryClientProvider client={client}>
+          <BusinessProcessesPage />
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByText("Plano Comercial e oferta PDE · v1"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Atividade de Plano Comercial e oferta PDE"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Atividade de Descoberta da oportunidade PDE"),
+    ).not.toBeInTheDocument();
   });
 
   it("permite excluir uma versão em rascunho após confirmação", async () => {
@@ -132,9 +187,11 @@ describe("BusinessProcessesPage", () => {
     });
 
     render(
-      <QueryClientProvider client={client}>
-        <BusinessProcessesPage />
-      </QueryClientProvider>,
+      <MemoryRouter>
+        <QueryClientProvider client={client}>
+          <BusinessProcessesPage />
+        </QueryClientProvider>
+      </MemoryRouter>,
     );
 
     fireEvent.click(
@@ -187,9 +244,11 @@ describe("BusinessProcessesPage", () => {
     });
 
     render(
-      <QueryClientProvider client={client}>
-        <BusinessProcessesPage />
-      </QueryClientProvider>,
+      <MemoryRouter initialEntries={["/business-processes?processId=8"]}>
+        <QueryClientProvider client={client}>
+          <BusinessProcessesPage />
+        </QueryClientProvider>
+      </MemoryRouter>,
     );
 
     expect(

@@ -3,16 +3,19 @@ import json
 import struct
 import urllib.error
 import urllib.request
+import uuid
 import zipfile
 from datetime import datetime
 
 
 PAYMENTS = "http://lead-portal-payments:8080"
 MOCK = "http://127.0.0.1:8080"
-PAYMENT_ID = "test-exp88-approved"
+RUN_ID = uuid.uuid4().hex[:12]
+PAYMENT_ID = f"test-exp88-approved-{RUN_ID}"
+BUYER_EMAIL = f"teste+exp88-{RUN_ID}@sandbox.local"
 BRIEFING = {
     "paymentId": PAYMENT_ID,
-    "buyerEmail": "teste+exp88@sandbox.local",
+    "buyerEmail": BUYER_EMAIL,
     "professionalName": "Studio Aurora Nails",
     "cityRegion": "Campinas",
     "whatsapp": "11999999999",
@@ -49,6 +52,7 @@ def expect_failure(url: str) -> int:
 
 
 assert urllib.request.urlopen(PAYMENTS + "/health", timeout=10).read() == b"ok"
+initial_email_count = get_json(MOCK + "/evidence/emails")["count"]
 initial = get_json(
     PAYMENTS + "/api/v1/agenda-cheia/post-purchase?payment_id=" + PAYMENT_ID
 )
@@ -64,13 +68,14 @@ assert delivered["status"] == "ENTREGUE"
 assert delivered["submittedAt"]
 
 emails = get_json(MOCK + "/evidence/emails")
-assert emails["count"] == 2
-assert all(email["to"] == "teste+exp88@sandbox.local" for email in emails["emails"])
+assert emails["count"] == initial_email_count + 2
+round_emails = [email for email in emails["emails"] if email["to"] == BUYER_EMAIL]
+assert len(round_emails) == 2
 assert all(
     email["externalReference"] == "agenda-cheia-nail-design"
-    for email in emails["emails"]
+    for email in round_emails
 )
-final_email = emails["emails"][-1]
+final_email = round_emails[-1]
 assert final_email["downloadUrl"]
 
 download_url = final_email["downloadUrl"].replace(
@@ -104,7 +109,7 @@ assert duplicate["status"] == delivered["status"]
 first_timestamp = datetime.fromisoformat(delivered["submittedAt"].replace("Z", "+00:00"))
 duplicate_timestamp = datetime.fromisoformat(duplicate["submittedAt"].replace("Z", "+00:00"))
 assert abs((first_timestamp - duplicate_timestamp).total_seconds()) < 0.001
-assert get_json(MOCK + "/evidence/emails")["count"] == 2
+assert get_json(MOCK + "/evidence/emails")["count"] == initial_email_count + 2
 assert expect_failure(
     PAYMENTS
     + "/api/v1/agenda-cheia/post-purchase/deliveries/invalid-exp88-token/download"
@@ -116,7 +121,7 @@ print(
             "status": "PASS",
             "paymentId": PAYMENT_ID,
             "deliveryStatus": delivered["status"],
-            "emails": emails["count"],
+            "emails": len(round_emails),
             "zipBytes": len(archive),
             "files": len(names),
             "posts": 10,

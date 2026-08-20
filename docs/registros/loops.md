@@ -8,6 +8,13 @@
 >
 > Uso obrigatório recomendado: antes de corrigir problema em GeraLanding, Facebook Ads, Lead Portal, OpenAI/schema, pipelines administrativos ou pipeline de hipótese, verificar se a solicitação reabre algum loop listado aqui.
 
+## LOOP-EXPERIMENT-RUN-NATIVE-ENUM-DRIFT — preflight quebra após evolução de gate
+
+- **Sintoma:** `POST /api/experiment-runs/{id}/preflight` retorna HTTP 500 com `Data truncated for column 'gate_group'`.
+- **Causa-raiz confirmada em 2026-08-20:** o Liquibase definiu os campos evolutivos de `experiment_run` como `VARCHAR`, mas o `ddl-auto=update` do Hibernate os converteu para `ENUM` nativo do MySQL. Uma constante nova no Java não atualizou a lista persistida.
+- **Correção efetiva:** o Liquibase reconverte os dez campos de run para `VARCHAR`, e as entidades fixam tipo JDBC e definição SQL textual.
+- **Prevenção:** teste de contrato bloqueia retorno silencioso ao enum nativo; o preflight deve persistir `COMMERCIAL_EVIDENCE` após Liquibase e bootstrap JPA no MySQL 5.7.
+
 ## LOOP-BACKEND-HEALTHCHECK-PROCESS-LEAK — probes presos esgotam PIDs
 
 - **Sintoma:** o backend permanece em execução, mas fica `unhealthy`, deixa de responder e registra `Cannot fork` e indisponibilidade do pool JDBC.

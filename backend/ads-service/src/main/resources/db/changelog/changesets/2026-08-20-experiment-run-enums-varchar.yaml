@@ -1,0 +1,54 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-20-experiment-run-enums-varchar-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment_run
+        - tableExists:
+            tableName: experiment_run_gate_result
+      changes:
+        - modifyDataType:
+            tableName: experiment_run
+            columnName: mode
+            newDataType: VARCHAR(24)
+        - modifyDataType:
+            tableName: experiment_run
+            columnName: status
+            newDataType: VARCHAR(32)
+        - modifyDataType:
+            tableName: experiment_run
+            columnName: evidence_validity
+            newDataType: VARCHAR(32)
+        - modifyDataType:
+            tableName: experiment_run
+            columnName: stop_policy
+            newDataType: VARCHAR(48)
+        - modifyDataType:
+            tableName: experiment_run
+            columnName: failure_classification
+            newDataType: VARCHAR(64)
+        - modifyDataType:
+            tableName: experiment_run
+            columnName: data_quality_status
+            newDataType: VARCHAR(32)
+        - modifyDataType:
+            tableName: experiment_run_gate_result
+            columnName: gate_group
+            newDataType: VARCHAR(48)
+        - modifyDataType:
+            tableName: experiment_run_gate_result
+            columnName: status
+            newDataType: VARCHAR(24)
+        - modifyDataType:
+            tableName: experiment_run_gate_result
+            columnName: severity
+            newDataType: VARCHAR(24)
+        - modifyDataType:
+            tableName: experiment_run_gate_result
+            columnName: evaluator_type
+            newDataType: VARCHAR(24)

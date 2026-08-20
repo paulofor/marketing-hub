@@ -8,6 +8,7 @@ import zlib
 from email.message import EmailMessage
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import urlparse
 
 
 APPROVED_ROOT = Path("/test/approved")
@@ -62,21 +63,24 @@ def prepare_approved_library() -> None:
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
-        if self.path == "/health":
+        request_path = urlparse(self.path).path
+        if request_path == "/health":
             self.respond(200, {"status": "UP"})
             return
-        if self.path == "/v1/payments/test-exp88-approved":
+        payment_prefix = "/v1/payments/test-exp88-approved-"
+        if request_path.startswith(payment_prefix):
+            payment_id = request_path.removeprefix("/v1/payments/")
             self.respond(
                 200,
                 {
-                    "id": "test-exp88-approved",
+                    "id": payment_id,
                     "status": "approved",
                     "transaction_amount": 0.67,
                     "currency_id": "BRL",
                     "description": "Agenda Cheia Nail Design - Compra teste",
                     "external_reference": "agenda-cheia-nail-design",
                     "date_approved": "2026-08-20T12:00:00Z",
-                    "payer": {"email": "teste+exp88@sandbox.local"},
+                    "payer": {"email": f"teste+{payment_id}@sandbox.local"},
                     "metadata": {"mh_test": "1", "experiment_id": "88"},
                 },
             )

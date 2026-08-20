@@ -19,7 +19,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 /** Representa uma tentativa operacional auditável de executar um experimento comercial. */
 @Entity
@@ -43,15 +45,22 @@ public class ExperimentRun {
   private Integer runNumber;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "mode", length = 24, nullable = false)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(name = "mode", columnDefinition = "VARCHAR(24)", length = 24, nullable = false)
   private ExperimentRunMode mode;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "status", length = 32, nullable = false)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(name = "status", columnDefinition = "VARCHAR(32)", length = 32, nullable = false)
   private ExperimentRunStatus status;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "evidence_validity", length = 32, nullable = false)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(
+      name = "evidence_validity",
+      columnDefinition = "VARCHAR(32)",
+      length = 32,
+      nullable = false)
   private ExperimentEvidenceValidity evidenceValidity;
 
   @Column(name = "strategy_version")
@@ -64,21 +73,28 @@ public class ExperimentRun {
   private Integer audienceVersion;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "stop_policy", length = 48, nullable = false)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(name = "stop_policy", columnDefinition = "VARCHAR(48)", length = 48, nullable = false)
   private ExperimentRunStopPolicy stopPolicy;
 
   @Column(name = "stop_reason", length = 96)
   private String stopReason;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "failure_classification", length = 64)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(name = "failure_classification", columnDefinition = "VARCHAR(64)", length = 64)
   private ExperimentRunFailureClassification failureClassification;
 
   @Column(name = "failure_detail", columnDefinition = "LONGTEXT")
   private String failureDetail;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "data_quality_status", length = 32, nullable = false)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(
+      name = "data_quality_status",
+      columnDefinition = "VARCHAR(32)",
+      length = 32,
+      nullable = false)
   private ExperimentRunDataQualityStatus dataQualityStatus;
 
   @Column(name = "requested_at", nullable = false)

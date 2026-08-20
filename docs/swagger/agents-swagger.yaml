@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Gestão de Agentes
-  version: 1.2.0
+  version: 1.3.0
 paths:
   /api/agents/work-monitor:
     get:
@@ -15,6 +15,49 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/AgentWorkMonitor"
+  /api/agents/work-monitor/{agentId}/automatic-execution:
+    put:
+      summary: Alterna a execução automática do agente entre PLAY e STOP
+      parameters:
+        - in: path
+          name: agentId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [automaticExecutionEnabled]
+              properties:
+                automaticExecutionEnabled:
+                  type: boolean
+      responses:
+        "200":
+          description: Estado operacional persistido e auditado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentAutomaticExecutionControl"
+  /api/internal/agents/executor-health/{agentKey}/automatic-execution:
+    get:
+      summary: Informa se o executor pode iniciar trabalho automático
+      parameters:
+        - in: path
+          name: agentKey
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Verdade operacional que o executor deve consultar antes de cada rotina.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentAutomaticExecutionControl"
   /api/agents/portrait:
     post:
       summary: Envia a figura mitológica de um agente
@@ -56,6 +99,8 @@ components:
         - agentKey
         - nickname
         - agentName
+        - automaticExecutionEnabled
+        - automaticExecutionStatus
         - workStatus
         - currentWork
         - externalDecisionRequired
@@ -71,6 +116,18 @@ components:
           type: string
         agentName:
           type: string
+        automaticExecutionEnabled:
+          type: boolean
+        automaticExecutionStatus:
+          type: string
+          enum: [PLAY, STOP]
+        automaticExecutionChangedAt:
+          type: string
+          format: date-time
+          nullable: true
+        automaticExecutionChangedBy:
+          type: string
+          nullable: true
         workStatus:
           type: string
         currentWork:
@@ -101,3 +158,28 @@ components:
           type: string
           format: date
           description: Dia comercial do contador no fuso America/Sao_Paulo.
+    AgentAutomaticExecutionControl:
+      type: object
+      required:
+        - agentId
+        - agentKey
+        - automaticExecutionEnabled
+        - automaticExecutionStatus
+      properties:
+        agentId:
+          type: integer
+          format: int64
+        agentKey:
+          type: string
+        automaticExecutionEnabled:
+          type: boolean
+        automaticExecutionStatus:
+          type: string
+          enum: [PLAY, STOP]
+        changedAt:
+          type: string
+          format: date-time
+          nullable: true
+        changedBy:
+          type: string
+          nullable: true

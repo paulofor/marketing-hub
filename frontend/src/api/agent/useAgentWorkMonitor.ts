@@ -6,6 +6,10 @@ export interface AgentWorkMonitor {
   agentKey: string;
   nickname: string;
   agentName: string;
+  automaticExecutionEnabled: boolean;
+  automaticExecutionStatus: "PLAY" | "STOP";
+  automaticExecutionChangedAt?: string | null;
+  automaticExecutionChangedBy?: string | null;
   workStatus:
     | "IDLE"
     | "WORKING"

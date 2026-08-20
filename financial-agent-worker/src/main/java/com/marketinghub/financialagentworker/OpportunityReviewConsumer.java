@@ -10,6 +10,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,7 @@ public class OpportunityReviewConsumer {
   private final RestClient backend;
   private final ObjectMapper json;
   private final FinancialAgentProperties properties;
+  @Autowired private AutomaticExecutionControl automaticExecution;
 
   /** Configura backend, limites e executor somente leitura de Plutus. */
   public OpportunityReviewConsumer(FinancialAgentProperties properties, ObjectMapper json) {
@@ -32,9 +34,10 @@ public class OpportunityReviewConsumer {
     this.json = json;
   }
 
-  /** Reserva um parecer antes da conciliação seguinte, sem bloquear a fila financeira. */
+  /** Reserva em PLAY um parecer antes da conciliação seguinte, sem bloquear a fila financeira. */
   @Scheduled(fixedDelay = 60000)
   public void processOne() {
+    if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
     Map<?, ?> job = null;
     try {
       job =

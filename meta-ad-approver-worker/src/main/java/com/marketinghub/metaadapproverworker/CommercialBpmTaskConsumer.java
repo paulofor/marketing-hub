@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
@@ -41,6 +42,7 @@ public class CommercialBpmTaskConsumer {
   private final String codex;
   private final String model;
   private final String repositoryPath;
+  @Autowired private AutomaticExecutionControl automaticExecution;
 
   /** Configura a fila canônica e a sandbox independente de Têmis. */
   public CommercialBpmTaskConsumer(
@@ -56,9 +58,10 @@ public class CommercialBpmTaskConsumer {
     this.json = json;
   }
 
-  /** Reserva e revisa uma atividade liberada sem decidir a próxima etapa. */
+  /** Reserva em PLAY e revisa uma atividade liberada sem decidir a próxima etapa. */
   @Scheduled(cron = "45 */1 * * * *")
   public void processOne() {
+    if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
     Map<String, Object> task = null;
     try {
       task = claimNext();

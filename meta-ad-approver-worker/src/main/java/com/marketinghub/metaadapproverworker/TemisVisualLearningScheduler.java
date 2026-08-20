@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -18,6 +19,7 @@ public class TemisVisualLearningScheduler {
   private static final Logger log = LoggerFactory.getLogger(TemisVisualLearningScheduler.class);
   private final TemisVisualLearningBackendClient backend;
   private final TemisVisualLearningRunner runner;
+  @Autowired private AutomaticExecutionControl automaticExecution;
 
   /** Inicializa a rotina com fila e consolidador independentes. */
   public TemisVisualLearningScheduler(
@@ -26,9 +28,10 @@ public class TemisVisualLearningScheduler {
     this.runner = runner;
   }
 
-  /** Processa no máximo uma amostra por ciclo para preservar capacidade das revisões comerciais. */
+  /** Processa em PLAY no máximo uma amostra por ciclo e preserva capacidade das revisões. */
   @Scheduled(cron = "45 */2 * * * *")
   public void processPending() {
+    if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
     List<TemisVisualLearningJob> jobs = backend.claimPending(1);
     jobs.forEach(this::process);
   }

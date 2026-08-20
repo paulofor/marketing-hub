@@ -89,6 +89,16 @@ public class Agent {
   @Column(name = "execution_mode", nullable = false, length = 50)
   private String executionMode;
 
+  @Column(name = "automatic_execution_enabled", nullable = false)
+  @Builder.Default
+  private Boolean automaticExecutionEnabled = true;
+
+  @Column(name = "automatic_execution_changed_at")
+  private Instant automaticExecutionChangedAt;
+
+  @Column(name = "automatic_execution_changed_by", length = 100)
+  private String automaticExecutionChangedBy;
+
   @Lob private String description;
 
   @OneToMany(mappedBy = "agent", cascade = CascadeType.ALL, orphanRemoval = true)

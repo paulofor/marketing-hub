@@ -1,0 +1,37 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-20-agent-automatic-execution-control
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: agent
+              columnName: automatic_execution_enabled
+        - not:
+            tableExists:
+              tableName: agent_automatic_execution_control_event
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent
+                ADD COLUMN automatic_execution_enabled TINYINT(1) NOT NULL DEFAULT 1 AFTER execution_mode,
+                ADD COLUMN automatic_execution_changed_at DATETIME NULL AFTER automatic_execution_enabled,
+                ADD COLUMN automatic_execution_changed_by VARCHAR(100) NULL AFTER automatic_execution_changed_at;
+
+              CREATE TABLE agent_automatic_execution_control_event (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                agent_id BIGINT NOT NULL,
+                automatic_execution_enabled TINYINT(1) NOT NULL,
+                changed_by VARCHAR(100) NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                CONSTRAINT fk_agent_automatic_execution_control_event_agent
+                  FOREIGN KEY (agent_id) REFERENCES agent(id),
+                INDEX idx_agent_automatic_execution_control_event_agent (agent_id, id)
+              );

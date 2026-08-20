@@ -98,9 +98,7 @@ public class FinancialAgentBackendClient {
             .body(new org.springframework.core.ParameterizedTypeReference<>() {});
     if (models == null) return null;
     return models.stream()
-        .filter(
-            model ->
-                "PENDING".equals(model.pricingResearchStatus()) || model.pricingStale())
+        .filter(model -> "PENDING".equals(model.pricingResearchStatus()) || model.pricingStale())
         .findFirst()
         .orElse(null);
   }

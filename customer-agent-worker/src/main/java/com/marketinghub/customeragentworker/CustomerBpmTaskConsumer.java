@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ClassPathResource;
@@ -33,6 +34,7 @@ public class CustomerBpmTaskConsumer {
   private final String codex;
   private final String model;
   private final String repositoryPath;
+  @Autowired private AutomaticExecutionControl automaticExecution;
 
   /** Configura a fila canônica, o modelo e a sandbox somente leitura de Psique. */
   public CustomerBpmTaskConsumer(
@@ -48,9 +50,10 @@ public class CustomerBpmTaskConsumer {
     this.json = json;
   }
 
-  /** Reserva e avalia uma atividade liberada sem escolher a próxima etapa do processo. */
+  /** Reserva em PLAY e avalia uma atividade liberada sem escolher a próxima etapa do processo. */
   @Scheduled(fixedDelay = 60000)
   public void processOne() {
+    if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
     Map<String, Object> task = null;
     try {
       task = claimNext();

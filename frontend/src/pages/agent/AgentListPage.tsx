@@ -7,6 +7,7 @@ import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 import { useState } from "react";
 import CodexAuthReconnectPanel from "./CodexAuthReconnectPanel";
 import AgentSessionSetupWizard from "./AgentSessionSetupWizard";
+import { useAgentAutomaticExecution } from "../../api/agent/useAgentAutomaticExecution";
 
 const CODEX_EXECUTORS = new Set([
   "customer-agent",
@@ -24,6 +25,7 @@ export default function AgentListPage() {
   const { data, isLoading } = useAgents();
   const maturity = useAgentMaturity();
   const workMonitor = useAgentWorkMonitor();
+  const automaticExecution = useAgentAutomaticExecution();
   const agents = Array.isArray(data) ? data : [];
   const agentsById = new Map(agents.map((agent) => [agent.id, agent]));
   const [reconnectAgent, setReconnectAgent] = useState<{
@@ -38,16 +40,16 @@ export default function AgentListPage() {
   return (
     <div>
       <PageTitle>Gestão de agentes</PageTitle>
-      <div className="d-flex justify-content-between align-items-start mb-3">
+      <div className="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
         <p className="mb-0 text-body-secondary">
           Defina responsabilidades, contexto, análises, entregáveis e regras de
           coordenação do Orquestrador.
         </p>
-        <div className="d-flex gap-2">
+        <div className="d-flex flex-wrap gap-2">
           <Link className="btn btn-outline-secondary btn-sm" to="/agent-themes">
             Temas
           </Link>
-          <div className="d-flex gap-2">
+          <div className="d-flex flex-wrap gap-2">
             <Link className="btn btn-outline-primary" to="/agents/personas">
               Biblioteca de Personas
             </Link>
@@ -60,12 +62,14 @@ export default function AgentListPage() {
 
       <section className="card mb-4">
         <div className="card-body">
-          <div className="d-flex justify-content-between align-items-start gap-3">
+          <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
             <div>
               <h2 className="h5">Monitor de trabalho dos agentes</h2>
               <p className="small text-body-secondary mb-0">
                 Atualização automática a cada 15 segundos com tarefas,
-                pipelines, dificuldades e decisões externas pendentes.
+                pipelines, dificuldades e decisões externas pendentes. STOP
+                impede novos trabalhos automáticos sem interromper à força o
+                trabalho já iniciado.
               </p>
             </div>
             <span className="badge text-bg-light">
@@ -90,6 +94,7 @@ export default function AgentListPage() {
                 <tr>
                   <th>Agente</th>
                   <th>Estado</th>
+                  <th>Automação</th>
                   <th>Trabalho atual</th>
                   <th>Dificuldade / decisão</th>
                   <th>Executor</th>
@@ -117,6 +122,46 @@ export default function AgentListPage() {
                       >
                         {item.workStatus}
                       </span>
+                    </td>
+                    <td>
+                      <div className="d-flex flex-column align-items-start gap-1">
+                        <span
+                          className={`badge ${item.automaticExecutionEnabled ? "text-bg-success" : "text-bg-secondary"}`}
+                        >
+                          {item.automaticExecutionStatus}
+                        </span>
+                        <button
+                          type="button"
+                          className={`btn btn-sm ${item.automaticExecutionEnabled ? "btn-outline-danger" : "btn-outline-success"}`}
+                          disabled={
+                            automaticExecution.isPending &&
+                            automaticExecution.variables?.agentId ===
+                              item.agentId
+                          }
+                          aria-label={
+                            item.automaticExecutionEnabled
+                              ? `Parar execução automática de ${item.nickname}`
+                              : `Ativar execução automática de ${item.nickname}`
+                          }
+                          onClick={() =>
+                            automaticExecution.mutate({
+                              agentId: item.agentId,
+                              automaticExecutionEnabled:
+                                !item.automaticExecutionEnabled,
+                            })
+                          }
+                        >
+                          {automaticExecution.isPending &&
+                          automaticExecution.variables?.agentId ===
+                            item.agentId ? (
+                            <span
+                              className="spinner-border spinner-border-sm me-1"
+                              aria-hidden="true"
+                            />
+                          ) : null}
+                          {item.automaticExecutionEnabled ? "■ Stop" : "▶ Play"}
+                        </button>
+                      </div>
                     </td>
                     <td>
                       <div className="fw-semibold">{item.currentWork}</div>
@@ -191,6 +236,12 @@ export default function AgentListPage() {
               </tbody>
             </table>
           </div>
+          {automaticExecution.isError ? (
+            <div className="alert alert-danger py-2 mt-3 mb-0" role="alert">
+              Não foi possível alterar a automação. O estado anterior foi
+              preservado.
+            </div>
+          ) : null}
         </div>
       </section>
 

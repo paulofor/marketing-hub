@@ -20,6 +20,7 @@ import { planDirectedResearch } from "./argos-codex.js";
 import { startCodexAuthReconnectConsumer } from "./codex-auth-reconnect.js";
 import { startAgentHealthReporter } from "./agent-health-reporter.js";
 import { collectMarketplaceEvidence } from "./marketplace-evidence.js";
+import { createAutomaticExecutionControl } from "./automatic-execution-control.js";
 
 const backendBaseUrl = process.env.BACKEND_BASE_URL || "http://191.252.181.168";
 const pollIntervalMs = Number(
@@ -41,6 +42,10 @@ const healthHost = process.env.PRODUCT_DISCOVERY_HEALTH_HOST || "0.0.0.0";
 const healthPort = Number(process.env.PRODUCT_DISCOVERY_HEALTH_PORT || "8080");
 const searchConfig = resolveSearchConfig();
 const healthState = createHealthState();
+const automaticExecution = createAutomaticExecutionControl({
+  backendBaseUrl,
+  logger: operationalLogger,
+});
 
 async function main() {
   operationalLogger.info(
@@ -68,6 +73,10 @@ async function main() {
 async function runCycle() {
   markPollStarted(healthState);
   try {
+    if (!(await automaticExecution.allowsAutomaticExecution())) {
+      markPollCompleted(healthState);
+      return;
+    }
     const pending = await getJson(
       `${backendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending`,
     );

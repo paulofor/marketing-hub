@@ -2,6 +2,7 @@ package com.marketinghub.growthoperatorworker;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +13,7 @@ public class GrowthOperatorScheduler {
   private final GrowthOperatorBackendClient backendClient;
   private final CodexReadOnlyRunner runner;
   private final WorkerProperties properties;
+  @Autowired private AutomaticExecutionControl automaticExecution;
 
   public GrowthOperatorScheduler(
       GrowthOperatorBackendClient backendClient,
@@ -22,9 +24,10 @@ public class GrowthOperatorScheduler {
     this.properties = properties;
   }
 
-  /** Processa no maximo um diagnostico por ciclo para preservar custo e auditabilidade. */
+  /** Processa em PLAY no máximo um diagnóstico por ciclo para preservar custo e auditabilidade. */
   @Scheduled(fixedDelay = 60000)
   public void processOne() {
+    if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
     GrowthOperatorJob job = null;
     try {
       ensureAutomaticCycleWithoutBlockingPendingQueue();

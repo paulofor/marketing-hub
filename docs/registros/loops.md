@@ -8,6 +8,13 @@
 >
 > Uso obrigatório recomendado: antes de corrigir problema em GeraLanding, Facebook Ads, Lead Portal, OpenAI/schema, pipelines administrativos ou pipeline de hipótese, verificar se a solicitação reabre algum loop listado aqui.
 
+## LOOP-BACKEND-HEALTHCHECK-PROCESS-LEAK — probes presos esgotam PIDs
+
+- **Sintoma:** o backend permanece em execução, mas fica `unhealthy`, deixa de responder e registra `Cannot fork` e indisponibilidade do pool JDBC.
+- **Causa-raiz confirmada em 2026-08-20:** o healthcheck iniciava `curl` a cada 30 segundos sem timeout próprio; quando o endpoint bloqueou esperando o banco, os probes se acumularam por dias até atingir o limite de PIDs do container.
+- **Correção efetiva:** o probe possui limites explícitos de conexão e duração inferiores ao timeout e ao intervalo do healthcheck.
+- **Prevenção:** teste de contrato bloqueia Dockerfile sem `--connect-timeout 2 --max-time 4`; a operação deve acompanhar PIDs e health após reinício controlado.
+
 ## LOOP-GROWTH-OPERATOR-OBSERVABILIDADE-001 — backlog sem diagnóstico do executor
 
 - **Sintoma:** o `growth-operator-worker` deixa de consumir a fila, mas o MCP não oferece health nem logs próprios do executor.

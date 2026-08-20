@@ -8,6 +8,10 @@ Ela deve entregar produtos digitais como experiência guiada, não como pacote d
 
 Toda publicação comercial de PDE deve seguir tambem o protocolo canônico geral em `docs/canonical/protocolo-publicacao-comercial-pde-canon.v1.md`. Esse protocolo vale para qualquer produto PDE, nao apenas para o Metodo MUSA, e define os gates de linguagem publica, validacao mobile/desktop, eventos, metricas limpas e bloqueio antes de trafego ou `RUNNING`.
 
+A criação e comercialização de um PDE deve seguir a cadeia simples de seis macroprocessos definida em
+`docs/canonical/cadeia-produtos-pde-canon.v1.md`, da descoberta da oportunidade até venda, entrega,
+aprendizado e decisão de escala.
+
 ### Experimento Pausa de Transição v1
 
 Decisão canônica de 2026-08-05: o mecanismo “Pausa de Transição” entra no motor PDE como hipótese experimental separada, sem ser apresentado como auto-hipnose, terapia ou tratamento.

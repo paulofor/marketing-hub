@@ -85,8 +85,81 @@ conteudo promocional:
 - bibliotecas de anuncios quando disponiveis;
 - noticias, relatorios setoriais e dados publicos que indiquem escala.
 
+Conversas espontaneas com pessoas do publico tambem sao fontes validas de **sinal inicial**, sobretudo
+quando revelam simultaneamente desejo, dor, tentativa anterior e dificuldade para executar. Esse tipo
+de relato deve entrar no Marketing Hub antes de existir uma ideia fechada de produto. Exemplos de
+linguagem valiosa incluem "queria um desses", "preciso conseguir...", "tentei fazer, mas me perdi" e
+"hoje resolvo manualmente".
+
+Uma conversa individual nao comprova escala, mercado ou disposicao de pagar. Ela abre uma hipotese de
+investigacao e nunca pode aprovar sozinha uma oportunidade, um Plano Comercial ou uma campanha.
+
 Conteudo de solucao deve ser usado para medir saturacao e lacuna, nao como prova direta
 da dor. A prova da dor deve vir preferencialmente da linguagem do publico.
+
+## Caixa de sinais humanos observados
+
+O inicio do processo `Descoberta e priorizacao da oportunidade PDE` deve aceitar uma entrada simples
+chamada **sinal humano observado**. Ela permite registrar conversa, entrevista, pedido espontaneo,
+comentario, reclamacao ou observacao de rotina sem exigir que o operador ja conheca o produto, a
+oferta ou o mecanismo.
+
+Cada sinal deve preservar, no minimo:
+
+- tipo de fonte e contexto da conversa;
+- data, canal e publico presumido;
+- trecho literal relevante ou transcricao fiel;
+- versao anonimizada usada pelos agentes;
+- desejo ou resultado procurado;
+- dor pratica e dor emocional observadas;
+- tentativa anterior e por que a pessoa nao conseguiu concluir;
+- esforco, risco ou conhecimento que a pessoa quer evitar;
+- solucao atual ou comportamento substituto, quando existir;
+- indicio de urgencia, pedido explicito ou intencao de pagar, sem inventar o que nao foi dito;
+- consentimento, finalidade, restricao de uso e referencia segura ao material bruto;
+- identificador de linhagem para acompanhar o sinal ate oportunidade, plano, PDE, comunicacao e
+  experimento.
+
+Nomes, telefone, empresa, foto, curriculo, identificadores e dados de terceiros devem ser removidos da
+versao entregue aos agentes, salvo necessidade legitima, base adequada e acesso restrito. Uma captura
+de tela privada nao deve virar prova publica nem copy atribuida a uma pessoa sem autorizacao.
+
+## Leitura orientada a dor e desejo
+
+O primeiro tratamento do sinal deve separar observacao de inferencia:
+
+- **fala observada:** as palavras realmente usadas pela pessoa;
+- **desejo funcional:** o resultado concreto que ela quer obter;
+- **desejo emocional e social:** como quer se sentir ou ser percebida;
+- **dor pratica:** tarefa, demora, custo, confusao ou retrabalho atual;
+- **dor emocional:** frustracao, inseguranca, sobrecarga ou medo percebido;
+- **tentativa frustrada:** o que tentou e em qual etapa se perdeu;
+- **lacuna candidata:** o que precisaria ser mais simples, seguro ou familiar;
+- **hipotese de PDE:** uma experiencia guiada que pode reduzir esforco e gerar microvalor;
+- **lacunas de evidencia:** tudo que ainda precisa ser confirmado.
+
+Argos estrutura o sinal, busca recorrencia e preserva as fontes. Psique interpreta desejo, alivio,
+esforco percebido, familiaridade, risco emocional e valor para a pessoa sem substituir a fala real por
+uma simulacao. Dedalo compara de duas a tres microexperiencias candidatas somente depois da
+confirmacao inicial. Plutus avalia viabilidade economica. Temis usa a linguagem validada apenas quando
+produto e Plano Comercial ja forem fontes de verdade para a comunicacao.
+
+## Fluxo enxuto do sinal ate a venda
+
+Para evitar complexidade prematura, o processo inicial deve seguir cinco movimentos:
+
+1. **Capturar:** registrar e anonimizar o sinal sem exigir proposta de produto.
+2. **Estruturar:** extrair dor, desejo, tentativa frustrada, resultado esperado e lacunas.
+3. **Confirmar:** procurar recorrencia, desatendimento e intencao de compra em pelo menos dois
+   caminhos independentes.
+4. **Conceber:** comparar de duas a tres microexperiencias PDE e aprovar no maximo uma para o Plano
+   Comercial.
+5. **Preservar a voz:** levar linguagem, evidencias e limites aprovados ao produto, oferta, criativos,
+   landing, venda e aprendizado, sempre vinculados ao sinal original.
+
+O produto e a comunicacao nao podem avancar diretamente da conversa individual. A saida de
+`Capturar` e `Estruturar` e uma hipotese pesquisavel; a saida de `Confirmar` e que pode se tornar um
+dossie de oportunidade.
 
 ## Busca dedicada
 

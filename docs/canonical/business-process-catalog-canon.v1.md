@@ -11,6 +11,12 @@ Processos de negócio e pipelines não são sinônimos. O processo explica e gov
 ponta; pipelines e workers executam contratos técnicos referenciados pelo processo. O catálogo não
 faz polling, não consome filas e não avança execuções operacionais.
 
+O processo de descoberta PDE deve começar por uma atividade capaz de receber **sinal humano
+observado** sem exigir solução pronta. Conversas, pedidos espontâneos, entrevistas, comentários e
+reclamações devem ser registrados de forma anonimizada, separando fala observada, desejo, dor,
+tentativa frustrada e inferências. O sinal individual inicia pesquisa; somente confirmação
+independente pode transformá-lo em dossiê de oportunidade e permitir o avanço da cadeia.
+
 Para Produtos Digitais Experienciais, a organização macro dos processos deve seguir
 `docs/canonical/cadeia-produtos-pde-canon.v1.md`. Processos especializados já publicados, como
 fabricação de entregáveis, criativos, landing, homologação e venda, são reutilizados dentro dessa

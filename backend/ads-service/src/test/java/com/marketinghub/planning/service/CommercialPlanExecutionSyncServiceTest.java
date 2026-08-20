@@ -9,6 +9,7 @@ import com.marketinghub.planning.CommercialPlanMilestone;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import org.junit.jupiter.api.Test;
@@ -67,6 +68,15 @@ class CommercialPlanExecutionSyncServiceTest {
     assertThat(milestone.getActualRevenue()).isEqualByComparingTo("81.00");
     assertThat(milestone.getActualExperimentsCreated()).isEqualTo(3);
     assertThat(milestone.getActualExperimentsPublished()).isEqualTo(2);
+    assertThat(jdbcTemplate.queries)
+        .anyMatch(
+            query ->
+                query.contains("from gera_sales_page_stage_execution")
+                    && query.contains("where execution_requested_at"))
+        .noneMatch(
+            query ->
+                query.matches(
+                    "(?s).*from\\s+gera_sales_page_stage_execution\\s+where\\s+created_at.*"));
   }
 
   /**
@@ -75,6 +85,7 @@ class CommercialPlanExecutionSyncServiceTest {
    */
   private static class FakeJdbcTemplate extends JdbcTemplate {
     private final Queue<Object> values = new ArrayDeque<>();
+    private final List<String> queries = new ArrayList<>();
 
     /** Inicializa a fila de resultados SQL simulados. */
     FakeJdbcTemplate(Object... values) {
@@ -84,6 +95,7 @@ class CommercialPlanExecutionSyncServiceTest {
     /** Retorna o proximo valor da fila respeitando o tipo solicitado. */
     @Override
     public <T> T queryForObject(String sql, Class<T> requiredType, Object... args) {
+      queries.add(sql);
       return requiredType.cast(values.remove());
     }
   }

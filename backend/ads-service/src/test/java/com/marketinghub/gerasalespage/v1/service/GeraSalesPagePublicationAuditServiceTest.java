@@ -17,6 +17,7 @@ import com.marketinghub.leadportal.LeadPortalFlowQuestion;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.support.LeadPortalPublicUrlResolver;
+import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
 import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
@@ -46,6 +47,7 @@ class GeraSalesPagePublicationAuditServiceTest {
   @Mock private LeadPortalFlowRepository leadPortalFlowRepository;
   @Mock private LeadPortalFlowPublisher leadPortalFlowPublisher;
   @Mock private LeadPortalPublicUrlResolver leadPortalPublicUrlResolver;
+  @Mock private CommercialPlanLandingAssetService landingAssetService;
   @Spy private ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
   @InjectMocks private GeraSalesPagePublicationAuditService service;
 

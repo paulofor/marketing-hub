@@ -35,15 +35,18 @@ public class BackendPublicLandingService {
 
   private final ExperimentRepository experimentRepository;
   private final RestTemplate restTemplate;
+  private final ApprovedLandingProductEvidenceGate landingAssetService;
   private final String leadPortalBaseUrl;
 
   /** Cria o service com repositório de experimentos, cliente HTTP e URL base do Lead Portal. */
   public BackendPublicLandingService(
       ExperimentRepository experimentRepository,
       RestTemplate restTemplate,
+      ApprovedLandingProductEvidenceGate landingAssetService,
       @Value("${integrations.lead-portal.base-url:}") String leadPortalBaseUrl) {
     this.experimentRepository = experimentRepository;
     this.restTemplate = restTemplate;
+    this.landingAssetService = landingAssetService;
     this.leadPortalBaseUrl = leadPortalBaseUrl;
   }
 
@@ -63,6 +66,7 @@ public class BackendPublicLandingService {
           experiment.getName());
 
       String landingPageHtml = resolveLandingPageHtml(experiment, experimentId);
+      landingAssetService.validateApprovedAssetReferences(experimentId, landingPageHtml);
       String slug = "exp-" + experimentId + "-landing-geralanding";
       log.info(
           "GeraLanding public landing publish approval resolved slug (experimentId={}, slug={})",

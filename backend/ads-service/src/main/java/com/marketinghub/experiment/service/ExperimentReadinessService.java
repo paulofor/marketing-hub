@@ -12,6 +12,7 @@ import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTest
 import com.marketinghub.experiment.video.service.ExperimentVideoAssetService;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
+import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
 import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
@@ -81,6 +82,7 @@ public class ExperimentReadinessService {
   private final ExperimentVideoAssetService experimentVideoAssetService;
   private final ExperimentSalesPageAbTestService salesPageAbTestService;
   private final ExperimentSalesPageTypeSelectionRepository salesPageTypeSelectionRepository;
+  private final CommercialPlanLandingAssetService landingAssetService;
 
   /** Cria o serviço com as fontes canônicas de prontidão do experimento. */
   public ExperimentReadinessService(
@@ -91,7 +93,8 @@ public class ExperimentReadinessService {
       ExperimentCampaignDestinationPolicy campaignDestinationPolicy,
       ExperimentVideoAssetService experimentVideoAssetService,
       ExperimentSalesPageAbTestService salesPageAbTestService,
-      ExperimentSalesPageTypeSelectionRepository salesPageTypeSelectionRepository) {
+      ExperimentSalesPageTypeSelectionRepository salesPageTypeSelectionRepository,
+      CommercialPlanLandingAssetService landingAssetService) {
     this.experimentService = experimentService;
     this.creativeRepository = creativeRepository;
     this.targetingSelectionRepository = targetingSelectionRepository;
@@ -100,6 +103,7 @@ public class ExperimentReadinessService {
     this.experimentVideoAssetService = experimentVideoAssetService;
     this.salesPageAbTestService = salesPageAbTestService;
     this.salesPageTypeSelectionRepository = salesPageTypeSelectionRepository;
+    this.landingAssetService = landingAssetService;
   }
 
   /** Resume a prontidão do experimento usando apenas dados canônicos aprovados para publicação. */
@@ -137,6 +141,17 @@ public class ExperimentReadinessService {
         !requiresSalesPageAbTest || salesPageAbTestService.hasReadyActiveTest(experimentId);
     Optional<GeraSalesPagePublicationAudit> salesPagePublication =
         campaignDestinationPolicy.latestSalesPagePublication(experimentId);
+    String currentLandingHtml =
+        salesPagePublication
+            .map(GeraSalesPagePublicationAudit::getHtml)
+            .orElseGet(
+                () ->
+                    StringUtils.hasText(experiment.getLandingPageHtml())
+                        ? experiment.getLandingPageHtml()
+                        : experiment.getHtmlGeraLanding());
+    int requiredApprovedLandingAssets = landingAssetService.requiredReferenceCount(experimentId);
+    boolean landingAssetLineageReady =
+        landingAssetService.hasRequiredApprovedAssetReferences(experimentId, currentLandingHtml);
 
     List<ExperimentReadinessIssueDto> issues = new ArrayList<>();
     if (!hasCreatives) {
@@ -238,6 +253,16 @@ public class ExperimentReadinessService {
               "Atualize a URL do anúncio para a página de venda publicada e mantenha o checkout apenas nos CTAs da página.",
               List.of()));
     }
+    if (requiredApprovedLandingAssets > 0 && !landingAssetLineageReady) {
+      issues.add(
+          new ExperimentReadinessIssueDto(
+              ExperimentReadinessIssueType.LANDING_VISUAL_EVIDENCE,
+              "Landing não mostra a entrega real aprovada",
+              "A página publicada não reutiliza a quantidade mínima de arquivos APPROVED da Biblioteca Audiovisual.",
+              "Republique a landing exibindo ao menos %d arquivos aprovados sem redesenhar o produto."
+                  .formatted(requiredApprovedLandingAssets),
+              List.of()));
+    }
     if (purchaseIntent
         && hasCommercialContract
         && salesPagePublication.isPresent()
@@ -285,12 +310,13 @@ public class ExperimentReadinessService {
 
     boolean landingReady =
         hasLandingReadyForRunning(
-            purchaseIntent,
-            pdeMembershipFunnel,
-            personalizedSampleProductAi,
-            hasGeraLandingPipeline,
-            hasGeraSalesPagePipeline,
-            salesPagePublication);
+                purchaseIntent,
+                pdeMembershipFunnel,
+                personalizedSampleProductAi,
+                hasGeraLandingPipeline,
+                hasGeraSalesPagePipeline,
+                salesPagePublication)
+            && landingAssetLineageReady;
     boolean checkoutReady =
         hasCheckoutReadyForRunning(
             purchaseIntent, pdeMembershipFunnel, salesPagePublication, hasPdeMembershipDestination);
@@ -437,6 +463,19 @@ public class ExperimentReadinessService {
     }
     if (!hasApprovedLandingDestination(experiment)) {
       missing.add("landingDestination");
+    }
+    Optional<GeraSalesPagePublicationAudit> publication =
+        campaignDestinationPolicy.latestSalesPagePublication(experiment.getId());
+    String landingHtml =
+        publication
+            .map(GeraSalesPagePublicationAudit::getHtml)
+            .orElseGet(
+                () ->
+                    StringUtils.hasText(experiment.getLandingPageHtml())
+                        ? experiment.getLandingPageHtml()
+                        : experiment.getHtmlGeraLanding());
+    if (!landingAssetService.hasRequiredApprovedAssetReferences(experiment.getId(), landingHtml)) {
+      missing.add("landingApprovedProductEvidence");
     }
     missing.addAll(campaignDestinationPolicy.missingConfiguration(experiment));
     if (isLowTicketProduct(experiment) && !hasFacebookPixel(experiment)) {

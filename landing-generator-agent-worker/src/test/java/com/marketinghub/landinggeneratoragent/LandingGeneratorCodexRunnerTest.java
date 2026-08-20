@@ -190,6 +190,57 @@ class LandingGeneratorCodexRunnerTest {
     runner.validate(decision(html), checkoutJob(canonical));
   }
 
+  /** Deve rejeitar a landing quando ela troca os arquivos aprovados por uma representacao. */
+  @Test
+  void shouldRejectLandingWithoutMinimumApprovedProductAssets() throws Exception {
+    LandingGeneratorCodexRunner runner = runner();
+    String canonical = "https://checkout.example/agenda-cheia?ref=88";
+    LandingAgentJob job = checkoutJobWithAssets(canonical);
+    String html =
+        "<a id=\"checkout-cta-primary\" href=\""
+            + canonical
+            + "\">Comprar</a><img src=\"https://assets.example/1.png\">"
+            + " conteudo".repeat(80);
+
+    assertThrows(IllegalArgumentException.class, () -> runner.validate(decision(html), job));
+  }
+
+  /** Deve rejeitar URLs aprovadas escondidas em metadado quando não existem imagens reais. */
+  @Test
+  void shouldRejectApprovedUrlsOutsideImageSources() throws Exception {
+    LandingGeneratorCodexRunner runner = runner();
+    String canonical = "https://checkout.example/agenda-cheia?ref=88";
+    LandingAgentJob job = checkoutJobWithAssets(canonical);
+    String html =
+        "<a id=\"checkout-cta-primary\" href=\""
+            + canonical
+            + "\">Comprar</a><div data-assets=\"https://assets.example/1.png "
+            + "https://assets.example/2.png https://assets.example/3.png "
+            + "https://assets.example/4.png\">Sem imagens reais</div>"
+            + " conteudo".repeat(80);
+
+    assertThrows(IllegalArgumentException.class, () -> runner.validate(decision(html), job));
+  }
+
+  /** Deve aceitar a composicao que preserva quatro arquivos reais e o checkout congelado. */
+  @Test
+  void shouldAcceptLandingWithMinimumApprovedProductAssets() throws Exception {
+    LandingGeneratorCodexRunner runner = runner();
+    String canonical = "https://checkout.example/agenda-cheia?ref=88";
+    LandingAgentJob job = checkoutJobWithAssets(canonical);
+    String html =
+        "<a id=\"checkout-cta-primary\" href=\""
+            + canonical
+            + "\">Comprar</a>"
+            + "<img src=\"https://assets.example/1.png\">"
+            + "<img src=\"https://assets.example/2.png\">"
+            + "<img src=\"https://assets.example/3.png\">"
+            + "<img src=\"https://assets.example/4.png\">"
+            + " conteudo".repeat(80);
+
+    runner.validate(decision(html), job);
+  }
+
   /** Cria o runner isolado para os contratos de saída do Codex. */
   private LandingGeneratorCodexRunner runner() {
     return new LandingGeneratorCodexRunner(
@@ -209,6 +260,26 @@ class LandingGeneratorCodexRunnerTest {
             List.of(Map.of("approachCode", "CODEX_CODE_IMPLEMENTATION", "available", true)),
             "checkoutContract",
             Map.of("canonicalUrl", canonical)));
+  }
+
+  /** Cria um job que obriga o uso literal de quatro referencias aprovadas do produto. */
+  private LandingAgentJob checkoutJobWithAssets(String canonical) {
+    return new LandingAgentJob(
+        "job-88",
+        88L,
+        Map.of(
+            "generationApproachCatalog",
+            List.of(Map.of("approachCode", "CODEX_CODE_IMPLEMENTATION", "available", true)),
+            "checkoutContract",
+            Map.of("canonicalUrl", canonical),
+            "minimumApprovedLandingVisualAssets",
+            4,
+            "approvedLandingVisualAssets",
+            List.of(
+                Map.of("assetUrl", "https://assets.example/1.png"),
+                Map.of("assetUrl", "https://assets.example/2.png"),
+                Map.of("assetUrl", "https://assets.example/3.png"),
+                Map.of("assetUrl", "https://assets.example/4.png"))));
   }
 
   /** Cria uma decisão mínima válida para exercitar o contrato de checkout. */

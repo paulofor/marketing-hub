@@ -2,6 +2,7 @@ package com.marketinghub.payments.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.payments.dto.AgendaCheiaBriefingRequest;
@@ -47,5 +48,35 @@ class AgendaCheiaPostPurchaseServiceTest {
         verify(emailService).sendToRecipient(payment, "buyer@example.com", "Studio Ana");
         verify(productionService).produceAndDeliver(org.mockito.ArgumentMatchers.any(AgendaCheiaBriefing.class),
                 org.mockito.ArgumentMatchers.eq(payment));
+    }
+
+    /** Deve retornar a entrega existente sem alterar briefing nem reenviar emails. */
+    @Test
+    void preservesCompletedDeliveryOnDuplicateBriefing() {
+        MercadoPagoPaymentDetails payment = new MercadoPagoPaymentDetails(
+                "pay-67", "approved", new BigDecimal("0.67"), "BRL", "Agenda Cheia",
+                "buyer@example.com", "agenda-cheia-nail-design", Instant.now(), Map.of(), "{}");
+        AgendaCheiaBriefing delivered = new AgendaCheiaBriefing();
+        delivered.setPaymentId("pay-67");
+        delivered.setStatus("ENTREGUE");
+        delivered.setSubmittedAt(Instant.parse("2026-08-20T12:00:00Z"));
+        when(checkoutService.fetchPayment("pay-67")).thenReturn(Optional.of(payment));
+        when(repository.findByPaymentId("pay-67")).thenReturn(Optional.of(delivered));
+        AgendaCheiaPostPurchaseService service =
+                new AgendaCheiaPostPurchaseService(checkoutService, repository, emailService, productionService);
+
+        var response = service.submit(new AgendaCheiaBriefingRequest(
+                "pay-67", "buyer@example.com", "Studio alterado", "Campinas", "11999999999",
+                "Alongamento", "Clean", "Rosa", "Preencher horários", null));
+
+        assertThat(response.status()).isEqualTo("ENTREGUE");
+        assertThat(response.submittedAt()).isEqualTo(Instant.parse("2026-08-20T12:00:00Z"));
+        verify(repository, never()).save(org.mockito.ArgumentMatchers.any(AgendaCheiaBriefing.class));
+        verify(emailService, never()).sendToRecipient(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyString());
+        verify(productionService, never()).produceAndDeliver(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 }

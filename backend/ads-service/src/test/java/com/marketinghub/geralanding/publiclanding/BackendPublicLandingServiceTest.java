@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.geralanding.publiclanding.service.ApprovedLandingProductEvidenceGate;
 import com.marketinghub.geralanding.publiclanding.service.BackendPublicLandingService;
 import com.marketinghub.geralanding.publiclanding.service.approveEndPublish.PublicLandingLeadPortalPublishRequest;
 import com.marketinghub.niche.MarketNiche;
@@ -30,6 +31,8 @@ class BackendPublicLandingServiceTest {
 
   @Mock private RestTemplate restTemplate;
 
+  @Mock private ApprovedLandingProductEvidenceGate landingAssetService;
+
   /**
    * Deve publicar html_geralanding com tracking, controles de funil, pixel e URL standalone
    * oficial.
@@ -37,7 +40,8 @@ class BackendPublicLandingServiceTest {
   @Test
   void approveEndPublishShouldPublishGeraLandingHtmlAndPersistStandaloneUrl() {
     BackendPublicLandingService service =
-        new BackendPublicLandingService(experimentRepository, restTemplate, "http://lead-portal");
+        new BackendPublicLandingService(
+            experimentRepository, restTemplate, landingAssetService, "http://lead-portal");
     MarketNiche niche = new MarketNiche();
     niche.setFacebookPixelId("123456789");
     Experiment experiment = new Experiment();
@@ -83,7 +87,8 @@ class BackendPublicLandingServiceTest {
   @Test
   void approveEndPublishShouldInjectLeadSubmissionContractWhenFormControlsExist() {
     BackendPublicLandingService service =
-        new BackendPublicLandingService(experimentRepository, restTemplate, "http://lead-portal");
+        new BackendPublicLandingService(
+            experimentRepository, restTemplate, landingAssetService, "http://lead-portal");
     Experiment experiment = new Experiment();
     experiment.setId(37L);
     experiment.setName("Experimento 37");
@@ -122,7 +127,8 @@ class BackendPublicLandingServiceTest {
   @Test
   void approveEndPublishShouldThrowConflictWhenLandingHtmlIsMissing() {
     BackendPublicLandingService service =
-        new BackendPublicLandingService(experimentRepository, restTemplate, "http://lead-portal");
+        new BackendPublicLandingService(
+            experimentRepository, restTemplate, landingAssetService, "http://lead-portal");
     Experiment experiment = new Experiment();
     experiment.setId(88L);
     experiment.setName("Sem HTML");

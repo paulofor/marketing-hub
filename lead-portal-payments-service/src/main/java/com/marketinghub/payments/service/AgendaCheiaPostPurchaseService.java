@@ -6,6 +6,7 @@ import com.marketinghub.payments.integration.mercadopago.MercadoPagoPaymentDetai
 import com.marketinghub.payments.model.AgendaCheiaBriefing;
 import com.marketinghub.payments.repository.AgendaCheiaBriefingRepository;
 import java.time.Instant;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -41,11 +42,14 @@ public class AgendaCheiaPostPurchaseService {
                 .orElse(new AgendaCheiaBriefingResponse(null, payment.id(), "AGUARDANDO_BRIEFING", null));
     }
 
-    /** Salva o briefing uma única vez e o deixa pronto para a produção. */
+    /** Salva o briefing uma única vez e preserva sem reenvio uma entrega já concluída. */
     public AgendaCheiaBriefingResponse submit(AgendaCheiaBriefingRequest request) {
         MercadoPagoPaymentDetails payment = approvedPayment(request.paymentId());
-        AgendaCheiaBriefing briefing = repository.findByPaymentId(payment.id())
-                .orElseGet(AgendaCheiaBriefing::new);
+        Optional<AgendaCheiaBriefing> existing = repository.findByPaymentId(payment.id());
+        if (existing.isPresent() && "ENTREGUE".equals(existing.get().getStatus())) {
+            return toResponse(existing.get());
+        }
+        AgendaCheiaBriefing briefing = existing.orElseGet(AgendaCheiaBriefing::new);
         briefing.setPaymentId(payment.id());
         briefing.setBuyerEmail(request.buyerEmail().trim());
         briefing.setProfessionalName(request.professionalName().trim());

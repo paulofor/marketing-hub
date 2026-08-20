@@ -4,6 +4,8 @@ Produza somente o documento HTML completo exigido pela decisão já tomada. Come
 
 Preserve literalmente oferta, preço, CTA principal e `checkoutContract.canonicalUrl` do contexto. Todo link de compra deve usar `id="checkout-cta-primary"` ou `data-analytics-role="primary-checkout"` e copiar literalmente essa URL no `href`. Não use JavaScript, handlers `on*`, pixels novos, placeholders, publicação, recursos externos novos ou promessas não autorizadas.
 
+Quando `approvedLandingVisualAssets` estiver preenchido, reutilize literalmente em elementos `img` ao menos `minimumApprovedLandingVisualAssets` URLs distintas dessa lista. Preserve cada arquivo como foi aprovado; não redesenhe o produto nem substitua a entrega por mock, gradiente ou imagem externa.
+
 Contexto congelado:
 `{{CONTEXT}}`
 

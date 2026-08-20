@@ -1,0 +1,6 @@
+FROM python:3.12-alpine
+
+WORKDIR /app
+COPY mock_services.py /app/mock_services.py
+COPY run_round.py /app/run_round.py
+CMD ["python", "/app/mock_services.py"]

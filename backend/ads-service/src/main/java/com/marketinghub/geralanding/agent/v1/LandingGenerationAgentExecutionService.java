@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.qualityreview.service.LandingQualityReviewedEvent;
+import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
@@ -49,6 +50,7 @@ public class LandingGenerationAgentExecutionService {
   private final ObjectMapper objectMapper;
   private final AgentTaskService agentTaskService;
   private final LandingGenerationResultApplicationService resultApplicationService;
+  private final CommercialPlanLandingAssetService landingAssetService;
 
   /** Inicializa a fila usando a persistência canônica do GeraLanding. */
   public LandingGenerationAgentExecutionService(
@@ -58,7 +60,8 @@ public class LandingGenerationAgentExecutionService {
       GeraSalesPagePublicationAuditRepository publicationRepository,
       ObjectMapper objectMapper,
       AgentTaskService agentTaskService,
-      LandingGenerationResultApplicationService resultApplicationService) {
+      LandingGenerationResultApplicationService resultApplicationService,
+      CommercialPlanLandingAssetService landingAssetService) {
     this.repository = repository;
     this.coordinator = coordinator;
     this.experimentRepository = experimentRepository;
@@ -66,6 +69,7 @@ public class LandingGenerationAgentExecutionService {
     this.objectMapper = objectMapper;
     this.agentTaskService = agentTaskService;
     this.resultApplicationService = resultApplicationService;
+    this.landingAssetService = landingAssetService;
   }
 
   /** Converte o parecer independente em trabalho do agente ou conclui a jornada aprovada. */
@@ -602,6 +606,15 @@ public class LandingGenerationAgentExecutionService {
                 putWhenPresent(context, "promise", experiment.getFunnelPromise());
                 putWhenPresent(context, "primaryCta", experiment.getPrimaryCta());
                 putWhenPresent(context, "landingHtml", experiment.getHtmlGeraLanding());
+                context.put(
+                    "approvedLandingVisualAssets",
+                    landingAssetService.payloadForExperiment(experiment.getId()));
+                context.put(
+                    "minimumApprovedLandingVisualAssets",
+                    landingAssetService.requiredReferenceCount(experiment.getId()));
+                context.put(
+                    "visualAssetRule",
+                    "Reutilize os arquivos APPROVED literalmente; não redesenhe o produto. A landing deve exibir ao menos minimumApprovedLandingVisualAssets URLs distintas do catálogo.");
                 publicationRepository
                     .findTopByExperimentIdOrderByPublishedAtDesc(experiment.getId())
                     .filter(publication -> StringUtils.hasText(publication.getCheckoutUrl()))

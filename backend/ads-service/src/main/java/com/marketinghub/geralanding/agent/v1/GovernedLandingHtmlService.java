@@ -2,6 +2,7 @@ package com.marketinghub.geralanding.agent.v1;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.qualityreview.service.BackendQualityReviewService;
+import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -32,15 +33,18 @@ public class GovernedLandingHtmlService {
   private final ExperimentRepository experimentRepository;
   private final GeraSalesPagePublicationAuditRepository publicationRepository;
   private final BackendQualityReviewService qualityReviewService;
+  private final CommercialPlanLandingAssetService landingAssetService;
 
   /** Inicializa o aplicador com a fonte canônica do experimento e o revisor independente. */
   public GovernedLandingHtmlService(
       ExperimentRepository experimentRepository,
       GeraSalesPagePublicationAuditRepository publicationRepository,
-      BackendQualityReviewService qualityReviewService) {
+      BackendQualityReviewService qualityReviewService,
+      CommercialPlanLandingAssetService landingAssetService) {
     this.experimentRepository = experimentRepository;
     this.publicationRepository = publicationRepository;
     this.qualityReviewService = qualityReviewService;
+    this.landingAssetService = landingAssetService;
   }
 
   /** Valida, persiste como rascunho e envia o documento integral para Têmis. */
@@ -54,6 +58,7 @@ public class GovernedLandingHtmlService {
     String currentHtml = experiment.getHtmlGeraLanding();
     validateDocument(generatedHtml);
     preserveCommercialContract(experiment, currentHtml, generatedHtml);
+    landingAssetService.validateApprovedAssetReferences(experimentId, generatedHtml);
     experiment.setHtmlGeraLanding(generatedHtml.trim());
     experimentRepository.save(experiment);
     qualityReviewService.reviewAfterHtmlGeneration(experiment);

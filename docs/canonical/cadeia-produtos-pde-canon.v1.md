@@ -232,6 +232,8 @@ A tela canônica de leitura é `/business-process-chains` e a API é
 `/api/business-process-chains`. O detalhe da cadeia deve mostrar, para cada processo, sua versão
 exata, objetivo, resultado final e contribuição de valor. Uma nova versão de processo não altera uma
 cadeia publicada; a adoção exige uma nova versão da cadeia, preservando auditoria e reprodutibilidade.
+O vínculo também deve ser navegável no sentido inverso: a tela de uma versão de processo mostra as
+cadeias que a contêm e abre diretamente o detalhe da cadeia selecionada.
 
 A cadeia inicial `pde-value-creation-delivery` usa os seis macroprocessos deste cânone. Processos
 especializados, como fabricação de entregáveis, criativos, landing, homologação de experimento e

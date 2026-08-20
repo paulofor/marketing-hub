@@ -58,6 +58,31 @@ class BusinessProcessChainControllerTest {
         .andExpect(jsonPath("$[0].processCount").value(6));
   }
 
+  /** Expõe as cadeias às quais pertence uma versão exata de processo. */
+  @Test
+  void listsChainsByProcess() throws Exception {
+    when(service.listChainsByProcess(22L))
+        .thenReturn(
+            List.of(
+                new BusinessProcessChainSummaryResponse(
+                    1L,
+                    "pde-value-creation-delivery",
+                    "Cadeia PDE",
+                    "Criar valor.",
+                    "Venda entregue.",
+                    "Tempo até venda entregue com satisfação",
+                    1,
+                    "PUBLISHED",
+                    6,
+                    Instant.parse("2026-08-20T10:00:00Z"))));
+
+    mockMvc
+        .perform(get("/api/business-process-chains/by-process/22"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].id").value(1))
+        .andExpect(jsonPath("$[0].name").value("Cadeia PDE"));
+  }
+
   /** Expõe objetivo, resultado e contribuição do processo no detalhe. */
   @Test
   void getsChainDetail() throws Exception {

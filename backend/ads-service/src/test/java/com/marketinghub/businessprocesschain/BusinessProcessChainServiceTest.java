@@ -33,6 +33,27 @@ class BusinessProcessChainServiceTest {
         .isEqualTo("Tempo até venda entregue com satisfação");
   }
 
+  /** Lista somente as cadeias vinculadas à versão exata do processo selecionado. */
+  @Test
+  void listsChainsByProcessDefinition() {
+    var repository = mock(BusinessProcessChainDefinitionRepository.class);
+    BusinessProcessChainDefinition chain = chain();
+    chain.setItems(List.of(item(chain, process(22L, "discovery", "Descoberta PDE"), 1)));
+    when(repository.findByProcessDefinitionId(22L)).thenReturn(List.of(chain));
+    var service = new BusinessProcessChainService(repository);
+
+    var result = service.listChainsByProcess(22L);
+
+    assertThat(result)
+        .singleElement()
+        .satisfies(
+            summary -> {
+              assertThat(summary.id()).isEqualTo(10L);
+              assertThat(summary.name()).isEqualTo("Criação e entrega de valor PDE");
+              assertThat(summary.processCount()).isEqualTo(1);
+            });
+  }
+
   /** Ordena os processos pela contribuição de valor mesmo quando a coleção chega fora de ordem. */
   @Test
   void getsExactProcessVersionsInValueOrder() {

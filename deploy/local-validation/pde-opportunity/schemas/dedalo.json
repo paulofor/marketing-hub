@@ -1,0 +1,52 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "comparison", "chosenOpportunity", "rejectedReasons", "missingEvidence", "rationale"],
+  "properties": {
+    "decision": { "type": "string", "enum": ["APPROVE", "RESEARCH_MORE", "REJECT"] },
+    "comparison": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "benefit", "risk", "implementationEffort", "evidenceQuality", "revenuePath", "pdeMechanism", "evidenceScore", "purchaseIntentScore", "simplicityScore", "riskSafetyScore", "rapidValueScore", "totalScore"],
+        "properties": {
+          "name": { "type": "string" },
+          "benefit": { "type": "string" },
+          "risk": { "type": "string" },
+          "implementationEffort": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
+          "evidenceQuality": { "type": "string" },
+          "revenuePath": { "type": "string" },
+          "pdeMechanism": { "type": "string" },
+          "evidenceScore": { "type": "integer", "minimum": 0, "maximum": 20 },
+          "purchaseIntentScore": { "type": "integer", "minimum": 0, "maximum": 20 },
+          "simplicityScore": { "type": "integer", "minimum": 0, "maximum": 20 },
+          "riskSafetyScore": { "type": "integer", "minimum": 0, "maximum": 20 },
+          "rapidValueScore": { "type": "integer", "minimum": 0, "maximum": 20 },
+          "totalScore": { "type": "integer", "minimum": 0, "maximum": 100 }
+        }
+      }
+    },
+    "chosenOpportunity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceAlternativeName", "name", "targetSegment", "jobToBeDone", "promise", "experienceSteps", "priceHypothesis", "acquisitionAngle", "firstTest"],
+      "properties": {
+        "sourceAlternativeName": { "type": "string" },
+        "name": { "type": "string" },
+        "targetSegment": { "type": "string" },
+        "jobToBeDone": { "type": "string" },
+        "promise": { "type": "string" },
+        "experienceSteps": { "type": "array", "minItems": 3, "maxItems": 6, "items": { "type": "string" } },
+        "priceHypothesis": { "type": "string" },
+        "acquisitionAngle": { "type": "string" },
+        "firstTest": { "type": "string" }
+      }
+    },
+    "rejectedReasons": { "type": "array", "items": { "type": "string" } },
+    "missingEvidence": { "type": "array", "items": { "type": "string" } },
+    "rationale": { "type": "string" }
+  }
+}

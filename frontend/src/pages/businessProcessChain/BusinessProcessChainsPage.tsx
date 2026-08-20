@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useMemo } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   useBusinessProcessChain,
   useBusinessProcessChains,
@@ -9,7 +9,12 @@ import "./BusinessProcessChainsPage.css";
 
 export default function BusinessProcessChainsPage() {
   const chains = useBusinessProcessChains();
-  const [selectedId, setSelectedId] = useState<number>();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedId = Number(searchParams.get("chainId"));
+  const selectedId =
+    Number.isSafeInteger(requestedId) && requestedId > 0
+      ? requestedId
+      : undefined;
   const activeId = useMemo(
     () =>
       selectedId ??
@@ -41,7 +46,11 @@ export default function BusinessProcessChainsPage() {
                 key={chain.id}
                 type="button"
                 className={`list-group-item list-group-item-action ${activeId === chain.id ? "active" : ""}`}
-                onClick={() => setSelectedId(chain.id)}
+                onClick={() => {
+                  const next = new URLSearchParams(searchParams);
+                  next.set("chainId", String(chain.id));
+                  setSearchParams(next, { replace: true });
+                }}
               >
                 <span className="d-block fw-semibold">{chain.name}</span>
                 <span className="small">
@@ -114,7 +123,11 @@ export default function BusinessProcessChainsPage() {
                             </span>
                             <Link
                               className="btn btn-sm btn-outline-primary"
-                              to={`/business-processes?processId=${process.processDefinitionId}`}
+                              to={`${
+                                process.status === "RETIRED"
+                                  ? "/business-processes/retired"
+                                  : "/business-processes"
+                              }?processId=${process.processDefinitionId}`}
                               aria-label={`Abrir atividades de ${process.name} no diagrama BPM`}
                             >
                               Abrir BPM

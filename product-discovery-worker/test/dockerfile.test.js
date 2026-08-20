@@ -6,6 +6,14 @@ const dockerfile = readFileSync(
   new URL("../Dockerfile", import.meta.url),
   "utf8",
 );
+const localCompose = readFileSync(
+  new URL("../docker-compose.yml", import.meta.url),
+  "utf8",
+);
+const deployCompose = readFileSync(
+  new URL("../docker-compose.deploy.yml", import.meta.url),
+  "utf8",
+);
 
 test("instala certificados raiz antes do cliente Codex", () => {
   const certificates = dockerfile.indexOf("ca-certificates");
@@ -19,4 +27,14 @@ test("instala certificados raiz antes do cliente Codex", () => {
     certificates < codex,
     "[ARQUITETURA] Os certificados raiz devem ser preparados antes da instalação do cliente Codex.",
   );
+});
+
+test("reporta a versão corrente de Argos nas duas topologias", () => {
+  for (const compose of [localCompose, deployCompose]) {
+    assert.match(
+      compose,
+      /AGENT_HEALTH_VERSION: \$\{ARGOS_AGENT_VERSION:-2\}/,
+      "[ARQUITETURA] Argos deve reportar por padrão a versão 2 cadastrada no backend.",
+    );
+  }
 });

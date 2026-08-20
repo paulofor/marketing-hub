@@ -23,6 +23,13 @@ public class BusinessProcessChainController {
     return service.listChains();
   }
 
+  /** Lista as cadeias que contêm a versão de processo informada. */
+  @GetMapping("/by-process/{processDefinitionId}")
+  public List<BusinessProcessChainSummaryResponse> listChainsByProcess(
+      @PathVariable Long processDefinitionId) {
+    return service.listChainsByProcess(processDefinitionId);
+  }
+
   /** Exibe os processos da cadeia na ordem em que criam e entregam valor. */
   @GetMapping("/{id}")
   public BusinessProcessChainDetailResponse getChain(@PathVariable Long id) {

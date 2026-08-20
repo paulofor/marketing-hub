@@ -431,6 +431,10 @@ export default function App() {
                 element={<BusinessProcessesPage />}
               />
               <Route
+                path="/business-processes/retired"
+                element={<BusinessProcessesPage catalogMode="retired" />}
+              />
+              <Route
                 path="/business-process-chains"
                 element={<BusinessProcessChainsPage />}
               />

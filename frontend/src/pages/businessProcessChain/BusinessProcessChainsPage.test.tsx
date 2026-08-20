@@ -71,7 +71,7 @@ describe("BusinessProcessChainsPage", () => {
                 triggerDescription: "Oportunidade aprovada.",
                 outcomeDescription: "Plano Comercial aprovado.",
                 versionNumber: 1,
-                status: "PUBLISHED",
+                status: "RETIRED",
               },
             ],
           },
@@ -112,7 +112,59 @@ describe("BusinessProcessChainsPage", () => {
       screen.getByRole("link", {
         name: "Abrir atividades de Plano Comercial e oferta PDE no diagrama BPM",
       }),
-    ).toHaveAttribute("href", "/business-processes?processId=12");
+    ).toHaveAttribute("href", "/business-processes/retired?processId=12");
     expect(axios.get).toHaveBeenCalledWith("/api/business-process-chains/1");
+  });
+
+  it("abre diretamente a cadeia indicada pelo link do processo", async () => {
+    const summaries = [
+      {
+        id: 3,
+        chainCode: "other-chain",
+        name: "Outra cadeia",
+        purpose: "Outro objetivo.",
+        outcomeDescription: "Outro resultado.",
+        primaryMetric: "Outra métrica",
+        versionNumber: 1,
+        status: "PUBLISHED",
+        processCount: 1,
+      },
+      {
+        id: 4,
+        chainCode: "pde-value-creation-delivery",
+        name: "Cadeia PDE",
+        purpose: "Criar valor.",
+        outcomeDescription: "Venda entregue.",
+        primaryMetric: "Tempo até venda entregue com satisfação",
+        versionNumber: 1,
+        status: "PUBLISHED",
+        processCount: 0,
+      },
+    ];
+    vi.mocked(axios.get).mockImplementation(async (url) => {
+      if (url === "/api/business-process-chains") return { data: summaries };
+      if (url === "/api/business-process-chains/4") {
+        return {
+          data: { ...summaries[1], createdAt: "2026-08-20", processes: [] },
+        };
+      }
+      return {
+        data: { ...summaries[0], createdAt: "2026-08-20", processes: [] },
+      };
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/business-process-chains?chainId=4"]}>
+        <QueryClientProvider client={client}>
+          <BusinessProcessChainsPage />
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("Cadeia PDE · v1")).toBeInTheDocument();
+    expect(axios.get).toHaveBeenCalledWith("/api/business-process-chains/4");
   });
 });

@@ -24,14 +24,20 @@ const studio = {
   usageInstructions: "Use o pending do backend.",
 };
 
-function mockCatalog(processes: unknown[], resources: unknown[] = [studio]) {
+function mockCatalog(
+  processes: unknown[],
+  resources: unknown[] = [studio],
+  chains: unknown[] = [],
+) {
   vi.mocked(axios.get).mockImplementation(
     async (url) =>
       ({
         data:
           url === "/api/business-process-execution-resources"
             ? resources
-            : processes,
+            : String(url).startsWith("/api/business-process-chains/by-process/")
+              ? chains
+              : processes,
       }) as never,
   );
 }
@@ -102,6 +108,149 @@ describe("BusinessProcessesPage", () => {
     expect(screen.getByDisplayValue("2")).toBeDisabled();
   });
 
+  it("mantém aposentados fora do catálogo atual e oferece acesso ao histórico", async () => {
+    mockCatalog([
+      {
+        id: 1,
+        processCode: "current-process",
+        name: "Processo vigente",
+        purpose: "Gerar valor agora.",
+        ownerName: "Operação",
+        triggerDescription: "Entrada atual",
+        outcomeDescription: "Resultado atual",
+        versionNumber: 2,
+        status: "PUBLISHED",
+        createdAt: "2026-08-20T10:00:00Z",
+        diagram: {
+          nodes: [
+            { id: "start", type: "START", label: "Início" },
+            { id: "task", type: "TASK", label: "Executar" },
+            { id: "end", type: "END", label: "Fim" },
+          ],
+          flows: [
+            { from: "start", to: "task" },
+            { from: "task", to: "end" },
+          ],
+        },
+      },
+      {
+        id: 2,
+        processCode: "current-process",
+        name: "Processo aposentado",
+        purpose: "Preservar o histórico.",
+        ownerName: "Operação",
+        triggerDescription: "Entrada antiga",
+        outcomeDescription: "Resultado antigo",
+        versionNumber: 1,
+        status: "RETIRED",
+        createdAt: "2026-08-19T10:00:00Z",
+        diagram: {
+          nodes: [
+            { id: "start", type: "START", label: "Início antigo" },
+            { id: "task", type: "TASK", label: "Executar versão antiga" },
+            { id: "end", type: "END", label: "Fim antigo" },
+          ],
+          flows: [
+            { from: "start", to: "task" },
+            { from: "task", to: "end" },
+          ],
+        },
+      },
+    ]);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={client}>
+          <BusinessProcessesPage />
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByText("Processo vigente · v2"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Processo aposentado")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Processos aposentados (1)" }),
+    ).toHaveAttribute("href", "/business-processes/retired");
+  });
+
+  it("mostra somente versões aposentadas na tela histórica", async () => {
+    mockCatalog([
+      {
+        id: 1,
+        processCode: "current-process",
+        name: "Processo vigente",
+        purpose: "Gerar valor agora.",
+        ownerName: "Operação",
+        triggerDescription: "Entrada atual",
+        outcomeDescription: "Resultado atual",
+        versionNumber: 2,
+        status: "PUBLISHED",
+        createdAt: "2026-08-20T10:00:00Z",
+        diagram: {
+          nodes: [
+            { id: "start", type: "START", label: "Início" },
+            { id: "task", type: "TASK", label: "Executar" },
+            { id: "end", type: "END", label: "Fim" },
+          ],
+          flows: [
+            { from: "start", to: "task" },
+            { from: "task", to: "end" },
+          ],
+        },
+      },
+      {
+        id: 2,
+        processCode: "current-process",
+        name: "Processo aposentado",
+        purpose: "Preservar o histórico.",
+        ownerName: "Operação",
+        triggerDescription: "Entrada antiga",
+        outcomeDescription: "Resultado antigo",
+        versionNumber: 1,
+        status: "RETIRED",
+        createdAt: "2026-08-19T10:00:00Z",
+        diagram: {
+          nodes: [
+            { id: "start", type: "START", label: "Início antigo" },
+            { id: "task", type: "TASK", label: "Executar versão antiga" },
+            { id: "end", type: "END", label: "Fim antigo" },
+          ],
+          flows: [
+            { from: "start", to: "task" },
+            { from: "task", to: "end" },
+          ],
+        },
+      },
+    ]);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/business-processes/retired"]}>
+        <QueryClientProvider client={client}>
+          <BusinessProcessesPage catalogMode="retired" />
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByText("Processo aposentado · v1"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Processo vigente")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Voltar aos processos atuais" }),
+    ).toHaveAttribute("href", "/business-processes");
+    expect(
+      screen.queryByRole("button", { name: "Cadastrar processo" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("abre diretamente o processo indicado pelo link da cadeia de valor", async () => {
     const process = (id: number, name: string) => ({
       id,
@@ -152,6 +301,68 @@ describe("BusinessProcessesPage", () => {
     expect(
       screen.queryByText("Atividade de Descoberta da oportunidade PDE"),
     ).not.toBeInTheDocument();
+  });
+
+  it("mostra a cadeia do processo e abre seu detalhe por link profundo", async () => {
+    mockCatalog(
+      [
+        {
+          id: 22,
+          processCode: "pde-opportunity-discovery",
+          name: "Descoberta e priorização da oportunidade PDE",
+          purpose: "Comprovar uma dor relevante.",
+          ownerName: "Inteligência de Mercado",
+          triggerDescription: "Sinais reais",
+          outcomeDescription: "Oportunidade aprovada",
+          versionNumber: 1,
+          status: "PUBLISHED",
+          createdAt: "2026-08-20T10:00:00Z",
+          publishedAt: "2026-08-20T10:00:00Z",
+          diagram: {
+            nodes: [
+              { id: "start", type: "START", label: "Início" },
+              { id: "end", type: "END", label: "Fim" },
+            ],
+            flows: [{ from: "start", to: "end" }],
+          },
+        },
+      ],
+      [studio],
+      [
+        {
+          id: 4,
+          chainCode: "pde-value-creation-delivery",
+          name: "Criação e entrega de valor PDE",
+          purpose: "Criar valor.",
+          outcomeDescription: "Venda entregue.",
+          primaryMetric: "Tempo até venda entregue com satisfação",
+          versionNumber: 1,
+          status: "PUBLISHED",
+          processCount: 6,
+          publishedAt: "2026-08-20T10:00:00Z",
+        },
+      ],
+    );
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/business-processes?processId=22"]}>
+        <QueryClientProvider client={client}>
+          <BusinessProcessesPage />
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole("link", {
+        name: "Criação e entrega de valor PDE · v1",
+      }),
+    ).toHaveAttribute("href", "/business-process-chains?chainId=4");
+    expect(axios.get).toHaveBeenCalledWith(
+      "/api/business-process-chains/by-process/22",
+    );
   });
 
   it("permite excluir uma versão em rascunho após confirmação", async () => {

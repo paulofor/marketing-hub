@@ -11,6 +11,8 @@ const testState = vi.hoisted(() => ({
   sourceReference: undefined as string | undefined,
   experiments: [] as Array<Record<string, unknown>>,
   taskCount: 1,
+  exceptional: false,
+  exceptionReason: undefined as string | undefined,
 }));
 
 vi.mock("../../api/agent/useAgents", () => ({
@@ -43,6 +45,8 @@ vi.mock("../../api/agentTask/useAgentTasks", () => ({
       priority: "HIGH",
       status: testState.taskStatus,
       sourceReference: testState.sourceReference,
+      exceptional: testState.exceptional,
+      exceptionReason: testState.exceptionReason,
       inputTokens: 1500,
       cachedInputTokens: 500,
       outputTokens: 400,
@@ -118,6 +122,28 @@ describe("AgentWorkspacePage", () => {
     testState.sourceReference = undefined;
     testState.experiments = [];
     testState.taskCount = 1;
+    testState.exceptional = false;
+    testState.exceptionReason = undefined;
+  });
+
+  it("quebra justificativa excepcional longa sem ampliar o card", () => {
+    testState.exceptional = true;
+    testState.exceptionReason =
+      "Execução histórica preservada com uma justificativa operacional extensa que precisa quebrar dentro da coluna da tarefa.";
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={["/agents/7"]}>
+          <Routes>
+            <Route path="/agents/:id" element={<AgentWorkspacePage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText(/Execução histórica preservada/)).toHaveClass(
+      "agent-task-card__exception",
+    );
   });
 
   it("destaca somente as cinco tarefas mais recentes do agente", () => {

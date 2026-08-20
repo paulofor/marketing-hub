@@ -33,7 +33,9 @@ Processos podem ser organizados em cadeias de criação e entrega de valor. A ca
 preserva as versões exatas dos processos participantes e possui objetivo, resultado e métrica
 principal próprios. Ela serve à visão gerencial e não executa, agenda ou avança etapas. A tela
 canônica é `/business-process-chains` e seu contrato de leitura é
-`/api/business-process-chains`.
+`/api/business-process-chains`. Quando uma versão de processo pertencer a uma ou mais cadeias, o
+detalhe em `/business-processes` deve mostrar cada cadeia e oferecer link direto para sua versão. A
+consulta reversa canônica é `GET /api/business-process-chains/by-process/{processDefinitionId}`.
 
 ## Governança BPM
 
@@ -47,6 +49,9 @@ canônica é `/business-process-chains` e seu contrato de leitura é
   Hub. Editar uma versão publicada cria uma nova versão em rascunho; versões `PUBLISHED` e `RETIRED`
   nunca são alteradas diretamente.
 - Ao publicar uma nova versão, a anterior passa a `RETIRED`, preservando histórico e auditoria.
+- O catálogo operacional em `/business-processes` mostra somente versões `DRAFT` e `PUBLISHED`.
+  Versões `RETIRED` ficam na tela histórica `/business-processes/retired`, acessível pelo catálogo,
+  para não competir visualmente com os processos atuais sem apagar sua rastreabilidade.
 - O diagrama é persistido como grafo estruturado, não como imagem ou XML livre.
 - Todo grafo precisa de exatamente um evento inicial, um final e fluxos entre elementos existentes.
 - A tela renderiza o grafo persistido pelo backend e não infere status ou regra de negócio.

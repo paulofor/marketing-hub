@@ -9,6 +9,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.service.ExperimentAiPromptSchemaUsageService;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
+import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
 import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.deliverable.DeliverablePackageRepository;
@@ -53,6 +54,7 @@ public class GeraSalesPageStageService {
   private final DeliverablePackageRepository deliverablePackageRepository;
   private final GeraSalesPagePublicationAuditService publicationAuditService;
   private final ExperimentAiPromptSchemaUsageService promptSchemaUsageService;
+  private final CommercialPlanLandingAssetService landingAssetService;
   private final ObjectMapper objectMapper;
 
   /** Inicializa o service com repositórios e serializador usados pelos contratos internos. */
@@ -63,6 +65,7 @@ public class GeraSalesPageStageService {
       DeliverablePackageRepository deliverablePackageRepository,
       GeraSalesPagePublicationAuditService publicationAuditService,
       ExperimentAiPromptSchemaUsageService promptSchemaUsageService,
+      CommercialPlanLandingAssetService landingAssetService,
       ObjectMapper objectMapper) {
     this.experimentRepository = experimentRepository;
     this.executionRepository = executionRepository;
@@ -70,6 +73,7 @@ public class GeraSalesPageStageService {
     this.deliverablePackageRepository = deliverablePackageRepository;
     this.publicationAuditService = publicationAuditService;
     this.promptSchemaUsageService = promptSchemaUsageService;
+    this.landingAssetService = landingAssetService;
     this.objectMapper = objectMapper;
   }
 
@@ -248,6 +252,12 @@ public class GeraSalesPageStageService {
     payload.put(
         "hypothesisFramework", parseJsonOrText(experiment.getHypothesisFrameworkJsonForPending()));
     payload.put("feoDeliverablePackage", latestFeoDeliverablePackage(experiment.getId()));
+    payload.put(
+        "approvedLandingVisualAssets",
+        landingAssetService.payloadForExperiment(experiment.getId()));
+    payload.put(
+        "minimumApprovedLandingVisualAssets",
+        landingAssetService.requiredReferenceCount(experiment.getId()));
     return payload;
   }
 

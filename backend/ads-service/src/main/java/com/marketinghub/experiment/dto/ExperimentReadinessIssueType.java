@@ -9,5 +9,6 @@ public enum ExperimentReadinessIssueType {
   TARGETING,
   GERA_LANDING,
   GERA_SALES_PAGE,
+  LANDING_VISUAL_EVIDENCE,
   SALES_PAGE_AB_TEST
 }

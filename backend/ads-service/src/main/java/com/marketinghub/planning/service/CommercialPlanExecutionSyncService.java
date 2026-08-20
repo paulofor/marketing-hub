@@ -106,7 +106,7 @@ public class CommercialPlanExecutionSyncService {
                     union all
                     select coalesce(sum(cost_usd), 0) as cost_usd
                     from gera_sales_page_stage_execution
-                    where created_at >= ? and created_at < ?
+                    where execution_requested_at >= ? and execution_requested_at < ?
                 ) actual_ai_costs
                 """,
                 start,

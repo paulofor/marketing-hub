@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.qualityreview.service.BackendQualityReviewService;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
+import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import java.util.Optional;
@@ -19,6 +20,7 @@ class GovernedLandingHtmlServiceTest {
   private ExperimentRepository repository;
   private BackendQualityReviewService qualityReviewService;
   private GeraSalesPagePublicationAuditRepository publicationRepository;
+  private CommercialPlanLandingAssetService landingAssetService;
   private GovernedLandingHtmlService service;
   private Experiment experiment;
 
@@ -28,8 +30,10 @@ class GovernedLandingHtmlServiceTest {
     repository = mock(ExperimentRepository.class);
     qualityReviewService = mock(BackendQualityReviewService.class);
     publicationRepository = mock(GeraSalesPagePublicationAuditRepository.class);
+    landingAssetService = mock(CommercialPlanLandingAssetService.class);
     service =
-        new GovernedLandingHtmlService(repository, publicationRepository, qualityReviewService);
+        new GovernedLandingHtmlService(
+            repository, publicationRepository, qualityReviewService, landingAssetService);
     experiment = mock(Experiment.class);
     when(repository.findById(88L)).thenReturn(Optional.of(experiment));
     when(experiment.getPrimaryCta()).thenReturn("Comprar o kit por R$ 67");

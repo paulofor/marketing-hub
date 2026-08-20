@@ -366,6 +366,14 @@ As etapas `landing-page-wireframe`, `landing-page-copy`, `landing-page-image-pla
 
 O uso desses dados é auxiliar: o contrato do experimento atual continua sendo a fonte principal de verdade. É proibido copiar texto, marca, URL, promessa específica, identidade visual ou claims de páginas externas. O worker deve usar as referências apenas para inferir padrões reutilizáveis e adequá-los ao produto, nicho, hipótese e oferta do experimento em execução.
 
+### 5.1.2 Prova visual canônica do produto na landing
+
+Quando o Plano Comercial governante possuir materiais `APPROVED`, aprovados por revisão independente e destinados a `LANDING`, o backend deve entregá-los às etapas de geração e correção como referências obrigatórias. A landing deve incorporar literalmente um conjunto representativo desses arquivos finais — até quatro, ou todos quando houver menos de quatro — preservando URL, versão e linhagem. O modelo pode criar cenário e composição ao redor dos entregáveis, mas não pode redesenhar, reinterpretar ou substituir o produto por uma aproximação visual.
+
+O contrato deve ser aplicado deterministicamente ao salvar HTML, publicar a landing, calcular readiness e autorizar criação de campanha. Quality Review aprovado, placeholder elegante, mockup abstrato ou descrição textual do kit não substituem a presença das URLs exatas. Se o plano ainda não possuir material aprovado para `LANDING`, o fluxo legado pode continuar, mas essa ausência deve permanecer explícita até a fabricação do produto fornecer a fonte visual canônica.
+
+Um `experiment_run` novo inicia com gates funcionais pendentes. A homologação somente pode liberar o preflight quando persistir evidências correlacionadas para qualidade da landing, submissão do fluxo, status efetivo de mídia e freshness dos dados. `PENDING` nunca equivale a aprovação; `NOT_APPLICABLE` só é aceito para mídia em execução técnica `TEST` e não libera uma execução de produção.
+
 ### 5.2 Instrumentação obrigatória de funil no assembler do design preset
 Para a etapa `LANDING_PAGE_DESIGN_PRESET`, o assembler de HTML provisório deve injetar instrumentação mínima de comportamento para diagnóstico de avanço de funil na landing:
 1. disparo de `page_view` no carregamento da página;

@@ -7,9 +7,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,6 +28,8 @@ public class LandingGeneratorCodexRunner {
           Pattern.CASE_INSENSITIVE);
   private static final Pattern HREF =
       Pattern.compile("\\bhref\\s*=\\s*[\\\"']([^\\\"']+)[\\\"']", Pattern.CASE_INSENSITIVE);
+  private static final Pattern IMAGE_SRC_ATTRIBUTE =
+      Pattern.compile("(?is)<img\\b[^>]*\\bsrc\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>");
   private final LandingGeneratorAgentProperties properties;
   private final ObjectMapper objectMapper;
   private final CodexTelemetryReporter telemetry;
@@ -244,11 +248,33 @@ public class LandingGeneratorCodexRunner {
       throw new IllegalArgumentException("HTML completo informado fora da abordagem por código");
     if ("CODEX_CODE_IMPLEMENTATION".equals(selectedApproach))
       validateCheckoutContract(value.path("generatedHtml").asText(), context);
+    if ("CODEX_CODE_IMPLEMENTATION".equals(selectedApproach))
+      validateApprovedLandingAssets(value.path("generatedHtml").asText(), context);
     if (value.path("expectedMetrics").isEmpty()
         || value.path("stopConditions").path("continueWhen").isEmpty()
         || value.path("stopConditions").path("adjustWhen").isEmpty()
         || value.path("stopConditions").path("stopWhen").isEmpty())
       throw new IllegalArgumentException("Plano autônomo sem métricas e condições de controle");
+  }
+
+  /** Exige que o HTML preserve a quantidade mínima de arquivos aprovados do produto real. */
+  private void validateApprovedLandingAssets(String html, JsonNode context) {
+    int required = context.path("minimumApprovedLandingVisualAssets").asInt(0);
+    if (required <= 0) return;
+    Set<String> approvedUrls = new HashSet<>();
+    for (JsonNode asset : context.path("approvedLandingVisualAssets")) {
+      String assetUrl = asset.path("assetUrl").asText("");
+      if (!assetUrl.isBlank()) approvedUrls.add(assetUrl);
+    }
+    Set<String> usedUrls = new HashSet<>();
+    Matcher imageSource = IMAGE_SRC_ATTRIBUTE.matcher(html);
+    while (imageSource.find()) {
+      String assetUrl = imageSource.group(1).trim();
+      if (approvedUrls.contains(assetUrl)) usedUrls.add(assetUrl);
+    }
+    if (usedUrls.size() < required)
+      throw new IllegalArgumentException(
+          "HTML não reutiliza a quantidade mínima de arquivos APPROVED da Biblioteca Audiovisual");
   }
 
   /** Impede callback quando Dédalo não preserva literalmente o checkout congelado. */

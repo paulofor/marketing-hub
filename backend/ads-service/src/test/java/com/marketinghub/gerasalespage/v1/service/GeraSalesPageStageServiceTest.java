@@ -15,6 +15,7 @@ import com.marketinghub.experiment.service.ExperimentAiPromptSchemaUsageService;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
 import com.marketinghub.leadportal.LeadPortalFlow;
+import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
 import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.deliverable.DeliverablePackageRepository;
@@ -43,6 +44,7 @@ class GeraSalesPageStageServiceTest {
   @Mock private DeliverablePackageRepository deliverablePackageRepository;
   @Mock private GeraSalesPagePublicationAuditService publicationAuditService;
   @Mock private ExperimentAiPromptSchemaUsageService promptSchemaUsageService;
+  @Mock private CommercialPlanLandingAssetService landingAssetService;
 
   private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -59,6 +61,7 @@ class GeraSalesPageStageServiceTest {
             deliverablePackageRepository,
             publicationAuditService,
             promptSchemaUsageService,
+            landingAssetService,
             objectMapper);
   }
 

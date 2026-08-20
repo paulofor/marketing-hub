@@ -24,6 +24,7 @@ import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.LeadPortalFlowQuestion;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
 import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
@@ -58,6 +59,7 @@ class ExperimentReadinessServiceTest {
   @Mock private ExperimentVideoAssetService experimentVideoAssetService;
   @Mock private ExperimentSalesPageAbTestService salesPageAbTestService;
   @Mock private ExperimentSalesPageTypeSelectionRepository salesPageTypeSelectionRepository;
+  @Mock private CommercialPlanLandingAssetService landingAssetService;
 
   private ExperimentReadinessService service;
 
@@ -75,7 +77,14 @@ class ExperimentReadinessServiceTest {
             campaignDestinationPolicy,
             experimentVideoAssetService,
             salesPageAbTestService,
-            salesPageTypeSelectionRepository);
+            salesPageTypeSelectionRepository,
+            landingAssetService);
+    lenient()
+        .when(
+            landingAssetService.hasRequiredApprovedAssetReferences(
+                org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.nullable(String.class)))
+        .thenReturn(true);
     lenient()
         .when(salesPageAbTestService.hasReadyActiveTest(org.mockito.ArgumentMatchers.anyLong()))
         .thenReturn(true);
@@ -534,6 +543,33 @@ class ExperimentReadinessServiceTest {
 
     assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
     assertThat(service.isReadyForCampaign(experiment)).isTrue();
+  }
+
+  /** Garante que pagina sem arquivos reais aprovados nao possa liberar campanha. */
+  @Test
+  void shouldBlockLowTicketCampaignWithoutApprovedProductEvidenceOnLanding() {
+    Experiment experiment = buildExperiment(54L, 64L);
+    experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+    experiment.setFollowUpActionUrl("https://pagamentopalf.site/sales-page-exp54.html");
+    experiment.getNiche().setFacebookPixelId("pixel-exp54");
+    completeCommercialContract(experiment);
+
+    when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(54L, CreativeStatus.READY))
+        .thenReturn(true);
+    mockPublishableSelection(54L, TargetingCandidateType.BEHAVIOR, TargetingElementType.BEHAVIOR);
+    mockCompletedGeraSalesPagePublication(54L);
+    mockSalesPageAudit(
+        54L,
+        "https://pagamentopalf.site/sales-page-exp54.html",
+        "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=exp54",
+        trackedSalesPageHtml());
+    when(landingAssetService.hasRequiredApprovedAssetReferences(
+            org.mockito.ArgumentMatchers.eq(54L), org.mockito.ArgumentMatchers.anyString()))
+        .thenReturn(false);
+
+    assertThat(service.computeMissingConfiguration(experiment))
+        .containsExactly("landingApprovedProductEvidence");
+    assertThat(service.isReadyForCampaign(experiment)).isFalse();
   }
 
   /** Garante que o funil PDE MUSA bloqueia domínio raiz sem versão explícita. */

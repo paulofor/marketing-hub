@@ -15,6 +15,8 @@ import com.marketinghub.experiment.run.ExperimentRunStopPolicy;
 import com.marketinghub.experiment.run.service.MoisCommercialDossierPreflightService.CommercialDossierPreflightResult;
 import com.marketinghub.experiment.run.service.create.CreateExperimentRunRequest;
 import com.marketinghub.experiment.run.service.get.ExperimentRunResponse;
+import com.marketinghub.experiment.run.service.homologation.ExperimentRunHomologationRequest;
+import com.marketinghub.experiment.run.service.homologation.ExperimentRunHomologationRequest.GateEvidence;
 import com.marketinghub.experiment.run.service.preflight.ExperimentRunGateResultResponse;
 import com.marketinghub.experiment.run.service.preflight.ExperimentRunPreflightResponse;
 import com.marketinghub.hypothesis.Hypothesis;
@@ -23,7 +25,10 @@ import com.marketinghub.repository.jpa.experiment.ExperimentRunGateResultReposit
 import com.marketinghub.repository.jpa.experiment.ExperimentRunRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +37,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class BackendExperimentRunService {
   private final ExperimentRepository experimentRepository;
   private static final String EVALUATOR_VERSION = "experiment-run-preflight.v1";
+  private static final String HOMOLOGATION_EVALUATOR_VERSION = "experiment-run-homologation.v1";
+  private static final Set<String> HOMOLOGATION_GATE_CODES =
+      Set.of(
+          "LANDING_QUALITY_REVIEW_APPROVED",
+          "FORM_CAN_BE_SUBMITTED",
+          "META_EFFECTIVE_STATUS_CONFIRMED",
+          "DATA_FRESHNESS_VALID");
 
   private final ExperimentRunRepository experimentRunRepository;
   private final ExperimentRunGateResultRepository gateResultRepository;
@@ -106,21 +118,39 @@ public class BackendExperimentRunService {
     gateResultRepository.deleteByExperimentRunId(runId);
     List<ExperimentRunGateResult> gates = buildInitialGateResults(run);
     List<ExperimentRunGateResult> savedGates = gateResultRepository.saveAll(gates);
-    boolean hasBlockers =
-        savedGates.stream().anyMatch(gate -> gate.getStatus() == ExperimentRunGateStatus.FAIL);
-    run.setStatus(
-        hasBlockers ? ExperimentRunStatus.PREFLIGHT_FAILED : ExperimentRunStatus.READY_TO_PUBLISH);
-    run.setDataQualityStatus(
-        hasBlockers
-            ? ExperimentRunDataQualityStatus.BLOCKED
-            : ExperimentRunDataQualityStatus.VALID);
-    run.setEvidenceValidity(
-        hasBlockers
-            ? ExperimentEvidenceValidity.STRATEGICALLY_INVALID
-            : ExperimentEvidenceValidity.NOT_EVALUATED);
     run.setPreflightStartedAt(
         run.getPreflightStartedAt() != null ? run.getPreflightStartedAt() : Instant.now());
-    run.setPreflightCompletedAt(Instant.now());
+    updateRunFromGates(run, savedGates);
+    ExperimentRun savedRun = experimentRunRepository.save(run);
+    return toPreflightResponse(savedRun, savedGates);
+  }
+
+  /** Consolida resultados funcionais e libera o run somente quando nenhum gate ficar pendente. */
+  @Transactional
+  public ExperimentRunPreflightResponse recordHomologationResults(
+      Long runId, ExperimentRunHomologationRequest request) {
+    ExperimentRun run =
+        experimentRunRepository
+            .findById(runId)
+            .orElseThrow(
+                () ->
+                    new EntityNotFoundException(
+                        "Run de experimento %d não encontrado".formatted(runId)));
+    List<ExperimentRunGateResult> gates =
+        gateResultRepository.findByExperimentRunIdOrderByGateGroupAscGateCodeAsc(runId);
+    if (gates.isEmpty()) {
+      throw new IllegalStateException("Execute o preflight inicial antes da homologação funcional");
+    }
+    Map<String, GateEvidence> evidenceByCode = validateHomologationRequest(run, request);
+    Instant evaluatedAt = Instant.now();
+    gates.stream()
+        .filter(gate -> HOMOLOGATION_GATE_CODES.contains(gate.getGateCode()))
+        .forEach(
+            gate ->
+                applyHomologationEvidence(
+                    gate, evidenceByCode.get(gate.getGateCode()), evaluatedAt));
+    List<ExperimentRunGateResult> savedGates = gateResultRepository.saveAll(gates);
+    updateRunFromGates(run, savedGates);
     ExperimentRun savedRun = experimentRunRepository.save(run);
     return toPreflightResponse(savedRun, savedGates);
   }
@@ -308,6 +338,100 @@ public class BackendExperimentRunService {
         .build();
   }
 
+  /** Valida completude, unicidade e estados aceitos nas evidencias da rodada de homologacao. */
+  private Map<String, GateEvidence> validateHomologationRequest(
+      ExperimentRun run, ExperimentRunHomologationRequest request) {
+    if (request == null || request.gates() == null) {
+      throw new IllegalArgumentException("Resultados de homologação são obrigatórios");
+    }
+    Map<String, GateEvidence> evidenceByCode = new HashMap<>();
+    for (GateEvidence evidence : request.gates()) {
+      if (evidence == null || !HOMOLOGATION_GATE_CODES.contains(evidence.gateCode())) {
+        throw new IllegalArgumentException("Gate funcional desconhecido na homologação");
+      }
+      if (evidenceByCode.putIfAbsent(evidence.gateCode(), evidence) != null) {
+        throw new IllegalArgumentException("Gate funcional duplicado na homologação");
+      }
+      validateHomologationEvidence(run, evidence);
+    }
+    if (!evidenceByCode.keySet().equals(HOMOLOGATION_GATE_CODES)) {
+      throw new IllegalArgumentException("A homologação deve informar os quatro gates funcionais");
+    }
+    return evidenceByCode;
+  }
+
+  /** Impede evidencias vazias e uso indevido de NOT_APPLICABLE em execucao de producao. */
+  private void validateHomologationEvidence(ExperimentRun run, GateEvidence evidence) {
+    if (evidence.status() != ExperimentRunGateStatus.PASS
+        && evidence.status() != ExperimentRunGateStatus.FAIL
+        && evidence.status() != ExperimentRunGateStatus.NOT_APPLICABLE) {
+      throw new IllegalArgumentException(
+          "Gate homologado deve terminar como PASS, FAIL ou NOT_APPLICABLE");
+    }
+    if (evidence.status() == ExperimentRunGateStatus.NOT_APPLICABLE
+        && (!"META_EFFECTIVE_STATUS_CONFIRMED".equals(evidence.gateCode())
+            || run.getMode() != ExperimentRunMode.TEST)) {
+      throw new IllegalArgumentException(
+          "NOT_APPLICABLE só é permitido para Meta em run técnico de teste");
+    }
+    if (!hasUsefulText(evidence.summary()) || !hasUsefulText(evidence.evidenceReference())) {
+      throw new IllegalArgumentException("Gate homologado exige resumo e referência de evidência");
+    }
+    if (evidence.summary().length() > 512 || evidence.evidenceReference().length() > 512) {
+      throw new IllegalArgumentException("Evidência de homologação excede o limite persistível");
+    }
+  }
+
+  /**
+   * Aplica a evidencia validada ao resultado atual sem criar gate paralelo ou perder correlacao.
+   */
+  private void applyHomologationEvidence(
+      ExperimentRunGateResult gate, GateEvidence evidence, Instant evaluatedAt) {
+    gate.setStatus(evidence.status());
+    gate.setSeverity(
+        evidence.status() == ExperimentRunGateStatus.FAIL
+            ? ExperimentRunGateSeverity.BLOCKER
+            : ExperimentRunGateSeverity.INFO);
+    gate.setSummary(evidence.summary());
+    gate.setEvidenceReference(evidence.evidenceReference());
+    gate.setRemediationCode(
+        evidence.status() == ExperimentRunGateStatus.FAIL ? "REPEAT_E2E_HOMOLOGATION" : null);
+    gate.setEvaluatedAt(evaluatedAt);
+    gate.setEvaluatorType(ExperimentRunGateEvaluatorType.DETERMINISTIC);
+    gate.setEvaluatorVersion(HOMOLOGATION_EVALUATOR_VERSION);
+  }
+
+  /** Atualiza o run distinguindo falha comprovada, homologacao pendente e prontidao integral. */
+  private void updateRunFromGates(ExperimentRun run, List<ExperimentRunGateResult> gates) {
+    boolean failed =
+        gates.stream().anyMatch(gate -> gate.getStatus() == ExperimentRunGateStatus.FAIL);
+    boolean unresolved = gates.stream().anyMatch(gate -> !isApprovedGateStatus(gate.getStatus()));
+    if (failed) {
+      run.setStatus(ExperimentRunStatus.PREFLIGHT_FAILED);
+      run.setDataQualityStatus(ExperimentRunDataQualityStatus.BLOCKED);
+      run.setEvidenceValidity(ExperimentEvidenceValidity.STRATEGICALLY_INVALID);
+      run.setPreflightCompletedAt(Instant.now());
+      return;
+    }
+    if (unresolved) {
+      run.setStatus(ExperimentRunStatus.PREFLIGHT_PENDING);
+      run.setDataQualityStatus(ExperimentRunDataQualityStatus.UNKNOWN);
+      run.setEvidenceValidity(ExperimentEvidenceValidity.NOT_EVALUATED);
+      run.setPreflightCompletedAt(null);
+      return;
+    }
+    run.setStatus(ExperimentRunStatus.READY_TO_PUBLISH);
+    run.setDataQualityStatus(ExperimentRunDataQualityStatus.VALID);
+    run.setEvidenceValidity(ExperimentEvidenceValidity.NOT_EVALUATED);
+    run.setPreflightCompletedAt(Instant.now());
+  }
+
+  /** Considera concluido somente gate aprovado ou explicitamente inaplicavel. */
+  private boolean isApprovedGateStatus(ExperimentRunGateStatus status) {
+    return status == ExperimentRunGateStatus.PASS
+        || status == ExperimentRunGateStatus.NOT_APPLICABLE;
+  }
+
   /** Verifica se um texto possui conteúdo útil para decisão comercial. */
   private boolean hasUsefulText(String value) {
     if (value == null || value.isBlank()) {
@@ -320,8 +444,7 @@ public class BackendExperimentRunService {
   /** Converte os gates persistidos em contrato de preflight para o frontend. */
   private ExperimentRunPreflightResponse toPreflightResponse(
       ExperimentRun run, List<ExperimentRunGateResult> gates) {
-    boolean hasBlockers =
-        gates.stream().anyMatch(gate -> gate.getStatus() == ExperimentRunGateStatus.FAIL);
+    boolean hasBlockers = gates.stream().anyMatch(gate -> !isApprovedGateStatus(gate.getStatus()));
     return new ExperimentRunPreflightResponse(
         run.getId(),
         run.getStatus(),

@@ -15,6 +15,7 @@ import com.marketinghub.leadportal.LeadPortalQuestionType;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.leadportal.support.LeadPortalPublicUrlResolver;
+import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
 import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
@@ -71,6 +72,7 @@ public class GeraSalesPagePublicationAuditService {
   private final LeadPortalFlowRepository leadPortalFlowRepository;
   private final LeadPortalFlowPublisher leadPortalFlowPublisher;
   private final LeadPortalPublicUrlResolver leadPortalPublicUrlResolver;
+  private final CommercialPlanLandingAssetService landingAssetService;
   private final ObjectMapper objectMapper;
 
   /** Inicializa o service com repositorios e serializador usados nos snapshots. */
@@ -82,6 +84,7 @@ public class GeraSalesPagePublicationAuditService {
       LeadPortalFlowRepository leadPortalFlowRepository,
       LeadPortalFlowPublisher leadPortalFlowPublisher,
       LeadPortalPublicUrlResolver leadPortalPublicUrlResolver,
+      CommercialPlanLandingAssetService landingAssetService,
       ObjectMapper objectMapper) {
     this.experimentRepository = experimentRepository;
     this.executionRepository = executionRepository;
@@ -90,6 +93,7 @@ public class GeraSalesPagePublicationAuditService {
     this.leadPortalFlowRepository = leadPortalFlowRepository;
     this.leadPortalFlowPublisher = leadPortalFlowPublisher;
     this.leadPortalPublicUrlResolver = leadPortalPublicUrlResolver;
+    this.landingAssetService = landingAssetService;
     this.objectMapper = objectMapper;
   }
 
@@ -169,6 +173,7 @@ public class GeraSalesPagePublicationAuditService {
     String packageJson = publicationExecution.getModelResponse();
     Map<String, Object> packagePayload = parseObject(packageJson);
     String html = stringValue(packagePayload.get("html"));
+    landingAssetService.validateApprovedAssetReferences(experiment.getId(), html);
     String checkoutUrl = stringValue(packagePayload.get("checkoutUrl"));
     String salesPageUrl =
         firstText(

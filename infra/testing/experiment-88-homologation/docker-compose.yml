@@ -1,0 +1,51 @@
+services:
+  mock-services:
+    build:
+      context: .
+      dockerfile: Dockerfile.mock-services
+    environment:
+      SMTP_HOST: sandbox-mail
+      SMTP_PORT: "1025"
+      SMTP_ENABLED: "false"
+    volumes:
+      - approved-photos:/test/approved
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/health"]
+      interval: 2s
+      timeout: 2s
+      retries: 60
+    ports:
+      - "18093:8080"
+
+  lead-portal-payments:
+    build:
+      context: ../../../lead-portal-payments-service
+    environment:
+      SPRING_PROFILES_ACTIVE: ""
+      MERCADO_PAGO_ACCESS_TOKEN: local-homologation-token
+      MERCADO_PAGO_BASE_URL: http://mock-services:8080
+      MERCADO_PAGO_NOTIFICATION_URL: http://mock-services:8080/api/v1/mercadopago/webhook
+      PAYMENTS_PUBLIC_BASE_URL: http://localhost:18092
+      AGENDA_CHEIA_APPROVED_PHOTO_ROOT: /test/approved
+      AGENDA_CHEIA_PRODUCTION_STORAGE_ROOT: /test/deliveries
+      DIGITAL_PRODUCT_DELIVERY_EMAIL_SERVICE_BASE_URL: http://mock-services:8080
+      DIGITAL_PRODUCT_DELIVERY_EMAIL_SEND_PATH: /api/v1/product-deliveries/send
+      PRODUCT_AI_DELIVERY_ENABLED: "false"
+      DELIVERY_ENABLED: "false"
+    depends_on:
+      mock-services:
+        condition: service_healthy
+    volumes:
+      - approved-photos:/test/approved:ro
+      - deliveries:/test/deliveries
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/health"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+    ports:
+      - "18092:8080"
+
+volumes:
+  approved-photos:
+  deliveries:

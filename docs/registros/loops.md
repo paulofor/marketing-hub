@@ -1429,3 +1429,11 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Correção sistêmica:** cada parecer independente gera um caso auditável; quinze casos homogêneos abrem consolidação 10+5 em modo sombra, sem efeitos externos. Apenas uma candidata que supera os gates pode ser promovida humanamente e injetada, junto de dois exemplos aprovados, em jobs novos do mesmo contexto.
 - **Prevenção:** testes de backend, worker e tela exigem segregação contextual, snapshot versionado, quinze IDs congelados, bloqueio de provider/gasto/publicação e ausência de autopromoção. As métricas expõem primeira tentativa, até três versões, recorrência, custo e qualidade premium.
 - **Fechamento do legado:** um comando administrativo idempotente incorpora pareceres já persistidos por experimento usando projeções leves, sem carregar imagens base64 e sem repetir provider, revisão ou gasto.
+
+## LOOP-LANDING-APROVADA-SEM-PRODUTO-REAL — Quality Review verde sem prova da entrega
+
+- **Data:** 2026-08-20.
+- **Sintoma:** o experimento #88 exibia `LANDING_APPROVED=true` e `eligibleForRunning=true`, embora a publicação #26 contivesse zero imagens reais dos vinte entregáveis aprovados do Agenda Cheia e usasse apenas formas abstratas.
+- **Causa-raiz:** prompts pediam coerência com o produto, mas o contrato de Dédalo não carregava as URLs finais aprovadas da Biblioteca Audiovisual. O Quality Review avaliava a aparência sem validar a linhagem, e readiness tratava a aprovação subjetiva como suficiente.
+- **Correção sistêmica:** o backend congela os materiais `APPROVED`, com revisão independente e finalidade `LANDING`, exige até quatro URLs exatas no HTML e aplica o mesmo gate ao salvar, publicar, calcular readiness e criar campanha. Dédalo pode compor contexto, mas não redesenhar o produto. Runs novos permanecem `PREFLIGHT_PENDING` até a homologação funcional persistir todos os gates.
+- **Prevenção:** testes de contrato cobrem filtragem da biblioteca, quantidade mínima de URLs exatas, bloqueio do worker, publicação/readiness/campanha e impedem que `PENDING` seja tratado como preflight aprovado.

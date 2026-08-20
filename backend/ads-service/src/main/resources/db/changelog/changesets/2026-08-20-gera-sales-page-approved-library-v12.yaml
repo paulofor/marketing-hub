@@ -1,0 +1,48 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-08-20-gera-sales-page-approved-library-v12.yaml
+  - changeSet:
+      id: 2026-08-20-gera-sales-page-approved-library-v12-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ai_prompt_schema_template
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE ai_prompt_schema_template
+              SET active = false, updated_at = CURRENT_TIMESTAMP
+              WHERE pipeline_code = 'gera-sales-page-v1'
+                AND stage_code IN ('sales-page-visual-plan', 'sales-page-html', 'sales-page-checkout-quality-review', 'sales-page-publication-package');
+
+              INSERT INTO ai_prompt_schema_template
+                (template_key, pipeline_code, stage_code, version, openai_model, schema_name, prompt_markdown_content, schema_json, active, created_at, updated_at)
+              VALUES
+                ('gera-sales-page-v1:sales-page-visual-plan:v12', 'gera-sales-page-v1', 'sales-page-visual-plan', 'v12', 'gpt-5.5', 'gera_sales_page_v1_visual_plan',
+                 'Você é diretor de arte de venda direta. Use experiment.approvedLandingVisualAssets como fonte de verdade visual do produto. Quando a lista não estiver vazia, selecione no mínimo experiment.minimumApprovedLandingVisualAssets arquivos distintos e planeje sua reutilização literal; preserve assetId, assetUrl e versão, sem redesenhar, reinterpretar ou solicitar outra imagem. Cenário, moldura e contexto podem organizar o arquivo real, mas não substituí-lo. Se a lista estiver vazia, não invente prova visual. Responda somente JSON aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["visualDirection","imageBriefs","trustElements"],"properties":{"visualDirection":{"type":"string"},"imageBriefs":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["sectionId","purpose","prompt"],"properties":{"sectionId":{"type":"string"},"purpose":{"type":"string"},"prompt":{"type":"string"}}}},"trustElements":{"type":"array","items":{"type":"string"}}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-html:v12', 'gera-sales-page-v1', 'sales-page-html', 'v12', 'gpt-5.5', 'gera_sales_page_v1_html',
+                 'Você é desenvolvedor front-end de páginas de venda. Gere HTML responsivo usando somente o contrato do experimento atual. Quando experiment.approvedLandingVisualAssets estiver preenchido, inclua em elementos img pelo menos experiment.minimumApprovedLandingVisualAssets assetUrl distintos copiados literalmente da lista; preserve os arquivos sem redesenho, mock fictício ou URL inventada. Mostre claramente que são exemplos reais do que a cliente recebe. Para DIRECT_CHECKOUT, todos os CTAs usam o checkout real e não existe formulário obrigatório. Não exponha termos internos, identificadores técnicos nem número do experimento. Responda somente JSON aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["html","checkoutUrl","notes"],"properties":{"html":{"type":"string"},"checkoutUrl":{"type":"string"},"notes":{"type":"array","items":{"type":"string"}}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-checkout-quality-review:v12', 'gera-sales-page-v1', 'sales-page-checkout-quality-review', 'v12', 'gpt-5.5', 'gera_sales_page_v1_checkout_quality_review',
+                 'Você é auditor comercial independente. Compare o HTML com experiment.approvedLandingVisualAssets. Quando a lista estiver preenchida, aprove somente se o HTML contiver pelo menos experiment.minimumApprovedLandingVisualAssets assetUrl distintos copiados literalmente, mostrar que são exemplos reais da entrega e não usar reconstruções aproximadas como prova. Bloqueie produto fictício, arquivo aposentado, URL inventada, CTA divergente, entrega inventada, linguagem interna ou formulário obrigatório em DIRECT_CHECKOUT. Responda somente JSON aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["approved","blockers","recommendation"],"properties":{"approved":{"type":"boolean"},"blockers":{"type":"array","items":{"type":"string"}},"recommendation":{"type":"string"}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-publication-package:v12', 'gera-sales-page-v1', 'sales-page-publication-package', 'v12', 'gpt-5.5', 'gera_sales_page_v1_publication_package',
+                 'Você é responsável pelo pacote final. Retorne readyForTraffic=true somente com revisão anterior aprovada, checkout e preço coerentes e, quando experiment.approvedLandingVisualAssets estiver preenchido, pelo menos experiment.minimumApprovedLandingVisualAssets assetUrl distintos e literais dentro do HTML. Preserve os arquivos reais sem reconstrução, não complete lacunas com referências históricas e não altere o HTML aprovado. Responda somente JSON aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["readyForTraffic","html","checkoutUrl","releaseChecklist"],"properties":{"readyForTraffic":{"type":"boolean"},"html":{"type":"string"},"checkoutUrl":{"type":"string"},"releaseChecklist":{"type":"array","items":{"type":"string"}}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+              ON DUPLICATE KEY UPDATE
+                openai_model = VALUES(openai_model),
+                schema_name = VALUES(schema_name),
+                prompt_markdown_content = VALUES(prompt_markdown_content),
+                schema_json = VALUES(schema_json),
+                active = true,
+                updated_at = CURRENT_TIMESTAMP;

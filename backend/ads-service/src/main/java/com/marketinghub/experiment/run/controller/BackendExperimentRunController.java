@@ -3,6 +3,7 @@ package com.marketinghub.experiment.run.controller;
 import com.marketinghub.experiment.run.service.BackendExperimentRunService;
 import com.marketinghub.experiment.run.service.create.CreateExperimentRunRequest;
 import com.marketinghub.experiment.run.service.get.ExperimentRunResponse;
+import com.marketinghub.experiment.run.service.homologation.ExperimentRunHomologationRequest;
 import com.marketinghub.experiment.run.service.preflight.ExperimentRunPreflightResponse;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -47,6 +48,13 @@ public class BackendExperimentRunController {
   @PostMapping("/experiment-runs/{runId}/preflight")
   public ExperimentRunPreflightResponse runPreflight(@PathVariable Long runId) {
     return service.runPreflight(runId);
+  }
+
+  /** Registra as evidencias funcionais obrigatorias produzidas pela homologacao ponta a ponta. */
+  @PostMapping("/experiment-runs/{runId}/homologation-results")
+  public ExperimentRunPreflightResponse recordHomologationResults(
+      @PathVariable Long runId, @RequestBody ExperimentRunHomologationRequest request) {
+    return service.recordHomologationResults(runId, request);
   }
 
   /** Retorna os detalhes de uma tentativa operacional pelo identificador do run. */

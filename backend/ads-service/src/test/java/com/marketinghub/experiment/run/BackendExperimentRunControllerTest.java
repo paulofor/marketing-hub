@@ -134,9 +134,7 @@ class BackendExperimentRunControllerTest {
         .andExpect(jsonPath("$.experimentId").value(experimentId));
   }
 
-  /**
-   * Deve executar preflight determinístico e liberar run sem bloqueadores estratégicos iniciais.
-   */
+  /** Deve manter o run pendente enquanto os quatro gates funcionais não tiverem evidências. */
   @Test
   void runPreflightWithoutBlockers() throws Exception {
     Long experimentId = createExperiment();
@@ -146,8 +144,8 @@ class BackendExperimentRunControllerTest {
     mockMvc
         .perform(post("/api/experiment-runs/{runId}/preflight", runId))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.runStatus").value("READY_TO_PUBLISH"))
-        .andExpect(jsonPath("$.hasBlockers").value(false))
+        .andExpect(jsonPath("$.runStatus").value("PREFLIGHT_PENDING"))
+        .andExpect(jsonPath("$.hasBlockers").value(true))
         .andExpect(
             jsonPath("$.gates[?(@.gateCode == 'MOIS_COMMERCIAL_DOSSIER_PREFLIGHT')].status")
                 .value(hasItem("PASS")))
@@ -166,7 +164,71 @@ class BackendExperimentRunControllerTest {
     mockMvc
         .perform(get("/api/experiment-runs/{runId}/preflight", runId))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.runStatus").value("READY_TO_PUBLISH"));
+        .andExpect(jsonPath("$.runStatus").value("PREFLIGHT_PENDING"));
+  }
+
+  /** Deve liberar um run somente depois de persistir quatro evidencias funcionais aprovadas. */
+  @Test
+  void homologationEvidenceCompletesPendingPreflight() throws Exception {
+    Long experimentId = createExperiment();
+    createRelevantCommercialDossier();
+    Long runId = createRun(experimentId);
+    mockMvc
+        .perform(post("/api/experiment-runs/{runId}/preflight", runId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.runStatus").value("PREFLIGHT_PENDING"));
+
+    String evidence =
+        """
+        {
+          "gates":[
+            {"gateCode":"LANDING_QUALITY_REVIEW_APPROVED","status":"PASS","summary":"Desktop e mobile aprovados","evidenceReference":"e2e://landing/round-1"},
+            {"gateCode":"FORM_CAN_BE_SUBMITTED","status":"PASS","summary":"Compra de teste e entrega concluidas","evidenceReference":"e2e://journey/round-1"},
+            {"gateCode":"META_EFFECTIVE_STATUS_CONFIRMED","status":"PASS","summary":"Contrato Meta confirmado sem publicar campanha","evidenceReference":"e2e://meta/round-1"},
+            {"gateCode":"DATA_FRESHNESS_VALID","status":"PASS","summary":"Eventos segregados e deduplicados","evidenceReference":"e2e://measurement/round-1"}
+          ]
+        }
+        """;
+
+    mockMvc
+        .perform(
+            post("/api/experiment-runs/{runId}/homologation-results", runId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(evidence))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.runStatus").value("READY_TO_PUBLISH"))
+        .andExpect(jsonPath("$.hasBlockers").value(false))
+        .andExpect(
+            jsonPath("$.gates[?(@.gateCode == 'FORM_CAN_BE_SUBMITTED')].status")
+                .value(hasItem("PASS")))
+        .andExpect(
+            jsonPath("$.gates[?(@.gateCode == 'FORM_CAN_BE_SUBMITTED')].evidenceReference")
+                .value(hasItem("e2e://journey/round-1")));
+  }
+
+  /** Deve impedir que producao use NOT_APPLICABLE para ignorar a confirmacao da Meta. */
+  @Test
+  void homologationRejectsMetaNotApplicableInProduction() throws Exception {
+    Long experimentId = createExperiment();
+    createRelevantCommercialDossier();
+    Long runId = createRun(experimentId);
+    mockMvc.perform(post("/api/experiment-runs/{runId}/preflight", runId));
+    String evidence =
+        """
+        {"gates":[
+          {"gateCode":"LANDING_QUALITY_REVIEW_APPROVED","status":"PASS","summary":"ok","evidenceReference":"e2e://landing"},
+          {"gateCode":"FORM_CAN_BE_SUBMITTED","status":"PASS","summary":"ok","evidenceReference":"e2e://journey"},
+          {"gateCode":"META_EFFECTIVE_STATUS_CONFIRMED","status":"NOT_APPLICABLE","summary":"ignorado","evidenceReference":"e2e://meta"},
+          {"gateCode":"DATA_FRESHNESS_VALID","status":"PASS","summary":"ok","evidenceReference":"e2e://measurement"}
+        ]}
+        """;
+
+    mockMvc
+        .perform(
+            post("/api/experiment-runs/{runId}/homologation-results", runId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(evidence))
+        .andExpect(status().is5xxServerError());
   }
 
   /** Deve bloquear preflight quando não existir dossiê MOIS aderente à hipótese. */

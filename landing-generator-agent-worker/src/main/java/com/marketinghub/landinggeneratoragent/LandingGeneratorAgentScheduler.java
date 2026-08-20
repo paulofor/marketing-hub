@@ -2,6 +2,7 @@ package com.marketinghub.landinggeneratoragent;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -11,6 +12,7 @@ public class LandingGeneratorAgentScheduler {
   private static final Logger log = LoggerFactory.getLogger(LandingGeneratorAgentScheduler.class);
   private final LandingGeneratorBackendClient backend;
   private final LandingGeneratorCodexRunner runner;
+  @Autowired private AutomaticExecutionControl automaticExecution;
 
   /** Configura o ciclo local sem controlar o avanço do pipeline. */
   public LandingGeneratorAgentScheduler(
@@ -19,9 +21,10 @@ public class LandingGeneratorAgentScheduler {
     this.runner = runner;
   }
 
-  /** Processa uma pendência por ciclo e isola a falha. */
+  /** Processa em PLAY uma pendência por ciclo e isola a falha. */
   @Scheduled(cron = "20 */1 * * * *")
   public void processPending() {
+    if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
     try {
       backend.claimPending().forEach(this::process);
     } catch (RuntimeException ex) {

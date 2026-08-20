@@ -10,6 +10,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,7 @@ public class OpportunityReviewConsumer {
   private final RestClient backend;
   private final ObjectMapper json;
   private final WorkerProperties properties;
+  @Autowired private AutomaticExecutionControl automaticExecution;
 
   /** Configura backend e executor somente leitura de Hermes. */
   public OpportunityReviewConsumer(WorkerProperties properties, ObjectMapper json) {
@@ -32,9 +34,10 @@ public class OpportunityReviewConsumer {
     this.json = json;
   }
 
-  /** Reserva um parecer sem bloquear os diagnósticos dos planos comerciais. */
+  /** Reserva em PLAY um parecer sem bloquear os diagnósticos dos planos comerciais. */
   @Scheduled(fixedDelay = 60000)
   public void processOne() {
+    if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
     Map<?, ?> job = null;
     try {
       job =

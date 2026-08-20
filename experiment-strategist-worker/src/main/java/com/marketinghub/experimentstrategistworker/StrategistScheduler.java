@@ -4,6 +4,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,7 @@ public class StrategistScheduler {
   private static final Logger log = LoggerFactory.getLogger(StrategistScheduler.class);
   private final StrategistBackendClient backend;
   private final CodexStrategistRunner runner;
+  @Autowired private AutomaticExecutionControl automaticExecution;
 
   /** Configura a fila canônica e o executor somente leitura. */
   public StrategistScheduler(StrategistBackendClient backend, CodexStrategistRunner runner) {
@@ -20,9 +22,10 @@ public class StrategistScheduler {
     this.runner = runner;
   }
 
-  /** Processa no máximo uma pesquisa por ciclo para preservar custo e rastreabilidade. */
+  /** Processa em PLAY no máximo uma pesquisa por ciclo para preservar custo e rastreabilidade. */
   @Scheduled(fixedDelay = 60000)
   public void processOne() {
+    if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
     StrategistJob job = null;
     try {
       job = backend.claim();

@@ -3,6 +3,7 @@ package com.marketinghub.metaadapproverworker;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -14,6 +15,7 @@ public class TemisImageStudioScheduler {
   private static final Logger log = LoggerFactory.getLogger(TemisImageStudioScheduler.class);
   private final TemisImageStudioProcessor imageStudio;
   private final TemisCreativeImprovementProcessor creativeImprovement;
+  @Autowired private AutomaticExecutionControl automaticExecution;
 
   /** Configura criação e retrabalho no container que não possui responsabilidade de revisão. */
   public TemisImageStudioScheduler(
@@ -23,9 +25,10 @@ public class TemisImageStudioScheduler {
     this.creativeImprovement = creativeImprovement;
   }
 
-  /** Executa as filas em série para impedir uploads simultâneos de artefatos grandes. */
+  /** Executa em PLAY as filas em série para impedir uploads simultâneos de artefatos grandes. */
   @Scheduled(cron = "30 */1 * * * *")
   public void processPending() {
+    if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
     runSafely("estúdio de imagens", imageStudio::processPending);
     runSafely("retrabalho de criativos", creativeImprovement::processPending);
     log.debug("Ciclo produtivo do Estúdio Visual de Têmis concluído");

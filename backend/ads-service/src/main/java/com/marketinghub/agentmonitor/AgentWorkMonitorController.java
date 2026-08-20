@@ -6,6 +6,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -14,16 +16,30 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/agents/work-monitor")
 public class AgentWorkMonitorController {
   private final AgentWorkMonitorService service;
+  private final AgentAutomaticExecutionControlService automaticExecution;
 
   /** Configura o serviço canônico de monitoramento. */
-  public AgentWorkMonitorController(AgentWorkMonitorService service) {
+  public AgentWorkMonitorController(
+      AgentWorkMonitorService service, AgentAutomaticExecutionControlService automaticExecution) {
     this.service = service;
+    this.automaticExecution = automaticExecution;
   }
 
   /** Lista trabalho, dificuldade, decisão externa e prontidão técnica de todos os agentes. */
   @GetMapping
   public List<AgentWorkMonitorResponse> list() {
     return service.list();
+  }
+
+  /** Alterna o agente entre PLAY e STOP sem modificar seu contrato ou versão. */
+  @PutMapping("/{agentId}/automatic-execution")
+  public AgentAutomaticExecutionControlResponse automaticExecution(
+      @PathVariable Long agentId,
+      @jakarta.validation.Valid @RequestBody AgentAutomaticExecutionControlRequest body,
+      HttpServletRequest request) {
+    String operator =
+        request.getRemoteUser() == null ? "marketing-hub-admin" : request.getRemoteUser();
+    return automaticExecution.update(agentId, body.automaticExecutionEnabled(), operator);
   }
 
   /** Inicia uma reconexão Codex auditada para o executor selecionado. */

@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /** Responsabilidade: proteger a retomada operacional das execuções de Dédalo. */
 class LandingGeneratorAgentSchedulerTest {
@@ -41,5 +42,20 @@ class LandingGeneratorAgentSchedulerTest {
     scheduler.processPending();
 
     verify(backend, never()).fail(any(), any());
+  }
+
+  /** Impede até a consulta da fila funcional quando Dédalo está em STOP. */
+  @Test
+  void doesNotClaimWorkWhenAutomaticExecutionIsStopped() {
+    LandingGeneratorBackendClient backend = mock(LandingGeneratorBackendClient.class);
+    LandingGeneratorCodexRunner runner = mock(LandingGeneratorCodexRunner.class);
+    AutomaticExecutionControl control = mock(AutomaticExecutionControl.class);
+    when(control.allowsAutomaticExecution()).thenReturn(false);
+    LandingGeneratorAgentScheduler scheduler = new LandingGeneratorAgentScheduler(backend, runner);
+    ReflectionTestUtils.setField(scheduler, "automaticExecution", control);
+
+    scheduler.processPending();
+
+    verify(backend, never()).claimPending();
   }
 }

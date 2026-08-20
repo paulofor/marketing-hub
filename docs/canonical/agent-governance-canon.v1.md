@@ -38,6 +38,26 @@ incrementa a versão e preserva uma fotografia auditável. As regras do Orquestr
 acionamento, pré-condições, prioridade, bloqueios e encaminhamento humano; a execução continua
 determinística no backend e os módulos executores apenas consomem pendências e reportam resultados.
 
+### Controle operacional PLAY/STOP
+
+Por decisão de 2026-08-20, cada agente possui na tela `Gestão de agentes` um controle operacional
+independente do status e da versão do contrato:
+
+- `PLAY`: permite que o módulo executor busque e inicie novos trabalhos automáticos;
+- `STOP`: impede que o módulo executor busque ou inicie qualquer novo trabalho automático.
+
+O backend persiste o estado atual e cada mudança em trilha auditável, com agente, operador e data.
+Todo executor deve consultar o contrato interno canônico antes de cada rotina automática e falhar
+fechado quando não conseguir comprovar `PLAY`. O controle deve ficar no módulo executor; o backend
+apenas persiste e expõe a configuração administrativa.
+
+`STOP` não cancela à força uma execução já iniciada, para não corromper artefatos nem perder
+auditoria: a execução corrente termina e nenhuma nova pendência é reservada. Health-check,
+telemetria, reconexão Codex e consumo do próprio comando PLAY/STOP permanecem ativos, pois são
+funções de controle e diagnóstico, não trabalho funcional do agente. Ações manuais explícitas
+continuam sujeitas aos gates e permissões próprios e não são convertidas em automação por este
+controle.
+
 ## Mesa de trabalho e caixa de entrada
 
 Cada agente cadastrado possui uma mesa própria em `/agents/{id}`. A mesa apresenta sua identidade,

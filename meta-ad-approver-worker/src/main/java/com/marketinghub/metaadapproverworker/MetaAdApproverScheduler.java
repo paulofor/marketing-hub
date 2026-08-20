@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,7 @@ public class MetaAdApproverScheduler {
   private final MetaAdApproverCodexRunner runner;
   private final MetaAdApproverProperties properties;
   private final TemisLibraryImageReviewProcessor libraryReview;
+  @Autowired private AutomaticExecutionControl automaticExecution;
 
   /** Configura o ciclo sem delegar avanço de gate ao worker. */
   public MetaAdApproverScheduler(
@@ -34,9 +36,12 @@ public class MetaAdApproverScheduler {
     this.libraryReview = libraryReview;
   }
 
-  /** Processa somente revisões independentes, sem executar produção ou edição de imagens. */
+  /**
+   * Processa em PLAY somente revisões independentes, sem executar produção ou edição de imagens.
+   */
   @Scheduled(cron = "30 */1 * * * *")
   public void processPending() {
+    if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
     try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
       executor.submit(
           () ->

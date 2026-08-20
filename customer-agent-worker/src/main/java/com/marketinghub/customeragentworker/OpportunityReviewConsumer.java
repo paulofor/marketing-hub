@@ -10,6 +10,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -27,6 +28,7 @@ public class OpportunityReviewConsumer {
   private final String codex;
   private final String model;
   private final String repositoryPath;
+  @Autowired private AutomaticExecutionControl automaticExecution;
 
   /** Configura backend e executor somente leitura especializado de Psique. */
   public OpportunityReviewConsumer(
@@ -42,9 +44,10 @@ public class OpportunityReviewConsumer {
     this.json = json;
   }
 
-  /** Reserva e processa um parecer sem bloquear avaliações de cliente. */
+  /** Reserva em PLAY e processa um parecer sem bloquear avaliações de cliente. */
   @Scheduled(fixedDelay = 60000)
   public void processOne() {
+    if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
     Map<?, ?> job = null;
     try {
       job =

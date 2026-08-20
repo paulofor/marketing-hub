@@ -13,10 +13,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/internal/agents/executor-health")
 public class AgentExecutorHealthController {
   private final AgentExecutorHealthService service;
+  private final AgentAutomaticExecutionControlService automaticExecution;
 
   /** Configura o serviço que valida e persiste as provas operacionais. */
-  public AgentExecutorHealthController(AgentExecutorHealthService service) {
+  public AgentExecutorHealthController(
+      AgentExecutorHealthService service,
+      AgentAutomaticExecutionControlService automaticExecution) {
     this.service = service;
+    this.automaticExecution = automaticExecution;
   }
 
   /** Registra uma operação segura que já comprova o acesso do executor ao backend. */
@@ -24,6 +28,12 @@ public class AgentExecutorHealthController {
   public AgentExecutorHealthResponse report(
       @Valid @RequestBody AgentExecutorHealthReportRequest request) {
     return service.report(request);
+  }
+
+  /** Informa ao executor se ele pode iniciar um novo trabalho automático. */
+  @GetMapping("/{agentKey}/automatic-execution")
+  public AgentAutomaticExecutionControlResponse automaticExecution(@PathVariable String agentKey) {
+    return automaticExecution.current(agentKey);
   }
 
   /** Reserva uma solicitação pendente para o executor autenticador. */

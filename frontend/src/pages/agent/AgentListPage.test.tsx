@@ -4,6 +4,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import AgentListPage from "./AgentListPage";
 
+const automaticExecutionMutate = vi.fn();
+
 vi.mock("../../api/agent/useAgents", () => ({
   useAgents: () => ({
     isLoading: false,
@@ -51,6 +53,8 @@ vi.mock("../../api/agent/useAgentWorkMonitor", () => ({
         nickname: "Apolo",
         agentName: "Agente Videomaker",
         agentKey: "videomaker",
+        automaticExecutionEnabled: false,
+        automaticExecutionStatus: "STOP",
         workStatus: "WORKING",
         currentWork: "Produção audiovisual do ciclo #5",
         progressDetail: "Execução em modo sombra",
@@ -70,6 +74,8 @@ vi.mock("../../api/agent/useAgentWorkMonitor", () => ({
         nickname: "Argos",
         agentName: "Radar de mercado",
         agentKey: "market-radar",
+        automaticExecutionEnabled: true,
+        automaticExecutionStatus: "PLAY",
         workStatus: "IDLE",
         currentWork: "Aguardando pesquisa dirigida",
         progressDetail: "Sem ciclo pendente",
@@ -89,6 +95,8 @@ vi.mock("../../api/agent/useAgentWorkMonitor", () => ({
         nickname: "Atena",
         agentName: "Estrategista de experimentos",
         agentKey: "experiment-strategist",
+        automaticExecutionEnabled: true,
+        automaticExecutionStatus: "PLAY",
         workStatus: "BLOCKED",
         currentWork: "Parecer de Atena no dossiê #6",
         progressDetail: "Execução canônica FAILED",
@@ -113,6 +121,8 @@ vi.mock("../../api/agent/useAgentWorkMonitor", () => ({
         nickname: "Dédalo",
         agentName: "Agente Gerador de Landing",
         agentKey: "landing-generator",
+        automaticExecutionEnabled: true,
+        automaticExecutionStatus: "PLAY",
         workStatus: "WORKING",
         currentWork: "Correção autônoma da landing do experimento #88",
         progressDetail: "Etapa em processamento",
@@ -137,6 +147,8 @@ vi.mock("../../api/agent/useAgentWorkMonitor", () => ({
         nickname: "Plutus",
         agentName: "Agente Financeiro",
         agentKey: "financial-agent",
+        automaticExecutionEnabled: true,
+        automaticExecutionStatus: "PLAY",
         workStatus: "BLOCKED",
         currentWork: "Avaliar ciclo MUSA #5",
         progressDetail: "Aguardando autenticação",
@@ -152,6 +164,15 @@ vi.mock("../../api/agent/useAgentWorkMonitor", () => ({
         },
       },
     ],
+  }),
+}));
+
+vi.mock("../../api/agent/useAgentAutomaticExecution", () => ({
+  useAgentAutomaticExecution: () => ({
+    isPending: false,
+    isError: false,
+    variables: undefined,
+    mutate: automaticExecutionMutate,
   }),
 }));
 
@@ -250,5 +271,27 @@ describe("AgentListPage", () => {
     expect(
       screen.getByRole("button", { name: "Criar sessão de Apolo" }),
     ).toBeInTheDocument();
+  });
+
+  it("exibe STOP/PLAY e envia a decisão inversa para o backend", async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AgentListPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("STOP")).toBeInTheDocument();
+    expect(screen.getAllByText("PLAY")).toHaveLength(4);
+    await user.click(
+      screen.getByRole("button", {
+        name: "Ativar execução automática de Apolo",
+      }),
+    );
+
+    expect(automaticExecutionMutate).toHaveBeenCalledWith({
+      agentId: 2,
+      automaticExecutionEnabled: true,
+    });
   });
 });

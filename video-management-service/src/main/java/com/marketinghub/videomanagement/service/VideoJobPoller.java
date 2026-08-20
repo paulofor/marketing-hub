@@ -4,14 +4,15 @@ import com.marketinghub.videomanagement.client.BackendVideoClient;
 import com.marketinghub.videomanagement.client.dto.SalesVideoJob;
 import com.marketinghub.videomanagement.client.dto.SalesVideoStatus;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
+import java.util.List;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Objects;
-
+/** Responsabilidade: reservar e despachar os jobs automáticos de produção audiovisual de Apolo. */
 @Component
 public class VideoJobPoller {
     private final Logger log = LoggerFactory.getLogger(VideoJobPoller.class);
@@ -19,7 +20,9 @@ public class VideoJobPoller {
     private final BackendVideoClient backendClient;
     private final VideoJobDispatcher dispatcher;
     private final VideoJobObservabilityService observabilityService;
+    @Autowired private AutomaticExecutionControl automaticExecution;
 
+    /** Configura fila, despacho e observabilidade sem transferir o avanço ao executor. */
     public VideoJobPoller(VideoManagementProperties properties,
                           BackendVideoClient backendClient,
                           VideoJobDispatcher dispatcher,
@@ -30,9 +33,13 @@ public class VideoJobPoller {
         this.observabilityService = observabilityService;
     }
 
+    /** Busca novos trabalhos somente quando polling local e PLAY administrativo estiverem ativos. */
     @Scheduled(initialDelay = 5000,
             fixedDelayString = "#{@videoManagementProperties.jobs.pollInterval.toMillis()}")
     public void pollJobs() {
+        if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) {
+            return;
+        }
         if (!properties.getJobs().isPollingEnabled()) {
             return;
         }
@@ -51,6 +58,7 @@ public class VideoJobPoller {
         }
     }
 
+    /** Retoma jobs órfãos da execução corrente sem reservar um novo contrato comercial. */
     private void recoverOrphanJobs() {
         List<SalesVideoJob> processingJobs = backendClient.fetchJobsByStatus(
                 SalesVideoStatus.VIDEO_PROCESSING, properties.getJobs().getBatchSize());

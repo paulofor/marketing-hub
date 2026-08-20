@@ -5,6 +5,7 @@ import java.io.StringWriter;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -17,6 +18,7 @@ public class CustomerAgentScheduler {
   private static final Logger log = LoggerFactory.getLogger(CustomerAgentScheduler.class);
   private final RestClient backend;
   private final CustomerEvaluationCodexRunner codexRunner;
+  @Autowired private AutomaticExecutionControl automaticExecution;
 
   /** Inicializa o cliente do backend e o executor estruturado da avaliação. */
   public CustomerAgentScheduler(
@@ -26,9 +28,10 @@ public class CustomerAgentScheduler {
     this.codexRunner = codexRunner;
   }
 
-  /** Consulta uma pendencia e executa o Codex sem permitir mutacoes. */
+  /** Consulta uma pendência em PLAY e executa o Codex sem permitir mutações. */
   @Scheduled(fixedDelayString = "${CUSTOMER_AGENT_POLL_MS:60000}")
   void runPending() {
+    if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
     try {
       Map<?, ?> job =
           backend

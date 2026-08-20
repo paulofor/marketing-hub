@@ -2,6 +2,7 @@ package com.marketinghub.financialagentworker;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +13,7 @@ public class FinancialAgentScheduler {
   private final FinancialAgentBackendClient backend;
   private final FinancialCodexRunner runner;
   private final FinancialAgentProperties properties;
+  @Autowired private AutomaticExecutionControl automaticExecution;
 
   /** Configura fila, executor Codex e limites operacionais de Plutus. */
   public FinancialAgentScheduler(
@@ -23,9 +25,10 @@ public class FinancialAgentScheduler {
     this.properties = properties;
   }
 
-  /** Processa no maximo um relatorio por ciclo para controlar custo e auditoria. */
+  /** Processa em PLAY no máximo um relatório por ciclo para controlar custo e auditoria. */
   @Scheduled(fixedDelay = 60000)
   public void processOne() {
+    if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
     FinancialAgentJob job = null;
     try {
       VideoProductionCycleReview cycle = pendingVideoCycleWithoutStarvation();

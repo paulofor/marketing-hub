@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.MediaType;
@@ -27,6 +28,7 @@ public class CustomerDigitalObservationScheduler {
   private final ObjectMapper mapper = new ObjectMapper();
   private final BrowserObservationRunner browserObservationRunner;
   private final CodexObservationAnalyzer observationAnalyzer;
+  @Autowired private AutomaticExecutionControl automaticExecution;
 
   /** Inicializa o consumo da fila observacional e as integrações controladas da execução. */
   public CustomerDigitalObservationScheduler(
@@ -40,9 +42,10 @@ public class CustomerDigitalObservationScheduler {
     this.observationAnalyzer = observationAnalyzer;
   }
 
-  /** Consulta uma observacao pendente sem criar navegacao quando a fila estiver vazia. */
+  /** Consulta em PLAY uma observação pendente sem criar navegação quando a fila estiver vazia. */
   @Scheduled(fixedDelayString = "${CUSTOMER_AGENT_OBSERVATION_POLL_MS:60000}")
   void runPending() {
+    if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
     try {
       Map<?, ?> job =
           backend

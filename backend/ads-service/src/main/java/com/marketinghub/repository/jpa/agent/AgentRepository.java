@@ -1,9 +1,11 @@
 package com.marketinghub.repository.jpa.agent;
 
 import com.marketinghub.agent.Agent;
+import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 
 /** Repositório JPA responsável pela persistência de Agent. */
 public interface AgentRepository extends JpaRepository<Agent, Long> {
@@ -13,6 +15,10 @@ public interface AgentRepository extends JpaRepository<Agent, Long> {
 
   /** Recupera a identidade técnica usada por integrações dos agentes. */
   Optional<Agent> findByAgentKey(String agentKey);
+
+  /** Bloqueia o cadastro durante a troca do estado operacional PLAY/STOP. */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  Optional<Agent> findLockedById(Long id);
 
   /** Lista os agentes pelo apelido usado na comunicacao operacional. */
   List<Agent> findAllByOrderByNicknameAsc();

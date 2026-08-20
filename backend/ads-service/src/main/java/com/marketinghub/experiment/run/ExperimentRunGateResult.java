@@ -18,6 +18,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /** Registra o resultado atual de um gate de preparação vinculado a um run de experimento. */
 @Entity
@@ -41,15 +43,18 @@ public class ExperimentRunGateResult {
   private String gateCode;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "gate_group", length = 48, nullable = false)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(name = "gate_group", columnDefinition = "VARCHAR(48)", length = 48, nullable = false)
   private ExperimentRunGateGroup gateGroup;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "status", length = 24, nullable = false)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(name = "status", columnDefinition = "VARCHAR(24)", length = 24, nullable = false)
   private ExperimentRunGateStatus status;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "severity", length = 24, nullable = false)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(name = "severity", columnDefinition = "VARCHAR(24)", length = 24, nullable = false)
   private ExperimentRunGateSeverity severity;
 
   @Column(name = "summary", length = 512, nullable = false)
@@ -65,7 +70,8 @@ public class ExperimentRunGateResult {
   private Instant evaluatedAt;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "evaluator_type", length = 24, nullable = false)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(name = "evaluator_type", columnDefinition = "VARCHAR(24)", length = 24, nullable = false)
   private ExperimentRunGateEvaluatorType evaluatorType;
 
   @Column(name = "evaluator_version", length = 64)

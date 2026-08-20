@@ -11,6 +11,11 @@ Processos de negócio e pipelines não são sinônimos. O processo explica e gov
 ponta; pipelines e workers executam contratos técnicos referenciados pelo processo. O catálogo não
 faz polling, não consome filas e não avança execuções operacionais.
 
+Para Produtos Digitais Experienciais, a organização macro dos processos deve seguir
+`docs/canonical/cadeia-produtos-pde-canon.v1.md`. Processos especializados já publicados, como
+fabricação de entregáveis, criativos, landing, homologação e venda, são reutilizados dentro dessa
+cadeia e não devem ser confundidos isoladamente com o ciclo completo de criação e venda de um PDE.
+
 ## Governança BPM
 
 - Cada processo possui código estável e versões imutáveis depois de publicadas.

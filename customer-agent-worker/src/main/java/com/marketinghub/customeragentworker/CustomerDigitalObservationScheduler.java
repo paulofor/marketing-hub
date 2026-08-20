@@ -77,6 +77,10 @@ public class CustomerDigitalObservationScheduler {
               StandardCharsets.UTF_8);
       String prompt =
           template
+              .replace(
+                  "{{PSIQUE_BEHAVIORAL_CORE_V2}}",
+                  Files.readString(
+                      Path.of("/app/prompts/psique/behavioral-core-v2.md"), StandardCharsets.UTF_8))
               .replace("{{PERSONA_JSON}}", String.valueOf(job.get("persona")))
               .replace("{{OBJECTIVE}}", String.valueOf(job.get("objective")))
               .replace(

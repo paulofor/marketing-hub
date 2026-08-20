@@ -6,6 +6,18 @@ export type ProcessNode = {
   label: string;
   owner?: string;
   description?: string;
+  executionResourceCode?: string;
+};
+
+export type BusinessProcessExecutionResource = {
+  id: number;
+  resourceCode: string;
+  name: string;
+  description: string;
+  resourceType: string;
+  responsibleAgentKey: string;
+  executorReference: string;
+  usageInstructions: string;
 };
 
 export type ProcessFlow = {

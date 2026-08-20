@@ -43,10 +43,11 @@ humano observado, nunca pela quantidade ou eloquência dos relatórios.
 
 ## Simulador comportamental v1
 
-Cada avaliação declara `BASELINE_V1` ou `BEHAVIORAL_V1`. A ausência de versão preserva
-`BASELINE_V1` para compatibilidade. O modo comportamental sempre executa primeiro o baseline com a
-mesma persona e ativo; em seguida produz uma segunda avaliação separada, sem sobrescrever ou
-reinterpretar o resultado original.
+Cada avaliação declara `BASELINE_V1`, `BEHAVIORAL_V1` ou `BEHAVIORAL_V2`. Registros legados mantêm
+sua versão original, mas toda nova avaliação sem versão explícita usa `BEHAVIORAL_V2` para impedir
+o retorno silencioso ao comportamento plenamente racional. O modo comportamental sempre executa
+primeiro o baseline com a mesma persona e ativo; em seguida produz uma segunda avaliação separada,
+sem sobrescrever ou reinterpretar o resultado original.
 
 O `BEHAVIORAL_V1` deve modelar estado anterior à exposição, memória contextual limitada às
 evidências fornecidas, objetivos concorrentes, atenção limitada, transições mentais progressivas,
@@ -62,6 +63,52 @@ A validação comparativa usa três decisões: continuar quando o modo comportam
 ou localizar abandono melhor que o baseline; ajustar quando o ganho for parcial; interromper quando
 apenas aumentar a elaboração narrativa sem reduzir erro preditivo. Campanhas, preço, publicação e
 resultados humanos permanecem fora da autoridade do simulador.
+
+## Simulador humano afetivo e social v2
+
+`BEHAVIORAL_V2` é o modo recomendado na interface e preserva `BASELINE_V1` e `BEHAVIORAL_V1`
+somente para compatibilidade e comparação. O v2 nunca descreve a persona como agente perfeitamente
+racional. Toda avaliação deve separar a reação afetiva inicial, a atenção seletiva, a decisão
+heurística e uma possível justificativa racional posterior.
+
+Psique deve modelar simultaneamente:
+
+- afastamento de dor, perda, arrependimento e rejeição;
+- busca de prazer, alívio, recompensa e autonomia;
+- desconto subjetivo do valor por esforço mental, financeiro ou operacional;
+- novidade e surpresa apoiadas em familiaridade suficiente para preservar confiança e controle;
+- risco sentido, que pode divergir do risco calculado;
+- ambivalência, incoerência e dependência do enquadramento;
+- valor relacional: o desejo fundamental de ser aceita, admirada, lembrada, pertencente e amada e
+  de evitar rejeição ou invisibilidade.
+
+A necessidade de pertencimento e amor permanece estrutural em toda simulação, mas sua ativação no
+caso concreto deve variar de zero a cinco conforme as evidências da persona, do contexto e do ativo.
+É proibido inferir que toda compra busca amor explicitamente. O schema exige tanto a força
+estrutural quanto a ativação situacional e a fronteira da evidência.
+
+O mesmo núcleo comportamental versionado é obrigatório em avaliações de ativos, observações
+mobile, oportunidades e atividades BPM de landing e criativo. Parecer sem impulso afetivo e leitura
+de pertencimento, admiração e amor é contratualmente inválido. O baseline pode continuar racional
+porque funciona como grupo de controle; ele não é a personalidade operacional recomendada de Psique.
+
+A compreensão dessas motivações serve para criar valor e reduzir esforço, nunca para explorar
+vulnerabilidades. Psique deve bloquear recomendações que pressionem por vergonha, solidão, medo,
+rejeição, insegurança, humilhação, engano ou dependência emocional.
+
+### Base científica
+
+- Kahneman e Tversky, teoria do prospecto (1979): https://doi.org/10.2307/1914185
+- Zajonc, mera exposição (1968): https://doi.org/10.1037/h0025848
+- Zajonc, afeto e preferência (1980): https://doi.org/10.1037/0003-066X.35.2.151
+- Berlyne, novidade, complexidade e valor hedônico (1970): https://doi.org/10.3758/BF03212593
+- Baumeister e Leary, necessidade de pertencimento (1995):
+  https://doi.org/10.1037/0033-2909.117.3.497
+- Leary et al., valor relacional e sociômetro (1995):
+  https://doi.org/10.1037/0022-3514.68.3.518
+- Kool et al., evitação de demanda cognitiva (2010): https://doi.org/10.1037/a0020198
+- Loewenstein et al., risco como sentimento (2001):
+  https://doi.org/10.1037/0033-2909.127.2.267
 
 ## Experiência Digital Observacional
 

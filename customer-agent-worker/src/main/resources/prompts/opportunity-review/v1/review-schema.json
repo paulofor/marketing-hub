@@ -1,1 +1,26 @@
-{"type":"object","additionalProperties":false,"properties":{"decision":{"type":"string","enum":["SUPPORT","ADJUST","REJECT"]},"rationale":{"type":"string"},"risks":{"type":"string"},"recommendation":{"type":"string"}},"required":["decision","rationale","risks","recommendation"]}
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "decision": {"type": "string", "enum": ["SUPPORT", "ADJUST", "REJECT"]},
+    "rationale": {"type": "string"},
+    "risks": {"type": "string"},
+    "recommendation": {"type": "string"},
+    "behavioralResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["firstImpulse", "pleasureAndEffort", "noveltyAndFamiliarity", "riskAndLoss", "belongingAdmirationLove", "rationalization", "dominantDriver", "evidenceBoundary"],
+      "properties": {
+        "firstImpulse": {"type": "string"},
+        "pleasureAndEffort": {"type": "string"},
+        "noveltyAndFamiliarity": {"type": "string"},
+        "riskAndLoss": {"type": "string"},
+        "belongingAdmirationLove": {"type": "string"},
+        "rationalization": {"type": "string"},
+        "dominantDriver": {"type": "string"},
+        "evidenceBoundary": {"type": "string"}
+      }
+    }
+  },
+  "required": ["decision", "rationale", "risks", "recommendation", "behavioralResponse"]
+}

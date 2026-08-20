@@ -6,8 +6,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.businessprocessresource.BusinessProcessExecutionResource;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
+import com.marketinghub.repository.jpa.businessprocessresource.BusinessProcessExecutionResourceRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -59,6 +61,67 @@ class BusinessProcessDefinitionServiceTest {
     assertThatThrownBy(() -> service.create(request(diagram)))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("Todo fluxo");
+  }
+
+  /** Persiste uma atividade com recurso quando o código está ativo no catálogo oficial. */
+  @Test
+  void acceptsActiveExecutionResourceOnTask() throws Exception {
+    var repository = mock(BusinessProcessDefinitionRepository.class);
+    var resources = mock(BusinessProcessExecutionResourceRepository.class);
+    when(repository.findByProcessCodeAndVersionNumber("landing", 2)).thenReturn(Optional.empty());
+    when(resources.findByResourceCodeAndActiveTrue("themis-image-studio"))
+        .thenReturn(Optional.of(studio()));
+    when(repository.save(any()))
+        .thenAnswer(
+            invocation -> {
+              BusinessProcessDefinition value = invocation.getArgument(0);
+              value.setId(10L);
+              return value;
+            });
+    var service =
+        new BusinessProcessDefinitionService(
+            repository, tasks, resources, mapper, Clock.systemUTC());
+
+    var result = service.create(request(diagramWithResource("TASK", "themis-image-studio")));
+
+    assertThat(result.diagram().path("nodes").get(1).path("executionResourceCode").asText())
+        .isEqualTo("themis-image-studio");
+  }
+
+  /** Rejeita recurso inexistente antes de persistir ou publicar a versão. */
+  @Test
+  void rejectsUnavailableExecutionResource() throws Exception {
+    var repository = mock(BusinessProcessDefinitionRepository.class);
+    var resources = mock(BusinessProcessExecutionResourceRepository.class);
+    when(repository.findByProcessCodeAndVersionNumber("landing", 2)).thenReturn(Optional.empty());
+    when(resources.findByResourceCodeAndActiveTrue("missing-studio")).thenReturn(Optional.empty());
+    var service =
+        new BusinessProcessDefinitionService(
+            repository, tasks, resources, mapper, Clock.systemUTC());
+
+    assertThatThrownBy(() -> service.create(request(diagramWithResource("TASK", "missing-studio"))))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("não está disponível");
+    verify(repository, never()).save(any());
+  }
+
+  /** Rejeita recurso em evento ou gate porque somente atividades possuem executor. */
+  @Test
+  void rejectsExecutionResourceOutsideTask() throws Exception {
+    var repository = mock(BusinessProcessDefinitionRepository.class);
+    when(repository.findByProcessCodeAndVersionNumber("landing", 2)).thenReturn(Optional.empty());
+    var service =
+        new BusinessProcessDefinitionService(
+            repository,
+            tasks,
+            mock(BusinessProcessExecutionResourceRepository.class),
+            mapper,
+            Clock.systemUTC());
+
+    assertThatThrownBy(
+            () -> service.create(request(diagramWithResource("GATEWAY", "themis-image-studio"))))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Somente atividades");
   }
 
   /** Publica a candidata e aposenta a versão anteriormente vigente. */
@@ -176,6 +239,29 @@ class BusinessProcessDefinitionServiceTest {
   private com.fasterxml.jackson.databind.JsonNode validDiagram() throws Exception {
     return mapper.readTree(
         "{\"nodes\":[{\"id\":\"start\",\"type\":\"START\",\"label\":\"Início\"},{\"id\":\"task\",\"type\":\"TASK\",\"label\":\"Fazer\"},{\"id\":\"end\",\"type\":\"END\",\"label\":\"Fim\"}],\"flows\":[{\"from\":\"start\",\"to\":\"task\"},{\"from\":\"task\",\"to\":\"end\"}]}");
+  }
+
+  /** Monta um grafo cujo elemento central declara o recurso sob validação. */
+  private com.fasterxml.jackson.databind.JsonNode diagramWithResource(
+      String type, String resourceCode) throws Exception {
+    return mapper.readTree(
+        "{\"nodes\":[{\"id\":\"start\",\"type\":\"START\",\"label\":\"Início\"},"
+            + "{\"id\":\"task\",\"type\":\""
+            + type
+            + "\",\"label\":\"Fazer\",\"executionResourceCode\":\""
+            + resourceCode
+            + "\"},{\"id\":\"end\",\"type\":\"END\",\"label\":\"Fim\"}],"
+            + "\"flows\":[{\"from\":\"start\",\"to\":\"task\"},{\"from\":\"task\",\"to\":\"end\"}]}");
+  }
+
+  /** Monta o recurso ativo usado nas atividades visuais de Têmis. */
+  private BusinessProcessExecutionResource studio() {
+    BusinessProcessExecutionResource resource = new BusinessProcessExecutionResource();
+    resource.setResourceCode("themis-image-studio");
+    resource.setName("Estúdio de Imagens de Têmis");
+    resource.setResponsibleAgentKey("meta-ad-approver");
+    resource.setActive(true);
+    return resource;
   }
 
   /** Monta uma versão persistida para testar troca de vigência. */

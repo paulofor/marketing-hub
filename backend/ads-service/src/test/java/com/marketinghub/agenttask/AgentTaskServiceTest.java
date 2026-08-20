@@ -11,9 +11,13 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.businessprocessresource.BusinessProcessExecutionResource;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
+import com.marketinghub.repository.jpa.businessprocessresource.BusinessProcessExecutionResourceRepository;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -685,6 +689,152 @@ class AgentTaskServiceTest {
     assertThat(task.getEvidenceJson()).contains("htmlVersion");
   }
 
+  /** Persiste tokens e acumula o custo calculado pelo backend em tentativas da mesma tarefa. */
+  @Test
+  void accumulatesModelUsageAndBackendEstimatedCost() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    OpenAiPricingService pricing = mock(OpenAiPricingService.class);
+    AgentTask task =
+        processTask(
+            30L,
+            agent(7L, "landing-generator", "Dédalo"),
+            process("PUBLISHED", "Dédalo"),
+            "html",
+            "IN_PROGRESS");
+    task.setInputTokens(100L);
+    task.setCachedInputTokens(20L);
+    task.setOutputTokens(30L);
+    task.setEstimatedCostUsd(new BigDecimal("0.01000000"));
+    task.setCostEstimationStatus("ESTIMATED");
+    when(repository.findById(30L)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    when(pricing.estimateTaskCost("gpt-test", "FLEX", 900L, 400L, 200L))
+        .thenReturn(Optional.of(new BigDecimal("0.02000000")));
+    Instant delivered = Instant.parse("2026-08-20T13:00:00Z");
+    AgentTaskService service =
+        new AgentTaskService(
+            repository,
+            mock(AgentRepository.class),
+            mock(BusinessProcessDefinitionRepository.class),
+            new ObjectMapper(),
+            pricing,
+            Clock.fixed(delivered, ZoneOffset.UTC));
+
+    service.completeClaimedProcessTask(
+        "landing-generator",
+        30L,
+        new CompleteAgentTaskRequest(
+            "{\"decision\":\"READY\"}",
+            "{\"htmlVersion\":2}",
+            List.of(new AgentTaskModelUsageRequest("gpt-test", "FLEX", 900L, 400L, 200L))));
+
+    assertThat(task.getInputTokens()).isEqualTo(1_000L);
+    assertThat(task.getCachedInputTokens()).isEqualTo(420L);
+    assertThat(task.getOutputTokens()).isEqualTo(230L);
+    assertThat(task.getEstimatedCostUsd()).isEqualByComparingTo("0.03000000");
+    assertThat(task.getCostEstimationStatus()).isEqualTo("ESTIMATED");
+    assertThat(task.getModelUsageUpdatedAt()).isEqualTo(delivered);
+  }
+
+  /** Preserva os tokens e sinaliza preço ausente quando o catálogo não conhece o modelo. */
+  @Test
+  void preservesTokensWhenPricingIsUnavailable() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    OpenAiPricingService pricing = mock(OpenAiPricingService.class);
+    AgentTask task =
+        processTask(
+            31L,
+            agent(2L, "customer-agent", "Psique"),
+            process("PUBLISHED", "Psique"),
+            "customer",
+            "IN_PROGRESS");
+    when(repository.findById(31L)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    when(pricing.estimateTaskCost("unknown", "FLEX", 500L, 100L, 80L)).thenReturn(Optional.empty());
+    AgentTaskService service =
+        new AgentTaskService(
+            repository,
+            mock(AgentRepository.class),
+            mock(BusinessProcessDefinitionRepository.class),
+            new ObjectMapper(),
+            pricing,
+            Clock.systemUTC());
+
+    service.failClaimedProcessTask(
+        "customer-agent",
+        31L,
+        new FailAgentTaskRequest(
+            "Ajuste necessário",
+            "{\"decision\":\"ADJUST\"}",
+            "{\"reviewer\":\"Psique\"}",
+            List.of(new AgentTaskModelUsageRequest("unknown", "FLEX", 500L, 100L, 80L))));
+
+    assertThat(task.getInputTokens()).isEqualTo(500L);
+    assertThat(task.getCachedInputTokens()).isEqualTo(100L);
+    assertThat(task.getOutputTokens()).isEqualTo(80L);
+    assertThat(task.getEstimatedCostUsd()).isNull();
+    assertThat(task.getCostEstimationStatus()).isEqualTo("PRICING_UNAVAILABLE");
+  }
+
+  /** Rejeita cache maior que a entrada total antes de persistir um custo impossível. */
+  @Test
+  void rejectsCachedTokensGreaterThanInput() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task =
+        processTask(
+            31L,
+            agent(2L, "customer-agent", "Psique"),
+            process("PUBLISHED", "Psique"),
+            "customer",
+            "IN_PROGRESS");
+    when(repository.findById(31L)).thenReturn(Optional.of(task));
+    AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+
+    assertThatThrownBy(
+            () ->
+                service.completeClaimedProcessTask(
+                    "customer-agent",
+                    31L,
+                    new CompleteAgentTaskRequest(
+                        "{}",
+                        "{}",
+                        List.of(
+                            new AgentTaskModelUsageRequest("gpt-test", "FLEX", 100L, 101L, 20L)))))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Consumo de modelo inválido");
+    verify(repository, never()).save(any());
+  }
+
+  /** Rejeita tier sem política de preço mesmo quando o serviço é chamado fora do controller. */
+  @Test
+  void rejectsUnsupportedServiceTier() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task =
+        processTask(
+            31L,
+            agent(2L, "customer-agent", "Psique"),
+            process("PUBLISHED", "Psique"),
+            "customer",
+            "IN_PROGRESS");
+    when(repository.findById(31L)).thenReturn(Optional.of(task));
+    AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+
+    assertThatThrownBy(
+            () ->
+                service.completeClaimedProcessTask(
+                    "customer-agent",
+                    31L,
+                    new CompleteAgentTaskRequest(
+                        "{}",
+                        "{}",
+                        List.of(
+                            new AgentTaskModelUsageRequest(
+                                "gpt-test", "UNMETERED", 100L, 0L, 20L)))))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Consumo de modelo inválido");
+    verify(repository, never()).save(any());
+  }
+
   /** Preserva o parecer funcional quando o agente bloqueia a atividade por qualidade. */
   @Test
   void blocksClaimedTaskWithAuditableReview() {
@@ -769,6 +919,105 @@ class AgentTaskServiceTest {
     verify(repository, never()).save(any());
   }
 
+  /** Impede o executor comum de reservar atividade que exige um container especializado. */
+  @Test
+  void routesSpecializedActivityOnlyToMatchingExecutionResource() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    BusinessProcessExecutionResourceRepository resources =
+        mock(BusinessProcessExecutionResourceRepository.class);
+    Agent temis = agent(6L, "meta-ad-approver", "Têmis");
+    BusinessProcessDefinition process = process("PUBLISHED", "Têmis");
+    process.setProcessCode("pde-construction-approval");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"deliverables\",\"type\":\"TASK\","
+            + "\"label\":\"Produzir entregáveis premium\",\"owner\":\"Têmis\","
+            + "\"executionResourceCode\":\"themis-image-studio\"}],\"flows\":[]}");
+    AgentTask task = processTask(88L, temis, process, "deliverables", "PENDING");
+    when(agents.findByAgentKey("meta-ad-approver")).thenReturn(Optional.of(temis));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "meta-ad-approver", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of());
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "meta-ad-approver", "WORK", "PENDING"))
+        .thenReturn(List.of(task));
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            9L, "commercial-plan:2@v4"))
+        .thenReturn(List.of(task));
+    when(repository.save(task)).thenReturn(task);
+    when(resources.findByResourceCodeAndActiveTrue("themis-image-studio"))
+        .thenReturn(Optional.of(studio()));
+    AgentTaskService service =
+        new AgentTaskService(
+            repository,
+            agents,
+            mock(BusinessProcessDefinitionRepository.class),
+            resources,
+            new ObjectMapper(),
+            null,
+            Clock.systemUTC());
+
+    assertThat(
+            service.claimEligibleProcessTask(
+                "meta-ad-approver", "pde-construction-approval", "deliverables"))
+        .isEmpty();
+
+    AgentTaskPendingResponse pending =
+        service
+            .claimEligibleProcessTask(
+                "meta-ad-approver",
+                "pde-construction-approval",
+                "deliverables",
+                "themis-image-studio")
+            .orElseThrow();
+
+    assertThat(pending.executionResource()).isNotNull();
+    assertThat(pending.executionResource().resourceCode()).isEqualTo("themis-image-studio");
+    assertThat(pending.executionResource().executorReference()).isEqualTo("themis-image-studio");
+    assertThat(task.getStatus()).isEqualTo("IN_PROGRESS");
+  }
+
+  /** Bloqueia vínculo quando o recurso especializado pertence a outro agente. */
+  @Test
+  void rejectsActivityResourceAssignedToAnotherAgent() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    BusinessProcessDefinitionRepository processes = mock(BusinessProcessDefinitionRepository.class);
+    BusinessProcessExecutionResourceRepository resources =
+        mock(BusinessProcessExecutionResourceRepository.class);
+    Agent psique = agent(2L, "customer-agent", "Psique");
+    BusinessProcessDefinition process = process("PUBLISHED", "Psique");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"html\",\"type\":\"TASK\",\"label\":\"Avaliar\","
+            + "\"owner\":\"Psique\",\"executionResourceCode\":\"themis-image-studio\"}],"
+            + "\"flows\":[]}");
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(processes.findById(9L)).thenReturn(Optional.of(process));
+    when(resources.findByResourceCodeAndActiveTrue("themis-image-studio"))
+        .thenReturn(Optional.of(studio()));
+    AgentTaskService service =
+        new AgentTaskService(
+            repository, agents, processes, resources, new ObjectMapper(), null, Clock.systemUTC());
+
+    assertThatThrownBy(
+            () ->
+                service.createByHuman(
+                    new CreateAgentTaskRequest(
+                        "customer-agent",
+                        "Operador",
+                        "Avaliar",
+                        "Avaliar entrega.",
+                        "HIGH",
+                        "experiment:88",
+                        9L,
+                        "html",
+                        false,
+                        null)))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("outro agente");
+    verify(repository, never()).save(any());
+  }
+
   /** Cria um agente mínimo para os cenários do serviço. */
   private Agent agent(Long id, String key, String nickname) {
     Agent value = new Agent();
@@ -776,6 +1025,19 @@ class AgentTaskServiceTest {
     value.setAgentKey(key);
     value.setNickname(nickname);
     return value;
+  }
+
+  /** Monta o Estúdio de Têmis com instruções entregues ao executor. */
+  private BusinessProcessExecutionResource studio() {
+    BusinessProcessExecutionResource resource = new BusinessProcessExecutionResource();
+    resource.setResourceCode("themis-image-studio");
+    resource.setName("Estúdio de Imagens de Têmis");
+    resource.setResourceType("CONTAINER");
+    resource.setResponsibleAgentKey("meta-ad-approver");
+    resource.setExecutorReference("themis-image-studio");
+    resource.setUsageInstructions("Consumir o endpoint pending do backend.");
+    resource.setActive(true);
+    return resource;
   }
 
   /** Cria uma definição mínima com atividade atribuída para validar o vínculo. */

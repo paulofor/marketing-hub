@@ -166,6 +166,7 @@ public class OpportunityReviewConsumer {
   /** Resolve o prompt com o contexto persistido pelo backend. */
   private String prompt(Map<?, ?> job) throws IOException {
     return read("prompts/opportunity-review/v1/review.md")
+        .replace("{{PSIQUE_BEHAVIORAL_CORE_V2}}", read("prompts/psique/behavioral-core-v2.md"))
         .replace("{{DOSSIER_CONTEXT}}", json.writeValueAsString(job));
   }
 
@@ -183,12 +184,15 @@ public class OpportunityReviewConsumer {
     }
   }
 
-  /** Rejeita respostas incompletas. */
+  /** Rejeita respostas sem decisão ou sem leitura afetiva e social auditável. */
   private void validate(JsonNode result) {
     if (!result.hasNonNull("decision")
         || !result.hasNonNull("rationale")
         || !result.hasNonNull("risks")
-        || !result.hasNonNull("recommendation"))
+        || !result.hasNonNull("recommendation")
+        || !result.path("behavioralResponse").isObject()
+        || result.path("behavioralResponse").path("firstImpulse").asText().isBlank()
+        || result.path("behavioralResponse").path("belongingAdmirationLove").asText().isBlank())
       throw new IllegalArgumentException("Parecer de oportunidade incompleto.");
   }
 

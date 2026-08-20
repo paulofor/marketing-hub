@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
+import com.marketinghub.repository.jpa.businessprocessresource.BusinessProcessExecutionResourceRepository;
 import java.text.Normalizer;
 import java.time.Clock;
 import java.time.Instant;
@@ -20,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class BusinessProcessDefinitionService {
   private final BusinessProcessDefinitionRepository repository;
   private final AgentTaskRepository agentTaskRepository;
+  private final BusinessProcessExecutionResourceRepository executionResourceRepository;
   private final ObjectMapper objectMapper;
   private final Clock clock;
 
@@ -28,8 +30,22 @@ public class BusinessProcessDefinitionService {
   public BusinessProcessDefinitionService(
       BusinessProcessDefinitionRepository repository,
       AgentTaskRepository agentTaskRepository,
+      BusinessProcessExecutionResourceRepository executionResourceRepository,
       ObjectMapper objectMapper) {
-    this(repository, agentTaskRepository, objectMapper, Clock.systemUTC());
+    this(
+        repository,
+        agentTaskRepository,
+        executionResourceRepository,
+        objectMapper,
+        Clock.systemUTC());
+  }
+
+  /** Preserva a montagem isolada de cenários que não usam recurso especializado. */
+  BusinessProcessDefinitionService(
+      BusinessProcessDefinitionRepository repository,
+      AgentTaskRepository agentTaskRepository,
+      ObjectMapper objectMapper) {
+    this(repository, agentTaskRepository, null, objectMapper, Clock.systemUTC());
   }
 
   /** Permite testes determinísticos do ciclo de publicação. */
@@ -38,8 +54,19 @@ public class BusinessProcessDefinitionService {
       AgentTaskRepository agentTaskRepository,
       ObjectMapper objectMapper,
       Clock clock) {
+    this(repository, agentTaskRepository, null, objectMapper, clock);
+  }
+
+  /** Permite validar recursos especializados com relógio determinístico nos testes. */
+  BusinessProcessDefinitionService(
+      BusinessProcessDefinitionRepository repository,
+      AgentTaskRepository agentTaskRepository,
+      BusinessProcessExecutionResourceRepository executionResourceRepository,
+      ObjectMapper objectMapper,
+      Clock clock) {
     this.repository = repository;
     this.agentTaskRepository = agentTaskRepository;
+    this.executionResourceRepository = executionResourceRepository;
     this.objectMapper = objectMapper;
     this.clock = clock;
   }
@@ -178,6 +205,7 @@ public class BusinessProcessDefinitionService {
       if (!Set.of("START", "TASK", "GATEWAY", "END").contains(type)) {
         throw invalid("Todo elemento deve possuir um tipo BPM reconhecido.");
       }
+      validateExecutionResource(node, type);
     }
     if (starts != 1 || ends != 1) {
       throw invalid("O processo deve ter exatamente um início e um fim.");
@@ -186,6 +214,22 @@ public class BusinessProcessDefinitionService {
       if (!ids.contains(flow.path("from").asText()) || !ids.contains(flow.path("to").asText())) {
         throw invalid("Todo fluxo deve conectar elementos existentes.");
       }
+    }
+  }
+
+  /** Valida o recurso opcional somente em atividades e contra o catálogo ativo do backend. */
+  private void validateExecutionResource(JsonNode node, String nodeType) {
+    String resourceCode = node.path("executionResourceCode").asText("").trim();
+    if (resourceCode.isEmpty()) return;
+    if (!"TASK".equals(nodeType)) {
+      throw invalid("Somente atividades podem exigir um recurso especializado.");
+    }
+    if (resourceCode.length() > 100 || !resourceCode.matches("[a-z0-9]+(?:-[a-z0-9]+)*")) {
+      throw invalid("O código do recurso especializado é inválido.");
+    }
+    if (executionResourceRepository == null
+        || executionResourceRepository.findByResourceCodeAndActiveTrue(resourceCode).isEmpty()) {
+      throw invalid("O recurso especializado informado não está disponível.");
     }
   }
 

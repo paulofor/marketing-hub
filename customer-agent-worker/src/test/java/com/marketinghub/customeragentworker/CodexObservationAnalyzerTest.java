@@ -55,6 +55,14 @@ class CodexObservationAnalyzerTest {
                     .toFile());
 
     assertStrictObjects(schema);
+    assertThat(schema.path("properties").path("simulatedReaction").path("required").toString())
+        .contains(
+            "firstAffectiveImpulse",
+            "pleasureAndEffort",
+            "noveltyAndFamiliarity",
+            "riskAndLoss",
+            "relationalValue",
+            "postHocRationalization");
   }
 
   /** Percorre recursivamente o schema e exige fechamento explícito de cada objeto. */

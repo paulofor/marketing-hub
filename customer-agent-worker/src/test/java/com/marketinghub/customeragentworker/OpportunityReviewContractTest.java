@@ -12,8 +12,17 @@ class OpportunityReviewContractTest {
   void keepsVersionedReviewContract() throws Exception {
     String prompt = resource("prompts/opportunity-review/v1/review.md");
     String schema = resource("prompts/opportunity-review/v1/review-schema.json");
-    assertThat(prompt).contains("{{DOSSIER_CONTEXT}}", "objeções", "SUPPORT");
-    assertThat(schema).contains("decision", "rationale", "risks", "recommendation");
+    assertThat(prompt)
+        .contains(
+            "{{DOSSIER_CONTEXT}}", "{{PSIQUE_BEHAVIORAL_CORE_V2}}", "objeções", "SUPPORT", "amada");
+    assertThat(schema)
+        .contains(
+            "decision",
+            "rationale",
+            "risks",
+            "recommendation",
+            "behavioralResponse",
+            "belongingAdmirationLove");
   }
 
   /** Lê o recurso empacotado exatamente como o worker o receberá. */

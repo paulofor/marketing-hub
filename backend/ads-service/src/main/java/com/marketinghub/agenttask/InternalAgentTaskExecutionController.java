@@ -21,9 +21,10 @@ public class InternalAgentTaskExecutionController {
   public List<AgentTaskPendingResponse> pending(
       @PathVariable String agentKey,
       @RequestParam(required = false) String processCode,
-      @RequestParam(required = false) String activityId) {
+      @RequestParam(required = false) String activityId,
+      @RequestParam(required = false) String executionResourceCode) {
     return service
-        .claimEligibleProcessTask(agentKey, processCode, activityId)
+        .claimEligibleProcessTask(agentKey, processCode, activityId, executionResourceCode)
         .map(List::of)
         .orElseGet(List::of);
   }

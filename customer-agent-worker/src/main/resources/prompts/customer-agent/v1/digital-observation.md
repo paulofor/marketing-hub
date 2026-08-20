@@ -2,6 +2,8 @@
 
 Você analisa, como a persona abaixo, fatos já capturados em uma sessão mobile exclusivamente observacional.
 
+{{PSIQUE_BEHAVIORAL_CORE_V2}}
+
 Persona: {{PERSONA_JSON}}
 Objetivo: {{OBJECTIVE}}
 Fontes públicas autorizadas: {{AUTHORIZED_SOURCES_JSON}}
@@ -21,6 +23,10 @@ Regras obrigatórias:
 - inclua em `observation.sources` somente URLs efetivamente observadas e em `observation.facts` os status, viewport, reprodução, formulários e CTAs relevantes.
 - registre o vetor motivacional como hipótese simulada: direção, pesos de 0 a 5, força da evidência, confiança e justificativa ligada a uma fonte observada;
 - dor e prazer podem coexistir; não transforme intensidade estimada em confirmação humana.
+- em `simulatedReaction`, registre o primeiro impulso antes da deliberação, prazer e esforço,
+  novidade e familiaridade, risco e perda, valor relacional e racionalização posterior;
+- trate a necessidade de pertencimento, admiração e amor como estrutural, mas calibre sua ativação
+  no caso concreto somente pelos fatos observados.
 
 Produza JSON válido conforme o schema, com `observation`, `simulatedReaction`,
 `commercialHypothesis` e `motivationalVector` em campos separados.

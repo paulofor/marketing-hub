@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import type {
   BusinessProcess,
+  BusinessProcessExecutionResource,
   CreateBusinessProcess,
   SaveBusinessProcess,
 } from "./types";
@@ -13,6 +14,18 @@ export function useBusinessProcesses() {
     queryKey: key,
     queryFn: async () =>
       (await axios.get<BusinessProcess[]>("/api/business-processes")).data,
+  });
+}
+
+export function useBusinessProcessExecutionResources() {
+  return useQuery({
+    queryKey: ["business-process-execution-resources"],
+    queryFn: async () =>
+      (
+        await axios.get<BusinessProcessExecutionResource[]>(
+          "/api/business-process-execution-resources",
+        )
+      ).data,
   });
 }
 
@@ -58,7 +71,8 @@ export function useUpdateBusinessProcess() {
 export function useDeleteBusinessProcess() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (id: number) => axios.delete(`/api/business-processes/${id}`),
+    mutationFn: async (id: number) =>
+      axios.delete(`/api/business-processes/${id}`),
     onSuccess: () => client.invalidateQueries({ queryKey: key }),
   });
 }

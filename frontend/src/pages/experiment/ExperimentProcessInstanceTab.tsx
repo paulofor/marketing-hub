@@ -1,5 +1,6 @@
 import { useProcessInstances } from "../../api/agentTask/useAgentTasks";
 import type { ProcessInstanceOperationalState } from "../../api/agentTask/types";
+import AgentTaskModelUsage from "../../components/AgentTaskModelUsage";
 
 const statePresentation: Record<
   ProcessInstanceOperationalState,
@@ -68,6 +69,9 @@ export default function ExperimentProcessInstanceTab({
                     </div>
                     <div className="small mt-1">
                       {task.agentNickname} · {task.stateReason}
+                    </div>
+                    <div className="mt-2">
+                      <AgentTaskModelUsage usage={task} />
                     </div>
                   </div>
                 );

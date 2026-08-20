@@ -23,6 +23,8 @@ import org.springframework.stereotype.Component;
 /** Responsabilidade: executar e validar a resposta estruturada do Codex para uma avaliação. */
 @Component
 public class CustomerEvaluationCodexRunner {
+  private static final String BEHAVIORAL_V1 = "BEHAVIORAL_V1";
+  private static final String BEHAVIORAL_V2 = "BEHAVIORAL_V2";
   private static final Pattern PUBLIC_URL =
       Pattern.compile("https?://[^\\s]+", Pattern.CASE_INSENSITIVE);
   private static final int MAX_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -63,20 +65,21 @@ public class CustomerEvaluationCodexRunner {
               evaluationId,
               baselinePrompt,
               "prompts/customer-agent/v1/evaluation-schema.json",
-              false,
+              null,
               visualEvidence);
-      if (!"BEHAVIORAL_V1".equals(String.valueOf(job.get("simulationVersion")))) {
+      String simulationVersion = String.valueOf(job.get("simulationVersion"));
+      if (!BEHAVIORAL_V1.equals(simulationVersion) && !BEHAVIORAL_V2.equals(simulationVersion)) {
         return baselinePayload(baseline, baselinePrompt);
       }
 
-      String behavioralPrompt = buildBehavioralPrompt(job, baseline);
+      String behavioralPrompt = buildBehavioralPrompt(job, baseline, simulationVersion);
+      String behavioralSchema =
+          BEHAVIORAL_V2.equals(simulationVersion)
+              ? "prompts/customer-agent/behavioral-v2/evaluation-schema.json"
+              : "prompts/customer-agent/behavioral-v1/evaluation-schema.json";
       JsonNode behavioral =
           execute(
-              evaluationId,
-              behavioralPrompt,
-              "prompts/customer-agent/behavioral-v1/evaluation-schema.json",
-              true,
-              visualEvidence);
+              evaluationId, behavioralPrompt, behavioralSchema, simulationVersion, visualEvidence);
       LinkedHashMap<String, String> payload = new LinkedHashMap<>();
       payload.put("assessment", behavioral.get("assessment").asText());
       payload.put("hypothesisJson", objectMapper.writeValueAsString(behavioral.get("hypotheses")));
@@ -86,9 +89,13 @@ public class CustomerEvaluationCodexRunner {
               + baselinePrompt
               + "\nBASELINE_V1_RESPONSE\n"
               + objectMapper.writeValueAsString(baseline)
-              + "\nBEHAVIORAL_V1_REQUEST\n"
+              + "\n"
+              + simulationVersion
+              + "_REQUEST\n"
               + behavioralPrompt
-              + "\nBEHAVIORAL_V1_RESPONSE\n"
+              + "\n"
+              + simulationVersion
+              + "_RESPONSE\n"
               + objectMapper.writeValueAsString(behavioral));
       payload.put("model", model);
       payload.put("baselineResultJson", objectMapper.writeValueAsString(baseline));
@@ -99,12 +106,12 @@ public class CustomerEvaluationCodexRunner {
     }
   }
 
-  /** Executa uma fase versionada e valida o contrato correspondente. */
+  /** Executa uma fase versionada e valida o contrato correspondente à versão solicitada. */
   private JsonNode execute(
       long evaluationId,
       String prompt,
       String schemaResource,
-      boolean behavioral,
+      String behavioralVersion,
       List<Path> visualEvidence)
       throws IOException, InterruptedException {
     Path answer = Files.createTempFile("customer-agent-evaluation-answer-", ".json");
@@ -137,8 +144,8 @@ public class CustomerEvaluationCodexRunner {
         }
         String raw = Files.readString(answer, StandardCharsets.UTF_8);
         JsonNode result = objectMapper.readTree(raw);
-        if (behavioral) validateBehavioral(result);
-        else validateBaseline(result);
+        if (behavioralVersion == null) validateBaseline(result);
+        else validateBehavioral(result, behavioralVersion);
         session.success();
         return result;
       }
@@ -262,13 +269,24 @@ public class CustomerEvaluationCodexRunner {
         .replace("{{ASSET_REFERENCE}}", String.valueOf(job.get("assetReference")));
   }
 
-  /** Resolve o prompt comportamental com o mesmo contexto e o baseline congelado. */
-  private String buildBehavioralPrompt(Map<?, ?> job, JsonNode baseline) throws IOException {
-    return read("prompts/customer-agent/behavioral-v1/evaluation.md")
+  /** Resolve o prompt comportamental versionado com o mesmo contexto e baseline congelado. */
+  private String buildBehavioralPrompt(Map<?, ?> job, JsonNode baseline, String simulationVersion)
+      throws IOException {
+    String resource =
+        BEHAVIORAL_V2.equals(simulationVersion)
+            ? "prompts/customer-agent/behavioral-v2/evaluation.md"
+            : "prompts/customer-agent/behavioral-v1/evaluation.md";
+    return read(resource)
+        .replace("{{PSIQUE_BEHAVIORAL_CORE_V2}}", behavioralCoreV2())
         .replace("{{PERSONA_JSON}}", String.valueOf(job.get("persona")))
         .replace("{{ASSET_TYPE}}", String.valueOf(job.get("assetType")))
         .replace("{{ASSET_REFERENCE}}", String.valueOf(job.get("assetReference")))
         .replace("{{BASELINE_JSON}}", objectMapper.writeValueAsString(baseline));
+  }
+
+  /** Lê o núcleo científico único compartilhado pelas execuções de Psique v2. */
+  private String behavioralCoreV2() throws IOException {
+    return read("prompts/psique/behavioral-core-v2.md");
   }
 
   /** Materializa um recurso do classpath para consumo seguro pelo processo Codex. */
@@ -299,6 +317,11 @@ public class CustomerEvaluationCodexRunner {
 
   /** Rejeita simulação comportamental incompleta ou probabilidades incoerentes. */
   void validateBehavioral(JsonNode result) {
+    validateBehavioral(result, BEHAVIORAL_V1);
+  }
+
+  /** Rejeita uma simulação v2 que omita os motores afetivos e sociais obrigatórios. */
+  void validateBehavioral(JsonNode result, String simulationVersion) {
     validateBaseline(result);
     if (!result.has("initialState")
         || !result.has("mentalTransitions")
@@ -307,6 +330,17 @@ public class CustomerEvaluationCodexRunner {
         || !result.has("memoryRecall")
         || !result.has("baselineComparison")) {
       throw new IllegalArgumentException("Resposta fora do contrato comportamental v1.");
+    }
+    if (BEHAVIORAL_V2.equals(simulationVersion)
+        && (!result.has("affectiveImpulse")
+            || !result.has("motivationalDynamics")
+            || !result.has("noveltyFamiliarity")
+            || !result.has("relationalValue")
+            || !result.has("postHocRationalization")
+            || !result.has("ethicalBoundary")
+            || !"FOUNDATIONAL"
+                .equals(result.path("relationalValue").path("foundationalNeed").asText()))) {
+      throw new IllegalArgumentException("Resposta fora do contrato comportamental v2 de Psique.");
     }
     int total = 0;
     var probabilities = result.get("actionProbabilities").fields();

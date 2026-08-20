@@ -1,0 +1,9 @@
+FROM mcr.microsoft.com/playwright:v1.54.2-noble
+
+WORKDIR /tests
+
+RUN npm install --no-save @playwright/test@1.54.2
+
+COPY visual-check.cjs /tests/visual-check.cjs
+
+CMD ["node", "/tests/visual-check.cjs"]

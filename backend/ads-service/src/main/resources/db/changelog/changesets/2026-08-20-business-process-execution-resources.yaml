@@ -1,0 +1,49 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-20-business-process-execution-resources
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: business_process_execution_resource
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE business_process_execution_resource (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                resource_code VARCHAR(100) NOT NULL,
+                name VARCHAR(160) NOT NULL,
+                description VARCHAR(500) NOT NULL,
+                resource_type VARCHAR(30) NOT NULL,
+                responsible_agent_key VARCHAR(100) NOT NULL,
+                executor_reference VARCHAR(160) NOT NULL,
+                usage_instructions TEXT NOT NULL,
+                active TINYINT(1) NOT NULL DEFAULT 1,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                CONSTRAINT uk_business_process_execution_resource_code UNIQUE (resource_code),
+                INDEX idx_business_process_execution_resource_agent
+                  (responsible_agent_key, active)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              INSERT INTO business_process_execution_resource
+                (resource_code, name, description, resource_type, responsible_agent_key,
+                 executor_reference, usage_instructions, active, created_at, updated_at)
+              VALUES
+                ('themis-image-studio',
+                 'Estúdio de Imagens de Têmis',
+                 'Cria, edita e compõe imagens preservando entregáveis reais e sua linhagem.',
+                 'CONTAINER',
+                 'meta-ad-approver',
+                 'themis-image-studio',
+                 'Execute a produção visual no container themis-image-studio pelo contrato pending do backend. O resultado nasce como DRAFT e exige revisão independente antes do uso comercial.',
+                 1,
+                 UTC_TIMESTAMP(),
+                 UTC_TIMESTAMP());

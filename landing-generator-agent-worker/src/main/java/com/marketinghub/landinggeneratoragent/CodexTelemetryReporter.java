@@ -120,6 +120,7 @@ public class CodexTelemetryReporter {
   TokenUsage readTokenUsage(Path output) {
     if (!Files.exists(output)) return TokenUsage.empty();
     long inputTokens = 0;
+    long cachedInputTokens = 0;
     long outputTokens = 0;
     boolean informed = false;
     try {
@@ -128,16 +129,22 @@ public class CodexTelemetryReporter {
         JsonNode event;
         try {
           event = objectMapper.readTree(line);
-        } catch (IOException ignored) {
+        } catch (IOException ex) {
+          log.debug("Linha não JSON ignorada na telemetria de Dédalo. output={}", output, ex);
           continue;
         }
         JsonNode usage = event.path("usage");
         if (!usage.isObject()) continue;
         Long input = tokenValue(usage, "input_tokens", "inputTokens");
         Long outputValue = tokenValue(usage, "output_tokens", "outputTokens");
-        if (input != null || outputValue != null) {
+        Long cached = tokenValue(usage, "cached_input_tokens", "cachedInputTokens");
+        if (cached == null) {
+          cached = tokenValue(usage.path("input_tokens_details"), "cached_tokens", "cachedTokens");
+        }
+        if (input != null || outputValue != null || cached != null) {
           informed = true;
           inputTokens = Math.max(inputTokens, input == null ? 0 : input);
+          cachedInputTokens = Math.max(cachedInputTokens, cached == null ? 0 : cached);
           outputTokens = Math.max(outputTokens, outputValue == null ? 0 : outputValue);
         }
       }
@@ -145,7 +152,9 @@ public class CodexTelemetryReporter {
       log.warn("Falha ao ler tokens reais da saída JSONL do Codex. output={}", output, ex);
       return TokenUsage.empty();
     }
-    return informed ? new TokenUsage(inputTokens, outputTokens) : TokenUsage.empty();
+    return informed
+        ? new TokenUsage(inputTokens, cachedInputTokens, outputTokens)
+        : TokenUsage.empty();
   }
 
   /** Aceita o nome oficial JSON e o alias Java sem estimar valores ausentes. */
@@ -155,10 +164,10 @@ public class CodexTelemetryReporter {
   }
 
   /** Representa a medição real de tokens informada pelo Codex. */
-  public record TokenUsage(Long inputTokens, Long outputTokens) {
+  public record TokenUsage(Long inputTokens, Long cachedInputTokens, Long outputTokens) {
     /** Representa uma execução que ainda não informou consumo. */
     static TokenUsage empty() {
-      return new TokenUsage(null, null);
+      return new TokenUsage(null, null, null);
     }
   }
 }

@@ -1,0 +1,90 @@
+openapi: 3.0.3
+info:
+  title: Catálogo de processos de negócio
+  version: 1.1.0
+  description: Cadastro versionado de processos e atividades do Marketing Hub.
+paths:
+  /api/business-processes:
+    get:
+      summary: Lista as versões dos processos
+      responses:
+        "200": { description: Catálogo e diagramas persistidos }
+    post:
+      summary: Cria uma versão em rascunho
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BusinessProcessDefinition" }
+      responses:
+        "201": { description: Rascunho criado }
+        "400": { description: Grafo ou recurso especializado inválido }
+  /api/business-processes/{id}:
+    put:
+      summary: Atualiza uma versão em rascunho
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BusinessProcessDefinition" }
+      responses:
+        "200": { description: Rascunho atualizado }
+        "409": { description: Versão já publicada ou aposentada }
+components:
+  schemas:
+    BusinessProcessDefinition:
+      type: object
+      required:
+        - processCode
+        - name
+        - purpose
+        - ownerName
+        - triggerDescription
+        - outcomeDescription
+        - versionNumber
+        - diagram
+      properties:
+        processCode: { type: string }
+        name: { type: string }
+        purpose: { type: string }
+        ownerName: { type: string }
+        triggerDescription: { type: string }
+        outcomeDescription: { type: string }
+        versionNumber: { type: integer, minimum: 1 }
+        technicalReference: { type: string, nullable: true }
+        diagram:
+          $ref: "#/components/schemas/ProcessDiagram"
+    ProcessDiagram:
+      type: object
+      required: [nodes, flows]
+      properties:
+        nodes:
+          type: array
+          items: { $ref: "#/components/schemas/ProcessNode" }
+        flows:
+          type: array
+          items:
+            type: object
+            required: [from, to]
+            properties:
+              from: { type: string }
+              to: { type: string }
+              label: { type: string, nullable: true }
+    ProcessNode:
+      type: object
+      required: [id, type, label]
+      properties:
+        id: { type: string }
+        type: { type: string, enum: [START, TASK, GATEWAY, END] }
+        label: { type: string }
+        owner: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        executionResourceCode:
+          type: string
+          nullable: true
+          description: Código opcional de recurso ativo, permitido somente em TASK.

@@ -3,6 +3,7 @@ package com.marketinghub.agenttask;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
@@ -91,6 +92,24 @@ public class AgentTask {
 
   @Column(name = "execution_error", columnDefinition = "LONGTEXT")
   private String executionError;
+
+  @Column(name = "input_tokens")
+  private Long inputTokens;
+
+  @Column(name = "cached_input_tokens")
+  private Long cachedInputTokens;
+
+  @Column(name = "output_tokens")
+  private Long outputTokens;
+
+  @Column(name = "estimated_cost_usd", precision = 18, scale = 8)
+  private BigDecimal estimatedCostUsd;
+
+  @Column(name = "cost_estimation_status", nullable = false, length = 32)
+  private String costEstimationStatus = "NOT_REPORTED";
+
+  @Column(name = "model_usage_updated_at")
+  private Instant modelUsageUpdatedAt;
 
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;

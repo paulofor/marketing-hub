@@ -82,8 +82,17 @@ public class LandingGeneratorCodexRunner {
         result.put("requestJson", request);
         result.put("responseJson", raw);
         result.put("model", properties.getModel());
-        result.put("inputTokens", sum(usage.inputTokens(), htmlUsage, true));
-        result.put("outputTokens", sum(usage.outputTokens(), htmlUsage, false));
+        result.put(
+            "inputTokens",
+            sum(usage.inputTokens(), htmlUsage == null ? null : htmlUsage.inputTokens()));
+        result.put(
+            "cachedInputTokens",
+            sum(
+                usage.cachedInputTokens(),
+                htmlUsage == null ? null : htmlUsage.cachedInputTokens()));
+        result.put(
+            "outputTokens",
+            sum(usage.outputTokens(), htmlUsage == null ? null : htmlUsage.outputTokens()));
         result.put("costUsd", null);
         return result;
       }
@@ -114,10 +123,7 @@ public class LandingGeneratorCodexRunner {
   }
 
   /** Soma a telemetria das duas interações sem transformar ausência de medição em zero. */
-  private Long sum(
-      Long planningTokens, CodexTelemetryReporter.TokenUsage htmlUsage, boolean input) {
-    Long htmlTokens =
-        htmlUsage == null ? null : (input ? htmlUsage.inputTokens() : htmlUsage.outputTokens());
+  private Long sum(Long planningTokens, Long htmlTokens) {
     if (planningTokens == null && htmlTokens == null) return null;
     return (planningTokens == null ? 0 : planningTokens) + (htmlTokens == null ? 0 : htmlTokens);
   }

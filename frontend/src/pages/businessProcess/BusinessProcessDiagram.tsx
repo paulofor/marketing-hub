@@ -1,4 +1,5 @@
 import type {
+  BusinessProcessExecutionResource,
   ProcessDiagram,
   ProcessNode,
 } from "../../api/businessProcess/types";
@@ -13,8 +14,10 @@ const label: Record<ProcessNode["type"], string> = {
 
 export default function BusinessProcessDiagram({
   diagram,
+  executionResources,
 }: {
   diagram: ProcessDiagram;
+  executionResources: BusinessProcessExecutionResource[];
 }) {
   const incoming = new Map<string, typeof diagram.flows>();
   diagram.flows.forEach((flow) =>
@@ -45,6 +48,24 @@ export default function BusinessProcessDiagram({
             {node.owner ? (
               <div className="process-node__owner">
                 Responsável: {node.owner}
+              </div>
+            ) : null}
+            {node.executionResourceCode ? (
+              <div className="process-node__resource">
+                Recurso obrigatório:{" "}
+                {executionResources.find(
+                  (item) => item.resourceCode === node.executionResourceCode,
+                )?.name ?? node.executionResourceCode}
+                {executionResources.find(
+                  (item) => item.resourceCode === node.executionResourceCode,
+                )?.executorReference
+                  ? ` · executor ${
+                      executionResources.find(
+                        (item) =>
+                          item.resourceCode === node.executionResourceCode,
+                      )?.executorReference
+                    }`
+                  : ""}
               </div>
             ) : null}
             {node.description ? <p>{node.description}</p> : null}

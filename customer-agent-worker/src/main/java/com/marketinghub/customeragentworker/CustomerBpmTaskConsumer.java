@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -55,15 +56,23 @@ public class CustomerBpmTaskConsumer {
   public void processOne() {
     if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
     Map<String, Object> task = null;
+    BpmExecution execution = null;
     try {
       task = claimNext();
       if (task == null) return;
-      JsonNode result = execute(task);
-      if ("APPROVED".equals(result.path("decision").asText())) report(task, result);
-      else block(task, result);
+      execution = execute(task);
+      JsonNode result = execution.result();
+      validate(result);
+      if ("APPROVED".equals(result.path("decision").asText()))
+        report(task, result, execution.usage());
+      else block(task, result, execution.usage());
     } catch (Exception ex) {
       log.error("Falha na atividade BPM de Psique. taskId={}", taskId(task), ex);
-      fail(task, ex);
+      TokenUsage usage =
+          execution != null
+              ? execution.usage()
+              : ex instanceof BpmExecutionException bpm ? bpm.usage() : null;
+      fail(task, ex, usage);
     }
   }
 
@@ -86,7 +95,7 @@ public class CustomerBpmTaskConsumer {
   }
 
   /** Executa o prompt versionado e exige um parecer estruturado sobre a experiência da cliente. */
-  JsonNode execute(Map<String, Object> task) throws IOException, InterruptedException {
+  BpmExecution execute(Map<String, Object> task) throws IOException, InterruptedException {
     Path output = Files.createTempFile("psique-bpm-result-", ".json");
     Path processLog = Files.createTempFile("psique-bpm-process-", ".log");
     Path schema = materialize(schemaResourceFor(processCode(task)), ".json");
@@ -107,6 +116,7 @@ public class CustomerBpmTaskConsumer {
                   schema.toString(),
                   "--output-last-message",
                   output.toString(),
+                  "--json",
                   "--color",
                   "never"));
       if (model != null && !model.isBlank()) command.addAll(List.of("--model", model));
@@ -119,15 +129,26 @@ public class CustomerBpmTaskConsumer {
       process.getOutputStream().close();
       if (!process.waitFor(40, TimeUnit.MINUTES)) {
         process.destroyForcibly();
-        throw new IllegalStateException("Timeout da atividade BPM de Psique após 40 minutos.");
+        throw new BpmExecutionException(
+            "Timeout da atividade BPM de Psique após 40 minutos.",
+            readTokenUsage(json, processLog));
       }
+      TokenUsage usage = readTokenUsage(json, processLog);
       if (process.exitValue() != 0) {
-        throw new IllegalStateException(
-            "Codex encerrou com falha: " + Files.readString(processLog));
+        throw new BpmExecutionException(
+            "Codex encerrou com falha: " + Files.readString(processLog), usage);
       }
-      JsonNode result = json.readTree(Files.readString(output));
-      validate(result);
-      return result;
+      try {
+        JsonNode result = json.readTree(Files.readString(output));
+        return new BpmExecution(result, usage);
+      } catch (IOException ex) {
+        log.error(
+            "Resposta inválida na atividade BPM de Psique. taskId={} output={}",
+            taskId(task),
+            output,
+            ex);
+        throw new BpmExecutionException("Resposta de Psique não contém JSON válido.", usage, ex);
+      }
     } finally {
       Files.deleteIfExists(output);
       Files.deleteIfExists(processLog);
@@ -136,24 +157,25 @@ public class CustomerBpmTaskConsumer {
   }
 
   /** Persiste o parecer e as evidências na própria atividade BPM. */
-  private void report(Map<String, Object> task, JsonNode result) throws IOException {
+  private void report(Map<String, Object> task, JsonNode result, TokenUsage usage)
+      throws IOException {
+    Map<String, Object> body = new HashMap<>();
+    body.put("resultJson", json.writeValueAsString(result));
+    body.put("evidenceJson", json.writeValueAsString(Map.of("reviewer", "Psique", "model", model)));
+    putModelUsage(body, usage);
     backend
         .post()
         .uri(
             "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/result",
             AGENT_KEY,
             taskId(task))
-        .body(
-            Map.of(
-                "resultJson", json.writeValueAsString(result),
-                "evidenceJson",
-                    json.writeValueAsString(Map.of("reviewer", "Psique", "model", model))))
+        .body(body)
         .retrieve()
         .toBodilessEntity();
   }
 
   /** Mantém o gate fechado quando o parecer não pôde ser produzido ou persistido. */
-  private void fail(Map<String, Object> task, Exception ex) {
+  private void fail(Map<String, Object> task, Exception ex, TokenUsage usage) {
     if (task == null) return;
     try {
       backend
@@ -162,7 +184,7 @@ public class CustomerBpmTaskConsumer {
               "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/failure",
               AGENT_KEY,
               taskId(task))
-          .body(Map.of("error", ex.toString()))
+          .body(failureBody(ex.toString(), usage))
           .retrieve()
           .toBodilessEntity();
     } catch (Exception callbackEx) {
@@ -171,22 +193,21 @@ public class CustomerBpmTaskConsumer {
   }
 
   /** Preserva o parecer funcional e impede avanço quando a cliente exige ajuste. */
-  private void block(Map<String, Object> task, JsonNode result) throws IOException {
+  private void block(Map<String, Object> task, JsonNode result, TokenUsage usage)
+      throws IOException {
     String resultJson = json.writeValueAsString(result);
+    Map<String, Object> body = new HashMap<>();
+    body.put("error", "Psique bloqueou o avanço: " + result.path("customerPerspective").asText());
+    body.put("resultJson", resultJson);
+    body.put("evidenceJson", json.writeValueAsString(Map.of("reviewer", "Psique", "model", model)));
+    putModelUsage(body, usage);
     backend
         .post()
         .uri(
             "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/failure",
             AGENT_KEY,
             taskId(task))
-        .body(
-            Map.of(
-                "error",
-                "Psique bloqueou o avanço: " + result.path("customerPerspective").asText(),
-                "resultJson",
-                resultJson,
-                "evidenceJson",
-                json.writeValueAsString(Map.of("reviewer", "Psique", "model", model))))
+        .body(body)
         .retrieve()
         .toBodilessEntity();
   }
@@ -194,7 +215,13 @@ public class CustomerBpmTaskConsumer {
   /** Resolve o contexto da atividade sem consultar banco ou decidir o avanço do processo. */
   private String prompt(Map<String, Object> task) throws IOException {
     return read(promptResourceFor(processCode(task)))
+        .replace("{{PSIQUE_BEHAVIORAL_CORE_V2}}", behavioralCoreV2())
         .replace("{{TASK_CONTEXT}}", json.writeValueAsString(task));
+  }
+
+  /** Lê a mesma constituição comportamental usada por todas as atividades de Psique. */
+  private String behavioralCoreV2() throws IOException {
+    return read("prompts/psique/behavioral-core-v2.md");
   }
 
   /** Seleciona o prompt versionado específico da entidade avaliada. */
@@ -217,16 +244,87 @@ public class CustomerBpmTaskConsumer {
     return value == null ? "" : value.toString();
   }
 
-  /** Valida que clareza, confiança, valor e objeções receberam decisão explícita. */
+  /** Valida que a decisão inclui evidência e uma resposta humana não plenamente racional. */
   static void validate(JsonNode result) {
     if (!List.of("APPROVED", "ADJUST", "BLOCKED").contains(result.path("decision").asText())) {
       throw new IllegalArgumentException("Parecer de Psique sem decisão válida");
     }
     if (result.path("customerPerspective").asText().isBlank()
+        || !result.path("behavioralResponse").isObject()
+        || result.path("behavioralResponse").path("firstImpulse").asText().isBlank()
+        || result.path("behavioralResponse").path("belongingAdmirationLove").asText().isBlank()
         || result.path("evidence").isEmpty()
         || result.path("requiredChanges").isMissingNode()) {
       throw new IllegalArgumentException("Parecer de Psique sem evidências suficientes");
     }
+  }
+
+  /** Lê a última medição cumulativa de entrada, cache e saída dos eventos JSONL do Codex. */
+  static TokenUsage readTokenUsage(ObjectMapper json, Path output) {
+    if (!Files.exists(output)) return TokenUsage.empty();
+    long input = 0;
+    long cached = 0;
+    long outputTokens = 0;
+    boolean informed = false;
+    try {
+      for (String line : Files.readAllLines(output)) {
+        if (line.isBlank()) continue;
+        JsonNode event;
+        try {
+          event = json.readTree(line);
+        } catch (IOException ex) {
+          log.debug("Linha não JSON ignorada na telemetria BPM de Psique. output={}", output, ex);
+          continue;
+        }
+        JsonNode usage = event.path("usage");
+        if (!usage.isObject()) continue;
+        Long measuredInput = tokenValue(usage, "input_tokens", "inputTokens");
+        Long measuredOutput = tokenValue(usage, "output_tokens", "outputTokens");
+        Long measuredCache = tokenValue(usage, "cached_input_tokens", "cachedInputTokens");
+        if (measuredCache == null) {
+          measuredCache =
+              tokenValue(usage.path("input_tokens_details"), "cached_tokens", "cachedTokens");
+        }
+        if (measuredInput != null || measuredOutput != null || measuredCache != null) {
+          informed = true;
+          input = Math.max(input, measuredInput == null ? 0 : measuredInput);
+          cached = Math.max(cached, measuredCache == null ? 0 : measuredCache);
+          outputTokens = Math.max(outputTokens, measuredOutput == null ? 0 : measuredOutput);
+        }
+      }
+    } catch (IOException ex) {
+      log.warn("Falha ao ler tokens da tarefa BPM de Psique. output={}", output, ex);
+      return TokenUsage.empty();
+    }
+    return informed ? new TokenUsage(input, cached, outputTokens) : TokenUsage.empty();
+  }
+
+  /** Lê um contador oficial ou seu alias sem inventar valor ausente. */
+  private static Long tokenValue(JsonNode usage, String officialName, String alias) {
+    JsonNode value = usage.hasNonNull(officialName) ? usage.get(officialName) : usage.get(alias);
+    return value != null && value.isNumber() ? value.longValue() : null;
+  }
+
+  /** Monta a falha preservando o consumo ocorrido antes do bloqueio. */
+  private Map<String, Object> failureBody(String error, TokenUsage usage) {
+    Map<String, Object> body = new HashMap<>();
+    body.put("error", error);
+    putModelUsage(body, usage);
+    return body;
+  }
+
+  /** Acrescenta ao callback somente uma medição real informada pelo Codex. */
+  private void putModelUsage(Map<String, Object> body, TokenUsage usage) {
+    if (usage == null || !usage.informed()) return;
+    body.put(
+        "modelUsages",
+        List.of(
+            Map.of(
+                "modelCode", model,
+                "serviceTier", "STANDARD",
+                "inputTokens", usage.inputTokens(),
+                "cachedInputTokens", usage.cachedInputTokens(),
+                "outputTokens", usage.outputTokens())));
   }
 
   /** Extrai o identificador estável da tarefa reservada. */
@@ -250,4 +348,42 @@ public class CustomerBpmTaskConsumer {
 
   /** Define uma fronteira BPM suportada pelo executor de Psique. */
   private record BpmContract(String processCode, String activityId) {}
+
+  /** Preserva o resultado funcional junto do consumo da mesma execução. */
+  record BpmExecution(JsonNode result, TokenUsage usage) {}
+
+  /** Representa contadores reais cumulativos informados pelo processo Codex. */
+  record TokenUsage(Long inputTokens, Long cachedInputTokens, Long outputTokens) {
+    /** Indica se a execução informou ao menos os contadores canônicos. */
+    boolean informed() {
+      return inputTokens != null || cachedInputTokens != null || outputTokens != null;
+    }
+
+    /** Representa execução sem medição disponível. */
+    static TokenUsage empty() {
+      return new TokenUsage(null, null, null);
+    }
+  }
+
+  /** Preserva tokens mesmo quando a execução técnica termina em falha. */
+  private static final class BpmExecutionException extends IllegalStateException {
+    private final TokenUsage usage;
+
+    /** Cria a falha técnica com a última medição conhecida. */
+    private BpmExecutionException(String message, TokenUsage usage) {
+      super(message);
+      this.usage = usage;
+    }
+
+    /** Cria a falha técnica mantendo também sua causa original. */
+    private BpmExecutionException(String message, TokenUsage usage, Throwable cause) {
+      super(message, cause);
+      this.usage = usage;
+    }
+
+    /** Retorna a medição preservada para o callback de falha. */
+    private TokenUsage usage() {
+      return usage;
+    }
+  }
 }

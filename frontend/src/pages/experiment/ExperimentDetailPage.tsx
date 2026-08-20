@@ -70,6 +70,7 @@ function formatPipelineStageModel(stageModel?: GeraLandingStageModel) {
 
 export const experimentDetailTabs = [
   { value: "construction", label: "Construção", manualOnly: true },
+  { value: "execucao", label: "Execução" },
   { value: "funnel", label: "Funil de vendas" },
   { value: "history", label: "Histórico" },
   { value: "process", label: "Processo" },

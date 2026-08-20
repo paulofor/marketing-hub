@@ -33,6 +33,12 @@ grep -Fq 'MCP_BACKEND_RECOVERY_CONTAINER: ${MCP_BACKEND_RECOVERY_CONTAINER:-mark
 grep -Fq 'MCP_BACKEND_RECOVERY_HEALTH_URL: ${MCP_BACKEND_RECOVERY_HEALTH_URL:-http://191.252.181.168/ops-mh-observability-v2/health}' docker-compose.mcp.yml
 grep -Fq 'JAVA_OPTS: ${BACKEND_JAVA_OPTS:--XX:InitialRAMPercentage=25 -XX:MaxRAMPercentage=60 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/logs/backend-oom.hprof}' docker-compose.yml
 
+if ! grep -Fq 'CMD curl -fsS --connect-timeout 2 --max-time 4 http://127.0.0.1:8000/ops-mh-observability-v2/health || exit 1' \
+  ../backend/ads-service/Dockerfile; then
+  echo "[CONTRATO] O healthcheck do backend deve encerrar probes lentos antes do próximo intervalo." >&2
+  exit 1
+fi
+
 if grep -q 'docker compose up' bin/apply-video-only.sh; then
   echo "[CONTRATO] apply-video-only.sh deve informar explicitamente docker-compose.video.yml." >&2
   exit 1

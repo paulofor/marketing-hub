@@ -41,12 +41,14 @@ objetivo não conclui o processo.
 **Objetivo final:** comprovar que existe uma dor recorrente, relevante, mal atendida e com intenção
 de compra, para a qual uma experiência digital simples pode gerar valor percebido.
 
-**Entrada mínima:** sinais de mercado, linguagem do público, reclamações, buscas, concorrentes e
-alternativas existentes.
+**Entrada mínima:** sinais de mercado, linguagem do público, conversas ou pedidos espontâneos,
+reclamações, buscas, concorrentes e alternativas existentes. Uma história individual inicia pesquisa,
+mas não comprova sozinha uma oportunidade.
 
 **Trabalho essencial:**
 
 - identificar público e cena concreta da dor;
+- capturar e anonimizar a fala observada, separando desejo, dor, tentativa frustrada e inferências;
 - comprovar escala e recorrência por fontes independentes;
 - entender por que as soluções atuais não satisfazem;
 - propor uma microexperiência de valor e um mecanismo plausível;
@@ -56,6 +58,8 @@ alternativas existentes.
 formato PDE recomendado, risco principal e decisão `APROVAR`, `PESQUISAR MAIS` ou `REJEITAR`.
 
 **Gate para avançar:** somente oportunidade `APROVADA`, sem evidência fabricada e com encaixe PDE.
+Pedido espontâneo ou conversa individual deve permanecer como `SINAL`, até ser confirmado por pelo
+menos dois caminhos independentes de recorrência, desatendimento e intenção de compra.
 
 ## 2. Plano comercial e desenho da oferta PDE
 
@@ -190,6 +194,18 @@ assets produzidos, tarefas concluídas ou impacto estimado não contam como vend
 | Homologação e ativação         | Processo publicado                            | Reutilizar e adaptar gates específicos de PDE quando necessário          |
 | Venda, entrega e decisão       | Processos publicados                          | Reutilizar operação/otimização e venda/entrega/satisfação                |
 
+## Entrada transversal — pessoas que não conseguem construir seus agentes
+
+Tentativas frustradas de usar agentes de IA no trabalho formam uma classe transversal de sinais, não
+um nicho automaticamente aprovado. O caso observado deve entrar no motor definido em
+`docs/canonical/solucoes-prontas-ia-trabalho-canon.v1.md`, que agrupa sinais pelo trabalho desejado e
+pela causa do fracasso antes de escolher profissão, segmento ou formato de solução.
+
+Quando o formato aprovado for PDE, o dossiê resultante entra nesta cadeia. Quando outro formato
+reduzir melhor o esforço — como agente pronto, automação gerenciada ou serviço assistido — o Marketing
+Hub deve preservar os mesmos gates de produto, comunicação, homologação, venda, entrega e aprendizado
+sem forçar uma classificação PDE.
+
 ## Regras de operação inicial
 
 - Um Plano Comercial governa a cadeia e mantém objetivo, prazo, orçamento, versão e métrica.
@@ -197,7 +213,11 @@ assets produzidos, tarefas concluídas ou impacto estimado não contam como vend
 - O backend controla avanço e persistência; agentes e workers executam atividades e reportam
   resultados.
 - Retrabalho retorna à causa reprovada, sem reiniciar toda a cadeia.
+- Venda, primeiro resultado útil e satisfação realimentam continuamente a descoberta; a cadeia não
+  termina em um relatório passivo.
 - Produto, oferta, experiência, criativos e destino preservam versões e linhagem.
+- Sinais humanos preservam a linhagem entre fala observada, dossiê, Plano Comercial, PDE,
+  comunicação, experimento e venda, sem expor dados pessoais desnecessários.
 - Aprovação de produto não autoriza campanha; aprovação técnica não autoriza gasto.
 - Na primeira versão, evitar subprocessos adicionais enquanto uma falha recorrente não demonstrar a
   necessidade de separação.

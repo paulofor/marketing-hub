@@ -1,0 +1,319 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-20-business-process-value-chains-1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE business_process_chain_definition (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                chain_code VARCHAR(100) NOT NULL,
+                name VARCHAR(160) NOT NULL,
+                purpose TEXT NOT NULL,
+                outcome_description VARCHAR(500) NOT NULL,
+                primary_metric VARCHAR(200) NOT NULL,
+                version_number INT NOT NULL,
+                status VARCHAR(20) NOT NULL,
+                created_at DATETIME NOT NULL,
+                published_at DATETIME NULL,
+                PRIMARY KEY (id),
+                CONSTRAINT uk_business_process_chain_code_version UNIQUE (chain_code, version_number),
+                INDEX idx_business_process_chain_status (chain_code, status)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              CREATE TABLE business_process_chain_item (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                chain_definition_id BIGINT NOT NULL,
+                process_definition_id BIGINT NOT NULL,
+                sequence_number INT NOT NULL,
+                value_contribution VARCHAR(500) NOT NULL,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                CONSTRAINT uk_business_process_chain_sequence UNIQUE (chain_definition_id, sequence_number),
+                CONSTRAINT uk_business_process_chain_process UNIQUE (chain_definition_id, process_definition_id),
+                CONSTRAINT fk_business_process_chain_item_chain FOREIGN KEY (chain_definition_id) REFERENCES business_process_chain_definition(id),
+                CONSTRAINT fk_business_process_chain_item_process FOREIGN KEY (process_definition_id) REFERENCES business_process_definition(id),
+                INDEX idx_business_process_chain_item_process (process_definition_id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+  - changeSet:
+      id: 2026-08-20-business-process-value-chains-2
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description, version_number, status, technical_reference, diagram_json, created_at, published_at)
+              SELECT
+                'pde-opportunity-discovery',
+                'Descoberta e priorização da oportunidade PDE',
+                'Comprovar uma dor relevante, recorrente e mal atendida que possa ser transformada em uma experiência digital desejada e vendável.',
+                'Inteligência de Mercado',
+                'Sinais reais de dor, busca, reclamação, alternativa ou intenção de compra.',
+                'Oportunidade PDE aprovada, rejeitada ou devolvida para pesquisa com evidências, público, dor raiz, encaixe da experiência e risco principal.',
+                1,
+                'PUBLISHED',
+                'descoberta-produtos-pde-canon.v1 / dossiê de oportunidade',
+                '{"nodes":[{"id":"start","type":"START","label":"Sinais de oportunidade recebidos","owner":"Backend","description":"Evidências de mercado iniciam a análise."},{"id":"evidence","type":"TASK","label":"Comprovar dor e demanda","owner":"Argos","description":"Reúne linguagem, recorrência, alternativas e intenção de compra."},{"id":"compare","type":"TASK","label":"Comparar oportunidades","owner":"Dédalo","description":"Prioriza valor, viabilidade e encaixe PDE."},{"id":"customer","type":"TASK","label":"Validar valor percebido","owner":"Psique","description":"Avalia relevância, desejo e esforço percebido."},{"id":"gate","type":"GATEWAY","label":"Oportunidade aprovada?","owner":"Backend","description":"Registra APROVAR, PESQUISAR MAIS ou REJEITAR."},{"id":"end","type":"END","label":"Decisão de oportunidade registrada","owner":"Backend","description":"Dossiê auditável encerra o processo."}],"flows":[{"from":"start","to":"evidence"},{"from":"evidence","to":"compare"},{"from":"compare","to":"customer"},{"from":"customer","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'pde-opportunity-discovery' AND version_number = 1
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description, version_number, status, technical_reference, diagram_json, created_at, published_at)
+              SELECT
+                'pde-commercial-plan-offer',
+                'Plano Comercial e desenho da oferta PDE',
+                'Transformar a oportunidade aprovada em uma oferta única, mensurável, financeiramente limitada e orientada a valor para a cliente.',
+                'Planejamento Comercial',
+                'Dossiê de oportunidade PDE aprovado.',
+                'Plano Comercial aprovado com público, transformação, experiência, oferta, preço, canal, orçamento, métricas e critérios de decisão.',
+                1,
+                'PUBLISHED',
+                'Plano Comercial / EPM / Framework Dor-Resultado-Mecanismo-Prova-Oferta',
+                '{"nodes":[{"id":"start","type":"START","label":"Oportunidade aprovada","owner":"Backend","description":"Dossiê válido inicia o desenho comercial."},{"id":"positioning","type":"TASK","label":"Definir público, dor e transformação","owner":"Dédalo","description":"Consolida a tese comercial central."},{"id":"experience","type":"TASK","label":"Desenhar experiência e oferta","owner":"Dédalo","description":"Define entrada, jornada, entrega, preço e CTA."},{"id":"economics","type":"TASK","label":"Limitar orçamento e métricas","owner":"Plutus","description":"Registra teto, prazo e critérios de continuar, ajustar e parar."},{"id":"review","type":"TASK","label":"Revisar valor e risco comercial","owner":"Psique e Têmis","description":"Valida desejo, clareza, fidelidade e compliance."},{"id":"gate","type":"GATEWAY","label":"Plano Comercial aprovado?","owner":"Backend","description":"Somente plano completo pode orientar produção."},{"id":"end","type":"END","label":"Plano Comercial vigente","owner":"Backend","description":"Versão aprovada governa produto e comunicação."}],"flows":[{"from":"start","to":"positioning"},{"from":"positioning","to":"experience"},{"from":"experience","to":"economics"},{"from":"economics","to":"review"},{"from":"review","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'pde-commercial-plan-offer' AND version_number = 1
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description, version_number, status, technical_reference, diagram_json, created_at, published_at)
+              SELECT
+                'pde-construction-approval',
+                'Construção e aprovação do PDE',
+                'Construir a experiência completa que conduz a cliente da entrada ao resultado prático prometido com facilidade e qualidade premium.',
+                'Operação de Produto',
+                'Plano Comercial e contrato funcional do PDE aprovados.',
+                'Versão canônica do PDE acessível, utilizável, íntegra, aprovada e pronta para venda, com conteúdo, progresso e entregáveis versionados.',
+                1,
+                'PUBLISHED',
+                'PDE Platform / product-manufacturing-approval',
+                '{"nodes":[{"id":"start","type":"START","label":"Contrato funcional aprovado","owner":"Backend","description":"A versão do plano define o produto a construir."},{"id":"journey","type":"TASK","label":"Construir jornada de valor","owner":"Operação de Produto","description":"Materializa diagnóstico, etapas, ações e progresso."},{"id":"deliverables","type":"TASK","label":"Produzir entregáveis premium","owner":"Têmis e executores de produto","description":"Cria conteúdos, imagens, vídeos e arquivos finais."},{"id":"access","type":"TASK","label":"Implementar acesso e continuidade","owner":"PDE Platform","description":"Garante entrada, retomada, erros e suporte mínimo."},{"id":"review","type":"TASK","label":"Revisar experiência completa","owner":"Psique e revisão independente","description":"Valida utilidade, facilidade, integridade e fidelidade."},{"id":"gate","type":"GATEWAY","label":"PDE aprovado?","owner":"Backend","description":"Bloqueia placeholder, ativo em rascunho ou dependência manual oculta."},{"id":"end","type":"END","label":"PDE canônico pronto para venda","owner":"Backend","description":"Versão comercial rastreável fica congelada."}],"flows":[{"from":"start","to":"journey"},{"from":"journey","to":"deliverables"},{"from":"deliverables","to":"access"},{"from":"access","to":"review"},{"from":"review","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'pde-construction-approval' AND version_number = 1
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description, version_number, status, technical_reference, diagram_json, created_at, published_at)
+              SELECT
+                'pde-communication-sales-journey',
+                'Comunicação e jornada de venda do PDE',
+                'Transformar o produto real em comunicação eficaz e em uma rota coerente entre descoberta, demonstração, oferta, compra e acesso.',
+                'Operação de Experimentos',
+                'PDE canônico aprovado e Plano Comercial vigente.',
+                'Kit comercial aprovado com criativos, destino, oferta, checkout, acesso e eventos coerentes, sem ativação automática de mídia.',
+                1,
+                'PUBLISHED',
+                'creative-production-approval / landing-page-generation',
+                '{"nodes":[{"id":"start","type":"START","label":"PDE aprovado","owner":"Backend","description":"Produto real e plano vigente orientam a comunicação."},{"id":"message","type":"TASK","label":"Definir mensagem e campanha","owner":"Têmis","description":"Escolhe ângulos, prova e continuidade de promessa."},{"id":"creative","type":"TASK","label":"Criar e aprovar criativos","owner":"Têmis e Psique","description":"Usa produto real com revisão independente."},{"id":"destination","type":"TASK","label":"Construir destino de venda","owner":"Dédalo","description":"Materializa landing ou microexperiência pública."},{"id":"checkout","type":"TASK","label":"Conectar oferta, checkout e acesso","owner":"Backend","description":"Preserva continuidade até a entrega."},{"id":"tracking","type":"TASK","label":"Instrumentar a jornada","owner":"Backend","description":"Registra visita, valor, CTA, checkout, compra e primeiro uso."},{"id":"gate","type":"GATEWAY","label":"Jornada comercial aprovada?","owner":"Backend","description":"Exige correspondência entre promessa, produto e entrega."},{"id":"end","type":"END","label":"Comunicação pronta para homologação","owner":"Backend","description":"Ativos e contratos ficam prontos sem gerar gasto."}],"flows":[{"from":"start","to":"message"},{"from":"message","to":"creative"},{"from":"creative","to":"destination"},{"from":"destination","to":"checkout"},{"from":"checkout","to":"tracking"},{"from":"tracking","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'pde-communication-sales-journey' AND version_number = 1
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description, version_number, status, technical_reference, diagram_json, created_at, published_at)
+              SELECT
+                'pde-commercial-homologation-activation',
+                'Homologação e ativação comercial do PDE',
+                'Comprovar que produto, venda, entrega e mensuração funcionam ponta a ponta antes de liberar tráfego e orçamento.',
+                'Operação de Experimentos',
+                'PDE e kit comercial aprovados.',
+                'Preflight aprovado e experimento apto a RUNNING, ou bloqueio persistido com causa-raiz e ação corretiva explícitas.',
+                1,
+                'PUBLISHED',
+                'experiment-homologation-activation / experiment-runs',
+                '{"nodes":[{"id":"start","type":"START","label":"Produto e kit comercial aprovados","owner":"Backend","description":"Versões exatas iniciam a homologação."},{"id":"devices","type":"TASK","label":"Validar desktop e mobile","owner":"Quality Review","description":"Verifica mensagem, usabilidade, CTA e continuidade."},{"id":"purchase","type":"TASK","label":"Executar compra de teste segregada","owner":"Operação","description":"Comprova checkout e pagamento sem contaminar vendas."},{"id":"delivery","type":"TASK","label":"Comprovar acesso e entrega","owner":"Operação","description":"Valida mensagem, conteúdo íntegro e primeiro uso."},{"id":"events","type":"TASK","label":"Validar eventos e observabilidade","owner":"Backend","description":"Confirma atribuição, métricas, orçamento e alertas."},{"id":"gate","type":"GATEWAY","label":"Todos os gates estão verdes?","owner":"Backend","description":"Somente evidências persistidas permitem ativação."},{"id":"end","type":"END","label":"Decisão de ativação registrada","owner":"Backend","description":"Aprova RUNNING ou bloqueia com causa e ação."}],"flows":[{"from":"start","to":"devices"},{"from":"devices","to":"purchase"},{"from":"purchase","to":"delivery"},{"from":"delivery","to":"events"},{"from":"events","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'pde-commercial-homologation-activation' AND version_number = 1
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description, version_number, status, technical_reference, diagram_json, created_at, published_at)
+              SELECT
+                'pde-sales-delivery-learning',
+                'Venda, entrega e aprendizado do PDE',
+                'Gerar vendas reais com entrega satisfatória e converter comportamento da cliente em decisão segura de continuar, ajustar, escalar ou parar.',
+                'Operador de Crescimento',
+                'Ativação autorizada com orçamento e critérios de decisão vigentes.',
+                'Ciclo comercial com vendas, receita, entrega e satisfação auditadas, aprendizado válido e decisão objetiva de continuidade ou escala.',
+                1,
+                'PUBLISHED',
+                'venda-entrega-satisfacao-cliente / operacao-otimizacao-experimento',
+                '{"nodes":[{"id":"start","type":"START","label":"Ativação autorizada","owner":"Backend","description":"Orçamento e regras de parada iniciam o ciclo."},{"id":"acquisition","type":"TASK","label":"Operar aquisição controlada","owner":"Operador de Crescimento","description":"Gera tráfego dentro do teto autorizado."},{"id":"fulfillment","type":"TASK","label":"Vender e entregar com satisfação","owner":"Operação","description":"Concilia venda, acesso, uso, suporte e reembolso."},{"id":"measure","type":"TASK","label":"Medir funil e valor entregue","owner":"Backend","description":"Calcula receita, CAC, conversão, conclusão e satisfação."},{"id":"learn","type":"TASK","label":"Consolidar aprendizado","owner":"Agentes e Operação","description":"Preserva evidências por público, oferta, criativo e versão."},{"id":"gate","type":"GATEWAY","label":"Qual decisão comercial?","owner":"Backend e operador humano","description":"Registra CONTINUAR, AJUSTAR, ESCALAR ou PARAR."},{"id":"end","type":"END","label":"Ciclo decidido por vendas e entrega","owner":"Backend","description":"Resultado real encerra o ciclo auditável."}],"flows":[{"from":"start","to":"acquisition"},{"from":"acquisition","to":"fulfillment"},{"from":"fulfillment","to":"measure"},{"from":"measure","to":"learn"},{"from":"learn","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'pde-sales-delivery-learning' AND version_number = 1
+              );
+
+  - changeSet:
+      id: 2026-08-20-business-process-value-chains-3
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_chain_definition
+                (chain_code, name, purpose, outcome_description, primary_metric, version_number, status, created_at, published_at)
+              SELECT
+                'pde-value-creation-delivery',
+                'Criação e entrega de valor de Produtos Digitais Experienciais',
+                'Transformar uma oportunidade real em produto incrível, comunicação eficaz, venda, entrega satisfatória e aprendizado para escala.',
+                'Produto Digital Experiencial vendido, entregue com satisfação e convertido em decisão comercial baseada em evidências.',
+                'Tempo até venda entregue com satisfação',
+                1,
+                'PUBLISHED',
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_chain_definition
+                WHERE chain_code = 'pde-value-creation-delivery' AND version_number = 1
+              );
+
+  - changeSet:
+      id: 2026-08-20-business-process-value-chains-4
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_chain_item
+                (chain_definition_id, process_definition_id, sequence_number, value_contribution, created_at)
+              SELECT chain_definition.id, process_definition.id, 1,
+                'Seleciona uma dor real e uma oportunidade com intenção de compra antes de consumir esforço de produção.',
+                UTC_TIMESTAMP()
+              FROM business_process_chain_definition chain_definition
+              JOIN business_process_definition process_definition
+                ON process_definition.process_code = 'pde-opportunity-discovery'
+               AND process_definition.version_number = 1
+              WHERE chain_definition.chain_code = 'pde-value-creation-delivery'
+                AND chain_definition.version_number = 1
+                AND NOT EXISTS (
+                  SELECT 1 FROM business_process_chain_item item
+                  WHERE item.chain_definition_id = chain_definition.id AND item.sequence_number = 1
+                );
+
+              INSERT INTO business_process_chain_item
+                (chain_definition_id, process_definition_id, sequence_number, value_contribution, created_at)
+              SELECT chain_definition.id, process_definition.id, 2,
+                'Transforma a oportunidade em uma oferta clara, desejável, mensurável e limitada financeiramente.',
+                UTC_TIMESTAMP()
+              FROM business_process_chain_definition chain_definition
+              JOIN business_process_definition process_definition
+                ON process_definition.process_code = 'pde-commercial-plan-offer'
+               AND process_definition.version_number = 1
+              WHERE chain_definition.chain_code = 'pde-value-creation-delivery'
+                AND chain_definition.version_number = 1
+                AND NOT EXISTS (
+                  SELECT 1 FROM business_process_chain_item item
+                  WHERE item.chain_definition_id = chain_definition.id AND item.sequence_number = 2
+                );
+
+              INSERT INTO business_process_chain_item
+                (chain_definition_id, process_definition_id, sequence_number, value_contribution, created_at)
+              SELECT chain_definition.id, process_definition.id, 3,
+                'Materializa a transformação prometida em uma experiência funcional, simples e premium.',
+                UTC_TIMESTAMP()
+              FROM business_process_chain_definition chain_definition
+              JOIN business_process_definition process_definition
+                ON process_definition.process_code = 'pde-construction-approval'
+               AND process_definition.version_number = 1
+              WHERE chain_definition.chain_code = 'pde-value-creation-delivery'
+                AND chain_definition.version_number = 1
+                AND NOT EXISTS (
+                  SELECT 1 FROM business_process_chain_item item
+                  WHERE item.chain_definition_id = chain_definition.id AND item.sequence_number = 3
+                );
+
+              INSERT INTO business_process_chain_item
+                (chain_definition_id, process_definition_id, sequence_number, value_contribution, created_at)
+              SELECT chain_definition.id, process_definition.id, 4,
+                'Faz a cliente reconhecer o valor do produto real e avançar sem ruptura até a compra e o acesso.',
+                UTC_TIMESTAMP()
+              FROM business_process_chain_definition chain_definition
+              JOIN business_process_definition process_definition
+                ON process_definition.process_code = 'pde-communication-sales-journey'
+               AND process_definition.version_number = 1
+              WHERE chain_definition.chain_code = 'pde-value-creation-delivery'
+                AND chain_definition.version_number = 1
+                AND NOT EXISTS (
+                  SELECT 1 FROM business_process_chain_item item
+                  WHERE item.chain_definition_id = chain_definition.id AND item.sequence_number = 4
+                );
+
+              INSERT INTO business_process_chain_item
+                (chain_definition_id, process_definition_id, sequence_number, value_contribution, created_at)
+              SELECT chain_definition.id, process_definition.id, 5,
+                'Protege receita e cliente ao comprovar compra, acesso, entrega e mensuração antes de liberar tráfego.',
+                UTC_TIMESTAMP()
+              FROM business_process_chain_definition chain_definition
+              JOIN business_process_definition process_definition
+                ON process_definition.process_code = 'pde-commercial-homologation-activation'
+               AND process_definition.version_number = 1
+              WHERE chain_definition.chain_code = 'pde-value-creation-delivery'
+                AND chain_definition.version_number = 1
+                AND NOT EXISTS (
+                  SELECT 1 FROM business_process_chain_item item
+                  WHERE item.chain_definition_id = chain_definition.id AND item.sequence_number = 5
+                );
+
+              INSERT INTO business_process_chain_item
+                (chain_definition_id, process_definition_id, sequence_number, value_contribution, created_at)
+              SELECT chain_definition.id, process_definition.id, 6,
+                'Converte vendas, uso, satisfação e margem em aprendizado para continuar, ajustar, escalar ou parar.',
+                UTC_TIMESTAMP()
+              FROM business_process_chain_definition chain_definition
+              JOIN business_process_definition process_definition
+                ON process_definition.process_code = 'pde-sales-delivery-learning'
+               AND process_definition.version_number = 1
+              WHERE chain_definition.chain_code = 'pde-value-creation-delivery'
+                AND chain_definition.version_number = 1
+                AND NOT EXISTS (
+                  SELECT 1 FROM business_process_chain_item item
+                  WHERE item.chain_definition_id = chain_definition.id AND item.sequence_number = 6
+                );

@@ -202,6 +202,22 @@ assets produzidos, tarefas concluídas ou impacto estimado não contam como vend
 - Na primeira versão, evitar subprocessos adicionais enquanto uma falha recorrente não demonstrar a
   necessidade de separação.
 
+## Organização no Marketing Hub
+
+A cadeia de valor é uma entidade própria, versionada e diferente de um processo BPM. Ela organiza
+processos publicados na ordem em que criam e entregam valor, sem executar tarefas e sem substituir o
+controle operacional do backend.
+
+A tela canônica de leitura é `/business-process-chains` e a API é
+`/api/business-process-chains`. O detalhe da cadeia deve mostrar, para cada processo, sua versão
+exata, objetivo, resultado final e contribuição de valor. Uma nova versão de processo não altera uma
+cadeia publicada; a adoção exige uma nova versão da cadeia, preservando auditoria e reprodutibilidade.
+
+A cadeia inicial `pde-value-creation-delivery` usa os seis macroprocessos deste cânone. Processos
+especializados, como fabricação de entregáveis, criativos, landing, homologação de experimento e
+operação de venda, continuam referenciados dentro dos macroprocessos e não são duplicados como uma
+segunda orquestração.
+
 ## Métricas da cadeia
 
 A cadeia deve permitir medir, no mínimo:

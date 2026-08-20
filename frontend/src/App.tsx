@@ -97,6 +97,7 @@ import ActiveAgentTasksPage from "./pages/agent/ActiveAgentTasksPage";
 import AgentThemePage from "./pages/agent/AgentThemePage";
 import SystemImprovementsPage from "./pages/systemImprovement/SystemImprovementsPage";
 import BusinessProcessesPage from "./pages/businessProcess/BusinessProcessesPage";
+import BusinessProcessChainsPage from "./pages/businessProcessChain/BusinessProcessChainsPage";
 import AgentLearningDashboardPage from "./pages/agentLearning/AgentLearningDashboardPage";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -428,6 +429,10 @@ export default function App() {
               <Route
                 path="/business-processes"
                 element={<BusinessProcessesPage />}
+              />
+              <Route
+                path="/business-process-chains"
+                element={<BusinessProcessChainsPage />}
               />
               <Route path="/agents/personas" element={<PersonaLibraryPage />} />
               <Route path="/agents/new" element={<NewAgentPage />} />

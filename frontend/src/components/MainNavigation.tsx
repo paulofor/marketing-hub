@@ -247,9 +247,14 @@ const NAV_SECTIONS: NavSection[] = [
         icon: ClipboardCheck,
       },
       {
+        to: "/business-process-chains",
+        label: "Cadeias de valor",
+        icon: Workflow,
+      },
+      {
         to: "/business-processes",
         label: "Processos",
-        icon: Workflow,
+        icon: List,
       },
       {
         to: "/whatsapp",

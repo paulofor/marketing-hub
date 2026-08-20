@@ -16,6 +16,12 @@ Para Produtos Digitais Experienciais, a organização macro dos processos deve s
 fabricação de entregáveis, criativos, landing, homologação e venda, são reutilizados dentro dessa
 cadeia e não devem ser confundidos isoladamente com o ciclo completo de criação e venda de um PDE.
 
+Processos podem ser organizados em cadeias de criação e entrega de valor. A cadeia é versionada,
+preserva as versões exatas dos processos participantes e possui objetivo, resultado e métrica
+principal próprios. Ela serve à visão gerencial e não executa, agenda ou avança etapas. A tela
+canônica é `/business-process-chains` e seu contrato de leitura é
+`/api/business-process-chains`.
+
 ## Governança BPM
 
 - Cada processo possui código estável e versões imutáveis depois de publicadas.

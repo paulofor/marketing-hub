@@ -1,0 +1,125 @@
+.business-process-chain-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 310px) minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.business-process-chain-layout > * {
+  min-width: 0;
+}
+
+.business-process-chain-list {
+  align-self: start;
+  position: sticky;
+  top: 1rem;
+}
+
+.business-process-chain-summary {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr minmax(130px, 0.5fr);
+  gap: 0.75rem;
+}
+
+.business-process-chain-summary > div,
+.business-process-chain-process-grid > div {
+  padding: 0.85rem;
+  border-radius: 0.7rem;
+  background: var(--bs-tertiary-bg);
+}
+
+.business-process-chain-summary strong,
+.business-process-chain-summary span,
+.business-process-chain-process-grid strong,
+.business-process-chain-process-grid span {
+  display: block;
+}
+
+.business-process-chain-summary span,
+.business-process-chain-process-grid span {
+  margin-top: 0.3rem;
+  font-size: 0.875rem;
+}
+
+.business-process-chain-processes {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.business-process-chain-processes > li {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  gap: 0.75rem;
+  position: relative;
+  padding-bottom: 1rem;
+}
+
+.business-process-chain-processes > li:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 1.34rem;
+  top: 2.5rem;
+  bottom: -0.1rem;
+  width: 2px;
+  background: var(--bs-border-color);
+}
+
+.business-process-chain-order {
+  position: relative;
+  z-index: 1;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--bs-primary);
+  color: white;
+  font-weight: 700;
+}
+
+.business-process-chain-process {
+  min-width: 0;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.8rem;
+  padding: 1rem;
+  background: var(--bs-body-bg);
+}
+
+.business-process-chain-process-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 767px) {
+  .business-process-chain-layout,
+  .business-process-chain-summary,
+  .business-process-chain-process-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .business-process-chain-list {
+    position: static;
+  }
+
+  .business-process-chain-processes > li {
+    grid-template-columns: 2.25rem minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+
+  .business-process-chain-order {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .business-process-chain-processes > li:not(:last-child)::before {
+    left: 1.08rem;
+    top: 2rem;
+  }
+
+  .business-process-chain-process {
+    padding: 0.85rem;
+  }
+}

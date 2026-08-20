@@ -1,0 +1,132 @@
+openapi: 3.0.3
+info:
+  title: Cadeias de processos de valor
+  version: 1.0.0
+  description: Leitura versionada das cadeias e dos processos que criam e entregam valor.
+paths:
+  /api/business-process-chains:
+    get:
+      summary: Lista as cadeias de processos
+      operationId: listBusinessProcessChains
+      responses:
+        "200":
+          description: Cadeias cadastradas com contagem oficial de processos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BusinessProcessChainSummary"
+  /api/business-process-chains/{id}:
+    get:
+      summary: Exibe os processos de uma cadeia em ordem de valor
+      operationId: getBusinessProcessChain
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Cadeia e versões exatas dos processos participantes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusinessProcessChainDetail"
+        "404":
+          description: Cadeia não encontrada
+components:
+  schemas:
+    BusinessProcessChainSummary:
+      type: object
+      required:
+        - id
+        - chainCode
+        - name
+        - purpose
+        - outcomeDescription
+        - primaryMetric
+        - versionNumber
+        - status
+        - processCount
+      properties:
+        id:
+          type: integer
+          format: int64
+        chainCode:
+          type: string
+        name:
+          type: string
+        purpose:
+          type: string
+        outcomeDescription:
+          type: string
+        primaryMetric:
+          type: string
+        versionNumber:
+          type: integer
+        status:
+          type: string
+          enum: [DRAFT, PUBLISHED, RETIRED]
+        processCount:
+          type: integer
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+    BusinessProcessChainDetail:
+      allOf:
+        - $ref: "#/components/schemas/BusinessProcessChainSummary"
+        - type: object
+          required:
+            - createdAt
+            - processes
+          properties:
+            createdAt:
+              type: string
+              format: date-time
+            processes:
+              type: array
+              items:
+                $ref: "#/components/schemas/BusinessProcessChainProcess"
+    BusinessProcessChainProcess:
+      type: object
+      required:
+        - sequenceNumber
+        - valueContribution
+        - processDefinitionId
+        - processCode
+        - name
+        - purpose
+        - ownerName
+        - triggerDescription
+        - outcomeDescription
+        - versionNumber
+        - status
+      properties:
+        sequenceNumber:
+          type: integer
+        valueContribution:
+          type: string
+        processDefinitionId:
+          type: integer
+          format: int64
+        processCode:
+          type: string
+        name:
+          type: string
+        purpose:
+          type: string
+        ownerName:
+          type: string
+        triggerDescription:
+          type: string
+        outcomeDescription:
+          type: string
+        versionNumber:
+          type: integer
+        status:
+          type: string
+          enum: [DRAFT, PUBLISHED, RETIRED]

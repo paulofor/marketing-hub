@@ -94,6 +94,12 @@ linguagem valiosa incluem "queria um desses", "preciso conseguir...", "tentei fa
 Uma conversa individual nao comprova escala, mercado ou disposicao de pagar. Ela abre uma hipotese de
 investigacao e nunca pode aprovar sozinha uma oportunidade, um Plano Comercial ou uma campanha.
 
+Quando o relato descreve uma tentativa frustrada de criar ou operar um agente de IA, a profissão da
+pessoa é contexto, não definição automática do mercado. O primeiro agrupamento deve considerar o
+trabalho que ela queria concluir, a entrada disponível, o resultado esperado e o ponto em que travou.
+Somente evidências posteriores podem definir segmento, formato de solução e encaixe PDE. A regra
+transversal está em `docs/canonical/solucoes-prontas-ia-trabalho-canon.v1.md`.
+
 Conteudo de solucao deve ser usado para medir saturacao e lacuna, nao como prova direta
 da dor. A prova da dor deve vir preferencialmente da linguagem do publico.
 
@@ -160,6 +166,11 @@ Para evitar complexidade prematura, o processo inicial deve seguir cinco movimen
 O produto e a comunicacao nao podem avancar diretamente da conversa individual. A saida de
 `Capturar` e `Estruturar` e uma hipotese pesquisavel; a saida de `Confirmar` e que pode se tornar um
 dossie de oportunidade.
+
+O processo não deve saltar de “uma profissional tentou criar um agente” para “criar um produto para a
+profissão dessa pessoa”. Antes, deve procurar outras situações com o mesmo trabalho, a mesma causa de
+fracasso ou o mesmo resultado desejado. A oportunidade aprovada pode escolher um segmento inicial,
+mas deve preservar a diferença entre evidência observada e decisão de posicionamento.
 
 ## Busca dedicada
 

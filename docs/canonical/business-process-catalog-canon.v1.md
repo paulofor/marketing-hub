@@ -33,7 +33,9 @@ Processos podem ser organizados em cadeias de criação e entrega de valor. A ca
 preserva as versões exatas dos processos participantes e possui objetivo, resultado e métrica
 principal próprios. Ela serve à visão gerencial e não executa, agenda ou avança etapas. A tela
 canônica é `/business-process-chains` e seu contrato de leitura é
-`/api/business-process-chains`.
+`/api/business-process-chains`. Quando uma versão de processo pertencer a uma ou mais cadeias, o
+detalhe em `/business-processes` deve mostrar cada cadeia e oferecer link direto para sua versão. A
+consulta reversa canônica é `GET /api/business-process-chains/by-process/{processDefinitionId}`.
 
 ## Governança BPM
 

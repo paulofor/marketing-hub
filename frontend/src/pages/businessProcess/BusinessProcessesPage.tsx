@@ -1,5 +1,5 @@
 import { FormEvent, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   useBusinessProcesses,
@@ -13,6 +13,7 @@ import type {
   BusinessProcess,
   ProcessDiagram,
 } from "../../api/businessProcess/types";
+import { useBusinessProcessChainsByProcess } from "../../api/businessProcessChain/useBusinessProcessChains";
 import PageTitle from "../../components/PageTitle";
 import BusinessProcessDiagram from "./BusinessProcessDiagram";
 import BusinessProcessEditor from "./BusinessProcessEditor";
@@ -76,6 +77,7 @@ export default function BusinessProcessesPage() {
       processes[0],
     [processes, selectedId],
   );
+  const processChainsQuery = useBusinessProcessChainsByProcess(selected?.id);
 
   const selectProcess = (id?: number) => {
     const next = new URLSearchParams(searchParams);
@@ -356,6 +358,25 @@ export default function BusinessProcessesPage() {
                           ? ` · Contrato: ${selected.technicalReference}`
                           : ""}
                       </div>
+                      {(processChainsQuery.data?.length ?? 0) > 0 ? (
+                        <div
+                          className="business-process-chains mt-3"
+                          aria-label="Cadeias de valor deste processo"
+                        >
+                          <strong className="small">Cadeia de valor</strong>
+                          <div className="d-flex flex-wrap gap-2 mt-1">
+                            {processChainsQuery.data?.map((chain) => (
+                              <Link
+                                key={chain.id}
+                                className="btn btn-sm btn-outline-primary"
+                                to={`/business-process-chains?chainId=${chain.id}`}
+                              >
+                                {chain.name} · v{chain.versionNumber}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                     <div className="d-flex gap-2 align-self-start">
                       <button

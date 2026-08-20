@@ -30,6 +30,14 @@ public class BusinessProcessChainService {
         .toList();
   }
 
+  /** Lista as cadeias às quais pertence uma versão exata de processo. */
+  @Transactional(readOnly = true)
+  public List<BusinessProcessChainSummaryResponse> listChainsByProcess(Long processDefinitionId) {
+    return repository.findByProcessDefinitionId(processDefinitionId).stream()
+        .map(this::summary)
+        .toList();
+  }
+
   /** Exibe a cadeia selecionada com as versões exatas de seus processos em ordem. */
   @Transactional(readOnly = true)
   public BusinessProcessChainDetailResponse getChain(Long id) {

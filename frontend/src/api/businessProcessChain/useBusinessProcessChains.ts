@@ -31,3 +31,18 @@ export function useBusinessProcessChain(id?: number) {
       ).data,
   });
 }
+
+export function useBusinessProcessChainsByProcess(
+  processDefinitionId?: number,
+) {
+  return useQuery({
+    queryKey: [...key, "by-process", processDefinitionId],
+    enabled: processDefinitionId !== undefined,
+    queryFn: async () =>
+      (
+        await axios.get<BusinessProcessChainSummary[]>(
+          `/api/business-process-chains/by-process/${processDefinitionId}`,
+        )
+      ).data,
+  });
+}

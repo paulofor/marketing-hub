@@ -24,14 +24,20 @@ const studio = {
   usageInstructions: "Use o pending do backend.",
 };
 
-function mockCatalog(processes: unknown[], resources: unknown[] = [studio]) {
+function mockCatalog(
+  processes: unknown[],
+  resources: unknown[] = [studio],
+  chains: unknown[] = [],
+) {
   vi.mocked(axios.get).mockImplementation(
     async (url) =>
       ({
         data:
           url === "/api/business-process-execution-resources"
             ? resources
-            : processes,
+            : String(url).startsWith("/api/business-process-chains/by-process/")
+              ? chains
+              : processes,
       }) as never,
   );
 }
@@ -152,6 +158,68 @@ describe("BusinessProcessesPage", () => {
     expect(
       screen.queryByText("Atividade de Descoberta da oportunidade PDE"),
     ).not.toBeInTheDocument();
+  });
+
+  it("mostra a cadeia do processo e abre seu detalhe por link profundo", async () => {
+    mockCatalog(
+      [
+        {
+          id: 22,
+          processCode: "pde-opportunity-discovery",
+          name: "Descoberta e priorização da oportunidade PDE",
+          purpose: "Comprovar uma dor relevante.",
+          ownerName: "Inteligência de Mercado",
+          triggerDescription: "Sinais reais",
+          outcomeDescription: "Oportunidade aprovada",
+          versionNumber: 1,
+          status: "PUBLISHED",
+          createdAt: "2026-08-20T10:00:00Z",
+          publishedAt: "2026-08-20T10:00:00Z",
+          diagram: {
+            nodes: [
+              { id: "start", type: "START", label: "Início" },
+              { id: "end", type: "END", label: "Fim" },
+            ],
+            flows: [{ from: "start", to: "end" }],
+          },
+        },
+      ],
+      [studio],
+      [
+        {
+          id: 4,
+          chainCode: "pde-value-creation-delivery",
+          name: "Criação e entrega de valor PDE",
+          purpose: "Criar valor.",
+          outcomeDescription: "Venda entregue.",
+          primaryMetric: "Tempo até venda entregue com satisfação",
+          versionNumber: 1,
+          status: "PUBLISHED",
+          processCount: 6,
+          publishedAt: "2026-08-20T10:00:00Z",
+        },
+      ],
+    );
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/business-processes?processId=22"]}>
+        <QueryClientProvider client={client}>
+          <BusinessProcessesPage />
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole("link", {
+        name: "Criação e entrega de valor PDE · v1",
+      }),
+    ).toHaveAttribute("href", "/business-process-chains?chainId=4");
+    expect(axios.get).toHaveBeenCalledWith(
+      "/api/business-process-chains/by-process/22",
+    );
   });
 
   it("permite excluir uma versão em rascunho após confirmação", async () => {

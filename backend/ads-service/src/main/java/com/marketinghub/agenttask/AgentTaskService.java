@@ -4,10 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.businessprocessresource.BusinessProcessExecutionResource;
 import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
+import com.marketinghub.repository.jpa.businessprocessresource.BusinessProcessExecutionResourceRepository;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -20,6 +22,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -29,6 +33,7 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: coordenar a caixa de entrada e o ciclo de vida das tarefas dos agentes. */
 @Service
 public class AgentTaskService {
+  private static final Logger log = LoggerFactory.getLogger(AgentTaskService.class);
   private static final Set<String> ALLOWED_TRANSITIONS =
       Set.of(
           "PENDING:IN_PROGRESS",
@@ -42,6 +47,7 @@ public class AgentTaskService {
   private final AgentTaskRepository repository;
   private final AgentRepository agentRepository;
   private final BusinessProcessDefinitionRepository processRepository;
+  private final BusinessProcessExecutionResourceRepository executionResourceRepository;
   private final ObjectMapper objectMapper;
   private final OpenAiPricingService pricingService;
   private final Clock clock;
@@ -52,12 +58,14 @@ public class AgentTaskService {
       AgentTaskRepository repository,
       AgentRepository agentRepository,
       BusinessProcessDefinitionRepository processRepository,
+      BusinessProcessExecutionResourceRepository executionResourceRepository,
       ObjectMapper objectMapper,
       OpenAiPricingService pricingService) {
     this(
         repository,
         agentRepository,
         processRepository,
+        executionResourceRepository,
         objectMapper,
         pricingService,
         Clock.systemUTC());
@@ -70,7 +78,7 @@ public class AgentTaskService {
       BusinessProcessDefinitionRepository processRepository,
       ObjectMapper objectMapper,
       Clock clock) {
-    this(repository, agentRepository, processRepository, objectMapper, null, clock);
+    this(repository, agentRepository, processRepository, null, objectMapper, null, clock);
   }
 
   /** Permite testes determinísticos do custo calculado pelo catálogo. */
@@ -81,9 +89,22 @@ public class AgentTaskService {
       ObjectMapper objectMapper,
       OpenAiPricingService pricingService,
       Clock clock) {
+    this(repository, agentRepository, processRepository, null, objectMapper, pricingService, clock);
+  }
+
+  /** Permite testar recursos especializados e custo com todas as fontes de verdade explícitas. */
+  AgentTaskService(
+      AgentTaskRepository repository,
+      AgentRepository agentRepository,
+      BusinessProcessDefinitionRepository processRepository,
+      BusinessProcessExecutionResourceRepository executionResourceRepository,
+      ObjectMapper objectMapper,
+      OpenAiPricingService pricingService,
+      Clock clock) {
     this.repository = repository;
     this.agentRepository = agentRepository;
     this.processRepository = processRepository;
+    this.executionResourceRepository = executionResourceRepository;
     this.objectMapper = objectMapper;
     this.pricingService = pricingService;
     this.clock = clock;
@@ -515,6 +536,7 @@ public class AgentTaskService {
             throw new ResponseStatusException(
                 HttpStatus.CONFLICT, "A atividade selecionada pertence a outro responsável.");
           }
+          validateExecutionResourceAssignee(node, assignee);
           return new ProcessBinding(
               definition, node.path("id").asText(), node.path("label").asText(), false, null);
         }
@@ -522,10 +544,27 @@ public class AgentTaskService {
     } catch (ResponseStatusException ex) {
       throw ex;
     } catch (Exception ex) {
+      log.error(
+          "Falha ao validar vínculo da tarefa ao processo. processDefinitionId={} activityId={} agentKey={}",
+          request.processDefinitionId(),
+          request.processActivityId(),
+          assignee.getAgentKey(),
+          ex);
       throw new IllegalStateException("Não foi possível validar o processo da tarefa.", ex);
     }
     throw new ResponseStatusException(
         HttpStatus.BAD_REQUEST, "Atividade do processo não encontrada.");
+  }
+
+  /** Impede vincular uma atividade especializada ao agente diferente do catálogo do recurso. */
+  private void validateExecutionResourceAssignee(JsonNode node, Agent assignee) {
+    String resourceCode = trimToNull(node.path("executionResourceCode").asText(null));
+    if (resourceCode == null) return;
+    BusinessProcessExecutionResource resource = requiredExecutionResource(resourceCode);
+    if (!resource.getResponsibleAgentKey().equals(assignee.getAgentKey())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "O recurso especializado pertence a outro agente responsável.");
+    }
   }
 
   /** Mantém os dados validados do vínculo antes da persistência da tarefa. */
@@ -539,13 +578,20 @@ public class AgentTaskService {
   /** Reserva atomicamente a primeira atividade liberada pelo grafo do processo. */
   @Transactional
   public Optional<AgentTaskPendingResponse> claimEligibleProcessTask(String agentKey) {
-    return claimEligibleProcessTask(agentKey, null, null);
+    return claimEligibleProcessTask(agentKey, null, null, null);
   }
 
   /** Reserva somente a atividade suportada pelo executor especializado informado. */
   @Transactional
   public Optional<AgentTaskPendingResponse> claimEligibleProcessTask(
       String agentKey, String processCode, String activityId) {
+    return claimEligibleProcessTask(agentKey, processCode, activityId, null);
+  }
+
+  /** Reserva somente trabalho compatível com processo, atividade e recurso deste executor. */
+  @Transactional
+  public Optional<AgentTaskPendingResponse> claimEligibleProcessTask(
+      String agentKey, String processCode, String activityId, String executionResourceCode) {
     agent(agentKey);
     Optional<AgentTask> alreadyClaimed =
         repository
@@ -553,17 +599,19 @@ public class AgentTaskService {
                 agentKey.trim(), "WORK", "IN_PROGRESS")
             .stream()
             .filter(task -> task.getProcessDefinition() != null)
-            .filter(task -> matchesExecutionContract(task, processCode, activityId))
+            .filter(
+                task ->
+                    matchesExecutionContract(task, processCode, activityId, executionResourceCode))
             .findFirst();
     if (alreadyClaimed.isPresent()) return Optional.of(pendingResponse(alreadyClaimed.get()));
     Optional<AgentTask> recovered =
-        recoverInterruptedCallbackOnce(agentKey, processCode, activityId);
+        recoverInterruptedCallbackOnce(agentKey, processCode, activityId, executionResourceCode);
     if (recovered.isPresent()) return Optional.of(pendingResponse(recovered.get()));
     for (AgentTask task :
         repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
             agentKey.trim(), "WORK", "PENDING")) {
       if (task.getProcessDefinition() == null
-          || !matchesExecutionContract(task, processCode, activityId)
+          || !matchesExecutionContract(task, processCode, activityId, executionResourceCode)
           || !predecessorsCompleted(task)) continue;
       Instant now = Instant.now(clock);
       task.setStatus("IN_PROGRESS");
@@ -577,26 +625,36 @@ public class AgentTaskService {
 
   /** Impede que um prompt especializado reserve atividade de outro processo ou responsabilidade. */
   private boolean matchesExecutionContract(
-      AgentTask task, String expectedProcessCode, String expectedActivityId) {
+      AgentTask task,
+      String expectedProcessCode,
+      String expectedActivityId,
+      String expectedExecutionResourceCode) {
+    String actualResourceCode = activityExecutionResourceCode(task);
+    boolean resourceMatches =
+        expectedExecutionResourceCode == null || expectedExecutionResourceCode.isBlank()
+            ? actualResourceCode == null
+            : expectedExecutionResourceCode.trim().equals(actualResourceCode);
     return (expectedProcessCode == null
             || expectedProcessCode.isBlank()
             || expectedProcessCode.trim().equals(task.getProcessDefinition().getProcessCode()))
         && (expectedActivityId == null
             || expectedActivityId.isBlank()
-            || expectedActivityId.trim().equals(task.getProcessActivityId()));
+            || expectedActivityId.trim().equals(task.getProcessActivityId()))
+        && resourceMatches;
   }
 
   /**
    * Retoma uma única vez callbacks interrompidos ou rejeições corrigíveis do contrato de landing.
    */
   private Optional<AgentTask> recoverInterruptedCallbackOnce(
-      String agentKey, String processCode, String activityId) {
+      String agentKey, String processCode, String activityId, String executionResourceCode) {
     return repository
         .findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
             agentKey.trim(), "WORK", "BLOCKED")
         .stream()
         .filter(task -> task.getProcessDefinition() != null)
-        .filter(task -> matchesExecutionContract(task, processCode, activityId))
+        .filter(
+            task -> matchesExecutionContract(task, processCode, activityId, executionResourceCode))
         .filter(task -> isRetryableCallbackFailure(task.getExecutionError()))
         .findFirst()
         .map(
@@ -638,7 +696,64 @@ public class AgentTaskService {
         task.getDescription(),
         task.getSourceReference(),
         task.getReceivedAt(),
+        executionResource(task),
         processContext(task));
+  }
+
+  /** Resolve o recurso exigido pela atividade e entrega instruções oficiais ao executor correto. */
+  private AgentTaskExecutionResourceResponse executionResource(AgentTask task) {
+    String resourceCode = activityExecutionResourceCode(task);
+    if (resourceCode == null) return null;
+    BusinessProcessExecutionResource resource = requiredExecutionResource(resourceCode);
+    if (!resource.getResponsibleAgentKey().equals(task.getAssignedAgent().getAgentKey())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "O recurso especializado não pertence ao agente responsável pela tarefa.");
+    }
+    return new AgentTaskExecutionResourceResponse(
+        resource.getResourceCode(),
+        resource.getName(),
+        resource.getResourceType(),
+        resource.getExecutorReference(),
+        resource.getUsageInstructions());
+  }
+
+  /** Lê da versão imutável do processo o código de recurso da atividade vinculada. */
+  private String activityExecutionResourceCode(AgentTask task) {
+    try {
+      JsonNode nodes =
+          objectMapper.readTree(task.getProcessDefinition().getDiagramJson()).path("nodes");
+      for (JsonNode node : nodes) {
+        if (task.getProcessActivityId().equals(node.path("id").asText())) {
+          return trimToNull(node.path("executionResourceCode").asText(null));
+        }
+      }
+      return null;
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao ler recurso da atividade. taskId={} processDefinitionId={} activityId={}",
+          task.getId(),
+          task.getProcessDefinition().getId(),
+          task.getProcessActivityId(),
+          ex);
+      throw new IllegalStateException(
+          "Não foi possível ler o recurso especializado da atividade.", ex);
+    }
+  }
+
+  /** Exige recurso ativo para impedir execução silenciosa por container ausente ou aposentado. */
+  private BusinessProcessExecutionResource requiredExecutionResource(String resourceCode) {
+    if (executionResourceRepository == null) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "O catálogo de recursos especializados não está disponível.");
+    }
+    return executionResourceRepository
+        .findByResourceCodeAndActiveTrue(resourceCode)
+        .orElseThrow(
+            () ->
+                new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "O recurso especializado da atividade não está disponível."));
   }
 
   /** Consolida resultados predecessores para o próximo agente avaliar evidências reais. */
@@ -664,6 +779,12 @@ public class AgentTaskService {
     try {
       return objectMapper.writeValueAsString(Map.of("completedActivities", completedActivities));
     } catch (Exception ex) {
+      log.error(
+          "Falha ao consolidar contexto do processo. taskId={} processDefinitionId={} sourceReference={}",
+          task.getId(),
+          task.getProcessDefinition().getId(),
+          task.getSourceReference(),
+          ex);
       throw new IllegalStateException("Não foi possível consolidar o contexto do processo", ex);
     }
   }
@@ -839,6 +960,12 @@ public class AgentTaskService {
       }
       return completed.containsAll(predecessors);
     } catch (Exception ex) {
+      log.error(
+          "Falha ao avaliar sequência BPM. taskId={} processDefinitionId={} activityId={}",
+          candidate.getId(),
+          candidate.getProcessDefinition().getId(),
+          candidate.getProcessActivityId(),
+          ex);
       throw new IllegalStateException(
           "Não foi possível avaliar a sequência BPM da tarefa " + candidate.getId(), ex);
     }

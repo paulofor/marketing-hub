@@ -72,6 +72,29 @@ paths:
             schema: {$ref: '#/components/schemas/AgentTaskRequest'}
       responses:
         '201': {description: Delegação registrada}
+  /api/internal/agent-tasks/{agentKey}/stage-executions/pending:
+    get:
+      summary: Reserva uma atividade compatível com o executor solicitante
+      parameters:
+        - $ref: '#/components/parameters/AgentKey'
+        - name: processCode
+          in: query
+          schema: {type: string}
+        - name: activityId
+          in: query
+          schema: {type: string}
+        - name: executionResourceCode
+          in: query
+          schema: {type: string}
+          description: Obrigatório no executor próprio de atividade especializada; ausente seleciona apenas atividades comuns.
+      responses:
+        '200':
+          description: Lista vazia ou uma única atividade reservada com o recurso exigido
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/PendingTaskResponse'}
   /api/internal/agent-tasks/v1/{taskId}/gate-decision:
     post:
       summary: Registra a decisão do gate pelo agente destinatário
@@ -156,6 +179,30 @@ components:
           type: string
           enum: [NOT_REPORTED, NOT_APPLICABLE, ESTIMATED, PARTIALLY_ESTIMATED, PRICING_UNAVAILABLE]
         modelUsageUpdatedAt: {type: string, format: date-time, nullable: true}
+    PendingTaskResponse:
+      type: object
+      required: [taskId, agentKey, processCode, processVersion, activityId, activityName]
+      properties:
+        taskId: {type: integer, format: int64}
+        agentKey: {type: string}
+        processCode: {type: string}
+        processVersion: {type: integer}
+        activityId: {type: string}
+        activityName: {type: string}
+        executionResource:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/ExecutionResource'
+        processContextJson: {type: string}
+    ExecutionResource:
+      type: object
+      required: [resourceCode, name, resourceType, executorReference, usageInstructions]
+      properties:
+        resourceCode: {type: string}
+        name: {type: string}
+        resourceType: {type: string}
+        executorReference: {type: string}
+        usageInstructions: {type: string}
     ModelUsage:
       type: object
       required: [modelCode, serviceTier, inputTokens, cachedInputTokens, outputTokens]

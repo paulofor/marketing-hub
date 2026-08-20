@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import {
   useBusinessProcesses,
+  useBusinessProcessExecutionResources,
   useCreateBusinessProcess,
   useDeleteBusinessProcess,
   usePublishBusinessProcess,
@@ -52,6 +53,7 @@ function linearDiagram(activities: string): ProcessDiagram {
 
 export default function BusinessProcessesPage() {
   const query = useBusinessProcesses();
+  const executionResourcesQuery = useBusinessProcessExecutionResources();
   const create = useCreateBusinessProcess();
   const remove = useDeleteBusinessProcess();
   const publish = usePublishBusinessProcess();
@@ -305,6 +307,9 @@ export default function BusinessProcessesPage() {
                 initial={editableValue}
                 identityLocked
                 saving={create.isPending || update.isPending}
+                executionResources={executionResourcesQuery.data ?? []}
+                resourcesLoading={executionResourcesQuery.isLoading}
+                resourcesUnavailable={executionResourcesQuery.isError}
                 onCancel={() => setEditing(undefined)}
                 onSave={async (value) => {
                   const saved =
@@ -373,7 +378,9 @@ export default function BusinessProcessesPage() {
                               toast.success("Rascunho excluído com segurança.");
                             }}
                           >
-                            {remove.isPending ? "Excluindo..." : "Excluir rascunho"}
+                            {remove.isPending
+                              ? "Excluindo..."
+                              : "Excluir rascunho"}
                           </button>
                           <button
                             type="button"
@@ -419,7 +426,17 @@ export default function BusinessProcessesPage() {
                 </section>
                 <section className="card card-body">
                   <h2 className="h5">Diagrama BPM</h2>
-                  <BusinessProcessDiagram diagram={selected.diagram} />
+                  {executionResourcesQuery.isError ? (
+                    <div className="alert alert-warning" role="alert">
+                      O catálogo de recursos especializados está indisponível.
+                      Os códigos persistidos continuam visíveis, mas novas
+                      versões não podem selecionar um recurso até a recuperação.
+                    </div>
+                  ) : null}
+                  <BusinessProcessDiagram
+                    diagram={selected.diagram}
+                    executionResources={executionResourcesQuery.data ?? []}
+                  />
                 </section>
               </>
             )

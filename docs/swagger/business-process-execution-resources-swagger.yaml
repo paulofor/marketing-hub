@@ -1,0 +1,41 @@
+openapi: 3.0.3
+info:
+  title: Recursos especializados de processos
+  version: 1.0.0
+  description: Catálogo persistido das capacidades que podem ser exigidas por atividades BPM.
+paths:
+  /api/business-process-execution-resources:
+    get:
+      summary: Lista recursos especializados ativos
+      operationId: listBusinessProcessExecutionResources
+      responses:
+        "200":
+          description: Recursos selecionáveis nas atividades de novas versões de processo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BusinessProcessExecutionResource"
+components:
+  schemas:
+    BusinessProcessExecutionResource:
+      type: object
+      required:
+        - id
+        - resourceCode
+        - name
+        - description
+        - resourceType
+        - responsibleAgentKey
+        - executorReference
+        - usageInstructions
+      properties:
+        id: { type: integer, format: int64 }
+        resourceCode: { type: string, pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        name: { type: string }
+        description: { type: string }
+        resourceType: { type: string, enum: [CONTAINER] }
+        responsibleAgentKey: { type: string }
+        executorReference: { type: string }
+        usageInstructions: { type: string }

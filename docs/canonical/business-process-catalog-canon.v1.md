@@ -39,6 +39,29 @@ canônica é `/business-process-chains` e seu contrato de leitura é
 - A tela renderiza o grafo persistido pelo backend e não infere status ou regra de negócio.
 - Publicar uma definição não publica landing, campanha, oferta ou conteúdo e não autoriza gasto.
 
+## Recursos especializados por atividade
+
+Uma atividade `TASK` pode declarar opcionalmente `executionResourceCode` quando o agente precisar de
+uma capacidade que não pertence ao seu executor comum. O valor não é texto livre: deve apontar para
+um recurso ativo do catálogo persistido `business_process_execution_resource`, consultado pela tela
+em `GET /api/business-process-execution-resources`.
+
+Cada recurso informa código estável, nome, tipo, agente responsável, referência do executor e
+instruções de uso. A primeira capacidade oficial é `themis-image-studio`, executada no container
+isolado homônimo para criar e editar imagens. Atividades sem essa necessidade permanecem sem recurso
+e seguem o executor normal do agente.
+
+O backend valida o recurso ao salvar e publicar a definição. Quando uma tarefa é vinculada, também
+confirma que o agente responsável é o mesmo do recurso. O contrato `pending` entrega ao executor o
+objeto `executionResource` completo. Um executor comum consulta a fila sem código de recurso e não
+pode reservar atividade especializada; o executor próprio deve informar `executionResourceCode` e
+só recebe atividades com correspondência exata. Recurso ausente, inativo ou atribuído a outro agente
+bloqueia a execução antes do trabalho e do consumo de modelo.
+
+O recurso não altera a regra de orquestração: o container consome pendência e reporta resultado
+somente pelo backend; não chama outro executor nem decide a próxima atividade. Como versões
+publicadas são imutáveis, adicionar, trocar ou remover um recurso exige nova versão do processo.
+
 ## Primeiro processo: Geração de landing page
 
 A versão 1 formaliza o ciclo:
@@ -75,7 +98,7 @@ Toda nova tarefa humana enviada pela Mesa de Entrada deve apontar para uma ativi
 
 Cada tarefa deve preservar dois marcos temporais canônicos: `received_at`, registrado somente quando o executor reserva a atividade pelo endpoint `pending`, e `delivered_at`, registrado uma única vez quando o callback entrega resultado e evidências. Criação, atualizações, bloqueios e cancelamentos não podem fabricar ou sobrescrever esses marcos.
 
-O contrato operacional canônico é `/api/internal/agent-tasks/<agentKey>/stage-executions/pending`. O backend libera somente atividades cujas predecessoras `TASK` da mesma versão de processo e referência de execução estejam concluídas. O executor reporta resultado ou falha pelos callbacks da execução; resultado e evidências ficam persistidos na tarefa. O executor nunca escolhe nem dispara a próxima atividade.
+O contrato operacional canônico é `/api/internal/agent-tasks/<agentKey>/stage-executions/pending`. O backend libera somente atividades cujas predecessoras `TASK` da mesma versão de processo e referência de execução estejam concluídas e cujo recurso opcional corresponda ao executor solicitante. O executor reporta resultado ou falha pelos callbacks da execução; resultado e evidências ficam persistidos na tarefa. O executor nunca escolhe nem dispara a próxima atividade.
 
 Toda tarefa que consumir modelo de IA deve persistir, no callback de resultado ou falha, o consumo
 real informado pelo provedor: tokens totais de entrada, parcela da entrada atendida por cache e

@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import type {
+  BusinessProcessExecutionResource,
   CreateBusinessProcess,
   ProcessFlow,
   ProcessNode,
@@ -17,6 +18,9 @@ type Props = {
   initial: CreateBusinessProcess;
   identityLocked: boolean;
   saving: boolean;
+  executionResources: BusinessProcessExecutionResource[];
+  resourcesLoading: boolean;
+  resourcesUnavailable: boolean;
   onCancel: () => void;
   onSave: (value: CreateBusinessProcess) => Promise<void>;
 };
@@ -26,6 +30,9 @@ export default function BusinessProcessEditor({
   initial,
   identityLocked,
   saving,
+  executionResources,
+  resourcesLoading,
+  resourcesUnavailable,
   onCancel,
   onSave,
 }: Props) {
@@ -100,7 +107,10 @@ export default function BusinessProcessEditor({
           ["Referência técnica", "technicalReference", 6],
         ].map(([label, field, width]) => (
           <div className={`col-md-${width}`} key={String(field)}>
-            <label className="form-label">{label}</label>
+            <label className="form-label">
+              {label}
+              {field !== "technicalReference" ? " *" : ""}
+            </label>
             <input
               className="form-control"
               required={field !== "technicalReference"}
@@ -132,7 +142,7 @@ export default function BusinessProcessEditor({
             className={field === "purpose" ? "col-12" : "col-md-6"}
             key={field}
           >
-            <label className="form-label">{label}</label>
+            <label className="form-label">{label} *</label>
             <textarea
               className="form-control"
               rows={2}
@@ -177,9 +187,14 @@ export default function BusinessProcessEditor({
             <select
               className="form-select"
               value={node.type}
-              onChange={(e) =>
-                updateNode(index, { type: e.target.value as ProcessNodeType })
-              }
+              onChange={(e) => {
+                const type = e.target.value as ProcessNodeType;
+                updateNode(index, {
+                  type,
+                  executionResourceCode:
+                    type === "TASK" ? node.executionResourceCode : undefined,
+                });
+              }}
             >
               {nodeTypes.map((type) => (
                 <option value={type.value} key={type.value}>
@@ -227,6 +242,76 @@ export default function BusinessProcessEditor({
             >
               Excluir
             </button>
+            {node.type === "TASK" ? (
+              <div className="process-editor__resource">
+                <div>
+                  <label
+                    className="form-label small fw-semibold"
+                    htmlFor={`execution-resource-${node.id}`}
+                  >
+                    Recurso especializado (opcional)
+                  </label>
+                  <select
+                    id={`execution-resource-${node.id}`}
+                    className="form-select"
+                    aria-label={`Recurso especializado de ${node.label}`}
+                    disabled={resourcesLoading || resourcesUnavailable}
+                    value={node.executionResourceCode ?? ""}
+                    onChange={(event) =>
+                      updateNode(index, {
+                        executionResourceCode: event.target.value || undefined,
+                      })
+                    }
+                  >
+                    <option value="">
+                      {resourcesLoading
+                        ? "Carregando recursos..."
+                        : resourcesUnavailable
+                          ? "Catálogo de recursos indisponível"
+                          : "Nenhum recurso especializado"}
+                    </option>
+                    {node.executionResourceCode &&
+                    !executionResources.some(
+                      (item) =>
+                        item.resourceCode === node.executionResourceCode,
+                    ) ? (
+                      <option value={node.executionResourceCode}>
+                        {node.executionResourceCode} (indisponível)
+                      </option>
+                    ) : null}
+                    {executionResources.map((resource) => (
+                      <option
+                        value={resource.resourceCode}
+                        key={resource.resourceCode}
+                      >
+                        {resource.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {executionResources.find(
+                  (item) => item.resourceCode === node.executionResourceCode,
+                ) ? (
+                  <p className="small text-body-secondary mb-0">
+                    {
+                      executionResources.find(
+                        (item) =>
+                          item.resourceCode === node.executionResourceCode,
+                      )?.description
+                    }{" "}
+                    Executor:{" "}
+                    <code>
+                      {
+                        executionResources.find(
+                          (item) =>
+                            item.resourceCode === node.executionResourceCode,
+                        )?.executorReference
+                      }
+                    </code>
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         ))}
       </div>

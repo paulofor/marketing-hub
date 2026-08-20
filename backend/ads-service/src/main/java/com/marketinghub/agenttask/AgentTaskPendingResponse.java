@@ -14,4 +14,34 @@ public record AgentTaskPendingResponse(
     String description,
     String sourceReference,
     Instant receivedAt,
-    String processContextJson) {}
+    AgentTaskExecutionResourceResponse executionResource,
+    String processContextJson) {
+
+  /** Preserva integrações internas anteriores ao recurso opcional da atividade. */
+  public AgentTaskPendingResponse(
+      Long taskId,
+      String agentKey,
+      String processCode,
+      Integer processVersion,
+      String activityId,
+      String activityName,
+      String title,
+      String description,
+      String sourceReference,
+      Instant receivedAt,
+      String processContextJson) {
+    this(
+        taskId,
+        agentKey,
+        processCode,
+        processVersion,
+        activityId,
+        activityName,
+        title,
+        description,
+        sourceReference,
+        receivedAt,
+        null,
+        processContextJson);
+  }
+}

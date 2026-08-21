@@ -209,8 +209,8 @@ jobs:
             "${IMAGE_NAMESPACE}" \
             "${IMAGE_TAG}" \
             "${GITHUB_SHA}" \
-            "${CLARITY_PROJECT_ID}" \
-            "${LEAD_PORTAL_CRITICAL_FLOW_SLUG}" <<'REMOTE_PUBLISH'
+            "${LEAD_PORTAL_CRITICAL_FLOW_SLUG}" \
+            "${CLARITY_PROJECT_ID}" <<'REMOTE_PUBLISH'
           set -euo pipefail
 
           remote_path="$1"
@@ -220,8 +220,8 @@ jobs:
           image_namespace="$5"
           image_tag="$6"
           github_sha="$7"
-          clarity_project_id="${8:-}"
-          critical_flow_slug="${9:?critical flow slug is required}"
+          critical_flow_slug="${8:?critical flow slug is required}"
+          clarity_project_id="${9:-}"
 
           cd "$remote_path"
           previous_backend_image="$(docker inspect --format '{{.Config.Image}}' lead-portal-backend 2>/dev/null || true)"

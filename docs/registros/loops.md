@@ -1488,3 +1488,11 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** prompts pediam coerência com o produto, mas o contrato de Dédalo não carregava as URLs finais aprovadas da Biblioteca Audiovisual. O Quality Review avaliava a aparência sem validar a linhagem, e readiness tratava a aprovação subjetiva como suficiente.
 - **Correção sistêmica:** o backend congela os materiais `APPROVED`, com revisão independente e finalidade `LANDING`, exige até quatro URLs exatas no HTML e aplica o mesmo gate ao salvar, publicar, calcular readiness e criar campanha. Dédalo pode compor contexto, mas não redesenhar o produto. Runs novos permanecem `PREFLIGHT_PENDING` até a homologação funcional persistir todos os gates.
 - **Prevenção:** testes de contrato cobrem filtragem da biblioteca, quantidade mínima de URLs exatas, bloqueio do worker, publicação/readiness/campanha e impedem que `PENDING` seja tratado como preflight aprovado.
+
+## LOOP-LEAD-PORTAL-DEPLOY-ARGUMENTO-OPCIONAL — valor vazio desloca contrato SSH
+
+- **Data:** 2026-08-21.
+- **Sintoma:** testes, build e imagens do Lead Portal concluíam, mas o job de deploy falhava antes da publicação com `critical flow slug is required`, mantendo em produção a imagem anterior e a landing sem a otimização já aprovada.
+- **Causa-raiz:** o identificador opcional do Clarity era enviado antes do slug obrigatório. O cliente SSH recompõe os argumentos como uma linha de comando remota; quando o valor opcional estava vazio, sua posição desaparecia e o slug passava da posição 9 para a 8.
+- **Correção sistêmica:** argumentos obrigatórios passam antes dos opcionais no contrato remoto; o slug ocupa a posição fixa 8 e o Clarity fica por último, com fallback vazio.
+- **Prevenção:** o teste de resiliência executa o contrato com Clarity ausente e preenchido, além de exigir no workflow a ordem segura dos dois parâmetros.

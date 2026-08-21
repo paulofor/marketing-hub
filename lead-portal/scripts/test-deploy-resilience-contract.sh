@@ -17,6 +17,8 @@ grep -F '/api/internal/flows/${critical_flow_slug}/optimize-assets' "$workflow" 
 grep -F 'data-mh-web-optimized' "$workflow" >/dev/null
 grep -F 'bash scripts/verify-public-landing.sh' "$workflow" >/dev/null
 grep -F 'LEAD_PORTAL_CRITICAL_FLOW_SLUG' "$workflow" >/dev/null
+grep -F 'critical_flow_slug="${8:?critical flow slug is required}"' "$workflow" >/dev/null
+grep -F 'clarity_project_id="${9:-}"' "$workflow" >/dev/null
 grep -F 'mh_audit=deploy-' "$landing_probe_script" >/dev/null
 grep -F -- '--max-time "$max_seconds"' "$landing_probe_script" >/dev/null
 grep -F 'data-analytics-role="primary-checkout"' "$landing_probe_script" >/dev/null
@@ -41,5 +43,19 @@ if [ "$reconcile_line" -ge "$public_probe_line" ] || [ "$public_probe_line" -ge 
   echo "[ARQUITETURA] reconciliação, sonda pública e homologação final estão fora de ordem" >&2
   exit 1
 fi
+
+# O shell remoto elimina argumentos vazios da linha SSH. O slug obrigatório deve
+# vir antes do Clarity opcional para continuar na posição 8 quando o projeto não
+# estiver configurado.
+validate_remote_arguments() {
+  critical_flow_slug="${8:?critical flow slug is required}"
+  clarity_project_id="${9:-}"
+  test "$critical_flow_slug" = 'exp-88-gerasalespage-v1'
+  test "$clarity_project_id" = "${EXPECTED_CLARITY_PROJECT_ID:-}"
+}
+
+validate_remote_arguments remote token registry user namespace tag sha exp-88-gerasalespage-v1
+EXPECTED_CLARITY_PROJECT_ID=clarity-123 \
+  validate_remote_arguments remote token registry user namespace tag sha exp-88-gerasalespage-v1 clarity-123
 
 echo "Contrato resiliente do deploy da landing aprovado."

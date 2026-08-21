@@ -43,6 +43,7 @@ const metaFieldLabel: Record<string, string> = {
 };
 
 const RECENT_TASK_LIMIT = 5;
+type TaskContextType = "COMMERCIAL_PLAN" | "EXPERIMENT";
 
 function experimentIdFromTask(task: AgentTask) {
   const match = task.sourceReference?.match(/^experiment:(\d+)$/);
@@ -60,10 +61,21 @@ export default function AgentWorkspacePage() {
   const experiments = useExperiments();
   const plans = useCommercialPlans();
   const processes = useBusinessProcesses();
+  const [taskContextType, setTaskContextType] =
+    useState<TaskContextType>("COMMERCIAL_PLAN");
   const [commercialPlanId, setCommercialPlanId] = useState<number | null>(null);
+  const [experimentContextId, setExperimentContextId] = useState("");
   const selectedPlanId = commercialPlanId ?? plans.data?.[0]?.id ?? null;
   const planVersions = useCommercialPlanVersions(selectedPlanId);
   const currentPlanVersion = planVersions.data?.[0]?.versionNumber;
+  const taskSourceReference =
+    taskContextType === "EXPERIMENT"
+      ? experimentContextId
+        ? `experiment:${experimentContextId}`
+        : ""
+      : selectedPlanId && currentPlanVersion
+        ? `commercial-plan:${selectedPlanId}@v${currentPlanVersion}`
+        : "";
   const [form, setForm] = useState({
     requestedByName: "Usuário do Marketing Hub",
     title: "",
@@ -81,16 +93,17 @@ export default function AgentWorkspacePage() {
   const selectedProcess = publishedProcesses.find(
     (process) => process.id === Number(form.processDefinitionId),
   );
+  const agentOwnerAliases = [agent?.nickname, agent?.agentKey, agent?.name]
+    .filter((value): value is string => Boolean(value?.trim()))
+    .map((value) => value.toLowerCase());
   const availableActivities = (selectedProcess?.diagram.nodes ?? []).filter(
-    (node) =>
-      node.type === "TASK" &&
-      (!node.owner ||
-        node.owner
-          .toLowerCase()
-          .includes(agent?.nickname.toLowerCase() ?? "") ||
-        node.owner
-          .toLowerCase()
-          .includes(agent?.agentKey?.toLowerCase() ?? "")),
+    (node) => {
+      const owner = node.owner?.toLowerCase();
+      return (
+        node.type === "TASK" &&
+        (!owner || agentOwnerAliases.some((alias) => owner.includes(alias)))
+      );
+    },
   );
   const openCount = useMemo(
     () =>
@@ -114,7 +127,7 @@ export default function AgentWorkspacePage() {
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (!selectedPlanId || !currentPlanVersion) return;
+    if (!taskSourceReference) return;
     create.mutate(
       {
         ...form,
@@ -125,7 +138,7 @@ export default function AgentWorkspacePage() {
           ? undefined
           : form.processActivityId,
         exceptionReason: form.exceptional ? form.exceptionReason : undefined,
-        sourceReference: `commercial-plan:${selectedPlanId}@v${currentPlanVersion}`,
+        sourceReference: taskSourceReference,
         assignedAgentKey: agent.agentKey!,
       },
       {
@@ -376,34 +389,86 @@ export default function AgentWorkspacePage() {
               <h2 className="h5">Nova solicitação</h2>
               <form onSubmit={submit} className="d-grid gap-3">
                 <div>
-                  <label className="form-label" htmlFor="task-commercial-plan">
-                    Plano comercial *
+                  <label className="form-label" htmlFor="task-context-type">
+                    Contexto da execução *
                   </label>
                   <select
-                    id="task-commercial-plan"
+                    id="task-context-type"
                     className="form-select"
                     required
-                    value={selectedPlanId ?? ""}
-                    onChange={(event) =>
-                      setCommercialPlanId(Number(event.target.value))
-                    }
+                    value={taskContextType}
+                    onChange={(event) => {
+                      setTaskContextType(event.target.value as TaskContextType);
+                      setForm({
+                        ...form,
+                        processDefinitionId: "",
+                        processActivityId: "",
+                      });
+                    }}
                   >
-                    <option value="" disabled>
-                      Selecione o objetivo comum
-                    </option>
-                    {(plans.data ?? []).map((plan) => (
-                      <option key={plan.id} value={plan.id}>
-                        {plan.name}
-                      </option>
-                    ))}
+                    <option value="COMMERCIAL_PLAN">Plano comercial</option>
+                    <option value="EXPERIMENT">Experimento</option>
                   </select>
-                  {currentPlanVersion ? (
-                    <small className="text-body-secondary">
-                      A tarefa será registrada no contexto v{currentPlanVersion}
-                      .
-                    </small>
-                  ) : null}
                 </div>
+                {taskContextType === "COMMERCIAL_PLAN" ? (
+                  <div>
+                    <label
+                      className="form-label"
+                      htmlFor="task-commercial-plan"
+                    >
+                      Plano comercial *
+                    </label>
+                    <select
+                      id="task-commercial-plan"
+                      className="form-select"
+                      required
+                      value={selectedPlanId ?? ""}
+                      onChange={(event) =>
+                        setCommercialPlanId(Number(event.target.value))
+                      }
+                    >
+                      <option value="" disabled>
+                        Selecione o objetivo comum
+                      </option>
+                      {(plans.data ?? []).map((plan) => (
+                        <option key={plan.id} value={plan.id}>
+                          {plan.name}
+                        </option>
+                      ))}
+                    </select>
+                    {currentPlanVersion ? (
+                      <small className="text-body-secondary">
+                        A tarefa será registrada no contexto v
+                        {currentPlanVersion}.
+                      </small>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div>
+                    <label className="form-label" htmlFor="task-experiment">
+                      Experimento *
+                    </label>
+                    <select
+                      id="task-experiment"
+                      className="form-select"
+                      required
+                      value={experimentContextId}
+                      onChange={(event) =>
+                        setExperimentContextId(event.target.value)
+                      }
+                    >
+                      <option value="">Selecione o experimento</option>
+                      {(experiments.data ?? []).map((experiment) => (
+                        <option key={experiment.id} value={experiment.id}>
+                          #{experiment.id} · {experiment.name}
+                        </option>
+                      ))}
+                    </select>
+                    <small className="text-body-secondary">
+                      A tarefa ficará auditável no histórico do experimento.
+                    </small>
+                  </div>
+                )}
                 <div>
                   <label className="form-label" htmlFor="task-process">
                     Processo publicado *
@@ -508,7 +573,7 @@ export default function AgentWorkspacePage() {
                 ) : null}
                 <div>
                   <label className="form-label" htmlFor="requester-name">
-                    Solicitante
+                    Solicitante *
                   </label>
                   <input
                     id="requester-name"
@@ -523,7 +588,7 @@ export default function AgentWorkspacePage() {
                 </div>
                 <div>
                   <label className="form-label" htmlFor="task-title">
-                    Tarefa
+                    Tarefa *
                   </label>
                   <input
                     id="task-title"
@@ -538,7 +603,7 @@ export default function AgentWorkspacePage() {
                 </div>
                 <div>
                   <label className="form-label" htmlFor="task-description">
-                    Resultado esperado
+                    Resultado esperado *
                   </label>
                   <textarea
                     id="task-description"
@@ -574,11 +639,19 @@ export default function AgentWorkspacePage() {
                 </div>
                 <button
                   className="btn btn-primary"
-                  disabled={
-                    create.isPending || !selectedPlanId || !currentPlanVersion
-                  }
+                  disabled={create.isPending || !taskSourceReference}
                 >
-                  Enviar para {agent.nickname}
+                  {create.isPending ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        aria-hidden="true"
+                      />
+                      Enviando...
+                    </>
+                  ) : (
+                    `Enviar para ${agent.nickname}`
+                  )}
                 </button>
               </form>
             </div>

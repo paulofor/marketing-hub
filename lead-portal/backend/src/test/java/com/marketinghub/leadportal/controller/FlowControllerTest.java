@@ -286,6 +286,10 @@ class FlowControllerTest {
                 .andExpect(content().string(containsString("interactionToNextPaintMs")))
                 .andExpect(content().string(containsString("timeToFirstByteMs")))
                 .andExpect(content().string(containsString("resourceErrorCount")))
+                .andExpect(content().string(containsString("marketinghub_visitor_id")))
+                .andExpect(content().string(containsString("visitorId: visitorId")))
+                .andExpect(content().string(containsString("automationSignal")))
+                .andExpect(content().string(containsString("referrer: document.referrer")))
                 .andExpect(content().string(containsString("isSelfReferentialLink")))
                 .andExpect(content().string(containsString("form_start")))
                 .andExpect(content().string(containsString("form_submit")));

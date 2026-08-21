@@ -57,6 +57,7 @@ public interface ExperimentLandingAnalyticsEventRepository
                        FROM experiment_landing_analytics_event e2
                        WHERE e2.experiment_id = e.experiment_id
                          AND e2.visitor_id = e.visitor_id
+                         AND e2.traffic_quality = 'HUMAN'
                          AND (:baseline IS NULL OR e2.occurred_at > :baseline)
                        ORDER BY e2.occurred_at DESC, e2.id DESC
                        LIMIT 1
@@ -65,6 +66,7 @@ public interface ExperimentLandingAnalyticsEventRepository
             WHERE e.experiment_id = :experimentId
               AND e.visitor_id IS NOT NULL
               AND e.visitor_id <> ''
+              AND e.traffic_quality = 'HUMAN'
               AND LOWER(e.event_type) = 'page_view'
               AND (:baseline IS NULL OR e.occurred_at > :baseline)
             GROUP BY e.experiment_id, e.visitor_id

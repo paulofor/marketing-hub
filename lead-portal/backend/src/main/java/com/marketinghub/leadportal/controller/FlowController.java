@@ -174,7 +174,10 @@ public class FlowController {
      * Atualiza a instrumentação legada para incluir diagnóstico e bloqueio de tráfego de teste.
      */
     private String refreshLandingAnalyticsScriptWhenMissingDebug(String slug, String html) {
-        if (html.contains("mhAnalyticsDebug") && html.contains("mh_internal_test")) {
+        if (html.contains("mhAnalyticsDebug")
+                && html.contains("mh_internal_test")
+                && html.contains("visitorId: visitorId")
+                && html.contains("automationSignal")) {
             return html;
         }
         String analyticsScript = buildLandingAnalyticsScript(slug);
@@ -212,10 +215,32 @@ public class FlowController {
                   const sessionKey = 'mh_lp_session_' + slugValue;
                   const sessionId = sessionStorage.getItem(sessionKey) || (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2));
                   sessionStorage.setItem(sessionKey, sessionId);
-                  debugLog('script carregado', {slug: slugValue, endpoint: endpoint, sessionId: sessionId, readyState: document.readyState});
                   const buildEventId = function(){
                     return crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2));
                   };
+                  const visitorCookieName = 'marketinghub_visitor_id';
+                  const visitorStorageKey = 'mh_lp_visitor_id';
+                  const readVisitorCookie = function(){
+                    const prefix = visitorCookieName + '=';
+                    const entry = document.cookie.split(';').map(function(value){ return value.trim(); }).find(function(value){ return value.indexOf(prefix) === 0; });
+                    return entry ? decodeURIComponent(entry.slice(prefix.length)) : null;
+                  };
+                  const createVisitorId = function(){
+                    return crypto.randomUUID ? crypto.randomUUID() : ('visitor-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2));
+                  };
+                  const resolveVisitorId = function(){
+                    let stored = readVisitorCookie();
+                    if (!stored) {
+                      try { stored = localStorage.getItem(visitorStorageKey); } catch (ignored) { /* Cookie continua como fonte principal. */ }
+                    }
+                    const resolved = stored || createVisitorId();
+                    const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+                    document.cookie = visitorCookieName + '=' + encodeURIComponent(resolved) + '; Max-Age=31536000; Path=/; SameSite=Lax' + secure;
+                    try { localStorage.setItem(visitorStorageKey, resolved); } catch (ignored) { /* Navegação privada pode bloquear storage. */ }
+                    return resolved;
+                  };
+                  const visitorId = resolveVisitorId();
+                  debugLog('script carregado', {slug: slugValue, endpoint: endpoint, sessionId: sessionId, readyState: document.readyState});
                   const resolveDeviceType = function(){
                     const userAgent = navigator.userAgent || '';
                     const isTablet = /ipad|tablet/i.test(userAgent) || (/android/i.test(userAgent) && !/mobile/i.test(userAgent));
@@ -297,6 +322,7 @@ public class FlowController {
                     const payload = Object.assign({
                       eventId: buildEventId(),
                       eventType: eventType,
+                      visitorId: visitorId,
                       sessionId: sessionId,
                       sectionId: sectionId || null,
                       elapsedMs: roundedElapsed,
@@ -304,6 +330,8 @@ public class FlowController {
                       pageUrl: window.location.href,
                       occurredAt: new Date().toISOString(),
                       userAgent: navigator.userAgent,
+                      automationSignal: navigator.webdriver === true,
+                      referrer: document.referrer || null,
                       deviceType: deviceType,
                       operatingSystem: operatingSystem,
                       screenWidth: resolveScreenSize().width,

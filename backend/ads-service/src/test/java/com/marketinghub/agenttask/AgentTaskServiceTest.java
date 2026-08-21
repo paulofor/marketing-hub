@@ -68,6 +68,46 @@ class AgentTaskServiceTest {
     assertThat(response.exceptional()).isFalse();
   }
 
+  /** Vincula Hermes à atividade cujo responsável usa seu nome funcional no BPM publicado. */
+  @Test
+  void createsHumanTaskBoundByAgentFunctionalName() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    BusinessProcessDefinitionRepository processes = mock(BusinessProcessDefinitionRepository.class);
+    Agent hermes = agent(1L, "growth-operator", "Hermes");
+    hermes.setName("Operador de Crescimento");
+    BusinessProcessDefinition process = process("PUBLISHED", "Operador de Crescimento");
+    when(agents.findByAgentKey("growth-operator")).thenReturn(Optional.of(hermes));
+    when(processes.findById(9L)).thenReturn(Optional.of(process));
+    when(repository.save(any(AgentTask.class)))
+        .thenAnswer(
+            invocation -> {
+              AgentTask task = invocation.getArgument(0);
+              task.setId(72L);
+              return task;
+            });
+    AgentTaskService service =
+        new AgentTaskService(repository, agents, processes, new ObjectMapper(), Clock.systemUTC());
+
+    AgentTaskResponse response =
+        service.createByHuman(
+            new CreateAgentTaskRequest(
+                "growth-operator",
+                "Usuário do Marketing Hub",
+                "Verificar integridade dos eventos",
+                "Confirmar visita, checkout, venda e entrega sem duplicidade.",
+                "HIGH",
+                "experiment:88",
+                9L,
+                "html",
+                false,
+                null));
+
+    assertThat(response.assignedAgentKey()).isEqualTo("growth-operator");
+    assertThat(response.sourceReference()).isEqualTo("experiment:88");
+    assertThat(response.processActivityName()).isEqualTo("Montar HTML");
+  }
+
   /** Vincula uma tarefa excepcional pendente sem perder sua identidade e seu histórico. */
   @Test
   void bindsPendingExceptionalTaskToPublishedActivity() {
@@ -1024,6 +1064,7 @@ class AgentTaskServiceTest {
     value.setId(id);
     value.setAgentKey(key);
     value.setNickname(nickname);
+    value.setName(nickname);
     return value;
   }
 

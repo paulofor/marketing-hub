@@ -1,8 +1,10 @@
 package com.marketinghub.growthoperatorworker;
 
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
@@ -76,6 +78,47 @@ public class GrowthOperatorBackendClient {
         .post()
         .uri("/api/growth-operator/v1/internal/executions/{id}/fail", id)
         .body(Map.of("errorMessage", errorMessage))
+        .retrieve()
+        .toBodilessEntity();
+  }
+
+  /** Reserva uma atividade BPM específica atribuída ao Operador de Crescimento. */
+  public Map<String, Object> claimBpmTask(String processCode, String activityId) {
+    List<Map<String, Object>> pending =
+        client
+            .get()
+            .uri(
+                "/api/internal/agent-tasks/{agent}/stage-executions/pending?processCode={processCode}&activityId={activityId}",
+                "growth-operator",
+                processCode,
+                activityId)
+            .retrieve()
+            .body(new ParameterizedTypeReference<>() {});
+    return pending == null || pending.isEmpty() ? null : pending.get(0);
+  }
+
+  /** Conclui uma atividade BPM preservando resultado, evidências e consumo do modelo. */
+  public void completeBpmTask(Long taskId, Map<String, Object> payload) {
+    client
+        .post()
+        .uri(
+            "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/result",
+            "growth-operator",
+            taskId)
+        .body(payload)
+        .retrieve()
+        .toBodilessEntity();
+  }
+
+  /** Bloqueia uma atividade BPM sem liberar a próxima etapa do processo. */
+  public void failBpmTask(Long taskId, Map<String, Object> payload) {
+    client
+        .post()
+        .uri(
+            "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/failure",
+            "growth-operator",
+            taskId)
+        .body(payload)
         .retrieve()
         .toBodilessEntity();
   }

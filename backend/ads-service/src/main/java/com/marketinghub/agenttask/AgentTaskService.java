@@ -526,13 +526,7 @@ public class AgentTaskService {
         if (request.processActivityId().trim().equals(node.path("id").asText())
             && "TASK".equals(node.path("type").asText())) {
           String owner = node.path("owner").asText("").trim();
-          if (!owner.isEmpty()
-              && !owner
-                  .toLowerCase(Locale.ROOT)
-                  .contains(assignee.getNickname().toLowerCase(Locale.ROOT))
-              && !owner
-                  .toLowerCase(Locale.ROOT)
-                  .contains(assignee.getAgentKey().toLowerCase(Locale.ROOT))) {
+          if (!owner.isEmpty() && !activityOwnerMatchesAgent(owner, assignee)) {
             throw new ResponseStatusException(
                 HttpStatus.CONFLICT, "A atividade selecionada pertence a outro responsável.");
           }
@@ -554,6 +548,20 @@ public class AgentTaskService {
     }
     throw new ResponseStatusException(
         HttpStatus.BAD_REQUEST, "Atividade do processo não encontrada.");
+  }
+
+  /** Reconhece o responsável do BPM pelo apelido, chave técnica ou nome funcional do agente. */
+  private boolean activityOwnerMatchesAgent(String owner, Agent assignee) {
+    String normalizedOwner = owner.toLowerCase(Locale.ROOT);
+    String[] identities = {assignee.getNickname(), assignee.getAgentKey(), assignee.getName()};
+    for (String identity : identities) {
+      if (identity != null
+          && !identity.isBlank()
+          && normalizedOwner.contains(identity.toLowerCase(Locale.ROOT))) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /** Impede vincular uma atividade especializada ao agente diferente do catálogo do recurso. */

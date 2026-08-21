@@ -258,9 +258,19 @@ Antes de implementar uma correção em tema com histórico de loop:
 - **Status:** fechado localmente em 2026-08-14; aguarda publicação.
 - **Sintoma:** Dédalo e Têmis acumulam execuções e custo de revisão embora o HTML consolidado permaneça idêntico.
 - **Causa-raiz confirmada:** o teto de quatro revisões era validado somente depois do parecer, e o design preset criava a próxima revisão por um caminho direto que não aplicava idempotência por versão.
+
 - **Correção efetiva:** o serviço canônico registra o hash do HTML antes da fila, reutiliza a execução da mesma versão e bloqueia o quinto HTML distinto no ciclo; design preset não cria mais a revisão diretamente.
 - **Prevenção:** testes de contrato exigem zero nova persistência para HTML idêntico, aceitam revisão após mudança real e bloqueiam a quinta versão do ciclo.
 - **Correção complementar em 2026-08-14:** quando Têmis classifica a causa como `LANDING_PAGE_HTML`, o preset deixa de tratar a estrutura anterior como totalmente imutável e permite edição estrutural governada, preservando checkout, tracking, oferta e demais contratos funcionais. Um teste de prompt impede a regressão para simples reestilização incapaz de corrigir layout e responsividade.
+
+## LOOP-LANDING-ANALYTICS-SEM-IDENTIDADE-VIRA-HUMANO — preview contado como tráfego comercial
+
+- **Severidade:** CRÍTICO.
+- **Status:** fechado localmente em 2026-08-21; aguarda publicação.
+- **Sintoma:** o cockpit do experimento #88 exibia visualizações e sessões humanas antes de a Meta registrar a primeira impressão, contaminando conversão, recorrência e tempo de carregamento.
+- **Causa-raiz confirmada:** o coletor standalone criava somente `sessionId`, sem identidade first-party estável; o backend classificava a ausência de sinal interno como humano, embora os logs históricos mostrassem validações da Meta, Chromium headless e emulações mobile. O marcador histórico `mh_audit` também não era reconhecido pelo backfill.
+- **Correção efetiva:** o coletor passa a gerar `visitorId` first-party, informar `navigator.webdriver` e referrer; o backend persiste `HUMAN`, `AUTOMATED` ou `UNKNOWN`, reconhece `mh_test` e `mh_audit`, usa somente eventos humanos nas métricas comerciais e preserva integralmente o evento bruto para auditoria.
+- **Prevenção:** testes de contrato exigem identidade para classificar visita humana, excluem automação e URLs oficiais de auditoria da recorrência e do funil e proíbem apagar eventos históricos quando chega a primeira impressão da campanha.
 
 ## LOOP-GERALANDING-COPY-PENDING-BUFFER — copy parada antes do processamento
 

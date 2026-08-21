@@ -655,7 +655,16 @@ components:
         visitorId:
           type: string
           nullable: true
-          description: Identificador first-party do visitante provável por navegador/dispositivo; opcional apenas para eventos legados.
+          description: Identificador first-party do visitante provável por navegador/dispositivo; obrigatório no coletor atual e opcional apenas para eventos legados.
+        automationSignal:
+          type: boolean
+          nullable: true
+          description: Sinal técnico de automação exposto pelo navegador, usado somente para excluir homologações da leitura comercial.
+        referrer:
+          type: string
+          format: uri
+          nullable: true
+          description: Origem de navegação informada pelo navegador para auditoria agregada de tráfego.
         campaignCode:
           type: string
           nullable: true

@@ -1,0 +1,96 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-21-experiment-landing-traffic-quality-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment_landing_analytics_event
+        - not:
+            columnExists:
+              tableName: experiment_landing_analytics_event
+              columnName: traffic_quality
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment_landing_analytics_event
+                ADD COLUMN traffic_quality VARCHAR(16) NOT NULL DEFAULT 'UNKNOWN' AFTER user_agent,
+                ADD COLUMN traffic_quality_reason VARCHAR(64) NOT NULL DEFAULT 'MISSING_VISITOR_ID' AFTER traffic_quality;
+
+  - changeSet:
+      id: 2026-08-21-experiment-landing-traffic-quality-002
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment_landing_analytics_event
+        - columnExists:
+            tableName: experiment_landing_analytics_event
+            columnName: traffic_quality
+        - columnExists:
+            tableName: experiment_landing_analytics_event
+            columnName: traffic_quality_reason
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+
+              UPDATE experiment_landing_analytics_event
+              SET traffic_quality = CASE
+                    WHEN LOWER(COALESCE(page_url, '')) LIKE '%mh_test=1%'
+                      OR LOWER(COALESCE(page_url, '')) LIKE '%mh_audit=%'
+                      OR LOWER(COALESCE(user_agent, '')) LIKE '%headlesschrome%'
+                      OR LOWER(COALESCE(user_agent, '')) LIKE '%playwright%'
+                      OR LOWER(COALESCE(user_agent, '')) LIKE '%puppeteer%'
+                      OR LOWER(COALESCE(user_agent, '')) LIKE '%bot%'
+                      OR LOWER(COALESCE(user_agent, '')) LIKE '%crawler%'
+                    THEN 'AUTOMATED'
+                    WHEN visitor_id IS NOT NULL AND TRIM(visitor_id) <> ''
+                    THEN 'HUMAN'
+                    ELSE 'UNKNOWN'
+                  END,
+                  traffic_quality_reason = CASE
+                    WHEN LOWER(COALESCE(page_url, '')) LIKE '%mh_test=1%'
+                      OR LOWER(COALESCE(page_url, '')) LIKE '%mh_audit=%'
+                    THEN 'INTERNAL_TEST_URL'
+                    WHEN LOWER(COALESCE(user_agent, '')) LIKE '%headlesschrome%'
+                      OR LOWER(COALESCE(user_agent, '')) LIKE '%playwright%'
+                      OR LOWER(COALESCE(user_agent, '')) LIKE '%puppeteer%'
+                      OR LOWER(COALESCE(user_agent, '')) LIKE '%bot%'
+                      OR LOWER(COALESCE(user_agent, '')) LIKE '%crawler%'
+                    THEN 'AUTOMATION_USER_AGENT'
+                    WHEN visitor_id IS NOT NULL AND TRIM(visitor_id) <> '' THEN 'NO_AUTOMATION_SIGNAL'
+                    ELSE 'MISSING_VISITOR_ID'
+                  END;
+
+  - changeSet:
+      id: 2026-08-21-experiment-landing-traffic-quality-003
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment_landing_analytics_event
+        - not:
+            indexExists:
+              tableName: experiment_landing_analytics_event
+              indexName: idx_landing_analytics_experiment_quality_type_occurred
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE INDEX idx_landing_analytics_experiment_quality_type_occurred
+                ON experiment_landing_analytics_event
+                   (experiment_id, traffic_quality, event_type, occurred_at);

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "executionStatus",
+    "activityOutcome",
+    "observedFacts",
+    "inferences",
+    "contradictoryEvidence",
+    "evidenceGaps",
+    "alternatives",
+    "selectedAlternative",
+    "expectedMetric",
+    "continueCriteria",
+    "adjustCriteria",
+    "stopCriteria",
+    "recommendedAction"
+  ],
+  "properties": {
+    "executionStatus": {"type": "string", "enum": ["COMPLETED", "BLOCKED"]},
+    "activityOutcome": {"type": "string", "minLength": 20},
+    "observedFacts": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "inferences": {"type": "array", "items": {"type": "string"}},
+    "contradictoryEvidence": {"type": "array", "items": {"type": "string"}},
+    "evidenceGaps": {"type": "array", "items": {"type": "string"}},
+    "alternatives": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "benefit", "risk", "effort", "fit"],
+        "properties": {
+          "name": {"type": "string"},
+          "benefit": {"type": "string"},
+          "risk": {"type": "string"},
+          "effort": {"type": "string"},
+          "fit": {"type": "string"}
+        }
+      }
+    },
+    "selectedAlternative": {"type": "string", "minLength": 3},
+    "expectedMetric": {"type": "string", "minLength": 3},
+    "continueCriteria": {"type": "string", "minLength": 3},
+    "adjustCriteria": {"type": "string", "minLength": 3},
+    "stopCriteria": {"type": "string", "minLength": 3},
+    "recommendedAction": {"type": "string", "minLength": 10}
+  }
+}

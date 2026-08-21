@@ -30,6 +30,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/** Valida a migração e a otimização dos ativos visuais de fluxos públicos. */
 @ExtendWith(MockitoExtension.class)
 class FlowAssetServiceTest {
 
@@ -41,6 +42,7 @@ class FlowAssetServiceTest {
 
     private FlowAssetService flowAssetService;
 
+    /** Monta o serviço com armazenamento e download controlados. */
     @BeforeEach
     void setUp() {
         StorageProperties storageProperties = new StorageProperties();
@@ -57,6 +59,7 @@ class FlowAssetServiceTest {
                 storageProperties);
     }
 
+    /** Confirma a migração de hero e provas legadas para o CDN atual. */
     @Test
     void shouldMigrateHeroAndProofAssetsToPublicCdn() throws IOException {
         SimpleFormStyleDefinition definition = new SimpleFormStyleDefinition(
@@ -120,6 +123,7 @@ class FlowAssetServiceTest {
         verify(fileStorageService, times(2)).store(any(byte[].class), anyString(), anyString(), anyString());
     }
 
+    /** Confirma que ativos estruturados já publicados no CDN não são migrados novamente. */
     @Test
     void shouldSkipAssetsAlreadyOnCdn() {
         SimpleFormStyleDefinition definition = new SimpleFormStyleDefinition(
@@ -155,6 +159,66 @@ class FlowAssetServiceTest {
         verify(fileStorageService, never()).store(any(byte[].class), anyString(), anyString(), anyString());
     }
 
+    /** Confirma derivados leves, prioridade de carregamento, segurança de host e idempotência. */
+    @Test
+    void shouldOptimizeStandaloneImagesWithoutChangingCanonicalSources() throws IOException {
+        String firstSource = "https://cdn.example.com/library/first.png";
+        String secondSource = "https://cdn.example.com/library/second.png";
+        String html = """
+                <!doctype html><html><body>
+                <img src="%s" alt="Primeira">
+                <img src="%s" alt="Segunda">
+                <img src="%s" alt="Primeira repetida">
+                <img src="https://outside.example.com/ignored.png" alt="Externa">
+                </body></html>
+                """.formatted(firstSource, secondSource, firstSource);
+        Flow flow = new Flow(
+                "landing-web",
+                "Landing",
+                null,
+                html,
+                null,
+                null,
+                null,
+                null,
+                null,
+                List.of(),
+                null,
+                null,
+                null,
+                null);
+        byte[] imageBytes = createImageBytes(1800, 1200);
+        when(legacyAssetClient.fetch(firstSource))
+                .thenReturn(Optional.of(new DownloadedAsset(imageBytes, "image/png", "first.png")));
+        when(legacyAssetClient.fetch(secondSource))
+                .thenReturn(Optional.of(new DownloadedAsset(imageBytes, "image/png", "second.png")));
+        when(fileStorageService.store(any(byte[].class), anyString(), anyString(), anyString()))
+                .thenReturn("landing-web-first.jpg")
+                .thenReturn("landing-web-second.jpg");
+        when(fileStorageService.resolvePublicUrl("landing-web-first.jpg"))
+                .thenReturn(Optional.of("https://cdn.example.com/landing-web-first.jpg"));
+        when(fileStorageService.resolvePublicUrl("landing-web-second.jpg"))
+                .thenReturn(Optional.of("https://cdn.example.com/landing-web-second.jpg"));
+
+        Flow optimized = flowAssetService.optimizeAssets(flow);
+        Flow optimizedAgain = flowAssetService.optimizeAssets(optimized);
+
+        assertThat(optimized.customFormHtml())
+                .contains("src=\"" + firstSource + "\"")
+                .contains("src=\"" + secondSource + "\"")
+                .contains("srcset=\"https://cdn.example.com/landing-web-first.jpg 1x\"")
+                .contains("srcset=\"https://cdn.example.com/landing-web-second.jpg 1x\"")
+                .contains("loading=\"eager\"")
+                .contains("loading=\"lazy\"")
+                .contains("data-mh-web-optimized=\"true\"")
+                .contains("src=\"https://outside.example.com/ignored.png\"");
+        assertThat(optimizedAgain.customFormHtml()).isEqualTo(optimized.customFormHtml());
+        verify(legacyAssetClient, times(1)).fetch(firstSource);
+        verify(legacyAssetClient, times(1)).fetch(secondSource);
+        verify(legacyAssetClient, never()).fetch("https://outside.example.com/ignored.png");
+    }
+
+    /** Produz uma imagem determinística para os testes de conversão. */
     private byte[] createImageBytes(int width, int height) throws IOException {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         var graphics = image.createGraphics();

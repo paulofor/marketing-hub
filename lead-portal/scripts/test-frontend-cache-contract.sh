@@ -16,7 +16,11 @@ grep -F 'docker ps --filter publish=80 -q' "$workflow" >/dev/null
 grep -F 'docker ps --filter publish=443 -q' "$workflow" >/dev/null
 grep -F 'com.docker.compose.project.working_dir' "$workflow" >/dev/null
 grep -F 'A porta pública está ocupada por container fora do escopo do Lead Portal' "$workflow" >/dev/null
-grep -F 'docker rm -f lead-portal-proxy lead-portal-proxy-1 lead-portal_proxy_1' "$workflow" >/dev/null
+grep -F 'docker rm -f lead-portal-proxy-1 lead-portal_proxy_1' "$workflow" >/dev/null
+grep -F 'up -d backend frontend' "$workflow" >/dev/null
+grep -F 'up -d proxy' "$workflow" >/dev/null
+grep -F 'proxy_switch_started=true' "$workflow" >/dev/null
+grep -F 'if [ "$proxy_switch_started" = true ]; then' "$workflow" >/dev/null
 grep -F 'if (!target.checkValidity()) {' "$flow_page" >/dev/null
 grep -F 'target.reportValidity();' "$flow_page" >/dev/null
 grep -F 'activeCustomTemplateBridges.get(doc)?.();' "$flow_page" >/dev/null
@@ -32,6 +36,18 @@ fi
 
 if grep -F 'up -d --force-recreate proxy' "$workflow" >/dev/null; then
   echo "[ARQUITETURA] deploy do Lead Portal não pode recriar um segundo proxy após subir a pilha" >&2
+  exit 1
+fi
+
+backend_frontend_line="$(grep -n -F 'up -d backend frontend' "$workflow" | head -1 | cut -d: -f1)"
+port_owner_line="$(grep -n -F 'docker ps --filter publish=80 -q' "$workflow" | head -1 | cut -d: -f1)"
+if [ "$backend_frontend_line" -ge "$port_owner_line" ]; then
+  echo "[ARQUITETURA] backend e frontend saudáveis devem preceder qualquer troca do proxy público" >&2
+  exit 1
+fi
+
+if grep -F 'docker rm -f lead-portal-proxy ' "$workflow" >/dev/null; then
+  echo "[ARQUITETURA] o proxy canônico não pode ser removido antes de o Compose preparar a substituição" >&2
   exit 1
 fi
 

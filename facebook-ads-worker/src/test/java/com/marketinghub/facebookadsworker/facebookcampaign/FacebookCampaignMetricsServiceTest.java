@@ -22,17 +22,40 @@ class FacebookCampaignMetricsServiceTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    /** Garante que a consulta de insights pede o campo de alcance da Meta. */
+    /** Garante que a consulta de insights pede alcance e usa o início real da campanha. */
     @Test
-    void buildInsightsQueryIncludesReach() throws Exception {
+    void buildInsightsQueryIncludesReachAndExplicitCampaignRange() throws Exception {
         FacebookCampaignMetricsService service = service();
+        JsonNode snapshot = objectMapper.readTree("""
+                {"start_time":"2026-08-20T20:26:38-0300"}
+                """);
 
-        Method method = FacebookCampaignMetricsService.class.getDeclaredMethod("buildInsightsQuery");
+        Method method = FacebookCampaignMetricsService.class.getDeclaredMethod(
+                "buildInsightsQuery", JsonNode.class);
         method.setAccessible(true);
         @SuppressWarnings("unchecked")
-        Map<String, String> query = (Map<String, String>) method.invoke(service);
+        Map<String, String> query = (Map<String, String>) method.invoke(service, snapshot);
 
         assertThat(query.get("fields")).contains("reach");
+        assertThat(query).doesNotContainKey("date_preset");
+        assertThat(query.get("time_range"))
+                .contains("\"since\":\"2026-08-20\"")
+                .contains("\"until\":\"");
+    }
+
+    /** Garante fallback limitado quando o retrato de status não informa o início da campanha. */
+    @Test
+    void buildInsightsQueryUsesBoundedFallbackWithoutStatusSnapshot() throws Exception {
+        FacebookCampaignMetricsService service = service();
+
+        Method method = FacebookCampaignMetricsService.class.getDeclaredMethod(
+                "buildInsightsQuery", JsonNode.class);
+        method.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Map<String, String> query = (Map<String, String>) method.invoke(service, new Object[]{null});
+
+        assertThat(query.get("time_range")).contains("\"since\":\"").contains("\"until\":\"");
+        assertThat(query).doesNotContainEntry("date_preset", "maximum");
     }
 
     /** Garante que o alcance retornado pela Meta entra no payload enviado ao backend. */

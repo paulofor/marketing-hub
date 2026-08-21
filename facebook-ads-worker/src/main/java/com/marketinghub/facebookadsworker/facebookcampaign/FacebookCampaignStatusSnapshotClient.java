@@ -20,9 +20,9 @@ public class FacebookCampaignStatusSnapshotClient {
         this.apiVersion = normalizeVersion(apiVersion);
     }
 
-    /** Busca campanha, ad sets e anúncios com status configurado e efetivo. */
+    /** Busca início e status efetivo da campanha, dos ad sets e dos anúncios. */
     public JsonNode fetch(String campaignId, String accessToken) {
-        String fields = "status,effective_status,adsets{status,effective_status,ads{status,effective_status}}";
+        String fields = "start_time,status,effective_status,adsets{status,effective_status,ads{status,effective_status}}";
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/" + apiVersion + "/" + campaignId)

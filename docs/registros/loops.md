@@ -338,6 +338,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 | Loop                                                | Severidade | Status inicial                   | Tema                                                  | Correção efetiva principal                                                                   |
 | --------------------------------------------------- | ---------- | -------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | `LOOP-FB-PUBLICATION`                               | CRÍTICO    | Aberto/recorrente                | Publicação Facebook Ads                               | contrato enxuto + protocolo `jobid` + validação com payload final                            |
+| `LOOP-META-INSIGHTS-PRESET-ZERA-TRAFEGO`            | CRÍTICO    | Fechado localmente em 2026-08-21 | Métricas Meta Ads                                     | intervalo explícito desde o início da campanha + teste contra preset vazio                   |
 | `LOOP-GL-PUBLICATION-LEADPORTAL`                    | CRÍTICO    | Estabilizado com risco           | GeraLanding → Lead Portal                             | separação `html_geralanding` puro vs `landing_page_html` publicável                          |
 | `LOOP-OPENAI-SCHEMA-CONTRACT`                       | ALTO       | Recorrente                       | Prompts, schemas e Structured Outputs                 | prompt + schema + parser + consumer test por etapa                                           |
 | `LOOP-GL-ARCHITECTURE-STAGES`                       | ALTO       | Parcialmente estabilizado        | Arquitetura por etapas                                | padrão por etapa backend e `openai.core.<etapa>` no Worker AI                                |
@@ -1087,6 +1088,12 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o HTML persistido pelo GeraSalesPage continha um coletor próprio que inferia o slug pelo último segmento da URL, enquanto o Lead Portal injetava um segundo coletor canônico com o slug explícito.
 - **Prevenção:** ao servir a landing standalone, o Lead Portal remove qualquer coletor legado `data-mh-sales-page-analytics` e mantém somente `data-mh-landing-analytics`, com slug recebido pelo controller e teste de contrato contra regressão.
 - Em 2026-08-08, a homologação do experimento #88 encontrou nova duplicidade: o coletor canônico da landing e a ponte React do formulário gerenciado registravam `form_start`/`form_submit` para a mesma interação. A ponte agora detecta `data-mh-landing-analytics` e delega esses eventos exclusivamente ao coletor canônico.
+
+# LOOP-META-INSIGHTS-PRESET-ZERA-TRAFEGO — Tráfego real sobrescrito por zero
+
+- **Sintoma:** a Meta confirma campanha ativa e registra impressões, cliques e gasto, mas o cockpit permanece zerado e o run não sai de `PUBLISHED_AWAITING_EXPOSURE`.
+- **Causa-raiz:** o Facebook Ads Worker consultava Insights com `date_preset=maximum`; para campanha recém-publicada, a Graph API podia devolver `data: []` nesse preset mesmo quando um `time_range` explícito retornava os dados do dia. O worker interpretava a resposta vazia como ausência de entrega e persistia zeros.
+- **Prevenção:** consultar o acumulado com `time_range` explícito desde `start_time` da campanha até o dia atual, usando fallback limitado à retenção segura quando o início não estiver disponível. Testes de contrato proíbem o retorno ao preset `maximum` e exigem o campo `start_time` no retrato da campanha.
 
 # LOOP-GERALANDING-AGENT-AFTER-COMMIT — Parecer não chega ao Agente Gerador de Landing
 

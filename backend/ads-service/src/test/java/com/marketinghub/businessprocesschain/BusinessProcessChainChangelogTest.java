@@ -8,6 +8,9 @@ import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: proteger o schema MySQL 5.7 e a cadeia PDE canônica versionada. */
 class BusinessProcessChainChangelogTest {
+  private static final String FORMAT_NEUTRAL_CHANGESET =
+      "changesets/2026-08-21-pde-format-neutral-chain-v2.yaml";
+
   /** Exige tabelas, seis processos, métrica comercial e include relativo no master. */
   @Test
   void declaresCompatiblePdeValueChain() throws Exception {
@@ -34,5 +37,29 @@ class BusinessProcessChainChangelogTest {
     assertThat(master)
         .contains(
             "file: changesets/2026-08-20-business-process-value-chains.yaml\n      relativeToChangelogFile: true");
+  }
+
+  /** Exige uma nova versão auditável que compare formatos e preserve a cadeia anterior. */
+  @Test
+  void declaresFormatNeutralPdeValueChainVersion() throws Exception {
+    String change =
+        Files.readString(Path.of("src/main/resources/db/changelog/" + FORMAT_NEUTRAL_CHANGESET));
+    String master =
+        Files.readString(Path.of("src/main/resources/db/changelog/db.changelog-master.yaml"));
+
+    assertThat(change)
+        .contains("dbms:\n            type: mysql")
+        .contains("'pde-value-creation-delivery'")
+        .contains("\"label\":\"Comparar formatos digitais\"")
+        .contains("\"label\":\"Escolher o melhor formato digital\"")
+        .contains("\"label\":\"Materializar o formato aprovado\"")
+        .contains("'pde-opportunity-discovery' AND version_number = 2")
+        .contains("'pde-commercial-plan-offer' AND version_number = 2")
+        .contains("'pde-construction-approval' AND version_number = 2")
+        .contains("AND chain_definition.version_number = 2")
+        .contains("SET status = 'RETIRED'")
+        .doesNotContain("TIMESTAMP NOT NULL");
+    assertThat(master)
+        .contains("file: " + FORMAT_NEUTRAL_CHANGESET + "\n      relativeToChangelogFile: true");
   }
 }

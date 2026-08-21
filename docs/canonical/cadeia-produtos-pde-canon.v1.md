@@ -3,12 +3,33 @@
 ## Objetivo
 
 Definir a cadeia inicial, simples e reutilizável para transformar uma dor real em um Produto Digital
-Experiencial construído, comunicado, vendido e entregue pelo Marketing Hub.
+Experiencial construído, comunicado, vendido e entregue pelo Marketing Hub, escolhendo o formato
+digital que melhor resolva a necessidade do mercado e entregue valor à cliente.
 
-O PDE não é um pacote de arquivos. É uma experiência guiada que reduz esforço, entrega valor
-percebido e ajuda a cliente a avançar de um estado de dor para um resultado prático. Imagens,
-vídeos, diagnósticos, missões, checklists e materiais são componentes dessa experiência, não o
-produto completo isoladamente.
+O PDE não é definido por ser um pacote de arquivos nem por possuir uma interface. É uma experiência
+digital coerente que reduz esforço, entrega valor percebido e ajuda a cliente a avançar de um estado
+de dor para um resultado prático. Ele pode ser materializado como kit digital, webapp, agente pronto,
+automação, área de membros, experiência guiada, conteúdo interativo, assinatura ou combinação
+híbrida. Imagens, vídeos, diagnósticos, missões, checklists, materiais e telas podem ser componentes
+da experiência; o valor entregue, e não a embalagem tecnológica, define o produto.
+
+## Neutralidade obrigatória de formato
+
+A cadeia não pode escolher kit por ser mais simples de produzir nem webapp por parecer mais
+sofisticado. Descoberta e Plano Comercial devem comparar **três alternativas de formato digital**
+sempre que existirem opções materialmente viáveis e registrar, para cada uma:
+
+- aderência ao trabalho que a cliente precisa realizar e à causa-raiz da dor;
+- valor percebido, utilidade, tempo até o primeiro resultado e esforço de adoção;
+- evidência de intenção de compra e adequação ao canal e ao contexto de uso;
+- tempo e custo de construção, operação, suporte e evolução;
+- margem, capacidade de escala, confiabilidade, privacidade e risco comercial.
+
+Deve vencer o formato que entregar a melhor combinação de valor para a cliente, aderência ao mercado
+e viabilidade econômica. O menor produto funcional pode ser preferível para aprender cedo, mas não
+pode reduzir a solução a um kit quando a transformação depender de interação, estado, cálculo,
+personalização ou continuidade que um webapp ou outro formato atenda melhor. A decisão deve ficar
+versionada no Plano Comercial com alternativas, evidências, trade-offs e motivo da escolha.
 
 ## Decisão de simplicidade
 
@@ -39,7 +60,7 @@ objetivo não conclui o processo.
 ## 1. Descoberta e priorização da oportunidade PDE
 
 **Objetivo final:** comprovar que existe uma dor recorrente, relevante, mal atendida e com intenção
-de compra, para a qual uma experiência digital simples pode gerar valor percebido.
+de compra, para a qual uma solução digital plausível pode gerar valor percebido.
 
 **Entrada mínima:** sinais de mercado, linguagem do público, conversas ou pedidos espontâneos,
 reclamações, buscas, concorrentes e alternativas existentes. Uma história individual inicia pesquisa,
@@ -52,10 +73,12 @@ mas não comprova sozinha uma oportunidade.
 - comprovar escala e recorrência por fontes independentes;
 - entender por que as soluções atuais não satisfazem;
 - propor uma microexperiência de valor e um mecanismo plausível;
+- levantar formatos digitais materialmente distintos capazes de entregar esse mecanismo, sem
+  antecipar que kit, webapp ou qualquer outra implementação será a vencedora;
 - comparar de duas a três oportunidades antes de priorizar uma.
 
 **Saída final:** dossiê de oportunidade com evidências, público, dor raiz, lacuna, intenção de compra,
-formato PDE recomendado, risco principal e decisão `APROVAR`, `PESQUISAR MAIS` ou `REJEITAR`.
+formatos digitais candidatos, risco principal e decisão `APROVAR`, `PESQUISAR MAIS` ou `REJEITAR`.
 
 **Gate para avançar:** somente oportunidade `APROVADA`, sem evidência fabricada e com encaixe PDE.
 Pedido espontâneo ou conversa individual deve permanecer como `SINAL`, até ser confirmado por pelo
@@ -72,41 +95,53 @@ mensurável e financeiramente limitada.
 
 - escolher um público, uma dor principal e uma transformação prometida;
 - validar mecanismo, prova e limites da promessa;
+- comparar formatos candidatos e escolher explicitamente o que melhor entrega valor, considerando
+  pelo menos kit digital, webapp ou outra alternativa viável quando aplicáveis;
 - definir a experiência: entrada, microvalor, jornada guiada, resultado e continuidade;
 - definir oferta, preço, CTA e canal inicial;
 - registrar objetivo comercial, prazo, orçamento máximo, métrica principal e critérios de
   continuar, ajustar e parar;
 - definir o que será entregue e como a cliente perceberá valor.
 
-**Saída final:** Plano Comercial aprovado, com versão da oferta e contrato funcional do PDE
-suficientes para orientar produção, comunicação, venda e mensuração sem reinvenção posterior.
+**Saída final:** Plano Comercial aprovado, com versão da oferta, matriz de decisão do formato e
+contrato funcional do PDE suficientes para orientar produção, comunicação, venda e mensuração sem
+reinvenção posterior.
 
-**Gate para avançar:** plano deve responder claramente quem compra, qual dor resolve, qual valor a
-experiência entrega, o que a cliente recebe, quanto custa, como será vendido e qual evidência decide
-o ciclo.
+**Gate para avançar:** plano deve responder claramente quem compra, qual dor resolve, por que o
+formato escolhido entrega mais valor que as alternativas, o que a cliente recebe, quanto custa, como
+será vendido e qual evidência decide o ciclo.
 
 ## 3. Construção e aprovação do PDE
 
-**Objetivo final:** entregar uma versão canônica do PDE que uma cliente consiga acessar, usar e
-concluir, percebendo a transformação prometida com qualidade premium.
+**Objetivo final:** entregar uma versão canônica do PDE, no formato digital aprovado, que uma cliente
+consiga acessar, usar e concluir, percebendo a transformação prometida com qualidade premium.
 
 **Entrada mínima:** Plano Comercial e contrato funcional aprovados.
 
 **Trabalho essencial:**
 
+- materializar o formato aprovado sem convertê-lo silenciosamente em um kit, webapp ou outra
+  implementação diferente;
 - materializar diagnóstico ou entrada guiada;
 - construir etapas, missões, recomendações ou microações da experiência;
 - produzir conteúdo e materiais de apoio finais;
 - implementar acesso, progresso, estados vazios, erros e suporte mínimo;
+- quando o formato for webapp ou ferramenta interativa, validar o fluxo funcional ponta a ponta,
+  persistência, segregação de dados, responsividade, segurança e recuperação de falhas;
+- quando o formato for kit ou conteúdo digital, validar integridade, aplicabilidade, organização,
+  abertura dos arquivos e clareza de uso para produzir o resultado prometido;
 - produzir e aprovar imagens, vídeos e arquivos necessários;
 - validar utilidade, facilidade, integridade, direitos e fidelidade à promessa;
 - congelar uma versão comercial rastreável do PDE.
 
-**Saída final:** versão funcional e aprovada do produto, com experiência, conteúdos e entregáveis
-íntegros, versionados e prontos para venda e entrega.
+**Saída final:** versão funcional e aprovada do produto no formato escolhido, com experiência,
+conteúdos, telas, automações e entregáveis aplicáveis íntegros, versionados e prontos para venda e
+entrega.
 
 **Gate para avançar:** uma pessoa deve conseguir completar o caminho principal e receber valor sem
-placeholder, linguagem interna, dependência manual oculta ou ativo ainda em rascunho.
+placeholder, linguagem interna, dependência manual oculta ou ativo ainda em rascunho. Sofisticação
+técnica não compensa menor utilidade, e simplicidade de produção não compensa uma entrega incapaz de
+resolver a necessidade validada.
 
 O processo `Fabricação e aprovação do produto` continua válido quando imagens ou arquivos forem
 entregáveis. Para um PDE, ele atua como subprocesso desta etapa e não representa sozinho a conclusão
@@ -117,12 +152,12 @@ do produto experiencial.
 **Objetivo final:** construir uma rota coerente entre anúncio, entrada pública, demonstração de
 valor, oferta, compra e acesso, usando o produto real como fonte da comunicação.
 
-**Entrada mínima:** PDE canônico aprovado e Plano Comercial vigente.
+**Entrada mínima:** PDE canônico aprovado no formato escolhido e Plano Comercial vigente.
 
 **Trabalho essencial:**
 
 - definir mensagem central, ângulos e campanha inicial;
-- criar criativos a partir de telas e materiais reais aprovados;
+- criar criativos a partir de telas, demonstrações e materiais reais aprovados;
 - quando o Plano Comercial escolher microconteúdo seriado, preservar uma única hipótese entre os
   episódios e medir continuidade até checkout e compra;
 - construir a entrada pública, landing ou microexperiência gratuita prevista no plano;
@@ -205,14 +240,19 @@ um nicho automaticamente aprovado. O caso observado deve entrar no motor definid
 `docs/canonical/solucoes-prontas-ia-trabalho-canon.v1.md`, que agrupa sinais pelo trabalho desejado e
 pela causa do fracasso antes de escolher profissão, segmento ou formato de solução.
 
-Quando o formato aprovado for PDE, o dossiê resultante entra nesta cadeia. Quando outro formato
-reduzir melhor o esforço — como agente pronto, automação gerenciada ou serviço assistido — o Marketing
-Hub deve preservar os mesmos gates de produto, comunicação, homologação, venda, entrega e aprendizado
-sem forçar uma classificação PDE.
+Quando o formato aprovado for um produto digital — como kit, webapp, agente pronto, automação,
+experiência guiada, área de membros ou solução híbrida — o dossiê resultante entra nesta cadeia e
+preserva os mesmos gates de produto, comunicação, homologação, venda, entrega e aprendizado. Serviço
+predominantemente humano pode reutilizar os gates, mas não deve ser classificado como PDE apenas para
+caber nesta cadeia.
 
 ## Regras de operação inicial
 
 - Um Plano Comercial governa a cadeia e mantém objetivo, prazo, orçamento, versão e métrica.
+- O formato é uma decisão versionada do Plano Comercial, não uma preferência fixa do agente ou do
+  módulo executor.
+- Alterar o formato depois da aprovação exige nova versão, nova homologação e preservação das
+  evidências da alternativa anterior.
 - Cada macroprocesso possui uma única saída final verificável e um gate de transição.
 - O backend controla avanço e persistência; agentes e workers executam atividades e reportam
   resultados.
@@ -239,16 +279,19 @@ cadeia publicada; a adoção exige uma nova versão da cadeia, preservando audit
 O vínculo também deve ser navegável no sentido inverso: a tela de uma versão de processo mostra as
 cadeias que a contêm e abre diretamente o detalhe da cadeia selecionada.
 
-A cadeia inicial `pde-value-creation-delivery` usa os seis macroprocessos deste cânone. Processos
-especializados, como fabricação de entregáveis, criativos, landing, homologação de experimento e
-operação de venda, continuam referenciados dentro dos macroprocessos e não são duplicados como uma
-segunda orquestração.
+A cadeia `pde-value-creation-delivery` usa os seis macroprocessos deste cânone. A versão 1 preserva o
+registro inicial; a versão 2 torna explícita a neutralidade de formato e atualiza descoberta, Plano
+Comercial e construção para comparar e escolher entre kit, webapp e qualquer outro formato digital
+capaz de entregar mais valor ao mercado. Processos especializados, como fabricação de entregáveis,
+criativos, landing, homologação de experimento e operação de venda, continuam referenciados dentro
+dos macroprocessos e não são duplicados como uma segunda orquestração.
 
 ## Métricas da cadeia
 
 A cadeia deve permitir medir, no mínimo:
 
 - tempo da oportunidade até Plano Comercial aprovado;
+- alternativas de formato comparadas, formato escolhido e motivo da decisão;
 - tempo do plano até PDE aprovado;
 - aprovação do produto e dos criativos na primeira tentativa;
 - custo de produção por versão aprovada;

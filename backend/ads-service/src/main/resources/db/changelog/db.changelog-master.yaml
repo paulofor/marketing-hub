@@ -1868,3 +1868,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-21-experiment-strategist-clarity-snapshots.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-21-pde-format-neutral-chain-v2.yaml
+      relativeToChangelogFile: true

@@ -2525,18 +2525,21 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         return response.body() != null ? response.body().path("recommendations") : objectMapper.createArrayNode();
     }
 
+    /**
+     * Consulta os Insights da campanha preservando parâmetros JSON com uma única codificação de URL.
+     */
     public JsonNode getCampaignInsights(String campaignId, Map<String, String> queryParams) {
         UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/" + campaignId + "/insights")
-            .queryParam("access_token", requireAccessToken());
+            .queryParam("access_token", strictUrlEncode(requireAccessToken()));
         if (queryParams != null) {
             queryParams.forEach((key, value) -> {
                 if (hasText(value)) {
-                    builder.queryParam(key, value);
+                    builder.queryParam(key, strictUrlEncode(value));
                 }
             });
         }
-        String path = buildVersionedPath(builder.toUriString());
-        FacebookApiResponse response = executeGet(path);
+        String path = buildVersionedPath(builder.build(true).toUriString());
+        FacebookApiResponse response = executeGetAbsolute(path);
         return response.body();
     }
 

@@ -1101,6 +1101,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Sintoma:** a Meta confirma campanha ativa e registra impressões, cliques e gasto, mas o cockpit permanece zerado e o run não sai de `PUBLISHED_AWAITING_EXPOSURE`.
 - **Causa-raiz:** o Facebook Ads Worker consultava Insights com `date_preset=maximum`; para campanha recém-publicada, a Graph API podia devolver `data: []` nesse preset mesmo quando um `time_range` explícito retornava os dados do dia. O worker interpretava a resposta vazia como ausência de entrega e persistia zeros.
 - **Prevenção:** consultar o acumulado com `time_range` explícito desde `start_time` da campanha até o dia atual, usando fallback limitado à retenção segura quando o início não estiver disponível. Testes de contrato proíbem o retorno ao preset `maximum` e exigem o campo `start_time` no retrato da campanha.
+- **Fechamento complementar em 2026-08-21:** o primeiro ajuste montava corretamente o JSON, mas `WebClient.uri(String)` codificava novamente o valor já codificado pelo `UriComponentsBuilder`; a Meta recebia `%7B...%7D` como texto e respondia `param time_range must be non-empty`. A chamada passa a construir uma `URI` absoluta com parâmetros estritamente codificados uma única vez, e o teste inspeciona o caminho HTTP bruto para impedir `%257B`.
 
 # LOOP-GERALANDING-AGENT-AFTER-COMMIT — Parecer não chega ao Agente Gerador de Landing
 

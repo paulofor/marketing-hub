@@ -214,7 +214,7 @@ jobs:
           image_namespace="$5"
           image_tag="$6"
           github_sha="$7"
-          clarity_project_id="$8"
+          clarity_project_id="${8:-}"
 
           cd "$remote_path"
           publish_diagnostics() {

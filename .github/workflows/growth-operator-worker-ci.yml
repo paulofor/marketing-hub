@@ -39,9 +39,17 @@ jobs:
           cache: maven
           cache-dependency-path: growth-operator-worker/pom.xml
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
       - name: Run unit tests
         working-directory: growth-operator-worker
         run: mvn -B test
+
+      - name: Validate entity-grounded MCP memory
+        working-directory: growth-operator-worker
+        run: node --test src/test/mcp/*.test.mjs
 
       - name: Validate container build
         run: docker build -t marketing-hub/growth-operator-worker:${{ github.sha }} growth-operator-worker

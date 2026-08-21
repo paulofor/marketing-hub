@@ -4,6 +4,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 python3 - "$repo_root" "$repo_root/config/agents/premium-agent-compliance.json" <<'PY'
 import json, pathlib, re, sys
 root=pathlib.Path(sys.argv[1]); agents=json.loads(pathlib.Path(sys.argv[2]).read_text())['agents']; errors=[]
+autonomy_levels = {'OBSERVE', 'ADVISE', 'ACT_WITH_APPROVAL', 'ACT_AUTONOMOUSLY'}
 workflow_by_agent = {
     'customer-agent': root/'.github/workflows/customer-agent-worker-ci.yml',
     'financial-agent': root/'.github/workflows/financial-agent-worker-ci.yml',
@@ -43,6 +44,17 @@ mcp_backend_contracts = {
     ),
 }
 for agent in agents:
+    autonomy_level = agent.get('autonomyLevel')
+    if autonomy_level not in autonomy_levels:
+        errors.append(f"{agent['key']}: nível de autonomia ausente ou inválido")
+    if autonomy_level in {'OBSERVE', 'ADVISE'} and agent.get('externalSideEffects') is not False:
+        errors.append(f"{agent['key']}: agente {autonomy_level} não pode declarar efeito externo")
+    if autonomy_level in {'ADVISE', 'ACT_WITH_APPROVAL'} and agent.get('humanReviewRequired') is not True:
+        errors.append(f"{agent['key']}: revisão humana obrigatória não declarada")
+    if autonomy_level == 'ACT_AUTONOMOUSLY':
+        for control in ('circuitBreaker', 'rollback'):
+            if agent.get(control) is not True:
+                errors.append(f"{agent['key']}: autonomia máxima sem {control}")
     if not agent['operational']:
         if not agent.get('blockedReason'): errors.append(f"{agent['key']}: bloqueio sem causa")
         continue
@@ -113,7 +125,7 @@ for agent in agents:
             )
 if errors:
     print('\n'.join(f"[ARQUITETURA] {e}" for e in errors),file=sys.stderr); raise SystemExit(1)
-print(f"[ARQUITETURA] {sum(a['operational'] for a in agents)} agentes conformes; {sum(not a['operational'] for a in agents)} bloqueado(s) com causa explícita.")
+print(f"[ARQUITETURA] {sum(a['operational'] for a in agents)} agentes conformes, classificados por autonomia proporcional; {sum(not a['operational'] for a in agents)} bloqueado(s) com causa explícita.")
 PY
 bash "$repo_root/scripts/test-isolated-agent-codex-auth.sh"
 node "$repo_root/scripts/test-agent-version-deploy-gate.mjs"

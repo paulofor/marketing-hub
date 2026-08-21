@@ -490,6 +490,7 @@ const emptyCommercialPlan: SaveCommercialPlanPayload = {
   targetAudience: "",
   mainPain: "",
   mainOffer: "",
+  mainLeadMagnet: "",
   mainChannel: "",
   mainMetric: "",
   successCriteria: "",
@@ -2965,6 +2966,7 @@ function CommercialPlanDetailPage({
                 ["targetAudience", "Público-alvo"],
                 ["mainPain", "Dor principal"],
                 ["mainOffer", "Oferta principal"],
+                ["mainLeadMagnet", "Prova ou isca principal"],
                 ["mainChannel", "Canal principal"],
                 ["mainMetric", "Métrica principal"],
                 ["successCriteria", "Critério de sucesso"],
@@ -3112,6 +3114,30 @@ function CommercialPlanDetailPage({
                       campo adiciona um novo teste e o seleciona para a próxima
                       ação.
                     </small>
+                  </div>
+                  <div className="col-md-4">
+                    <label
+                      className="form-label"
+                      htmlFor="planning-operational-revenue-target"
+                    >
+                      Meta operacional de receita
+                    </label>
+                    <input
+                      id="planning-operational-revenue-target"
+                      className="form-control"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={planDraft.operationalRevenueTarget ?? ""}
+                      onChange={(event) =>
+                        updatePlanDraft(
+                          "operationalRevenueTarget",
+                          event.target.value === ""
+                            ? null
+                            : Number(event.target.value),
+                        )
+                      }
+                    />
                   </div>
                   <div className="col-md-4">
                     <label className="form-label" htmlFor="planning-status">
@@ -3292,6 +3318,34 @@ function CommercialPlanDetailPage({
                     </div>
                   ))}
                 </div>
+                {(
+                  [
+                    ["targetAudience", "Público-alvo"],
+                    ["mainPain", "Dor principal"],
+                    ["mainOffer", "Oferta principal"],
+                    ["mainLeadMagnet", "Prova ou isca principal"],
+                    ["mainChannel", "Canal principal"],
+                    ["mainMetric", "Métrica principal"],
+                  ] as const
+                ).map(([field, label]) => (
+                  <div key={field}>
+                    <label
+                      className="form-label mb-0"
+                      htmlFor={`planning-${field}`}
+                    >
+                      {label}
+                    </label>
+                    <textarea
+                      id={`planning-${field}`}
+                      className="form-control"
+                      rows={2}
+                      value={planDraft[field] ?? ""}
+                      onChange={(event) =>
+                        updatePlanDraft(field, event.target.value)
+                      }
+                    />
+                  </div>
+                ))}
                 <label className="form-label mb-0" htmlFor="planning-objective">
                   Objetivo comercial
                 </label>

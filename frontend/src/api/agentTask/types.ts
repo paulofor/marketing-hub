@@ -1,6 +1,20 @@
 export type AgentTaskStatus =
   "PENDING" | "IN_PROGRESS" | "COMPLETED" | "BLOCKED" | "CANCELLED";
 
+export interface AgentTaskFailureAudit {
+  readiness: "COMPLETE" | "PARTIAL";
+  intendedWork: string;
+  sourceReference?: string;
+  processCode?: string;
+  activityId?: string;
+  activityName?: string;
+  authorityPolicy?: string;
+  accessedEvidenceJson?: string;
+  producedOutputJson?: string;
+  error?: string;
+  missingEvidence: string[];
+}
+
 export interface AgentTask {
   id: number;
   assignedAgentId: number;
@@ -30,6 +44,7 @@ export interface AgentTask {
   resultJson?: string;
   evidenceJson?: string;
   executionError?: string;
+  failureAudit?: AgentTaskFailureAudit;
   inputTokens?: number;
   cachedInputTokens?: number;
   outputTokens?: number;
@@ -78,6 +93,7 @@ export interface ProcessInstanceTask {
   taskStatus: AgentTaskStatus;
   operationalState: ProcessInstanceOperationalState;
   stateReason: string;
+  failureAudit?: AgentTaskFailureAudit;
   inputTokens?: number;
   cachedInputTokens?: number;
   outputTokens?: number;

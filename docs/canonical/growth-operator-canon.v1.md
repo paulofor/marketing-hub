@@ -71,6 +71,24 @@ aprendizados. O Operador deve comparar pecas do mesmo `strategyGroupKey`, distin
 producao de gasto de campanha e somente confirmar aprendizado quando houver eventos humanos
 atribuidos.
 
+## Memória ligada à ferramenta
+
+O Operador usa o piloto de recuperação just-in-time da memória premium. Antes de devolver o
+resultado de uma ferramenta MCP de consulta, o servidor recupera no máximo três memórias vigentes
+do escopo `MCP_TOOL/<nome-da-ferramenta>` e as apresenta em bloco separado, sem alterar o payload
+oficial. Falha nessa recuperação não bloqueia a consulta comercial e deve ficar registrada no log.
+
+A mesma memória especializada fica disponível tanto em ciclos por plano comercial quanto em
+tarefas BPM segregadas por experimento. Sem `appliesToTool`, o candidato pertence somente ao plano
+ou experimento atual. Com `appliesToTool`, ele descreve um cuidado operacional reutilizável daquela
+ferramenta e nunca um fato particular do experimento.
+
+Memória `CANDIDATE` é hipótese, memória `CONFIRMED` é conhecimento operacional anterior e nenhuma
+das duas substitui o dado atual, comprova resultado comercial, amplia autoridade ou autoriza
+mutação. Somente teste determinístico, callback oficial ou resultado posterior independente pode
+originar e promover esse conhecimento. Instabilidade transitória, opinião do modelo, recomendação,
+PR, impacto estimado, clique ou evento isolado não viram skill global.
+
 Estrategias de outro produto ou experimento nunca devem ser vinculadas automaticamente apenas por compartilharem tema, personagem ou grupo narrativo. Ausencia de estrategia compativel e uma lacuna valida; vinculo incorreto e contaminacao de evidencia.
 
 ## Imagem e operacao

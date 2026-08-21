@@ -1706,7 +1706,7 @@ function isInternalTestTraffic() {
     return false;
   }
   const params = new URLSearchParams(window.location.search);
-  if (params.get("mh_test") === "1") {
+  if (params.get("mh_test") === "1" || params.has("mh_audit")) {
     window.sessionStorage.setItem(INTERNAL_TEST_STORAGE_KEY, "true");
     return true;
   }

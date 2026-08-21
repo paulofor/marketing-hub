@@ -7,15 +7,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experimentstrategist.ExperimentStrategistBehavioralSnapshot;
+import com.marketinghub.experimentstrategist.ExperimentStrategistBehavioralSnapshotStatus;
 import com.marketinghub.experimentstrategist.ExperimentStrategistExecution;
 import com.marketinghub.experimentstrategist.ExperimentStrategistExecutionStatus;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.service.CommercialPlanService;
+import com.marketinghub.repository.jpa.experimentstrategist.ExperimentStrategistBehavioralSnapshotRepository;
 import com.marketinghub.repository.jpa.experimentstrategist.ExperimentStrategistExecutionRepository;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Pageable;
 
@@ -39,6 +45,7 @@ class ExperimentStrategistExecutionServiceTest {
     ExperimentStrategistExecutionService service =
         new ExperimentStrategistExecutionService(
             repository,
+            mock(ExperimentStrategistBehavioralSnapshotRepository.class),
             mock(CommercialPlanService.class),
             mock(ExperimentStrategistContextService.class),
             new ObjectMapper());
@@ -67,6 +74,7 @@ class ExperimentStrategistExecutionServiceTest {
     ExperimentStrategistExecutionService service =
         new ExperimentStrategistExecutionService(
             repository,
+            mock(ExperimentStrategistBehavioralSnapshotRepository.class),
             mock(CommercialPlanService.class),
             mock(ExperimentStrategistContextService.class),
             new ObjectMapper());
@@ -97,7 +105,12 @@ class ExperimentStrategistExecutionServiceTest {
               return value;
             });
     ExperimentStrategistExecutionService service =
-        new ExperimentStrategistExecutionService(repository, plans, contexts, new ObjectMapper());
+        new ExperimentStrategistExecutionService(
+            repository,
+            mock(ExperimentStrategistBehavioralSnapshotRepository.class),
+            plans,
+            contexts,
+            new ObjectMapper());
 
     var result =
         service.start(
@@ -107,6 +120,141 @@ class ExperimentStrategistExecutionServiceTest {
     assertThat(result.authorityMode()).isEqualTo("READ_ONLY_RESEARCH");
     assertThat(result.evidenceSnapshot()).contains("CHECKOUT");
     verify(repository).save(any(ExperimentStrategistExecution.class));
+  }
+
+  /** Reserva e conclui somente snapshot agregado do experimento pertencente ao plano. */
+  @Test
+  void persistsSegregatedClaritySnapshotWithZeroProviderCost() {
+    ExperimentStrategistExecutionRepository repository =
+        mock(ExperimentStrategistExecutionRepository.class);
+    ExperimentStrategistBehavioralSnapshotRepository snapshots =
+        mock(ExperimentStrategistBehavioralSnapshotRepository.class);
+    Experiment experiment = new Experiment();
+    experiment.setId(88L);
+    CommercialPlan plan = new CommercialPlan();
+    plan.setId(2L);
+    plan.setExperiment(experiment);
+    ExperimentStrategistExecution execution = new ExperimentStrategistExecution();
+    execution.setId(19L);
+    execution.setCommercialPlan(plan);
+    execution.setStatus(ExperimentStrategistExecutionStatus.RUNNING);
+    when(repository.findById(19L)).thenReturn(Optional.of(execution));
+    AtomicReference<ExperimentStrategistBehavioralSnapshot> persisted = new AtomicReference<>();
+    when(snapshots.save(any()))
+        .thenAnswer(
+            invocation -> {
+              ExperimentStrategistBehavioralSnapshot value = invocation.getArgument(0);
+              value.setId(44L);
+              persisted.set(value);
+              return value;
+            });
+    ExperimentStrategistExecutionService service =
+        new ExperimentStrategistExecutionService(
+            repository,
+            snapshots,
+            mock(CommercialPlanService.class),
+            mock(ExperimentStrategistContextService.class),
+            new ObjectMapper());
+
+    var reserved =
+        service.reserveBehavioralSnapshot(
+            19L,
+            new ExperimentStrategistExecutionService.ReserveBehavioralSnapshotRequest(
+                88L, "DEVICE", 2));
+
+    assertThat(reserved.experimentId()).isEqualTo(88L);
+    assertThat(reserved.queryText())
+        .contains("/flows/exp-88-", "tipo de dispositivo", "Não retorne gravações");
+    assertThat(reserved.estimatedCostUsd()).isEqualByComparingTo(BigDecimal.ZERO);
+
+    when(snapshots.findByIdAndExecutionId(44L, 19L))
+        .thenAnswer(invocation -> Optional.ofNullable(persisted.get()));
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () ->
+                service.completeBehavioralSnapshot(
+                    19L,
+                    44L,
+                    new ExperimentStrategistExecutionService.CompleteBehavioralSnapshotRequest(
+                        "{\"sessionId\":\"individual\"}")))
+        .hasMessageContaining("campo individual proibido");
+
+    var completed =
+        service.completeBehavioralSnapshot(
+            19L,
+            44L,
+            new ExperimentStrategistExecutionService.CompleteBehavioralSnapshotRequest(
+                "{\"sessions\":12,\"rageClicks\":2}"));
+    assertThat(completed.status())
+        .isEqualTo(ExperimentStrategistBehavioralSnapshotStatus.COMPLETED);
+  }
+
+  /** Bloqueia a quarta consulta da mesma execução antes de consumir a cota externa. */
+  @Test
+  void blocksFourthClaritySnapshotPerExecution() {
+    ExperimentStrategistExecutionRepository repository =
+        mock(ExperimentStrategistExecutionRepository.class);
+    ExperimentStrategistBehavioralSnapshotRepository snapshots =
+        mock(ExperimentStrategistBehavioralSnapshotRepository.class);
+    Experiment experiment = new Experiment();
+    experiment.setId(88L);
+    CommercialPlan plan = new CommercialPlan();
+    plan.setExperiment(experiment);
+    ExperimentStrategistExecution execution = new ExperimentStrategistExecution();
+    execution.setId(19L);
+    execution.setCommercialPlan(plan);
+    execution.setStatus(ExperimentStrategistExecutionStatus.RUNNING);
+    when(repository.findById(19L)).thenReturn(Optional.of(execution));
+    when(snapshots.countByExecutionId(19L)).thenReturn(3L);
+    ExperimentStrategistExecutionService service =
+        new ExperimentStrategistExecutionService(
+            repository,
+            snapshots,
+            mock(CommercialPlanService.class),
+            mock(ExperimentStrategistContextService.class),
+            new ObjectMapper());
+
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () ->
+                service.reserveBehavioralSnapshot(
+                    19L,
+                    new ExperimentStrategistExecutionService.ReserveBehavioralSnapshotRequest(
+                        88L, "PAGE", 1)))
+        .hasMessageContaining("três snapshots");
+  }
+
+  /** Preserva uma consulta de folga e bloqueia o décimo uso diário da API externa. */
+  @Test
+  void blocksTenthClaritySnapshotOfUtcDay() {
+    ExperimentStrategistExecutionRepository repository =
+        mock(ExperimentStrategistExecutionRepository.class);
+    ExperimentStrategistBehavioralSnapshotRepository snapshots =
+        mock(ExperimentStrategistBehavioralSnapshotRepository.class);
+    Experiment experiment = new Experiment();
+    experiment.setId(88L);
+    CommercialPlan plan = new CommercialPlan();
+    plan.setExperiment(experiment);
+    ExperimentStrategistExecution execution = new ExperimentStrategistExecution();
+    execution.setId(19L);
+    execution.setCommercialPlan(plan);
+    execution.setStatus(ExperimentStrategistExecutionStatus.RUNNING);
+    when(repository.findById(19L)).thenReturn(Optional.of(execution));
+    when(snapshots.countByExecutionId(19L)).thenReturn(0L);
+    when(snapshots.countByProviderAndRequestedAtGreaterThanEqual(any(), any())).thenReturn(9L);
+    ExperimentStrategistExecutionService service =
+        new ExperimentStrategistExecutionService(
+            repository,
+            snapshots,
+            mock(CommercialPlanService.class),
+            mock(ExperimentStrategistContextService.class),
+            new ObjectMapper());
+
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () ->
+                service.reserveBehavioralSnapshot(
+                    19L,
+                    new ExperimentStrategistExecutionService.ReserveBehavioralSnapshotRequest(
+                        88L, "PAGE", 1)))
+        .hasMessageContaining("Cota diária segura");
   }
 
   /** Cria uma execução mínima para cenários de lease. */

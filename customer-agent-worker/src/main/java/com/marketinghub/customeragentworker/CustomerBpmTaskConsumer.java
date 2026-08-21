@@ -161,7 +161,7 @@ public class CustomerBpmTaskConsumer {
       throws IOException {
     Map<String, Object> body = new HashMap<>();
     body.put("resultJson", json.writeValueAsString(result));
-    body.put("evidenceJson", json.writeValueAsString(Map.of("reviewer", "Psique", "model", model)));
+    body.put("evidenceJson", evidence(task));
     putModelUsage(body, usage);
     backend
         .post()
@@ -184,7 +184,7 @@ public class CustomerBpmTaskConsumer {
               "/api/internal/agent-tasks/{agent}/stage-executions/{taskId}/failure",
               AGENT_KEY,
               taskId(task))
-          .body(failureBody(ex.toString(), usage))
+          .body(failureBody(task, ex.toString(), usage))
           .retrieve()
           .toBodilessEntity();
     } catch (Exception callbackEx) {
@@ -199,7 +199,7 @@ public class CustomerBpmTaskConsumer {
     Map<String, Object> body = new HashMap<>();
     body.put("error", "Psique bloqueou o avanço: " + result.path("customerPerspective").asText());
     body.put("resultJson", resultJson);
-    body.put("evidenceJson", json.writeValueAsString(Map.of("reviewer", "Psique", "model", model)));
+    body.put("evidenceJson", evidence(task));
     putModelUsage(body, usage);
     backend
         .post()
@@ -306,11 +306,36 @@ public class CustomerBpmTaskConsumer {
   }
 
   /** Monta a falha preservando o consumo ocorrido antes do bloqueio. */
-  private Map<String, Object> failureBody(String error, TokenUsage usage) {
+  private Map<String, Object> failureBody(Map<String, Object> task, String error, TokenUsage usage)
+      throws IOException {
     Map<String, Object> body = new HashMap<>();
     body.put("error", error);
+    body.put("evidenceJson", evidence(task));
     putModelUsage(body, usage);
     return body;
+  }
+
+  /** Preserva o contexto acessado e comprova que Psique não realizou efeito externo. */
+  private String evidence(Map<String, Object> task) throws IOException {
+    return json.writeValueAsString(evidenceFields("Psique", model, task));
+  }
+
+  /** Monta os campos mínimos que tornam sucesso e falha reconstruíveis na mesma tarefa. */
+  static Map<String, Object> evidenceFields(
+      String reviewer, String model, Map<String, Object> task) {
+    return Map.of(
+        "reviewer",
+        reviewer,
+        "model",
+        model,
+        "sourceReference",
+        String.valueOf(task.get("sourceReference")),
+        "activityId",
+        String.valueOf(task.get("activityId")),
+        "accessMode",
+        "READ_ONLY",
+        "externalSideEffects",
+        false);
   }
 
   /** Acrescenta ao callback somente uma medição real informada pelo Codex. */

@@ -184,6 +184,7 @@ let mockWeeks: unknown[] = [
   },
 ];
 const createPlanMutate = vi.fn();
+const updatePlanMutate = vi.fn();
 const updateWeekMutate = vi.fn();
 const requestRevenueProjectionMutate = vi.fn();
 const requestCommercialAssumptionsMutate = vi.fn();
@@ -402,7 +403,7 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
       isSuccess: false,
     }),
     useUpdateCommercialPlan: () => ({
-      mutate: vi.fn(),
+      mutate: updatePlanMutate,
       isPending: false,
       isError: false,
       isSuccess: false,
@@ -498,6 +499,7 @@ function renderPage(path?: string) {
 
 afterEach(() => {
   createPlanMutate.mockReset();
+  updatePlanMutate.mockReset();
   mockPlans = defaultPlans;
   lastReferenceMonth = null;
   mockWeeks = [
@@ -687,6 +689,13 @@ describe("CommercialPlanningPage", () => {
       {
         ...defaultPlans[0],
         experimentId: 85,
+        targetAudience: "Prestadores de serviços locais",
+        mainPain: "Improviso no atendimento inicial",
+        mainOffer: "Kit manual entregue em 48 horas",
+        mainLeadMagnet: "Amostra anonimizada antes do pagamento",
+        mainChannel: "Conversas individuais autorizadas",
+        mainMetric: "Vendas pagas confirmadas",
+        operationalRevenueTarget: 1745,
         stopCriteria: "Gate vigente do plano selecionado",
         nextAction: "Próxima ação do plano selecionado",
       },
@@ -699,11 +708,32 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getByLabelText("Status")).toBeTruthy();
     expect(screen.getByLabelText("Prazo da meta")).toBeTruthy();
     expect(screen.getByLabelText("Meta de receita")).toBeTruthy();
+    expect(screen.getByLabelText("Meta operacional de receita")).toHaveValue(
+      1745,
+    );
     expect(screen.getByLabelText("Teto total do plano (R$)")).toHaveValue(300);
     expect(
       screen.getByLabelText("Adicionar/selecionar experimento"),
     ).toHaveValue(85);
     expect(screen.getByLabelText("Objetivo comercial")).toBeTruthy();
+    expect(screen.getByLabelText("Público-alvo")).toHaveValue(
+      "Prestadores de serviços locais",
+    );
+    expect(screen.getByLabelText("Dor principal")).toHaveValue(
+      "Improviso no atendimento inicial",
+    );
+    expect(screen.getByLabelText("Oferta principal")).toHaveValue(
+      "Kit manual entregue em 48 horas",
+    );
+    expect(screen.getByLabelText("Prova ou isca principal")).toHaveValue(
+      "Amostra anonimizada antes do pagamento",
+    );
+    expect(screen.getByLabelText("Canal principal")).toHaveValue(
+      "Conversas individuais autorizadas",
+    );
+    expect(screen.getByLabelText("Métrica principal")).toHaveValue(
+      "Vendas pagas confirmadas",
+    );
     expect(screen.getByLabelText("Critério de sucesso")).toBeTruthy();
     expect(screen.getByLabelText("Critério de parada")).toBeTruthy();
     expect(screen.getByLabelText("Critério de parada")).toHaveValue(
@@ -718,6 +748,29 @@ describe("CommercialPlanningPage", () => {
     expect(
       screen.getByRole("button", { name: "Salvar planejamento" }),
     ).toBeTruthy();
+    await user.clear(screen.getByLabelText("Oferta principal"));
+    await user.type(
+      screen.getByLabelText("Oferta principal"),
+      "Kit manual aprovado por R$ 349",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Salvar planejamento" }),
+    );
+    expect(updatePlanMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 1,
+        payload: expect.objectContaining({
+          targetAudience: "Prestadores de serviços locais",
+          mainPain: "Improviso no atendimento inicial",
+          mainOffer: "Kit manual aprovado por R$ 349",
+          mainLeadMagnet: "Amostra anonimizada antes do pagamento",
+          mainChannel: "Conversas individuais autorizadas",
+          mainMetric: "Vendas pagas confirmadas",
+          operationalRevenueTarget: 1745,
+        }),
+      }),
+      expect.any(Object),
+    );
     await user.click(
       screen.getByRole("button", { name: "Homologar jornada com Dédalo" }),
     );

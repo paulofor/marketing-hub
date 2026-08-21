@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: proteger o contrato funcional da revisão BPM de Psique. */
@@ -110,5 +111,21 @@ class CustomerBpmTaskConsumerTest {
     org.assertj.core.api.Assertions.assertThat(usage.cachedInputTokens()).isEqualTo(700L);
     org.assertj.core.api.Assertions.assertThat(usage.outputTokens()).isEqualTo(300L);
     Files.deleteIfExists(output);
+  }
+
+  /** Preserva contexto e ausência de efeitos externos inclusive quando Psique bloqueia. */
+  @Test
+  void buildsGovernedFailureEvidence() {
+    Map<String, Object> evidence =
+        CustomerBpmTaskConsumer.evidenceFields(
+            "Psique",
+            "gpt-5.6-sol",
+            Map.of("sourceReference", "experiment:88", "activityId", "customer"));
+
+    org.assertj.core.api.Assertions.assertThat(evidence)
+        .containsEntry("sourceReference", "experiment:88")
+        .containsEntry("activityId", "customer")
+        .containsEntry("accessMode", "READ_ONLY")
+        .containsEntry("externalSideEffects", false);
   }
 }

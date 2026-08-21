@@ -13,6 +13,28 @@ Transformar sinais reais de sessões, funil, aprendizados e formatos de produto 
 - memória comportamental estruturada e vigente no MySQL;
 - artefatos textuais anonimizados, criptografados e privados no S3.
 - definições comerciais versionadas dos produtos e comparações persistidas de seus experimentos.
+- snapshots agregados do Microsoft Clarity, quando configurado, limitados a página, origem e dispositivo.
+
+## Comportamento real agregado com Microsoft Clarity
+
+O Microsoft Clarity entra como recurso opcional do Estrategista, não como agente novo. Um adaptador
+versionado expõe somente a consulta agregada `PAGE`, `SOURCE` e `DEVICE`; ferramentas de gravação,
+identificadores individuais e timelines não ficam disponíveis ao agente. Cada consulta deve informar
+o experimento, usar janela de um a três dias e ser filtrada pela URL pública `flows/exp-<id>-...`.
+
+O backend autoriza e persiste a requisição, a resposta bruta, o status, a dimensão, a janela, o
+experimento, os horários e o custo direto do provedor, atualmente zero. O limite preventivo é de três
+snapshots por execução e nove por dia, preservando uma chamada da cota pública para diagnóstico.
+`mh_test=1` e a marca persistida `mh_internal_test` nunca podem carregar o coletor Clarity.
+
+Clarity opera em modo sem consentimento de armazenamento por padrão (`consentv2` com armazenamento de
+anúncios e analytics negado), sem identificadores customizados e com formulários mascarados. Mudança
+para cookies ou associação entre páginas exige consentimento explícito e nova decisão canônica.
+
+Scroll, engajamento, rage clicks, dead clicks, quick backs, erros e desempenho são sinais observados,
+não causas. O Estrategista deve confrontá-los com o funil interno, registrar explicação concorrente e
+declarar amostra insuficiente quando não houver base segura. É proibido inferir emoção, intenção,
+saúde, personalidade ou outro perfil individual.
 
 ## Aprendizado de portfólio
 
@@ -33,9 +55,13 @@ autorização humana aplicável.
 - validações: parecer incompleto, sem três alternativas ou sem fronteira do Operador é rejeitado;
 - falhas: ausência de eventos, integração indisponível ou evidência contraditória resulta em lacunas explícitas e baixa confiança;
 - integrações e observabilidade: snapshot do backend, request/resposta brutos, modelo, custo, fontes e status permanecem persistidos;
+- integração Clarity: caminho feliz, token ausente, cota, timeout, resposta granular bloqueada e segregação por experimento são cobertos;
 - métricas: vendas, entrega, satisfação, reembolso, margem, esforço e repetibilidade são comparados sem converter proxies em vendas;
 - segregação: resultados permanecem vinculados ao produto, planejamento e experimentos corretos;
 - interface: o painel comunica em desktop e mobile que o Estrategista recomenda e o Operador executa.
+
+A rodada local completa deve validar desktop, iPhone 15 Pro e Pixel 7, comprovando que o coletor não é
+carregado em `mh_test`, não causa overflow e não interfere no CTA, checkout ou analytics próprio.
 
 ## Memória híbrida
 

@@ -1,5 +1,6 @@
 package com.marketinghub.leadportal.controller;
 
+import com.marketinghub.leadportal.analytics.ClarityTrackingScriptFactory;
 import com.marketinghub.leadportal.dto.FlowResponse;
 import com.marketinghub.leadportal.dto.UpsertFlowRequest;
 import com.marketinghub.leadportal.model.Flow;
@@ -35,12 +36,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class FlowController {
 
     private final FlowService flowService;
+    private final ClarityTrackingScriptFactory clarityTrackingScriptFactory;
 
     /**
      * Inicializa o controller com o serviço de fluxos públicos.
      */
-    public FlowController(FlowService flowService) {
+    public FlowController(
+            FlowService flowService,
+            ClarityTrackingScriptFactory clarityTrackingScriptFactory) {
         this.flowService = flowService;
+        this.clarityTrackingScriptFactory = clarityTrackingScriptFactory;
     }
 
     /**
@@ -75,11 +80,10 @@ public class FlowController {
      */
     @GetMapping("/{slug}")
     public FlowResponse getFlow(@PathVariable("slug") String slug, HttpServletRequest request) {
-        if (isTestTraffic(request)) {
-            return FlowResponse.from(flowService.get(slug));
-        }
-        FlowAccessMetadata accessMetadata = FlowAccessMetadata.from(request);
-        return FlowResponse.from(flowService.getAndTrackAccess(slug, accessMetadata));
+        Flow flow = isTestTraffic(request)
+                ? flowService.get(slug)
+                : flowService.getAndTrackAccess(slug, FlowAccessMetadata.from(request));
+        return instrumentedResponse(flow);
     }
 
     /**
@@ -100,7 +104,7 @@ public class FlowController {
         }
         return ResponseEntity.ok()
                 .contentType(MediaType.TEXT_HTML)
-                .body(injectLandingAnalyticsScript(slug, html));
+                .body(clarityTrackingScriptFactory.inject(injectLandingAnalyticsScript(slug, html)));
     }
 
     /**
@@ -160,6 +164,29 @@ public class FlowController {
     }
 
     /**
+     * Entrega o HTML público com a instrumentação dinâmica também para a rota React do fluxo.
+     */
+    private FlowResponse instrumentedResponse(Flow flow) {
+        FlowResponse response = FlowResponse.from(flow);
+        if (!isStandaloneHtmlDocument(response.customFormHtml())) {
+            return response;
+        }
+        String instrumentedHtml = clarityTrackingScriptFactory.inject(
+                injectLandingAnalyticsScript(response.slug(), response.customFormHtml()));
+        return new FlowResponse(
+                response.slug(),
+                response.name(),
+                response.description(),
+                instrumentedHtml,
+                response.customFormRenderMode(),
+                response.questions(),
+                response.simpleFormStyle(),
+                response.facebookPixelId(),
+                response.facebookPixelCode(),
+                response.facebookPixelCreatedAt());
+    }
+
+    /**
      * Remove o coletor legado embutido no HTML para manter somente o coletor canônico do Lead Portal.
      */
     private String removeLegacySalesPageAnalyticsScript(String html) {
@@ -198,10 +225,11 @@ public class FlowController {
                   const slugValue = %s;
                   const params = new URLSearchParams(window.location.search);
                   const testParam = params.get('mh_test') === '1';
-                  if (testParam) {
+                  const auditParam = params.has('mh_audit');
+                  if (testParam || auditParam) {
                     sessionStorage.setItem('mh_internal_test', 'true');
                   }
-                  if (testParam || sessionStorage.getItem('mh_internal_test') === 'true') {
+                  if (testParam || auditParam || sessionStorage.getItem('mh_internal_test') === 'true') {
                     return;
                   }
                   const endpoint = '/api/flows/' + encodeURIComponent(slugValue) + '/page-analytics';
@@ -489,7 +517,8 @@ public class FlowController {
      * Identifica acessos internos de teste que não devem entrar nas métricas comerciais.
      */
     private boolean isTestTraffic(HttpServletRequest request) {
-        return "1".equals(request.getParameter("mh_test"));
+        return "1".equals(request.getParameter("mh_test"))
+                || request.getParameter("mh_audit") != null;
     }
 
     /**

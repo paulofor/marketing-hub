@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: proteger o contrato funcional do gate BPM de Têmis. */
@@ -58,5 +59,21 @@ class CommercialBpmTaskConsumerTest {
     org.assertj.core.api.Assertions.assertThat(usage.cachedInputTokens()).isEqualTo(1500L);
     org.assertj.core.api.Assertions.assertThat(usage.outputTokens()).isEqualTo(450L);
     Files.deleteIfExists(output);
+  }
+
+  /** Preserva contexto e ausência de efeitos externos inclusive quando Têmis bloqueia. */
+  @Test
+  void buildsGovernedFailureEvidence() {
+    Map<String, Object> evidence =
+        CommercialBpmTaskConsumer.evidenceFields(
+            "Têmis",
+            "gpt-5.6-sol",
+            Map.of("sourceReference", "experiment:88", "activityId", "commercial"));
+
+    org.assertj.core.api.Assertions.assertThat(evidence)
+        .containsEntry("sourceReference", "experiment:88")
+        .containsEntry("activityId", "commercial")
+        .containsEntry("accessMode", "READ_ONLY")
+        .containsEntry("externalSideEffects", false);
   }
 }

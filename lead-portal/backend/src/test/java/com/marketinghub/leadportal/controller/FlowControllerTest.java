@@ -267,13 +267,21 @@ class FlowControllerTest {
 
         mockMvc.perform(get("/api/flows/landing-direta"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.customFormRenderMode").value("STANDALONE_PAGE"));
+                .andExpect(jsonPath("$.customFormRenderMode").value("STANDALONE_PAGE"))
+                .andExpect(jsonPath("$.customFormHtml").value(containsString("data-mh-landing-analytics")))
+                .andExpect(jsonPath("$.customFormHtml").value(containsString("data-mh-clarity-analytics")));
 
         mockMvc.perform(get("/api/flows/landing-direta/page"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
                 .andExpect(content().string(containsString("Landing direta")))
                 .andExpect(content().string(containsString("data-mh-landing-analytics=\"true\"")))
+                .andExpect(content().string(containsString("data-mh-clarity-analytics=\"aggregate-v1\"")))
+                .andExpect(content().string(containsString("consentv2")))
+                .andExpect(content().string(containsString("analytics_Storage: 'denied'")))
+                .andExpect(content().string(containsString("data-clarity-mask")))
+                .andExpect(content().string(containsString("params.has('mh_audit')")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("clarity('identify'"))))
                 .andExpect(content().string(containsString("/api/flows/")))
                 .andExpect(content().string(containsString("/page-analytics")))
                 .andExpect(content().string(containsString("mhAnalyticsDebug")))
@@ -293,6 +301,25 @@ class FlowControllerTest {
                 .andExpect(content().string(containsString("isSelfReferentialLink")))
                 .andExpect(content().string(containsString("form_start")))
                 .andExpect(content().string(containsString("form_submit")));
+    }
+
+    /**
+     * Valida que auditorias internas não registram acesso nem carregam Clarity no navegador.
+     */
+    @Test
+    void auditLinkIsExcludedFromCommercialTrackingContracts() throws Exception {
+        UpsertFlowRequest request = buildRequest();
+        request.setCustomFormHtml("<!doctype html><html><head></head><body>Auditoria</body></html>");
+        mockMvc.perform(put("/api/flows/auditoria")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/flows/auditoria").param("mh_audit", "visual"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.customFormHtml").value(containsString("params.has('mh_audit')")));
+
+        assertThat(flowAccessRepository.findAll()).isEmpty();
     }
 
     /**

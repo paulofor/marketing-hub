@@ -179,6 +179,30 @@ components:
           type: string
           enum: [NOT_REPORTED, NOT_APPLICABLE, ESTIMATED, PARTIALLY_ESTIMATED, PRICING_UNAVAILABLE]
         modelUsageUpdatedAt: {type: string, format: date-time, nullable: true}
+        failureAudit:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/FailureAudit'
+    FailureAudit:
+      type: object
+      required: [readiness, intendedWork, missingEvidence]
+      properties:
+        readiness: {type: string, enum: [COMPLETE, PARTIAL]}
+        intendedWork: {type: string}
+        sourceReference: {type: string, nullable: true}
+        processCode: {type: string, nullable: true}
+        activityId: {type: string, nullable: true}
+        activityName: {type: string, nullable: true}
+        authorityPolicy: {type: string, nullable: true}
+        accessedEvidenceJson: {type: string, nullable: true}
+        producedOutputJson: {type: string, nullable: true}
+        error:
+          type: string
+          nullable: true
+          description: Erro técnico ou causa funcional que bloqueou a tarefa.
+        missingEvidence:
+          type: array
+          items: {type: string}
     PendingTaskResponse:
       type: object
       required: [taskId, agentKey, processCode, processVersion, activityId, activityName]

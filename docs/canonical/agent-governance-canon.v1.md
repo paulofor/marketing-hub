@@ -31,6 +31,36 @@ publicação, comunicação em massa, início ou retomada de campanhas e abertur
 explícita e aprovação humana. Gates determinísticos podem autorizar apenas ações preventivas já
 previstas no contrato canônico do agente.
 
+## Governança proporcional e reconstrução de falhas
+
+Cada agente deve declarar no manifesto de conformidade um nível de autonomia: `OBSERVE`, `ADVISE`,
+`ACT_WITH_APPROVAL` ou `ACT_AUTONOMOUSLY`. O controle cresce com o risco. Agentes `OBSERVE` e
+`ADVISE` não podem declarar efeitos externos; `ADVISE` e `ACT_WITH_APPROVAL` exigem revisão humana;
+`ACT_AUTONOMOUSLY` exige circuit breaker e rollback comprovados. A classificação descreve a
+fronteira do executor, não o efeito posterior que o backend possa aplicar por regra determinística.
+
+Os agentes premium atuais são `ADVISE`: consultam contexto em sandbox somente leitura e reportam
+parecer, artefato ou decisão técnica. Publicação, gasto, preço, comunicação em massa e avanço de
+pipeline permanecem sob os gates do backend e as aprovações correspondentes.
+
+Toda tarefa `BLOCKED` deve expor na própria mesa um log governado capaz de reconstruir:
+
+- trabalho pretendido;
+- entidade, processo e atividade envolvidos;
+- limite de autoridade vigente;
+- evidências e ferramentas acessadas;
+- saída produzida antes da interrupção, quando existir;
+- erro técnico ou causa do bloqueio preservada e campos de auditoria ausentes.
+
+O backend deriva esse log dos dados persistidos da tarefa. Falha antiga incompleta deve aparecer
+como `PARTIAL`, nunca ser preenchida por inferência ou ocultada. Logs técnicos continuam úteis para
+causa-raiz, mas não substituem a explicação funcional auditável ao usuário.
+
+Um AI gateway só deve entrar no runtime quando houver pelo menos dois provedores substituíveis para
+a mesma modalidade ou um problema comprovado de custo, disponibilidade ou política que o roteamento
+resolva. Até esse gatilho, catálogo de modelos, contabilização central de custo e contratos
+versionados permanecem preferíveis a acrescentar uma camada sem benefício comercial medido.
+
 ## Gestão administrativa
 
 A tela `Gestão de agentes` é a entrada canônica para criar e revisar contratos. Cada salvamento

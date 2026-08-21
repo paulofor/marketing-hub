@@ -22,6 +22,11 @@ Fluxo operacional:
 3. Worker publica video no canal autenticado ou roda em `dryRun`.
 4. Worker reporta sucesso ou bloqueio ao backend para relatorio.
 
+Quando o Plano Comercial escolher uma hipotese de microconteudo seriado, o aquecimento inicial usa
+tres videos: conflito reconhecivel, microrecompensa com mecanismo e demonstracao com CTA. A sequencia
+continua sujeita a aprovacao humana e deve ser comparada com uma peca unica pelos eventos de retencao,
+continuidade, checkout e venda; visualizacao isolada nao comprova resultado comercial.
+
 ## Variaveis
 
 - `SOCIAL_BACKEND_BASE_URL`: URL do backend.

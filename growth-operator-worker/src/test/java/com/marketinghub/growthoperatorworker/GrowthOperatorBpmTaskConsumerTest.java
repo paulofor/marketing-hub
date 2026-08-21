@@ -38,6 +38,8 @@ class GrowthOperatorBpmTaskConsumerTest {
     ArgumentCaptor<Map<String, Object>> payload = ArgumentCaptor.forClass(Map.class);
     verify(backend).completeBpmTask(eq(88L), payload.capture());
     assertThat(payload.getValue().get("resultJson").toString()).contains("COMPLETED");
+    assertThat(payload.getValue().get("evidenceJson").toString())
+        .contains("READ_ONLY", "externalSideEffects", "experiment:88");
     assertThat(payload.getValue().get("modelUsages").toString())
         .contains("gpt-5.6-sol", "inputTokens=120", "cachedInputTokens=20", "outputTokens=40");
   }

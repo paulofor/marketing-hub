@@ -60,3 +60,19 @@ visualizações engajadas, espectadores recorrentes, sessões na landing, leads,
 checkouts, vendas e receita atribuída. Visualização ou impacto estimado nunca
 deve ser contado como venda. A decisão do backend deve orientar coleta de
 amostra, ajuste do CTA ou continuidade usando os eventos persistidos.
+
+## Sequência curta opcional
+
+Quando o Plano Comercial registrar uma hipótese de microconteúdo seriado, o aquecimento pode usar
+uma sequência inicial curta sem criar novo agente ou canal. A estrutura de referência é:
+
+1. conflito reconhecível e pergunta aberta legítima;
+2. pequena recompensa prática, mecanismo e nova pergunta;
+3. demonstração ou prova do produto real e CTA para o destino canônico.
+
+Todas as peças devem compartilhar `strategyGroupKey`, produto, experimento, oferta, destino e campanha
+UTM, preservando ordem e papel de cada episódio. O plano deve medir retenção por episódio,
+continuidade para o próximo, retorno, CTA, checkout, compra e receita. A sequência só pode ser
+considerada vencedora contra uma peça única sob audiência, placement, destino e teto financeiro
+equivalentes. Cliffhanger enganoso, valor artificialmente retido e publicação automática continuam
+proibidos.

@@ -4,6 +4,7 @@ package com.marketinghub.leadportal.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -55,7 +56,7 @@ class FlowServiceTest {
                 simpleFlowCatalog,
                 flowAssetService,
                 simpleFormStyleDefaults);
-        when(simpleFlowCatalog.find(anyString())).thenReturn(Optional.empty());
+        lenient().when(simpleFlowCatalog.find(anyString())).thenReturn(Optional.empty());
     }
 
     /** Garante que a rota pública não migra ativos nem grava alterações durante a leitura. */
@@ -100,5 +101,41 @@ class FlowServiceTest {
 
         verify(flowAssetService, never()).optimizeAssets(any(Flow.class));
         verify(flowRepository, never()).save(any(FlowEntity.class));
+    }
+
+    /** Garante que a manutenção otimiza o HTML histórico e preserva sua auditoria de acesso. */
+    @Test
+    void shouldOptimizeExistingAssetsAndPreserveAccessCount() {
+        FlowEntity entity = new FlowEntity();
+        entity.setSlug("landing-historica");
+        entity.setName("Landing histórica");
+        entity.setCustomFormHtml("<html><body><img src=\"https://cdn.example/original.png\"></body></html>");
+        entity.setAccessCount(17L);
+
+        Flow optimized = new Flow(
+                "landing-historica",
+                "Landing histórica",
+                null,
+                "<html><body><img src=\"https://cdn.example/original.png\" srcset=\"https://cdn.example/optimized.jpg 1x\" data-mh-web-optimized=\"true\"></body></html>",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
+
+        when(flowRepository.findById("landing-historica")).thenReturn(Optional.of(entity));
+        when(flowAssetService.optimizeAssets(any(Flow.class))).thenReturn(optimized);
+        when(flowRepository.save(any(FlowEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Flow result = flowService.optimizeExistingAssets("landing-historica");
+
+        assertThat(result.customFormHtml()).contains("data-mh-web-optimized=\"true\"");
+        verify(flowRepository).save(org.mockito.ArgumentMatchers.argThat(saved -> saved.getAccessCount() == 17L));
     }
 }

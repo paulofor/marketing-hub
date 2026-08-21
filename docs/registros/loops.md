@@ -406,6 +406,13 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - **Correção efetiva**: usar o container canônico do frontend, impedir fallback de `/assets/` para `index.html`, desabilitar cache do HTML e validar após o deploy que o bundle referenciado existe e responde `200:application/javascript`. O deploy reconcilia o proprietário real das portas públicas por labels do Compose e remove somente containers pertencentes ao Lead Portal.
 - **Prevenção**: o CI executa `lead-portal/scripts/test-frontend-cache-contract.sh` para impedir regressão da configuração e da reconciliação de portas, além da sonda pública pós-deploy. Se o proprietário das portas não pertencer ao projeto, o deploy interrompe com diagnóstico em vez de remover serviço alheio.
 
+## LOOP-LEAD-PORTAL-DEPLOY-RESOURCE-STARVATION — containers saudáveis com landing indisponível
+
+- **Sintoma:** backend e frontend aparecem `healthy`, mas a landing comercial responde em 5 a 58 segundos ou termina em `504` durante e depois do deploy.
+- **Causa-raiz confirmada em 2026-08-21:** o VPS de 1 GB manteve em paralelo os containers canônicos e uma pilha legada de backend/frontend; com 69 MB livres e 2,9 GB de swap ocupada, o JVM registrou `thread starvation`. A sonda usava uma landing de teste em chave de cache segregada e o trap desarmava o rollback antes da homologação pública.
+- **Correção efetiva:** reconciliar apenas os nomes legados comprovados, limitar memória do JVM, preservar o cache da landing em volume, serializar o primeiro preenchimento com `proxy_cache_lock`, reprocessar ativos históricos em derivados web antes da troca, pré-aquecer a mesma chave comercial com `mh_audit`, exigir cinco respostas abaixo de quatro segundos e restaurar as imagens anteriores quando qualquer gate falhar.
+- **Prevenção:** `test-deploy-resilience-contract.sh` bloqueia regressões de reconciliação, cache, timeout, sonda e rollback; `test-proxy-resilience-e2e.sh` reproduz rajada concorrente, cache persistente, recriação do proxy e backend indisponível; a saúde do backend inclui a renderização do fluxo crítico configurado.
+
 ---
 
 ## LOOP-BACKEND-LOGS-DEPENDENT-ON-BACKEND — Falha de bootstrap elimina o próprio diagnóstico
@@ -1094,6 +1101,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Sintoma:** a Meta confirma campanha ativa e registra impressões, cliques e gasto, mas o cockpit permanece zerado e o run não sai de `PUBLISHED_AWAITING_EXPOSURE`.
 - **Causa-raiz:** o Facebook Ads Worker consultava Insights com `date_preset=maximum`; para campanha recém-publicada, a Graph API podia devolver `data: []` nesse preset mesmo quando um `time_range` explícito retornava os dados do dia. O worker interpretava a resposta vazia como ausência de entrega e persistia zeros.
 - **Prevenção:** consultar o acumulado com `time_range` explícito desde `start_time` da campanha até o dia atual, usando fallback limitado à retenção segura quando o início não estiver disponível. Testes de contrato proíbem o retorno ao preset `maximum` e exigem o campo `start_time` no retrato da campanha.
+- **Fechamento complementar em 2026-08-21:** o primeiro ajuste montava corretamente o JSON, mas `WebClient.uri(String)` codificava novamente o valor já codificado pelo `UriComponentsBuilder`; a Meta recebia `%7B...%7D` como texto e respondia `param time_range must be non-empty`. A chamada passa a construir uma `URI` absoluta com parâmetros estritamente codificados uma única vez, e o teste inspeciona o caminho HTTP bruto para impedir `%257B`.
 
 # LOOP-GERALANDING-AGENT-AFTER-COMMIT — Parecer não chega ao Agente Gerador de Landing
 

@@ -74,6 +74,28 @@ public class FlowService {
         return applyStyleDefaults(normalizeCustomFormHtml(flow));
     }
 
+    /** Reprocessa de forma idempotente os ativos de um fluxo persistido antes da publicação. */
+    @Transactional
+    public Flow optimizeExistingAssets(String slug) {
+        if (simpleFlowCatalog.supports(slug)) {
+            throw new IllegalArgumentException(
+                    "Fluxos simples são gerenciados automaticamente e não possuem ativos persistidos.");
+        }
+
+        FlowEntity existing = repository
+                .findById(slug)
+                .orElseThrow(() -> new FlowNotFoundException(slug));
+        Flow current = applyStyleDefaults(normalizeCustomFormHtml(existing.toModel()));
+        Flow optimized = flowAssetService.optimizeAssets(current);
+        if (optimized == null || optimized.equals(current)) {
+            return current;
+        }
+
+        FlowEntity optimizedEntity = FlowEntity.fromModel(optimized);
+        optimizedEntity.setAccessCount(existing.getAccessCount());
+        return applyStyleDefaults(normalizeCustomFormHtml(repository.save(optimizedEntity).toModel()));
+    }
+
     /** Retorna o fluxo e registra somente os dados operacionais do acesso. */
     @Transactional
     public Flow getAndTrackAccess(String slug, FlowAccessMetadata accessMetadata) {

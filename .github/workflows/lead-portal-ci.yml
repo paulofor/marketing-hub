@@ -79,6 +79,10 @@ jobs:
         run: lead-portal/scripts/test-runtime-health-contract.sh
       - name: Validate production deploy trigger contract
         run: lead-portal/scripts/test-deploy-trigger-contract.sh
+      - name: Validate resilient landing deploy contract
+        run: lead-portal/scripts/test-deploy-resilience-contract.sh
+      - name: Validate landing proxy resilience end to end
+        run: lead-portal/scripts/test-proxy-resilience-e2e.sh
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Log in to GitHub Container Registry
@@ -149,6 +153,7 @@ jobs:
       GHCR_USERNAME: ${{ secrets.GHCR_USERNAME != '' && secrets.GHCR_USERNAME || github.repository_owner }}
       GHCR_TOKEN: ${{ secrets.GHCR_TOKEN != '' && secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
       CLARITY_PROJECT_ID: ${{ vars.CLARITY_PROJECT_ID }}
+      LEAD_PORTAL_CRITICAL_FLOW_SLUG: ${{ vars.LEAD_PORTAL_CRITICAL_FLOW_SLUG != '' && vars.LEAD_PORTAL_CRITICAL_FLOW_SLUG || 'exp-88-gerasalespage-v1' }}
     steps:
       - uses: actions/checkout@v4
       - name: Configure SSH
@@ -204,7 +209,8 @@ jobs:
             "${IMAGE_NAMESPACE}" \
             "${IMAGE_TAG}" \
             "${GITHUB_SHA}" \
-            "${CLARITY_PROJECT_ID}" <<'REMOTE_PUBLISH'
+            "${CLARITY_PROJECT_ID}" \
+            "${LEAD_PORTAL_CRITICAL_FLOW_SLUG}" <<'REMOTE_PUBLISH'
           set -euo pipefail
 
           remote_path="$1"
@@ -215,15 +221,32 @@ jobs:
           image_tag="$6"
           github_sha="$7"
           clarity_project_id="${8:-}"
+          critical_flow_slug="${9:?critical flow slug is required}"
 
           cd "$remote_path"
-          proxy_switch_started=false
+          previous_backend_image="$(docker inspect --format '{{.Config.Image}}' lead-portal-backend 2>/dev/null || true)"
+          previous_frontend_image="$(docker inspect --format '{{.Config.Image}}' lead-portal-frontend 2>/dev/null || true)"
+          deployment_validated=false
           publish_diagnostics() {
             exit_code="$?"
             trap - EXIT HUP INT TERM
             if [ "$exit_code" -ne 0 ]; then
-              if [ "$proxy_switch_started" = true ]; then
-                docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d proxy || true
+              if [ "$deployment_validated" = false ] \
+                && [ -n "$previous_backend_image" ] \
+                && [ -n "$previous_frontend_image" ]; then
+                echo "Falha antes da homologação pública; restaurando as imagens anteriores do Lead Portal." >&2
+                export LEAD_PORTAL_BACKEND_IMAGE="$previous_backend_image"
+                export LEAD_PORTAL_FRONTEND_IMAGE="$previous_frontend_image"
+                docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d backend frontend || true
+                for rollback_attempt in $(seq 1 24); do
+                  rollback_backend_health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' lead-portal-backend 2>/dev/null || true)"
+                  rollback_frontend_health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' lead-portal-frontend 2>/dev/null || true)"
+                  if [ "$rollback_backend_health" = healthy ] && [ "$rollback_frontend_health" = healthy ]; then
+                    docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d proxy || true
+                    break
+                  fi
+                  sleep 5
+                done
               fi
               docker compose -f docker-compose.yml -f docker-compose.deploy.yml ps || true
               docker logs --tail 200 lead-portal-backend || true
@@ -240,7 +263,9 @@ jobs:
           export LEAD_PORTAL_BACKEND_IMAGE="${image_namespace}/lead-portal-backend:${image_tag}"
           export LEAD_PORTAL_FRONTEND_IMAGE="${image_namespace}/lead-portal-frontend:${image_tag}"
           export CLARITY_PROJECT_ID="${clarity_project_id}"
+          export LEAD_PORTAL_CRITICAL_FLOW_SLUG="${critical_flow_slug}"
           docker network inspect public-net >/dev/null 2>&1 || docker network create public-net
+          bash scripts/reconcile-stale-runtime.sh
           docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull
           docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d backend frontend
           for health_attempt in $(seq 1 36); do
@@ -256,7 +281,19 @@ jobs:
             sleep 10
           done
 
-          proxy_switch_started=true
+          docker exec lead-portal-backend \
+            curl -fsS --connect-timeout 2 --max-time 240 -X POST \
+            "http://localhost:8080/api/internal/flows/${critical_flow_slug}/optimize-assets" \
+            | grep -F 'data-mh-web-optimized' >/dev/null
+
+          for direct_probe in 1 2 3; do
+            docker exec lead-portal-backend \
+              curl -fsS --connect-timeout 2 --max-time 4 \
+              "http://localhost:8080/api/flows/${critical_flow_slug}/page?mh_test=1&direct-deploy-probe=${github_sha}-${direct_probe}" \
+              | grep -F 'data-mh-landing-analytics' >/dev/null
+          done
+          bash scripts/reconcile-stale-runtime.sh
+
           port_owner_ids="$({
             docker ps --filter publish=80 -q
             docker ps --filter publish=443 -q
@@ -279,20 +316,23 @@ jobs:
           done
           docker rm -f lead-portal-proxy-1 lead-portal_proxy_1 >/dev/null 2>&1 || true
           docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d proxy
-          proxy_switch_started=false
 
           index_html="$(docker exec lead-portal-frontend cat /usr/share/nginx/html/index.html)"
           asset_path="$(printf '%s' "$index_html" | sed -n 's/.*src="\([^\"]*\.js\)".*/\1/p' | head -n 1)"
           test -n "$asset_path"
           docker exec lead-portal-frontend test -f "/usr/share/nginx/html${asset_path}"
           test "$(curl -fsS -o /dev/null -w '%{http_code}:%{content_type}' "https://oportunidadebrasil.shop${asset_path}")" = '200:application/javascript'
-          for probe in 1 2 3 4 5; do
-            curl -fsS "https://oportunidadebrasil.shop/flows/exp-81-gerasalespage-v1?mh_test=1&deploy-probe=${github_sha}-${probe}" | grep -F 'data-mh-landing-analytics' >/dev/null
-          done
+          bash scripts/verify-public-landing.sh \
+            'https://oportunidadebrasil.shop' \
+            "$critical_flow_slug" \
+            5 \
+            4
           if [ -n "${clarity_project_id}" ]; then
-            curl -fsS "https://oportunidadebrasil.shop/flows/exp-81-gerasalespage-v1?deploy-clarity=${github_sha}" | grep -F 'data-mh-clarity-analytics="aggregate-v1"' >/dev/null
+            curl -fsS --connect-timeout 2 --max-time 4 \
+              "https://oportunidadebrasil.shop/flows/${critical_flow_slug}?mh_audit=deploy-clarity-${github_sha}" \
+              | grep -F 'data-mh-clarity-analytics="aggregate-v1"' >/dev/null
           fi
-          test "$(curl -fsS -o /dev/null -w '%{http_code}' 'https://oportunidadebrasil.shop/flows/exp-81-gerasalespage-v1?mh_test=1&deploy-health=1')" = '200'
+          deployment_validated=true
           docker image prune -af
           trap - EXIT
           REMOTE_PUBLISH

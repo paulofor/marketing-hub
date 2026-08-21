@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/** Valida os contratos HTTP e as regras de integração do cliente da Graph API. */
 class FacebookAdsServiceTest {
     private FailFastMockWebServer server;
     private FacebookAdsService service;
@@ -1317,5 +1318,22 @@ class FacebookAdsServiceTest {
         RecordedRequest request = takeRequest("request");
         assertEquals("/v23.0/77/insights?access_token=token&fields=impressions", request.getPath());
         assertEquals("10", node.get("data").get(0).path("impressions").asText());
+    }
+
+    /** Garante que o intervalo de Insights chega à Meta como JSON codificado uma única vez. */
+    @Test
+    void metricsEncodesTimeRangeExactlyOnce() throws Exception {
+        server.enqueueResponse(new MockResponse().setBody("{\"data\":[]}")
+            .addHeader("Content-Type", "application/json"));
+        String timeRange = "{\"since\":\"2026-08-20\",\"until\":\"2026-08-21\"}";
+
+        service.getCampaignInsights("77", Map.of("time_range", timeRange));
+
+        RecordedRequest request = takeRequest("campaign insights with time range");
+        assertNotNull(request.getRequestUrl());
+        assertEquals(timeRange, request.getRequestUrl().queryParameter("time_range"));
+        assertTrue(request.getPath().contains(
+            "time_range=%7B%22since%22%3A%222026-08-20%22%2C%22until%22%3A%222026-08-21%22%7D"));
+        assertFalse(request.getPath().contains("%257B"));
     }
 }

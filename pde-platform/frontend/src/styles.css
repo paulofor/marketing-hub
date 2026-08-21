@@ -3101,3 +3101,487 @@ h3 {
   padding: 12px;
   border-left: 4px solid #d1a45f;
 }
+
+/* Experiência genérica para PDEs assistidos, sem acoplamento a um produto específico. */
+.assisted-pde-shell {
+  --assisted-primary: #173b37;
+  --assisted-accent: #d18b3d;
+  --assisted-background: #f7f3eb;
+  min-height: 100vh;
+  padding: clamp(24px, 5vw, 72px);
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--assisted-accent) 18%, transparent), transparent 36%),
+    var(--assisted-background);
+  color: var(--assisted-primary);
+}
+
+.assisted-pde-shell h1,
+.assisted-pde-shell h2,
+.assisted-pde-shell h3,
+.assisted-pde-shell p {
+  margin-top: 0;
+}
+
+.assisted-pde-entry,
+.assisted-pde-preview,
+.assisted-pde-header,
+.assisted-pde-progress,
+.assisted-pde-missions,
+.assisted-pde-materials,
+.assisted-pde-service-notice,
+.assisted-pde-support,
+.assisted-pde-completion {
+  width: min(1120px, 100%);
+  margin-inline: auto;
+}
+
+.assisted-pde-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
+  gap: clamp(28px, 6vw, 80px);
+  align-items: center;
+}
+
+.assisted-pde-copy h1,
+.assisted-pde-header h1 {
+  max-width: 820px;
+  margin-bottom: 20px;
+  font-size: clamp(2.35rem, 6vw, 5.8rem);
+  line-height: 0.96;
+  letter-spacing: -0.055em;
+}
+
+.assisted-pde-promise {
+  max-width: 700px;
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  line-height: 1.55;
+}
+
+.assisted-pde-kicker {
+  display: inline-block;
+  margin-bottom: 12px;
+  color: color-mix(in srgb, var(--assisted-primary) 75%, #ffffff);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.assisted-pde-trust-grid {
+  display: grid;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.assisted-pde-trust-grid span {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-weight: 700;
+}
+
+.assisted-pde-trust-grid svg,
+.assisted-pde-section-heading svg,
+.assisted-pde-completion svg {
+  width: 22px;
+  flex: 0 0 22px;
+}
+
+.assisted-pde-access-card,
+.assisted-pde-progress,
+.assisted-pde-mission,
+.assisted-pde-material-grid article {
+  border: 1px solid color-mix(in srgb, var(--assisted-primary) 15%, transparent);
+  border-radius: 24px;
+  background: color-mix(in srgb, #ffffff 88%, var(--assisted-background));
+  box-shadow: 0 20px 70px color-mix(in srgb, var(--assisted-primary) 12%, transparent);
+}
+
+.assisted-pde-access-card {
+  padding: clamp(24px, 4vw, 38px);
+}
+
+.assisted-pde-access-card > svg {
+  width: 34px;
+  height: 34px;
+  margin-bottom: 18px;
+  color: var(--assisted-accent);
+}
+
+.assisted-pde-access-card label,
+.assisted-pde-mission-action label {
+  display: block;
+  margin: 18px 0 8px;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.assisted-pde-access-card input,
+.assisted-pde-mission-action textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--assisted-primary) 24%, transparent);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--assisted-primary);
+  font: inherit;
+}
+
+.assisted-pde-access-card button,
+.assisted-pde-mission-action button,
+.assisted-pde-state button {
+  display: inline-flex;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 14px;
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 12px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  background: var(--assisted-primary);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.assisted-pde-shell button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.assisted-pde-access-card small {
+  display: block;
+  margin-top: 18px;
+  line-height: 1.5;
+}
+
+.assisted-pde-preview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 32px;
+  margin-top: clamp(56px, 9vw, 110px);
+  padding-top: 34px;
+  border-top: 1px solid color-mix(in srgb, var(--assisted-primary) 18%, transparent);
+}
+
+.assisted-pde-preview ul {
+  margin: 0;
+  padding-left: 22px;
+  line-height: 1.7;
+}
+
+.assisted-pde-workspace {
+  display: grid;
+  gap: 28px;
+}
+
+.assisted-pde-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.assisted-pde-header h1 {
+  margin-bottom: 8px;
+  font-size: clamp(2rem, 5vw, 4rem);
+}
+
+.assisted-pde-secondary {
+  min-width: 90px;
+  padding: 10px 16px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--assisted-primary);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.assisted-pde-progress {
+  padding: 22px;
+}
+
+.assisted-pde-service-notice,
+.assisted-pde-operation-state,
+.assisted-pde-materials-locked {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--assisted-accent) 45%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--assisted-accent) 10%, #ffffff);
+}
+
+.assisted-pde-service-notice svg,
+.assisted-pde-operation-state svg,
+.assisted-pde-materials-locked svg {
+  width: 22px;
+  flex: 0 0 22px;
+}
+
+.assisted-pde-service-notice p,
+.assisted-pde-materials-locked p {
+  margin: 6px 0 0;
+  line-height: 1.55;
+}
+
+.assisted-pde-operation-state {
+  margin-top: 16px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.assisted-pde-materials-locked {
+  align-items: center;
+}
+
+.assisted-pde-personal-delivery {
+  margin-top: 18px;
+  padding: 18px;
+  border: 2px solid color-mix(in srgb, var(--assisted-accent) 65%, transparent);
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.assisted-pde-personal-delivery > span {
+  color: var(--assisted-accent);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.assisted-pde-personal-delivery h4 {
+  margin: 8px 0;
+}
+
+.assisted-pde-personal-delivery pre {
+  max-height: 320px;
+  padding: 14px;
+  overflow: auto;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--assisted-background) 80%, #ffffff);
+  color: var(--assisted-primary);
+  font: inherit;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.assisted-pde-personal-delivery a {
+  font-weight: 900;
+}
+
+.assisted-pde-support {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 14px;
+  padding: 24px;
+  border: 1px solid color-mix(in srgb, var(--assisted-primary) 18%, transparent);
+  border-radius: 20px;
+  background: #ffffff;
+}
+
+.assisted-pde-support textarea {
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--assisted-primary) 24%, transparent);
+  border-radius: 10px;
+  font: inherit;
+}
+
+.assisted-pde-support button {
+  min-height: 46px;
+  margin-top: 12px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--assisted-primary);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 800;
+}
+
+.assisted-pde-progress > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.assisted-pde-progress-track {
+  height: 10px;
+  margin: 12px 0;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--assisted-primary) 12%, transparent);
+}
+
+.assisted-pde-progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--assisted-accent);
+  transition: width 220ms ease;
+}
+
+.assisted-pde-progress p {
+  margin-bottom: 0;
+}
+
+.assisted-pde-missions,
+.assisted-pde-materials {
+  padding-top: 18px;
+}
+
+.assisted-pde-section-heading {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.assisted-pde-section-heading h2 {
+  margin-bottom: 0;
+}
+
+.assisted-pde-mission-list {
+  display: grid;
+  gap: 16px;
+}
+
+.assisted-pde-mission {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 16px;
+  padding: clamp(20px, 4vw, 30px);
+}
+
+.assisted-pde-mission.is-complete {
+  border-color: color-mix(in srgb, var(--assisted-accent) 55%, transparent);
+}
+
+.assisted-pde-mission-index {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  place-items: center;
+  background: var(--assisted-primary);
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.assisted-pde-mission p,
+.assisted-pde-mission small {
+  line-height: 1.55;
+}
+
+.assisted-pde-material-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.assisted-pde-material-grid article {
+  padding: 24px;
+}
+
+.assisted-pde-material-grid article > span {
+  color: var(--assisted-accent);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.assisted-pde-material-grid a {
+  color: var(--assisted-primary);
+  font-weight: 900;
+}
+
+.assisted-pde-completion {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 22px;
+  border-radius: 18px;
+  background: var(--assisted-primary);
+  color: #ffffff;
+}
+
+.assisted-pde-completion p {
+  margin: 0;
+}
+
+.assisted-pde-success,
+.assisted-pde-form-error {
+  width: min(1120px, 100%);
+  margin: 14px auto 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: color-mix(in srgb, #37a169 16%, #ffffff);
+}
+
+.assisted-pde-form-error {
+  background: color-mix(in srgb, #c53030 14%, #ffffff);
+  color: #7d1b1b;
+}
+
+.assisted-pde-state {
+  display: grid;
+  min-height: 100vh;
+  padding: 24px;
+  place-content: center;
+  justify-items: center;
+  background: #f7f3eb;
+  color: #173b37;
+  text-align: center;
+}
+
+.assisted-pde-state button {
+  width: auto;
+}
+
+.assisted-pde-spinner {
+  animation: assisted-pde-spin 900ms linear infinite;
+}
+
+@keyframes assisted-pde-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 820px) {
+  .assisted-pde-shell {
+    padding: 24px 16px 44px;
+  }
+
+  .assisted-pde-entry,
+  .assisted-pde-preview,
+  .assisted-pde-material-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .assisted-pde-copy h1 {
+    font-size: clamp(2.5rem, 14vw, 4.4rem);
+  }
+
+  .assisted-pde-header {
+    align-items: center;
+  }
+
+  .assisted-pde-mission {
+    grid-template-columns: 36px minmax(0, 1fr);
+    padding: 18px;
+  }
+
+  .assisted-pde-mission-index {
+    width: 34px;
+    height: 34px;
+  }
+}

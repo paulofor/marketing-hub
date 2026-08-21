@@ -567,9 +567,9 @@ class AgentTaskServiceTest {
     assertThat(task.getStatus()).isEqualTo("IN_PROGRESS");
   }
 
-  /** Reoferece a lease ativa ao mesmo agente após reinício sem liberar sucessoras. */
+  /** Não reoferece uma lease ativa a outro polling sem identidade da execução original. */
   @Test
-  void resumesClaimedProcessTaskBeforeClaimingAnother() {
+  void doesNotResumeClaimedProcessTaskFromPendingQueue() {
     AgentTaskRepository repository = mock(AgentTaskRepository.class);
     AgentRepository agents = mock(AgentRepository.class);
     Agent dedalo = agent(7L, "landing-generator", "Dédalo");
@@ -580,12 +580,10 @@ class AgentTaskServiceTest {
             "landing-generator", "WORK", "IN_PROGRESS"))
         .thenReturn(List.of(claimed));
 
-    AgentTaskPendingResponse resumed =
-        service(repository, agents, Clock.systemUTC())
-            .claimEligibleProcessTask("landing-generator")
-            .orElseThrow();
-
-    assertThat(resumed.taskId()).isEqualTo(30L);
+    assertThat(
+            service(repository, agents, Clock.systemUTC())
+                .claimEligibleProcessTask("landing-generator"))
+        .isEmpty();
     verify(repository, never()).save(any());
   }
 

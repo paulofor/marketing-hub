@@ -7,9 +7,11 @@ import com.marketinghub.pde.dto.FunnelAnalyticsResetResponse;
 import com.marketinghub.pde.dto.FunnelAnalyticsSummaryResponse;
 import com.marketinghub.pde.dto.FunnelEventRequest;
 import com.marketinghub.pde.dto.FunnelEventResponse;
+import com.marketinghub.pde.dto.DeliveryArtifactResponse;
 import com.marketinghub.pde.dto.GoogleAccessRequest;
 import com.marketinghub.pde.dto.MagicLinkResponse;
 import com.marketinghub.pde.dto.MissionInteractionRequest;
+import com.marketinghub.pde.dto.SupportRequest;
 import com.marketinghub.pde.dto.PepperWebhookRequest;
 import com.marketinghub.pde.dto.PepperSyncRequest;
 import com.marketinghub.pde.dto.PepperSyncResponse;
@@ -21,6 +23,9 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,13 +48,6 @@ public class AccessController {
     public AccessController(AccessService accessService, PepperTransactionSyncService pepperTransactionSyncService) {
         this.accessService = accessService;
         this.pepperTransactionSyncService = pepperTransactionSyncService;
-    }
-
-    /** Cria um acesso de desenvolvimento para validar a experiência antes do checkout real. */
-    @PostMapping("/dev")
-    @ResponseStatus(HttpStatus.CREATED)
-    public AccessResponse createDevAccess(@Valid @RequestBody AccessRequest request) {
-        return accessService.createAccess(request.productSlug(), request.email(), "DEV");
     }
 
     /** Libera acesso da cliente a partir do e-mail informado no fluxo de compra. */
@@ -195,5 +193,26 @@ public class AccessController {
             @Valid @RequestBody MissionInteractionRequest request) {
         accessService.saveMissionInteraction(token, missionId, request);
         return accessService.getWorkspace(token);
+    }
+
+    /** Baixa o conteúdo personalizado vinculado ao próprio token e marco concluído. */
+    @GetMapping("/{token}/deliveries/{missionId}/download")
+    public ResponseEntity<String> downloadDelivery(
+            @PathVariable("token") String token,
+            @PathVariable("missionId") String missionId) {
+        DeliveryArtifactResponse artifact = accessService.getDeliveryArtifact(token, missionId);
+        String filename = missionId.replaceAll("[^a-zA-Z0-9-]", "-") + ".md";
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/markdown;charset=UTF-8"))
+                .header("Content-Disposition", ContentDisposition.attachment().filename(filename).build().toString())
+                .body(artifact.content());
+    }
+
+    /** Registra um pedido de suporte ou revisão sem retirar a cliente da experiência. */
+    @PostMapping("/{token}/support-requests")
+    public WorkspaceResponse requestSupport(
+            @PathVariable("token") String token,
+            @Valid @RequestBody SupportRequest request) {
+        return accessService.requestSupport(token, request.message());
     }
 }

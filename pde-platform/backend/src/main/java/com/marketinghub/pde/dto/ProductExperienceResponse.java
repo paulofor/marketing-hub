@@ -37,8 +37,41 @@ public record ProductExperienceResponse(
             String principle,
             String action,
             String evidence,
-            String visualCue
-    ) {}
+            String visualCue,
+            String completionRole,
+            DeliveryContractDto deliveryContract
+    ) {
+        /** Mantém compatibilidade com contratos que já declaram somente o papel de conclusão. */
+        public MissionDto(
+                String id,
+                int day,
+                String title,
+                String principle,
+                String action,
+                String evidence,
+                String visualCue,
+                String completionRole) {
+            this(id, day, title, principle, action, evidence, visualCue, completionRole, null);
+        }
+
+        /** Mantém compatibilidade com contratos anteriores em que toda missão pertence à cliente. */
+        public MissionDto(
+                String id,
+                int day,
+                String title,
+                String principle,
+                String action,
+                String evidence,
+                String visualCue) {
+            this(id, day, title, principle, action, evidence, visualCue, null, null);
+        }
+    }
+
+    /** Define as seções materiais obrigatórias de uma entrega operacional estruturada. */
+    public record DeliveryContractDto(List<DeliverySectionDto> sections) {}
+
+    /** Define quantidade e identidade de uma seção verificável da entrega. */
+    public record DeliverySectionDto(String id, String title, int minItems, int maxItems) {}
 
     /** Define um material de apoio disponível na biblioteca do produto. */
     public record SupportMaterialDto(String title, String type, String description, String url) {}

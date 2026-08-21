@@ -1422,6 +1422,22 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Correção sistêmica:** Dédalo reutiliza a tentativa materializada enquanto ela não estiver em falha e entrega à próxima atividade HTML, anúncio, checkout, preço e auditoria visual avaliados.
 - **Prevenção:** testes de contrato impedem nova materialização durante o gate e comprovam a propagação das evidências comerciais para Psique e Têmis.
 
+## LOOP-BPM-PENDING-REOFERECE-LEASE-ATIVA — duas instâncias executam a mesma tarefa
+
+- **Data:** 2026-08-21.
+- **Sintoma:** duas instâncias locais de Dédalo receberam a tarefa #169; uma delas gerou o pacote, mas teve o callback rejeitado porque a outra já havia concluído a mesma lease.
+- **Causa-raiz:** o endpoint canônico `pending` reoferecia qualquer tarefa `IN_PROGRESS` ao agente, sem possuir uma identidade de executor capaz de distinguir retomada legítima de uma segunda instância concorrente.
+- **Correção sistêmica:** a fila `pending` passa a entregar somente tarefas realmente pendentes, bloqueadas com `PESSIMISTIC_WRITE`; retomadas usam o contrato explícito por `taskId` e deixam de ocorrer por polling anônimo.
+- **Prevenção:** teste de contrato comprova que uma lease ativa não volta pela fila e a trava transacional impede duas reservas simultâneas do mesmo registro.
+
+## LOOP-PDE-ENTREGA-DECLARADA-SEM-CONTEUDO — resumo libera pacote incompleto
+
+- **Data:** 2026-08-21.
+- **Sintoma:** a jornada do Kit WhatsApp concluía a entrega completa com um arquivo que dizia incluir respostas, perguntas, follow-ups, guia e checklist, mas não materializava esses itens.
+- **Causa-raiz:** o gate validava somente título, versão e tamanho mínimo do texto; uma descrição da entrega satisfazia o mesmo contrato do conteúdo funcional prometido.
+- **Correção sistêmica:** cada missão pode declarar seções estruturadas com limites mínimos e máximos. O backend exige todas as seções, bloqueia duplicatas, itens vazios e seções inesperadas e monta o artefato final somente a partir dos itens validados. A primeira aplicação planejada também deixa de equivaler a uso realizado.
+- **Prevenção:** testes unitários e ponta a ponta rejeitam o resumo declarativo e inspecionam materialmente respostas, perguntas, follow-ups, regras, guia e checklist antes de liberar a jornada.
+
 # 2026-08-14 — Dédalo: reconexão Codex bloqueava a produção da landing
 
 - **Sintoma:** uma correção integral de HTML permanecia iniciada sem ser reservada pelo executor.

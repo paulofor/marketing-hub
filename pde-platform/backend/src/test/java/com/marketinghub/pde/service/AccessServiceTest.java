@@ -5,14 +5,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.marketinghub.pde.dto.FunnelEventRequest;
 import com.marketinghub.pde.dto.AccessResponse;
 import com.marketinghub.pde.dto.AiGuidanceCreateRequest;
 import com.marketinghub.pde.dto.AiGuidanceResultRequest;
 import com.marketinghub.pde.dto.MissionInteractionRequest;
+import com.marketinghub.pde.dto.OperationalMissionCompletionRequest;
+import com.marketinghub.pde.dto.OperationalMissionCompletionRequest.DeliverySectionRequest;
 import com.marketinghub.pde.dto.PepperWebhookRequest;
 import com.marketinghub.pde.dto.WorkspaceResponse;
+import com.marketinghub.pde.dto.ProductExperienceResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.nio.file.Path;
@@ -77,6 +81,208 @@ class AccessServiceTest {
 
         assertThat(workspace.completedMissionIds()).containsExactly("dia-1-ruido-visual");
         assertThat(workspace.progressPercent()).isEqualTo(14);
+    }
+
+    /** Impede que a cliente conclua um marco operacional da experiência assistida. */
+    @Test
+    void rejectsCustomerCompletionOfOperationalMission() {
+        ProductCatalogService catalog = roleAwareCatalog();
+        AccessService accessService = new AccessService(
+                catalog, new ObjectMapper(), tempDir.resolve("role-customer.json").toString());
+        AccessResponse access = accessService.createAccess("kit-role-aware", "cliente@sandbox.local", "DEV");
+
+        accessService.completeMission(access.token(), "entrada");
+
+        assertThrows(IllegalArgumentException.class,
+                () -> accessService.completeMission(access.token(), "entrega"));
+        assertThat(accessService.getWorkspace(access.token()).completedMissionIds()).containsExactly("entrada");
+    }
+
+    /** Impede que a operação pule a entrada que pertence à cliente. */
+    @Test
+    void rejectsOperationalMissionBeforeItsPredecessor() {
+        ProductCatalogService catalog = roleAwareCatalog();
+        AccessService accessService = new AccessService(
+                catalog, new ObjectMapper(), tempDir.resolve("role-order.json").toString());
+        AccessResponse access = accessService.createAccess("kit-role-aware", "cliente@sandbox.local", "DEV");
+
+        assertThrows(IllegalArgumentException.class,
+                () -> accessService.completeOperationalMission(access.token(), "entrega"));
+        assertThat(accessService.getWorkspace(access.token()).completedMissionIds()).isEmpty();
+    }
+
+    /** Preserva a sequência entre entrada, operação e primeira aplicação da cliente. */
+    @Test
+    void completesRoleAwareJourneyInCanonicalOrder() {
+        ProductCatalogService catalog = roleAwareCatalog();
+        AccessService accessService = new AccessService(
+                catalog, new ObjectMapper(), tempDir.resolve("role-happy.json").toString());
+        AccessResponse access = accessService.createAccess("kit-role-aware", "cliente@sandbox.local", "DEV");
+
+        accessService.completeMission(access.token(), "entrada");
+        accessService.completeOperationalMission(access.token(), "entrega");
+        accessService.completeMission(access.token(), "aplicacao");
+
+        WorkspaceResponse workspace = accessService.getWorkspace(access.token());
+        assertThat(workspace.completedMissionIds()).containsExactlyInAnyOrder("entrada", "entrega", "aplicacao");
+        assertThat(workspace.progressPercent()).isEqualTo(100);
+    }
+
+    /** Exige e restaura microentrega e pacote individual antes de liberar os marcos prometidos. */
+    @Test
+    void persistsPersonalizedDeliveriesForCompletedOperationalMilestones() {
+        ProductCatalogService catalog = assistedDeliveryCatalog();
+        String storagePath = tempDir.resolve("personal-deliveries.json").toString();
+        AccessService accessService = new AccessService(catalog, new ObjectMapper(), storagePath);
+        AccessResponse access = accessService.createAccess("kit-delivery", "cliente@sandbox.local", "DEV");
+
+        saveCompleteBriefing(accessService, access.token());
+        accessService.completeMission(access.token(), "entrada-guiada");
+        accessService.completeOperationalMission(access.token(), "conferencia-de-completude");
+        accessService.completeOperationalMission(access.token(), "diagnostico-humano");
+        assertThrows(IllegalArgumentException.class,
+                () -> accessService.completeOperationalMission(access.token(), "microvalor-12h"));
+        accessService.completeOperationalMission(
+                access.token(),
+                "microvalor-12h",
+                new OperationalMissionCompletionRequest(
+                        "Microentrega Studio Aurora",
+                        "micro-v1",
+                        "Conteúdo individual com três cenários, duas perguntas e uma resposta ajustada ao briefing da cliente. "
+                                + "A mensagem exige revisão humana antes de qualquer uso no WhatsApp."));
+        accessService.completeOperationalMission(
+                access.token(),
+                "entrega-completa-48h",
+                new OperationalMissionCompletionRequest(
+                        "Kit completo Studio Aurora",
+                        "kit-v1",
+                        null,
+                        completeDeliverySections()));
+        accessService.requestSupport(access.token(), "Quero revisar a resposta de preço antes do uso.");
+
+        AccessService restarted = new AccessService(catalog, new ObjectMapper(), storagePath);
+        WorkspaceResponse workspace = restarted.getWorkspace(access.token());
+
+        assertThat(workspace.deliveryArtifacts()).hasSize(2);
+        assertThat(workspace.deliveryArtifacts()).extracting("missionId")
+                .containsExactlyInAnyOrder("microvalor-12h", "entrega-completa-48h");
+        assertThat(restarted.getDeliveryArtifact(access.token(), "microvalor-12h").content())
+                .contains("três cenários", "revisão humana");
+        assertThat(workspace.supportStatus()).isEqualTo("OPEN");
+    }
+
+    /** Bloqueia uma entrega que apenas declara quantidades sem materializar cada componente prometido. */
+    @Test
+    void rejectsDeclarativeFullDeliveryWithoutStructuredItems() {
+        ProductCatalogService catalog = assistedDeliveryCatalog();
+        AccessService accessService = new AccessService(
+                catalog, new ObjectMapper(), tempDir.resolve("declarative-delivery.json").toString());
+        AccessResponse access = accessService.createAccess("kit-delivery", "cliente@sandbox.local", "DEV");
+
+        saveCompleteBriefing(accessService, access.token());
+        accessService.completeMission(access.token(), "entrada-guiada");
+        accessService.completeOperationalMission(access.token(), "conferencia-de-completude");
+        accessService.completeOperationalMission(access.token(), "diagnostico-humano");
+        accessService.completeOperationalMission(
+                access.token(),
+                "microvalor-12h",
+                new OperationalMissionCompletionRequest(
+                        "Microentrega Studio Aurora",
+                        "micro-v1",
+                        "Conteúdo individual com três cenários, duas perguntas e uma resposta ajustada ao briefing da cliente. "
+                                + "A mensagem exige revisão humana antes de qualquer uso no WhatsApp."));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> accessService.completeOperationalMission(
+                        access.token(),
+                        "entrega-completa-48h",
+                        new OperationalMissionCompletionRequest(
+                                "Kit completo Studio Aurora",
+                                "kit-v1",
+                                "Declara incluir quinze respostas, oito perguntas, quatro follow-ups, guia e checklist.")));
+    }
+
+    /** Monta um catálogo mínimo com autoridade explícita para cliente e operação. */
+    private ProductCatalogService roleAwareCatalog() {
+        ProductCatalogService catalog = mock(ProductCatalogService.class);
+        ProductExperienceResponse product = mock(ProductExperienceResponse.class);
+        when(product.missions()).thenReturn(List.of(
+                new ProductExperienceResponse.MissionDto(
+                        "entrada", 1, "Entrada", "Objetivo", "Ação", "Evidência", "Dica", "CUSTOMER"),
+                new ProductExperienceResponse.MissionDto(
+                        "entrega", 2, "Entrega", "Objetivo", "Ação", "Evidência", "Dica", "OPERATION"),
+                new ProductExperienceResponse.MissionDto(
+                        "aplicacao", 3, "Aplicação", "Objetivo", "Ação", "Evidência", "Dica", "CUSTOMER")));
+        when(catalog.getProduct("kit-role-aware")).thenReturn(product);
+        return catalog;
+    }
+
+    /** Monta a sequência canônica mínima que exige duas entregas personalizadas. */
+    private ProductCatalogService assistedDeliveryCatalog() {
+        ProductCatalogService catalog = mock(ProductCatalogService.class);
+        ProductExperienceResponse product = mock(ProductExperienceResponse.class);
+        when(product.missions()).thenReturn(List.of(
+                new ProductExperienceResponse.MissionDto(
+                        "entrada-guiada", 1, "Entrada", "Objetivo", "Ação", "Evidência", "Dica", "CUSTOMER"),
+                new ProductExperienceResponse.MissionDto(
+                        "conferencia-de-completude", 2, "Conferência", "Objetivo", "Ação", "Evidência", "Dica", "OPERATION"),
+                new ProductExperienceResponse.MissionDto(
+                        "diagnostico-humano", 3, "Diagnóstico", "Objetivo", "Ação", "Evidência", "Dica", "OPERATION"),
+                new ProductExperienceResponse.MissionDto(
+                        "microvalor-12h", 4, "Microvalor", "Objetivo", "Ação", "Evidência", "Dica", "OPERATION"),
+                new ProductExperienceResponse.MissionDto(
+                        "entrega-completa-48h",
+                        5,
+                        "Entrega",
+                        "Objetivo",
+                        "Ação",
+                        "Evidência",
+                        "Dica",
+                        "OPERATION",
+                        completeDeliveryContract()),
+                new ProductExperienceResponse.MissionDto(
+                        "primeira-aplicacao-e-revisao", 6, "Aplicação", "Objetivo", "Ação", "Evidência", "Dica", "CUSTOMER")));
+        when(catalog.getProduct("kit-delivery")).thenReturn(product);
+        return catalog;
+    }
+
+    /** Define o contrato mínimo do kit completo usado nos testes da entrega material. */
+    private ProductExperienceResponse.DeliveryContractDto completeDeliveryContract() {
+        return new ProductExperienceResponse.DeliveryContractDto(List.of(
+                new ProductExperienceResponse.DeliverySectionDto("responses", "Respostas", 10, 20),
+                new ProductExperienceResponse.DeliverySectionDto("qualificationQuestions", "Perguntas", 5, 10),
+                new ProductExperienceResponse.DeliverySectionDto("followUps", "Follow-ups", 3, 5),
+                new ProductExperienceResponse.DeliverySectionDto("escalationRules", "Regras", 1, 8),
+                new ProductExperienceResponse.DeliverySectionDto("usageGuide", "Guia", 3, 10),
+                new ProductExperienceResponse.DeliverySectionDto("checklist", "Checklist", 5, 20)));
+    }
+
+    /** Monta uma entrega completa com todos os itens exigidos pelo contrato. */
+    private List<DeliverySectionRequest> completeDeliverySections() {
+        return List.of(
+                new DeliverySectionRequest("responses", numberedItems("Resposta personalizada", 10)),
+                new DeliverySectionRequest("qualificationQuestions", numberedItems("Pergunta personalizada", 5)),
+                new DeliverySectionRequest("followUps", numberedItems("Follow-up manual", 3)),
+                new DeliverySectionRequest("escalationRules", List.of("Revisar pessoalmente toda exceção")),
+                new DeliverySectionRequest("usageGuide", numberedItems("Passo de uso", 3)),
+                new DeliverySectionRequest("checklist", numberedItems("Item de revisão", 5)));
+    }
+
+    /** Gera itens distintos para provar quantidade material em cada seção. */
+    private List<String> numberedItems(String prefix, int quantity) {
+        return java.util.stream.IntStream.rangeClosed(1, quantity)
+                .mapToObj(index -> prefix + " " + index + " ajustado ao Studio Aurora")
+                .toList();
+    }
+
+    /** Salva o briefing completo antes de concluir a entrada da cliente. */
+    private void saveCompleteBriefing(AccessService accessService, String token) {
+        accessService.saveMissionInteraction(token, "entrada-guiada", new MissionInteractionRequest(Map.of(
+                "services", "Manicure, alongamento e manutenção",
+                "repeatedQuestions", "Preço, duração e agenda",
+                "policies", "Hora marcada na região central",
+                "tone", "Acolhedor, profissional e direto",
+                "anonymousScenarios", "Cinco situações anonimizadas")));
     }
 
     /** Confirma que respostas de personalização do Dia 1 continuam disponíveis após reinício. */
@@ -882,6 +1088,84 @@ class AccessServiceTest {
         assertThat(summary.recentJourneys())
                 .singleElement()
                 .satisfies(journey -> assertThat(journey.sessionId()).isEqualTo("session-human"));
+    }
+
+    /** Mantém evento funcional de homologação fora dos indicadores humanos e comerciais. */
+    @Test
+    void excludesExplicitTestMarkerBeforeFunctionalEventClassification() throws SQLException {
+        String jdbcUrl = "jdbc:h2:mem:pde_explicit_test;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createPdeFunnelEventSchema(jdbcUrl);
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(),
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                null,
+                null);
+
+        accessService.recordFunnelEvent(new FunnelEventRequest(
+                "metodo-musa-7-dias",
+                "FIRST_USE",
+                "test-token",
+                "teste+round@sandbox.local",
+                "DEV",
+                "mh_test",
+                "http://localhost:5176/?mh_test=1",
+                "127.0.0.1",
+                "Mozilla/5.0",
+                Map.of("visitorId", "test-visitor", "sessionId", "test-session")));
+
+        var summary = accessService.summarizeFunnelAnalytics("metodo-musa-7-dias");
+
+        assertThat(summary.totalEvents()).isZero();
+        assertThat(summary.rawTotalEvents()).isEqualTo(1);
+        assertThat(summary.humanSessions()).isZero();
+        assertThat(summary.trafficQualityBreakdown())
+                .singleElement()
+                .satisfies(metric -> {
+                    assertThat(metric.trafficQuality()).isEqualTo("INTERNAL_QA");
+                    assertThat(metric.events()).isEqualTo(1);
+                });
+    }
+
+    /** Mantém a ativação gerada internamente por um acesso DEV fora dos indicadores comerciais. */
+    @Test
+    void excludesDevAccessEventsWithoutDependingOnPageMarkers() throws SQLException {
+        String jdbcUrl = "jdbc:h2:mem:pde_dev_access;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createPdeFunnelEventSchema(jdbcUrl);
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(),
+                new ObjectMapper(),
+                tempDir.resolve("access-grants-dev.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                null,
+                null);
+
+        accessService.recordFunnelEvent(new FunnelEventRequest(
+                "metodo-musa-7-dias",
+                "FIRST_USE",
+                "dev-token",
+                "teste+dev@sandbox.local",
+                "DEV",
+                "pde-platform",
+                null,
+                Map.of("missionId", "dia-1-ruido-visual")));
+
+        var summary = accessService.summarizeFunnelAnalytics("metodo-musa-7-dias");
+
+        assertThat(summary.totalEvents()).isZero();
+        assertThat(summary.humanSessions()).isZero();
+        assertThat(summary.internalQaSessions()).isEqualTo(1);
     }
 
     /** Confirma que jornadas por sessão retornam vazio no modo local sem banco analítico. */

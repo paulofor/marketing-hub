@@ -1,10 +1,12 @@
 package com.marketinghub.repository.jpa.agenttask;
 
 import com.marketinghub.agenttask.AgentTask;
+import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -38,6 +40,7 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
       String agentKey, String taskKind, List<String> statuses);
 
   /** Lista o trabalho ainda não reservado de um executor na ordem em que entrou no processo. */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
   List<AgentTask> findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
       String agentKey, String taskKind, String status);
 

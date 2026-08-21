@@ -12,5 +12,7 @@ public record WorkspaceResponse(
         int totalMissions,
         int progressPercent,
         List<String> completedMissionIds,
-        List<MissionInteractionResponse> missionInteractions
+        List<MissionInteractionResponse> missionInteractions,
+        List<DeliveryArtifactResponse> deliveryArtifacts,
+        String supportStatus
 ) {}

@@ -1,6 +1,7 @@
 package com.marketinghub.pde.service;
 
 import com.marketinghub.pde.dto.AccessResponse;
+import com.marketinghub.pde.dto.DeliveryArtifactResponse;
 import com.marketinghub.pde.dto.FunnelAnalyticsResetResponse;
 import com.marketinghub.pde.dto.FunnelAnalyticsEventMetricDto;
 import com.marketinghub.pde.dto.FunnelAnalyticsExperienceVersionMetricDto;
@@ -16,6 +17,8 @@ import com.marketinghub.pde.dto.FunnelEventResponse;
 import com.marketinghub.pde.dto.MagicLinkResponse;
 import com.marketinghub.pde.dto.MissionInteractionRequest;
 import com.marketinghub.pde.dto.MissionInteractionResponse;
+import com.marketinghub.pde.dto.OperationalMissionCompletionRequest;
+import com.marketinghub.pde.dto.OperationalMissionCompletionRequest.DeliverySectionRequest;
 import com.marketinghub.pde.dto.PepperWebhookRequest;
 import com.marketinghub.pde.dto.ProductExperienceResponse;
 import com.marketinghub.pde.dto.WorkspaceResponse;
@@ -58,6 +61,10 @@ public class AccessService {
     private static final ZoneId OPERATIONAL_TIME_ZONE = ZoneId.of("America/Sao_Paulo");
     private static final String TRAFFIC_QUALITY_HUMAN = "HUMAN";
     private static final String COMMERCIAL_TRAFFIC_FILTER = " traffic_quality = 'HUMAN' ";
+    private static final String DELIVERY_TITLE_KEY = "operatorDeliveryTitle";
+    private static final String DELIVERY_VERSION_KEY = "operatorDeliveryVersion";
+    private static final String DELIVERY_CONTENT_KEY = "operatorDeliveryContent";
+    private static final String DELIVERY_CREATED_AT_KEY = "operatorDeliveryCreatedAt";
 
     private final ProductCatalogService productCatalogService;
     private final ObjectMapper objectMapper;
@@ -673,13 +680,19 @@ public class AccessService {
                 totalMissions,
                 progressPercent,
                 completedMissionIds.stream().toList(),
-                toMissionInteractionResponses(grant));
+                toMissionInteractionResponses(grant),
+                toDeliveryArtifactResponses(grant),
+                supportStatus(grant));
     }
 
-    /** Marca uma missão do produto como concluída após validar se ela existe. */
+    /** Marca uma missão da cliente como concluída sem permitir avanço de etapas operacionais. */
     public void completeMission(String token, String missionId) {
         AccessGrant grant = getGrant(token);
-        validateMissionExists(grant, missionId);
+        ProductExperienceResponse product = productCatalogService.getProduct(grant.getProductSlug());
+        ProductExperienceResponse.MissionDto mission = validateMissionExists(product, missionId);
+        validateMissionRole(mission, "CUSTOMER");
+        validateMissionOrder(product, grant, mission);
+        validateCustomerCompletionEvidence(grant, missionId);
         boolean firstCompletedMission = grant.getCompletedMissionIds().isEmpty();
         grant.completeMission(missionId);
         persistAccess(grant);
@@ -696,10 +709,210 @@ public class AccessService {
         }
     }
 
+    /** Marca um marco operacional como concluído somente pelo contrato interno autorizado. */
+    public void completeOperationalMission(String token, String missionId) {
+        completeOperationalMission(token, missionId, null);
+    }
+
+    /** Conclui um marco operacional e persiste a entrega individual quando o marco a exige. */
+    public void completeOperationalMission(
+            String token, String missionId, OperationalMissionCompletionRequest request) {
+        AccessGrant grant = getGrant(token);
+        ProductExperienceResponse product = productCatalogService.getProduct(grant.getProductSlug());
+        ProductExperienceResponse.MissionDto mission = validateMissionExists(product, missionId);
+        validateMissionRole(mission, "OPERATION");
+        validateMissionOrder(product, grant, mission);
+        if (requiresDeliveryArtifact(missionId)) {
+            Map<String, String> delivery = validateDeliveryArtifact(mission, request);
+            grant.saveMissionInteraction(missionId, delivery);
+        }
+        grant.completeMission(missionId);
+        persistAccess(grant);
+    }
+
+    /** Retorna uma entrega individual somente quando o acesso e o marco concluído coincidem. */
+    public DeliveryArtifactResponse getDeliveryArtifact(String token, String missionId) {
+        AccessGrant grant = getGrant(token);
+        return toDeliveryArtifactResponses(grant).stream()
+                .filter(artifact -> artifact.missionId().equals(missionId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Entrega personalizada ainda não disponível"));
+    }
+
+    /** Registra uma solicitação rastreável de suporte dentro do mesmo acesso da cliente. */
+    public WorkspaceResponse requestSupport(String token, String message) {
+        AccessGrant grant = getGrant(token);
+        String sanitizedMessage = message == null ? "" : message.trim();
+        if (sanitizedMessage.isBlank() || sanitizedMessage.length() > 2000) {
+            throw new IllegalArgumentException("Descreva o suporte necessário em até 2.000 caracteres");
+        }
+        grant.saveMissionInteraction("support", Map.of(
+                "requestText", sanitizedMessage,
+                "requestStatus", "OPEN",
+                "requestedAt", Instant.now().toString()));
+        persistAccess(grant);
+        recordFunnelEvent(new FunnelEventRequest(
+                grant.getProductSlug(),
+                "SUPPORT_REQUESTED",
+                grant.getToken(),
+                grant.getEmail(),
+                grant.getSource(),
+                "pde-platform",
+                null,
+                Map.of("supportType", "CUSTOMER_REQUEST")));
+        return getWorkspace(token);
+    }
+
+    /** Identifica os marcos que precisam materializar valor individual antes da conclusão. */
+    private boolean requiresDeliveryArtifact(String missionId) {
+        return Set.of("microvalor-12h", "entrega-completa-48h").contains(missionId);
+    }
+
+    /** Valida e normaliza o artefato entregue pela operação para uma cliente específica. */
+    private Map<String, String> validateDeliveryArtifact(
+            ProductExperienceResponse.MissionDto mission,
+            OperationalMissionCompletionRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("O marco exige uma entrega personalizada");
+        }
+        String title = request.deliveryTitle() == null ? "" : request.deliveryTitle().trim();
+        String version = request.deliveryVersion() == null ? "" : request.deliveryVersion().trim();
+        String content = hasStructuredDeliveryContract(mission)
+                ? buildStructuredDelivery(mission.deliveryContract(), request.deliverySections())
+                : request.deliveryContent() == null ? "" : request.deliveryContent().trim();
+        if (title.isBlank() || title.length() > 160
+                || version.isBlank() || version.length() > 80
+                || content.length() < 100 || content.length() > 20000) {
+            throw new IllegalArgumentException("Entrega personalizada incompleta ou fora dos limites");
+        }
+        return Map.of(
+                DELIVERY_TITLE_KEY, title,
+                DELIVERY_VERSION_KEY, version,
+                DELIVERY_CONTENT_KEY, content,
+                DELIVERY_CREATED_AT_KEY, Instant.now().toString());
+    }
+
+    /** Confirma se a missão declara seções materiais verificáveis antes da entrega. */
+    private boolean hasStructuredDeliveryContract(ProductExperienceResponse.MissionDto mission) {
+        return mission.deliveryContract() != null
+                && mission.deliveryContract().sections() != null
+                && !mission.deliveryContract().sections().isEmpty();
+    }
+
+    /** Valida todas as seções e gera o documento final sem aceitar simples declaração de conteúdo. */
+    private String buildStructuredDelivery(
+            ProductExperienceResponse.DeliveryContractDto contract,
+            List<DeliverySectionRequest> receivedSections) {
+        if (receivedSections == null) {
+            throw new IllegalArgumentException("A entrega completa exige todas as seções estruturadas");
+        }
+        Map<String, DeliverySectionRequest> sectionsById = new LinkedHashMap<>();
+        for (DeliverySectionRequest section : receivedSections) {
+            String sectionId = section == null || section.sectionId() == null ? "" : section.sectionId().trim();
+            if (sectionId.isBlank() || sectionsById.putIfAbsent(sectionId, section) != null) {
+                throw new IllegalArgumentException("A entrega contém seção ausente ou duplicada");
+            }
+        }
+        Set<String> requiredIds = new LinkedHashSet<>();
+        StringBuilder content = new StringBuilder("# Entrega completa personalizada\n");
+        for (ProductExperienceResponse.DeliverySectionDto requirement : contract.sections()) {
+            validateDeliveryRequirement(requirement);
+            requiredIds.add(requirement.id());
+            DeliverySectionRequest received = sectionsById.get(requirement.id());
+            List<String> items = received == null || received.items() == null ? List.of() : received.items();
+            if (items.size() < requirement.minItems() || items.size() > requirement.maxItems()) {
+                throw new IllegalArgumentException(
+                        "A seção " + requirement.title() + " exige entre " + requirement.minItems()
+                                + " e " + requirement.maxItems() + " itens materiais");
+            }
+            content.append("\n## ").append(requirement.title()).append('\n');
+            for (String item : items) {
+                String normalized = item == null ? "" : item.trim();
+                if (normalized.isBlank() || normalized.length() > 1000) {
+                    throw new IllegalArgumentException("A seção " + requirement.title() + " contém item inválido");
+                }
+                content.append("- ").append(normalized).append('\n');
+            }
+        }
+        if (!sectionsById.keySet().equals(requiredIds) || content.length() > 20000) {
+            throw new IllegalArgumentException("A entrega completa possui seções inesperadas ou excede o limite");
+        }
+        return content.toString().trim();
+    }
+
+    /** Protege o contrato contra limites inválidos que poderiam liberar uma entrega vazia. */
+    private void validateDeliveryRequirement(ProductExperienceResponse.DeliverySectionDto requirement) {
+        if (requirement == null || requirement.id() == null || requirement.id().isBlank()
+                || requirement.title() == null || requirement.title().isBlank()
+                || requirement.minItems() < 1 || requirement.maxItems() < requirement.minItems()
+                || requirement.maxItems() > 20) {
+            throw new IllegalArgumentException("Contrato de entrega estruturada inválido");
+        }
+    }
+
+    /** Exige entrada real e primeiro uso real nos dois marcos que pertencem à cliente. */
+    private void validateCustomerCompletionEvidence(AccessGrant grant, String missionId) {
+        Map<String, String> answers = grant.getMissionInteractions().getOrDefault(missionId, Map.of());
+        if ("entrada-guiada".equals(missionId)) {
+            requireAnswers(answers, Set.of(
+                    "services", "repeatedQuestions", "policies", "tone", "anonymousScenarios"));
+        }
+        if ("primeira-aplicacao-e-revisao".equals(missionId)) {
+            requireAnswers(answers, Set.of(
+                    "selectedResponses",
+                    "qualificationBlock",
+                    "escalationRule",
+                    "applicationStatus",
+                    "applicationOutcome",
+                    "applicationReview"));
+            if (!"APPLIED".equals(answers.get("applicationStatus"))) {
+                throw new IllegalArgumentException("Conclua somente após uma primeira aplicação manual real");
+            }
+        }
+    }
+
+    /** Valida a presença material das respostas exigidas por um marco da cliente. */
+    private void requireAnswers(Map<String, String> answers, Set<String> requiredKeys) {
+        if (requiredKeys.stream().anyMatch(key -> {
+            String value = answers.get(key);
+            return value == null || value.isBlank();
+        })) {
+            throw new IllegalArgumentException("Preencha todas as evidências exigidas antes de concluir a etapa");
+        }
+    }
+
+    /** Converte interações operacionais concluídas em entregas individualizadas para a área. */
+    private List<DeliveryArtifactResponse> toDeliveryArtifactResponses(AccessGrant grant) {
+        Set<String> completedMissionIds = grant.getCompletedMissionIds();
+        List<DeliveryArtifactResponse> deliveries = new ArrayList<>();
+        grant.getMissionInteractions().forEach((missionId, answers) -> {
+            String content = answers.get(DELIVERY_CONTENT_KEY);
+            if (completedMissionIds.contains(missionId) && content != null && !content.isBlank()) {
+                deliveries.add(new DeliveryArtifactResponse(
+                        missionId,
+                        answers.get(DELIVERY_TITLE_KEY),
+                        answers.get(DELIVERY_VERSION_KEY),
+                        answers.get(DELIVERY_CREATED_AT_KEY),
+                        content,
+                        "/api/pde/access/" + grant.getToken() + "/deliveries/" + missionId + "/download"));
+            }
+        });
+        return deliveries;
+    }
+
+    /** Resume o último estado de suporte persistido para orientar a cliente na retomada. */
+    private String supportStatus(AccessGrant grant) {
+        return grant.getMissionInteractions().getOrDefault("support", Map.of())
+                .getOrDefault("requestStatus", "NONE");
+    }
+
     /** Salva respostas da cliente para personalizar a missão e medir engajamento real. */
     public void saveMissionInteraction(String token, String missionId, MissionInteractionRequest request) {
         AccessGrant grant = getGrant(token);
-        validateMissionExists(grant, missionId);
+        ProductExperienceResponse product = productCatalogService.getProduct(grant.getProductSlug());
+        ProductExperienceResponse.MissionDto mission = validateMissionExists(product, missionId);
+        validateMissionRole(mission, "CUSTOMER");
+        validateMissionOrder(product, grant, mission);
         Map<String, String> sanitizedAnswers = sanitizeInteractionAnswers(request.answers());
         grant.saveMissionInteraction(missionId, sanitizedAnswers);
         persistAccess(grant);
@@ -714,12 +927,46 @@ public class AccessService {
                 Map.of("missionId", missionId, "answerKeys", sanitizedAnswers.keySet())));
     }
 
-    /** Confirma que a missão pertence ao produto acessado pela cliente. */
-    private void validateMissionExists(AccessGrant grant, String missionId) {
-        ProductExperienceResponse product = productCatalogService.getProduct(grant.getProductSlug());
-        boolean missionExists = product.missions().stream().anyMatch(mission -> mission.id().equals(missionId));
-        if (!missionExists) {
-            throw new IllegalArgumentException("Missão PDE não encontrada: " + missionId);
+    /** Confirma que a missão pertence ao produto e retorna seu contrato canônico. */
+    private ProductExperienceResponse.MissionDto validateMissionExists(
+            ProductExperienceResponse product, String missionId) {
+        return product.missions().stream()
+                .filter(mission -> mission.id().equals(missionId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Missão PDE não encontrada: " + missionId));
+    }
+
+    /** Impede que cliente ou operação concluam a etapa pertencente ao outro papel. */
+    private void validateMissionRole(ProductExperienceResponse.MissionDto mission, String expectedRole) {
+        String configuredRole = mission.completionRole();
+        String effectiveRole = configuredRole == null || configuredRole.isBlank()
+                ? "CUSTOMER"
+                : configuredRole.trim().toUpperCase();
+        if (!effectiveRole.equals(expectedRole)) {
+            throw new IllegalArgumentException(
+                    "Missão PDE pertence ao papel " + effectiveRole + ": " + mission.id());
+        }
+    }
+
+    /** Exige conclusão sequencial somente nos contratos novos que declaram papéis operacionais. */
+    private void validateMissionOrder(
+            ProductExperienceResponse product,
+            AccessGrant grant,
+            ProductExperienceResponse.MissionDto requestedMission) {
+        boolean roleAwareJourney = product.missions().stream()
+                .anyMatch(mission -> mission.completionRole() != null && !mission.completionRole().isBlank());
+        if (!roleAwareJourney) {
+            return;
+        }
+        Set<String> completedMissionIds = grant.getCompletedMissionIds();
+        for (ProductExperienceResponse.MissionDto mission : product.missions()) {
+            if (mission.id().equals(requestedMission.id())) {
+                return;
+            }
+            if (!completedMissionIds.contains(mission.id())) {
+                throw new IllegalArgumentException(
+                        "Conclua a etapa anterior antes de avançar: " + mission.id());
+            }
         }
     }
 
@@ -926,6 +1173,7 @@ public class AccessService {
                 "MISSION_INTERACTION_SAVED",
                 "AI_GUIDANCE_REQUESTED",
                 "MATERIAL_OPEN",
+                "SUPPORT_REQUESTED",
                 "EXPERIMENT_CONSENT_RECORDED",
                 "EXPERIMENT_SESSION_STARTED",
                 "TRANSITION_PAUSE_EXPERIENCE_COMPLETED",
@@ -1713,6 +1961,9 @@ public class AccessService {
         String userAgent = normalizeTrafficText(resolveUserAgent(request, metadata));
         String clientIp = blankToNull(request.clientIp());
         String provider = resolveTrafficProvider(clientIp, userAgent);
+        if (isExplicitTestTraffic(request, metadata)) {
+            return new TrafficClassification("INTERNAL_QA", "EXPLICIT_TEST_MARKER", provider);
+        }
         if (isFunctionalPurchaseEvent(eventType)) {
             return new TrafficClassification(TRAFFIC_QUALITY_HUMAN, "FUNNEL_RESULT_EVENT", provider);
         }
@@ -1736,6 +1987,21 @@ public class AccessService {
             return new TrafficClassification("UNKNOWN", "MISSING_USER_AGENT", provider);
         }
         return new TrafficClassification(TRAFFIC_QUALITY_HUMAN, "BROWSER_TRAFFIC", provider);
+    }
+
+    /** Reconhece homologações declaradas antes de classificar eventos finais como comerciais. */
+    private boolean isExplicitTestTraffic(FunnelEventRequest request, Map<String, Object> metadata) {
+        if ("DEV".equalsIgnoreCase(request.provider()) || "DEV".equalsIgnoreCase(request.source())) {
+            return true;
+        }
+        String markers = normalizeTrafficText(String.join(
+                " ",
+                request.provider() == null ? "" : request.provider(),
+                request.source() == null ? "" : request.source(),
+                request.pageUrl() == null ? "" : request.pageUrl(),
+                metadataString(metadata, "utmSource"),
+                metadataString(metadata, "utmCampaign")));
+        return containsAny(markers, "mh_test", "mh_audit", "mh_preview=qa", "pde_analytics=off");
     }
 
     /** Trata eventos finais de compra/acesso como resultado funcional, não como pageview de robô. */

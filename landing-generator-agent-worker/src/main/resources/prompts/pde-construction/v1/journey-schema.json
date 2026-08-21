@@ -1,0 +1,56 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "rationale", "alternatives", "selectedApproach", "experienceContract", "acceptanceCriteria", "requiredChanges"],
+  "properties": {
+    "decision": {"type": "string", "enum": ["READY", "BLOCKED"]},
+    "rationale": {"type": "string", "minLength": 20, "maxLength": 1200},
+    "alternatives": {
+      "type": "array", "minItems": 3, "maxItems": 3,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["name", "benefit", "risk", "effort", "salesFit"],
+        "properties": {
+          "name": {"type": "string", "minLength": 3, "maxLength": 120},
+          "benefit": {"type": "string", "minLength": 10, "maxLength": 500},
+          "risk": {"type": "string", "minLength": 10, "maxLength": 500},
+          "effort": {"type": "string", "minLength": 3, "maxLength": 300},
+          "salesFit": {"type": "string", "minLength": 10, "maxLength": 500}
+        }
+      }
+    },
+    "selectedApproach": {"type": "string", "minLength": 20, "maxLength": 500},
+    "experienceContract": {
+      "type": "object", "additionalProperties": false,
+      "required": ["entry", "stages", "microValue", "fullDelivery", "firstUse", "progressSignals", "continuity", "support", "privacyBoundary"],
+      "properties": {
+        "entry": {"type": "string", "minLength": 20, "maxLength": 1200},
+        "stages": {
+          "type": "array", "minItems": 5, "maxItems": 8,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["id", "title", "objective", "customerInput", "customerOutput", "completionCriterion", "customerEffort"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+              "title": {"type": "string", "minLength": 3, "maxLength": 120},
+              "objective": {"type": "string", "minLength": 10, "maxLength": 600},
+              "customerInput": {"type": "string", "minLength": 3, "maxLength": 600},
+              "customerOutput": {"type": "string", "minLength": 3, "maxLength": 600},
+              "completionCriterion": {"type": "string", "minLength": 10, "maxLength": 600},
+              "customerEffort": {"type": "string", "minLength": 3, "maxLength": 300}
+            }
+          }
+        },
+        "microValue": {"type": "string", "minLength": 20, "maxLength": 1000},
+        "fullDelivery": {"type": "string", "minLength": 20, "maxLength": 1000},
+        "firstUse": {"type": "string", "minLength": 20, "maxLength": 1000},
+        "progressSignals": {"type": "array", "minItems": 4, "maxItems": 12, "items": {"type": "string", "minLength": 3, "maxLength": 180}},
+        "continuity": {"type": "string", "minLength": 20, "maxLength": 1000},
+        "support": {"type": "string", "minLength": 20, "maxLength": 800},
+        "privacyBoundary": {"type": "string", "minLength": 20, "maxLength": 1000}
+      }
+    },
+    "acceptanceCriteria": {"type": "array", "minItems": 6, "maxItems": 16, "items": {"type": "string", "minLength": 10, "maxLength": 400}},
+    "requiredChanges": {"type": "array", "maxItems": 12, "items": {"type": "string", "minLength": 5, "maxLength": 500}}
+  }
+}

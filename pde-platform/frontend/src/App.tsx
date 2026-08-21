@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BookOpen, CalendarDays, Check, ChevronRight, ClipboardCheck, CreditCard, Gauge, KeyRound, Library, LoaderCircle, Lock, LogIn, Mail, Pencil, Sparkles, Target, User } from 'lucide-react';
 import { createRoot } from 'react-dom/client';
 import { AdaptiveVideoPlayer } from './AdaptiveVideoPlayer';
+import { AssistedServiceApp } from './AssistedServiceApp';
 import { TransitionPauseExperiment } from './TransitionPauseExperiment';
 import {
   fallbackProduct,
@@ -2700,4 +2701,13 @@ function App() {
 }
 
 const root = createRoot(document.getElementById('root') as HTMLElement);
-root.render(window.location.pathname.startsWith('/transition-pause') ? <TransitionPauseExperiment /> : <App />);
+const configuredProductSlug = import.meta.env.VITE_PDE_PRODUCT_SLUG || 'metodo-musa-7-dias';
+root.render(
+  window.location.pathname.startsWith('/transition-pause') ? (
+    <TransitionPauseExperiment />
+  ) : configuredProductSlug === 'metodo-musa-7-dias' ? (
+    <App />
+  ) : (
+    <AssistedServiceApp productSlug={configuredProductSlug} />
+  ),
+);

@@ -19,6 +19,7 @@ export type Mission = {
   action: string;
   evidence: string;
   visualCue: string;
+  completionRole?: 'CUSTOMER' | 'OPERATION';
 };
 
 export type SupportMaterial = {

@@ -1,27 +1,46 @@
 CREATE TABLE IF NOT EXISTS pde_access_grant (
-  token VARCHAR(120) NOT NULL,
-  product_slug VARCHAR(120) NOT NULL,
-  email VARCHAR(191) NOT NULL,
-  source VARCHAR(80) NOT NULL,
+  token VARCHAR(36) NOT NULL,
+  product_slug VARCHAR(191) NOT NULL,
+  email VARCHAR(320) NOT NULL,
+  normalized_email VARCHAR(320) NOT NULL,
+  source VARCHAR(40) NOT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (token),
-  KEY idx_pde_access_grant_product_email (product_slug, email)
+  UNIQUE KEY uk_pde_access_product_email (product_slug, normalized_email),
+  KEY idx_pde_access_product (product_slug),
+  KEY idx_pde_access_email (normalized_email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS pde_access_mission_completion (
-  access_token VARCHAR(120) NOT NULL,
-  mission_id VARCHAR(120) NOT NULL,
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  access_token VARCHAR(36) NOT NULL,
+  mission_id VARCHAR(191) NOT NULL,
   completed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (access_token, mission_id)
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_pde_access_mission (access_token, mission_id),
+  KEY idx_pde_access_mission_token (access_token),
+  CONSTRAINT fk_pde_access_mission_grant
+    FOREIGN KEY (access_token) REFERENCES pde_access_grant (token)
+    ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS pde_access_mission_interaction_answer (
-  access_token VARCHAR(120) NOT NULL,
-  mission_id VARCHAR(120) NOT NULL,
-  question_key VARCHAR(120) NOT NULL,
-  answer_text TEXT NULL,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (access_token, mission_id, question_key)
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  access_token VARCHAR(36) NOT NULL,
+  product_slug VARCHAR(191) NOT NULL,
+  mission_id VARCHAR(191) NOT NULL,
+  question_key VARCHAR(100) NOT NULL,
+  answer_text LONGTEXT NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_pde_mission_interaction_answer (access_token, mission_id, question_key),
+  KEY idx_pde_mission_interaction_product (product_slug, mission_id),
+  KEY idx_pde_mission_interaction_token (access_token),
+  CONSTRAINT fk_pde_mission_interaction_grant
+    FOREIGN KEY (access_token) REFERENCES pde_access_grant (token)
+    ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS pde_funnel_event (

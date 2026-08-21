@@ -7,24 +7,36 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import net.coobird.thumbnailator.Thumbnails;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+/** Converte imagens recebidas pelo Lead Portal em derivados JPEG adequados ao canal de uso. */
 @Service
 public class ImageOptimizer {
 
-    private static final Logger log = LoggerFactory.getLogger(ImageOptimizer.class);
     private static final int MAX_WIDTH = 1600;
     private static final float OUTPUT_QUALITY = 0.85f;
+    private static final int LANDING_MAX_WIDTH = 960;
+    private static final float LANDING_OUTPUT_QUALITY = 0.76f;
 
+    /** Representa o conteúdo otimizado e seu contrato de armazenamento. */
     public record OptimizedImage(byte[] content, String contentType, String extension) {}
 
+    /** Otimiza uma imagem de formulário ou prova preservando resolução ampla. */
     public OptimizedImage optimize(byte[] content) {
+        return optimize(content, MAX_WIDTH, OUTPUT_QUALITY);
+    }
+
+    /** Otimiza uma imagem para carregamento rápido em uma landing pública. */
+    public OptimizedImage optimizeForLanding(byte[] content) {
+        return optimize(content, LANDING_MAX_WIDTH, LANDING_OUTPUT_QUALITY);
+    }
+
+    /** Executa a conversão JPEG com largura e qualidade definidas para o canal. */
+    private OptimizedImage optimize(byte[] content, int maxWidth, float outputQuality) {
         try {
             BufferedImage image = read(content);
-            double scale = image.getWidth() > MAX_WIDTH
-                    ? (double) MAX_WIDTH / image.getWidth()
+            double scale = image.getWidth() > maxWidth
+                    ? (double) maxWidth / image.getWidth()
                     : 1.0;
 
             BufferedImage sanitized = ensureOpaque(image);
@@ -32,7 +44,7 @@ public class ImageOptimizer {
             Thumbnails.of(sanitized)
                     .scale(scale)
                     .outputFormat("jpg")
-                    .outputQuality(OUTPUT_QUALITY)
+                    .outputQuality(outputQuality)
                     .toOutputStream(output);
 
             return new OptimizedImage(output.toByteArray(), "image/jpeg", "jpg");
@@ -41,6 +53,7 @@ public class ImageOptimizer {
         }
     }
 
+    /** Decodifica o conteúdo e rejeita arquivos que não representam uma imagem válida. */
     private BufferedImage read(byte[] content) throws IOException {
         try (ByteArrayInputStream input = new ByteArrayInputStream(content)) {
             BufferedImage image = javax.imageio.ImageIO.read(input);
@@ -51,6 +64,7 @@ public class ImageOptimizer {
         }
     }
 
+    /** Remove transparência sobre fundo branco para permitir a codificação JPEG. */
     private BufferedImage ensureOpaque(BufferedImage image) {
         if (!image.getColorModel().hasAlpha()) {
             return image;

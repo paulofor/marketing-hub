@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-21-experiment-landing-traffic-quality.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-20-experiment-run-enums-varchar.yaml
       relativeToChangelogFile: true
   - include:

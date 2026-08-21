@@ -505,6 +505,8 @@ class ExperimentFunnelServiceRenderCompleteTest {
     assertEquals("session-123", normalized.getSessionId());
     assertEquals("page_view", normalized.getEventType());
     assertEquals("https://oportunidadebrasil.shop/page", normalized.getPageUrl());
+    assertEquals("HUMAN", normalized.getTrafficQuality());
+    assertEquals("NO_AUTOMATION_SIGNAL", normalized.getTrafficQualityReason());
     assertEquals(Instant.parse("2026-06-07T10:00:00Z"), normalized.getOccurredAt());
     assertEquals(700L, normalized.getFunnelEvent().getId());
   }
@@ -544,6 +546,8 @@ class ExperimentFunnelServiceRenderCompleteTest {
     verify(landingAnalyticsEventRepository).save(normalizedCaptor.capture());
     assertNull(normalizedCaptor.getValue().getVisitorId());
     assertEquals("legacy-session", normalizedCaptor.getValue().getSessionId());
+    assertEquals("UNKNOWN", normalizedCaptor.getValue().getTrafficQuality());
+    assertEquals("MISSING_VISITOR_ID", normalizedCaptor.getValue().getTrafficQualityReason());
   }
 
   /**
@@ -645,23 +649,23 @@ class ExperimentFunnelServiceRenderCompleteTest {
             List.of(
                 landingEvent(
                     1L,
-                    "eventId=e1;eventType=page_view;sessionId=s1;deviceType=mobile;operatingSystem=ios;screenWidth=390;screenHeight=844;userAgent=iPhone",
+                    "eventId=e1;eventType=page_view;visitorId=v1;sessionId=s1;deviceType=mobile;operatingSystem=ios;screenWidth=390;screenHeight=844;userAgent=iPhone",
                     Instant.parse("2026-06-04T21:00:00Z")),
                 landingEvent(
                     2L,
-                    "eventId=e2;eventType=page_view;sessionId=s2;deviceType=desktop;operatingSystem=other;screenWidth=1366;screenHeight=768;userAgent=Desktop",
+                    "eventId=e2;eventType=page_view;visitorId=v2;sessionId=s2;deviceType=desktop;operatingSystem=other;screenWidth=1366;screenHeight=768;userAgent=Desktop",
                     Instant.parse("2026-06-04T21:01:00Z")),
                 landingEvent(
                     3L,
-                    "eventId=e3;eventType=page_view;sessionId=s3;deviceType=tablet;operatingSystem=ios;screenWidth=820;screenHeight=1180;userAgent=iPad",
+                    "eventId=e3;eventType=page_view;visitorId=v3;sessionId=s3;deviceType=tablet;operatingSystem=ios;screenWidth=820;screenHeight=1180;userAgent=iPad",
                     Instant.parse("2026-06-04T21:02:00Z")),
                 landingEvent(
                     4L,
-                    "eventId=e4;eventType=section_view_time;sessionId=s1;elapsedMs=1500;deviceType=mobile;operatingSystem=ios;screenWidth=390;screenHeight=844",
+                    "eventId=e4;eventType=section_view_time;visitorId=v1;sessionId=s1;elapsedMs=1500;deviceType=mobile;operatingSystem=ios;screenWidth=390;screenHeight=844",
                     Instant.parse("2026-06-04T21:03:00Z")),
                 landingEvent(
                     5L,
-                    "eventId=e5;eventType=page_load_metric;sessionId=s1;loadDurationMs=2400;domContentLoadedMs=900;firstContentfulPaintMs=700;resourceErrorCount=2;connectionType=4g",
+                    "eventId=e5;eventType=page_load_metric;visitorId=v1;sessionId=s1;loadDurationMs=2400;domContentLoadedMs=900;firstContentfulPaintMs=700;resourceErrorCount=2;connectionType=4g",
                     Instant.parse("2026-06-04T21:04:00Z"))));
 
     var summary = service.summarizeLandingAnalytics(39L);
@@ -807,6 +811,80 @@ class ExperimentFunnelServiceRenderCompleteTest {
     assertEquals("INTERNAL_TEST_URL", summary.sessions().getFirst().trafficQualityReason());
   }
 
+  /** Garante que a URL histórica de auditoria mobile não contamine a amostra humana. */
+  @Test
+  void summarizeLandingAnalyticsClassifiesAuditUrlAsAutomated() {
+    Experiment experiment = Experiment.builder().id(89L).build();
+    when(experimentRepository.findById(89L)).thenReturn(Optional.of(experiment));
+    when(eventRepository.findLandingAnalyticsEvents(
+            eq(89L),
+            eq(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE),
+            eq(null),
+            any(Pageable.class)))
+        .thenReturn(
+            List.of(
+                landingEvent(
+                    1L,
+                    "eventId=t2;eventType=page_view;visitorId=visitor-audit;sessionId=session-audit;pageUrl=https://example.test/flows/comercial?mh_audit=exp88;userAgent=Mobile Safari;deviceType=mobile",
+                    Instant.parse("2026-08-21T02:00:00Z"))));
+
+    var summary = service.summarizeLandingAnalytics(89L);
+
+    assertEquals(0, summary.totalSessions());
+    assertEquals(0, summary.trafficQuality().humanSessions());
+    assertEquals(1, summary.trafficQuality().automatedSessions());
+    assertEquals("INTERNAL_TEST_URL", summary.sessions().getFirst().trafficQualityReason());
+  }
+
+  /** Garante que eventos legados sem visitante não sejam promovidos a tráfego comercial. */
+  @Test
+  void summarizeLandingAnalyticsClassifiesMissingVisitorAsUnknown() {
+    Experiment experiment = Experiment.builder().id(86L).build();
+    when(experimentRepository.findById(86L)).thenReturn(Optional.of(experiment));
+    when(eventRepository.findLandingAnalyticsEvents(
+            eq(86L),
+            eq(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE),
+            eq(null),
+            any(Pageable.class)))
+        .thenReturn(
+            List.of(
+                landingEvent(
+                    1L,
+                    "eventId=u1;eventType=page_view;sessionId=session-legacy;pageUrl=https://example.test/flows/comercial;userAgent=Mobile Safari;deviceType=mobile",
+                    Instant.parse("2026-08-21T01:00:00Z"))));
+
+    var summary = service.summarizeLandingAnalytics(86L);
+
+    assertEquals(0, summary.totalSessions());
+    assertEquals(0, summary.trafficQuality().humanSessions());
+    assertEquals(1, summary.trafficQuality().unknownSessions());
+    assertEquals("MISSING_VISITOR_ID", summary.sessions().getFirst().trafficQualityReason());
+  }
+
+  /** Garante que o sinal nativo do navegador prevaleça mesmo quando o user-agent é mascarado. */
+  @Test
+  void summarizeLandingAnalyticsClassifiesBrowserAutomationSignal() {
+    Experiment experiment = Experiment.builder().id(87L).build();
+    when(experimentRepository.findById(87L)).thenReturn(Optional.of(experiment));
+    when(eventRepository.findLandingAnalyticsEvents(
+            eq(87L),
+            eq(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE),
+            eq(null),
+            any(Pageable.class)))
+        .thenReturn(
+            List.of(
+                landingEvent(
+                    1L,
+                    "eventId=a1;eventType=page_view;visitorId=visitor-test;sessionId=session-test;pageUrl=https://example.test/flows/comercial;userAgent=Mobile Safari;automationSignal=true;deviceType=mobile",
+                    Instant.parse("2026-08-21T01:01:00Z"))));
+
+    var summary = service.summarizeLandingAnalytics(87L);
+
+    assertEquals(0, summary.totalSessions());
+    assertEquals(1, summary.trafficQuality().automatedSessions());
+    assertEquals("BROWSER_AUTOMATION_SIGNAL", summary.sessions().getFirst().trafficQualityReason());
+  }
+
   /** Valida que visitantes com sessões diferentes são marcados como recorrentes prováveis. */
   @Test
   void summarizeLandingAnalyticsVisitorsMarksVisitorWithMultipleSessionsAsRecurrent() {
@@ -856,27 +934,27 @@ class ExperimentFunnelServiceRenderCompleteTest {
             List.of(
                 landingEvent(
                     1L,
-                    "eventId=e1;eventType=page_view;sessionId=s1;deviceType=mobile;userAgent=Instagram",
+                    "eventId=e1;eventType=page_view;visitorId=v1;sessionId=s1;deviceType=mobile;userAgent=Instagram",
                     Instant.parse("2026-06-04T21:00:00Z")),
                 landingEvent(
                     2L,
-                    "eventId=e2;eventType=page_view;sessionId=s2;deviceType=mobile;userAgent=Instagram",
+                    "eventId=e2;eventType=page_view;visitorId=v2;sessionId=s2;deviceType=mobile;userAgent=Instagram",
                     Instant.parse("2026-06-04T21:01:00Z")),
                 landingEvent(
                     3L,
-                    "eventId=e3;eventType=page_view;sessionId=s3;deviceType=mobile;userAgent=Chrome",
+                    "eventId=e3;eventType=page_view;visitorId=v3;sessionId=s3;deviceType=mobile;userAgent=Chrome",
                     Instant.parse("2026-06-04T21:02:00Z")),
                 landingEvent(
                     4L,
-                    "eventId=e4;eventType=page_view;sessionId=s4;deviceType=mobile;userAgent=Chrome",
+                    "eventId=e4;eventType=page_view;visitorId=v4;sessionId=s4;deviceType=mobile;userAgent=Chrome",
                     Instant.parse("2026-06-04T21:03:00Z")),
                 landingEvent(
                     5L,
-                    "eventId=e5;eventType=page_view;sessionId=s5;deviceType=mobile;userAgent=Chrome",
+                    "eventId=e5;eventType=page_view;visitorId=v5;sessionId=s5;deviceType=mobile;userAgent=Chrome",
                     Instant.parse("2026-06-04T21:04:00Z")),
                 landingEvent(
                     6L,
-                    "eventId=e6;eventType=page_load_metric;sessionId=s1;loadDurationMs=1200;domContentLoadedMs=600;firstContentfulPaintMs=500;resourceErrorCount=0",
+                    "eventId=e6;eventType=page_load_metric;visitorId=v1;sessionId=s1;loadDurationMs=1200;domContentLoadedMs=600;firstContentfulPaintMs=500;resourceErrorCount=0",
                     Instant.parse("2026-06-04T21:05:00Z"))));
 
     var summary = service.summarizeLandingAnalytics(55L);
@@ -949,21 +1027,23 @@ class ExperimentFunnelServiceRenderCompleteTest {
             eq(
                 """
                 SELECT CASE
-                           WHEN normalized_page_views.total > 0 THEN normalized_page_views.total
+                           WHEN normalized_page_views.all_events > 0 THEN normalized_page_views.total
                            ELSE render_complete.total
                        END AS total,
                        NULL AS unique_count,
                        CASE
-                           WHEN normalized_page_views.total > 0 THEN normalized_page_views.last_event
+                           WHEN normalized_page_views.all_events > 0 THEN normalized_page_views.last_event
                            ELSE render_complete.last_event
                        END AS last_event
                 FROM (
-                    SELECT COUNT(*) AS total,
-                           MAX(occurred_at) AS last_event
+                    SELECT COUNT(*) AS all_events,
+                           COALESCE(SUM(CASE WHEN traffic_quality = 'HUMAN' THEN 1 ELSE 0 END), 0) AS total,
+                           MAX(CASE WHEN traffic_quality = 'HUMAN' THEN occurred_at ELSE NULL END) AS last_event
                     FROM experiment_landing_analytics_event
                     WHERE experiment_id = ?
                       AND LOWER(event_type) = 'page_view'
                       AND LOWER(COALESCE(page_url, '')) NOT LIKE '%%mh_test=1%%'
+                      AND LOWER(COALESCE(page_url, '')) NOT LIKE '%%mh_audit=%%'
                       AND (? IS NULL OR occurred_at > ?)
                 ) normalized_page_views
                 CROSS JOIN (
@@ -1003,21 +1083,23 @@ class ExperimentFunnelServiceRenderCompleteTest {
             eq(
                 """
                 SELECT CASE
-                           WHEN normalized_page_views.total > 0 THEN normalized_page_views.total
+                           WHEN normalized_page_views.all_events > 0 THEN normalized_page_views.total
                            ELSE render_complete.total
                        END AS total,
                        NULL AS unique_count,
                        CASE
-                           WHEN normalized_page_views.total > 0 THEN normalized_page_views.last_event
+                           WHEN normalized_page_views.all_events > 0 THEN normalized_page_views.last_event
                            ELSE render_complete.last_event
                        END AS last_event
                 FROM (
-                    SELECT COUNT(*) AS total,
-                           MAX(occurred_at) AS last_event
+                    SELECT COUNT(*) AS all_events,
+                           COALESCE(SUM(CASE WHEN traffic_quality = 'HUMAN' THEN 1 ELSE 0 END), 0) AS total,
+                           MAX(CASE WHEN traffic_quality = 'HUMAN' THEN occurred_at ELSE NULL END) AS last_event
                     FROM experiment_landing_analytics_event
                     WHERE experiment_id = ?
                       AND LOWER(event_type) = 'page_view'
                       AND LOWER(COALESCE(page_url, '')) NOT LIKE '%%mh_test=1%%'
+                      AND LOWER(COALESCE(page_url, '')) NOT LIKE '%%mh_audit=%%'
                       AND (? IS NULL OR occurred_at > ?)
                 ) normalized_page_views
                 CROSS JOIN (

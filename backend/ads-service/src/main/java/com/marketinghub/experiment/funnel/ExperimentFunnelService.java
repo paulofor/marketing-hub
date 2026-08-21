@@ -826,7 +826,7 @@ public class ExperimentFunnelService {
               .occurredAt(occurredAt)
               .build();
       ExperimentFunnelEvent savedEvent = eventRepository.save(event);
-      saveNormalizedLandingAnalyticsEvent(experiment, savedEvent, request, occurredAt);
+      saveNormalizedLandingAnalyticsEvent(experiment, savedEvent, request, occurredAt, payload);
     }
   }
 
@@ -902,7 +902,8 @@ public class ExperimentFunnelService {
       Experiment experiment,
       ExperimentFunnelEvent funnelEvent,
       RegisterLandingPageAnalyticsEventRequest request,
-      Instant occurredAt) {
+      Instant occurredAt,
+      String payload) {
     String visitorId = normalizeNullableText(request.visitorId(), 128);
     String sessionId = normalizeNullableText(request.sessionId(), 128);
     String eventType = normalizeNullableText(request.eventType(), 64);
@@ -934,6 +935,11 @@ public class ExperimentFunnelService {
     normalizedEvent.setSectionId(normalizeNullableText(request.sectionId(), 190));
     normalizedEvent.setPageUrl(pageUrl);
     normalizedEvent.setUserAgent(normalizeNullableText(request.userAgent(), 512));
+    TrafficDiagnosis traffic =
+        classifyLandingTraffic(
+            parseDelimitedPayload(payload), visitorId, isFakeExperiment(experiment));
+    normalizedEvent.setTrafficQuality(traffic.quality().name());
+    normalizedEvent.setTrafficQualityReason(traffic.reason());
     normalizedEvent.setOccurredAt(occurredAt);
     landingAnalyticsEventRepository.save(normalizedEvent);
   }
@@ -1060,6 +1066,9 @@ public class ExperimentFunnelService {
         request.resourceErrorCount() == null ? "" : request.resourceErrorCount().toString();
     String connectionType = sanitizePayloadValue(request.connectionType());
     String clientIp = sanitizePayloadValue(request.clientIp());
+    String automationSignal =
+        request.automationSignal() == null ? "" : request.automationSignal().toString();
+    String referrer = sanitizePayloadValue(request.referrer());
     String videoId = sanitizePayloadValue(request.videoId());
     String videoCurrentTimeMs =
         request.videoCurrentTimeMs() == null ? "" : request.videoCurrentTimeMs().toString();
@@ -1111,6 +1120,10 @@ public class ExperimentFunnelService {
         + connectionType
         + ";clientIp="
         + clientIp
+        + ";automationSignal="
+        + sanitizePayloadValue(automationSignal)
+        + ";referrer="
+        + referrer
         + ";videoId="
         + videoId
         + ";videoCurrentTimeMs="
@@ -1213,21 +1226,23 @@ public class ExperimentFunnelService {
         fetchSingleMetric(
             """
                         SELECT CASE
-                                   WHEN normalized_page_views.total > 0 THEN normalized_page_views.total
+                                   WHEN normalized_page_views.all_events > 0 THEN normalized_page_views.total
                                    ELSE render_complete.total
                                END AS total,
                                NULL AS unique_count,
                                CASE
-                                   WHEN normalized_page_views.total > 0 THEN normalized_page_views.last_event
+                                   WHEN normalized_page_views.all_events > 0 THEN normalized_page_views.last_event
                                    ELSE render_complete.last_event
                                END AS last_event
                         FROM (
-                            SELECT COUNT(*) AS total,
-                                   MAX(occurred_at) AS last_event
+                            SELECT COUNT(*) AS all_events,
+                                   COALESCE(SUM(CASE WHEN traffic_quality = 'HUMAN' THEN 1 ELSE 0 END), 0) AS total,
+                                   MAX(CASE WHEN traffic_quality = 'HUMAN' THEN occurred_at ELSE NULL END) AS last_event
                             FROM experiment_landing_analytics_event
                             WHERE experiment_id = ?
                               AND LOWER(event_type) = 'page_view'
                               AND LOWER(COALESCE(page_url, '')) NOT LIKE '%%mh_test=1%%'
+                              AND LOWER(COALESCE(page_url, '')) NOT LIKE '%%mh_audit=%%'
                               AND (? IS NULL OR occurred_at > ?)
                         ) normalized_page_views
                         CROSS JOIN (
@@ -1256,16 +1271,20 @@ public class ExperimentFunnelService {
             """
                         SELECT COUNT(*) AS total,
                                COUNT(DISTINCT NULLIF(
-                                   SUBSTRING_INDEX(SUBSTRING_INDEX(payload, 'visitorId=', -1), ';', 1),
+                                   SUBSTRING_INDEX(SUBSTRING_INDEX(efe.payload, 'visitorId=', -1), ';', 1),
                                    ''
                                )) AS unique_count,
-                               MAX(occurred_at) AS last_event
-                        FROM experiment_funnel_event
-                        WHERE experiment_id = ?
-                          AND stage = 'VIDEO_VISTO_PARCIAL'
-                          AND source = ?
-                          AND LOWER(COALESCE(payload, '')) NOT LIKE '%%mh_test=1%%'
-                          AND (? IS NULL OR occurred_at > ?)
+                               MAX(efe.occurred_at) AS last_event
+                        FROM experiment_funnel_event efe
+                        JOIN experiment_landing_analytics_event ela
+                          ON ela.funnel_event_id = efe.id
+                         AND ela.traffic_quality = 'HUMAN'
+                        WHERE efe.experiment_id = ?
+                          AND efe.stage = 'VIDEO_VISTO_PARCIAL'
+                          AND efe.source = ?
+                          AND LOWER(COALESCE(efe.payload, '')) NOT LIKE '%%mh_test=1%%'
+                          AND LOWER(COALESCE(efe.payload, '')) NOT LIKE '%%mh_audit=%%'
+                          AND (? IS NULL OR efe.occurred_at > ?)
                         """,
             experimentId,
             ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE,
@@ -1280,16 +1299,20 @@ public class ExperimentFunnelService {
             """
                         SELECT COUNT(*) AS total,
                                COUNT(DISTINCT NULLIF(
-                                   SUBSTRING_INDEX(SUBSTRING_INDEX(payload, 'visitorId=', -1), ';', 1),
+                                   SUBSTRING_INDEX(SUBSTRING_INDEX(efe.payload, 'visitorId=', -1), ';', 1),
                                    ''
                                )) AS unique_count,
-                               MAX(occurred_at) AS last_event
-                        FROM experiment_funnel_event
-                        WHERE experiment_id = ?
-                          AND stage = 'VIDEO_VISTO_COMPLETO'
-                          AND source = ?
-                          AND LOWER(COALESCE(payload, '')) NOT LIKE '%%mh_test=1%%'
-                          AND (? IS NULL OR occurred_at > ?)
+                               MAX(efe.occurred_at) AS last_event
+                        FROM experiment_funnel_event efe
+                        JOIN experiment_landing_analytics_event ela
+                          ON ela.funnel_event_id = efe.id
+                         AND ela.traffic_quality = 'HUMAN'
+                        WHERE efe.experiment_id = ?
+                          AND efe.stage = 'VIDEO_VISTO_COMPLETO'
+                          AND efe.source = ?
+                          AND LOWER(COALESCE(efe.payload, '')) NOT LIKE '%%mh_test=1%%'
+                          AND LOWER(COALESCE(efe.payload, '')) NOT LIKE '%%mh_audit=%%'
+                          AND (? IS NULL OR efe.occurred_at > ?)
                         """,
             experimentId,
             ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE,
@@ -1386,11 +1409,15 @@ public class ExperimentFunnelService {
                             UNION ALL
                             SELECT efe.occurred_at AS event_at
                             FROM experiment_funnel_event efe
+                            JOIN experiment_landing_analytics_event ela
+                              ON ela.funnel_event_id = efe.id
+                             AND ela.traffic_quality = 'HUMAN'
                             WHERE efe.experiment_id = ?
                               AND efe.stage = 'ACESSO_CHECKOUT'
                               AND efe.source = ?
                               AND efe.payload LIKE '%%eventType=checkout_click%%'
                               AND LOWER(COALESCE(efe.payload, '')) NOT LIKE '%%mh_test=1%%'
+                              AND LOWER(COALESCE(efe.payload, '')) NOT LIKE '%%mh_audit=%%'
                         ) checkout_access
                         WHERE (? IS NULL OR event_at > ?)
                         """
@@ -2695,8 +2722,8 @@ public class ExperimentFunnelService {
   private record TrafficDiagnosis(TrafficQuality quality, String reason) {}
 
   /**
-   * Classifica verificações técnicas por sinais combinados, preservando como humana a sessão que
-   * não possui evidência suficiente de automação.
+   * Classifica verificações técnicas por sinais combinados e mantém eventos sem identidade
+   * first-party como desconhecidos, sem convertê-los em audiência comercial.
    */
   private static TrafficDiagnosis classifyLandingTraffic(
       Map<String, String> payload, String visitorId, boolean fakeExperiment) {
@@ -2705,8 +2732,10 @@ public class ExperimentFunnelService {
     String width = firstNonBlankStatic(payload.get("screenWidth"), "");
     String height = firstNonBlankStatic(payload.get("screenHeight"), "");
     boolean missingVisitor = visitorId == null || visitorId.isBlank();
+    boolean explicitAutomation =
+        "true".equalsIgnoreCase(firstNonBlankStatic(payload.get("automationSignal"), "false"));
     boolean internalRenderUrl = pageUrl.contains("/api/flows/") && pageUrl.contains("/page");
-    boolean internalTestUrl = pageUrl.contains("mh_test=1");
+    boolean internalTestUrl = pageUrl.contains("mh_test=1") || pageUrl.contains("mh_audit=");
     boolean knownAutomationAgent =
         userAgent.contains("headlesschrome")
             || userAgent.contains("playwright")
@@ -2720,6 +2749,9 @@ public class ExperimentFunnelService {
     if (internalTestUrl) {
       return new TrafficDiagnosis(TrafficQuality.AUTOMATED, "INTERNAL_TEST_URL");
     }
+    if (explicitAutomation) {
+      return new TrafficDiagnosis(TrafficQuality.AUTOMATED, "BROWSER_AUTOMATION_SIGNAL");
+    }
     if (knownAutomationAgent) {
       return new TrafficDiagnosis(TrafficQuality.AUTOMATED, "AUTOMATION_USER_AGENT");
     }
@@ -2728,6 +2760,9 @@ public class ExperimentFunnelService {
     }
     if (missingVisitor && internalRenderUrl) {
       return new TrafficDiagnosis(TrafficQuality.AUTOMATED, "INTERNAL_RENDER_URL");
+    }
+    if (missingVisitor) {
+      return new TrafficDiagnosis(TrafficQuality.UNKNOWN, "MISSING_VISITOR_ID");
     }
     return new TrafficDiagnosis(TrafficQuality.HUMAN, "NO_AUTOMATION_SIGNAL");
   }
@@ -2786,7 +2821,10 @@ public class ExperimentFunnelService {
         return;
       }
       eventCount++;
-      if (traffic != null && traffic.quality() == TrafficQuality.AUTOMATED) {
+      if (traffic != null
+          && (traffic.quality() == TrafficQuality.AUTOMATED
+              || (traffic.quality() == TrafficQuality.UNKNOWN
+                  && trafficQuality == TrafficQuality.HUMAN))) {
         trafficQuality = traffic.quality();
         trafficQualityReason = traffic.reason();
       }

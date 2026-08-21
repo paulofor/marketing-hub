@@ -1,15 +1,26 @@
 import readline from 'node:readline';
 
 const baseUrl = requiredEnv('MCP_MARKETING_HUB_URL').replace(/\/$/, '');
-const planId = positiveInteger(requiredEnv('MCP_COMMERCIAL_PLAN_ID'), 'MCP_COMMERCIAL_PLAN_ID');
+const planId = optionalPositiveInteger(process.env.MCP_COMMERCIAL_PLAN_ID, 'MCP_COMMERCIAL_PLAN_ID');
+const experimentId = optionalPositiveInteger(process.env.MCP_EXPERIMENT_ID, 'MCP_EXPERIMENT_ID');
+if ((planId === null) === (experimentId === null)) {
+  throw new Error('Informe exatamente um escopo: MCP_COMMERCIAL_PLAN_ID ou MCP_EXPERIMENT_ID');
+}
 
-const tools = [
-  tool('consultar_planejamento', 'Consulta o planejamento comercial e suas metas atuais.', {}),
+const experimentTools = [
+  tool('consultar_experimento', 'Consulta o experimento e seu contrato comercial atual.', {}),
   tool('consultar_funil', 'Consulta o funil consolidado do experimento vinculado ao planejamento.', {}),
-  tool('consultar_sessoes', 'Consulta jornadas e eventos anonimizados do planejamento.', {
+  tool('consultar_sessoes', 'Consulta jornadas e eventos anonimizados do experimento.', {
     eventLimit: { type: 'integer', minimum: 1, maximum: 2000, default: 2000 }
   }),
-  tool('consultar_campanhas', 'Consulta as campanhas Meta do experimento vinculado ao planejamento.', {}),
+  tool('consultar_campanhas', 'Consulta as campanhas Meta do experimento.', {}),
+  tool('consultar_cockpit', 'Consulta placar comercial, gargalo e métricas do experimento.', {}),
+  tool('consultar_processo', 'Consulta as tarefas BPM auditáveis deste experimento.', {})
+];
+
+const planTools = [
+  tool('consultar_planejamento', 'Consulta o planejamento comercial e suas metas atuais.', {}),
+  ...experimentTools,
   tool('consultar_memoria', 'Consulta o historico auditavel dos ciclos do Operador.', {}),
   tool('consultar_estrategia_videos', 'Consulta estrategia, custos, progressao e aprendizados dos videos.', {}),
   tool('consultar_pendencias', 'Consulta acoes abertas e resultados comprovados do planejamento.', {}),
@@ -23,11 +34,18 @@ const tools = [
   tool('solicitar_retomada_experimento', 'Solicita retomada sujeita a aprovacao humana.', actionSchema(), ['reason', 'evidence'])
 ];
 
+const tools = planId === null ? experimentTools : planTools;
+
 const routes = {
   consultar_planejamento: () => `/api/planning/commercial-plans/${planId}`,
+  consultar_experimento: () => experimentRoute(''),
   consultar_funil: () => experimentRoute('funnel'),
-  consultar_sessoes: args => `/api/growth-operator/v1/internal/commercial-plans/${planId}/session-intelligence?eventLimit=${boundedLimit(args.eventLimit)}`,
+  consultar_sessoes: args => planId === null
+    ? experimentRoute('funnel/analytics')
+    : `/api/growth-operator/v1/internal/commercial-plans/${planId}/session-intelligence?eventLimit=${boundedLimit(args.eventLimit)}`,
   consultar_campanhas: () => experimentRoute('facebook-campaigns'),
+  consultar_cockpit: () => experimentRoute('cockpit'),
+  consultar_processo: async () => `/api/agent-tasks/process-instances?sourceReference=${encodeURIComponent(`experiment:${await resolvedExperimentId()}`)}`,
   consultar_memoria: () => `/api/growth-operator/v1/commercial-plans/${planId}/executions`,
   consultar_estrategia_videos: () => `/api/growth-operator/v1/internal/commercial-plans/${planId}/video-strategy-intelligence`,
   consultar_pendencias: () => `/api/growth-operator/v1/commercial-plans/${planId}/tasks`,
@@ -72,10 +90,10 @@ async function callTool(params) {
   const startedAt = new Date().toISOString();
   const response = await fetch(`${baseUrl}${path}`, { method: mutable ? 'POST' : 'GET', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: mutable ? JSON.stringify(args) : undefined, signal: AbortSignal.timeout(30000) });
   const body = await response.text();
-  process.stderr.write(`${JSON.stringify({ tool: params.name, planId, path, startedAt, status: response.status })}\n`);
+  process.stderr.write(`${JSON.stringify({ tool: params.name, planId, experimentId, path, startedAt, status: response.status })}\n`);
   if (!response.ok) throw new Error(`Marketing Hub respondeu HTTP ${response.status} em ${params.name}`);
   const payload = JSON.parse(body);
-  return { content: [{ type: 'text', text: JSON.stringify({ audit: { tool: params.name, planId, source: path, consultedAt: startedAt, readOnly: !mutable, governedMutation: mutable }, data: payload }) }] };
+  return { content: [{ type: 'text', text: JSON.stringify({ audit: { tool: params.name, planId, experimentId, source: path, consultedAt: startedAt, readOnly: !mutable, governedMutation: mutable }, data: payload }) }] };
 }
 
 async function callMemory(method, args) {
@@ -92,13 +110,23 @@ function actionSchema() {
 }
 
 async function experimentRoute(suffix) {
+  const resolved = await resolvedExperimentId();
+  return `/api/experiments/${resolved}${suffix ? `/${suffix}` : ''}`;
+}
+
+async function resolvedExperimentId() {
+  if (experimentId !== null) return experimentId;
   const response = await fetch(`${baseUrl}/api/planning/commercial-plans/${planId}`, {
     method: 'GET', headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(30000)
   });
   if (!response.ok) throw new Error(`Nao foi possivel resolver o experimento do planejamento: HTTP ${response.status}`);
   const plan = await response.json();
-  const experimentId = positiveInteger(plan.experimentId, 'experimentId do planejamento');
-  return `/api/experiments/${experimentId}/${suffix}`;
+  return positiveInteger(plan.experimentId, 'experimentId do planejamento');
+}
+
+function optionalPositiveInteger(value, name) {
+  if (value === undefined || value === null || String(value).trim() === '') return null;
+  return positiveInteger(value, name);
 }
 
 function tool(name, description, properties, required = []) {

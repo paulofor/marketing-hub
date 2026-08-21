@@ -19,7 +19,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 /**
  * Evento normalizado de analytics da landing usado para consultas recorrentes por visitante
- * provável.
+ * provável, com classificação conservadora por padrão quando a origem ainda não foi avaliada.
  */
 @Entity
 @Table(name = "experiment_landing_analytics_event")
@@ -60,6 +60,14 @@ public class ExperimentLandingAnalyticsEvent {
 
   @Column(name = "user_agent", length = 512)
   private String userAgent;
+
+  @Column(name = "traffic_quality", nullable = false, length = 16)
+  @Builder.Default
+  private String trafficQuality = "UNKNOWN";
+
+  @Column(name = "traffic_quality_reason", nullable = false, length = 64)
+  @Builder.Default
+  private String trafficQualityReason = "MISSING_VISITOR_ID";
 
   @Column(name = "occurred_at", nullable = false)
   private Instant occurredAt;

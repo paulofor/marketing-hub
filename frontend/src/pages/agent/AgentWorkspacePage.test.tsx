@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AgentWorkspacePage from "./AgentWorkspacePage";
@@ -7,12 +7,15 @@ import AgentWorkspacePage from "./AgentWorkspacePage";
 const testState = vi.hoisted(() => ({
   agentKey: "landing-generator",
   nickname: "Dédalo",
+  agentName: "Agente Gerador de Landing",
   taskStatus: "PENDING",
   sourceReference: undefined as string | undefined,
   experiments: [] as Array<Record<string, unknown>>,
   taskCount: 1,
   exceptional: false,
   exceptionReason: undefined as string | undefined,
+  createMutate: vi.fn(),
+  processes: [] as Array<Record<string, unknown>>,
 }));
 
 vi.mock("../../api/agent/useAgents", () => ({
@@ -23,7 +26,7 @@ vi.mock("../../api/agent/useAgents", () => ({
         id: 7,
         agentKey: testState.agentKey,
         nickname: testState.nickname,
-        name: "Agente Gerador de Landing",
+        name: testState.agentName,
         status: "TEST",
       },
     ],
@@ -57,7 +60,10 @@ vi.mock("../../api/agentTask/useAgentTasks", () => ({
       updatedAt: "2026-08-11T15:00:00Z",
     })),
   }),
-  useCreateAgentTask: () => ({ mutate: vi.fn(), isPending: false }),
+  useCreateAgentTask: () => ({
+    mutate: testState.createMutate,
+    isPending: false,
+  }),
   useUpdateAgentTaskStatus: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
@@ -113,17 +119,27 @@ vi.mock("../../api/experiment/useExperiments", () => ({
   useExperiments: () => ({ data: testState.experiments, isLoading: false }),
 }));
 
+vi.mock("../../api/businessProcess/useBusinessProcesses", () => ({
+  useBusinessProcesses: () => ({
+    data: testState.processes,
+    isLoading: false,
+  }),
+}));
+
 describe("AgentWorkspacePage", () => {
   beforeEach(() => {
     cleanup();
     testState.agentKey = "landing-generator";
     testState.nickname = "Dédalo";
+    testState.agentName = "Agente Gerador de Landing";
     testState.taskStatus = "PENDING";
     testState.sourceReference = undefined;
     testState.experiments = [];
     testState.taskCount = 1;
     testState.exceptional = false;
     testState.exceptionReason = undefined;
+    testState.createMutate.mockReset();
+    testState.processes = [];
   });
 
   it("quebra justificativa excepcional longa sem ampliar o card", () => {
@@ -222,6 +238,74 @@ describe("AgentWorkspacePage", () => {
     expect(
       screen.getByRole("button", { name: "Em andamento" }),
     ).toBeInTheDocument();
+  });
+
+  it("registra uma nova tarefa no contexto auditável do experimento", () => {
+    testState.agentKey = "growth-operator";
+    testState.nickname = "Hermes";
+    testState.agentName = "Operador de Crescimento";
+    testState.experiments = [{ id: "88", name: "Agenda Cheia Nail Design" }];
+    testState.processes = [
+      {
+        id: 20,
+        processCode: "operacao-otimizacao-experimento",
+        name: "Operação e otimização de experimento",
+        versionNumber: 3,
+        status: "PUBLISHED",
+        diagram: {
+          nodes: [
+            {
+              id: "confirmar-instrumentacao",
+              type: "TASK",
+              label: "Confirmar instrumentação",
+              owner: "Operador de Crescimento",
+            },
+          ],
+          flows: [],
+        },
+      },
+    ];
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={["/agents/7"]}>
+          <Routes>
+            <Route path="/agents/:id" element={<AgentWorkspacePage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    fireEvent.change(screen.getByLabelText("Contexto da execução *"), {
+      target: { value: "EXPERIMENT" },
+    });
+    fireEvent.change(screen.getByLabelText("Experimento *"), {
+      target: { value: "88" },
+    });
+    fireEvent.change(screen.getByLabelText("Processo publicado *"), {
+      target: { value: "20" },
+    });
+    fireEvent.change(screen.getByLabelText("Atividade do processo *"), {
+      target: { value: "confirmar-instrumentacao" },
+    });
+    fireEvent.change(screen.getByLabelText("Tarefa *"), {
+      target: { value: "Reconciliar eventos do experimento #88" },
+    });
+    fireEvent.change(screen.getByLabelText("Resultado esperado *"), {
+      target: {
+        value: "Métricas comerciais contêm somente visitas humanas válidas.",
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Enviar para Hermes" }));
+
+    expect(testState.createMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceReference: "experiment:88",
+        processDefinitionId: 20,
+        processActivityId: "confirmar-instrumentacao",
+      }),
+      expect.any(Object),
+    );
   });
 
   it("mostra motivo e contagem Meta antes de retomar Têmis", () => {

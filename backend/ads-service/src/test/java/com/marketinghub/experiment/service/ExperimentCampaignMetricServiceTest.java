@@ -2,8 +2,6 @@ package com.marketinghub.experiment.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -13,22 +11,17 @@ import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.run.service.ExperimentRunMetricLifecycleService;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.repository.jpa.experiment.ExperimentCampaignMetricRepository;
-import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
-import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
-import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -42,12 +35,6 @@ class ExperimentCampaignMetricServiceTest {
 
   @Mock private CostAttributionService costAttributionService;
 
-  @Mock private ExperimentRepository experimentRepository;
-
-  @Mock private ExperimentFunnelEventRepository funnelEventRepository;
-
-  @Mock private ExperimentLandingAnalyticsEventRepository landingAnalyticsEventRepository;
-
   @Mock private ExperimentRunMetricLifecycleService runMetricLifecycleService;
 
   private ExperimentCampaignMetricService service;
@@ -57,22 +44,15 @@ class ExperimentCampaignMetricServiceTest {
   void setUp() {
     service =
         new ExperimentCampaignMetricService(
-            repository,
-            campaignRepository,
-            costAttributionService,
-            experimentRepository,
-            funnelEventRepository,
-            landingAnalyticsEventRepository,
-            runMetricLifecycleService,
-            "");
+            repository, campaignRepository, costAttributionService, runMetricLifecycleService, "");
   }
 
   /**
-   * Garante que o primeiro recebimento de impressões remove eventos de teste antes de salvar a
+   * Garante que o primeiro recebimento de impressões preserva os eventos auditáveis e salva a
    * métrica real.
    */
   @Test
-  void upsertResetsFunnelWhenImpressionsStart() {
+  void upsertPreservesFunnelWhenImpressionsStart() {
     Experiment experiment = Experiment.builder().id(41L).build();
     FacebookAdsCampaign campaign = new FacebookAdsCampaign();
     campaign.setId("campaign-1");
@@ -94,21 +74,8 @@ class ExperimentCampaignMetricServiceTest {
         0L,
         new BigDecimal("1.10"));
 
-    InOrder inOrder =
-        inOrder(
-            landingAnalyticsEventRepository,
-            funnelEventRepository,
-            experimentRepository,
-            repository);
-    inOrder.verify(landingAnalyticsEventRepository).deleteByExperimentId(41L);
-    inOrder
-        .verify(funnelEventRepository)
-        .deleteByExperimentIdAndSource(
-            41L, ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE);
-    inOrder.verify(funnelEventRepository).deleteByExperimentId(41L);
-    inOrder.verify(experimentRepository).save(experiment);
-    inOrder.verify(repository).save(any(ExperimentCampaignMetric.class));
-    assertThat(experiment.getFunnelResetAt()).isNotNull();
+    verify(repository).save(any(ExperimentCampaignMetric.class));
+    assertThat(experiment.getFunnelResetAt()).isNull();
   }
 
   /**
@@ -117,8 +84,7 @@ class ExperimentCampaignMetricServiceTest {
    */
   @Test
   void upsertDoesNotResetFunnelWhenMetricAlreadyHadImpressions() {
-    Experiment experiment =
-        Experiment.builder().id(41L).funnelResetAt(Instant.parse("2026-06-24T00:00:00Z")).build();
+    Experiment experiment = Experiment.builder().id(41L).build();
     FacebookAdsCampaign campaign = new FacebookAdsCampaign();
     campaign.setId("campaign-1");
     campaign.setExperiment(experiment);
@@ -143,9 +109,7 @@ class ExperimentCampaignMetricServiceTest {
         0L,
         BigDecimal.ZERO);
 
-    verify(landingAnalyticsEventRepository, never()).deleteByExperimentId(41L);
-    verify(funnelEventRepository, never()).deleteByExperimentId(any());
-    verify(experimentRepository, never()).save(experiment);
+    verify(repository).save(existingMetric);
   }
 
   /** Garante que toda sincronização reconcilia o run com a exposição recebida da Meta. */
@@ -193,9 +157,6 @@ class ExperimentCampaignMetricServiceTest {
               repository,
               campaignRepository,
               costAttributionService,
-              experimentRepository,
-              funnelEventRepository,
-              landingAnalyticsEventRepository,
               runMetricLifecycleService,
               "http://localhost:" + server.getAddress().getPort() + "/reset");
       Experiment experiment =

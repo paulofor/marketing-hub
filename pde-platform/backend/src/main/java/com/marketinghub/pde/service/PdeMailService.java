@@ -82,7 +82,7 @@ public class PdeMailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(from);
             message.setTo(to);
-            message.setSubject("Seu acesso ao Método MUSA");
+            message.setSubject("Seu acesso à experiência digital");
             message.setText(buildMagicLinkText(accessUrl));
             sender.send(message);
         } catch (RuntimeException ex) {
@@ -103,7 +103,7 @@ public class PdeMailService {
                             .simple(Message.builder()
                                     .subject(Content.builder()
                                             .charset("UTF-8")
-                                            .data("Seu acesso ao Método MUSA")
+                                            .data("Seu acesso à experiência digital")
                                             .build())
                                     .body(Body.builder()
                                             .text(Content.builder()
@@ -126,14 +126,14 @@ public class PdeMailService {
         }
     }
 
-    /** Monta o texto comercial do link de acesso da Área MUSA. */
+    /** Monta um texto de acesso compatível com qualquer produto atendido pela PDE Platform. */
     String buildMagicLinkText(String accessUrl) {
         return """
                 Oi,
 
-                Seu acesso ao Clube MUSA está pronto.
+                Seu acesso à experiência digital está pronto.
 
-                Entre por este link seguro para liberar seu diagnóstico inicial e continuar o Dia 1 do Método MUSA:
+                Entre por este link seguro para retomar seu progresso, consultar entregas e pedir suporte:
 
                 %s
 

@@ -6,10 +6,12 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Converte erros da API PDE em respostas simples para o frontend. */
 @RestControllerAdvice
@@ -37,6 +39,16 @@ public class ApiExceptionHandler {
     public Map<String, String> handleValidation(MethodArgumentNotValidException ex) {
         log.warn("Falha de validação na API PDE", ex);
         return Map.of("error", "Entrada inválida para a API PDE");
+    }
+
+    /** Preserva o status HTTP deliberado de controles de acesso e outros contratos explícitos. */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, String>> handleResponseStatus(ResponseStatusException ex) {
+        log.warn("Resposta controlada na API PDE: status={}, reason={}", ex.getStatusCode(), ex.getReason(), ex);
+        String message = ex.getReason() == null || ex.getReason().isBlank()
+                ? "A solicitação não foi autorizada"
+                : ex.getReason();
+        return ResponseEntity.status(ex.getStatusCode()).body(Map.of("error", message));
     }
 
     /** Registra falha inesperada para impedir leitura comercial baseada em funil quebrado. */

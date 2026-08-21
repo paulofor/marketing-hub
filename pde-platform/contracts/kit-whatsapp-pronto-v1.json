@@ -1,0 +1,177 @@
+{
+  "slug": "kit-whatsapp-pronto",
+  "experienceVersion": "kit-whatsapp-pde-v1",
+  "layoutKey": "assisted-service-v1",
+  "funnelVersion": "pde-assisted-service-v1",
+  "name": "Kit WhatsApp Pronto",
+  "promise": "Em até 48 horas, receba respostas, perguntas e follow-ups ajustados ao seu atendimento para usar manualmente no WhatsApp com mais clareza e menos retrabalho.",
+  "audience": "Pequenos prestadores de serviços locais que já atendem pelo WhatsApp.",
+  "priceLabel": "R$ 349",
+  "theme": {
+    "primary": "#145C52",
+    "accent": "#E9A23B",
+    "background": "#F7F4EC",
+    "imageUrl": ""
+  },
+  "diagnostic": {
+    "title": "Prepare o material do seu atendimento",
+    "intro": "Você não precisa configurar bot ou integração. Basta reunir as informações abaixo, remover dados pessoais e seguir a jornada guiada.",
+    "questions": [
+      "Quais serviços você mais vende pelo WhatsApp?",
+      "Quais dúvidas e objeções mais se repetem?",
+      "Quais regras de preço, agenda e área atendida precisam ser respeitadas?",
+      "Você possui cinco conversas anonimizadas ou cinco exemplos equivalentes?"
+    ]
+  },
+  "missions": [
+    {
+      "id": "entrada-guiada",
+      "day": 1,
+      "title": "Entrada guiada",
+      "principle": "Reunir apenas o contexto necessário para personalizar o kit sem inventar regras.",
+      "action": "Preencha o roteiro de briefing e separe cinco conversas anonimizadas ou cinco situações equivalentes.",
+      "evidence": "Registre que serviços, área atendida, políticas, tom e exemplos foram reunidos sem dados pessoais.",
+      "visualCue": "Tempo estimado: 15 a 25 minutos.",
+      "completionRole": "CUSTOMER"
+    },
+    {
+      "id": "conferencia-de-completude",
+      "day": 2,
+      "title": "Conferência de completude",
+      "principle": "Os prazos começam somente quando pagamento e entrada estão completos.",
+      "action": "Revise o briefing e complete qualquer informação marcada como pendente.",
+      "evidence": "Confirme que a produção pode começar sem adivinhar preço, serviço, prazo ou política.",
+      "visualCue": "Se houver pendência, você recebe uma lista curta e objetiva.",
+      "completionRole": "OPERATION"
+    },
+    {
+      "id": "diagnostico-humano",
+      "day": 3,
+      "title": "Diagnóstico humano",
+      "principle": "Priorizar os cenários que mais afetam tempo, clareza e avanço da conversa.",
+      "action": "Aguarde a análise da equipe e responda somente se uma pendência objetiva aparecer.",
+      "evidence": "Três cenários prioritários foram identificados com base no material enviado.",
+      "visualCue": "Nenhum contato é feito com seus clientes.",
+      "completionRole": "OPERATION"
+    },
+    {
+      "id": "microvalor-12h",
+      "day": 4,
+      "title": "Microvalor em até 12 horas",
+      "principle": "Entregar utilidade prática antes do pacote completo e validar a direção do tom.",
+      "action": "Leia os três cenários, as duas perguntas e a primeira resposta; sinalize somente desalinhamentos reais.",
+      "evidence": "A microentrega ficou clara, copiável e coerente com o seu negócio.",
+      "visualCue": "Revise cada mensagem antes de qualquer uso.",
+      "completionRole": "OPERATION"
+    },
+    {
+      "id": "entrega-completa-48h",
+      "day": 5,
+      "title": "Kit completo em até 48 horas",
+      "principle": "Concentrar todo o material editável em um pacote simples para uso manual.",
+      "action": "Confira respostas, perguntas, follow-ups, escalonamento, guia e checklist.",
+      "evidence": "Todos os materiais foram abertos e o conteúdo representa as regras atuais do negócio.",
+      "visualCue": "Sem bot, API, disparo ou resposta automática.",
+      "completionRole": "OPERATION",
+      "deliveryContract": {
+        "sections": [
+          {
+            "id": "responses",
+            "title": "Respostas personalizadas",
+            "minItems": 10,
+            "maxItems": 20
+          },
+          {
+            "id": "qualificationQuestions",
+            "title": "Perguntas de qualificação",
+            "minItems": 5,
+            "maxItems": 10
+          },
+          {
+            "id": "followUps",
+            "title": "Follow-ups manuais",
+            "minItems": 3,
+            "maxItems": 5
+          },
+          {
+            "id": "escalationRules",
+            "title": "Regras de escalonamento",
+            "minItems": 1,
+            "maxItems": 8
+          },
+          {
+            "id": "usageGuide",
+            "title": "Guia de uso",
+            "minItems": 3,
+            "maxItems": 10
+          },
+          {
+            "id": "checklist",
+            "title": "Checklist de revisão",
+            "minItems": 5,
+            "maxItems": 20
+          }
+        ]
+      }
+    },
+    {
+      "id": "primeira-aplicacao-e-revisao",
+      "day": 6,
+      "title": "Primeira aplicação e revisão",
+      "principle": "Começar pequeno para obter valor com controle humano.",
+      "action": "Escolha três respostas, um bloco de qualificação e uma regra de escalonamento para aplicar manualmente na mesma semana.",
+      "evidence": "Registre o que funcionou, o que precisa de ajuste pequeno e qualquer mudança de escopo.",
+      "visualCue": "Mudança superior a 30%, novo serviço ou nova praça pede um novo kit.",
+      "completionRole": "CUSTOMER"
+    }
+  ],
+  "supportMaterials": [
+    {
+      "title": "Comece aqui",
+      "type": "Guia editável",
+      "description": "Entenda o uso manual, os limites e a sequência recomendada.",
+      "url": "/materials/kit-whatsapp-v1/01-comece-aqui.md"
+    },
+    {
+      "title": "Roteiro de briefing",
+      "type": "Modelo editável",
+      "description": "Reúna o contexto necessário sem enviar dados pessoais dos seus clientes.",
+      "url": "/materials/kit-whatsapp-v1/02-roteiro-de-briefing.md"
+    },
+    {
+      "title": "Biblioteca de 15 respostas",
+      "type": "Biblioteca editável",
+      "description": "Mensagens organizadas por cenário, com quando usar, quando parar e o que revisar.",
+      "url": "/materials/kit-whatsapp-v1/03-biblioteca-de-respostas.md"
+    },
+    {
+      "title": "Qualificação e follow-ups",
+      "type": "Roteiro editável",
+      "description": "Oito perguntas e quatro retornos manuais sem pressão indevida.",
+      "url": "/materials/kit-whatsapp-v1/04-qualificacao-e-followups.md"
+    },
+    {
+      "title": "Regras de escalonamento",
+      "type": "Checklist de segurança",
+      "description": "Saiba quando interromper o modelo e tratar a situação individualmente.",
+      "url": "/materials/kit-whatsapp-v1/05-regras-de-escalonamento.md"
+    },
+    {
+      "title": "Modelo da microentrega",
+      "type": "Modelo editável",
+      "description": "Estrutura do primeiro valor útil entregue em até 12 horas.",
+      "url": "/materials/kit-whatsapp-v1/06-modelo-microentrega-12h.md"
+    },
+    {
+      "title": "Guia e atualização",
+      "type": "Guia editável",
+      "description": "Aplique o kit, revise os resultados e mantenha regras e mensagens atuais.",
+      "url": "/materials/kit-whatsapp-v1/07-guia-e-atualizacao.md"
+    }
+  ],
+  "heroVideos": [],
+  "publicDiagnosticQuestions": [],
+  "publicFirstFold": null,
+  "scientificEvidencePack": null,
+  "completionOffer": "Após a primeira aplicação, até cinco ajustes pequenos podem ser contratados por R$ 99. Mudança superior a 30%, novo serviço, nova praça ou regra regional relevante exige um novo kit."
+}

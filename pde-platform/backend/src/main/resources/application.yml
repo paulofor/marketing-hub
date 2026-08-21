@@ -12,6 +12,7 @@ pde:
     marketing-hub-base-url: ${PDE_MARKETING_HUB_BASE_URL:}
     experience-version-override: ${PDE_EXPERIENCE_VERSION_OVERRIDE:}
   access:
+    dev-enabled: ${PDE_DEV_ACCESS_ENABLED:false}
     storage-path: ${PDE_ACCESS_STORAGE_PATH:/data/pde/access-grants.json}
     jdbc-url: ${PDE_ACCESS_JDBC_URL:}
     jdbc-username: ${PDE_ACCESS_JDBC_USERNAME:}
@@ -26,6 +27,9 @@ pde:
       product-slug: ${PDE_PEPPER_PRODUCT_SLUG:metodo-musa-7-dias}
       sync-lookback-days: ${PDE_PEPPER_SYNC_LOOKBACK_DAYS:14}
       minimum-paid-amount-cents: ${PDE_PEPPER_MINIMUM_PAID_AMOUNT_CENTS:6700}
+  assisted-operation:
+    enabled: ${PDE_ASSISTED_OPERATION_ENABLED:false}
+    token: ${PDE_ASSISTED_OPERATION_TOKEN:}
   auth:
     google:
       client-id: ${PDE_GOOGLE_CLIENT_ID:}

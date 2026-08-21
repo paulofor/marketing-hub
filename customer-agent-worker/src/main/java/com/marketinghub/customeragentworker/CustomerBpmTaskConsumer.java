@@ -29,12 +29,14 @@ public class CustomerBpmTaskConsumer {
   private static final List<BpmContract> CONTRACTS =
       List.of(
           new BpmContract("creative-production-approval", "customer"),
-          new BpmContract("landing-page-generation", "customer"));
+          new BpmContract("landing-page-generation", "customer"),
+          new BpmContract("pde-construction-approval", "review"));
   private final RestClient backend;
   private final ObjectMapper json;
   private final String codex;
   private final String model;
   private final String repositoryPath;
+  private final PdeExperienceEvidenceLoader pdeExperienceEvidenceLoader;
   @Autowired private AutomaticExecutionControl automaticExecution;
 
   /** Configura a fila canônica, o modelo e a sandbox somente leitura de Psique. */
@@ -48,6 +50,7 @@ public class CustomerBpmTaskConsumer {
     this.codex = codex;
     this.model = model;
     this.repositoryPath = repositoryPath;
+    this.pdeExperienceEvidenceLoader = new PdeExperienceEvidenceLoader(repositoryPath);
     this.json = json;
   }
 
@@ -212,11 +215,15 @@ public class CustomerBpmTaskConsumer {
         .toBodilessEntity();
   }
 
-  /** Resolve o contexto da atividade sem consultar banco ou decidir o avanço do processo. */
+  /** Resolve o contexto e injeta evidência versionada sem depender da sandbox interna do modelo. */
   private String prompt(Map<String, Object> task) throws IOException {
+    Map<String, Object> promptContext = new HashMap<>(task);
+    if ("pde-construction-approval".equals(processCode(task))) {
+      promptContext.put("versionedExperienceEvidence", pdeExperienceEvidenceLoader.load());
+    }
     return read(promptResourceFor(processCode(task)))
         .replace("{{PSIQUE_BEHAVIORAL_CORE_V2}}", behavioralCoreV2())
-        .replace("{{TASK_CONTEXT}}", json.writeValueAsString(task));
+        .replace("{{TASK_CONTEXT}}", json.writeValueAsString(promptContext));
   }
 
   /** Lê a mesma constituição comportamental usada por todas as atividades de Psique. */
@@ -226,16 +233,20 @@ public class CustomerBpmTaskConsumer {
 
   /** Seleciona o prompt versionado específico da entidade avaliada. */
   static String promptResourceFor(String processCode) {
-    return "creative-production-approval".equals(processCode)
-        ? "prompts/bpm/creative-customer-review.md"
-        : "prompts/bpm/landing-customer-review.md";
+    return switch (processCode) {
+      case "creative-production-approval" -> "prompts/bpm/creative-customer-review.md";
+      case "pde-construction-approval" -> "prompts/bpm/pde-experience-review.md";
+      default -> "prompts/bpm/landing-customer-review.md";
+    };
   }
 
   /** Seleciona o schema versionado específico da entidade avaliada. */
   static String schemaResourceFor(String processCode) {
-    return "creative-production-approval".equals(processCode)
-        ? "prompts/bpm/creative-customer-review-schema.json"
-        : "prompts/bpm/landing-customer-review-schema.json";
+    return switch (processCode) {
+      case "creative-production-approval" -> "prompts/bpm/creative-customer-review-schema.json";
+      case "pde-construction-approval" -> "prompts/bpm/pde-experience-review-schema.json";
+      default -> "prompts/bpm/landing-customer-review-schema.json";
+    };
   }
 
   /** Lê o processo congelado no contrato da tarefa reservada. */

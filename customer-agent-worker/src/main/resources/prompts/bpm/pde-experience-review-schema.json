@@ -1,0 +1,38 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "customerPerspective", "valueScore", "behavioralResponse", "journeyChecks", "evidence", "limitations", "requiredChanges"],
+  "properties": {
+    "decision": {"type": "string", "enum": ["APPROVED", "ADJUST", "BLOCKED"]},
+    "customerPerspective": {"type": "string", "minLength": 20, "maxLength": 1800},
+    "valueScore": {"type": "integer", "minimum": 0, "maximum": 100},
+    "behavioralResponse": {
+      "type": "object", "additionalProperties": false,
+      "required": ["firstImpulse", "dominantEmotion", "safeNovelty", "belongingAdmirationLove", "effortPerception", "trustBoundary"],
+      "properties": {
+        "firstImpulse": {"type": "string", "minLength": 10, "maxLength": 700},
+        "dominantEmotion": {"type": "string", "minLength": 3, "maxLength": 200},
+        "safeNovelty": {"type": "string", "minLength": 10, "maxLength": 700},
+        "belongingAdmirationLove": {"type": "string", "minLength": 10, "maxLength": 700},
+        "effortPerception": {"type": "string", "minLength": 10, "maxLength": 700},
+        "trustBoundary": {"type": "string", "minLength": 10, "maxLength": 700}
+      }
+    },
+    "journeyChecks": {
+      "type": "array", "minItems": 8, "maxItems": 24,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["stage", "status", "customerEvidence", "friction"],
+        "properties": {
+          "stage": {"type": "string", "minLength": 3, "maxLength": 120},
+          "status": {"type": "string", "enum": ["PASS", "ADJUST", "BLOCK"]},
+          "customerEvidence": {"type": "string", "minLength": 10, "maxLength": 700},
+          "friction": {"type": "string", "minLength": 3, "maxLength": 500}
+        }
+      }
+    },
+    "evidence": {"type": "array", "minItems": 6, "maxItems": 24, "items": {"type": "string", "minLength": 10, "maxLength": 700}},
+    "limitations": {"type": "array", "minItems": 1, "maxItems": 12, "items": {"type": "string", "minLength": 10, "maxLength": 700}},
+    "requiredChanges": {"type": "array", "maxItems": 16, "items": {"type": "string", "minLength": 5, "maxLength": 700}}
+  }
+}

@@ -70,6 +70,17 @@ class CustomerBpmTaskConsumerTest {
         .isEqualTo("prompts/bpm/creative-customer-review-schema.json");
   }
 
+  /** Seleciona o contrato de revisão integral da experiência do PDE. */
+  @Test
+  void selectsVersionedPdeExperienceContract() {
+    org.assertj.core.api.Assertions.assertThat(
+            CustomerBpmTaskConsumer.promptResourceFor("pde-construction-approval"))
+        .isEqualTo("prompts/bpm/pde-experience-review.md");
+    org.assertj.core.api.Assertions.assertThat(
+            CustomerBpmTaskConsumer.schemaResourceFor("pde-construction-approval"))
+        .isEqualTo("prompts/bpm/pde-experience-review-schema.json");
+  }
+
   /** Exige o núcleo afetivo, a surpresa segura e o desejo de amor nos contratos BPM. */
   @Test
   void requiresSharedBehavioralCoreInEveryBpmReview() throws Exception {
@@ -81,13 +92,16 @@ class CustomerBpmTaskConsumerTest {
     String landing =
         Files.readString(
             Path.of("src/main/resources/prompts/bpm/landing-customer-review-schema.json"));
+    String pde =
+        Files.readString(
+            Path.of("src/main/resources/prompts/bpm/pde-experience-review-schema.json"));
 
     org.assertj.core.api.Assertions.assertThat(core)
         .contains("reação afetiva rápida")
         .contains("faixa de novidade segura")
         .contains("amada")
         .contains("Não recomende explorar vergonha");
-    org.assertj.core.api.Assertions.assertThat(java.util.List.of(creative, landing))
+    org.assertj.core.api.Assertions.assertThat(java.util.List.of(creative, landing, pde))
         .allSatisfy(
             schema ->
                 org.assertj.core.api.Assertions.assertThat(schema)

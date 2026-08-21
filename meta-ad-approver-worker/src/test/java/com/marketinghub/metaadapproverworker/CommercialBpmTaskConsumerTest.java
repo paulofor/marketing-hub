@@ -41,6 +41,17 @@ class CommercialBpmTaskConsumerTest {
         .isEqualTo("prompts/bpm/creative-commercial-review-schema.json");
   }
 
+  /** Seleciona o contrato independente de revisão dos entregáveis do PDE. */
+  @Test
+  void selectsVersionedPdeDeliverablesContract() {
+    org.assertj.core.api.Assertions.assertThat(
+            CommercialBpmTaskConsumer.promptResourceFor("pde-construction-approval"))
+        .isEqualTo("prompts/bpm/pde-deliverables-review.md");
+    org.assertj.core.api.Assertions.assertThat(
+            CommercialBpmTaskConsumer.schemaResourceFor("pde-construction-approval"))
+        .isEqualTo("prompts/bpm/pde-deliverables-review-schema.json");
+  }
+
   /** Lê entrada, cache e saída cumulativos do gate executado pelo Codex. */
   @Test
   void readsTaskTokenUsageFromCodexJsonl() throws Exception {

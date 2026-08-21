@@ -37,12 +37,14 @@ public class CommercialBpmTaskConsumer {
           new BpmContract("creative-production-approval", "brief"),
           new BpmContract("creative-production-approval", "generate"),
           new BpmContract("creative-production-approval", "commercial"),
-          new BpmContract("landing-page-generation", "commercial"));
+          new BpmContract("landing-page-generation", "commercial"),
+          new BpmContract("pde-construction-approval", "deliverables"));
   private final RestClient backend;
   private final ObjectMapper json;
   private final String codex;
   private final String model;
   private final String repositoryPath;
+  private final PdeReviewArtifactLoader pdeArtifactLoader;
   @Autowired private AutomaticExecutionControl automaticExecution;
 
   /** Configura a fila canônica e a sandbox independente de Têmis. */
@@ -56,6 +58,7 @@ public class CommercialBpmTaskConsumer {
     this.codex = codex;
     this.model = model;
     this.repositoryPath = repositoryPath;
+    this.pdeArtifactLoader = new PdeReviewArtifactLoader(repositoryPath);
     this.json = json;
   }
 
@@ -221,22 +224,30 @@ public class CommercialBpmTaskConsumer {
 
   /** Resolve o contexto congelado da tarefa no prompt versionado. */
   private String prompt(Map<String, Object> task) throws IOException {
+    Map<String, Object> promptContext = new HashMap<>(task);
+    if ("pde-construction-approval".equals(processCode(task))) {
+      promptContext.put("versionedArtifactEvidence", pdeArtifactLoader.load());
+    }
     return read(promptResourceFor(processCode(task)))
-        .replace("{{TASK_CONTEXT}}", json.writeValueAsString(task));
+        .replace("{{TASK_CONTEXT}}", json.writeValueAsString(promptContext));
   }
 
   /** Seleciona o prompt versionado específico do gate avaliado. */
   static String promptResourceFor(String processCode) {
-    return "creative-production-approval".equals(processCode)
-        ? "prompts/bpm/creative-commercial-review.md"
-        : "prompts/bpm/landing-commercial-review.md";
+    return switch (processCode) {
+      case "creative-production-approval" -> "prompts/bpm/creative-commercial-review.md";
+      case "pde-construction-approval" -> "prompts/bpm/pde-deliverables-review.md";
+      default -> "prompts/bpm/landing-commercial-review.md";
+    };
   }
 
   /** Seleciona o schema versionado específico do gate avaliado. */
   static String schemaResourceFor(String processCode) {
-    return "creative-production-approval".equals(processCode)
-        ? "prompts/bpm/creative-commercial-review-schema.json"
-        : "prompts/bpm/landing-commercial-review-schema.json";
+    return switch (processCode) {
+      case "creative-production-approval" -> "prompts/bpm/creative-commercial-review-schema.json";
+      case "pde-construction-approval" -> "prompts/bpm/pde-deliverables-review-schema.json";
+      default -> "prompts/bpm/landing-commercial-review-schema.json";
+    };
   }
 
   /** Lê o processo congelado no contrato da tarefa reservada. */

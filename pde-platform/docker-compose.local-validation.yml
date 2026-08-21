@@ -1,7 +1,9 @@
 services:
   pde-platform-local-mysql:
-    image: mysql:5.7
-    container_name: pde-platform-local-mysql
+    build:
+      context: ./local-validation
+      dockerfile: Dockerfile.mysql57
+    image: marketing-hub/pde-local-mysql57:validation
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     ports:
       - "${PDE_LOCAL_MYSQL_PORT:-33067}:3306"
@@ -15,5 +17,3 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
-    volumes:
-      - ./local-validation/mysql-init:/docker-entrypoint-initdb.d:ro

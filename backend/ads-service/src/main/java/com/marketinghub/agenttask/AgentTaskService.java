@@ -653,17 +653,6 @@ public class AgentTaskService {
   public Optional<AgentTaskPendingResponse> claimEligibleProcessTask(
       String agentKey, String processCode, String activityId, String executionResourceCode) {
     agent(agentKey);
-    Optional<AgentTask> alreadyClaimed =
-        repository
-            .findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
-                agentKey.trim(), "WORK", "IN_PROGRESS")
-            .stream()
-            .filter(task -> task.getProcessDefinition() != null)
-            .filter(
-                task ->
-                    matchesExecutionContract(task, processCode, activityId, executionResourceCode))
-            .findFirst();
-    if (alreadyClaimed.isPresent()) return Optional.of(pendingResponse(alreadyClaimed.get()));
     Optional<AgentTask> recovered =
         recoverInterruptedCallbackOnce(agentKey, processCode, activityId, executionResourceCode);
     if (recovered.isPresent()) return Optional.of(pendingResponse(recovered.get()));

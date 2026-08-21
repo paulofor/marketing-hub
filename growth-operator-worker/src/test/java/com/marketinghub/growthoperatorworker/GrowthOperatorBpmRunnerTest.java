@@ -78,6 +78,7 @@ class GrowthOperatorBpmRunnerTest {
           #!/bin/sh
           [ "$MCP_EXPERIMENT_ID" = "88" ] || exit 21
           [ -z "$MCP_COMMERCIAL_PLAN_ID" ] || exit 22
+          [ "$MCP_SOURCE_EXECUTION_ID" = "bpm-task-1" ] || exit 23
           answer=""
           while [ "$#" -gt 0 ]; do
             if [ "$1" = "--output-last-message" ]; then
@@ -112,7 +113,7 @@ class GrowthOperatorBpmRunnerTest {
     }
   }
 
-  /** Protege os gates de amostra, performance, segregação e decisão em três alternativas. */
+  /** Protege gates comerciais, três alternativas e memória ligada à ferramenta. */
   @Test
   void shouldVersionExperimentOptimizationContract() throws Exception {
     String prompt = read("prompts/bpm/v1/experiment-optimization.md");
@@ -126,14 +127,18 @@ class GrowthOperatorBpmRunnerTest {
             "p95 de carregamento abaixo de 4",
             "zero erros de recurso",
             "exatamente três alternativas",
-            "NaN");
+            "NaN",
+            "justInTimeMemory",
+            "appliesToTool");
     assertThat(schema).contains("executionStatus", "COMPLETED", "BLOCKED", "selectedAlternative");
     assertThat(mcp)
         .contains(
             "MCP_EXPERIMENT_ID",
             "consultar_cockpit",
             "funnel/analytics",
-            "experiment:${await resolvedExperimentId()}");
+            "experiment:${await resolvedExperimentId()}",
+            "MCP_TOOL",
+            "recuperar_memoria_just_in_time");
   }
 
   /** Lê integralmente um recurso usado pelo contrato. */

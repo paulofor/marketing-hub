@@ -36,7 +36,7 @@ public class CodexReadOnlyRunner {
     this(properties, objectMapper, null);
   }
 
-  /** Executa um diagnostico efemero sem permitir escrita no repositorio. */
+  /** Executa diagnóstico efêmero com memória correlacionada e repositório somente leitura. */
   public Map<String, Object> run(GrowthOperatorJob job) throws IOException, InterruptedException {
     Path output = Files.createTempFile("growth-operator-", ".json");
     Path processOutput = Files.createTempFile("growth-operator-process-", ".log");
@@ -50,6 +50,9 @@ public class CodexReadOnlyRunner {
       processBuilder
           .environment()
           .put("MCP_COMMERCIAL_PLAN_ID", String.valueOf(job.commercialPlanId()));
+      processBuilder
+          .environment()
+          .put("MCP_SOURCE_EXECUTION_ID", "growth-operator-execution-" + job.id());
       processBuilder.environment().put("MCP_MARKETING_HUB_URL", properties.getMarketingHubUrl());
       Process process = processBuilder.start();
       process.getOutputStream().write(buildPrompt(job).getBytes(StandardCharsets.UTF_8));

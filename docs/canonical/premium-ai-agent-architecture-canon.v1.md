@@ -91,6 +91,21 @@ tempo/custo ou melhora resultado e impacto comercial comprovado. Crescimento da 
 lembranças e autorreferência do agente não constituem aprendizagem. Memórias sem uso, vencidas,
 repetidas ou frequentemente contraditas devem ser retiradas sem apagar a trilha auditável.
 
+Quando o domínio possuir ferramentas ou entidades estáveis, a recuperação pode combinar contexto
+global curto com instruções locais ligadas diretamente à entidade acessada. A orientação local deve
+ser injetada just-in-time, em bloco separado do payload oficial, com limite pequeno e procedência;
+falha da memória não pode ocultar nem impedir a leitura do dado operacional. No piloto v1, o
+Operador de Crescimento usa `scopeType=MCP_TOOL` e `scopeId=<nome-da-ferramenta>`, limitado a três
+memórias por chamada. Conhecimento de um experimento não pode ser promovido a regra global de uma
+ferramenta sem evidência independente reutilizável.
+
+Prática sintética, reimplementação deliberada de código e geração automática de verificadores só
+podem ocorrer em sandbox descartável, sem secrets, provider externo, gasto, publicação ou acesso a
+dados produtivos. Código de avaliador escrito por modelo nunca entra no runtime por autoaprovação:
+precisa de contraexemplo rotulado, ganho no resultado final, holdout, testes de segurança, revisão
+humana, diff e Pull Request. Colisão entre saída correta e incorreta tratada igualmente pelo
+avaliador deve ser registrada como ponto cego, não mascarada por score médio.
+
 O gate do repositório deve validar também o contrato ponta a ponta entre cada rota chamada pelo MCP e
 o endpoint realmente exposto pelo controller do próprio módulo no backend. Registrar o servidor no
 comando Codex sem garantir que suas ferramentas alcancem os dados congelados é falha de prontidão e

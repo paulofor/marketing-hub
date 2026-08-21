@@ -55,7 +55,7 @@ class CodexReadOnlyRunnerTest {
             "retorne ADJUST");
   }
 
-  /** Confirma que o diagnóstico exige autocorreção sem expor cadeia de pensamento privada. */
+  /** Confirma autocorreção auditável e uso seguro da memória ligada à ferramenta. */
   @Test
   void shouldRequireAuditableReasoningProtocol() throws Exception {
     String prompt =
@@ -77,7 +77,9 @@ class CodexReadOnlyRunnerTest {
             "procure evidência",
             "contraditória, teste as três alternativas",
             "Não exponha cadeia de pensamento",
-            "Tente refutar a alternativa escolhida");
+            "Tente refutar a alternativa escolhida",
+            "justInTimeMemory",
+            "appliesToTool");
     assertThat(schema)
         .contains(
             "decisionAudit",

@@ -32,7 +32,7 @@ public class GrowthOperatorBpmRunner {
     this.json = json;
   }
 
-  /** Executa uma atividade usando somente o experimento identificado na referência canônica. */
+  /** Executa uma atividade com experimento segregado e correlação da memória pela tarefa. */
   public BpmExecution run(Map<String, Object> task) throws IOException, InterruptedException {
     long experimentId = experimentId(task);
     Path answer = Files.createTempFile("hermes-bpm-result-", ".json");
@@ -46,6 +46,7 @@ public class GrowthOperatorBpmRunner {
               .redirectOutput(processLog.toFile());
       builder.environment().remove("MCP_COMMERCIAL_PLAN_ID");
       builder.environment().put("MCP_EXPERIMENT_ID", String.valueOf(experimentId));
+      builder.environment().put("MCP_SOURCE_EXECUTION_ID", "bpm-task-" + task.get("taskId"));
       builder.environment().put("MCP_MARKETING_HUB_URL", properties.getMarketingHubUrl());
       Process process = builder.start();
       process.getOutputStream().write(prompt(task).getBytes(StandardCharsets.UTF_8));

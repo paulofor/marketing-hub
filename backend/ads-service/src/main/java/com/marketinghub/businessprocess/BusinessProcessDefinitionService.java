@@ -206,6 +206,7 @@ public class BusinessProcessDefinitionService {
         throw invalid("Todo elemento deve possuir um tipo BPM reconhecido.");
       }
       validateExecutionResource(node, type);
+      validateDocumentOutput(node, type);
     }
     if (starts != 1 || ends != 1) {
       throw invalid("O processo deve ter exatamente um início e um fim.");
@@ -230,6 +231,19 @@ public class BusinessProcessDefinitionService {
     if (executionResourceRepository == null
         || executionResourceRepository.findByResourceCodeAndActiveTrue(resourceCode).isEmpty()) {
       throw invalid("O recurso especializado informado não está disponível.");
+    }
+  }
+
+  /** Valida a saída documental opcional somente em atividades executáveis. */
+  private void validateDocumentOutput(JsonNode node, String nodeType) {
+    JsonNode documentOutput = node.path("documentOutput");
+    if (documentOutput.isMissingNode() || documentOutput.isNull()) return;
+    if (!"TASK".equals(nodeType)) {
+      throw invalid("Somente atividades podem declarar um documento como saída do objetivo.");
+    }
+    String label = documentOutput.path("label").asText("").trim();
+    if (!documentOutput.isObject() || label.isEmpty() || label.length() > 160) {
+      throw invalid("A saída documental exige um nome entre 1 e 160 caracteres.");
     }
   }
 

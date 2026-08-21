@@ -28,6 +28,7 @@ function mockCatalog(
   processes: unknown[],
   resources: unknown[] = [studio],
   chains: unknown[] = [],
+  documentActivities: string[] = [],
 ) {
   vi.mocked(axios.get).mockImplementation(
     async (url) =>
@@ -35,6 +36,8 @@ function mockCatalog(
         data:
           url === "/api/business-process-execution-resources"
             ? resources
+            : String(url).endsWith("/document-activities")
+              ? documentActivities
             : String(url).startsWith("/api/business-process-chains/by-process/")
               ? chains
               : processes,
@@ -363,6 +366,86 @@ describe("BusinessProcessesPage", () => {
     expect(axios.get).toHaveBeenCalledWith(
       "/api/business-process-chains/by-process/22",
     );
+  });
+
+  it("liga o objetivo aos dez últimos documentos produzidos pela atividade", async () => {
+    mockCatalog(
+      [
+        {
+          id: 22,
+          processCode: "pde-opportunity-discovery",
+          name: "Descoberta e priorização da oportunidade PDE",
+          purpose: "Comprovar uma dor relevante.",
+          ownerName: "Inteligência de Mercado",
+          triggerDescription: "Sinais reais",
+          outcomeDescription: "Oportunidade aprovada",
+          versionNumber: 1,
+          status: "PUBLISHED",
+          createdAt: "2026-08-20T10:00:00Z",
+          publishedAt: "2026-08-20T10:00:00Z",
+          diagram: {
+            nodes: [
+              { id: "start", type: "START", label: "Início" },
+              {
+                id: "evidence",
+                type: "TASK",
+                label: "Comprovar dor e demanda",
+                description: "Reúne linguagem e intenção de compra.",
+              },
+              {
+                id: "compare",
+                type: "TASK",
+                label: "Comparar oportunidades",
+                description: "Prioriza valor e viabilidade.",
+              },
+              { id: "end", type: "END", label: "Fim" },
+            ],
+            flows: [
+              { from: "start", to: "evidence" },
+              { from: "evidence", to: "compare" },
+              { from: "compare", to: "end" },
+            ],
+          },
+        },
+      ],
+      [studio],
+      [],
+      ["evidence"],
+    );
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/business-processes?processId=22"]}>
+        <QueryClientProvider client={client}>
+          <BusinessProcessesPage />
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole("link", {
+        name: "Ver os 10 últimos documentos gerados",
+      }),
+    ).toHaveAttribute(
+      "href",
+      "/business-processes/22/documents",
+    );
+    expect(
+      screen.getByRole("link", {
+        name: "Ver os 10 últimos documentos",
+      }),
+    ).toHaveAttribute(
+      "href",
+      "/business-processes/22/activities/evidence/documents",
+    );
+    expect(screen.getAllByText("Objetivo:")).toHaveLength(3);
+    expect(
+      screen.queryByRole("link", {
+        name: "Ver os 10 últimos documentos · oportunidades comparadas",
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it("permite excluir uma versão em rascunho após confirmação", async () => {

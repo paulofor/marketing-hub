@@ -1,6 +1,8 @@
 package com.marketinghub.experiment.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -160,6 +162,68 @@ class ExperimentCockpitServiceTest {
 
     assertEquals("ANUNCIO_SEM_CLIQUE", cockpit.bottleneck().code());
     assertEquals("TROCAR_CRIATIVO", cockpit.nextActions().get(0).code());
+  }
+
+  /** Garante que custo legado e eventos pré-exposição não contaminam a inicialização comercial. */
+  @Test
+  void getCockpitStartsCommercialMetricsAtZeroUntilFirstVerifiedImpression() {
+    ExperimentCampaignMetric campaignMetric =
+        ExperimentCampaignMetric.builder()
+            .impressions(0L)
+            .clicks(0L)
+            .spend(BigDecimal.ZERO)
+            .cpc(BigDecimal.ZERO)
+            .build();
+    Experiment experiment =
+        Experiment.builder()
+            .id(88L)
+            .name("Agenda Cheia Nail Design")
+            .experimentType(ExperimentType.LOW_TICKET_PRODUCT)
+            .campaignMetric(campaignMetric)
+            .totalCost(new BigDecimal("0.14"))
+            .build();
+    when(experimentRepository.findById(88L)).thenReturn(Optional.of(experiment));
+    when(readinessService.summarize(88L))
+        .thenReturn(
+            new ExperimentReadinessSummaryDto(
+                false, 0, false, 0, false, false, 0, 0, List.of(), List.of(), false, List.of()));
+    when(diagnosticsService.diagnose(88L))
+        .thenReturn(
+            new ExperimentDiagnosticsDto(
+                ExperimentDiagnosticsSeverity.INFO,
+                "Pronto",
+                "Sem bloqueio operacional.",
+                null,
+                List.of(),
+                null));
+    when(funnelService.summarizeLandingAnalytics(88L))
+        .thenReturn(
+            new ExperimentLandingAnalyticsDto(
+                60, 14, 13, 33, 1000, 70, null, List.of(), List.of(), List.of(), null, null,
+                List.of()));
+    when(funnelService.summarize(88L))
+        .thenReturn(
+            List.of(
+                stage(ExperimentFunnelStage.VISUALIZACAO_ANUNCIO, 0),
+                stage(ExperimentFunnelStage.ACESSO_FORM_LEAD, 0),
+                stage(ExperimentFunnelStage.VISUALIZACAO_FORM, 16),
+                stage(ExperimentFunnelStage.ACESSO_CHECKOUT, 0),
+                stage(ExperimentFunnelStage.COMPRA, 0)));
+    when(funnelDiagnosticService.diagnose(88L))
+        .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(), null));
+    when(funnelService.approvedRevenue(88L)).thenReturn(BigDecimal.ZERO);
+
+    var cockpit = service.getCockpit(88L);
+
+    assertEquals(BigDecimal.ZERO, cockpit.scoreboard().spend());
+    assertEquals(BigDecimal.ZERO, cockpit.scoreboard().margin());
+    assertNull(cockpit.scoreboard().roas());
+    assertNull(cockpit.scoreboard().ctr());
+    assertNull(cockpit.scoreboard().cpc());
+    assertEquals(0L, cockpit.scoreboard().pageViews());
+    assertTrue(cockpit.funnel().stream().allMatch(stage -> stage.totalCount() == 0));
+    assertEquals("AGUARDANDO_PRIMEIRA_IMPRESSAO", cockpit.bottleneck().code());
+    assertEquals("AGUARDAR_PRIMEIRA_IMPRESSAO", cockpit.nextActions().get(0).code());
   }
 
   /** Prepara um experimento real saudável, sem eventos de funil e com métricas de anúncio. */

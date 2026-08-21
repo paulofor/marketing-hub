@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: Catálogo de processos de negócio
-  version: 1.1.0
-  description: Cadastro versionado de processos e atividades do Marketing Hub.
+  version: 1.2.0
+  description: Cadastro versionado de processos, atividades e seus documentos no Marketing Hub.
 paths:
   /api/business-processes:
     get:
@@ -35,7 +35,63 @@ paths:
       responses:
         "200": { description: Rascunho atualizado }
         "409": { description: Versão já publicada ou aposentada }
+  /api/business-processes/{processDefinitionId}/document-activities:
+    get:
+      summary: Lista atividades que já produziram documentos concluídos
+      parameters:
+        - $ref: "#/components/parameters/ProcessDefinitionId"
+      responses:
+        "200":
+          description: Identificadores das atividades documentais
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: string }
+        "404": { description: Processo não encontrado }
+  /api/business-processes/{processDefinitionId}/documents:
+    get:
+      summary: Lista os dez documentos mais recentes do processo
+      parameters:
+        - $ref: "#/components/parameters/ProcessDefinitionId"
+      responses:
+        "200":
+          description: Documentos do processo ordenados do mais recente para o mais antigo
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 10
+                items:
+                  $ref: "#/components/schemas/BusinessProcessActivityDocument"
+        "404": { description: Processo não encontrado }
+  /api/business-processes/{processDefinitionId}/activities/{activityId}/documents:
+    get:
+      summary: Lista os dez documentos mais recentes da atividade
+      parameters:
+        - $ref: "#/components/parameters/ProcessDefinitionId"
+        - name: activityId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Documentos ordenados do mais recente para o mais antigo
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 10
+                items:
+                  $ref: "#/components/schemas/BusinessProcessActivityDocument"
+        "404": { description: Processo ou atividade TASK não encontrada }
 components:
+  parameters:
+    ProcessDefinitionId:
+      name: processDefinitionId
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
   schemas:
     BusinessProcessDefinition:
       type: object
@@ -88,3 +144,33 @@ components:
           type: string
           nullable: true
           description: Código opcional de recurso ativo, permitido somente em TASK.
+        documentOutput:
+          type: object
+          nullable: true
+          description: Saída documental opcional, permitida somente em TASK.
+          required: [label]
+          properties:
+            label: { type: string, minLength: 1, maxLength: 160 }
+    BusinessProcessActivityDocument:
+      type: object
+      required:
+        - taskId
+        - title
+        - assignedAgentKey
+        - assignedAgentNickname
+        - costEstimationStatus
+        - generatedAt
+      properties:
+        taskId: { type: integer, format: int64 }
+        title: { type: string }
+        sourceReference: { type: string, nullable: true }
+        assignedAgentKey: { type: string }
+        assignedAgentNickname: { type: string }
+        resultJson: { type: string, nullable: true }
+        evidenceJson: { type: string, nullable: true }
+        inputTokens: { type: integer, format: int64, nullable: true }
+        cachedInputTokens: { type: integer, format: int64, nullable: true }
+        outputTokens: { type: integer, format: int64, nullable: true }
+        estimatedCostUsd: { type: number, format: decimal, nullable: true }
+        costEstimationStatus: { type: string }
+        generatedAt: { type: string, format: date-time }

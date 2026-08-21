@@ -3,6 +3,7 @@ import type {
   ProcessDiagram,
   ProcessNode,
 } from "../../api/businessProcess/types";
+import { Link } from "react-router-dom";
 import "./BusinessProcessesPage.css";
 
 const label: Record<ProcessNode["type"], string> = {
@@ -15,9 +16,13 @@ const label: Record<ProcessNode["type"], string> = {
 export default function BusinessProcessDiagram({
   diagram,
   executionResources,
+  processDefinitionId,
+  documentActivityIds,
 }: {
   diagram: ProcessDiagram;
   executionResources: BusinessProcessExecutionResource[];
+  processDefinitionId: number;
+  documentActivityIds: string[];
 }) {
   const incoming = new Map<string, typeof diagram.flows>();
   diagram.flows.forEach((flow) =>
@@ -68,7 +73,26 @@ export default function BusinessProcessDiagram({
                   : ""}
               </div>
             ) : null}
-            {node.description ? <p>{node.description}</p> : null}
+            {node.description ? (
+              <div className="process-node__objective">
+                <p>
+                  <strong>Objetivo:</strong> {node.description}
+                </p>
+                {node.type === "TASK" &&
+                (node.documentOutput ||
+                  documentActivityIds.includes(node.id)) ? (
+                  <Link
+                    className="process-node__documents-link"
+                    to={`/business-processes/${processDefinitionId}/activities/${encodeURIComponent(node.id)}/documents`}
+                  >
+                    Ver os 10 últimos documentos
+                    {node.documentOutput?.label
+                      ? ` · ${node.documentOutput.label}`
+                      : ""}
+                  </Link>
+                ) : null}
+              </div>
+            ) : null}
           </article>
         </div>
       ))}

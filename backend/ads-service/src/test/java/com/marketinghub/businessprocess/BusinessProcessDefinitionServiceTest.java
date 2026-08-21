@@ -124,6 +124,52 @@ class BusinessProcessDefinitionServiceTest {
         .hasMessageContaining("Somente atividades");
   }
 
+  /** Aceita saída documental nomeada em atividade para orientar o histórico no BPM. */
+  @Test
+  void acceptsNamedDocumentOutputOnTask() throws Exception {
+    var repository = mock(BusinessProcessDefinitionRepository.class);
+    when(repository.findByProcessCodeAndVersionNumber("landing", 2)).thenReturn(Optional.empty());
+    when(repository.save(any()))
+        .thenAnswer(
+            invocation -> {
+              BusinessProcessDefinition value = invocation.getArgument(0);
+              value.setId(10L);
+              return value;
+            });
+    var service = new BusinessProcessDefinitionService(repository, tasks, mapper);
+    var diagram =
+        mapper.readTree(
+            "{\"nodes\":[{\"id\":\"start\",\"type\":\"START\",\"label\":\"Início\"},"
+                + "{\"id\":\"task\",\"type\":\"TASK\",\"label\":\"Pesquisar\","
+                + "\"documentOutput\":{\"label\":\"Dossiê de oportunidade\"}},"
+                + "{\"id\":\"end\",\"type\":\"END\",\"label\":\"Fim\"}],"
+                + "\"flows\":[{\"from\":\"start\",\"to\":\"task\"},{\"from\":\"task\",\"to\":\"end\"}]}");
+
+    var result = service.create(request(diagram));
+
+    assertThat(result.diagram().path("nodes").get(1).path("documentOutput").path("label").asText())
+        .isEqualTo("Dossiê de oportunidade");
+  }
+
+  /** Rejeita saída documental em gate para preservar a relação atividade-tarefa-documento. */
+  @Test
+  void rejectsDocumentOutputOutsideTask() throws Exception {
+    var repository = mock(BusinessProcessDefinitionRepository.class);
+    when(repository.findByProcessCodeAndVersionNumber("landing", 2)).thenReturn(Optional.empty());
+    var service = new BusinessProcessDefinitionService(repository, tasks, mapper);
+    var diagram =
+        mapper.readTree(
+            "{\"nodes\":[{\"id\":\"start\",\"type\":\"START\",\"label\":\"Início\"},"
+                + "{\"id\":\"gate\",\"type\":\"GATEWAY\",\"label\":\"Aprovada?\","
+                + "\"documentOutput\":{\"label\":\"Decisão\"}},"
+                + "{\"id\":\"end\",\"type\":\"END\",\"label\":\"Fim\"}],"
+                + "\"flows\":[{\"from\":\"start\",\"to\":\"gate\"},{\"from\":\"gate\",\"to\":\"end\"}]}");
+
+    assertThatThrownBy(() -> service.create(request(diagram)))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Somente atividades");
+  }
+
   /** Publica a candidata e aposenta a versão anteriormente vigente. */
   @Test
   void publishesAndRetiresPreviousVersion() throws Exception {

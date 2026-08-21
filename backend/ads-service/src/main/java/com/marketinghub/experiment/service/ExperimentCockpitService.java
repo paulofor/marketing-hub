@@ -66,12 +66,14 @@ public class ExperimentCockpitService {
     ExperimentReadinessSummaryDto readiness = readinessService.summarize(experimentId);
     ExperimentLandingAnalyticsDto analytics = funnelService.summarizeLandingAnalytics(experimentId);
     List<ExperimentFunnelStageDto> funnelStages = funnelService.summarize(experimentId);
+    List<ExperimentFunnelStageDto> commercialFunnelStages =
+        normalizeFunnelForCommercialReading(experiment.getCampaignMetric(), funnelStages);
     ExperimentFunnelDiagnosticsResponseDto funnelDiagnostics =
         funnelDiagnosticService.diagnose(experimentId);
     ExperimentDiagnosticsDto experimentDiagnostics = diagnosticsService.diagnose(experimentId);
     BigDecimal revenue = funnelService.approvedRevenue(experimentId);
     ExperimentCockpitScoreboardDto scoreboard =
-        buildScoreboard(experiment, funnelStages, analytics, revenue);
+        buildScoreboard(experiment, commercialFunnelStages, analytics, revenue);
     ExperimentCockpitBottleneckDto bottleneck =
         diagnoseBottleneck(readiness, funnelDiagnostics, scoreboard);
     return new ExperimentCockpitDto(
@@ -83,7 +85,7 @@ public class ExperimentCockpitService {
         scoreboard,
         buildQuestion(experiment),
         buildHealth(readiness, experimentDiagnostics),
-        funnelStages.stream()
+        commercialFunnelStages.stream()
             .sorted(Comparator.comparingInt(ExperimentFunnelStageDto::getOrder))
             .map(this::toCockpitStage)
             .toList(),
@@ -137,17 +139,14 @@ public class ExperimentCockpitService {
       ExperimentLandingAnalyticsDto analytics,
       BigDecimal revenue) {
     ExperimentCampaignMetric metric = experiment.getCampaignMetric();
-    BigDecimal spend =
-        money(experiment.getCost())
-            .add(money(experiment.getExpense()))
-            .add(money(metric != null ? metric.getSpend() : null));
-    if (BigDecimal.ZERO.compareTo(spend) == 0 && experiment.getTotalCost() != null) {
-      spend = experiment.getTotalCost();
-    }
+    BigDecimal spend = money(metric != null ? metric.getSpend() : null);
+    boolean awaitingVerifiedExposure = isAwaitingVerifiedExposure(metric);
     long measuredPageViews =
-        Math.max(
-            analytics.pageViews(),
-            stageTotal(funnelStages, ExperimentFunnelStage.VISUALIZACAO_FORM));
+        awaitingVerifiedExposure
+            ? 0L
+            : Math.max(
+                analytics.pageViews(),
+                stageTotal(funnelStages, ExperimentFunnelStage.VISUALIZACAO_FORM));
     long leads = stageTotal(funnelStages, ExperimentFunnelStage.ENVIO_FORM);
     long partialVideoViews = stageTotal(funnelStages, ExperimentFunnelStage.VIDEO_VISTO_PARCIAL);
     long completeVideoViews = stageTotal(funnelStages, ExperimentFunnelStage.VIDEO_VISTO_COMPLETO);
@@ -163,7 +162,7 @@ public class ExperimentCockpitService {
         impressions,
         clicks,
         percentage(clicks, impressions),
-        metric != null ? metric.getCpc() : null,
+        clicks != null && clicks > 0 && metric != null ? metric.getCpc() : null,
         measuredPageViews,
         partialVideoViews,
         completeVideoViews,
@@ -224,6 +223,15 @@ public class ExperimentCockpitService {
           "Há pendências de publicação, tracking ou entrega antes do mercado ser julgado.",
           "Evita matar uma oferta por falha operacional.",
           "Corrigir prontidão e mensuração antes de gastar mais.");
+    }
+    if (scoreboard.impressions() != null && scoreboard.impressions() == 0) {
+      return bottleneck(
+          "AGUARDANDO_PRIMEIRA_IMPRESSAO",
+          "Campanha publicada, aguardando a primeira impressão",
+          "secondary",
+          "A Meta ainda não confirmou exposição nem gasto da campanha.",
+          "Eventos anteriores à primeira impressão permanecem na auditoria técnica, mas não podem orientar conversão, criativo ou oferta.",
+          "Manter a campanha atual e iniciar a leitura comercial somente após a primeira impressão sincronizada.");
     }
     Optional<ExperimentFunnelStageDiagnosticDto> technicalIssue =
         funnelDiagnostics.diagnostics().stream()
@@ -347,6 +355,36 @@ public class ExperimentCockpitService {
         stage.getSource());
   }
 
+  /** Exclui da leitura comercial eventos anteriores à primeira impressão sem apagar a auditoria. */
+  private List<ExperimentFunnelStageDto> normalizeFunnelForCommercialReading(
+      ExperimentCampaignMetric metric, List<ExperimentFunnelStageDto> stages) {
+    if (!isAwaitingVerifiedExposure(metric)) {
+      return stages;
+    }
+    return stages.stream().map(this::zeroPreExposureStage).toList();
+  }
+
+  /** Cria uma etapa comercial zerada enquanto os eventos permanecem no analytics detalhado. */
+  private ExperimentFunnelStageDto zeroPreExposureStage(ExperimentFunnelStageDto source) {
+    ExperimentFunnelStageDto stage = new ExperimentFunnelStageDto();
+    stage.setStage(source.getStage());
+    stage.setLabel(source.getLabel());
+    stage.setOrder(source.getOrder());
+    stage.setAutoCount(0L);
+    stage.setManualCount(0L);
+    stage.setTotalCount(0L);
+    stage.setUniqueCount(source.getUniqueCount() == null ? null : 0L);
+    stage.setLastEventAt(null);
+    stage.setSource(
+        "Aguardando primeira impressão confirmada pela Meta; eventos pré-exposição ficam no Analytics técnico.");
+    return stage;
+  }
+
+  /** Indica que a Meta ainda não confirmou exposição para abrir a leitura comercial. */
+  private boolean isAwaitingVerifiedExposure(ExperimentCampaignMetric metric) {
+    return metric != null && (metric.getImpressions() == null || metric.getImpressions() <= 0);
+  }
+
   /** Gera aprendizados persistidos e diagnósticos úteis para comparação de versões. */
   private List<String> buildLearnings(
       Experiment experiment, ExperimentFunnelDiagnosticsResponseDto diagnostics) {
@@ -452,6 +490,18 @@ public class ExperimentCockpitService {
                   "Acompanhar entrega",
                   "Reavalie o anúncio ao atingir 200 impressões ou se surgir bloqueio técnico ou financeiro.",
                   experimentRoute + "/facebook-api-logs"));
+      case "AGUARDANDO_PRIMEIRA_IMPRESSAO" ->
+          List.of(
+              action(
+                  "AGUARDAR_PRIMEIRA_IMPRESSAO",
+                  "Aguardar a primeira impressão",
+                  "A campanha está publicada, mas ainda não existe exposição confirmada para avaliar desempenho.",
+                  experimentRoute + "/facebook-api-logs"),
+              action(
+                  "PRESERVAR_CONFIGURACAO_INICIAL",
+                  "Preservar campanha e oferta",
+                  "Não altere criativo, público ou página antes de existir sinal real da Meta.",
+                  experimentRoute));
       case "EXECUCAO_INVALIDA", "FALHA_TECNICA_FUNIL", "CLIQUE_SEM_PAGINA" ->
           List.of(
               action(

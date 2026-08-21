@@ -66,6 +66,21 @@
   font-size: 0.875rem;
   color: var(--bs-secondary-color);
 }
+.process-node__objective strong {
+  color: var(--bs-body-color);
+}
+.process-node__documents-link {
+  display: inline-flex;
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.business-process-objective-documents-link {
+  display: inline-flex;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
 .process-node__type {
   font-size: 0.7rem;
   font-weight: 700;
@@ -117,14 +132,19 @@
   border: 1px solid var(--bs-border-color);
   border-radius: 0.65rem;
 }
-.process-editor__resource {
+.process-editor__task-contracts {
   grid-column: 1 / -1;
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 0.25rem;
+  border-top: 1px dashed var(--bs-border-color);
+}
+.process-editor__resource,
+.process-editor__document {
   display: grid;
   grid-template-columns: minmax(220px, 0.8fr) minmax(260px, 1.2fr);
   gap: 0.75rem;
   align-items: end;
-  padding-top: 0.25rem;
-  border-top: 1px dashed var(--bs-border-color);
 }
 .process-editor__flow {
   display: grid;
@@ -133,6 +153,80 @@
     auto;
   align-items: center;
   gap: 0.5rem;
+}
+.business-process-document > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  list-style-position: inside;
+}
+.business-process-documents-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 1rem;
+  background: var(--bs-tertiary-bg);
+}
+.business-process-documents-toolbar .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.business-process-document {
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 0.25rem 0.85rem rgba(25, 50, 80, 0.08);
+}
+.business-process-documents-loading {
+  display: grid;
+  min-height: 12rem;
+  place-items: center;
+}
+.business-process-documents-empty {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1rem;
+  border: 1px dashed var(--bs-border-color);
+  border-radius: 1rem;
+  color: var(--bs-secondary-color);
+  text-align: center;
+}
+.business-process-document__audit {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.business-process-document__audit > div {
+  min-width: 0;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--bs-tertiary-bg);
+}
+.business-process-document__audit dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+}
+.business-process-document__audit dd {
+  margin: 0.25rem 0 0;
+  overflow-wrap: anywhere;
+}
+.business-process-document__content {
+  max-height: 32rem;
+  margin: 0;
+  padding: 0.85rem;
+  overflow: auto;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  background: var(--bs-tertiary-bg);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 @media (max-width: 767px) {
   .business-process-layout {
@@ -155,11 +249,16 @@
   .process-editor__flow {
     grid-template-columns: 1fr;
   }
-  .process-editor__resource {
+  .process-editor__task-contracts,
+  .process-editor__resource,
+  .process-editor__document {
     grid-column: auto;
     grid-template-columns: 1fr;
   }
   .process-editor__flow > span {
     display: none;
+  }
+  .business-process-document__audit {
+    grid-template-columns: 1fr;
   }
 }

@@ -3,7 +3,10 @@ package com.marketinghub.repository.jpa.agenttask;
 import com.marketinghub.agenttask.AgentTask;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: persistir e consultar as caixas de entrada dos agentes. */
 public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
@@ -41,4 +44,49 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
   /** Lista as tarefas da mesma execução de processo para validar predecessoras e gates. */
   List<AgentTask> findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
       Long processDefinitionId, String sourceReference);
+
+  /** Lista as atividades que já produziram ao menos um documento auditável concluído. */
+  @Query(
+      """
+      select distinct task.processActivityId
+      from AgentTask task
+      where task.processDefinition.id = :processDefinitionId
+        and task.processActivityId is not null
+        and task.status = 'COMPLETED'
+        and ((task.resultJson is not null and task.resultJson <> '')
+          or (task.evidenceJson is not null and task.evidenceJson <> ''))
+      """)
+  List<String> findDocumentActivityIds(@Param("processDefinitionId") Long processDefinitionId);
+
+  /** Busca os documentos mais recentes de uma atividade sem misturar processos ou atividades. */
+  @Query(
+      """
+      select task
+      from AgentTask task
+      where task.processDefinition.id = :processDefinitionId
+        and task.processActivityId = :activityId
+        and task.status = 'COMPLETED'
+        and ((task.resultJson is not null and task.resultJson <> '')
+          or (task.evidenceJson is not null and task.evidenceJson <> ''))
+      order by task.deliveredAt desc, task.updatedAt desc, task.id desc
+      """)
+  List<AgentTask> findRecentActivityDocuments(
+      @Param("processDefinitionId") Long processDefinitionId,
+      @Param("activityId") String activityId,
+      Pageable pageable);
+
+  /** Busca os documentos mais recentes da definição inteira sem misturar outros processos. */
+  @Query(
+      """
+      select task
+      from AgentTask task
+      where task.processDefinition.id = :processDefinitionId
+        and task.processActivityId is not null
+        and task.status = 'COMPLETED'
+        and ((task.resultJson is not null and task.resultJson <> '')
+          or (task.evidenceJson is not null and task.evidenceJson <> ''))
+      order by task.deliveredAt desc, task.updatedAt desc, task.id desc
+      """)
+  List<AgentTask> findRecentProcessDocuments(
+      @Param("processDefinitionId") Long processDefinitionId, Pageable pageable);
 }

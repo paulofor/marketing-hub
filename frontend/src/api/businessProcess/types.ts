@@ -7,6 +7,9 @@ export type ProcessNode = {
   owner?: string;
   description?: string;
   executionResourceCode?: string;
+  documentOutput?: {
+    label: string;
+  };
 };
 
 export type BusinessProcessExecutionResource = {
@@ -50,3 +53,19 @@ export type CreateBusinessProcess = Omit<
 >;
 
 export type SaveBusinessProcess = CreateBusinessProcess;
+
+export type BusinessProcessActivityDocument = {
+  taskId: number;
+  title: string;
+  sourceReference?: string;
+  assignedAgentKey: string;
+  assignedAgentNickname: string;
+  resultJson?: string;
+  evidenceJson?: string;
+  inputTokens?: number;
+  cachedInputTokens?: number;
+  outputTokens?: number;
+  estimatedCostUsd?: number;
+  costEstimationStatus: string;
+  generatedAt: string;
+};

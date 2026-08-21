@@ -97,6 +97,7 @@ import ActiveAgentTasksPage from "./pages/agent/ActiveAgentTasksPage";
 import AgentThemePage from "./pages/agent/AgentThemePage";
 import SystemImprovementsPage from "./pages/systemImprovement/SystemImprovementsPage";
 import BusinessProcessesPage from "./pages/businessProcess/BusinessProcessesPage";
+import BusinessProcessActivityDocumentsPage from "./pages/businessProcess/BusinessProcessActivityDocumentsPage";
 import BusinessProcessChainsPage from "./pages/businessProcessChain/BusinessProcessChainsPage";
 import AgentLearningDashboardPage from "./pages/agentLearning/AgentLearningDashboardPage";
 import { ToastContainer } from "react-toastify";
@@ -433,6 +434,14 @@ export default function App() {
               <Route
                 path="/business-processes/retired"
                 element={<BusinessProcessesPage catalogMode="retired" />}
+              />
+              <Route
+                path="/business-processes/:processDefinitionId/activities/:activityId/documents"
+                element={<BusinessProcessActivityDocumentsPage />}
+              />
+              <Route
+                path="/business-processes/:processDefinitionId/documents"
+                element={<BusinessProcessActivityDocumentsPage />}
               />
               <Route
                 path="/business-process-chains"

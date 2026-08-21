@@ -816,6 +816,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - Em 2026-08-08, os templates v11 do GeraSalesPage separaram a linguagem interna do formulário da copy pública. O prompt v10 instruía o HTML a usar o “formulário gerenciado” e simultaneamente exigia que o quality review bloqueasse termos internos, criando reprovação determinística. Copy e HTML agora apresentam apenas “formulário” ou “responder algumas informações”, enquanto a auditoria continua bloqueando nomes de implementação.
 - Em 2026-08-08, o comando da tela passou a usar sempre o `rebuild` auditável. Antes, uma rodada reprovada antes da primeira publicação mantinha a contagem de publicações em zero; a tela chamava `start`, que reutilizava a primeira etapa concluída por idempotência e nunca exercitava o template corrigido. O teste de contrato impede que a interface volte a escolher o comando pela existência de publicação.
 - Em 2026-08-07, o marco de reset do funil passou a ser convertido explicitamente de `Instant` para `DATETIME` UTC antes das consultas JDBC. Antes, o driver aplicava o fuso local ao parâmetro e submissões técnicas anteriores ao reset continuavam contabilizadas; o painel podia iniciar um experimento comercial com conversões falsas mesmo após zerar as contagens.
+- Em 2026-08-21, o experimento #88 confirmou um intervalo ainda desprotegido: entre a publicação da campanha e a primeira impressão sincronizada, previews e validações da Meta geraram eventos com `fbclid`, embora o Insights oficial permanecesse vazio. O cockpit passou a manter as contagens comerciais em zero até a primeira impressão confirmada, preservando esses eventos apenas no Analytics técnico. A sincronização de métricas agora reconcilia o run como `PUBLISHED_AWAITING_EXPOSURE` e abre `commercial_window_started_at` somente na primeira impressão, quando o reset canônico remove o pré-tráfego.
 
 - **Severidade**: CRÍTICO.
 - **Status**: recorrente.
@@ -1020,6 +1021,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - toda tela ou relatório de experimento deve diferenciar custo rastreável, total legado e diferença não reconciliada;
   - custos OpenAI/GeraLanding/GeraSalesPage em USD entram como auditoria técnica, não como parcela BRL sem conversão rastreável;
   - sincronização de mídia deve aplicar apenas delta e ter teste de regressão;
+  - o campo `spend` do cockpit deve usar exclusivamente gasto de mídia sincronizado; `experiment.total_cost` permanece legado não reconciliado e nunca pode aparecer como gasto de campanha;
   - atribuição de custo não pode persistir o mesmo delta por dois caminhos na mesma transação.
 - **Regra preventiva**:
   - nunca usar `experiment.total_cost` isolado como explicação financeira principal; sempre reconciliar por origem auditável ou marcar como legado não reconciliado.

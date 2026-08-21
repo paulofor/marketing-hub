@@ -80,6 +80,28 @@ O recurso não altera a regra de orquestração: o container consome pendência 
 somente pelo backend; não chama outro executor nem decide a próxima atividade. Como versões
 publicadas são imutáveis, adicionar, trocar ou remover um recurso exige nova versão do processo.
 
+## Documentos gerados por atividade
+
+Quando o objetivo de uma atividade `TASK` produzir um documento, a definição pode declarar
+`documentOutput.label` com o nome funcional desse documento. A tela BPM apresenta no próprio
+objetivo um link para os **dez documentos concluídos mais recentes** daquela atividade.
+Quando o processo já possuir qualquer saída documental, seu objetivo principal também oferece uma
+visão consolidada dos dez documentos mais recentes da versão inteira.
+
+O histórico documental não cria uma persistência paralela: cada documento corresponde ao resultado
+e às evidências já auditados na tarefa da atividade. A consulta preserva tarefa, origem, agente,
+horário, tokens e custo estimado, sempre segregados pela versão exata do processo e pelo identificador
+da atividade. Atividades legadas que já possuem resultados concluídos também recebem o link, mesmo
+antes de uma nova versão declarar o rótulo explícito.
+
+Somente atividades `TASK` podem declarar saída documental. Gates e eventos não geram tarefas e não
+podem assumir autoria de documentos. A API canônica é
+`GET /api/business-processes/{processDefinitionId}/activities/{activityId}/documents`; ela limita a
+resposta a dez itens ordenados do mais recente para o mais antigo. Conteúdo de outro processo,
+atividade, tarefa bloqueada ou execução incompleta não pode aparecer nesse histórico.
+O consolidado do objetivo principal usa
+`GET /api/business-processes/{processDefinitionId}/documents` e aplica o mesmo limite e segregação.
+
 ## Primeiro processo: Geração de landing page
 
 A versão 1 formaliza o ciclo:

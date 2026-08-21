@@ -9,6 +9,7 @@ import {
   usePublishBusinessProcess,
   useUpdateBusinessProcess,
 } from "../../api/businessProcess/useBusinessProcesses";
+import { useBusinessProcessDocumentActivities } from "../../api/businessProcess/useBusinessProcessDocuments";
 import type {
   BusinessProcess,
   ProcessDiagram,
@@ -92,6 +93,9 @@ export default function BusinessProcessesPage({
     [processes, selectedId],
   );
   const processChainsQuery = useBusinessProcessChainsByProcess(selected?.id);
+  const documentActivitiesQuery = useBusinessProcessDocumentActivities(
+    selected?.id,
+  );
 
   const selectProcess = (id?: number) => {
     const next = new URLSearchParams(searchParams);
@@ -396,7 +400,20 @@ export default function BusinessProcessesPage({
                       <h2 className="h4 mt-2 mb-1">
                         {selected.name} · v{selected.versionNumber}
                       </h2>
-                      <p className="mb-2">{selected.purpose}</p>
+                      <p className="mb-2">
+                        <strong>Objetivo:</strong> {selected.purpose}
+                      </p>
+                      {(documentActivitiesQuery.data?.length ?? 0) > 0 ||
+                      selected.diagram.nodes.some(
+                        (node) => node.type === "TASK" && node.documentOutput,
+                      ) ? (
+                        <Link
+                          className="business-process-objective-documents-link"
+                          to={`/business-processes/${selected.id}/documents`}
+                        >
+                          Ver os 10 últimos documentos gerados
+                        </Link>
+                      ) : null}
                       <div className="small text-body-secondary">
                         Dono: {selected.ownerName}
                         {selected.technicalReference
@@ -515,6 +532,8 @@ export default function BusinessProcessesPage({
                   <BusinessProcessDiagram
                     diagram={selected.diagram}
                     executionResources={executionResourcesQuery.data ?? []}
+                    processDefinitionId={selected.id}
+                    documentActivityIds={documentActivitiesQuery.data ?? []}
                   />
                 </section>
               </>

@@ -193,6 +193,8 @@ export default function BusinessProcessEditor({
                   type,
                   executionResourceCode:
                     type === "TASK" ? node.executionResourceCode : undefined,
+                  documentOutput:
+                    type === "TASK" ? node.documentOutput : undefined,
                 });
               }}
             >
@@ -243,73 +245,114 @@ export default function BusinessProcessEditor({
               Excluir
             </button>
             {node.type === "TASK" ? (
-              <div className="process-editor__resource">
-                <div>
-                  <label
-                    className="form-label small fw-semibold"
-                    htmlFor={`execution-resource-${node.id}`}
-                  >
-                    Recurso especializado (opcional)
-                  </label>
-                  <select
-                    id={`execution-resource-${node.id}`}
-                    className="form-select"
-                    aria-label={`Recurso especializado de ${node.label}`}
-                    disabled={resourcesLoading || resourcesUnavailable}
-                    value={node.executionResourceCode ?? ""}
-                    onChange={(event) =>
-                      updateNode(index, {
-                        executionResourceCode: event.target.value || undefined,
-                      })
-                    }
-                  >
-                    <option value="">
-                      {resourcesLoading
-                        ? "Carregando recursos..."
-                        : resourcesUnavailable
-                          ? "Catálogo de recursos indisponível"
-                          : "Nenhum recurso especializado"}
-                    </option>
-                    {node.executionResourceCode &&
-                    !executionResources.some(
-                      (item) =>
-                        item.resourceCode === node.executionResourceCode,
-                    ) ? (
-                      <option value={node.executionResourceCode}>
-                        {node.executionResourceCode} (indisponível)
-                      </option>
-                    ) : null}
-                    {executionResources.map((resource) => (
-                      <option
-                        value={resource.resourceCode}
-                        key={resource.resourceCode}
-                      >
-                        {resource.name}
-                      </option>
-                    ))}
-                  </select>
+              <div className="process-editor__task-contracts">
+                <div className="process-editor__document">
+                  <div className="form-check">
+                    <input
+                      id={`document-output-${node.id}`}
+                      className="form-check-input"
+                      type="checkbox"
+                      checked={Boolean(node.documentOutput)}
+                      onChange={(event) =>
+                        updateNode(index, {
+                          documentOutput: event.target.checked
+                            ? { label: "documentos gerados" }
+                            : undefined,
+                        })
+                      }
+                    />
+                    <label
+                      className="form-check-label small fw-semibold"
+                      htmlFor={`document-output-${node.id}`}
+                    >
+                      O objetivo gera documento
+                    </label>
+                  </div>
+                  {node.documentOutput ? (
+                    <input
+                      className="form-control"
+                      aria-label={`Nome do documento de ${node.label}`}
+                      maxLength={160}
+                      required
+                      value={node.documentOutput.label}
+                      onChange={(event) =>
+                        updateNode(index, {
+                          documentOutput: { label: event.target.value },
+                        })
+                      }
+                    />
+                  ) : null}
                 </div>
-                {executionResources.find(
-                  (item) => item.resourceCode === node.executionResourceCode,
-                ) ? (
-                  <p className="small text-body-secondary mb-0">
-                    {
-                      executionResources.find(
+                <div className="process-editor__resource">
+                  <div>
+                    <label
+                      className="form-label small fw-semibold"
+                      htmlFor={`execution-resource-${node.id}`}
+                    >
+                      Recurso especializado (opcional)
+                    </label>
+                    <select
+                      id={`execution-resource-${node.id}`}
+                      className="form-select"
+                      aria-label={`Recurso especializado de ${node.label}`}
+                      disabled={resourcesLoading || resourcesUnavailable}
+                      value={node.executionResourceCode ?? ""}
+                      onChange={(event) =>
+                        updateNode(index, {
+                          executionResourceCode:
+                            event.target.value || undefined,
+                        })
+                      }
+                    >
+                      <option value="">
+                        {resourcesLoading
+                          ? "Carregando recursos..."
+                          : resourcesUnavailable
+                            ? "Catálogo de recursos indisponível"
+                            : "Nenhum recurso especializado"}
+                      </option>
+                      {node.executionResourceCode &&
+                      !executionResources.some(
                         (item) =>
                           item.resourceCode === node.executionResourceCode,
-                      )?.description
-                    }{" "}
-                    Executor:{" "}
-                    <code>
+                      ) ? (
+                        <option value={node.executionResourceCode}>
+                          {node.executionResourceCode} (indisponível)
+                        </option>
+                      ) : null}
+                      {executionResources.map((resource) => (
+                        <option
+                          value={resource.resourceCode}
+                          key={resource.resourceCode}
+                        >
+                          {resource.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {executionResources.find(
+                    (item) => item.resourceCode === node.executionResourceCode,
+                  ) ? (
+                    <p className="small text-body-secondary mb-0">
                       {
                         executionResources.find(
                           (item) =>
                             item.resourceCode === node.executionResourceCode,
-                        )?.executorReference
-                      }
-                    </code>
-                  </p>
-                ) : null}
+                        )?.description
+                      }{" "}
+                      Executor:{" "}
+                      <code>
+                        {
+                          executionResources.find(
+                            (item) =>
+                              item.resourceCode ===
+                              node.executionResourceCode,
+                          )?.executorReference
+                        }
+                      </code>
+                    </p>
+                  ) : null}
+                </div>
               </div>
             ) : null}
           </div>

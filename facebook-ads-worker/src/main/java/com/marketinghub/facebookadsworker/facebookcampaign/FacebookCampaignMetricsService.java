@@ -22,6 +22,7 @@ import reactor.core.publisher.Mono;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -114,8 +115,9 @@ public class FacebookCampaignMetricsService {
      */
     private void processTarget(CampaignMetricsSyncTarget target) {
         try {
-            syncStatusSnapshot(target.campaignId());
-            JsonNode insights = facebookAdsService.getCampaignInsights(target.campaignId(), buildInsightsQuery());
+            JsonNode statusSnapshot = syncStatusSnapshot(target.campaignId());
+            JsonNode insights = facebookAdsService.getCampaignInsights(
+                    target.campaignId(), buildInsightsQuery(statusSnapshot));
             JsonNode data = insights.path("data");
             if (!data.isArray() || data.isEmpty()) {
                 sendMetrics(target.campaignId(), buildEmptyMetricsPayload());
@@ -148,16 +150,18 @@ public class FacebookCampaignMetricsService {
     /**
      * Consulta status efetivo na Meta e envia o retrato ao backend para manter o painel coerente.
      */
-    private void syncStatusSnapshot(String campaignId) {
+    private JsonNode syncStatusSnapshot(String campaignId) {
         try {
             JsonNode snapshot = statusSnapshotClient.fetch(campaignId, facebookAdsService.getCurrentAccessToken());
             if (snapshot == null || snapshot.isNull()) {
-                return;
+                return null;
             }
             CampaignStatusSyncRequest payload = mapStatusSnapshot(snapshot);
             sendStatusSync(campaignId, payload);
+            return snapshot;
         } catch (Exception ex) {
             LOGGER.warn("Could not sync Facebook status snapshot for campaign {}: {}", campaignId, ex.getMessage(), ex);
+            return null;
         }
     }
 
@@ -197,14 +201,32 @@ public class FacebookCampaignMetricsService {
     }
 
     /**
-     * Monta os parâmetros canônicos de consulta de insights de campanha na Meta.
+     * Monta o intervalo acumulado de insights desde o início da campanha até o dia atual.
      */
-    private Map<String, String> buildInsightsQuery() {
+    private Map<String, String> buildInsightsQuery(JsonNode statusSnapshot) {
+        LocalDate endDate = LocalDate.now(ZoneOffset.UTC);
+        LocalDate startDate = resolveInsightsStartDate(statusSnapshot, endDate);
         Map<String, String> params = new HashMap<>();
         params.put("fields", "campaign_name,reach,impressions,clicks,spend,actions,date_start,date_stop");
-        params.put("date_preset", "maximum");
+        params.put(
+                "time_range",
+                "{\"since\":\"%s\",\"until\":\"%s\"}".formatted(startDate, endDate));
         params.put("time_increment", "all_days");
         return params;
+    }
+
+    /**
+     * Resolve a data inicial da campanha e limita o fallback à retenção segura da Meta.
+     */
+    private LocalDate resolveInsightsStartDate(JsonNode statusSnapshot, LocalDate endDate) {
+        String startTime = statusSnapshot != null ? statusSnapshot.path("start_time").asText(null) : null;
+        if (StringUtils.hasText(startTime) && startTime.length() >= 10) {
+            LocalDate parsed = parseDate(startTime.substring(0, 10));
+            if (parsed != null && !parsed.isAfter(endDate)) {
+                return parsed;
+            }
+        }
+        return endDate.minusMonths(36);
     }
 
     /**

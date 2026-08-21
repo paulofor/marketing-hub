@@ -132,7 +132,7 @@ jobs:
       - frontend
       - docker
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     concurrency:
       group: deploy-vps-191-252-120-96
       cancel-in-progress: false
@@ -217,9 +217,14 @@ jobs:
           clarity_project_id="${8:-}"
 
           cd "$remote_path"
+          proxy_switch_started=false
           publish_diagnostics() {
             exit_code="$?"
+            trap - EXIT HUP INT TERM
             if [ "$exit_code" -ne 0 ]; then
+              if [ "$proxy_switch_started" = true ]; then
+                docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d proxy || true
+              fi
               docker compose -f docker-compose.yml -f docker-compose.deploy.yml ps || true
               docker logs --tail 200 lead-portal-backend || true
               docker logs --tail 100 lead-portal-frontend || true
@@ -228,6 +233,7 @@ jobs:
             exit "$exit_code"
           }
           trap publish_diagnostics EXIT
+          trap 'exit 143' HUP INT TERM
           if [ -n "$ghcr_token" ]; then
             printf '%s' "$ghcr_token" | docker login "$image_registry" -u "$ghcr_username" --password-stdin
           fi
@@ -236,6 +242,21 @@ jobs:
           export CLARITY_PROJECT_ID="${clarity_project_id}"
           docker network inspect public-net >/dev/null 2>&1 || docker network create public-net
           docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull
+          docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d backend frontend
+          for health_attempt in $(seq 1 36); do
+            backend_health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' lead-portal-backend 2>/dev/null || true)"
+            frontend_health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' lead-portal-frontend 2>/dev/null || true)"
+            if [ "$backend_health" = healthy ] && [ "$frontend_health" = healthy ]; then
+              break
+            fi
+            if [ "$health_attempt" -eq 36 ]; then
+              echo "Backend ou frontend do Lead Portal não ficou saudável antes da troca do proxy." >&2
+              exit 1
+            fi
+            sleep 10
+          done
+
+          proxy_switch_started=true
           port_owner_ids="$({
             docker ps --filter publish=80 -q
             docker ps --filter publish=443 -q
@@ -245,7 +266,9 @@ jobs:
             compose_service="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.service"}}' "$container_id")"
             compose_workdir="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project.working_dir"}}' "$container_id")"
             case "$container_name:$compose_service:$compose_workdir" in
-              lead-portal*:proxy:*|*:proxy:"$remote_path")
+              *:proxy:"$remote_path")
+                ;;
+              lead-portal*:proxy:*)
                 docker rm -f "$container_id"
                 ;;
               *)
@@ -254,8 +277,9 @@ jobs:
                 ;;
             esac
           done
-          docker rm -f lead-portal-proxy lead-portal-proxy-1 lead-portal_proxy_1 >/dev/null 2>&1 || true
-          docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d
+          docker rm -f lead-portal-proxy-1 lead-portal_proxy_1 >/dev/null 2>&1 || true
+          docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d proxy
+          proxy_switch_started=false
 
           index_html="$(docker exec lead-portal-frontend cat /usr/share/nginx/html/index.html)"
           asset_path="$(printf '%s' "$index_html" | sed -n 's/.*src="\([^\"]*\.js\)".*/\1/p' | head -n 1)"

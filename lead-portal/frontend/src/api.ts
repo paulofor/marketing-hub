@@ -137,7 +137,11 @@ export async function submitFlowSubmission(
   image?: File | null
 ): Promise<FlowSubmissionResponse> {
   const formData = new FormData();
-  const testMode = new URLSearchParams(window.location.search).get("mh_test") === "1";
+  const currentParams = new URLSearchParams(window.location.search);
+  const testMode =
+    currentParams.get("mh_test") === "1" ||
+    currentParams.has("mh_audit") ||
+    window.sessionStorage.getItem("mh_internal_test") === "true";
   const trimmedCampaignCode = testMode
     ? INTERNAL_TEST_CAMPAIGN_CODE
     : payload.campaignCode?.trim();

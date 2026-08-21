@@ -20,11 +20,13 @@ services:
       CODEX_HOME: /home/strategist/.codex
       CODEX_COMMAND: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh
       STRATEGIST_CODEX_EXECUTABLE: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh
+      CLARITY_API_TOKEN_FILE: /run/secrets/clarity-api-token
     ports:
       - "8096:8096"
     volumes:
       - ${MARKETING_HUB_REPOSITORY_HOST:-..}:/workspace/marketing-hub:ro
       - ${EXPERIMENT_STRATEGIST_CODEX_HOME:?Defina a sessão Codex individual da Atena}:/home/strategist/.codex
+      - ${EXPERIMENT_STRATEGIST_CLARITY_TOKEN_FILE_HOST:-/opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token}:/run/secrets/clarity-api-token:ro
     read_only: true
     tmpfs:
       - /tmp:size=128m,noexec,nosuid

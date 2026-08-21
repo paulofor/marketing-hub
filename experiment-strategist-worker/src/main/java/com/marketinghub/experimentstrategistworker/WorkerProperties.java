@@ -13,6 +13,7 @@ public class WorkerProperties {
   private String codexCommand;
   private String model;
   private Duration codexTimeout = Duration.ofMinutes(40);
+  private String clarityApiTokenFile;
 
   /** Retorna a URL do backend. */
   public String getBackendUrl() {
@@ -62,5 +63,15 @@ public class WorkerProperties {
   /** Configura o timeout do Codex. */
   public void setCodexTimeout(Duration value) {
     codexTimeout = value;
+  }
+
+  /** Retorna o arquivo secreto do token da API Data Export do Clarity. */
+  public String getClarityApiTokenFile() {
+    return clarityApiTokenFile;
+  }
+
+  /** Configura o arquivo secreto do token da API Data Export do Clarity. */
+  public void setClarityApiTokenFile(String value) {
+    clarityApiTokenFile = value;
   }
 }

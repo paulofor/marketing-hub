@@ -7,9 +7,13 @@ import com.marketinghub.experimentstrategist.memory.ExperimentStrategistMemorySe
 import com.marketinghub.experimentstrategist.memory.ExperimentStrategistMemoryService.MemoryResponse;
 import com.marketinghub.experimentstrategist.service.ExperimentStrategistContextService;
 import com.marketinghub.experimentstrategist.service.ExperimentStrategistExecutionService;
+import com.marketinghub.experimentstrategist.service.ExperimentStrategistExecutionService.BehavioralSnapshotResponse;
+import com.marketinghub.experimentstrategist.service.ExperimentStrategistExecutionService.CompleteBehavioralSnapshotRequest;
 import com.marketinghub.experimentstrategist.service.ExperimentStrategistExecutionService.CompleteRequest;
 import com.marketinghub.experimentstrategist.service.ExperimentStrategistExecutionService.ExecutionResponse;
+import com.marketinghub.experimentstrategist.service.ExperimentStrategistExecutionService.FailBehavioralSnapshotRequest;
 import com.marketinghub.experimentstrategist.service.ExperimentStrategistExecutionService.FailRequest;
+import com.marketinghub.experimentstrategist.service.ExperimentStrategistExecutionService.ReserveBehavioralSnapshotRequest;
 import com.marketinghub.experimentstrategist.service.ExperimentStrategistExecutionService.StartRequest;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Responsabilidade: expor contexto e registros auditaveis da memoria do Estrategista v1. */
+/** Responsabilidade: expor contexto, execuções e evidências auditáveis do Estrategista v1. */
 @RestController
 @RequestMapping("/api/experiment-strategist/v1")
 public class ExperimentStrategistController {
@@ -66,6 +70,31 @@ public class ExperimentStrategistController {
   @GetMapping("/internal/executions/{id}")
   public ExecutionResponse getExecution(@PathVariable Long id) {
     return executionService.getExecution(id);
+  }
+
+  /** Reserva uma consulta agregada do Clarity para a execução informada. */
+  @PostMapping("/internal/executions/{id}/behavioral-snapshots/reserve")
+  public BehavioralSnapshotResponse reserveBehavioralSnapshot(
+      @PathVariable Long id, @RequestBody ReserveBehavioralSnapshotRequest request) {
+    return executionService.reserveBehavioralSnapshot(id, request);
+  }
+
+  /** Recebe a resposta agregada do MCP oficial do Clarity. */
+  @PostMapping("/internal/executions/{id}/behavioral-snapshots/{snapshotId}/complete")
+  public BehavioralSnapshotResponse completeBehavioralSnapshot(
+      @PathVariable Long id,
+      @PathVariable Long snapshotId,
+      @RequestBody CompleteBehavioralSnapshotRequest request) {
+    return executionService.completeBehavioralSnapshot(id, snapshotId, request);
+  }
+
+  /** Recebe a falha auditável de uma consulta do Clarity. */
+  @PostMapping("/internal/executions/{id}/behavioral-snapshots/{snapshotId}/fail")
+  public BehavioralSnapshotResponse failBehavioralSnapshot(
+      @PathVariable Long id,
+      @PathVariable Long snapshotId,
+      @RequestBody FailBehavioralSnapshotRequest request) {
+    return executionService.failBehavioralSnapshot(id, snapshotId, request);
   }
 
   /** Recebe um parecer estruturado sem executar sua recomendacao. */

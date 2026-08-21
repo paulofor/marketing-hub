@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-21-experiment-strategist-clarity-snapshots
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE experiment_strategist_behavioral_snapshot (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                execution_id BIGINT NOT NULL,
+                experiment_id BIGINT NOT NULL,
+                provider VARCHAR(40) NOT NULL,
+                dimension_code VARCHAR(20) NOT NULL,
+                window_days INT NOT NULL,
+                query_text TEXT NOT NULL,
+                status VARCHAR(20) NOT NULL,
+                raw_response LONGTEXT NULL,
+                error_message TEXT NULL,
+                estimated_cost_usd DECIMAL(18,8) NOT NULL DEFAULT 0,
+                requested_at DATETIME NOT NULL,
+                finished_at DATETIME NULL,
+                PRIMARY KEY (id),
+                INDEX idx_strategist_behavior_execution (execution_id, requested_at),
+                INDEX idx_strategist_behavior_quota (provider, requested_at),
+                INDEX idx_strategist_behavior_experiment (experiment_id, requested_at),
+                CONSTRAINT fk_strategist_behavior_execution FOREIGN KEY (execution_id) REFERENCES experiment_strategist_execution(id),
+                CONSTRAINT fk_strategist_behavior_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

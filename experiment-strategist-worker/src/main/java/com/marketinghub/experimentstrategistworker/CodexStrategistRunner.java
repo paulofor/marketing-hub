@@ -41,6 +41,7 @@ public class CodexStrategistRunner {
   public Map<String, Object> run(StrategistJob job) throws IOException, InterruptedException {
     Path output = Files.createTempFile("experiment-strategist-", ".json");
     Path log = Files.createTempFile("experiment-strategist-", ".log");
+    boolean clarityAvailable = isClarityApiTokenAvailable();
     boolean assumptions = "COMMERCIAL_ASSUMPTIONS_PROPOSAL".equals(job.authorityMode());
     Path schema =
         materialize(
@@ -49,13 +50,19 @@ public class CodexStrategistRunner {
                 : "prompts/experiment-strategist/v1/research-schema.json",
             ".json");
     Path mcp = materialize("mcp/experiment-strategist.mjs", ".mjs");
+    Path clarityMcp = materialize("mcp/clarity-aggregate.mjs", ".mjs");
     try {
-      ProcessBuilder builder = new ProcessBuilder(command(output, schema, mcp));
+      ProcessBuilder builder =
+          new ProcessBuilder(command(output, schema, mcp, clarityMcp, clarityAvailable));
       builder.redirectErrorStream(true).redirectOutput(log.toFile());
       builder.environment().put("MCP_BACKEND_URL", properties.getBackendUrl());
       builder.environment().put("MCP_EXECUTION_ID", job.id().toString());
+      if (clarityAvailable)
+        builder.environment().put("CLARITY_API_TOKEN_FILE", properties.getClarityApiTokenFile());
       Process process = builder.start();
-      process.getOutputStream().write(prompt(job).getBytes(StandardCharsets.UTF_8));
+      process
+          .getOutputStream()
+          .write(prompt(job, clarityAvailable).getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
       CodexTelemetryReporter.Session session =
           telemetry == null ? null : telemetry.monitor(job.id(), process, log);
@@ -74,20 +81,18 @@ public class CodexStrategistRunner {
         validate(result, assumptions);
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("alternativesJson", json.writeValueAsString(result.get("alternatives")));
-        payload.put(
-            "recommendationJson",
-            json.writeValueAsString(
-                Map.of(
-                    "diagnosis",
-                    result.get("diagnosis"),
-                    assumptions ? "proposedAssumptions" : "marketIntelligence",
-                    assumptions
-                        ? result.get("proposedAssumptions")
-                        : result.get("marketIntelligence"),
-                    assumptions ? "evidenceQuality" : "portfolioAssessment",
-                    assumptions ? result.get("evidenceQuality") : result.get("portfolioAssessment"),
-                    "recommendation",
-                    result.get("recommendation"))));
+        Map<String, Object> recommendation = new LinkedHashMap<>();
+        recommendation.put("diagnosis", result.get("diagnosis"));
+        if (!assumptions)
+          recommendation.put("behavioralAssessment", result.get("behavioralAssessment"));
+        recommendation.put(
+            assumptions ? "proposedAssumptions" : "marketIntelligence",
+            assumptions ? result.get("proposedAssumptions") : result.get("marketIntelligence"));
+        recommendation.put(
+            assumptions ? "evidenceQuality" : "portfolioAssessment",
+            assumptions ? result.get("evidenceQuality") : result.get("portfolioAssessment"));
+        recommendation.put("recommendation", result.get("recommendation"));
+        payload.put("recommendationJson", json.writeValueAsString(recommendation));
         payload.put("publicSourcesJson", json.writeValueAsString(result.get("sources")));
         payload.put("rawModelResponse", raw);
         payload.put(
@@ -103,6 +108,7 @@ public class CodexStrategistRunner {
       Files.deleteIfExists(log);
       Files.deleteIfExists(schema);
       Files.deleteIfExists(mcp);
+      Files.deleteIfExists(clarityMcp);
     }
   }
 
@@ -132,6 +138,12 @@ public class CodexStrategistRunner {
 
   /** Monta o comando com o MCP exclusivo e versionado do Estrategista. */
   List<String> command(Path output, Path schema, Path mcp) {
+    return command(output, schema, mcp, Path.of("clarity-aggregate.mjs"), false);
+  }
+
+  /** Monta o comando com o MCP interno e o adaptador agregado opcional do Clarity. */
+  List<String> command(
+      Path output, Path schema, Path mcp, Path clarityMcp, boolean clarityAvailable) {
     List<String> command = new ArrayList<>();
     command.add(properties.getCodexCommand());
     command.add("--search");
@@ -152,6 +164,12 @@ public class CodexStrategistRunner {
     command.add("mcp_servers.experiment_strategist.command=\"node\"");
     command.add("--config");
     command.add("mcp_servers.experiment_strategist.args=[\"" + mcp.toAbsolutePath() + "\"]");
+    if (clarityAvailable) {
+      command.add("--config");
+      command.add("mcp_servers.clarity_aggregate.command=\"node\"");
+      command.add("--config");
+      command.add("mcp_servers.clarity_aggregate.args=[\"" + clarityMcp.toAbsolutePath() + "\"]");
+    }
     if (hasText(properties.getModel())) {
       command.add("--model");
       command.add(properties.getModel());
@@ -160,7 +178,7 @@ public class CodexStrategistRunner {
   }
 
   /** Resolve o prompt com evidencias e biblioteca comportamental versionadas. */
-  private String prompt(StrategistJob job) throws IOException {
+  private String prompt(StrategistJob job, boolean clarityAvailable) throws IOException {
     boolean assumptions = "COMMERCIAL_ASSUMPTIONS_PROPOSAL".equals(job.authorityMode());
     return read(assumptions
             ? "prompts/experiment-strategist/v1/commercial-assumptions.md"
@@ -168,7 +186,21 @@ public class CodexStrategistRunner {
         .replace("{{EVIDENCE_SNAPSHOT}}", text(job.evidenceSnapshot()))
         .replace("{{BEHAVIORAL_MEMORY}}", "Incluida no snapshot de evidencias.")
         .replace("{{BEHAVIORAL_SCIENCE_LIBRARY}}", read("behavioral-science/v1/library.md"))
+        .replace(
+            "{{CLARITY_CAPABILITY}}",
+            clarityAvailable
+                ? "DISPONIVEL: consulte somente snapshots agregados por PAGE, SOURCE e DEVICE."
+                : "INDISPONIVEL: declare a lacuna e use somente o funil interno; não invente dados.")
         .replace("{{RESEARCH_QUESTION}}", text(job.researchQuestion()));
+  }
+
+  /** Confirma que o arquivo secreto do Clarity existe, é legível e não está vazio. */
+  private boolean isClarityApiTokenAvailable() throws IOException {
+    if (!hasText(properties.getClarityApiTokenFile())) return false;
+    Path tokenFile = Path.of(properties.getClarityApiTokenFile());
+    return Files.isRegularFile(tokenFile)
+        && Files.isReadable(tokenFile)
+        && Files.size(tokenFile) > 0;
   }
 
   /** Rejeita parecer sem portfólio, inteligência de mercado, três caminhos ou recomendação. */
@@ -189,6 +221,7 @@ public class CodexStrategistRunner {
         || !result.has("sources")
         || result.get("sources").size() < 2
         || !result.hasNonNull("marketIntelligence")
+        || !result.hasNonNull("behavioralAssessment")
         || !result.hasNonNull("portfolioAssessment")
         || !result.hasNonNull("recommendation")
         || !result.hasNonNull("diagnosis"))

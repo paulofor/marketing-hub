@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Estrategista de Experimentos v1
-  version: 1.3.0
+  version: 1.4.0
 paths:
   /api/experiment-strategist/v1/commercial-plans/{planId}/executions:
     post:
@@ -25,6 +25,29 @@ paths:
       responses:
         '200': {description: Parecer persistido}
         '409': {description: Execucao fora do estado RUNNING}
+  /api/experiment-strategist/v1/internal/executions/{id}/behavioral-snapshots/reserve:
+    post:
+      summary: Reserva uma consulta agregada e segregada do Microsoft Clarity.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ReserveBehavioralSnapshotRequest'}
+      responses:
+        '200': {description: Consulta reservada com texto canônico}
+        '400': {description: Dimensão, janela ou experimento inválido}
+        '429': {description: Cota segura por execução ou por dia atingida}
+  /api/experiment-strategist/v1/internal/executions/{id}/behavioral-snapshots/{snapshotId}/complete:
+    post:
+      summary: Persiste a resposta bruta agregada do MCP oficial do Clarity.
+      responses:
+        '200': {description: Snapshot agregado concluído e auditável}
+        '409': {description: Snapshot ou execução fora do estado esperado}
+  /api/experiment-strategist/v1/internal/executions/{id}/behavioral-snapshots/{snapshotId}/fail:
+    post:
+      summary: Persiste a falha técnica da consulta Clarity sem inventar evidência.
+      responses:
+        '200': {description: Falha do snapshot persistida}
   /api/experiment-strategist/v1/internal/executions/{id}/fail:
     post:
       summary: Persiste a causa detalhada da falha do worker.
@@ -79,6 +102,13 @@ paths:
         '503': {description: Bucket nao configurado}
 components:
   schemas:
+    ReserveBehavioralSnapshotRequest:
+      type: object
+      required: [experimentId, dimension, windowDays]
+      properties:
+        experimentId: {type: integer, format: int64, minimum: 1}
+        dimension: {type: string, enum: [PAGE, SOURCE, DEVICE]}
+        windowDays: {type: integer, minimum: 1, maximum: 3}
     CreateMemoryRequest:
       type: object
       required: [commercialPlanId, behavioralMechanism, statement, evidenceLevel, confidence, validationStatus]

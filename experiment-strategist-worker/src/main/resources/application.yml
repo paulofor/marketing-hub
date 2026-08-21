@@ -25,3 +25,4 @@ experiment-strategist:
   codex-command: ${CODEX_COMMAND:codex}
   model: ${CODEX_MODEL:}
   codex-timeout: ${EXPERIMENT_STRATEGIST_CODEX_TIMEOUT:PT40M}
+  clarity-api-token-file: ${CLARITY_API_TOKEN_FILE:}

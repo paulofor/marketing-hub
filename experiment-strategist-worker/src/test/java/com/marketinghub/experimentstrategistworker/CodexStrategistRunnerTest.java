@@ -25,6 +25,31 @@ class CodexStrategistRunnerTest {
     assertThat(properties.getCodexTimeout().toMinutes()).isEqualTo(40);
   }
 
+  /**
+   * Confirma que o adaptador Clarity só entra quando existe credencial e nunca vai na linha de
+   * comando.
+   */
+  @Test
+  void enablesAggregateClarityWithoutExposingTokenInCommand() {
+    WorkerProperties properties = new WorkerProperties();
+    properties.setCodexCommand("codex");
+    properties.setRepositoryPath("/workspace/marketing-hub");
+    CodexStrategistRunner runner = new CodexStrategistRunner(properties, new ObjectMapper());
+
+    var command =
+        runner.command(
+            Path.of("/tmp/output.json"),
+            Path.of("/tmp/schema.json"),
+            Path.of("/tmp/internal.mjs"),
+            Path.of("/tmp/clarity.mjs"),
+            true);
+
+    assertThat(command)
+        .contains("mcp_servers.clarity_aggregate.command=\"node\"")
+        .contains("mcp_servers.clarity_aggregate.args=[\"/tmp/clarity.mjs\"]")
+        .noneMatch(value -> value.contains("api-token"));
+  }
+
   /** Confirma que navegador, pesquisa externa e procedência entram no artefato versionado. */
   @Test
   void packagesAuditableBrowserResearch() throws Exception {
@@ -37,7 +62,10 @@ class CodexStrategistRunnerTest {
             Path.of("src/main/resources/prompts/experiment-strategist/v1/research-schema.json"));
 
     assertThat(dockerfile)
+        .contains("FROM node:20-bookworm-slim AS node-runtime")
         .contains("FROM eclipse-temurin:21-jre-noble")
+        .contains("ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm")
+        .contains("node --version | grep -Eq '^v2[0-9]\\.'")
         .contains("npx playwright-core install --with-deps chromium")
         .contains("COPY --from=build /build/src/main/resources/browser /app/browser");
     assertThat(prompt)
@@ -45,7 +73,9 @@ class CodexStrategistRunnerTest {
         .contains("duas classes independentes de evidência")
         .contains("mapa comparativo dos concorrentes")
         .contains("linguagem literal pública de clientes")
-        .contains("o mercado oferece X, mas o cliente ainda precisa fazer Y");
+        .contains("o mercado oferece X, mas o cliente ainda precisa fazer Y")
+        .contains("snapshots: PAGE, SOURCE e DEVICE")
+        .contains("Nunca solicite gravação");
     assertThat(schema)
         .contains("marketIntelligence", "customerLanguage", "competitors", "customerEffort")
         .contains(
@@ -56,6 +86,7 @@ class CodexStrategistRunnerTest {
             "operatorBoundary",
             "positioning",
             "memoryOutcome");
+    assertThat(schema).contains("behavioralAssessment", "AGGREGATE_ONLY_NO_INDIVIDUAL_PROFILING");
   }
 
   /** Confirma que constantes booleanas mantêm o tipo exigido pelo Structured Outputs. */

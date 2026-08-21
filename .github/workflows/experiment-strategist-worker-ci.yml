@@ -43,6 +43,10 @@ jobs:
         working-directory: experiment-strategist-worker
         run: mvn -B test
 
+      - name: Run Clarity MCP adapter tests
+        working-directory: experiment-strategist-worker
+        run: npm ci && npm test
+
       - name: Validate container build
         run: docker build -t marketing-hub/experiment-strategist-worker:${{ github.sha }} experiment-strategist-worker
 
@@ -72,8 +76,12 @@ jobs:
           rsync -az scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
 
       - name: Rebuild and restart worker
+        env:
+          CLARITY_API_TOKEN: ${{ secrets.CLARITY_API_TOKEN }}
         run: |
           set -euo pipefail
+          ssh "${VPS_USER}@${VPS_IP}" "install -d -o 10001 -g 10001 -m 700 /opt/growth-operator/agents/experiment-strategist/secrets && if [ ! -f /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token ]; then install -o 10001 -g 10001 -m 600 /dev/null /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token; fi && chown 10001:10001 /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token && chmod 600 /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token"
+          printf '%s' "${CLARITY_API_TOKEN}" | ssh "${VPS_USER}@${VPS_IP}" "umask 077; tee /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token >/dev/null; chown 10001:10001 /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token; chmod 600 /opt/growth-operator/agents/experiment-strategist/secrets/clarity-api-token"
           ssh "${VPS_USER}@${VPS_IP}" "\
             install -d -o 10001 -g 10001 /opt/growth-operator/agents/experiment-strategist/codex-home \
             && export EXPERIMENT_STRATEGIST_CODEX_HOME=/opt/growth-operator/agents/experiment-strategist/codex-home \

@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 class BusinessProcessChainChangelogTest {
   private static final String FORMAT_NEUTRAL_CHANGESET =
       "changesets/2026-08-21-pde-format-neutral-chain-v2.yaml";
+  private static final String PROOF_DISTRIBUTION_CHANGESET =
+      "changesets/2026-08-21-pde-proof-distribution-intent-chain-v3.yaml";
 
   /** Exige tabelas, seis processos, métrica comercial e include relativo no master. */
   @Test
@@ -61,5 +63,38 @@ class BusinessProcessChainChangelogTest {
         .doesNotContain("TIMESTAMP NOT NULL");
     assertThat(master)
         .contains("file: " + FORMAT_NEUTRAL_CHANGESET + "\n      relativeToChangelogFile: true");
+  }
+
+  /** Exige prova verificável, distribuição acumulável e intenção governada nos seis processos. */
+  @Test
+  void declaresProofDistributionAndIntentPdeValueChainVersion() throws Exception {
+    String change =
+        Files.readString(
+            Path.of("src/main/resources/db/changelog/" + PROOF_DISTRIBUTION_CHANGESET));
+    String master =
+        Files.readString(Path.of("src/main/resources/db/changelog/db.changelog-master.yaml"));
+
+    assertThat(change)
+        .contains("dbms:\n            type: mysql")
+        .contains("\"label\":\"Mapear perguntas e sinais de confiança\"")
+        .contains("\"label\":\"Desenhar prova antes da compra\"")
+        .contains("\"label\":\"Construir pacote de prova verificável\"")
+        .contains("\"label\":\"Preparar canal e ativo próprio\"")
+        .contains("\"label\":\"Validar canal, consentimento e atribuição\"")
+        .contains("\"label\":\"Coletar prova e dúvidas reais\"")
+        .contains("WHERE process_code = 'pde-opportunity-discovery' AND version_number = 3")
+        .contains("WHERE process_code = 'pde-commercial-plan-offer' AND version_number = 3")
+        .contains("WHERE process_code = 'pde-construction-approval' AND version_number = 3")
+        .contains("WHERE process_code = 'pde-communication-sales-journey' AND version_number = 2")
+        .contains(
+            "WHERE process_code = 'pde-commercial-homologation-activation' AND version_number = 2")
+        .contains("WHERE process_code = 'pde-sales-delivery-learning' AND version_number = 2")
+        .contains("AND chain_definition.version_number = 3")
+        .contains("'pde-value-creation-delivery'")
+        .contains("SET status = 'RETIRED'")
+        .doesNotContain("TIMESTAMP NOT NULL");
+    assertThat(master)
+        .contains(
+            "file: " + PROOF_DISTRIBUTION_CHANGESET + "\n      relativeToChangelogFile: true");
   }
 }

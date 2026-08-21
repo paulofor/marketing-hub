@@ -31,6 +31,35 @@ pode reduzir a solução a um kit quando a transformação depender de interaç�
 personalização ou continuidade que um webapp ou outro formato atenda melhor. A decisão deve ficar
 versionada no Plano Comercial com alternativas, evidências, trade-offs e motivo da escolha.
 
+## Contrato transversal de prova, distribuição e intenção
+
+Produto melhor não é apenas o que funciona depois da compra. Ele também precisa ser compreendido,
+verificado e descoberto com confiança antes dela. Cada versão PDE deve manter um contrato enxuto com:
+
+- **prova antes da compra:** perguntas prioritárias, objeções, descrição detalhada, demonstração,
+  amostra, limitações e evidências que sustentam cada promessa relevante;
+- **distribuição acumulável:** hipótese para reduzir dependência contínua de mídia comprada, usando
+  quando aderente audiência identificada consentida, parceiros, creators/afiliados recorrentes,
+  comunidade ou uma utilidade gratuita que tenha valor próprio;
+- **resposta à intenção:** sinais simples e consentidos, como origem, retorno, tempo, progresso ou
+  tentativa de saída, podem ajustar o momento do CTA, a prova ou a próxima ação em experimento
+  versionado, sem inferir estados psicológicos individuais;
+- **aprendizado comercial:** a melhoria só é aceita quando compra, margem, primeiro resultado útil,
+  satisfação ou retenção confirmarem o valor; cadastro, impacto estimado e atribuição do fornecedor
+  não substituem venda real.
+
+No Plano Comercial, comparar exatamente três rotas materialmente viáveis de aquisição e continuidade:
+mídia comprada, rede recorrente por performance e ativo próprio/parceria. Uma rota inviável deve ser
+registrada como tal e substituída por outra alternativa real. Não é obrigatório criar programa de
+afiliados, área gratuita ou personalização comportamental para todo PDE; é obrigatório explicitar por
+que o mecanismo escolhido é o melhor para o produto, o público e a economia unitária.
+
+Reviews e depoimentos só podem vir de clientes ou usuários reais, com origem, data e autorização
+rastreáveis. Na ausência deles, usar demonstração do produto real, amostra, especificação, revisão
+independente e limites honestos. É proibido fabricar prova social. A mesma versão e o mesmo segmento
+não podem receber preço ocultamente diferente por comportamento; preço é variável comercial
+versionada e deve ser testado separadamente com governança explícita.
+
 ## Decisão de simplicidade
 
 Foram consideradas três estruturas:
@@ -72,13 +101,19 @@ mas não comprova sozinha uma oportunidade.
 - capturar e anonimizar a fala observada, separando desejo, dor, tentativa frustrada e inferências;
 - comprovar escala e recorrência por fontes independentes;
 - entender por que as soluções atuais não satisfazem;
+- mapear as perguntas, objeções e lacunas de informação que impedem a decisão de compra, separando
+  reviews de soluções existentes de prova pertencente ao futuro PDE;
+- identificar ativos de distribuição já acessíveis ao público e ao Marketing Hub, incluindo creators
+  recorrentes, parceiros, comunidades e utilidades gratuitas, sem presumir que audiência equivale a
+  intenção de compra;
 - propor uma microexperiência de valor e um mecanismo plausível;
 - levantar formatos digitais materialmente distintos capazes de entregar esse mecanismo, sem
   antecipar que kit, webapp ou qualquer outra implementação será a vencedora;
 - comparar de duas a três oportunidades antes de priorizar uma.
 
 **Saída final:** dossiê de oportunidade com evidências, público, dor raiz, lacuna, intenção de compra,
-formatos digitais candidatos, risco principal e decisão `APROVAR`, `PESQUISAR MAIS` ou `REJEITAR`.
+perguntas prioritárias, sinais de confiança, ativos de distribuição, formatos digitais candidatos,
+risco principal e decisão `APROVAR`, `PESQUISAR MAIS` ou `REJEITAR`.
 
 **Gate para avançar:** somente oportunidade `APROVADA`, sem evidência fabricada e com encaixe PDE.
 Pedido espontâneo ou conversa individual deve permanecer como `SINAL`, até ser confirmado por pelo
@@ -97,19 +132,28 @@ mensurável e financeiramente limitada.
 - validar mecanismo, prova e limites da promessa;
 - comparar formatos candidatos e escolher explicitamente o que melhor entrega valor, considerando
   pelo menos kit digital, webapp ou outra alternativa viável quando aplicáveis;
+- criar a matriz promessa -> pergunta/objeção -> prova verificável -> fonte -> limitação, sem depender
+  de desconto para compensar informação ou confiança ausente;
 - definir a experiência: entrada, microvalor, jornada guiada, resultado e continuidade;
-- definir oferta, preço, CTA e canal inicial;
+- comparar três rotas viáveis de aquisição e continuidade e escolher canal inicial, ativo próprio a
+  construir e regra de atribuição; quando a rota usar creators, definir recorrência, remuneração por
+  performance, habilitação, antifraude e economia unitária;
+- avaliar se uma utilidade gratuita de valor próprio pode gerar audiência consentida e se existe um
+  lado pagante sustentável, sem transformar captura de dados em benefício fictício;
+- definir oferta, preço e CTA; qualquer resposta por intenção deve especificar sinais permitidos,
+  regra, fallback, versão e teste incremental, sem preço individual oculto;
 - registrar objetivo comercial, prazo, orçamento máximo, métrica principal e critérios de
   continuar, ajustar e parar;
 - definir o que será entregue e como a cliente perceberá valor.
 
-**Saída final:** Plano Comercial aprovado, com versão da oferta, matriz de decisão do formato e
-contrato funcional do PDE suficientes para orientar produção, comunicação, venda e mensuração sem
-reinvenção posterior.
+**Saída final:** Plano Comercial aprovado, com versão da oferta, matriz de decisão do formato,
+contrato de prova, matriz de distribuição/continuidade e contrato funcional do PDE suficientes para
+orientar produção, comunicação, venda e mensuração sem reinvenção posterior.
 
 **Gate para avançar:** plano deve responder claramente quem compra, qual dor resolve, por que o
 formato escolhido entrega mais valor que as alternativas, o que a cliente recebe, quanto custa, como
-será vendido e qual evidência decide o ciclo.
+cada promessa será provada, como será vendido sem depender indefinidamente de um único canal pago e
+qual evidência decide o ciclo.
 
 ## 3. Construção e aprovação do PDE
 
@@ -130,6 +174,12 @@ consiga acessar, usar e concluir, percebendo a transformação prometida com qua
   persistência, segregação de dados, responsividade, segurança e recuperação de falhas;
 - quando o formato for kit ou conteúdo digital, validar integridade, aplicabilidade, organização,
   abertura dos arquivos e clareza de uso para produzir o resultado prometido;
+- construir o pacote de prova da versão com demonstração ou amostra real, descrição completa,
+  perguntas e respostas, requisitos de entrada, resultado observável e limitações;
+- estruturar fatos do produto para leitura humana e por mecanismos de recomendação, preservando a
+  mesma verdade em página, criativo, checkout, suporte e entrega;
+- quando previsto no plano, implementar identificação consentida, indicação/atribuição, continuidade
+  ou utilidade gratuita sem liberar acesso pago indevido nem misturar dados entre clientes;
 - produzir e aprovar imagens, vídeos e arquivos necessários;
 - validar utilidade, facilidade, integridade, direitos e fidelidade à promessa;
 - congelar uma versão comercial rastreável do PDE.
@@ -138,10 +188,11 @@ consiga acessar, usar e concluir, percebendo a transformação prometida com qua
 conteúdos, telas, automações e entregáveis aplicáveis íntegros, versionados e prontos para venda e
 entrega.
 
-**Gate para avançar:** uma pessoa deve conseguir completar o caminho principal e receber valor sem
-placeholder, linguagem interna, dependência manual oculta ou ativo ainda em rascunho. Sofisticação
-técnica não compensa menor utilidade, e simplicidade de produção não compensa uma entrega incapaz de
-resolver a necessidade validada.
+**Gate para avançar:** uma pessoa deve conseguir compreender e verificar a oferta, completar o caminho
+principal e receber valor sem pergunta prioritária sem resposta, prova fabricada, placeholder,
+linguagem interna, dependência manual oculta ou ativo ainda em rascunho. Sofisticação técnica não
+compensa menor utilidade, e simplicidade de produção não compensa uma entrega incapaz de resolver a
+necessidade validada.
 
 O processo `Fabricação e aprovação do produto` continua válido quando imagens ou arquivos forem
 entregáveis. Para um PDE, ele atua como subprocesso desta etapa e não representa sozinho a conclusão
@@ -161,6 +212,14 @@ valor, oferta, compra e acesso, usando o produto real como fonte da comunicaçã
 - quando o Plano Comercial escolher microconteúdo seriado, preservar uma única hipótese entre os
   episódios e medir continuidade até checkout e compra;
 - construir a entrada pública, landing ou microexperiência gratuita prevista no plano;
+- apresentar descrição suficiente, demonstração, perguntas e respostas, limitações e somente provas
+  reais; a ausência de reviews iniciais deve ser declarada, não preenchida artificialmente;
+- quando escolhida, preparar uma rede recorrente de creators/afiliados com materiais reais em mais de
+  um formato, identificador individual, comissão, atribuição, validade e regras antifraude;
+- quando escolhida, conectar a utilidade gratuita à continuidade identificada e consentida, deixando
+  explícitos benefício gratuito, oferta paga e uso de dados;
+- aplicar respostas por intenção somente como variante governada de mensagem, prova, CTA ou momento,
+  com fallback neutro e medição incremental;
 - configurar paywall, checkout e continuidade pós-compra;
 - garantir correspondência entre promessa, criativo, experiência, oferta e entrega;
 - instrumentar visita, interação de valor, CTA, checkout, compra, acesso e primeiro uso.
@@ -168,8 +227,10 @@ valor, oferta, compra e acesso, usando o produto real como fonte da comunicaçã
 **Saída final:** kit comercial aprovado com criativos, destino de campanha, jornada de venda,
 checkout, acesso e eventos preparados, sem ativação automática de mídia.
 
-**Gate para avançar:** a cliente deve reconhecer para quem é, entender o benefício, ver o produto
-real, saber o próximo passo e chegar à compra sem ruptura de mensagem.
+**Gate para avançar:** a cliente deve reconhecer para quem é, entender o benefício, encontrar resposta
+para as dúvidas prioritárias, verificar o produto real, saber o próximo passo e chegar à compra sem
+ruptura de mensagem. Canal, creator, variante e versão devem permanecer atribuíveis até venda e
+entrega.
 
 Os processos `Criação e aprovação de criativos` e `Geração de landing page` permanecem como
 subprocessos especializados desta etapa. Nem todo PDE exige landing tradicional; a entrada pode ser a
@@ -188,6 +249,8 @@ acesso, entregar valor e medir o funil sem contaminar dados nem orçamento.
 - validar anúncio, URL, versão PDE, primeira dobra e CTA;
 - realizar checkout e pagamento de teste segregado;
 - comprovar evento, mensagem, acesso, conteúdo íntegro e primeiro uso;
+- comprovar pacote de prova, perguntas prioritárias, consentimento, identificação, atribuição e
+  deduplicação por canal/creator; regras de intenção precisam de fallback seguro e versão rastreável;
 - validar observabilidade, atribuição, orçamento e regras de parada;
 - persistir evidências de todos os gates.
 
@@ -208,11 +271,17 @@ clientes em decisão objetiva de continuar, ajustar, escalar ou parar.
 **Trabalho essencial:**
 
 - operar aquisição dentro do teto autorizado;
+- operar e comparar mídia, creators/parceiros e ativos próprios somente nas rotas aprovadas, pagando
+  comissão ou mídia apenas conforme contrato e atribuição auditável;
 - acompanhar o gargalo real do funil;
 - garantir acesso e entrega antes de ampliar aquisição;
 - medir receita, CAC, conversão, primeiro uso, conclusão, satisfação e reembolso;
 - manter a compradora identificada em uma continuidade simples e de baixo atrito para retorno, uso e
   nova oferta pertinente, sem exigir aplicativo nativo antes de comprovar recorrência;
+- solicitar avaliação somente depois do primeiro resultado útil, preservar consentimento e usar
+  perguntas sem resposta, reviews e suporte como insumo para melhorar produto e comunicação;
+- medir lift de respostas à intenção por experimento controlado; correlação comportamental ou score
+  previsto não prova causalidade;
 - preservar aprendizados por público, criativo, oferta e versão da experiência;
 - corrigir causa-raiz e abrir nova versão quando a hipótese comercial mudar.
 
@@ -282,9 +351,11 @@ cadeias que a contêm e abre diretamente o detalhe da cadeia selecionada.
 A cadeia `pde-value-creation-delivery` usa os seis macroprocessos deste cânone. A versão 1 preserva o
 registro inicial; a versão 2 torna explícita a neutralidade de formato e atualiza descoberta, Plano
 Comercial e construção para comparar e escolher entre kit, webapp e qualquer outro formato digital
-capaz de entregar mais valor ao mercado. Processos especializados, como fabricação de entregáveis,
-criativos, landing, homologação de experimento e operação de venda, continuam referenciados dentro
-dos macroprocessos e não são duplicados como uma segunda orquestração.
+capaz de entregar mais valor ao mercado. A versão 3 adiciona o contrato transversal de prova antes da
+compra, distribuição acumulável e resposta governada à intenção nos seis processos. Processos
+especializados, como fabricação de entregáveis, criativos, landing, homologação de experimento e
+operação de venda, continuam referenciados dentro dos macroprocessos e não são duplicados como uma
+segunda orquestração.
 
 ## Métricas da cadeia
 
@@ -297,6 +368,11 @@ A cadeia deve permitir medir, no mínimo:
 - custo de produção por versão aprovada;
 - tempo do PDE aprovado até primeira venda;
 - taxa de compra, acesso, primeiro uso e conclusão;
+- cobertura de perguntas prioritárias por prova verificável e conversão após consumo da prova;
+- participação, CAC, margem e vendas incrementais por mídia, creator/parceiro e ativo próprio;
+- parcela de creators recorrentes ativos, receita atribuída recorrente e custo total de comissão;
+- audiência identificada consentida, retorno, recompra e retenção do ativo próprio;
+- lift incremental de variantes acionadas por intenção, sempre comparadas ao fallback neutro;
 - satisfação, reembolso, CAC, receita e margem;
 - quantidade e reincidência de retrabalhos por causa-raiz.
 

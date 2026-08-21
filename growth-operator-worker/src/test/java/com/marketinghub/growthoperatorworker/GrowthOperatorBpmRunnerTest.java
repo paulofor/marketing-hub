@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
@@ -65,6 +66,17 @@ class GrowthOperatorBpmRunnerTest {
     } finally {
       Files.deleteIfExists(log);
     }
+  }
+
+  /** Mantém as ferramentas observadas disponíveis para o callback mesmo após falha técnica. */
+  @Test
+  void shouldPreserveToolUsageInFailure() throws Exception {
+    var tool = new ObjectMapper().readTree("{\"tool\":\"consultar_funil\",\"status\":200}");
+    var failure =
+        new GrowthOperatorBpmRunner.BpmExecutionException(
+            "Falha técnica", GrowthOperatorBpmRunner.TokenUsage.empty(), List.of(tool));
+
+    assertThat(failure.toolUsage()).containsExactly(tool);
   }
 
   /** Executa o fluxo local completo com processo simulado e escopo exclusivo do experimento. */

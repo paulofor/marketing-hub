@@ -8,6 +8,7 @@ import {
 } from "../../api/agentTask/useAgentTasks";
 import { AgentTask, AgentTaskStatus } from "../../api/agentTask/types";
 import AgentTaskModelUsage from "../../components/AgentTaskModelUsage";
+import AgentTaskFailureAudit from "../../components/AgentTaskFailureAudit";
 import PageTitle from "../../components/PageTitle";
 import {
   useCommercialPlans,
@@ -744,6 +745,7 @@ export default function AgentWorkspacePage() {
                     <div className="border rounded bg-body-tertiary p-2 mb-2">
                       <AgentTaskModelUsage usage={task} />
                     </div>
+                    <AgentTaskFailureAudit audit={task.failureAudit} />
                     {task.gateStatus ? (
                       <div className="small mb-2">
                         Decisão do gate: <strong>{task.gateStatus}</strong>

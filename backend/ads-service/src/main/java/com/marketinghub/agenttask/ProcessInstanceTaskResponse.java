@@ -13,6 +13,7 @@ public record ProcessInstanceTaskResponse(
     String taskStatus,
     String operationalState,
     String stateReason,
+    AgentTaskFailureAuditResponse failureAudit,
     Long inputTokens,
     Long cachedInputTokens,
     Long outputTokens,

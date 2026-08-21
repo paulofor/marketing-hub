@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useActiveAgentTasks } from "../../api/agentTask/useAgentTasks";
 import { AgentTaskStatus } from "../../api/agentTask/types";
 import AgentTaskModelUsage from "../../components/AgentTaskModelUsage";
+import AgentTaskFailureAudit from "../../components/AgentTaskFailureAudit";
 import PageTitle from "../../components/PageTitle";
 
 const statusLabel: Record<AgentTaskStatus, string> = {
@@ -107,6 +108,7 @@ export default function ActiveAgentTasksPage() {
                   </td>
                   <td className="text-nowrap">
                     <AgentTaskModelUsage usage={task} />
+                    <AgentTaskFailureAudit audit={task.failureAudit} />
                   </td>
                   <td className="text-nowrap small">
                     <div>

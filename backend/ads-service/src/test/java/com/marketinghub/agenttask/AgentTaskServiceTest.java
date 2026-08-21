@@ -388,6 +388,98 @@ class AgentTaskServiceTest {
             });
   }
 
+  /** Reconstrói falha com intenção, contexto, evidência, saída e limite de autoridade. */
+  @Test
+  void exposesGovernedFailureAuditWithoutTechnicalLogs() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    Agent assignee = agent(1L, "growth-operator", "Hermes");
+    assignee.setAuthorityPolicy("Somente leitura; gasto e publicação exigem aprovação humana.");
+    AgentTask task = processTask(92L, assignee, process("PUBLISHED", "Hermes"), "html", "BLOCKED");
+    task.setDescription("Confirmar a integridade do funil antes de otimizar.");
+    task.setSourceReference("experiment:88");
+    task.setGateDecisionReason("Evento de checkout ausente.");
+    task.setEvidenceJson("{\"accessMode\":\"READ_ONLY\",\"toolUsage\":[\"consultar_funil\"]}");
+    task.setResultJson("{\"decision\":\"BLOCKED\"}");
+    when(repository.findByStatusInOrderByUpdatedAtDescIdDesc(
+            List.of("IN_PROGRESS", "BLOCKED", "PENDING")))
+        .thenReturn(List.of(task));
+
+    AgentTaskFailureAuditResponse audit =
+        service(repository, mock(AgentRepository.class), Clock.systemUTC())
+            .activeTasks()
+            .getFirst()
+            .failureAudit();
+
+    assertThat(audit.readiness()).isEqualTo("COMPLETE");
+    assertThat(audit.intendedWork()).contains("integridade do funil");
+    assertThat(audit.sourceReference()).isEqualTo("experiment:88");
+    assertThat(audit.processCode()).isEqualTo("landing-page-generation");
+    assertThat(audit.accessedEvidenceJson()).contains("consultar_funil");
+    assertThat(audit.producedOutputJson()).contains("BLOCKED");
+    assertThat(audit.authorityPolicy()).contains("aprovação humana");
+    assertThat(audit.missingEvidence()).isEmpty();
+  }
+
+  /** Marca como parcial um bloqueio legado que não preservou causa nem acessos. */
+  @Test
+  void exposesMissingEvidenceInLegacyFailureAudit() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task = new AgentTask();
+    task.setId(93L);
+    task.setAssignedAgent(agent(3L, "financial-agent", "Plutus"));
+    task.setRequestedByType("HUMAN");
+    task.setRequestedByName("Operador");
+    task.setTitle("Avaliar orçamento");
+    task.setDescription("Confirmar o teto financeiro.");
+    task.setPriority("HIGH");
+    task.setStatus("BLOCKED");
+    task.setTaskKind("WORK");
+    task.setCreatedAt(Instant.parse("2026-08-12T10:00:00Z"));
+    task.setUpdatedAt(task.getCreatedAt());
+    when(repository.findByStatusInOrderByUpdatedAtDescIdDesc(
+            List.of("IN_PROGRESS", "BLOCKED", "PENDING")))
+        .thenReturn(List.of(task));
+
+    AgentTaskFailureAuditResponse audit =
+        service(repository, mock(AgentRepository.class), Clock.systemUTC())
+            .activeTasks()
+            .getFirst()
+            .failureAudit();
+
+    assertThat(audit.readiness()).isEqualTo("PARTIAL");
+    assertThat(audit.missingEvidence())
+        .containsExactly(
+            "referência da entidade",
+            "processo e atividade",
+            "limite de autoridade",
+            "causa da falha ou bloqueio",
+            "evidências acessadas");
+  }
+
+  /** Não declara prontidão quando a evidência histórica não pode ser interpretada como JSON. */
+  @Test
+  void rejectsInvalidJsonAsCompleteFailureEvidence() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    Agent assignee = agent(3L, "financial-agent", "Plutus");
+    assignee.setAuthorityPolicy("Somente leitura e parecer financeiro.");
+    AgentTask task =
+        processTask(94L, assignee, process("PUBLISHED", "Plutus"), "budget", "BLOCKED");
+    task.setExecutionError("Catálogo indisponível.");
+    task.setEvidenceJson("não é json");
+    when(repository.findByStatusInOrderByUpdatedAtDescIdDesc(
+            List.of("IN_PROGRESS", "BLOCKED", "PENDING")))
+        .thenReturn(List.of(task));
+
+    AgentTaskFailureAuditResponse audit =
+        service(repository, mock(AgentRepository.class), Clock.systemUTC())
+            .activeTasks()
+            .getFirst()
+            .failureAudit();
+
+    assertThat(audit.readiness()).isEqualTo("PARTIAL");
+    assertThat(audit.missingEvidence()).containsExactly("evidências em JSON válido");
+  }
+
   /** Impede concluir uma tarefa que ainda não foi iniciada. */
   @Test
   void rejectsInvalidStatusJump() {

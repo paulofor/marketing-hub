@@ -320,6 +320,7 @@ public class AgentTaskService {
         task.getStatus(),
         state,
         reason,
+        failureAudit(task),
         task.getInputTokens(),
         task.getCachedInputTokens(),
         task.getOutputTokens(),
@@ -465,6 +466,7 @@ public class AgentTaskService {
         task.getResultJson(),
         task.getEvidenceJson(),
         task.getExecutionError(),
+        failureAudit(task),
         task.getInputTokens(),
         task.getCachedInputTokens(),
         task.getOutputTokens(),
@@ -475,6 +477,56 @@ public class AgentTaskService {
         task.getDeliveredAt(),
         task.getCreatedAt(),
         task.getUpdatedAt());
+  }
+
+  /** Reconstrói intenção, contexto, acesso, saída e erro sem depender de logs técnicos. */
+  private AgentTaskFailureAuditResponse failureAudit(AgentTask task) {
+    if (!"BLOCKED".equals(task.getStatus())) return null;
+    List<String> missing = new ArrayList<>();
+    String intendedWork = trimToNull(task.getDescription());
+    if (intendedWork == null) intendedWork = trimToNull(task.getTitle());
+    String sourceReference = trimToNull(task.getSourceReference());
+    String evidence = trimToNull(task.getEvidenceJson());
+    String error = trimToNull(task.getExecutionError());
+    if (error == null) error = trimToNull(task.getGateDecisionReason());
+    BusinessProcessDefinition process = task.getProcessDefinition();
+    String processCode = process == null ? null : trimToNull(process.getProcessCode());
+    String activityId = trimToNull(task.getProcessActivityId());
+    String authorityPolicy = trimToNull(task.getAssignedAgent().getAuthorityPolicy());
+    if (intendedWork == null) missing.add("trabalho pretendido");
+    if (sourceReference == null) missing.add("referência da entidade");
+    if (processCode == null || activityId == null) missing.add("processo e atividade");
+    if (authorityPolicy == null) missing.add("limite de autoridade");
+    if (error == null) missing.add("causa da falha ou bloqueio");
+    if (evidence == null) {
+      missing.add("evidências acessadas");
+    } else if (!isValidJson(task.getId(), evidence)) {
+      missing.add("evidências em JSON válido");
+    }
+    return new AgentTaskFailureAuditResponse(
+        missing.isEmpty() ? "COMPLETE" : "PARTIAL",
+        intendedWork,
+        sourceReference,
+        processCode,
+        activityId,
+        task.getProcessActivityName(),
+        authorityPolicy,
+        evidence,
+        trimToNull(task.getResultJson()),
+        error,
+        List.copyOf(missing));
+  }
+
+  /** Confirma que a evidência persistida pode ser lida de forma determinística. */
+  private boolean isValidJson(Long taskId, String value) {
+    try {
+      objectMapper.readTree(value);
+      return true;
+    } catch (Exception ex) {
+      log.warn(
+          "Evidência inválida ao reconstruir o log governado da tarefa. taskId={}", taskId, ex);
+      return false;
+    }
   }
 
   /** Resolve uma tarefa existente para mudanças auditáveis de estado ou gate. */

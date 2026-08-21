@@ -70,7 +70,13 @@ public class GrowthOperatorBpmTaskConsumer {
                 : ex instanceof GrowthOperatorBpmRunner.BpmExecutionException bpm
                     ? bpm.usage()
                     : GrowthOperatorBpmRunner.TokenUsage.empty();
-        failCallback(task, ex, usage);
+        List<JsonNode> toolUsage =
+            execution != null
+                ? execution.toolUsage()
+                : ex instanceof GrowthOperatorBpmRunner.BpmExecutionException bpm
+                    ? bpm.toolUsage()
+                    : List.of();
+        failCallback(task, ex, usage, toolUsage);
       }
     }
   }
@@ -105,17 +111,14 @@ public class GrowthOperatorBpmTaskConsumer {
 
   /** Registra uma falha técnica sem perder o consumo medido antes da interrupção. */
   private void failCallback(
-      Map<String, Object> task, Exception ex, GrowthOperatorBpmRunner.TokenUsage usage) {
+      Map<String, Object> task,
+      Exception ex,
+      GrowthOperatorBpmRunner.TokenUsage usage,
+      List<JsonNode> toolUsage) {
     try {
       Map<String, Object> body = new HashMap<>();
       body.put("error", ex.toString());
-      body.put(
-          "evidenceJson",
-          json.writeValueAsString(
-              Map.of(
-                  "agent", "Hermes",
-                  "model", modelCode(),
-                  "sourceReference", String.valueOf(task.get("sourceReference")))));
+      body.put("evidenceJson", evidence(task, toolUsage));
       putModelUsage(body, usage);
       backend.failBpmTask(taskId(task), body);
     } catch (Exception callbackEx) {
@@ -130,11 +133,20 @@ public class GrowthOperatorBpmTaskConsumer {
   private String evidence(Map<String, Object> task, List<JsonNode> toolUsage) throws Exception {
     return json.writeValueAsString(
         Map.of(
-            "agent", "Hermes",
-            "model", modelCode(),
-            "sourceReference", String.valueOf(task.get("sourceReference")),
-            "activityId", String.valueOf(task.get("activityId")),
-            "toolUsage", toolUsage));
+            "agent",
+            "Hermes",
+            "model",
+            modelCode(),
+            "sourceReference",
+            String.valueOf(task.get("sourceReference")),
+            "activityId",
+            String.valueOf(task.get("activityId")),
+            "accessMode",
+            "READ_ONLY",
+            "externalSideEffects",
+            false,
+            "toolUsage",
+            toolUsage));
   }
 
   /** Acrescenta ao callback somente contadores realmente informados pelo Codex. */

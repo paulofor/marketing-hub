@@ -58,7 +58,8 @@ public class GrowthOperatorBpmRunner {
             "Timeout da atividade BPM de Hermes após "
                 + properties.getCodexTimeout().toMinutes()
                 + " minutos.",
-            readTokenUsage(processLog));
+            readTokenUsage(processLog),
+            safeToolUsage(processLog, task, experimentId));
       }
       TokenUsage usage = readTokenUsage(processLog);
       if (process.exitValue() != 0) {
@@ -67,7 +68,8 @@ public class GrowthOperatorBpmRunner {
                 + process.exitValue()
                 + ": "
                 + Files.readString(processLog),
-            usage);
+            usage,
+            safeToolUsage(processLog, task, experimentId));
       }
       try {
         JsonNode result = json.readTree(Files.readString(answer));
@@ -80,7 +82,10 @@ public class GrowthOperatorBpmRunner {
             experimentId,
             ex);
         throw new BpmExecutionException(
-            "Resposta BPM de Hermes fora do contrato versionado.", usage, ex);
+            "Resposta BPM de Hermes fora do contrato versionado.",
+            usage,
+            safeToolUsage(processLog, task, experimentId),
+            ex);
       }
     } finally {
       Files.deleteIfExists(answer);
@@ -213,6 +218,22 @@ public class GrowthOperatorBpmRunner {
     return tools;
   }
 
+  /** Preserva as ferramentas já observadas sem substituir a falha funcional por erro de leitura. */
+  private List<JsonNode> safeToolUsage(
+      Path processLog, Map<String, Object> task, long experimentId) {
+    try {
+      return extractToolUsage(processLog);
+    } catch (IOException ex) {
+      log.warn(
+          "Falha ao reconstruir ferramentas MCP da atividade BPM de Hermes. taskId={} experimentId={} processLog={}",
+          task.get("taskId"),
+          experimentId,
+          processLog,
+          ex);
+      return List.of();
+    }
+  }
+
   /** Lê um contador oficial ou seu alias sem inventar valor ausente. */
   private static Long tokenValue(JsonNode usage, String officialName, String alias) {
     JsonNode value = usage.hasNonNull(officialName) ? usage.get(officialName) : usage.get(alias);
@@ -257,22 +278,41 @@ public class GrowthOperatorBpmRunner {
   /** Preserva tokens medidos quando a execução termina em falha técnica. */
   public static final class BpmExecutionException extends IllegalStateException {
     private final TokenUsage usage;
+    private final List<JsonNode> toolUsage;
 
     /** Cria a falha com a última medição disponível. */
     BpmExecutionException(String message, TokenUsage usage) {
+      this(message, usage, List.of());
+    }
+
+    /** Cria a falha com medição e ferramentas já consultadas. */
+    BpmExecutionException(String message, TokenUsage usage, List<JsonNode> toolUsage) {
       super(message);
       this.usage = usage;
+      this.toolUsage = List.copyOf(toolUsage);
     }
 
     /** Cria a falha com medição e causa original. */
     BpmExecutionException(String message, TokenUsage usage, Throwable cause) {
+      this(message, usage, List.of(), cause);
+    }
+
+    /** Cria a falha preservando medição, ferramentas e causa original. */
+    BpmExecutionException(
+        String message, TokenUsage usage, List<JsonNode> toolUsage, Throwable cause) {
       super(message, cause);
       this.usage = usage;
+      this.toolUsage = List.copyOf(toolUsage);
     }
 
     /** Retorna a medição preservada antes da falha. */
     public TokenUsage usage() {
       return usage;
+    }
+
+    /** Retorna as ferramentas observadas antes da falha. */
+    public List<JsonNode> toolUsage() {
+      return toolUsage;
     }
   }
 }

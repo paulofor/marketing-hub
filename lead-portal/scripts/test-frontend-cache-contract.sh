@@ -19,8 +19,8 @@ grep -F 'A porta pública está ocupada por container fora do escopo do Lead Por
 grep -F 'docker rm -f lead-portal-proxy-1 lead-portal_proxy_1' "$workflow" >/dev/null
 grep -F 'up -d backend frontend' "$workflow" >/dev/null
 grep -F 'up -d proxy' "$workflow" >/dev/null
-grep -F 'proxy_switch_started=true' "$workflow" >/dev/null
-grep -F 'if [ "$proxy_switch_started" = true ]; then' "$workflow" >/dev/null
+grep -F 'deployment_validated=false' "$workflow" >/dev/null
+grep -F 'if [ "$deployment_validated" = false ]' "$workflow" >/dev/null
 grep -F 'if (!target.checkValidity()) {' "$flow_page" >/dev/null
 grep -F 'target.reportValidity();' "$flow_page" >/dev/null
 grep -F 'activeCustomTemplateBridges.get(doc)?.();' "$flow_page" >/dev/null

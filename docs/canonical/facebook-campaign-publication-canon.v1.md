@@ -102,6 +102,8 @@ Regra de destino versionado: o repositório de anúncios e o `facebook-ads-worke
 | `experiment.daily_budget`, `facebook_release_requested_at`, `funnel_reset_at`, `market_niche.facebook_pixel_id`, `market_niche.facebook_pixel_requested_at`, `market_niche.facebook_pixel_request_status`, `status` | `marketinghubdb.experiment` | Controlam orçamento, liberação, resets e sincronismo de pixel. |
 | `experiment_campaign_metric` + eventos do Lead Portal + checkout/pagamentos | bancos do domínio de experimentos e `lead-portal` | Usados para preencher alcance, impressões, funil e custo por etapa. |
 
+Uma campanha de venda não pode permanecer ativa durante indisponibilidade comprovada da URL de destino. Antes de liberar ou retomar mídia, a mesma landing comercial deve responder externamente em cinco verificações consecutivas, com HTML de analytics, CTA de checkout e derivados web otimizados presentes e tempo total inferior a quatro segundos. Sondas operacionais devem usar `mh_audit` para não contaminar o funil, mas compartilhar a chave de cache comercial que receberá o tráfego. Falha durante publicação do Lead Portal deve restaurar a última pilha homologada; saúde isolada de container não substitui o gate funcional público.
+
 ## 5. Bloqueios canônicos de publicação (diagnóstico do worker)
 
 Implementação: `ExperimentReadinessService` (backend) expõe os mesmos critérios usados pelo cartão **Campanha de Facebook Ads** e pelo `facebook-ads-worker`. **Todos os itens abaixo precisam estar resolvidos** para que o worker gere conjuntos de anúncios.

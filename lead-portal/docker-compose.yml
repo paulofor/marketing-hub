@@ -8,9 +8,11 @@ services:
     volumes:
       - ./data:/app/data
     environment:
+      JAVA_TOOL_OPTIONS: -Xms64m -Xmx256m -XX:MaxMetaspaceSize=128m -XX:MaxDirectMemorySize=64m -XX:+ExitOnOutOfMemoryError
       SPRING_DATASOURCE_URL: jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: marketing_hub_user
       SPRING_DATASOURCE_PASSWORD: Ab9!rG4wX8_tMq2Bz7#HpK5V
+      LEAD_PORTAL_CRITICAL_FLOW_SLUG: ${LEAD_PORTAL_CRITICAL_FLOW_SLUG:-exp-88-gerasalespage-v1}
       LEAD_PORTAL_STORAGE_BUCKET: leadportal
       LEAD_PORTAL_STORAGE_ENDPOINT: https://95b059f4f73518a658d07a19438f38c9.r2.cloudflarestorage.com
       LEAD_PORTAL_STORAGE_ACCESS_KEY_ID: fafc943bd27d2a1c55c84f80778994a0
@@ -25,10 +27,8 @@ services:
     healthcheck:
       test:
         [
-          "CMD",
-          "curl",
-          "-fsS",
-          "http://localhost:8080/api/ops-lp-observability-v2/health",
+          "CMD-SHELL",
+          "curl -fsS --max-time 4 http://localhost:8080/api/ops-lp-observability-v2/health >/dev/null && curl -fsS --max-time 4 http://localhost:8080/api/flows/$${LEAD_PORTAL_CRITICAL_FLOW_SLUG}/page?mh_test=1 | grep -F data-mh-landing-analytics >/dev/null",
         ]
       interval: 30s
       timeout: 5s
@@ -85,6 +85,7 @@ services:
 
       # certificados emitidos pelo certbot no host
       - /etc/letsencrypt:/etc/letsencrypt:ro
+      - lead-portal-landing-cache:/var/cache/nginx/landing
     restart: unless-stopped
     networks:
       default:
@@ -123,3 +124,7 @@ networks:
   public-net:
     name: public-net
     external: true
+
+volumes:
+  lead-portal-landing-cache:
+    name: lead-portal-landing-cache

@@ -27,6 +27,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -301,6 +302,34 @@ class FlowControllerTest {
                 .andExpect(content().string(containsString("isSelfReferentialLink")))
                 .andExpect(content().string(containsString("form_start")))
                 .andExpect(content().string(containsString("form_submit")));
+    }
+
+    /** Valida o comando interno idempotente que reprocessa ativos de uma landing histórica. */
+    @Test
+    void optimizeExistingFlowAssetsThroughInternalEndpoint() throws Exception {
+        UpsertFlowRequest request = buildRequest();
+        request.setCustomFormHtml("<!doctype html><html><body>Landing histórica</body></html>");
+
+        mockMvc.perform(put("/api/flows/landing-historica")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/internal/flows/landing-historica/optimize-assets"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slug").value("landing-historica"))
+                .andExpect(jsonPath("$.customFormRenderMode").value("STANDALONE_PAGE"));
+    }
+
+    /** Impede que o comando de manutenção interna seja acionado pelo proxy público. */
+    @Test
+    void rejectExternalAssetMaintenanceRequest() throws Exception {
+        mockMvc.perform(post("/api/internal/flows/landing-historica/optimize-assets")
+                        .with(request -> {
+                            request.setRemoteAddr("172.18.0.20");
+                            return request;
+                        }))
+                .andExpect(status().isForbidden());
     }
 
     /**

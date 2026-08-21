@@ -9,10 +9,12 @@ import com.marketinghub.worker.salesvideo.dto.SalesVideoCommercialPlaybookRespon
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
+/** Valida que o prompt de roteiro preserve os contextos comercial e cinematográfico. */
 class SalesVideoPromptBuilderTest {
 
     private final SalesVideoPromptBuilder builder = new SalesVideoPromptBuilder();
 
+    /** Deve incluir dados do produto e as regras condicionais de microconteúdo seriado. */
     @Test
     void shouldIncludeKeyFieldsInPrompt() {
         SalesVideoProfileDto profile = new SalesVideoProfileDto();
@@ -49,6 +51,8 @@ class SalesVideoPromptBuilderTest {
         assertThat(prompt).contains("Garantia total de 30 dias");
         assertThat(prompt).contains("storyboard");
         assertThat(prompt).contains("conversa natural com o consumidor");
+        assertThat(prompt).contains("sequencia ou microsserie");
+        assertThat(prompt).contains("microrecompensa compreensivel");
         assertThat(prompt).contains("Nao use exemplos de moda");
         assertThat(prompt).contains("qualquer produto digital");
         assertThat(prompt).doesNotContain("parar de sentir que falta algo no look");

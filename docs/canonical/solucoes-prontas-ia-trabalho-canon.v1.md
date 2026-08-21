@@ -88,6 +88,24 @@ experiência, formato, limites, demonstração, oferta candidata, custo e métri
 **Gate:** a solução avança somente quando reduz esforço de forma observável, produz resultado útil,
 possui um caminho plausível de compra e não depende de a cliente aprender a construir o agente.
 
+### Envelope de controle humano
+
+Quando a solução puder comprar, publicar, enviar, contratar, excluir, compartilhar dados ou assumir
+outro compromisso externo, o contrato deve tornar o controle parte visível do valor entregue. O
+envelope mínimo inclui:
+
+- limite explícito de preço, quantidade, escopo, destinatário e período;
+- prévia comparável e aprovação humana antes da primeira ação irreversível ou financeira;
+- escolha de dados transação por transação, sem acesso amplo como condição silenciosa;
+- comando de pausa ou desligamento disponível a qualquer momento;
+- cancelamento, correção, devolução ou escalonamento humano quando a natureza da ação permitir;
+- histórico simples do que a IA recomendou, do que a cliente aprovou e do resultado observado;
+- responsabilidade e suporte claramente atribuídos quando ocorrer erro.
+
+A primeira versão deve priorizar `IA pesquisa/compara -> cliente decide`. A autonomia pode crescer
+somente dentro de regras previamente aprovadas e depois de resultados reais confiáveis. Economia de
+tempo sem controle percebido nao constitui uma oferta pronta e segura.
+
 ## Processo 3 — Construção e aprovação da solução
 
 **Objetivo final:** entregar uma solução pronta que funcione com entradas familiares e gere o

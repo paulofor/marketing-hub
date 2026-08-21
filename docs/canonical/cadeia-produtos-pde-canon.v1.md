@@ -123,6 +123,8 @@ valor, oferta, compra e acesso, usando o produto real como fonte da comunicaçã
 
 - definir mensagem central, ângulos e campanha inicial;
 - criar criativos a partir de telas e materiais reais aprovados;
+- quando o Plano Comercial escolher microconteúdo seriado, preservar uma única hipótese entre os
+  episódios e medir continuidade até checkout e compra;
 - construir a entrada pública, landing ou microexperiência gratuita prevista no plano;
 - configurar paywall, checkout e continuidade pós-compra;
 - garantir correspondência entre promessa, criativo, experiência, oferta e entrega;
@@ -174,6 +176,8 @@ clientes em decisão objetiva de continuar, ajustar, escalar ou parar.
 - acompanhar o gargalo real do funil;
 - garantir acesso e entrega antes de ampliar aquisição;
 - medir receita, CAC, conversão, primeiro uso, conclusão, satisfação e reembolso;
+- manter a compradora identificada em uma continuidade simples e de baixo atrito para retorno, uso e
+  nova oferta pertinente, sem exigir aplicativo nativo antes de comprovar recorrência;
 - preservar aprendizados por público, criativo, oferta e versão da experiência;
 - corrigir causa-raiz e abrir nova versão quando a hipótese comercial mudar.
 

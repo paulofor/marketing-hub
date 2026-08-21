@@ -90,8 +90,11 @@ public class YoutubePublicationProcessor implements StageProcessor<YoutubePublic
                 "MARKET_WARMUP_PLANNED",
                 null,
                 null,
-                "Plano de aquecimento criado para educar dor, demonstrar mecanismo e preparar venda do PDE.",
-                List.of("Video 1: dor cotidiana e custo de nao resolver.", "Video 2: mecanismo IA invisivel no dia a dia.", "Video 3: prova/demonstracao curta com CTA para lista ou pagina."));
+                "Plano de aquecimento seriado criado para entregar valor progressivo e preparar a venda do PDE.",
+                List.of(
+                        "Video 1: conflito cotidiano reconhecivel e pergunta aberta legitima.",
+                        "Video 2: microrecompensa pratica, mecanismo simples e proxima pergunta.",
+                        "Video 3: prova ou demonstracao do produto real com CTA para o destino canonico."));
     }
 
     /**

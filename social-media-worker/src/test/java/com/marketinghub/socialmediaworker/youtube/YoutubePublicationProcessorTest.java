@@ -2,6 +2,7 @@ package com.marketinghub.socialmediaworker.youtube;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -12,6 +13,7 @@ import com.marketinghub.socialmediaworker.pipeline.StageContext;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
+/** Valida os resultados funcionais das ações de publicação e aquecimento no YouTube. */
 class YoutubePublicationProcessorTest {
 
     @Test
@@ -25,6 +27,7 @@ class YoutubePublicationProcessorTest {
         assertEquals(YoutubePublicationAction.CREATE_CHANNEL_PLAN, output.action());
     }
 
+    /** Deve produzir uma sequência curta com conflito, microrecompensa e demonstração. */
     @Test
     void processCreatesMarketWarmupPlan() {
         YoutubePublicationProcessor processor = new YoutubePublicationProcessor(mock(YoutubeApiClient.class));
@@ -34,6 +37,9 @@ class YoutubePublicationProcessorTest {
 
         assertEquals("MARKET_WARMUP_PLANNED", output.status());
         assertEquals(3, output.recommendedNextActions().size());
+        assertTrue(output.recommendedNextActions().get(0).contains("pergunta aberta legitima"));
+        assertTrue(output.recommendedNextActions().get(1).contains("microrecompensa pratica"));
+        assertTrue(output.recommendedNextActions().get(2).contains("destino canonico"));
     }
 
     @Test

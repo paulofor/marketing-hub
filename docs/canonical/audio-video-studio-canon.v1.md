@@ -226,6 +226,37 @@ persistidos no backend.
 
 Cada video comercial deve preservar a hipotese, funcao no funil, framework, evidencias cientificas, limites da promessa, plano de medicao, resultados reais, decisao e proxima versao. Pecas complementares usam o mesmo `strategyGroupKey`: o video de campanha qualifica pela dor e o hero do PDE aprofunda mecanismo e jornada, mantendo `message match`. Resultados estimados nunca podem ser registrados como venda; a decisao permitida e `COLLECTING`, `CONTINUE`, `ADJUST` ou `STOP`.
 
+#### Microconteudo seriado como hipotese opcional
+
+Uma sequencia curta pode ser testada quando a oferta exigir mais contexto do que uma unica peca
+consegue entregar sem aumentar carga cognitiva. O formato nao e padrao obrigatorio e nao autoriza
+criar plataforma, agente ou aplicativo separado. Apolo, o Estudio e o Social Media Worker reutilizam
+os contratos atuais e tratam a sequencia inteira como uma unica hipotese comercial.
+
+A primeira versao deve usar de tres a cinco episodios curtos, todos ligados ao mesmo
+`strategyGroupKey`, produto, Plano Comercial, experimento, oferta e destino. Cada episodio deve
+declarar ordem, papel no funil, pergunta aberta que recebe, microrecompensa entregue, proxima pergunta
+legitima e CTA. A estrutura inicial recomendada e:
+
+1. situacao reconhecivel e conflito concreto;
+2. mecanismo ou microacao que entrega valor parcial;
+3. demonstracao ou prova do produto real e CTA proporcional.
+
+O encerramento pode criar curiosidade, mas nao pode esconder informacao essencial, fabricar urgencia,
+prometer resultado inexistente nem impedir que o episodio entregue valor proprio. Um episodio nao deve
+repetir integralmente o anterior apenas para prolongar consumo.
+
+O plano de medicao deve separar, por episodio, canal, placement, dispositivo e versao: inicio de
+reproducao, retencao em 3 segundos, 50% e 95%, continuidade para o episodio seguinte, retorno em 24
+horas e sete dias, CTA, checkout, compra, receita e custo. Retencao ou conclusao de episodio e sinal de
+atencao, nao venda. A sequencia so supera uma peca unica quando melhora checkout, compra ou receita na
+mesma audiencia e contexto, sem piorar custo, entrega ou satisfacao.
+
+Um teste inicial deve comparar a sequencia com uma peca unica forte, mantendo oferta, audiencia,
+placement, destino e teto financeiro equivalentes. Mudar narrativa e placement simultaneamente
+contamina a conclusao. Enquanto a instrumentacao nao reconstruir a jornada entre episodios e venda,
+a decisao permanece `COLLECTING` ou `ADJUST`.
+
 Essa ordem evita desperdicio de geracao: nenhum video premium deve avancar para renderizacao antes de existir clareza comercial, roteiro estruturado e referencias visuais suficientes para preservar consistencia e valor percebido.
 
 A pagina de edicao do projeto deve apresentar os blocos operacionais nessa mesma ordem, tanto visualmente quanto no documento HTML. A navegacao resumida pode permanecer no topo, mas roteiro, storyboard, audio, geracao, montagem, revisao e aprendizado nao podem ser separados por listas de projetos, escopo institucional ou outros paineis auxiliares. Em telas pequenas, a navegacao das etapas pode ter rolagem horizontal, enquanto o conteudo principal permanece em uma unica sequencia vertical.

@@ -23,6 +23,7 @@ Como usar o contexto:
 - Se houver CTA primario, use-o como proximo passo natural. Se nao houver, crie um CTA leve e proporcional.
 - Se houver evidencia, prova social ou risco reverso, use com precisao e sem exagero.
 - Se houver Brief Cinematico PDE, use-o como direcao principal do storyboard e das cenas: preserve papel no funil, promessa visual, dor visual, sujeito, movimento, camera, luz, emocao, CTA/transicao e restricoes de qualidade.
+- Se o contexto indicar que a peca pertence a uma sequencia ou microsserie, respeite a ordem e o papel do episodio. Receba a pergunta aberta anterior, entregue uma microrecompensa compreensivel neste episodio e abra somente a proxima pergunta legitima. Use CTA para o proximo episodio ou destino comercial conforme o papel informado, sem reter artificialmente valor nem inventar urgencia.
 
 Tarefas:
 1. Criar um hook forte, curto e alinhado ao avatar.
@@ -64,6 +65,7 @@ Instrucoes comerciais:
 - Use promessa, prova social e mecanismo unico quando disponiveis.
 - Distribua o storyboard em abertura, desenvolvimento, prova ou objecoes e CTA.
 - O storyboard deve conter direcao cinematografica concreta: sujeito, acao/movimento, camera/enquadramento, luz/estetica e emocao percebida.
+- Em sequencia ou microsserie, cada episodio precisa entregar valor proprio e manter continuidade de personagem, promessa, mecanismo, oferta e destino. Cliffhanger enganoso, repeticao integral e CTA que contradiga o papel do episodio devem ser evitados.
 - Evite frases genericas, exageros impossiveis, promessas sem lastro e termos vagos como "coerente", "autentico", "transformador", "potencializar" ou "elevar" sem exemplo concreto.
 - Se algum dado comercial estiver ausente, nao invente prova; use uma explicacao plausivel do mecanismo e uma microexperiencia segura.
 - O roteiro deve funcionar para qualquer produto digital. Nunca dependa de vocabulario especifico de um produto anterior quando ele nao estiver no contexto atual.

@@ -3,6 +3,7 @@ package com.marketinghub.experiment.service;
 import com.marketinghub.cost.CostAttributionService;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
+import com.marketinghub.experiment.run.service.ExperimentRunMetricLifecycleService;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.repository.jpa.experiment.ExperimentCampaignMetricRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
@@ -37,6 +38,7 @@ public class ExperimentCampaignMetricService {
   private final ExperimentRepository experimentRepository;
   private final ExperimentFunnelEventRepository funnelEventRepository;
   private final ExperimentLandingAnalyticsEventRepository landingAnalyticsEventRepository;
+  private final ExperimentRunMetricLifecycleService runMetricLifecycleService;
   private final String pdeCampaignAnalyticsResetUrl;
   private final HttpClient pdeResetHttpClient;
 
@@ -48,6 +50,7 @@ public class ExperimentCampaignMetricService {
       ExperimentRepository experimentRepository,
       ExperimentFunnelEventRepository funnelEventRepository,
       ExperimentLandingAnalyticsEventRepository landingAnalyticsEventRepository,
+      ExperimentRunMetricLifecycleService runMetricLifecycleService,
       @Value("${pde.campaign-analytics-reset-url:}") String pdeCampaignAnalyticsResetUrl) {
     this.repository = repository;
     this.campaignRepository = campaignRepository;
@@ -55,6 +58,7 @@ public class ExperimentCampaignMetricService {
     this.experimentRepository = experimentRepository;
     this.funnelEventRepository = funnelEventRepository;
     this.landingAnalyticsEventRepository = landingAnalyticsEventRepository;
+    this.runMetricLifecycleService = runMetricLifecycleService;
     this.pdeCampaignAnalyticsResetUrl = pdeCampaignAnalyticsResetUrl;
     this.pdeResetHttpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
   }
@@ -96,6 +100,7 @@ public class ExperimentCampaignMetricService {
     metric.setCpl(calculateCpl(normalizedSpend, leads));
     ExperimentCampaignMetric saved = repository.save(metric);
     applySpendDelta(experiment, normalizedSpend, previousSpend);
+    runMetricLifecycleService.synchronize(experiment, campaign, impressions);
     return saved;
   }
 

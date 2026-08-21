@@ -6594,3 +6594,11 @@
 - Correção: hash do HTML persistido antes do consumo, idempotência por versão e teto de quatro versões distintas por ciclo, com bloqueio para decisão humana ao atingir o limite.
 - Critério operacional: HTML idêntico não gera novo parecer; HTML alterado pode ser revisado até o teto; aprovação, gasto e publicação continuam sujeitos aos gates comerciais existentes.
 - 2026-08-15 — Experimento #88: Dédalo, Psique e Têmis foram isolados do host final e executados na sandbox contra o backend canônico. A revisão real confirmou que a URL pública ainda apresenta prova visual esquemática do kit, apesar de candidatas mais novas persistidas. Corrigida localmente a descoberta configurável do Chromium no MCP de Têmis; o gate permaneceu fechado corretamente, sem forçar aprovação, `RUNNING`, publicação ou gasto.
+
+## 2026-08-21 — Experimento 88: métricas comerciais aguardam exposição confirmada
+
+- evidência de produção: campanha Meta `120251282333490326` ativa, com dois anúncios ativos e orçamento de R$ 20/dia, mas Insights oficial e `experiment_campaign_metric` ainda com zero impressões, cliques, alcance, leads e gasto;
+- causa-raiz confirmada: o cockpit somava `experiment.total_cost = 0,14` como gasto de mídia e interpretava 16 page views pré-exposição como tráfego comercial, embora o run produtivo ainda não tivesse `commercial_window_started_at`;
+- decisão: preservar os eventos de preview/validação no Analytics técnico e manter o placar/funil comercial em zero até a primeira impressão confirmada pela Meta;
+- prevenção: o run passa a registrar publicação, primeira impressão e início da janela comercial pela sincronização de métricas; custo por clique, CTR, ROAS e custos por conversão permanecem nulos quando não existe denominador;
+- critério operacional: continuar sem alterar campanha até a primeira impressão; ajustar somente se a Meta continuar sem entrega ou registrar erro; parar se surgir gasto sem evento atribuível ou falha de mensuração.

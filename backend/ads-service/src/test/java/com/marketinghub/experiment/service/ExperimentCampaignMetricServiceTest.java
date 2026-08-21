@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.marketinghub.cost.CostAttributionService;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
+import com.marketinghub.experiment.run.service.ExperimentRunMetricLifecycleService;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.repository.jpa.experiment.ExperimentCampaignMetricRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
@@ -47,6 +48,8 @@ class ExperimentCampaignMetricServiceTest {
 
   @Mock private ExperimentLandingAnalyticsEventRepository landingAnalyticsEventRepository;
 
+  @Mock private ExperimentRunMetricLifecycleService runMetricLifecycleService;
+
   private ExperimentCampaignMetricService service;
 
   /** Monta o serviço real com repositórios controlados por mock. */
@@ -60,6 +63,7 @@ class ExperimentCampaignMetricServiceTest {
             experimentRepository,
             funnelEventRepository,
             landingAnalyticsEventRepository,
+            runMetricLifecycleService,
             "");
   }
 
@@ -144,6 +148,29 @@ class ExperimentCampaignMetricServiceTest {
     verify(experimentRepository, never()).save(experiment);
   }
 
+  /** Garante que toda sincronização reconcilia o run com a exposição recebida da Meta. */
+  @Test
+  void upsertSynchronizesRunMetricLifecycle() {
+    Experiment experiment = Experiment.builder().id(88L).build();
+    FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+    campaign.setId("campaign-88");
+    campaign.setExperiment(experiment);
+    ExperimentCampaignMetric metric =
+        ExperimentCampaignMetric.builder()
+            .experiment(experiment)
+            .campaign(campaign)
+            .impressions(0L)
+            .build();
+
+    when(campaignRepository.findById("campaign-88")).thenReturn(Optional.of(campaign));
+    when(repository.findByExperiment(experiment)).thenReturn(Optional.of(metric));
+    when(repository.save(metric)).thenReturn(metric);
+
+    service.upsert("campaign-88", null, null, 0L, 0L, 0L, 0L, BigDecimal.ZERO);
+
+    verify(runMetricLifecycleService).synchronize(experiment, campaign, 0L);
+  }
+
   /**
    * Garante que campanha do Clube MUSA tambem limpa analytics PDE antes de salvar a primeira
    * metrica real.
@@ -169,6 +196,7 @@ class ExperimentCampaignMetricServiceTest {
               experimentRepository,
               funnelEventRepository,
               landingAnalyticsEventRepository,
+              runMetricLifecycleService,
               "http://localhost:" + server.getAddress().getPort() + "/reset");
       Experiment experiment =
           Experiment.builder().id(67L).followUpActionUrl("https://clubemusa.com.br").build();

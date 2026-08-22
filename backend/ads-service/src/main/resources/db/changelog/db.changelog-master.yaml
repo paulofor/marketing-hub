@@ -1874,3 +1874,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-21-pde-proof-distribution-intent-chain-v3.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-21-pde-ai-decision-readiness-chain-v4.yaml
+      relativeToChangelogFile: true

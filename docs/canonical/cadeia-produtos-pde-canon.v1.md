@@ -60,6 +60,37 @@ independente e limites honestos. É proibido fabricar prova social. A mesma vers
 não podem receber preço ocultamente diferente por comportamento; preço é variável comercial
 versionada e deve ser testado separadamente com governança explícita.
 
+## Contrato transversal de decisão assistida, esforço e controle
+
+Cada versão PDE deve produzir um **Cartão de Decisão do Produto** legível por pessoas e reutilizável
+por mecanismos de busca, comparação ou recomendação. O cartão preserva uma única verdade versionada
+e atualizada para nome, problema e trabalho resolvido, resultado verificável, para quem serve, para
+quem não serve, requisitos de entrada, mecanismo, formato e entregáveis, preço total e recorrência,
+prazo e forma de acesso, prova e origem, limitações, privacidade, suporte, cancelamento ou reembolso e
+disponibilidade. Landing, checkout, criativo, suporte e entrega não podem contradizer esses fatos.
+
+A **Prontidão para Decisão por IA** é um gate de qualidade, não uma promessa de ranqueamento. O score
+vai de 0 a 100 e soma cinco dimensões de até 20 pontos: completude; verificabilidade; consistência e
+atualidade; adequação e comparação; acessibilidade e estrutura. Cada dimensão recebe 0 quando está
+ausente ou contraditória, 10 quando parcial e 20 quando completa e rastreável. O gate exige no mínimo
+80 pontos e nenhum campo crítico ausente: público adequado e inadequado, preço, entrega, prova das
+promessas e limitações. O score, uma citação por IA ou uma visita referenciada por IA não comprova
+venda nem preferência do mercado.
+
+O Marketing Hub otimiza duas propriedades em conjunto:
+
+- **esforço de decisão menor:** reduzir escolhas, etapas, dúvidas, tempo de carregamento e esforço
+  residual sem omitir preço, riscos ou limites;
+- **controle percebido maior:** quando houver personalização, explicar por que a opção foi mostrada,
+  quais categorias de dados foram usadas e oferecer ajuste de preferências, recusa e fallback neutro.
+
+Sinais agregados e consentidos de scroll, retorno, tempo, abandono, FAQ, dead/rage click, erro de
+recurso e desempenho podem compor um **Índice de Fricção Comportamental** versionado de 0 a 100. A
+fórmula, janela, amostra, denominadores e origem precisam ficar persistidos. O índice localiza trechos
+que merecem teste; não diagnostica emoção, desejo, intenção, personalidade ou causa individual. Toda
+hipótese deve registrar ao menos uma explicação concorrente e ser validada isoladamente contra
+checkout, compra, receita e entrega. Sem amostra suficiente, o resultado é `EVIDÊNCIA INSUFICIENTE`.
+
 ## Decisão de simplicidade
 
 Foram consideradas três estruturas:
@@ -101,6 +132,8 @@ mas não comprova sozinha uma oportunidade.
 - capturar e anonimizar a fala observada, separando desejo, dor, tentativa frustrada e inferências;
 - comprovar escala e recorrência por fontes independentes;
 - entender por que as soluções atuais não satisfazem;
+- mapear como pessoas pesquisam, comparam e pedem recomendação, incluindo consultas assistidas por IA
+  quando houver evidência, sem assumir que crescimento observado no varejo se repete no nicho;
 - mapear as perguntas, objeções e lacunas de informação que impedem a decisão de compra, separando
   reviews de soluções existentes de prova pertencente ao futuro PDE;
 - identificar ativos de distribuição já acessíveis ao público e ao Marketing Hub, incluindo creators
@@ -130,6 +163,8 @@ mensurável e financeiramente limitada.
 
 - escolher um público, uma dor principal e uma transformação prometida;
 - validar mecanismo, prova e limites da promessa;
+- definir o Cartão de Decisão do Produto e a meta de Prontidão para Decisão por IA, preservando fatos
+  críticos e a mesma verdade em todos os pontos da jornada;
 - comparar formatos candidatos e escolher explicitamente o que melhor entrega valor, considerando
   pelo menos kit digital, webapp ou outra alternativa viável quando aplicáveis;
 - criar a matriz promessa -> pergunta/objeção -> prova verificável -> fonte -> limitação, sem depender
@@ -142,13 +177,16 @@ mensurável e financeiramente limitada.
   lado pagante sustentável, sem transformar captura de dados em benefício fictício;
 - definir oferta, preço e CTA; qualquer resposta por intenção deve especificar sinais permitidos,
   regra, fallback, versão e teste incremental, sem preço individual oculto;
+- se houver personalização, definir explicação, categorias de dados, preferências editáveis, recusa,
+  fallback neutro e métrica incremental antes da construção;
 - registrar objetivo comercial, prazo, orçamento máximo, métrica principal e critérios de
   continuar, ajustar e parar;
 - definir o que será entregue e como a cliente perceberá valor.
 
 **Saída final:** Plano Comercial aprovado, com versão da oferta, matriz de decisão do formato,
 contrato de prova, matriz de distribuição/continuidade e contrato funcional do PDE suficientes para
-orientar produção, comunicação, venda e mensuração sem reinvenção posterior.
+orientar produção, comunicação, venda e mensuração sem reinvenção posterior, incluindo o Cartão de
+Decisão e o contrato de controle quando houver personalização.
 
 **Gate para avançar:** plano deve responder claramente quem compra, qual dor resolve, por que o
 formato escolhido entrega mais valor que as alternativas, o que a cliente recebe, quanto custa, como
@@ -178,6 +216,8 @@ consiga acessar, usar e concluir, percebendo a transformação prometida com qua
   perguntas e respostas, requisitos de entrada, resultado observável e limitações;
 - estruturar fatos do produto para leitura humana e por mecanismos de recomendação, preservando a
   mesma verdade em página, criativo, checkout, suporte e entrega;
+- materializar o Cartão de Decisão do Produto em conteúdo visível e, quando o canal suportar, em
+  estrutura legível por máquina sem fatos ocultos ou diferentes do conteúdo apresentado à cliente;
 - quando previsto no plano, implementar identificação consentida, indicação/atribuição, continuidade
   ou utilidade gratuita sem liberar acesso pago indevido nem misturar dados entre clientes;
 - produzir e aprovar imagens, vídeos e arquivos necessários;
@@ -192,7 +232,8 @@ entrega.
 principal e receber valor sem pergunta prioritária sem resposta, prova fabricada, placeholder,
 linguagem interna, dependência manual oculta ou ativo ainda em rascunho. Sofisticação técnica não
 compensa menor utilidade, e simplicidade de produção não compensa uma entrega incapaz de resolver a
-necessidade validada.
+necessidade validada. A Prontidão para Decisão por IA deve alcançar 80 pontos, sem campo crítico
+ausente, mas não substitui a revisão humana nem a prova de valor do produto.
 
 O processo `Fabricação e aprovação do produto` continua válido quando imagens ou arquivos forem
 entregáveis. Para um PDE, ele atua como subprocesso desta etapa e não representa sozinho a conclusão
@@ -214,12 +255,16 @@ valor, oferta, compra e acesso, usando o produto real como fonte da comunicaçã
 - construir a entrada pública, landing ou microexperiência gratuita prevista no plano;
 - apresentar descrição suficiente, demonstração, perguntas e respostas, limitações e somente provas
   reais; a ausência de reviews iniciais deve ser declarada, não preenchida artificialmente;
+- publicar o Cartão de Decisão com fatos visíveis, consistentes e atualizados; marcação estruturada,
+  feed ou metadado não pode conter promessa, preço ou disponibilidade diferentes da página;
 - quando escolhida, preparar uma rede recorrente de creators/afiliados com materiais reais em mais de
   um formato, identificador individual, comissão, atribuição, validade e regras antifraude;
 - quando escolhida, conectar a utilidade gratuita à continuidade identificada e consentida, deixando
   explícitos benefício gratuito, oferta paga e uso de dados;
 - aplicar respostas por intenção somente como variante governada de mensagem, prova, CTA ou momento,
   com fallback neutro e medição incremental;
+- explicar qualquer recomendação personalizada com “por que você está vendo isto”, permitir ajustar
+  preferências ou recusá-la e manter uma jornada neutra funcional;
 - configurar paywall, checkout e continuidade pós-compra;
 - garantir correspondência entre promessa, criativo, experiência, oferta e entrega;
 - instrumentar visita, interação de valor, CTA, checkout, compra, acesso e primeiro uso.
@@ -251,6 +296,10 @@ acesso, entregar valor e medir o funil sem contaminar dados nem orçamento.
 - comprovar evento, mensagem, acesso, conteúdo íntegro e primeiro uso;
 - comprovar pacote de prova, perguntas prioritárias, consentimento, identificação, atribuição e
   deduplicação por canal/creator; regras de intenção precisam de fallback seguro e versão rastreável;
+- comprovar o Cartão de Decisão por extração determinística e por perguntas de uma pessoa; uma revisão
+  assistida por IA pode ser complementar, com prompt, resposta, tokens e custo auditados;
+- validar que explicação, ajuste, recusa e fallback da personalização funcionam sem preço oculto nem
+  bloqueio do caminho neutro;
 - validar observabilidade, atribuição, orçamento e regras de parada;
 - persistir evidências de todos os gates.
 
@@ -282,6 +331,10 @@ clientes em decisão objetiva de continuar, ajustar, escalar ou parar.
   perguntas sem resposta, reviews e suporte como insumo para melhorar produto e comunicação;
 - medir lift de respostas à intenção por experimento controlado; correlação comportamental ou score
   previsto não prova causalidade;
+- segmentar origens de IA somente quando o referrer ou parâmetro persistido sustentar a atribuição e
+  comparar visita válida, checkout, compra, receita e entrega contra outras origens;
+- transformar fricção agregada em hipótese concorrente e testar uma variável por vez; reduzir o índice
+  sem melhorar compra, receita ou entrega não confirma valor comercial;
 - preservar aprendizados por público, criativo, oferta e versão da experiência;
 - corrigir causa-raiz e abrir nova versão quando a hipótese comercial mudar.
 
@@ -352,7 +405,9 @@ A cadeia `pde-value-creation-delivery` usa os seis macroprocessos deste cânone.
 registro inicial; a versão 2 torna explícita a neutralidade de formato e atualiza descoberta, Plano
 Comercial e construção para comparar e escolher entre kit, webapp e qualquer outro formato digital
 capaz de entregar mais valor ao mercado. A versão 3 adiciona o contrato transversal de prova antes da
-compra, distribuição acumulável e resposta governada à intenção nos seis processos. Processos
+compra, distribuição acumulável e resposta governada à intenção nos seis processos. A versão 4
+adiciona o Cartão de Decisão, o gate de Prontidão para Decisão por IA, o diagnóstico agregado de
+fricção e o controle explícito da personalização. Processos
 especializados, como fabricação de entregáveis, criativos, landing, homologação de experimento e
 operação de venda, continuam referenciados dentro dos macroprocessos e não são duplicados como uma
 segunda orquestração.
@@ -373,6 +428,12 @@ A cadeia deve permitir medir, no mínimo:
 - parcela de creators recorrentes ativos, receita atribuída recorrente e custo total de comissão;
 - audiência identificada consentida, retorno, recompra e retenção do ativo próprio;
 - lift incremental de variantes acionadas por intenção, sempre comparadas ao fallback neutro;
+- Prontidão para Decisão por IA por versão, campos críticos ausentes e divergências entre superfícies;
+- visitas com origem de IA comprovável, checkout, compra, receita e entrega dessa origem, sem atribuir
+  tráfego direto ou desconhecido a agentes;
+- Índice de Fricção Comportamental por página, dispositivo e versão, sempre com amostra e fórmula;
+- taxa de uso de explicação, ajuste de preferência, recusa e fallback neutro em experiências
+  personalizadas;
 - satisfação, reembolso, CAC, receita e margem;
 - quantidade e reincidência de retrabalhos por causa-raiz.
 

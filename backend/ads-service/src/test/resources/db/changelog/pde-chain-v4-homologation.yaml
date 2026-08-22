@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - include:
+      file: ../../../../main/resources/db/changelog/changesets/2026-08-14-business-process-catalog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: ../../../../main/resources/db/changelog/changesets/2026-08-20-business-process-value-chains.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: ../../../../main/resources/db/changelog/changesets/2026-08-21-pde-format-neutral-chain-v2.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: ../../../../main/resources/db/changelog/changesets/2026-08-21-pde-proof-distribution-intent-chain-v3.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: ../../../../main/resources/db/changelog/changesets/2026-08-21-pde-ai-decision-readiness-chain-v4.yaml
+      relativeToChangelogFile: true

@@ -157,6 +157,33 @@ class GeraSalesPageStageServiceTest {
         .hasMessageContaining("checkout");
   }
 
+  /** Deve usar o checkout explícito e preservar a URL da landing como destino de campanha. */
+  @Test
+  void startShouldAcceptCommercialCheckoutSeparateFromLanding() {
+    Experiment experiment = new Experiment();
+    experiment.setId(89L);
+    experiment.setFollowUpActionUrl("https://landing.exemplo.test/kit-whatsapp");
+    experiment.setCommercialCheckoutUrl(
+        "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=kit-89");
+    completeCommercialContract(experiment);
+    when(experimentRepository.findById(89L)).thenReturn(Optional.of(experiment));
+    AiPromptSchemaTemplate activeTemplate = template(GeraSalesPageStageCode.OFFER_BRIEF.code());
+    when(templateRepository.findFirstByPipelineCodeAndStageCodeAndActiveTrueOrderByVersionDesc(
+            "gera-sales-page-v1", GeraSalesPageStageCode.OFFER_BRIEF.code()))
+        .thenReturn(Optional.of(activeTemplate));
+    when(executionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
+            89L, GeraSalesPageStageCode.OFFER_BRIEF.code()))
+        .thenReturn(Optional.empty());
+    when(executionRepository.save(any(GeraSalesPageStageExecution.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    GeraSalesPageStartResponse response = service.start(89L);
+
+    assertThat(response.stageCode()).isEqualTo(GeraSalesPageStageCode.OFFER_BRIEF.code());
+    assertThat(experiment.getFollowUpActionUrl())
+        .isEqualTo("https://landing.exemplo.test/kit-whatsapp");
+  }
+
   /**
    * Deve incluir o pacote FEO real no pending para a página materializar os entregáveis vendidos.
    */

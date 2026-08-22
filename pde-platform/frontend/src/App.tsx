@@ -399,7 +399,7 @@ function resolveUrlHost(url: string) {
   }
 }
 
-function readRuntimeConfigValue(key: 'VITE_MUSA_CHECKOUT_URL' | 'VITE_GOOGLE_CLIENT_ID' | 'VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE' | 'VITE_MUSA_HERO_VIDEO_URL' | 'VITE_MUSA_HERO_STREAM_URL', fallback = '') {
+function readRuntimeConfigValue(key: 'VITE_MUSA_CHECKOUT_URL' | 'VITE_GOOGLE_CLIENT_ID' | 'VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE' | 'VITE_MUSA_HERO_VIDEO_URL' | 'VITE_MUSA_HERO_STREAM_URL' | 'VITE_PDE_PRODUCT_SLUG', fallback = '') {
   return window.__MUSA_RUNTIME_CONFIG__?.[key] || fallback;
 }
 
@@ -2701,7 +2701,10 @@ function App() {
 }
 
 const root = createRoot(document.getElementById('root') as HTMLElement);
-const configuredProductSlug = import.meta.env.VITE_PDE_PRODUCT_SLUG || 'metodo-musa-7-dias';
+const configuredProductSlug = readRuntimeConfigValue(
+  'VITE_PDE_PRODUCT_SLUG',
+  import.meta.env.VITE_PDE_PRODUCT_SLUG || 'metodo-musa-7-dias',
+);
 root.render(
   window.location.pathname.startsWith('/transition-pause') ? (
     <TransitionPauseExperiment />

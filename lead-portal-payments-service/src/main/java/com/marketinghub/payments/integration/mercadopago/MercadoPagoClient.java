@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -27,42 +28,61 @@ import org.springframework.web.client.RestClientException;
 public class MercadoPagoClient {
 
     private static final Logger log = LoggerFactory.getLogger(MercadoPagoClient.class);
+    private static final String PREFERENCE_ENDPOINT = "/checkout/preferences";
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
 
+    /** Inicializa o cliente com a conexão autenticada e o conversor de payloads. */
     public MercadoPagoClient(RestClient mercadoPagoRestClient, ObjectMapper objectMapper) {
         this.restClient = mercadoPagoRestClient;
         this.objectMapper = objectMapper;
     }
 
+    /** Cria uma preferência e registra request, resposta e endpoint para auditoria operacional. */
     public MercadoPagoPreferenceResponse createPreference(MercadoPagoPreferenceRequest request) {
+        return createPreference(request, null);
+    }
+
+    /** Cria uma preferência com chave estável para tornar repetições externas idempotentes. */
+    public MercadoPagoPreferenceResponse createPreference(
+            MercadoPagoPreferenceRequest request, String idempotencyKey) {
         try {
-            log.info("Criando preferência no Mercado Pago para packageId={} (payer={}, amount={} {}, notificationUrl={})",
+            log.info("Enviando preferência ao Mercado Pago. endpoint={}, idempotencyKey={}, packageId={}, productKey={}, amount={} {}, notificationUrl={}",
+                    PREFERENCE_ENDPOINT,
+                    idempotencyKey,
                     request.metadata().get("packageId"),
-                    request.payer() != null ? request.payer().name() : null,
+                    request.metadata().get("productKey"),
                     request.items() != null && !request.items().isEmpty() ? request.items().get(0).unitPrice() : null,
                     request.items() != null && !request.items().isEmpty() ? request.items().get(0).currencyId() : null,
                     request.notificationUrl());
-            ResponseEntity<MercadoPagoPreferenceResponse> response = restClient.post()
-                    .uri("/checkout/preferences")
-                    .body(request)
+            RestClient.RequestBodySpec requestSpec = restClient.post().uri(PREFERENCE_ENDPOINT);
+            if (StringUtils.hasText(idempotencyKey)) {
+                requestSpec.header("X-Idempotency-Key", idempotencyKey);
+            }
+            ResponseEntity<MercadoPagoPreferenceResponse> response = requestSpec.body(request)
                     .retrieve()
                     .toEntity(MercadoPagoPreferenceResponse.class);
             MercadoPagoPreferenceResponse body = response.getBody();
             if (body != null) {
-                log.info("Preferência {} criada no Mercado Pago (initPoint={})", body.id(), body.initPoint());
+                log.info(
+                        "Resposta de preferência recebida do Mercado Pago. endpoint={}, preferenceId={}, status={}, initPoint={}",
+                        PREFERENCE_ENDPOINT,
+                        body.id(),
+                        response.getStatusCode(),
+                        body.initPoint());
             }
             return body;
         } catch (RestClientException ex) {
             if (ex instanceof HttpStatusCodeException statusException) {
                 log.error(
-                        "Falha ao criar preferência no Mercado Pago (status={}, body={})",
+                        "Falha ao criar preferência no Mercado Pago. endpoint={}, status={}, body={}",
+                        PREFERENCE_ENDPOINT,
                         statusException.getStatusCode(),
                         statusException.getResponseBodyAsString(),
                         ex);
             } else {
-                log.error("Falha ao criar preferência no Mercado Pago", ex);
+                log.error("Falha ao criar preferência no Mercado Pago. endpoint={}", PREFERENCE_ENDPOINT, ex);
             }
             throw new IllegalStateException("Erro ao criar preferência de pagamento", ex);
         }

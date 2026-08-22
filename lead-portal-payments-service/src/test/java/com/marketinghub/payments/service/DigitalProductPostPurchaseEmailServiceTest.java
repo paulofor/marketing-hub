@@ -104,6 +104,34 @@ class DigitalProductPostPurchaseEmailServiceTest {
         verify(emailClient, never()).send(any());
     }
 
+    /** Deve enviar ao comprador o acesso do Kit WhatsApp após pagamento aprovado. */
+    @Test
+    void sendIfSupportedShouldDeliverKitWhatsAppAccess() {
+        MercadoPagoPaymentDetails payment = new MercadoPagoPaymentDetails(
+                "pay-kit-whatsapp",
+                "approved",
+                new BigDecimal("349.00"),
+                "BRL",
+                "Kit WhatsApp Pronto",
+                "prestador@example.com",
+                "kit-whatsapp-pronto",
+                Instant.now(),
+                Map.of("experimentId", 89),
+                "{}");
+        when(repository.findByPaymentId("pay-kit-whatsapp")).thenReturn(Optional.empty());
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(emailClient.send(any())).thenReturn(
+                new DigitalProductDeliveryEmailResponse("req-kit", "SENT", "ok"));
+
+        service.sendIfSupported(payment);
+
+        verify(emailClient).send(argThat(request ->
+                request.productName().equals("Kit WhatsApp Pronto")
+                        && request.deliveryPageUrl().startsWith(
+                                "https://kit-whatsapp-pronto.digicomdigital.com.br")
+                        && request.deliveryPageUrl().contains("payment_id=pay-kit-whatsapp")));
+    }
+
     /** Deve remover o rótulo de compra teste ao reenviar a entrega final do Agenda Cheia. */
     @Test
     void sendCompletedKitShouldRestoreAgendaCheiaCommercialIdentity() {

@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { useExperiment } from "../../api/experiment/useExperiment";
 import type {
+  ExperimentPlatform,
   ExperimentStage,
   ExperimentType,
   ProductAiSubtype,
@@ -15,6 +16,7 @@ import {
 } from "../../api/experiment/useUpdateExperiment";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import { useExperimentPlaybook } from "../../api/experiment/useExperimentPlaybook";
+import { useCommercialCheckout } from "../../api/experiment/useCommercialCheckout";
 import { useJourneyTemplates } from "../../api/journey/useJourneyTemplates";
 import { useAllFacebookPages } from "../../api/useAllFacebookPages";
 import { useInstagramAccounts } from "../../api/useInstagramAccounts";
@@ -38,6 +40,7 @@ const productAiSubtypeLabels: Record<ProductAiSubtype, string> = {
 };
 
 interface FormData {
+  platform: ExperimentPlatform;
   name: string;
   kpiTarget: string;
   dailyBudget: string;
@@ -88,6 +91,7 @@ export default function EditExperimentPage() {
     useImageGenerationModels();
   const { data: playbook } = useExperimentPlaybook();
   const update = useUpdateExperiment(expId);
+  const commercialCheckout = useCommercialCheckout(expId);
   const {
     register,
     handleSubmit,
@@ -97,6 +101,7 @@ export default function EditExperimentPage() {
     setValue,
   } = useForm<FormData>({
     defaultValues: {
+      platform: "FACEBOOK",
       name: "",
       kpiTarget: "",
       dailyBudget: "",
@@ -137,6 +142,7 @@ export default function EditExperimentPage() {
     if (data) {
       const currentKpi = data.kpiTarget ?? data.kpiTargetCpl;
       reset({
+        platform: data.platform ?? "FACEBOOK",
         name: data.name || "",
         kpiTarget: currentKpi != null ? String(currentKpi) : "",
         dailyBudget:
@@ -193,6 +199,7 @@ export default function EditExperimentPage() {
   const selectedImageQualityId = watch("imageModelQualityId");
   const imagesPerPackageValue = watch("imagesPerPackage");
   const experimentTypeValue = watch("experimentType");
+  const platformValue = watch("platform");
   const productAiSubtypeValue = watch("productAiSubtype");
   const isLowTicketProduct = experimentTypeValue === "LOW_TICKET_PRODUCT";
   const isPdeMembershipSubscriptionFunnel =
@@ -515,6 +522,7 @@ export default function EditExperimentPage() {
         funnelPromise: values.funnelPromise.trim(),
         primaryCta: values.primaryCta.trim(),
         experimentType: values.experimentType,
+        platform: values.platform,
         productAiSubtype:
           productAiSubtypeForExperiment(
             values.experimentType,
@@ -581,6 +589,13 @@ export default function EditExperimentPage() {
   };
 
   if (isLoading || !data) return <p>Carregando...</p>;
+  const checkoutPrice =
+    data.unitPrice == null
+      ? ""
+      : new Intl.NumberFormat("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        }).format(data.unitPrice);
 
   return (
     <div className="experiment-edit-page">
@@ -669,6 +684,38 @@ export default function EditExperimentPage() {
                           : isLowTicketProduct
                             ? "Prioriza venda direta: página curta, checkout e entrega."
                             : "Prioriza captura de lead: isca/amostra antes da venda."}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="platform">
+                      Canal de aquisição <span className="text-danger">*</span>
+                    </label>
+                    <select
+                      id="platform"
+                      className="form-select"
+                      {...register("platform")}
+                      onChange={(event) => {
+                        register("platform").onChange(event);
+                        if (event.target.value === "DIRECT_ONE_TO_ONE") {
+                          setValue("dailyBudget", "", { shouldDirty: true });
+                          setValue("facebookPageId", "", {
+                            shouldDirty: true,
+                          });
+                          setValue("instagramAccountId", "", {
+                            shouldDirty: true,
+                          });
+                        }
+                      }}
+                    >
+                      <option value="DIRECT_ONE_TO_ONE">
+                        Abordagem individual consentida
+                      </option>
+                      <option value="FACEBOOK">Meta / Facebook Ads</option>
+                    </select>
+                    <div className="form-text">
+                      {platformValue === "DIRECT_ONE_TO_ONE"
+                        ? "Usa uma amostra consentida e não exige campanha, segmentação Meta ou verba de mídia."
+                        : "Exige público aprovado, campanha registrada e orçamento antes da execução."}
                     </div>
                   </div>
                   {isLowTicketProduct && (
@@ -914,22 +961,24 @@ export default function EditExperimentPage() {
                       {...register("kpiTarget")}
                     />
                   </div>
-                  <div>
-                    <label className="form-label" htmlFor="dailyBudget">
-                      Orçamento diário
-                    </label>
-                    <input
-                      id="dailyBudget"
-                      className="form-control"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      {...register("dailyBudget")}
-                    />
-                    <div className="form-text">
-                      Opcional para experimentos orgânicos sem mídia paga.
+                  {platformValue === "FACEBOOK" && (
+                    <div>
+                      <label className="form-label" htmlFor="dailyBudget">
+                        Orçamento diário
+                      </label>
+                      <input
+                        id="dailyBudget"
+                        className="form-control"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        {...register("dailyBudget")}
+                      />
+                      <div className="form-text">
+                        Opcional no planejamento; obrigatório antes da campanha.
+                      </div>
                     </div>
-                  </div>
+                  )}
                   <div>
                     <label className="form-label" htmlFor="unitPrice">
                       Preço unitário (R$) <span className="text-danger">*</span>
@@ -960,6 +1009,59 @@ export default function EditExperimentPage() {
                     <div className="form-text">
                       {salesPageDestinationCopy.help}
                     </div>
+                  </div>
+                  <div>
+                    <label
+                      className="form-label"
+                      htmlFor="commercialCheckoutUrl"
+                    >
+                      Checkout comercial
+                    </label>
+                    <input
+                      id="commercialCheckoutUrl"
+                      className="form-control"
+                      type="url"
+                      readOnly
+                      value={data.commercialCheckoutUrl || ""}
+                      placeholder="Disponível após publicar e validar a área PDE"
+                    />
+                    <div className="d-flex flex-wrap gap-2 mt-2">
+                      <button
+                        type="button"
+                        className="btn btn-outline-primary btn-sm"
+                        disabled={
+                          commercialCheckout.isPending ||
+                          data.status !== "PLANNED"
+                        }
+                        onClick={() => commercialCheckout.mutate()}
+                      >
+                        {commercialCheckout.isPending
+                          ? "Criando checkout..."
+                          : data.commercialCheckoutUrl
+                            ? "Validar checkout existente"
+                            : `Criar checkout${checkoutPrice ? ` de ${checkoutPrice}` : ""}`}
+                      </button>
+                      {data.commercialCheckoutUrl ? (
+                        <a
+                          className="btn btn-outline-secondary btn-sm"
+                          href={data.commercialCheckoutUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Abrir checkout
+                        </a>
+                      ) : null}
+                    </div>
+                    <div className="form-text">
+                      O checkout usa o preço persistido no experimento e só é
+                      liberado após a entrega PDE passar na validação pública.
+                    </div>
+                    {commercialCheckout.isError ? (
+                      <div className="text-danger small mt-1" role="alert">
+                        Não foi possível criar o checkout. Confirme que a área
+                        PDE está ativa e validada.
+                      </div>
+                    ) : null}
                   </div>
                   <div>
                     <label className="form-label" htmlFor="startDate">
@@ -1140,52 +1242,59 @@ export default function EditExperimentPage() {
                       {...register("compressedImagesPerPackage")}
                     />
                   </div>
-                  <div>
-                    <label className="form-label" htmlFor="instagramAccountId">
-                      Conta do Instagram
-                    </label>
-                    <select
-                      id="instagramAccountId"
-                      className="form-select"
-                      {...register("instagramAccountId")}
-                      value={selectedInstagramAccountId ?? ""}
-                      disabled={isLoadingInstagramAccounts}
-                    >
-                      <option value="">
-                        {isLoadingInstagramAccounts
-                          ? "Carregando contas cadastradas..."
-                          : noInstagramAccounts
-                            ? "Nenhuma conta cadastrada (opcional)"
-                            : "Nenhuma conta selecionada"}
-                      </option>
-                      {instagramAccountOptions.map((account) => (
-                        <option key={account.id} value={String(account.id)}>
-                          {account.name} ({account.handle})
+                  {platformValue === "FACEBOOK" && (
+                    <div>
+                      <label
+                        className="form-label"
+                        htmlFor="instagramAccountId"
+                      >
+                        Conta do Instagram
+                      </label>
+                      <select
+                        id="instagramAccountId"
+                        className="form-select"
+                        {...register("instagramAccountId")}
+                        value={selectedInstagramAccountId ?? ""}
+                        disabled={isLoadingInstagramAccounts}
+                      >
+                        <option value="">
+                          {isLoadingInstagramAccounts
+                            ? "Carregando contas cadastradas..."
+                            : noInstagramAccounts
+                              ? "Nenhuma conta cadastrada (opcional)"
+                              : "Nenhuma conta selecionada"}
                         </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="form-label" htmlFor="facebookPageId">
-                      Página do Facebook
-                    </label>
-                    <select
-                      id="facebookPageId"
-                      className="form-select"
-                      {...register("facebookPageId")}
-                    >
-                      <option value="">
-                        {isLoadingFacebookPages
-                          ? "Carregando páginas cadastradas..."
-                          : "Nenhuma página selecionada"}
-                      </option>
-                      {facebookPageOptions.map((page) => (
-                        <option key={page.id} value={String(page.id)}>
-                          {page.name} ({page.pageId})
+                        {instagramAccountOptions.map((account) => (
+                          <option key={account.id} value={String(account.id)}>
+                            {account.name} ({account.handle})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {platformValue === "FACEBOOK" && (
+                    <div>
+                      <label className="form-label" htmlFor="facebookPageId">
+                        Página do Facebook
+                      </label>
+                      <select
+                        id="facebookPageId"
+                        className="form-select"
+                        {...register("facebookPageId")}
+                      >
+                        <option value="">
+                          {isLoadingFacebookPages
+                            ? "Carregando páginas cadastradas..."
+                            : "Nenhuma página selecionada"}
                         </option>
-                      ))}
-                    </select>
-                  </div>
+                        {facebookPageOptions.map((page) => (
+                          <option key={page.id} value={String(page.id)}>
+                            {page.name} ({page.pageId})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
                 {hasWorkerRequests && (
                   <div className="experiment-edit-note" aria-live="polite">
@@ -1206,7 +1315,7 @@ export default function EditExperimentPage() {
                     </div>
                   </div>
                 )}
-                {noInstagramAccounts && (
+                {platformValue === "FACEBOOK" && noInstagramAccounts && (
                   <div className="alert alert-light mt-3" role="status">
                     Nenhuma conta do Instagram está cadastrada. Experimentos
                     orgânicos podem ser salvos sem essa integração.

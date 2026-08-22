@@ -132,3 +132,22 @@ recorrência.
 O processo permanece bloqueado corretamente antes dos subprocessos de criativos e landing: ainda
 faltam URL pública, checkout atribuível, acesso, eventos e políticas homologados. Nenhuma abordagem,
 publicação, campanha, venda ou gasto foi realizado.
+
+## Continuação após o PR 5004
+
+O PR 5004 foi integrado e o deploy do backend e frontend terminou saudável. A validação como usuário
+final comprovou que o experimento 89 continuava `PLANNED`, porém ainda persistido como `FACEBOOK`,
+sem URL pública, checkout, criativo ou landing. A causa não era o preço: era a ausência de um canal
+individual de primeira classe e de uma superfície produtiva neutra fora do domínio MUSA.
+
+Foram comparados três caminhos: preencher dados Meta fictícios, inferir o canal pela verba zerada ou
+persistir o canal individual explicitamente. Foi escolhido o terceiro, porque mantém auditoria e
+permite novos canais no futuro sem heurística. O contrato passa a usar `DIRECT_ONE_TO_ONE`, sem
+segmentação Meta nem orçamento, e mantém a Meta inalterada para experimentos pagos.
+
+A landing, o checkout e a entrega deixam de disputar o mesmo campo. O experimento recebe checkout
+comercial próprio, criado de forma autenticada e idempotente somente depois que o slot PDE do produto
+estiver público, validado e ativo. O domínio planejado é
+`kit-whatsapp-pronto.digicomdigital.com.br`, com imagem e container próprios do motor PDE. Isso
+preserva R$ 349 como hipótese da implantação personalizada em até 48 horas, sem vender um kit
+genérico nem registrar venda, gasto ou contato de homologação.

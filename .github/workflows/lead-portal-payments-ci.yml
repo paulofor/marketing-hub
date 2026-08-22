@@ -28,6 +28,14 @@ on:
         options:
           - "false"
           - "true"
+      issue_kit_whatsapp_certificate:
+        description: "Emitir/renovar certificado do Kit WhatsApp depois que o DNS apontar para o VPS PDE"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 jobs:
   test:
@@ -116,7 +124,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate certificate target
-        if: inputs.issue_clubemusa_certificate == 'true' && inputs.issue_digicomdigital_certificate == 'true'
+        if: (inputs.issue_clubemusa_certificate == 'true' && inputs.issue_digicomdigital_certificate == 'true') || (inputs.issue_clubemusa_certificate == 'true' && inputs.issue_kit_whatsapp_certificate == 'true') || (inputs.issue_digicomdigital_certificate == 'true' && inputs.issue_kit_whatsapp_certificate == 'true')
         run: |
           echo "Selecione apenas um domínio por execução para impedir emissão no host incorreto." >&2
           exit 1
@@ -242,6 +250,22 @@ jobs:
             && export LEAD_PORTAL_PAYMENTS_AUTH_TOKEN='${PAYMENTS_AUTH_TOKEN}' \
             && export OPENAI_API_KEY='${AGENDA_CHEIA_OPENAI_API_KEY}' \
             && export CERTBOT_PRIMARY_DOMAIN=digicomdigital.com.br \
+            && docker compose -f docker-compose.deploy.yml --profile certbot run --rm certbot-pagamentos \
+            && docker compose -f docker-compose.deploy.yml up -d --force-recreate --no-deps proxy"
+      - name: Issue Kit WhatsApp certificate
+        if: github.event_name == 'workflow_dispatch' && inputs.issue_kit_whatsapp_certificate == 'true'
+        env:
+          PAYMENTS_AUTH_TOKEN: ${{ secrets.LEAD_PORTAL_PAYMENTS_AUTH_TOKEN }}
+          AGENDA_CHEIA_OPENAI_API_KEY: ${{ secrets.PDE_OPENAI_API_KEY }}
+        run: |
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
+            && cd ${REMOTE_PATH} \
+            && export LEAD_PORTAL_PAYMENTS_IMAGE='${IMAGE_NAMESPACE}/lead-portal-payments-service:${IMAGE_TAG}' \
+            && export LEAD_PORTAL_PAYMENTS_NETWORK='${LEAD_PORTAL_PAYMENTS_NETWORK}' \
+            && export LEAD_PORTAL_PAYMENTS_AUTH_TOKEN='${PAYMENTS_AUTH_TOKEN}' \
+            && export OPENAI_API_KEY='${AGENDA_CHEIA_OPENAI_API_KEY}' \
+            && export CERTBOT_PRIMARY_DOMAIN=kit-whatsapp-pronto.digicomdigital.com.br \
+            && export CERTBOT_INCLUDE_WWW=false \
             && docker compose -f docker-compose.deploy.yml --profile certbot run --rm certbot-pagamentos \
             && docker compose -f docker-compose.deploy.yml up -d --force-recreate --no-deps proxy"
       - name: Clean build artifacts from repository

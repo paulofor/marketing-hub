@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 /** Controla liberação de acesso e progresso da cliente na experiência PDE. */
 @Service
@@ -1046,17 +1047,22 @@ public class AccessService {
                 : "TRIAL";
     }
 
-    /** Converte URL relativa em URL absoluta para envio por e-mail. */
-    private String buildAbsoluteAccessUrl(String accessUrl) {
-        String normalizedBase = appBaseUrl == null || appBaseUrl.isBlank()
-                ? "http://localhost:5176"
-                : appBaseUrl.replaceAll("/+$", "");
+    /** Converte URL relativa em URL absoluta usando o domínio público do produto correto. */
+    private String buildAbsoluteAccessUrl(String productSlug, String accessUrl) {
+        String normalizedBase;
+        if (StringUtils.hasText(productSlug) && !"metodo-musa-7-dias".equals(productSlug)) {
+            normalizedBase = "https://" + productSlug.trim().toLowerCase() + ".digicomdigital.com.br";
+        } else {
+            normalizedBase = appBaseUrl == null || appBaseUrl.isBlank()
+                    ? "http://localhost:5176"
+                    : appBaseUrl.replaceAll("/+$", "");
+        }
         return normalizedBase + accessUrl;
     }
 
     /** Envia ou expõe em teste o link de acesso da Área MUSA. */
     private MagicLinkResponse sendAccessLink(String productSlug, String email, String accessUrl) {
-        String absoluteUrl = buildAbsoluteAccessUrl(accessUrl);
+        String absoluteUrl = buildAbsoluteAccessUrl(productSlug, accessUrl);
         if (mailService != null && mailService.isConfigured()) {
             try {
                 mailService.sendMagicLink(email, absoluteUrl);

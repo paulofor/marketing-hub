@@ -43,6 +43,16 @@ O padrão obrigatório é:
 - **PDE Platform entrega experiência, acesso, progresso e materiais**.
 - **Marketing Hub é a fonte de verdade para mudanças comerciais do PDE** quando a experiência estiver em campanha ou experimento ativo.
 
+### Domínio público por produto
+
+- o Método MUSA mantém seus domínios em `clubemusa.com.br`;
+- outros produtos PDE usam domínio corporativo próprio ou subdomínio explícito de
+  `digicomdigital.com.br`, como `kit-whatsapp-pronto.digicomdigital.com.br`;
+- o domínio deve identificar um único produto, apontar para o host canônico da PDE Platform e ter
+  certificado TLS válido antes da validação e ativação do slot;
+- compartilhar o motor PDE não autoriza compartilhar imagem ou container entre versões públicas:
+  cada produto/versão continua com imagem, container, URL e diagnóstico próprios.
+
 Não criar um front/back novo para cada produto, salvo exceção explícita e registrada. Essa regra não autoriza reaproveitar a mesma imagem pública para versões comerciais diferentes: o motor continua reutilizável, mas cada versão PDE publicada em domínio próprio deve ser empacotada e executada como imagem/container próprios.
 
 ### Isolamento obrigatório por versão pública

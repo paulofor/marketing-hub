@@ -1048,6 +1048,44 @@ class ExperimentServiceTest {
         .isEqualTo(ExperimentStatus.PLANNED);
   }
 
+  /** Permite executar amostra individual sem inventar campanha, verba ou custo-alvo de Meta. */
+  @Test
+  void updateStatusRunningAcceptsDirectOneToOneWithoutFacebookCampaignOrBudget() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Niche Direct Running").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("ADR").build());
+    var hyp =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
+                .title("HDR")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .build());
+    CreateExperimentRequest request = new CreateExperimentRequest();
+    applyStageDefaults(request);
+    request.setMarketNicheId(niche.getId());
+    request.setHypothesisId(hyp.getId());
+    request.setName("ExpDirectRunning");
+    request.setHypothesis("H");
+    request.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    request.setSampleSize(15);
+    request.setJourneyTemplateId(createJourneyTemplate().getId());
+    Experiment experiment = service.create(request);
+
+    Experiment running = service.updateStatus(experiment.getId(), ExperimentStatus.RUNNING);
+
+    assertThat(running.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
+    assertThat(running.getPlatform()).isEqualTo(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    assertThat(running.getDailyBudget()).isNull();
+    assertThat(facebookAdsCampaignRepository.existsByExperimentId(running.getId())).isFalse();
+  }
+
   @Test
   void updateStatusRunningRejectsInactivePdeDestination() {
     MarketNiche niche =

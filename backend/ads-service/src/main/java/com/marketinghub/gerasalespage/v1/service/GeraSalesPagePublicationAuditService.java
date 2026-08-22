@@ -223,7 +223,12 @@ public class GeraSalesPagePublicationAuditService {
     if (personalizedSampleSalesPage) {
       return StringUtils.hasText(checkoutUrl) ? checkoutUrl : null;
     }
-    return StringUtils.hasText(checkoutUrl) ? checkoutUrl : experiment.getFollowUpActionUrl();
+    if (StringUtils.hasText(checkoutUrl)) {
+      return checkoutUrl;
+    }
+    return StringUtils.hasText(experiment.getCommercialCheckoutUrl())
+        ? experiment.getCommercialCheckoutUrl()
+        : experiment.getFollowUpActionUrl();
   }
 
   /** Bloqueia publicacao de pagina publica com termos comerciais comuns sem acentuacao. */

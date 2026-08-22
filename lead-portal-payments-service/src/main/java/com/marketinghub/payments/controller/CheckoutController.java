@@ -2,9 +2,12 @@ package com.marketinghub.payments.controller;
 
 import com.marketinghub.payments.dto.CreateCheckoutRequest;
 import com.marketinghub.payments.dto.CreateCheckoutResponse;
+import com.marketinghub.payments.dto.CommercialProductCheckoutRequest;
+import com.marketinghub.payments.dto.CommercialProductCheckoutResponse;
 import com.marketinghub.payments.dto.TemporaryCheckoutRequest;
 import com.marketinghub.payments.dto.TemporaryCheckoutResponse;
 import com.marketinghub.payments.service.CheckoutService;
+import com.marketinghub.payments.service.CommercialProductCheckoutService;
 import com.marketinghub.payments.service.PremiumDeliveryService;
 import com.marketinghub.payments.service.TemporaryCheckoutService;
 import com.marketinghub.payments.service.TemporaryCheckoutAdminAuthorizer;
@@ -29,21 +32,33 @@ public class CheckoutController {
     private final PremiumDeliveryService premiumDeliveryService;
     private final TemporaryCheckoutService temporaryCheckoutService;
     private final TemporaryCheckoutAdminAuthorizer temporaryCheckoutAdminAuthorizer;
+    private final CommercialProductCheckoutService commercialProductCheckoutService;
 
     /** Configura os serviços usados pelas operações de pagamento. */
     public CheckoutController(CheckoutService checkoutService, PremiumDeliveryService premiumDeliveryService,
                               TemporaryCheckoutService temporaryCheckoutService,
-                              TemporaryCheckoutAdminAuthorizer temporaryCheckoutAdminAuthorizer) {
+                              TemporaryCheckoutAdminAuthorizer temporaryCheckoutAdminAuthorizer,
+                              CommercialProductCheckoutService commercialProductCheckoutService) {
         this.checkoutService = checkoutService;
         this.premiumDeliveryService = premiumDeliveryService;
         this.temporaryCheckoutService = temporaryCheckoutService;
         this.temporaryCheckoutAdminAuthorizer = temporaryCheckoutAdminAuthorizer;
+        this.commercialProductCheckoutService = commercialProductCheckoutService;
     }
 
     /** Cria ou reutiliza o checkout de um pacote pronto. */
     @PostMapping("/checkout")
     public CreateCheckoutResponse createCheckout(@Valid @RequestBody CreateCheckoutRequest request) {
         return checkoutService.createCheckout(request);
+    }
+
+    /** Cria checkout comercial de produto a partir do contrato autenticado do Marketing Hub. */
+    @PostMapping("/products/checkout")
+    public CommercialProductCheckoutResponse createCommercialProductCheckout(
+            @RequestHeader(name = "Authorization", required = false) String authorization,
+            @Valid @RequestBody CommercialProductCheckoutRequest request) {
+        temporaryCheckoutAdminAuthorizer.authorize(authorization);
+        return commercialProductCheckoutService.create(request);
     }
 
     /** Consulta o checkout mais recente de um pacote. */

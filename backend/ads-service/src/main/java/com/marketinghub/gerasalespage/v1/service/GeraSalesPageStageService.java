@@ -456,11 +456,11 @@ public class GeraSalesPageStageService {
     return normalized;
   }
 
-  /**
-   * Resolve o checkout interno priorizando auditoria anterior quando followUpActionUrl já virou
-   * página.
-   */
+  /** Resolve o checkout explícito sem confundir o destino de campanha com pagamento. */
   private String resolveCheckoutUrl(Experiment experiment) {
+    if (StringUtils.hasText(experiment.getCommercialCheckoutUrl())) {
+      return experiment.getCommercialCheckoutUrl();
+    }
     String auditedCheckoutUrl = publicationAuditService.latestCheckoutUrl(experiment.getId());
     if (StringUtils.hasText(auditedCheckoutUrl)) {
       return auditedCheckoutUrl;

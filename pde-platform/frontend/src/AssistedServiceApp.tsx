@@ -934,7 +934,9 @@ async function trackEvent(
 function stableTrackingId(key: string, storage: Storage) {
   const existing = storage.getItem(key);
   if (existing) return existing;
-  const generated = window.crypto.randomUUID();
+  const generated =
+    window.crypto?.randomUUID?.() ??
+    `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   storage.setItem(key, generated);
   return generated;
 }

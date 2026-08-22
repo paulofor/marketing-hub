@@ -115,6 +115,63 @@ public class LeadPortalPaymentsClient {
         HttpMethod.POST, "/api/v1/payments/temporary/" + productKey + "/restore", null, productKey);
   }
 
+  /** Solicita ao serviço de pagamentos um checkout comercial para contrato já validado. */
+  public CommercialProductCheckoutResponse createCommercialProductCheckout(
+      CommercialProductCheckoutRequest request) {
+    if (!properties.isEnabled() || !StringUtils.hasText(properties.getBaseUrl())) {
+      throw new IllegalStateException("Integração com lead-portal-payments não configurada");
+    }
+    var uri =
+        UriComponentsBuilder.fromHttpUrl(properties.getBaseUrl())
+            .path("/api/v1/payments/products/checkout")
+            .build()
+            .toUri();
+    try {
+      log.info(
+          "Enviando checkout comercial ao Lead Portal Payments. productKey={}, experimentId={}, amount={}, deliveryPageUrl={}, endpoint={}",
+          request.productKey(),
+          request.experimentId(),
+          request.amount(),
+          request.deliveryPageUrl(),
+          uri);
+      ResponseEntity<CommercialProductCheckoutResponse> response =
+          restTemplate.exchange(
+              uri,
+              HttpMethod.POST,
+              new HttpEntity<>(request, buildHeaders()),
+              CommercialProductCheckoutResponse.class);
+      CommercialProductCheckoutResponse body = response.getBody();
+      if (body == null || !StringUtils.hasText(body.checkoutUrl())) {
+        throw new IllegalStateException("Serviço de pagamentos não retornou checkout comercial");
+      }
+      log.info(
+          "Checkout comercial recebido do Lead Portal Payments. productKey={}, experimentId={}, preferenceId={}, status={}, endpoint={}",
+          body.productKey(),
+          body.experimentId(),
+          body.preferenceId(),
+          response.getStatusCode(),
+          uri);
+      return body;
+    } catch (RestClientResponseException ex) {
+      log.error(
+          "Falha HTTP ao criar checkout comercial. productKey={}, experimentId={}, endpoint={}, body={}",
+          request.productKey(),
+          request.experimentId(),
+          uri,
+          ex.getResponseBodyAsString(),
+          ex);
+      throw new IllegalStateException("Falha ao criar checkout comercial", ex);
+    } catch (RestClientException ex) {
+      log.error(
+          "Falha de comunicação ao criar checkout comercial. productKey={}, experimentId={}, endpoint={}",
+          request.productKey(),
+          request.experimentId(),
+          uri,
+          ex);
+      throw new IllegalStateException("Serviço de pagamentos indisponível", ex);
+    }
+  }
+
   private TemporaryCheckoutResponse exchangeTemporary(
       HttpMethod method, String path, TemporaryCheckoutRequest request, String productKey) {
     if (!properties.isEnabled() || !StringUtils.hasText(properties.getBaseUrl())) {
@@ -192,4 +249,24 @@ public class LeadPortalPaymentsClient {
       String status,
       Instant activatedAt,
       Instant expiresAt) {}
+
+  /** Contrato interno enviado para criar checkout de produto digital. */
+  public record CommercialProductCheckoutRequest(
+      String productKey,
+      String productName,
+      Long productId,
+      Long experimentId,
+      BigDecimal amount,
+      String deliveryPageUrl) {}
+
+  /** Checkout comercial retornado pelo serviço oficial de pagamentos. */
+  public record CommercialProductCheckoutResponse(
+      String productKey,
+      Long productId,
+      Long experimentId,
+      String preferenceId,
+      String checkoutUrl,
+      BigDecimal amount,
+      String currency,
+      String deliveryPageUrl) {}
 }

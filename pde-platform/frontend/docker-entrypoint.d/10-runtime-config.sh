@@ -4,7 +4,10 @@ set -eu
 CONFIG_FILE="${MUSA_RUNTIME_CONFIG_FILE:-/usr/share/nginx/html/runtime-config.js}"
 DIAGNOSTICS_FILE="${MUSA_VERSION_DIAGNOSTICS_FILE:-/usr/share/nginx/html/version-diagnostics.json}"
 LEGACY_DIAGNOSTICS_FILE="${MUSA_SLOT_DIAGNOSTICS_FILE:-/usr/share/nginx/html/slot-diagnostics.json}"
+HEALTH_CONTRACT_FILE="${PDE_HEALTH_CONTRACT_FILE:-/usr/share/nginx/html/pde-health-contract.json}"
 CHECKOUT_URL="${VITE_MUSA_CHECKOUT_URL:-}"
+PRODUCT_SLUG="${VITE_PDE_PRODUCT_SLUG:-metodo-musa-7-dias}"
+HEALTH_REQUIRED_TEXT="${PDE_HEALTH_REQUIRED_TEXT:-Experiência assistida e manual}"
 GOOGLE_CLIENT_ID="${VITE_GOOGLE_CLIENT_ID:-}"
 EXPERIENCE_VERSION_OVERRIDE="${VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE:-}"
 HERO_VIDEO_URL="${VITE_MUSA_HERO_VIDEO_URL:-}"
@@ -28,9 +31,29 @@ window.__MUSA_RUNTIME_CONFIG__ = {
   VITE_GOOGLE_CLIENT_ID: "$(json_escape "$GOOGLE_CLIENT_ID")",
   VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: "$(json_escape "$EXPERIENCE_VERSION_OVERRIDE")",
   VITE_MUSA_HERO_VIDEO_URL: "$(json_escape "$HERO_VIDEO_URL")",
-  VITE_MUSA_HERO_STREAM_URL: "$(json_escape "$HERO_STREAM_URL")"
+  VITE_MUSA_HERO_STREAM_URL: "$(json_escape "$HERO_STREAM_URL")",
+  VITE_PDE_PRODUCT_SLUG: "$(json_escape "$PRODUCT_SLUG")"
 };
 EOF
+
+if [ "$PRODUCT_SLUG" != "metodo-musa-7-dias" ]; then
+  cat > "$HEALTH_CONTRACT_FILE" <<EOF
+{
+  "slug": "$(json_escape "$PRODUCT_SLUG")",
+  "healthPath": "/",
+  "requiredTexts": ["$(json_escape "$HEALTH_REQUIRED_TEXT")"],
+  "requiredHlsStreams": [],
+  "forbiddenTexts": [
+    "Application error",
+    "Cannot find module",
+    "Unexpected token",
+    "Failed to fetch dynamically imported module",
+    "metodo-musa-7-dias",
+    "Clube MUSA"
+  ]
+}
+EOF
+fi
 
 cat > "$DIAGNOSTICS_FILE" <<EOF
 {
@@ -40,6 +63,7 @@ cat > "$DIAGNOSTICS_FILE" <<EOF
   "legacySlot": "$(json_escape "$FRONTEND_VERSION")",
   "publicUrl": "$(json_escape "$FRONTEND_PUBLIC_URL")",
   "experienceVersion": "$(json_escape "$EXPERIENCE_VERSION_OVERRIDE")",
+  "productSlug": "$(json_escape "$PRODUCT_SLUG")",
   "image": "$(json_escape "$FRONTEND_IMAGE")",
   "imageVersionId": "$(json_escape "$FRONTEND_IMAGE_VERSION_ID")",
   "imageTag": "$(json_escape "$DEPLOY_IMAGE_TAG")",

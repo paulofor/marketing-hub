@@ -40,6 +40,7 @@ public class ExperimentDto {
   private FacebookPageDto facebookPage;
   private FacebookInstantFormDto facebookInstantForm;
   private String followUpActionUrl;
+  private String commercialCheckoutUrl;
   private String leadPortalFlowModel;
   private boolean schemaFirstLeadPortalEnabled;
   private String creativeTextPrompt;

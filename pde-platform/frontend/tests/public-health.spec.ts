@@ -119,9 +119,11 @@ test('health publico renderiza app, javascript e texto comercial', async ({ page
   expect(diagnostics.image).toBeTruthy();
   expect(diagnostics.imageVersionId).toBeTruthy();
   expect(diagnostics.commitSha).toBeTruthy();
-  expect(diagnostics.knownPointedDomains?.map((domain) => domain.host)).toEqual(
-    expect.arrayContaining(['v5.clubemusa.com.br', 'v6.clubemusa.com.br', 'v7.clubemusa.com.br']),
-  );
+  if (contract.slug === 'metodo-musa-7-dias') {
+    expect(diagnostics.knownPointedDomains?.map((domain) => domain.host)).toEqual(
+      expect.arrayContaining(['v5.clubemusa.com.br', 'v6.clubemusa.com.br', 'v7.clubemusa.com.br']),
+    );
+  }
   const publishedFirstFoldTexts = await loadPublishedFirstFoldTexts(request, contract.slug, diagnostics);
   const staticRequiredTexts = removeMutableFallbackTexts(contract.requiredTexts, publishedFirstFoldTexts);
 

@@ -3,6 +3,7 @@ import axios from "axios";
 import type {
   Experiment,
   ExperimentCampaignObjective,
+  ExperimentPlatform,
   ExperimentStage,
   ExperimentType,
   ProductAiSubtype,
@@ -22,6 +23,7 @@ export interface CreateExperiment {
   experimentType?: ExperimentType;
   productAiSubtype?: ProductAiSubtype | null;
   campaignObjective?: ExperimentCampaignObjective;
+  platform: ExperimentPlatform;
   stage: ExperimentStage;
   primaryVariable?: string;
   primaryMetric?: string;

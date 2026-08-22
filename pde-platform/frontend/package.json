@@ -11,6 +11,7 @@
     "build": "tsc --noEmit && vite build",
     "test:local-integration": "playwright test tests/musa-local-integration.spec.ts --config=playwright.local-integration.config.ts",
     "test:assisted-service": "playwright test tests/assisted-service-local.spec.ts --config=playwright.assisted-service.config.ts",
+    "test:assisted-service:container": "playwright test tests/assisted-service-local.spec.ts --config=playwright.assisted-service.container.config.ts",
     "test:public-diagnostic-smoke": "playwright test tests/public-presence-diagnostic.smoke.spec.ts --config=playwright.public-api.config.ts",
     "test:public-health": "playwright test tests/public-health.spec.ts --config=playwright.public.config.ts",
     "test:visual": "playwright test",

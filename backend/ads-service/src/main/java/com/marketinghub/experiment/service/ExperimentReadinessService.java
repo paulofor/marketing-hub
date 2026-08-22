@@ -3,6 +3,7 @@ package com.marketinghub.experiment.service;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
@@ -118,7 +119,8 @@ public class ExperimentReadinessService {
     long leadPortalFlowCount = hasReadyLeadPortalFlow(experiment) ? 1L : 0L;
     boolean hasLeadPortalFlow = leadPortalFlowCount > 0;
 
-    boolean hasCompleteTargeting = hasConfiguredTargeting(experiment);
+    boolean requiresMetaTargeting = requiresMetaTargeting(experiment);
+    boolean hasCompleteTargeting = !requiresMetaTargeting || hasConfiguredTargeting(experiment);
     List<TargetingElementType> missingTypes =
         hasCompleteTargeting ? List.of() : PUBLISHABLE_TARGETING_TYPES;
     long geraLandingCompletedStageCount = countCompletedGeraLandingStages(experimentId);
@@ -200,7 +202,7 @@ public class ExperimentReadinessService {
               "Configure página, checkout, destino do anúncio, coletores e divisão de tráfego das duas variantes antes de liberar a campanha.",
               List.of()));
     }
-    if (!hasCompleteTargeting) {
+    if (requiresMetaTargeting && !hasCompleteTargeting) {
       issues.add(
           new ExperimentReadinessIssueDto(
               ExperimentReadinessIssueType.TARGETING,
@@ -360,12 +362,16 @@ public class ExperimentReadinessService {
                 "Publique a página com page_view, page_load_metric, section_view_time e checkout_click."),
             runningRequirement(
                 "TARGETING_READY",
-                "Público pronto",
+                requiresMetaTargeting ? "Público Meta pronto" : "Canal individual pronto",
                 hasCompleteTargeting,
-                hasCompleteTargeting
-                    ? "Existe público aprovado com ID oficial da Meta."
-                    : "Não existe público publicável salvo.",
-                "Salve ao menos um interesse, cargo ou comportamento aprovado."),
+                requiresMetaTargeting
+                    ? hasCompleteTargeting
+                        ? "Existe público aprovado com ID oficial da Meta."
+                        : "Não existe público publicável salvo."
+                    : "A amostra individual consentida não depende de segmentação da Meta.",
+                requiresMetaTargeting
+                    ? "Salve ao menos um interesse, cargo ou comportamento aprovado."
+                    : "Preserve a lista consentida, a origem e a atribuição de cada contato."),
             runningRequirement(
                 "NO_BLOCKING_STAGES",
                 "Sem etapas bloqueantes",
@@ -478,7 +484,9 @@ public class ExperimentReadinessService {
       missing.add("landingApprovedProductEvidence");
     }
     missing.addAll(campaignDestinationPolicy.missingConfiguration(experiment));
-    if (isLowTicketProduct(experiment) && !hasFacebookPixel(experiment)) {
+    if (requiresMetaTargeting(experiment)
+        && isLowTicketProduct(experiment)
+        && !hasFacebookPixel(experiment)) {
       missing.add("facebookPixel");
     }
     if (isPersonalizedSampleProductAi(experiment)
@@ -492,7 +500,7 @@ public class ExperimentReadinessService {
         && !salesPageAbTestService.hasReadyActiveTest(experiment.getId())) {
       missing.add("salesPageAbTest");
     }
-    if (!hasConfiguredTargeting(experiment)) {
+    if (requiresMetaTargeting(experiment) && !hasConfiguredTargeting(experiment)) {
       missing.add("approvedTargetingPackage");
     }
     return List.copyOf(missing);
@@ -518,6 +526,11 @@ public class ExperimentReadinessService {
       return false;
     }
     return hasSelectedTargeting(experiment.getId());
+  }
+
+  /** Informa se o canal depende de público e identificadores oficiais da Meta. */
+  private boolean requiresMetaTargeting(Experiment experiment) {
+    return experiment == null || experiment.getPlatform() != ExperimentPlatform.DIRECT_ONE_TO_ONE;
   }
 
   /**

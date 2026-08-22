@@ -22,6 +22,7 @@ grep -F 'clarity_project_id="${9:-}"' "$workflow" >/dev/null
 grep -F 'mh_audit=deploy-' "$landing_probe_script" >/dev/null
 grep -F -- '--max-time "$max_seconds"' "$landing_probe_script" >/dev/null
 grep -F 'data-analytics-role="primary-checkout"' "$landing_probe_script" >/dev/null
+grep -F "'checkout_click'" "$landing_probe_script" >/dev/null
 grep -F 'data-mh-web-optimized' "$landing_probe_script" >/dev/null
 grep -F 'checkout|mercadopago|pagamento|pref_id' "$landing_probe_script" >/dev/null
 grep -F 'marketinghub-lead-portal-backend-1' "$reconcile_script" >/dev/null

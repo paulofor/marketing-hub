@@ -837,6 +837,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - Em 2026-08-08, o comando da tela passou a usar sempre o `rebuild` auditável. Antes, uma rodada reprovada antes da primeira publicação mantinha a contagem de publicações em zero; a tela chamava `start`, que reutilizava a primeira etapa concluída por idempotência e nunca exercitava o template corrigido. O teste de contrato impede que a interface volte a escolher o comando pela existência de publicação.
 - Em 2026-08-07, o marco de reset do funil passou a ser convertido explicitamente de `Instant` para `DATETIME` UTC antes das consultas JDBC. Antes, o driver aplicava o fuso local ao parâmetro e submissões técnicas anteriores ao reset continuavam contabilizadas; o painel podia iniciar um experimento comercial com conversões falsas mesmo após zerar as contagens.
 - Em 2026-08-21, o experimento #88 confirmou um intervalo ainda desprotegido: entre a publicação da campanha e a primeira impressão sincronizada, previews e validações da Meta geraram eventos com `fbclid`, embora o Insights oficial permanecesse vazio. O cockpit passou a manter as contagens comerciais em zero até a primeira impressão confirmada, preservando esses eventos apenas no Analytics técnico. A sincronização de métricas agora reconcilia o run como `PUBLISHED_AWAITING_EXPOSURE` e abre `commercial_window_started_at` somente na primeira impressão, quando o reset canônico remove o pré-tráfego.
+- Em 2026-08-22, o reteste público do experimento #88 mostrou que a versão leve da landing preservava os seis destinos do Mercado Pago, mas não os atributos `data-analytics-role`; o coletor canônico registrava página e seções, porém não emitia `checkout_click`. O Lead Portal passou a reconhecer checkout tanto pelo marcador semântico quanto pelo destino externo (`pref_id`, host Mercado Pago ou caminho canônico de checkout/pagamento), registrar a seção de origem e liberar a navegação sem atraso. O teste do controller impede que a mensuração volte a depender exclusivamente do HTML gerado, e a sonda pública do deploy rejeita uma landing cujo coletor não contenha `checkout_click`.
 
 - **Severidade**: CRÍTICO.
 - **Status**: recorrente.
@@ -872,7 +873,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - `visitorId` provável;
   - `sessionId`;
   - `eventType`;
-  - `page_view`, `section_view_time`, `ENVIO_FORM`;
+  - `page_view`, `section_view_time`, `checkout_click`, `ENVIO_FORM`;
   - deduplicação de `page_view` em 3 segundos.
 - **Fechamento mínimo do loop**:
   - registry de eventos com fonte, payload, tabela bruta, tabela normalizada e query de resumo;

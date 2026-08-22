@@ -1,0 +1,300 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-21-pde-ai-decision-readiness-chain-v4-1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description, version_number, status, technical_reference, diagram_json, created_at, published_at)
+              SELECT
+                'pde-opportunity-discovery',
+                'Descoberta e priorização da oportunidade PDE',
+                'Comprovar dor, intenção e jornada de decisão para pessoas e agentes antes de escolher oportunidade, formato e distribuição.',
+                'Inteligência de Mercado',
+                'Sinais reais de dor, busca, comparação, recomendação, dúvida, alternativa, intenção de compra ou distribuição acessível.',
+                'Oportunidade PDE decidida com evidências, jornada de decisão, perguntas, sinais de confiança, distribuição, formatos e risco principal.',
+                4,
+                'PUBLISHED',
+                'cadeia-produtos-pde-canon.v1 / pde-decisao-assistida-2026-08-21',
+                '{"nodes":[{"id":"start","type":"START","label":"Sinais de oportunidade recebidos","owner":"Backend","description":"Evidências de mercado iniciam a análise."},{"id":"evidence","type":"TASK","label":"Comprovar dor e demanda","owner":"Argos","description":"Reúne linguagem, recorrência, alternativas e intenção de compra."},{"id":"decisionJourney","type":"TASK","label":"Mapear jornada de decisão assistida","owner":"Argos e Hermes","description":"Identifica como o público pesquisa, compara e pede recomendações, inclusive por IA quando houver evidência."},{"id":"questions","type":"TASK","label":"Mapear perguntas e sinais de confiança","owner":"Argos","description":"Separa dúvidas, provas esperadas e lacunas sem fabricar evidência."},{"id":"distribution","type":"TASK","label":"Mapear ativos de distribuição","owner":"Hermes","description":"Avalia mídia, creators, parceiros, comunidades e utilidades próprias."},{"id":"formats","type":"TASK","label":"Comparar formatos digitais","owner":"Dédalo","description":"Compara três formatos viáveis por valor, esforço, custo, risco e escala."},{"id":"customer","type":"TASK","label":"Validar valor e esforço percebidos","owner":"Psique","description":"Avalia relevância, compreensão, confiança e esforço sem diagnosticar o indivíduo."},{"id":"gate","type":"GATEWAY","label":"Oportunidade aprovada?","owner":"Backend","description":"Registra APROVAR, PESQUISAR MAIS ou REJEITAR."},{"id":"end","type":"END","label":"Decisão de oportunidade registrada","owner":"Backend","description":"Dossiê auditável encerra o processo."}],"flows":[{"from":"start","to":"evidence"},{"from":"evidence","to":"decisionJourney"},{"from":"decisionJourney","to":"questions"},{"from":"questions","to":"distribution"},{"from":"distribution","to":"formats"},{"from":"formats","to":"customer"},{"from":"customer","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'pde-opportunity-discovery' AND version_number = 4
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description, version_number, status, technical_reference, diagram_json, created_at, published_at)
+              SELECT
+                'pde-commercial-plan-offer',
+                'Plano Comercial e desenho da oferta PDE',
+                'Transformar a oportunidade em oferta mensurável, verificável e fácil de decidir, preservando controle e economia unitária.',
+                'Planejamento Comercial',
+                'Dossiê PDE aprovado com formatos, jornada de decisão, perguntas, confiança e distribuição candidatos.',
+                'Plano aprovado com formato, oferta, Cartão de Decisão, prova, distribuição, controle, orçamento, métricas e critérios.',
+                4,
+                'PUBLISHED',
+                'cadeia-produtos-pde-canon.v1 / Plano Comercial / pde-decisao-assistida-2026-08-21',
+                '{"nodes":[{"id":"start","type":"START","label":"Oportunidade aprovada","owner":"Backend","description":"Dossiê válido inicia o desenho comercial."},{"id":"positioning","type":"TASK","label":"Definir público, dor e transformação","owner":"Dédalo","description":"Consolida a tese comercial central."},{"id":"format","type":"TASK","label":"Escolher o melhor formato digital","owner":"Dédalo","description":"Compara três alternativas por valor, adoção, custo, risco e escala."},{"id":"decisionCard","type":"TASK","label":"Definir Cartão de Decisão","owner":"Dédalo e Têmis","description":"Estrutura público adequado e inadequado, resultado, mecanismo, preço, entrega, prova, limites, privacidade e suporte."},{"id":"proof","type":"TASK","label":"Desenhar prova antes da compra","owner":"Têmis","description":"Liga promessas e perguntas a demonstração, fonte e limitação."},{"id":"distribution","type":"TASK","label":"Escolher distribuição acumulável","owner":"Hermes","description":"Compara mídia, rede recorrente e ativo próprio com atribuição e economia."},{"id":"control","type":"TASK","label":"Governar personalização e controle","owner":"Hermes e Têmis","description":"Define explicação, dados usados, ajuste, recusa, fallback neutro e teste sem preço oculto."},{"id":"experience","type":"TASK","label":"Desenhar produto e oferta","owner":"Dédalo","description":"Define entrada, jornada, entrega, preço e CTA no formato escolhido."},{"id":"economics","type":"TASK","label":"Limitar orçamento e métricas","owner":"Plutus","description":"Registra economia, teto, prazo e critérios de continuar, ajustar e parar."},{"id":"review","type":"TASK","label":"Revisar valor e risco comercial","owner":"Psique e Têmis","description":"Valida desejo, utilidade, decisão, controle, viabilidade e compliance."},{"id":"gate","type":"GATEWAY","label":"Plano Comercial aprovado?","owner":"Backend","description":"Exige contrato rastreável antes de orientar produção."},{"id":"end","type":"END","label":"Plano Comercial vigente","owner":"Backend","description":"A versão governa produto, prova, decisão, controle e comunicação."}],"flows":[{"from":"start","to":"positioning"},{"from":"positioning","to":"format"},{"from":"format","to":"decisionCard"},{"from":"decisionCard","to":"proof"},{"from":"proof","to":"distribution"},{"from":"distribution","to":"control"},{"from":"control","to":"experience"},{"from":"experience","to":"economics"},{"from":"economics","to":"review"},{"from":"review","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'pde-commercial-plan-offer' AND version_number = 4
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description, version_number, status, technical_reference, diagram_json, created_at, published_at)
+              SELECT
+                'pde-construction-approval',
+                'Construção e aprovação do PDE',
+                'Construir o PDE e seus fatos verificáveis no formato aprovado, reduzindo esforço sem retirar controle da cliente.',
+                'Operação de Produto',
+                'Plano aprovado com formato, contrato funcional, Cartão de Decisão, prova, distribuição e controle definidos.',
+                'Versão funcional aprovada com produto, prova, Cartão de Decisão, acesso, controle e prontidão para venda.',
+                4,
+                'PUBLISHED',
+                'cadeia-produtos-pde-canon.v1 / product-manufacturing-approval / pde-decisao-assistida-2026-08-21',
+                '{"nodes":[{"id":"start","type":"START","label":"Formato e contratos aprovados","owner":"Backend","description":"Plano define produto, prova, decisão e controle a construir."},{"id":"implementation","type":"TASK","label":"Materializar o formato aprovado","owner":"Operação de Produto","description":"Constrói kit, webapp, agente, automação, área ou solução híbrida sem troca silenciosa."},{"id":"journey","type":"TASK","label":"Construir jornada de valor","owner":"Executor do formato","description":"Materializa entrada, ações, estado e resultado observável."},{"id":"deliverables","type":"TASK","label":"Produzir componentes premium","owner":"Têmis e executores de produto","description":"Cria conteúdos, telas, imagens, vídeos, arquivos e automações aplicáveis."},{"id":"proof","type":"TASK","label":"Construir pacote de prova verificável","owner":"Têmis","description":"Materializa demonstração, perguntas, requisitos e limitações sem prova fabricada."},{"id":"decisionCard","type":"TASK","label":"Materializar Cartão de Decisão","owner":"Dédalo e Têmis","description":"Publica os mesmos fatos para pessoas e leitura por máquina, sem conteúdo oculto divergente."},{"id":"access","type":"TASK","label":"Implementar acesso e controle","owner":"Executor do formato","description":"Garante entrada, retomada, segregação, preferências, recusa, fallback, erros e suporte."},{"id":"review","type":"TASK","label":"Revisar produto completo","owner":"Psique e revisão independente","description":"Valida utilidade, facilidade, controle, prova, segurança e fidelidade."},{"id":"readiness","type":"GATEWAY","label":"Prontidão para Decisão por IA aprovada?","owner":"Backend","description":"Exige score mínimo 80 e nenhum campo crítico ausente, sem substituir revisão humana."},{"id":"end","type":"END","label":"Produto canônico pronto para venda","owner":"Backend","description":"Versão comercial, prova e Cartão de Decisão ficam congelados."}],"flows":[{"from":"start","to":"implementation"},{"from":"implementation","to":"journey"},{"from":"journey","to":"deliverables"},{"from":"deliverables","to":"proof"},{"from":"proof","to":"decisionCard"},{"from":"decisionCard","to":"access"},{"from":"access","to":"review"},{"from":"review","to":"readiness"},{"from":"readiness","to":"end"}]}',
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'pde-construction-approval' AND version_number = 4
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description, version_number, status, technical_reference, diagram_json, created_at, published_at)
+              SELECT
+                'pde-communication-sales-journey',
+                'Comunicação e jornada de venda do PDE',
+                'Transformar produto e prova em uma jornada clara para pessoas e agentes, com personalização explicável e atribuição.',
+                'Operação de Experimentos',
+                'PDE aprovado com Cartão de Decisão, pacote de prova e Plano Comercial vigente.',
+                'Jornada aprovada com fatos estruturados, prova, canais, controle, checkout, acesso e eventos, sem ativar mídia.',
+                3,
+                'PUBLISHED',
+                'creative-production-approval / landing-page-generation / pde-decisao-assistida-2026-08-21',
+                '{"nodes":[{"id":"start","type":"START","label":"PDE e decisão aprovados","owner":"Backend","description":"Produto, Cartão de Decisão, prova e plano orientam a comunicação."},{"id":"message","type":"TASK","label":"Definir mensagem e campanha","owner":"Têmis","description":"Escolhe ângulos e continuidade de promessa."},{"id":"decisionCard","type":"TASK","label":"Publicar fatos para decisão","owner":"Dédalo e Têmis","description":"Expõe público, preço, entrega, prova e limites em conteúdo visível e estrutura consistente."},{"id":"proof","type":"TASK","label":"Responder dúvidas com prova real","owner":"Têmis","description":"Apresenta demonstração, perguntas, limitações e somente reviews rastreáveis."},{"id":"channel","type":"TASK","label":"Preparar canal e ativo próprio","owner":"Hermes","description":"Configura mídia, creators, parceiros ou utilidade consentida aprovados."},{"id":"creative","type":"TASK","label":"Criar e aprovar criativos","owner":"Têmis e Psique","description":"Usa o produto real e fatos consistentes com o destino."},{"id":"destination","type":"TASK","label":"Construir destino de venda","owner":"Dédalo","description":"Materializa landing ou microexperiência pública com menor esforço de decisão."},{"id":"control","type":"TASK","label":"Explicar recomendação e preservar controle","owner":"Hermes","description":"Mostra motivo, categorias de dados, ajuste, recusa e fallback neutro."},{"id":"checkout","type":"TASK","label":"Conectar oferta, checkout e acesso","owner":"Backend","description":"Preserva verdade e continuidade até a entrega."},{"id":"tracking","type":"TASK","label":"Instrumentar decisão e atribuição","owner":"Backend","description":"Registra origem comprovável, versão, visita, prova, controle, CTA, checkout, compra e uso."},{"id":"gate","type":"GATEWAY","label":"Jornada comercial aprovada?","owner":"Backend","description":"Exige fatos consistentes, prova real, controle e caminho neutro funcional."},{"id":"end","type":"END","label":"Comunicação pronta para homologação","owner":"Backend","description":"Ativos e contratos ficam prontos sem gasto."}],"flows":[{"from":"start","to":"message"},{"from":"message","to":"decisionCard"},{"from":"decisionCard","to":"proof"},{"from":"proof","to":"channel"},{"from":"channel","to":"creative"},{"from":"creative","to":"destination"},{"from":"destination","to":"control"},{"from":"control","to":"checkout"},{"from":"checkout","to":"tracking"},{"from":"tracking","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'pde-communication-sales-journey' AND version_number = 3
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description, version_number, status, technical_reference, diagram_json, created_at, published_at)
+              SELECT
+                'pde-commercial-homologation-activation',
+                'Homologação e ativação comercial do PDE',
+                'Comprovar decisão, controle, compra, entrega e mensuração ponta a ponta antes de liberar tráfego e orçamento.',
+                'Operação de Experimentos',
+                'PDE e jornada aprovados com Cartão de Decisão, canais, controle e versões rastreáveis.',
+                'Preflight aprovado e experimento apto a RUNNING, ou bloqueio persistido com causa-raiz e ação corretiva.',
+                3,
+                'PUBLISHED',
+                'experiment-homologation-activation / experiment-runs / pde-decisao-assistida-2026-08-21',
+                '{"nodes":[{"id":"start","type":"START","label":"Produto e jornada aprovados","owner":"Backend","description":"Versões exatas iniciam a homologação."},{"id":"devices","type":"TASK","label":"Validar desktop e mobile","owner":"Quality Review","description":"Verifica mensagem, prova, usabilidade, desempenho, CTA e continuidade."},{"id":"extraction","type":"TASK","label":"Extrair e comparar fatos de decisão","owner":"Quality Review","description":"Confirma deterministicamente preço, público, entrega, prova e limites entre superfícies."},{"id":"human","type":"TASK","label":"Validar decisão com uma pessoa","owner":"Psique e revisão independente","description":"Comprova compreensão, adequação, esforço e próximo passo sem depender do score."},{"id":"control","type":"TASK","label":"Validar controle da personalização","owner":"Operação","description":"Comprova explicação, ajuste, recusa, fallback neutro e ausência de preço oculto."},{"id":"purchase","type":"TASK","label":"Executar compra de teste segregada","owner":"Operação","description":"Comprova checkout e pagamento sem contaminar vendas."},{"id":"delivery","type":"TASK","label":"Comprovar acesso e entrega","owner":"Operação","description":"Valida mensagem, conteúdo íntegro e primeiro uso."},{"id":"events","type":"TASK","label":"Validar eventos e observabilidade","owner":"Backend","description":"Confirma origem, funil, fricção, métricas, orçamento, amostra e alertas."},{"id":"gate","type":"GATEWAY","label":"Todos os gates estão verdes?","owner":"Backend","description":"Exige score mínimo 80, fatos críticos completos e evidências persistidas."},{"id":"end","type":"END","label":"Decisão de ativação registrada","owner":"Backend","description":"Aprova RUNNING ou bloqueia com causa e ação."}],"flows":[{"from":"start","to":"devices"},{"from":"devices","to":"extraction"},{"from":"extraction","to":"human"},{"from":"human","to":"control"},{"from":"control","to":"purchase"},{"from":"purchase","to":"delivery"},{"from":"delivery","to":"events"},{"from":"events","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'pde-commercial-homologation-activation' AND version_number = 3
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description, version_number, status, technical_reference, diagram_json, created_at, published_at)
+              SELECT
+                'pde-sales-delivery-learning',
+                'Venda, entrega e aprendizado do PDE',
+                'Gerar vendas com entrega satisfatória e aprender se decisão assistida, menor fricção e controle melhoram receita e margem.',
+                'Operador de Crescimento',
+                'Ativação autorizada com orçamento, canais, versão, fórmula de fricção e critérios vigentes.',
+                'Ciclo com vendas, receita, entrega, satisfação, origem e experimentos de decisão auditados para decidir escala.',
+                3,
+                'PUBLISHED',
+                'venda-entrega-satisfacao-cliente / operacao-otimizacao-experimento / pde-decisao-assistida-2026-08-21',
+                '{"nodes":[{"id":"start","type":"START","label":"Ativação autorizada","owner":"Backend","description":"Orçamento, canais e regras de parada iniciam o ciclo."},{"id":"acquisition","type":"TASK","label":"Operar aquisição controlada","owner":"Operador de Crescimento","description":"Compara somente canais aprovados dentro do teto."},{"id":"fulfillment","type":"TASK","label":"Vender e entregar com satisfação","owner":"Operação","description":"Concilia venda, acesso, uso, suporte e reembolso."},{"id":"proof","type":"TASK","label":"Coletar prova e dúvidas reais","owner":"Operação","description":"Solicita avaliação após primeiro valor e preserva consentimento e origem."},{"id":"behavior","type":"TASK","label":"Diagnosticar fricção agregada","owner":"Estrategista de Experimentos","description":"Confronta sinais, funil e explicação concorrente sem inferir emoção ou causa individual."},{"id":"measure","type":"TASK","label":"Medir decisão, venda e valor","owner":"Backend","description":"Separa origem comprovável de IA, fallback e variantes; calcula checkout, compra, receita, margem, entrega e satisfação."},{"id":"learn","type":"TASK","label":"Consolidar aprendizado","owner":"Agentes e Operação","description":"Preserva fatos, hipóteses, fórmula, amostra, versões e resultado comercial."},{"id":"gate","type":"GATEWAY","label":"Qual decisão comercial?","owner":"Backend e operador humano","description":"Decide por vendas e entrega; score ou redução de fricção isolados não confirmam valor."},{"id":"end","type":"END","label":"Ciclo decidido por vendas e entrega","owner":"Backend","description":"Registra CONTINUAR, AJUSTAR, ESCALAR ou PARAR."}],"flows":[{"from":"start","to":"acquisition"},{"from":"acquisition","to":"fulfillment"},{"from":"fulfillment","to":"proof"},{"from":"proof","to":"behavior"},{"from":"behavior","to":"measure"},{"from":"measure","to":"learn"},{"from":"learn","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'pde-sales-delivery-learning' AND version_number = 3
+              );
+
+  - changeSet:
+      id: 2026-08-21-pde-ai-decision-readiness-chain-v4-2
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_chain_definition
+                (chain_code, name, purpose, outcome_description, primary_metric, version_number, status, created_at, published_at)
+              SELECT
+                'pde-value-creation-delivery',
+                'Criação e entrega de valor de Produtos Digitais Experienciais',
+                'Transformar uma oportunidade real em produto verificável, fácil de decidir e usar, compreensível por pessoas e agentes e vendido com controle.',
+                'PDE escolhido com confiança, comprado com menor esforço, entregue com satisfação e convertido em aprendizado auditável para escala.',
+                'Tempo até venda entregue com satisfação',
+                4,
+                'PUBLISHED',
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_chain_definition
+                WHERE chain_code = 'pde-value-creation-delivery' AND version_number = 4
+              );
+
+  - changeSet:
+      id: 2026-08-21-pde-ai-decision-readiness-chain-v4-3
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_chain_item
+                (chain_definition_id, process_definition_id, sequence_number, value_contribution, created_at)
+              SELECT chain_definition.id, process_definition.id, 1,
+                'Seleciona uma dor e compreende como o público pesquisa, compara e pede recomendação antes de produzir.',
+                UTC_TIMESTAMP()
+              FROM business_process_chain_definition chain_definition
+              JOIN business_process_definition process_definition
+                ON process_definition.process_code = 'pde-opportunity-discovery'
+               AND process_definition.version_number = 4
+              LEFT JOIN business_process_chain_item existing_item
+                ON existing_item.chain_definition_id = chain_definition.id
+               AND existing_item.sequence_number = 1
+              WHERE chain_definition.chain_code = 'pde-value-creation-delivery'
+                AND chain_definition.version_number = 4
+                AND existing_item.id IS NULL;
+
+              INSERT INTO business_process_chain_item
+                (chain_definition_id, process_definition_id, sequence_number, value_contribution, created_at)
+              SELECT chain_definition.id, process_definition.id, 2,
+                'Define formato, Cartão de Decisão, prova, oferta, distribuição, controle e economia antes da construção.',
+                UTC_TIMESTAMP()
+              FROM business_process_chain_definition chain_definition
+              JOIN business_process_definition process_definition
+                ON process_definition.process_code = 'pde-commercial-plan-offer'
+               AND process_definition.version_number = 4
+              LEFT JOIN business_process_chain_item existing_item
+                ON existing_item.chain_definition_id = chain_definition.id
+               AND existing_item.sequence_number = 2
+              WHERE chain_definition.chain_code = 'pde-value-creation-delivery'
+                AND chain_definition.version_number = 4
+                AND existing_item.id IS NULL;
+
+              INSERT INTO business_process_chain_item
+                (chain_definition_id, process_definition_id, sequence_number, value_contribution, created_at)
+              SELECT chain_definition.id, process_definition.id, 3,
+                'Materializa transformação, prova, fatos estruturados e controle no formato digital aprovado.',
+                UTC_TIMESTAMP()
+              FROM business_process_chain_definition chain_definition
+              JOIN business_process_definition process_definition
+                ON process_definition.process_code = 'pde-construction-approval'
+               AND process_definition.version_number = 4
+              LEFT JOIN business_process_chain_item existing_item
+                ON existing_item.chain_definition_id = chain_definition.id
+               AND existing_item.sequence_number = 3
+              WHERE chain_definition.chain_code = 'pde-value-creation-delivery'
+                AND chain_definition.version_number = 4
+                AND existing_item.id IS NULL;
+
+              INSERT INTO business_process_chain_item
+                (chain_definition_id, process_definition_id, sequence_number, value_contribution, created_at)
+              SELECT chain_definition.id, process_definition.id, 4,
+                'Torna a oferta compreensível para pessoas e agentes, com personalização explicável e jornada atribuível.',
+                UTC_TIMESTAMP()
+              FROM business_process_chain_definition chain_definition
+              JOIN business_process_definition process_definition
+                ON process_definition.process_code = 'pde-communication-sales-journey'
+               AND process_definition.version_number = 3
+              LEFT JOIN business_process_chain_item existing_item
+                ON existing_item.chain_definition_id = chain_definition.id
+               AND existing_item.sequence_number = 4
+              WHERE chain_definition.chain_code = 'pde-value-creation-delivery'
+                AND chain_definition.version_number = 4
+                AND existing_item.id IS NULL;
+
+              INSERT INTO business_process_chain_item
+                (chain_definition_id, process_definition_id, sequence_number, value_contribution, created_at)
+              SELECT chain_definition.id, process_definition.id, 5,
+                'Protege cliente e receita ao comprovar fatos, controle, compra, acesso, entrega e mensuração antes do tráfego.',
+                UTC_TIMESTAMP()
+              FROM business_process_chain_definition chain_definition
+              JOIN business_process_definition process_definition
+                ON process_definition.process_code = 'pde-commercial-homologation-activation'
+               AND process_definition.version_number = 3
+              LEFT JOIN business_process_chain_item existing_item
+                ON existing_item.chain_definition_id = chain_definition.id
+               AND existing_item.sequence_number = 5
+              WHERE chain_definition.chain_code = 'pde-value-creation-delivery'
+                AND chain_definition.version_number = 4
+                AND existing_item.id IS NULL;
+
+              INSERT INTO business_process_chain_item
+                (chain_definition_id, process_definition_id, sequence_number, value_contribution, created_at)
+              SELECT chain_definition.id, process_definition.id, 6,
+                'Converte vendas, origem, fricção, controle, uso e satisfação em decisão de continuar, ajustar, escalar ou parar.',
+                UTC_TIMESTAMP()
+              FROM business_process_chain_definition chain_definition
+              JOIN business_process_definition process_definition
+                ON process_definition.process_code = 'pde-sales-delivery-learning'
+               AND process_definition.version_number = 3
+              LEFT JOIN business_process_chain_item existing_item
+                ON existing_item.chain_definition_id = chain_definition.id
+               AND existing_item.sequence_number = 6
+              WHERE chain_definition.chain_code = 'pde-value-creation-delivery'
+                AND chain_definition.version_number = 4
+                AND existing_item.id IS NULL;
+
+              UPDATE business_process_definition
+              SET status = 'RETIRED'
+              WHERE (
+                  process_code IN (
+                    'pde-opportunity-discovery',
+                    'pde-commercial-plan-offer',
+                    'pde-construction-approval'
+                  )
+                  AND version_number = 3
+                ) OR (
+                  process_code IN (
+                    'pde-communication-sales-journey',
+                    'pde-commercial-homologation-activation',
+                    'pde-sales-delivery-learning'
+                  )
+                  AND version_number = 2
+                );
+
+              UPDATE business_process_chain_definition
+              SET status = 'RETIRED'
+              WHERE chain_code = 'pde-value-creation-delivery'
+                AND version_number = 3
+                AND status <> 'RETIRED';

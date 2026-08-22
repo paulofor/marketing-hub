@@ -204,7 +204,8 @@ public class FlowController {
         if (html.contains("mhAnalyticsDebug")
                 && html.contains("mh_internal_test")
                 && html.contains("visitorId: visitorId")
-                && html.contains("automationSignal")) {
+                && html.contains("automationSignal")
+                && html.contains("checkout_click")) {
             return html;
         }
         String analyticsScript = buildLandingAnalyticsScript(slug);
@@ -216,7 +217,7 @@ public class FlowController {
     }
 
     /**
-     * Monta o script de analytics que envia page_view e expõe logs de console somente quando o debug é ativado.
+     * Monta o script de analytics que registra a jornada pública e expõe logs somente com debug ativado.
      */
     private String buildLandingAnalyticsScript(String slug) {
         return """
@@ -391,6 +392,31 @@ public class FlowController {
                       return false;
                     }
                   };
+                  const isCheckoutLink = function(anchor){
+                    if (!anchor || !anchor.href) return false;
+                    const declaredRole = (anchor.getAttribute('data-analytics-role') || '').toLowerCase();
+                    if (declaredRole === 'primary-checkout') return true;
+                    try {
+                      const targetUrl = new URL(anchor.href, window.location.href);
+                      const host = targetUrl.hostname.toLowerCase();
+                      const path = targetUrl.pathname.toLowerCase();
+                      const isExternal = targetUrl.origin !== window.location.origin;
+                      const isMercadoPagoCheckout = (host === 'mercadopago.com.br' || host.endsWith('.mercadopago.com.br'))
+                        && path.indexOf('/checkout/') >= 0;
+                      const hasCheckoutPreference = targetUrl.searchParams.has('pref_id');
+                      const hasCheckoutPath = /(^|\\/)(checkout|pagamento|payment)(\\/|$)/.test(path);
+                      return isExternal && (isMercadoPagoCheckout || hasCheckoutPreference || hasCheckoutPath);
+                    } catch (error) {
+                      return false;
+                    }
+                  };
+                  const resolveCheckoutSection = function(anchor){
+                    const section = anchor && anchor.closest
+                      ? anchor.closest('section[id], [data-section-id], [data-track-section]')
+                      : null;
+                    if (!section) return null;
+                    return section.id || section.getAttribute('data-section-id') || section.getAttribute('data-track-section');
+                  };
                   const startTracking = function(){
                     debugLog('tracking iniciado', {slug: slugValue});
                     sendEvent('page_view', null, null);
@@ -427,7 +453,12 @@ public class FlowController {
                     trackedSections.forEach(function(el){ observer.observe(el); });
                     document.addEventListener('click', function(event){
                       const anchor = event.target && event.target.closest ? event.target.closest('a[href]') : null;
-                      if (!anchor || !isSelfReferentialLink(anchor)) return;
+                      if (!anchor) return;
+                      if (isCheckoutLink(anchor)) {
+                        sendEvent('checkout_click', resolveCheckoutSection(anchor), null);
+                        return;
+                      }
+                      if (!isSelfReferentialLink(anchor)) return;
                       const formTarget = resolveFormTarget();
                       if (!formTarget) return;
                       event.preventDefault();

@@ -3,12 +3,93 @@
 ## Objetivo
 
 Definir a cadeia inicial, simples e reutilizável para transformar uma dor real em um Produto Digital
-Experiencial construído, comunicado, vendido e entregue pelo Marketing Hub.
+Experiencial construído, comunicado, vendido e entregue pelo Marketing Hub, escolhendo o formato
+digital que melhor resolva a necessidade do mercado e entregue valor à cliente.
 
-O PDE não é um pacote de arquivos. É uma experiência guiada que reduz esforço, entrega valor
-percebido e ajuda a cliente a avançar de um estado de dor para um resultado prático. Imagens,
-vídeos, diagnósticos, missões, checklists e materiais são componentes dessa experiência, não o
-produto completo isoladamente.
+O PDE não é definido por ser um pacote de arquivos nem por possuir uma interface. É uma experiência
+digital coerente que reduz esforço, entrega valor percebido e ajuda a cliente a avançar de um estado
+de dor para um resultado prático. Ele pode ser materializado como kit digital, webapp, agente pronto,
+automação, área de membros, experiência guiada, conteúdo interativo, assinatura ou combinação
+híbrida. Imagens, vídeos, diagnósticos, missões, checklists, materiais e telas podem ser componentes
+da experiência; o valor entregue, e não a embalagem tecnológica, define o produto.
+
+## Neutralidade obrigatória de formato
+
+A cadeia não pode escolher kit por ser mais simples de produzir nem webapp por parecer mais
+sofisticado. Descoberta e Plano Comercial devem comparar **três alternativas de formato digital**
+sempre que existirem opções materialmente viáveis e registrar, para cada uma:
+
+- aderência ao trabalho que a cliente precisa realizar e à causa-raiz da dor;
+- valor percebido, utilidade, tempo até o primeiro resultado e esforço de adoção;
+- evidência de intenção de compra e adequação ao canal e ao contexto de uso;
+- tempo e custo de construção, operação, suporte e evolução;
+- margem, capacidade de escala, confiabilidade, privacidade e risco comercial.
+
+Deve vencer o formato que entregar a melhor combinação de valor para a cliente, aderência ao mercado
+e viabilidade econômica. O menor produto funcional pode ser preferível para aprender cedo, mas não
+pode reduzir a solução a um kit quando a transformação depender de interação, estado, cálculo,
+personalização ou continuidade que um webapp ou outro formato atenda melhor. A decisão deve ficar
+versionada no Plano Comercial com alternativas, evidências, trade-offs e motivo da escolha.
+
+## Contrato transversal de prova, distribuição e intenção
+
+Produto melhor não é apenas o que funciona depois da compra. Ele também precisa ser compreendido,
+verificado e descoberto com confiança antes dela. Cada versão PDE deve manter um contrato enxuto com:
+
+- **prova antes da compra:** perguntas prioritárias, objeções, descrição detalhada, demonstração,
+  amostra, limitações e evidências que sustentam cada promessa relevante;
+- **distribuição acumulável:** hipótese para reduzir dependência contínua de mídia comprada, usando
+  quando aderente audiência identificada consentida, parceiros, creators/afiliados recorrentes,
+  comunidade ou uma utilidade gratuita que tenha valor próprio;
+- **resposta à intenção:** sinais simples e consentidos, como origem, retorno, tempo, progresso ou
+  tentativa de saída, podem ajustar o momento do CTA, a prova ou a próxima ação em experimento
+  versionado, sem inferir estados psicológicos individuais;
+- **aprendizado comercial:** a melhoria só é aceita quando compra, margem, primeiro resultado útil,
+  satisfação ou retenção confirmarem o valor; cadastro, impacto estimado e atribuição do fornecedor
+  não substituem venda real.
+
+No Plano Comercial, comparar exatamente três rotas materialmente viáveis de aquisição e continuidade:
+mídia comprada, rede recorrente por performance e ativo próprio/parceria. Uma rota inviável deve ser
+registrada como tal e substituída por outra alternativa real. Não é obrigatório criar programa de
+afiliados, área gratuita ou personalização comportamental para todo PDE; é obrigatório explicitar por
+que o mecanismo escolhido é o melhor para o produto, o público e a economia unitária.
+
+Reviews e depoimentos só podem vir de clientes ou usuários reais, com origem, data e autorização
+rastreáveis. Na ausência deles, usar demonstração do produto real, amostra, especificação, revisão
+independente e limites honestos. É proibido fabricar prova social. A mesma versão e o mesmo segmento
+não podem receber preço ocultamente diferente por comportamento; preço é variável comercial
+versionada e deve ser testado separadamente com governança explícita.
+
+## Contrato transversal de decisão assistida, esforço e controle
+
+Cada versão PDE deve produzir um **Cartão de Decisão do Produto** legível por pessoas e reutilizável
+por mecanismos de busca, comparação ou recomendação. O cartão preserva uma única verdade versionada
+e atualizada para nome, problema e trabalho resolvido, resultado verificável, para quem serve, para
+quem não serve, requisitos de entrada, mecanismo, formato e entregáveis, preço total e recorrência,
+prazo e forma de acesso, prova e origem, limitações, privacidade, suporte, cancelamento ou reembolso e
+disponibilidade. Landing, checkout, criativo, suporte e entrega não podem contradizer esses fatos.
+
+A **Prontidão para Decisão por IA** é um gate de qualidade, não uma promessa de ranqueamento. O score
+vai de 0 a 100 e soma cinco dimensões de até 20 pontos: completude; verificabilidade; consistência e
+atualidade; adequação e comparação; acessibilidade e estrutura. Cada dimensão recebe 0 quando está
+ausente ou contraditória, 10 quando parcial e 20 quando completa e rastreável. O gate exige no mínimo
+80 pontos e nenhum campo crítico ausente: público adequado e inadequado, preço, entrega, prova das
+promessas e limitações. O score, uma citação por IA ou uma visita referenciada por IA não comprova
+venda nem preferência do mercado.
+
+O Marketing Hub otimiza duas propriedades em conjunto:
+
+- **esforço de decisão menor:** reduzir escolhas, etapas, dúvidas, tempo de carregamento e esforço
+  residual sem omitir preço, riscos ou limites;
+- **controle percebido maior:** quando houver personalização, explicar por que a opção foi mostrada,
+  quais categorias de dados foram usadas e oferecer ajuste de preferências, recusa e fallback neutro.
+
+Sinais agregados e consentidos de scroll, retorno, tempo, abandono, FAQ, dead/rage click, erro de
+recurso e desempenho podem compor um **Índice de Fricção Comportamental** versionado de 0 a 100. A
+fórmula, janela, amostra, denominadores e origem precisam ficar persistidos. O índice localiza trechos
+que merecem teste; não diagnostica emoção, desejo, intenção, personalidade ou causa individual. Toda
+hipótese deve registrar ao menos uma explicação concorrente e ser validada isoladamente contra
+checkout, compra, receita e entrega. Sem amostra suficiente, o resultado é `EVIDÊNCIA INSUFICIENTE`.
 
 ## Decisão de simplicidade
 
@@ -39,7 +120,7 @@ objetivo não conclui o processo.
 ## 1. Descoberta e priorização da oportunidade PDE
 
 **Objetivo final:** comprovar que existe uma dor recorrente, relevante, mal atendida e com intenção
-de compra, para a qual uma experiência digital simples pode gerar valor percebido.
+de compra, para a qual uma solução digital plausível pode gerar valor percebido.
 
 **Entrada mínima:** sinais de mercado, linguagem do público, conversas ou pedidos espontâneos,
 reclamações, buscas, concorrentes e alternativas existentes. Uma história individual inicia pesquisa,
@@ -51,11 +132,21 @@ mas não comprova sozinha uma oportunidade.
 - capturar e anonimizar a fala observada, separando desejo, dor, tentativa frustrada e inferências;
 - comprovar escala e recorrência por fontes independentes;
 - entender por que as soluções atuais não satisfazem;
+- mapear como pessoas pesquisam, comparam e pedem recomendação, incluindo consultas assistidas por IA
+  quando houver evidência, sem assumir que crescimento observado no varejo se repete no nicho;
+- mapear as perguntas, objeções e lacunas de informação que impedem a decisão de compra, separando
+  reviews de soluções existentes de prova pertencente ao futuro PDE;
+- identificar ativos de distribuição já acessíveis ao público e ao Marketing Hub, incluindo creators
+  recorrentes, parceiros, comunidades e utilidades gratuitas, sem presumir que audiência equivale a
+  intenção de compra;
 - propor uma microexperiência de valor e um mecanismo plausível;
+- levantar formatos digitais materialmente distintos capazes de entregar esse mecanismo, sem
+  antecipar que kit, webapp ou qualquer outra implementação será a vencedora;
 - comparar de duas a três oportunidades antes de priorizar uma.
 
 **Saída final:** dossiê de oportunidade com evidências, público, dor raiz, lacuna, intenção de compra,
-formato PDE recomendado, risco principal e decisão `APROVAR`, `PESQUISAR MAIS` ou `REJEITAR`.
+perguntas prioritárias, sinais de confiança, ativos de distribuição, formatos digitais candidatos,
+risco principal e decisão `APROVAR`, `PESQUISAR MAIS` ou `REJEITAR`.
 
 **Gate para avançar:** somente oportunidade `APROVADA`, sem evidência fabricada e com encaixe PDE.
 Pedido espontâneo ou conversa individual deve permanecer como `SINAL`, até ser confirmado por pelo
@@ -72,41 +163,77 @@ mensurável e financeiramente limitada.
 
 - escolher um público, uma dor principal e uma transformação prometida;
 - validar mecanismo, prova e limites da promessa;
+- definir o Cartão de Decisão do Produto e a meta de Prontidão para Decisão por IA, preservando fatos
+  críticos e a mesma verdade em todos os pontos da jornada;
+- comparar formatos candidatos e escolher explicitamente o que melhor entrega valor, considerando
+  pelo menos kit digital, webapp ou outra alternativa viável quando aplicáveis;
+- criar a matriz promessa -> pergunta/objeção -> prova verificável -> fonte -> limitação, sem depender
+  de desconto para compensar informação ou confiança ausente;
 - definir a experiência: entrada, microvalor, jornada guiada, resultado e continuidade;
-- definir oferta, preço, CTA e canal inicial;
+- comparar três rotas viáveis de aquisição e continuidade e escolher canal inicial, ativo próprio a
+  construir e regra de atribuição; quando a rota usar creators, definir recorrência, remuneração por
+  performance, habilitação, antifraude e economia unitária;
+- avaliar se uma utilidade gratuita de valor próprio pode gerar audiência consentida e se existe um
+  lado pagante sustentável, sem transformar captura de dados em benefício fictício;
+- definir oferta, preço e CTA; qualquer resposta por intenção deve especificar sinais permitidos,
+  regra, fallback, versão e teste incremental, sem preço individual oculto;
+- se houver personalização, definir explicação, categorias de dados, preferências editáveis, recusa,
+  fallback neutro e métrica incremental antes da construção;
 - registrar objetivo comercial, prazo, orçamento máximo, métrica principal e critérios de
   continuar, ajustar e parar;
 - definir o que será entregue e como a cliente perceberá valor.
 
-**Saída final:** Plano Comercial aprovado, com versão da oferta e contrato funcional do PDE
-suficientes para orientar produção, comunicação, venda e mensuração sem reinvenção posterior.
+**Saída final:** Plano Comercial aprovado, com versão da oferta, matriz de decisão do formato,
+contrato de prova, matriz de distribuição/continuidade e contrato funcional do PDE suficientes para
+orientar produção, comunicação, venda e mensuração sem reinvenção posterior, incluindo o Cartão de
+Decisão e o contrato de controle quando houver personalização.
 
-**Gate para avançar:** plano deve responder claramente quem compra, qual dor resolve, qual valor a
-experiência entrega, o que a cliente recebe, quanto custa, como será vendido e qual evidência decide
-o ciclo.
+**Gate para avançar:** plano deve responder claramente quem compra, qual dor resolve, por que o
+formato escolhido entrega mais valor que as alternativas, o que a cliente recebe, quanto custa, como
+cada promessa será provada, como será vendido sem depender indefinidamente de um único canal pago e
+qual evidência decide o ciclo.
 
 ## 3. Construção e aprovação do PDE
 
-**Objetivo final:** entregar uma versão canônica do PDE que uma cliente consiga acessar, usar e
-concluir, percebendo a transformação prometida com qualidade premium.
+**Objetivo final:** entregar uma versão canônica do PDE, no formato digital aprovado, que uma cliente
+consiga acessar, usar e concluir, percebendo a transformação prometida com qualidade premium.
 
 **Entrada mínima:** Plano Comercial e contrato funcional aprovados.
 
 **Trabalho essencial:**
 
+- materializar o formato aprovado sem convertê-lo silenciosamente em um kit, webapp ou outra
+  implementação diferente;
 - materializar diagnóstico ou entrada guiada;
 - construir etapas, missões, recomendações ou microações da experiência;
 - produzir conteúdo e materiais de apoio finais;
 - implementar acesso, progresso, estados vazios, erros e suporte mínimo;
+- quando o formato for webapp ou ferramenta interativa, validar o fluxo funcional ponta a ponta,
+  persistência, segregação de dados, responsividade, segurança e recuperação de falhas;
+- quando o formato for kit ou conteúdo digital, validar integridade, aplicabilidade, organização,
+  abertura dos arquivos e clareza de uso para produzir o resultado prometido;
+- construir o pacote de prova da versão com demonstração ou amostra real, descrição completa,
+  perguntas e respostas, requisitos de entrada, resultado observável e limitações;
+- estruturar fatos do produto para leitura humana e por mecanismos de recomendação, preservando a
+  mesma verdade em página, criativo, checkout, suporte e entrega;
+- materializar o Cartão de Decisão do Produto em conteúdo visível e, quando o canal suportar, em
+  estrutura legível por máquina sem fatos ocultos ou diferentes do conteúdo apresentado à cliente;
+- quando previsto no plano, implementar identificação consentida, indicação/atribuição, continuidade
+  ou utilidade gratuita sem liberar acesso pago indevido nem misturar dados entre clientes;
 - produzir e aprovar imagens, vídeos e arquivos necessários;
 - validar utilidade, facilidade, integridade, direitos e fidelidade à promessa;
 - congelar uma versão comercial rastreável do PDE.
 
-**Saída final:** versão funcional e aprovada do produto, com experiência, conteúdos e entregáveis
-íntegros, versionados e prontos para venda e entrega.
+**Saída final:** versão funcional e aprovada do produto no formato escolhido, com experiência,
+conteúdos, telas, automações e entregáveis aplicáveis íntegros, versionados e prontos para venda e
+entrega.
 
-**Gate para avançar:** uma pessoa deve conseguir completar o caminho principal e receber valor sem
-placeholder, linguagem interna, dependência manual oculta ou ativo ainda em rascunho.
+**Gate para avançar:** uma pessoa deve conseguir compreender e verificar a oferta, completar o caminho
+principal e receber valor sem pergunta prioritária sem resposta, prova fabricada, placeholder,
+linguagem interna, dependência manual oculta ou ativo ainda em rascunho. Sofisticação técnica não
+compensa menor utilidade, e simplicidade de produção não compensa uma entrega incapaz de resolver a
+necessidade validada. A Prontidão para Decisão por IA deve alcançar 80 pontos, sem campo crítico
+ausente, mas não substitui a revisão humana nem a prova de valor do produto.
 
 O processo `Fabricação e aprovação do produto` continua válido quando imagens ou arquivos forem
 entregáveis. Para um PDE, ele atua como subprocesso desta etapa e não representa sozinho a conclusão
@@ -117,15 +244,27 @@ do produto experiencial.
 **Objetivo final:** construir uma rota coerente entre anúncio, entrada pública, demonstração de
 valor, oferta, compra e acesso, usando o produto real como fonte da comunicação.
 
-**Entrada mínima:** PDE canônico aprovado e Plano Comercial vigente.
+**Entrada mínima:** PDE canônico aprovado no formato escolhido e Plano Comercial vigente.
 
 **Trabalho essencial:**
 
 - definir mensagem central, ângulos e campanha inicial;
-- criar criativos a partir de telas e materiais reais aprovados;
+- criar criativos a partir de telas, demonstrações e materiais reais aprovados;
 - quando o Plano Comercial escolher microconteúdo seriado, preservar uma única hipótese entre os
   episódios e medir continuidade até checkout e compra;
 - construir a entrada pública, landing ou microexperiência gratuita prevista no plano;
+- apresentar descrição suficiente, demonstração, perguntas e respostas, limitações e somente provas
+  reais; a ausência de reviews iniciais deve ser declarada, não preenchida artificialmente;
+- publicar o Cartão de Decisão com fatos visíveis, consistentes e atualizados; marcação estruturada,
+  feed ou metadado não pode conter promessa, preço ou disponibilidade diferentes da página;
+- quando escolhida, preparar uma rede recorrente de creators/afiliados com materiais reais em mais de
+  um formato, identificador individual, comissão, atribuição, validade e regras antifraude;
+- quando escolhida, conectar a utilidade gratuita à continuidade identificada e consentida, deixando
+  explícitos benefício gratuito, oferta paga e uso de dados;
+- aplicar respostas por intenção somente como variante governada de mensagem, prova, CTA ou momento,
+  com fallback neutro e medição incremental;
+- explicar qualquer recomendação personalizada com “por que você está vendo isto”, permitir ajustar
+  preferências ou recusá-la e manter uma jornada neutra funcional;
 - configurar paywall, checkout e continuidade pós-compra;
 - garantir correspondência entre promessa, criativo, experiência, oferta e entrega;
 - instrumentar visita, interação de valor, CTA, checkout, compra, acesso e primeiro uso.
@@ -133,8 +272,10 @@ valor, oferta, compra e acesso, usando o produto real como fonte da comunicaçã
 **Saída final:** kit comercial aprovado com criativos, destino de campanha, jornada de venda,
 checkout, acesso e eventos preparados, sem ativação automática de mídia.
 
-**Gate para avançar:** a cliente deve reconhecer para quem é, entender o benefício, ver o produto
-real, saber o próximo passo e chegar à compra sem ruptura de mensagem.
+**Gate para avançar:** a cliente deve reconhecer para quem é, entender o benefício, encontrar resposta
+para as dúvidas prioritárias, verificar o produto real, saber o próximo passo e chegar à compra sem
+ruptura de mensagem. Canal, creator, variante e versão devem permanecer atribuíveis até venda e
+entrega.
 
 Os processos `Criação e aprovação de criativos` e `Geração de landing page` permanecem como
 subprocessos especializados desta etapa. Nem todo PDE exige landing tradicional; a entrada pode ser a
@@ -153,6 +294,12 @@ acesso, entregar valor e medir o funil sem contaminar dados nem orçamento.
 - validar anúncio, URL, versão PDE, primeira dobra e CTA;
 - realizar checkout e pagamento de teste segregado;
 - comprovar evento, mensagem, acesso, conteúdo íntegro e primeiro uso;
+- comprovar pacote de prova, perguntas prioritárias, consentimento, identificação, atribuição e
+  deduplicação por canal/creator; regras de intenção precisam de fallback seguro e versão rastreável;
+- comprovar o Cartão de Decisão por extração determinística e por perguntas de uma pessoa; uma revisão
+  assistida por IA pode ser complementar, com prompt, resposta, tokens e custo auditados;
+- validar que explicação, ajuste, recusa e fallback da personalização funcionam sem preço oculto nem
+  bloqueio do caminho neutro;
 - validar observabilidade, atribuição, orçamento e regras de parada;
 - persistir evidências de todos os gates.
 
@@ -173,11 +320,21 @@ clientes em decisão objetiva de continuar, ajustar, escalar ou parar.
 **Trabalho essencial:**
 
 - operar aquisição dentro do teto autorizado;
+- operar e comparar mídia, creators/parceiros e ativos próprios somente nas rotas aprovadas, pagando
+  comissão ou mídia apenas conforme contrato e atribuição auditável;
 - acompanhar o gargalo real do funil;
 - garantir acesso e entrega antes de ampliar aquisição;
 - medir receita, CAC, conversão, primeiro uso, conclusão, satisfação e reembolso;
 - manter a compradora identificada em uma continuidade simples e de baixo atrito para retorno, uso e
   nova oferta pertinente, sem exigir aplicativo nativo antes de comprovar recorrência;
+- solicitar avaliação somente depois do primeiro resultado útil, preservar consentimento e usar
+  perguntas sem resposta, reviews e suporte como insumo para melhorar produto e comunicação;
+- medir lift de respostas à intenção por experimento controlado; correlação comportamental ou score
+  previsto não prova causalidade;
+- segmentar origens de IA somente quando o referrer ou parâmetro persistido sustentar a atribuição e
+  comparar visita válida, checkout, compra, receita e entrega contra outras origens;
+- transformar fricção agregada em hipótese concorrente e testar uma variável por vez; reduzir o índice
+  sem melhorar compra, receita ou entrega não confirma valor comercial;
 - preservar aprendizados por público, criativo, oferta e versão da experiência;
 - corrigir causa-raiz e abrir nova versão quando a hipótese comercial mudar.
 
@@ -205,14 +362,19 @@ um nicho automaticamente aprovado. O caso observado deve entrar no motor definid
 `docs/canonical/solucoes-prontas-ia-trabalho-canon.v1.md`, que agrupa sinais pelo trabalho desejado e
 pela causa do fracasso antes de escolher profissão, segmento ou formato de solução.
 
-Quando o formato aprovado for PDE, o dossiê resultante entra nesta cadeia. Quando outro formato
-reduzir melhor o esforço — como agente pronto, automação gerenciada ou serviço assistido — o Marketing
-Hub deve preservar os mesmos gates de produto, comunicação, homologação, venda, entrega e aprendizado
-sem forçar uma classificação PDE.
+Quando o formato aprovado for um produto digital — como kit, webapp, agente pronto, automação,
+experiência guiada, área de membros ou solução híbrida — o dossiê resultante entra nesta cadeia e
+preserva os mesmos gates de produto, comunicação, homologação, venda, entrega e aprendizado. Serviço
+predominantemente humano pode reutilizar os gates, mas não deve ser classificado como PDE apenas para
+caber nesta cadeia.
 
 ## Regras de operação inicial
 
 - Um Plano Comercial governa a cadeia e mantém objetivo, prazo, orçamento, versão e métrica.
+- O formato é uma decisão versionada do Plano Comercial, não uma preferência fixa do agente ou do
+  módulo executor.
+- Alterar o formato depois da aprovação exige nova versão, nova homologação e preservação das
+  evidências da alternativa anterior.
 - Cada macroprocesso possui uma única saída final verificável e um gate de transição.
 - O backend controla avanço e persistência; agentes e workers executam atividades e reportam
   resultados.
@@ -239,7 +401,13 @@ cadeia publicada; a adoção exige uma nova versão da cadeia, preservando audit
 O vínculo também deve ser navegável no sentido inverso: a tela de uma versão de processo mostra as
 cadeias que a contêm e abre diretamente o detalhe da cadeia selecionada.
 
-A cadeia inicial `pde-value-creation-delivery` usa os seis macroprocessos deste cânone. Processos
+A cadeia `pde-value-creation-delivery` usa os seis macroprocessos deste cânone. A versão 1 preserva o
+registro inicial; a versão 2 torna explícita a neutralidade de formato e atualiza descoberta, Plano
+Comercial e construção para comparar e escolher entre kit, webapp e qualquer outro formato digital
+capaz de entregar mais valor ao mercado. A versão 3 adiciona o contrato transversal de prova antes da
+compra, distribuição acumulável e resposta governada à intenção nos seis processos. A versão 4
+adiciona o Cartão de Decisão, o gate de Prontidão para Decisão por IA, o diagnóstico agregado de
+fricção e o controle explícito da personalização. Processos
 especializados, como fabricação de entregáveis, criativos, landing, homologação de experimento e
 operação de venda, continuam referenciados dentro dos macroprocessos e não são duplicados como uma
 segunda orquestração.
@@ -249,11 +417,23 @@ segunda orquestração.
 A cadeia deve permitir medir, no mínimo:
 
 - tempo da oportunidade até Plano Comercial aprovado;
+- alternativas de formato comparadas, formato escolhido e motivo da decisão;
 - tempo do plano até PDE aprovado;
 - aprovação do produto e dos criativos na primeira tentativa;
 - custo de produção por versão aprovada;
 - tempo do PDE aprovado até primeira venda;
 - taxa de compra, acesso, primeiro uso e conclusão;
+- cobertura de perguntas prioritárias por prova verificável e conversão após consumo da prova;
+- participação, CAC, margem e vendas incrementais por mídia, creator/parceiro e ativo próprio;
+- parcela de creators recorrentes ativos, receita atribuída recorrente e custo total de comissão;
+- audiência identificada consentida, retorno, recompra e retenção do ativo próprio;
+- lift incremental de variantes acionadas por intenção, sempre comparadas ao fallback neutro;
+- Prontidão para Decisão por IA por versão, campos críticos ausentes e divergências entre superfícies;
+- visitas com origem de IA comprovável, checkout, compra, receita e entrega dessa origem, sem atribuir
+  tráfego direto ou desconhecido a agentes;
+- Índice de Fricção Comportamental por página, dispositivo e versão, sempre com amostra e fórmula;
+- taxa de uso de explicação, ajuste de preferência, recusa e fallback neutro em experiências
+  personalizadas;
 - satisfação, reembolso, CAC, receita e margem;
 - quantidade e reincidência de retrabalhos por causa-raiz.
 

@@ -46,6 +46,7 @@ for probe in $(seq 1 "$attempts"); do
     exit 1
   fi
   grep -F 'data-mh-landing-analytics' "$response_file" >/dev/null
+  grep -F "'checkout_click'" "$response_file" >/dev/null
   grep -F 'data-mh-web-optimized' "$response_file" >/dev/null
   if ! grep -F 'data-analytics-role="primary-checkout"' "$response_file" >/dev/null \
     && ! grep -Eiq '<a[^>]+href=[^>]*(checkout|mercadopago|pagamento|pref_id)' "$response_file"; then

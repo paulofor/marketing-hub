@@ -439,6 +439,70 @@ class FlowControllerTest {
     }
 
     /**
+     * Garante que CTAs de checkout continuem mensuráveis mesmo quando o HTML não traz marcador semântico.
+     */
+    @Test
+    void getStandaloneFlowPageTracksCheckoutLinksByMarkerOrDestination() throws Exception {
+        UpsertFlowRequest request = buildRequest();
+        request.setCustomFormHtml("""
+                <!doctype html><html><body>
+                <section id="oferta">
+                  <a href="https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=preferencia-ativa">Comprar</a>
+                  <a data-analytics-role="primary-checkout" href="https://checkout.example.com/order/1">Comprar marcado</a>
+                </section>
+                </body></html>
+                """);
+
+        mockMvc.perform(put("/api/flows/landing-checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        MvcResult result = mockMvc.perform(get("/api/flows/landing-checkout/page"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertThat(result.getResponse().getContentAsString())
+                .contains("anchor.getAttribute('data-analytics-role')")
+                .contains("targetUrl.searchParams.has('pref_id')")
+                .contains("host.endsWith('.mercadopago.com.br')")
+                .contains("sendEvent('checkout_click', resolveCheckoutSection(anchor), null)");
+    }
+
+    /**
+     * Garante que uma landing com coletor anterior seja atualizada quando ainda não mede checkout.
+     */
+    @Test
+    void getStandaloneFlowPageRefreshesCollectorWithoutCheckoutTracking() throws Exception {
+        UpsertFlowRequest request = buildRequest();
+        request.setCustomFormHtml("""
+                <!doctype html><html><body>
+                <a href="https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=ativa">Comprar</a>
+                <script data-mh-landing-analytics="true">
+                  var mhAnalyticsDebug = true;
+                  var mh_internal_test = true;
+                  var visitorId = 'anterior';
+                  var payload = {visitorId: visitorId, automationSignal: false};
+                  console.log('coletor-sem-checkout', payload);
+                </script>
+                </body></html>
+                """);
+
+        mockMvc.perform(put("/api/flows/landing-coletor-sem-checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        MvcResult result = mockMvc.perform(get("/api/flows/landing-coletor-sem-checkout/page"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertThat(result.getResponse().getContentAsString())
+                .contains("checkout_click")
+                .doesNotContain("console.log('coletor-sem-checkout'");
+    }
+
+    /**
      * Valida conflito quando a página standalone é solicitada para HTML de iframe.
      */
     @Test

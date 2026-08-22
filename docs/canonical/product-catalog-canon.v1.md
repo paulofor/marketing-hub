@@ -8,8 +8,13 @@ Produto é um ativo comercial próprio do Marketing Hub, separado de campanha, e
 
 O cadastro de produto deve separar o tipo amplo do formato comercial efetivamente testado. Todo
 produto em validação pode registrar uma definição versionada com os mesmos componentes, para que
-programas guiados, pacotes de imagens, vídeos, diagnósticos, bibliotecas, assinaturas e serviços
-híbridos sejam comparáveis sem perder suas diferenças.
+programas guiados, pacotes de imagens, vídeos, diagnósticos, bibliotecas, webapps, agentes,
+automações, assinaturas e serviços híbridos sejam comparáveis sem perder suas diferenças.
+
+Webapp, aplicativo, site, extensão e interface conversacional são formatos de entrega, não novos
+tipos comerciais por si sós. O tipo continua sendo definido pelo mecanismo de valor, pela entrega e
+pelo modelo de receita. A cadeia PDE deve comparar esses formatos com kits e outras alternativas e
+escolher o que melhor atender ao mercado, sem preferência tecnológica antecipada.
 
 Campos comparáveis mínimos:
 

@@ -1776,14 +1776,14 @@ export default function ExperimentDetailPage() {
   };
   const openLandingActions = () => openExperimentTab("landing");
 
-  const isReadyForFacebook = readinessSummary?.eligibleForRunning ?? false;
+  const isReadyForRunning = readinessSummary?.eligibleForRunning ?? false;
   const releaseInProgress = releaseExperiment.isPending;
   const lastReleaseAt = data.facebookReleaseRequestedAt;
   const lastReleaseLabel = lastReleaseAt
     ? formatDateTimeValue(lastReleaseAt)
     : null;
   const canReleaseExperiment =
-    isReadyForFacebook && data.platform === "FACEBOOK";
+    isReadyForRunning && data.platform === "FACEBOOK";
   const releaseButtonDisabled =
     releaseInProgress ||
     !canReleaseExperiment ||
@@ -1792,10 +1792,10 @@ export default function ExperimentDetailPage() {
 
   const hasExperimentPipelineContent = Boolean(
     data.campaignAngle ||
-    data.adCopy ||
-    data.adImageBriefing ||
-    data.creativeTextPrompt ||
-    data.creativeImagePrompt,
+      data.adCopy ||
+      data.adImageBriefing ||
+      data.creativeTextPrompt ||
+      data.creativeImagePrompt,
   );
   const hasGeraLandingPipelineReady =
     readinessSummary?.hasGeraLandingPipeline ?? false;
@@ -1806,6 +1806,7 @@ export default function ExperimentDetailPage() {
   const hasAtLeastThreeApprovedCreatives = readinessCreativeCount >= 3;
   const hasAudienceSelection = hasPublisherTargeting;
   const isLowTicketProduct = data.experimentType === "LOW_TICKET_PRODUCT";
+  const isDirectOneToOne = data.platform === "DIRECT_ONE_TO_ONE";
   const isPdeMembershipSubscriptionFunnel =
     data.experimentType === "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL";
   const pdeMonitor = pdeMonitorQuery.data;
@@ -1825,6 +1826,12 @@ export default function ExperimentDetailPage() {
   );
   const isSalesObjectiveExperiment =
     isLowTicketProduct || isPdeMembershipSubscriptionFunnel;
+  const creativeGate = readinessSummary?.runningGateRequirements?.find(
+    (requirement) => requirement.code === "CREATIVE_APPROVED",
+  );
+  const targetingGate = readinessSummary?.runningGateRequirements?.find(
+    (requirement) => requirement.code === "TARGETING_READY",
+  );
   const campaignObjectiveLabel =
     data.campaignObjective === "LEADS"
       ? "Leads"
@@ -1867,7 +1874,9 @@ export default function ExperimentDetailPage() {
       title: "Experimento configurado para venda",
       detail:
         campaignObjectiveLabel === "Vendas"
-          ? "Objetivo de campanha marcado como vendas"
+          ? isDirectOneToOne
+            ? "Objetivo comercial marcado como vendas"
+            : "Objetivo de campanha marcado como vendas"
           : "Ajuste o objetivo para vendas antes de liberar tráfego",
       isMet: campaignObjectiveLabel === "Vendas",
       isLoading: false,
@@ -1878,7 +1887,9 @@ export default function ExperimentDetailPage() {
       id: "sales-page",
       title: "Página de venda cadastrada",
       detail: data.followUpActionUrl
-        ? "URL final cadastrada para a campanha"
+        ? isDirectOneToOne
+          ? "URL final cadastrada para a jornada individual"
+          : "URL final cadastrada para a campanha"
         : "Cadastre a página de venda com checkout ativo",
       isMet: Boolean(data.followUpActionUrl),
       isLoading: isLoadingReadiness,
@@ -1887,31 +1898,45 @@ export default function ExperimentDetailPage() {
     },
     {
       id: "approved-creatives",
-      title: "Criativos prontos",
-      detail: `${readinessCreativeCount}/3 criativos aprovados`,
-      isMet: hasAtLeastThreeApprovedCreatives,
+      title: isDirectOneToOne
+        ? "Material da abordagem pronto"
+        : "Criativos prontos",
+      detail:
+        creativeGate?.detail ??
+        `${readinessCreativeCount} criativo(s) publicável(is)`,
+      isMet: creativeGate?.ready ?? hasAtLeastThreeApprovedCreatives,
       isLoading: isLoadingReadiness,
       actionLabel: "Abrir criativos",
       action: () => openExperimentTab("creatives"),
     },
     {
       id: "audience-selection",
-      title: "Público salvo",
-      detail: hasAudienceSelection
-        ? "Público salvo atende a regra do publicador"
-        : "Salve um público válido para entrar na fila do publicador",
-      isMet: hasAudienceSelection,
+      title: isDirectOneToOne ? "Canal individual pronto" : "Público salvo",
+      detail:
+        targetingGate?.detail ??
+        (hasAudienceSelection
+          ? "Público salvo atende a regra do publicador"
+          : "Salve um público válido para entrar na fila do publicador"),
+      isMet: targetingGate?.ready ?? hasAudienceSelection,
       isLoading: isLoadingReadiness,
-      actionLabel: "Abrir público",
-      action: () => openExperimentTab("publico"),
+      actionLabel: isDirectOneToOne ? "Revisar canal" : "Abrir público",
+      action: isDirectOneToOne
+        ? () => navigate(`/experiments/${expId}/edit`)
+        : () => openExperimentTab("publico"),
     },
     {
       id: "controlled-release",
-      title: "Pronto para campanha controlada",
-      detail: isReadyForFacebook
-        ? "Checklist mínimo concluído para liberação controlada"
-        : "Conclua página, criativos e público antes de liberar",
-      isMet: isReadyForFacebook,
+      title: isDirectOneToOne
+        ? "Pronto para abordagem individual"
+        : "Pronto para campanha controlada",
+      detail: isReadyForRunning
+        ? isDirectOneToOne
+          ? "Checklist mínimo concluído para iniciar a amostra consentida"
+          : "Checklist mínimo concluído para liberação controlada"
+        : isDirectOneToOne
+          ? "Conclua página, material e checkout antes de abordar"
+          : "Conclua página, criativos e público antes de liberar",
+      isMet: isReadyForRunning,
       isLoading: isLoadingReadiness,
       actionLabel: "Ver liberação",
       action: () => window.scrollTo({ top: 0, behavior: "smooth" }),
@@ -2518,26 +2543,30 @@ export default function ExperimentDetailPage() {
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-start">
             <h5 className="card-title mb-0">
-              {isPdeMembershipSubscriptionFunnel
-                ? "Campanha de Facebook Ads para assinatura PDE"
-                : isLowTicketProduct
-                  ? "Campanha de Facebook Ads para venda"
-                  : "Campanha de Facebook Ads"}
+              {isDirectOneToOne
+                ? "Abordagem individual consentida"
+                : isPdeMembershipSubscriptionFunnel
+                  ? "Campanha de Facebook Ads para assinatura PDE"
+                  : isLowTicketProduct
+                    ? "Campanha de Facebook Ads para venda"
+                    : "Campanha de Facebook Ads"}
             </h5>
             <span
               className={`badge ${
-                isReadyForFacebook ? "text-bg-success" : "text-bg-warning"
+                isReadyForRunning ? "text-bg-success" : "text-bg-warning"
               }`}
             >
-              {isReadyForFacebook ? "Pronto" : "Pendente"}
+              {isReadyForRunning ? "Pronto" : "Pendente"}
             </span>
           </div>
           <p className="card-text mt-2">
-            {isPdeMembershipSubscriptionFunnel
-              ? "Checklist consolidado para publicar anúncio, entrada no PED/MUSA, checkout, assinatura e ativação pós-compra."
-              : isLowTicketProduct
-                ? "Checklist consolidado para publicar anúncio, página curta, checkout e entrega com foco na primeira compra."
-                : "Checklist consolidado das regras de publicação. Ele reflete o documento interno e o diagnóstico automático do worker."}
+            {isDirectOneToOne
+              ? `Checklist para executar a amostra de ${data.sampleSize ?? 0} contatos sem mídia paga, comunicação em massa ou dependência da Meta.`
+              : isPdeMembershipSubscriptionFunnel
+                ? "Checklist consolidado para publicar anúncio, entrada no PED/MUSA, checkout, assinatura e ativação pós-compra."
+                : isLowTicketProduct
+                  ? "Checklist consolidado para publicar anúncio, página curta, checkout e entrega com foco na primeira compra."
+                  : "Checklist consolidado das regras de publicação. Ele reflete o documento interno e o diagnóstico automático do worker."}
           </p>
           {isLoadingReadiness ? (
             <div
@@ -2553,22 +2582,32 @@ export default function ExperimentDetailPage() {
             </div>
           ) : null}
           <div className="mt-3 d-flex flex-column flex-lg-row align-items-start gap-3">
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleFacebookRelease}
-              disabled={releaseButtonDisabled}
-            >
-              {releaseInProgress
-                ? "Liberando..."
-                : "Liberar para Facebook Ads Worker"}
-            </button>
+            {isDirectOneToOne ? (
+              <span className="badge text-bg-light border text-body px-3 py-2">
+                Sem mídia paga
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleFacebookRelease}
+                disabled={releaseButtonDisabled}
+              >
+                {releaseInProgress
+                  ? "Liberando..."
+                  : "Liberar para Facebook Ads Worker"}
+              </button>
+            )}
             <div className="small text-body-secondary">
-              {isReadyForFacebook
-                ? isSalesObjectiveExperiment
-                  ? "Ao liberar, o status muda para Planejado e a campanha será preparada para objetivo de vendas."
-                  : "Ao liberar, o status muda para Planejado e o funil de vendas é zerado antes da publicação."
-                : "Resolva os bloqueios para habilitar a liberação automática."}
+              {isDirectOneToOne
+                ? isReadyForRunning
+                  ? "O gate comercial está pronto; a abordagem continua manual, individual, consentida e atribuível."
+                  : "Resolva os bloqueios do gate antes de iniciar qualquer contato."
+                : isReadyForRunning
+                  ? isSalesObjectiveExperiment
+                    ? "Ao liberar, o status muda para Planejado e a campanha será preparada para objetivo de vendas."
+                    : "Ao liberar, o status muda para Planejado e o funil de vendas é zerado antes da publicação."
+                  : "Resolva os bloqueios para habilitar a liberação automática."}
               {lastReleaseLabel ? (
                 <div className="mt-1">
                   Última liberação: <strong>{lastReleaseLabel}</strong>

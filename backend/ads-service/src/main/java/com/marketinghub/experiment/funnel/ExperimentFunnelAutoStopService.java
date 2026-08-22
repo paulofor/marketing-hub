@@ -45,13 +45,14 @@ public class ExperimentFunnelAutoStopService {
   }
 
   /**
-   * Aplica a regra única de campanha: após R$ 25,00, campanha sem resultado primário deve parar.
+   * Aplica a regra única de campanha inclusive na liquidação final após uma pausa observada na
+   * Meta: após R$ 25,00, campanha sem resultado primário deve parar.
    *
    * @return {@code true} quando o experimento foi parado automaticamente, {@code false} caso
    *     contrário.
    */
   public boolean stopIfNoPrimaryResultAfterMinimumSpend(Experiment experiment) {
-    if (experiment == null || experiment.getStatus() != ExperimentStatus.RUNNING) {
+    if (!isEligibleForZeroPrimaryResultStop(experiment)) {
       return false;
     }
     BigDecimal campaignSpend = resolveCampaignSpend(experiment);
@@ -79,6 +80,16 @@ public class ExperimentFunnelAutoStopService {
         FacebookCampaignStopReason.CAMPAIGN_ZERO_RESULT_AFTER_MINIMUM_SPEND,
         "campanha gastou R$ 25,00 sem resultado primário: envio de formulário, abertura de email de amostra ou compra");
     return true;
+  }
+
+  /**
+   * Mantém elegíveis a execução ativa e a pausa externa recém-reconciliada, sem reabrir estados
+   * comerciais já encerrados.
+   */
+  private boolean isEligibleForZeroPrimaryResultStop(Experiment experiment) {
+    return experiment != null
+        && (experiment.getStatus() == ExperimentStatus.RUNNING
+            || experiment.getStatus() == ExperimentStatus.USER_STOPPED);
   }
 
   /**

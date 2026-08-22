@@ -88,6 +88,51 @@ class ExperimentFunnelAutoStopServiceTest {
     assertThat(campaign.getStopLastError()).isNull();
   }
 
+  /**
+   * Garante que a liquidação final invalida o experimento e corrige a causa mesmo após a Meta ter
+   * sido reconciliada como pausa externa.
+   */
+  @Test
+  void stopsUserStoppedExperimentWhenFinalMetricConfirmsMinimumSpend() {
+    experiment.setStatus(ExperimentStatus.USER_STOPPED);
+    when(diagnosticService.diagnose(99L))
+        .thenReturn(
+            new ExperimentFunnelDiagnosticsResponseDto(
+                List.of(
+                    stage(
+                        ExperimentFunnelStage.ENVIO_FORM,
+                        6,
+                        0,
+                        FunnelDiagnosticStatus.INSUFFICIENT_DATA),
+                    stage(
+                        ExperimentFunnelStage.ABERTURA_EMAIL_AMOSTRA,
+                        0,
+                        0,
+                        FunnelDiagnosticStatus.NO_DATA),
+                    stage(ExperimentFunnelStage.COMPRA, 0, 0, FunnelDiagnosticStatus.NO_DATA)),
+                null));
+    when(campaignMetricRepository.findByExperiment(experiment))
+        .thenReturn(Optional.of(metricWithSpend("25.24")));
+    FacebookAdsCampaign campaign = campaign("camp-paused-before-final-metric");
+    Instant requestedAt = Instant.now().minus(2, ChronoUnit.MINUTES);
+    Instant completedAt = Instant.now().minus(1, ChronoUnit.MINUTES);
+    campaign.setStatus(FacebookAdStatus.PAUSED);
+    campaign.setStopReason(FacebookCampaignStopReason.ADMIN_EXPERIMENT_PAUSED);
+    campaign.setStopRequestedAt(requestedAt);
+    campaign.setStopCompletedAt(completedAt);
+    when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
+
+    boolean stopped = service.stopIfNoPrimaryResultAfterMinimumSpend(experiment);
+
+    assertThat(stopped).isTrue();
+    assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.INVALIDATED);
+    assertThat(campaign.getStopReason())
+        .isEqualTo(FacebookCampaignStopReason.CAMPAIGN_ZERO_RESULT_AFTER_MINIMUM_SPEND);
+    assertThat(campaign.getStopRequestedAt()).isEqualTo(requestedAt);
+    assertThat(campaign.getStopCompletedAt()).isEqualTo(completedAt);
+    assertThat(campaign.getStopLastError()).isNull();
+  }
+
   /** Garante que resultado primário existente impede a parada por gasto mínimo. */
   @Test
   void keepsCampaignRunningWhenPrimaryResultExists() {

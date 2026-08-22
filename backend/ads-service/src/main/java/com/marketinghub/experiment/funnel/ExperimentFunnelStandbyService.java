@@ -50,7 +50,10 @@ public class ExperimentFunnelStandbyService {
     return true;
   }
 
-  /** Registra ou reabre a solicitação de pausa para campanhas Facebook ainda ativas. */
+  /**
+   * Registra a causa comercial em todas as campanhas e reabre a solicitação somente quando ainda
+   * houver parada efetiva a executar na Meta.
+   */
   public void requestFacebookCampaignStops(
       Long experimentId, FacebookCampaignStopReason stopReason, String businessReason) {
     List<FacebookAdsCampaign> campaigns = campaignRepository.findByExperimentId(experimentId);
@@ -61,21 +64,23 @@ public class ExperimentFunnelStandbyService {
       return;
     }
     Instant now = Instant.now();
-    campaigns.stream()
-        .filter(this::requiresStopRequest)
-        .forEach(
-            campaign -> {
-              campaign.setStopRequestedAt(now);
-              campaign.setStopCompletedAt(null);
-              campaign.setStopReason(stopReason);
-              campaign.setStopLastError(null);
-              LOGGER.info(
-                  "Stop request registered for campaign {} from experiment {}: reason={}, businessReason={}",
-                  campaign.getId(),
-                  experimentId,
-                  stopReason,
-                  businessReason);
-            });
+    campaigns.forEach(
+        campaign -> {
+          boolean requiresStop = requiresStopRequest(campaign);
+          campaign.setStopReason(stopReason);
+          campaign.setStopLastError(null);
+          if (requiresStop) {
+            campaign.setStopRequestedAt(now);
+            campaign.setStopCompletedAt(null);
+          }
+          LOGGER.info(
+              "Stop cause reconciled for campaign {} from experiment {}: reason={}, requiresStop={}, businessReason={}",
+              campaign.getId(),
+              experimentId,
+              stopReason,
+              requiresStop,
+              businessReason);
+        });
     campaignRepository.saveAll(campaigns);
   }
 

@@ -471,8 +471,25 @@ jobs:
             grep -q '"image"' "/tmp/pde-${version}-version-diagnostics.json"
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused --output /dev/null "${url}/"
           }
-          validate_public_version v5
-          validate_public_version v6
+
+          validate_public_health() {
+            local version="$1"
+            local url="https://${version}.clubemusa.com.br"
+            validate_dns_points_to_deploy_host "${version}.clubemusa.com.br"
+            curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused "${url}/healthz" | grep -q '"status":"UP"'
+            curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused --output /dev/null "${url}/"
+          }
+
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v5" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
+            validate_public_version v5
+          else
+            validate_public_health v5
+          fi
+          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v6" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
+            validate_public_version v6
+          else
+            validate_public_health v6
+          fi
           if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "v7" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
             validate_public_version v7
           fi

@@ -53,6 +53,11 @@ describe("contrato de planejamento do experimento", () => {
     expect(parseOptionalPositiveAmount("abc")).toBe(null);
   });
 
+  it("mantém meta de KPI opcional em uma amostra individual planejada", () => {
+    expect(parseOptionalPositiveAmount(" ")).toBe(undefined);
+    expect(parseOptionalPositiveAmount("3")).toBe(3);
+  });
+
   it("mantém Instagram opcional nos experimentos orgânicos", () => {
     expect(parseOptionalEntityId("")).toBe(null);
     expect(parseOptionalEntityId("12")).toBe(12);

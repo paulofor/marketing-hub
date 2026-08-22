@@ -144,7 +144,8 @@ export default function EditExperimentPage() {
       reset({
         platform: data.platform ?? "FACEBOOK",
         name: data.name || "",
-        kpiTarget: currentKpi != null ? String(currentKpi) : "",
+        kpiTarget:
+          currentKpi != null && currentKpi > 0 ? String(currentKpi) : "",
         dailyBudget:
           data.dailyBudget != null && data.dailyBudget > 0
             ? String(data.dailyBudget)
@@ -463,6 +464,11 @@ export default function EditExperimentPage() {
         alert("Informe um orçamento diário válido ou deixe o campo vazio");
         return;
       }
+      const parsedKpiTarget = parseOptionalPositiveAmount(values.kpiTarget);
+      if (parsedKpiTarget === null) {
+        alert("Informe uma meta de KPI válida ou deixe o campo vazio");
+        return;
+      }
       const parsedUnitPrice = Number(values.unitPrice);
       if (
         !values.unitPrice ||
@@ -533,7 +539,7 @@ export default function EditExperimentPage() {
           : isSalesObjectiveExperiment
             ? "SALES"
             : "LEADS",
-        kpiTarget: Number(values.kpiTarget),
+        kpiTarget: parsedKpiTarget,
         dailyBudget: parsedDailyBudget ?? null,
         unitPrice: parsedUnitPrice,
         metricPresetId: values.metricPresetId || undefined,
@@ -698,6 +704,10 @@ export default function EditExperimentPage() {
                         register("platform").onChange(event);
                         if (event.target.value === "DIRECT_ONE_TO_ONE") {
                           setValue("dailyBudget", "", { shouldDirty: true });
+                          setValue("kpiTarget", "", { shouldDirty: true });
+                          setValue("metricPresetId", "", {
+                            shouldDirty: true,
+                          });
                           setValue("facebookPageId", "", {
                             shouldDirty: true,
                           });
@@ -950,17 +960,19 @@ export default function EditExperimentPage() {
                       {...register("name")}
                     />
                   </div>
-                  <div>
-                    <label className="form-label" htmlFor="kpiTarget">
-                      Meta do KPI
-                    </label>
-                    <input
-                      id="kpiTarget"
-                      className="form-control"
-                      type="number"
-                      {...register("kpiTarget")}
-                    />
-                  </div>
+                  {platformValue === "FACEBOOK" && (
+                    <div>
+                      <label className="form-label" htmlFor="kpiTarget">
+                        Meta de custo por resultado
+                      </label>
+                      <input
+                        id="kpiTarget"
+                        className="form-control"
+                        type="number"
+                        {...register("kpiTarget")}
+                      />
+                    </div>
+                  )}
                   {platformValue === "FACEBOOK" && (
                     <div>
                       <label className="form-label" htmlFor="dailyBudget">
@@ -1085,24 +1097,26 @@ export default function EditExperimentPage() {
                       {...register("endDate")}
                     />
                   </div>
-                  <div>
-                    <label className="form-label" htmlFor="preset">
-                      Preset de Métricas
-                    </label>
-                    <select
-                      id="preset"
-                      className="form-select"
-                      {...register("metricPresetId")}
-                    >
-                      <option value="">Selecione Preset de Métricas</option>
-                      {Array.isArray(presets) &&
-                        presets.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
+                  {platformValue === "FACEBOOK" && (
+                    <div>
+                      <label className="form-label" htmlFor="preset">
+                        Preset de Métricas
+                      </label>
+                      <select
+                        id="preset"
+                        className="form-select"
+                        {...register("metricPresetId")}
+                      >
+                        <option value="">Selecione Preset de Métricas</option>
+                        {Array.isArray(presets) &&
+                          presets.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  )}
                   <div>
                     <label className="form-label" htmlFor="journeyTemplate">
                       Template de Jornada <span className="text-danger">*</span>

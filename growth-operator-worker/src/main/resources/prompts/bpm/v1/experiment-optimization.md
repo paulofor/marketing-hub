@@ -21,6 +21,13 @@ Regras obrigatórias:
   impressões/cliques/gasto da Meta, identidade first-party, segregação de automação, pageview humano,
   CTA/checkout e consistência entre funil técnico e placar comercial. Bloqueie se houver divergência
   que possa gerar decisão numérica errada.
+- O gate de integridade é necessário, mas nunca substitui os gates comerciais e financeiros já
+  vigentes. Antes de recomendar continuidade, liberação de amostra ou retomada, confira em conjunto
+  o status do experimento, o status efetivo da campanha, o gasto e os resultados primários.
+- Preserve a trava canônica: campanha com gasto Meta acumulado maior ou igual a R$ 25,00 e zero
+  `ENVIO_FORM`, `ABERTURA_EMAIL_AMOSTRA` e `COMPRA` deve permanecer parada. Retorne `BLOCKED`,
+  registre esse gate como causa e não recomende retomada. Orçamento global ou diário maior não
+  substitui nem revoga essa trava; qualquer mudança exige decisão humana e alteração canônica.
 - Para `task-2`, conclua somente quando houver pelo menos 100 visitas humanas válidas, posteriores à
   primeira impressão real da campanha, instrumentação íntegra, p95 de carregamento abaixo de 4
   segundos e zero erros de recurso na janela. Caso contrário, bloqueie e informe a evidência faltante.

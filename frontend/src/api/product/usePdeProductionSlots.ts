@@ -6,6 +6,28 @@ import type {
   SavePdeProductionSlotRequest,
 } from "../experiment/usePostDeployMonitor";
 
+export interface PdeSlotValidationFeedback {
+  success: boolean;
+  message: string;
+}
+
+export function pdeSlotValidationFeedback(
+  slot: PostDeployPdeProductionSlot,
+): PdeSlotValidationFeedback {
+  if (slot.validationStatus === "OK") {
+    return {
+      success: true,
+      message: `URL da versão PDE ${slot.slotCode} validada.`,
+    };
+  }
+  return {
+    success: false,
+    message:
+      slot.validationSummary ||
+      `A URL da versão PDE ${slot.slotCode} não passou na validação.`,
+  };
+}
+
 export function useProductPdeProductionSlots(productId?: string | number) {
   return useQuery<PostDeployPdeProductionSlot[]>({
     queryKey: ["products", productId, "pde-production-slots"],
@@ -41,7 +63,9 @@ export function useSaveProductPdeProductionSlot(productId?: string | number) {
   });
 }
 
-export function useValidateProductPdeProductionSlot(productId?: string | number) {
+export function useValidateProductPdeProductionSlot(
+  productId?: string | number,
+) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (slotCode: string) => {
@@ -51,7 +75,12 @@ export function useValidateProductPdeProductionSlot(productId?: string | number)
       return data;
     },
     onSuccess: (slot) => {
-      toast.success(`URL da versão PDE ${slot.slotCode} validada.`);
+      const feedback = pdeSlotValidationFeedback(slot);
+      if (feedback.success) {
+        toast.success(feedback.message);
+      } else {
+        toast.error(feedback.message);
+      }
       queryClient.invalidateQueries({
         queryKey: ["products", productId, "pde-production-slots"],
       });
@@ -62,7 +91,9 @@ export function useValidateProductPdeProductionSlot(productId?: string | number)
   });
 }
 
-export function usePublishProductPdeProductionSlot(productId?: string | number) {
+export function usePublishProductPdeProductionSlot(
+  productId?: string | number,
+) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({

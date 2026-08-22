@@ -85,6 +85,32 @@ class GrowthOperatorBpmTaskConsumerTest {
     verify(backend).completeBpmTask(eq(90L), any());
   }
 
+  /** Prioriza e conclui o contrato da jornada do PDE com referência do plano preservada. */
+  @Test
+  void shouldCompletePdeCommunicationContract() throws Exception {
+    GrowthOperatorBackendClient backend = mock(GrowthOperatorBackendClient.class);
+    GrowthOperatorBpmRunner runner = mock(GrowthOperatorBpmRunner.class);
+    Map<String, Object> task =
+        Map.of(
+            "taskId", 91L,
+            "activityId", "contract",
+            "sourceReference", "commercial-plan:4@v2",
+            "processCode", "pde-communication-sales-journey");
+    when(backend.claimBpmTask("pde-communication-sales-journey", "contract")).thenReturn(task);
+    when(runner.run(task))
+        .thenReturn(
+            new GrowthOperatorBpmRunner.BpmExecution(
+                result("COMPLETED"), GrowthOperatorBpmRunner.TokenUsage.empty(), List.of()));
+
+    new GrowthOperatorBpmTaskConsumer(backend, runner, properties(), json).processOne();
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Map<String, Object>> payload = ArgumentCaptor.forClass(Map.class);
+    verify(backend).completeBpmTask(eq(91L), payload.capture());
+    assertThat(payload.getValue().get("evidenceJson").toString())
+        .contains("commercial-plan:4@v2", "externalSideEffects");
+  }
+
   /** Cria uma resposta mínima válida para exercitar os callbacks. */
   private com.fasterxml.jackson.databind.JsonNode result(String status) throws Exception {
     return json.readTree(

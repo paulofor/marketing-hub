@@ -26,7 +26,7 @@ export interface CreateExperiment {
   primaryVariable?: string;
   primaryMetric?: string;
   commercialObjective?: string;
-  kpiTarget: number;
+  kpiTarget?: number;
   metricPresetId?: string;
   sampleSize?: number;
   mde?: number;

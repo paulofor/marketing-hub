@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "executionStatus",
+    "activityOutcome",
+    "observedFacts",
+    "inferences",
+    "contradictoryEvidence",
+    "evidenceGaps",
+    "alternatives",
+    "selectedAlternative",
+    "priceDecision",
+    "communicationContract",
+    "expectedMetric",
+    "continueCriteria",
+    "adjustCriteria",
+    "stopCriteria",
+    "recommendedAction"
+  ],
+  "properties": {
+    "executionStatus": { "type": "string", "enum": ["COMPLETED", "BLOCKED"] },
+    "activityOutcome": { "type": "string", "minLength": 10 },
+    "observedFacts": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 3 } },
+    "inferences": { "type": "array", "items": { "type": "string" } },
+    "contradictoryEvidence": { "type": "array", "items": { "type": "string" } },
+    "evidenceGaps": { "type": "array", "items": { "type": "string" } },
+    "alternatives": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "benefit", "risk", "effort", "fit"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "benefit": { "type": "string", "minLength": 1 },
+          "risk": { "type": "string", "minLength": 1 },
+          "effort": { "type": "string", "minLength": 1 },
+          "fit": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "selectedAlternative": { "type": "string", "minLength": 1 },
+    "priceDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approvedPriceBrl", "decision", "rationale", "marketReference", "marginGuardrail", "comprehensionTest"],
+      "properties": {
+        "approvedPriceBrl": { "type": "number", "exclusiveMinimum": 0 },
+        "decision": { "type": "string", "enum": ["KEEP", "ADJUST", "BLOCK"] },
+        "rationale": { "type": "string", "minLength": 10 },
+        "marketReference": { "type": "string", "minLength": 10 },
+        "marginGuardrail": { "type": "string", "minLength": 5 },
+        "comprehensionTest": { "type": "string", "minLength": 10 }
+      }
+    },
+    "communicationContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["audience", "pain", "promise", "mechanism", "offerFraming", "proof", "limitations", "primaryChannel", "creativeBrief", "destinationBrief", "primaryCta", "checkoutAndAccess", "events", "samplePlan", "testTrafficSegregation"],
+      "properties": {
+        "audience": { "type": "string", "minLength": 5 },
+        "pain": { "type": "string", "minLength": 5 },
+        "promise": { "type": "string", "minLength": 5 },
+        "mechanism": { "type": "string", "minLength": 5 },
+        "offerFraming": { "type": "string", "minLength": 5 },
+        "proof": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 3 } },
+        "limitations": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 3 } },
+        "primaryChannel": { "type": "string", "minLength": 3 },
+        "creativeBrief": { "type": "string", "minLength": 10 },
+        "destinationBrief": { "type": "string", "minLength": 10 },
+        "primaryCta": { "type": "string", "minLength": 3 },
+        "checkoutAndAccess": { "type": "string", "minLength": 10 },
+        "events": { "type": "array", "minItems": 4, "items": { "type": "string", "minLength": 3 } },
+        "samplePlan": { "type": "string", "minLength": 10 },
+        "testTrafficSegregation": { "type": "string", "minLength": 5 }
+      }
+    },
+    "expectedMetric": { "type": "string", "minLength": 3 },
+    "continueCriteria": { "type": "string", "minLength": 3 },
+    "adjustCriteria": { "type": "string", "minLength": 3 },
+    "stopCriteria": { "type": "string", "minLength": 3 },
+    "recommendedAction": { "type": "string", "minLength": 3 }
+  }
+}

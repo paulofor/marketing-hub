@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "commercialRationale", "priceClarityScore", "evidence", "risks", "requiredChanges"],
+  "properties": {
+    "decision": { "type": "string", "enum": ["APPROVED", "ADJUST", "BLOCKED"] },
+    "commercialRationale": { "type": "string", "minLength": 10 },
+    "priceClarityScore": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "evidence": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 3 } },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "requiredChanges": { "type": "array", "items": { "type": "string" } }
+  }
+}

@@ -21,8 +21,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class GrowthOperatorBpmRunner {
   private static final Logger log = LoggerFactory.getLogger(GrowthOperatorBpmRunner.class);
-  private static final String PROMPT = "prompts/bpm/v1/experiment-optimization.md";
-  private static final String SCHEMA = "prompts/bpm/v1/experiment-optimization-schema.json";
+  private static final String EXPERIMENT_PROCESS = "operacao-otimizacao-experimento";
+  private static final String COMMUNICATION_PROCESS = "pde-communication-sales-journey";
   private final WorkerProperties properties;
   private final ObjectMapper json;
 
@@ -32,12 +32,13 @@ public class GrowthOperatorBpmRunner {
     this.json = json;
   }
 
-  /** Executa uma atividade com experimento segregado e correlação da memória pela tarefa. */
+  /** Executa uma atividade com escopo segregado e correlação da memória pela tarefa. */
   public BpmExecution run(Map<String, Object> task) throws IOException, InterruptedException {
-    long experimentId = experimentId(task);
+    String processCode = processCode(task);
+    ExecutionScope scope = executionScope(task);
     Path answer = Files.createTempFile("hermes-bpm-result-", ".json");
     Path processLog = Files.createTempFile("hermes-bpm-process-", ".log");
-    Path schema = materialize(SCHEMA, ".json");
+    Path schema = materialize(schemaResourceFor(processCode), ".json");
     Path mcpServer = materialize("mcp/marketing-hub-readonly.mjs", ".mjs");
     try {
       ProcessBuilder builder =
@@ -45,7 +46,8 @@ public class GrowthOperatorBpmRunner {
               .redirectErrorStream(true)
               .redirectOutput(processLog.toFile());
       builder.environment().remove("MCP_COMMERCIAL_PLAN_ID");
-      builder.environment().put("MCP_EXPERIMENT_ID", String.valueOf(experimentId));
+      builder.environment().remove("MCP_EXPERIMENT_ID");
+      builder.environment().put(scope.environmentName(), String.valueOf(scope.id()));
       builder.environment().put("MCP_SOURCE_EXECUTION_ID", "bpm-task-" + task.get("taskId"));
       builder.environment().put("MCP_MARKETING_HUB_URL", properties.getMarketingHubUrl());
       Process process = builder.start();
@@ -59,7 +61,7 @@ public class GrowthOperatorBpmRunner {
                 + properties.getCodexTimeout().toMinutes()
                 + " minutos.",
             readTokenUsage(processLog),
-            safeToolUsage(processLog, task, experimentId));
+            safeToolUsage(processLog, task, scope));
       }
       TokenUsage usage = readTokenUsage(processLog);
       if (process.exitValue() != 0) {
@@ -69,22 +71,22 @@ public class GrowthOperatorBpmRunner {
                 + ": "
                 + Files.readString(processLog),
             usage,
-            safeToolUsage(processLog, task, experimentId));
+            safeToolUsage(processLog, task, scope));
       }
       try {
         JsonNode result = json.readTree(Files.readString(answer));
-        validate(result);
+        validate(result, processCode);
         return new BpmExecution(result, usage, extractToolUsage(processLog));
       } catch (IOException | RuntimeException ex) {
         log.error(
-            "Resposta inválida na atividade BPM de Hermes. taskId={} experimentId={}",
+            "Resposta inválida na atividade BPM de Hermes. taskId={} sourceReference={}",
             task.get("taskId"),
-            experimentId,
+            scope.reference(),
             ex);
         throw new BpmExecutionException(
             "Resposta BPM de Hermes fora do contrato versionado.",
             usage,
-            safeToolUsage(processLog, task, experimentId),
+            safeToolUsage(processLog, task, scope),
             ex);
       }
     } finally {
@@ -135,22 +137,59 @@ public class GrowthOperatorBpmRunner {
 
   /** Resolve o prompt versionado usando o contrato congelado da tarefa. */
   String prompt(Map<String, Object> task) throws IOException {
-    return read(PROMPT).replace("{{TASK_CONTEXT}}", json.writeValueAsString(task));
+    return read(promptResourceFor(processCode(task)))
+        .replace("{{TASK_CONTEXT}}", json.writeValueAsString(task));
   }
 
   /** Extrai o experimento da referência segregada e rejeita qualquer outro escopo. */
   static long experimentId(Map<String, Object> task) {
-    Object source = task.get("sourceReference");
-    String reference = source == null ? "" : source.toString().trim();
-    if (!reference.matches("experiment:[1-9][0-9]*")) {
+    ExecutionScope scope = executionScope(task);
+    if (!"MCP_EXPERIMENT_ID".equals(scope.environmentName())) {
       throw new IllegalArgumentException(
           "Atividade BPM de Hermes exige sourceReference no formato experiment:<id>.");
     }
-    return Long.parseLong(reference.substring("experiment:".length()));
+    return scope.id();
   }
 
-  /** Exige decisão funcional, alternativas e critérios de governança do experimento. */
-  static void validate(JsonNode result) {
+  /** Resolve o escopo permitido pelo processo sem misturar plano e experimento. */
+  static ExecutionScope executionScope(Map<String, Object> task) {
+    String reference = String.valueOf(task.getOrDefault("sourceReference", "")).trim();
+    if (EXPERIMENT_PROCESS.equals(processCode(task))
+        && reference.matches("experiment:[1-9][0-9]*")) {
+      return new ExecutionScope(
+          "MCP_EXPERIMENT_ID",
+          Long.parseLong(reference.substring("experiment:".length())),
+          reference);
+    }
+    if (COMMUNICATION_PROCESS.equals(processCode(task))
+        && reference.matches("commercial-plan:[1-9][0-9]*(?:@v[1-9][0-9]*)?")) {
+      String id = reference.substring("commercial-plan:".length()).replaceFirst("@v.*$", "");
+      return new ExecutionScope("MCP_COMMERCIAL_PLAN_ID", Long.parseLong(id), reference);
+    }
+    throw new IllegalArgumentException(
+        "Atividade BPM de Hermes exige escopo canônico compatível com o processo.");
+  }
+
+  /** Seleciona o prompt versionado específico da responsabilidade executada. */
+  static String promptResourceFor(String processCode) {
+    return switch (processCode) {
+      case COMMUNICATION_PROCESS -> "prompts/bpm/v1/pde-communication-contract.md";
+      case EXPERIMENT_PROCESS -> "prompts/bpm/v1/experiment-optimization.md";
+      default -> throw new IllegalArgumentException("Processo BPM não suportado por Hermes.");
+    };
+  }
+
+  /** Seleciona o schema versionado específico da responsabilidade executada. */
+  static String schemaResourceFor(String processCode) {
+    return switch (processCode) {
+      case COMMUNICATION_PROCESS -> "prompts/bpm/v1/pde-communication-contract-schema.json";
+      case EXPERIMENT_PROCESS -> "prompts/bpm/v1/experiment-optimization-schema.json";
+      default -> throw new IllegalArgumentException("Processo BPM não suportado por Hermes.");
+    };
+  }
+
+  /** Exige decisão funcional, alternativas e critérios de governança do processo. */
+  static void validate(JsonNode result, String processCode) {
     if (!List.of("COMPLETED", "BLOCKED").contains(result.path("executionStatus").asText())
         || result.path("alternatives").size() != 3
         || result.path("observedFacts").isEmpty()
@@ -161,6 +200,16 @@ public class GrowthOperatorBpmRunner {
         || result.path("recommendedAction").asText().isBlank()) {
       throw new IllegalArgumentException("Parecer BPM de Hermes incompleto.");
     }
+    if (COMMUNICATION_PROCESS.equals(processCode)
+        && (result.path("communicationContract").isMissingNode()
+            || result.path("priceDecision").isMissingNode())) {
+      throw new IllegalArgumentException("Contrato de comunicação do PDE incompleto.");
+    }
+  }
+
+  /** Lê o processo congelado da tarefa. */
+  private static String processCode(Map<String, Object> task) {
+    return String.valueOf(task.getOrDefault("processCode", "")).trim();
   }
 
   /** Lê a última medição cumulativa de tokens emitida pelo Codex. */
@@ -220,14 +269,14 @@ public class GrowthOperatorBpmRunner {
 
   /** Preserva as ferramentas já observadas sem substituir a falha funcional por erro de leitura. */
   private List<JsonNode> safeToolUsage(
-      Path processLog, Map<String, Object> task, long experimentId) {
+      Path processLog, Map<String, Object> task, ExecutionScope scope) {
     try {
       return extractToolUsage(processLog);
     } catch (IOException ex) {
       log.warn(
-          "Falha ao reconstruir ferramentas MCP da atividade BPM de Hermes. taskId={} experimentId={} processLog={}",
+          "Falha ao reconstruir ferramentas MCP da atividade BPM de Hermes. taskId={} sourceReference={} processLog={}",
           task.get("taskId"),
-          experimentId,
+          scope.reference(),
           processLog,
           ex);
       return List.of();
@@ -261,6 +310,9 @@ public class GrowthOperatorBpmRunner {
 
   /** Preserva resultado, ferramentas e consumo na mesma execução BPM. */
   public record BpmExecution(JsonNode result, TokenUsage usage, List<JsonNode> toolUsage) {}
+
+  /** Representa o único escopo de dados liberado para uma execução. */
+  record ExecutionScope(String environmentName, long id, String reference) {}
 
   /** Representa contadores reais cumulativos informados pelo Codex. */
   public record TokenUsage(Long inputTokens, Long cachedInputTokens, Long outputTokens) {

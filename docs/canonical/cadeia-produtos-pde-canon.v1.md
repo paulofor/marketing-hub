@@ -117,6 +117,7 @@ Cada trabalho tem uma única autoridade:
 | Construir e aprovar o PDE completo | `pde-construction-approval` | `product-manufacturing-approval` fica aposentado; ativos e entregáveis são atividades da construção canônica |
 | Produzir e aprovar criativos | `creative-production-approval` | comunicação apenas delega e integra o resultado aprovado |
 | Produzir e aprovar landing | `landing-page-generation` | comunicação não recria copy, HTML, imagens ou revisão da landing |
+| Materializar e governar degustação pré-compra | `pde-tasting-proof-of-value` | construção fornece produto e prova aprovados; comunicação decide quando delegar e apenas integra a experiência aprovada |
 | Executar preflight técnico | `experiment-homologation-activation` | homologação comercial do PDE valida riscos próprios, consome as evidências e decide ativação |
 | Operar e otimizar experimento | `operacao-otimizacao-experimento` | processo final apenas consolida o resultado, sem executar outra otimização |
 | Conciliar venda, entregar e medir satisfação | `venda-entrega-satisfacao-cliente` | processo final não reentrega, reprocessa ou solicita satisfação novamente |
@@ -306,11 +307,42 @@ para as dúvidas prioritárias, verificar o produto real, saber o próximo passo
 ruptura de mensagem. Canal, creator, variante e versão devem permanecer atribuíveis até venda e
 entrega.
 
-Os processos `Criação e aprovação de criativos` e `Geração de landing page` permanecem como
-subprocessos especializados desta etapa. `Comunicação e jornada de venda do PDE` congela o contrato,
-delega cada produção uma única vez e integra os resultados a checkout, acesso e eventos. Nem todo PDE
-exige landing tradicional; a entrada pode ser a própria microexperiência, desde que o Plano Comercial
-defina essa rota.
+Os processos `Criação e aprovação de criativos`, `Geração de landing page` e `Degustação e prova de
+valor pré-compra` permanecem como subprocessos especializados desta etapa. `Comunicação e jornada de
+venda do PDE` congela o contrato, delega cada produção uma única vez e integra os resultados a
+checkout, acesso e eventos. Nem todo PDE exige landing tradicional ou degustação; a entrada pode ser
+a própria microexperiência, desde que o Plano Comercial defina essa rota.
+
+### Subprocesso opcional: Degustação e prova de valor pré-compra
+
+O subprocesso `pde-tasting-proof-of-value` transforma o pacote de prova e o produto já aprovados em
+uma experiência pré-compra limitada, útil e mensurável. Ele pode materializar amostra personalizada,
+acesso limitado por funcionalidade ou experimentação limitada por tempo ou uso. O formato precisa
+provar um diferencial específico, produzir um primeiro resultado real e conectar explicitamente esse
+resultado à continuidade paga, sem entregar gratuitamente a transformação completa.
+
+**Entrada mínima:** Plano Comercial que escolha degustação, versão PDE aprovada, pacote de prova,
+fronteira entre valor gratuito e pago, preço vigente, custo máximo por uso e regras de consentimento,
+expiração e prevenção de abuso.
+
+**Trabalho exclusivo:** confirmar modalidade e hipótese de prova; definir microvalor e limite pago;
+configurar consentimento, custo, expiração e antifraude; materializar a degustação a partir do produto
+aprovado; conectar CTA, checkout e acesso; instrumentar `tasting_started`, `value_moment`,
+`paywall_viewed`, `checkout_started`, `purchase`, expiração e bloqueio de abuso; e homologar caminho
+feliz, falhas, retomada, limite e segregação entre pessoas.
+
+**Saída final:** degustação aprovada, versionada e pronta para integração à jornada, com evidências,
+custo e eventos auditáveis, sem ativação automática de mídia.
+
+**Gate:** continuar quando a experiência entrega valor real, preserva privacidade e margem e permite
+atribuir degustação, checkout e venda; ajustar quando houver ativação sem avanço comercial; parar
+diante de canibalização, custo excessivo, abuso, promessa contraditória ou mensuração incompleta.
+Amostra iniciada, primeiro valor e checkout nunca contam como venda.
+
+O subprocesso não escolhe preço, não fabrica ou aprova novamente o PDE, não recria criativos ou
+landing, não ativa campanha e não decide o avanço da cadeia. Produtos de compra única usam degustação
+para reduzir incerteza e demonstrar qualidade; criação de hábito só é objetivo quando o valor do PDE
+for recorrente.
 
 ## 5. Homologação e ativação comercial
 

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import type {
   BusinessProcess,
+  BusinessProcessComposition,
   BusinessProcessExecutionResource,
   CreateBusinessProcess,
   SaveBusinessProcess,
@@ -14,6 +15,19 @@ export function useBusinessProcesses() {
     queryKey: key,
     queryFn: async () =>
       (await axios.get<BusinessProcess[]>("/api/business-processes")).data,
+  });
+}
+
+export function useBusinessProcessComposition(processDefinitionId?: number) {
+  return useQuery({
+    queryKey: ["business-processes", processDefinitionId, "composition"],
+    enabled: processDefinitionId !== undefined,
+    queryFn: async () =>
+      (
+        await axios.get<BusinessProcessComposition>(
+          `/api/business-processes/${processDefinitionId}/composition`,
+        )
+      ).data,
   });
 }
 

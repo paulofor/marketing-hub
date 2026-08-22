@@ -319,6 +319,7 @@ class BusinessProcessDefinitionServiceTest {
     BusinessProcessDefinition subprocess = entity(6L, 1, "PUBLISHED", validDiagram().toString());
     subprocess.setProcessCode("product-assets");
     subprocess.setProcessType("SUBPROCESS");
+    subprocess.setParentProcessCode("landing");
     when(repository.findByProcessCodeAndVersionNumber("landing", 2)).thenReturn(Optional.empty());
     when(repository.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
             "product-assets", "PUBLISHED"))
@@ -342,6 +343,31 @@ class BusinessProcessDefinitionServiceTest {
 
     assertThat(result.diagram().path("nodes").get(1).path("subprocessCode").asText())
         .isEqualTo("product-assets");
+  }
+
+  /** Rejeita chamada de subprocesso vinculado a outro pai para preservar a árvore oficial. */
+  @Test
+  void rejectsSubprocessFromAnotherValueProcess() throws Exception {
+    var repository = mock(BusinessProcessDefinitionRepository.class);
+    BusinessProcessDefinition subprocess = entity(6L, 1, "PUBLISHED", validDiagram().toString());
+    subprocess.setProcessCode("product-assets");
+    subprocess.setProcessType("SUBPROCESS");
+    subprocess.setParentProcessCode("other-value-process");
+    when(repository.findByProcessCodeAndVersionNumber("landing", 2)).thenReturn(Optional.empty());
+    when(repository.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
+            "product-assets", "PUBLISHED"))
+        .thenReturn(Optional.of(subprocess));
+    var service = new BusinessProcessDefinitionService(repository, tasks, mapper);
+    var diagram =
+        mapper.readTree(
+            "{\"nodes\":[{\"id\":\"start\",\"type\":\"START\",\"label\":\"Início\"},"
+                + "{\"id\":\"task\",\"type\":\"TASK\",\"label\":\"Produzir\",\"subprocessCode\":\"product-assets\"},"
+                + "{\"id\":\"end\",\"type\":\"END\",\"label\":\"Fim\"}],"
+                + "\"flows\":[{\"from\":\"start\",\"to\":\"task\"},{\"from\":\"task\",\"to\":\"end\"}]}");
+
+    assertThatThrownBy(() -> service.create(request(diagram)))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("pertencer a este processo de valor");
   }
 
   /** Exclui rascunho sem tarefa e preserva qualquer definição utilizada. */

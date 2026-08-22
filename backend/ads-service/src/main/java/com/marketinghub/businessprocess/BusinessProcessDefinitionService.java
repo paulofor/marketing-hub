@@ -94,7 +94,7 @@ public class BusinessProcessDefinitionService {
     }
     validateEquivalentProcess(request.name(), code, null);
     validateResponsibilityBoundary(request.processType(), request.parentProcessCode(), code);
-    validateDiagram(request.diagram());
+    validateDiagram(request.diagram(), code);
     BusinessProcessDefinition value = new BusinessProcessDefinition();
     value.setProcessCode(code);
     value.setName(request.name().trim());
@@ -129,7 +129,7 @@ public class BusinessProcessDefinitionService {
     validateEquivalentProcess(request.name(), value.getProcessCode(), value.getId());
     validateResponsibilityBoundary(
         request.processType(), request.parentProcessCode(), value.getProcessCode());
-    validateDiagram(request.diagram());
+    validateDiagram(request.diagram(), value.getProcessCode());
     applyEditableFields(value, request);
     return response(repository.save(value));
   }
@@ -143,7 +143,7 @@ public class BusinessProcessDefinitionService {
     }
     validateResponsibilityBoundary(
         processType(selected), selected.getParentProcessCode(), selected.getProcessCode());
-    validateDiagram(read(selected.getDiagramJson()));
+    validateDiagram(read(selected.getDiagramJson()), selected.getProcessCode());
     Instant now = Instant.now(clock);
     repository.findAllByProcessCodeOrderByVersionNumberDesc(selected.getProcessCode()).stream()
         .filter(item -> "PUBLISHED".equals(item.getStatus()))
@@ -217,8 +217,8 @@ public class BusinessProcessDefinitionService {
     }
   }
 
-  /** Valida integridade BPM mínima: eventos únicos e fluxos apontando para nós existentes. */
-  private void validateDiagram(JsonNode diagram) {
+  /** Valida integridade BPM, fluxos e delegações pertencentes ao processo informado. */
+  private void validateDiagram(JsonNode diagram, String processCode) {
     JsonNode nodes = diagram.path("nodes");
     JsonNode flows = diagram.path("flows");
     if (!nodes.isArray() || nodes.size() < 3 || !flows.isArray() || flows.isEmpty()) {
@@ -240,7 +240,7 @@ public class BusinessProcessDefinitionService {
       }
       validateExecutionResource(node, type);
       validateDocumentOutput(node, type);
-      validateSubprocessReference(node, type);
+      validateSubprocessReference(node, type, processCode);
     }
     if (starts != 1 || ends != 1) {
       throw invalid("O processo deve ter exatamente um início e um fim.");
@@ -281,8 +281,9 @@ public class BusinessProcessDefinitionService {
     }
   }
 
-  /** Valida a chamada explícita de subprocesso e impede uma segunda execução implícita. */
-  private void validateSubprocessReference(JsonNode node, String nodeType) {
+  /** Valida a chamada explícita de um subprocesso pertencente ao processo de valor atual. */
+  private void validateSubprocessReference(
+      JsonNode node, String nodeType, String parentProcessCode) {
     String subprocessCode = node.path("subprocessCode").asText("").trim();
     if (subprocessCode.isEmpty()) return;
     if (!"TASK".equals(nodeType)) {
@@ -300,6 +301,9 @@ public class BusinessProcessDefinitionService {
             .orElseThrow(() -> invalid("O subprocesso informado precisa estar publicado."));
     if (!"SUBPROCESS".equals(processType(subprocess))) {
       throw invalid("A atividade deve apontar para uma definição classificada como subprocesso.");
+    }
+    if (!parentProcessCode.equals(subprocess.getParentProcessCode())) {
+      throw invalid("O subprocesso informado precisa pertencer a este processo de valor.");
     }
   }
 

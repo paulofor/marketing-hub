@@ -52,6 +52,24 @@ export type BusinessProcess = {
   publishedAt?: string;
 };
 
+export type BusinessProcessReference = {
+  id: number;
+  processCode: string;
+  name: string;
+  purpose: string;
+  ownerName: string;
+  versionNumber: number;
+  status: "DRAFT" | "PUBLISHED" | "RETIRED";
+  processType: "VALUE_PROCESS" | "SUBPROCESS";
+};
+
+export type BusinessProcessComposition = {
+  process: BusinessProcessReference;
+  parentProcess?: BusinessProcessReference;
+  subprocessCount: number;
+  subprocesses: BusinessProcessReference[];
+};
+
 export type CreateBusinessProcess = Omit<
   BusinessProcess,
   "id" | "status" | "createdAt" | "publishedAt"

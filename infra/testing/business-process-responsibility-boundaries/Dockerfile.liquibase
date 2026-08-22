@@ -1,0 +1,9 @@
+FROM liquibase/liquibase:4.28
+
+USER root
+
+RUN lpm add mysql --global
+
+COPY --chown=liquibase:root backend/ads-service /liquibase/work
+
+USER liquibase

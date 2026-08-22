@@ -17,4 +17,8 @@ public record BusinessProcessDefinitionResponse(
     String technicalReference,
     JsonNode diagram,
     Instant createdAt,
-    Instant publishedAt) {}
+    Instant publishedAt,
+    String processType,
+    String parentProcessCode,
+    Long parentProcessDefinitionId,
+    String parentProcessName) {}

@@ -17,4 +17,8 @@ public interface BusinessProcessDefinitionRepository
 
   /** Lista versões do mesmo processo para governar a publicação. */
   List<BusinessProcessDefinition> findAllByProcessCodeOrderByVersionNumberDesc(String processCode);
+
+  /** Localiza a versão vigente de um processo pai para validar composição sem ambiguidade. */
+  Optional<BusinessProcessDefinition> findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
+      String processCode, String status);
 }

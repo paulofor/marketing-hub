@@ -1,0 +1,33 @@
+databaseChangeLog:
+  - changeSet:
+      id: business-process-responsibility-boundaries-fixture-1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, diagram_json, created_at, published_at)
+              VALUES
+                ('product-manufacturing-approval', 'Fabricação e aprovação do produto',
+                 'Fixture do subprocesso histórico de fabricação.', 'Operação de Produtos',
+                 'Plano comercial aprovado.', 'Produto fabricado.', 2, 'PUBLISHED', NULL,
+                 '{"nodes":[],"flows":[]}', UTC_TIMESTAMP(), UTC_TIMESTAMP()),
+                ('creative-production-approval', 'Criação e aprovação de criativos',
+                 'Fixture do subprocesso especializado de criativos.', 'Operação de Experimentos',
+                 'Comunicação aprovada.', 'Criativos aprovados.', 5, 'PUBLISHED', NULL,
+                 '{"nodes":[],"flows":[]}', UTC_TIMESTAMP(), UTC_TIMESTAMP()),
+                ('operacao-otimizacao-experimento', 'Operação e otimização de experimento',
+                 'Fixture do subprocesso especializado de otimização.', 'Operação de Crescimento',
+                 'Experimento ativo.', 'Hipótese operacional avaliada.', 3, 'PUBLISHED', NULL,
+                 '{"nodes":[],"flows":[]}', UTC_TIMESTAMP(), UTC_TIMESTAMP()),
+                ('venda-entrega-satisfacao-cliente', 'Venda, entrega e satisfação',
+                 'Fixture do subprocesso especializado de entrega.', 'Operação de Produtos',
+                 'Venda aprovada.', 'Entrega e satisfação registradas.', 3, 'PUBLISHED', NULL,
+                 '{"nodes":[],"flows":[]}', UTC_TIMESTAMP(), UTC_TIMESTAMP());

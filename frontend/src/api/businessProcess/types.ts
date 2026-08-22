@@ -7,6 +7,7 @@ export type ProcessNode = {
   owner?: string;
   description?: string;
   executionResourceCode?: string;
+  subprocessCode?: string;
   documentOutput?: {
     label: string;
   };
@@ -42,6 +43,10 @@ export type BusinessProcess = {
   versionNumber: number;
   status: "DRAFT" | "PUBLISHED" | "RETIRED";
   technicalReference?: string;
+  processType?: "VALUE_PROCESS" | "SUBPROCESS";
+  parentProcessCode?: string;
+  parentProcessDefinitionId?: number;
+  parentProcessName?: string;
   diagram: ProcessDiagram;
   createdAt: string;
   publishedAt?: string;

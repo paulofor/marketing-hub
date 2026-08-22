@@ -73,6 +73,11 @@ export default function BusinessProcessDiagram({
                   : ""}
               </div>
             ) : null}
+            {node.subprocessCode ? (
+              <div className="process-node__resource">
+                Subprocesso canônico: {node.subprocessCode}
+              </div>
+            ) : null}
             {node.description ? (
               <div className="process-node__objective">
                 <p>

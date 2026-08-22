@@ -77,7 +77,14 @@ export default function BusinessProcessEditor({
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    await onSave(value);
+    await onSave({
+      ...value,
+      processType: value.processType ?? "VALUE_PROCESS",
+      parentProcessCode:
+        (value.processType ?? "VALUE_PROCESS") === "SUBPROCESS"
+          ? value.parentProcessCode
+          : undefined,
+    });
   };
 
   return (
@@ -133,6 +140,52 @@ export default function BusinessProcessEditor({
             />
           </div>
         ))}
+        <div className="col-md-4">
+          <label className="form-label" htmlFor="editor-process-type">
+            Tipo *
+          </label>
+          <select
+            id="editor-process-type"
+            className="form-select"
+            required
+            value={value.processType ?? "VALUE_PROCESS"}
+            onChange={(event) => {
+              const processType = event.target.value as
+                "VALUE_PROCESS" | "SUBPROCESS";
+              setValue({
+                ...value,
+                processType,
+                parentProcessCode:
+                  processType === "SUBPROCESS"
+                    ? value.parentProcessCode
+                    : undefined,
+              });
+            }}
+          >
+            <option value="VALUE_PROCESS">Processo de valor</option>
+            <option value="SUBPROCESS">Subprocesso</option>
+          </select>
+        </div>
+        {(value.processType ?? "VALUE_PROCESS") === "SUBPROCESS" ? (
+          <div className="col-md-8">
+            <label className="form-label" htmlFor="editor-parent-process">
+              Código do processo de valor pai *
+            </label>
+            <input
+              id="editor-parent-process"
+              className="form-control"
+              required
+              pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+              value={value.parentProcessCode ?? ""}
+              onChange={(event) =>
+                setValue({
+                  ...value,
+                  parentProcessCode: event.target.value || undefined,
+                })
+              }
+            />
+          </div>
+        ) : null}
         {[
           ["Objetivo", "purpose"],
           ["Evento de início", "triggerDescription"],
@@ -195,6 +248,8 @@ export default function BusinessProcessEditor({
                     type === "TASK" ? node.executionResourceCode : undefined,
                   documentOutput:
                     type === "TASK" ? node.documentOutput : undefined,
+                  subprocessCode:
+                    type === "TASK" ? node.subprocessCode : undefined,
                 });
               }}
             >
@@ -246,6 +301,28 @@ export default function BusinessProcessEditor({
             </button>
             {node.type === "TASK" ? (
               <div className="process-editor__task-contracts">
+                <div className="process-editor__resource">
+                  <label
+                    className="form-label small fw-semibold"
+                    htmlFor={`subprocess-${node.id}`}
+                  >
+                    Subprocesso canônico (opcional)
+                  </label>
+                  <input
+                    id={`subprocess-${node.id}`}
+                    className="form-control"
+                    pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+                    value={node.subprocessCode ?? ""}
+                    onChange={(event) =>
+                      updateNode(index, {
+                        subprocessCode: event.target.value || undefined,
+                        executionResourceCode: event.target.value
+                          ? undefined
+                          : node.executionResourceCode,
+                      })
+                    }
+                  />
+                </div>
                 <div className="process-editor__document">
                   <div className="form-check">
                     <input
@@ -296,11 +373,15 @@ export default function BusinessProcessEditor({
                       className="form-select"
                       aria-label={`Recurso especializado de ${node.label}`}
                       disabled={resourcesLoading || resourcesUnavailable}
+                      aria-disabled={Boolean(node.subprocessCode)}
                       value={node.executionResourceCode ?? ""}
                       onChange={(event) =>
                         updateNode(index, {
                           executionResourceCode:
                             event.target.value || undefined,
+                          subprocessCode: event.target.value
+                            ? undefined
+                            : node.subprocessCode,
                         })
                       }
                     >
@@ -345,8 +426,7 @@ export default function BusinessProcessEditor({
                         {
                           executionResources.find(
                             (item) =>
-                              item.resourceCode ===
-                              node.executionResourceCode,
+                              item.resourceCode === node.executionResourceCode,
                           )?.executorReference
                         }
                       </code>

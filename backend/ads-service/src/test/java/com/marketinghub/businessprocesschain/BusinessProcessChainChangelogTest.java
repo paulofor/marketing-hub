@@ -19,6 +19,8 @@ class BusinessProcessChainChangelogTest {
       "changesets/2026-08-21-pde-proof-distribution-intent-chain-v3.yaml";
   private static final String AI_DECISION_READINESS_CHANGESET =
       "changesets/2026-08-21-pde-ai-decision-readiness-chain-v4.yaml";
+  private static final String RESPONSIBILITY_BOUNDARIES_CHANGESET =
+      "changesets/2026-08-22-business-process-responsibility-boundaries.yaml";
   private static final String HOMOLOGATION_CHANGELOG =
       "src/test/resources/db/changelog/pde-chain-v4-homologation.yaml";
 
@@ -168,6 +170,51 @@ class BusinessProcessChainChangelogTest {
       assertThat(homologation.getDatabaseChangeLog().getChangeSets())
           .extracting("id")
           .contains("2026-08-21-pde-ai-decision-readiness-chain-v4-3");
+    }
+  }
+
+  /** Exige cadeia v5 com subprocessos explícitos e uma única autoridade de construção. */
+  @Test
+  void declaresExclusiveResponsibilityPdeValueChainVersion() throws Exception {
+    String change =
+        Files.readString(
+            Path.of("src/main/resources/db/changelog/" + RESPONSIBILITY_BOUNDARIES_CHANGESET));
+    String master =
+        Files.readString(Path.of("src/main/resources/db/changelog/db.changelog-master.yaml"));
+
+    assertThat(change)
+        .contains("'pde-value-creation-delivery'")
+        .contains("version_number = 5")
+        .contains("'SUBPROCESS'")
+        .contains("\"subprocessCode\":\"creative-production-approval\"")
+        .contains("\"subprocessCode\":\"landing-page-generation\"")
+        .contains("\"subprocessCode\":\"experiment-homologation-activation\"")
+        .contains("\"subprocessCode\":\"operacao-otimizacao-experimento\"")
+        .contains("\"subprocessCode\":\"venda-entrega-satisfacao-cliente\"")
+        .contains("WHERE process_code = 'product-manufacturing-approval'")
+        .doesNotContain("TIMESTAMP NOT NULL");
+    assertThat(master)
+        .contains(
+            "file: "
+                + RESPONSIBILITY_BOUNDARIES_CHANGESET
+                + "\n      relativeToChangelogFile: true");
+
+    try (DirectoryResourceAccessor resourceAccessor =
+        new DirectoryResourceAccessor(Path.of(".").toAbsolutePath().normalize())) {
+      var database =
+          DatabaseFactory.getInstance()
+              .openDatabase("offline:mysql", null, null, null, resourceAccessor);
+      var liquibase =
+          new Liquibase(
+              "src/main/resources/db/changelog/" + RESPONSIBILITY_BOUNDARIES_CHANGESET,
+              resourceAccessor,
+              database);
+
+      assertThat(liquibase.getDatabaseChangeLog().getChangeSets()).hasSize(4);
+      var homologation = new Liquibase(HOMOLOGATION_CHANGELOG, resourceAccessor, database);
+      assertThat(homologation.getDatabaseChangeLog().getChangeSets())
+          .extracting("id")
+          .contains("2026-08-22-business-process-responsibility-boundaries-4");
     }
   }
 }

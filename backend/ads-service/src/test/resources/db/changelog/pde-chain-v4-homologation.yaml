@@ -14,3 +14,12 @@ databaseChangeLog:
   - include:
       file: ../../../../main/resources/db/changelog/changesets/2026-08-21-pde-ai-decision-readiness-chain-v4.yaml
       relativeToChangelogFile: true
+  - include:
+      file: business-process-responsibility-boundaries-fixture.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: ../../../../main/resources/db/changelog/changesets/2026-08-22-business-process-responsibility-boundaries.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: business-process-responsibility-boundaries-assertion.yaml
+      relativeToChangelogFile: true

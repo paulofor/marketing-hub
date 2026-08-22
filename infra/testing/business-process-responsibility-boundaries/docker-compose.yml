@@ -1,0 +1,48 @@
+services:
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: marketinghub_process_boundaries
+      MYSQL_ROOT_PASSWORD: local-process-boundaries
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "127.0.0.1",
+          "-plocal-process-boundaries",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 60
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  liquibase-validation:
+    build:
+      context: ../../..
+      dockerfile: infra/testing/business-process-responsibility-boundaries/Dockerfile.liquibase
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        liquibase \
+          --url='jdbc:mysql://mysql:3306/marketinghub_process_boundaries?useSSL=false&allowPublicKeyRetrieval=true' \
+          --username=root \
+          --password=local-process-boundaries \
+          --changelog-file=work/src/test/resources/db/changelog/pde-chain-v4-homologation.yaml \
+          update
+        liquibase \
+          --url='jdbc:mysql://mysql:3306/marketinghub_process_boundaries?useSSL=false&allowPublicKeyRetrieval=true' \
+          --username=root \
+          --password=local-process-boundaries \
+          --changelog-file=work/src/test/resources/db/changelog/pde-chain-v4-homologation.yaml \
+          update
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql-data:

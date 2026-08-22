@@ -35,6 +35,7 @@
 - **Causa-raiz confirmada em 2026-08-12:** antes de reservar a fila principal, o scheduler tentava criar um ciclo automático para um plano configurado. O HTTP 409 esperado quando esse plano não possuía experimento `RUNNING` encerrava o polling e impedia o consumo de pendências independentes de Agenda Cheia e MUSA.
 - **Correção efetiva:** a avaliação do ciclo automático continua auditável, mas sua falha fica isolada; o worker sempre tenta reservar a fila principal no mesmo polling.
 - **Prevenção:** teste unitário exige `claimPending()` mesmo quando `ensureAutomaticCycle()` falha, impedindo uma fila auxiliar de causar starvation global.
+- **Fechamento complementar em 2026-08-22:** um diagnóstico automático longo ainda ocupava a única thread do agendador e impedia a fila BPM de Hermes de reservar a validação pós-deploy do experimento #88. O executor passa a manter quatro threads agendadas, uma para cada rotina independente atual, e um teste de contrato impede regressão para a fila única.
 
 ## LOOP-COMMERCIAL-PLAN-WITHOUT-NEXT-ACTION — plano aberto esquecido sem agente
 

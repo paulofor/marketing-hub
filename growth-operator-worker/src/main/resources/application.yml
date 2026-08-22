@@ -12,6 +12,10 @@ management:
 spring:
   application:
     name: growth-operator-worker
+  task:
+    scheduling:
+      pool:
+        size: 4
 logging:
   file:
     name: ${LOG_FILE_NAME:/tmp/growth-operator-worker.log}

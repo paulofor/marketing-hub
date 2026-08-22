@@ -6614,3 +6614,12 @@
 - correção causal: o cliente de Insights passa a enviar uma `URI` absoluta com codificação única, campanha pausada continua elegível para uma reconciliação final e teste de contrato bloqueia a sequência `%257B` no caminho transmitido.
 - contenção operacional: o DNS comercial apontava para `191.252.120.96`, não para o host inicialmente informado; no host correto, os dois containers legados concorrentes foram parados de forma reversível e a pilha canônica permaneceu saudável. Seis leituras consecutivas da landing responderam HTTP 200 entre 0,50 e 0,74 segundo.
 - reconciliação auditada: o agregado oficial da Meta foi enviado pelo contrato do backend e o cockpit passou a exibir 205 impressões, quatro cliques, CTR 1,9512%, CPC R$ 1,17, gasto R$ 4,68, dois page views e zero checkout/venda. Experimento e campanha permaneceram pausados; Hermes foi mantido em `STOP`, sem tokens, porque ainda não existe amostra suficiente para mudar comunicação.
+
+## 2026-08-22 — Experimento 88: integridade aprovada sem revogar a trava financeira
+
+- evidência operacional: a tarefa BPM #187 de Hermes comprovou a reconciliação de seis pageviews humanas em cinco sessões, horários UTC coerentes, tráfego automatizado segregado, p95 de 3,893 segundos e zero erro de recurso;
+- gate financeiro independente: os Insights oficiais da Meta registraram 843 impressões, sete cliques, gasto de R$ 25,24 e zero resultado primário; campanha e experimento permaneceram parados conforme a trava canônica de R$ 25,00;
+- causa-raiz da recomendação contraditória: o contrato BPM tratava o gate de integridade como suficiente para recomendar a coleta da amostra e não exigia confrontá-lo com a regra financeira já acionada;
+- correção local: Hermes passa a bloquear continuidade, liberação de amostra ou retomada quando o gasto Meta atingir R$ 25,00 sem `ENVIO_FORM`, `ABERTURA_EMAIL_AMOSTRA` ou `COMPRA`; orçamento diário ou global maior não revoga a trava;
+- correção causal no backend: a liquidação final também avalia o experimento recém-reconciliado como `USER_STOPPED`, altera-o para `INVALIDATED` e atualiza o motivo comercial mesmo quando a campanha já foi pausada na Meta, sem reabrir uma solicitação física concluída;
+- estado do processo: a tarefa #188 registra `task-2` como próxima atividade, mas Hermes permanece em `STOP` e nenhum novo gasto é autorizado enquanto o produto não decidir alterar a regra canônica ou encerrar/redesenhar o experimento.

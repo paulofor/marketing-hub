@@ -381,6 +381,35 @@ class AccessServiceTest {
         assertThat(response.accessUrl()).isNull();
     }
 
+    /** Confirma que o Kit recebe link mágico no próprio domínio e nunca no domínio MUSA. */
+    @Test
+    void sendsNonMusaMagicLinkToProductDomain() {
+        ProductCatalogService productCatalogService = mock(ProductCatalogService.class);
+        when(productCatalogService.getProduct("kit-whatsapp-pronto"))
+                .thenReturn(mock(ProductExperienceResponse.class));
+        CapturingMailService mailService = new CapturingMailService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("kit-magic-link.json").toString(),
+                "",
+                "",
+                "",
+                false,
+                "http://localhost:5176",
+                false,
+                mailService,
+                null);
+
+        var response = accessService.requestMagicLink(
+                "kit-whatsapp-pronto", "prestador@sandbox.local");
+
+        assertThat(response.deliveryStatus()).isEqualTo("SENT");
+        assertThat(mailService.accessUrl)
+                .startsWith("https://kit-whatsapp-pronto.digicomdigital.com.br/access/")
+                .doesNotContain("clubemusa.com.br");
+    }
+
     /** Confirma que a tentativa de login sem cadastro orienta a cliente a pedir primeiro acesso. */
     @Test
     void rejectsExistingCustomerMagicLinkWhenEmailIsUnknown() {
@@ -1764,6 +1793,29 @@ class AccessServiceTest {
         @Override
         public void sendMagicLink(String to, String accessUrl) {
             throw new IllegalStateException("SES rejeitou o remetente");
+        }
+    }
+
+    /** Captura o link mágico sem enviar e-mail externo durante a homologação. */
+    private static class CapturingMailService extends PdeMailService {
+
+        private String accessUrl;
+
+        /** Inicializa o provedor local com transporte marcado como configurado. */
+        CapturingMailService() {
+            super("ses", "us-east-1", "", 1025, "acesso@digicomdigital.com.br", "", "");
+        }
+
+        /** Informa que o provedor de homologação aceita envios. */
+        @Override
+        public boolean isConfigured() {
+            return true;
+        }
+
+        /** Guarda o link que seria enviado para permitir a asserção do domínio. */
+        @Override
+        public void sendMagicLink(String to, String value) {
+            this.accessUrl = value;
         }
     }
 }

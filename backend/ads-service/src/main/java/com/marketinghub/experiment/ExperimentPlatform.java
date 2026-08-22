@@ -1,6 +1,7 @@
 package com.marketinghub.experiment;
 
-/** Advertising platform supported by the experiment module. */
+/** Representa o canal de aquisição usado para executar um experimento comercial. */
 public enum ExperimentPlatform {
-  FACEBOOK
+  FACEBOOK,
+  DIRECT_ONE_TO_ONE
 }

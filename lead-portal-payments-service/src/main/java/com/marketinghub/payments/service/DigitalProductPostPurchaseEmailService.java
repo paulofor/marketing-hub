@@ -30,6 +30,7 @@ public class DigitalProductPostPurchaseEmailService {
     private final DigitalProductDeliveryEmailRepository repository;
     private final DigitalProductDeliveryEmailClient emailClient;
 
+    /** Inicializa a entrega com configuração, persistência e cliente oficial de e-mail. */
     public DigitalProductPostPurchaseEmailService(DigitalProductEmailDeliveryProperties properties,
                                                   DigitalProductDeliveryEmailRepository repository,
                                                   DigitalProductDeliveryEmailClient emailClient) {
@@ -222,6 +223,13 @@ public class DigitalProductPostPurchaseEmailService {
                     properties.getAgendaCheiaReference(),
                     properties.getAgendaCheiaProductName(),
                     properties.getAgendaCheiaDeliveryPageUrl(),
+                    null));
+        }
+        if (normalized.equals(normalize(properties.getKitWhatsAppReference()))) {
+            return Optional.of(new DigitalProductConfig(
+                    properties.getKitWhatsAppReference(),
+                    properties.getKitWhatsAppProductName(),
+                    properties.getKitWhatsAppDeliveryPageUrl(),
                     null));
         }
         return Optional.empty();

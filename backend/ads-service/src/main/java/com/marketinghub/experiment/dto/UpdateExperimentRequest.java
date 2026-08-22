@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
 import com.marketinghub.experiment.ExperimentCampaignObjective;
+import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStage;
 import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.productai.ProductAiSubtype;
@@ -31,6 +32,8 @@ public class UpdateExperimentRequest {
   @JsonIgnore private boolean productAiSubtypePresent;
   private ExperimentCampaignObjective campaignObjective;
   @JsonIgnore private boolean campaignObjectivePresent;
+  private ExperimentPlatform platform;
+  @JsonIgnore private boolean platformPresent;
   private ExperimentStage stage;
   private String primaryVariable;
   private String primaryMetric;
@@ -138,6 +141,13 @@ public class UpdateExperimentRequest {
   public void setCampaignObjective(ExperimentCampaignObjective campaignObjective) {
     this.campaignObjective = campaignObjective;
     this.campaignObjectivePresent = true;
+  }
+
+  /** Registra a presença do canal de aquisição no payload de atualização. */
+  @JsonSetter(value = "platform", nulls = Nulls.SET)
+  public void setPlatform(ExperimentPlatform platform) {
+    this.platform = platform;
+    this.platformPresent = true;
   }
 
   @JsonSetter(value = "facebookPageId", nulls = Nulls.SET)

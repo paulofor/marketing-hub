@@ -1,10 +1,14 @@
 import { expect, test } from "@playwright/test";
 
 const productSlug = "kit-whatsapp-pronto";
+const backendBaseUrl =
+  process.env.PDE_ASSISTED_BACKEND_URL ?? "http://127.0.0.1:8096";
+const mailBaseUrl =
+  process.env.PDE_ASSISTED_MAIL_URL ?? "http://sandbox-mail:8025";
 
 test.beforeEach(async ({ page, request }) => {
   await request.post(
-    `http://127.0.0.1:8096/api/pde/access/analytics/${productSlug}/reset-campaign-start`,
+    `${backendBaseUrl}/api/pde/access/analytics/${productSlug}/reset-campaign-start`,
   );
   await page.goto("/?mh_test=1");
 });
@@ -80,17 +84,17 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
   expect(accessToken).toBeTruthy();
 
   const deliveryBeforeOperation = await request.get(
-    `http://127.0.0.1:8096/api/pde/access/${accessToken}/deliveries/microvalor-12h/download`,
+    `${backendBaseUrl}/api/pde/access/${accessToken}/deliveries/microvalor-12h/download`,
   );
   expect(deliveryBeforeOperation.ok()).toBeFalsy();
 
   const unauthorizedCustomerAdvance = await request.post(
-    `http://127.0.0.1:8096/api/pde/access/${accessToken}/missions/conferencia-de-completude/complete`,
+    `${backendBaseUrl}/api/pde/access/${accessToken}/missions/conferencia-de-completude/complete`,
   );
   expect(unauthorizedCustomerAdvance.ok()).toBeFalsy();
 
   const unauthorizedOperationAdvance = await request.post(
-    `http://127.0.0.1:8096/api/internal/pde/assisted-operation/access/${accessToken}/missions/conferencia-de-completude/complete`,
+    `${backendBaseUrl}/api/internal/pde/assisted-operation/access/${accessToken}/missions/conferencia-de-completude/complete`,
     { headers: { "X-PDE-Operation-Token": "token-incorreto" } },
   );
   expect(unauthorizedOperationAdvance.status()).toBe(403);
@@ -176,14 +180,14 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
     },
   ];
   const incompleteDelivery = await request.post(
-    `http://127.0.0.1:8096/api/internal/pde/assisted-operation/access/${accessToken}/missions/microvalor-12h/complete`,
+    `${backendBaseUrl}/api/internal/pde/assisted-operation/access/${accessToken}/missions/microvalor-12h/complete`,
     { headers: { "X-PDE-Operation-Token": "pde-local-operation-test" } },
   );
   expect(incompleteDelivery.ok()).toBeFalsy();
 
   for (const stage of operationalStages) {
     const operationAdvance = await request.post(
-      `http://127.0.0.1:8096/api/internal/pde/assisted-operation/access/${accessToken}/missions/${stage.missionId}/complete`,
+      `${backendBaseUrl}/api/internal/pde/assisted-operation/access/${accessToken}/missions/${stage.missionId}/complete`,
       {
         headers: { "X-PDE-Operation-Token": "pde-local-operation-test" },
         data:
@@ -299,7 +303,7 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
   ).toBeVisible();
 
   const magicLinkResponse = await request.post(
-    "http://127.0.0.1:8096/api/pde/access/login-link",
+    `${backendBaseUrl}/api/pde/access/login-link`,
     {
       data: { productSlug, email },
     },
@@ -309,7 +313,7 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
   await expect
     .poll(async () => {
       const mailResponse = await request.get(
-        "http://sandbox-mail:8025/api/v1/messages",
+        `${mailBaseUrl}/api/v1/messages`,
       );
       const mailbox = await mailResponse.json();
       return mailbox.messages.some((message: { To?: { Address?: string }[] }) =>
@@ -340,7 +344,7 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
   await expect
     .poll(async () => {
       const response = await request.get(
-        `http://127.0.0.1:8096/api/pde/access/analytics/${productSlug}/summary`,
+        `${backendBaseUrl}/api/pde/access/analytics/${productSlug}/summary`,
       );
       const summary = await response.json();
       return {
@@ -358,7 +362,7 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
     });
 
   const summaryResponse = await request.get(
-    `http://127.0.0.1:8096/api/pde/access/analytics/${productSlug}/summary`,
+    `${backendBaseUrl}/api/pde/access/analytics/${productSlug}/summary`,
   );
   expect((await summaryResponse.json()).rawTotalEvents).toBeGreaterThanOrEqual(
     12,

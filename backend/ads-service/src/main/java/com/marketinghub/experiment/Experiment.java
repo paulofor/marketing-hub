@@ -119,6 +119,10 @@ public class Experiment {
   @Column(name = "follow_up_action_url", length = 512)
   private String followUpActionUrl;
 
+  /** URL comercial do checkout, separada do destino de aquisição e da landing publicada. */
+  @Column(name = "commercial_checkout_url", length = 1200)
+  private String commercialCheckoutUrl;
+
   @Column(name = "lead_portal_flow_model", length = 191)
   private String leadPortalFlowModel;
 

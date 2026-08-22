@@ -8,6 +8,7 @@ import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignObjective;
+import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentTargetingSelection;
 import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
@@ -157,6 +158,39 @@ class ExperimentReadinessServiceTest {
     assertThat(summary.issues()).isEmpty();
     assertThat(summary.eligibleForRunning()).isTrue();
     assertThat(summary.runningGateRequirements()).allMatch(requirement -> requirement.ready());
+  }
+
+  /** Garante que abordagem individual preserve gates comerciais sem exigir segmentação Meta. */
+  @Test
+  void shouldTreatMetaTargetingAsNotApplicableForDirectOneToOneChannel() {
+    Long experimentId = 81L;
+    Experiment experiment = buildExperiment(experimentId, 91L);
+    experiment.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    LeadPortalFlow flow = new LeadPortalFlow();
+    flow.setApproved(true);
+    experiment.setLeadPortalFlow(flow);
+
+    when(experimentService.get(experimentId)).thenReturn(experiment);
+    when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(1L);
+    when(creativeRepository.existsByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(true);
+    mockCompletedGeraLandingStages(experimentId);
+
+    ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
+
+    assertThat(summary.hasCompleteTargeting()).isTrue();
+    assertThat(summary.missingTargetingTypes()).isEmpty();
+    assertThat(summary.issues())
+        .extracting(ExperimentReadinessIssueDto::type)
+        .doesNotContain(ExperimentReadinessIssueType.TARGETING);
+    assertThat(summary.runningGateRequirements())
+        .filteredOn(requirement -> requirement.code().equals("TARGETING_READY"))
+        .allMatch(requirement -> requirement.ready())
+        .extracting(requirement -> requirement.title())
+        .containsExactly("Canal individual pronto");
   }
 
   @Test

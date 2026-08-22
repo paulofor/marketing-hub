@@ -84,6 +84,9 @@ digital-product:
       agenda-cheia-reference: ${DIGITAL_PRODUCT_AGENDA_CHEIA_REFERENCE:agenda-cheia-nail-design}
       agenda-cheia-product-name: ${DIGITAL_PRODUCT_AGENDA_CHEIA_PRODUCT_NAME:Agenda Cheia Nail Design}
       agenda-cheia-delivery-page-url: ${DIGITAL_PRODUCT_AGENDA_CHEIA_DELIVERY_PAGE_URL:https://pagamentopalf.site/agenda-cheia/obrigado.html}
+      kit-whats-app-reference: ${DIGITAL_PRODUCT_KIT_WHATSAPP_REFERENCE:kit-whatsapp-pronto}
+      kit-whats-app-product-name: ${DIGITAL_PRODUCT_KIT_WHATSAPP_PRODUCT_NAME:Kit WhatsApp Pronto}
+      kit-whats-app-delivery-page-url: ${DIGITAL_PRODUCT_KIT_WHATSAPP_DELIVERY_PAGE_URL:https://kit-whatsapp-pronto.digicomdigital.com.br}
 
 product-ai:
   delivery:

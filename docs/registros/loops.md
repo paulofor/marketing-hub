@@ -1521,3 +1521,27 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o identificador opcional do Clarity era enviado antes do slug obrigatório. O cliente SSH recompõe os argumentos como uma linha de comando remota; quando o valor opcional estava vazio, sua posição desaparecia e o slug passava da posição 9 para a 8.
 - **Correção sistêmica:** argumentos obrigatórios passam antes dos opcionais no contrato remoto; o slug ocupa a posição fixa 8 e o Clarity fica por último, com fallback vazio.
 - **Prevenção:** o teste de resiliência executa o contrato com Clarity ausente e preenchido, além de exigir no workflow a ordem segura dos dois parâmetros.
+
+## LOOP-EXPERIMENTO-ORGANICO-HERDA-META — validação individual exige infraestrutura paga
+
+- **Data:** 2026-08-22.
+- **Sintoma:** o experimento 89 foi planejado para 15 abordagens individuais consentidas, mas o
+  registro produtivo permaneceu `FACEBOOK` e o readiness exigia segmentação, conta e campanha Meta.
+- **Causa-raiz:** a ausência de plataforma explícita era convertida para Facebook e o orçamento
+  zerado não representava formalmente um canal orgânico.
+- **Correção sistêmica:** `DIRECT_ONE_TO_ONE` passa a ser contrato persistido; o backend dispensa
+  somente requisitos Meta nesse canal, mantendo amostra, entrega, checkout, eventos e gate comercial.
+- **Prevenção:** testes de criação, atualização, readiness e transição para `RUNNING` comprovam que
+  canal individual não recebe orçamento ou contas Meta e que Facebook preserva os bloqueios atuais.
+
+## LOOP-LANDING-CHECKOUT-MESMO-CAMPO — URL de campanha substitui destino de pagamento
+
+- **Data:** 2026-08-22.
+- **Sintoma:** a geração da landing precisava do checkout, mas `follow_up_action_url` já representava
+  o destino da campanha; reutilizá-lo enviaria a abordagem diretamente ao pagamento ou faria o CTA
+  voltar para a própria landing.
+- **Causa-raiz:** o experimento não possuía campo canônico separado para checkout comercial.
+- **Correção sistêmica:** `commercial_checkout_url` guarda exclusivamente o pagamento; a landing
+  continua em `follow_up_action_url`, e o checkout só nasce após a entrega PDE validada.
+- **Prevenção:** testes exigem preservação das duas URLs, criação idempotente no provedor e prioridade
+  do checkout explícito na geração e auditoria da página de vendas.

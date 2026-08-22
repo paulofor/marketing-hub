@@ -843,9 +843,13 @@ public class PdeProductionSlotService {
             .replaceFirst("^https?://", "")
             .replaceAll("/+$", "")
             .toLowerCase(Locale.ROOT);
-    if (!domain.endsWith("clubemusa.com.br")) {
+    boolean corporateDomain =
+        domain.equals("digicomdigital.com.br") || domain.endsWith(".digicomdigital.com.br");
+    boolean musaDomain = domain.equals("clubemusa.com.br") || domain.endsWith(".clubemusa.com.br");
+    if (!corporateDomain && !musaDomain) {
       throw new ResponseStatusException(
-          HttpStatus.BAD_REQUEST, "Slot PDE MUSA deve usar subdomínio de clubemusa.com.br");
+          HttpStatus.BAD_REQUEST,
+          "Slot PDE deve usar domínio corporativo digicomdigital.com.br ou clubemusa.com.br");
     }
     return domain;
   }

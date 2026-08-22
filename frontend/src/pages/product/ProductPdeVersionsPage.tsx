@@ -27,6 +27,10 @@ const statusLabels: Record<PdeProductionSlotStatus, string> = {
 
 const layoutOptions = [
   {
+    value: "assisted-service-v1",
+    label: "Serviço assistido",
+  },
+  {
     value: "video-explicativo",
     label: "Vídeo explicativo",
   },
@@ -51,6 +55,52 @@ const layoutOptions = [
     label: "Layout custom v6",
   },
 ];
+
+type NewPdeSlotForm = {
+  slotCode: string;
+  domain: string;
+  experienceVersion: string;
+  layoutKey: string;
+  sourceExperimentId: string;
+  status: PdeProductionSlotStatus;
+  notes: string;
+};
+
+/** Retorna um cadastro inicial coerente com o produto, sem pressupor que todo PDE seja MUSA. */
+export function defaultPdeSlotForm(product?: {
+  slug?: string;
+  pdeExperienceJson?: string;
+}): NewPdeSlotForm {
+  if (!product?.slug || product.slug === "metodo-musa-7-dias") {
+    return {
+      slotCode: "v2",
+      domain: "v2.clubemusa.com.br",
+      experienceVersion: "musa-pde-entry-v5-estrada-desejo",
+      layoutKey: "estrada-desejo",
+      sourceExperimentId: "",
+      status: "PLANNED",
+      notes: "",
+    };
+  }
+  let layoutKey = "assisted-service-v1";
+  try {
+    const contract = JSON.parse(product.pdeExperienceJson || "{}") as {
+      layoutKey?: string;
+    };
+    if (contract.layoutKey?.trim()) layoutKey = contract.layoutKey.trim();
+  } catch {
+    // O backend continuará sendo a autoridade para validar o contrato completo.
+  }
+  return {
+    slotCode: "v1",
+    domain: `${product.slug}.digicomdigital.com.br`,
+    experienceVersion: `${product.slug}-pde-v1`,
+    layoutKey,
+    sourceExperimentId: "",
+    status: "PLANNED",
+    notes: "",
+  };
+}
 
 function hasExplicitTimeZone(value: string) {
   return /(?:z|[+-]\d{2}:?\d{2})$/i.test(value.trim());
@@ -262,15 +312,8 @@ export default function ProductPdeVersionsPage() {
   });
   const activeSlots = sortedSlots.filter((slot) => !isPausedSlot(slot));
   const pausedSlots = sortedSlots.filter(isPausedSlot);
-  const [form, setForm] = useState({
-    slotCode: "v2",
-    domain: "v2.clubemusa.com.br",
-    experienceVersion: "musa-pde-entry-v5-estrada-desejo",
-    layoutKey: "estrada-desejo",
-    sourceExperimentId: "",
-    status: "PLANNED" as PdeProductionSlotStatus,
-    notes: "",
-  });
+  const [form, setForm] = useState<NewPdeSlotForm>(() => defaultPdeSlotForm());
+  const [defaultProductSlug, setDefaultProductSlug] = useState("");
   const [selectedEditorSlotCode, setSelectedEditorSlotCode] = useState("");
   const selectedEditorSlot = useMemo(
     () => slots.find((slot) => slot.slotCode === selectedEditorSlotCode),
@@ -284,6 +327,17 @@ export default function ProductPdeVersionsPage() {
       setSelectedEditorSlotCode(slots[0].slotCode);
     }
   }, [selectedEditorSlotCode, slots]);
+
+  useEffect(() => {
+    if (
+      !product?.slug ||
+      slots.length > 0 ||
+      defaultProductSlug === product.slug
+    )
+      return;
+    setForm(defaultPdeSlotForm(product));
+    setDefaultProductSlug(product.slug);
+  }, [defaultProductSlug, product, slots.length]);
 
   useEffect(() => {
     if (!selectedEditorSlot) return;

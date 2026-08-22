@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.marketinghub.experiment.ExperimentCampaignObjective;
 import com.marketinghub.experiment.ExperimentCreationSource;
+import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStage;
 import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.productai.ProductAiSubtype;
@@ -29,6 +30,7 @@ public class CreateExperimentRequest {
   private ExperimentType experimentType;
   private ProductAiSubtype productAiSubtype;
   private ExperimentCampaignObjective campaignObjective;
+  private ExperimentPlatform platform;
   private ExperimentStage stage;
   private String primaryVariable;
   private String primaryMetric;

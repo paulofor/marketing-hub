@@ -1,0 +1,98 @@
+services:
+  pde-platform-local-mysql:
+    build:
+      context: ./local-validation
+      dockerfile: Dockerfile.mysql57
+    image: marketing-hub/pde-local-mysql57:validation
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: pde_local
+      MYSQL_USER: pde
+      MYSQL_PASSWORD: pde
+      MYSQL_ROOT_PASSWORD: pde-root
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "pde", "-ppde"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  sandbox-mail:
+    image: axllent/mailpit:v1.27
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  pde-platform-backend-kit-validation:
+    build:
+      context: ./backend
+    environment:
+      PDE_MARKETING_HUB_BASE_URL: http://191.252.181.168
+      PDE_DEV_ACCESS_ENABLED: "true"
+      PDE_ASSISTED_OPERATION_ENABLED: "true"
+      PDE_ASSISTED_OPERATION_TOKEN: pde-local-operation-test
+      PDE_ACCESS_JDBC_URL: jdbc:mysql://pde-platform-local-mysql:3306/pde_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      PDE_ACCESS_JDBC_USERNAME: pde
+      PDE_ACCESS_JDBC_PASSWORD: pde
+      PDE_ACCESS_REQUIRE_JDBC: "true"
+      PDE_ACCESS_STORAGE_PATH: /data/pde-kit-whatsapp-access-grants.json
+      PDE_AI_STORAGE_PATH: /data/pde-kit-whatsapp-ai-guidance.json
+      PDE_APP_BASE_URL: http://pde-platform-frontend-kit-validation
+      PDE_MAIL_TRANSPORT: smtp
+      PDE_SMTP_HOST: sandbox-mail
+      PDE_SMTP_PORT: "1025"
+    depends_on:
+      pde-platform-local-mysql:
+        condition: service_healthy
+      sandbox-mail:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8096/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - pde-kit-validation-data:/data
+
+  pde-platform-frontend-kit-validation:
+    build:
+      context: ./frontend
+      args:
+        PDE_FRONTEND_VERSION_ID: kit-whatsapp-v1
+        VITE_PDE_ENABLE_DEV_ACCESS: "true"
+    environment:
+      VITE_PDE_PRODUCT_SLUG: kit-whatsapp-pronto
+      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: kit-whatsapp-pronto-pde-v1
+      PDE_HEALTH_REQUIRED_TEXT: Experiência assistida e manual
+      PDE_FRONTEND_VERSION: kit-whatsapp-v1
+      PDE_FRONTEND_PUBLIC_URL: http://pde-platform-frontend-kit-validation
+      PDE_FRONTEND_VERSION_ID: kit-whatsapp-v1
+      PDE_BACKEND_UPSTREAM: pde-platform-backend-kit-validation:8096
+    depends_on:
+      pde-platform-backend-kit-validation:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/pde-health-contract.json | grep -q 'kit-whatsapp-pronto'"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  pde-assisted-service-e2e:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.assisted-service-e2e
+    environment:
+      PDE_ASSISTED_FRONTEND_URL: http://pde-platform-frontend-kit-validation
+      PDE_ASSISTED_BACKEND_URL: http://pde-platform-backend-kit-validation:8096
+      PDE_ASSISTED_MAIL_URL: http://sandbox-mail:8025
+    depends_on:
+      pde-platform-backend-kit-validation:
+        condition: service_healthy
+      pde-platform-frontend-kit-validation:
+        condition: service_healthy
+      sandbox-mail:
+        condition: service_healthy
+
+volumes:
+  pde-kit-validation-data:

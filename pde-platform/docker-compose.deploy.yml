@@ -153,6 +153,41 @@ services:
       retries: 5
       start_period: 15s
 
+  pde-platform-frontend-kit-whatsapp:
+    image: ${PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_IMAGE:?PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_IMAGE is required}
+    container_name: pde-platform-frontend-kit-whatsapp
+    depends_on:
+      pde-platform-backend:
+        condition: service_healthy
+    restart: unless-stopped
+    ports:
+      - "${PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT:-5179}:80"
+    environment:
+      VITE_PDE_PRODUCT_SLUG: kit-whatsapp-pronto
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: kit-whatsapp-pronto-pde-v1
+      PDE_HEALTH_REQUIRED_TEXT: Experiência assistida e manual
+      PDE_FRONTEND_VERSION: kit-whatsapp-v1
+      PDE_FRONTEND_PUBLIC_URL: https://kit-whatsapp-pronto.digicomdigital.com.br
+      PDE_FRONTEND_IMAGE: ${PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_IMAGE:-}
+      PDE_FRONTEND_VERSION_ID: kit-whatsapp-v1
+      PDE_DEPLOY_COMMIT_SHA: ${PDE_DEPLOY_COMMIT_SHA:-unknown}
+      PDE_DEPLOY_IMAGE_TAG: ${PDE_DEPLOY_IMAGE_TAG:-unknown}
+      PDE_DEPLOY_DEPLOYED_AT: ${PDE_DEPLOY_DEPLOYED_AT:-}
+      PDE_BACKEND_UPSTREAM: ${PDE_BACKEND_UPSTREAM:-pde-platform-backend:8096}
+    networks:
+      - pde-platform-net
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1/pde-health-contract.json | grep -q 'kit-whatsapp-pronto' || exit 1",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
   pde-ai-worker:
     image: ${PDE_AI_WORKER_IMAGE:?PDE_AI_WORKER_IMAGE is required}
     container_name: pde-ai-worker

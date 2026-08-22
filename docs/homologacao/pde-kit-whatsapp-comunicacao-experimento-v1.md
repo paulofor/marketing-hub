@@ -50,10 +50,12 @@ e [Decreto 7.962/2013](https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2013/
 | Hipótese | criar hipótese vinculada ao produto | não aceitar hipótese de outro produto | `hypothesis.product_id = 9` |
 | Tipo | criar `LOW_TICKET_PRODUCT` sem subtipo IA | subtipo IA só quando escolhido | `product_ai_subtype IS NULL` |
 | Preço | herdar R$ 349 do produto | bloquear preço vazio, zero ou divergente | `unit_price_brl = 349` |
-| Canal | salvar plano orgânico sem Instagram e sem orçamento diário | Meta continua bloqueada até canal e orçamento aprovados | experimento `PLANNED`, sem publicação |
+| Canal | salvar `DIRECT_ONE_TO_ONE` sem Instagram e sem orçamento diário | Meta continua bloqueada até canal e orçamento aprovados | experimento `PLANNED`, sem publicação |
+| Superfície | publicar imagem/container próprios no domínio do produto | bloquear domínio estranho, contrato de outro produto ou TLS inválido | `kit-whatsapp-pronto.digicomdigital.com.br`, diagnóstico e contrato coerentes |
 | Mensagem | mostrar personalização, prazo, entregáveis e revisão | rejeitar promessa de bot, automação ou resultado garantido | contrato e copy versionados |
 | Prova | usar materiais reais do produto | rejeitar depoimento ou resultado inventado | linhagem dos materiais preservada |
-| Jornada | origem → mensagem → checkout → acesso → primeiro uso | falhas de checkout, e-mail, acesso e evento permanecem observáveis | eventos segregados e auditáveis |
+| Jornada | origem → landing → checkout → acesso → primeiro uso | falhas de checkout, e-mail, acesso e evento permanecem observáveis | URLs de landing, checkout e entrega separadas, eventos segregados e auditáveis |
+| Checkout | criar preferência autenticada pelo preço do experimento | bloquear entrega PDE não validada e impedir duplicata por clique repetido | R$ 349, produto 9 e experimento 89 na metadata |
 | Métricas | venda paga é o objetivo final | clique, score e teste não contam como venda | contadores comerciais zerados em QA |
 | Dados de teste | marcar auditoria local | impedir mistura com tráfego humano | `mh_test`/`mh_audit` segregados |
 | Navegadores | Chromium desktop | viewport e teclado | sem erro funcional ou overflow |
@@ -81,3 +83,14 @@ taxas, suporte e retrabalho.
   ou contribuição não positiva.
 
 Publicação, mídia e contato com clientes permanecem fora desta homologação local.
+
+A jornada local roda em uma única rede Compose com MySQL 5.7, backend PDE, frontend dedicado,
+SMTP descartável e Playwright. O teste não depende de portas publicadas no host e repete desktop,
+iPhone 15 Pro e Pixel 7 com dados novos a cada rodada.
+
+## Rodada local após o PR 5004
+
+O deploy do PR 5004 confirmou o editor corrigido, mas o contrato produtivo ainda registrava o
+experimento orgânico como `FACEBOOK`. A correção causal torna o canal individual um enum persistido,
+separa landing de checkout e exige entrega PDE pública, validada e ativa antes de criar a cobrança.
+O preço permanece R$ 349; nenhuma preferência real é criada durante a homologação local.

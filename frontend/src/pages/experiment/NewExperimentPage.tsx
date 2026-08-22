@@ -25,6 +25,7 @@ import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { getStatisticsDefaultsForBudget } from "./statisticsDefaults";
 import type {
+  ExperimentPlatform,
   ExperimentType,
   ProductAiSubtype,
 } from "../../api/experiment/useExperiments";
@@ -65,6 +66,7 @@ const productAiSubtypeLabels: Record<ProductAiSubtype, string> = {
 };
 
 type FormState = {
+  platform: ExperimentPlatform;
   productId: string;
   desireTerritoryCode: string;
   experimentType: ExperimentType;
@@ -111,6 +113,7 @@ export default function NewExperimentPage() {
   const { data: niches } = useNiches();
   const { data: products } = useProducts();
   const [form, setForm] = useState<FormState>({
+    platform: "FACEBOOK",
     productId: "",
     desireTerritoryCode: "",
     experimentType: "LOW_TICKET_PRODUCT",
@@ -511,6 +514,7 @@ export default function NewExperimentPage() {
         funnelPromise: form.funnelPromise.trim(),
         primaryCta: form.primaryCta.trim(),
         experimentType: form.experimentType,
+        platform: form.platform,
         productAiSubtype:
           form.experimentType === "LOW_TICKET_PRODUCT"
             ? productAiSubtypeForSubmit
@@ -552,6 +556,7 @@ export default function NewExperimentPage() {
         });
       }
       setForm({
+        platform: "FACEBOOK",
         productId: "",
         desireTerritoryCode: "",
         experimentType: "LOW_TICKET_PRODUCT",
@@ -681,6 +686,42 @@ export default function NewExperimentPage() {
             : isLowTicketProduct
               ? "Fluxo principal: anúncio, página curta, checkout e entrega. Métrica central: compra ou clique no checkout."
               : "Fluxo principal: anúncio, captura de lead e entrega de isca/amostra."}
+      </div>
+      <label className="form-label" htmlFor="platform">
+        Canal de aquisição
+      </label>
+      <select
+        id="platform"
+        className="form-select mb-2"
+        value={form.platform}
+        onChange={(event) =>
+          setForm((current) => ({
+            ...current,
+            platform: event.target.value as ExperimentPlatform,
+            dailyBudget:
+              event.target.value === "DIRECT_ONE_TO_ONE"
+                ? ""
+                : current.dailyBudget,
+            facebookPageId:
+              event.target.value === "DIRECT_ONE_TO_ONE"
+                ? ""
+                : current.facebookPageId,
+            instagramAccountId:
+              event.target.value === "DIRECT_ONE_TO_ONE"
+                ? ""
+                : current.instagramAccountId,
+          }))
+        }
+      >
+        <option value="DIRECT_ONE_TO_ONE">
+          Abordagem individual consentida
+        </option>
+        <option value="FACEBOOK">Meta / Facebook Ads</option>
+      </select>
+      <div className="form-text mb-3">
+        {form.platform === "DIRECT_ONE_TO_ONE"
+          ? "Valida com uma lista pequena de contatos consentidos, sem campanha, segmentação Meta ou verba de mídia."
+          : "Exige público aprovado, campanha registrada e orçamento antes de entrar em execução."}
       </div>
       {isLowTicketProduct && (
         <>
@@ -1173,37 +1214,40 @@ export default function NewExperimentPage() {
           />
         </div>
       </div>
-      <label className="form-label" htmlFor="dailyBudget">
-        Orçamento diário (opcional no planejamento)
-      </label>
-      <input
-        id="dailyBudget"
-        className="form-control mb-2"
-        placeholder="Valor em reais"
-        type="number"
-        min="0.01"
-        step="0.01"
-        value={form.dailyBudget}
-        onChange={(e) => {
-          const value = e.target.value;
-          setForm((prev) => {
-            const next = { ...prev, dailyBudget: value };
-            if (!value.trim()) {
-              if (autoSampleSize) {
-                next.sampleSize = "";
-              }
-              if (autoMde) {
-                next.mde = "";
-              }
-            }
-            return next;
-          });
-        }}
-      />
-      <div className="form-text mb-2">
-        Deixe vazio para validação orgânica ou abordagem individual. O orçamento
-        deve ser definido e aprovado antes de qualquer campanha paga.
-      </div>
+      {form.platform === "FACEBOOK" && (
+        <>
+          <label className="form-label" htmlFor="dailyBudget">
+            Orçamento diário (opcional no planejamento)
+          </label>
+          <input
+            id="dailyBudget"
+            className="form-control mb-2"
+            placeholder="Valor em reais"
+            type="number"
+            min="0.01"
+            step="0.01"
+            value={form.dailyBudget}
+            onChange={(e) => {
+              const value = e.target.value;
+              setForm((prev) => {
+                const next = { ...prev, dailyBudget: value };
+                if (!value.trim()) {
+                  if (autoSampleSize) {
+                    next.sampleSize = "";
+                  }
+                  if (autoMde) {
+                    next.mde = "";
+                  }
+                }
+                return next;
+              });
+            }}
+          />
+          <div className="form-text mb-2">
+            Defina somente quando a campanha paga estiver aprovada.
+          </div>
+        </>
+      )}
       <label className="form-label" htmlFor="unitPrice">
         {isPdeMembershipSubscriptionFunnel
           ? "Preço da assinatura/plano (R$)"
@@ -1261,49 +1305,56 @@ export default function NewExperimentPage() {
           </option>
         ))}
       </select>
-      <label className="form-label" htmlFor="instagramAccount">
-        Conta do Instagram (opcional no planejamento)
-      </label>
-      <select
-        id="instagramAccount"
-        className="form-select mb-2"
-        value={form.instagramAccountId}
-        onChange={(e) =>
-          setForm((prev) => ({ ...prev, instagramAccountId: e.target.value }))
-        }
-        disabled={isLoadingInstagramAccounts || noInstagramAccounts}
-      >
-        <option value="">
-          {isLoadingInstagramAccounts
-            ? "Carregando contas cadastradas..."
-            : noInstagramAccounts
-              ? "Nenhuma conta cadastrada"
-              : "Selecione uma conta"}
-        </option>
-        {Array.isArray(instagramAccounts) &&
-          instagramAccounts.map((account) => (
-            <option key={account.id} value={account.id}>
-              {account.name} ({account.handle})
+      {form.platform === "FACEBOOK" && (
+        <>
+          <label className="form-label" htmlFor="instagramAccount">
+            Conta do Instagram (opcional no planejamento)
+          </label>
+          <select
+            id="instagramAccount"
+            className="form-select mb-2"
+            value={form.instagramAccountId}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                instagramAccountId: e.target.value,
+              }))
+            }
+            disabled={isLoadingInstagramAccounts || noInstagramAccounts}
+          >
+            <option value="">
+              {isLoadingInstagramAccounts
+                ? "Carregando contas cadastradas..."
+                : noInstagramAccounts
+                  ? "Nenhuma conta cadastrada"
+                  : "Selecione uma conta"}
             </option>
-          ))}
-      </select>
-      <div className="form-text mb-2">
-        Vincule uma conta antes de publicar na Meta. Validações orgânicas ou
-        individuais podem ser planejadas sem Instagram.
-      </div>
-      {noInstagramAccounts && (
-        <div className="alert alert-info" role="status">
-          Nenhuma conta do Instagram está cadastrada. Isso não bloqueia o
-          rascunho; apenas a publicação posterior na Meta.
-          <div className="mt-2">
-            <a
-              className="btn btn-outline-primary btn-sm"
-              href="/accounts/instagram"
-            >
-              Abrir Contas do Instagram
-            </a>
+            {Array.isArray(instagramAccounts) &&
+              instagramAccounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.name} ({account.handle})
+                </option>
+              ))}
+          </select>
+          <div className="form-text mb-2">
+            Vincule uma conta antes de publicar na Meta. Validações orgânicas ou
+            individuais podem ser planejadas sem Instagram.
           </div>
-        </div>
+          {noInstagramAccounts && (
+            <div className="alert alert-info" role="status">
+              Nenhuma conta do Instagram está cadastrada. Isso não bloqueia o
+              rascunho; apenas a publicação posterior na Meta.
+              <div className="mt-2">
+                <a
+                  className="btn btn-outline-primary btn-sm"
+                  href="/accounts/instagram"
+                >
+                  Abrir Contas do Instagram
+                </a>
+              </div>
+            </div>
+          )}
+        </>
       )}
       {!isLoadingJourneyTemplates && !journeyTemplates?.content?.length && (
         <div className="alert alert-warning" role="alert">
@@ -1319,29 +1370,33 @@ export default function NewExperimentPage() {
           </div>
         </div>
       )}
-      <label className="form-label" htmlFor="facebookPage">
-        Página do Facebook
-      </label>
-      <select
-        id="facebookPage"
-        className="form-select mb-2"
-        value={form.facebookPageId}
-        onChange={(e) =>
-          setForm((prev) => ({ ...prev, facebookPageId: e.target.value }))
-        }
-      >
-        <option value="">
-          {isLoadingFacebookPages
-            ? "Carregando páginas cadastradas..."
-            : "Nenhuma página selecionada"}
-        </option>
-        {Array.isArray(facebookPages) &&
-          facebookPages.map((page) => (
-            <option key={page.id} value={page.id}>
-              {page.name} ({page.pageId})
+      {form.platform === "FACEBOOK" && (
+        <>
+          <label className="form-label" htmlFor="facebookPage">
+            Página do Facebook
+          </label>
+          <select
+            id="facebookPage"
+            className="form-select mb-2"
+            value={form.facebookPageId}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, facebookPageId: e.target.value }))
+            }
+          >
+            <option value="">
+              {isLoadingFacebookPages
+                ? "Carregando páginas cadastradas..."
+                : "Nenhuma página selecionada"}
             </option>
-          ))}
-      </select>
+            {Array.isArray(facebookPages) &&
+              facebookPages.map((page) => (
+                <option key={page.id} value={page.id}>
+                  {page.name} ({page.pageId})
+                </option>
+              ))}
+          </select>
+        </>
+      )}
       <input
         className="form-control mb-2"
         placeholder="Data de Início"

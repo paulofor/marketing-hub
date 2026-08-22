@@ -439,6 +439,8 @@ public class ExperimentService {
           HttpStatus.BAD_REQUEST, "A hipótese selecionada não pertence ao produto do experimento");
     }
     ExperimentType resolvedExperimentType = resolveExperimentType(request.getExperimentType());
+    ExperimentPlatform resolvedPlatform = resolveExperimentPlatform(request.getPlatform());
+    validateBudgetForPlatform(resolvedPlatform, request.getDailyBudget());
     var resolvedProductAiSubtype =
         resolvedExperimentType == ExperimentType.FAKE_EXPERIMENT
             ? null
@@ -538,7 +540,7 @@ public class ExperimentService {
             .startDate(request.getStartDate())
             .endDate(request.getEndDate())
             .status(ExperimentStatus.PLANNED)
-            .platform(ExperimentPlatform.FACEBOOK)
+            .platform(resolvedPlatform)
             .stage(request.getStage() != null ? request.getStage() : ExperimentStage.AD)
             .primaryVariable(normalizedPrimaryVariable)
             .primaryMetric(normalizedPrimaryMetric)
@@ -564,6 +566,7 @@ public class ExperimentService {
             .imageGenerationModel(imageSelection.model())
             .imageGenerationQuality(imageSelection.quality())
             .followUpActionUrl(followUpActionUrl)
+            .commercialCheckoutUrl(null)
             .creativeTextPrompt(normalizePrompt(request.getCreativeTextPrompt()))
             .creativeImagePrompt(normalizePrompt(request.getCreativeImagePrompt()))
             .build();
@@ -936,13 +939,16 @@ public class ExperimentService {
     if (exp.getExperimentType() == ExperimentType.FAKE_EXPERIMENT) {
       return;
     }
-    if (exp.getKpiTargetCpl() == null
-        || exp.getStopLossCpl() == null
-        || exp.getSampleSize() == null) {
+    if (exp.getSampleSize() == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "sampleSize not set");
+    }
+    if (exp.getPlatform() == ExperimentPlatform.FACEBOOK
+        && (exp.getKpiTargetCpl() == null || exp.getStopLossCpl() == null)) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "financial fields not set");
     }
-    if (exp.getDailyBudget() == null
-        || exp.getDailyBudget().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+    if (exp.getPlatform() == ExperimentPlatform.FACEBOOK
+        && (exp.getDailyBudget() == null
+            || exp.getDailyBudget().compareTo(java.math.BigDecimal.ZERO) <= 0)) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "dailyBudget not set");
     }
     if (exp.getPlatform() == ExperimentPlatform.FACEBOOK
@@ -1061,6 +1067,22 @@ public class ExperimentService {
 
     exp.setName(request.getName());
     exp.setHypothesis(request.getHypothesis());
+    if (request.isPlatformPresent()) {
+      ExperimentPlatform resolvedPlatform = resolveExperimentPlatform(request.getPlatform());
+      if (resolvedPlatform != exp.getPlatform() && exp.getStatus() != ExperimentStatus.PLANNED) {
+        throw new ResponseStatusException(
+            HttpStatus.CONFLICT,
+            "O canal de aquisição só pode ser alterado enquanto o experimento estiver PLANNED");
+      }
+      exp.setPlatform(resolvedPlatform);
+      if (resolvedPlatform == ExperimentPlatform.DIRECT_ONE_TO_ONE) {
+        exp.setDailyBudget(null);
+        exp.setFacebookPage(null);
+        exp.setFacebookInstantForm(null);
+        exp.setInstagramAccount(null);
+        exp.setFacebookReleaseRequestedAt(null);
+      }
+    }
     if (request.isSinglePainPresent()) {
       exp.setSinglePain(normalizeExperimentPromiseField(request.getSinglePain()));
     }
@@ -1109,6 +1131,7 @@ public class ExperimentService {
       }
       exp.setDailyBudget(request.getDailyBudget());
     }
+    validateBudgetForPlatform(exp.getPlatform(), exp.getDailyBudget());
     if (request.isUnitPricePresent()) {
       exp.setUnitPrice(normalizeUnitPrice(request.getUnitPrice()));
     }
@@ -1671,6 +1694,20 @@ public class ExperimentService {
   /** Resolve o tipo comercial do experimento mantendo compatibilidade com testes antigos. */
   private ExperimentType resolveExperimentType(ExperimentType requestedType) {
     return requestedType != null ? requestedType : ExperimentType.NICHE_TEST;
+  }
+
+  /** Resolve o canal mantendo Facebook como padrão para contratos legados sem o campo. */
+  private ExperimentPlatform resolveExperimentPlatform(ExperimentPlatform requestedPlatform) {
+    return requestedPlatform != null ? requestedPlatform : ExperimentPlatform.FACEBOOK;
+  }
+
+  /** Impede que verba de mídia seja registrada em uma validação individual sem campanha. */
+  private void validateBudgetForPlatform(ExperimentPlatform platform, BigDecimal dailyBudget) {
+    if (platform == ExperimentPlatform.DIRECT_ONE_TO_ONE && dailyBudget != null) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "dailyBudget não se aplica ao canal de abordagem individual consentida");
+    }
   }
 
   /**

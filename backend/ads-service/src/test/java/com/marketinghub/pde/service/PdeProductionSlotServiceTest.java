@@ -82,6 +82,40 @@ class PdeProductionSlotServiceTest {
     assertThat(response.sourceExperimentId()).isEqualTo(71L);
   }
 
+  /** Deve aceitar domínio corporativo neutro para um PDE que não seja o MUSA. */
+  @Test
+  void acceptsCorporateDomainForNonMusaProduct() {
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("kit-whatsapp-pronto", "v1"))
+        .thenReturn(Optional.empty());
+    when(repository.save(org.mockito.ArgumentMatchers.any(PdeProductionSlot.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    var response =
+        service.saveProductionSlot(
+            "kit-whatsapp-pronto",
+            89L,
+            new PostDeployPdeProductionSlotRequestDto(
+                "v1",
+                null,
+                "kit-whatsapp-pronto.digicomdigital.com.br",
+                null,
+                null,
+                "kit-whatsapp-pronto-pde-v1",
+                "assisted-service-v1",
+                null,
+                PdeProductionSlotStatus.PLANNED,
+                null,
+                "Entrega assistida em 48 horas",
+                null,
+                null));
+
+    assertThat(response.domain()).isEqualTo("kit-whatsapp-pronto.digicomdigital.com.br");
+    assertThat(response.publicUrl()).isEqualTo("https://kit-whatsapp-pronto.digicomdigital.com.br");
+  }
+
   /** Deve publicar contrato preenchendo a identidade independente de versão e layout do slot. */
   @Test
   void publishesSlotContractWithVersionAndLayoutIdentity() throws Exception {

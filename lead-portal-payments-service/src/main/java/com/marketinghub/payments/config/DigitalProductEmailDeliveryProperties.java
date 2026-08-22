@@ -27,6 +27,10 @@ public class DigitalProductEmailDeliveryProperties {
     private String agendaCheiaReference = "agenda-cheia-nail-design";
     private String agendaCheiaProductName = "Agenda Cheia Nail Design";
     private String agendaCheiaDeliveryPageUrl = "https://pagamentopalf.site/agenda-cheia/obrigado.html";
+    private String kitWhatsAppReference = "kit-whatsapp-pronto";
+    private String kitWhatsAppProductName = "Kit WhatsApp Pronto";
+    private String kitWhatsAppDeliveryPageUrl =
+            "https://kit-whatsapp-pronto.digicomdigital.com.br";
 
     /** Indica se o envio automático está ativo. */
     public boolean isEnabled() {
@@ -175,4 +179,22 @@ public class DigitalProductEmailDeliveryProperties {
 
     /** Define a página pública do briefing pós-compra. */
     public void setAgendaCheiaDeliveryPageUrl(String value) { agendaCheiaDeliveryPageUrl = value; }
+
+    /** Retorna a referência comercial do Kit WhatsApp Pronto. */
+    public String getKitWhatsAppReference() { return kitWhatsAppReference; }
+
+    /** Define a referência comercial do Kit WhatsApp Pronto. */
+    public void setKitWhatsAppReference(String value) { kitWhatsAppReference = value; }
+
+    /** Retorna o nome público do Kit WhatsApp Pronto. */
+    public String getKitWhatsAppProductName() { return kitWhatsAppProductName; }
+
+    /** Define o nome público do Kit WhatsApp Pronto. */
+    public void setKitWhatsAppProductName(String value) { kitWhatsAppProductName = value; }
+
+    /** Retorna a área de acesso entregue após o pagamento. */
+    public String getKitWhatsAppDeliveryPageUrl() { return kitWhatsAppDeliveryPageUrl; }
+
+    /** Define a área de acesso entregue após o pagamento. */
+    public void setKitWhatsAppDeliveryPageUrl(String value) { kitWhatsAppDeliveryPageUrl = value; }
 }

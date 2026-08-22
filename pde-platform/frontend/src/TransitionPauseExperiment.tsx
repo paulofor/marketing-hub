@@ -8,7 +8,11 @@ type Session = {
   exitInstruction: string;
 };
 
-const participantId = crypto.randomUUID();
+function createLocalIdentifier() {
+  return window.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+const participantId = createLocalIdentifier();
 
 /** Renderiza o experimento consentido da Pausa de Transição sem oferta ou tráfego pago. */
 export function TransitionPauseExperiment() {
@@ -21,7 +25,7 @@ export function TransitionPauseExperiment() {
   const [session, setSession] = useState<Session | null>(null);
   const [status, setStatus] = useState<'idle' | 'starting' | 'running' | 'done' | 'stopped'>('idle');
   const [secondsLeft, setSecondsLeft] = useState(0);
-  const sessionId = useMemo(() => crypto.randomUUID(), []);
+  const sessionId = useMemo(createLocalIdentifier, []);
   const sessionStartedAt = useRef<number | null>(null);
 
   async function start() {

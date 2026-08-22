@@ -22,6 +22,7 @@ export type ExperimentType =
   | "PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL"
   | "FAKE_EXPERIMENT";
 export type ExperimentCreationSource = "SYSTEM_FLOW" | "MANUAL_FLOW";
+export type ExperimentPlatform = "FACEBOOK" | "DIRECT_ONE_TO_ONE";
 export type ProductAiSubtype =
   | "AI_VISUAL_PREVIEW"
   | "AI_PERSONALIZED_SAMPLE"
@@ -112,6 +113,7 @@ export interface Experiment {
   facebookPixelCreatedAt?: string | null;
   facebookReleaseRequestedAt?: string | null;
   followUpActionUrl?: string | null;
+  commercialCheckoutUrl?: string | null;
   leadPortalFlowModel?: string | null;
   schemaFirstLeadPortalEnabled?: boolean;
   creativeTextPrompt?: string | null;
@@ -170,7 +172,7 @@ export interface Experiment {
   imageModelQualityName?: string | null;
   creativeApproved: boolean;
   status: string;
-  platform: string;
+  platform: ExperimentPlatform;
   stage: ExperimentStage;
   creativeGenerationMode?: "DEFAULT" | "PIPELINE_ADS";
   creativeGenerationStatus?:

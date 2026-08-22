@@ -22,6 +22,11 @@ import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { salesPageDestinationCopy } from "./experimentDestinationCopy";
 import { experimentStageLabels } from "./stageLabels";
+import {
+  parseOptionalEntityId,
+  parseOptionalPositiveAmount,
+  productAiSubtypeForExperiment,
+} from "./experimentPlanningContract";
 
 const productAiSubtypeLabels: Record<ProductAiSubtype, string> = {
   AI_VISUAL_PREVIEW: "Prévia visual IA",
@@ -134,7 +139,10 @@ export default function EditExperimentPage() {
       reset({
         name: data.name || "",
         kpiTarget: currentKpi != null ? String(currentKpi) : "",
-        dailyBudget: data.dailyBudget != null ? String(data.dailyBudget) : "",
+        dailyBudget:
+          data.dailyBudget != null && data.dailyBudget > 0
+            ? String(data.dailyBudget)
+            : "",
         unitPrice: data.unitPrice != null ? String(data.unitPrice) : "",
         followUpActionUrl: data.followUpActionUrl ?? "",
         startDate: toDateInputValue(data.startDate),
@@ -171,11 +179,7 @@ export default function EditExperimentPage() {
         funnelPromise: data.funnelPromise ?? "",
         primaryCta: data.primaryCta ?? "",
         experimentType: data.experimentType ?? "NICHE_TEST",
-        productAiSubtype:
-          data.productAiSubtype ??
-          (data.experimentType === "LOW_TICKET_PRODUCT"
-            ? "AI_PERSONALIZED_SAMPLE"
-            : ""),
+        productAiSubtype: data.productAiSubtype ?? "",
       });
     }
   }, [data, reset]);
@@ -419,16 +423,6 @@ export default function EditExperimentPage() {
   const onSubmit = async (values: FormData) => {
     try {
       if (!data) return;
-      if (noInstagramAccounts) {
-        alert(
-          "Cadastre uma conta do Instagram em Contas do Instagram antes de salvar o experimento.",
-        );
-        return;
-      }
-      if (!values.instagramAccountId) {
-        alert("Selecione uma conta do Instagram");
-        return;
-      }
       if (!values.journeyTemplateId.trim()) {
         alert("Selecione um template de jornada");
         return;
@@ -457,13 +451,9 @@ export default function EditExperimentPage() {
         alert("Informe o CTA principal");
         return;
       }
-      const parsedDailyBudget = Number(values.dailyBudget);
-      if (
-        !values.dailyBudget ||
-        Number.isNaN(parsedDailyBudget) ||
-        parsedDailyBudget <= 0
-      ) {
-        alert("Informe um orçamento diário válido");
+      const parsedDailyBudget = parseOptionalPositiveAmount(values.dailyBudget);
+      if (parsedDailyBudget === null) {
+        alert("Informe um orçamento diário válido ou deixe o campo vazio");
         return;
       }
       const parsedUnitPrice = Number(values.unitPrice);
@@ -525,23 +515,25 @@ export default function EditExperimentPage() {
         funnelPromise: values.funnelPromise.trim(),
         primaryCta: values.primaryCta.trim(),
         experimentType: values.experimentType,
-        productAiSubtype: isLowTicketProduct
-          ? values.productAiSubtype || "AI_PERSONALIZED_SAMPLE"
-          : null,
+        productAiSubtype:
+          productAiSubtypeForExperiment(
+            values.experimentType,
+            values.productAiSubtype,
+          ) ?? null,
         campaignObjective: isFakeExperiment
           ? "TRAFFIC"
           : isSalesObjectiveExperiment
             ? "SALES"
             : "LEADS",
         kpiTarget: Number(values.kpiTarget),
-        dailyBudget: parsedDailyBudget,
+        dailyBudget: parsedDailyBudget ?? null,
         unitPrice: parsedUnitPrice,
         metricPresetId: values.metricPresetId || undefined,
         sampleSize: data.sampleSize ?? undefined,
         mde: data.mdePercent ?? undefined,
         startDate: values.startDate || undefined,
         endDate: values.endDate || undefined,
-        instagramAccountId: Number(values.instagramAccountId),
+        instagramAccountId: parseOptionalEntityId(values.instagramAccountId),
         instantFormsToGenerate: data.instantFormsToGenerate ?? undefined,
         emailsToGenerate: data.emailsToGenerate ?? undefined,
         imagesPerPackage: parsedImagesPerPackage,
@@ -649,11 +641,9 @@ export default function EditExperimentPage() {
                       onChange={(event) => {
                         register("experimentType").onChange(event);
                         if (event.target.value === "LOW_TICKET_PRODUCT") {
-                          setValue(
-                            "productAiSubtype",
-                            productAiSubtypeValue || "AI_PERSONALIZED_SAMPLE",
-                            { shouldDirty: true },
-                          );
+                          setValue("productAiSubtype", productAiSubtypeValue, {
+                            shouldDirty: true,
+                          });
                         } else {
                           setValue("productAiSubtype", "", {
                             shouldDirty: true,
@@ -691,6 +681,7 @@ export default function EditExperimentPage() {
                         className="form-select"
                         {...register("productAiSubtype")}
                       >
+                        <option value="">Não é um Produto IA</option>
                         {Object.entries(productAiSubtypeLabels).map(
                           ([value, label]) => (
                             <option key={value} value={value}>
@@ -925,7 +916,7 @@ export default function EditExperimentPage() {
                   </div>
                   <div>
                     <label className="form-label" htmlFor="dailyBudget">
-                      Orçamento diário <span className="text-danger">*</span>
+                      Orçamento diário
                     </label>
                     <input
                       id="dailyBudget"
@@ -935,6 +926,9 @@ export default function EditExperimentPage() {
                       step="0.01"
                       {...register("dailyBudget")}
                     />
+                    <div className="form-text">
+                      Opcional para experimentos orgânicos sem mídia paga.
+                    </div>
                   </div>
                   <div>
                     <label className="form-label" htmlFor="unitPrice">
@@ -1148,23 +1142,21 @@ export default function EditExperimentPage() {
                   </div>
                   <div>
                     <label className="form-label" htmlFor="instagramAccountId">
-                      Conta do Instagram <span className="text-danger">*</span>
+                      Conta do Instagram
                     </label>
                     <select
                       id="instagramAccountId"
                       className="form-select"
                       {...register("instagramAccountId")}
                       value={selectedInstagramAccountId ?? ""}
-                      disabled={
-                        isLoadingInstagramAccounts || noInstagramAccounts
-                      }
+                      disabled={isLoadingInstagramAccounts}
                     >
                       <option value="">
                         {isLoadingInstagramAccounts
                           ? "Carregando contas cadastradas..."
                           : noInstagramAccounts
-                            ? "Cadastre uma conta para continuar"
-                            : "Selecione uma conta"}
+                            ? "Nenhuma conta cadastrada (opcional)"
+                            : "Nenhuma conta selecionada"}
                       </option>
                       {instagramAccountOptions.map((account) => (
                         <option key={account.id} value={String(account.id)}>
@@ -1215,9 +1207,9 @@ export default function EditExperimentPage() {
                   </div>
                 )}
                 {noInstagramAccounts && (
-                  <div className="alert alert-warning mt-3" role="alert">
-                    Nenhuma conta do Instagram está cadastrada. Cadastre uma
-                    conta antes de editar o experimento.
+                  <div className="alert alert-light mt-3" role="status">
+                    Nenhuma conta do Instagram está cadastrada. Experimentos
+                    orgânicos podem ser salvos sem essa integração.
                     <div className="mt-2">
                       <a
                         className="btn btn-outline-primary btn-sm"
@@ -1295,11 +1287,7 @@ export default function EditExperimentPage() {
                 <button
                   type="button"
                   className="btn btn-primary"
-                  disabled={
-                    update.isPending ||
-                    noInstagramAccounts ||
-                    !selectedJourneyTemplateId
-                  }
+                  disabled={update.isPending || !selectedJourneyTemplateId}
                   onClick={handleSubmit(onSubmit, (errors) => {
                     console.log("Validation errors", errors);
                   })}

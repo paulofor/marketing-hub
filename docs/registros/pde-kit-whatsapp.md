@@ -104,3 +104,31 @@ e orçamento mesmo para uma validação individual orgânica. Os contratos e a t
 localmente. A hipótese `MPDS-H003` (`2e5f87b6-0537-4213-85fa-d585b1fc59de`) foi criada pela tela e
 vinculada ao produto 9; nenhum experimento, landing, contato, publicação ou gasto foi criado enquanto
 essas correções não estiverem implantadas.
+
+## Experimento orgânico do passo 4
+
+Em 2026-08-22, após o deploy do contrato de criação, o experimento 89 (`MPDS-H003-E001`) foi criado
+pela tela e vinculado ao Plano Comercial 4. O contrato preserva produto 9, hipótese `MPDS-H003`,
+território `CONVERSA_QUE_AVANCA`, amostra de 15 contatos, preço de R$ 349, objetivo de vendas e
+ausência de mídia paga, Instagram e subtipo de Produto IA.
+
+A revisão de preço comparou três caminhos: reduzir para competir com arquivos genéricos, construir
+automação/webapp antes da validação ou testar a implantação assistida. Foi mantida a terceira opção.
+R$ 349 é hipótese coerente para personalização, revisão humana e entrega em até 48 horas, mas não
+para um pacote genérico de scripts. A contribuição nominal continua em R$ 229 por venda (65,62%);
+conversão, reembolso e custo realizado permanecem desconhecidos até vendas e entregas reais.
+
+A geração assistida de três contratos de promessa registrou 5.385 tokens de entrada, 1.208 de saída
+e custo de US$ 0,004500 no modelo `gpt-5.2`. O acumulado comunicado do passo 4 passa a 303.089
+tokens de entrada, 175.360 em cache, 8.992 de saída e US$ 0,719700; diferenças futuras devem ser
+reconciliadas pela telemetria persistida das tarefas, sem contar novamente execuções já informadas.
+
+Ao abrir a edição, foi confirmada uma divergência entre os contratos de criação e atualização: a
+tela ainda exigia Instagram e orçamento positivo e convertia todo low-ticket sem subtipo em
+`AI_PERSONALIZED_SAMPLE`. A correção local passou a compartilhar o mesmo contrato de planejamento,
+preservar orçamento e Instagram opcionais e não inventar Produto IA. O teste de contrato impede a
+recorrência.
+
+O processo permanece bloqueado corretamente antes dos subprocessos de criativos e landing: ainda
+faltam URL pública, checkout atribuível, acesso, eventos e políticas homologados. Nenhuma abordagem,
+publicação, campanha, venda ou gasto foi realizado.

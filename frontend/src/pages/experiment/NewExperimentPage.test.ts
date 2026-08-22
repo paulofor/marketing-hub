@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { Product } from "../../api/product/useProducts";
+import { productsEligibleForNiche } from "./NewExperimentPage";
 import {
+  parseOptionalEntityId,
   parseOptionalPositiveAmount,
   productAiSubtypeForExperiment,
-  productsEligibleForNiche,
-} from "./NewExperimentPage";
+} from "./experimentPlanningContract";
 
 const product = (id: number, marketNicheId?: number): Product =>
   ({
@@ -50,5 +51,11 @@ describe("contrato de planejamento do experimento", () => {
     expect(parseOptionalPositiveAmount("20")).toBe(20);
     expect(parseOptionalPositiveAmount("0")).toBe(null);
     expect(parseOptionalPositiveAmount("abc")).toBe(null);
+  });
+
+  it("mantém Instagram opcional nos experimentos orgânicos", () => {
+    expect(parseOptionalEntityId("")).toBe(null);
+    expect(parseOptionalEntityId("12")).toBe(12);
+    expect(parseOptionalEntityId("0")).toBe(null);
   });
 });

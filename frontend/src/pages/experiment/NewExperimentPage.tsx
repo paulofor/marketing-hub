@@ -29,6 +29,10 @@ import type {
   ProductAiSubtype,
 } from "../../api/experiment/useExperiments";
 import type { Product } from "../../api/product/useProducts";
+import {
+  parseOptionalPositiveAmount,
+  productAiSubtypeForExperiment,
+} from "./experimentPlanningContract";
 
 export function productsEligibleForNiche(
   products: Product[],
@@ -49,23 +53,6 @@ export function hypothesesEligibleForProduct(
   return hypotheses.filter(
     (hypothesis) => hypothesis.productId === Number(productId),
   );
-}
-
-export function productAiSubtypeForExperiment(
-  experimentType: ExperimentType,
-  productAiSubtype: ProductAiSubtype | "",
-): ProductAiSubtype | undefined {
-  return experimentType === "LOW_TICKET_PRODUCT" && productAiSubtype
-    ? productAiSubtype
-    : undefined;
-}
-
-export function parseOptionalPositiveAmount(
-  value: string,
-): number | undefined | null {
-  if (!value.trim()) return undefined;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
 const productAiSubtypeLabels: Record<ProductAiSubtype, string> = {

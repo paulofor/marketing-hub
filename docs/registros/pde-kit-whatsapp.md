@@ -174,3 +174,11 @@ Após a última correção, duas rodadas locais completas e consecutivas passara
 7 com MySQL 5.7 e SMTP descartável. Hermes, Têmis e Plutus não foram repetidos enquanto o contrato
 público permaneceu ausente; a contabilização do passo 4 continua em 303.089 tokens de entrada,
 175.360 em cache, 8.992 de saída e US$ 0,719700.
+
+Na publicação produtiva, a imagem, o container e o proxy do Kit ficaram saudáveis, mas o workflow
+parou no gate HTTPS antes de testar o novo domínio. A causa foi uma validação forte e incondicional
+de `version-diagnostics.json` nas versões MUSA v5 e v6, embora a execução direcionada ao Kit não
+tivesse republicado esses containers legados. O gate passa a exigir diagnóstico completo somente da
+versão selecionada e mantém DNS, health e entrada pública como regressão mínima das versões não
+alteradas. O certificado do Kit continua sendo emitido pelo workflow canônico do proxy depois que o
+DNS estiver publicado; certificado autoassinado nunca libera o slot nem o checkout.

@@ -6,11 +6,11 @@ info:
 paths:
   /api/business-process-chains:
     get:
-      summary: Lista as cadeias de processos
+      summary: Lista as cadeias de processos publicadas e em uso
       operationId: listBusinessProcessChains
       responses:
         "200":
-          description: Cadeias cadastradas com contagem oficial de processos
+          description: Versões publicadas das cadeias em uso com contagem oficial de processos
           content:
             application/json:
               schema:

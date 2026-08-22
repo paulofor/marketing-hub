@@ -15,13 +15,13 @@ export default function BusinessProcessChainsPage() {
     Number.isSafeInteger(requestedId) && requestedId > 0
       ? requestedId
       : undefined;
-  const activeId = useMemo(
-    () =>
-      selectedId ??
-      chains.data?.find((item) => item.status === "PUBLISHED")?.id ??
-      chains.data?.[0]?.id,
-    [chains.data, selectedId],
-  );
+  const activeId = useMemo(() => {
+    const availableChains = chains.data ?? [];
+    const selectedChain = availableChains.find(
+      (item) => item.id === selectedId,
+    );
+    return selectedChain?.id ?? availableChains[0]?.id;
+  }, [chains.data, selectedId]);
   const detail = useBusinessProcessChain(activeId);
 
   return (

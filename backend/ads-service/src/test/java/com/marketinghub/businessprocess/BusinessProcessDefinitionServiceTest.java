@@ -245,6 +245,105 @@ class BusinessProcessDefinitionServiceTest {
     verify(repository, never()).save(any());
   }
 
+  /** Aceita subprocesso somente quando o processo de valor pai está publicado. */
+  @Test
+  void createsSubprocessWithPublishedValueProcessParent() throws Exception {
+    var repository = mock(BusinessProcessDefinitionRepository.class);
+    BusinessProcessDefinition parent = entity(5L, 1, "PUBLISHED", validDiagram().toString());
+    parent.setProcessCode("pde-construction-approval");
+    parent.setProcessType("VALUE_PROCESS");
+    when(repository.findByProcessCodeAndVersionNumber("product-assets", 1))
+        .thenReturn(Optional.empty());
+    when(repository.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
+            "pde-construction-approval", "PUBLISHED"))
+        .thenReturn(Optional.of(parent));
+    when(repository.save(any()))
+        .thenAnswer(
+            invocation -> {
+              BusinessProcessDefinition value = invocation.getArgument(0);
+              value.setId(11L);
+              return value;
+            });
+    var service = new BusinessProcessDefinitionService(repository, tasks, mapper);
+    BusinessProcessDefinitionRequest request =
+        new BusinessProcessDefinitionRequest(
+            "product-assets",
+            "Produção de entregáveis",
+            "Produzir ativos",
+            "Operação",
+            "Produto definido",
+            "Ativos aprovados",
+            1,
+            null,
+            validDiagram(),
+            "SUBPROCESS",
+            "pde-construction-approval");
+
+    var result = service.create(request);
+
+    assertThat(result.processType()).isEqualTo("SUBPROCESS");
+    assertThat(result.parentProcessDefinitionId()).isEqualTo(5L);
+    assertThat(result.parentProcessCode()).isEqualTo("pde-construction-approval");
+  }
+
+  /** Rejeita subprocesso sem pai para impedir responsabilidades paralelas soltas. */
+  @Test
+  void rejectsSubprocessWithoutParent() throws Exception {
+    var repository = mock(BusinessProcessDefinitionRepository.class);
+    when(repository.findByProcessCodeAndVersionNumber("product-assets", 1))
+        .thenReturn(Optional.empty());
+    var service = new BusinessProcessDefinitionService(repository, tasks, mapper);
+    BusinessProcessDefinitionRequest request =
+        new BusinessProcessDefinitionRequest(
+            "product-assets",
+            "Produção de entregáveis",
+            "Produzir ativos",
+            "Operação",
+            "Produto definido",
+            "Ativos aprovados",
+            1,
+            null,
+            validDiagram(),
+            "SUBPROCESS",
+            null);
+
+    assertThatThrownBy(() -> service.create(request))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("exige um processo de valor pai");
+  }
+
+  /** Aceita chamada de subprocesso publicado como contrato explícito da atividade. */
+  @Test
+  void acceptsPublishedSubprocessReference() throws Exception {
+    var repository = mock(BusinessProcessDefinitionRepository.class);
+    BusinessProcessDefinition subprocess = entity(6L, 1, "PUBLISHED", validDiagram().toString());
+    subprocess.setProcessCode("product-assets");
+    subprocess.setProcessType("SUBPROCESS");
+    when(repository.findByProcessCodeAndVersionNumber("landing", 2)).thenReturn(Optional.empty());
+    when(repository.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
+            "product-assets", "PUBLISHED"))
+        .thenReturn(Optional.of(subprocess));
+    when(repository.save(any()))
+        .thenAnswer(
+            invocation -> {
+              BusinessProcessDefinition value = invocation.getArgument(0);
+              value.setId(10L);
+              return value;
+            });
+    var service = new BusinessProcessDefinitionService(repository, tasks, mapper);
+    var diagram =
+        mapper.readTree(
+            "{\"nodes\":[{\"id\":\"start\",\"type\":\"START\",\"label\":\"Início\"},"
+                + "{\"id\":\"task\",\"type\":\"TASK\",\"label\":\"Produzir\",\"subprocessCode\":\"product-assets\"},"
+                + "{\"id\":\"end\",\"type\":\"END\",\"label\":\"Fim\"}],"
+                + "\"flows\":[{\"from\":\"start\",\"to\":\"task\"},{\"from\":\"task\",\"to\":\"end\"}]}");
+
+    var result = service.create(request(diagram));
+
+    assertThat(result.diagram().path("nodes").get(1).path("subprocessCode").asText())
+        .isEqualTo("product-assets");
+  }
+
   /** Exclui rascunho sem tarefa e preserva qualquer definição utilizada. */
   @Test
   void deletesOnlyUnusedDraft() throws Exception {

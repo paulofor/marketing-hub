@@ -38,9 +38,11 @@ function mockCatalog(
             ? resources
             : String(url).endsWith("/document-activities")
               ? documentActivities
-            : String(url).startsWith("/api/business-process-chains/by-process/")
-              ? chains
-              : processes,
+              : String(url).startsWith(
+                    "/api/business-process-chains/by-process/",
+                  )
+                ? chains
+                : processes,
       }) as never,
   );
 }
@@ -179,6 +181,73 @@ describe("BusinessProcessesPage", () => {
     expect(
       screen.getByRole("link", { name: "Processos aposentados (1)" }),
     ).toHaveAttribute("href", "/business-processes/retired");
+  });
+
+  it("separa subprocessos e mostra o processo de valor pai informado pelo backend", async () => {
+    const diagram = {
+      nodes: [
+        { id: "start", type: "START", label: "Início" },
+        { id: "task", type: "TASK", label: "Executar" },
+        { id: "end", type: "END", label: "Fim" },
+      ],
+      flows: [
+        { from: "start", to: "task" },
+        { from: "task", to: "end" },
+      ],
+    };
+    mockCatalog([
+      {
+        id: 40,
+        processCode: "pde-communication-sales-journey",
+        name: "Comunicação e jornada de venda do PDE",
+        purpose: "Integrar a jornada.",
+        ownerName: "Operação",
+        triggerDescription: "Produto aprovado",
+        outcomeDescription: "Jornada integrada",
+        versionNumber: 4,
+        status: "PUBLISHED",
+        processType: "VALUE_PROCESS",
+        createdAt: "2026-08-22T00:00:00Z",
+        diagram,
+      },
+      {
+        id: 17,
+        processCode: "creative-production-approval",
+        name: "Criação e aprovação de criativos",
+        purpose: "Produzir criativos.",
+        ownerName: "Operação",
+        triggerDescription: "Briefing aprovado",
+        outcomeDescription: "Criativo aprovado",
+        versionNumber: 5,
+        status: "PUBLISHED",
+        processType: "SUBPROCESS",
+        parentProcessCode: "pde-communication-sales-journey",
+        parentProcessDefinitionId: 40,
+        parentProcessName: "Comunicação e jornada de venda do PDE",
+        createdAt: "2026-08-22T00:00:00Z",
+        diagram,
+      },
+    ]);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/business-processes?processId=17"]}>
+        <QueryClientProvider client={client}>
+          <BusinessProcessesPage />
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("Processos de valor")).toBeInTheDocument();
+    expect(screen.getByText("Subprocessos especializados")).toBeInTheDocument();
+    expect(screen.getByText("SUBPROCESSO")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", {
+        name: "Comunicação e jornada de venda do PDE",
+      }),
+    ).toHaveAttribute("href", "/business-processes?processId=40");
   });
 
   it("mostra somente versões aposentadas na tela histórica", async () => {
@@ -428,10 +497,7 @@ describe("BusinessProcessesPage", () => {
       await screen.findByRole("link", {
         name: "Ver os 10 últimos documentos gerados",
       }),
-    ).toHaveAttribute(
-      "href",
-      "/business-processes/22/documents",
-    );
+    ).toHaveAttribute("href", "/business-processes/22/documents");
     expect(
       screen.getByRole("link", {
         name: "Ver os 10 últimos documentos",

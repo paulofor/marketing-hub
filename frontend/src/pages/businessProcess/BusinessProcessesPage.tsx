@@ -20,7 +20,21 @@ import BusinessProcessDiagram from "./BusinessProcessDiagram";
 import BusinessProcessEditor from "./BusinessProcessEditor";
 import "./BusinessProcessesPage.css";
 
-const initial = {
+type BusinessProcessForm = {
+  processCode: string;
+  name: string;
+  purpose: string;
+  ownerName: string;
+  triggerDescription: string;
+  outcomeDescription: string;
+  versionNumber: number;
+  technicalReference: string;
+  processType: "VALUE_PROCESS" | "SUBPROCESS";
+  parentProcessCode: string;
+  activities: string;
+};
+
+const initial: BusinessProcessForm = {
   processCode: "",
   name: "",
   purpose: "",
@@ -29,6 +43,8 @@ const initial = {
   outcomeDescription: "",
   versionNumber: 1,
   technicalReference: "",
+  processType: "VALUE_PROCESS",
+  parentProcessCode: "",
   activities: "",
 };
 
@@ -76,10 +92,16 @@ export default function BusinessProcessesPage({
   const retiredProcesses = allProcesses.filter(
     (item) => item.status === "RETIRED",
   );
-  const processes =
+  const processes = (
     catalogMode === "retired"
       ? retiredProcesses
-      : allProcesses.filter((item) => item.status !== "RETIRED");
+      : allProcesses.filter((item) => item.status !== "RETIRED")
+  ).sort((left, right) => {
+    const typeComparison =
+      (left.processType === "SUBPROCESS" ? 1 : 0) -
+      (right.processType === "SUBPROCESS" ? 1 : 0);
+    return typeComparison || left.name.localeCompare(right.name, "pt-BR");
+  });
   const requestedId = Number(searchParams.get("processId"));
   const selectedId =
     Number.isSafeInteger(requestedId) && requestedId > 0
@@ -121,6 +143,8 @@ export default function BusinessProcessesPage({
               ) + 1
             : selected.versionNumber,
         technicalReference: selected.technicalReference,
+        processType: selected.processType ?? "VALUE_PROCESS",
+        parentProcessCode: selected.parentProcessCode,
         diagram: structuredClone(selected.diagram),
       }
     : undefined;
@@ -136,6 +160,11 @@ export default function BusinessProcessesPage({
       outcomeDescription: form.outcomeDescription,
       versionNumber: form.versionNumber,
       technicalReference: form.technicalReference || undefined,
+      processType: form.processType,
+      parentProcessCode:
+        form.processType === "SUBPROCESS"
+          ? form.parentProcessCode || undefined
+          : undefined,
       diagram: linearDiagram(form.activities),
     });
     selectProcess(saved.id);
@@ -219,6 +248,65 @@ export default function BusinessProcessesPage({
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
             </div>
+            <div className="col-md-4">
+              <label className="form-label" htmlFor="process-type">
+                Tipo *
+              </label>
+              <select
+                id="process-type"
+                className="form-select"
+                required
+                value={form.processType}
+                onChange={(event) => {
+                  const processType = event.target.value as
+                    "VALUE_PROCESS" | "SUBPROCESS";
+                  setForm({
+                    ...form,
+                    processType,
+                    parentProcessCode:
+                      processType === "SUBPROCESS"
+                        ? form.parentProcessCode
+                        : "",
+                  });
+                }}
+              >
+                <option value="VALUE_PROCESS">Processo de valor</option>
+                <option value="SUBPROCESS">Subprocesso</option>
+              </select>
+            </div>
+            {form.processType === "SUBPROCESS" ? (
+              <div className="col-md-8">
+                <label className="form-label" htmlFor="parent-process-code">
+                  Código do processo de valor pai *
+                </label>
+                <select
+                  id="parent-process-code"
+                  className="form-select"
+                  required
+                  value={form.parentProcessCode}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      parentProcessCode: event.target.value,
+                    })
+                  }
+                >
+                  <option value="">Selecione</option>
+                  {allProcesses
+                    .filter(
+                      (item) =>
+                        item.status === "PUBLISHED" &&
+                        (item.processType ?? "VALUE_PROCESS") ===
+                          "VALUE_PROCESS",
+                    )
+                    .map((item) => (
+                      <option value={item.processCode} key={item.id}>
+                        {item.name} · v{item.versionNumber}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            ) : null}
             <div className="col-md-2">
               <label className="form-label" htmlFor="process-version">
                 Versão *
@@ -343,18 +431,28 @@ export default function BusinessProcessesPage({
             {catalogMode === "retired" ? "Histórico" : "Catálogo atual"}
           </div>
           <div className="list-group list-group-flush">
-            {processes.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`list-group-item list-group-item-action ${selected?.id === item.id ? "active" : ""}`}
-                onClick={() => selectProcess(item.id)}
-              >
-                <span className="d-block fw-semibold">{item.name}</span>
-                <span className="small">
-                  v{item.versionNumber} · {item.status}
-                </span>
-              </button>
+            {processes.map((item, index) => (
+              <div key={item.id}>
+                {(index === 0 ||
+                  (processes[index - 1].processType ?? "VALUE_PROCESS") !==
+                    (item.processType ?? "VALUE_PROCESS")) && (
+                  <div className="business-process-list__group">
+                    {(item.processType ?? "VALUE_PROCESS") === "SUBPROCESS"
+                      ? "Subprocessos especializados"
+                      : "Processos de valor"}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  className={`list-group-item list-group-item-action ${selected?.id === item.id ? "active" : ""}`}
+                  onClick={() => selectProcess(item.id)}
+                >
+                  <span className="d-block fw-semibold">{item.name}</span>
+                  <span className="small">
+                    v{item.versionNumber} · {item.status}
+                  </span>
+                </button>
+              </div>
             ))}
           </div>
         </aside>
@@ -397,6 +495,12 @@ export default function BusinessProcessesPage({
                       >
                         {selected.status}
                       </span>
+                      <span className="badge text-bg-light ms-2">
+                        {(selected.processType ?? "VALUE_PROCESS") ===
+                        "SUBPROCESS"
+                          ? "SUBPROCESSO"
+                          : "PROCESSO DE VALOR"}
+                      </span>
                       <h2 className="h4 mt-2 mb-1">
                         {selected.name} · v{selected.versionNumber}
                       </h2>
@@ -420,6 +524,20 @@ export default function BusinessProcessesPage({
                           ? ` · Contrato: ${selected.technicalReference}`
                           : ""}
                       </div>
+                      {selected.parentProcessDefinitionId ? (
+                        <div className="mt-2">
+                          <strong className="small">
+                            Processo de valor pai
+                          </strong>{" "}
+                          <Link
+                            className="btn btn-sm btn-outline-secondary ms-2"
+                            to={`/business-processes?processId=${selected.parentProcessDefinitionId}`}
+                          >
+                            {selected.parentProcessName ??
+                              selected.parentProcessCode}
+                          </Link>
+                        </div>
+                      ) : null}
                       {(processChainsQuery.data?.length ?? 0) > 0 ? (
                         <div
                           className="business-process-chains mt-3"

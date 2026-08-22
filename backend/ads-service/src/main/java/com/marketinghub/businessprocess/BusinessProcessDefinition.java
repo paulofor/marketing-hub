@@ -49,6 +49,12 @@ public class BusinessProcessDefinition {
   @Column(name = "technical_reference", length = 200)
   private String technicalReference;
 
+  @Column(name = "process_type", nullable = false, length = 20)
+  private String processType = "VALUE_PROCESS";
+
+  @Column(name = "parent_process_code", length = 100)
+  private String parentProcessCode;
+
   @Column(name = "diagram_json", nullable = false, columnDefinition = "LONGTEXT")
   private String diagramJson;
 

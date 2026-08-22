@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: business-process-responsibility-boundaries-assertion-1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 6
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE status = 'PUBLISHED' AND process_type = 'VALUE_PROCESS'
+        - sqlCheck:
+            expectedResult: 5
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE status = 'PUBLISHED' AND process_type = 'SUBPROCESS' AND parent_process_code IS NOT NULL
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM business_process_definition WHERE status = 'PUBLISHED' AND process_code = 'product-manufacturing-approval'
+        - sqlCheck:
+            expectedResult: 1
+            sql: SELECT COUNT(*) FROM business_process_chain_definition WHERE chain_code = 'pde-value-creation-delivery' AND version_number = 5 AND status = 'PUBLISHED'
+        - sqlCheck:
+            expectedResult: 6
+            sql: SELECT COUNT(*) FROM business_process_chain_item item JOIN business_process_chain_definition chain_definition ON chain_definition.id = item.chain_definition_id WHERE chain_definition.chain_code = 'pde-value-creation-delivery' AND chain_definition.version_number = 5
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: SELECT 1;

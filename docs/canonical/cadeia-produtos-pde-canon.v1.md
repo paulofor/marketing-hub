@@ -103,6 +103,29 @@ Foram consideradas três estruturas:
 A cadeia inicial adota **seis macroprocessos**. Processos especializados, como fabricação de imagens,
 geração de landing e criação de criativos, permanecem reutilizáveis dentro da etapa correspondente.
 
+## Fronteiras obrigatórias de responsabilidade
+
+O catálogo distingue `VALUE_PROCESS` de `SUBPROCESS`. Um processo de valor possui resultado de
+negócio e gate de avanço da cadeia; um subprocesso executa uma capacidade especializada, possui um
+único processo de valor pai e não pode decidir sozinho o avanço, ativar mídia ou repetir o resultado
+do pai.
+
+Cada trabalho tem uma única autoridade:
+
+| Trabalho | Autoridade única | Limite dos demais processos |
+| --- | --- | --- |
+| Construir e aprovar o PDE completo | `pde-construction-approval` | `product-manufacturing-approval` fica aposentado; ativos e entregáveis são atividades da construção canônica |
+| Produzir e aprovar criativos | `creative-production-approval` | comunicação apenas delega e integra o resultado aprovado |
+| Produzir e aprovar landing | `landing-page-generation` | comunicação não recria copy, HTML, imagens ou revisão da landing |
+| Executar preflight técnico | `experiment-homologation-activation` | homologação comercial do PDE valida riscos próprios, consome as evidências e decide ativação |
+| Operar e otimizar experimento | `operacao-otimizacao-experimento` | processo final apenas consolida o resultado, sem executar outra otimização |
+| Conciliar venda, entregar e medir satisfação | `venda-entrega-satisfacao-cliente` | processo final não reentrega, reprocessa ou solicita satisfação novamente |
+
+Uma atividade que delega trabalho deve declarar `subprocessCode`. Ela não pode possuir ao mesmo tempo
+um executor especializado, pois isso criaria duas autoridades para a mesma execução. A tela deve
+mostrar tipo e processo pai a partir do backend. Versões anteriores permanecem preservadas como
+histórico, mas somente uma versão publicada de cada código participa da operação atual.
+
 ## Cadeia principal
 
 ```text
@@ -235,9 +258,11 @@ compensa menor utilidade, e simplicidade de produção não compensa uma entrega
 necessidade validada. A Prontidão para Decisão por IA deve alcançar 80 pontos, sem campo crítico
 ausente, mas não substitui a revisão humana nem a prova de valor do produto.
 
-O processo `Fabricação e aprovação do produto` continua válido quando imagens ou arquivos forem
-entregáveis. Para um PDE, ele atua como subprocesso desta etapa e não representa sozinho a conclusão
-do produto experiencial.
+O processo legado `Fabricação e aprovação do produto` foi aposentado após a auditoria de
+responsabilidades de 2026-08-22. Imagens, arquivos e demais entregáveis são produzidos dentro de
+`Construção e aprovação do PDE`, que já possui os executores e gates necessários. Reabrir um
+subprocesso separado exige uma capacidade reutilizável nova, contrato próprio e evidência de que não
+duplica materialização ou aprovação.
 
 ## 4. Preparação da comunicação e da jornada de venda
 
@@ -278,8 +303,10 @@ ruptura de mensagem. Canal, creator, variante e versão devem permanecer atribu�
 entrega.
 
 Os processos `Criação e aprovação de criativos` e `Geração de landing page` permanecem como
-subprocessos especializados desta etapa. Nem todo PDE exige landing tradicional; a entrada pode ser a
-própria microexperiência, desde que o Plano Comercial defina essa rota.
+subprocessos especializados desta etapa. `Comunicação e jornada de venda do PDE` congela o contrato,
+delega cada produção uma única vez e integra os resultados a checkout, acesso e eventos. Nem todo PDE
+exige landing tradicional; a entrada pode ser a própria microexperiência, desde que o Plano Comercial
+defina essa rota.
 
 ## 5. Homologação e ativação comercial
 
@@ -400,6 +427,12 @@ exata, objetivo, resultado final e contribuição de valor. Uma nova versão de 
 cadeia publicada; a adoção exige uma nova versão da cadeia, preservando auditoria e reprodutibilidade.
 O vínculo também deve ser navegável no sentido inverso: a tela de uma versão de processo mostra as
 cadeias que a contêm e abre diretamente o detalhe da cadeia selecionada.
+
+A listagem operacional da tela e de `GET /api/business-process-chains` mostra somente versões
+`PUBLISHED`, para que versões obsoletas não concorram visualmente com as cadeias em uso. Versões
+`RETIRED` continuam persistidas e consultáveis pelo detalhe por ID e pela relação reversa com os
+processos, preservando auditoria e reprodutibilidade sem poluir a operação corrente. A tela ignora
+um `chainId` que não pertença à listagem operacional e abre a primeira cadeia em uso.
 
 A cadeia `pde-value-creation-delivery` usa os seis macroprocessos deste cânone. A versão 1 preserva o
 registro inicial; a versão 2 torna explícita a neutralidade de formato e atualiza descoberta, Plano

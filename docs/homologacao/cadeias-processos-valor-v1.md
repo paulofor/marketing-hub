@@ -20,6 +20,23 @@ valor, sem inferir dados no frontend nem executar trabalho operacional.
 | Desktop | Chromium | Lista, detalhe e navegação ficam legíveis sem overflow horizontal |
 | Mobile | iPhone 15 Pro e Pixel 7 | Cards empilham, textos quebram e botões permanecem acessíveis |
 
+## Matriz de homologação das fronteiras v5
+
+| Área | Cenário | Critério de aprovação |
+| --- | --- | --- |
+| Caminho feliz | Abrir cadeia PDE v5 | Seis processos de valor aparecem na ordem e os subprocessos ficam fora da cadeia principal |
+| Responsabilidade | Construção do PDE | Existe uma única autoridade publicada; fabricação legada está aposentada |
+| Composição | Comunicação | Criativos e landing aparecem como subprocessos do processo de comunicação |
+| Composição | Homologação | O processo PDE consome um preflight técnico que não ativa nem monitora tráfego |
+| Composição | Venda e aprendizado | Otimização e entrega são subprocessos distintos e o pai apenas consolida a decisão |
+| Validação | Novo subprocesso sem pai | Backend responde 400 e não persiste definição órfã |
+| Validação | Pai que também é subprocesso | Backend responde 400 e mantém somente um nível de composição |
+| Validação | Atividade com subprocesso e executor | Backend responde 400 para impedir dupla execução |
+| Observabilidade | Catálogo administrativo | Tipo, processo pai e chamada de subprocesso vêm do backend e ficam visíveis |
+| Histórico | Versões e tarefas anteriores | Registros aposentados e tarefas continuam consultáveis sem migração destrutiva |
+| MySQL 5.7 | Migração e reaplicação | Colunas, versões, vínculos e cadeia v5 são idempotentes e não usam padrão sujeito ao erro 1093 |
+| Desktop e mobile | Catálogo agrupado | Processos de valor e subprocessos permanecem legíveis e navegáveis sem overflow |
+
 ## Regra de repetição
 
 Uma rodada local completa sem defeitos conclui a homologação. Se a rodada revelar defeito, a

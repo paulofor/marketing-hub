@@ -33,7 +33,7 @@ class BusinessProcessChainControllerTest {
     mockMvc = MockMvcBuilders.standaloneSetup(new BusinessProcessChainController(service)).build();
   }
 
-  /** Expõe lista e contagem oficial de processos. */
+  /** Expõe lista operacional de cadeias publicadas e a contagem oficial de processos. */
   @Test
   void listsChains() throws Exception {
     when(service.listChains())

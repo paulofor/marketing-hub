@@ -93,6 +93,7 @@ public class BusinessProcessDefinitionService {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Esta versão do processo já existe.");
     }
     validateEquivalentProcess(request.name(), code, null);
+    validateResponsibilityBoundary(request.processType(), request.parentProcessCode(), code);
     validateDiagram(request.diagram());
     BusinessProcessDefinition value = new BusinessProcessDefinition();
     value.setProcessCode(code);
@@ -104,6 +105,8 @@ public class BusinessProcessDefinitionService {
     value.setVersionNumber(request.versionNumber());
     value.setStatus("DRAFT");
     value.setTechnicalReference(trimToNull(request.technicalReference()));
+    value.setProcessType(request.processType().trim());
+    value.setParentProcessCode(trimToNull(request.parentProcessCode()));
     value.setDiagramJson(write(request.diagram()));
     value.setCreatedAt(Instant.now(clock));
     return response(repository.save(value));
@@ -124,6 +127,8 @@ public class BusinessProcessDefinitionService {
           HttpStatus.CONFLICT, "Código e número da versão não podem ser alterados.");
     }
     validateEquivalentProcess(request.name(), value.getProcessCode(), value.getId());
+    validateResponsibilityBoundary(
+        request.processType(), request.parentProcessCode(), value.getProcessCode());
     validateDiagram(request.diagram());
     applyEditableFields(value, request);
     return response(repository.save(value));
@@ -136,6 +141,8 @@ public class BusinessProcessDefinitionService {
     if ("PUBLISHED".equals(selected.getStatus())) {
       return response(selected);
     }
+    validateResponsibilityBoundary(
+        processType(selected), selected.getParentProcessCode(), selected.getProcessCode());
     validateDiagram(read(selected.getDiagramJson()));
     Instant now = Instant.now(clock);
     repository.findAllByProcessCodeOrderByVersionNumberDesc(selected.getProcessCode()).stream()
@@ -184,6 +191,32 @@ public class BusinessProcessDefinitionService {
     return withoutAccents.replaceAll("[^a-z0-9]+", " ").trim();
   }
 
+  /** Garante que subprocessos tenham um único processo de valor pai vigente. */
+  private void validateResponsibilityBoundary(
+      String processType, String parentProcessCode, String processCode) {
+    String normalizedType = processType == null ? "" : processType.trim();
+    String normalizedParent = trimToNull(parentProcessCode);
+    if ("VALUE_PROCESS".equals(normalizedType)) {
+      if (normalizedParent != null) {
+        throw invalid("Processo de valor não pode declarar processo pai.");
+      }
+      return;
+    }
+    if (!"SUBPROCESS".equals(normalizedType)) {
+      throw invalid("O tipo deve ser VALUE_PROCESS ou SUBPROCESS.");
+    }
+    if (normalizedParent == null || normalizedParent.equals(processCode)) {
+      throw invalid("Subprocesso exige um processo de valor pai diferente dele próprio.");
+    }
+    BusinessProcessDefinition parent =
+        repository
+            .findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(normalizedParent, "PUBLISHED")
+            .orElseThrow(() -> invalid("O processo de valor pai precisa estar publicado."));
+    if (!"VALUE_PROCESS".equals(processType(parent))) {
+      throw invalid("O pai de um subprocesso precisa ser um processo de valor.");
+    }
+  }
+
   /** Valida integridade BPM mínima: eventos únicos e fluxos apontando para nós existentes. */
   private void validateDiagram(JsonNode diagram) {
     JsonNode nodes = diagram.path("nodes");
@@ -207,6 +240,7 @@ public class BusinessProcessDefinitionService {
       }
       validateExecutionResource(node, type);
       validateDocumentOutput(node, type);
+      validateSubprocessReference(node, type);
     }
     if (starts != 1 || ends != 1) {
       throw invalid("O processo deve ter exatamente um início e um fim.");
@@ -247,6 +281,28 @@ public class BusinessProcessDefinitionService {
     }
   }
 
+  /** Valida a chamada explícita de subprocesso e impede uma segunda execução implícita. */
+  private void validateSubprocessReference(JsonNode node, String nodeType) {
+    String subprocessCode = node.path("subprocessCode").asText("").trim();
+    if (subprocessCode.isEmpty()) return;
+    if (!"TASK".equals(nodeType)) {
+      throw invalid("Somente atividades podem chamar subprocessos.");
+    }
+    if (!node.path("executionResourceCode").asText("").isBlank()) {
+      throw invalid("Uma atividade não pode executar recurso e subprocesso ao mesmo tempo.");
+    }
+    if (!subprocessCode.matches("[a-z0-9]+(?:-[a-z0-9]+)*")) {
+      throw invalid("O código do subprocesso é inválido.");
+    }
+    BusinessProcessDefinition subprocess =
+        repository
+            .findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(subprocessCode, "PUBLISHED")
+            .orElseThrow(() -> invalid("O subprocesso informado precisa estar publicado."));
+    if (!"SUBPROCESS".equals(processType(subprocess))) {
+      throw invalid("A atividade deve apontar para uma definição classificada como subprocesso.");
+    }
+  }
+
   /** Copia os campos que podem mudar enquanto a definição ainda é rascunho. */
   private void applyEditableFields(
       BusinessProcessDefinition value, BusinessProcessDefinitionRequest request) {
@@ -256,11 +312,20 @@ public class BusinessProcessDefinitionService {
     value.setTriggerDescription(request.triggerDescription().trim());
     value.setOutcomeDescription(request.outcomeDescription().trim());
     value.setTechnicalReference(trimToNull(request.technicalReference()));
+    value.setProcessType(request.processType().trim());
+    value.setParentProcessCode(trimToNull(request.parentProcessCode()));
     value.setDiagramJson(write(request.diagram()));
   }
 
   /** Converte uma entidade no contrato oficial da tela. */
   private BusinessProcessDefinitionResponse response(BusinessProcessDefinition value) {
+    BusinessProcessDefinition parent =
+        value.getParentProcessCode() == null
+            ? null
+            : repository
+                .findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
+                    value.getParentProcessCode(), "PUBLISHED")
+                .orElse(null);
     return new BusinessProcessDefinitionResponse(
         value.getId(),
         value.getProcessCode(),
@@ -274,7 +339,16 @@ public class BusinessProcessDefinitionService {
         value.getTechnicalReference(),
         read(value.getDiagramJson()),
         value.getCreatedAt(),
-        value.getPublishedAt());
+        value.getPublishedAt(),
+        processType(value),
+        value.getParentProcessCode(),
+        parent == null ? null : parent.getId(),
+        parent == null ? null : parent.getName());
+  }
+
+  /** Interpreta registros anteriores à classificação como processos de valor. */
+  private String processType(BusinessProcessDefinition value) {
+    return value.getProcessType() == null ? "VALUE_PROCESS" : value.getProcessType();
   }
 
   /** Obtém uma versão existente ou responde 404. */

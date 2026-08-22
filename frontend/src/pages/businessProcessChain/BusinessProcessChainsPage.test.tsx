@@ -167,4 +167,46 @@ describe("BusinessProcessChainsPage", () => {
     expect(await screen.findByText("Cadeia PDE · v1")).toBeInTheDocument();
     expect(axios.get).toHaveBeenCalledWith("/api/business-process-chains/4");
   });
+
+  it("ignora link antigo para cadeia que não está mais na lista operacional", async () => {
+    const currentChain = {
+      id: 4,
+      chainCode: "pde-value-creation-delivery",
+      name: "Cadeia PDE",
+      purpose: "Criar valor.",
+      outcomeDescription: "Venda entregue.",
+      primaryMetric: "Tempo até venda entregue com satisfação",
+      versionNumber: 4,
+      status: "PUBLISHED",
+      processCount: 0,
+    };
+    vi.mocked(axios.get).mockImplementation(async (url) => {
+      if (url === "/api/business-process-chains") {
+        return { data: [currentChain] };
+      }
+      if (url === "/api/business-process-chains/4") {
+        return {
+          data: { ...currentChain, createdAt: "2026-08-22", processes: [] },
+        };
+      }
+      throw new Error(`Versão obsoleta consultada: ${url}`);
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/business-process-chains?chainId=3"]}>
+        <QueryClientProvider client={client}>
+          <BusinessProcessChainsPage />
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("Cadeia PDE · v4")).toBeInTheDocument();
+    expect(axios.get).toHaveBeenCalledWith("/api/business-process-chains/4");
+    expect(axios.get).not.toHaveBeenCalledWith(
+      "/api/business-process-chains/3",
+    );
+  });
 });

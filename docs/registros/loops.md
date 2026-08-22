@@ -1028,6 +1028,14 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - UI mostra modelo, modo, preço e custo acumulado.
 - **Regra preventiva**:
   - nenhuma etapa OpenAI deve persistir execução sem modelo efetivo, tokens e regra de preço identificável.
+  - a sincronização de preços deve falhar integralmente quando um modelo publicado simultaneamente
+    em Standard e Batch não puder ser interpretado, preservando o catálogo anterior em vez de
+    registrar sucesso parcial.
+- **Recorrência fechada em 2026-08-22**: a página oficial passou a incluir preço de cache write e
+  contexto longo, alterando as linhas HTML de 7 para 9 colunas e os props Astro de 4 para 5 campos.
+  O job noturno continuava verde, mas ignorava `gpt-5.6-sol`, `terra`, `luna` e outros modelos nesse
+  formato. O parser passou a reconhecer ambas as representações, a cobertura Standard/Batch virou
+  contrato bloqueante e `gpt-5.6-sol` recebeu seed oficial para disponibilização imediata no deploy.
 
 ## LOOP-EXPERIMENT-COST-RECONCILIATION — Total de custo sem origem auditável
 

@@ -27,6 +27,20 @@ test('injeta memoria da ferramenta no momento da consulta sem alterar o payload 
     const listed = await client.request('tools/list', {});
     assert(listed.result.tools.some(tool => tool.name === 'recuperar_memoria_especializada'));
     assert(listed.result.tools.some(tool => tool.name === 'registrar_aprendizado_candidato'));
+    const cockpitTool = listed.result.tools.find(tool => tool.name === 'consultar_cockpit');
+    assert.deepEqual(cockpitTool.annotations, {
+      readOnlyHint: true,
+      openWorldHint: true,
+      destructiveHint: false
+    });
+    const memoryWriteTool = listed.result.tools.find(
+      tool => tool.name === 'registrar_aprendizado_candidato'
+    );
+    assert.deepEqual(memoryWriteTool.annotations, {
+      readOnlyHint: false,
+      openWorldHint: true,
+      destructiveHint: false
+    });
 
     const result = await client.request('tools/call', {
       name: 'consultar_cockpit',

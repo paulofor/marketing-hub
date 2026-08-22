@@ -846,6 +846,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - Em 2026-08-07, o marco de reset do funil passou a ser convertido explicitamente de `Instant` para `DATETIME` UTC antes das consultas JDBC. Antes, o driver aplicava o fuso local ao parâmetro e submissões técnicas anteriores ao reset continuavam contabilizadas; o painel podia iniciar um experimento comercial com conversões falsas mesmo após zerar as contagens.
 - Em 2026-08-21, o experimento #88 confirmou um intervalo ainda desprotegido: entre a publicação da campanha e a primeira impressão sincronizada, previews e validações da Meta geraram eventos com `fbclid`, embora o Insights oficial permanecesse vazio. O cockpit passou a manter as contagens comerciais em zero até a primeira impressão confirmada, preservando esses eventos apenas no Analytics técnico. A sincronização de métricas agora reconcilia o run como `PUBLISHED_AWAITING_EXPOSURE` e abre `commercial_window_started_at` somente na primeira impressão, quando o reset canônico remove o pré-tráfego.
 - Em 2026-08-22, o reteste público do experimento #88 mostrou que a versão leve da landing preservava os seis destinos do Mercado Pago, mas não os atributos `data-analytics-role`; o coletor canônico registrava página e seções, porém não emitia `checkout_click`. O Lead Portal passou a reconhecer checkout tanto pelo marcador semântico quanto pelo destino externo (`pref_id`, host Mercado Pago ou caminho canônico de checkout/pagamento), registrar a seção de origem e liberar a navegação sem atraso. O teste do controller impede que a mensuração volte a depender exclusivamente do HTML gerado, e a sonda pública do deploy rejeita uma landing cujo coletor não contenha `checkout_click`.
+- Em 2026-08-22, Hermes encontrou três leituras divergentes no experimento #88: o funil contava três `page_view`s humanos, o Analytics reduzia toda a sessão a um único `page_view`, e o visitante preservava os três eventos válidos; além disso, `CPL` era zero sem leads e o JDBC reinterpretava como horário local o `DATETIME` UTC da sincronização Meta. A consolidação agora aplica a mesma janela canônica de três segundos por página, mantém custos sem denominador como `null` e converte o `DATETIME` agregado explicitamente de UTC. Testes cobrem recarregamento válido, denominador ausente e leitura temporal sem deslocamento.
 
 - **Severidade**: CRÍTICO.
 - **Status**: recorrente.
@@ -872,7 +873,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - enviar `deviceType`, sistema operacional e tamanho de tela pelo script público para apoiar decisão de layout/mobile;
   - serializar horários de analytics vindos de `DATETIME` com offset operacional explícito, evitando que a UI interprete horário de Brasília como UTC.
   - classificar verificações internas e navegadores automatizados por sessão, preservando-os para auditoria e excluindo-os de audiência, abandono e desempenho comerciais;
-  - deduplicar marcos de página, vídeo, CTA e formulário por sessão na consolidação, sem apagar os eventos brutos;
+  - deduplicar `page_view` pela janela canônica de três segundos e marcos de vídeo, CTA e formulário por sessão, sem apagar os eventos brutos;
   - usar `Instant` como contrato temporal único entre eventos detalhados, sessões e visitantes.
 - **Contratos sensíveis**:
   - `experiment_funnel_event`;
@@ -891,7 +892,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - teste: submissão pública soma `ENVIO_FORM` sem duplicar;
   - teste: jornada recente serializa `DATETIME` operacional com offset de Brasília.
   - teste: monitor interno permanece auditável, mas não altera sessões humanas nem tempo de carregamento;
-  - teste: marco repetido na mesma sessão conta uma única vez no resumo comercial.
+  - teste: marco de conversão repetido na mesma sessão conta uma única vez e recarregamento de página fora da janela canônica continua sendo uma visualização válida.
 - **Regra preventiva**:
   - todo novo evento de landing só está pronto quando aparecer na UI que o usuário usa para decisão.
 
@@ -1250,6 +1251,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o `codex exec` não interativo herdava política de aprovação da identidade e as ferramentas MCP não declaravam anotações de risco; não existia usuário para responder à elicitação.
 - **Correção sistêmica:** declarar `approval_policy=never` por configuração explícita com sandbox `read-only` e anotar todas as ferramentas com `readOnlyHint`, `openWorldHint` e `destructiveHint` coerentes.
 - **Prevenção:** teste de contrato valida simultaneamente a política não interativa e as anotações MCP.
+- **Fechamento em Hermes (2026-08-22):** o Operador de Crescimento repetiu o loop porque, além de não declarar a política e as anotações, registrava no Codex um MCP sem encaminhar as variáveis de escopo. O runner agora encaminha somente URL, escopo canônico e correlação da tarefa, aplica `approval_policy=never`, publica as anotações de risco e reconstrói do JSONL as ferramentas, fontes e horários realmente consultados. Testes Java e Node protegem os contratos de execução e auditoria.
 
 # LOOP-META-AD-APPROVER-LOG-ENDPOINT-DRIFT — MCP aponta para rota de log inexistente
 

@@ -187,7 +187,7 @@ public class ExperimentCampaignMetricService {
   /** Calcula o custo por clique a partir do gasto e dos cliques sincronizados. */
   private BigDecimal calculateCpc(BigDecimal spend, Long clicks) {
     if (spend == null || clicks == null || clicks == 0) {
-      return BigDecimal.ZERO;
+      return null;
     }
     return spend.divide(BigDecimal.valueOf(clicks), 2, RoundingMode.HALF_UP);
   }
@@ -195,7 +195,7 @@ public class ExperimentCampaignMetricService {
   /** Calcula o custo por lead a partir do gasto e dos leads sincronizados. */
   private BigDecimal calculateCpl(BigDecimal spend, Long leads) {
     if (spend == null || leads == null || leads == 0) {
-      return BigDecimal.ZERO;
+      return null;
     }
     return spend.divide(BigDecimal.valueOf(leads), 2, RoundingMode.HALF_UP);
   }

@@ -73,4 +73,14 @@ class ExperimentFunnelServiceResetTest {
 
     assertEquals(LocalDateTime.parse("2026-08-07T16:55:40.604464"), databaseBaseline);
   }
+
+  /** Garante que o DATETIME UTC do banco não receba deslocamento do fuso da JVM na leitura. */
+  @Test
+  void convertsUtcDatabaseDateTimeBackToInstant() {
+    LocalDateTime databaseValue = LocalDateTime.parse("2026-08-22T14:44:26.729474");
+
+    Instant instant = ExperimentFunnelService.fromUtcDatabaseDateTime(databaseValue);
+
+    assertEquals(Instant.parse("2026-08-22T14:44:26.729474Z"), instant);
+  }
 }

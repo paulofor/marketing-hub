@@ -119,11 +119,13 @@ public class GrowthOperatorBpmRunner {
                 "--color",
                 "never",
                 "--config",
+                "approval_policy=\"never\"",
+                "--config",
                 "mcp_servers.marketing_hub_readonly.command=\"node\"",
                 "--config",
-                "mcp_servers.marketing_hub_readonly.args=[\""
-                    + mcpServer.toAbsolutePath()
-                    + "\"]"));
+                "mcp_servers.marketing_hub_readonly.args=[\"" + mcpServer.toAbsolutePath() + "\"]",
+                "--config",
+                "mcp_servers.marketing_hub_readonly.env_vars=[\"MCP_MARKETING_HUB_URL\",\"MCP_COMMERCIAL_PLAN_ID\",\"MCP_EXPERIMENT_ID\",\"MCP_SOURCE_EXECUTION_ID\"]"));
     if (hasText(properties.getReasoningEffort())) {
       command.addAll(
           List.of(
@@ -253,18 +255,50 @@ public class GrowthOperatorBpmRunner {
   }
 
   /** Resume as ferramentas MCP usadas para compor a evidência auditável. */
-  private List<JsonNode> extractToolUsage(Path processLog) throws IOException {
+  List<JsonNode> extractToolUsage(Path processLog) throws IOException {
     List<JsonNode> tools = new ArrayList<>();
     for (String line : Files.readAllLines(processLog)) {
       if (!line.startsWith("{") || !line.contains("\"tool\"")) continue;
       try {
         JsonNode candidate = json.readTree(line);
-        if (candidate.hasNonNull("tool") && candidate.hasNonNull("status")) tools.add(candidate);
+        if (candidate.hasNonNull("tool") && candidate.hasNonNull("status")) {
+          tools.add(candidate);
+          continue;
+        }
+        JsonNode item = candidate.path("item");
+        if (!"mcp_tool_call".equals(item.path("type").asText())
+            || item.path("tool").asText().isBlank()) {
+          continue;
+        }
+        var observed = json.createObjectNode();
+        observed.put("tool", item.path("tool").asText());
+        observed.put("server", item.path("server").asText());
+        observed.put("status", item.path("status").asText());
+        JsonNode audit = mcpAudit(item.path("result"));
+        if (audit != null) observed.set("audit", audit);
+        tools.add(observed);
       } catch (IOException ex) {
         log.debug("Linha MCP inválida ignorada na evidência BPM de Hermes.", ex);
       }
     }
     return tools;
+  }
+
+  /** Recupera a origem e o horário auditável devolvidos dentro do conteúdo textual do MCP. */
+  private JsonNode mcpAudit(JsonNode result) {
+    for (JsonNode content : result.path("content")) {
+      if (!"text".equals(content.path("type").asText())
+          || content.path("text").asText().isBlank()) {
+        continue;
+      }
+      try {
+        JsonNode payload = json.readTree(content.path("text").asText());
+        if (payload.has("audit")) return payload.get("audit");
+      } catch (IOException ex) {
+        log.debug("Conteúdo textual do MCP não contém auditoria JSON.", ex);
+      }
+    }
+    return null;
   }
 
   /** Preserva as ferramentas já observadas sem substituir a falha funcional por erro de leitura. */

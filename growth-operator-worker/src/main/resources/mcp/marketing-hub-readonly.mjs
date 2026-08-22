@@ -198,7 +198,17 @@ function optionalPositiveInteger(value, name) {
 }
 
 function tool(name, description, properties, required = []) {
-  return { name, description, inputSchema: { type: 'object', additionalProperties: false, properties, required } };
+  const writable = name.startsWith('registrar_') || name.startsWith('solicitar_');
+  return {
+    name,
+    description,
+    inputSchema: { type: 'object', additionalProperties: false, properties, required },
+    annotations: {
+      readOnlyHint: !writable,
+      openWorldHint: true,
+      destructiveHint: false
+    }
+  };
 }
 
 function boundedLimit(value) {

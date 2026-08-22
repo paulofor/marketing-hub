@@ -726,6 +726,10 @@ class ExperimentFunnelServiceRenderCompleteTest {
                     "eventId=h3;eventType=page_load_metric;visitorId=visitor-1;sessionId=human-1;pageUrl=https://example.test/flows/agenda;loadDurationMs=1800",
                     Instant.parse("2026-08-04T02:57:02Z")),
                 landingEvent(
+                    8L,
+                    "eventId=h4;eventType=page_view;visitorId=visitor-1;sessionId=human-1;pageUrl=https://example.test/flows/agenda;deviceType=mobile;screenWidth=390;screenHeight=844",
+                    Instant.parse("2026-08-04T02:57:10Z")),
+                landingEvent(
                     4L,
                     "eventId=a1;eventType=page_view;sessionId=monitor-1;pageUrl=https://example.test/api/flows/agenda/page;deviceType=desktop;screenWidth=1600;screenHeight=1200",
                     Instant.parse("2026-08-04T02:58:00Z")),
@@ -745,13 +749,13 @@ class ExperimentFunnelServiceRenderCompleteTest {
     var summary = service.summarizeLandingAnalytics(81L);
 
     assertEquals(1, summary.totalSessions());
-    assertEquals(1, summary.pageViews());
-    assertEquals(2, summary.totalEvents());
+    assertEquals(2, summary.pageViews());
+    assertEquals(3, summary.totalEvents());
     assertEquals(1, summary.trafficQuality().humanSessions());
     assertEquals(3, summary.trafficQuality().automatedSessions());
     assertEquals(1, summary.loadMetrics().events());
     assertEquals(1800, summary.loadMetrics().averageLoadDurationMs());
-    assertEquals(Instant.parse("2026-08-04T02:57:02Z"), summary.lastEventAt());
+    assertEquals(Instant.parse("2026-08-04T02:57:10Z"), summary.lastEventAt());
     assertEquals(4, summary.sessions().size());
     assertEquals(
         3,

@@ -135,6 +135,35 @@ class ExperimentCampaignMetricServiceTest {
     verify(runMetricLifecycleService).synchronize(experiment, campaign, 0L);
   }
 
+  /** Mantém custos por conversão nulos quando a campanha ainda não possui denominador. */
+  @Test
+  void upsertKeepsUndefinedConversionCostsNull() {
+    Experiment experiment = Experiment.builder().id(88L).build();
+    FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+    campaign.setId("campaign-88");
+    campaign.setExperiment(experiment);
+    ExperimentCampaignMetric metric =
+        ExperimentCampaignMetric.builder().experiment(experiment).campaign(campaign).build();
+
+    when(campaignRepository.findById("campaign-88")).thenReturn(Optional.of(campaign));
+    when(repository.findByExperiment(experiment)).thenReturn(Optional.of(metric));
+    when(repository.save(metric)).thenReturn(metric);
+
+    ExperimentCampaignMetric saved =
+        service.upsert(
+            "campaign-88",
+            LocalDate.parse("2026-08-22"),
+            LocalDate.parse("2026-08-22"),
+            10L,
+            12L,
+            0L,
+            0L,
+            new BigDecimal("3.50"));
+
+    assertThat(saved.getCpc()).isNull();
+    assertThat(saved.getCpl()).isNull();
+  }
+
   /**
    * Garante que campanha do Clube MUSA tambem limpa analytics PDE antes de salvar a primeira
    * metrica real.

@@ -65,11 +65,19 @@ class GrowthOperatorBpmRunnerTest {
 
     assertThat(command)
         .containsSubsequence("--sandbox", "read-only")
-        .contains("--json", "--search", "--output-schema", "/tmp/schema.json")
+        .contains(
+            "--json",
+            "--search",
+            "--output-schema",
+            "/tmp/schema.json",
+            "approval_policy=\"never\"")
         .doesNotContain("--dangerously-bypass-approvals-and-sandbox");
     assertThat(command)
         .contains("mcp_servers.marketing_hub_readonly.command=\"node\"")
         .anyMatch(value -> value.contains("/tmp/mcp.mjs"));
+    assertThat(command)
+        .contains(
+            "mcp_servers.marketing_hub_readonly.env_vars=[\"MCP_MARKETING_HUB_URL\",\"MCP_COMMERCIAL_PLAN_ID\",\"MCP_EXPERIMENT_ID\",\"MCP_SOURCE_EXECUTION_ID\"]");
   }
 
   /** Preserva os últimos contadores cumulativos informados no JSONL do Codex. */
@@ -103,6 +111,31 @@ class GrowthOperatorBpmRunnerTest {
             "Falha técnica", GrowthOperatorBpmRunner.TokenUsage.empty(), List.of(tool));
 
     assertThat(failure.toolUsage()).containsExactly(tool);
+  }
+
+  /** Reconstrói ferramenta, fonte e horário consultado a partir do JSONL oficial do Codex. */
+  @Test
+  void shouldExtractAuditableMcpUsageFromCodexJsonl() throws Exception {
+    Path log = Files.createTempFile("hermes-bpm-mcp-", ".log");
+    try {
+      Files.writeString(
+          log,
+          """
+          {"type":"item.completed","item":{"type":"mcp_tool_call","server":"marketing_hub_readonly","tool":"consultar_funil","status":"completed","result":{"content":[{"type":"text","text":"{\\"audit\\":{\\"source\\":\\"/api/experiments/88/funnel\\",\\"consultedAt\\":\\"2026-08-22T14:42:53Z\\",\\"readOnly\\":true},\\"data\\":{}}"}]}}}
+          """,
+          StandardCharsets.UTF_8);
+
+      List<com.fasterxml.jackson.databind.JsonNode> usage =
+          new GrowthOperatorBpmRunner(properties(), new ObjectMapper()).extractToolUsage(log);
+
+      assertThat(usage).hasSize(1);
+      assertThat(usage.getFirst().path("tool").asText()).isEqualTo("consultar_funil");
+      assertThat(usage.getFirst().path("status").asText()).isEqualTo("completed");
+      assertThat(usage.getFirst().path("audit").path("source").asText())
+          .isEqualTo("/api/experiments/88/funnel");
+    } finally {
+      Files.deleteIfExists(log);
+    }
   }
 
   /** Executa o fluxo local completo com processo simulado e escopo exclusivo do experimento. */
@@ -222,7 +255,10 @@ class GrowthOperatorBpmRunnerTest {
             "funnel/analytics",
             "experiment:${await resolvedExperimentId()}",
             "MCP_TOOL",
-            "recuperar_memoria_just_in_time");
+            "recuperar_memoria_just_in_time",
+            "readOnlyHint: !writable",
+            "openWorldHint: true",
+            "destructiveHint: false");
   }
 
   /** Protege preço, jornada, mensuração e ausência de efeitos externos no contrato do PDE. */

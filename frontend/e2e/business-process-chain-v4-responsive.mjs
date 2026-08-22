@@ -86,7 +86,7 @@ try {
       }
     });
 
-    await page.goto(`${baseUrl}/business-process-chains?chainId=4`, {
+    await page.goto(`${baseUrl}/business-process-chains?chainId=3`, {
       waitUntil: "domcontentloaded",
     });
     await page.getByRole("heading", { name: `${chain.name} · v4` }).waitFor();

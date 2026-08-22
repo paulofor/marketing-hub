@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class BusinessProcessChainController {
   private final BusinessProcessChainService service;
 
-  /** Lista as cadeias cadastradas e suas versões. */
+  /** Lista as versões publicadas das cadeias atualmente em uso. */
   @GetMapping
   public List<BusinessProcessChainSummaryResponse> listChains() {
     return service.listChains();

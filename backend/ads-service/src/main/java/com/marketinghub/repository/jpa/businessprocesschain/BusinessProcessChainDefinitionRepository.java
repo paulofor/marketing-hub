@@ -11,9 +11,10 @@ import org.springframework.data.repository.query.Param;
 /** Responsabilidade: consultar cadeias versionadas com seus processos ordenados. */
 public interface BusinessProcessChainDefinitionRepository
     extends JpaRepository<BusinessProcessChainDefinition, Long> {
-  /** Lista as cadeias e carrega os processos necessários ao resumo oficial. */
+  /** Lista as cadeias de um status e carrega os processos necessários ao resumo oficial. */
   @EntityGraph(attributePaths = {"items", "items.processDefinition"})
-  List<BusinessProcessChainDefinition> findAllByOrderByNameAscVersionNumberDesc();
+  List<BusinessProcessChainDefinition> findAllByStatusOrderByNameAscVersionNumberDesc(
+      String status);
 
   /** Lista as cadeias que contêm uma versão exata de processo. */
   @EntityGraph(attributePaths = {"items", "items.processDefinition"})

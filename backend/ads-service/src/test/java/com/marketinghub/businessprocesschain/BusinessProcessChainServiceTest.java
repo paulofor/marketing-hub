@@ -16,13 +16,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: comprovar a leitura ordenada e versionada das cadeias de processos. */
 class BusinessProcessChainServiceTest {
-  /** Lista a quantidade de processos calculada pelo backend. */
+  /** Lista a quantidade de processos somente da cadeia publicada em uso. */
   @Test
   void listsChainWithBackendProcessCount() {
     var repository = mock(BusinessProcessChainDefinitionRepository.class);
     BusinessProcessChainDefinition chain = chain();
     chain.setItems(List.of(item(chain, process(2L, "second", "Segundo"), 2)));
-    when(repository.findAllByOrderByNameAscVersionNumberDesc()).thenReturn(List.of(chain));
+    when(repository.findAllByStatusOrderByNameAscVersionNumberDesc("PUBLISHED"))
+        .thenReturn(List.of(chain));
     var service = new BusinessProcessChainService(repository);
 
     var result = service.listChains();

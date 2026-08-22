@@ -20,12 +20,14 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 @RequiredArgsConstructor
 public class BusinessProcessChainService {
+  private static final String PUBLISHED_STATUS = "PUBLISHED";
+
   private final BusinessProcessChainDefinitionRepository repository;
 
-  /** Lista as versões das cadeias com contagens calculadas pela fonte de verdade do backend. */
+  /** Lista somente as cadeias publicadas em uso, com contagens calculadas pelo backend. */
   @Transactional(readOnly = true)
   public List<BusinessProcessChainSummaryResponse> listChains() {
-    return repository.findAllByOrderByNameAscVersionNumberDesc().stream()
+    return repository.findAllByStatusOrderByNameAscVersionNumberDesc(PUBLISHED_STATUS).stream()
         .map(this::summary)
         .toList();
   }

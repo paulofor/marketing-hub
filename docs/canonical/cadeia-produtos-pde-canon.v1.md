@@ -428,6 +428,12 @@ cadeia publicada; a adoção exige uma nova versão da cadeia, preservando audit
 O vínculo também deve ser navegável no sentido inverso: a tela de uma versão de processo mostra as
 cadeias que a contêm e abre diretamente o detalhe da cadeia selecionada.
 
+A listagem operacional da tela e de `GET /api/business-process-chains` mostra somente versões
+`PUBLISHED`, para que versões obsoletas não concorram visualmente com as cadeias em uso. Versões
+`RETIRED` continuam persistidas e consultáveis pelo detalhe por ID e pela relação reversa com os
+processos, preservando auditoria e reprodutibilidade sem poluir a operação corrente. A tela ignora
+um `chainId` que não pertença à listagem operacional e abre a primeira cadeia em uso.
+
 A cadeia `pde-value-creation-delivery` usa os seis macroprocessos deste cânone. A versão 1 preserva o
 registro inicial; a versão 2 torna explícita a neutralidade de formato e atualiza descoberta, Plano
 Comercial e construção para comparar e escolher entre kit, webapp e qualquer outro formato digital

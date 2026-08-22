@@ -68,11 +68,39 @@ executor, sem depender de subprocesso de leitura dentro da sandbox do modelo.
 - a execução duplicada da tarefa 169 foi contabilizada conservadoramente, embora o contrato da fila
   tenha sido corrigido para impedir recorrência;
 - passo 3: 514.875 tokens de entrada, 164.992 em cache e 30.344 de saída;
-- custo conhecido do passo 3: US$ 1,821391, além de três execuções cujo preço do modelo não estava
-  disponível no callback;
+- custo reconciliado do passo 3: US$ 2,538547; as três execuções anteriormente sem preço somaram
+  US$ 0,717156 após o cadastro oficial do `gpt-5.6-sol`;
 - acumulado dos passos 1 a 3: 810.772 tokens de entrada, 195.200 em cache e 240.354 de saída;
-- custo conhecido acumulado: US$ 3,62246893, além das mesmas três execuções sem preço disponível.
+- custo reconciliado acumulado dos passos 1 a 3: US$ 4,33962493.
 
 O produto 9 permanece em `CONSTRUCAO_E_APROVACAO` até o PR e o deploy materializarem a versão
 homologada. Isso impede que aprovação local seja confundida com disponibilidade comercial. Nenhuma
 oferta, campanha, contato, venda ou gasto foi realizado neste passo.
+
+## Início do passo 4 — comunicação e jornada
+
+Em 2026-08-22, o banco confirmou o produto em `COMUNICACAO_E_JORNADA`, com mapa de desejo v1 já
+persistido, preço de R$ 349 e sem hipótese primária, experimento ou URL pública. O próximo processo é
+`pde-communication-sales-journey` v4; homologação comercial e venda/entrega permanecem posteriores.
+
+Foram comparados kit genérico barato, implantação assistida por R$ 349 e automação/webapp mensal. A
+implantação foi preservada porque entrega personalização, revisão e prazo de 48 horas sem mudar o
+produto antes de validar demanda. A comunicação deve dizer `implantação assistida`, nunca apenas
+`kit`.
+
+Hermes, Têmis e Plutus foram executados localmente com `gpt-5.6-sol`:
+
+- 297.704 tokens de entrada, dos quais 175.360 em cache, e 7.784 de saída;
+- custo estimado do passo 4 até o gate: US$ 0,715200;
+- acumulado reconciliado dos passos 1 a 4: US$ 5,05482493;
+- Têmis confirmou clareza de preço 94/100, mas o processo permanece bloqueado até existir superfície
+  publicada, checkout, acesso, eventos, políticas e origem consentida comprováveis;
+- Plutus confirmou contribuição nominal de R$ 229 por venda e rejeitou tratar conversão, reembolso
+  e custos como fatos antes de vendas reais.
+
+A execução revelou uma causa sistêmica: os workers de Hermes e Têmis não reconheciam a atividade
+`pde-communication-sales-journey/contract`, e a criação de experimento forçava Produto IA, Instagram
+e orçamento mesmo para uma validação individual orgânica. Os contratos e a tela foram corrigidos
+localmente. A hipótese `MPDS-H003` (`2e5f87b6-0537-4213-85fa-d585b1fc59de`) foi criada pela tela e
+vinculada ao produto 9; nenhum experimento, landing, contato, publicação ou gasto foi criado enquanto
+essas correções não estiverem implantadas.

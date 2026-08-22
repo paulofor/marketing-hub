@@ -35,7 +35,6 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -2204,8 +2203,8 @@ public class ExperimentFunnelService {
           }
           long total = rs.getLong("total");
           Long unique = (Long) rs.getObject("unique_count");
-          Timestamp ts = rs.getTimestamp("last_event");
-          Instant last = ts != null ? ts.toInstant() : null;
+          LocalDateTime databaseDateTime = rs.getObject("last_event", LocalDateTime.class);
+          Instant last = fromUtcDatabaseDateTime(databaseDateTime);
           return new AggregatedMetric(total, unique, last);
         },
         args);
@@ -2224,6 +2223,11 @@ public class ExperimentFunnelService {
   /** Converte o marco UTC para o DATETIME canônico usado nas consultas JDBC do funil. */
   static LocalDateTime toUtcDatabaseDateTime(Instant baseline) {
     return baseline == null ? null : LocalDateTime.ofInstant(baseline, ZoneOffset.UTC);
+  }
+
+  /** Converte o DATETIME UTC canônico do banco sem aplicar novamente o fuso da JVM. */
+  static Instant fromUtcDatabaseDateTime(LocalDateTime value) {
+    return value == null ? null : value.toInstant(ZoneOffset.UTC);
   }
 
   /** Normaliza o código de campanha para o tamanho aceito pelo banco. */
@@ -2795,6 +2799,7 @@ public class ExperimentFunnelService {
     private TrafficQuality trafficQuality = TrafficQuality.HUMAN;
     private String trafficQualityReason = "NO_AUTOMATION_SIGNAL";
     private final Set<String> recordedMilestones = new java.util.HashSet<>();
+    private final Map<String, Instant> recordedPageViews = new HashMap<>();
     private final Map<String, SectionAccumulator> sections = new LinkedHashMap<>();
 
     /** Cria acumulador de sessão para o identificador normalizado recebido da landing. */
@@ -2816,8 +2821,7 @@ public class ExperimentFunnelService {
         Integer screenHeight,
         TrafficDiagnosis traffic) {
       String normalizedEventType = eventType == null ? "" : eventType.trim().toLowerCase();
-      if (isDeduplicatedMilestone(normalizedEventType)
-          && !recordedMilestones.add(normalizedEventType)) {
+      if (isDeduplicatedMilestone(normalizedEventType, occurredAt, pageUrl)) {
         return;
       }
       eventCount++;
@@ -2864,14 +2868,31 @@ public class ExperimentFunnelService {
       }
     }
 
-    /** Deduplica marcos de conversão e mídia por sessão sem remover eventos brutos da auditoria. */
-    private boolean isDeduplicatedMilestone(String eventType) {
-      return "page_view".equals(eventType)
-          || "video_complete".equals(eventType)
-          || "video_completed".equals(eventType)
-          || "checkout_click".equals(eventType)
-          || "form_start".equals(eventType)
-          || "form_submit".equals(eventType);
+    /** Deduplica marcos pela regra canônica sem eliminar recarregamentos válidos da página. */
+    private boolean isDeduplicatedMilestone(String eventType, Instant occurredAt, String pageUrl) {
+      if ("page_view".equals(eventType)) {
+        String pageKey = firstNonBlankStatic(pageUrl, "sem-url");
+        Instant previous = recordedPageViews.get(pageKey);
+        if (previous != null
+            && occurredAt != null
+            && Duration.between(previous, occurredAt)
+                    .abs()
+                    .compareTo(Duration.ofSeconds(PAGE_VIEW_DEDUPLICATION_WINDOW_SECONDS))
+                <= 0) {
+          return true;
+        }
+        if (occurredAt == null) {
+          return !recordedMilestones.add("page_view:" + pageKey);
+        }
+        recordedPageViews.put(pageKey, occurredAt);
+        return false;
+      }
+      return ("video_complete".equals(eventType)
+              || "video_completed".equals(eventType)
+              || "checkout_click".equals(eventType)
+              || "form_start".equals(eventType)
+              || "form_submit".equals(eventType))
+          && !recordedMilestones.add(eventType);
     }
 
     /** Informa se a sessão pode compor métricas comerciais e de desempenho. */

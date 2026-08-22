@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jsoup.Jsoup;
@@ -128,7 +130,77 @@ public class OpenAiPricingPageClient {
               batch.cachedInput(),
               batch.output()));
     }
+    validatePublishedModelCoverage(document, prices);
     return prices;
+  }
+
+  /**
+   * Impede uma sincronização parcial quando a fonte oficial publicar um modelo em Standard e Batch,
+   * mas o formato da linha deixar de ser reconhecido pelo parser.
+   */
+  private void validatePublishedModelCoverage(
+      Document document, List<OpenAiModelPricing> parsedPrices) {
+    Set<String> standardCodes = publishedModelCodes(document, "standard");
+    Set<String> batchCodes = publishedModelCodes(document, "batch");
+    standardCodes.retainAll(batchCodes);
+    parsedPrices.forEach(price -> standardCodes.remove(price.code()));
+    if (!standardCodes.isEmpty()) {
+      throw new IllegalStateException(
+          "Página oficial de preços OpenAI contém modelos Standard/Batch não reconhecidos: "
+              + String.join(", ", standardCodes));
+    }
+  }
+
+  /** Coleta códigos publicados em uma aba sem depender da quantidade de colunas financeiras. */
+  private Set<String> publishedModelCodes(Document document, String mode) {
+    Set<String> codes = new TreeSet<>();
+    for (Element pane : document.select("[data-content-switcher-pane][data-value=" + mode + "]")) {
+      for (Element table : pane.select("table")) {
+        if (isFineTuningTable(table)) {
+          continue;
+        }
+        for (Element row : table.select("tbody tr")) {
+          Element firstCell = row.selectFirst("td");
+          addSupportedCode(codes, firstCell == null ? "" : firstCell.text());
+        }
+      }
+      collectAstroModelCodes(pane, codes);
+    }
+    return codes;
+  }
+
+  /** Coleta os códigos dos componentes Astro para também validar linhas ocultas em "All models". */
+  private void collectAstroModelCodes(Element pane, Set<String> codes) {
+    for (Element island : pane.select("astro-island[props]")) {
+      String component = island.attr("component-export");
+      if (!"TextTokenPricingTables".equals(component) && !"PricingTable".equals(component)) {
+        continue;
+      }
+      try {
+        JsonNode props = OBJECT_MAPPER.readTree(island.attr("props"));
+        if (isFineTuningProps(props)) {
+          continue;
+        }
+        for (List<String> row : readAstroRows(props)) {
+          if (!row.isEmpty()) {
+            addSupportedCode(codes, row.getFirst());
+          }
+        }
+      } catch (JsonProcessingException ex) {
+        log.warn(
+            "Falha ao validar cobertura dos preços OpenAI; operation=openai-pricing-page-coverage component={}",
+            component,
+            ex);
+      }
+    }
+  }
+
+  /** Normaliza e adiciona somente identificadores compatíveis com o catálogo financeiro. */
+  private void addSupportedCode(Set<String> codes, String rawCode) {
+    String code = normalizeModelCode(rawCode);
+    if (isSupportedTokenModelCode(code)) {
+      codes.add(code);
+    }
   }
 
   /** Busca preços tokenizados preservando compatibilidade com chamadas antigas focadas em texto. */
@@ -248,11 +320,15 @@ public class OpenAiPricingPageClient {
    */
   private Optional<PriceTriple> parsePricingRow(Element row) {
     List<Element> cells = row.select("td");
+    if (cells.size() == 9) {
+      return parseTextPricingRowWithCacheWrite(cells);
+    }
     if (cells.size() == 7) {
       return parseTextPricingRow(cells);
     }
     if (cells.size() == 5) {
-      return parseImagePricingRow(cells);
+      Optional<PriceTriple> imagePrice = parseImagePricingRow(cells);
+      return imagePrice.isPresent() ? imagePrice : parseCompactTextPricingRow(cells);
     }
     if (cells.size() == 4) {
       return parseSimplePricingRow(cells);
@@ -268,10 +344,31 @@ public class OpenAiPricingPageClient {
     if (cells.size() == 4) {
       return buildPriceTriple(cells.get(0), cells.get(1), cells.get(2), cells.get(3));
     }
-    if (cells.size() == 5 && "image".equalsIgnoreCase(cells.get(1))) {
-      return buildPriceTriple(cells.get(0), cells.get(2), cells.get(3), cells.get(4));
+    if (cells.size() == 5) {
+      if ("image".equalsIgnoreCase(cells.get(1))) {
+        return buildPriceTriple(cells.get(0), cells.get(2), cells.get(3), cells.get(4));
+      }
+      return buildPriceTriple(cells.get(0), cells.get(1), cells.get(2), cells.get(4));
+    }
+    if (cells.size() == 9) {
+      return buildPriceTriple(cells.get(0), cells.get(1), cells.get(2), cells.get(4));
     }
     return Optional.empty();
+  }
+
+  /**
+   * Extrai a tarifa de contexto curto quando a tabela inclui cache write e preços de contexto
+   * longo.
+   */
+  private Optional<PriceTriple> parseTextPricingRowWithCacheWrite(List<Element> cells) {
+    return buildPriceTriple(
+        cells.get(0).text(), cells.get(1).text(), cells.get(2).text(), cells.get(4).text());
+  }
+
+  /** Extrai a tarifa textual compacta que inclui cache write entre cache read e output. */
+  private Optional<PriceTriple> parseCompactTextPricingRow(List<Element> cells) {
+    return buildPriceTriple(
+        cells.get(0).text(), cells.get(1).text(), cells.get(2).text(), cells.get(4).text());
   }
 
   /**

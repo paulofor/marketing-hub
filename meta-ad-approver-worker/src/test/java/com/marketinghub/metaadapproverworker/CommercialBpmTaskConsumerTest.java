@@ -3,10 +3,12 @@ package com.marketinghub.metaadapproverworker;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ClassPathResource;
 
 /** Responsabilidade: proteger o contrato funcional do gate BPM de Têmis. */
 class CommercialBpmTaskConsumerTest {
@@ -50,6 +52,36 @@ class CommercialBpmTaskConsumerTest {
     org.assertj.core.api.Assertions.assertThat(
             CommercialBpmTaskConsumer.schemaResourceFor("pde-construction-approval"))
         .isEqualTo("prompts/bpm/pde-deliverables-review-schema.json");
+  }
+
+  /** Seleciona a revisão independente de comunicação sem reutilizar prompt de landing. */
+  @Test
+  void selectsVersionedPdeCommunicationContract() throws Exception {
+    org.assertj.core.api.Assertions.assertThat(
+            CommercialBpmTaskConsumer.promptResourceFor("pde-communication-sales-journey"))
+        .isEqualTo("prompts/bpm/pde-communication-review.md");
+    org.assertj.core.api.Assertions.assertThat(
+            CommercialBpmTaskConsumer.schemaResourceFor("pde-communication-sales-journey"))
+        .isEqualTo("prompts/bpm/pde-communication-review-schema.json");
+
+    String prompt = read("prompts/bpm/pde-communication-review.md");
+    String schema = read("prompts/bpm/pde-communication-review-schema.json");
+    org.assertj.core.api.Assertions.assertThat(prompt)
+        .contains(
+            "preço compreensível",
+            "tráfego de teste segregado",
+            "autorize mídia",
+            "80–100",
+            "não reduz automaticamente");
+    org.assertj.core.api.Assertions.assertThat(schema)
+        .contains("priceClarityScore", "commercialRationale", "requiredChanges");
+  }
+
+  /** Lê integralmente um contrato versionado do classpath. */
+  private String read(String resource) throws Exception {
+    try (var input = new ClassPathResource(resource).getInputStream()) {
+      return new String(input.readAllBytes(), StandardCharsets.UTF_8);
+    }
   }
 
   /** Lê entrada, cache e saída cumulativos do gate executado pelo Codex. */

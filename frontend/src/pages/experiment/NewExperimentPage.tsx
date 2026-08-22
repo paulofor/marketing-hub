@@ -51,6 +51,23 @@ export function hypothesesEligibleForProduct(
   );
 }
 
+export function productAiSubtypeForExperiment(
+  experimentType: ExperimentType,
+  productAiSubtype: ProductAiSubtype | "",
+): ProductAiSubtype | undefined {
+  return experimentType === "LOW_TICKET_PRODUCT" && productAiSubtype
+    ? productAiSubtype
+    : undefined;
+}
+
+export function parseOptionalPositiveAmount(
+  value: string,
+): number | undefined | null {
+  if (!value.trim()) return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 const productAiSubtypeLabels: Record<ProductAiSubtype, string> = {
   AI_VISUAL_PREVIEW: "Prévia visual IA",
   AI_PERSONALIZED_SAMPLE: "Amostra personalizada IA",
@@ -110,7 +127,7 @@ export default function NewExperimentPage() {
     productId: "",
     desireTerritoryCode: "",
     experimentType: "LOW_TICKET_PRODUCT",
-    productAiSubtype: "AI_PERSONALIZED_SAMPLE",
+    productAiSubtype: "",
     nicheId: nicheIdParam,
     hypothesisId: hypothesisIdParam,
     hypothesis: "",
@@ -414,21 +431,11 @@ export default function NewExperimentPage() {
 
   const submit = async () => {
     try {
-      if (!isFakeExperiment && noInstagramAccounts) {
-        alert(
-          "Cadastre uma conta do Instagram em Contas do Instagram antes de criar o experimento.",
-        );
-        return;
-      }
-      if (!isFakeExperiment && !form.instagramAccountId) {
-        alert("Selecione uma conta do Instagram");
-        return;
-      }
       let hypothesisIdForSubmit = form.hypothesisId;
-      let productAiSubtypeForSubmit =
-        form.experimentType === "LOW_TICKET_PRODUCT"
-          ? form.productAiSubtype || undefined
-          : undefined;
+      let productAiSubtypeForSubmit = productAiSubtypeForExperiment(
+        form.experimentType,
+        form.productAiSubtype,
+      );
       let unitPriceForSubmit = form.unitPrice;
       if (isProductAiExperiment && !productAiReady) {
         const prepared = await prepareSelectedProductAiSubtype();
@@ -477,13 +484,22 @@ export default function NewExperimentPage() {
         alert("Selecione o produto e o território do Mapa de Desejo");
         return;
       }
-      const parsedDailyBudget = Number(form.dailyBudget);
+      const parsedDailyBudget = parseOptionalPositiveAmount(form.dailyBudget);
+      if (parsedDailyBudget === null) {
+        alert("Informe um orçamento diário válido ou deixe o campo vazio");
+        return;
+      }
+      const parsedKpiTarget = parseOptionalPositiveAmount(form.kpiTarget);
+      if (parsedKpiTarget === null) {
+        alert("Informe um custo-alvo válido ou deixe o campo vazio");
+        return;
+      }
+      const parsedSampleSize = parseOptionalPositiveAmount(form.sampleSize);
       if (
-        !form.dailyBudget ||
-        Number.isNaN(parsedDailyBudget) ||
-        parsedDailyBudget <= 0
+        parsedSampleSize === null ||
+        (parsedSampleSize != null && !Number.isInteger(parsedSampleSize))
       ) {
-        alert("Informe um orçamento diário válido");
+        alert("Informe uma amostra inteira maior que zero");
         return;
       }
       const parsedUnitPrice = Number(unitPriceForSubmit);
@@ -514,9 +530,9 @@ export default function NewExperimentPage() {
             : undefined,
         campaignObjective,
         commercialObjective: form.commercialObjective.trim(),
-        kpiTarget: Number(form.kpiTarget),
+        kpiTarget: parsedKpiTarget,
         metricPresetId: form.metricPresetId || undefined,
-        sampleSize: form.sampleSize ? Number(form.sampleSize) : undefined,
+        sampleSize: parsedSampleSize,
         mde: form.mde ? Number(form.mde) : undefined,
         dailyBudget: parsedDailyBudget,
         unitPrice: parsedUnitPrice,
@@ -552,7 +568,7 @@ export default function NewExperimentPage() {
         productId: "",
         desireTerritoryCode: "",
         experimentType: "LOW_TICKET_PRODUCT",
-        productAiSubtype: "AI_PERSONALIZED_SAMPLE",
+        productAiSubtype: "",
         nicheId: nicheIdParam,
         hypothesisId: hypothesisIdParam,
         hypothesis: "",
@@ -644,7 +660,7 @@ export default function NewExperimentPage() {
             experimentType: e.target.value as ExperimentType,
             productAiSubtype:
               e.target.value === "LOW_TICKET_PRODUCT"
-                ? prev.productAiSubtype || "AI_PERSONALIZED_SAMPLE"
+                ? prev.productAiSubtype
                 : "",
             primaryCta:
               e.target.value === "LOW_TICKET_PRODUCT"
@@ -695,6 +711,7 @@ export default function NewExperimentPage() {
               }))
             }
           >
+            <option value="">Sem mecanismo de Produto IA</option>
             {Object.entries(productAiSubtypeLabels).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
@@ -713,13 +730,22 @@ export default function NewExperimentPage() {
             className="form-select mb-3"
             value={form.productId}
             onChange={(event) =>
-              setForm((current) => ({
-                ...current,
-                productId: event.target.value,
-                desireTerritoryCode: "",
-                hypothesisId: "",
-                hypothesis: "",
-              }))
+              setForm((current) => {
+                const product = products?.find(
+                  (item) => item.id === Number(event.target.value),
+                );
+                return {
+                  ...current,
+                  productId: event.target.value,
+                  desireTerritoryCode: "",
+                  hypothesisId: "",
+                  hypothesis: "",
+                  unitPrice:
+                    product?.currentPriceBrl != null
+                      ? String(product.currentPriceBrl)
+                      : current.unitPrice,
+                };
+              })
             }
           >
             <option value="">Selecione o produto</option>
@@ -1117,15 +1143,58 @@ export default function NewExperimentPage() {
           </div>
         </div>
       </div>
+      <div className="row g-2 mb-2">
+        <div className="col-12 col-md-6">
+          <label className="form-label" htmlFor="sampleSize">
+            Amostra qualificada
+          </label>
+          <input
+            id="sampleSize"
+            className="form-control"
+            placeholder="Ex.: 15 contatos qualificados"
+            type="number"
+            min="1"
+            step="1"
+            value={form.sampleSize}
+            onChange={(event) => {
+              setAutoSampleSize(false);
+              setForm((current) => ({
+                ...current,
+                sampleSize: event.target.value,
+              }));
+            }}
+          />
+        </div>
+        <div className="col-12 col-md-6">
+          <label className="form-label" htmlFor="kpiTarget">
+            Custo-alvo por resultado (opcional)
+          </label>
+          <input
+            id="kpiTarget"
+            className="form-control"
+            placeholder="Deixe vazio quando não houver aquisição paga"
+            type="number"
+            min="0.01"
+            step="0.01"
+            value={form.kpiTarget}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                kpiTarget: event.target.value,
+              }))
+            }
+          />
+        </div>
+      </div>
       <label className="form-label" htmlFor="dailyBudget">
-        Orçamento diário <span className="text-danger">*</span>
+        Orçamento diário (opcional no planejamento)
       </label>
       <input
         id="dailyBudget"
         className="form-control mb-2"
         placeholder="Valor em reais"
         type="number"
-        min="0"
+        min="0.01"
         step="0.01"
         value={form.dailyBudget}
         onChange={(e) => {
@@ -1144,6 +1213,10 @@ export default function NewExperimentPage() {
           });
         }}
       />
+      <div className="form-text mb-2">
+        Deixe vazio para validação orgânica ou abordagem individual. O orçamento
+        deve ser definido e aprovado antes de qualquer campanha paga.
+      </div>
       <label className="form-label" htmlFor="unitPrice">
         {isPdeMembershipSubscriptionFunnel
           ? "Preço da assinatura/plano (R$)"
@@ -1159,7 +1232,9 @@ export default function NewExperimentPage() {
           isPdeMembershipSubscriptionFunnel
             ? "Ex.: 29.90"
             : isLowTicketProduct
-              ? "Ex.: 27.00"
+              ? selectedProduct?.currentPriceBrl != null
+                ? `Ex.: ${selectedProduct.currentPriceBrl.toFixed(2)}`
+                : "Preço aprovado no plano comercial"
               : "Valor por imagem em reais"
         }
         type="number"
@@ -1174,7 +1249,7 @@ export default function NewExperimentPage() {
         {isPdeMembershipSubscriptionFunnel
           ? "Use o preço do plano que será anunciado para medir assinatura aprovada e ativação."
           : isLowTicketProduct
-            ? "Use a faixa recomendada nos planos: R$ 19 a R$ 47 para a primeira venda."
+            ? "Use o preço aprovado do produto. Ofertas personalizadas devem explicar escopo, prazo e revisão humana para não parecerem um kit genérico."
             : "Usado para gerar o link de pagamento no Mercado Pago."}
       </div>
       <label className="form-label" htmlFor="imageModel">
@@ -1200,7 +1275,7 @@ export default function NewExperimentPage() {
         ))}
       </select>
       <label className="form-label" htmlFor="instagramAccount">
-        Conta do Instagram <span className="text-danger">*</span>
+        Conta do Instagram (opcional no planejamento)
       </label>
       <select
         id="instagramAccount"
@@ -1215,7 +1290,7 @@ export default function NewExperimentPage() {
           {isLoadingInstagramAccounts
             ? "Carregando contas cadastradas..."
             : noInstagramAccounts
-              ? "Cadastre uma conta para continuar"
+              ? "Nenhuma conta cadastrada"
               : "Selecione uma conta"}
         </option>
         {Array.isArray(instagramAccounts) &&
@@ -1226,13 +1301,13 @@ export default function NewExperimentPage() {
           ))}
       </select>
       <div className="form-text mb-2">
-        Essa conta será usada como identidade do Instagram nas campanhas
-        geradas.
+        Vincule uma conta antes de publicar na Meta. Validações orgânicas ou
+        individuais podem ser planejadas sem Instagram.
       </div>
       {noInstagramAccounts && (
-        <div className="alert alert-warning" role="alert">
-          Nenhuma conta do Instagram está cadastrada. Cadastre uma conta antes
-          de criar novos experimentos.
+        <div className="alert alert-info" role="status">
+          Nenhuma conta do Instagram está cadastrada. Isso não bloqueia o
+          rascunho; apenas a publicação posterior na Meta.
           <div className="mt-2">
             <a
               className="btn btn-outline-primary btn-sm"
@@ -1304,7 +1379,6 @@ export default function NewExperimentPage() {
         disabled={
           create.isPending ||
           prepareProductAiHypothesis.isPending ||
-          noInstagramAccounts ||
           (!isLoadingJourneyTemplates && !journeyTemplates?.content?.length)
         }
       >

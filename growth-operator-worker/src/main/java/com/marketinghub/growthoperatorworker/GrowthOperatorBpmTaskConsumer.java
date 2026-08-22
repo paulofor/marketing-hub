@@ -11,13 +11,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/** Responsabilidade: consumir as atividades BPM de otimização atribuídas a Hermes. */
+/** Responsabilidade: consumir as atividades BPM comerciais atribuídas a Hermes. */
 @Component
 public class GrowthOperatorBpmTaskConsumer {
   private static final Logger log = LoggerFactory.getLogger(GrowthOperatorBpmTaskConsumer.class);
-  private static final String PROCESS_CODE = "operacao-otimizacao-experimento";
-  private static final List<String> ACTIVITIES =
-      List.of("task-1", "task-2", "task-3", "task-4", "task-10");
+  private static final List<BpmContract> CONTRACTS =
+      List.of(
+          new BpmContract("pde-communication-sales-journey", "contract"),
+          new BpmContract("operacao-otimizacao-experimento", "task-1"),
+          new BpmContract("operacao-otimizacao-experimento", "task-2"),
+          new BpmContract("operacao-otimizacao-experimento", "task-3"),
+          new BpmContract("operacao-otimizacao-experimento", "task-4"),
+          new BpmContract("operacao-otimizacao-experimento", "task-10"));
   private final GrowthOperatorBackendClient backend;
   private final GrowthOperatorBpmRunner runner;
   private final WorkerProperties properties;
@@ -81,11 +86,12 @@ public class GrowthOperatorBpmTaskConsumer {
     }
   }
 
-  /** Busca as atividades de Hermes na ordem definida pelo processo publicado. */
+  /** Busca somente os contratos suportados por Hermes em ordem explícita. */
   private Map<String, Object> claimNext() {
-    for (String activityId : ACTIVITIES) {
-      Map<String, Object> task = backend.claimBpmTask(PROCESS_CODE, activityId);
-      if (task != null) return task;
+    for (BpmContract contract : CONTRACTS) {
+      Map<String, Object> task =
+          backend.claimBpmTask(contract.processCode(), contract.activityId());
+      if (task != null && !task.isEmpty()) return task;
     }
     return null;
   }
@@ -179,4 +185,7 @@ public class GrowthOperatorBpmTaskConsumer {
   private Object taskIdOrNull(Map<String, Object> task) {
     return task == null ? null : task.get("taskId");
   }
+
+  /** Define uma fronteira BPM suportada pelo executor de Hermes. */
+  private record BpmContract(String processCode, String activityId) {}
 }

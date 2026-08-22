@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { Product } from "../../api/product/useProducts";
-import { productsEligibleForNiche } from "./NewExperimentPage";
+import {
+  parseOptionalPositiveAmount,
+  productAiSubtypeForExperiment,
+  productsEligibleForNiche,
+} from "./NewExperimentPage";
 
 const product = (id: number, marketNicheId?: number): Product =>
   ({
@@ -25,5 +29,26 @@ describe("productsEligibleForNiche", () => {
         (item) => item.id,
       ),
     ).toEqual([7, 8]);
+  });
+});
+
+describe("contrato de planejamento do experimento", () => {
+  it("permite low-ticket sem transformar um serviço manual em Produto IA", () => {
+    expect(productAiSubtypeForExperiment("LOW_TICKET_PRODUCT", "")).toBe(
+      undefined,
+    );
+    expect(
+      productAiSubtypeForExperiment(
+        "LOW_TICKET_PRODUCT",
+        "AI_PERSONALIZED_SAMPLE",
+      ),
+    ).toBe("AI_PERSONALIZED_SAMPLE");
+  });
+
+  it("mantém orçamento opcional no rascunho e rejeita valor inválido", () => {
+    expect(parseOptionalPositiveAmount("")).toBe(undefined);
+    expect(parseOptionalPositiveAmount("20")).toBe(20);
+    expect(parseOptionalPositiveAmount("0")).toBe(null);
+    expect(parseOptionalPositiveAmount("abc")).toBe(null);
   });
 });

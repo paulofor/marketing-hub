@@ -1,0 +1,42 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-22-openai-gpt56-sol-official-pricing
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: openai_model
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO openai_model (
+                  name, code,
+                  price_input_standard, price_input_cached_standard, price_output_standard,
+                  price_input_batch, price_input_cached_batch, price_output_batch,
+                  accepts_image_input, pricing_source, last_pricing_sync_at, created_at, updated_at
+              )
+              SELECT 'GPT-5.6 Sol', 'gpt-5.6-sol',
+                     4.00000, 0.40000, 20.00000,
+                     2.00000, 0.20000, 10.00000,
+                     0, 'https://developers.openai.com/api/docs/pricing', NOW(), NOW(), NOW()
+              FROM (SELECT 1) seed
+              LEFT JOIN openai_model existing ON existing.code = 'gpt-5.6-sol'
+              WHERE existing.id IS NULL;
+
+              UPDATE openai_model
+              SET name = 'GPT-5.6 Sol',
+                  price_input_standard = 4.00000,
+                  price_input_cached_standard = 0.40000,
+                  price_output_standard = 20.00000,
+                  price_input_batch = 2.00000,
+                  price_input_cached_batch = 0.20000,
+                  price_output_batch = 10.00000,
+                  pricing_source = 'https://developers.openai.com/api/docs/pricing',
+                  last_pricing_sync_at = NOW(),
+                  updated_at = NOW()
+              WHERE code = 'gpt-5.6-sol';

@@ -33,6 +33,7 @@ public class CommercialBpmTaskConsumer {
   private static final String AGENT_KEY = "meta-ad-approver";
   private static final List<BpmContract> CONTRACTS =
       List.of(
+          new BpmContract("pde-communication-sales-journey", "contract"),
           new BpmContract("creative-production-approval", "library"),
           new BpmContract("creative-production-approval", "brief"),
           new BpmContract("creative-production-approval", "generate"),
@@ -235,6 +236,7 @@ public class CommercialBpmTaskConsumer {
   /** Seleciona o prompt versionado específico do gate avaliado. */
   static String promptResourceFor(String processCode) {
     return switch (processCode) {
+      case "pde-communication-sales-journey" -> "prompts/bpm/pde-communication-review.md";
       case "creative-production-approval" -> "prompts/bpm/creative-commercial-review.md";
       case "pde-construction-approval" -> "prompts/bpm/pde-deliverables-review.md";
       default -> "prompts/bpm/landing-commercial-review.md";
@@ -244,6 +246,7 @@ public class CommercialBpmTaskConsumer {
   /** Seleciona o schema versionado específico do gate avaliado. */
   static String schemaResourceFor(String processCode) {
     return switch (processCode) {
+      case "pde-communication-sales-journey" -> "prompts/bpm/pde-communication-review-schema.json";
       case "creative-production-approval" -> "prompts/bpm/creative-commercial-review-schema.json";
       case "pde-construction-approval" -> "prompts/bpm/pde-deliverables-review-schema.json";
       default -> "prompts/bpm/landing-commercial-review-schema.json";

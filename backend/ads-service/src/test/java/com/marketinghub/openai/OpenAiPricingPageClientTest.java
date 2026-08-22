@@ -145,6 +145,88 @@ class OpenAiPricingPageClientTest {
   }
 
   /**
+   * Garante a leitura do formato atual da tabela, com cache write e preços separados por tamanho de
+   * contexto.
+   */
+  @Test
+  void shouldParseGpt56SolPricingWithCacheWriteAndLongContextColumns() {
+    OpenAiPricingPageClient client = new OpenAiPricingPageClient();
+
+    List<OpenAiModelPricing> prices =
+        client.parsePricingPage(
+            """
+                <div data-content-switcher-pane="true" data-value="standard">
+                  <table><tbody><tr>
+                    <td>gpt-5.6-sol</td><td>$4.00</td><td>$0.40</td><td>$5.00</td><td>$20.00</td>
+                    <td>$8.00</td><td>$0.80</td><td>$10.00</td><td>$30.00</td>
+                  </tr></tbody></table>
+                </div>
+                <div data-content-switcher-pane="true" data-value="batch">
+                  <table><tbody><tr>
+                    <td>gpt-5.6-sol</td><td>$2.00</td><td>$0.20</td><td>$2.50</td><td>$10.00</td>
+                    <td>$4.00</td><td>$0.40</td><td>$5.00</td><td>$15.00</td>
+                  </tr></tbody></table>
+                </div>
+                """);
+
+    assertThat(prices).hasSize(1);
+    OpenAiModelPricing pricing = prices.getFirst();
+    assertThat(pricing.code()).isEqualTo("gpt-5.6-sol");
+    assertThat(pricing.priceInputStandard()).isEqualByComparingTo("4.00");
+    assertThat(pricing.priceInputCachedStandard()).isEqualByComparingTo("0.40");
+    assertThat(pricing.priceOutputStandard()).isEqualByComparingTo("20.00");
+    assertThat(pricing.priceInputBatch()).isEqualByComparingTo("2.00");
+    assertThat(pricing.priceInputCachedBatch()).isEqualByComparingTo("0.20");
+    assertThat(pricing.priceOutputBatch()).isEqualByComparingTo("10.00");
+  }
+
+  /** Garante a leitura do payload Astro atual, que inclui cache write antes do output. */
+  @Test
+  void shouldParseGpt56SolPricingFromCurrentAstroProps() {
+    OpenAiPricingPageClient client = new OpenAiPricingPageClient();
+
+    List<OpenAiModelPricing> prices =
+        client.parsePricingPage(
+            """
+                <div data-content-switcher-pane="true" data-value="standard">
+                  <astro-island component-export="TextTokenPricingTables"
+                    props='{"rows":[1,[[1,[[0,"gpt-5.6-sol"],[0,4],[0,0.4],[0,5],[0,20]]]]]}'>
+                  </astro-island>
+                </div>
+                <div data-content-switcher-pane="true" data-value="batch">
+                  <astro-island component-export="TextTokenPricingTables"
+                    props='{"rows":[1,[[1,[[0,"gpt-5.6-sol"],[0,2],[0,0.2],[0,2.5],[0,10]]]]]}'>
+                  </astro-island>
+                </div>
+                """);
+
+    assertThat(prices).hasSize(1);
+    assertThat(prices.getFirst().priceInputStandard()).isEqualByComparingTo("4");
+    assertThat(prices.getFirst().priceOutputStandard()).isEqualByComparingTo("20");
+    assertThat(prices.getFirst().priceInputBatch()).isEqualByComparingTo("2");
+    assertThat(prices.getFirst().priceOutputBatch()).isEqualByComparingTo("10");
+  }
+
+  /** Garante falha explícita quando uma nova forma de linha tornar a sincronização parcial. */
+  @Test
+  void shouldRejectPartialPricingSyncWhenPublishedModelCannotBeParsed() {
+    OpenAiPricingPageClient client = new OpenAiPricingPageClient();
+    String html =
+        """
+            <div data-content-switcher-pane="true" data-value="standard">
+              <table><tbody><tr><td>gpt-future</td><td>$1</td><td>$0.1</td><td>$1.25</td><td>$5</td><td>extra</td></tr></tbody></table>
+            </div>
+            <div data-content-switcher-pane="true" data-value="batch">
+              <table><tbody><tr><td>gpt-future</td><td>$0.5</td><td>$0.05</td><td>$0.625</td><td>$2.5</td><td>extra</td></tr></tbody></table>
+            </div>
+            """;
+
+    assertThatThrownBy(() -> client.parsePricingPage(html))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("gpt-future");
+  }
+
+  /**
    * Garante que a rotina preserve compatibilidade com metadados financeiros legados da API
    * autenticada.
    */

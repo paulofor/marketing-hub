@@ -19,6 +19,8 @@ import com.marketinghub.experiment.funnel.ExperimentFunnelStage;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelDiagnosticsResponseDto;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsVisitorDto;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsVisitorsDto;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import java.math.BigDecimal;
 import java.util.List;
@@ -164,6 +166,51 @@ class ExperimentCockpitServiceTest {
     assertEquals("TROCAR_CRIATIVO", cockpit.nextActions().get(0).code());
   }
 
+  /** Impede leitura comercial quando analytics, visitantes e funil divergem em pageviews. */
+  @Test
+  void getCockpitBlocksDivergentCanonicalPageViews() {
+    Long experimentId = 90L;
+    prepareRealExperimentWithAdMetrics(experimentId, 500L, 4L);
+    var visitors =
+        new ExperimentLandingAnalyticsVisitorsDto(
+            2, 1, 1, List.of(visitor("visitante-1", 2), visitor("visitante-2", 1)));
+    when(funnelService.summarizeLandingAnalytics(experimentId))
+        .thenReturn(
+            new ExperimentLandingAnalyticsDto(
+                7, 2, 2, 4, 13000, 6500, null, List.of(), List.of(), List.of(), null, visitors,
+                List.of()));
+    when(funnelService.summarize(experimentId))
+        .thenReturn(List.of(stage(ExperimentFunnelStage.VISUALIZACAO_FORM, 3)));
+
+    var cockpit = service.getCockpit(experimentId);
+
+    assertEquals("BLOCKED", cockpit.health().status());
+    assertEquals("INTEGRIDADE_METRICAS_DIVERGENTE", cockpit.bottleneck().code());
+    assertTrue(cockpit.health().blockers().getFirst().contains("Analytics registra 2"));
+  }
+
+  /** Libera a leitura quando analytics, visitantes e funil compartilham a contagem canônica. */
+  @Test
+  void getCockpitAcceptsAlignedCanonicalPageViews() {
+    Long experimentId = 91L;
+    prepareRealExperimentWithAdMetrics(experimentId, 500L, 4L);
+    var visitors =
+        new ExperimentLandingAnalyticsVisitorsDto(
+            2, 1, 1, List.of(visitor("visitante-1", 2), visitor("visitante-2", 1)));
+    when(funnelService.summarizeLandingAnalytics(experimentId))
+        .thenReturn(
+            new ExperimentLandingAnalyticsDto(
+                8, 2, 3, 4, 13000, 6500, null, List.of(), List.of(), List.of(), null, visitors,
+                List.of()));
+    when(funnelService.summarize(experimentId))
+        .thenReturn(List.of(stage(ExperimentFunnelStage.VISUALIZACAO_FORM, 3)));
+
+    var cockpit = service.getCockpit(experimentId);
+
+    assertEquals("READY", cockpit.health().status());
+    assertEquals("PAGINA_SEM_CONVERSAO", cockpit.bottleneck().code());
+  }
+
   /** Garante que custo legado e eventos pré-exposição não contaminam a inicialização comercial. */
   @Test
   void getCockpitStartsCommercialMetricsAtZeroUntilFirstVerifiedImpression() {
@@ -269,5 +316,11 @@ class ExperimentCockpitServiceTest {
     dto.setOrder(stage.getOrder());
     dto.setTotalCount(totalCount);
     return dto;
+  }
+
+  /** Cria um visitante provável mínimo com a quantidade informada de pageviews válidos. */
+  private ExperimentLandingAnalyticsVisitorDto visitor(String visitorId, long pageViews) {
+    return new ExperimentLandingAnalyticsVisitorDto(
+        visitorId, 1, pageViews, null, null, 0, 1, null, "mobile", "Mobile", pageViews > 1);
   }
 }

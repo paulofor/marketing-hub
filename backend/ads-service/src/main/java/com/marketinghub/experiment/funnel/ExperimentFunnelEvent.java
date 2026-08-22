@@ -5,7 +5,6 @@ import com.marketinghub.model.Lead;
 import jakarta.persistence.*;
 import java.time.Instant;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 
 /**
  * Evento que representa uma interação registrada em alguma etapa do funil de vendas do experimento.
@@ -42,7 +41,14 @@ public class ExperimentFunnelEvent {
   @Column(columnDefinition = "LONGTEXT")
   private String payload;
 
-  @CreationTimestamp
   @Column(name = "occurred_at")
   private Instant occurredAt;
+
+  /** Preenche o instante no servidor somente quando a origem não informou o horário do evento. */
+  @PrePersist
+  void initializeOccurredAt() {
+    if (occurredAt == null) {
+      occurredAt = Instant.now();
+    }
+  }
 }

@@ -74,8 +74,9 @@ public class ExperimentCockpitService {
     BigDecimal revenue = funnelService.approvedRevenue(experimentId);
     ExperimentCockpitScoreboardDto scoreboard =
         buildScoreboard(experiment, commercialFunnelStages, analytics, revenue);
+    List<String> metricIntegrityIssues = diagnoseMetricIntegrity(analytics, funnelStages);
     ExperimentCockpitBottleneckDto bottleneck =
-        diagnoseBottleneck(readiness, funnelDiagnostics, scoreboard);
+        diagnoseBottleneck(readiness, funnelDiagnostics, scoreboard, metricIntegrityIssues);
     return new ExperimentCockpitDto(
         experiment.getId(),
         experiment.getName(),
@@ -84,7 +85,7 @@ public class ExperimentCockpitService {
         valueOf(experiment.getCampaignObjective()),
         scoreboard,
         buildQuestion(experiment),
-        buildHealth(readiness, experimentDiagnostics),
+        buildHealth(readiness, experimentDiagnostics, metricIntegrityIssues),
         commercialFunnelStages.stream()
             .sorted(Comparator.comparingInt(ExperimentFunnelStageDto::getOrder))
             .map(this::toCockpitStage)
@@ -188,12 +189,16 @@ public class ExperimentCockpitService {
 
   /** Resume a prontidão operacional que define se a leitura de mercado pode ser interpretada. */
   private ExperimentCockpitHealthDto buildHealth(
-      ExperimentReadinessSummaryDto readiness, ExperimentDiagnosticsDto diagnostics) {
+      ExperimentReadinessSummaryDto readiness,
+      ExperimentDiagnosticsDto diagnostics,
+      List<String> metricIntegrityIssues) {
     List<String> blockers =
-        readiness.issues().stream()
-            .map(issue -> firstText(issue.description(), issue.recommendation(), issue.title()))
-            .filter(StringUtils::hasText)
-            .toList();
+        new ArrayList<>(
+            readiness.issues().stream()
+                .map(issue -> firstText(issue.description(), issue.recommendation(), issue.title()))
+                .filter(StringUtils::hasText)
+                .toList());
+    blockers.addAll(metricIntegrityIssues);
     if (blockers.isEmpty()) {
       return new ExperimentCockpitHealthDto(
           "READY",
@@ -214,7 +219,17 @@ public class ExperimentCockpitService {
   private ExperimentCockpitBottleneckDto diagnoseBottleneck(
       ExperimentReadinessSummaryDto readiness,
       ExperimentFunnelDiagnosticsResponseDto funnelDiagnostics,
-      ExperimentCockpitScoreboardDto scoreboard) {
+      ExperimentCockpitScoreboardDto scoreboard,
+      List<String> metricIntegrityIssues) {
+    if (!metricIntegrityIssues.isEmpty()) {
+      return bottleneck(
+          "INTEGRIDADE_METRICAS_DIVERGENTE",
+          "Fontes do funil estão divergentes",
+          "danger",
+          metricIntegrityIssues.getFirst(),
+          "O sistema não pode otimizar comunicação nem liberar amostra com contagens contraditórias.",
+          "Reconciliar analytics, visitantes e funil antes de interpretar conversão.");
+    }
     if (!readiness.issues().isEmpty()) {
       return bottleneck(
           "EXECUCAO_INVALIDA",
@@ -329,6 +344,28 @@ public class ExperimentCockpitService {
         "Não há volume suficiente de exposição, clique ou sessão para decidir.",
         "A prioridade é colocar o experimento validamente diante do mercado.",
         "Publicar ou destravar distribuição e confirmar tracking.");
+  }
+
+  /** Bloqueia leitura comercial quando as fontes canônicas de pageview não fecham entre si. */
+  private List<String> diagnoseMetricIntegrity(
+      ExperimentLandingAnalyticsDto analytics, List<ExperimentFunnelStageDto> funnelStages) {
+    if (analytics == null
+        || analytics.visitors() == null
+        || analytics.visitors().visitors() == null
+        || analytics.visitors().probableVisitors() == 0) {
+      return List.of();
+    }
+    long visitorPageViews =
+        analytics.visitors().visitors().stream()
+            .mapToLong(visitor -> visitor.validPageViews())
+            .sum();
+    long funnelPageViews = stageTotal(funnelStages, ExperimentFunnelStage.VISUALIZACAO_FORM);
+    if (analytics.pageViews() == visitorPageViews && analytics.pageViews() == funnelPageViews) {
+      return List.of();
+    }
+    return List.of(
+        "Analytics registra %d pageviews humanas, visitantes normalizados registram %d e o funil registra %d."
+            .formatted(analytics.pageViews(), visitorPageViews, funnelPageViews));
   }
 
   /** Cria um DTO de gargalo com os textos comerciais do cockpit. */

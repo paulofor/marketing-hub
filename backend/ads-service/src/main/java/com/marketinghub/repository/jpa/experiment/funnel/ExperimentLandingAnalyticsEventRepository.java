@@ -88,11 +88,11 @@ public interface ExperimentLandingAnalyticsEventRepository
     /** Retorna a quantidade de page_views válidos após deduplicação operacional. */
     long getValidPageViews();
 
-    /** Retorna o primeiro acesso válido do visitante provável. */
-    Instant getFirstAccessAt();
+    /** Retorna o primeiro acesso válido no tipo temporal nativo fornecido pelo driver. */
+    Object getFirstAccessAt();
 
-    /** Retorna o último acesso válido do visitante provável. */
-    Instant getLastAccessAt();
+    /** Retorna o último acesso válido no tipo temporal nativo fornecido pelo driver. */
+    Object getLastAccessAt();
 
     /** Retorna a quantidade de páginas distintas visualizadas pelo visitante provável. */
     long getDistinctPages();

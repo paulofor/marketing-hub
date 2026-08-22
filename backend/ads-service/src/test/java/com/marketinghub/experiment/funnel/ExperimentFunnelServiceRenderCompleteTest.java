@@ -28,6 +28,8 @@ import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyt
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository.VisitorRecurrenceProjection;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -1938,14 +1940,14 @@ class ExperimentFunnelServiceRenderCompleteTest {
 
       /** Retorna o primeiro acesso sintético do teste. */
       @Override
-      public Instant getFirstAccessAt() {
-        return firstAccessAt;
+      public LocalDateTime getFirstAccessAt() {
+        return LocalDateTime.ofInstant(firstAccessAt, ZoneOffset.UTC);
       }
 
       /** Retorna o último acesso sintético do teste. */
       @Override
-      public Instant getLastAccessAt() {
-        return lastAccessAt;
+      public LocalDateTime getLastAccessAt() {
+        return LocalDateTime.ofInstant(lastAccessAt, ZoneOffset.UTC);
       }
 
       /** Retorna a quantidade sintética de páginas distintas do teste. */

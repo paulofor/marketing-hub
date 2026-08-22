@@ -847,6 +847,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - Em 2026-08-21, o experimento #88 confirmou um intervalo ainda desprotegido: entre a publicação da campanha e a primeira impressão sincronizada, previews e validações da Meta geraram eventos com `fbclid`, embora o Insights oficial permanecesse vazio. O cockpit passou a manter as contagens comerciais em zero até a primeira impressão confirmada, preservando esses eventos apenas no Analytics técnico. A sincronização de métricas agora reconcilia o run como `PUBLISHED_AWAITING_EXPOSURE` e abre `commercial_window_started_at` somente na primeira impressão, quando o reset canônico remove o pré-tráfego.
 - Em 2026-08-22, o reteste público do experimento #88 mostrou que a versão leve da landing preservava os seis destinos do Mercado Pago, mas não os atributos `data-analytics-role`; o coletor canônico registrava página e seções, porém não emitia `checkout_click`. O Lead Portal passou a reconhecer checkout tanto pelo marcador semântico quanto pelo destino externo (`pref_id`, host Mercado Pago ou caminho canônico de checkout/pagamento), registrar a seção de origem e liberar a navegação sem atraso. O teste do controller impede que a mensuração volte a depender exclusivamente do HTML gerado, e a sonda pública do deploy rejeita uma landing cujo coletor não contenha `checkout_click`.
 - Em 2026-08-22, Hermes encontrou três leituras divergentes no experimento #88: o funil contava três `page_view`s humanos, o Analytics reduzia toda a sessão a um único `page_view`, e o visitante preservava os três eventos válidos; além disso, `CPL` era zero sem leads e o JDBC reinterpretava como horário local o `DATETIME` UTC da sincronização Meta. A consolidação agora aplica a mesma janela canônica de três segundos por página, mantém custos sem denominador como `null` e converte o `DATETIME` agregado explicitamente de UTC. Testes cobrem recarregamento válido, denominador ausente e leitura temporal sem deslocamento.
+- Em 2026-08-22, a reexecução pós-deploy de Hermes comprovou que a primeira correção não fechava a causa-raiz: a aba Analytics ainda lia `experiment_funnel_event`, cujo `@CreationTimestamp` substituía o instante informado pelo navegador, enquanto recorrência e funil liam `experiment_landing_analytics_event`. Dois recarregamentos válidos chegavam ao normalizado com onze segundos de intervalo, mas recebiam o mesmo segundo no evento bruto e eram deduplicados incorretamente. A leitura analítica passa a usar o evento normalizado como fonte única, a projeção nativa converte `DATETIME(6)` UTC explicitamente e o evento bruto preserva o instante de origem quando informado. O cockpit agora bloqueia a leitura comercial se Analytics, visitantes e funil não fecharem a mesma quantidade de pageviews.
 
 - **Severidade**: CRÍTICO.
 - **Status**: recorrente.
@@ -875,6 +876,8 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - classificar verificações internas e navegadores automatizados por sessão, preservando-os para auditoria e excluindo-os de audiência, abandono e desempenho comerciais;
   - deduplicar `page_view` pela janela canônica de três segundos e marcos de vídeo, CTA e formulário por sessão, sem apagar os eventos brutos;
   - usar `Instant` como contrato temporal único entre eventos detalhados, sessões e visitantes.
+  - preservar no evento bruto o instante informado pela origem e preencher horário do servidor somente quando ele estiver ausente;
+  - bloquear o cockpit quando Analytics, visitantes normalizados e funil discordarem sobre pageviews humanas.
 - **Contratos sensíveis**:
   - `experiment_funnel_event`;
   - `experiment_landing_analytics_event`;
@@ -893,6 +896,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - teste: jornada recente serializa `DATETIME` operacional com offset de Brasília.
   - teste: monitor interno permanece auditável, mas não altera sessões humanas nem tempo de carregamento;
   - teste: marco de conversão repetido na mesma sessão conta uma única vez e recarregamento de página fora da janela canônica continua sendo uma visualização válida.
+  - teste: resumo analítico consulta a fonte normalizada, preserva o instante do navegador e fecha a contagem com visitantes e funil antes de liberar leitura comercial.
 - **Regra preventiva**:
   - todo novo evento de landing só está pronto quando aparecer na UI que o usuário usa para decisão.
 

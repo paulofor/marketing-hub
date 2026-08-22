@@ -21,4 +21,9 @@ public interface BusinessProcessDefinitionRepository
   /** Localiza a versão vigente de um processo pai para validar composição sem ambiguidade. */
   Optional<BusinessProcessDefinition> findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
       String processCode, String status);
+
+  /** Lista os subprocessos vigentes de um processo de valor para expor sua composição oficial. */
+  List<BusinessProcessDefinition>
+      findAllByParentProcessCodeAndStatusOrderByNameAscVersionNumberDesc(
+          String parentProcessCode, String status);
 }

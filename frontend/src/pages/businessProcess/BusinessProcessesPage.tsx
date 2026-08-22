@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   useBusinessProcesses,
+  useBusinessProcessComposition,
   useBusinessProcessExecutionResources,
   useCreateBusinessProcess,
   useDeleteBusinessProcess,
@@ -16,6 +17,7 @@ import type {
 } from "../../api/businessProcess/types";
 import { useBusinessProcessChainsByProcess } from "../../api/businessProcessChain/useBusinessProcessChains";
 import PageTitle from "../../components/PageTitle";
+import BusinessProcessCompositionPanel from "./BusinessProcessCompositionPanel";
 import BusinessProcessDiagram from "./BusinessProcessDiagram";
 import BusinessProcessEditor from "./BusinessProcessEditor";
 import "./BusinessProcessesPage.css";
@@ -114,6 +116,7 @@ export default function BusinessProcessesPage({
       processes[0],
     [processes, selectedId],
   );
+  const compositionQuery = useBusinessProcessComposition(selected?.id);
   const processChainsQuery = useBusinessProcessChainsByProcess(selected?.id);
   const documentActivitiesQuery = useBusinessProcessDocumentActivities(
     selected?.id,
@@ -431,29 +434,149 @@ export default function BusinessProcessesPage({
             {catalogMode === "retired" ? "Histórico" : "Catálogo atual"}
           </div>
           <div className="list-group list-group-flush">
-            {processes.map((item, index) => (
-              <div key={item.id}>
-                {(index === 0 ||
-                  (processes[index - 1].processType ?? "VALUE_PROCESS") !==
-                    (item.processType ?? "VALUE_PROCESS")) && (
-                  <div className="business-process-list__group">
-                    {(item.processType ?? "VALUE_PROCESS") === "SUBPROCESS"
-                      ? "Subprocessos especializados"
-                      : "Processos de valor"}
+            {catalogMode === "current" ? (
+              <>
+                <div className="business-process-list__group">
+                  Processos de valor e suas especialidades
+                </div>
+                {processes
+                  .filter(
+                    (item) =>
+                      (item.processType ?? "VALUE_PROCESS") === "VALUE_PROCESS",
+                  )
+                  .map((item) => {
+                    const subprocesses = processes.filter(
+                      (candidate) =>
+                        candidate.processType === "SUBPROCESS" &&
+                        (candidate.parentProcessDefinitionId === item.id ||
+                          (!candidate.parentProcessDefinitionId &&
+                            candidate.parentProcessCode === item.processCode &&
+                            item.status === "PUBLISHED")),
+                    );
+                    return (
+                      <div
+                        className="business-process-list__tree"
+                        key={item.id}
+                      >
+                        <button
+                          type="button"
+                          className={`list-group-item list-group-item-action business-process-list__parent ${selected?.id === item.id ? "active" : ""}`}
+                          onClick={() => selectProcess(item.id)}
+                        >
+                          <span className="business-process-list__kind">
+                            Processo de valor
+                          </span>
+                          <span className="d-block fw-semibold">
+                            {item.name}
+                          </span>
+                          <span className="small">
+                            v{item.versionNumber} · {item.status}
+                          </span>
+                        </button>
+                        {subprocesses.length > 0 ? (
+                          <div
+                            className="business-process-list__children"
+                            aria-label={`Subprocessos de ${item.name}`}
+                          >
+                            <span className="business-process-list__children-label">
+                              Subprocessos deste processo
+                            </span>
+                            {subprocesses.map((subprocess) => (
+                              <button
+                                type="button"
+                                key={subprocess.id}
+                                className={`list-group-item list-group-item-action business-process-list__child ${selected?.id === subprocess.id ? "active" : ""}`}
+                                onClick={() => selectProcess(subprocess.id)}
+                              >
+                                <span className="d-block fw-semibold">
+                                  {subprocess.name}
+                                </span>
+                                <span className="small">
+                                  v{subprocess.versionNumber} ·{" "}
+                                  {subprocess.status}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                {processes.some(
+                  (item) =>
+                    item.processType === "SUBPROCESS" &&
+                    !processes.some(
+                      (parent) =>
+                        (parent.processType ?? "VALUE_PROCESS") ===
+                          "VALUE_PROCESS" &&
+                        (item.parentProcessDefinitionId === parent.id ||
+                          (!item.parentProcessDefinitionId &&
+                            item.parentProcessCode === parent.processCode &&
+                            parent.status === "PUBLISHED")),
+                    ),
+                ) ? (
+                  <div>
+                    <div className="business-process-list__group">
+                      Subprocessos sem pai vigente no catálogo
+                    </div>
+                    {processes
+                      .filter(
+                        (item) =>
+                          item.processType === "SUBPROCESS" &&
+                          !processes.some(
+                            (parent) =>
+                              (parent.processType ?? "VALUE_PROCESS") ===
+                                "VALUE_PROCESS" &&
+                              (item.parentProcessDefinitionId === parent.id ||
+                                (!item.parentProcessDefinitionId &&
+                                  item.parentProcessCode ===
+                                    parent.processCode &&
+                                  parent.status === "PUBLISHED")),
+                          ),
+                      )
+                      .map((item) => (
+                        <button
+                          type="button"
+                          key={item.id}
+                          className={`list-group-item list-group-item-action ${selected?.id === item.id ? "active" : ""}`}
+                          onClick={() => selectProcess(item.id)}
+                        >
+                          <span className="d-block fw-semibold">
+                            {item.name}
+                          </span>
+                          <span className="small">
+                            v{item.versionNumber} · {item.status}
+                          </span>
+                        </button>
+                      ))}
                   </div>
-                )}
-                <button
-                  type="button"
-                  className={`list-group-item list-group-item-action ${selected?.id === item.id ? "active" : ""}`}
-                  onClick={() => selectProcess(item.id)}
-                >
-                  <span className="d-block fw-semibold">{item.name}</span>
-                  <span className="small">
-                    v{item.versionNumber} · {item.status}
-                  </span>
-                </button>
-              </div>
-            ))}
+                ) : null}
+              </>
+            ) : (
+              processes.map((item, index) => (
+                <div key={item.id}>
+                  {(index === 0 ||
+                    (processes[index - 1].processType ?? "VALUE_PROCESS") !==
+                      (item.processType ?? "VALUE_PROCESS")) && (
+                    <div className="business-process-list__group">
+                      {(item.processType ?? "VALUE_PROCESS") === "SUBPROCESS"
+                        ? "Subprocessos especializados"
+                        : "Processos de valor"}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    className={`list-group-item list-group-item-action ${selected?.id === item.id ? "active" : ""}`}
+                    onClick={() => selectProcess(item.id)}
+                  >
+                    <span className="d-block fw-semibold">{item.name}</span>
+                    <span className="small">
+                      v{item.versionNumber} · {item.status}
+                    </span>
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </aside>
 
@@ -524,20 +647,6 @@ export default function BusinessProcessesPage({
                           ? ` · Contrato: ${selected.technicalReference}`
                           : ""}
                       </div>
-                      {selected.parentProcessDefinitionId ? (
-                        <div className="mt-2">
-                          <strong className="small">
-                            Processo de valor pai
-                          </strong>{" "}
-                          <Link
-                            className="btn btn-sm btn-outline-secondary ms-2"
-                            to={`/business-processes?processId=${selected.parentProcessDefinitionId}`}
-                          >
-                            {selected.parentProcessName ??
-                              selected.parentProcessCode}
-                          </Link>
-                        </div>
-                      ) : null}
                       {(processChainsQuery.data?.length ?? 0) > 0 ? (
                         <div
                           className="business-process-chains mt-3"
@@ -638,6 +747,11 @@ export default function BusinessProcessesPage({
                     </div>
                   </div>
                 </section>
+                <BusinessProcessCompositionPanel
+                  composition={compositionQuery.data}
+                  loading={compositionQuery.isLoading}
+                  unavailable={compositionQuery.isError}
+                />
                 <section className="card card-body">
                   <h2 className="h5">Diagrama BPM</h2>
                   {executionResourcesQuery.isError ? (
@@ -652,6 +766,7 @@ export default function BusinessProcessesPage({
                     executionResources={executionResourcesQuery.data ?? []}
                     processDefinitionId={selected.id}
                     documentActivityIds={documentActivitiesQuery.data ?? []}
+                    subprocesses={compositionQuery.data?.subprocesses ?? []}
                   />
                 </section>
               </>

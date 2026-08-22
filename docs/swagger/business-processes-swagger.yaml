@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Catálogo de processos de negócio
-  version: 1.3.0
+  version: 1.4.0
   description: Cadastro versionado de processos de valor, subprocessos, atividades e documentos no Marketing Hub.
 paths:
   /api/business-processes:
@@ -35,6 +35,19 @@ paths:
       responses:
         "200": { description: Rascunho atualizado }
         "409": { description: Versão já publicada ou aposentada }
+  /api/business-processes/{processDefinitionId}/composition:
+    get:
+      summary: Exibe a composição hierárquica oficial do processo
+      parameters:
+        - $ref: "#/components/parameters/ProcessDefinitionId"
+      responses:
+        "200":
+          description: Processo, pai opcional e subprocessos publicados
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusinessProcessComposition"
+        "404": { description: Processo não encontrado }
   /api/business-processes/{processDefinitionId}/document-activities:
     get:
       summary: Lista atividades que já produziram documentos concluídos
@@ -133,6 +146,44 @@ components:
           nullable: true
         diagram:
           $ref: "#/components/schemas/ProcessDiagram"
+    BusinessProcessComposition:
+      type: object
+      required: [process, subprocessCount, subprocesses]
+      properties:
+        process:
+          $ref: "#/components/schemas/BusinessProcessReference"
+        parentProcess:
+          allOf:
+            - $ref: "#/components/schemas/BusinessProcessReference"
+          nullable: true
+        subprocessCount:
+          type: integer
+          minimum: 0
+          description: Contagem oficial de subprocessos publicados do processo.
+        subprocesses:
+          type: array
+          items:
+            $ref: "#/components/schemas/BusinessProcessReference"
+    BusinessProcessReference:
+      type: object
+      required:
+        - id
+        - processCode
+        - name
+        - purpose
+        - ownerName
+        - versionNumber
+        - status
+        - processType
+      properties:
+        id: { type: integer, format: int64 }
+        processCode: { type: string }
+        name: { type: string }
+        purpose: { type: string }
+        ownerName: { type: string }
+        versionNumber: { type: integer, minimum: 1 }
+        status: { type: string, enum: [DRAFT, PUBLISHED, RETIRED] }
+        processType: { type: string, enum: [VALUE_PROCESS, SUBPROCESS] }
     ProcessDiagram:
       type: object
       required: [nodes, flows]

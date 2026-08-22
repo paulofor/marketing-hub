@@ -36,17 +36,19 @@ public interface ExperimentFunnelEventRepository
   List<StageAggregation> aggregateManualByExperiment(
       @Param("experimentId") Long experimentId, @Param("baseline") Instant baseline);
 
-  /** Busca os eventos públicos de analytics da landing respeitando o marco temporal do funil. */
+  /**
+   * Busca os eventos normalizados de analytics da landing respeitando o marco temporal do funil.
+   */
   @Query(
       """
-            select e.id as id,
-                   e.payload as payload,
-                   e.occurredAt as occurredAt
-            from ExperimentFunnelEvent e
-            where e.experiment.id = :experimentId
-              and e.source = :source
-              and (:baseline is null or e.occurredAt > :baseline)
-            order by e.occurredAt desc, e.id desc
+            select normalized.id as id,
+                   normalized.funnelEvent.payload as payload,
+                   normalized.occurredAt as occurredAt
+            from ExperimentLandingAnalyticsEvent normalized
+            where normalized.experiment.id = :experimentId
+              and normalized.funnelEvent.source = :source
+              and (:baseline is null or normalized.occurredAt > :baseline)
+            order by normalized.occurredAt desc, normalized.id desc
             """)
   List<LandingAnalyticsEventProjection> findLandingAnalyticsEvents(
       @Param("experimentId") Long experimentId,
@@ -54,14 +56,14 @@ public interface ExperimentFunnelEventRepository
       @Param("baseline") Instant baseline,
       Pageable pageable);
 
-  /** Conta os eventos detalhados disponíveis no mesmo escopo temporal do analytics. */
+  /** Conta os eventos normalizados disponíveis no mesmo escopo temporal do analytics. */
   @Query(
       """
-            select count(e.id)
-            from ExperimentFunnelEvent e
-            where e.experiment.id = :experimentId
-              and e.source = :source
-              and (:baseline is null or e.occurredAt > :baseline)
+            select count(normalized.id)
+            from ExperimentLandingAnalyticsEvent normalized
+            where normalized.experiment.id = :experimentId
+              and normalized.funnelEvent.source = :source
+              and (:baseline is null or normalized.occurredAt > :baseline)
             """)
   long countLandingAnalyticsEvents(
       @Param("experimentId") Long experimentId,

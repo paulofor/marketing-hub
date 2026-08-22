@@ -10,8 +10,10 @@ import com.marketinghub.repository.jpa.core.LeadRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -80,6 +82,26 @@ class ExperimentFunnelServiceResetTest {
     LocalDateTime databaseValue = LocalDateTime.parse("2026-08-22T14:44:26.729474");
 
     Instant instant = ExperimentFunnelService.fromUtcDatabaseDateTime(databaseValue);
+
+    assertEquals(Instant.parse("2026-08-22T14:44:26.729474Z"), instant);
+  }
+
+  /** Normaliza a projeção com offset usada pelo banco de testes para o mesmo instante UTC. */
+  @Test
+  void convertsOffsetProjectionToUtcInstant() {
+    OffsetDateTime databaseValue = OffsetDateTime.parse("2026-08-22T11:44:26.729474-03:00");
+
+    Instant instant = ExperimentFunnelService.fromUtcDatabaseValue(databaseValue);
+
+    assertEquals(Instant.parse("2026-08-22T14:44:26.729474Z"), instant);
+  }
+
+  /** Interpreta o timestamp JDBC de DATETIME como UTC sem aplicar o fuso da JVM. */
+  @Test
+  void convertsJdbcTimestampToUtcInstant() {
+    Timestamp databaseValue = Timestamp.valueOf(LocalDateTime.parse("2026-08-22T14:44:26.729474"));
+
+    Instant instant = ExperimentFunnelService.fromUtcDatabaseValue(databaseValue);
 
     assertEquals(Instant.parse("2026-08-22T14:44:26.729474Z"), instant);
   }

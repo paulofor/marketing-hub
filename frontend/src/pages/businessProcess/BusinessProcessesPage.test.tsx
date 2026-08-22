@@ -24,27 +24,80 @@ const studio = {
   usageInstructions: "Use o pending do backend.",
 };
 
+type ProcessFixture = {
+  id: number;
+  processCode: string;
+  name: string;
+  purpose: string;
+  ownerName: string;
+  versionNumber: number;
+  status: "DRAFT" | "PUBLISHED" | "RETIRED";
+  processType?: "VALUE_PROCESS" | "SUBPROCESS";
+  parentProcessCode?: string;
+  parentProcessDefinitionId?: number;
+};
+
+function compositionFixture(processes: unknown[], url: string) {
+  const processId = Number(
+    url.match(/business-processes\/(\d+)\/composition/)?.[1],
+  );
+  const values = processes as ProcessFixture[];
+  const process = values.find((item) => item.id === processId);
+  if (!process) return undefined;
+  const reference = (item: ProcessFixture) => ({
+    id: item.id,
+    processCode: item.processCode,
+    name: item.name,
+    purpose: item.purpose,
+    ownerName: item.ownerName,
+    versionNumber: item.versionNumber,
+    status: item.status,
+    processType: item.processType ?? "VALUE_PROCESS",
+  });
+  const parent = values.find(
+    (item) =>
+      item.id === process.parentProcessDefinitionId ||
+      (item.processCode === process.parentProcessCode &&
+        item.status === "PUBLISHED"),
+  );
+  const subprocesses = values.filter(
+    (item) =>
+      item.processType === "SUBPROCESS" &&
+      item.status === "PUBLISHED" &&
+      process.status !== "RETIRED" &&
+      item.parentProcessCode === process.processCode,
+  );
+  return {
+    process: reference(process),
+    parentProcess: parent ? reference(parent) : undefined,
+    subprocessCount: subprocesses.length,
+    subprocesses: subprocesses.map(reference),
+  };
+}
+
 function mockCatalog(
   processes: unknown[],
   resources: unknown[] = [studio],
   chains: unknown[] = [],
   documentActivities: string[] = [],
 ) {
-  vi.mocked(axios.get).mockImplementation(
-    async (url) =>
-      ({
-        data:
-          url === "/api/business-process-execution-resources"
-            ? resources
-            : String(url).endsWith("/document-activities")
+  vi.mocked(axios.get).mockImplementation(async (url) => {
+    const requestedUrl = String(url);
+    return {
+      data:
+        url === "/api/business-process-execution-resources"
+          ? resources
+          : requestedUrl.endsWith("/composition")
+            ? compositionFixture(processes, requestedUrl)
+            : requestedUrl.endsWith("/document-activities")
               ? documentActivities
-              : String(url).startsWith(
+              : requestedUrl.startsWith(
                     "/api/business-process-chains/by-process/",
                   )
                 ? chains
                 : processes,
-      }) as never,
-  );
+    } as never;
+  });
 }
 
 describe("BusinessProcessesPage", () => {
@@ -240,14 +293,154 @@ describe("BusinessProcessesPage", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText("Processos de valor")).toBeInTheDocument();
-    expect(screen.getByText("Subprocessos especializados")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Processos de valor e suas especialidades"),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByLabelText(
+        "Subprocessos de Comunicação e jornada de venda do PDE",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText("Este é um subprocesso"),
+    ).toBeInTheDocument();
     expect(screen.getByText("SUBPROCESSO")).toBeInTheDocument();
     expect(
       screen.getByRole("link", {
-        name: "Comunicação e jornada de venda do PDE",
+        name: /Processo de valor pai Comunicação e jornada de venda do PDE/,
       }),
     ).toHaveAttribute("href", "/business-processes?processId=40");
+  });
+
+  it("explica a composição do pai e abre subprocessos pelo painel e pelo diagrama", async () => {
+    mockCatalog([
+      {
+        id: 40,
+        processCode: "pde-communication-sales-journey",
+        name: "Comunicação e jornada de venda do PDE",
+        purpose: "Integrar a jornada.",
+        ownerName: "Operação",
+        triggerDescription: "Produto aprovado",
+        outcomeDescription: "Jornada integrada",
+        versionNumber: 4,
+        status: "PUBLISHED",
+        processType: "VALUE_PROCESS",
+        createdAt: "2026-08-22T00:00:00Z",
+        diagram: {
+          nodes: [
+            { id: "start", type: "START", label: "Início" },
+            {
+              id: "creatives",
+              type: "TASK",
+              label: "Produzir comunicação",
+              subprocessCode: "creative-production-approval",
+            },
+            { id: "end", type: "END", label: "Fim" },
+          ],
+          flows: [
+            { from: "start", to: "creatives" },
+            { from: "creatives", to: "end" },
+          ],
+        },
+      },
+      {
+        id: 17,
+        processCode: "creative-production-approval",
+        name: "Criação e aprovação de criativos",
+        purpose: "Produzir criativos aprovados.",
+        ownerName: "Operação de Experimentos",
+        triggerDescription: "Briefing aprovado",
+        outcomeDescription: "Criativos aprovados",
+        versionNumber: 5,
+        status: "PUBLISHED",
+        processType: "SUBPROCESS",
+        parentProcessCode: "pde-communication-sales-journey",
+        parentProcessDefinitionId: 40,
+        createdAt: "2026-08-22T00:00:00Z",
+        diagram: {
+          nodes: [
+            { id: "start", type: "START", label: "Início" },
+            { id: "task", type: "TASK", label: "Criar" },
+            { id: "end", type: "END", label: "Fim" },
+          ],
+          flows: [
+            { from: "start", to: "task" },
+            { from: "task", to: "end" },
+          ],
+        },
+      },
+    ]);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/business-processes?processId=40"]}>
+        <QueryClientProvider client={client}>
+          <BusinessProcessesPage />
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByText("Como este processo é composto"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("1 subprocesso em uso")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", {
+        name: "Abrir subprocesso Criação e aprovação de criativos",
+      }),
+    ).toHaveAttribute("href", "/business-processes?processId=17");
+    expect(
+      screen.getByText(/novos subprocessos publicados e vinculados/i),
+    ).toBeInTheDocument();
+  });
+
+  it("explica como novos subprocessos aparecerão quando o processo ainda não possui filhos", async () => {
+    mockCatalog([
+      {
+        id: 41,
+        processCode: "pde-construction",
+        name: "Construção e aprovação do PDE",
+        purpose: "Construir o produto.",
+        ownerName: "Operação de Produtos",
+        triggerDescription: "Oferta aprovada",
+        outcomeDescription: "Produto aprovado",
+        versionNumber: 2,
+        status: "PUBLISHED",
+        processType: "VALUE_PROCESS",
+        createdAt: "2026-08-22T00:00:00Z",
+        diagram: {
+          nodes: [
+            { id: "start", type: "START", label: "Início" },
+            { id: "task", type: "TASK", label: "Construir" },
+            { id: "end", type: "END", label: "Fim" },
+          ],
+          flows: [
+            { from: "start", to: "task" },
+            { from: "task", to: "end" },
+          ],
+        },
+      },
+    ]);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(
+      <MemoryRouter>
+        <QueryClientProvider client={client}>
+          <BusinessProcessesPage />
+        </QueryClientProvider>
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByText("Nenhum subprocesso em uso neste momento."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/ela aparecerá automaticamente nesta composição/i),
+    ).toBeInTheDocument();
   });
 
   it("mostra somente versões aposentadas na tela histórica", async () => {

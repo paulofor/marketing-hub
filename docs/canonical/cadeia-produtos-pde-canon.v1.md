@@ -123,8 +123,12 @@ Cada trabalho tem uma única autoridade:
 
 Uma atividade que delega trabalho deve declarar `subprocessCode`. Ela não pode possuir ao mesmo tempo
 um executor especializado, pois isso criaria duas autoridades para a mesma execução. A tela deve
-mostrar tipo e processo pai a partir do backend. Versões anteriores permanecem preservadas como
-histórico, mas somente uma versão publicada de cada código participa da operação atual.
+mostrar a composição nos dois sentidos a partir do backend: o subprocesso aponta para seu processo
+de valor pai, o processo pai lista seus subprocessos vigentes com nome e link, e a atividade que
+delega deve abrir o subprocesso pelo nome, sem expor somente código técnico. O catálogo deve manter
+os subprocessos visualmente agrupados sob o respectivo processo pai e explicar que novas capacidades
+especializadas publicadas aparecerão nessa composição. Versões anteriores permanecem preservadas
+como histórico, mas somente uma versão publicada de cada código participa da operação atual.
 
 ## Cadeia principal
 

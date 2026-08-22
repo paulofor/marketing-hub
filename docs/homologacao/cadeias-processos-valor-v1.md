@@ -33,9 +33,15 @@ valor, sem inferir dados no frontend nem executar trabalho operacional.
 | Validação | Pai que também é subprocesso | Backend responde 400 e mantém somente um nível de composição |
 | Validação | Atividade com subprocesso e executor | Backend responde 400 para impedir dupla execução |
 | Observabilidade | Catálogo administrativo | Tipo, processo pai e chamada de subprocesso vêm do backend e ficam visíveis |
+| Contrato | Composição explícita | Endpoint retorna processo, pai opcional, contagem e subprocessos publicados sem inferência da tela |
+| Navegação do pai | Processo com subprocessos | Painel lista cada filho por nome, objetivo, responsável, versão e link direto |
+| Navegação do filho | Subprocesso selecionado | Painel explica a especialização e oferece retorno direto ao processo de valor pai |
+| Diagrama | Atividade delegada | Chamada exibe nome amigável e link para o subprocesso, preservando o código como detalhe técnico |
+| Extensibilidade | Processo sem filhos | Tela explica que novos subprocessos publicados e vinculados aparecerão automaticamente |
+| Consistência | Filho de outro processo | Backend rejeita a delegação e preserva uma única árvore de responsabilidade |
 | Histórico | Versões e tarefas anteriores | Registros aposentados e tarefas continuam consultáveis sem migração destrutiva |
 | MySQL 5.7 | Migração e reaplicação | Colunas, versões, vínculos e cadeia v5 são idempotentes e não usam padrão sujeito ao erro 1093 |
-| Desktop e mobile | Catálogo agrupado | Processos de valor e subprocessos permanecem legíveis e navegáveis sem overflow |
+| Desktop e mobile | Catálogo hierárquico | Filhos ficam agrupados sob o pai, cards empilham e links permanecem legíveis sem overflow |
 
 ## Regra de repetição
 

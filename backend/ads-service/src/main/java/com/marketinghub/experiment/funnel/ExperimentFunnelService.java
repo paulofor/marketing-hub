@@ -590,8 +590,9 @@ public class ExperimentFunnelService {
   /** Converte a agregação SQL em DTO público, mascarando o visitorId antes de responder à API. */
   private ExperimentLandingAnalyticsVisitorDto toVisitorDto(
       ExperimentLandingAnalyticsEventRepository.VisitorRecurrenceProjection projection) {
-    long intervalSeconds =
-        secondsBetween(projection.getFirstAccessAt(), projection.getLastAccessAt());
+    Instant firstAccessAt = fromUtcDatabaseValue(projection.getFirstAccessAt());
+    Instant lastAccessAt = fromUtcDatabaseValue(projection.getLastAccessAt());
+    long intervalSeconds = secondsBetween(firstAccessAt, lastAccessAt);
     boolean recurrent =
         projection.getTotalSessions() >= 2
             || (projection.getValidPageViews() >= 2
@@ -601,8 +602,8 @@ public class ExperimentFunnelService {
         maskVisitorId(projection.getVisitorId()),
         projection.getTotalSessions(),
         projection.getValidPageViews(),
-        projection.getFirstAccessAt(),
-        projection.getLastAccessAt(),
+        firstAccessAt,
+        lastAccessAt,
         intervalSeconds,
         projection.getDistinctPages(),
         projection.getLastUserAgent(),
@@ -2228,6 +2229,27 @@ public class ExperimentFunnelService {
   /** Converte o DATETIME UTC canônico do banco sem aplicar novamente o fuso da JVM. */
   static Instant fromUtcDatabaseDateTime(LocalDateTime value) {
     return value == null ? null : value.toInstant(ZoneOffset.UTC);
+  }
+
+  /** Converte tipos temporais de projeções nativas para o instante UTC canônico do analytics. */
+  static Instant fromUtcDatabaseValue(Object value) {
+    if (value == null) {
+      return null;
+    }
+    if (value instanceof Instant instant) {
+      return instant;
+    }
+    if (value instanceof LocalDateTime localDateTime) {
+      return fromUtcDatabaseDateTime(localDateTime);
+    }
+    if (value instanceof OffsetDateTime offsetDateTime) {
+      return offsetDateTime.toInstant();
+    }
+    if (value instanceof java.sql.Timestamp timestamp) {
+      return fromUtcDatabaseDateTime(timestamp.toLocalDateTime());
+    }
+    throw new IllegalArgumentException(
+        "Tipo temporal de analytics não suportado: " + value.getClass().getName());
   }
 
   /** Normaliza o código de campanha para o tamanho aceito pelo banco. */

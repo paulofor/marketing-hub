@@ -39,6 +39,23 @@ test("createHealthPayload reports provider and Brave key status without leaking 
   assert.equal(JSON.stringify(payload).includes("brave-secret-value"), false);
 });
 
+test("createHealthPayload recognizes the sandbox Brave credential alias", () => {
+  const payload = createHealthPayload({
+    searchConfig: resolveSearchConfig({ BRAVE_API_KEY: "sandbox-secret" }),
+    state: createHealthState(new Date("2026-08-22T04:00:00.000Z")),
+    pollIntervalMs: 60000,
+    maxSearchResults: 8,
+    env: { BRAVE_API_KEY: "sandbox-secret" },
+  });
+
+  assert.equal(payload.activeSearchProvider, SEARCH_PROVIDERS.BRAVE);
+  assert.deepEqual(payload.braveSearch, {
+    keyStatus: "CONFIGURED",
+    keySource: "env",
+  });
+  assert.equal(JSON.stringify(payload).includes("sandbox-secret"), false);
+});
+
 test("createHealthPayload keeps last processed cycle after completion and failure", () => {
   const state = createHealthState(new Date("2026-07-26T12:00:00.000Z"));
   markPollStarted(state, new Date("2026-07-26T12:01:00.000Z"));

@@ -1,15 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { collectMarketplaceEvidence } from "../src/marketplace-evidence.js";
-import { normalizeMetaAdEvidence } from "../src/marketplace-evidence.js";
+import {
+  collectMarketplaceEvidence,
+  filterRelevantOffers,
+  normalizeMetaAdEvidence,
+} from "../src/marketplace-evidence.js";
 
 test("executa pedidos dirigidos e remove ofertas duplicadas", async () => {
   const calls = [];
   const offers = await collectMarketplaceEvidence(
     {
       marketplaceRequests: [
-        { marketplace: "HOTMART", query: "whatsapp", maxProducts: 10 },
-        { marketplace: "CLICKBANK", query: "whatsapp", maxProducts: 10 },
+        { marketplace: "HOTMART", query: "curso vendas whatsapp", maxProducts: 10 },
+        { marketplace: "CLICKBANK", query: "curso vendas whatsapp", maxProducts: 10 },
       ],
     },
     {
@@ -36,7 +39,7 @@ test("executa pedidos dirigidos e remove ofertas duplicadas", async () => {
                 {
                   marketplace,
                   referenceId: "1",
-                  title: `Oferta ${marketplace}`,
+                  title: `Curso de vendas ${marketplace}`,
                   productUrl: `https://example.test/${marketplace}`,
                   price: "97.00",
                   tractionSignal: 85,
@@ -59,6 +62,27 @@ test("executa pedidos dirigidos e remove ofertas duplicadas", async () => {
   assert.equal(offers[0].observations, 3);
   assert.equal(offers[0].previousTractionSignal, 82);
   assert.equal(offers[0].evidenceConfidence, "HIGH");
+});
+
+test("descarta ofertas que coincidem apenas com termos genéricos do público", () => {
+  const offers = filterRelevantOffers(
+    [
+      {
+        title: "Curso de investimentos",
+        description: "Suporte por WhatsApp para clientes e prestadores",
+      },
+      {
+        title: "Gerador de proposta comercial",
+        description: "Monte orçamento profissional e compartilhe com o cliente",
+      },
+    ],
+    "gerador de proposta comercial para prestadores pelo WhatsApp",
+    "propostas e orçamentos para prestadores locais",
+  );
+
+  assert.deepEqual(offers.map((offer) => offer.title), [
+    "Gerador de proposta comercial",
+  ]);
 });
 
 test("preserva longevidade Meta como sinal e não como venda comprovada", () => {

@@ -182,9 +182,13 @@ consultas públicas, marketplaces autorizados, limite de produtos e condições 
 
 Hotmart e ClickBank permanecem como coletores autenticados isolados. O plano de Argos
 funciona como solicitação dirigida; os coletores são responsáveis por autenticação e
-captura estruturada. Toda conclusão comercial deve preservar fonte, data, snapshot bruto
-e correlação com o ciclo. Uma observação isolada ou uma posição momentânea no ranking não
-comprova vendas.
+captura estruturada. Como a cadeia PDE aceita kits, webapps, agentes, serviços assistidos
+e outros formatos digitais, páginas comerciais públicas de concorrentes também podem
+compor o conjunto comparável quando preservarem URL, domínio, descrição, preço disponível,
+data, confiança e correlação com o ciclo. Conteúdo editorial, página de busca, menção
+genérica, anúncio e posição em ranking não são alternativa paga comparável por si sós.
+Toda conclusão comercial deve preservar fonte, data, snapshot bruto e correlação com o
+ciclo. Uma observação isolada ou uma posição momentânea no ranking não comprova vendas.
 
 O Product Discovery Worker deve executar cada solicitação dirigida pelo contrato interno
 do próprio domínio no backend. O backend consulta os snapshots persistidos, filtra por
@@ -193,8 +197,12 @@ credencial ou controller de outro módulo. As ofertas usadas devem entrar no dos
 marketplace, referência, URL, coleta, preço e sinal de tração disponíveis.
 
 Um ciclo dirigido não pode concluir nem marcar a tarefa do dossiê como concluída com menos
-de dez ofertas únicas comparáveis. Dados ausentes devem bloquear o ciclo com a lacuna
-explícita, sem fabricar evidência e sem transformar temperatura, score ou ranking em venda.
+de dez ofertas únicas comparáveis, vindas dos marketplaces autorizados ou de páginas
+comerciais públicas aderentes ao problema quando o formato pesquisado não for coberto pelos
+marketplaces. A contagem deve deduplicar por referência e domínio, exigir aderência
+semântica e preservar ao menos dois caminhos independentes de confirmação. Dados ausentes
+devem bloquear o ciclo com a lacuna explícita, sem fabricar evidência e sem transformar
+temperatura, score, ranking, anúncio ou página comercial em venda.
 
 O plano deve exigir ao menos dez ofertas comparáveis e bloquear qualquer tentativa de
 compra, afiliação, publicação, acesso a credenciais ou ampliação autônoma do limite.

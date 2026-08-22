@@ -6,6 +6,7 @@ import { join } from "node:path";
 import {
   analyzeSearchResults,
   buildSearchQueries,
+  extractPublicComparableOffers,
   normalizeBraveResponse,
   normalizeSerpApiResponse,
   normalizeTavilyResponse,
@@ -182,6 +183,15 @@ test("resolveSearchConfig prefers Brave when key is available", () => {
   assert.equal(config.braveApiKey, "brave-test-key");
 });
 
+test("resolveSearchConfig accepts the sandbox Brave credential alias", () => {
+  const config = resolveSearchConfig({
+    BRAVE_API_KEY: "sandbox-brave-key",
+  });
+
+  assert.equal(config.provider, SEARCH_PROVIDERS.BRAVE);
+  assert.equal(config.braveApiKey, "sandbox-brave-key");
+});
+
 test("resolveSearchConfig reads Brave key from file when env value is absent", () => {
   const dir = mkdtempSync(join(tmpdir(), "product-discovery-worker-"));
   const keyPath = join(dir, "brave_api_key");
@@ -266,6 +276,81 @@ test("normalizeSerpApiResponse maps organic results to public evidence", () => {
 
   assert.equal(results[0].url, "https://questions.example/estilo");
   assert.match(results[0].snippet, /não consigo/);
+});
+
+test("extrai alternativas públicas pagas sem contar conteúdo editorial", () => {
+  const offers = extractPublicComparableOffers([
+    {
+      title: "Gerador de propostas para prestadores",
+      url: "https://produto-a.example/propostas",
+      snippet: "Software com planos a partir de R$ 29 por mês.",
+    },
+    {
+      title: "Outro plano do mesmo gerador",
+      url: "https://produto-a.example/precos",
+      snippet: "Plataforma de orçamento com assinatura mensal.",
+    },
+    {
+      title: "App de orçamento profissional",
+      url: "https://produto-b.example/",
+      snippet: "Comece grátis e contrate o plano para criar propostas.",
+    },
+    {
+      title: "Como fazer uma proposta comercial",
+      url: "https://conteudo.example/blog/proposta",
+      snippet: "Artigo com modelo gratuito e dicas.",
+    },
+    {
+      title: "Planejador de orçamento pessoal",
+      url: "https://financeiro.example/orcamento",
+      snippet: "Aplicativo grátis para controlar despesas pessoais.",
+    },
+    {
+      title: "Modelo de proposta comercial em PDF",
+      url: "https://prefeitura.gov.br/modelo-proposta.pdf",
+      snippet: "Documento público gratuito para orçamento.",
+    },
+  ]);
+
+  assert.deepEqual(
+    offers.map((offer) => offer.referenceId),
+    ["produto-a.example", "produto-b.example"],
+  );
+  assert.equal(offers[0].marketplace, "PUBLIC_WEB");
+  assert.equal(offers[0].price, "R$ 29");
+  assert.match(offers[0].signalDisclaimer, /não vendas/);
+});
+
+test("mecanismo de propostas exige ciência sobre decisão, clareza e confiança", () => {
+  const report = analyzeSearchResults(
+    {
+      theme: "propostas e orçamentos para prestadores",
+      targetAudience: "autônomos",
+    },
+    [
+      {
+        title: "Critérios de seleção e priorização de propostas de projetos",
+        url: "https://researchgate.net/publication/1",
+        snippet: "Artigo com propostas para selecionar projetos.",
+      },
+      {
+        title: "Information overload and online purchase decision",
+        url: "https://frontiersin.org/journals/psychology/articles/1/full",
+        snippet: "Information clarity reduces cognitive load and purchase decision difficulty.",
+      },
+      {
+        title: "Software de proposta preço",
+        url: "https://produto.example/propostas",
+        snippet: "Comprar plano por R$ 29 para resolver problema confuso e manual.",
+      },
+    ],
+  );
+
+  const evidence = JSON.parse(report.opportunities[0].evidenceJson);
+  assert.deepEqual(
+    evidence.scientificArticles.map((article) => article.originalTitle),
+    ["Information overload and online purchase decision"],
+  );
 });
 
 test("searchInternet calls configured Brave API and deduplicates results", async () => {
@@ -582,6 +667,28 @@ test("scientific and commercial queries are inside the operational query limit",
   }).slice(0, 14);
   assert.ok(
     queries.some((query) => query.includes("scientific study mechanism")),
+  );
+  assert.ok(
+    queries.some(
+      (query) => query.includes("preço") || query.includes("resposta pronta"),
+    ),
+  );
+});
+
+test("plano dirigido extenso não elimina pesquisa científica e comercial", () => {
+  const queries = buildSearchQueries({
+    theme: "propostas comerciais para prestadores",
+    targetAudience: "prestadores locais",
+    directedQueries: Array.from({ length: 16 }, (_, index) => `consulta dirigida ${index}`),
+  }).slice(0, 14);
+
+  assert.ok(
+    queries.some(
+      (query) =>
+        query.includes("purchase intention") ||
+        query.includes("purchase decision") ||
+        query.includes("decision support"),
+    ),
   );
   assert.ok(
     queries.some(

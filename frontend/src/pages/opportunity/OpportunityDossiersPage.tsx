@@ -88,6 +88,22 @@ export default function OpportunityDossiersPage() {
               />
             </label>
             <label className="form-label">
+              Modelo de entrega candidato
+              <textarea
+                className="form-control"
+                value={form.deliveryModel}
+                onChange={(e) => field("deliveryModel", e.target.value)}
+              />
+            </label>
+            <label className="form-label">
+              Riscos conhecidos
+              <textarea
+                className="form-control"
+                value={form.knownRisks}
+                onChange={(e) => field("knownRisks", e.target.value)}
+              />
+            </label>
+            <label className="form-label">
               Experimento recomendado
               <textarea
                 className="form-control"
@@ -184,6 +200,32 @@ export default function OpportunityDossiersPage() {
                 </div>
               </div>
               <hr />
+              <dl className="row mb-3">
+                <dt className="col-md-4">Público</dt>
+                <dd className="col-md-8">{current.targetAudience}</dd>
+                <dt className="col-md-4">Dor principal</dt>
+                <dd className="col-md-8">{current.mainPain}</dd>
+                <dt className="col-md-4">Referência</dt>
+                <dd className="col-md-8">{current.referenceProduct}</dd>
+                <dt className="col-md-4">Vantagem por IA</dt>
+                <dd className="col-md-8">{current.aiAdvantage}</dd>
+                <dt className="col-md-4">Oferta candidata</dt>
+                <dd className="col-md-8">
+                  {current.proposedOffer || "Não informada"}
+                </dd>
+                <dt className="col-md-4">Modelo de entrega</dt>
+                <dd className="col-md-8">
+                  {current.deliveryModel || "Não informado"}
+                </dd>
+                <dt className="col-md-4">Riscos conhecidos</dt>
+                <dd className="col-md-8">
+                  {current.knownRisks || "Não informados"}
+                </dd>
+                <dt className="col-md-4">Experimento recomendado</dt>
+                <dd className="col-md-8">
+                  {current.experimentRecommendation || "Não informado"}
+                </dd>
+              </dl>
               <h3 className="h6">Evidências ({current.evidence.length})</h3>
               {current.evidence.map((e) => (
                 <p key={e.id}>

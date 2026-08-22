@@ -138,7 +138,7 @@ export function startHealthServer({
 }
 
 function resolveBraveKeySource(env) {
-  if (env.BRAVE_SEARCH_API_KEY) {
+  if (env.BRAVE_SEARCH_API_KEY || env.BRAVE_API_KEY) {
     return "env";
   }
   if (env.BRAVE_SEARCH_API_KEY_FILE) {

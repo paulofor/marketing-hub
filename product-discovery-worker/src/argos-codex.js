@@ -1,10 +1,7 @@
-import { execFile } from "node:child_process";
+import { spawn } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { promisify } from "node:util";
-
-const execFileAsync = promisify(execFile);
 
 /** Cria com Codex um plano de investigação; nenhuma credencial de marketplace entra no prompt. */
 export async function planDirectedResearch(job, options = {}) {
@@ -26,23 +23,138 @@ export async function planDirectedResearch(job, options = {}) {
       schema,
       "--output-last-message",
       output,
+      "--json",
       "--color",
       "never",
     ];
     const model = options.model || process.env.ARGOS_CODEX_MODEL;
     if (model) args.push("--model", model);
-    await execFileAsync(command, args, {
-      input: buildPrompt(job),
-      timeout: Number(options.timeoutMs || process.env.ARGOS_CODEX_TIMEOUT_MS || 600000),
+    const execute = options.execute || executeCodexWithInput;
+    const execution = await execute(command, args, buildPrompt(job), {
+      timeoutMs: Number(options.timeoutMs || process.env.ARGOS_CODEX_TIMEOUT_MS || 600000),
       maxBuffer: 10 * 1024 * 1024,
     });
-    const rawResponse = await readFile(output, "utf8");
+    let rawResponse;
+    try {
+      rawResponse = await readFile(output, "utf8");
+    } catch (error) {
+      if (error?.code === "ENOENT") {
+        throw new Error("Codex terminou sem produzir o plano estruturado de Argos", {
+          cause: error,
+        });
+      }
+      throw error;
+    }
     const plan = JSON.parse(rawResponse);
     validatePlan(plan);
-    return { plan, rawResponse, model: model || "codex-default", mode: "CODEX" };
+    return {
+      plan,
+      rawResponse,
+      model: model || "codex-default",
+      mode: "CODEX",
+      usage: parseCodexUsage(execution?.stdout),
+    };
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+}
+
+/** Executa o Codex enviando e encerrando explicitamente a entrada padrão. */
+export function executeCodexWithInput(command, args, input, options = {}) {
+  const spawnProcess = options.spawnProcess || spawn;
+  const timeoutMs = Number(options.timeoutMs || 600000);
+  const maxBuffer = Number(options.maxBuffer || 10 * 1024 * 1024);
+  return new Promise((resolve, reject) => {
+    let child;
+    let settled = false;
+    let timeout;
+    let stdout = "";
+    let stderr = "";
+
+    const rejectOnce = (error) => {
+      if (settled) return;
+      settled = true;
+      if (timeout) clearTimeout(timeout);
+      reject(error);
+    };
+    const appendOutput = (current, chunk) => {
+      const next = current + String(chunk);
+      if (next.length > maxBuffer) {
+        child?.kill("SIGTERM");
+        rejectOnce(new Error("Saída do planejamento de Argos excedeu o limite seguro"));
+      }
+      return next;
+    };
+
+    try {
+      child = spawnProcess(command, args, { stdio: ["pipe", "pipe", "pipe"] });
+    } catch (error) {
+      rejectOnce(new Error(`Falha ao iniciar o Codex para Argos: ${error.message}`, { cause: error }));
+      return;
+    }
+
+    timeout = setTimeout(() => {
+      child.kill("SIGTERM");
+      rejectOnce(new Error(`Planejamento de Argos excedeu o timeout de ${timeoutMs} ms`));
+    }, timeoutMs);
+
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => {
+      stdout = appendOutput(stdout, chunk);
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr = appendOutput(stderr, chunk);
+    });
+    child.on("error", (error) => {
+      rejectOnce(new Error(`Falha ao executar o Codex para Argos: ${error.message}`, { cause: error }));
+    });
+    child.on("close", (code, signal) => {
+      if (settled) return;
+      if (code !== 0) {
+        const detail = stderr.trim().slice(-2000);
+        rejectOnce(
+          new Error(
+            `Codex encerrou o planejamento de Argos com código ${code ?? "desconhecido"}${signal ? ` e sinal ${signal}` : ""}${detail ? `: ${detail}` : ""}`,
+          ),
+        );
+        return;
+      }
+      settled = true;
+      clearTimeout(timeout);
+      resolve({ stdout, stderr });
+    });
+    child.stdin.on("error", (error) => {
+      if (error?.code !== "EPIPE") {
+        rejectOnce(
+          new Error(`Falha ao enviar o contexto de Argos ao Codex: ${error.message}`, {
+            cause: error,
+          }),
+        );
+      }
+    });
+    child.stdin.end(input, "utf8");
+  });
+}
+
+/** Extrai a contabilização final emitida pelo modo JSON do Codex. */
+export function parseCodexUsage(stdout) {
+  let usage;
+  for (const line of String(stdout || "").split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      const event = JSON.parse(line);
+      if (event.type === "turn.completed" && event.usage) usage = event.usage;
+    } catch {
+      // Linhas operacionais não estruturadas não substituem a resposta funcional.
+    }
+  }
+  if (!usage) return null;
+  return {
+    inputTokens: Number(usage.input_tokens || 0),
+    cachedInputTokens: Number(usage.cached_input_tokens || 0),
+    outputTokens: Number(usage.output_tokens || 0),
+  };
 }
 
 /** Produz um plano seguro quando o piloto Codex está desligado ou ainda sem sessão. */

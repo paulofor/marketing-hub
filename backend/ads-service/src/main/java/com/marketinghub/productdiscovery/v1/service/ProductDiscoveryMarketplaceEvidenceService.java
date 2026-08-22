@@ -19,6 +19,41 @@ import org.springframework.web.server.ResponseStatusException;
 /** Consulta snapshots autenticados sem expor credenciais ou acoplar Argos aos coletores. */
 @Service
 public class ProductDiscoveryMarketplaceEvidenceService {
+  private static final List<String> GENERIC_RELEVANCE_TERMS =
+      List.of(
+          "como",
+          "para",
+          "pela",
+          "pelo",
+          "prestador",
+          "prestadores",
+          "servico",
+          "servicos",
+          "cliente",
+          "clientes",
+          "pequeno",
+          "pequenos",
+          "local",
+          "locais",
+          "brasil",
+          "whatsapp",
+          "oferta",
+          "ofertas",
+          "comercial",
+          "comerciais",
+          "preco",
+          "venda",
+          "vendas",
+          "produto",
+          "produtos",
+          "digital",
+          "digitais",
+          "execucao",
+          "validada",
+          "validado",
+          "claras",
+          "claro",
+          "pde");
   private final JdbcTemplate jdbcTemplate;
 
   /** Inicializa a leitura auditavel dos snapshots persistidos pelo backend. */
@@ -35,6 +70,8 @@ public class ProductDiscoveryMarketplaceEvidenceService {
     List<String> terms =
         Arrays.stream(normalizedQuery.toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}]+"))
             .filter(term -> term.length() >= 4)
+            .map(this::normalizeTerm)
+            .filter(term -> !GENERIC_RELEVANCE_TERMS.contains(term))
             .distinct()
             .limit(6)
             .toList();
@@ -43,14 +80,15 @@ public class ProductDiscoveryMarketplaceEvidenceService {
             ? ""
             : " AND ("
                 + String.join(
-                    " OR ",
+                    " + ",
                     java.util.Collections.nCopies(
                         terms.size(),
-                        "LOWER(CONCAT_WS(' ', product_name, title, hotmart_description)) LIKE ?"))
-                + ")";
+                        "CASE WHEN LOWER(CONCAT_WS(' ', product_name, title, hotmart_description)) LIKE ? THEN 1 ELSE 0 END"))
+                + ") >= ?";
     List<Object> parameters = new ArrayList<>();
     parameters.add(source);
     terms.forEach(term -> parameters.add("%" + term + "%"));
+    if (!terms.isEmpty()) parameters.add(Math.min(2, terms.size()));
     parameters.add(250);
     List<MarketplaceHistoryRow> rows =
         jdbcTemplate.query(
@@ -156,6 +194,12 @@ public class ProductDiscoveryMarketplaceEvidenceService {
   /** Lê inteiro anulável sem converter ausência em zero. */
   private Integer nullableInteger(ResultSet rs, String column) throws SQLException {
     return rs.getObject(column) == null ? null : rs.getInt(column);
+  }
+
+  /** Remove acentos para comparar termos genéricos sem depender da collation do banco. */
+  private String normalizeTerm(String value) {
+    return java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFD)
+        .replaceAll("\\p{M}", "");
   }
 
   /** Representa uma observação de oferta em uma coleta específica. */

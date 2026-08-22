@@ -1,5 +1,6 @@
 import {
   analyzeSearchResults,
+  extractPublicComparableOffers,
   resolveSearchConfig,
   searchInternet,
 } from "./research.js";
@@ -96,6 +97,9 @@ async function processJob(job) {
   );
   try {
     const directed = await planDirectedResearch(job);
+    operationalLogger.info(
+      `[product-discovery-worker] directed plan cycle=${job.cycleId} model=${directed.model} inputTokens=${directed.usage?.inputTokens ?? "unavailable"} cachedInputTokens=${directed.usage?.cachedInputTokens ?? "unavailable"} outputTokens=${directed.usage?.outputTokens ?? "unavailable"}`,
+    );
     await postJson(
       `${backendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${job.cycleId}/plan`,
       {
@@ -118,8 +122,15 @@ async function processJob(job) {
     const marketplaceOffers = await collectMarketplaceEvidence(directed.plan, {
       backendBaseUrl,
       logger: operationalLogger,
+      researchContext: [job.theme, job.targetAudience, job.objective]
+        .filter(Boolean)
+        .join(" "),
     });
-    const report = analyzeSearchResults(job, results, marketplaceOffers, {
+    const comparableOffers = deduplicateOffers([
+      ...marketplaceOffers,
+      ...extractPublicComparableOffers(results),
+    ]);
+    const report = analyzeSearchResults(job, results, comparableOffers, {
       minimumComparableOffers: directed.plan.minimumComparableOffers,
     });
     await postJson(
@@ -141,6 +152,18 @@ async function processJob(job) {
       error,
     );
   }
+}
+
+/** Remove a mesma alternativa observada por consultas diferentes sem inflar o gate. */
+function deduplicateOffers(offers) {
+  return [
+    ...new Map(
+      offers.map((offer) => [
+        `${offer.marketplace}:${offer.referenceId || offer.url}`,
+        offer,
+      ]),
+    ).values(),
+  ];
 }
 
 async function getJson(url) {

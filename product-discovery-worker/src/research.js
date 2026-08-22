@@ -56,6 +56,17 @@ const COMMERCIAL_INTENT_TERMS = [
 
 const DOMAIN_PAIN_QUERIES = [
   {
+    match: ["proposta", "propostas", "orcamento", "orçamento", "cotacao", "cotação"],
+    queries: [
+      "software proposta comercial preço",
+      "gerador de orçamento online preço",
+      "aplicativo orçamento prestador mensalidade",
+      "plataforma proposta comercial teste grátis",
+      "sistema de propostas para autônomos preço",
+      "app orçamento profissional assinatura",
+    ],
+  },
+  {
     match: [
       "mei",
       "autonomo",
@@ -215,15 +226,24 @@ export function buildSearchQueries(job) {
   const commercialSignalQueries = COMMERCIAL_SIGNAL_TEMPLATES.map((template) =>
     template.replace("{base}", base),
   );
-  const scientificResearchQueries = SCIENTIFIC_RESEARCH_TEMPLATES.map(
+  const genericScientificQueries = SCIENTIFIC_RESEARCH_TEMPLATES.map(
     (template) => template.replace("{base}", base),
   );
+  const scientificResearchQueries =
+    /propost|or[cç]ament|cota[cç]/i.test(base)
+      ? [
+          "information clarity trust purchase intention online service study",
+          "information overload purchase decision clarity decision support study",
+          "transparent AI decision support trust purchase intention study",
+          ...genericScientificQueries,
+        ]
+      : genericScientificQueries;
 
   return deduplicateQueries([
-    ...(Array.isArray(job.directedQueries) ? job.directedQueries : []),
+    ...(Array.isArray(job.directedQueries) ? job.directedQueries.slice(0, 5) : []),
     ...domainQueries.slice(0, 2),
     ...commercialSignalQueries.slice(0, 2),
-    ...scientificResearchQueries.slice(0, 2),
+    ...scientificResearchQueries.slice(0, 3),
     ...domainQueries.slice(2),
     ...commercialSignalQueries.slice(2),
     ...scientificResearchQueries.slice(2),
@@ -241,7 +261,7 @@ export function resolveSearchConfig(env = process.env) {
   return {
     provider,
     braveApiKey: resolveSecret(
-      env.BRAVE_SEARCH_API_KEY,
+      env.BRAVE_SEARCH_API_KEY || env.BRAVE_API_KEY,
       env.BRAVE_SEARCH_API_KEY_FILE,
     ),
     tavilyApiKey: env.TAVILY_API_KEY || "",
@@ -373,6 +393,73 @@ export function normalizeSerpApiResponse(payload) {
       ),
     }))
     .filter(hasSearchResultShape);
+}
+
+/** Converte páginas comerciais públicas em alternativas comparáveis para formatos fora de marketplaces. */
+export function extractPublicComparableOffers(results) {
+  const byDomain = new Map();
+  for (const result of results || []) {
+    if (!isPublicComparableOffer(result)) continue;
+    const domain = safeDomain(result.url);
+    if (!domain || byDomain.has(domain)) continue;
+    const priceMatch = `${result.title} ${result.snippet}`.match(
+      /R\$\s?\d+(?:[.,]\d{1,2})?/i,
+    );
+    byDomain.set(domain, {
+      marketplace: "PUBLIC_WEB",
+      referenceId: domain,
+      title: result.title,
+      url: result.url,
+      description: result.snippet,
+      producer: domain,
+      price: priceMatch?.[0] || null,
+      tractionSignal: null,
+      rating: null,
+      reviewCount: null,
+      category: "PUBLIC_PAID_ALTERNATIVE",
+      format: null,
+      observations: 1,
+      firstObservedAt: null,
+      evidenceConfidence: priceMatch ? "MEDIUM" : "LOW",
+      collectedAt: new Date().toISOString(),
+      collectionJobId: null,
+      signalDisclaimer:
+        "Página comercial comprova uma alternativa ofertada, não vendas, satisfação ou tração.",
+    });
+  }
+  return [...byDomain.values()];
+}
+
+function isPublicComparableOffer(result) {
+  if (!hasSearchResultShape(result) || isScientificArticleCandidate(result)) return false;
+  const url = new URL(result.url);
+  const domain = url.hostname.toLowerCase();
+  const path = url.pathname.toLowerCase();
+  if (
+    /(^|\.)(reddit|youtube|facebook|instagram|tiktok|quora)\.com$/.test(domain) ||
+    /(^|\.)(blog\.|capterra\.|getapp\.|techtudo\.|portalinsights\.|neon\.)/.test(
+      domain,
+    ) ||
+    /\/(blog|artigo|articles|noticia|news|perguntas|perguntas-frequentes|faq|guia|recursos|directory|listas|post|comparar)(\/|$)/.test(
+      path,
+    ) ||
+    /\.(pdf|doc|docx)$/i.test(path) ||
+    domain.endsWith(".gov.br") ||
+    domain.endsWith(".jus.br")
+  ) {
+    return false;
+  }
+  const text = `${result.title} ${result.snippet}`.toLowerCase();
+  if (/or[cç]amento pessoal|planejador.*or[cç]amento pessoal/.test(text)) return false;
+  const commercialSignal =
+    /r\$\s?\d|pre[cç]o|planos?|assinatura|mensal|teste gr[aá]tis|comece gr[aá]tis|contratar|comprar|software|plataforma|aplicativo|\bapp\b/.test(
+      text,
+    );
+  const productSignal =
+    /proposta|or[cç]amento|cota[cç][aã]o|precifica[cç][aã]o|pacote de servi[cç]os|follow.?up/.test(
+      text,
+    );
+  return commercialSignal && productSignal;
 }
 
 export function analyzeSearchResults(job, results, marketplaceOffers = null, options = {}) {
@@ -546,7 +633,7 @@ function normalizeProvider(value) {
 }
 
 function inferProvider(env = process.env) {
-  if (env.BRAVE_SEARCH_API_KEY || env.BRAVE_SEARCH_API_KEY_FILE) {
+  if (env.BRAVE_SEARCH_API_KEY || env.BRAVE_API_KEY || env.BRAVE_SEARCH_API_KEY_FILE) {
     return SEARCH_PROVIDERS.BRAVE;
   }
   if (env.TAVILY_API_KEY) {
@@ -572,7 +659,11 @@ async function searchQuery(query, config, fetchFn, logger) {
 }
 
 async function searchBrave(query, config, fetchFn, logger) {
-  requireApiKey(config.braveApiKey, "BRAVE_SEARCH_API_KEY", config.provider);
+  requireApiKey(
+    config.braveApiKey,
+    "BRAVE_SEARCH_API_KEY ou BRAVE_API_KEY",
+    config.provider,
+  );
   const normalizedQuery = normalizeBraveQuery(query);
   const url = new URL(config.braveEndpoint);
   url.searchParams.set("q", normalizedQuery);
@@ -826,7 +917,10 @@ function deduplicateResults(results) {
 
 function extractScientificArticles(results, job) {
   return deduplicateResults(results)
-    .filter(isScientificArticleCandidate)
+    .filter(
+      (result) =>
+        isScientificArticleCandidate(result) && isScientificMechanismRelevant(result, job),
+    )
     .map((result) => {
       const summary =
         result.snippet || "Resumo indisponível no resultado de busca.";
@@ -838,6 +932,19 @@ function extractScientificArticles(results, job) {
         mechanismApplication: buildMechanismApplication(result, job),
       };
     });
+}
+
+function isScientificMechanismRelevant(result, job) {
+  const context = `${job?.theme || ""} ${job?.targetAudience || ""}`;
+  if (!/propost|or[cç]ament|cota[cç]/i.test(context)) return true;
+  const text = `${result.title} ${result.snippet}`.toLowerCase();
+  const decisionMechanism =
+    /purchase decision|purchase intention|decision support|information overload/.test(text);
+  const explanatoryMechanism =
+    /clarity|trust|price|information processing|uncertainty|transparency|cognitive load/.test(
+      text,
+    );
+  return decisionMechanism && explanatoryMechanism;
 }
 
 function isScientificArticleCandidate(result) {

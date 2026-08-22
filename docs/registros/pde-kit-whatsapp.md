@@ -182,3 +182,32 @@ tivesse republicado esses containers legados. O gate passa a exigir diagnóstico
 versão selecionada e mantém DNS, health e entrada pública como regressão mínima das versões não
 alteradas. O certificado do Kit continua sendo emitido pelo workflow canônico do proxy depois que o
 DNS estiver publicado; certificado autoassinado nunca libera o slot nem o checkout.
+
+## Homologação produtiva do acesso e do checkout
+
+Em 2026-08-22, o DNS `kit-whatsapp-pronto.digicomdigital.com.br` foi publicado no Route 53 para
+`163.245.200.7`, ficou `INSYNC` e recebeu certificado Let's Encrypt válido. Saúde, contrato PDE,
+diagnóstico de versão e entrada pública responderam HTTP 200. A experiência foi validada sem erros de
+console ou recursos quebrados em desktop, iPhone 15 Pro e Pixel 7. Pela tela administrativa, o slot 7
+foi publicado e ativado com `validationStatus=OK` e HTTP 200, vinculado ao experimento 89.
+
+A primeira criação do checkout pela tela devolveu HTTP 500. O histórico do backend mostrou que o
+endpoint canônico `https://pagamentopalf.site/api/v1/payments/products/checkout` respondia 404,
+embora o contrato já existisse no código do PR 5005. O inventário confirmou que o container do host
+canônico de pagamentos ainda executava a imagem anterior; uma publicação direcionada ao host PDE
+não atualizava esse serviço. Foram comparados trocar a URL do backend, mover o DNS de pagamentos ou
+publicar a imagem versionada no host canônico. Foi escolhida a terceira alternativa, preservando o
+contrato e a topologia existentes.
+
+Depois do deploy pelo workflow oficial, o endpoint passou a responder ao contrato, a criação pela
+tela retornou HTTP 200 e uma segunda chamada retornou o mesmo checkout persistido, sem nova
+preferência. O banco confirmou preço de R$ 349 e `commercial_checkout_url` preenchida uma única vez.
+O link resolve para o domínio oficial do Mercado Pago; o navegador headless recebeu o bloqueio
+antibot esperado do provedor, portanto nenhuma compra ou pagamento de homologação foi iniciado.
+
+O experimento continua `PLANNED` e ainda aparece como `FACEBOOK` na versão produtiva. A correção do
+PR 5006 deve ser publicada antes de salvar `DIRECT_ONE_TO_ONE`; executar Hermes ou Têmis antes disso
+recriaria o contrato Meta conhecido e consumiria tokens sem possibilidade de aprovação. Após o
+deploy, o gate continua apenas se canal individual, checkout, eventos e entrega permanecerem íntegros;
+ajusta se a oferta for entendida como kit genérico; e para diante de falha de mensuração, privacidade,
+entrega ou margem.

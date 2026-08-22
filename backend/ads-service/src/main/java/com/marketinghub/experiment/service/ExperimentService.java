@@ -1023,17 +1023,13 @@ public class ExperimentService {
   }
 
   /**
-   * Atualiza os campos mutáveis do experimento preservando o contrato comercial quando ausente no
-   * payload.
+   * Atualiza os campos mutáveis e preserva KPI e preset opcionais em experimentos ainda planejados.
    */
   @Transactional
   public Experiment update(Long id, UpdateExperimentRequest request) {
     Experiment exp = repository.findById(id).orElseThrow();
 
-    if (request.getName() == null
-        || request.getKpiTargetCpl() == null
-        || request.getHypothesis() == null
-        || request.getMetricPresetId() == null) {
+    if (request.getName() == null || request.getHypothesis() == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "required fields missing");
     }
 
@@ -1052,7 +1048,10 @@ public class ExperimentService {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "sampleSize must be at least 1");
     }
 
-    MetricPreset preset = metricPresetService.get(request.getMetricPresetId());
+    MetricPreset preset =
+        StringUtils.hasText(request.getMetricPresetId())
+            ? metricPresetService.get(request.getMetricPresetId())
+            : exp.getMetricPreset();
     ExperimentStage resolvedStage =
         request.getStage() != null ? request.getStage() : exp.getStage();
     if (resolvedStage == null) {
@@ -1118,7 +1117,9 @@ public class ExperimentService {
           resolveCampaignObjective(
               exp.getCampaignObjective(), request.getFreeReward(), exp.getExperimentType()));
     }
-    exp.setKpiTargetCpl(request.getKpiTargetCpl());
+    if (request.getKpiTargetCpl() != null) {
+      exp.setKpiTargetCpl(request.getKpiTargetCpl());
+    }
     exp.setMetricPreset(preset);
     exp.setStage(resolvedStage);
     exp.setPrimaryVariable(normalizedPrimaryVariable);
@@ -1143,16 +1144,21 @@ public class ExperimentService {
     }
     if (request.getSampleSize() != null) {
       exp.setSampleSize(request.getSampleSize());
-    } else {
+    } else if (preset != null && exp.getSampleSize() == null) {
       exp.setSampleSize(preset.getSampleSize());
     }
     if (request.getMdePercent() != null) {
       exp.setMdePercent(request.getMdePercent());
-    } else {
+    } else if (preset != null && exp.getMdePercent() == null) {
       exp.setMdePercent(preset.getDefaultMdePp());
     }
-    if (request.getKpiTargetCpl() != null && preset.getStopLossFactor() != null) {
+    if (request.getKpiTargetCpl() != null && preset != null && preset.getStopLossFactor() != null) {
       exp.setStopLossCpl(request.getKpiTargetCpl().multiply(preset.getStopLossFactor()));
+    }
+    if (exp.getPlatform() == ExperimentPlatform.DIRECT_ONE_TO_ONE) {
+      exp.setKpiTargetCpl(null);
+      exp.setMetricPreset(null);
+      exp.setStopLossCpl(null);
     }
     exp.setStartDate(request.getStartDate());
     exp.setEndDate(request.getEndDate());

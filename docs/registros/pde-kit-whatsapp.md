@@ -151,3 +151,26 @@ estiver público, validado e ativo. O domínio planejado é
 `kit-whatsapp-pronto.digicomdigital.com.br`, com imagem e container próprios do motor PDE. Isso
 preserva R$ 349 como hipótese da implantação personalizada em até 48 horas, sem vender um kit
 genérico nem registrar venda, gasto ou contato de homologação.
+
+## Validação produtiva após o PR 5005
+
+Em 2026-08-22, o PR 5005 estava integrado e os serviços administrativos estavam saudáveis, mas o
+job específico de publicação da PDE Platform foi ignorado porque ele exige execução manual. O host
+PDE não possuía o container `pde-platform-frontend-kit-whatsapp` e o domínio
+`kit-whatsapp-pronto.digicomdigital.com.br` ainda não resolvia. Pela tela foi criado o slot produtivo
+7, versão `v1`, vinculado ao experimento 89; o teste oficial persistiu corretamente `FAILED` por
+falha de acesso à URL pública. O slot permaneceu `PLANNED` e nenhum checkout real foi criado.
+
+A validação ponta a ponta também encontrou divergência entre criação e edição: o backend aceitava
+o rascunho individual sem custo-alvo e preset de mídia, mas exigia os dois campos na atualização. A
+tela convertia o KPI vazio em zero e ainda apresentava confirmação positiva mesmo quando o teste do
+slot retornava `FAILED`. A correção alinha o contrato de atualização ao de criação, remove dados de
+mídia ao selecionar `DIRECT_ONE_TO_ONE`, usa o gate persistido do backend na tela e apresenta como
+erro a causa de validação devolvida pelo backend.
+
+Após a última correção, duas rodadas locais completas e consecutivas passaram. Cada rodada incluiu
+76 testes direcionados do backend administrativo, 38 do serviço de pagamentos, 81 do backend PDE,
+370 do frontend administrativo, builds e nove jornadas Playwright em desktop, iPhone 15 Pro e Pixel
+7 com MySQL 5.7 e SMTP descartável. Hermes, Têmis e Plutus não foram repetidos enquanto o contrato
+público permaneceu ausente; a contabilização do passo 4 continua em 303.089 tokens de entrada,
+175.360 em cache, 8.992 de saída e US$ 0,719700.

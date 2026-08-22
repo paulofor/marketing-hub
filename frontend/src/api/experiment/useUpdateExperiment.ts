@@ -23,7 +23,7 @@ export interface UpdateExperiment {
   stage?: ExperimentStage;
   primaryVariable?: string;
   primaryMetric?: string;
-  kpiTarget: number;
+  kpiTarget?: number;
   metricPresetId?: string;
   sampleSize?: number;
   mde?: number;

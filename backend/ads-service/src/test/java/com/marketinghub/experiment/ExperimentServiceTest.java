@@ -1086,6 +1086,52 @@ class ExperimentServiceTest {
     assertThat(facebookAdsCampaignRepository.existsByExperimentId(running.getId())).isFalse();
   }
 
+  /** Permite corrigir o canal do rascunho sem inventar KPI ou preset de mídia paga. */
+  @Test
+  void updateAcceptsDirectOneToOneWithoutKpiOrMetricPreset() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Niche Direct Update").build());
+    var angle =
+        angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("ADU").build());
+    var hypothesis =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
+                .title("HDU")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .build());
+    CreateExperimentRequest createRequest = new CreateExperimentRequest();
+    applyStageDefaults(createRequest);
+    createRequest.setMarketNicheId(niche.getId());
+    createRequest.setHypothesisId(hypothesis.getId());
+    createRequest.setName("ExpDirectUpdate");
+    createRequest.setHypothesis("HDU");
+    createRequest.setPlatform(ExperimentPlatform.FACEBOOK);
+    createRequest.setSampleSize(15);
+    createRequest.setJourneyTemplateId(createJourneyTemplate().getId());
+    Experiment experiment = service.create(createRequest);
+
+    UpdateExperimentRequest updateRequest = new UpdateExperimentRequest();
+    applyStageDefaults(updateRequest);
+    updateRequest.setName(experiment.getName());
+    updateRequest.setHypothesis(experiment.getHypothesis());
+    updateRequest.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+
+    Experiment updated = service.update(experiment.getId(), updateRequest);
+
+    assertThat(updated.getPlatform()).isEqualTo(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    assertThat(updated.getKpiTargetCpl()).isNull();
+    assertThat(updated.getMetricPreset()).isNull();
+    assertThat(updated.getStopLossCpl()).isNull();
+    assertThat(updated.getSampleSize()).isEqualTo(15);
+    assertThat(updated.getDailyBudget()).isNull();
+  }
+
   @Test
   void updateStatusRunningRejectsInactivePdeDestination() {
     MarketNiche niche =

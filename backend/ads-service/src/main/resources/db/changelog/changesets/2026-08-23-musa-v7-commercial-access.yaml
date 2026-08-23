@@ -1,0 +1,119 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-23-musa-v7-commercial-access
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_access_grant
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              SET @schema_name = DATABASE();
+              SET @has_experience_version = (
+                SELECT COUNT(*) FROM information_schema.columns
+                WHERE table_schema = @schema_name
+                  AND table_name = 'pde_access_grant'
+                  AND column_name = 'experience_version'
+              );
+              SET @sql_experience_version = IF(
+                @has_experience_version = 0,
+                'ALTER TABLE pde_access_grant ADD COLUMN experience_version VARCHAR(80) NOT NULL DEFAULT '''' AFTER source',
+                'SELECT 1'
+              );
+              PREPARE stmt_experience_version FROM @sql_experience_version;
+              EXECUTE stmt_experience_version;
+              DEALLOCATE PREPARE stmt_experience_version;
+
+              SET @has_paid_at = (
+                SELECT COUNT(*) FROM information_schema.columns
+                WHERE table_schema = @schema_name
+                  AND table_name = 'pde_access_grant'
+                  AND column_name = 'paid_at'
+              );
+              SET @sql_paid_at = IF(
+                @has_paid_at = 0,
+                'ALTER TABLE pde_access_grant ADD COLUMN paid_at DATETIME NULL AFTER experience_version',
+                'SELECT 1'
+              );
+              PREPARE stmt_paid_at FROM @sql_paid_at;
+              EXECUTE stmt_paid_at;
+              DEALLOCATE PREPARE stmt_paid_at;
+
+              SET @has_expires_at = (
+                SELECT COUNT(*) FROM information_schema.columns
+                WHERE table_schema = @schema_name
+                  AND table_name = 'pde_access_grant'
+                  AND column_name = 'expires_at'
+              );
+              SET @sql_expires_at = IF(
+                @has_expires_at = 0,
+                'ALTER TABLE pde_access_grant ADD COLUMN expires_at DATETIME NULL AFTER paid_at',
+                'SELECT 1'
+              );
+              PREPARE stmt_expires_at FROM @sql_expires_at;
+              EXECUTE stmt_expires_at;
+              DEALLOCATE PREPARE stmt_expires_at;
+  - changeSet:
+      id: 2026-08-23-musa-v7-product-contract
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - columnExists:
+            tableName: product
+            columnName: pde_experience_json
+        - tableExists:
+            tableName: pde_production_slot
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: published_experience_json
+      changes:
+        - sqlFile:
+            path: 2026-08-23-musa-v7-product-contract.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true
+  - changeSet:
+      id: 2026-08-23-musa-v7-payment-audit
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            - tableExists:
+                tableName: pde_payment_audit
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE pde_payment_audit (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                provider VARCHAR(40) NOT NULL,
+                transaction_id VARCHAR(191) NOT NULL,
+                product_slug VARCHAR(191) NOT NULL,
+                offer_hash VARCHAR(191) NOT NULL,
+                amount_cents INT NOT NULL,
+                currency VARCHAR(3) NOT NULL,
+                payment_status VARCHAR(40) NOT NULL,
+                buyer_reference_hash CHAR(64) NOT NULL,
+                access_reference_hash CHAR(64) NULL,
+                verified_at DATETIME NOT NULL,
+                access_released_at DATETIME NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_pde_payment_provider_transaction (provider, transaction_id),
+                KEY idx_pde_payment_product_verified (product_slug, verified_at),
+                KEY idx_pde_payment_buyer_reference (buyer_reference_hash)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

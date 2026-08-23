@@ -1,5 +1,11 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-23-product-type-catalog.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-23-product-internal-identity.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-22-experiment-platform-varchar.yaml
       relativeToChangelogFile: true
   - include:
@@ -1888,4 +1894,7 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changesets/2026-08-22-business-process-responsibility-boundaries.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-23-musa-v7-commercial-access.yaml
       relativeToChangelogFile: true

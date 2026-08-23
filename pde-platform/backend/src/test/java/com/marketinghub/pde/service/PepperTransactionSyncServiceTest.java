@@ -30,7 +30,9 @@ class PepperTransactionSyncServiceTest {
                         "paid",
                         "owm6x",
                         "Metodo MUSA",
-                        6700))),
+                        6700,
+                        "BRL"))),
+                new PaymentAuditService("", "", ""),
                 "metodo-musa-7-dias");
 
         var response = syncService.syncPaidTransactions(null, "cliente@sandbox.local");
@@ -51,6 +53,7 @@ class PepperTransactionSyncServiceTest {
                 new ProductCatalogService(),
                 new ObjectMapper(),
                 tempDir.resolve("access-grants.json").toString());
+        PaymentAuditService paymentAuditService = new PaymentAuditService("", "", "");
         PepperTransactionSyncService syncService = new PepperTransactionSyncService(
                 accessService,
                 new StaticPepperGateway(List.of(new PepperPaidTransaction(
@@ -59,13 +62,37 @@ class PepperTransactionSyncServiceTest {
                         "paid",
                         "owm6x",
                         "Metodo MUSA",
-                        6700))),
+                        6700,
+                        "BRL"))),
+                paymentAuditService,
                 "metodo-musa-7-dias");
 
         var first = syncService.syncPaidTransactions("metodo-musa-7-dias", "cliente@sandbox.local");
         var second = syncService.syncPaidTransactions("metodo-musa-7-dias", "cliente@sandbox.local");
 
         assertThat(second.accesses().getFirst().token()).isEqualTo(first.accesses().getFirst().token());
+        assertThat(paymentAuditService.findForTesting("tx-paid-67")).hasValueSatisfying(audit -> {
+            assertThat(audit.productSlug()).isEqualTo("metodo-musa-7-dias");
+            assertThat(audit.amountCents()).isEqualTo(6700);
+            assertThat(audit.currency()).isEqualTo("BRL");
+            assertThat(audit.accessReferenceHash()).hasSize(64);
+        });
+    }
+
+    /** Impede que a mesma transação libere acesso para outro produto ou outra compradora. */
+    @Test
+    void blocksReuseOfTransactionWithDifferentFinancialContract() {
+        PaymentAuditService paymentAuditService = new PaymentAuditService("", "", "");
+        PepperPaidTransaction original = new PepperPaidTransaction(
+                "tx-reused", "cliente@sandbox.local", "paid", "owm6x", "MUSA", 6700, "BRL");
+        PepperPaidTransaction collision = new PepperPaidTransaction(
+                "tx-reused", "outra@sandbox.local", "paid", "owm6x", "MUSA", 6700, "BRL");
+
+        paymentAuditService.recordVerifiedPayment("metodo-musa-7-dias", original);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> paymentAuditService.recordVerifiedPayment("outro-produto", collision));
     }
 
     /** Retorna uma lista fixa de transacoes pagas para simular a API Pepper. */

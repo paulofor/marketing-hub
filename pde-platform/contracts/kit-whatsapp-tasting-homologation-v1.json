@@ -1,0 +1,110 @@
+{
+  "evidenceVersion": "kit-whatsapp-tasting-homologation-v1",
+  "productSlug": "kit-whatsapp-pronto",
+  "experimentId": 89,
+  "verifiedAt": "2026-08-23T08:22:00Z",
+  "status": "PASSED",
+  "scope": "Degustação determinística, privacidade, eventos, fronteira paga, checkout e experiência responsiva.",
+  "implementationEvidence": [
+    {
+      "path": "pde-platform/frontend/src/AssistedServiceApp.tsx",
+      "sha256": "8fabb3deea3a2b57c16a7829236d0f881ee595d6c2b2299552cbd6d0159c7e17"
+    },
+    {
+      "path": "pde-platform/frontend/src/assistedServiceTastingContracts.ts",
+      "sha256": "d6ce39486cb797c01b9e440f143cf509909ea97100043d353e81c410f82c9755"
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
+      "sha256": "0752c32b6e4634948b52d03d50dd7056ac0bd3602457a4c16fcdf3dbf1109b3f"
+    }
+  ],
+  "executableEvidence": [
+    {
+      "path": "pde-platform/frontend/tests/assisted-service-local.spec.ts",
+      "sha256": "f93530b32bbbb3cba57e14c1b0d7d3e883abf9ea4e771c660dfb775c45f6bffd",
+      "proves": [
+        "as seis combinações de duas situações por três tons materializam respostas distintas",
+        "cada combinação entrega uma resposta, uma pergunta e três follow-ups",
+        "o nome genérico do serviço não aparece no payload de telemetria",
+        "TASTING_STARTED ocorre uma vez e VALUE_MOMENT e PAYWALL_VIEWED ocorrem uma vez por resultado",
+        "CHECKOUT_STARTED preserva experimento, preço, host e contractVersion",
+        "mh_test permanece segregado da amostra humana"
+      ]
+    },
+    {
+      "path": "pde-platform/frontend/tests/public-health.spec.ts",
+      "sha256": "6daa7500b3355d4ed2c4fce1874228ff592a534bd11c3d1a9177edf75cec7283",
+      "proves": [
+        "o deploy do Kit falha se a degustação não estiver renderizada",
+        "oferta, preço, checkout e degustação pertencem à mesma superfície pública"
+      ]
+    },
+    {
+      "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/AccessServiceTest.java",
+      "sha256": "40b7e5c0495e5babe53e9a7edd36203de267d6ff04553e72a1ae32dc329ec6ce",
+      "proves": [
+        "os eventos canônicos da degustação são aceitos",
+        "evento fora do contrato continua rejeitado",
+        "tráfego de teste e interno permanece segregado"
+      ]
+    }
+  ],
+  "consecutiveLocalRounds": [
+    {
+      "round": 1,
+      "result": "PASSED",
+      "metaAdApproverUnitTests": 53,
+      "pdeBackendUnitTests": 83,
+      "assistedJourneyTests": 12,
+      "publicHealthTests": 2,
+      "browsers": [
+        "Desktop Chrome",
+        "iPhone 15 Pro",
+        "Pixel 7"
+      ],
+      "infrastructure": [
+        "MySQL 5.7",
+        "SMTP descartável",
+        "imagem Docker versionada"
+      ]
+    },
+    {
+      "round": 2,
+      "result": "PASSED",
+      "metaAdApproverUnitTests": 53,
+      "pdeBackendUnitTests": 83,
+      "assistedJourneyTests": 12,
+      "publicHealthTests": 2,
+      "browsers": [
+        "Desktop Chrome",
+        "iPhone 15 Pro",
+        "Pixel 7"
+      ],
+      "infrastructure": [
+        "MySQL 5.7 com volume novo",
+        "SMTP descartável com topologia nova",
+        "imagem Docker versionada"
+      ]
+    }
+  ],
+  "privacyAndCostEvidence": {
+    "freeTextPersisted": false,
+    "externalModelCalled": false,
+    "externalServiceCalled": false,
+    "costPerSampleUsd": 0,
+    "testTrafficCountedAsHuman": false,
+    "intermediateEventsCountedAsSale": false
+  },
+  "authoritativeTelemetry": {
+    "ingestionEndpoint": "/api/pde/access/events",
+    "store": "pde_funnel_event",
+    "correlationKeys": [
+      "productSlug",
+      "experimentId",
+      "contractVersion",
+      "visitorId",
+      "sessionId"
+    ]
+  }
+}

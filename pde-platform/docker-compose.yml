@@ -11,18 +11,26 @@ services:
       PDE_ACCESS_JDBC_URL: ${PDE_ACCESS_JDBC_URL:-}
       PDE_ACCESS_JDBC_USERNAME: ${PDE_ACCESS_JDBC_USERNAME:-}
       PDE_ACCESS_JDBC_PASSWORD: ${PDE_ACCESS_JDBC_PASSWORD:-}
+      PDE_INTERNAL_API_TOKEN: ${PDE_INTERNAL_API_TOKEN:-pde-local-internal-test}
+      PDE_INTERNAL_QA_ENABLED: ${PDE_INTERNAL_QA_ENABLED:-true}
       PDE_APP_BASE_URL: ${PDE_APP_BASE_URL:-http://localhost:5176}
       PDE_PEPPER_API_TOKEN: ${PDE_PEPPER_API_TOKEN:-}
       PDE_PEPPER_OFFER_HASHES: ${PDE_PEPPER_OFFER_HASHES:-owm6x,c8mnn}
       PDE_PEPPER_PRODUCT_SLUG: ${PDE_PEPPER_PRODUCT_SLUG:-metodo-musa-7-dias}
       PDE_PEPPER_SYNC_LOOKBACK_DAYS: ${PDE_PEPPER_SYNC_LOOKBACK_DAYS:-14}
-      PDE_PEPPER_MINIMUM_PAID_AMOUNT_CENTS: ${PDE_PEPPER_MINIMUM_PAID_AMOUNT_CENTS:-6700}
+      PDE_PEPPER_EXPECTED_PAID_AMOUNT_CENTS: ${PDE_PEPPER_EXPECTED_PAID_AMOUNT_CENTS:-6700}
+      PDE_PEPPER_EXPECTED_CURRENCY: ${PDE_PEPPER_EXPECTED_CURRENCY:-BRL}
       PDE_GOOGLE_CLIENT_ID: ${PDE_GOOGLE_CLIENT_ID:-}
       PDE_MAIL_TRANSPORT: ${PDE_MAIL_TRANSPORT:-smtp}
       PDE_MAIL_AWS_REGION: ${PDE_MAIL_AWS_REGION:-us-east-1}
       PDE_MAIL_FROM: ${PDE_MAIL_FROM:-area-musa@sandbox.local}
       PDE_SMTP_HOST: ${PDE_SMTP_HOST:-sandbox-mail}
       PDE_SMTP_PORT: ${PDE_SMTP_PORT:-1025}
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8096/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
     volumes:
       - pde-platform-data:/data/pde
 
@@ -50,12 +58,27 @@ services:
       - pde-platform-backend
     environment:
       PDE_BACKEND_URL: ${PDE_BACKEND_URL:-http://pde-platform-backend:8096}
+      PDE_INTERNAL_API_TOKEN: ${PDE_INTERNAL_API_TOKEN:-pde-local-internal-test}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_API_KEY_FILE: ${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.5}
       POLL_INTERVAL_MS: ${POLL_INTERVAL_MS:-4000}
     volumes:
       - ${OPENAI_API_KEY_HOST_FILE:-/root/infra/openai-token/openai_api_key}:/run/secrets/openai_api_key:ro
+
+  pde-retention-worker:
+    build:
+      context: ./pde-retention-worker
+    container_name: pde-retention-worker
+    depends_on:
+      pde-platform-backend:
+        condition: service_healthy
+    environment:
+      PDE_BACKEND_URL: ${PDE_BACKEND_URL:-http://pde-platform-backend:8096}
+      PDE_INTERNAL_API_TOKEN: ${PDE_INTERNAL_API_TOKEN:-pde-local-internal-test}
+      PDE_RETENTION_INTERVAL_MS: ${PDE_RETENTION_INTERVAL_MS:-86400000}
+      PDE_RETENTION_RETRY_ATTEMPTS: ${PDE_RETENTION_RETRY_ATTEMPTS:-12}
+      PDE_RETENTION_RETRY_DELAY_MS: ${PDE_RETENTION_RETRY_DELAY_MS:-5000}
 
 volumes:
   pde-platform-data:

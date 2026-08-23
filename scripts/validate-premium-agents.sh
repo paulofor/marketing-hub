@@ -119,6 +119,23 @@ for agent in agents:
         module_sync = f'rsync -az --delete {agent["module"]}/'
         if module_sync not in workflow_text:
             errors.append(f"{agent['key']}: workflow não sincroniza somente o próprio módulo")
+        if agent['key'] == 'meta-ad-approver':
+            artifact_markers = (
+                '- pde-platform/contracts/**',
+                '- pde-platform/frontend/public/materials/**',
+                'rsync -az --delete pde-platform/contracts/',
+                'rsync -az --delete pde-platform/frontend/public/materials/',
+                'rsync -az scripts/codex-oauth-session-safe.sh',
+                'test -x /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh',
+                'test -s /workspace/marketing-hub/pde-platform/contracts/kit-whatsapp-pronto-v1.json',
+                'test -s /workspace/marketing-hub/pde-platform/contracts/commercial-journey-event-contract-v1.json',
+                'test -s /workspace/marketing-hub/pde-platform/frontend/public/materials/kit-whatsapp-v1/01-comece-aqui.md',
+            )
+            for marker in artifact_markers:
+                if marker not in workflow_text:
+                    errors.append(
+                        f"{agent['key']}: workflow não entrega ou valida a evidência PDE versionada ({marker})"
+                    )
         if "${REPOSITORY_DIR}/.deployed-revision" in workflow_text:
             errors.append(
                 f"{agent['key']}: workflow depende de marcador global incompatível com sincronização isolada"

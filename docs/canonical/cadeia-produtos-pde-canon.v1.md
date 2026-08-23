@@ -356,8 +356,8 @@ expiração e prevenção de abuso.
 
 **Trabalho exclusivo:** confirmar modalidade e hipótese de prova; definir microvalor e limite pago;
 configurar consentimento, custo, expiração e antifraude; materializar a degustação a partir do produto
-aprovado; conectar CTA, checkout e acesso; instrumentar `tasting_started`, `value_moment`,
-`paywall_viewed`, `checkout_started`, `purchase`, expiração e bloqueio de abuso; e homologar caminho
+aprovado; conectar CTA, checkout e acesso; instrumentar `TASTING_STARTED`, `VALUE_MOMENT`,
+`PAYWALL_VIEWED`, `CHECKOUT_STARTED`, `PURCHASE_COMPLETED`, expiração e bloqueio de abuso; e homologar caminho
 feliz, falhas, retomada, limite e segregação entre pessoas.
 
 **Saída final:** degustação aprovada, versionada e pronta para integração à jornada, com evidências,

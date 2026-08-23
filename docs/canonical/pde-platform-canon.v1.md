@@ -141,12 +141,29 @@ O checkout externo deve:
 
 Pepper é a preferência inicial para automação. Mercado Pago pode ser fallback.
 
+O webhook público é somente um aviso de que uma transação pode ter mudado de estado. Antes de
+liberar acesso, o backend PDE deve consultar o provedor pela identificação exata da transação e
+confirmar, no retorno autenticado do provedor, status pago e oferta autorizada. Para oferta de preço
+fixo, a confirmação deve exigir exatamente valor e moeda versionados; tolerância só pode existir em
+contrato comercial explícito. Campos de pagamento enviados diretamente no webhook não constituem
+prova de compra.
+
+Cada compra comprovada deve manter trilha financeira idempotente separada do progresso da cliente,
+com provedor, transação, produto, oferta, valor, moeda, status e vínculo não reutilizável ao acesso.
+Essa trilha não deve guardar e-mail nem bearer token em texto claro e deve sobreviver à exclusão
+aplicável pelo prazo legal ou contábil documentado.
+
+Acesso integral de homologação deve existir somente em rota interna protegida por segredo e por
+trava explícita de ambiente. Essa capacidade deve ficar desligada em produção e não pode registrar
+compra, receita, aprovação de pagamento ou liberação comercial. Endpoints públicos nunca podem
+simular checkout aprovado ou conceder acesso integral por e-mail arbitrário.
+
 ### Backend PDE
 
 O backend PDE deve:
 
 - receber webhooks de compra aprovada;
-- liberar acesso por produto e e-mail;
+- liberar acesso por produto e identidade comprovada pelo provedor;
 - expor catálogo do produto;
 - controlar diagnóstico e progresso;
 - registrar missões concluídas;
@@ -158,6 +175,31 @@ O backend PDE deve:
 - receber resultados de workers de IA com saída funcional estruturada, payload bruto, modelo, tier, tokens, custo quando houver e erro.
 
 O backend PDE pode acessar dados persistidos diretamente ou por contratos internos definidos para o módulo, desde que preserve a fronteira de produto: o frontend PDE não deve conhecer nem consumir endpoints do backend principal `backend/ads-service`.
+
+O catálogo público deve expor apenas o conteúdo necessário para conhecer e degustar o produto.
+Missões pagas, materiais, pacote científico operacional e metadados internos pertencem ao workspace
+autenticado. Arquivos de apoio pagos devem ser autorizados pelo backend a cada acesso; conhecer a URL
+do arquivo não concede direito de download.
+
+Retomada pública por e-mail deve entregar o segredo somente ao endereço cuja posse está sendo
+comprovada, como link mágico. Nenhuma rota pública pode devolver bearer token, URL autenticada,
+workspace, material ou ação de privacidade usando apenas produto e e-mail informado.
+
+Analytics individuais, reset de campanha, inclusão de tráfego não humano, sincronização de
+pagamentos, retenção e outras operações administrativas devem exigir autenticação interna. O resumo
+humano agregado necessário ao monitoramento comercial pode permanecer público desde que não exponha
+dados pessoais, jornadas individuais ou capacidade de mutação.
+
+O backend PDE deve oferecer ao titular autenticado acesso aos próprios dados, correção e exclusão ou
+anonimização aplicável. A rotina operacional de retenção deve ser disparada pelo módulo executor
+responsável, por contrato interno autenticado; o backend permanece responsável pela leitura, escrita,
+auditoria e execução da operação solicitada, sem criar agendamento operacional próprio.
+
+Exclusão ou retenção deve invalidar e remover o token original, apagar PII e correlatores de funil e
+preservar somente uma auditoria com novo identificador aleatório sem vínculo reversível. O executor
+de retenção deve aguardar a saúde do backend, correlacionar request/response e aplicar retries locais
+para falhas transitórias antes do intervalo diário; indisponibilidade momentânea não pode ser tratada
+como ciclo concluído.
 
 ### IA direcionada no PDE
 

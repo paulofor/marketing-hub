@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ComponentType, ReactNode } from "react";
+import { Link } from "react-router-dom";
 import {
   BadgeDollarSign,
   Brush,
@@ -15,21 +16,25 @@ import { CreateProduct } from "../../api/product/useCreateProduct";
 import { Product } from "../../api/product/useProducts";
 import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 import { useNiches } from "../../api/niche/useNiches";
+import { useProductTypes } from "../../api/productType/useProductTypes";
 
 type ProductFormValues = {
-  [K in keyof CreateProduct]-?: string;
-};
+  [K in Exclude<keyof CreateProduct, "aliases">]-?: string;
+} & { aliases: string };
 
 const defaultForm: ProductFormValues = {
   slug: "",
   name: "",
+  internalName: "",
+  aliases: "",
   publicUrl: "",
   logoUrl: "",
   colorPalette: "",
   targetAudience: "",
   languageStyle: "",
   codeModules: "",
-  productType: "PDE - Produto Digital Experiencial",
+  productType: "",
+  productTypeId: "",
   productFormat: "",
   deliveryMode: "",
   revenueModel: "",
@@ -72,6 +77,8 @@ function toFormValues(product?: Product): ProductFormValues {
   return {
     slug: product.slug ?? "",
     name: product.name ?? "",
+    internalName: product.internalName ?? product.name ?? "",
+    aliases: product.aliases?.join("\n") ?? "",
     publicUrl: product.publicUrl ?? "",
     logoUrl: product.logoUrl ?? "",
     colorPalette: product.colorPalette ?? "",
@@ -79,6 +86,8 @@ function toFormValues(product?: Product): ProductFormValues {
     languageStyle: product.languageStyle ?? "",
     codeModules: product.codeModules ?? "",
     productType: product.productType ?? defaultForm.productType,
+    productTypeId:
+      product.productTypeId != null ? String(product.productTypeId) : "",
     productFormat: product.productFormat ?? "",
     deliveryMode: product.deliveryMode ?? "",
     revenueModel: product.revenueModel ?? "",
@@ -127,9 +136,14 @@ function toFormValues(product?: Product): ProductFormValues {
 function toPayload(form: ProductFormValues): CreateProduct {
   return {
     ...form,
+    aliases: form.aliases
+      .split(/[,;\n]/)
+      .map((alias) => alias.trim())
+      .filter(Boolean),
     marketNicheId: Number(form.marketNicheId) || undefined,
     instagramAccountId: Number(form.instagramAccountId) || undefined,
     currentPriceBrl: Number(form.currentPriceBrl) || undefined,
+    productTypeId: Number(form.productTypeId) || undefined,
     aiCost: Number(form.aiCost) || 0,
   };
 }
@@ -144,6 +158,8 @@ type ProductFieldProps = {
   rows?: number;
   inputMode?: "decimal" | "numeric" | "text" | "url";
   placeholder?: string;
+  maxLength?: number;
+  helpText?: string;
 };
 
 function ProductField({
@@ -156,6 +172,8 @@ function ProductField({
   rows = 3,
   inputMode = "text",
   placeholder,
+  maxLength,
+  helpText,
 }: ProductFieldProps) {
   return (
     <div className="product-editor-field">
@@ -168,6 +186,7 @@ function ProductField({
           id={`product-${String(field)}`}
           className="form-control"
           rows={rows}
+          maxLength={maxLength}
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(field, e.target.value)}
@@ -177,11 +196,13 @@ function ProductField({
           id={`product-${String(field)}`}
           className="form-control"
           inputMode={inputMode}
+          maxLength={maxLength}
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(field, e.target.value)}
         />
       )}
+      {helpText && <div className="form-text">{helpText}</div>}
     </div>
   );
 }
@@ -225,19 +246,31 @@ export default function ProductForm({
 }: ProductFormProps) {
   const { data: accountsData } = useInstagramAccounts();
   const { data: nichesData } = useNiches();
+  const productTypesQuery = useProductTypes(true);
   const accounts = Array.isArray(accountsData) ? accountsData : [];
   const niches = Array.isArray(nichesData) ? nichesData : [];
   const [form, setForm] = useState<ProductFormValues>(() =>
     toFormValues(initialProduct),
   );
+  const productTypes = Array.isArray(productTypesQuery.data)
+    ? productTypesQuery.data.filter(
+        (type) =>
+          type.status === "ACTIVE" || String(type.id) === form.productTypeId,
+      )
+    : [];
 
   const setField = (field: keyof ProductFormValues, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
   const submit = () => {
+    if (!form.productTypeId) return;
     onSubmit(toPayload(form));
   };
+
+  const selectedProductType = productTypes.find(
+    (type) => String(type.id) === form.productTypeId,
+  );
 
   const applyAgendaCheiaDesireMap = () => {
     setForm((current) => ({
@@ -334,10 +367,15 @@ export default function ProductForm({
           {form.commercialStatus || "Sem status"}
         </span>
         <h2>{form.name || "Produto sem nome"}</h2>
+        <p className="text-muted small mb-3">
+          Internamente: {form.internalName || "nome ainda não definido"}
+        </p>
         <dl>
           <div>
             <dt>Tipo</dt>
-            <dd>{form.productType || "Não informado"}</dd>
+            <dd>
+              {selectedProductType?.name || form.productType || "Não informado"}
+            </dd>
           </div>
           <div>
             <dt>Preço</dt>
@@ -359,7 +397,7 @@ export default function ProductForm({
         <button
           className="btn btn-primary w-100"
           onClick={submit}
-          disabled={isSaving}
+          disabled={isSaving || !form.productTypeId}
         >
           {isSaving ? (
             <>
@@ -384,16 +422,27 @@ export default function ProductForm({
             <div className="product-editor-grid__wide">
               <ProductField
                 field="name"
-                label="Nome comercial"
+                label="Nome comercial (visível ao cliente)"
                 required
+                maxLength={191}
                 value={form.name}
                 onChange={setField}
               />
             </div>
             <ProductField
+              field="internalName"
+              label="Nome interno/de trabalho"
+              required
+              maxLength={191}
+              value={form.internalName}
+              onChange={setField}
+              helpText="Permanece estável enquanto o nome comercial evolui."
+            />
+            <ProductField
               field="slug"
               label="Slug"
               required
+              maxLength={191}
               value={form.slug}
               onChange={setField}
             />
@@ -405,6 +454,16 @@ export default function ProductForm({
               onChange={setField}
             />
           </div>
+          <ProductField
+            field="aliases"
+            label="Apelidos internos"
+            multiline
+            rows={3}
+            value={form.aliases}
+            onChange={setField}
+            placeholder="MUSA v7, vídeos orientados ao desejo, projeto presença"
+            helpText="Use vírgula ou uma linha por apelido. Eles servem para busca interna e nunca aparecem na oferta pública."
+          />
           <div className="product-editor-grid product-editor-grid--2">
             <ProductField
               field="publicUrl"
@@ -420,15 +479,58 @@ export default function ProductForm({
               value={form.logoUrl}
               onChange={setField}
             />
-            <ProductField
-              field="productType"
-              label="Tipo de produto"
-              value={form.productType}
-              onChange={setField}
-            />
+            <div className="product-editor-field">
+              <label className="form-label" htmlFor="product-productTypeId">
+                Tipo de produto *
+              </label>
+              <select
+                id="product-productTypeId"
+                className="form-select"
+                required
+                value={form.productTypeId}
+                onChange={(event) => {
+                  const selected = productTypes.find(
+                    (type) => String(type.id) === event.target.value,
+                  );
+                  setForm((current) => ({
+                    ...current,
+                    productTypeId: event.target.value,
+                    productType: selected?.name ?? current.productType,
+                  }));
+                }}
+              >
+                <option value="">
+                  {productTypesQuery.isLoading
+                    ? "Carregando tipos..."
+                    : "Selecione um tipo"}
+                </option>
+                {productTypes.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {type.name}
+                    {type.status === "RETIRED" ? " (aposentado)" : ""}
+                  </option>
+                ))}
+              </select>
+              <div className="form-text">
+                Não encontrou uma classificação adequada?{" "}
+                <Link to="/product-types">Cadastre um tipo ou apelido</Link> sem
+                limitar a ideia do produto.
+              </div>
+              {!form.productTypeId && (
+                <div className="form-text text-danger">
+                  Selecione um tipo em uso antes de salvar o produto.
+                </div>
+              )}
+              {productTypesQuery.isError && (
+                <div className="form-text text-danger">
+                  Não foi possível carregar o catálogo de tipos.
+                </div>
+              )}
+            </div>
             <ProductField
               field="commercialStatus"
               label="Status comercial"
+              maxLength={64}
               value={form.commercialStatus}
               onChange={setField}
             />
@@ -450,6 +552,7 @@ export default function ProductForm({
             <ProductField
               field="productFormat"
               label="Formato entregue"
+              maxLength={64}
               value={form.productFormat}
               onChange={setField}
               placeholder="Programa guiado, pacote de imagens, diagnóstico..."
@@ -457,6 +560,7 @@ export default function ProductForm({
             <ProductField
               field="deliveryMode"
               label="Modo de entrega"
+              maxLength={64}
               value={form.deliveryMode}
               onChange={setField}
               placeholder="Automática, personalizada, híbrida..."
@@ -464,6 +568,7 @@ export default function ProductForm({
             <ProductField
               field="revenueModel"
               label="Modelo de receita"
+              maxLength={64}
               value={form.revenueModel}
               onChange={setField}
               placeholder="Compra única, assinatura, recorrência..."
@@ -471,6 +576,7 @@ export default function ProductForm({
             <ProductField
               field="valueUnit"
               label="Unidade de valor"
+              maxLength={191}
               value={form.valueUnit}
               onChange={setField}
               placeholder="7 dias concluídos, 10 imagens utilizáveis..."
@@ -478,6 +584,7 @@ export default function ProductForm({
             <ProductField
               field="valueEvidenceMetric"
               label="Evidência de valor"
+              maxLength={191}
               value={form.valueEvidenceMetric}
               onChange={setField}
               placeholder="Uso, satisfação, recompra ou resultado percebido"
@@ -485,6 +592,7 @@ export default function ProductForm({
             <ProductField
               field="validationDefinitionVersion"
               label="Versão da definição"
+              maxLength={32}
               value={form.validationDefinitionVersion}
               onChange={setField}
             />

@@ -1,0 +1,64 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-23-product-internal-name
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - not:
+            columnExists:
+              tableName: product
+              columnName: internal_name
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product
+                ADD COLUMN internal_name VARCHAR(191) NULL AFTER name;
+
+              UPDATE product
+                 SET internal_name = name
+               WHERE internal_name IS NULL
+                 AND name IS NOT NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product DROP COLUMN internal_name;
+
+  - changeSet:
+      id: 2026-08-23-product-internal-aliases
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - not:
+            tableExists:
+              tableName: product_alias
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE product_alias (
+                product_id BIGINT NOT NULL,
+                alias VARCHAR(191) NOT NULL,
+                PRIMARY KEY (product_id, alias),
+                UNIQUE KEY uk_product_alias_alias (alias),
+                CONSTRAINT fk_product_alias_product
+                  FOREIGN KEY (product_id) REFERENCES product(id) ON DELETE CASCADE
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DROP TABLE product_alias;

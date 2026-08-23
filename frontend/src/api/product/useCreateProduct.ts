@@ -5,6 +5,8 @@ import { Product } from "./useProducts";
 export interface CreateProduct {
   slug?: string;
   name?: string;
+  internalName?: string;
+  aliases?: string[];
   publicUrl?: string;
   logoUrl?: string;
   colorPalette?: string;
@@ -12,6 +14,7 @@ export interface CreateProduct {
   languageStyle?: string;
   codeModules?: string;
   productType?: string;
+  productTypeId?: number;
   productFormat?: string;
   deliveryMode?: string;
   revenueModel?: string;

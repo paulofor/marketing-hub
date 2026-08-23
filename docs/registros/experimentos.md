@@ -6623,3 +6623,15 @@
 - correção local: Hermes passa a bloquear continuidade, liberação de amostra ou retomada quando o gasto Meta atingir R$ 25,00 sem `ENVIO_FORM`, `ABERTURA_EMAIL_AMOSTRA` ou `COMPRA`; orçamento diário ou global maior não revoga a trava;
 - correção causal no backend: a liquidação final também avalia o experimento recém-reconciliado como `USER_STOPPED`, altera-o para `INVALIDATED` e atualiza o motivo comercial mesmo quando a campanha já foi pausada na Meta, sem reabrir uma solicitação física concluída;
 - estado do processo: a tarefa #188 registra `task-2` como próxima atividade, mas Hermes permanece em `STOP` e nenhum novo gasto é autorizado enquanto o produto não decidir alterar a regra canônica ou encerrar/redesenhar o experimento.
+
+## 2026-08-23 — Kit WhatsApp Pronto: matriz local da degustação pré-compra
+
+- **Gargalo corrigido:** a jornada prometia uma demonstração, mas não materializava valor antes do checkout do experimento #89.
+- **Caminho feliz:** selecionar serviço genérico, situação e tom deve produzir uma resposta, uma pergunta e três follow-ups, revelar a fronteira paga e manter o checkout canônico de R$ 349.
+- **Validações e falhas:** entrada insuficiente deve ser rejeitada; combinação sem contrato não pode produzir resultado; ausência da oferta mantém checkout e degustação bloqueados; evento desconhecido continua rejeitado pelo backend.
+- **Integrações e observabilidade:** `TASTING_STARTED`, `VALUE_MOMENT`, `PAYWALL_VIEWED` e `CHECKOUT_STARTED` devem ser aceitos e atribuídos ao experimento #89. O serviço digitado não pode aparecer nos metadados persistidos.
+- **Métricas e segregação:** início, momento de valor e checkout são sinais separados; nenhum deles conta como compra. Tráfego com `mh_test=1` permanece segregado da amostra humana e o custo externo por degustação é zero.
+- **Dispositivos homologados:** Chromium desktop, iPhone 15 Pro e Pixel 7, com formulário, resultado, fronteira paga e CTA utilizáveis sem overflow.
+- **Gate:** continuar apenas com prova materializada e eventos íntegros; ajustar se houver valor sem avanço para checkout; parar diante de vazamento de dados, canibalização da entrega, custo inesperado ou contaminação de vendas.
+- **Revisão independente:** Têmis bloqueou corretamente a tarefa #197 por ausência de provas executáveis no pacote de revisão. Depois que código, testes, duas rodadas e autoridade dos eventos foram injetados como evidência versionada, a tarefa #198 terminou `APPROVED`, com clareza de preço 98/100 e nenhuma mudança pendente.
+- **Telemetria das revisões #197–198:** 322.520 tokens de entrada, 159.232 em cache, 2.814 de saída e custo estimado de US$ 0,77312480. Nenhum contato, publicação, pagamento, gasto ou venda foi gerado.

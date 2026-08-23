@@ -4,6 +4,43 @@
 
 Produto é um ativo comercial próprio do Marketing Hub, separado de campanha, experimento e entrega técnica.
 
+## Identidade interna e nome comercial
+
+Todo produto deve preservar uma única identidade estável ao longo da cadeia, mesmo quando o melhor
+nome para o mercado ainda estiver sendo descoberto. O contrato separa:
+
+- `id` e `slug`: identificadores estáveis usados em vínculos, contratos e URLs;
+- `internal_name`: nome de trabalho legível por pessoas e agentes dentro do Marketing Hub;
+- `name`: nome comercial mostrado ao cliente em oferta, página, checkout e entrega;
+- `product_alias`: apelidos internos alternativos ou históricos usados somente para localização.
+
+Alterar o nome comercial não cria outro produto nem reescreve seu histórico. Apelidos devem ser
+únicos no catálogo, não podem substituir `id` ou `slug` nos vínculos e nunca podem aparecer
+automaticamente em artefatos públicos. Pessoas e agentes podem pesquisar o catálogo por nome
+comercial, nome interno, apelido ou slug, mas devem persistir e propagar o produto resolvido por
+`id` e `slug`.
+
+O nome interno pode preservar a formulação que surgiu na descoberta, no plano ou em uma versão de
+trabalho, enquanto o nome comercial pode evoluir conforme clareza, desejo, diferenciação e vendas
+reais. A tela deve mostrar as duas camadas sem ambiguidade e identificar explicitamente os apelidos
+como internos.
+
+## Classificação extensível por tipo
+
+Todo produto pode ser vinculado a uma definição do catálogo de tipos por `product_type_id`. O
+campo textual legado `product_type` permanece como nome canônico sincronizado para compatibilidade,
+mas a associação estável é o identificador do cadastro.
+
+O cadastro de tipos deve permitir nome, código, descrição, apelidos internos e estado. Novas ideias
+nascem como `PROPOSED`; somente tipos `ACTIVE` podem receber novos produtos; tipos `RETIRED`
+preservam os vínculos e relatórios históricos. Código, nome e apelidos devem resolver para uma única
+definição, impedindo categorias duplicadas com palavras diferentes.
+
+O formulário de produto deve selecionar um tipo ativo da fonte de verdade do backend. Se nenhuma
+classificação representar bem o mecanismo de valor, a pessoa deve cadastrar uma proposta de tipo ou
+acrescentar um apelido ao tipo correto, sem forçar a ideia em um enum e sem criar rótulo livre fora
+do catálogo.
+
 ## Descoberta modular de formatos
 
 O cadastro de produto deve separar o tipo amplo do formato comercial efetivamente testado. Todo
@@ -83,8 +120,10 @@ O produto não deve ficar preso a um único experimento. Experimento é evidênc
 
 ## Atributos iniciais obrigatórios
 
+- Nome interno/de trabalho.
 - Nome comercial.
 - Slug estável.
+- Apelidos internos quando houver nomes alternativos ou históricos.
 - URL pública.
 - Paleta de cores.
 - Público alvo.

@@ -8,6 +8,8 @@ public record WorkspaceResponse(
         String email,
         String accessSource,
         String subscriptionStatus,
+        String experienceVersion,
+        String accessExpiresAt,
         int completedMissions,
         int totalMissions,
         int progressPercent,

@@ -28,6 +28,6 @@ public class ProductController {
             @RequestHeader(value = "Host", required = false) String host,
             @RequestParam(value = "slotCode", required = false) String slotCode,
             @RequestParam(value = "experienceVersion", required = false) String experienceVersion) {
-        return productCatalogService.getProductForRequest(slug, host, slotCode, experienceVersion);
+        return productCatalogService.getPublicProductForRequest(slug, host, slotCode, experienceVersion);
     }
 }

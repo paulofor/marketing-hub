@@ -34,6 +34,9 @@ describe("ProductListPage", () => {
       </QueryClientProvider>,
     );
     expect(await screen.findByText(/Novo Produto/)).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "Tipos de produto" }),
+    ).toHaveAttribute("href", "/product-types");
   });
 
   it("shows edit option for listed product", async () => {
@@ -44,6 +47,8 @@ describe("ProductListPage", () => {
           slug: "pde-anti-invisibilidade-profissional-7-dias",
           name: "PDE Anti-Invisibilidade Profissional",
           currentPriceBrl: 47,
+          productType: "PDE - Produto Digital Experiencial",
+          productTypeCode: "PDE",
         },
       ],
     });
@@ -61,6 +66,64 @@ describe("ProductListPage", () => {
     expect(
       await screen.findByText("PDE Anti-Invisibilidade Profissional"),
     ).toBeTruthy();
+    expect(screen.getByText("PDE - Produto Digital Experiencial")).toBeTruthy();
+    expect(screen.getByText("PDE")).toBeTruthy();
+  });
+
+  it("shows and searches the internal identity without replacing the commercial name", async () => {
+    (axios.get as any).mockImplementation(
+      (url: string, config?: { params?: { query?: string } }) => {
+        if (url === "/api/products/value-chain-positions") {
+          return Promise.resolve({ data: [] });
+        }
+        return Promise.resolve({
+          data: [
+            {
+              id: 4,
+              slug: "metodo-musa-7-dias",
+              name: "Método MUSA - Presença Elegante em 7 Dias",
+              internalName: "MUSA desejo v7",
+              aliases: ["MUSA v7", "Vídeos orientados ao desejo"],
+              commercialStatus: "VALIDACAO_COMERCIAL",
+              queryReceived: config?.params?.query,
+            },
+          ],
+        });
+      },
+    );
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <BrowserRouter>
+          <ProductListPage />
+        </BrowserRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Método MUSA - Presença Elegante em 7 Dias",
+      }),
+    ).toBeTruthy();
+    expect(screen.getByText("MUSA desejo v7")).toBeTruthy();
+    const aliases = screen.getByLabelText(
+      "Apelidos internos de Método MUSA - Presença Elegante em 7 Dias",
+    );
+    expect(within(aliases).getByText("MUSA v7")).toBeTruthy();
+    expect(
+      within(aliases).getByText("Vídeos orientados ao desejo"),
+    ).toBeTruthy();
+
+    fireEvent.change(
+      screen.getByLabelText("Localizar produto por qualquer nome"),
+      { target: { value: "MUSA v7" } },
+    );
+
+    await waitFor(() =>
+      expect(axios.get).toHaveBeenCalledWith("/api/products", {
+        params: { query: "MUSA v7" },
+      }),
+    );
   });
 
   it("shows the product position in the published value chain", async () => {

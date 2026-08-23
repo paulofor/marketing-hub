@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object", "additionalProperties": false,
+  "required": ["activity", "decision", "score", "alternatives", "observedFacts", "promiseProofMatrix", "decisionCardChecks", "controlContract", "commercialRisks", "customerRisks", "prohibitedClaims", "requiredChanges", "rationale", "sources"],
+  "properties": {
+    "activity": {"type": "string", "enum": ["decisionCard", "proof", "control", "review"]},
+    "decision": {"type": "string", "enum": ["APPROVE", "ADJUST", "REJECT"]},
+    "score": {"type": "integer", "minimum": 0, "maximum": 100},
+    "alternatives": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "string"}},
+    "observedFacts": {"type": "array", "items": {"type": "string"}},
+    "promiseProofMatrix": {
+      "type": "array", "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["promise", "question", "proof", "source", "limitation"],
+        "properties": {"promise": {"type": "string"}, "question": {"type": "string"}, "proof": {"type": "string"}, "source": {"type": "string"}, "limitation": {"type": "string"}}
+      }
+    },
+    "decisionCardChecks": {
+      "type": "array", "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["field", "status", "rationale"],
+        "properties": {"field": {"type": "string"}, "status": {"type": "string", "enum": ["PASS", "ADJUST", "FAIL"]}, "rationale": {"type": "string"}}
+      }
+    },
+    "controlContract": {
+      "type": "object", "additionalProperties": false,
+      "required": ["explanation", "dataCategories", "editablePreferences", "refusal", "neutralFallback", "priceRule"],
+      "properties": {
+        "explanation": {"type": "string"}, "dataCategories": {"type": "array", "items": {"type": "string"}},
+        "editablePreferences": {"type": "array", "items": {"type": "string"}}, "refusal": {"type": "string"},
+        "neutralFallback": {"type": "string"}, "priceRule": {"type": "string"}
+      }
+    },
+    "commercialRisks": {"type": "array", "items": {"type": "string"}},
+    "customerRisks": {"type": "array", "items": {"type": "string"}},
+    "prohibitedClaims": {"type": "array", "items": {"type": "string"}},
+    "requiredChanges": {"type": "array", "items": {"type": "string"}},
+    "rationale": {"type": "string"},
+    "sources": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["title", "url", "supports"], "properties": {"title": {"type": "string"}, "url": {"type": "string"}, "supports": {"type": "string"}}}}
+  }
+}
+

@@ -4,9 +4,12 @@ import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.media.Asset;
 import com.marketinghub.memberarea.MemberArea;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.producttype.ProductTypeDefinition;
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -32,6 +35,17 @@ public class Product {
   /** Nome comercial público do produto. */
   @Column(name = "name", length = 191)
   private String name;
+
+  /** Nome de trabalho estável usado por pessoas e agentes dentro do Marketing Hub. */
+  @Column(name = "internal_name", length = 191)
+  private String internalName;
+
+  /** Nomes internos alternativos e históricos que permitem localizar o mesmo produto. */
+  @ElementCollection(fetch = FetchType.EAGER)
+  @CollectionTable(name = "product_alias", joinColumns = @JoinColumn(name = "product_id"))
+  @Column(name = "alias", nullable = false, length = 191)
+  @Builder.Default
+  private Set<String> aliases = new LinkedHashSet<>();
 
   /** URL pública da área, página ou experiência principal do produto. */
   @Column(name = "public_url", length = 512)
@@ -62,8 +76,15 @@ public class Product {
   private String codeModules;
 
   /** Tipo comercial do produto dentro da estratégia do Marketing Hub. */
-  @Column(name = "product_type", length = 64)
+  @Column(name = "product_type", length = 191)
   private String productType;
+
+  /** Definição estável do tipo no catálogo extensível de produtos. */
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "product_type_id")
+  @ToString.Exclude
+  @EqualsAndHashCode.Exclude
+  private ProductTypeDefinition productTypeDefinition;
 
   /** Formato principal entregue ao cliente, comparável entre produtos e experimentos. */
   @Column(name = "product_format", length = 64)

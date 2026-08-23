@@ -7,5 +7,11 @@ import java.util.Map;
 /** Recebe a solicitação de orientação por IA para uma missão específica do PDE. */
 public record AiGuidanceCreateRequest(
         @NotBlank String guidanceType,
-        @NotEmpty Map<String, String> answers
-) {}
+        @NotEmpty Map<String, String> answers,
+        String experienceVersion
+) {
+    /** Mantém o contrato dos clientes que ainda usam o executor de IA legado. */
+    public AiGuidanceCreateRequest(String guidanceType, Map<String, String> answers) {
+        this(guidanceType, answers, null);
+    }
+}

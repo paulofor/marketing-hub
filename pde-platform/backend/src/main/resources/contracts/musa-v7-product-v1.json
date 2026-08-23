@@ -1,0 +1,164 @@
+{
+  "slug": "metodo-musa-7-dias",
+  "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair",
+  "layoutKey": "espelho-antes-de-sair",
+  "funnelVersion": "musa-membership-funnel-v1",
+  "name": "Método MUSA - Semana dos 7 Sinais de Presença",
+  "promise": "Descubra o idioma silencioso da sua imagem e organize em 7 dias os sinais que fazem sua presença parecer mais elegante, intencional e coerente usando o que você já tem.",
+  "audience": "Mulheres urbanas que querem elevar presença, cuidado percebido e segurança visual com microações acessíveis.",
+  "priceLabel": "R$67",
+  "theme": {
+    "primary": "#7a2444",
+    "accent": "#d6a75c",
+    "background": "#fff8f3",
+    "imageUrl": "/assets/musa-cover.png"
+  },
+  "diagnostic": {
+    "title": "Primeiro ajuste MUSA",
+    "intro": "Responda 4 escolhas rápidas. O MUSA combina suas preferências por regras locais e sugere um ajuste pequeno para você testar com o que já possui.",
+    "questions": [
+      "Que mensagem sua imagem comunica sem intenção?",
+      "Em qual cena sua primeira impressão importa mais agora?",
+      "Qual sinal de presença você quer reforçar nesta semana?"
+    ]
+  },
+  "missions": [
+    {
+      "id": "dia-1-ruido-visual",
+      "day": 1,
+      "title": "O espelho não vê roupa, vê mensagem",
+      "principle": "A vestimenta participa da percepção de pessoa: antes de explicar quem você é, sua imagem já envia sinais.",
+      "action": "Vista uma combinação real e escreva a mensagem que ela parece transmitir hoje. Depois escolha um ajuste pequeno para aproximar essa mensagem da mulher que você quer comunicar.",
+      "evidence": "Frase preenchida: hoje minha imagem parece dizer...",
+      "visualCue": "Observe roupa, cabelo, pele e detalhe final como um conjunto de sinais, não como peças soltas."
+    },
+    {
+      "id": "dia-2-assinatura",
+      "day": 2,
+      "title": "A peça que muda seu estado interno",
+      "principle": "Uma peça pode ganhar força quando carrega significado para você e faz sentido na situação escolhida.",
+      "action": "Escolha uma peça-sinal que represente presença, cuidado ou elegância para você. Use essa peça em uma cena simples do dia e registre como ela muda sua postura diante do espelho.",
+      "evidence": "Peça-sinal escolhida com o significado que ela carrega.",
+      "visualCue": "Priorize significado e intenção, não preço ou marca."
+    },
+    {
+      "id": "dia-3-base-acessivel",
+      "day": 3,
+      "title": "Formalidade sem rigidez",
+      "principle": "Sinais de estrutura e acabamento podem ajudar você a perceber mais intenção, sempre conforme seu contexto e sua preferência.",
+      "action": "Eleve uma combinação comum com um sinal de estrutura: terceira peça, tecido mais firme, sapato, cabelo alinhado ou acabamento melhor definido.",
+      "evidence": "Antes/depois registrado com o detalhe que deixou o look mais intencional.",
+      "visualCue": "Procure o ponto em que o visual fica mais pronto sem parecer duro."
+    },
+    {
+      "id": "dia-4-checklist-12-minutos",
+      "day": 4,
+      "title": "Primeiras impressões são leituras rápidas",
+      "principle": "Roupa e acabamento participam da primeira impressão, sem determinar como outras pessoas irão reagir.",
+      "action": "Escolha uma situação real dos próximos dias e monte o primeiro sinal que você quer transmitir ao entrar: calma, cuidado, presença, feminilidade ou segurança.",
+      "evidence": "Cena escolhida com o primeiro sinal planejado.",
+      "visualCue": "Imagine a primeira leitura do ambiente antes de escolher o detalhe final."
+    },
+    {
+      "id": "dia-5-compra-inteligente",
+      "day": 5,
+      "title": "Cor como direção, não decoração",
+      "principle": "Cores podem orientar a coerência visual quando escolhidas segundo a situação e a sua preferência.",
+      "action": "Escolha uma cor-base e uma cor-sinal para comunicar calma, presença, suavidade ou força sem exagerar.",
+      "evidence": "Paleta de 2 cores registrada para uma ocasião real.",
+      "visualCue": "Use a cor como guia de intenção, não como enfeite isolado."
+    },
+    {
+      "id": "dia-6-situacao-chave",
+      "day": 6,
+      "title": "Assinatura pessoal: ser reconhecida sem esforço",
+      "principle": "Escolhas repetidas podem facilitar uma assinatura pessoal reconhecível por você mesma.",
+      "action": "Defina 3 sinais repetíveis da sua presença: cabelo, cor, acessório, perfume, textura, maquiagem leve ou acabamento.",
+      "evidence": "Três sinais de assinatura MUSA definidos.",
+      "visualCue": "Elegância fica mais fácil quando vira repetição inteligente."
+    },
+    {
+      "id": "dia-7-plano-pessoal",
+      "day": 7,
+      "title": "Seu algoritmo de presença elegante",
+      "principle": "Como escolhas de roupa dependem de pessoa, contexto e preferência, o método organiza opções sem prometer uma reação externa.",
+      "action": "Transforme suas respostas da semana em uma fórmula pessoal: sinais, ocasiões, regra anti-compra impulsiva e checklist antes de sair.",
+      "evidence": "Fórmula MUSA pessoal preenchida para repetir por 30 dias.",
+      "visualCue": "Feche a semana com um jeito seu de se arrumar com menos dúvida."
+    }
+  ],
+  "supportMaterials": [
+    {
+      "title": "Mapa dos 7 Sinais MUSA",
+      "type": "HTML",
+      "description": "Resumo dos sete sinais com conceito, missão, exemplo e aplicação prática.",
+      "url": "/materials/musa-v7/mapa-dos-7-sinais.html"
+    },
+    {
+      "title": "Checklist Antes de Sair",
+      "type": "HTML",
+      "description": "Checklist acessível para revisar mensagem visual, peça-sinal, estrutura, cor, acabamento e assinatura pessoal.",
+      "url": "/materials/musa-v7/checklist-antes-de-sair.html"
+    },
+    {
+      "title": "Fórmula MUSA Pessoal",
+      "type": "CSV",
+      "description": "Template para registrar sinais repetíveis, ocasiões, evidências e regra anti-compra impulsiva.",
+      "url": "/materials/musa-v7/formula-musa-pessoal.csv"
+    }
+  ],
+  "heroVideos": [],
+  "publicDiagnosticQuestions": [
+    {
+      "key": "mainObstacle",
+      "stageLabel": "Mensagem visual",
+      "question": "Se sua imagem falasse antes de você hoje, qual mensagem ela passaria sem intenção?",
+      "options": ["Falta presença", "Pareço comum", "Estou improvisada", "Não comunica meu momento", "Minha imagem está coerente; quero apenas organizar minhas escolhas"],
+      "imageUrl": "/assets/musa-diagnostic-slide-1.png",
+      "visualTitle": "A jornada começa pelo idioma silencioso da roupa.",
+      "visualText": "A degustação organiza o primeiro sinal visual que você escolheu observar antes de qualquer compra nova.",
+      "journeyEventType": "PROBLEM_RECOGNIZED"
+    },
+    {
+      "key": "presenceFocus",
+      "stageLabel": "Primeira impressão",
+      "question": "Em qual cena você quer ser lida com mais intenção primeiro?",
+      "options": ["Trabalho ou reunião", "Encontro ou saída", "Rotina comum", "Foto ou conteúdo"],
+      "imageUrl": "/assets/musa-diagnostic-slide-2.png",
+      "visualTitle": "A situação real orienta um ajuste pequeno e observável.",
+      "visualText": "A roupa participa da primeira impressão, mas o contexto e a preferência de cada pessoa importam. O MUSA transforma isso em uma escolha simples para sua rotina.",
+      "journeyEventType": "REAL_INPUT_SUBMITTED"
+    },
+    {
+      "key": "desiredSignal",
+      "stageLabel": "Sinal desejado",
+      "question": "Qual sinal você quer reforçar com mais clareza nesta semana?",
+      "options": ["Elegância discreta", "Segurança calma", "Cuidado percebido", "Imagem mais marcante"],
+      "imageUrl": "/assets/musa-diagnostic-slide-3.png",
+      "visualTitle": "Cada dia trabalha um sinal de presença.",
+      "visualText": "Mensagem, peça-sinal, estrutura, primeira impressão, cor, assinatura pessoal e fórmula MUSA viram uma sequência prática.",
+      "journeyEventType": "MECHANISM_VIEWED"
+    },
+    {
+      "key": "startingResource",
+      "stageLabel": "Recurso acessível",
+      "question": "Qual recurso você prefere usar primeiro sem comprar nada?",
+      "options": ["Roupa que já tenho", "Cor e acabamento", "Acessório ou perfume", "Postura e presença"],
+      "imageUrl": "/assets/musa-diagnostic-slide-4.png",
+      "visualTitle": "A promessa é um método simples traduzido em microação.",
+      "visualText": "Você recebe um primeiro ajuste agora e depois entende como os 7 sinais organizam uma presença mais coerente.",
+      "journeyEventType": "CATEGORY_UNDERSTOOD"
+    }
+  ],
+  "publicFirstFold": {
+    "headline": "Sua roupa fala antes de você. Ela está falando com roteiro?",
+    "supportingText": "A Semana dos 7 Sinais organiza escolhas de roupa, acabamento e presença em microações simples, sem exigir um guarda-roupa novo.",
+    "videoKicker": "Método MUSA em 7 dias",
+    "videoHeadline": "Veja como cada dia organiza um ajuste possível usando o que você já possui.",
+    "videoSupportingText": "Mensagem visual, peça-sinal, formalidade leve, primeira impressão, cor, assinatura pessoal e fórmula MUSA viram uma jornada prática de 7 dias.",
+    "videoExtraText": "Responda 4 escolhas rápidas para organizar um primeiro ajuste possível com o que você já possui.",
+    "videoCtaLabel": "Ver meu primeiro ajuste MUSA"
+  },
+  "scientificEvidencePack": null,
+  "completionOffer": "Ao concluir os 7 dias, sua fórmula MUSA e os materiais permanecem disponíveis durante os 90 dias do acesso, sem assinatura ou renovação automática."
+}

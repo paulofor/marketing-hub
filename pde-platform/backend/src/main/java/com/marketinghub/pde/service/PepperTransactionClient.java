@@ -32,7 +32,8 @@ public class PepperTransactionClient implements PepperTransactionGateway {
     private final String apiToken;
     private final Set<String> acceptedOfferHashes;
     private final int syncLookbackDays;
-    private final int minimumPaidAmountCents;
+    private final int expectedPaidAmountCents;
+    private final String expectedCurrency;
 
     /** Recebe configuracoes da API Pepper e prepara o cliente HTTP. */
     public PepperTransactionClient(
@@ -41,14 +42,16 @@ public class PepperTransactionClient implements PepperTransactionGateway {
             @Value("${pde.access.pepper.api-token:}") String apiToken,
             @Value("${pde.access.pepper.offer-hashes:owm6x,c8mnn}") String offerHashes,
             @Value("${pde.access.pepper.sync-lookback-days:14}") int syncLookbackDays,
-            @Value("${pde.access.pepper.minimum-paid-amount-cents:6700}") int minimumPaidAmountCents) {
+            @Value("${pde.access.pepper.expected-paid-amount-cents:6700}") int expectedPaidAmountCents,
+            @Value("${pde.access.pepper.expected-currency:BRL}") String expectedCurrency) {
         this.objectMapper = objectMapper;
         this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
         this.apiBaseUrl = trimTrailingSlash(apiBaseUrl);
         this.apiToken = apiToken;
         this.acceptedOfferHashes = parseOfferHashes(offerHashes);
         this.syncLookbackDays = Math.max(1, syncLookbackDays);
-        this.minimumPaidAmountCents = Math.max(1, minimumPaidAmountCents);
+        this.expectedPaidAmountCents = Math.max(1, expectedPaidAmountCents);
+        this.expectedCurrency = expectedCurrency == null ? "" : expectedCurrency.trim().toUpperCase();
     }
 
     /** Busca transacoes pagas e filtra somente ofertas comerciais aceitas pelo Clube MUSA. */
@@ -163,7 +166,10 @@ public class PepperTransactionClient implements PepperTransactionGateway {
         String status = text(transaction, "payment_status");
         String offerHash = text(transaction.path("offer"), "hash");
         Integer amount = integer(transaction, "amount");
-        if (!"paid".equalsIgnoreCase(status) || !isAcceptedOfferHash(offerHash) || !isAcceptedAmount(amount)) {
+        String currency = resolvedCurrency(transaction);
+        if (!"paid".equalsIgnoreCase(status)
+                || !isAcceptedOfferHash(offerHash)
+                || !isAcceptedAmountAndCurrency(amount, currency)) {
             return null;
         }
         String buyerEmail = text(transaction.path("customer"), "email");
@@ -180,7 +186,8 @@ public class PepperTransactionClient implements PepperTransactionGateway {
                 status,
                 offerHash,
                 text(transaction.path("offer"), "title"),
-                amount);
+                amount,
+                currency);
     }
 
     /** Resolve o identificador mais estavel disponivel no payload da Pepper. */
@@ -194,9 +201,21 @@ public class PepperTransactionClient implements PepperTransactionGateway {
         return offerHash != null && acceptedOfferHashes.contains(offerHash.trim());
     }
 
-    /** Confere se o valor pago protege contra liberacao da oferta antiga gratuita. */
-    private boolean isAcceptedAmount(Integer amount) {
-        return amount != null && amount >= minimumPaidAmountCents;
+    /** Confere exatamente o preço e a moeda aprovados no plano comercial vigente. */
+    private boolean isAcceptedAmountAndCurrency(Integer amount, String currency) {
+        return amount != null
+                && amount == expectedPaidAmountCents
+                && currency != null
+                && expectedCurrency.equalsIgnoreCase(currency);
+    }
+
+    /** Resolve a moeda explicitamente informada pelo provedor sem assumir BRL por omissão. */
+    private String resolvedCurrency(JsonNode transaction) {
+        String currency = text(transaction, "currency");
+        if (currency == null || currency.isBlank()) {
+            currency = text(transaction, "currency_code");
+        }
+        return currency == null ? null : currency.trim().toUpperCase();
     }
 
     /** Le campo textual opcional do JSON da Pepper. */

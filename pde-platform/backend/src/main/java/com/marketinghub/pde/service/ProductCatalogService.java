@@ -1,5 +1,6 @@
 package com.marketinghub.pde.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.pde.dto.ProductExperienceResponse;
 import com.marketinghub.pde.dto.ProductExperienceResponse.DiagnosticDto;
 import com.marketinghub.pde.dto.ProductExperienceResponse.HeroVideoDto;
@@ -8,6 +9,8 @@ import com.marketinghub.pde.dto.ProductExperienceResponse.ScientificEvidencePack
 import com.marketinghub.pde.dto.ProductExperienceResponse.ScientificReferenceDto;
 import com.marketinghub.pde.dto.ProductExperienceResponse.SupportMaterialDto;
 import com.marketinghub.pde.dto.ProductExperienceResponse.ThemeDto;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +31,7 @@ public class ProductCatalogService {
     private static final String MUSA_V5_EXPERIENCE_VERSION = "musa-pde-entry-v5-video-explicativo";
     private static final String MUSA_V6_EXPERIENCE_VERSION = "musa-pde-entry-v6-video-motivacional";
     private static final String MUSA_V7_EXPERIENCE_VERSION = "musa-pde-entry-v7-espelho-antes-de-sair";
+    private static final String MUSA_V7_CONTRACT_RESOURCE = "/contracts/musa-v7-product-v1.json";
     private static final Map<String, String> MUSA_VERSIONED_HOST_EXPERIENCES = Map.of(
             "v1.clubemusa.com.br", MUSA_V5_EXPERIENCE_VERSION,
             "v2.clubemusa.com.br", MUSA_V5_EXPERIENCE_VERSION,
@@ -80,13 +84,49 @@ public class ProductCatalogService {
         Optional<ProductExperienceResponse> marketingHubProduct =
                 loadMarketingHubProduct(slug, host, requestedSlotCode, requestedExperienceVersion);
         if (marketingHubProduct.isPresent()) {
-            return applyDefaultLayout(marketingHubProduct.get());
+            ProductExperienceResponse loadedProduct = applyDefaultLayout(marketingHubProduct.get());
+            String requestedVersion = StringUtils.hasText(requestedExperienceVersion)
+                    ? requestedExperienceVersion.trim()
+                    : resolveHostExperienceVersion(host);
+            if (MUSA_V7_EXPERIENCE_VERSION.equals(loadedProduct.experienceVersion())
+                    || MUSA_V7_EXPERIENCE_VERSION.equals(requestedVersion)) {
+                return createMusaV7Product();
+            }
+            return loadedProduct;
         }
         ProductExperienceResponse product = products.get(slug);
         if (product == null) {
             throw new IllegalArgumentException("Produto PDE não encontrado: " + slug);
         }
         return applyExperienceVersionOverride(product, host, requestedExperienceVersion);
+    }
+
+    /** Retorna somente o contrato necessário antes da autenticação, sem missões ou materiais pagos. */
+    public ProductExperienceResponse getPublicProductForRequest(
+            String slug,
+            String host,
+            String requestedSlotCode,
+            String requestedExperienceVersion) {
+        ProductExperienceResponse product = getProductForRequest(
+                slug, host, requestedSlotCode, requestedExperienceVersion);
+        return new ProductExperienceResponse(
+                product.slug(),
+                product.experienceVersion(),
+                product.layoutKey(),
+                product.funnelVersion(),
+                product.name(),
+                product.promise(),
+                product.audience(),
+                product.priceLabel(),
+                product.theme(),
+                product.diagnostic(),
+                List.of(),
+                List.of(),
+                product.heroVideos(),
+                product.publicDiagnosticQuestions(),
+                product.publicFirstFold(),
+                null,
+                product.completionOffer());
     }
 
     /** Aplica override operacional ou versão derivada do hostname sem alterar o contrato base. */
@@ -110,7 +150,7 @@ public class ProductCatalogService {
             return product;
         }
         if (MUSA_V7_EXPERIENCE_VERSION.equals(selectedExperienceVersion.trim())) {
-            product = createMusaScientificV7Product();
+            product = createMusaV7Product();
         }
         return new ProductExperienceResponse(
                 product.slug(),
@@ -393,115 +433,17 @@ public class ProductCatalogService {
                 "Não há oferta comercial nesta fase experimental.");
     }
 
-    /** Cria o fallback local da v7 científica quando o Marketing Hub estiver indisponível. */
-    private static ProductExperienceResponse createMusaScientificV7Product() {
-        return new ProductExperienceResponse(
-                "metodo-musa-7-dias",
-                MUSA_V7_EXPERIENCE_VERSION,
-                "espelho-antes-de-sair",
-                "musa-membership-funnel-v1",
-                "Método MUSA - Semana dos 7 Sinais de Presença",
-                "Descubra o idioma silencioso da sua imagem e organize em 7 dias os sinais que fazem sua presença parecer mais elegante, intencional e coerente usando o que você já tem.",
-                "Mulheres urbanas que querem elevar presença, cuidado percebido e segurança visual com ciência traduzida em microações acessíveis.",
-                MUSA_PRICE_LABEL,
-                new ThemeDto("#7a2444", "#d6a75c", "#fff8f3", "/assets/musa-cover.png"),
-                new DiagnosticDto(
-                        "Mapa Científico de Presença MUSA",
-                        "Responda 4 escolhas rápidas. O MUSA identifica qual sinal visual pode estar enfraquecendo sua presença e mostra como a semana de 7 dias organiza isso com base nos artigos do produto.",
-                        List.of(
-                                "Que mensagem sua imagem comunica sem intenção?",
-                                "Em qual cena sua primeira impressão importa mais agora?",
-                                "Qual sinal de presença você quer reforçar nesta semana?")),
-                List.of(
-                        new MissionDto(
-                                "dia-1-ruido-visual",
-                                1,
-                                "O espelho não vê roupa, vê mensagem",
-                                "A vestimenta participa da percepção de pessoa: antes de explicar quem você é, sua imagem já envia sinais.",
-                                "Vista uma combinação real e escreva a mensagem que ela parece transmitir hoje. Depois escolha um ajuste pequeno para aproximar essa mensagem da mulher que você quer comunicar.",
-                                "Frase preenchida: hoje minha imagem parece dizer...",
-                                "Observe roupa, cabelo, pele e detalhe final como um conjunto de sinais, não como peças soltas."),
-                        new MissionDto(
-                                "dia-2-assinatura",
-                                2,
-                                "A peça que muda seu estado interno",
-                                "A cognição vestida sugere que uma peça ganha força quando carrega significado para a pessoa e para a situação.",
-                                "Escolha uma peça-sinal que represente presença, cuidado ou elegância para você. Use essa peça em uma cena simples do dia e registre como ela muda sua postura diante do espelho.",
-                                "Peça-sinal escolhida com o significado que ela carrega.",
-                                "Priorize significado e intenção, não preço ou marca."),
-                        new MissionDto(
-                                "dia-3-base-acessivel",
-                                3,
-                                "Formalidade sem rigidez",
-                                "Sinais de estrutura e formalidade podem alterar a leitura de prontidão, presença e adequação ao contexto.",
-                                "Eleve uma combinação comum com um sinal de estrutura: terceira peça, tecido mais firme, sapato, cabelo alinhado ou acabamento melhor definido.",
-                                "Antes/depois registrado com o detalhe que deixou o look mais intencional.",
-                                "Procure o ponto em que o visual fica mais pronto sem parecer duro."),
-                        new MissionDto(
-                                "dia-4-checklist-12-minutos",
-                                4,
-                                "Primeiras impressões são leituras rápidas",
-                                "Roupa e acabamento participam dos primeiros julgamentos sociais e profissionais, especialmente quando a pessoa ainda falou pouco.",
-                                "Escolha uma situação real dos próximos dias e monte o primeiro sinal que você quer transmitir ao entrar: calma, cuidado, presença, feminilidade ou segurança.",
-                                "Cena escolhida com o primeiro sinal planejado.",
-                                "Imagine a primeira leitura do ambiente antes de escolher o detalhe final."),
-                        new MissionDto(
-                                "dia-5-compra-inteligente",
-                                5,
-                                "Cor como direção, não decoração",
-                                "Cores carregam significado contextual e podem orientar percepção, sensação e coerência visual.",
-                                "Escolha uma cor-base e uma cor-sinal para comunicar calma, presença, suavidade ou força sem exagerar.",
-                                "Paleta de 2 cores registrada para uma ocasião real.",
-                                "Use a cor como guia de intenção, não como enfeite isolado."),
-                        new MissionDto(
-                                "dia-6-situacao-chave",
-                                6,
-                                "Assinatura pessoal: ser reconhecida sem esforço",
-                                "Moda e escolhas repetidas ajudam a organizar autoconceito, autoapresentação e identidade social.",
-                                "Defina 3 sinais repetíveis da sua presença: cabelo, cor, acessório, perfume, textura, maquiagem leve ou acabamento.",
-                                "Três sinais de assinatura MUSA definidos.",
-                                "Elegância fica mais fácil quando vira repetição inteligente."),
-                        new MissionDto(
-                                "dia-7-plano-pessoal",
-                                7,
-                                "Seu algoritmo de presença elegante",
-                                "Como escolhas de roupa dependem de pessoa, contexto e preferência, a orientação precisa ser personalizada e aplicável à rotina real.",
-                                "Transforme suas respostas da semana em uma fórmula pessoal: sinais, ocasiões, regra anti-compra impulsiva e checklist antes de sair.",
-                                "Fórmula MUSA pessoal preenchida para repetir por 30 dias.",
-                                "Feche a semana com um jeito seu de se arrumar com menos dúvida.")),
-                List.of(
-                        new SupportMaterialDto(
-                                "Mapa dos 7 Sinais MUSA",
-                                "HTML",
-                                "Resumo da semana científica com conceito, missão e aplicação prática de cada dia.",
-                                "/materials/experiencia-guiada-musa.html"),
-                        new SupportMaterialDto(
-                                "Checklist Antes de Sair",
-                                "PDF",
-                                "Checklist para revisar mensagem visual, peça-sinal, estrutura, cor, acabamento e assinatura pessoal.",
-                                "/materials/metodo-musa-ebook.pdf"),
-                        new SupportMaterialDto(
-                                "Fórmula MUSA Pessoal",
-                                "CSV",
-                                "Template para registrar sinais repetíveis, ocasiões e regra anti-compra impulsiva.",
-                                "/materials/plano-checklists-e-templates.csv"),
-                        new SupportMaterialDto(
-                                "Mapa Visual MUSA",
-                                "Infográfico",
-                                "Resumo visual do método: coerência, redução de ruído e assinatura pessoal.",
-                                "/materials/mapa-visual-musa.png")),
-                List.of(),
-                null,
-                new ProductExperienceResponse.PublicFirstFoldDto(
-                        "Sua roupa fala antes de você. Ela está falando com roteiro?",
-                        "A nova Semana dos 7 Sinais transforma artigos científicos sobre roupa, percepção e autopercepção em microações simples para sua presença elegante.",
-                        "Método MUSA em 7 dias",
-                        "Veja como cada dia usa uma ideia dos artigos do MUSA para organizar sua imagem sem comprar um guarda-roupa novo.",
-                        "Mensagem visual, peça-sinal, formalidade leve, primeira impressão, cor, assinatura pessoal e fórmula MUSA viram uma jornada prática de 7 dias.",
-                        "Depois do vídeo, responda 4 escolhas rápidas para receber o primeiro sinal que pode estar apagando sua presença hoje.",
-                        "Ver meu plano científico MUSA de 7 dias"),
-                createMusaScientificEvidencePack(),
-                "Ao concluir os 7 dias, você pode continuar no Clube MUSA com novos desafios mensais de presença, estilo e autocuidado acessível.");
+    /** Carrega o contrato canônico da v7 usado tanto para paridade quanto para fallback seguro. */
+    private static ProductExperienceResponse createMusaV7Product() {
+        try (InputStream input = ProductCatalogService.class.getResourceAsStream(MUSA_V7_CONTRACT_RESOURCE)) {
+            if (input == null) {
+                throw new IOException("Contrato canônico MUSA v7 não encontrado no classpath");
+            }
+            return new ObjectMapper().readValue(input, ProductExperienceResponse.class);
+        } catch (IOException ex) {
+            log.error("Falha ao carregar contrato canônico MUSA v7; resource={}", MUSA_V7_CONTRACT_RESOURCE, ex);
+            throw new IllegalStateException("Contrato canônico MUSA v7 inválido", ex);
+        }
     }
 
     /** Cria o pacote científico operacional do MUSA usado pela Consultora MUSA. */

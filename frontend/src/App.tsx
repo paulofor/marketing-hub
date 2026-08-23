@@ -21,6 +21,7 @@ import PdeFirstFoldCopyEditorPage from "./pages/product/PdeFirstFoldCopyEditorPa
 import ProductOrganicVideoPlanPage from "./pages/product/ProductOrganicVideoPlanPage";
 import ProductAdsPage from "./pages/product/ProductAdsPage";
 import ProductScientificArticlesPage from "./pages/product/ProductScientificArticlesPage";
+import ProductTypeCatalogPage from "./pages/productType/ProductTypeCatalogPage";
 import ProductDiscoveryPage from "./pages/productDiscovery/ProductDiscoveryPage";
 import ProductDiscoveryCycleDetailPage from "./pages/productDiscovery/ProductDiscoveryCycleDetailPage";
 import ProductSalesVideoPage from "./pages/salesVideo/ProductSalesVideoPage";
@@ -236,6 +237,10 @@ export default function App() {
               <Route path="/app-ideas" element={<AppIdeaListPage />} />
               <Route path="/app-ideas/new" element={<NewAppIdeaPage />} />
               <Route path="/products" element={<ProductListPage />} />
+              <Route
+                path="/product-types"
+                element={<ProductTypeCatalogPage />}
+              />
               <Route
                 path="/product-discovery"
                 element={<ProductDiscoveryPage />}

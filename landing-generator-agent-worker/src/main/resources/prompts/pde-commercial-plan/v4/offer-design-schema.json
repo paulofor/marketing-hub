@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["activity", "decision", "alternatives", "selectedApproach", "positioning", "formatDecision", "decisionCard", "experienceContract", "assumptions", "requiredChanges", "rationale", "sources"],
+  "properties": {
+    "activity": {"type": "string", "enum": ["positioning", "format", "decisionCard", "experience"]},
+    "decision": {"type": "string", "enum": ["APPROVE", "ADJUST", "REJECT"]},
+    "alternatives": {
+      "type": "array", "minItems": 3, "maxItems": 3,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["name", "benefit", "risk", "effort", "fitScore"],
+        "properties": {
+          "name": {"type": "string"}, "benefit": {"type": "string"}, "risk": {"type": "string"},
+          "effort": {"type": "string", "enum": ["LOW", "MEDIUM", "HIGH"]},
+          "fitScore": {"type": "integer", "minimum": 0, "maximum": 100}
+        }
+      }
+    },
+    "selectedApproach": {"type": "string"},
+    "positioning": {
+      "type": "object", "additionalProperties": false,
+      "required": ["audience", "excludedAudience", "painScene", "mainPain", "transformation", "mechanism"],
+      "properties": {
+        "audience": {"type": "string"}, "excludedAudience": {"type": "string"},
+        "painScene": {"type": "string"}, "mainPain": {"type": "string"},
+        "transformation": {"type": "string"}, "mechanism": {"type": "string"}
+      }
+    },
+    "formatDecision": {
+      "type": "object", "additionalProperties": false,
+      "required": ["selectedFormat", "whyWins", "alternativesConsidered", "timeToFirstValue"],
+      "properties": {
+        "selectedFormat": {"type": "string"}, "whyWins": {"type": "string"},
+        "alternativesConsidered": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "string"}},
+        "timeToFirstValue": {"type": "string"}
+      }
+    },
+    "decisionCard": {
+      "type": "object", "additionalProperties": false,
+      "required": ["forWhom", "notForWhom", "result", "mechanism", "priceBrl", "billing", "delivery", "proof", "limits", "privacy", "support", "refund"],
+      "properties": {
+        "forWhom": {"type": "string"}, "notForWhom": {"type": "string"}, "result": {"type": "string"},
+        "mechanism": {"type": "string"}, "priceBrl": {"type": "number", "minimum": 0},
+        "billing": {"type": "string"}, "delivery": {"type": "string"}, "proof": {"type": "string"},
+        "limits": {"type": "array", "items": {"type": "string"}}, "privacy": {"type": "string"},
+        "support": {"type": "string"}, "refund": {"type": "string"}
+      }
+    },
+    "experienceContract": {
+      "type": "object", "additionalProperties": false,
+      "required": ["entryInputs", "microValue", "journey", "deliverables", "firstResult", "continuity", "cta"],
+      "properties": {
+        "entryInputs": {"type": "array", "items": {"type": "string"}}, "microValue": {"type": "string"},
+        "journey": {"type": "array", "items": {"type": "string"}},
+        "deliverables": {"type": "array", "items": {"type": "string"}},
+        "firstResult": {"type": "string"}, "continuity": {"type": "string"}, "cta": {"type": "string"}
+      }
+    },
+    "assumptions": {"type": "array", "items": {"type": "string"}},
+    "requiredChanges": {"type": "array", "items": {"type": "string"}},
+    "rationale": {"type": "string"},
+    "sources": {
+      "type": "array", "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["title", "url", "supports"],
+        "properties": {"title": {"type": "string"}, "url": {"type": "string"}, "supports": {"type": "string"}}
+      }
+    }
+  }
+}
+

@@ -89,4 +89,12 @@ describe('prompts da Consultora MUSA', () => {
     assert.match(worker, /return \['default', 'flex', 'default'\]/);
     assert.match(worker, /return \['flex', 'flex', 'default'\]/);
   });
+
+  it('worker autentica consumo e retorno da fila interna do PDE', async () => {
+    const worker = await readFile(new URL('../src/worker.js', import.meta.url), 'utf8');
+
+    assert.match(worker, /PDE_INTERNAL_API_TOKEN/);
+    assert.match(worker, /'X-PDE-Internal-Token': pdeInternalToken/g);
+    assert.match(worker, /PDE_INTERNAL_API_TOKEN não configurado/);
+  });
 });

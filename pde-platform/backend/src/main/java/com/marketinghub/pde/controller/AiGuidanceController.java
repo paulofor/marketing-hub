@@ -6,6 +6,7 @@ import com.marketinghub.pde.dto.AiGuidanceResponse;
 import com.marketinghub.pde.dto.AiGuidanceResultRequest;
 import com.marketinghub.pde.dto.PublicPresenceDiagnosticRequest;
 import com.marketinghub.pde.service.AiGuidanceService;
+import com.marketinghub.pde.service.InternalApiAuthorizer;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,10 +24,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class AiGuidanceController {
 
     private final AiGuidanceService aiGuidanceService;
+    private final InternalApiAuthorizer internalApiAuthorizer;
 
-    /** Recebe o serviço que controla solicitações e resultados de IA. */
-    public AiGuidanceController(AiGuidanceService aiGuidanceService) {
+    /** Recebe os serviços que controlam solicitações de IA e autorizam o executor. */
+    public AiGuidanceController(
+            AiGuidanceService aiGuidanceService,
+            InternalApiAuthorizer internalApiAuthorizer) {
         this.aiGuidanceService = aiGuidanceService;
+        this.internalApiAuthorizer = internalApiAuthorizer;
     }
 
     /** Cria uma orientação guiada por IA para a missão informada. */
@@ -63,7 +69,9 @@ public class AiGuidanceController {
 
     /** Entrega uma lista unitária de pendência ao worker executor do PDE. */
     @GetMapping("/api/internal/pde/ai-guidance/stage-executions/pending")
-    public List<AiGuidancePendingResponse> getPendingGuidance() {
+    public List<AiGuidancePendingResponse> getPendingGuidance(
+            @RequestHeader(value = "X-PDE-Internal-Token", required = false) String internalToken) {
+        internalApiAuthorizer.requireAuthorized(internalToken);
         return aiGuidanceService.getPendingGuidance().map(List::of).orElseGet(List::of);
     }
 
@@ -71,7 +79,9 @@ public class AiGuidanceController {
     @PostMapping("/api/internal/pde/ai-guidance/stage-executions/{requestId}/result")
     public AiGuidanceResponse receiveGuidanceResult(
             @PathVariable("requestId") String requestId,
+            @RequestHeader(value = "X-PDE-Internal-Token", required = false) String internalToken,
             @Valid @RequestBody AiGuidanceResultRequest request) {
+        internalApiAuthorizer.requireAuthorized(internalToken);
         return aiGuidanceService.receiveGuidanceResult(requestId, request);
     }
 }

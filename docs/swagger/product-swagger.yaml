@@ -4,6 +4,99 @@ info:
   version: 1.0.0
   description: Endpoints públicos e administrativos do cadastro comercial de produtos.
 paths:
+  /api/products:
+    get:
+      tags:
+        - Products
+      summary: Lista ou pesquisa produtos por suas identidades comercial e interna.
+      operationId: listProducts
+      parameters:
+        - name: query
+          in: query
+          required: false
+          description: Nome comercial, nome interno, apelido ou slug do produto.
+          schema:
+            type: string
+            maxLength: 191
+          example: MUSA v7
+      responses:
+        "200":
+          description: Produtos encontrados no catálogo administrativo.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+    post:
+      tags:
+        - Products
+      summary: Cadastra um produto preservando identidade interna e nome comercial.
+      operationId: createProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpsertRequest"
+      responses:
+        "200":
+          description: Produto cadastrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "409":
+          description: Nome ou apelido já identifica outro produto.
+  /api/products/{id}:
+    get:
+      tags:
+        - Products
+      summary: Retorna o cadastro administrativo de um produto.
+      operationId: getProduct
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Produto encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: Produto não encontrado.
+    put:
+      tags:
+        - Products
+      summary: Atualiza os dados e as identidades internas do produto.
+      operationId: updateProduct
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpsertRequest"
+      responses:
+        "200":
+          description: Produto atualizado sem alterar sua identidade canônica.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "409":
+          description: Nome ou apelido já identifica outro produto.
   /api/products/{id}/financial-summary:
     get:
       tags:
@@ -426,6 +519,33 @@ components:
           type: string
         name:
           type: string
+          description: Nome comercial usado nas superfícies públicas.
+        internalName:
+          type: string
+          description: Nome de trabalho usado somente dentro do Marketing Hub.
+        aliases:
+          type: array
+          description: Apelidos internos alternativos ou históricos.
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 191
+        productType:
+          type: string
+          description: Nome canônico sincronizado para clientes legados.
+        productTypeId:
+          type: integer
+          format: int64
+          description: Identidade estável do tipo no catálogo extensível.
+        productTypeCode:
+          type: string
+          maxLength: 64
+        productTypeStatus:
+          type: string
+          enum:
+            - PROPOSED
+            - ACTIVE
+            - RETIRED
         pdeExperienceJson:
           type: string
         videoSeedImageAssetId:
@@ -443,6 +563,37 @@ components:
         videoSeedReviewedAt:
           type: string
           format: date-time
+    ProductUpsertRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        slug:
+          type: string
+          maxLength: 191
+        name:
+          type: string
+          maxLength: 191
+          description: Nome comercial visível ao cliente.
+        internalName:
+          type: string
+          maxLength: 191
+          description: Nome interno estável; quando omitido na criação, deriva do nome comercial.
+        aliases:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 191
+          description: Apelidos internos, únicos no catálogo e nunca publicados automaticamente.
+        productTypeId:
+          type: integer
+          format: int64
+          description: Tipo ativo selecionado no catálogo canônico.
+        productType:
+          type: string
+          maxLength: 191
+          deprecated: true
+          description: Identidade legada resolvida por nome, código ou apelido cadastrado.
     ProductScientificArticle:
       type: object
       properties:

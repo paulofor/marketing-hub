@@ -1,0 +1,6 @@
+FROM liquibase/liquibase:4.29.2
+
+USER root
+RUN lpm add mysql --global
+COPY --chown=liquibase:root backend/ads-service/src/main/resources/db/changelog /liquibase/changelog
+USER liquibase

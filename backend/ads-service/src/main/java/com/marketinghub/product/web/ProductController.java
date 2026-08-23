@@ -56,7 +56,7 @@ public class ProductController {
 
   /** Cadastra um novo produto comercial no Marketing Hub. */
   @PostMapping
-  public ProductDto create(@RequestBody CreateProductRequest request) {
+  public ProductDto create(@Valid @RequestBody CreateProductRequest request) {
     return mapper.toDto(service.createProduct(request));
   }
 
@@ -68,7 +68,8 @@ public class ProductController {
 
   /** Atualiza os dados comerciais editáveis de um produto existente. */
   @PutMapping("/{id}")
-  public ProductDto update(@PathVariable Long id, @RequestBody CreateProductRequest request) {
+  public ProductDto update(
+      @PathVariable Long id, @Valid @RequestBody CreateProductRequest request) {
     return mapper.toDto(service.updateProduct(id, request));
   }
 
@@ -213,10 +214,10 @@ public class ProductController {
         product.getSlug(), slotCode, request);
   }
 
-  /** Lista os produtos comerciais cadastrados no Marketing Hub. */
+  /** Lista ou pesquisa produtos por nome comercial, nome interno, apelido ou slug. */
   @GetMapping
-  public List<ProductDto> list() {
-    return StreamSupport.stream(service.listProducts().spliterator(), false)
+  public List<ProductDto> list(@RequestParam(required = false) String query) {
+    return StreamSupport.stream(service.listProducts(query).spliterator(), false)
         .map(mapper::toDto)
         .toList();
   }

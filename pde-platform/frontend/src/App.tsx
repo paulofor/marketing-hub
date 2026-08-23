@@ -6,7 +6,9 @@ import { AssistedServiceApp } from './AssistedServiceApp';
 import { TransitionPauseExperiment } from './TransitionPauseExperiment';
 import {
   fallbackProduct,
+  MUSA_V7_EXPERIENCE_VERSION,
   type ProductExperience,
+  type SupportMaterial,
   resolveHeroVideoUrl,
   resolveMusaFallbackProduct,
   resolveMusaExperienceContract,
@@ -19,12 +21,15 @@ type Workspace = {
   product: ProductExperience;
   email: string;
   accessSource: string;
-  subscriptionStatus: 'ACTIVE' | 'TRIAL';
+  subscriptionStatus: 'ACTIVE' | 'TRIAL' | 'EXPIRED';
+  experienceVersion?: string;
+  accessExpiresAt?: string;
   completedMissions: number;
   totalMissions: number;
   progressPercent: number;
   completedMissionIds: string[];
   missionInteractions: MissionInteraction[];
+  supportStatus: 'NONE' | 'OPEN';
 };
 
 type MissionInteraction = {
@@ -52,6 +57,13 @@ type MagicLinkResponse = {
   email: string;
   deliveryStatus: string;
   accessUrl?: string;
+};
+
+type PrivacyActionResponse = {
+  action: 'ACCESS' | 'CORRECTION' | 'DELETION' | 'OBJECTION';
+  status: 'COMPLETED';
+  executedAt: string;
+  data: Record<string, unknown>;
 };
 
 type DiagnosticOption = {
@@ -112,6 +124,8 @@ declare global {
 const PUBLIC_DIAGNOSTIC_MAX_POLL_ATTEMPTS = 90;
 const PUBLIC_DIAGNOSTIC_INITIAL_POLL_DELAY_MS = 900;
 const PUBLIC_DIAGNOSTIC_POLL_INTERVAL_MS = 1800;
+const MUSA_PRIVACY_CONTACT_EMAIL = 'contato@digicomdigital.com.br';
+const MUSA_NEUTRAL_CHOICE = 'Manter como está por enquanto';
 
 const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
   'dia-1-ruido-visual': {
@@ -208,17 +222,20 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
       {
         key: 'pieces',
         label: '5 peças que você já tem',
-        placeholder: 'Ex.: calça preta, camisa branca, vestido vinho...',
+        placeholder: 'Escolha uma base',
+        options: ['Calça e camisa', 'Vestido', 'Jeans e terceira peça', 'Saia e blusa'],
       },
       {
         key: 'accessories',
         label: '2 acessórios ou acabamentos disponíveis',
-        placeholder: 'Ex.: brinco dourado e perfume suave',
+        placeholder: 'Escolha os acabamentos',
+        options: ['Brinco e perfume', 'Bolsa e sapato', 'Lenço e textura', 'Cabelo e maquiagem leve'],
       },
       {
         key: 'realOccasion',
         label: 'Para qual situação real essa base precisa funcionar?',
-        placeholder: 'Ex.: reunião, jantar, rotina de trabalho',
+        placeholder: 'Escolha a ocasião',
+        options: ['Trabalho ou reunião', 'Encontro ou saída', 'Rotina comum', 'Foto ou conteúdo'],
       },
     ],
   },
@@ -238,17 +255,20 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
       {
         key: 'availableMinutes',
         label: 'Quanto tempo real você tem antes de sair?',
-        placeholder: 'Ex.: 8, 12 ou 15 minutos',
+        placeholder: 'Escolha o tempo',
+        options: ['5 minutos', '10 minutos', '15 minutos', '20 minutos'],
       },
       {
         key: 'weakestFinish',
         label: 'Qual acabamento costuma falhar primeiro?',
-        placeholder: 'Ex.: cabelo, pele, roupa, perfume, postura',
+        placeholder: 'Escolha o ponto',
+        options: ['Cabelo', 'Pele', 'Roupa', 'Postura e presença'],
       },
       {
         key: 'desiredFeeling',
         label: 'Como você quer se sentir ao sair?',
-        placeholder: 'Ex.: limpa, marcante, segura, feminina',
+        placeholder: 'Escolha a intenção',
+        options: ['Mais cuidada', 'Mais segura', 'Mais leve', 'Mais marcante'],
       },
     ],
   },
@@ -268,17 +288,20 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
       {
         key: 'desiredItem',
         label: 'O que você está pensando em comprar?',
-        placeholder: 'Ex.: blazer, perfume, bolsa, sapato',
+        placeholder: 'Escolha o item',
+        options: ['Roupa', 'Sapato', 'Bolsa', 'Acessório ou perfume'],
       },
       {
         key: 'buyingReason',
         label: 'Qual sensação você espera resolver com essa compra?',
-        placeholder: 'Ex.: parecer mais arrumada, menos comum, mais adulta',
+        placeholder: 'Escolha o motivo',
+        options: ['Resolver uma ocasião', 'Sentir mais presença', 'Substituir item gasto', 'Impulso ou novidade'],
       },
       {
         key: 'fitWithSignature',
         label: 'Como esse item conversa com sua assinatura MUSA?',
-        placeholder: 'Ex.: combina com minha cor-base e acabamento',
+        placeholder: 'Escolha a aderência',
+        options: ['Combina e será repetido', 'Combina pouco', 'Já tenho algo equivalente', 'Ainda não sei'],
       },
     ],
   },
@@ -298,17 +321,20 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
       {
         key: 'occasion',
         label: 'Qual é a ocasião?',
-        placeholder: 'Ex.: reunião, evento, encontro, gravação, almoço',
+        placeholder: 'Escolha a ocasião',
+        options: ['Trabalho ou reunião', 'Encontro ou saída', 'Evento', 'Foto ou conteúdo'],
       },
       {
         key: 'plannedLook',
         label: 'Qual composição você pretende usar?',
-        placeholder: 'Roupa, cabelo, pele, perfume e detalhe final',
+        placeholder: 'Escolha a base',
+        options: ['Base neutra e detalhe', 'Peça-sinal e acabamento', 'Cor-base e acessório', 'Ainda vou escolher'],
       },
       {
         key: 'presenceRisk',
         label: 'O que pode enfraquecer sua presença nesse contexto?',
-        placeholder: 'Ex.: pressa, insegurança, roupa sem caimento',
+        placeholder: 'Escolha o risco',
+        options: ['Pressa', 'Excesso de informação', 'Falta de acabamento', 'Desconforto'],
       },
     ],
   },
@@ -328,17 +354,20 @@ const missionGuidanceConfigs: Record<string, MissionGuidanceConfig> = {
       {
         key: 'bestSignal',
         label: 'Qual sinal mais funcionou nesta semana?',
-        placeholder: 'Ex.: cabelo polido, cor-base vinho, perfume',
+        placeholder: 'Escolha o sinal',
+        options: ['Acabamento', 'Cor-base', 'Peça-sinal', 'Postura e presença'],
       },
       {
         key: 'hardestPoint',
         label: 'Qual ponto ainda exige esforço?',
-        placeholder: 'Ex.: manter cabelo, combinar cores, evitar compras',
+        placeholder: 'Escolha a dificuldade',
+        options: ['Pouco tempo', 'Combinar cores', 'Evitar compras', 'Manter constância'],
       },
       {
         key: 'weeklyRitual',
         label: 'Que ritual semanal você consegue repetir?',
-        placeholder: 'Ex.: separar 3 combinações no domingo por 15 minutos',
+        placeholder: 'Escolha o ritual',
+        options: ['Separar 3 combinações', 'Revisar acabamentos', 'Planejar uma ocasião', 'Repetir a peça-sinal'],
       },
     ],
   },
@@ -373,6 +402,29 @@ function resolveDeviceType() {
     return 'tablet';
   }
   return 'desktop';
+}
+
+function MusaV7PrivacyNotice({ compact = false }: { compact?: boolean }) {
+  return (
+    <section className={`musa-privacy-notice${compact ? ' compact' : ''}`} aria-label="Privacidade e controle dos dados MUSA">
+      <div>
+        <p className="section-kicker">Privacidade e autonomia</p>
+        <h2>Você controla os dados da sua jornada.</h2>
+        <p>
+          Usamos seu e-mail, escolhas categoriais, progresso, estado do acesso e eventos técnicos somente para entregar, retomar, apoiar e medir o Método MUSA.
+          As sete missões não pedem foto nem texto livre e não enviam suas respostas para OpenAI ou gerador de vídeo. Se você procurar suporte, poderá escrever voluntariamente uma mensagem breve, usada somente para atender seu pedido.
+        </p>
+      </div>
+      <ul>
+        <li>Escolhas, progresso e eventos técnicos ficam durante o acesso e por até 180 dias após a expiração para recuperação, suporte, prevenção de abuso e auditoria.</li>
+        <li>Registros de pagamento são mantidos somente pelos prazos legais e contábeis aplicáveis; depois, os demais dados devem ser excluídos ou anonimizados.</li>
+        <li>Você pode pedir confirmação, acesso, correção ou exclusão aplicável, informando o e-mail usado no produto.</li>
+      </ul>
+      <a href={`mailto:${MUSA_PRIVACY_CONTACT_EMAIL}?subject=Direitos%20de%20dados%20MUSA`}>
+        Solicitar acesso, correção ou exclusão
+      </a>
+    </section>
+  );
 }
 
 function readCampaignParams() {
@@ -412,10 +464,16 @@ function resolveHostExperienceVersionOverride() {
   return resolveCurrentMusaVersionedHostConfig()?.experienceVersion ?? '';
 }
 
+function resolvePreviewExperienceVersionOverride() {
+  const params = new URLSearchParams(window.location.search);
+  const localHosts = new Set(['localhost', '127.0.0.1', 'pde-platform-frontend']);
+  return localHosts.has(window.location.hostname.toLowerCase()) ? (params.get('experienceVersion') ?? '') : '';
+}
+
 function resolvePublicProductUrl() {
   const query = new URLSearchParams();
   const hostConfig = resolveCurrentMusaVersionedHostConfig();
-  const hostExperienceVersion = hostConfig?.experienceVersion ?? '';
+  const hostExperienceVersion = hostConfig?.experienceVersion ?? resolvePreviewExperienceVersionOverride();
   if (hostConfig?.slotCode) {
     query.set('slotCode', hostConfig.slotCode);
   }
@@ -428,7 +486,9 @@ function resolvePublicProductUrl() {
 
 function applyExperienceOverrides(productExperience: ProductExperience, allowHostOverride = true) {
   const experienceVersionOverride = readRuntimeConfigValue('VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE', (import.meta.env.VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE as string | undefined) ?? '');
-  const hostExperienceVersionOverride = allowHostOverride ? resolveHostExperienceVersionOverride() : '';
+  const hostExperienceVersionOverride = allowHostOverride
+    ? (resolveHostExperienceVersionOverride() || resolvePreviewExperienceVersionOverride())
+    : '';
   const selectedExperienceVersion = hostExperienceVersionOverride || experienceVersionOverride;
   if (!selectedExperienceVersion) {
     return productExperience;
@@ -443,7 +503,9 @@ function applyExperienceOverrides(productExperience: ProductExperience, allowHos
 
 function resolveFallbackProductForCurrentContext() {
   const experienceVersionOverride = readRuntimeConfigValue('VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE', (import.meta.env.VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE as string | undefined) ?? '');
-  const selectedExperienceVersion = resolveHostExperienceVersionOverride() || experienceVersionOverride;
+  const selectedExperienceVersion = resolveHostExperienceVersionOverride()
+    || resolvePreviewExperienceVersionOverride()
+    || experienceVersionOverride;
   return resolveMusaFallbackProduct(selectedExperienceVersion);
 }
 
@@ -478,6 +540,8 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [privacyCompletionMessage, setPrivacyCompletionMessage] = useState('');
+  const [correctedEmail, setCorrectedEmail] = useState('');
   const [devAccessUrl, setDevAccessUrl] = useState('');
   const [presenceBlocker, setPresenceBlocker] = useState('');
   const [desiredPresence, setDesiredPresence] = useState('');
@@ -496,6 +560,8 @@ function App() {
   const [completedMissionFeedbackId, setCompletedMissionFeedbackId] = useState('');
   const [missionFeedback, setMissionFeedback] = useState<Record<string, string>>({});
   const [missionFeedbackSent, setMissionFeedbackSent] = useState(false);
+  const [supportMessage, setSupportMessage] = useState('');
+  const [submittingSupport, setSubmittingSupport] = useState(false);
   const firstUseTrackedRef = useRef(false);
   const visitorIdRef = useRef(stableBrowserId('musaVisitorId'));
   const sessionIdRef = useRef(window.sessionStorage.getItem('musaSessionId') ?? '');
@@ -519,6 +585,7 @@ function App() {
   const [publicDiagnosticVideoVariant] = useState<PublicDiagnosticVideoVariant>(resolvePublicDiagnosticVideoVariant);
   const currentProduct = workspace?.product ?? product;
   const currentExperienceVersion = resolveExperienceVersion(currentProduct);
+  const isMusaV7 = currentExperienceVersion === MUSA_V7_EXPERIENCE_VERSION;
   const currentMusaExperience = resolveMusaExperienceContract(currentExperienceVersion, currentProduct.layoutKey);
   const publicDiagnosticQuestions =
     currentProduct.publicDiagnosticQuestions?.length
@@ -1372,7 +1439,7 @@ function App() {
     }
   }
 
-  async function requestMissionGuidance(missionId: string) {
+  async function requestMissionGuidance(missionId: string, suppliedAnswers?: Record<string, string>) {
     if (!accessToken || !workspace) {
       return;
     }
@@ -1381,7 +1448,7 @@ function App() {
       await saveMissionInteraction(missionId);
       return;
     }
-    const answers = sanitizeAnswers(missionAnswers[missionId] ?? {});
+    const answers = sanitizeAnswers(suppliedAnswers ?? missionAnswers[missionId] ?? {});
     if (Object.keys(answers).length < 3) {
       setErrorMessage('Preencha os 3 pontos para a Consultora MUSA montar sua orientação.');
       return;
@@ -1398,12 +1465,15 @@ function App() {
       const response = await fetch(`/api/pde/access/${accessToken}/missions/${missionId}/ai-guidance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guidanceType: config.guidanceType, answers }),
+        body: JSON.stringify({ guidanceType: config.guidanceType, answers, experienceVersion: currentExperienceVersion }),
       });
       if (!response.ok) {
         throw new Error('Não foi possível solicitar sua orientação MUSA.');
       }
       const guidance = (await response.json()) as AiGuidance;
+      if (suppliedAnswers) {
+        setMissionAnswers((current) => ({ ...current, [missionId]: suppliedAnswers }));
+      }
       setAiGuidanceByMission((current) => ({
         ...current,
         [missionId]: guidance,
@@ -1414,6 +1484,92 @@ function App() {
       setErrorMessage('Não conseguimos acionar a Consultora MUSA agora. Suas respostas podem ser salvas e usadas manualmente.');
     } finally {
       setGeneratingGuidance(false);
+    }
+  }
+
+  async function keepMissionAsIs(missionId: string) {
+    const config = missionGuidanceConfigs[missionId];
+    if (!config) {
+      return;
+    }
+    const neutralAnswers = Object.fromEntries(config.fields.map((field) => [field.key, MUSA_NEUTRAL_CHOICE]));
+    await requestMissionGuidance(missionId, neutralAnswers);
+    trackEvent('MISSION_INTERACTION_SAVED', {
+      accessToken,
+      email: workspace?.email,
+      provider: workspace?.accessSource,
+      metadata: { missionId, neutralPath: true, actionName: 'keep_mission_as_is' },
+    });
+  }
+
+  async function submitSupportRequest() {
+    if (!accessToken || !workspace || !supportMessage.trim()) {
+      return;
+    }
+    setSubmittingSupport(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+    try {
+      const response = await fetch(`/api/pde/access/${accessToken}/support-requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: supportMessage.trim() }),
+      });
+      if (!response.ok) {
+        throw new Error('Não foi possível registrar o suporte.');
+      }
+      const data = (await response.json()) as Workspace;
+      setWorkspace({ ...data, product: applyExperienceOverrides(data.product, false) });
+      setSupportMessage('');
+      setSuccessMessage('Pedido de suporte registrado no seu acesso. A equipe responderá pelo e-mail usado na MUSA.');
+    } catch {
+      setErrorMessage('Não conseguimos registrar seu pedido agora. Tente novamente ou escreva para contato@digicomdigital.com.br.');
+    } finally {
+      setSubmittingSupport(false);
+    }
+  }
+
+  async function executePrivacyAction(action: 'ACCESS' | 'CORRECTION' | 'DELETION') {
+    if (!accessToken || !workspace) {
+      return;
+    }
+    if (action === 'DELETION' && !window.confirm('Excluir respostas e progresso deste acesso? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+    setErrorMessage('');
+    setSuccessMessage('');
+    try {
+      const response = await fetch(`/api/pde/access/${accessToken}/privacy-requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, correctedEmail: action === 'CORRECTION' ? correctedEmail.trim() : undefined }),
+      });
+      if (!response.ok) {
+        throw new Error('Não foi possível executar o direito solicitado.');
+      }
+      const result = (await response.json()) as PrivacyActionResponse;
+      if (action === 'ACCESS') {
+        const dataUrl = URL.createObjectURL(new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' }));
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = 'meus-dados-musa.json';
+        link.click();
+        URL.revokeObjectURL(dataUrl);
+        setSuccessMessage('Sua cópia de dados foi gerada e o atendimento ficou auditado.');
+        return;
+      }
+      if (action === 'CORRECTION') {
+        setWorkspace({ ...workspace, email: correctedEmail.trim().toLowerCase() });
+        setCorrectedEmail('');
+        setSuccessMessage('E-mail corrigido. Use o novo endereço para retomar sua jornada.');
+        return;
+      }
+      setWorkspace(null);
+      setAccessToken('');
+      window.history.replaceState({}, '', '/');
+      setPrivacyCompletionMessage('Seus dados de uso e progresso foram excluídos. Registros fiscais permanecem somente pelo prazo legal aplicável.');
+    } catch {
+      setErrorMessage('Não conseguimos executar sua solicitação de privacidade agora. Escreva para contato@digicomdigital.com.br.');
     }
   }
 
@@ -1471,7 +1627,7 @@ function App() {
       const response = await fetch('/api/pde/public/presence-diagnostic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers }),
+        body: JSON.stringify({ answers, experienceVersion: currentExperienceVersion }),
       });
       if (!response.ok) {
         throw new Error('Não foi possível solicitar o diagnóstico.');
@@ -1515,7 +1671,7 @@ function App() {
       const response = await fetch('/api/pde/access/magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productSlug: product.slug, email }),
+        body: JSON.stringify({ productSlug: product.slug, email, experienceVersion: currentExperienceVersion }),
       });
       if (!response.ok) {
         const errorBody = await response.json().catch(() => ({}) as ApiErrorResponse);
@@ -1638,9 +1794,12 @@ function App() {
 
   const completedMissionIds = new Set(workspace?.completedMissionIds ?? []);
   const firstMission = currentProduct.missions[0];
-  const nextMission = currentProduct.missions.find((mission) => !completedMissionIds.has(mission.id)) ?? currentProduct.missions[0];
+  const nextMission = currentProduct.missions.find((mission) => !completedMissionIds.has(mission.id));
   const nextMissionIsFirstMission = Boolean(firstMission && nextMission?.id === firstMission.id);
   const hasActiveSubscription = workspace?.subscriptionStatus === 'ACTIVE';
+  const accessExpiryLabel = workspace?.accessExpiresAt
+    ? new Date(workspace.accessExpiresAt).toLocaleDateString('pt-BR')
+    : '';
   const dayOneCompleted = Boolean(firstMission && completedMissionIds.has(firstMission.id));
   const trialNeedsPaymentForNextDay = Boolean(!hasActiveSubscription && dayOneCompleted && nextMission && !nextMissionIsFirstMission);
   const canCompleteActiveMission = Boolean(activeMission && (hasActiveSubscription || activeMission.id === firstMission?.id));
@@ -1654,6 +1813,7 @@ function App() {
   const showMotivationalTimelineVideo = currentMusaExperience.usesMotivationalTimelineVideo;
   const showPublishedPublicDiagnosticVideoHero =
     !workspace
+    && !isMusaV7
     && Boolean(heroPlaybackUrl)
     && ((currentMusaExperience.supportsPublishedPublicDiagnosticVideoHero && publicDiagnosticVideoVariant !== 'control')
       || publicDiagnosticVideoVariant === 'video');
@@ -1700,6 +1860,31 @@ function App() {
     }
     const answers = missionAnswers[missionId] ?? {};
     return config.fields.every((field) => answers[field.key]?.trim());
+  }
+
+  async function openProtectedMaterial(material: SupportMaterial) {
+    setErrorMessage('');
+    try {
+      if (!isMusaV7 || !material.url.startsWith('/')) {
+        window.open(material.url, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      const response = await fetch(material.url, {
+        headers: { 'X-PDE-Access-Token': accessToken },
+      });
+      if (!response.ok) {
+        throw new Error('Material não autorizado');
+      }
+      const objectUrl = URL.createObjectURL(await response.blob());
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch {
+      setErrorMessage('Não conseguimos abrir este material agora. Confirme seu acesso ou peça ajuda ao suporte.');
+    }
   }
 
   function trackPublicHeroVideoPlayback(eventType: string, metadata: Record<string, unknown> = {}) {
@@ -1790,6 +1975,7 @@ function App() {
           <div className="public-diagnostic-intro">
             <h1>{publicFirstFoldHeadline}</h1>
             <p>{publicFirstFoldSupportingText}</p>
+            {privacyCompletionMessage && <p className="form-message success-message" role="status">{privacyCompletionMessage}</p>}
           </div>
 
           {showPublicDiagnosticVideoHero && (
@@ -1898,7 +2084,7 @@ function App() {
             </section>
           )}
 
-          <section className="public-diagnostic-form" aria-label="Diagnóstico de Presença">
+          <section className="public-diagnostic-form" aria-label={isMusaV7 ? 'Primeiro ajuste MUSA' : 'Diagnóstico de Presença'}>
             <div className="public-diagnostic-experience">
               <div
                 className={`public-diagnostic-visual public-diagnostic-visual-${publicDiagnosticDirection}`}
@@ -1906,7 +2092,7 @@ function App() {
               >
                 <img src={activePublicDiagnosticQuestion.imageUrl} alt="" />
                 <div className="public-diagnostic-visual-copy">
-                  <span>Diagnóstico de Presença</span>
+                  <span>{isMusaV7 ? 'Primeiro ajuste MUSA' : 'Diagnóstico de Presença'}</span>
                   <strong>{activePublicDiagnosticQuestion.visualTitle}</strong>
                   <p>{activePublicDiagnosticQuestion.visualText}</p>
                 </div>
@@ -1954,7 +2140,7 @@ function App() {
                   <p className="section-kicker">Seu primeiro ajuste MUSA</p>
                   <span>{answeredPublicDiagnosticCount}/{publicDiagnosticQuestions.length} passos</span>
                 </div>
-                <h2>Em 4 respostas rápidas, você descobre o detalhe que mais enfraquece sua presença e recebe uma ação simples para testar hoje.</h2>
+                <h2>{isMusaV7 ? 'Em 4 escolhas rápidas, você organiza um ajuste pequeno para testar hoje com o que já possui.' : 'Em 4 respostas rápidas, você descobre o detalhe que mais enfraquece sua presença e recebe uma ação simples para testar hoje.'}</h2>
                 <div className="public-road-steps" aria-label="Etapas do seu primeiro ajuste MUSA">
                   {publicDiagnosticQuestions.map((question, index) => (
                     <span key={question.key} className={index === publicDiagnosticStep ? 'active' : publicDiagnosticAnswers[question.key] ? 'answered' : ''}>
@@ -1988,7 +2174,7 @@ function App() {
           {publicDiagnosticPending && (
             <section className="public-ai-status" role="status" aria-live="polite">
               <LoaderCircle className="button-spinner" size={20} />
-              <span>A Consultora MUSA está lendo suas respostas e criando um plano de 7 dias para sua rotina.</span>
+              <span>{isMusaV7 ? 'O Método MUSA está combinando suas escolhas por regras locais.' : 'A Consultora MUSA está lendo suas respostas e criando um plano de 7 dias para sua rotina.'}</span>
             </section>
           )}
 
@@ -2000,15 +2186,15 @@ function App() {
           )}
 
           {publicDiagnosticCompleted && (
-            <section className="public-diagnostic-result" aria-label="Plano personalizado de 7 dias">
+            <section className="public-diagnostic-result" aria-label={isMusaV7 ? 'Primeiro ajuste e prévia dos 7 dias' : 'Plano personalizado de 7 dias'}>
               <div className="public-result-hero">
                 <div>
-                  <p className="section-kicker">Resultado MUSA gratuito</p>
+                  <p className="section-kicker">{isMusaV7 ? 'Primeiro ajuste gratuito' : 'Resultado MUSA gratuito'}</p>
                   <h2>{resolvePublicDiagnosticHeadline(publicDiagnosticGuidance)}</h2>
                   <p>{resolvePublicDiagnosticSummary(publicDiagnosticGuidance)}</p>
                 </div>
                 <div className="public-main-signal" aria-label="Seu sinal principal de presença">
-                  <span>Seu sinal principal hoje</span>
+                  <span>{isMusaV7 ? 'Sua escolha principal hoje' : 'Seu sinal principal hoje'}</span>
                   <strong>{resolvePrincipalPresenceSignal(publicDiagnosticGuidance)}</strong>
                 </div>
               </div>
@@ -2088,6 +2274,7 @@ function App() {
             </section>
           )}
         </section>
+        {isMusaV7 && <MusaV7PrivacyNotice />}
       </main>
     );
   }
@@ -2323,8 +2510,8 @@ function App() {
             <span>Próxima missão</span>
             <strong>{nextMission ? `Dia ${nextMission.day}` : 'Jornada finalizada'}</strong>
           </div>
-          <h2>{nextMission?.title ?? 'Continue sua assinatura MUSA'}</h2>
-          <p>{trialNeedsPaymentForNextDay ? 'Sua primeira microação foi registrada. O Dia 2 continua a transformação com sua assinatura simples, mas precisa do acesso completo para abrir.' : nextMission ? 'Escolha uma combinação real, identifique o sinal que sua imagem comunica sem intenção e registre a frase que vai guiar sua primeira microação.' : currentProduct.completionOffer}</p>
+          <h2>{nextMission?.title ?? 'Sua jornada MUSA está concluída'}</h2>
+          <p>{trialNeedsPaymentForNextDay ? 'Sua primeira microação foi registrada. O Dia 2 continua a sequência, mas precisa do acesso completo para abrir.' : nextMission ? 'Escolha uma combinação real, observe o sinal que você deseja ajustar e registre a escolha que vai guiar sua microação.' : currentProduct.completionOffer}</p>
           {trialNeedsPaymentForNextDay ? (
             <button className="secondary-button next-mission-button" onClick={handleSubscriptionClick}>
               <CreditCard size={18} />
@@ -2364,9 +2551,9 @@ function App() {
         </article>
         <article className="status-card">
           <ClipboardCheck size={20} />
-          <span>Diagnóstico</span>
+          <span>Primeiro ajuste</span>
           <strong>Comece pelo espelho</strong>
-          <p>Nomeie o que hoje deixa você arrumada, mas pouco marcante.</p>
+          <p>Escolha o sinal que você quer observar e teste uma mudança pequena.</p>
         </article>
         <article className="status-card">
           <CalendarDays size={20} />
@@ -2376,18 +2563,22 @@ function App() {
         </article>
         <article className="status-card">
           <KeyRound size={20} />
-          <span>{hasActiveSubscription ? 'Produto ativo' : 'Assinatura'}</span>
-          <strong>{hasActiveSubscription ? 'Acesso completo' : 'Pendente'}</strong>
-          <p>{hasActiveSubscription ? 'Método MUSA liberado para uso.' : 'Assine para liberar todos os recursos.'}</p>
+          <span>{hasActiveSubscription ? 'Produto ativo' : 'Acesso completo'}</span>
+          <strong>{hasActiveSubscription ? 'Liberado' : workspace.subscriptionStatus === 'EXPIRED' ? 'Expirado' : 'Pendente'}</strong>
+          <p>{hasActiveSubscription
+            ? `Método MUSA liberado${accessExpiryLabel ? ` até ${accessExpiryLabel}` : ''}.`
+            : workspace.subscriptionStatus === 'EXPIRED'
+              ? 'Os 90 dias terminaram. Sua compra anterior permanece reconhecida e não existe renovação automática.'
+              : 'Faça o pagamento único para liberar os 7 dias.'}</p>
         </article>
       </section>
 
-      {!hasActiveSubscription && (
-        <section className="subscription-paywall" aria-label="Oferta de assinatura MUSA" data-analytics-section="subscription_paywall">
+      {workspace.subscriptionStatus === 'TRIAL' && (
+        <section className="subscription-paywall" aria-label="Oferta de acesso completo MUSA" data-analytics-section="access_paywall">
           <div>
             <p className="section-kicker">Liberar área completa</p>
-            <h2>Assine o Clube MUSA para continuar seu plano personalizado dos 7 dias.</h2>
-            <p>Seu Mapa de Presença inicial já mostrou o primeiro sinal. O acesso completo libera os próximos dias, a sequência de microações e o acompanhamento para transformar isso em presença repetível.</p>
+            <h2>Libere o Método MUSA completo com pagamento único.</h2>
+            <p>Seu primeiro ajuste já mostrou o mecanismo. O pagamento único libera os 7 dias e os materiais por 90 dias, sem assinatura ou renovação automática.</p>
             {currentProduct.priceLabel && (
               <div className="paywall-price-highlight" aria-label={`Preço do acesso completo: ${currentProduct.priceLabel}`}>
                 <span>Acesso completo</span>
@@ -2402,6 +2593,17 @@ function App() {
         </section>
       )}
 
+      {workspace.subscriptionStatus === 'EXPIRED' && (
+        <section className="subscription-expired-notice" aria-label="Acesso MUSA expirado">
+          <div>
+            <p className="section-kicker">Acesso encerrado</p>
+            <h2>Seus 90 dias terminaram, mas sua compra anterior continua reconhecida.</h2>
+            <p>Não há assinatura, renovação automática nem nova cobrança iniciada por esta tela. Use o suporte abaixo para revisar sua situação ou exercer seus direitos sobre os dados.</p>
+          </div>
+          <a className="secondary-button" href="#musa-support">Ir para suporte e dados</a>
+        </section>
+      )}
+
       <section className="dashboard-header compact-dashboard-header">
         <div className="dashboard-title">
           <div className="dashboard-icon">
@@ -2409,8 +2611,8 @@ function App() {
           </div>
           <div>
             <p className="eyebrow">Roteiro guiado</p>
-            <h2>Mapa de Presença e plano de 7 dias</h2>
-            <p>Responda, receba seu mapa e siga a próxima microação indicada pela jornada.</p>
+            <h2>Primeiro ajuste e jornada de 7 dias</h2>
+            <p>Escolha, organize seu ajuste e siga a próxima microação da jornada.</p>
           </div>
         </div>
       </section>
@@ -2500,6 +2702,7 @@ function App() {
                   <p className="section-kicker">{activeMissionGuidanceConfig.kicker}</p>
                   <h3>{activeMissionGuidanceConfig.title}</h3>
                   <p className="guidance-helper-text">{activeMissionGuidanceConfig.helperText}</p>
+                  {isMusaV7 && <p className="musa-local-rules-note">Regras locais: suas escolhas não são enviadas para IA ou gerador de vídeo.</p>}
                   {activeMissionGuidanceConfig.fields.map((field) => (
                     <label key={field.key}>
                       {field.label}
@@ -2528,6 +2731,16 @@ function App() {
                     {generatingGuidance ? <LoaderCircle className="button-spinner" size={16} /> : <Sparkles size={16} />}
                     {generatingGuidance ? activeMissionGuidanceConfig.loadingLabel : activeMissionGuidanceConfig.buttonLabel}
                   </button>
+                  {isMusaV7 && (
+                    <button
+                      className="neutral-mission-button"
+                      disabled={generatingGuidance || savingInteraction || completedMissionIds.has(activeMission.id)}
+                      onClick={() => keepMissionAsIs(activeMission.id)}
+                      type="button"
+                    >
+                      Manter como está por enquanto
+                    </button>
+                  )}
                   {activeMissionGuidance?.status === 'PENDING' && (
                     <div className="personalized-summary">
                       <LoaderCircle className="button-spinner" size={17} />
@@ -2640,7 +2853,7 @@ function App() {
               )}
               <button className="secondary-button" disabled={!workspace || completedMissionIds.has(activeMission.id) || !canRegisterActiveMission || missionCompletionStatus === 'processing'} onClick={() => completeMission(activeMission.id)}>
                 {missionCompletionStatus === 'processing' ? <LoaderCircle className="button-spinner" size={18} /> : canRegisterActiveMission ? <Check size={18} /> : <Lock size={18} />}
-                {missionCompletionStatus === 'processing' ? `Registrando seu Dia ${activeMission.day}...` : canRegisterActiveMission ? (completedMissionIds.has(activeMission.id) ? 'Missão concluída' : `Registrar Dia ${activeMission.day} concluído`) : activeMission.id === firstMission?.id ? 'Receba seu diagnóstico para concluir' : activeMissionGuidanceConfig ? 'Preencha os 3 pontos para concluir' : 'Assine para salvar esta missão'}
+                {missionCompletionStatus === 'processing' ? `Registrando seu Dia ${activeMission.day}...` : canRegisterActiveMission ? (completedMissionIds.has(activeMission.id) ? 'Missão concluída' : `Registrar Dia ${activeMission.day} concluído`) : activeMission.id === firstMission?.id ? 'Receba seu primeiro ajuste para concluir' : activeMissionGuidanceConfig ? 'Preencha os 3 pontos para concluir' : 'Libere o acesso completo para salvar esta missão'}
               </button>
             </article>
           )}
@@ -2664,11 +2877,10 @@ function App() {
                 <span>{material.type}</span>
                 <h3>{material.title}</h3>
                 <p>{material.description}</p>
-                <a
-                  href={material.url}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
                   onClick={() => {
+                    void openProtectedMaterial(material);
                     trackEvent('MATERIAL_OPEN', {
                       accessToken,
                       email: workspace.email,
@@ -2685,9 +2897,58 @@ function App() {
                   }}
                 >
                   Abrir material
-                </a>
+                </button>
               </article>
             ))}
+          </div>
+        </section>
+      )}
+
+      {isMusaV7 && <MusaV7PrivacyNotice compact />}
+
+      {isMusaV7 && (
+        <section className="musa-support-panel" id="musa-support" aria-label="Suporte MUSA">
+          <div>
+            <p className="section-kicker">Suporte dentro da experiência</p>
+            <h2>Precisa de ajuda para usar ou retomar o MUSA?</h2>
+            <p>Seu pedido fica ligado a este acesso. A equipe responde pelo e-mail <strong>{workspace.email}</strong>, inclusive se os 90 dias já tiverem terminado.</p>
+            {workspace.supportStatus === 'OPEN' && <p className="support-open-status" role="status">Você já possui um pedido de suporte aberto.</p>}
+          </div>
+          <label>
+            Como podemos ajudar?
+            <textarea
+              rows={3}
+              maxLength={2000}
+              value={supportMessage}
+              onChange={(event) => setSupportMessage(event.target.value)}
+              placeholder="Descreva brevemente a dúvida ou o ponto que deseja revisar."
+            />
+            <span className="support-data-guidance">Mensagem voluntária usada somente para atender este pedido e mantida pelo prazo necessário ao suporte. Não inclua saúde, intimidade, documentos ou outros dados sensíveis e desnecessários.</span>
+          </label>
+          <button className="inline-save-button" disabled={submittingSupport || !supportMessage.trim()} onClick={submitSupportRequest} type="button">
+            <Mail size={17} />
+            {submittingSupport ? 'Registrando pedido...' : 'Pedir suporte'}
+          </button>
+          {errorMessage && <p className="form-message">{errorMessage}</p>}
+          {successMessage && <p className="form-message success-message">{successMessage}</p>}
+          <div className="privacy-actions" aria-label="Direitos sobre meus dados">
+            <label className="privacy-email-correction">
+              Corrigir e-mail do acesso
+              <input
+                type="email"
+                value={correctedEmail}
+                onChange={(event) => setCorrectedEmail(event.target.value)}
+                placeholder="novoemail@exemplo.com"
+              />
+            </label>
+            <button
+              className="neutral-mission-button"
+              disabled={!correctedEmail.trim() || correctedEmail.trim().toLowerCase() === workspace.email.toLowerCase()}
+              onClick={() => executePrivacyAction('CORRECTION')}
+              type="button"
+            >Corrigir meu e-mail</button>
+            <button className="neutral-mission-button" onClick={() => executePrivacyAction('ACCESS')} type="button">Baixar meus dados</button>
+            <button className="privacy-delete-button" onClick={() => executePrivacyAction('DELETION')} type="button">Excluir respostas e progresso</button>
           </div>
         </section>
       )}

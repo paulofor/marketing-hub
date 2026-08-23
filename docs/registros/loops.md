@@ -8,6 +8,27 @@
 >
 > Uso obrigatório recomendado: antes de corrigir problema em GeraLanding, Facebook Ads, Lead Portal, OpenAI/schema, pipelines administrativos ou pipeline de hipótese, verificar se a solicitação reabre algum loop listado aqui.
 
+## LOOP-PDE-INTERFACE-SEGURA-COM-ROTA-LEGADA-INSEGURA — contrato contornado fora da tela
+
+- **Sintoma confirmado em 2026-08-23:** a jornada oficial MUSA v7 usava link mágico e respostas
+  categoriais, mas rotas públicas legadas devolviam o bearer token apenas com produto e e-mail e a
+  rota direta de interação ainda aceitava texto livre.
+- **Causa-raiz:** segurança e minimização foram testadas somente pelo caminho visual feliz, sem um
+  contrato único aplicado a toda a superfície HTTP.
+- **Correção sistêmica:** as rotas de login/cadastro que retornavam token foram removidas, logs foram
+  redigidos e a validação categorial por chave passou a ser central. Pepper exige preço e moeda exatos
+  e mantém auditoria financeira idempotente separada, sem PII ou credencial em claro.
+- **Prevenção:** testes negativos de controller, serviço e Playwright usam somente o e-mail conhecido,
+  chamam a rota de interação diretamente e tentam preço inferior, superior, moeda errada e transação
+  reutilizada. Toda correção reinicia as duas rodadas completas de homologação.
+
+## LOOP-PDE-DEGUSTACAO-DECLARADA-SEM-VALOR — promessa de demonstração sem amostra materializada
+
+- **Sintoma confirmado em 2026-08-23:** a oferta do Kit WhatsApp dizia apresentar uma demonstração, mas a página apenas repetia um parágrafo de prova comercial e não entregava uma resposta aplicável antes do checkout.
+- **Causa-raiz:** o campo textual `proof` da oferta era usado simultaneamente como promessa e como suposta evidência, sem contrato funcional, fronteira paga ou evento de ativação que comprovasse a entrega da degustação.
+- **Correção sistêmica:** a degustação passa a ter contrato versionado próprio e demonstração determinística interativa. A visitante informa somente um serviço genérico, escolhe situação e tom e recebe uma resposta, uma pergunta de qualificação e três follow-ups; o texto informado nunca é persistido. A implantação completa permanece claramente reservada à oferta paga.
+- **Prevenção:** a homologação pública exige a interface de degustação no Kit; a jornada ponta a ponta valida materialização, privacidade, fronteira paga e a sequência atribuível `TASTING_STARTED`, `VALUE_MOMENT`, `PAYWALL_VIEWED` e `CHECKOUT_STARTED`. Texto promocional isolado não satisfaz mais o gate de prova de valor.
+
 ## LOOP-PDE-TARGETED-DEPLOY-CROSS-SURFACE-SMOKE — publicação isolada falha por versão não publicada
 
 - **Sintoma confirmado em 2026-08-23:** o deploy direcionado ao frontend `kit-whatsapp` publicou a imagem correta, passou nos contratos públicos do Kit e terminou vermelho ao tentar validar `version-diagnostics.json` das versões v5 e v6 do MUSA.
@@ -381,6 +402,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 | `LOOP-DEPLOY-COMPOSE-CROSS-SERVICE-SECRETS`         | ALTO       | Fechado em 2026-08-04            | Deploy por serviço                                    | descritor Compose isolado por destino + teste sem secrets alheios                            |
 | `LOOP-DEPLOY-STALE-IMAGE`                           | ALTO       | Fechado em 2026-08-04            | Detecção de mudanças do deploy                        | alteração de publicador/workflow força rebuild e teste do artefato                           |
 | `LOOP-DEPLOY-GLOBAL-TIMEOUT`                        | ALTO       | Fechado em 2026-08-06            | Deploy backend/frontend                               | limites próprios por operação + saúde obrigatória do backend                                 |
+| `LOOP-TEMIS-PDE-ARTIFACT-DEPLOY-DRIFT`              | ALTO       | Fechado localmente em 2026-08-23 | Evidência versionada de Têmis                         | sincronização allowlist + gatilho por artefato + readiness dentro do container                |
 | `LOOP-CUSTOMER-AGENT-OBSERVABILITY`                 | ALTO       | Fechado em 2026-08-06            | Agente Cliente                                        | logfile canônico do worker + alias MCP + teste ponta a ponta                                 |
 | `LOOP-CUSTOMER-AGENT-EVALUATION-TIMEOUT`            | ALTO       | Fechado em 2026-08-06            | Agente Cliente                                        | timeout adequado + erro persistido e integralmente visível no frontend + retry controlado    |
 | `LOOP-FINANCIAL-AGENT-OBSERVABILITY`                | ALTO       | Fechado em 2026-08-06            | Agente Financeiro                                     | logfile canônico do worker + alias MCP + teste ponta a ponta                                 |
@@ -1583,3 +1605,50 @@ Use este checklist quando o problema estiver em algum loop acima:
   compilador.
 - **Prevenção:** teste HTTP com `MockMvc` chama a rota empacotável e confirma produto, experimento e
   preço; a jornada assistida local também consulta o endpoint real antes de simular o checkout.
+
+## LOOP-TEMIS-PDE-ARTIFACT-DEPLOY-DRIFT — revisão não recebe o contrato publicado
+
+- **Data:** 2026-08-23.
+- **Sintoma:** a tarefa #195 de Têmis foi reservada e bloqueada antes de consumir o modelo com
+  `Diretório de contratos comerciais PDE não encontrado`, apesar de o PR #5011 e o deploy dos
+  workers estarem verdes.
+- **Causa-raiz confirmada:** o container monta o repositório do host como fonte somente leitura,
+  mas o workflow isolado sincronizava apenas `meta-ad-approver-worker/` e um script. Os contratos em
+  `pde-platform/contracts/` e os materiais em `pde-platform/frontend/public/materials/` nunca eram
+  entregues ao host. As revisões #190 e #193 já registravam evidência versionada limitada, confirmando
+  que a divergência antecedia a falha fechada da tarefa #195.
+- **Correção sistêmica:** o workflow passa a sincronizar apenas os dois diretórios de evidência
+  autorizados e o launcher Codex usado pelo Compose, dispara quando eles mudarem e preserva o
+  restante do repositório isolado.
+- **Prevenção:** o gate arquitetural exige os gatilhos e comandos de sincronização; o readiness do
+  deploy entra no container de Têmis e exige os contratos da oferta, dos eventos e ao menos um
+  material funcional antes de declarar o executor pronto.
+
+## LOOP-PLANO-COMERCIAL-COAUTORIA-LIBERA-SUCESSORA — atividade avança com um revisor pendente
+
+- **Data:** 2026-08-23.
+- **Sintoma:** uma sucessora do Plano Comercial podia ser reservada quando apenas um dos responsáveis
+  pela predecessora havia concluído, ignorando o segundo parecer da mesma atividade.
+- **Causa-raiz:** a elegibilidade verificava a existência de uma conclusão por atividade, não a
+  conclusão de todas as tarefas daquela atividade na mesma instância.
+- **Prevenção:** o backend agrupa por atividade e exige a tentativa mais recente de cada coautor
+  concluída; tentativas superadas continuam auditáveis, mas não bloqueiam a correção. O contexto do
+  executor mantém somente o resultado concluído mais recente por agente e atividade.
+
+## LOOP-EXECUTOR-LOCAL-SEM-TIMEOUT — tarefa fica em andamento sem resposta do modelo
+
+- **Data:** 2026-08-23.
+- **Sintoma:** a tarefa #220 permaneceu em andamento por quinze minutos sem resposta nem telemetria.
+- **Causa-raiz:** o executor local não possuía limite operacional nem callback de falha técnica.
+- **Prevenção:** o runner aplica timeout validado, encerra o processo e persiste erro técnico e uso
+  parcial quando disponível; uma nova tarefa auditável pode então retomar a atividade.
+
+## LOOP-PRODUTO-CAMPO-MAIOR-QUE-SCHEMA — tela aceita texto e backend responde 500
+
+- **Data:** 2026-08-23.
+- **Sintoma:** salvar o produto #6 retornou HTTP 500 e MySQL 1406 porque `delivery_mode` recebeu mais
+  que 64 caracteres.
+- **Causa-raiz:** entidade e Liquibase limitavam os campos comparáveis, mas DTO e formulário não
+  reproduziam os mesmos máximos.
+- **Prevenção:** validação Bean Validation rejeita o payload antes do banco e o formulário limita os
+  campos conforme o schema. Testes REST e de interface protegem a concordância.

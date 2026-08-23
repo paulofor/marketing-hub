@@ -11,19 +11,38 @@ public class AccessGrant {
 
     private final String token;
     private final String productSlug;
-    private final String email;
+    private String email;
     private String source;
     private final Instant createdAt;
+    private String experienceVersion;
+    private Instant paidAt;
+    private Instant expiresAt;
     private final Set<String> completedMissionIds = new LinkedHashSet<>();
     private final Map<String, Map<String, String>> missionInteractions = new LinkedHashMap<>();
 
     /** Cria um acesso liberado para produto, e-mail e origem informados. */
     public AccessGrant(String token, String productSlug, String email, String source, Instant createdAt) {
+        this(token, productSlug, email, source, createdAt, "", null, null);
+    }
+
+    /** Cria um acesso preservando versão, pagamento e expiração contratual. */
+    public AccessGrant(
+            String token,
+            String productSlug,
+            String email,
+            String source,
+            Instant createdAt,
+            String experienceVersion,
+            Instant paidAt,
+            Instant expiresAt) {
         this.token = token;
         this.productSlug = productSlug;
         this.email = email;
         this.source = source;
         this.createdAt = createdAt;
+        this.experienceVersion = experienceVersion == null ? "" : experienceVersion;
+        this.paidAt = paidAt;
+        this.expiresAt = expiresAt;
     }
 
     /** Cria um acesso com progresso ja persistido anteriormente. */
@@ -55,6 +74,27 @@ public class AccessGrant {
         }
     }
 
+    /** Reconstrói um acesso versionado com prazo e progresso já persistidos. */
+    public AccessGrant(
+            String token,
+            String productSlug,
+            String email,
+            String source,
+            Instant createdAt,
+            String experienceVersion,
+            Instant paidAt,
+            Instant expiresAt,
+            Set<String> completedMissionIds,
+            Map<String, Map<String, String>> missionInteractions) {
+        this(token, productSlug, email, source, createdAt, experienceVersion, paidAt, expiresAt);
+        if (completedMissionIds != null) {
+            this.completedMissionIds.addAll(completedMissionIds);
+        }
+        if (missionInteractions != null) {
+            missionInteractions.forEach(this::saveMissionInteraction);
+        }
+    }
+
     /** Retorna o token público de acesso da cliente. */
     public String getToken() {
         return token;
@@ -80,9 +120,56 @@ public class AccessGrant {
         this.source = source;
     }
 
+    /** Vincula a versão comercial quando o acesso nasce em uma superfície versionada. */
+    public void updateExperienceVersion(String experienceVersion) {
+        if (experienceVersion != null && !experienceVersion.isBlank()) {
+            this.experienceVersion = experienceVersion.trim();
+        }
+    }
+
+    /** Registra a aprovação do pagamento e a data limite do acesso comprado. */
+    public void activatePaidAccess(Instant paidAt, Instant expiresAt) {
+        this.paidAt = paidAt;
+        this.expiresAt = expiresAt;
+    }
+
+    /** Corrige o e-mail do acesso após solicitação autenticada da titular. */
+    public void updateEmail(String email) {
+        this.email = email;
+    }
+
+    /** Remove dados de uso e invalida o acesso preservando somente auditoria anônima. */
+    public void anonymizeForPrivacy(String anonymousEmail, String reason, Instant executedAt) {
+        this.email = anonymousEmail;
+        this.source = "PRIVACY_DELETED";
+        this.paidAt = null;
+        this.expiresAt = null;
+        this.completedMissionIds.clear();
+        this.missionInteractions.clear();
+        this.missionInteractions.put("privacy", Map.of(
+                "requestType", reason,
+                "requestStatus", "COMPLETED",
+                "executedAt", executedAt.toString()));
+    }
+
     /** Retorna a data de criação do acesso. */
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    /** Retorna a versão da experiência associada ao acesso. */
+    public String getExperienceVersion() {
+        return experienceVersion;
+    }
+
+    /** Retorna o instante em que o pagamento foi aprovado. */
+    public Instant getPaidAt() {
+        return paidAt;
+    }
+
+    /** Retorna o instante de expiração quando o produto possui prazo contratual. */
+    public Instant getExpiresAt() {
+        return expiresAt;
     }
 
     /** Marca uma missão como concluída. */

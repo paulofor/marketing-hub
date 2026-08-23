@@ -18,6 +18,7 @@ const mysqlPort = process.env.PDE_LOCAL_MYSQL_PORT ?? '33067';
 export default defineConfig({
   testDir: './tests',
   testMatch: /musa-local-integration\.spec\.ts/,
+  workers: 1,
   timeout: 60_000,
   expect: {
     timeout: 10_000,
@@ -66,6 +67,14 @@ export default defineConfig({
     {
       name: 'local-integration-chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'local-integration-iphone-15-pro',
+      use: { ...devices['iPhone 15 Pro'] },
+    },
+    {
+      name: 'local-integration-pixel-7',
+      use: { ...devices['Pixel 7'] },
     },
   ],
 });

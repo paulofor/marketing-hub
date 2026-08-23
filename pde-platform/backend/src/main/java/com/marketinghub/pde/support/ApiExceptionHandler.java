@@ -11,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Converte erros da API PDE em respostas simples para o frontend. */
@@ -41,6 +42,14 @@ public class ApiExceptionHandler {
         return Map.of("error", "Entrada inválida para a API PDE");
     }
 
+    /** Responde controles internos e de entitlement com proibição explícita. */
+    @ExceptionHandler(SecurityException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public Map<String, String> handleSecurity(SecurityException ex) {
+        log.warn("Operação proibida na API PDE: {}", ex.getMessage(), ex);
+        return Map.of("error", ex.getMessage());
+    }
+
     /** Preserva o status HTTP deliberado de controles de acesso e outros contratos explícitos. */
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Map<String, String>> handleResponseStatus(ResponseStatusException ex) {
@@ -51,19 +60,25 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(ex.getStatusCode()).body(Map.of("error", message));
     }
 
+    /** Preserva rota inexistente como 404 sem fabricar alerta técnico de falha operacional. */
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, String> handleNoResource(NoResourceFoundException ex) {
+        log.info("Rota inexistente na API PDE; resourcePath={}", ex.getResourcePath());
+        return Map.of("error", "Rota não encontrada");
+    }
+
     /** Registra falha inesperada para impedir leitura comercial baseada em funil quebrado. */
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Map<String, String> handleUnexpected(Exception ex, HttpServletRequest request) {
         String endpoint = request == null ? "unknown" : request.getRequestURI();
         String method = request == null ? "unknown" : request.getMethod();
-        String queryString = request == null ? null : request.getQueryString();
         String clientIp = request == null ? "unknown" : resolveClientIp(request);
         log.error(
-                "Falha inesperada na API PDE; method={}, endpoint={}, queryString={}, clientIp={}",
+                "Falha inesperada na API PDE; method={}, endpoint={}, clientIp={}",
                 method,
                 endpoint,
-                queryString,
                 clientIp,
                 ex);
         operationalHealthService.recordEndpointFailure(request, HttpStatus.INTERNAL_SERVER_ERROR.value(), ex);

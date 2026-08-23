@@ -24,12 +24,15 @@ services:
       PDE_ACCESS_JDBC_URL: ${PDE_ACCESS_JDBC_URL:?PDE_ACCESS_JDBC_URL is required for PDE production analytics}
       PDE_ACCESS_JDBC_USERNAME: ${PDE_ACCESS_JDBC_USERNAME:?PDE_ACCESS_JDBC_USERNAME is required for PDE production analytics}
       PDE_ACCESS_JDBC_PASSWORD: ${PDE_ACCESS_JDBC_PASSWORD:?PDE_ACCESS_JDBC_PASSWORD is required for PDE production analytics}
+      PDE_INTERNAL_API_TOKEN: ${PDE_INTERNAL_API_TOKEN:?PDE_INTERNAL_API_TOKEN is required for PDE internal operations}
+      PDE_INTERNAL_QA_ENABLED: "false"
       PDE_APP_BASE_URL: ${PDE_APP_BASE_URL:-https://v5.clubemusa.com.br}
       PDE_PEPPER_API_TOKEN: ${PDE_PEPPER_API_TOKEN:?PDE_PEPPER_API_TOKEN is required for Pepper paid transaction sync}
       PDE_PEPPER_OFFER_HASHES: ${PDE_PEPPER_OFFER_HASHES:-owm6x,c8mnn}
       PDE_PEPPER_PRODUCT_SLUG: ${PDE_PEPPER_PRODUCT_SLUG:-metodo-musa-7-dias}
       PDE_PEPPER_SYNC_LOOKBACK_DAYS: ${PDE_PEPPER_SYNC_LOOKBACK_DAYS:-14}
-      PDE_PEPPER_MINIMUM_PAID_AMOUNT_CENTS: ${PDE_PEPPER_MINIMUM_PAID_AMOUNT_CENTS:-6700}
+      PDE_PEPPER_EXPECTED_PAID_AMOUNT_CENTS: ${PDE_PEPPER_EXPECTED_PAID_AMOUNT_CENTS:-6700}
+      PDE_PEPPER_EXPECTED_CURRENCY: ${PDE_PEPPER_EXPECTED_CURRENCY:-BRL}
       PDE_MAIL_TRANSPORT: ${PDE_MAIL_TRANSPORT:-ses}
       PDE_MAIL_AWS_REGION: ${PDE_MAIL_AWS_REGION:-us-east-1}
       PDE_MAIL_FROM: ${PDE_MAIL_FROM:-acesso@clubemusa.com.br}
@@ -197,12 +200,27 @@ services:
     restart: unless-stopped
     environment:
       PDE_BACKEND_URL: ${PDE_BACKEND_URL:-http://pde-platform-backend:8096}
+      PDE_INTERNAL_API_TOKEN: ${PDE_INTERNAL_API_TOKEN:?PDE_INTERNAL_API_TOKEN is required for PDE AI worker}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_API_KEY_FILE: ${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.5}
       POLL_INTERVAL_MS: ${POLL_INTERVAL_MS:-4000}
     volumes:
       - ${OPENAI_API_KEY_HOST_FILE:-/root/infra/openai-token/openai_api_key}:/run/secrets/openai_api_key:ro
+    networks:
+      - pde-platform-net
+
+  pde-retention-worker:
+    image: ${PDE_RETENTION_WORKER_IMAGE:?PDE_RETENTION_WORKER_IMAGE is required}
+    container_name: pde-retention-worker
+    depends_on:
+      pde-platform-backend:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      PDE_BACKEND_URL: ${PDE_BACKEND_URL:-http://pde-platform-backend:8096}
+      PDE_INTERNAL_API_TOKEN: ${PDE_INTERNAL_API_TOKEN:?PDE_INTERNAL_API_TOKEN is required for PDE retention worker}
+      PDE_RETENTION_INTERVAL_MS: ${PDE_RETENTION_INTERVAL_MS:-86400000}
     networks:
       - pde-platform-net
 

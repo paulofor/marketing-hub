@@ -42,8 +42,9 @@ Cada versao publica tambem deve expor `GET /version-diagnostics.json`, com
 `imageTag`, `commitSha` e `deployedAt`. Esse endpoint e gerado no start do
 container de frontend e serve para confirmar rapidamente se `v5`, `v6` ou `v7`
 esta rodando a imagem e a versao comercial esperadas antes de liberar trafego de
-campanha. `GET /slot-diagnostics.json` existe apenas como alias legado
-temporario.
+campanha. `GET /slot-diagnostics.json` existe apenas como alias legado temporário. O papel `pointed`
+informa somente apontamento de domínio; publicação ou ativação comercial devem ser comprovadas pelos
+metadados do artefato e pelos gates operacionais, nunca inferidas desse papel.
 
 O backend PDE tambem deve expor `GET /api/pde/build-identity` e `GET
 /actuator/info`, com a identidade da build atualmente implantada: aplicacao,
@@ -109,7 +110,7 @@ Deploy de produção:
 - Para ambientes de preview ou rollback, sobrescreva `PDE_EXPERIENCE_VERSION_OVERRIDE`, `VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE`, `PDE_DEPLOY_FRONTEND_URL` e `PDE_APP_BASE_URL` apenas fora dos subdomínios versionados produtivos.
 - Defina `PDE_PEPPER_API_TOKEN` em produção para reconciliar compras pagas quando o postback da Pepper não for entregue.
 - Mantenha `PDE_PEPPER_OFFER_HASHES=owm6x,c8mnn` durante a transição: `owm6x` é a oferta atual e `c8mnn` cobre compras reais antigas.
-- `PDE_PEPPER_MINIMUM_PAID_AMOUNT_CENTS=6700` bloqueia liberação de acesso se a oferta antiga aparecer com valor zerado.
+- `PDE_PEPPER_EXPECTED_PAID_AMOUNT_CENTS=6700` e `PDE_PEPPER_EXPECTED_CURRENCY=BRL` exigem exatamente o preço e a moeda aprovados antes de liberar acesso.
 - `PDE_PEPPER_SYNC_LOOKBACK_DAYS` define a janela de busca de transações recentes; o padrão é 14 dias.
 - Em produção, `PDE_ACCESS_REQUIRE_JDBC=true` é obrigatório para bloquear o backend quando a persistência analítica não estiver configurada.
 - Quando `PDE_APP_BASE_URL` apontar para `clubemusa.com.br`, incluindo subdomínios versionados como `v5.clubemusa.com.br`, o backend também bloqueia início sem JDBC mesmo se a flag operacional estiver ausente.
@@ -161,7 +162,7 @@ coerente com o histórico da jornada.
 - Em testes, use SMTP descartavel em `sandbox-mail:1025` e destinatarios `teste+<jobId>@sandbox.local`.
 - Acesso criado por Google/magic link entra como `TRIAL`; acesso por checkout/Pepper entra como `ACTIVE`.
 - O checkout Pepper do paywall MUSA deve ser configurado em runtime por `VITE_MUSA_CHECKOUT_URL`; a oferta atual de validação comercial aponta para `https://go.pepper.com.br/owm6x`.
-- Se o webhook/postback Pepper falhar, o backend pode reconciliar compras pagas pela API Pepper em `POST /api/pde/access/pepper/sync`, por `search` ou `transactionHash`; o login por e-mail também tenta essa reconciliação sob demanda antes de negar acesso.
+- Se o webhook/postback Pepper falhar, o backend pode reconciliar compras pagas pela API Pepper em `POST /api/pde/access/pepper/sync`, por `search` ou `transactionHash`; a retomada pública continua exigindo link mágico entregue ao e-mail verificado.
 - Eventos medidos: funil comercial (`PED_ENTRY`, `PRESENCE_MAP_CHOICE_SELECTED`, `DIAGNOSTIC_CHOICE_SELECTED`, `LOGIN_STARTED`, `LOGIN_COMPLETED`, `PAYWALL_VIEWED`, `SUBSCRIPTION_CLICKED`, `SUBSCRIPTION_APPROVED`), uso da área logada (`MISSION_OPEN`, `MISSION_INTERACTION_SAVED`, `MISSION_COMPLETED`, `AI_GUIDANCE_REQUESTED`, `MATERIAL_OPEN`) e comportamento rico de tela (`SCREEN_VIEW`, `SCREEN_TIME`, `SECTION_VIEW`, `SCROLL_DEPTH`, `UI_CLICK`, `LINK_CLICK`, `FIELD_FOCUS`, `FIELD_INPUT`, `FIELD_FILLED`, `FIELD_ABANDONED`).
 - Jornadas individuais por sessão podem ser consultadas em `GET /api/pde/access/analytics/metodo-musa-7-dias/journeys?limit=50`; o retorno mostra telas, seções, tempo visível, scroll máximo, foco/preenchimento do e-mail, clique em CTA e ponto provável de abandono.
 

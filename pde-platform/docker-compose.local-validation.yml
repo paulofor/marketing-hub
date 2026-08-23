@@ -17,3 +17,20 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+
+  pde-platform-backend:
+    depends_on:
+      pde-platform-local-mysql:
+        condition: service_healthy
+    environment:
+      PDE_ACCESS_JDBC_URL: jdbc:mysql://pde-platform-local-mysql:3306/pde_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      PDE_ACCESS_JDBC_USERNAME: pde
+      PDE_ACCESS_JDBC_PASSWORD: pde
+      PDE_ACCESS_REQUIRE_JDBC: "true"
+
+  pde-liquibase-validation:
+    profiles: ["liquibase-validation"]
+    build:
+      context: ..
+      dockerfile: pde-platform/local-validation/Dockerfile.liquibase-mysql57
+    image: marketing-hub/pde-liquibase-mysql57:validation

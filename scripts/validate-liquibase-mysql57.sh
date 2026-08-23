@@ -20,11 +20,13 @@ log "Validando includes relativos no changelog mestre"
 python3 - "${MASTER_CHANGELOG}" <<'PY'
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 
 path = Path(sys.argv[1])
 lines = path.read_text(encoding="utf-8").splitlines()
 errors = []
+included_files = []
 
 for index, line in enumerate(lines):
     match = re.match(r"^(\s*)-\s+include:\s*$", line)
@@ -47,10 +49,15 @@ for index, line in enumerate(lines):
     if not file_match:
         continue
     file_value = file_match.group(1)
+    included_files.append(file_value)
     if file_value.startswith("changesets/") and not re.search(
         r"^\s+relativeToChangelogFile:\s*true\s*$", block_text, re.MULTILINE
     ):
         errors.append(f"{path}:{index + 1}: include relativo sem relativeToChangelogFile: true ({file_value})")
+
+for file_value, count in Counter(included_files).items():
+    if count > 1:
+        errors.append(f"{path}: include duplicado ({count} ocorrências): {file_value}")
 
 if errors:
     print("\n".join(errors), file=sys.stderr)

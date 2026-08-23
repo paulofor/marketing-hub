@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object", "additionalProperties": false,
+  "required": ["activity", "decision", "alternatives", "selectedRoute", "distributionContract", "controlContract", "observedFacts", "requiredChanges", "rationale", "sources"],
+  "properties": {
+    "activity": {"type": "string", "enum": ["distribution", "control"]},
+    "decision": {"type": "string", "enum": ["APPROVE", "ADJUST", "REJECT"]},
+    "alternatives": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "object", "additionalProperties": false, "required": ["route", "model", "benefits", "risks", "cost", "attribution", "compoundingAsset", "fitScore"], "properties": {"route": {"type": "string"}, "model": {"type": "string"}, "benefits": {"type": "array", "items": {"type": "string"}}, "risks": {"type": "array", "items": {"type": "string"}}, "cost": {"type": "string"}, "attribution": {"type": "string"}, "compoundingAsset": {"type": "string"}, "fitScore": {"type": "integer", "minimum": 0, "maximum": 100}}}},
+    "selectedRoute": {"type": "string"},
+    "distributionContract": {"type": "object", "additionalProperties": false, "required": ["initialChannel", "ownedAsset", "partnerPath", "attributionRule", "antiFraud", "consentRule", "metrics", "continueCriteria", "adjustCriteria", "stopCriteria"], "properties": {"initialChannel": {"type": "string"}, "ownedAsset": {"type": "string"}, "partnerPath": {"type": "string"}, "attributionRule": {"type": "string"}, "antiFraud": {"type": "string"}, "consentRule": {"type": "string"}, "metrics": {"type": "array", "items": {"type": "string"}}, "continueCriteria": {"type": "string"}, "adjustCriteria": {"type": "string"}, "stopCriteria": {"type": "string"}}},
+    "controlContract": {"type": "object", "additionalProperties": false, "required": ["allowedSignals", "adaptationRule", "fallback", "optOut", "incrementalTest", "prohibitedUses"], "properties": {"allowedSignals": {"type": "array", "items": {"type": "string"}}, "adaptationRule": {"type": "string"}, "fallback": {"type": "string"}, "optOut": {"type": "string"}, "incrementalTest": {"type": "string"}, "prohibitedUses": {"type": "array", "items": {"type": "string"}}}},
+    "observedFacts": {"type": "array", "items": {"type": "string"}},
+    "requiredChanges": {"type": "array", "items": {"type": "string"}},
+    "rationale": {"type": "string"},
+    "sources": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["title", "url", "supports"], "properties": {"title": {"type": "string"}, "url": {"type": "string"}, "supports": {"type": "string"}}}}
+  }
+}
+

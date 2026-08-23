@@ -526,6 +526,24 @@ public class PdeProductionSlotService {
           healthPath,
           null);
     }
+    String commercialOfferPath = text(contract, "commercialOfferPath");
+    if (!DEFAULT_PDE_PRODUCT_SLUG.equals(slot.getProductSlug())
+        && !StringUtils.hasText(commercialOfferPath)) {
+      return ValidationResult.failed(
+          contractResponse.statusCode(),
+          "Contrato público não declara oferta comercial",
+          "commercialOfferPath ausente para produto PDE comercial",
+          contractSlug,
+          healthPath,
+          null);
+    }
+    if (StringUtils.hasText(commercialOfferPath)) {
+      Optional<ValidationResult> commercialOfferFailure =
+          validateCommercialOffer(slot, contractSlug, healthPath, commercialOfferPath);
+      if (commercialOfferFailure.isPresent()) {
+        return commercialOfferFailure.get();
+      }
+    }
 
     String resolvedUrl = resolveUrl(slot.getPublicUrl(), healthPath);
     HttpResponse<String> page = get(resolvedUrl);
@@ -574,10 +592,71 @@ public class PdeProductionSlotService {
     return ValidationResult.ok(
         page.statusCode(),
         "URL produtiva validada",
-        "Health, contrato público, entrada do funil, copy pública e HLS versionado responderam.",
+        "Health, contrato público, oferta comercial, entrada do funil, copy pública e HLS versionado responderam.",
         contractSlug,
         healthPath,
         resolvedUrl);
+  }
+
+  /** Confirma preço, checkout, copy e atribuição reais antes de aprovar um slot comercial. */
+  private Optional<ValidationResult> validateCommercialOffer(
+      PdeProductionSlot slot, String contractSlug, String healthPath, String commercialOfferPath)
+      throws IOException, InterruptedException {
+    String offerUrl = resolveUrl(slot.getPublicUrl(), commercialOfferPath);
+    HttpResponse<String> response = get(offerUrl);
+    if (!isSuccess(response)) {
+      return Optional.of(
+          ValidationResult.failed(
+              response.statusCode(),
+              "Oferta comercial pública não respondeu com sucesso",
+              "Resposta " + offerUrl + ": HTTP " + response.statusCode(),
+              contractSlug,
+              healthPath,
+              offerUrl));
+    }
+    JsonNode offer = objectMapper.readTree(response.body());
+    String checkoutUrl = text(offer, "checkoutUrl");
+    boolean validPrice =
+        offer.hasNonNull("priceBrl")
+            && offer.get("priceBrl").isNumber()
+            && offer.get("priceBrl").decimalValue().signum() > 0;
+    boolean validIdentity =
+        slot.getProductSlug().equals(text(offer, "productSlug"))
+            && offer.path("experimentId").asLong(0L) > 0;
+    boolean validCopy =
+        StringUtils.hasText(text(offer, "promise"))
+            && StringUtils.hasText(text(offer, "primaryCta"));
+    boolean validSupplier =
+        StringUtils.hasText(text(offer, "supplierLegalName"))
+            && StringUtils.hasText(text(offer, "supplierRegistrationNumber"))
+            && StringUtils.hasText(text(offer, "supplierAddress"))
+            && text(offer, "supportEmail").contains("@");
+    boolean validPolicies =
+        isHttpsUrl(text(offer, "termsUrl"))
+            && isHttpsUrl(text(offer, "privacyUrl"))
+            && isHttpsUrl(text(offer, "refundPolicyUrl"));
+    boolean validCheckout = StringUtils.hasText(checkoutUrl) && isHttpsUrl(checkoutUrl);
+    if (!validIdentity
+        || !validPrice
+        || !validCopy
+        || !validSupplier
+        || !validPolicies
+        || !validCheckout) {
+      return Optional.of(
+          ValidationResult.failed(
+              response.statusCode(),
+              "Oferta comercial pública está incompleta",
+              "Produto, experimento, preço, promessa, CTA, fornecedor, políticas e checkout HTTPS são obrigatórios.",
+              contractSlug,
+              healthPath,
+              offerUrl));
+    }
+    return Optional.empty();
+  }
+
+  /** Reconhece somente URLs HTTPS completas nos contratos públicos de venda. */
+  private boolean isHttpsUrl(String value) {
+    return StringUtils.hasText(value) && value.trim().startsWith("https://");
   }
 
   /** Aplica o resultado auditável da validação no slot persistido. */

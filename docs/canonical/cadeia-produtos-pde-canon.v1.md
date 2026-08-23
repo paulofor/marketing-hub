@@ -298,6 +298,11 @@ valor, oferta, compra e acesso, usando o produto real como fonte da comunicaçã
 - configurar paywall, checkout e continuidade pós-compra;
 - garantir correspondência entre promessa, criativo, experiência, oferta e entrega;
 - instrumentar visita, interação de valor, CTA, checkout, compra, acesso e primeiro uso.
+- para uma superfície que recebe aquisição, renderizar antes da compra a oferta canônica do
+  experimento, incluindo dor, promessa, prova, CTA, preço, fornecedor, contato, políticas e checkout;
+  uma área de acesso pós-compra isolada não pode ser homologada como landing comercial;
+- validar a oferta pública por contrato executável: produto e experimento atribuídos, preço positivo,
+  checkout HTTPS, identidade do fornecedor e políticas precisam responder pela mesma URL produtiva.
 
 **Saída final:** kit comercial aprovado com criativos, destino de campanha, jornada de venda,
 checkout, acesso e eventos preparados, sem ativação automática de mídia.

@@ -8,6 +8,8 @@ HEALTH_CONTRACT_FILE="${PDE_HEALTH_CONTRACT_FILE:-/usr/share/nginx/html/pde-heal
 CHECKOUT_URL="${VITE_MUSA_CHECKOUT_URL:-}"
 PRODUCT_SLUG="${VITE_PDE_PRODUCT_SLUG:-metodo-musa-7-dias}"
 HEALTH_REQUIRED_TEXT="${PDE_HEALTH_REQUIRED_TEXT:-Experiência assistida e manual}"
+HEALTH_REQUIRED_SALES_TEXT="${PDE_HEALTH_REQUIRED_SALES_TEXT:-}"
+HEALTH_REQUIRED_PRICE_TEXT="${PDE_HEALTH_REQUIRED_PRICE_TEXT:-}"
 GOOGLE_CLIENT_ID="${VITE_GOOGLE_CLIENT_ID:-}"
 EXPERIENCE_VERSION_OVERRIDE="${VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE:-}"
 HERO_VIDEO_URL="${VITE_MUSA_HERO_VIDEO_URL:-}"
@@ -37,11 +39,20 @@ window.__MUSA_RUNTIME_CONFIG__ = {
 EOF
 
 if [ "$PRODUCT_SLUG" != "metodo-musa-7-dias" ]; then
+  REQUIRED_TEXTS="[\"$(json_escape "$HEALTH_REQUIRED_TEXT")\""
+  if [ -n "$HEALTH_REQUIRED_SALES_TEXT" ]; then
+    REQUIRED_TEXTS="$REQUIRED_TEXTS, \"$(json_escape "$HEALTH_REQUIRED_SALES_TEXT")\""
+  fi
+  if [ -n "$HEALTH_REQUIRED_PRICE_TEXT" ]; then
+    REQUIRED_TEXTS="$REQUIRED_TEXTS, \"$(json_escape "$HEALTH_REQUIRED_PRICE_TEXT")\""
+  fi
+  REQUIRED_TEXTS="$REQUIRED_TEXTS]"
   cat > "$HEALTH_CONTRACT_FILE" <<EOF
 {
   "slug": "$(json_escape "$PRODUCT_SLUG")",
   "healthPath": "/",
-  "requiredTexts": ["$(json_escape "$HEALTH_REQUIRED_TEXT")"],
+  "commercialOfferPath": "/api/pde/products/$(json_escape "$PRODUCT_SLUG")/commercial-offer",
+  "requiredTexts": $REQUIRED_TEXTS,
   "requiredHlsStreams": [],
   "forbiddenTexts": [
     "Application error",

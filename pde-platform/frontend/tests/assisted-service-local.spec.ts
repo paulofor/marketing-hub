@@ -6,7 +6,50 @@ const backendBaseUrl =
 const mailBaseUrl =
   process.env.PDE_ASSISTED_MAIL_URL ?? "http://sandbox-mail:8025";
 
-test.beforeEach(async ({ page, request }) => {
+test.beforeEach(async ({ context, page, request }) => {
+  await context.route(
+    "**/api/pde/products/kit-whatsapp-pronto/commercial-offer",
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          productSlug,
+          experimentId: 89,
+          experimentStatus: "PLANNED",
+          acquisitionChannel: "DIRECT_ONE_TO_ONE",
+          pain: "Você perde oportunidades no WhatsApp porque improvisa respostas e follow-ups.",
+          proof:
+            "Veja uma resposta e duas perguntas personalizadas para um cenário real do seu atendimento.",
+          promise:
+            "Em até 48 horas, receba seu atendimento no WhatsApp sob medida e revisado por uma pessoa.",
+          primaryCta: "Quero meu atendimento sob medida",
+          priceBrl: 349,
+          checkoutUrl: "https://pay.example/kit-whatsapp",
+          salesPageUrl: "https://kit-whatsapp-pronto.digicomdigital.com.br",
+          targetAudience: "Pequenos prestadores que atendem pelo WhatsApp",
+          productFormat: "IMPLANTACAO_PERSONALIZADA",
+          deliveryMode: "ASSISTIDA_MANUAL",
+          valueUnit:
+            "Respostas, perguntas e follow-ups prontos para revisar e usar",
+          supplierLegalName: "Fornecedor de Homologação Ltda.",
+          supplierRegistrationNumber: "00.000.000/0001-00",
+          supplierAddress: "Endereço de homologação, 100",
+          supportEmail: "teste@sandbox.local",
+          termsUrl: "http://127.0.0.1:57182/terms",
+          privacyUrl: "http://127.0.0.1:57182/privacy",
+          refundPolicyUrl: "http://127.0.0.1:57182/refund-policy",
+        }),
+      });
+    },
+  );
+  await context.route("https://pay.example/kit-whatsapp", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "text/html; charset=utf-8",
+      body: "<html><body><h1>Checkout de homologação</h1></body></html>",
+    });
+  });
   await request.post(
     `${backendBaseUrl}/api/pde/access/analytics/${productSlug}/reset-campaign-start`,
   );
@@ -22,6 +65,26 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
   ).toBeVisible();
   await expect(page.getByText("Microvalor em até 12 horas")).toBeVisible();
   await expect(page.getByText("Revisão humana antes do uso")).toBeVisible();
+  await expect(page.getByTestId("commercial-offer")).toContainText("R$ 349");
+  const checkout = page.getByRole("link", {
+    name: "Quero meu atendimento sob medida",
+  });
+  await expect(checkout).toHaveAttribute(
+    "href",
+    "https://pay.example/kit-whatsapp",
+  );
+  await expect(
+    page.getByRole("heading", { name: "Já comprou? Acesse sua área" }),
+  ).toBeVisible();
+  await expect(page.getByText("Fornecedor de Homologação Ltda.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Termos" })).toHaveCount(2);
+  const popupPromise = page.waitForEvent("popup");
+  await checkout.click();
+  const checkoutPage = await popupPromise;
+  await expect(
+    checkoutPage.getByRole("heading", { name: "Checkout de homologação" }),
+  ).toBeVisible();
+  await checkoutPage.close();
 
   const email = `teste+kit-whatsapp-${testInfo.project.name}-${Date.now()}@sandbox.local`;
   await page.getByLabel("E-mail").fill(email);
@@ -312,9 +375,7 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
   expect((await magicLinkResponse.json()).deliveryStatus).toBe("SENT");
   await expect
     .poll(async () => {
-      const mailResponse = await request.get(
-        `${mailBaseUrl}/api/v1/messages`,
-      );
+      const mailResponse = await request.get(`${mailBaseUrl}/api/v1/messages`);
       const mailbox = await mailResponse.json();
       return mailbox.messages.some((message: { To?: { Address?: string }[] }) =>
         message.To?.some((recipient) => recipient.Address === email),
@@ -385,6 +446,29 @@ test("bloqueia e orienta acesso inválido sem perder o contrato público", async
     /acesso|encontrado|solicitação/i,
   );
   await expect(page.getByTestId("assisted-workspace")).toHaveCount(0);
+});
+
+test("publica termos, privacidade e reembolso com o fornecedor da oferta", async ({
+  page,
+}) => {
+  const policies = [
+    ["/terms", "Termos da implantação personalizada"],
+    ["/privacy", "Privacidade e uso de dados"],
+    ["/refund-policy", "Cancelamento e reembolso"],
+  ] as const;
+
+  for (const [path, heading] of policies) {
+    await page.goto(path);
+    await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+    await expect(
+      page.getByText("Fornecedor de Homologação Ltda."),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+      ),
+    ).toBeTruthy();
+  }
 });
 
 test("exige e-mail válido antes de criar acesso segregado", async ({

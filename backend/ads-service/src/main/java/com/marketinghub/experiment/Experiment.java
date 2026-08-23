@@ -233,7 +233,10 @@ public class Experiment {
   @Column(name = "last_status_changed_at")
   private Instant lastStatusChangedAt;
 
+  /** Canal de aquisição do experimento, persistido como texto para permitir evolução segura. */
   @Enumerated(EnumType.STRING)
+  @JdbcTypeCode(SqlTypes.VARCHAR)
+  @Column(name = "platform", length = 40)
   private ExperimentPlatform platform;
 
   @Builder.Default

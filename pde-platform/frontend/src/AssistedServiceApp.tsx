@@ -5,6 +5,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   Clock3,
+  CreditCard,
   KeyRound,
   LoaderCircle,
   Mail,
@@ -57,6 +58,31 @@ type MagicLinkResponse = {
   accessUrl?: string;
 };
 
+type CommercialOffer = {
+  productSlug: string;
+  experimentId: number;
+  experimentStatus: string;
+  acquisitionChannel?: string;
+  pain: string;
+  proof: string;
+  promise: string;
+  primaryCta: string;
+  priceBrl: number;
+  checkoutUrl: string;
+  salesPageUrl: string;
+  targetAudience?: string;
+  productFormat?: string;
+  deliveryMode?: string;
+  valueUnit?: string;
+  supplierLegalName: string;
+  supplierRegistrationNumber: string;
+  supplierAddress: string;
+  supportEmail: string;
+  termsUrl: string;
+  privacyUrl: string;
+  refundPolicyUrl: string;
+};
+
 type AssistedServiceAppProps = {
   productSlug: string;
 };
@@ -66,6 +92,8 @@ const testAccessEnabled = import.meta.env.VITE_PDE_ENABLE_DEV_ACCESS === "true";
 /** Renderiza produtos PDE assistidos usando somente o contrato público versionado. */
 export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
   const [product, setProduct] = useState<ProductExperience | null>(null);
+  const [commercialOffer, setCommercialOffer] =
+    useState<CommercialOffer | null>(null);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [accessToken, setAccessToken] = useState(() =>
     accessTokenFromLocation(productSlug),
@@ -88,15 +116,23 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
     let active = true;
     async function load() {
       try {
-        const productResponse = await fetch(
-          `/api/pde/products/${encodeURIComponent(productSlug)}`,
-        );
+        const [productResponse, commercialOfferResponse] = await Promise.all([
+          fetch(`/api/pde/products/${encodeURIComponent(productSlug)}`),
+          fetch(
+            `/api/pde/products/${encodeURIComponent(productSlug)}/commercial-offer`,
+          ),
+        ]);
         if (!productResponse.ok)
           throw new Error("Não foi possível carregar este produto agora.");
         const loadedProduct =
           (await productResponse.json()) as ProductExperience;
         if (!active) return;
         setProduct(loadedProduct);
+        if (commercialOfferResponse.ok) {
+          setCommercialOffer(
+            (await commercialOfferResponse.json()) as CommercialOffer,
+          );
+        }
         document.title = loadedProduct.name;
         void trackEvent("PAGE_VIEW", loadedProduct);
         if (accessToken) {
@@ -313,6 +349,18 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
     setMessage("Sessão encerrada. Seu progresso permanece salvo.");
   }
 
+  /** Registra a intenção comercial antes de abrir o checkout oficial em nova aba. */
+  function startCheckout() {
+    if (!product || !commercialOffer) return;
+    void trackEvent("CHECKOUT_STARTED", product, {
+      metadata: {
+        experimentId: commercialOffer.experimentId,
+        priceBrl: commercialOffer.priceBrl,
+        checkoutHost: new URL(commercialOffer.checkoutUrl).hostname,
+      },
+    });
+  }
+
   if (loading) {
     return (
       <main className="assisted-pde-state" role="status">
@@ -334,7 +382,16 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
     );
   }
 
+  const policy = resolveCommercialPolicy(
+    window.location.pathname,
+    commercialOffer,
+  );
+  if (policy && commercialOffer) {
+    return <CommercialPolicyPage offer={commercialOffer} policy={policy} />;
+  }
+
   if (!workspace) {
+    const publicPromise = commercialOffer?.promise ?? product.promise;
     return (
       <main
         className="assisted-pde-shell"
@@ -349,10 +406,11 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
         <section className="assisted-pde-entry" data-testid="assisted-entry">
           <div className="assisted-pde-copy">
             <span className="assisted-pde-kicker">
-              Experiência assistida e manual
+              Implantação personalizada · revisão humana
             </span>
             <h1>{product.name}</h1>
-            <p className="assisted-pde-promise">{product.promise}</p>
+            <p className="assisted-pde-pain">{commercialOffer?.pain}</p>
+            <p className="assisted-pde-promise">{publicPromise}</p>
             <div className="assisted-pde-trust-grid">
               <span>
                 <Clock3 /> Microvalor em até 12 horas
@@ -365,9 +423,95 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
               </span>
             </div>
           </div>
+          {commercialOffer ? (
+            <aside
+              className="assisted-pde-offer-card"
+              data-testid="commercial-offer"
+            >
+              <CreditCard />
+              <span className="assisted-pde-kicker">Pagamento único</span>
+              <h2>Seu atendimento sob medida</h2>
+              <p>{commercialOffer.valueUnit || product.promise}</p>
+              <strong className="assisted-pde-price">
+                {formatBrl(commercialOffer.priceBrl)}
+              </strong>
+              <a
+                className="assisted-pde-checkout-cta"
+                href={commercialOffer.checkoutUrl}
+                target="_blank"
+                rel="noreferrer"
+                onClick={startCheckout}
+              >
+                {commercialOffer.primaryCta} <ChevronRight />
+              </a>
+              <small>
+                Você revisa os dados e as condições no checkout antes de
+                confirmar.
+              </small>
+              <nav
+                className="assisted-pde-offer-policies"
+                aria-label="Condições da compra"
+              >
+                <a
+                  href={commercialOffer.termsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Termos
+                </a>
+                <a
+                  href={commercialOffer.privacyUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Privacidade
+                </a>
+                <a
+                  href={commercialOffer.refundPolicyUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Cancelamento e reembolso
+                </a>
+              </nav>
+            </aside>
+          ) : (
+            <aside
+              className="assisted-pde-offer-card assisted-pde-offer-unavailable"
+              role="status"
+            >
+              <ShieldCheck />
+              <h2>Oferta temporariamente indisponível</h2>
+              <p>
+                Não abriremos um checkout sem validar preço, entrega e
+                atribuição.
+              </p>
+            </aside>
+          )}
+        </section>
+        {commercialOffer ? (
+          <section
+            className="assisted-pde-value-proof"
+            aria-labelledby="assisted-value-proof-title"
+          >
+            <div>
+              <span className="assisted-pde-kicker">
+                Veja o mecanismo antes de decidir
+              </span>
+              <h2 id="assisted-value-proof-title">
+                Uma prova pequena do atendimento completo
+              </h2>
+            </div>
+            <p>{commercialOffer.proof}</p>
+          </section>
+        ) : null}
+        <section
+          className="assisted-pde-existing-access"
+          aria-labelledby="assisted-access-title"
+        >
           <aside className="assisted-pde-access-card">
             <KeyRound />
-            <h2>Acesse sua área</h2>
+            <h2 id="assisted-access-title">Já comprou? Acesse sua área</h2>
             <p>Use o e-mail informado na compra. Não pedimos senha.</p>
             <form onSubmit={requestAccess}>
               <label htmlFor="assisted-email">E-mail</label>
@@ -419,6 +563,9 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
             ))}
           </ul>
         </section>
+        {commercialOffer ? (
+          <CommercialLegalFooter offer={commercialOffer} />
+        ) : null}
       </main>
     );
   }
@@ -799,6 +946,101 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
   );
 }
 
+type CommercialPolicy = "terms" | "privacy" | "refund";
+
+/** Identifica uma política pública sem interferir nos caminhos de acesso do produto. */
+function resolveCommercialPolicy(
+  path: string,
+  offer: CommercialOffer | null,
+): CommercialPolicy | null {
+  if (!offer) return null;
+  if (path === "/terms") return "terms";
+  if (path === "/privacy") return "privacy";
+  if (path === "/refund-policy") return "refund";
+  return null;
+}
+
+/** Renderiza os termos essenciais usando a identidade canônica do fornecedor. */
+function CommercialPolicyPage({
+  offer,
+  policy,
+}: {
+  offer: CommercialOffer;
+  policy: CommercialPolicy;
+}) {
+  const content =
+    policy === "terms"
+      ? {
+          title: "Termos da implantação personalizada",
+          paragraphs: [
+            `A compra contrata uma implantação assistida para WhatsApp pelo valor de ${formatBrl(offer.priceBrl)}, conforme o escopo apresentado antes do checkout.`,
+            "O prazo de até 48 horas começa depois da confirmação do pagamento e do briefing mínimo completo. A entrega exige revisão humana antes do uso e não envia mensagens automaticamente.",
+            "O briefing deve usar exemplos anonimizados. Não envie nomes, telefones, endereços nem conversas identificáveis de clientes finais.",
+          ],
+        }
+      : policy === "privacy"
+        ? {
+            title: "Privacidade e uso de dados",
+            paragraphs: [
+              "Usamos e-mail, respostas do briefing, progresso e solicitações de suporte somente para entregar, revisar e dar acesso ao produto contratado.",
+              "A cliente deve fornecer situações anonimizadas. Dados identificáveis de terceiros não são necessários para a personalização.",
+              `Dúvidas, correção ou exclusão podem ser solicitadas pelo e-mail ${offer.supportEmail}.`,
+            ],
+          }
+        : {
+            title: "Cancelamento e reembolso",
+            paragraphs: [
+              "Compras realizadas a distância podem ser canceladas no prazo legal aplicável. O início do briefing não exige renúncia ao direito de arrependimento.",
+              `Envie o pedido pelo e-mail ${offer.supportEmail}, informando o e-mail usado na compra. A solicitação e o retorno ficam registrados.`,
+              "Se a operação perder o prazo por causa própria, a compradora pode escolher novo prazo ou reembolso integral.",
+            ],
+          };
+  return (
+    <main className="assisted-pde-policy">
+      <a href="/" className="assisted-pde-policy-back">
+        ← Voltar para a oferta
+      </a>
+      <span className="assisted-pde-kicker">Kit WhatsApp Pronto</span>
+      <h1>{content.title}</h1>
+      {content.paragraphs.map((paragraph) => (
+        <p key={paragraph}>{paragraph}</p>
+      ))}
+      <CommercialLegalFooter offer={offer} />
+    </main>
+  );
+}
+
+/** Mostra fornecedor e contato de forma visível antes da decisão de compra. */
+function CommercialLegalFooter({ offer }: { offer: CommercialOffer }) {
+  return (
+    <footer className="assisted-pde-legal">
+      <div>
+        <strong>{offer.supplierLegalName}</strong>
+        <span>{offer.supplierRegistrationNumber}</span>
+        <span>{offer.supplierAddress}</span>
+        <a
+          href={`mailto:${offer.supportEmail}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {offer.supportEmail}
+        </a>
+      </div>
+      <nav aria-label="Informações legais">
+        <a href={offer.termsUrl} target="_blank" rel="noreferrer">
+          Termos
+        </a>
+        <a href={offer.privacyUrl} target="_blank" rel="noreferrer">
+          Privacidade
+        </a>
+        <a href={offer.refundPolicyUrl} target="_blank" rel="noreferrer">
+          Cancelamento e reembolso
+        </a>
+      </nav>
+    </footer>
+  );
+}
+
 /** Consulta a área autenticada usando o token de acesso. */
 async function fetchWorkspace(token: string) {
   const response = await fetch(
@@ -879,6 +1121,16 @@ function readError(error: unknown) {
   return error instanceof Error
     ? error.message
     : "A solicitação não pôde ser concluída.";
+}
+
+/** Formata o preço canônico em reais sem manter uma cópia textual no frontend. */
+function formatBrl(value: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value);
 }
 
 type TrackingOptions = {

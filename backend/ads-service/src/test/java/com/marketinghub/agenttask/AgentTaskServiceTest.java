@@ -703,6 +703,68 @@ class AgentTaskServiceTest {
     assertThat(service.claimEligibleProcessTask("customer-agent")).isPresent();
   }
 
+  /** Exige que todos os responsáveis da mesma atividade entreguem antes de liberar a sucessora. */
+  @Test
+  void blocksSuccessorUntilEveryCoOwnerCompletesSharedActivity() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent plutus = agent(3L, "financial-agent", "Plutus");
+    BusinessProcessDefinition process = process("PUBLISHED", "Plutus");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"review\",\"type\":\"TASK\"},{\"id\":\"economics\",\"type\":\"TASK\"}],"
+            + "\"flows\":[{\"from\":\"review\",\"to\":\"economics\"}]}");
+    AgentTask psiqueReview =
+        processTask(40L, agent(2L, "customer-agent", "Psique"), process, "review", "COMPLETED");
+    AgentTask temisReview =
+        processTask(41L, agent(6L, "meta-ad-approver", "Têmis"), process, "review", "PENDING");
+    AgentTask economics = processTask(42L, plutus, process, "economics", "PENDING");
+    when(agents.findByAgentKey("financial-agent")).thenReturn(Optional.of(plutus));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "financial-agent", "WORK", "PENDING"))
+        .thenReturn(List.of(economics));
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            9L, "commercial-plan:2@v4"))
+        .thenReturn(List.of(psiqueReview, temisReview, economics));
+    AgentTaskService service = service(repository, agents, Clock.systemUTC());
+
+    assertThat(service.claimEligibleProcessTask("financial-agent")).isEmpty();
+
+    temisReview.setStatus("COMPLETED");
+    assertThat(service.claimEligibleProcessTask("financial-agent")).isPresent();
+  }
+
+  /**
+   * Considera a correção mais recente sem deixar uma tentativa antiga bloquear o fluxo para sempre.
+   */
+  @Test
+  void allowsSuccessorWhenLatestAttemptFromEveryCoOwnerCompletes() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent psique = agent(2L, "customer-agent", "Psique");
+    Agent temis = agent(6L, "meta-ad-approver", "Têmis");
+    Agent plutus = agent(3L, "financial-agent", "Plutus");
+    BusinessProcessDefinition process = process("PUBLISHED", "Plutus");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"review\",\"type\":\"TASK\"},{\"id\":\"economics\",\"type\":\"TASK\"}],"
+            + "\"flows\":[{\"from\":\"review\",\"to\":\"economics\"}]}");
+    AgentTask failedReview = processTask(40L, psique, process, "review", "BLOCKED");
+    AgentTask correctedReview = processTask(41L, psique, process, "review", "COMPLETED");
+    AgentTask coOwnerReview = processTask(42L, temis, process, "review", "COMPLETED");
+    AgentTask economics = processTask(43L, plutus, process, "economics", "PENDING");
+    when(agents.findByAgentKey("financial-agent")).thenReturn(Optional.of(plutus));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "financial-agent", "WORK", "PENDING"))
+        .thenReturn(List.of(economics));
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            9L, "commercial-plan:2@v4"))
+        .thenReturn(List.of(failedReview, correctedReview, coOwnerReview, economics));
+
+    assertThat(
+            service(repository, agents, Clock.systemUTC())
+                .claimEligibleProcessTask("financial-agent"))
+        .isPresent();
+  }
+
   /** Respeita o formato flows/from/to usado pelas definições publicadas no editor BPM. */
   @Test
   void blocksSuccessorUsingPublishedFlowSchema() {
@@ -1061,6 +1123,41 @@ class AgentTaskServiceTest {
             .orElseThrow();
 
     assertThat(pending.processContextJson()).contains("APPROVE_FOR_PUBLICATION", "desktop.png");
+  }
+
+  /** Envia somente a correção mais recente do mesmo responsável e atividade ao próximo agente. */
+  @Test
+  void compactsSupersededCompletedAttemptsFromPendingContext() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    Agent psique = agent(2L, "customer-agent", "Psique");
+    BusinessProcessDefinition process = process("PUBLISHED", "Psique");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"html\",\"type\":\"TASK\"},{\"id\":\"customer\",\"type\":\"TASK\"}],"
+            + "\"flows\":[{\"from\":\"html\",\"to\":\"customer\"}]}");
+    AgentTask oldHtml = processTask(30L, dedalo, process, "html", "COMPLETED");
+    oldHtml.setResultJson("{\"version\":\"superseded\"}");
+    AgentTask currentHtml = processTask(32L, dedalo, process, "html", "COMPLETED");
+    currentHtml.setResultJson("{\"version\":\"current\"}");
+    AgentTask customer = processTask(33L, psique, process, "customer", "PENDING");
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "IN_PROGRESS"))
+        .thenReturn(List.of());
+    when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(
+            "customer-agent", "WORK", "PENDING"))
+        .thenReturn(List.of(customer));
+    when(repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            9L, "commercial-plan:2@v4"))
+        .thenReturn(List.of(oldHtml, currentHtml, customer));
+
+    AgentTaskPendingResponse pending =
+        service(repository, agents, Clock.systemUTC())
+            .claimEligibleProcessTask("customer-agent")
+            .orElseThrow();
+
+    assertThat(pending.processContextJson()).contains("current").doesNotContain("superseded");
   }
 
   /** Não deixa o consumidor de landing reservar uma tarefa de outro processo de Psique. */

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object", "additionalProperties": false,
+  "required": ["activity", "decision", "scenarios", "economics", "metrics", "assumptions", "requiredChanges", "rationale", "sources"],
+  "properties": {
+    "activity": {"type": "string", "enum": ["economics"]},
+    "decision": {"type": "string", "enum": ["APPROVE", "ADJUST", "REJECT"]},
+    "scenarios": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "object", "additionalProperties": false, "required": ["name", "priceBrl", "variableCostBrl", "maxCacBrl", "targetSales", "benefit", "risk", "recommended"], "properties": {"name": {"type": "string"}, "priceBrl": {"type": "number", "minimum": 0}, "variableCostBrl": {"type": "number", "minimum": 0}, "maxCacBrl": {"type": "number", "minimum": 0}, "targetSales": {"type": "integer", "minimum": 0}, "benefit": {"type": "string"}, "risk": {"type": "string"}, "recommended": {"type": "boolean"}}}},
+    "economics": {"type": "object", "additionalProperties": false, "required": ["offerPriceBrl", "variableCostPerSaleBrl", "contributionPerSaleBrl", "contributionMarginPercent", "maxCacBrl", "fixedInitialCostBrl", "maxBudgetBrl", "expectedTraffic", "expectedConversionPercent", "expectedRefundPercent", "targetSales", "targetRevenueBrl", "deadline"], "properties": {"offerPriceBrl": {"type": "number", "minimum": 0}, "variableCostPerSaleBrl": {"type": "number", "minimum": 0}, "contributionPerSaleBrl": {"type": "number"}, "contributionMarginPercent": {"type": "number"}, "maxCacBrl": {"type": "number", "minimum": 0}, "fixedInitialCostBrl": {"type": "number", "minimum": 0}, "maxBudgetBrl": {"type": "number", "minimum": 0}, "expectedTraffic": {"type": "integer", "minimum": 0}, "expectedConversionPercent": {"type": "number", "minimum": 0}, "expectedRefundPercent": {"type": "number", "minimum": 0}, "targetSales": {"type": "integer", "minimum": 0}, "targetRevenueBrl": {"type": "number", "minimum": 0}, "deadline": {"type": "string"}}},
+    "metrics": {"type": "object", "additionalProperties": false, "required": ["primary", "leading", "delivery", "continueCriteria", "adjustCriteria", "stopCriteria"], "properties": {"primary": {"type": "string"}, "leading": {"type": "array", "items": {"type": "string"}}, "delivery": {"type": "array", "items": {"type": "string"}}, "continueCriteria": {"type": "string"}, "adjustCriteria": {"type": "string"}, "stopCriteria": {"type": "string"}}},
+    "assumptions": {"type": "array", "items": {"type": "string"}},
+    "requiredChanges": {"type": "array", "items": {"type": "string"}},
+    "rationale": {"type": "string"},
+    "sources": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["title", "url", "supports"], "properties": {"title": {"type": "string"}, "url": {"type": "string"}, "supports": {"type": "string"}}}}
+  }
+}
+

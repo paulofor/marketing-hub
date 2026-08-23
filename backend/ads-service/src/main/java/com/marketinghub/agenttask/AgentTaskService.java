@@ -836,12 +836,20 @@ public class AgentTaskService {
 
   /** Consolida resultados predecessores para o próximo agente avaliar evidências reais. */
   private String processContext(AgentTask task) {
+    Map<String, AgentTask> latestByOwnerActivity = new java.util.LinkedHashMap<>();
+    repository
+        .findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
+            task.getProcessDefinition().getId(), task.getSourceReference())
+        .stream()
+        .filter(sibling -> "COMPLETED".equals(sibling.getStatus()))
+        .forEach(
+            sibling ->
+                latestByOwnerActivity.put(
+                    sibling.getAssignedAgent().getAgentKey() + ":" + sibling.getProcessActivityId(),
+                    sibling));
     List<Map<String, Object>> completedActivities =
-        repository
-            .findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
-                task.getProcessDefinition().getId(), task.getSourceReference())
-            .stream()
-            .filter(sibling -> "COMPLETED".equals(sibling.getStatus()))
+        latestByOwnerActivity.values().stream()
+            .sorted(java.util.Comparator.comparing(AgentTask::getId))
             .map(
                 sibling -> {
                   Map<String, Object> context = new java.util.LinkedHashMap<>();
@@ -1015,11 +1023,16 @@ public class AgentTaskService {
       List<AgentTask> siblings =
           repository.findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
               candidate.getProcessDefinition().getId(), candidate.getSourceReference());
-      Set<String> completed = new HashSet<>();
-      siblings.stream()
-          .filter(task -> "COMPLETED".equals(task.getStatus()))
-          .map(AgentTask::getProcessActivityId)
-          .forEach(completed::add);
+      Map<String, Map<String, AgentTask>> latestTasksByActivityAndOwner = new HashMap<>();
+      siblings.forEach(
+          sibling ->
+              latestTasksByActivityAndOwner
+                  .computeIfAbsent(sibling.getProcessActivityId(), ignored -> new HashMap<>())
+                  .merge(
+                      sibling.getAssignedAgent().getAgentKey(),
+                      sibling,
+                      (current, replacement) ->
+                          replacement.getId() > current.getId() ? replacement : current));
       Set<String> taskNodes = new HashSet<>();
       siblings.stream().map(AgentTask::getProcessActivityId).forEach(taskNodes::add);
       Set<String> predecessors = new HashSet<>();
@@ -1036,7 +1049,14 @@ public class AgentTaskService {
           else queue.addLast(source);
         }
       }
-      return completed.containsAll(predecessors);
+      return predecessors.stream()
+          .allMatch(
+              predecessor ->
+                  latestTasksByActivityAndOwner
+                      .getOrDefault(predecessor, Map.of())
+                      .values()
+                      .stream()
+                      .allMatch(task -> "COMPLETED".equals(task.getStatus())));
     } catch (Exception ex) {
       log.error(
           "Falha ao avaliar sequência BPM. taskId={} processDefinitionId={} activityId={}",

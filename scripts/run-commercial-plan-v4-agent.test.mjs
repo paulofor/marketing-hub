@@ -1,0 +1,62 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  executionTimeout,
+  parseUsage,
+  refreshedProcessContext,
+  resolveContract,
+  taskFromPayload,
+  validateResult
+} from "./run-commercial-plan-v4-agent.mjs";
+
+test("protege o executor contra timeout ausente ou inválido", () => {
+  assert.equal(executionTimeout(undefined), 600000);
+  assert.equal(executionTimeout("120000"), 120000);
+  assert.throws(() => executionTimeout("inválido"), /Timeout do agente/);
+});
+
+test("segrega atividades por agente", () => {
+  assert.equal(resolveContract("landing-generator", "format").activities.length, 4);
+  assert.throws(() => resolveContract("financial-agent", "review"), /não suportado/);
+});
+
+test("preserva a última telemetria cumulativa", () => {
+  const usage = parseUsage([
+    '{"usage":{"input_tokens":100,"cached_input_tokens":20,"output_tokens":30}}',
+    '{"response":{"service_tier":"flex","usage":{"input_tokens":180,"input_tokens_details":{"cached_tokens":45},"output_tokens":60}}}'
+  ].join("\n"));
+  assert.deepEqual(usage, {
+    informed: true,
+    inputTokens: 180,
+    cachedInputTokens: 45,
+    outputTokens: 60,
+    serviceTier: "flex"
+  });
+});
+
+test("rejeita resposta sem três alternativas", () => {
+  assert.throws(
+    () => validateResult({ activity: "economics", decision: "APPROVE", scenarios: [1, 2] }, "economics"),
+    /exatamente três/
+  );
+});
+
+test("recupera tarefa original de uma execução bloqueada", () => {
+  assert.equal(taskFromPayload({ task: { taskId: 202 } }).taskId, 202);
+  assert.throws(() => taskFromPayload({ result: {} }), /sem contexto original/);
+});
+
+test("atualiza contexto somente com predecessores concluídos da mesma instância", () => {
+  const context = JSON.parse(
+    refreshedProcessContext(
+      [[
+        { id: 2, assignedAgentKey: "landing-generator", sourceReference: "commercial-plan:5@v2", processCode: "pde-commercial-plan-offer", status: "COMPLETED", processActivityId: "format", resultJson: "{}" },
+        { id: 3, sourceReference: "commercial-plan:5@v2", processCode: "pde-commercial-plan-offer", status: "BLOCKED", processActivityId: "review", resultJson: "{}" },
+        { id: 4, sourceReference: "commercial-plan:4@v2", processCode: "pde-commercial-plan-offer", status: "COMPLETED", processActivityId: "format", resultJson: "{}" },
+        { id: 5, assignedAgentKey: "landing-generator", sourceReference: "commercial-plan:5@v2", processCode: "pde-commercial-plan-offer", status: "COMPLETED", processActivityId: "format", resultJson: "{\"latest\":true}" }
+      ]],
+      "commercial-plan:5@v2"
+    )
+  );
+  assert.deepEqual(context.completedActivities.map(item => item.taskId), [5]);
+});

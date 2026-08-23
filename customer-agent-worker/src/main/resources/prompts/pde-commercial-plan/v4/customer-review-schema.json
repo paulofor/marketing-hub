@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object", "additionalProperties": false,
+  "required": ["activity", "decision", "scores", "interpretations", "customerLanguage", "objections", "trustRequirements", "valueMoment", "firstWeekValue", "pricePerception", "effort", "perceivedRisk", "requiredChanges", "prohibitedClaims", "evidenceLimit", "rationale", "sources"],
+  "properties": {
+    "activity": {"type": "string", "enum": ["review"]},
+    "decision": {"type": "string", "enum": ["APPROVE", "ADJUST", "REJECT"]},
+    "scores": {"type": "object", "additionalProperties": false, "required": ["clarity", "utility", "ease", "trust", "priceFit", "control"], "properties": {"clarity": {"type": "integer", "minimum": 0, "maximum": 100}, "utility": {"type": "integer", "minimum": 0, "maximum": 100}, "ease": {"type": "integer", "minimum": 0, "maximum": 100}, "trust": {"type": "integer", "minimum": 0, "maximum": 100}, "priceFit": {"type": "integer", "minimum": 0, "maximum": 100}, "control": {"type": "integer", "minimum": 0, "maximum": 100}}},
+    "interpretations": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "object", "additionalProperties": false, "required": ["reading", "benefit", "risk", "likelyReaction"], "properties": {"reading": {"type": "string"}, "benefit": {"type": "string"}, "risk": {"type": "string"}, "likelyReaction": {"type": "string"}}}},
+    "customerLanguage": {"type": "array", "items": {"type": "string"}},
+    "objections": {"type": "array", "items": {"type": "string"}},
+    "trustRequirements": {"type": "array", "items": {"type": "string"}},
+    "valueMoment": {"type": "string"}, "firstWeekValue": {"type": "string"},
+    "pricePerception": {"type": "string"}, "effort": {"type": "string"}, "perceivedRisk": {"type": "string"},
+    "requiredChanges": {"type": "array", "items": {"type": "string"}},
+    "prohibitedClaims": {"type": "array", "items": {"type": "string"}},
+    "evidenceLimit": {"type": "string"}, "rationale": {"type": "string"},
+    "sources": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["title", "url", "supports"], "properties": {"title": {"type": "string"}, "url": {"type": "string"}, "supports": {"type": "string"}}}}
+  }
+}

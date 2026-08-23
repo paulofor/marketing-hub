@@ -144,6 +144,7 @@ type ProductFieldProps = {
   rows?: number;
   inputMode?: "decimal" | "numeric" | "text" | "url";
   placeholder?: string;
+  maxLength?: number;
 };
 
 function ProductField({
@@ -156,6 +157,7 @@ function ProductField({
   rows = 3,
   inputMode = "text",
   placeholder,
+  maxLength,
 }: ProductFieldProps) {
   return (
     <div className="product-editor-field">
@@ -168,6 +170,7 @@ function ProductField({
           id={`product-${String(field)}`}
           className="form-control"
           rows={rows}
+          maxLength={maxLength}
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(field, e.target.value)}
@@ -177,6 +180,7 @@ function ProductField({
           id={`product-${String(field)}`}
           className="form-control"
           inputMode={inputMode}
+          maxLength={maxLength}
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(field, e.target.value)}
@@ -423,12 +427,14 @@ export default function ProductForm({
             <ProductField
               field="productType"
               label="Tipo de produto"
+              maxLength={64}
               value={form.productType}
               onChange={setField}
             />
             <ProductField
               field="commercialStatus"
               label="Status comercial"
+              maxLength={64}
               value={form.commercialStatus}
               onChange={setField}
             />
@@ -450,6 +456,7 @@ export default function ProductForm({
             <ProductField
               field="productFormat"
               label="Formato entregue"
+              maxLength={64}
               value={form.productFormat}
               onChange={setField}
               placeholder="Programa guiado, pacote de imagens, diagnóstico..."
@@ -457,6 +464,7 @@ export default function ProductForm({
             <ProductField
               field="deliveryMode"
               label="Modo de entrega"
+              maxLength={64}
               value={form.deliveryMode}
               onChange={setField}
               placeholder="Automática, personalizada, híbrida..."
@@ -464,6 +472,7 @@ export default function ProductForm({
             <ProductField
               field="revenueModel"
               label="Modelo de receita"
+              maxLength={64}
               value={form.revenueModel}
               onChange={setField}
               placeholder="Compra única, assinatura, recorrência..."
@@ -471,6 +480,7 @@ export default function ProductForm({
             <ProductField
               field="valueUnit"
               label="Unidade de valor"
+              maxLength={191}
               value={form.valueUnit}
               onChange={setField}
               placeholder="7 dias concluídos, 10 imagens utilizáveis..."
@@ -478,6 +488,7 @@ export default function ProductForm({
             <ProductField
               field="valueEvidenceMetric"
               label="Evidência de valor"
+              maxLength={191}
               value={form.valueEvidenceMetric}
               onChange={setField}
               placeholder="Uso, satisfação, recompra ou resultado percebido"
@@ -485,6 +496,7 @@ export default function ProductForm({
             <ProductField
               field="validationDefinitionVersion"
               label="Versão da definição"
+              maxLength={32}
               value={form.validationDefinitionVersion}
               onChange={setField}
             />

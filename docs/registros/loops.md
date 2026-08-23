@@ -1609,3 +1609,32 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** o gate arquitetural exige os gatilhos e comandos de sincronização; o readiness do
   deploy entra no container de Têmis e exige os contratos da oferta, dos eventos e ao menos um
   material funcional antes de declarar o executor pronto.
+
+## LOOP-PLANO-COMERCIAL-COAUTORIA-LIBERA-SUCESSORA — atividade avança com um revisor pendente
+
+- **Data:** 2026-08-23.
+- **Sintoma:** uma sucessora do Plano Comercial podia ser reservada quando apenas um dos responsáveis
+  pela predecessora havia concluído, ignorando o segundo parecer da mesma atividade.
+- **Causa-raiz:** a elegibilidade verificava a existência de uma conclusão por atividade, não a
+  conclusão de todas as tarefas daquela atividade na mesma instância.
+- **Prevenção:** o backend agrupa por atividade e exige a tentativa mais recente de cada coautor
+  concluída; tentativas superadas continuam auditáveis, mas não bloqueiam a correção. O contexto do
+  executor mantém somente o resultado concluído mais recente por agente e atividade.
+
+## LOOP-EXECUTOR-LOCAL-SEM-TIMEOUT — tarefa fica em andamento sem resposta do modelo
+
+- **Data:** 2026-08-23.
+- **Sintoma:** a tarefa #220 permaneceu em andamento por quinze minutos sem resposta nem telemetria.
+- **Causa-raiz:** o executor local não possuía limite operacional nem callback de falha técnica.
+- **Prevenção:** o runner aplica timeout validado, encerra o processo e persiste erro técnico e uso
+  parcial quando disponível; uma nova tarefa auditável pode então retomar a atividade.
+
+## LOOP-PRODUTO-CAMPO-MAIOR-QUE-SCHEMA — tela aceita texto e backend responde 500
+
+- **Data:** 2026-08-23.
+- **Sintoma:** salvar o produto #6 retornou HTTP 500 e MySQL 1406 porque `delivery_mode` recebeu mais
+  que 64 caracteres.
+- **Causa-raiz:** entidade e Liquibase limitavam os campos comparáveis, mas DTO e formulário não
+  reproduziam os mesmos máximos.
+- **Prevenção:** validação Bean Validation rejeita o payload antes do banco e o formulário limita os
+  campos conforme o schema. Testes REST e de interface protegem a concordância.

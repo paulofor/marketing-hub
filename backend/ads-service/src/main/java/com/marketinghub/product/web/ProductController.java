@@ -56,7 +56,7 @@ public class ProductController {
 
   /** Cadastra um novo produto comercial no Marketing Hub. */
   @PostMapping
-  public ProductDto create(@RequestBody CreateProductRequest request) {
+  public ProductDto create(@Valid @RequestBody CreateProductRequest request) {
     return mapper.toDto(service.createProduct(request));
   }
 
@@ -68,7 +68,8 @@ public class ProductController {
 
   /** Atualiza os dados comerciais editáveis de um produto existente. */
   @PutMapping("/{id}")
-  public ProductDto update(@PathVariable Long id, @RequestBody CreateProductRequest request) {
+  public ProductDto update(
+      @PathVariable Long id, @Valid @RequestBody CreateProductRequest request) {
     return mapper.toDto(service.updateProduct(id, request));
   }
 

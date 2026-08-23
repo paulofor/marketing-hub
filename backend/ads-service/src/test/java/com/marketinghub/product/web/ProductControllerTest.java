@@ -110,6 +110,21 @@ class ProductControllerTest {
         .andExpect(jsonPath("$.currentPriceBrl").value(67.00));
   }
 
+  /** Deve rejeitar campos maiores que a coluna antes de chegar ao banco. */
+  @Test
+  void rejectProductDeliveryModeLargerThanSchema() throws Exception {
+    CreateProductRequest request = new CreateProductRequest();
+    request.setName("PDE seguro");
+    request.setDeliveryMode("x".repeat(65));
+
+    mockMvc
+        .perform(
+            put("/api/products/{id}", 1L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+  }
+
   /** Deve expor anúncios reutilizáveis vinculados ao produto. */
   @Test
   void getAdLibrary() throws Exception {

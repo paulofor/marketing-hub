@@ -103,6 +103,8 @@ public class ExperimentDto {
   private String lastStatusChangeReason;
   private String lastStatusChangeAction;
   private Instant lastStatusChangedAt;
+  private boolean reactivationAvailable;
+  private boolean terminalReconciliationAvailable;
   private String primaryVariable;
   private String primaryMetric;
   private boolean creativeApproved;

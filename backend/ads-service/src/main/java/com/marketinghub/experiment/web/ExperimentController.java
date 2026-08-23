@@ -14,6 +14,8 @@ import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentStrategicPositioningRequest;
 import com.marketinghub.experiment.dto.UpdateSelectedSampleEmailRequest;
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
+import com.marketinghub.experiment.funnel.ExperimentTerminalReconciliationService;
+import com.marketinghub.experiment.funnel.ExperimentTerminalReconciliationService.TerminalReconciliationResponse;
 import com.marketinghub.experiment.funnel.dto.ExperimentPdeCockpitDiagnosticsDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
@@ -63,6 +65,7 @@ public class ExperimentController {
   private final ExperimentCostReconciliationService costReconciliationService;
   private final ExperimentCockpitService cockpitService;
   private final TemisCreativeTaskOrchestrationService temisCreativeTaskOrchestrationService;
+  private final ExperimentTerminalReconciliationService terminalReconciliationService;
 
   /**
    * Inicializa o controller com serviços de experimento, diagnóstico, prontidão e geração de
@@ -81,7 +84,8 @@ public class ExperimentController {
       ExperimentConstructionService constructionService,
       ExperimentCostReconciliationService costReconciliationService,
       ExperimentCockpitService cockpitService,
-      TemisCreativeTaskOrchestrationService temisCreativeTaskOrchestrationService) {
+      TemisCreativeTaskOrchestrationService temisCreativeTaskOrchestrationService,
+      ExperimentTerminalReconciliationService terminalReconciliationService) {
     this.service = service;
     this.mapper = mapper;
     this.diagnosticsService = diagnosticsService;
@@ -95,6 +99,7 @@ public class ExperimentController {
     this.costReconciliationService = costReconciliationService;
     this.cockpitService = cockpitService;
     this.temisCreativeTaskOrchestrationService = temisCreativeTaskOrchestrationService;
+    this.terminalReconciliationService = terminalReconciliationService;
   }
 
   /** Cria um novo experimento com os dados comerciais informados na tela. */
@@ -185,7 +190,21 @@ public class ExperimentController {
     ExperimentDto dto = costReconciliationService.enrich(experiment, mapper.toDto(experiment));
     dto.setSessionDurationSummary(buildSessionDurationSummary(experiment.getId()));
     dto.setRevenue(funnelService.approvedRevenue(experiment.getId()));
+    boolean terminalReconciliationAvailable = terminalReconciliationService.isAvailable(experiment);
+    dto.setTerminalReconciliationAvailable(terminalReconciliationAvailable);
+    dto.setReactivationAvailable(
+        service.isReactivationAvailable(experiment) && !terminalReconciliationAvailable);
     return dto;
+  }
+
+  /** Reavalia a trava financeira sem reativar campanha ou criar novo gasto. */
+  @Operation(
+      summary = "Reconciliar encerramento financeiro",
+      description =
+          "Reavalia métricas persistidas de um experimento parado sem reativar mídia nem autorizar novo gasto.")
+  @PostMapping("/{id}/terminal-reconciliation")
+  public TerminalReconciliationResponse reconcileTerminalState(@PathVariable Long id) {
+    return terminalReconciliationService.reconcile(id);
   }
 
   /** Consolida tempo medio geral e por variante A/B quando houver teste separado. */
@@ -225,6 +244,12 @@ public class ExperimentController {
   @PostMapping("/{id}/reactivate")
   public ExperimentDto reactivate(
       @PathVariable Long id, @RequestBody ReactivateExperimentRequest request) {
+    com.marketinghub.experiment.Experiment experiment = service.get(id);
+    if (terminalReconciliationService.isAvailable(experiment)) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "Experimento atingiu a trava financeira e deve ser encerrado, não reativado.");
+    }
     return mapper.toDto(service.reactivate(id, request));
   }
 

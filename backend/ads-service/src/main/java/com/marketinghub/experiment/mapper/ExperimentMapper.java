@@ -65,6 +65,8 @@ public interface ExperimentMapper {
   @org.mapstruct.Mapping(target = "unreconciledLegacyCost", ignore = true)
   @org.mapstruct.Mapping(target = "revenue", ignore = true)
   @org.mapstruct.Mapping(target = "sessionDurationSummary", ignore = true)
+  @org.mapstruct.Mapping(target = "reactivationAvailable", ignore = true)
+  @org.mapstruct.Mapping(target = "terminalReconciliationAvailable", ignore = true)
   @org.mapstruct.Mapping(target = "creativeMetaCopyViolations", ignore = true)
   @org.mapstruct.Mapping(target = "unitPrice", expression = "java(experiment.getUnitPrice())")
   @org.mapstruct.Mapping(

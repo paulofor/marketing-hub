@@ -8,6 +8,13 @@
 >
 > Uso obrigatório recomendado: antes de corrigir problema em GeraLanding, Facebook Ads, Lead Portal, OpenAI/schema, pipelines administrativos ou pipeline de hipótese, verificar se a solicitação reabre algum loop listado aqui.
 
+## LOOP-EXPERIMENT-TERMINAL-STATE-DIVERGENCE — campanha pausada com run e agente ativos
+
+- **Sintoma confirmado em 2026-08-23:** o experimento #88 ficou `USER_STOPPED` e a campanha `PAUSED` após R$ 25,24 sem resultado primário, mas o run #6 permaneceu `RUNNING` e a tarefa de Hermes #188 ficou `PENDING`.
+- **Causa-raiz:** a sincronização marcava `metrics_final_synced_at` antes de terminar as regras derivadas e a invalidação financeira não encerrava `ExperimentRun` nem tarefas reabríveis. Depois do deploy da regra correta, a campanha já não voltava à fila porque parecia liquidada.
+- **Correção sistêmica:** a liquidação final só é marcada após as regras derivadas passarem; a parada comercial conclui o run, classifica a evidência e cancela tarefas ativas; um comando administrativo idempotente permite reconciliar históricos sem reativar mídia.
+- **Prevenção:** testes cobrem a etapa `SAMPLE` no cadastro do sucessor, a parada financeira, o fechamento do run, o cancelamento das tarefas, o comando visível na lista administrativa e o bloqueio da reativação do experimento antigo.
+
 ## LOOP-EXPERIMENT-RUN-NATIVE-ENUM-DRIFT — preflight quebra após evolução de gate
 
 - **Sintoma:** `POST /api/experiment-runs/{id}/preflight` retorna HTTP 500 com `Data truncated for column 'gate_group'`.

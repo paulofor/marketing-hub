@@ -6,10 +6,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.run.ExperimentEvidenceValidity;
 import com.marketinghub.experiment.run.ExperimentRun;
+import com.marketinghub.experiment.run.ExperimentRunFailureClassification;
 import com.marketinghub.experiment.run.ExperimentRunMode;
 import com.marketinghub.experiment.run.ExperimentRunStatus;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
+import com.marketinghub.facebookads.FacebookCampaignStopReason;
 import com.marketinghub.repository.jpa.experiment.ExperimentRunRepository;
 import java.time.Instant;
 import java.util.Optional;
@@ -90,6 +93,31 @@ class ExperimentRunMetricLifecycleServiceTest {
 
     assertThat(run.getStatus()).isEqualTo(ExperimentRunStatus.COMPLETED);
     verify(experimentRunRepository, never()).save(run);
+  }
+
+  /** Encerra o run como evidência comercial válida ao atingir a trava sem resultado primário. */
+  @Test
+  void completesCommercialRunAfterFinancialStop() {
+    Experiment experiment = Experiment.builder().id(88L).build();
+    ExperimentRun run = run(experiment, ExperimentRunStatus.RUNNING);
+    when(experimentRunRepository.findTopByExperimentIdAndModeOrderByRunNumberDesc(
+            88L, ExperimentRunMode.PRODUCTION))
+        .thenReturn(Optional.of(run));
+
+    service.completeCommercialStop(
+        experiment,
+        FacebookCampaignStopReason.CAMPAIGN_ZERO_RESULT_AFTER_MINIMUM_SPEND,
+        "R$ 25,00 sem resultado primário");
+
+    assertThat(run.getStatus()).isEqualTo(ExperimentRunStatus.COMPLETED);
+    assertThat(run.getEvidenceValidity()).isEqualTo(ExperimentEvidenceValidity.COMMERCIALLY_VALID);
+    assertThat(run.getFailureClassification())
+        .isEqualTo(ExperimentRunFailureClassification.COMMERCIAL_HYPOTHESIS_FAILURE);
+    assertThat(run.getStopReason())
+        .isEqualTo(FacebookCampaignStopReason.CAMPAIGN_ZERO_RESULT_AFTER_MINIMUM_SPEND.name());
+    assertThat(run.getFailureDetail()).isEqualTo("R$ 25,00 sem resultado primário");
+    assertThat(run.getEndedAt()).isNotNull();
+    verify(experimentRunRepository).save(run);
   }
 
   /** Cria uma campanha mínima com o marco de publicação informado. */

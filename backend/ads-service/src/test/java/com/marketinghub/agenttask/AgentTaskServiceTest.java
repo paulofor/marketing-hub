@@ -29,6 +29,44 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: comprovar autoria, segregação e ciclo de vida das tarefas dos agentes. */
 class AgentTaskServiceTest {
 
+  /** Encerra tarefas reabríveis quando a entidade comercial não pode mais avançar. */
+  @Test
+  void cancelsActiveTasksForTerminalExperiment() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask pending = new AgentTask();
+    pending.setId(188L);
+    pending.setStatus("PENDING");
+    pending.setCreatedAt(Instant.parse("2026-08-22T22:33:54Z"));
+    pending.setUpdatedAt(pending.getCreatedAt());
+    AgentTask completed = new AgentTask();
+    completed.setId(187L);
+    completed.setStatus("COMPLETED");
+    completed.setCreatedAt(Instant.parse("2026-08-22T22:24:33Z"));
+    completed.setUpdatedAt(completed.getCreatedAt());
+    when(repository.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:88"))
+        .thenReturn(List.of(completed, pending));
+    Clock clock = Clock.fixed(Instant.parse("2026-08-23T01:45:00Z"), ZoneOffset.UTC);
+    AgentTaskService service =
+        new AgentTaskService(
+            repository,
+            mock(AgentRepository.class),
+            mock(BusinessProcessDefinitionRepository.class),
+            new ObjectMapper(),
+            clock);
+
+    int cancelled =
+        service.cancelActiveTasksBySourceReference(
+            "experiment:88", "Trava financeira encerrada sem resultado primário.");
+
+    assertThat(cancelled).isEqualTo(1);
+    assertThat(pending.getStatus()).isEqualTo("CANCELLED");
+    assertThat(pending.getExecutionError())
+        .isEqualTo("Trava financeira encerrada sem resultado primário.");
+    assertThat(pending.getUpdatedAt()).isEqualTo(Instant.parse("2026-08-23T01:45:00Z"));
+    assertThat(completed.getStatus()).isEqualTo("COMPLETED");
+    verify(repository).saveAll(List.of(pending));
+  }
+
   /** Vincula a nova tarefa humana a uma atividade publicada do responsável correto. */
   @Test
   void createsHumanTaskBoundToPublishedActivity() {

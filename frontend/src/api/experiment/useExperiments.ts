@@ -185,6 +185,8 @@ export interface Experiment {
   lastStatusChangeReason?: string | null;
   lastStatusChangeAction?: string | null;
   lastStatusChangedAt?: string | null;
+  reactivationAvailable?: boolean;
+  terminalReconciliationAvailable?: boolean;
   primaryVariable?: string | null;
   primaryMetric?: string | null;
   createdAt: string;

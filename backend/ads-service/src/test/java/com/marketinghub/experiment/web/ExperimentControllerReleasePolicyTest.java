@@ -7,7 +7,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.dto.ReactivateExperimentRequest;
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
+import com.marketinghub.experiment.funnel.ExperimentTerminalReconciliationService;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
 import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
 import com.marketinghub.experiment.service.ExperimentCampaignDestinationPolicy;
@@ -35,24 +37,53 @@ class ExperimentControllerReleasePolicyTest {
     when(service.get(60L)).thenReturn(experiment);
     when(policy.missingConfiguration(experiment)).thenReturn(List.of("salesPageAdDestination"));
     ExperimentController controller =
-        new ExperimentController(
-            service,
-            mock(ExperimentMapper.class),
-            mock(ExperimentDiagnosticsService.class),
-            mock(ExperimentReadinessService.class),
-            mock(ExperimentPromiseGenerationService.class),
-            policy,
-            mock(ExperimentFunnelService.class),
-            mock(ExperimentSalesPageAbTestService.class),
-            mock(ExperimentDeliverablesZipService.class),
-            mock(ExperimentConstructionService.class),
-            mock(ExperimentCostReconciliationService.class),
-            mock(ExperimentCockpitService.class),
-            mock(com.marketinghub.experiment.service.TemisCreativeTaskOrchestrationService.class));
+        controller(service, policy, mock(ExperimentTerminalReconciliationService.class));
 
     assertThatThrownBy(() -> controller.releaseForFacebook(60L))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("checkout direto");
     verify(service, never()).releaseForFacebook(60L);
+  }
+
+  /** Impede que um experimento com trava financeira seja reativado pela rota administrativa. */
+  @Test
+  void reactivationRejectsExperimentAwaitingFinancialReconciliation() {
+    ExperimentService service = mock(ExperimentService.class);
+    ExperimentTerminalReconciliationService reconciliationService =
+        mock(ExperimentTerminalReconciliationService.class);
+    Experiment experiment = new Experiment();
+    when(service.get(88L)).thenReturn(experiment);
+    when(reconciliationService.isAvailable(experiment)).thenReturn(true);
+    ExperimentController controller =
+        controller(service, mock(ExperimentCampaignDestinationPolicy.class), reconciliationService);
+    ReactivateExperimentRequest request =
+        new ReactivateExperimentRequest("Reativação não deve ser permitida");
+
+    assertThatThrownBy(() -> controller.reactivate(88L, request))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("trava financeira");
+    verify(service, never()).reactivate(88L, request);
+  }
+
+  /** Monta o controller com colaboradores controlados para validar políticas administrativas. */
+  private ExperimentController controller(
+      ExperimentService service,
+      ExperimentCampaignDestinationPolicy policy,
+      ExperimentTerminalReconciliationService reconciliationService) {
+    return new ExperimentController(
+        service,
+        mock(ExperimentMapper.class),
+        mock(ExperimentDiagnosticsService.class),
+        mock(ExperimentReadinessService.class),
+        mock(ExperimentPromiseGenerationService.class),
+        policy,
+        mock(ExperimentFunnelService.class),
+        mock(ExperimentSalesPageAbTestService.class),
+        mock(ExperimentDeliverablesZipService.class),
+        mock(ExperimentConstructionService.class),
+        mock(ExperimentCostReconciliationService.class),
+        mock(ExperimentCockpitService.class),
+        mock(com.marketinghub.experiment.service.TemisCreativeTaskOrchestrationService.class),
+        reconciliationService);
   }
 }

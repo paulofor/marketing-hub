@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.marketinghub.ads.FacebookAccount;
+import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.ExperimentStatus;
@@ -25,6 +26,7 @@ import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDiagnosticDto
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticReasonCode;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticStatus;
 import com.marketinghub.experiment.funnel.dto.FunnelThresholdCheckDto;
+import com.marketinghub.experiment.run.service.ExperimentRunMetricLifecycleService;
 import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
 import com.marketinghub.experiment.service.ExperimentCampaignMetricService;
 import com.marketinghub.experiment.service.ExperimentReadinessService;
@@ -87,6 +89,8 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
   @Mock private ExperimentCampaignMetricRepository campaignMetricRepository;
   @Mock private CampaignStrategyService campaignStrategyService;
   @Mock private ExperimentSalesPageAbTestService salesPageAbTestService;
+  @Mock private ExperimentRunMetricLifecycleService runMetricLifecycleService;
+  @Mock private AgentTaskService agentTaskService;
 
   private MockMvc mockMvc;
   private ObjectMapper objectMapper;
@@ -101,7 +105,9 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
         new ExperimentFunnelAutoStopService(
             diagnosticService,
             new ExperimentFunnelStandbyService(campaignRepository),
-            campaignMetricRepository);
+            campaignMetricRepository,
+            runMetricLifecycleService,
+            agentTaskService);
     FacebookAdsCampaignController controller =
         new FacebookAdsCampaignController(
             experimentService,

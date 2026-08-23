@@ -60,6 +60,18 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
   page,
   request,
 }, testInfo) => {
+  const canonicalOfferResponse = await request.get(
+    `${backendBaseUrl}/api/pde/products/${productSlug}/commercial-offer`,
+  );
+  expect(canonicalOfferResponse.ok()).toBeTruthy();
+  const canonicalOffer = await canonicalOfferResponse.json();
+  expect(canonicalOffer).toMatchObject({
+    productSlug,
+    experimentId: 89,
+    acquisitionChannel: "DIRECT_ONE_TO_ONE",
+    priceBrl: 349,
+  });
+
   await expect(
     page.getByRole("heading", { name: "Kit WhatsApp Pronto" }),
   ).toBeVisible();

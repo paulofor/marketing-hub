@@ -1,10 +1,13 @@
 package com.marketinghub.experiment.run.service;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.run.ExperimentEvidenceValidity;
 import com.marketinghub.experiment.run.ExperimentRun;
+import com.marketinghub.experiment.run.ExperimentRunFailureClassification;
 import com.marketinghub.experiment.run.ExperimentRunMode;
 import com.marketinghub.experiment.run.ExperimentRunStatus;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
+import com.marketinghub.facebookads.FacebookCampaignStopReason;
 import com.marketinghub.repository.jpa.experiment.ExperimentRunRepository;
 import java.time.Instant;
 import java.util.EnumSet;
@@ -47,6 +50,68 @@ public class ExperimentRunMetricLifecycleService {
             experiment.getId(), ExperimentRunMode.PRODUCTION)
         .filter(run -> EXPOSURE_ELIGIBLE_STATUSES.contains(run.getStatus()))
         .ifPresent(run -> synchronize(run, experiment, campaign, synchronizedImpressions));
+  }
+
+  /**
+   * Encerra a tentativa produtiva quando uma regra comercial determinística invalida a campanha.
+   */
+  public void completeCommercialStop(
+      Experiment experiment, FacebookCampaignStopReason stopReason, String detail) {
+    if (experiment == null || experiment.getId() == null || stopReason == null) {
+      return;
+    }
+    experimentRunRepository
+        .findTopByExperimentIdAndModeOrderByRunNumberDesc(
+            experiment.getId(), ExperimentRunMode.PRODUCTION)
+        .filter(run -> !isTerminal(run.getStatus()))
+        .ifPresent(run -> completeCommercialStop(run, experiment, stopReason, detail));
+  }
+
+  /**
+   * Persiste o resultado comercial final sem transformar uma reprovação válida em falha técnica.
+   */
+  private void completeCommercialStop(
+      ExperimentRun run,
+      Experiment experiment,
+      FacebookCampaignStopReason stopReason,
+      String detail) {
+    run.setStatus(ExperimentRunStatus.COMPLETED);
+    run.setStopReason(stopReason.name());
+    run.setFailureClassification(resolveFailureClassification(stopReason));
+    run.setFailureDetail(detail);
+    run.setEvidenceValidity(resolveEvidenceValidity(stopReason));
+    run.setEndedAt(Instant.now());
+    experimentRunRepository.save(run);
+    log.info(
+        "experiment_run_commercial_stop experimentId={} runId={} stopReason={} evidenceValidity={} failureClassification={}",
+        experiment.getId(),
+        run.getId(),
+        stopReason,
+        run.getEvidenceValidity(),
+        run.getFailureClassification());
+  }
+
+  /** Identifica estados que não podem ser reabertos pela reconciliação financeira. */
+  private boolean isTerminal(ExperimentRunStatus status) {
+    return status == ExperimentRunStatus.COMPLETED
+        || status == ExperimentRunStatus.FAILED
+        || status == ExperimentRunStatus.CANCELLED;
+  }
+
+  /** Classifica a validade da evidência conforme a causa comercial da parada. */
+  private ExperimentEvidenceValidity resolveEvidenceValidity(
+      FacebookCampaignStopReason stopReason) {
+    return stopReason == FacebookCampaignStopReason.LOW_IMPRESSIONS_AFTER_RUNNING_TIME
+        ? ExperimentEvidenceValidity.INSUFFICIENT_DATA
+        : ExperimentEvidenceValidity.COMMERCIALLY_VALID;
+  }
+
+  /** Classifica o motivo operacional preservando a distinção entre audiência e hipótese. */
+  private ExperimentRunFailureClassification resolveFailureClassification(
+      FacebookCampaignStopReason stopReason) {
+    return stopReason == FacebookCampaignStopReason.LOW_IMPRESSIONS_AFTER_RUNNING_TIME
+        ? ExperimentRunFailureClassification.AUDIENCE_FAILURE
+        : ExperimentRunFailureClassification.COMMERCIAL_HYPOTHESIS_FAILURE;
   }
 
   /** Aplica os marcos ausentes sem reabrir runs terminais nem deslocar uma janela já iniciada. */

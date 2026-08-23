@@ -1,8 +1,10 @@
 package com.marketinghub.experiment.funnel;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.ExperimentStatus;
@@ -10,6 +12,7 @@ import com.marketinghub.experiment.funnel.dto.ExperimentFunnelDiagnosticsRespons
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDiagnosticDto;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticReasonCode;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticStatus;
+import com.marketinghub.experiment.run.service.ExperimentRunMetricLifecycleService;
 import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookCampaignStopReason;
@@ -33,6 +36,8 @@ class ExperimentFunnelAutoStopServiceTest {
   @Mock private ExperimentFunnelDiagnosticService diagnosticService;
   @Mock private FacebookAdsCampaignRepository campaignRepository;
   @Mock private ExperimentCampaignMetricRepository campaignMetricRepository;
+  @Mock private ExperimentRunMetricLifecycleService runMetricLifecycleService;
+  @Mock private AgentTaskService agentTaskService;
 
   private ExperimentFunnelAutoStopService service;
   private Experiment experiment;
@@ -44,7 +49,9 @@ class ExperimentFunnelAutoStopServiceTest {
         new ExperimentFunnelAutoStopService(
             diagnosticService,
             new ExperimentFunnelStandbyService(campaignRepository),
-            campaignMetricRepository);
+            campaignMetricRepository,
+            runMetricLifecycleService,
+            agentTaskService);
     experiment = new Experiment();
     experiment.setId(99L);
     experiment.setStatus(ExperimentStatus.RUNNING);
@@ -131,6 +138,57 @@ class ExperimentFunnelAutoStopServiceTest {
     assertThat(campaign.getStopRequestedAt()).isEqualTo(requestedAt);
     assertThat(campaign.getStopCompletedAt()).isEqualTo(completedAt);
     assertThat(campaign.getStopLastError()).isNull();
+    verify(runMetricLifecycleService)
+        .completeCommercialStop(
+            experiment,
+            FacebookCampaignStopReason.CAMPAIGN_ZERO_RESULT_AFTER_MINIMUM_SPEND,
+            "campanha gastou R$ 25,00 sem resultado primário: envio de formulário, abertura de email de amostra ou compra");
+    verify(agentTaskService)
+        .cancelActiveTasksBySourceReference(
+            "experiment:99",
+            "campanha gastou R$ 25,00 sem resultado primário: envio de formulário, abertura de email de amostra ou compra");
+  }
+
+  /** Libera a ação administrativa somente para pausa manual que atingiu o gasto mínimo. */
+  @Test
+  void offersFinancialReconciliationForStoppedExperimentAtMinimumSpend() {
+    experiment.setStatus(ExperimentStatus.USER_STOPPED);
+    when(campaignMetricRepository.findByExperiment(experiment))
+        .thenReturn(Optional.of(metricWithSpend("25.24")));
+    when(diagnosticService.diagnose(99L))
+        .thenReturn(
+            new ExperimentFunnelDiagnosticsResponseDto(
+                List.of(
+                    stage(ExperimentFunnelStage.ENVIO_FORM, 6, 0, FunnelDiagnosticStatus.NO_DATA),
+                    stage(
+                        ExperimentFunnelStage.ABERTURA_EMAIL_AMOSTRA,
+                        0,
+                        0,
+                        FunnelDiagnosticStatus.NO_DATA),
+                    stage(ExperimentFunnelStage.COMPRA, 0, 0, FunnelDiagnosticStatus.NO_DATA)),
+                null));
+
+    assertThat(service.isFinancialReconciliationAvailable(experiment)).isTrue();
+  }
+
+  /** Não oferece encerramento financeiro quando a campanha já gerou resultado primário. */
+  @Test
+  void doesNotOfferFinancialReconciliationWhenPrimaryResultExists() {
+    experiment.setStatus(ExperimentStatus.USER_STOPPED);
+    when(campaignMetricRepository.findByExperiment(experiment))
+        .thenReturn(Optional.of(metricWithSpend("25.24")));
+    when(diagnosticService.diagnose(99L))
+        .thenReturn(
+            new ExperimentFunnelDiagnosticsResponseDto(
+                List.of(
+                    stage(
+                        ExperimentFunnelStage.COMPRA,
+                        1,
+                        1,
+                        FunnelDiagnosticStatus.HEALTHY_OR_INCONCLUSIVE)),
+                null));
+
+    assertThat(service.isFinancialReconciliationAvailable(experiment)).isFalse();
   }
 
   /** Garante que resultado primário existente impede a parada por gasto mínimo. */

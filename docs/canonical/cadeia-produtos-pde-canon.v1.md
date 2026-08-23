@@ -145,6 +145,14 @@ como histórico, mas somente uma versão publicada de cada código participa da 
 Cada processo deve possuir um objetivo final verificável. Concluir atividades sem atingir esse
 objetivo não conclui o processo.
 
+As telas de produtos devem separar explicitamente o **status comercial** da **posição na cadeia**.
+Para cada produto, o backend resolve a posição usando a cadeia PDE publicada e a interface mostra o
+nome humano do processo atual, sua posição `n de total`, o nome e a versão da cadeia e um link para a
+definição canônica do processo. A interface não pode inferir nomes somente a partir de códigos
+técnicos. Status sem vínculo e cadeia indisponível devem aparecer como estados explícitos, nunca como
+uma etapa fabricada. Novas versões publicadas da cadeia devem refletir automaticamente o nome, a
+ordem e o total de processos exibidos.
+
 ## 1. Descoberta e priorização da oportunidade PDE
 
 **Objetivo final:** comprovar que existe uma dor recorrente, relevante, mal atendida e com intenção

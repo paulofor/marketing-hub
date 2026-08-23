@@ -63,6 +63,61 @@ describe("ProductListPage", () => {
     ).toBeTruthy();
   });
 
+  it("shows the product position in the published value chain", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/products/value-chain-positions") {
+        return Promise.resolve({
+          data: [
+            {
+              productId: 9,
+              commercialStatus: "COMUNICACAO_E_JORNADA",
+              resolutionStatus: "IDENTIFIED",
+              resolutionMessage: "Posição identificada.",
+              chainDefinitionId: 5,
+              chainName:
+                "Criação e entrega de valor de Produtos Digitais Experienciais",
+              chainVersion: 5,
+              processDefinitionId: 43,
+              processCode: "pde-communication-sales-journey",
+              processName: "Comunicação e jornada de venda do PDE",
+              processVersion: 4,
+              sequenceNumber: 4,
+              processCount: 6,
+            },
+          ],
+        });
+      }
+      return Promise.resolve({
+        data: [
+          {
+            id: 9,
+            slug: "kit-whatsapp-pronto",
+            name: "Kit WhatsApp Pronto",
+            commercialStatus: "COMUNICACAO_E_JORNADA",
+          },
+        ],
+      });
+    });
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <BrowserRouter>
+          <ProductListPage />
+        </BrowserRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("Etapa 4 de 6")).toBeTruthy();
+    expect(
+      screen.getByRole("link", {
+        name: /Comunicação e jornada de venda do PDE/i,
+      }),
+    ).toHaveAttribute("href", "/business-processes?processId=43");
+    expect(
+      screen.getByText("Status comercial: Comunicação e jornada"),
+    ).toBeTruthy();
+  });
+
   it("shows product video images action for listed product", async () => {
     (axios.get as any).mockResolvedValue({
       data: [

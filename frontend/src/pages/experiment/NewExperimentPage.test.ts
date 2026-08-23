@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Product } from "../../api/product/useProducts";
 import { productsEligibleForNiche } from "./NewExperimentPage";
 import {
+  experimentIdentityFields,
   parseOptionalEntityId,
   parseOptionalPositiveAmount,
   productAiSubtypeForExperiment,
@@ -62,5 +63,19 @@ describe("contrato de planejamento do experimento", () => {
     expect(parseOptionalEntityId("")).toBe(null);
     expect(parseOptionalEntityId("12")).toBe(12);
     expect(parseOptionalEntityId("0")).toBe(null);
+  });
+
+  it("preserva etapa, variável e métrica preparadas para a degustação", () => {
+    expect(
+      experimentIdentityFields(
+        "SAMPLE",
+        "Amostra visual personalizada",
+        "Compra aprovada e custo de IA por compra",
+      ),
+    ).toEqual({
+      stage: "SAMPLE",
+      primaryVariable: "Amostra visual personalizada",
+      primaryMetric: "Compra aprovada e custo de IA por compra",
+    });
   });
 });

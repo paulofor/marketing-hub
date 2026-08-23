@@ -1,11 +1,13 @@
 package com.marketinghub.experiment.funnel;
 
+import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelDiagnosticsResponseDto;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDiagnosticDto;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticStatus;
+import com.marketinghub.experiment.run.service.ExperimentRunMetricLifecycleService;
 import com.marketinghub.facebookads.FacebookCampaignStopReason;
 import com.marketinghub.repository.jpa.experiment.ExperimentCampaignMetricRepository;
 import java.math.BigDecimal;
@@ -30,6 +32,8 @@ public class ExperimentFunnelAutoStopService {
   private final ExperimentFunnelDiagnosticService diagnosticService;
   private final ExperimentFunnelStandbyService standbyService;
   private final ExperimentCampaignMetricRepository campaignMetricRepository;
+  private final ExperimentRunMetricLifecycleService runMetricLifecycleService;
+  private final AgentTaskService agentTaskService;
 
   /**
    * Cria o serviço com diagnóstico de funil, campanhas e métricas para registrar pausas
@@ -38,10 +42,14 @@ public class ExperimentFunnelAutoStopService {
   public ExperimentFunnelAutoStopService(
       ExperimentFunnelDiagnosticService diagnosticService,
       ExperimentFunnelStandbyService standbyService,
-      ExperimentCampaignMetricRepository campaignMetricRepository) {
+      ExperimentCampaignMetricRepository campaignMetricRepository,
+      ExperimentRunMetricLifecycleService runMetricLifecycleService,
+      AgentTaskService agentTaskService) {
     this.diagnosticService = diagnosticService;
     this.standbyService = standbyService;
     this.campaignMetricRepository = campaignMetricRepository;
+    this.runMetricLifecycleService = runMetricLifecycleService;
+    this.agentTaskService = agentTaskService;
   }
 
   /**
@@ -55,26 +63,18 @@ public class ExperimentFunnelAutoStopService {
     if (!isEligibleForZeroPrimaryResultStop(experiment)) {
       return false;
     }
-    BigDecimal campaignSpend = resolveCampaignSpend(experiment);
-    if (campaignSpend.compareTo(ZERO_PRIMARY_RESULT_MINIMUM_SPEND) < 0) {
-      return false;
-    }
-    ExperimentFunnelDiagnosticsResponseDto diagnostics =
-        diagnosticService.diagnose(experiment.getId());
-    long formSubmissions = successesFor(diagnostics, ExperimentFunnelStage.ENVIO_FORM);
-    long sampleEmailOpens = successesFor(diagnostics, ExperimentFunnelStage.ABERTURA_EMAIL_AMOSTRA);
-    long purchases = successesFor(diagnostics, ExperimentFunnelStage.COMPRA);
-    if (formSubmissions > 0 || sampleEmailOpens > 0 || purchases > 0) {
+    ZeroPrimaryResultEvidence evidence = resolveZeroPrimaryResultEvidence(experiment);
+    if (!evidence.reachedStopThreshold()) {
       return false;
     }
     LOGGER.warn(
         "Automatic campaign stop triggered for experiment {} due to zero primary result after minimum spend: spend={}, minimumSpend={}, formSubmissions={}, sampleEmailOpens={}, purchases={}",
         experiment.getId(),
-        campaignSpend,
+        evidence.campaignSpend(),
         ZERO_PRIMARY_RESULT_MINIMUM_SPEND,
-        formSubmissions,
-        sampleEmailOpens,
-        purchases);
+        evidence.formSubmissions(),
+        evidence.sampleEmailOpens(),
+        evidence.purchases());
     invalidateExperimentAndRequestStops(
         experiment,
         FacebookCampaignStopReason.CAMPAIGN_ZERO_RESULT_AFTER_MINIMUM_SPEND,
@@ -90,6 +90,44 @@ public class ExperimentFunnelAutoStopService {
     return experiment != null
         && (experiment.getStatus() == ExperimentStatus.RUNNING
             || experiment.getStatus() == ExperimentStatus.USER_STOPPED);
+  }
+
+  /**
+   * Indica se uma pausa manual possui gasto mínimo e ausência comprovada de resultado primário para
+   * oferecer a reconciliação financeira na interface.
+   */
+  public boolean isFinancialReconciliationAvailable(Experiment experiment) {
+    return experiment != null
+        && experiment.getStatus() == ExperimentStatus.USER_STOPPED
+        && resolveZeroPrimaryResultEvidence(experiment).reachedStopThreshold();
+  }
+
+  /** Consolida uma única leitura canônica do gasto e dos resultados primários do experimento. */
+  private ZeroPrimaryResultEvidence resolveZeroPrimaryResultEvidence(Experiment experiment) {
+    BigDecimal campaignSpend = resolveCampaignSpend(experiment);
+    if (campaignSpend.compareTo(ZERO_PRIMARY_RESULT_MINIMUM_SPEND) < 0) {
+      return new ZeroPrimaryResultEvidence(campaignSpend, 0, 0, 0);
+    }
+    ExperimentFunnelDiagnosticsResponseDto diagnostics =
+        diagnosticService.diagnose(experiment.getId());
+    return new ZeroPrimaryResultEvidence(
+        campaignSpend,
+        successesFor(diagnostics, ExperimentFunnelStage.ENVIO_FORM),
+        successesFor(diagnostics, ExperimentFunnelStage.ABERTURA_EMAIL_AMOSTRA),
+        successesFor(diagnostics, ExperimentFunnelStage.COMPRA));
+  }
+
+  /** Representa a evidência mínima necessária para aplicar a trava comercial sem falso positivo. */
+  private record ZeroPrimaryResultEvidence(
+      BigDecimal campaignSpend, long formSubmissions, long sampleEmailOpens, long purchases) {
+
+    /** Confirma simultaneamente o limite de gasto e a ausência de todos os resultados primários. */
+    private boolean reachedStopThreshold() {
+      return campaignSpend.compareTo(ZERO_PRIMARY_RESULT_MINIMUM_SPEND) >= 0
+          && formSubmissions == 0
+          && sampleEmailOpens == 0
+          && purchases == 0;
+    }
   }
 
   /**
@@ -209,5 +247,8 @@ public class ExperimentFunnelAutoStopService {
       Experiment experiment, FacebookCampaignStopReason stopReason, String businessReason) {
     experiment.setStatus(ExperimentStatus.INVALIDATED);
     standbyService.requestFacebookCampaignStops(experiment.getId(), stopReason, businessReason);
+    runMetricLifecycleService.completeCommercialStop(experiment, stopReason, businessReason);
+    agentTaskService.cancelActiveTasksBySourceReference(
+        "experiment:" + experiment.getId(), businessReason);
   }
 }

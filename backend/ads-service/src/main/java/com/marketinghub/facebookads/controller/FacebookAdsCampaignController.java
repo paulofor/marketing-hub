@@ -547,8 +547,10 @@ public class FacebookAdsCampaignController {
     FacebookAdsCampaign campaign = metric.getCampaign();
     campaign.setMetricsLastSyncedAt(Instant.now());
     campaign.setMetricsLastError(null);
-    markFinalMetricsSyncWhenExperimentIsSettled(campaign);
     evaluateMetricsSideEffectsSafely(campaign, metric);
+    if (campaign.getMetricsLastError() == null) {
+      markFinalMetricsSyncWhenExperimentIsSettled(campaign);
+    }
     return toMetricSummary(metric);
   }
 

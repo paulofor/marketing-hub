@@ -7,8 +7,11 @@ import {
   Video,
 } from "lucide-react";
 import { useMemo, type CSSProperties } from "react";
+import { formatCommercialStatus } from "../api/product/productStatus";
+import { useProductValueChainPositions } from "../api/product/useProductValueChainPositions";
 import { useProducts, type Product } from "../api/product/useProducts";
 import PageTitle from "../components/PageTitle";
+import ProductValueChainPosition from "../components/ProductValueChainPosition";
 
 const money = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -58,20 +61,28 @@ function getProductPrimaryColor(product: Product) {
 function sortByRecentActivity(a: Product, b: Product) {
   const aTime = Date.parse(a.updatedAt || a.createdAt || "");
   const bTime = Date.parse(b.updatedAt || b.createdAt || "");
-  return (
-    (Number.isNaN(bTime) ? 0 : bTime) -
-    (Number.isNaN(aTime) ? 0 : aTime)
-  );
+  return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
 }
 
 export default function HomePage() {
   const { data, isLoading } = useProducts();
+  const valueChainPositions = useProductValueChainPositions();
   const activeProducts = useMemo(
     () =>
       Array.isArray(data)
         ? data.filter(isActiveProduct).sort(sortByRecentActivity)
         : [],
     [data],
+  );
+  const valueChainPositionByProductId = useMemo(
+    () =>
+      new Map(
+        (valueChainPositions.data ?? []).map((position) => [
+          position.productId,
+          position,
+        ]),
+      ),
+    [valueChainPositions.data],
   );
 
   return (
@@ -80,8 +91,8 @@ export default function HomePage() {
         <div>
           <PageTitle>Início</PageTitle>
           <p className="text-muted mb-0">
-            Produtos ativos prontos para operação, campanha, vídeo e melhoria
-            de conversão.
+            Produtos ativos prontos para operação, campanha, vídeo e melhoria de
+            conversão.
           </p>
         </div>
         <Link className="btn btn-outline-primary" to="/products">
@@ -97,8 +108,8 @@ export default function HomePage() {
           <div>
             <h2 className="h5 mb-1">Nenhum produto ativo encontrado</h2>
             <p className="text-muted mb-0">
-              Cadastre ou reative um produto para priorizar campanhas e
-              produção comercial.
+              Cadastre ou reative um produto para priorizar campanhas e produção
+              comercial.
             </p>
           </div>
         </section>
@@ -113,7 +124,9 @@ export default function HomePage() {
                 style={{ "--product-primary": primaryColor } as CSSProperties}
               >
                 <div className="home-product-card__topline">
-                  <span>{product.commercialStatus || "Ativo"}</span>
+                  <span>
+                    Status: {formatCommercialStatus(product.commercialStatus)}
+                  </span>
                   <strong>
                     {product.currentPriceBrl != null
                       ? money.format(product.currentPriceBrl)
@@ -125,6 +138,13 @@ export default function HomePage() {
                 <p className="home-product-card__slug">
                   {product.slug || "sem-slug"}
                 </p>
+                <ProductValueChainPosition
+                  compact
+                  productName={getProductName(product)}
+                  position={valueChainPositionByProductId.get(product.id)}
+                  isLoading={valueChainPositions.isLoading}
+                  isError={valueChainPositions.isError}
+                />
                 <p className="home-product-card__promise">
                   {getPrimaryPromise(product)}
                 </p>

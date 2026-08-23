@@ -26,11 +26,13 @@ import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { getStatisticsDefaultsForBudget } from "./statisticsDefaults";
 import type {
   ExperimentPlatform,
+  ExperimentStage,
   ExperimentType,
   ProductAiSubtype,
 } from "../../api/experiment/useExperiments";
 import type { Product } from "../../api/product/useProducts";
 import {
+  experimentIdentityFields,
   parseOptionalPositiveAmount,
   productAiSubtypeForExperiment,
 } from "./experimentPlanningContract";
@@ -90,7 +92,7 @@ type FormState = {
   imagesPerPackage: string;
   openImagesPerPackage: string;
   compressedImagesPerPackage: string;
-  stage: string;
+  stage: ExperimentStage;
   primaryVariable: string;
   primaryMetric: string;
   commercialObjective: string;
@@ -508,7 +510,11 @@ export default function NewExperimentPage() {
         hypothesisId: hypothesisIdForSubmit || undefined,
         name: "",
         hypothesis: form.hypothesis,
-        stage: "AD",
+        ...experimentIdentityFields(
+          form.stage,
+          form.primaryVariable,
+          form.primaryMetric,
+        ),
         singlePain: form.singlePain.trim(),
         freeReward: form.freeReward.trim() || undefined,
         funnelPromise: form.funnelPromise.trim(),

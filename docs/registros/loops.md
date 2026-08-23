@@ -8,6 +8,13 @@
 >
 > Uso obrigatório recomendado: antes de corrigir problema em GeraLanding, Facebook Ads, Lead Portal, OpenAI/schema, pipelines administrativos ou pipeline de hipótese, verificar se a solicitação reabre algum loop listado aqui.
 
+## LOOP-EXPERIMENT-TERMINAL-STATE-DIVERGENCE — campanha pausada com run e agente ativos
+
+- **Sintoma confirmado em 2026-08-23:** o experimento #88 ficou `USER_STOPPED` e a campanha `PAUSED` após R$ 25,24 sem resultado primário, mas o run #6 permaneceu `RUNNING` e a tarefa de Hermes #188 ficou `PENDING`.
+- **Causa-raiz:** a sincronização marcava `metrics_final_synced_at` antes de terminar as regras derivadas e a invalidação financeira não encerrava `ExperimentRun` nem tarefas reabríveis. Depois do deploy da regra correta, a campanha já não voltava à fila porque parecia liquidada.
+- **Correção sistêmica:** a liquidação final só é marcada após as regras derivadas passarem; a parada comercial conclui o run, classifica a evidência e cancela tarefas ativas; um comando administrativo idempotente permite reconciliar históricos sem reativar mídia.
+- **Prevenção:** testes cobrem a etapa `SAMPLE` no cadastro do sucessor, a parada financeira, o fechamento do run, o cancelamento das tarefas, o comando visível na lista administrativa e o bloqueio da reativação do experimento antigo.
+
 ## LOOP-EXPERIMENT-RUN-NATIVE-ENUM-DRIFT — preflight quebra após evolução de gate
 
 - **Sintoma:** `POST /api/experiment-runs/{id}/preflight` retorna HTTP 500 com `Data truncated for column 'gate_group'`.
@@ -495,6 +502,12 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - **Regra preventiva**:
   - todo deploy isolado deve validar e subir somente o descritor do seu destino;
   - um teste de contrato deve renderizar o Compose isolado sem secrets de outros módulos.
+- **Recorrência fechada localmente em 2026-08-23:** o deploy do PDE publicou backend e frontend,
+  mas terminou vermelho ao tentar recriar o proxy pelo Compose do serviço de pagamentos; a
+  interpolação exigiu `OPENAI_API_KEY` de outra responsabilidade antes de selecionar `proxy`. O
+  workflow PDE passa apenas a localizar o proxy já publicado, conectá-lo à rede compartilhada e
+  recarregar sua configuração. Um teste de contrato bloqueia acesso ao diretório ou Compose do
+  serviço de pagamentos pelo deploy PDE.
 
 ---
 
@@ -1551,3 +1564,15 @@ Use este checklist quando o problema estiver em algum loop acima:
   continua em `follow_up_action_url`, e o checkout só nasce após a entrega PDE validada.
 - **Prevenção:** testes exigem preservação das duas URLs, criação idempotente no provedor e prioridade
   do checkout explícito na geração e auditoria da página de vendas.
+
+## LOOP-PDE-PATH-VARIABLE-SEM-NOME — oferta pública falha somente no artefato empacotado
+
+- **Data:** 2026-08-23.
+- **Sintoma:** o backend PDE inicia saudável e o endpoint novo existe, mas a oferta pública responde
+  404 com erro de resolução do argumento `String` quando executada a imagem de produção.
+- **Causa-raiz:** o controller usava `@PathVariable` sem nome explícito e o build não preservava
+  metadados de nomes de parâmetros no bytecode.
+- **Correção sistêmica:** o nome `productSlug` fica explícito na anotação, sem depender de opção do
+  compilador.
+- **Prevenção:** teste HTTP com `MockMvc` chama a rota empacotável e confirma produto, experimento e
+  preço; a jornada assistida local também consulta o endpoint real antes de simular o checkout.

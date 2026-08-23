@@ -226,6 +226,39 @@ paths:
                 $ref: '#/components/schemas/Experiment'
         '404':
           description: Experimento não encontrado
+  /api/experiments/{experimentId}/terminal-reconciliation:
+    post:
+      tags: [Experiments]
+      summary: Reconciliar encerramento financeiro do experimento
+      description: Reavalia um experimento USER_STOPPED com as métricas persistidas, sem reativar mídia, e encerra run e tarefas quando a trava financeira estiver comprovada.
+      parameters:
+        - in: path
+          name: experimentId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Resultado da reconciliação terminal
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [experimentId, status, invalidated]
+                properties:
+                  experimentId:
+                    type: integer
+                    format: int64
+                  status:
+                    type: string
+                    enum: [USER_STOPPED, INVALIDATED]
+                  invalidated:
+                    type: boolean
+        '409':
+          description: Experimento não está parado pelo usuário
+        '404':
+          description: Experimento não encontrado
   /api/experiments/{id}/construction:
     get:
       tags: [Experiments]
@@ -1588,6 +1621,12 @@ components:
           enum: [LEADS, TRAFFIC]
         status:
           type: string
+        reactivationAvailable:
+          type: boolean
+          description: Indica se o backend permite oferecer a retomada do experimento.
+        terminalReconciliationAvailable:
+          type: boolean
+          description: Indica se o backend permite oferecer a reconciliação financeira sem reativar mídia.
         journeyTemplateId:
           type: integer
         journeyTemplateName:

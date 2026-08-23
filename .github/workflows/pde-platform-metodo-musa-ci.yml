@@ -51,6 +51,8 @@ jobs:
         working-directory: pde-platform/backend
     steps:
       - uses: actions/checkout@v4
+      - name: Validate isolated deploy contract
+        run: bash ../scripts/test-deploy-isolation-contract.sh
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -235,7 +237,6 @@ jobs:
       PDE_PLATFORM_FRONTEND_V7_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_V7_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_V7_PORT || '5178' }}
       PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT: ${{ secrets.PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT != '' && secrets.PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT || '5179' }}
       PDE_PLATFORM_BACKEND_PORT: ${{ secrets.PDE_PLATFORM_BACKEND_PORT != '' && secrets.PDE_PLATFORM_BACKEND_PORT || '8096' }}
-      LEAD_PORTAL_PAYMENTS_REMOTE_PATH: ${{ secrets.LEAD_PORTAL_PAYMENTS_REMOTE_PATH != '' && secrets.LEAD_PORTAL_PAYMENTS_REMOTE_PATH || '/root/lead-portal-payments-service' }}
       AWS_REGION: ${{ secrets.PDE_MAIL_AWS_REGION != '' && secrets.PDE_MAIL_AWS_REGION || 'us-east-1' }}
       AWS_ACCESS_KEY_ID: ${{ secrets.PDE_MAIL_AWS_ACCESS_KEY_ID != '' && secrets.PDE_MAIL_AWS_ACCESS_KEY_ID || secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.PDE_MAIL_AWS_SECRET_ACCESS_KEY != '' && secrets.PDE_MAIL_AWS_SECRET_ACCESS_KEY || secrets.AWS_SECRET_ACCESS_KEY }}
@@ -371,16 +372,10 @@ jobs:
               fi; \
             done \
             && docker image prune -af"
-      - name: Ensure Clube MUSA public proxy
+      - name: Connect existing public proxy
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && (docker network inspect ${PDE_PLATFORM_NETWORK} >/dev/null 2>&1 || docker network create ${PDE_PLATFORM_NETWORK}) \
-            && if [ -f '${LEAD_PORTAL_PAYMENTS_REMOTE_PATH}/docker-compose.deploy.yml' ]; then \
-              cd '${LEAD_PORTAL_PAYMENTS_REMOTE_PATH}' \
-              && export LEAD_PORTAL_PAYMENTS_NETWORK='${PDE_PLATFORM_NETWORK}' \
-              && export LEAD_PORTAL_PAYMENTS_IMAGE='${IMAGE_NAMESPACE}/lead-portal-payments-service:latest' \
-              && docker compose -f docker-compose.deploy.yml up -d --no-deps proxy; \
-            fi \
             && PROXY_CONTAINERS=\"lead-portal-payments-service-proxy-1 lead-portal-payments-service_proxy_1 lead-portal-payments-proxy-1 lead-portal-payments_proxy_1 proxy \$(docker ps --filter publish=443 --format '{{.Names}}' || true)\" \
             && PROXY_FOUND=false \
             && for proxy_container in \${PROXY_CONTAINERS}; do \

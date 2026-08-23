@@ -6,6 +6,7 @@ import {
   useUpdateExperimentStatus,
 } from "../../api/experiment/useUpdateExperimentStatus";
 import { useCloseExperimentPipelineJobs } from "../../api/experiment/useCloseExperimentPipelineJobs";
+import { useReconcileExperimentTerminalState } from "../../api/experiment/useReconcileExperimentTerminalState";
 import { useLatestPromiseOptionsDraft } from "../../api/experiment/useGeneratePromiseOptions";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
@@ -16,13 +17,6 @@ import axios from "axios";
 
 const PAGE_SIZE = 25;
 const BRL_PER_USD = 5;
-const REACTIVATABLE_STATUSES = new Set([
-  "PAUSED",
-  "STANDBY",
-  "USER_STOPPED",
-  "INCONCLUSIVE",
-  "FAILED",
-]);
 function formatDate(value?: string | null) {
   if (!value) return "—";
   const date = new Date(value);
@@ -108,6 +102,7 @@ export default function ExperimentListPage() {
   const updateStatus = useUpdateExperimentStatus();
   const reactivateExperiment = useReactivateExperiment();
   const closePipelineJobs = useCloseExperimentPipelineJobs();
+  const reconcileTerminalState = useReconcileExperimentTerminalState();
   const queryClient = useQueryClient();
   const latestPromiseOptionsDraft = useLatestPromiseOptionsDraft();
   const [search, setSearch] = useState("");
@@ -124,6 +119,9 @@ export default function ExperimentListPage() {
     string | null
   >(null);
   const [retryingExperimentId, setRetryingExperimentId] = useState<
+    string | null
+  >(null);
+  const [reconcilingExperimentId, setReconcilingExperimentId] = useState<
     string | null
   >(null);
   const [reactivationExperimentId, setReactivationExperimentId] = useState<
@@ -233,6 +231,28 @@ export default function ExperimentListPage() {
       toast.error("Não foi possível reenviar o experimento para a fila.");
     } finally {
       setRetryingExperimentId(null);
+    }
+  }
+
+  async function handleTerminalReconciliation(experimentId: string) {
+    setReconcilingExperimentId(experimentId);
+    try {
+      const result = await reconcileTerminalState.mutateAsync(experimentId);
+      if (result.invalidated) {
+        toast.success(
+          "Experimento encerrado pelo limite financeiro, com execução e tarefas reconciliadas.",
+        );
+      } else {
+        toast.info(
+          "O encerramento foi preservado sem evidência para invalidação financeira.",
+        );
+      }
+    } catch {
+      toast.error(
+        "Não foi possível reconciliar o encerramento do experimento.",
+      );
+    } finally {
+      setReconcilingExperimentId(null);
     }
   }
 
@@ -349,7 +369,7 @@ export default function ExperimentListPage() {
           <tbody>
             {paginated.map((e) => {
               const canStop = e.status === "RUNNING";
-              const canReactivate = REACTIVATABLE_STATUSES.has(e.status);
+              const canReactivate = e.reactivationAvailable === true;
               const isCommercialValidation =
                 isCommercialValidationExperiment(e);
               const isStopping = stoppingExperimentId === String(e.id);
@@ -463,6 +483,25 @@ export default function ExperimentListPage() {
                         }}
                       >
                         Retornar à atividade
+                      </button>
+                    )}
+                    {e.terminalReconciliationAvailable && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-danger ms-1"
+                        disabled={reconcilingExperimentId === String(e.id)}
+                        onClick={() =>
+                          handleTerminalReconciliation(String(e.id))
+                        }
+                      >
+                        {reconcilingExperimentId === String(e.id) && (
+                          <span
+                            className="spinner-border spinner-border-sm me-1"
+                            role="status"
+                            aria-hidden="true"
+                          />
+                        )}
+                        Concluir pelo limite financeiro
                       </button>
                     )}
                     {e.status === "FAILED" && (

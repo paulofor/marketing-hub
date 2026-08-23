@@ -357,6 +357,35 @@ public class AgentTaskService {
     return response(repository.save(task));
   }
 
+  /**
+   * Cancela o trabalho ainda reabrível de uma entidade encerrada e preserva o diagnóstico já
+   * registrado em cada tarefa.
+   */
+  @Transactional
+  public int cancelActiveTasksBySourceReference(String sourceReference, String reason) {
+    String reference = trimToNull(sourceReference);
+    if (reference == null) {
+      return 0;
+    }
+    Instant now = Instant.now(clock);
+    String normalizedReason = trimToNull(reason);
+    List<AgentTask> changed =
+        repository.findBySourceReferenceOrderByCreatedAtAscIdAsc(reference).stream()
+            .filter(task -> List.of("PENDING", "IN_PROGRESS", "BLOCKED").contains(task.getStatus()))
+            .peek(
+                task -> {
+                  task.setStatus("CANCELLED");
+                  if (normalizedReason != null
+                      && !org.springframework.util.StringUtils.hasText(task.getExecutionError())) {
+                    task.setExecutionError(normalizedReason);
+                  }
+                  task.setUpdatedAt(now);
+                })
+            .toList();
+    repository.saveAll(changed);
+    return changed.size();
+  }
+
   /** Migra uma tarefa excepcional ainda não recebida para uma atividade BPM publicada. */
   @Transactional
   public AgentTaskResponse bindProcess(Long taskId, BindAgentTaskProcessRequest request) {

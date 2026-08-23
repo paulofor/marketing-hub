@@ -155,6 +155,10 @@ Regra canônica:
 - parar campanha quando o gasto sincronizado atingir `R$ 25,00` e não houver nenhum resultado primário: `ENVIO_FORM`, `ABERTURA_EMAIL_AMOSTRA` ou `COMPRA`;
 - parar campanha quando qualquer etapa prioritária do funil ficar `STATISTICALLY_FAILED`;
 - registrar `experiment.status = INVALIDATED` e solicitar pausa das campanhas vinculadas via `facebook_ads_campaign.stop_requested_at`;
+- na mesma decisão, concluir o `ExperimentRun` produtivo, classificar a validade da evidência, preencher motivo e horário final e cancelar tarefas de agentes ainda reabríveis da referência `experiment:<id>`;
+- nunca considerar a liquidação final concluída antes de executar com sucesso as regras derivadas da métrica; falha nessa reconciliação deve manter a campanha elegível para nova sincronização;
+- experimento `USER_STOPPED` que já possua gasto final acima do limite pode ser reconciliado pelo comando administrativo sem reativar campanha, conjunto ou anúncio;
+- enquanto essa reconciliação financeira estiver disponível, o backend deve ocultar e rejeitar a reativação do experimento antigo; uma nova hipótese comercial deve nascer em experimento sucessor, com métricas e orçamento próprios;
 - usar `CAMPAIGN_ZERO_RESULT_AFTER_MINIMUM_SPEND` para gasto mínimo sem resultado primário e `CAMPAIGN_STATISTICALLY_FAILED_STAGE` para reprovação estatística de etapa;
 - manter motivos antigos de low-ticket apenas como histórico de dados já gravados, sem usá-los como caminho operacional novo.
 

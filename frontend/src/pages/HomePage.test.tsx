@@ -37,7 +37,8 @@ describe("HomePage", () => {
           commercialStatus: "VALIDACAO_COMERCIAL",
           currentPriceBrl: 27,
           targetAudience: "Mulheres que querem melhorar a presença visual",
-          primaryHypothesis: "Diagnóstico de presença elegante em poucos minutos",
+          primaryHypothesis:
+            "Diagnóstico de presença elegante em poucos minutos",
           primaryCta: "Começar diagnóstico",
           colorPalette: "#7a2444, #d6a75c",
           updatedAt: "2026-07-28T01:00:00Z",
@@ -62,6 +63,53 @@ describe("HomePage", () => {
       "href",
       "/products/1/sales-videos",
     );
+  });
+
+  it("shows the current value-chain process as a human-readable link", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/products/value-chain-positions") {
+        return Promise.resolve({
+          data: [
+            {
+              productId: 9,
+              commercialStatus: "COMUNICACAO_E_JORNADA",
+              resolutionStatus: "IDENTIFIED",
+              resolutionMessage: "Posição identificada.",
+              chainDefinitionId: 5,
+              chainName:
+                "Criação e entrega de valor de Produtos Digitais Experienciais",
+              chainVersion: 5,
+              processDefinitionId: 43,
+              processCode: "pde-communication-sales-journey",
+              processName: "Comunicação e jornada de venda do PDE",
+              processVersion: 4,
+              sequenceNumber: 4,
+              processCount: 6,
+            },
+          ],
+        });
+      }
+      return Promise.resolve({
+        data: [
+          {
+            id: 9,
+            slug: "kit-whatsapp-pronto",
+            name: "Kit WhatsApp Pronto",
+            commercialStatus: "COMUNICACAO_E_JORNADA",
+          },
+        ],
+      });
+    });
+
+    renderHome();
+
+    expect(await screen.findByText("Etapa 4 de 6")).toBeTruthy();
+    expect(
+      screen.getByRole("link", {
+        name: /Comunicação e jornada de venda do PDE/i,
+      }),
+    ).toHaveAttribute("href", "/business-processes?processId=43");
+    expect(screen.getByText("Status: Comunicação e jornada")).toBeTruthy();
   });
 
   it("shows empty state when there are no active products", async () => {

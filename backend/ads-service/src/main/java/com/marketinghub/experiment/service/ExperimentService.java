@@ -878,7 +878,7 @@ public class ExperimentService {
     String reason = normalizeStatusChangeReason(request != null ? request.reason() : null);
     Experiment exp = repository.findById(id).orElseThrow();
     ExperimentStatus previousStatus = exp.getStatus();
-    if (!canReactivate(previousStatus)) {
+    if (!isReactivationAvailable(exp)) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "experiment status does not allow reactivation");
     }
@@ -900,8 +900,12 @@ public class ExperimentService {
     return exp;
   }
 
-  /** Verifica se o status atual representa um experimento parado que pode voltar à atividade. */
-  private boolean canReactivate(ExperimentStatus status) {
+  /** Verifica se o estado persistido aceita uma nova execução, antes dos bloqueios financeiros. */
+  public boolean isReactivationAvailable(Experiment experiment) {
+    if (experiment == null) {
+      return false;
+    }
+    ExperimentStatus status = experiment.getStatus();
     return status == ExperimentStatus.PAUSED
         || status == ExperimentStatus.STANDBY
         || status == ExperimentStatus.USER_STOPPED

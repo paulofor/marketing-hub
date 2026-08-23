@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ComponentType, ReactNode } from "react";
+import { Link } from "react-router-dom";
 import {
   BadgeDollarSign,
   Brush,
@@ -15,6 +16,7 @@ import { CreateProduct } from "../../api/product/useCreateProduct";
 import { Product } from "../../api/product/useProducts";
 import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 import { useNiches } from "../../api/niche/useNiches";
+import { useProductTypes } from "../../api/productType/useProductTypes";
 
 type ProductFormValues = {
   [K in Exclude<keyof CreateProduct, "aliases">]-?: string;
@@ -31,7 +33,8 @@ const defaultForm: ProductFormValues = {
   targetAudience: "",
   languageStyle: "",
   codeModules: "",
-  productType: "PDE - Produto Digital Experiencial",
+  productType: "",
+  productTypeId: "",
   productFormat: "",
   deliveryMode: "",
   revenueModel: "",
@@ -83,6 +86,8 @@ function toFormValues(product?: Product): ProductFormValues {
     languageStyle: product.languageStyle ?? "",
     codeModules: product.codeModules ?? "",
     productType: product.productType ?? defaultForm.productType,
+    productTypeId:
+      product.productTypeId != null ? String(product.productTypeId) : "",
     productFormat: product.productFormat ?? "",
     deliveryMode: product.deliveryMode ?? "",
     revenueModel: product.revenueModel ?? "",
@@ -138,6 +143,7 @@ function toPayload(form: ProductFormValues): CreateProduct {
     marketNicheId: Number(form.marketNicheId) || undefined,
     instagramAccountId: Number(form.instagramAccountId) || undefined,
     currentPriceBrl: Number(form.currentPriceBrl) || undefined,
+    productTypeId: Number(form.productTypeId) || undefined,
     aiCost: Number(form.aiCost) || 0,
   };
 }
@@ -240,19 +246,31 @@ export default function ProductForm({
 }: ProductFormProps) {
   const { data: accountsData } = useInstagramAccounts();
   const { data: nichesData } = useNiches();
+  const productTypesQuery = useProductTypes(true);
   const accounts = Array.isArray(accountsData) ? accountsData : [];
   const niches = Array.isArray(nichesData) ? nichesData : [];
   const [form, setForm] = useState<ProductFormValues>(() =>
     toFormValues(initialProduct),
   );
+  const productTypes = Array.isArray(productTypesQuery.data)
+    ? productTypesQuery.data.filter(
+        (type) =>
+          type.status === "ACTIVE" || String(type.id) === form.productTypeId,
+      )
+    : [];
 
   const setField = (field: keyof ProductFormValues, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
   const submit = () => {
+    if (!form.productTypeId) return;
     onSubmit(toPayload(form));
   };
+
+  const selectedProductType = productTypes.find(
+    (type) => String(type.id) === form.productTypeId,
+  );
 
   const applyAgendaCheiaDesireMap = () => {
     setForm((current) => ({
@@ -355,7 +373,9 @@ export default function ProductForm({
         <dl>
           <div>
             <dt>Tipo</dt>
-            <dd>{form.productType || "Não informado"}</dd>
+            <dd>
+              {selectedProductType?.name || form.productType || "Não informado"}
+            </dd>
           </div>
           <div>
             <dt>Preço</dt>
@@ -377,7 +397,7 @@ export default function ProductForm({
         <button
           className="btn btn-primary w-100"
           onClick={submit}
-          disabled={isSaving}
+          disabled={isSaving || !form.productTypeId}
         >
           {isSaving ? (
             <>
@@ -459,13 +479,54 @@ export default function ProductForm({
               value={form.logoUrl}
               onChange={setField}
             />
-            <ProductField
-              field="productType"
-              label="Tipo de produto"
-              maxLength={64}
-              value={form.productType}
-              onChange={setField}
-            />
+            <div className="product-editor-field">
+              <label className="form-label" htmlFor="product-productTypeId">
+                Tipo de produto *
+              </label>
+              <select
+                id="product-productTypeId"
+                className="form-select"
+                required
+                value={form.productTypeId}
+                onChange={(event) => {
+                  const selected = productTypes.find(
+                    (type) => String(type.id) === event.target.value,
+                  );
+                  setForm((current) => ({
+                    ...current,
+                    productTypeId: event.target.value,
+                    productType: selected?.name ?? current.productType,
+                  }));
+                }}
+              >
+                <option value="">
+                  {productTypesQuery.isLoading
+                    ? "Carregando tipos..."
+                    : "Selecione um tipo"}
+                </option>
+                {productTypes.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {type.name}
+                    {type.status === "RETIRED" ? " (aposentado)" : ""}
+                  </option>
+                ))}
+              </select>
+              <div className="form-text">
+                Não encontrou uma classificação adequada?{" "}
+                <Link to="/product-types">Cadastre um tipo ou apelido</Link> sem
+                limitar a ideia do produto.
+              </div>
+              {!form.productTypeId && (
+                <div className="form-text text-danger">
+                  Selecione um tipo em uso antes de salvar o produto.
+                </div>
+              )}
+              {productTypesQuery.isError && (
+                <div className="form-text text-danger">
+                  Não foi possível carregar o catálogo de tipos.
+                </div>
+              )}
+            </div>
             <ProductField
               field="commercialStatus"
               label="Status comercial"

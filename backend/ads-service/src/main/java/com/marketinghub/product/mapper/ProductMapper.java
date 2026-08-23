@@ -14,6 +14,9 @@ public interface ProductMapper {
   @Mapping(target = "marketNicheId", source = "marketNiche.id")
   @Mapping(target = "videoSeedImageAssetId", source = "videoSeedImageAsset.id")
   @Mapping(target = "aliases", expression = "java(toSortedAliases(product))")
+  @Mapping(target = "productTypeId", source = "productTypeDefinition.id")
+  @Mapping(target = "productTypeCode", source = "productTypeDefinition.code")
+  @Mapping(target = "productTypeStatus", source = "productTypeDefinition.status")
   ProductDto toDto(Product product);
 
   /** Ordena os apelidos internos para manter respostas estáveis para tela e agentes. */

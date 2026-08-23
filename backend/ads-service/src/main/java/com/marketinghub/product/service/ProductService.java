@@ -36,12 +36,15 @@ import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlan
 import com.marketinghub.product.service.updateVideoSeedImage.UpdateProductVideoSeedImageRequest;
 import com.marketinghub.product.service.videoimage.GenerateProductVideoImagesRequest;
 import com.marketinghub.product.service.videoimage.ProductVideoImageDto;
+import com.marketinghub.producttype.ProductTypeDefinition;
+import com.marketinghub.producttype.ProductTypeStatus;
 import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.repository.jpa.product.ProductVideoImageRepository;
 import com.marketinghub.repository.jpa.product.ProductVideoProviderAvatarRepository;
+import com.marketinghub.repository.jpa.producttype.ProductTypeDefinitionRepository;
 import com.marketinghub.storage.AssetStorageService;
 import com.marketinghub.storage.AssetUploadCategory;
 import com.marketinghub.storage.AssetUploadContext;
@@ -91,6 +94,7 @@ public class ProductService {
   private final AssetRepository assetRepository;
   private final ProductVideoImageRepository productVideoImageRepository;
   private final ProductVideoProviderAvatarRepository productVideoProviderAvatarRepository;
+  private final ProductTypeDefinitionRepository productTypeDefinitionRepository;
   private final ImageGeneratorService imageGeneratorService;
   private final AssetStorageService assetStorageService;
   private final ObjectMapper objectMapper;
@@ -105,6 +109,7 @@ public class ProductService {
       AssetRepository assetRepository,
       ProductVideoImageRepository productVideoImageRepository,
       ProductVideoProviderAvatarRepository productVideoProviderAvatarRepository,
+      ProductTypeDefinitionRepository productTypeDefinitionRepository,
       ImageGeneratorService imageGeneratorService,
       AssetStorageService assetStorageService,
       ObjectMapper objectMapper,
@@ -115,6 +120,7 @@ public class ProductService {
     this.assetRepository = assetRepository;
     this.productVideoImageRepository = productVideoImageRepository;
     this.productVideoProviderAvatarRepository = productVideoProviderAvatarRepository;
+    this.productTypeDefinitionRepository = productTypeDefinitionRepository;
     this.imageGeneratorService = imageGeneratorService;
     this.assetStorageService = assetStorageService;
     this.objectMapper = objectMapper;
@@ -179,6 +185,10 @@ public class ProductService {
   public Product createProduct(CreateProductRequest request) {
     Product product = Product.builder().build();
     applyRequest(product, request);
+    if (product.getProductTypeDefinition() == null) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Selecione um tipo em uso antes de cadastrar o produto.");
+    }
     return repository.save(product);
   }
 
@@ -1241,7 +1251,7 @@ public class ProductService {
     product.setTargetAudience(request.getTargetAudience());
     product.setLanguageStyle(request.getLanguageStyle());
     product.setCodeModules(request.getCodeModules());
-    product.setProductType(request.getProductType());
+    resolveProductType(product, request);
     product.setProductFormat(normalizeOptional(request.getProductFormat()));
     product.setDeliveryMode(normalizeOptional(request.getDeliveryMode()));
     product.setRevenueModel(normalizeOptional(request.getRevenueModel()));
@@ -1292,6 +1302,53 @@ public class ProductService {
     }
     String currentInternalName = normalizeOptional(product.getInternalName());
     return currentInternalName != null ? currentInternalName : commercialName;
+  }
+
+  /**
+   * Resolve o tipo por identificador ou identidade legada e aceita novos vínculos apenas ativos.
+   */
+  private void resolveProductType(Product product, CreateProductRequest request) {
+    ProductTypeDefinition requestedType = null;
+    if (request.getProductTypeId() != null) {
+      requestedType =
+          productTypeDefinitionRepository
+              .findById(request.getProductTypeId())
+              .orElseThrow(
+                  () ->
+                      new ResponseStatusException(
+                          HttpStatus.BAD_REQUEST, "Tipo de produto não encontrado no catálogo."));
+    } else if (normalizeOptional(request.getProductType()) != null) {
+      String requestedIdentity = canonicalIdentity(request.getProductType());
+      requestedType =
+          productTypeDefinitionRepository.findAllByOrderByNameAsc().stream()
+              .filter(type -> matchesProductTypeIdentity(type, requestedIdentity))
+              .findFirst()
+              .orElseThrow(
+                  () ->
+                      new ResponseStatusException(
+                          HttpStatus.BAD_REQUEST,
+                          "Cadastre o tipo de produto antes de vinculá-lo ao produto."));
+    } else if (product.getProductTypeDefinition() != null) {
+      return;
+    } else {
+      return;
+    }
+    if (requestedType.getStatus() != ProductTypeStatus.ACTIVE
+        && !requestedType.equals(product.getProductTypeDefinition())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Somente tipos em uso podem receber novos produtos.");
+    }
+    product.setProductTypeDefinition(requestedType);
+    product.setProductType(requestedType.getName());
+  }
+
+  /** Verifica código, nome e apelidos aceitos para compatibilidade com integrações existentes. */
+  private boolean matchesProductTypeIdentity(ProductTypeDefinition type, String identity) {
+    return canonicalIdentity(type.getCode()).equals(identity)
+        || canonicalIdentity(type.getName()).equals(identity)
+        || type.getAliases().stream()
+            .map(this::canonicalIdentity)
+            .anyMatch(alias -> alias.equals(identity));
   }
 
   /** Normaliza apelidos, remove redundâncias e preserva clientes antigos que não enviam o campo. */

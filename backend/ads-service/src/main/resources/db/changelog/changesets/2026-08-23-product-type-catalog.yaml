@@ -1,0 +1,131 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-23-product-type-catalog
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - not:
+            tableExists:
+              tableName: product_type_definition
+        - not:
+            tableExists:
+              tableName: product_type_alias
+        - not:
+            columnExists:
+              tableName: product
+              columnName: product_type_id
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE product_type_definition (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                code VARCHAR(64) NOT NULL,
+                name VARCHAR(191) NOT NULL,
+                description VARCHAR(1000) NULL,
+                status VARCHAR(32) NOT NULL DEFAULT 'PROPOSED',
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_product_type_definition_code (code),
+                UNIQUE KEY uk_product_type_definition_name (name)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+              CREATE TABLE product_type_alias (
+                product_type_id BIGINT NOT NULL,
+                alias VARCHAR(191) NOT NULL,
+                PRIMARY KEY (product_type_id, alias),
+                UNIQUE KEY uk_product_type_alias_alias (alias),
+                CONSTRAINT fk_product_type_alias_definition
+                  FOREIGN KEY (product_type_id) REFERENCES product_type_definition(id)
+                  ON DELETE CASCADE
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+              ALTER TABLE product
+                MODIFY COLUMN product_type VARCHAR(191) NULL,
+                ADD COLUMN product_type_id BIGINT NULL AFTER product_type,
+                ADD KEY idx_product_product_type_id (product_type_id),
+                ADD CONSTRAINT fk_product_product_type_definition
+                  FOREIGN KEY (product_type_id) REFERENCES product_type_definition(id);
+
+              INSERT INTO product_type_definition
+                (code, name, description, status, created_at, updated_at)
+              VALUES
+                ('PDE', 'PDE - Produto Digital Experiencial',
+                 'Experiência digital que entrega transformação observável por uma jornada de valor.',
+                 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('LOW_TICKET_DIGITAL_PRODUCT', 'Produto low-ticket',
+                 'Pacote digital simples, automatizável e de compra direta com baixo atrito.',
+                 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('AI_PRODUCT', 'Produto IA',
+                 'Produto cujo valor depende de geração, transformação ou personalização por IA.',
+                 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('AI_SANDBOX_CONVERSATIONAL_PRODUCT', 'Produto IA de atendimento personalizado por sandbox',
+                 'Atendimento conversacional com memória individual, contexto e execução isolada.',
+                 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('EXTERNAL_MEMBERS_AREA_PRODUCT', 'Área de membros externa',
+                 'Produto com acesso protegido, conteúdo, progresso ou recorrência após a compra.',
+                 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('AI_INTERACTIVE_EDUCATIONAL_EXPERIENCE', 'Experiência educacional interativa com IA',
+                 'Aprendizagem por cenários, decisões, prática e feedback orientado por IA.',
+                 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+              INSERT INTO product_type_alias (product_type_id, alias)
+              SELECT id, 'PDE' FROM product_type_definition WHERE code = 'PDE';
+              INSERT INTO product_type_alias (product_type_id, alias)
+              SELECT id, 'Produto Digital Experiencial' FROM product_type_definition WHERE code = 'PDE';
+              INSERT INTO product_type_alias (product_type_id, alias)
+              SELECT id, 'PDE - Consultor Especialista por WhatsApp' FROM product_type_definition
+               WHERE code = 'AI_SANDBOX_CONVERSATIONAL_PRODUCT';
+              INSERT INTO product_type_alias (product_type_id, alias)
+              SELECT id, 'Especialista por WhatsApp' FROM product_type_definition
+               WHERE code = 'AI_SANDBOX_CONVERSATIONAL_PRODUCT';
+              INSERT INTO product_type_alias (product_type_id, alias)
+              SELECT id, 'Consultor por WhatsApp' FROM product_type_definition
+               WHERE code = 'AI_SANDBOX_CONVERSATIONAL_PRODUCT';
+              INSERT INTO product_type_alias (product_type_id, alias)
+              SELECT id, 'Produto low-ticket de posts personalizados' FROM product_type_definition
+               WHERE code = 'LOW_TICKET_DIGITAL_PRODUCT';
+              INSERT INTO product_type_alias (product_type_id, alias)
+              SELECT id, 'Posts personalizados' FROM product_type_definition
+               WHERE code = 'LOW_TICKET_DIGITAL_PRODUCT';
+              INSERT INTO product_type_alias (product_type_id, alias)
+              SELECT id, 'Kit digital de entrada' FROM product_type_definition
+               WHERE code = 'LOW_TICKET_DIGITAL_PRODUCT';
+              INSERT INTO product_type_alias (product_type_id, alias)
+              SELECT id, 'Produto com IA' FROM product_type_definition WHERE code = 'AI_PRODUCT';
+              INSERT INTO product_type_alias (product_type_id, alias)
+              SELECT id, 'Atendimento personalizado por sandbox' FROM product_type_definition
+               WHERE code = 'AI_SANDBOX_CONVERSATIONAL_PRODUCT';
+              INSERT INTO product_type_alias (product_type_id, alias)
+              SELECT id, 'Área de membros' FROM product_type_definition
+               WHERE code = 'EXTERNAL_MEMBERS_AREA_PRODUCT';
+              INSERT INTO product_type_alias (product_type_id, alias)
+              SELECT id, 'Educação interativa com IA' FROM product_type_definition
+               WHERE code = 'AI_INTERACTIVE_EDUCATIONAL_EXPERIENCE';
+
+              UPDATE product p
+              JOIN product_type_definition definition
+                ON definition.name = p.product_type
+                 SET p.product_type_id = definition.id
+               WHERE p.product_type_id IS NULL;
+
+              UPDATE product p
+              JOIN product_type_alias alias ON alias.alias = p.product_type
+                 SET p.product_type_id = alias.product_type_id
+               WHERE p.product_type_id IS NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product DROP FOREIGN KEY fk_product_product_type_definition;
+              ALTER TABLE product DROP COLUMN product_type_id;
+              ALTER TABLE product MODIFY COLUMN product_type VARCHAR(64) NULL;
+              DROP TABLE product_type_alias;
+              DROP TABLE product_type_definition;

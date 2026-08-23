@@ -14,6 +14,7 @@ export interface CreateProduct {
   languageStyle?: string;
   codeModules?: string;
   productType?: string;
+  productTypeId?: number;
   productFormat?: string;
   deliveryMode?: string;
   revenueModel?: string;

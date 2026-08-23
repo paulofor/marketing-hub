@@ -20,6 +20,9 @@ public class ProductDto {
   private String languageStyle;
   private String codeModules;
   private String productType;
+  private Long productTypeId;
+  private String productTypeCode;
+  private String productTypeStatus;
   private String productFormat;
   private String deliveryMode;
   private String revenueModel;

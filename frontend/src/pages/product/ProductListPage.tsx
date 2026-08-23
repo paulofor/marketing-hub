@@ -265,9 +265,14 @@ export default function ProductListPage() {
             escala.
           </p>
         </div>
-        <Link className="btn btn-primary" to="/products/new">
-          Novo Produto
-        </Link>
+        <div className="d-flex flex-wrap gap-2">
+          <Link className="btn btn-outline-primary" to="/product-types">
+            Tipos de produto
+          </Link>
+          <Link className="btn btn-primary" to="/products/new">
+            Novo Produto
+          </Link>
+        </div>
       </div>
 
       <div className="product-catalog-search mb-4">
@@ -384,6 +389,17 @@ export default function ProductListPage() {
                 <div className="row g-3 mt-1">
                   <div className="col-12 col-xl-7">
                     <dl className="product-catalog-card__facts">
+                      <div>
+                        <dt>Tipo de produto</dt>
+                        <dd>
+                          {product.productType || "Ainda não classificado"}
+                          {product.productTypeCode ? (
+                            <small className="d-block text-muted">
+                              {product.productTypeCode}
+                            </small>
+                          ) : null}
+                        </dd>
+                      </div>
                       <div>
                         <dt>URL pública</dt>
                         <dd>

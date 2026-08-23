@@ -34,6 +34,9 @@ describe("ProductListPage", () => {
       </QueryClientProvider>,
     );
     expect(await screen.findByText(/Novo Produto/)).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "Tipos de produto" }),
+    ).toHaveAttribute("href", "/product-types");
   });
 
   it("shows edit option for listed product", async () => {
@@ -44,6 +47,8 @@ describe("ProductListPage", () => {
           slug: "pde-anti-invisibilidade-profissional-7-dias",
           name: "PDE Anti-Invisibilidade Profissional",
           currentPriceBrl: 47,
+          productType: "PDE - Produto Digital Experiencial",
+          productTypeCode: "PDE",
         },
       ],
     });
@@ -61,6 +66,8 @@ describe("ProductListPage", () => {
     expect(
       await screen.findByText("PDE Anti-Invisibilidade Profissional"),
     ).toBeTruthy();
+    expect(screen.getByText("PDE - Produto Digital Experiencial")).toBeTruthy();
+    expect(screen.getByText("PDE")).toBeTruthy();
   });
 
   it("shows and searches the internal identity without replacing the commercial name", async () => {

@@ -18,6 +18,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
   /** Lista produtos do nicho para impedir que agentes misturem mapas quando houver ambiguidade. */
   List<Product> findAllByMarketNiche_Id(Long marketNicheId);
 
+  /** Lista produtos vinculados a um tipo para manter o nome legado sincronizado. */
+  List<Product> findAllByProductTypeDefinition_Id(Long productTypeId);
+
+  /** Conta produtos classificados por um tipo sem recomputação no frontend. */
+  long countByProductTypeDefinition_Id(Long productTypeId);
+
   /** Pesquisa o catálogo por nome comercial, nome interno, apelido ou slug. */
   @Query(
       """

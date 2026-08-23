@@ -1,0 +1,164 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub - Product Types
+  version: 1.0.0
+  description: Cadastro extensível de classificações e apelidos internos de tipos de produto.
+paths:
+  /api/product-types:
+    get:
+      summary: Lista tipos por nome, código ou apelido.
+      operationId: listProductTypes
+      parameters:
+        - name: query
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: includeRetired
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Catálogo filtrado; por padrão retorna somente tipos ativos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductType"
+    post:
+      summary: Cadastra uma proposta ou tipo ativo.
+      operationId: createProductType
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveProductType"
+      responses:
+        "200":
+          description: Tipo cadastrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductType"
+        "409":
+          description: Nome, código ou apelido já identifica outro tipo.
+  /api/product-types/{id}:
+    get:
+      summary: Retorna um tipo preservado no catálogo.
+      operationId: getProductType
+      parameters:
+        - $ref: "#/components/parameters/ProductTypeId"
+      responses:
+        "200":
+          description: Tipo encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductType"
+        "404":
+          description: Tipo não encontrado.
+    put:
+      summary: Atualiza definição, apelidos ou estado do tipo.
+      operationId: updateProductType
+      parameters:
+        - $ref: "#/components/parameters/ProductTypeId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveProductType"
+      responses:
+        "200":
+          description: Tipo atualizado e nome legado sincronizado nos produtos vinculados.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductType"
+        "409":
+          description: Identidade duplicada ou tentativa de trocar código em uso.
+components:
+  parameters:
+    ProductTypeId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+  schemas:
+    ProductTypeStatus:
+      type: string
+      enum:
+        - PROPOSED
+        - ACTIVE
+        - RETIRED
+    ProductType:
+      type: object
+      required:
+        - id
+        - code
+        - name
+        - aliases
+        - status
+        - productCount
+      properties:
+        id:
+          type: integer
+          format: int64
+        code:
+          type: string
+          maxLength: 64
+        name:
+          type: string
+          maxLength: 191
+        description:
+          type: string
+          maxLength: 1000
+        aliases:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 191
+        status:
+          $ref: "#/components/schemas/ProductTypeStatus"
+        productCount:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    SaveProductType:
+      type: object
+      required:
+        - name
+        - aliases
+        - status
+      properties:
+        code:
+          type: string
+          maxLength: 64
+          description: Quando omitido, é derivado do nome.
+        name:
+          type: string
+          maxLength: 191
+        description:
+          type: string
+          maxLength: 1000
+        aliases:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 191
+        status:
+          $ref: "#/components/schemas/ProductTypeStatus"

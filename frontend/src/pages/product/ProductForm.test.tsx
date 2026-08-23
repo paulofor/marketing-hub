@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { BrowserRouter } from "react-router-dom";
 import ProductForm from "./ProductForm";
 
 vi.mock("../../api/useInstagramAccounts", () => ({
@@ -8,13 +9,41 @@ vi.mock("../../api/useInstagramAccounts", () => ({
 vi.mock("../../api/niche/useNiches", () => ({
   useNiches: () => ({ data: [] }),
 }));
+vi.mock("../../api/productType/useProductTypes", () => ({
+  useProductTypes: () => ({
+    data: [
+      {
+        id: 1,
+        code: "PDE",
+        name: "PDE - Produto Digital Experiencial",
+        aliases: ["PDE"],
+        status: "ACTIVE",
+        productCount: 4,
+      },
+    ],
+  }),
+}));
+
+function selectProductType() {
+  fireEvent.change(screen.getByLabelText(/Tipo de produto/i), {
+    target: { value: "1" },
+  });
+}
+
+function renderForm(onSubmit = vi.fn()) {
+  render(
+    <BrowserRouter>
+      <ProductForm isSaving={false} onSubmit={onSubmit} />
+    </BrowserRouter>,
+  );
+}
 
 afterEach(cleanup);
 
 describe("ProductForm desire association map", () => {
   it("separates the commercial name from internal names and aliases", () => {
     const onSubmit = vi.fn();
-    render(<ProductForm isSaving={false} onSubmit={onSubmit} />);
+    renderForm(onSubmit);
 
     fireEvent.change(
       screen.getByLabelText(/Nome comercial \(visível ao cliente\)/i),
@@ -28,6 +57,7 @@ describe("ProductForm desire association map", () => {
         value: "MUSA v7, vídeos orientados ao desejo\nprojeto presença",
       },
     });
+    selectProductType();
     fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
 
     expect(onSubmit).toHaveBeenCalledWith(
@@ -35,13 +65,16 @@ describe("ProductForm desire association map", () => {
         name: "Método MUSA",
         internalName: "MUSA desejo v7",
         aliases: ["MUSA v7", "vídeos orientados ao desejo", "projeto presença"],
+        productTypeId: 1,
       }),
     );
     expect(screen.getByText(/nunca aparecem na oferta pública/i)).toBeTruthy();
   });
 
   it("limits fields to the backend schema before submit", () => {
-    render(<ProductForm isSaving={false} onSubmit={vi.fn()} />);
+    renderForm();
+
+    selectProductType();
 
     expect(screen.getByLabelText("Formato entregue")).toHaveAttribute(
       "maxlength",
@@ -59,7 +92,9 @@ describe("ProductForm desire association map", () => {
 
   it("applies the three Agenda Cheia territories and keeps approval gates", () => {
     const onSubmit = vi.fn();
-    render(<ProductForm isSaving={false} onSubmit={onSubmit} />);
+    renderForm(onSubmit);
+
+    selectProductType();
 
     fireEvent.click(
       screen.getByRole("button", {

@@ -25,6 +25,22 @@ trabalho, enquanto o nome comercial pode evoluir conforme clareza, desejo, difer
 reais. A tela deve mostrar as duas camadas sem ambiguidade e identificar explicitamente os apelidos
 como internos.
 
+## Classificação extensível por tipo
+
+Todo produto pode ser vinculado a uma definição do catálogo de tipos por `product_type_id`. O
+campo textual legado `product_type` permanece como nome canônico sincronizado para compatibilidade,
+mas a associação estável é o identificador do cadastro.
+
+O cadastro de tipos deve permitir nome, código, descrição, apelidos internos e estado. Novas ideias
+nascem como `PROPOSED`; somente tipos `ACTIVE` podem receber novos produtos; tipos `RETIRED`
+preservam os vínculos e relatórios históricos. Código, nome e apelidos devem resolver para uma única
+definição, impedindo categorias duplicadas com palavras diferentes.
+
+O formulário de produto deve selecionar um tipo ativo da fonte de verdade do backend. Se nenhuma
+classificação representar bem o mecanismo de valor, a pessoa deve cadastrar uma proposta de tipo ou
+acrescentar um apelido ao tipo correto, sem forçar a ideia em um enum e sem criar rótulo livre fora
+do catálogo.
+
 ## Descoberta modular de formatos
 
 O cadastro de produto deve separar o tipo amplo do formato comercial efetivamente testado. Todo

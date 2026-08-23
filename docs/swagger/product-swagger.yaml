@@ -530,6 +530,22 @@ components:
           items:
             type: string
             maxLength: 191
+        productType:
+          type: string
+          description: Nome canônico sincronizado para clientes legados.
+        productTypeId:
+          type: integer
+          format: int64
+          description: Identidade estável do tipo no catálogo extensível.
+        productTypeCode:
+          type: string
+          maxLength: 64
+        productTypeStatus:
+          type: string
+          enum:
+            - PROPOSED
+            - ACTIVE
+            - RETIRED
         pdeExperienceJson:
           type: string
         videoSeedImageAssetId:
@@ -569,6 +585,15 @@ components:
             type: string
             maxLength: 191
           description: Apelidos internos, únicos no catálogo e nunca publicados automaticamente.
+        productTypeId:
+          type: integer
+          format: int64
+          description: Tipo ativo selecionado no catálogo canônico.
+        productType:
+          type: string
+          maxLength: 191
+          deprecated: true
+          description: Identidade legada resolvida por nome, código ou apelido cadastrado.
     ProductScientificArticle:
       type: object
       properties:

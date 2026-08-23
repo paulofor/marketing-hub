@@ -36,6 +36,8 @@ public class CreateProductRequest {
   @Size(max = 64)
   private String productType;
 
+  private Long productTypeId;
+
   @Size(max = 64)
   private String productFormat;
 

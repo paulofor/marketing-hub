@@ -21,12 +21,15 @@ import com.marketinghub.product.ProductVideoSeedImageReviewStatus;
 import com.marketinghub.product.dto.CreateProductRequest;
 import com.marketinghub.product.dto.RegisterProductVideoProviderAvatarRequest;
 import com.marketinghub.product.service.updateVideoSeedImage.UpdateProductVideoSeedImageRequest;
+import com.marketinghub.producttype.ProductTypeDefinition;
+import com.marketinghub.producttype.ProductTypeStatus;
 import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.repository.jpa.product.ProductVideoImageRepository;
 import com.marketinghub.repository.jpa.product.ProductVideoProviderAvatarRepository;
+import com.marketinghub.repository.jpa.producttype.ProductTypeDefinitionRepository;
 import com.marketinghub.storage.AssetStorageService;
 import java.math.BigDecimal;
 import java.util.List;
@@ -40,6 +43,33 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: validar as regras de cadastro comercial de produtos. */
 class ProductServiceTest {
   private final ObjectMapper objectMapper = new ObjectMapper();
+
+  /** Cria o serviço com catálogo de tipos controlado pelo cenário. */
+  private ProductService newService(
+      ProductRepository productRepository,
+      ProductTypeDefinitionRepository productTypeDefinitionRepository) {
+    return newService(
+        productRepository, productTypeDefinitionRepository, mock(MarketNicheRepository.class));
+  }
+
+  /** Cria o serviço com catálogos de tipo e nicho controlados pelo cenário. */
+  private ProductService newService(
+      ProductRepository productRepository,
+      ProductTypeDefinitionRepository productTypeDefinitionRepository,
+      MarketNicheRepository marketNicheRepository) {
+    return new ProductService(
+        productRepository,
+        mock(InstagramAccountRepository.class),
+        marketNicheRepository,
+        mock(AssetRepository.class),
+        mock(ProductVideoImageRepository.class),
+        mock(ProductVideoProviderAvatarRepository.class),
+        productTypeDefinitionRepository,
+        mock(ImageGeneratorService.class),
+        mock(AssetStorageService.class),
+        objectMapper,
+        mock(JdbcTemplate.class));
+  }
 
   /** Cria o serviço com dependências auxiliares mockadas para testes focados em produto. */
   private ProductService newService(
@@ -90,6 +120,7 @@ class ProductServiceTest {
             mock(AssetRepository.class),
             mock(ProductVideoImageRepository.class),
             mock(ProductVideoProviderAvatarRepository.class),
+            mock(ProductTypeDefinitionRepository.class),
             mock(ImageGeneratorService.class),
             mock(AssetStorageService.class),
             objectMapper,
@@ -131,6 +162,7 @@ class ProductServiceTest {
         assetRepository,
         productVideoImageRepository,
         productVideoProviderAvatarRepository,
+        mock(ProductTypeDefinitionRepository.class),
         mock(ImageGeneratorService.class),
         mock(AssetStorageService.class),
         objectMapper,
@@ -221,6 +253,110 @@ class ProductServiceTest {
     assertThat(updated.getDesireAssociationMapVersion()).isEqualTo("v1");
     assertThat(updated.getDesireAssociationMapJson()).contains("PROFESSIONAL_PRIDE");
     assertThat(updated.getMarketNiche()).isSameAs(niche);
+  }
+
+  /** Deve vincular o produto à identidade estável do tipo selecionado na tela. */
+  @Test
+  void updateProductAssignsCatalogType() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    ProductTypeDefinitionRepository typeRepository = mock(ProductTypeDefinitionRepository.class);
+    MarketNicheRepository nicheRepository = mock(MarketNicheRepository.class);
+    ProductService service = newService(productRepository, typeRepository, nicheRepository);
+    Product product = Product.builder().id(9L).name("Kit WhatsApp Pronto").build();
+    ProductTypeDefinition type =
+        ProductTypeDefinition.builder()
+            .id(5L)
+            .code("PDE")
+            .name("PDE - Produto Digital Experiencial")
+            .aliases(Set.of("Produto Digital Experiencial"))
+            .status(ProductTypeStatus.ACTIVE)
+            .build();
+    CreateProductRequest request = new CreateProductRequest();
+    request.setName(product.getName());
+    request.setProductTypeId(5L);
+    request.setMarketNicheId(10L);
+    MarketNiche niche = new MarketNiche();
+    when(productRepository.findById(9L)).thenReturn(Optional.of(product));
+    when(typeRepository.findById(5L)).thenReturn(Optional.of(type));
+    when(nicheRepository.findById(10L)).thenReturn(Optional.of(niche));
+    when(productRepository.save(product)).thenReturn(product);
+
+    Product updated = service.updateProduct(9L, request);
+
+    assertThat(updated.getProductTypeDefinition()).isSameAs(type);
+    assertThat(updated.getProductType()).isEqualTo("PDE - Produto Digital Experiencial");
+  }
+
+  /** Deve aceitar um apelido cadastrado enviado por uma integração legada. */
+  @Test
+  void updateProductResolvesLegacyTypeAlias() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    ProductTypeDefinitionRepository typeRepository = mock(ProductTypeDefinitionRepository.class);
+    MarketNicheRepository nicheRepository = mock(MarketNicheRepository.class);
+    ProductService service = newService(productRepository, typeRepository, nicheRepository);
+    Product product = Product.builder().id(8L).name("Especialista no WhatsApp").build();
+    ProductTypeDefinition type =
+        ProductTypeDefinition.builder()
+            .id(6L)
+            .code("AI_SANDBOX_CONVERSATIONAL_PRODUCT")
+            .name("Produto IA de atendimento personalizado por sandbox")
+            .aliases(Set.of("PDE - Consultor Especialista por WhatsApp", "Consultor por WhatsApp"))
+            .status(ProductTypeStatus.ACTIVE)
+            .build();
+    CreateProductRequest request = new CreateProductRequest();
+    request.setName(product.getName());
+    request.setProductType("consultor por whatsapp");
+    request.setMarketNicheId(10L);
+    MarketNiche niche = new MarketNiche();
+    when(productRepository.findById(8L)).thenReturn(Optional.of(product));
+    when(typeRepository.findAllByOrderByNameAsc()).thenReturn(List.of(type));
+    when(nicheRepository.findById(10L)).thenReturn(Optional.of(niche));
+    when(productRepository.save(product)).thenReturn(product);
+
+    assertThat(service.updateProduct(8L, request).getProductTypeDefinition()).isSameAs(type);
+  }
+
+  /** Deve impedir novo vínculo com um tipo já aposentado. */
+  @Test
+  void updateProductRejectsRetiredType() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    ProductTypeDefinitionRepository typeRepository = mock(ProductTypeDefinitionRepository.class);
+    ProductService service = newService(productRepository, typeRepository);
+    Product product = Product.builder().id(7L).name("Agenda Cheia").build();
+    ProductTypeDefinition retired =
+        ProductTypeDefinition.builder()
+            .id(7L)
+            .code("OLD")
+            .name("Tipo antigo")
+            .aliases(Set.of())
+            .status(ProductTypeStatus.RETIRED)
+            .build();
+    CreateProductRequest request = new CreateProductRequest();
+    request.setName(product.getName());
+    request.setProductTypeId(7L);
+    when(productRepository.findById(7L)).thenReturn(Optional.of(product));
+    when(typeRepository.findById(7L)).thenReturn(Optional.of(retired));
+
+    assertThatThrownBy(() -> service.updateProduct(7L, request))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Somente tipos em uso");
+  }
+
+  /** Deve impedir que um produto novo nasça sem classificação comercial auditável. */
+  @Test
+  void createProductRejectsMissingCatalogType() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    ProductTypeDefinitionRepository typeRepository = mock(ProductTypeDefinitionRepository.class);
+    MarketNicheRepository nicheRepository = mock(MarketNicheRepository.class);
+    ProductService service = newService(productRepository, typeRepository, nicheRepository);
+    CreateProductRequest request = new CreateProductRequest();
+    request.setName("Ideia ainda aberta");
+    request.setMarketNicheId(10L);
+    when(nicheRepository.findById(10L)).thenReturn(Optional.of(new MarketNiche()));
+
+    assertThatThrownBy(() -> service.createProduct(request))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Selecione um tipo em uso");
   }
 
   /** Deve preservar o nome interno quando um cliente antigo não envia o novo campo. */

@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-23-product-type-catalog.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-23-product-internal-identity.yaml
       relativeToChangelogFile: true
   - include:
@@ -1594,10 +1597,6 @@ databaseChangeLog:
 
   - include:
       file: changesets/2026-07-16-pde-access-grants.yaml
-      relativeToChangelogFile: true
-
-  - include:
-      file: changesets/2026-08-23-musa-v7-commercial-access.yaml
       relativeToChangelogFile: true
 
   - include:

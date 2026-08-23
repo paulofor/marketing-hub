@@ -6,6 +6,31 @@ Definir os tipos de produto do Marketing Hub para orientar decisoes futuras de n
 
 Este documento e a descricao canonica unica dos tipos de produto do sistema. Qualquer novo tipo, subtipo ou mudanca de regra comercial sobre tipos de produto deve ser registrado aqui antes de orientar implementacao, campanhas, experimentos ou relatorios.
 
+## Catálogo extensível e apelidos
+
+Os tipos não são um `enum` fechado. O Marketing Hub deve manter um cadastro operacional com:
+
+- `code`: identidade estável usada por integrações e agentes;
+- `name`: nome canônico legível;
+- `description`: fronteira do mecanismo de valor e quando usar;
+- `aliases`: nomes alternativos usados somente para pesquisa e resolução interna;
+- `status`: `PROPOSED`, `ACTIVE` ou `RETIRED`;
+- quantidade de produtos vinculados, calculada pelo backend.
+
+Uma ideia nova pode ser cadastrada como `PROPOSED` sem alterar a classificação de produtos nem
+limitar a exploração. Ela só pode receber produtos quando estiver `ACTIVE`. A ativação exige nome e
+fronteira claros e o registro correspondente neste cânone. Um tipo aposentado permanece ligado aos
+produtos históricos, mas não pode receber novos vínculos.
+
+Apelido não cria outro tipo e nunca substitui o código estável. Pessoas e agentes podem localizar o
+mesmo tipo por código, nome ou apelido, mas devem persistir o identificador canônico. Apelidos de
+tipo são internos e não entram automaticamente em oferta, landing, checkout ou entrega.
+
+Formato de entrega, canal, ativo comercial, mecanismo técnico e nome de trabalho do produto não
+devem virar novos tipos quando puderem ser representados pelo tipo vigente, modo comercial,
+subtipo, formato ou apelido. Antes de ativar uma categoria nova, comparar essa fronteira com as
+categorias existentes para evitar fragmentar métricas e aprendizados.
+
 ## Fontes consolidadas
 
 Este canon consolida, em uma unica descricao operacional, os tipos e modos de produto ja descritos nos documentos do Marketing Hub, principalmente:
@@ -27,6 +52,7 @@ Tipos canonicos de produto:
 
 | Tipo canonico | Nome operacional | Venda principal | Quando usar |
 |---|---|---|---|
+| `PDE` | PDE - Produto Digital Experiencial | Experiência digital orientada a uma transformação observável. | Quando o mecanismo principal é uma jornada interativa de valor, ainda que use outros modos técnicos. |
 | `LOW_TICKET_DIGITAL_PRODUCT` | Produto low-ticket | Compra direta de pacote digital simples. | Para validar dor/oferta com baixo atrito e buscar primeira venda. |
 | `AI_PRODUCT` | Produto IA | Ferramenta, amostra, simulador, asset pack ou entrega personalizada com IA. | Quando a personalizacao ou transformacao por IA aumenta valor percebido. |
 | `AI_SANDBOX_CONVERSATIONAL_PRODUCT` | Produto IA de atendimento personalizado por sandbox | Atendimento ou entrega conversacional personalizada por WhatsApp/canal equivalente. | Quando memoria individual e resposta contextual aumentam conversao, retencao ou ticket. |
@@ -44,6 +70,11 @@ Modos comerciais transversais:
 | `HYBRID` | Estrutura-base padronizada com partes personalizadas. | Produto IA personalizado e alguns low-tickets evoluidos. |
 
 Ativos comerciais como video de vendas, avatar, pagina, criativo, amostra, lead magnet, checkout e email nao sao automaticamente tipos de produto. Eles podem virar produto apenas quando forem a entrega comprada pelo cliente. Caso contrario, sao ativos de aquisicao, prova, conversao ou entrega.
+
+Os nomes legados `PDE - Consultor Especialista por WhatsApp` e `Produto low-ticket de posts
+personalizados` são apelidos internos de `AI_SANDBOX_CONVERSATIONAL_PRODUCT` e
+`LOW_TICKET_DIGITAL_PRODUCT`, respectivamente. WhatsApp, personalização e posts descrevem canal,
+modo ou formato; não justificam categorias independentes.
 
 ## Regra financeira comum
 

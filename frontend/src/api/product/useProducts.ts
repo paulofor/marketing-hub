@@ -14,6 +14,9 @@ export interface Product {
   languageStyle?: string;
   codeModules?: string;
   productType?: string;
+  productTypeId?: number;
+  productTypeCode?: string;
+  productTypeStatus?: "PROPOSED" | "ACTIVE" | "RETIRED";
   productFormat?: string;
   deliveryMode?: string;
   revenueModel?: string;

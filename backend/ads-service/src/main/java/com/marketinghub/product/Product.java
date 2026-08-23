@@ -4,6 +4,7 @@ import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.media.Asset;
 import com.marketinghub.memberarea.MemberArea;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.producttype.ProductTypeDefinition;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.LinkedHashSet;
@@ -75,8 +76,15 @@ public class Product {
   private String codeModules;
 
   /** Tipo comercial do produto dentro da estratégia do Marketing Hub. */
-  @Column(name = "product_type", length = 64)
+  @Column(name = "product_type", length = 191)
   private String productType;
+
+  /** Definição estável do tipo no catálogo extensível de produtos. */
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "product_type_id")
+  @ToString.Exclude
+  @EqualsAndHashCode.Exclude
+  private ProductTypeDefinition productTypeDefinition;
 
   /** Formato principal entregue ao cliente, comparável entre produtos e experimentos. */
   @Column(name = "product_format", length = 64)

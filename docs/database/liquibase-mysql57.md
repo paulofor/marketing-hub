@@ -6,7 +6,7 @@ Ele é executado automaticamente em Pull Requests que alteram changelogs, o vali
 
 ## Etapa executada no workflow
 
-Executar `scripts/validate-liquibase-mysql57.sh` para verificar includes relativos, dependências conhecidas, campos temporais e risco do erro MySQL 1093 nos arquivos alterados.
+Executar `scripts/validate-liquibase-mysql57.sh` para verificar includes relativos, includes duplicados, dependências conhecidas, campos temporais e risco do erro MySQL 1093 nos arquivos alterados.
 
 O workflow não inicia MySQL, não executa `liquibase:update` e não usa banco, credenciais ou dados de produção. A compatibilidade física de uma migração continua sendo responsabilidade da homologação controlada do ambiente antes da publicação em produção.
 

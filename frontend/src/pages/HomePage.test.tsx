@@ -34,6 +34,8 @@ describe("HomePage", () => {
           id: 1,
           slug: "metodo-musa-7-dias",
           name: "Metodo MUSA",
+          internalName: "Vega",
+          productTypeInternalName: "Opala",
           commercialStatus: "VALIDACAO_COMERCIAL",
           currentPriceBrl: 27,
           targetAudience: "Mulheres que querem melhorar a presença visual",
@@ -58,11 +60,40 @@ describe("HomePage", () => {
     expect(await screen.findByText("Metodo MUSA")).toBeTruthy();
     expect(screen.queryByText("Produto Pausado")).toBeNull();
     expect(screen.getByText("R$ 27,00")).toBeTruthy();
+    expect(screen.getByText("Vega")).toBeTruthy();
+    expect(screen.getByText("Opala")).toBeTruthy();
+    expect(
+      screen.getByRole("region", {
+        name: "Identidade interna de Metodo MUSA",
+      }),
+    ).toBeTruthy();
     expect(screen.getByText(/Diagnóstico de presença elegante/i)).toBeTruthy();
     expect(screen.getByRole("link", { name: /Vídeos/i })).toHaveAttribute(
       "href",
       "/products/1/sales-videos",
     );
+  });
+
+  it("keeps the internal identity visible when its cataloging is pending", async () => {
+    (axios.get as any).mockResolvedValue({
+      data: [
+        {
+          id: 3,
+          slug: "produto-em-catalogacao",
+          name: "Produto em catalogação",
+          commercialStatus: "PLANNED",
+        },
+      ],
+    });
+
+    renderHome();
+
+    const identity = await screen.findByRole("region", {
+      name: "Identidade interna de Produto em catalogação",
+    });
+    expect(identity).toHaveTextContent("Produto · estrela");
+    expect(identity).toHaveTextContent("Tipo · mineral");
+    expect(identity).toHaveTextContent("Pendente");
   });
 
   it("shows the current value-chain process as a human-readable link", async () => {

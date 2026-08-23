@@ -42,17 +42,28 @@ class PdeReviewArtifactLoaderTest {
     Path outsideContract = tempDir.resolve("fora-do-diretorio.json");
     Files.writeString(outsideContract, "{\"slug\":\"externo\"}");
     Files.createSymbolicLink(contracts.resolve("atalho-externo.json"), outsideContract);
+    for (String relativePath : PdeReviewArtifactLoader.communicationImplementationEvidencePaths()) {
+      Path artifact = tempDir.resolve(relativePath);
+      Files.createDirectories(artifact.getParent());
+      Files.writeString(artifact, "prova executável de " + relativePath);
+    }
 
     var evidence = new PdeReviewArtifactLoader(tempDir.toString()).loadCommunicationContracts();
 
     assertThat(evidence)
         .extracting(item -> item.get("path"))
-        .containsExactly(
-            "pde-platform/contracts/produto-a-v1.json", "pde-platform/contracts/produto-b-v1.json");
+        .containsExactlyElementsOf(
+            java.util.stream.Stream.concat(
+                    java.util.stream.Stream.of(
+                        "pde-platform/contracts/produto-a-v1.json",
+                        "pde-platform/contracts/produto-b-v1.json"),
+                    PdeReviewArtifactLoader.communicationImplementationEvidencePaths().stream())
+                .toList());
     assertThat(evidence)
         .allSatisfy(
             artifact -> {
-              assertThat(artifact.get("content").toString()).contains("slug");
+              assertThat(artifact.get("content").toString())
+                  .containsAnyOf("slug", "prova executável");
               assertThat(artifact.get("contentChecksum").toString()).isNotBlank();
             });
   }

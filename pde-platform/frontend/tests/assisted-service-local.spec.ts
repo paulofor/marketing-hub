@@ -60,6 +60,17 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
   page,
   request,
 }, testInfo) => {
+  const commercialEvents: Array<Record<string, unknown>> = [];
+  page.on("request", (browserRequest) => {
+    if (
+      browserRequest.method() === "POST" &&
+      browserRequest.url().includes("/api/pde/access/events")
+    ) {
+      const payload = browserRequest.postDataJSON() as Record<string, unknown>;
+      commercialEvents.push(payload);
+    }
+  });
+
   const canonicalOfferResponse = await request.get(
     `${backendBaseUrl}/api/pde/products/${productSlug}/commercial-offer`,
   );
@@ -87,9 +98,9 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
   await expect(page.getByTestId("commercial-offer")).toContainText(
     /prazo de até 48 horas começa após o pagamento confirmado/i,
   );
-  const checkout = page.getByRole("link", {
-    name: "Quero meu atendimento sob medida",
-  });
+  const checkout = page
+    .getByTestId("commercial-offer")
+    .getByRole("link", { name: "Quero meu atendimento sob medida" });
   await expect(checkout).toHaveAttribute(
     "href",
     "https://pay.example/kit-whatsapp",
@@ -99,6 +110,70 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
   ).toBeVisible();
   await expect(page.getByText("Fornecedor de Homologação Ltda.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Termos" })).toHaveCount(2);
+  await expect(page.getByTestId("assisted-tasting")).toContainText(
+    "Experimente uma sequência antes de comprar",
+  );
+  await page.getByLabel("Qual serviço você oferece?").fill("m");
+  await page.getByRole("button", { name: "Gerar minha amostra" }).click();
+  await expect(page.getByRole("alert")).toContainText(
+    "Informe um serviço genérico",
+  );
+  await page.getByLabel("Qual serviço você oferece?").fill("manicure");
+  const tastingResult = page.getByTestId("assisted-tasting-result");
+  const materializedResponses = new Set<string>();
+  for (const scenarioId of ["orcamento-sem-resposta", "pedido-de-preco"]) {
+    for (const toneId of ["acolhedor", "direto", "profissional"]) {
+      await page.getByLabel("Situação").selectOption(scenarioId);
+      await page.getByLabel("Tom").selectOption(toneId);
+      await page.getByRole("button", { name: "Gerar minha amostra" }).click();
+      await expect(tastingResult).toContainText("manicure");
+      await expect(tastingResult).toContainText("Pergunta de qualificação");
+      await expect(tastingResult.locator("ol li")).toHaveCount(3);
+      materializedResponses.add(
+        await tastingResult
+          .getByRole("heading", { name: "Resposta inicial" })
+          .locator("xpath=following-sibling::p[1]")
+          .innerText(),
+      );
+    }
+  }
+  expect(materializedResponses).toHaveSize(6);
+  await expect(tastingResult).toContainText(
+    "A implantação paga inclui briefing",
+  );
+  await expect
+    .poll(() => commercialEvents.map((event) => event.eventType))
+    .toEqual(
+      expect.arrayContaining([
+        "TASTING_STARTED",
+        "VALUE_MOMENT",
+        "PAYWALL_VIEWED",
+      ]),
+    );
+  await expect
+    .poll(
+      () =>
+        commercialEvents.filter(
+          (event) => event.eventType === "TASTING_STARTED",
+        ).length,
+    )
+    .toBe(1);
+  await expect
+    .poll(
+      () =>
+        commercialEvents.filter((event) => event.eventType === "VALUE_MOMENT")
+          .length,
+    )
+    .toBe(6);
+  await expect
+    .poll(
+      () =>
+        commercialEvents.filter((event) => event.eventType === "PAYWALL_VIEWED")
+          .length,
+    )
+    .toBe(6);
+  expect(JSON.stringify(commercialEvents)).not.toContain("manicure");
+
   const popupPromise = page.waitForEvent("popup");
   await checkout.click();
   const checkoutPage = await popupPromise;
@@ -106,6 +181,22 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
     checkoutPage.getByRole("heading", { name: "Checkout de homologação" }),
   ).toBeVisible();
   await checkoutPage.close();
+  await expect
+    .poll(() => commercialEvents.map((event) => event.eventType))
+    .toContain("CHECKOUT_STARTED");
+  const checkoutEvent = commercialEvents.find(
+    (event) => event.eventType === "CHECKOUT_STARTED",
+  );
+  expect(checkoutEvent).toMatchObject({
+    productSlug,
+    source: "mh_test",
+    metadata: {
+      experimentId: 89,
+      contractVersion: "kit-whatsapp-tasting-v1",
+      priceBrl: 349,
+      checkoutHost: "pay.example",
+    },
+  });
 
   const email = `teste+kit-whatsapp-${testInfo.project.name}-${Date.now()}@sandbox.local`;
   await page.getByLabel("E-mail").fill(email);

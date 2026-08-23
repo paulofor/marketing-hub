@@ -609,6 +609,8 @@ class AccessServiceTest {
                 "PROBLEM_RECOGNIZED",
                 "CATEGORY_UNDERSTOOD",
                 "MECHANISM_VIEWED",
+                "TASTING_STARTED",
+                "VALUE_MOMENT",
                 "MICRO_EXPERIENCE_STARTED",
                 "REAL_INPUT_SUBMITTED",
                 "MICRO_RESULT_RECEIVED",

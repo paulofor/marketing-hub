@@ -17,6 +17,14 @@ import java.util.zip.CRC32;
  */
 final class PdeReviewArtifactLoader {
   private static final String COMMUNICATION_CONTRACT_DIRECTORY = "pde-platform/contracts";
+  private static final List<String> COMMUNICATION_IMPLEMENTATION_EVIDENCE_PATHS =
+      List.of(
+          "pde-platform/frontend/src/AssistedServiceApp.tsx",
+          "pde-platform/frontend/src/assistedServiceTastingContracts.ts",
+          "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
+          "pde-platform/frontend/tests/assisted-service-local.spec.ts",
+          "pde-platform/frontend/tests/public-health.spec.ts",
+          "pde-platform/backend/src/test/java/com/marketinghub/pde/service/AccessServiceTest.java");
   private static final List<String> ARTIFACT_PATHS =
       List.of(
           "pde-platform/contracts/kit-whatsapp-pronto-v1.json",
@@ -91,12 +99,39 @@ final class PdeReviewArtifactLoader {
     if (evidence.isEmpty()) {
       throw new IOException("Nenhum contrato comercial PDE versionado foi encontrado");
     }
+    for (String relativePath : COMMUNICATION_IMPLEMENTATION_EVIDENCE_PATHS) {
+      evidence.add(readAuthorizedEvidence(relativePath));
+    }
     return evidence;
   }
 
   /** Expõe a lista fixa apenas para testes de contrato do carregador. */
   static List<String> artifactPaths() {
     return ARTIFACT_PATHS;
+  }
+
+  /** Expõe as provas de implementação entregues ao gate apenas para teste de contrato. */
+  static List<String> communicationImplementationEvidencePaths() {
+    return COMMUNICATION_IMPLEMENTATION_EVIDENCE_PATHS;
+  }
+
+  /** Lê uma prova de implementação somente dentro da raiz autorizada do repositório. */
+  private Map<String, Object> readAuthorizedEvidence(String relativePath) throws IOException {
+    Path artifact = repositoryRoot.resolve(relativePath).normalize();
+    if (!artifact.startsWith(repositoryRoot)
+        || !Files.isRegularFile(artifact, LinkOption.NOFOLLOW_LINKS)) {
+      throw new IOException("Prova de implementação PDE não encontrada: " + relativePath);
+    }
+    String content = Files.readString(artifact, StandardCharsets.UTF_8);
+    return Map.of(
+        "path",
+        relativePath,
+        "contentLength",
+        content.length(),
+        "contentChecksum",
+        checksum(content),
+        "content",
+        content);
   }
 
   /** Calcula checksum determinístico para comprovar qual conteúdo foi revisado. */

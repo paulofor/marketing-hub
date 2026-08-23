@@ -1,0 +1,146 @@
+{
+  "contractVersion": "kit-whatsapp-tasting-v1",
+  "productSlug": "kit-whatsapp-pronto",
+  "parentProcessCode": "pde-communication-sales-journey",
+  "subprocessCode": "pde-tasting-proof-of-value",
+  "mode": "DETERMINISTIC_INTERACTIVE_DEMO",
+  "commercialHypothesis": "Uma amostra aplicável reduz a incerteza sobre a personalização e aumenta o avanço para checkout sem entregar gratuitamente a implantação completa.",
+  "input": {
+    "fields": [
+      "genericService",
+      "scenarioId",
+      "toneId"
+    ],
+    "forbiddenData": [
+      "nome de cliente",
+      "telefone",
+      "endereço",
+      "conversa identificável",
+      "qualquer dado pessoal de cliente final"
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "orcamento-sem-resposta",
+      "label": "Enviei o orçamento e a pessoa sumiu",
+      "objective": "Retomar uma conversa sem pressionar nem presumir interesse."
+    },
+    {
+      "id": "pedido-de-preco",
+      "label": "A pessoa perguntou somente o preço",
+      "objective": "Responder com clareza e descobrir o contexto mínimo antes do próximo passo."
+    }
+  ],
+  "tones": [
+    "acolhedor",
+    "direto",
+    "profissional"
+  ],
+  "outputContract": {
+    "initialResponseCount": 1,
+    "qualificationQuestionCount": 1,
+    "followUpCount": 3,
+    "requiresHumanReviewBeforeUse": true,
+    "usesExternalModel": false,
+    "costPerSampleUsd": 0
+  },
+  "telemetryAuthority": {
+    "ingestionEndpoint": "/api/pde/access/events",
+    "authoritativeStore": "pde_funnel_event",
+    "correlationKeys": [
+      "productSlug",
+      "experimentId",
+      "contractVersion",
+      "visitorId",
+      "sessionId"
+    ],
+    "salesAccountingRule": "Somente a confirmação autoritativa de pagamento pode contar como venda ou receita; degustação, QA, paywall e início de checkout são sinais intermediários."
+  },
+  "paidBoundary": "A degustação cobre uma única situação demonstrativa. A implantação paga inclui briefing, adaptação às regras reais do negócio, 10 a 20 respostas, 5 a 10 perguntas, 3 a 5 follow-ups, regras de escalonamento, guia, checklist, revisão humana e entrega completa.",
+  "events": [
+    {
+      "eventName": "TASTING_STARTED",
+      "trigger": "Primeiro foco da visitante no formulário da degustação.",
+      "requiredMetadata": [
+        "contractVersion",
+        "experimentId",
+        "visitorId",
+        "sessionId"
+      ],
+      "authoritativeSource": "pde_funnel_event",
+      "correlationKeys": [
+        "experimentId",
+        "contractVersion",
+        "visitorId",
+        "sessionId"
+      ],
+      "commercialMeaning": "Início da prova de valor; não conta como venda."
+    },
+    {
+      "eventName": "VALUE_MOMENT",
+      "trigger": "Resposta, pergunta e follow-ups são materializados para uma combinação válida.",
+      "requiredMetadata": [
+        "contractVersion",
+        "experimentId",
+        "scenarioId",
+        "toneId",
+        "visitorId",
+        "sessionId"
+      ],
+      "privacyBoundary": "O nome genérico do serviço não é persistido no evento.",
+      "authoritativeSource": "pde_funnel_event",
+      "correlationKeys": [
+        "experimentId",
+        "contractVersion",
+        "visitorId",
+        "sessionId"
+      ],
+      "commercialMeaning": "Primeiro resultado útil da degustação; não conta como venda."
+    },
+    {
+      "eventName": "PAYWALL_VIEWED",
+      "trigger": "A continuidade paga e sua fronteira aparecem junto ao resultado.",
+      "requiredMetadata": [
+        "contractVersion",
+        "experimentId",
+        "scenarioId",
+        "toneId",
+        "visitorId",
+        "sessionId"
+      ],
+      "authoritativeSource": "pde_funnel_event",
+      "correlationKeys": [
+        "experimentId",
+        "contractVersion",
+        "visitorId",
+        "sessionId"
+      ],
+      "commercialMeaning": "Exposição da oferta após valor; não conta como venda."
+    },
+    {
+      "eventName": "CHECKOUT_STARTED",
+      "trigger": "Clique no CTA do checkout canônico.",
+      "requiredMetadata": [
+        "experimentId",
+        "contractVersion",
+        "priceBrl",
+        "checkoutHost",
+        "visitorId",
+        "sessionId"
+      ],
+      "authoritativeSource": "pde_funnel_event",
+      "correlationKeys": [
+        "experimentId",
+        "contractVersion",
+        "visitorId",
+        "sessionId"
+      ],
+      "commercialMeaning": "Intenção de compra; não conta como venda."
+    }
+  ],
+  "gate": {
+    "continue": "A degustação gera resultado real, registra TASTING_STARTED, VALUE_MOMENT, PAYWALL_VIEWED e CHECKOUT_STARTED de forma atribuível e preserva a margem.",
+    "adjust": "Há VALUE_MOMENT sem avanço para checkout ou visitantes interpretam a amostra como a entrega completa.",
+    "stop": "A amostra vaza dados pessoais, canibaliza a entrega, registra custo inesperado, permite abuso ou contamina métricas de venda."
+  }
+}

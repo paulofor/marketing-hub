@@ -8,6 +8,13 @@
 >
 > Uso obrigatório recomendado: antes de corrigir problema em GeraLanding, Facebook Ads, Lead Portal, OpenAI/schema, pipelines administrativos ou pipeline de hipótese, verificar se a solicitação reabre algum loop listado aqui.
 
+## LOOP-PDE-DEGUSTACAO-DECLARADA-SEM-VALOR — promessa de demonstração sem amostra materializada
+
+- **Sintoma confirmado em 2026-08-23:** a oferta do Kit WhatsApp dizia apresentar uma demonstração, mas a página apenas repetia um parágrafo de prova comercial e não entregava uma resposta aplicável antes do checkout.
+- **Causa-raiz:** o campo textual `proof` da oferta era usado simultaneamente como promessa e como suposta evidência, sem contrato funcional, fronteira paga ou evento de ativação que comprovasse a entrega da degustação.
+- **Correção sistêmica:** a degustação passa a ter contrato versionado próprio e demonstração determinística interativa. A visitante informa somente um serviço genérico, escolhe situação e tom e recebe uma resposta, uma pergunta de qualificação e três follow-ups; o texto informado nunca é persistido. A implantação completa permanece claramente reservada à oferta paga.
+- **Prevenção:** a homologação pública exige a interface de degustação no Kit; a jornada ponta a ponta valida materialização, privacidade, fronteira paga e a sequência atribuível `TASTING_STARTED`, `VALUE_MOMENT`, `PAYWALL_VIEWED` e `CHECKOUT_STARTED`. Texto promocional isolado não satisfaz mais o gate de prova de valor.
+
 ## LOOP-PDE-TARGETED-DEPLOY-CROSS-SURFACE-SMOKE — publicação isolada falha por versão não publicada
 
 - **Sintoma confirmado em 2026-08-23:** o deploy direcionado ao frontend `kit-whatsapp` publicou a imagem correta, passou nos contratos públicos do Kit e terminou vermelho ao tentar validar `version-diagnostics.json` das versões v5 e v6 do MUSA.

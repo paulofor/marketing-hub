@@ -1,4 +1,4 @@
-import React, { FormEvent, useEffect, useMemo, useState } from "react";
+import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   BookOpen,
   Check,
@@ -13,6 +13,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import type { ProductExperience } from "./musaExperiences";
+import { resolveAssistedServiceTastingContract } from "./assistedServiceTastingContracts";
 
 type MissionInteraction = {
   missionId: string;
@@ -91,6 +92,10 @@ const testAccessEnabled = import.meta.env.VITE_PDE_ENABLE_DEV_ACCESS === "true";
 
 /** Renderiza produtos PDE assistidos usando somente o contrato público versionado. */
 export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
+  const tastingContract = useMemo(
+    () => resolveAssistedServiceTastingContract(productSlug),
+    [productSlug],
+  );
   const [product, setProduct] = useState<ProductExperience | null>(null);
   const [commercialOffer, setCommercialOffer] =
     useState<CommercialOffer | null>(null);
@@ -110,6 +115,20 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [tastingService, setTastingService] = useState("");
+  const [tastingScenarioId, setTastingScenarioId] = useState(
+    tastingContract?.scenarios[0]?.id ?? "",
+  );
+  const [tastingToneId, setTastingToneId] = useState(
+    tastingContract?.tones[0]?.id ?? "",
+  );
+  const [tastingResult, setTastingResult] = useState<{
+    response: string;
+    qualificationQuestion: string;
+    followUps: string[];
+  } | null>(null);
+  const [tastingError, setTastingError] = useState("");
+  const tastingStarted = useRef(false);
 
   /** Carrega o produto e restaura a área da cliente quando existe token local. */
   useEffect(() => {
@@ -357,8 +376,66 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
         experimentId: commercialOffer.experimentId,
         priceBrl: commercialOffer.priceBrl,
         checkoutHost: new URL(commercialOffer.checkoutUrl).hostname,
+        ...(tastingContract
+          ? { contractVersion: tastingContract.version }
+          : {}),
       },
     });
+  }
+
+  /** Registra uma única entrada na degustação sem persistir o texto informado pela visitante. */
+  function startTasting() {
+    if (!product || !tastingContract || tastingStarted.current) return;
+    tastingStarted.current = true;
+    void trackEvent("TASTING_STARTED", product, {
+      metadata: {
+        contractVersion: tastingContract.version,
+        experimentId: commercialOffer?.experimentId,
+      },
+    });
+  }
+
+  /** Materializa uma amostra determinística e registra valor e continuidade paga separadamente. */
+  function generateTasting(event: FormEvent) {
+    event.preventDefault();
+    if (!product || !tastingContract) return;
+    const service = tastingService.trim().replace(/\s+/g, " ");
+    if (service.length < 2) {
+      setTastingError("Informe um serviço genérico para gerar a amostra.");
+      setTastingResult(null);
+      return;
+    }
+    const variant = tastingContract.variants.find(
+      (item) =>
+        item.scenarioId === tastingScenarioId && item.toneId === tastingToneId,
+    );
+    if (!variant) {
+      setTastingError("Esta combinação ainda não possui uma amostra segura.");
+      setTastingResult(null);
+      return;
+    }
+    startTasting();
+    setTastingError("");
+    setTastingResult({
+      response: applyTastingService(variant.response, service),
+      qualificationQuestion: applyTastingService(
+        variant.qualificationQuestion,
+        service,
+      ),
+      followUps: variant.followUps.map((item) =>
+        applyTastingService(item, service),
+      ),
+    });
+    const metadata = {
+      contractVersion: tastingContract.version,
+      experimentId: commercialOffer?.experimentId,
+      scenarioId: tastingScenarioId,
+      toneId: tastingToneId,
+    };
+    void Promise.all([
+      trackEvent("VALUE_MOMENT", product, { metadata }),
+      trackEvent("PAYWALL_VIEWED", product, { metadata }),
+    ]);
   }
 
   if (loading) {
@@ -490,7 +567,104 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
             </aside>
           )}
         </section>
-        {commercialOffer ? (
+        {commercialOffer && tastingContract ? (
+          <section
+            className="assisted-pde-tasting"
+            aria-labelledby="assisted-tasting-title"
+            data-testid="assisted-tasting"
+          >
+            <div className="assisted-pde-tasting-heading">
+              <span className="assisted-pde-kicker">
+                Veja o mecanismo antes de decidir
+              </span>
+              <h2 id="assisted-tasting-title">{tastingContract.title}</h2>
+              <p>{tastingContract.introduction}</p>
+            </div>
+            <form onSubmit={generateTasting} onFocus={startTasting}>
+              <label htmlFor="assisted-tasting-service">
+                {tastingContract.serviceLabel}
+              </label>
+              <input
+                id="assisted-tasting-service"
+                value={tastingService}
+                maxLength={80}
+                required
+                placeholder={tastingContract.servicePlaceholder}
+                onChange={(event) => setTastingService(event.target.value)}
+              />
+              <small>{tastingContract.privacyHint}</small>
+              <div className="assisted-pde-tasting-options">
+                <div>
+                  <label htmlFor="assisted-tasting-scenario">Situação</label>
+                  <select
+                    id="assisted-tasting-scenario"
+                    value={tastingScenarioId}
+                    onChange={(event) =>
+                      setTastingScenarioId(event.target.value)
+                    }
+                  >
+                    {tastingContract.scenarios.map((scenario) => (
+                      <option key={scenario.id} value={scenario.id}>
+                        {scenario.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="assisted-tasting-tone">Tom</label>
+                  <select
+                    id="assisted-tasting-tone"
+                    value={tastingToneId}
+                    onChange={(event) => setTastingToneId(event.target.value)}
+                  >
+                    {tastingContract.tones.map((tone) => (
+                      <option key={tone.id} value={tone.id}>
+                        {tone.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <button type="submit">{tastingContract.submitLabel}</button>
+              {tastingError ? (
+                <p className="assisted-pde-form-error" role="alert">
+                  {tastingError}
+                </p>
+              ) : null}
+            </form>
+            {tastingResult ? (
+              <article
+                className="assisted-pde-tasting-result"
+                aria-live="polite"
+                data-testid="assisted-tasting-result"
+              >
+                <span className="assisted-pde-kicker">Sua amostra</span>
+                <h3>Resposta inicial</h3>
+                <p>{tastingResult.response}</p>
+                <h3>Pergunta de qualificação</h3>
+                <p>{tastingResult.qualificationQuestion}</p>
+                <h3>Follow-ups respeitosos</h3>
+                <ol>
+                  {tastingResult.followUps.map((followUp) => (
+                    <li key={followUp}>{followUp}</li>
+                  ))}
+                </ol>
+                <p className="assisted-pde-tasting-boundary">
+                  {tastingContract.paidBoundary}
+                </p>
+                <a
+                  className="assisted-pde-checkout-cta"
+                  href={commercialOffer.checkoutUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={startCheckout}
+                >
+                  {commercialOffer.primaryCta} <ChevronRight />
+                </a>
+              </article>
+            ) : null}
+          </section>
+        ) : commercialOffer ? (
           <section
             className="assisted-pde-value-proof"
             aria-labelledby="assisted-value-proof-title"
@@ -1132,6 +1306,11 @@ function formatBrl(value: number) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+/** Aplica somente o nome genérico do serviço aos textos versionados da degustação. */
+function applyTastingService(template: string, service: string) {
+  return template.split("{servico}").join(service);
 }
 
 type TrackingOptions = {

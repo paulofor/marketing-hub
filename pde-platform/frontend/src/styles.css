@@ -3212,6 +3212,7 @@ h3 {
 
 .assisted-pde-entry,
 .assisted-pde-value-proof,
+.assisted-pde-tasting,
 .assisted-pde-existing-access,
 .assisted-pde-legal,
 .assisted-pde-preview,
@@ -3394,6 +3395,123 @@ h3 {
   align-self: center;
   font-size: clamp(1rem, 2vw, 1.2rem);
   line-height: 1.65;
+}
+
+.assisted-pde-tasting {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(320px, 1.2fr);
+  gap: clamp(24px, 5vw, 64px);
+  margin-top: clamp(48px, 7vw, 82px);
+  padding: clamp(24px, 5vw, 48px);
+  border: 1px solid color-mix(in srgb, var(--assisted-primary) 15%, transparent);
+  border-radius: 28px;
+  background: color-mix(in srgb, #ffffff 90%, var(--assisted-background));
+  box-shadow: 0 24px 80px
+    color-mix(in srgb, var(--assisted-primary) 10%, transparent);
+}
+
+.assisted-pde-tasting-heading h2 {
+  max-width: 520px;
+  margin-bottom: 16px;
+  font-size: clamp(1.8rem, 4vw, 3.3rem);
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+}
+
+.assisted-pde-tasting-heading p,
+.assisted-pde-tasting form small,
+.assisted-pde-tasting-result p,
+.assisted-pde-tasting-result li {
+  line-height: 1.6;
+}
+
+.assisted-pde-tasting form {
+  padding: clamp(20px, 4vw, 32px);
+  border-radius: 20px;
+  background: var(--assisted-primary);
+  color: #ffffff;
+}
+
+.assisted-pde-tasting label {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 0.88rem;
+  font-weight: 850;
+}
+
+.assisted-pde-tasting input,
+.assisted-pde-tasting select {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, #ffffff 35%, transparent);
+  border-radius: 11px;
+  background: #ffffff;
+  color: var(--assisted-primary);
+  font: inherit;
+}
+
+.assisted-pde-tasting form small {
+  display: block;
+  margin-top: 8px;
+  color: color-mix(in srgb, #ffffff 78%, transparent);
+}
+
+.assisted-pde-tasting-options {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.65fr);
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.assisted-pde-tasting button {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 20px;
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--assisted-accent);
+  color: #1f2d2a;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.assisted-pde-tasting .assisted-pde-form-error {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.assisted-pde-tasting-result {
+  grid-column: 1 / -1;
+  padding: clamp(22px, 4vw, 36px);
+  border: 2px solid color-mix(in srgb, var(--assisted-accent) 55%, transparent);
+  border-radius: 22px;
+  background: #ffffff;
+}
+
+.assisted-pde-tasting-result h3 {
+  margin: 20px 0 7px;
+  font-size: 1rem;
+}
+
+.assisted-pde-tasting-result ol {
+  padding-left: 22px;
+}
+
+.assisted-pde-tasting-boundary {
+  margin: 24px 0 0;
+  padding: 16px;
+  border-left: 4px solid var(--assisted-accent);
+  border-radius: 8px;
+  background: var(--assisted-background);
+  font-weight: 700;
+}
+
+.assisted-pde-tasting-result .assisted-pde-checkout-cta {
+  max-width: 480px;
 }
 
 .assisted-pde-existing-access {
@@ -3825,8 +3943,13 @@ h3 {
 
   .assisted-pde-entry,
   .assisted-pde-value-proof,
+  .assisted-pde-tasting,
   .assisted-pde-preview,
   .assisted-pde-material-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .assisted-pde-tasting-options {
     grid-template-columns: 1fr;
   }
 

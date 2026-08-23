@@ -206,6 +206,7 @@ test("health publico renderiza app, javascript e texto comercial", async ({
   expect(diagnostics.imageVersionId).toBeTruthy();
   expect(diagnostics.commitSha).toBeTruthy();
   if (contract.slug === "metodo-musa-7-dias") {
+    expect(diagnostics.knownPointedDomains?.map((domain) => domain.role)).not.toContain("active");
     expect(
       diagnostics.knownPointedDomains?.map((domain) => domain.host),
     ).toEqual(

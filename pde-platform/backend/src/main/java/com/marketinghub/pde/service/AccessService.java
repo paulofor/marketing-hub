@@ -19,8 +19,9 @@ import com.marketinghub.pde.dto.MissionInteractionRequest;
 import com.marketinghub.pde.dto.MissionInteractionResponse;
 import com.marketinghub.pde.dto.OperationalMissionCompletionRequest;
 import com.marketinghub.pde.dto.OperationalMissionCompletionRequest.DeliverySectionRequest;
-import com.marketinghub.pde.dto.PepperWebhookRequest;
 import com.marketinghub.pde.dto.ProductExperienceResponse;
+import com.marketinghub.pde.dto.PrivacyActionRequest;
+import com.marketinghub.pde.dto.PrivacyActionResponse;
 import com.marketinghub.pde.dto.WorkspaceResponse;
 import com.marketinghub.pde.model.AccessGrant;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -66,6 +67,10 @@ public class AccessService {
     private static final String DELIVERY_VERSION_KEY = "operatorDeliveryVersion";
     private static final String DELIVERY_CONTENT_KEY = "operatorDeliveryContent";
     private static final String DELIVERY_CREATED_AT_KEY = "operatorDeliveryCreatedAt";
+    private static final String MUSA_PRODUCT_SLUG = "metodo-musa-7-dias";
+    private static final String MUSA_V7_EXPERIENCE_VERSION = "musa-pde-entry-v7-espelho-antes-de-sair";
+    private static final long MUSA_PAID_ACCESS_DAYS = 90L;
+    private static final long CUSTOMER_DATA_RETENTION_DAYS_AFTER_EXPIRY = 180L;
 
     private final ProductCatalogService productCatalogService;
     private final ObjectMapper objectMapper;
@@ -171,7 +176,9 @@ public class AccessService {
                 appBaseUrl,
                 exposeMagicLinkInResponse,
                 internalExcludedIps,
-                null,
+                jdbcUrl == null || jdbcUrl.isBlank()
+                        ? null
+                        : new PdeDatabaseMigrationService(jdbcUrl, jdbcUsername, jdbcPassword),
                 mailService,
                 googleIdentityService);
     }
@@ -183,57 +190,81 @@ public class AccessService {
 
     /** Cria um acesso para um produto existente e retorna a URL da área da cliente. */
     public AccessResponse createAccess(String productSlug, String email, String source) {
-        productCatalogService.getProduct(productSlug);
+        return createAccess(productSlug, email, source, "");
+    }
+
+    /** Cria ou atualiza um acesso preservando a versão comercial que originou a entrada. */
+    public AccessResponse createAccess(
+            String productSlug, String email, String source, String experienceVersion) {
+        resolveProduct(productSlug, experienceVersion);
         AccessGrant existingGrant = findGrantByEmail(productSlug, email);
         if (existingGrant != null) {
+            boolean versionCanChange = !isPaidSource(existingGrant.getSource());
+            if (versionCanChange) {
+                existingGrant.updateExperienceVersion(experienceVersion);
+            }
             boolean promotedToPaid = shouldPromoteToPaidSource(existingGrant, source);
             if (promotedToPaid) {
                 existingGrant.updateSource(source);
+                activatePaidTermIfApplicable(existingGrant);
                 persistAccess(existingGrant);
                 recordSubscriptionApprovedIfNeeded(existingGrant, source, Map.of());
+            } else if (experienceVersion != null && !experienceVersion.isBlank()) {
+                persistAccess(existingGrant);
             }
             return toAccessResponse(existingGrant);
         }
         String token = UUID.randomUUID().toString();
-        AccessGrant grant = new AccessGrant(token, productSlug, normalizeEmail(email), source, Instant.now());
+        Instant createdAt = Instant.now();
+        AccessGrant grant = new AccessGrant(
+                token,
+                productSlug,
+                normalizeEmail(email),
+                source,
+                createdAt,
+                nullToBlank(experienceVersion),
+                null,
+                null);
+        if (isPaidSource(source)) {
+            activatePaidTermIfApplicable(grant);
+        }
         accessByToken.put(token, grant);
         persistAccess(grant);
         recordSubscriptionApprovedIfNeeded(grant, source, Map.of());
         return toAccessResponse(grant);
     }
 
-    /** Processa o webhook Pepper e libera acesso apenas quando o pagamento foi realizado. */
-    public AccessResponse receivePepperWebhook(PepperWebhookRequest request) {
-        String status = request.resolvedStatus();
-        String transactionId = request.resolvedTransactionId();
-        String buyerEmail = request.resolvedBuyerEmail();
-        String productSlug = request.resolvedProductSlug("metodo-musa-7-dias");
-        if (!"paid".equalsIgnoreCase(status)) {
-            log.info(
-                    "Webhook Pepper ignorado sem pagamento realizado; productSlug={}, transactionId={}, status={}",
-                    productSlug,
-                    transactionId,
-                    status);
-            throw new IllegalArgumentException("Webhook Pepper sem pagamento realizado: " + status);
+    /** Cria acesso pago fictício segregado para a homologação interna habilitada pelo controller. */
+    public AccessResponse createInternalQaAccess(String productSlug, String email, String experienceVersion) {
+        if (email == null || !email.trim().toLowerCase().endsWith("@sandbox.local")) {
+            throw new IllegalArgumentException("A homologação aceita somente e-mail sandbox.local");
         }
-        if (buyerEmail == null || buyerEmail.isBlank()) {
-            throw new IllegalArgumentException("Webhook Pepper sem e-mail da compradora");
+        return createAccess(productSlug, email, "INTERNAL_QA", experienceVersion);
+    }
+
+    /** Expira um acesso interno de QA para homologar a experiência pós-contrato sem alterar vendas. */
+    public WorkspaceResponse expireInternalQaAccess(String token) {
+        AccessGrant grant = getGrant(token);
+        if (!"INTERNAL_QA".equals(grant.getSource())) {
+            throw new SecurityException("Somente acesso interno de QA pode ser expirado por homologação");
         }
-        log.info(
-                "Webhook Pepper aprovado para liberar acesso PDE; productSlug={}, transactionId={}, buyerEmail={}",
-                productSlug,
-                transactionId,
-                buyerEmail);
-        return releasePepperPaidTransaction(
-                productSlug,
-                buyerEmail,
-                transactionId,
-                request.offer() == null ? null : request.offer().hash());
+        Instant now = Instant.now();
+        grant.activatePaidAccess(
+                now.minusSeconds((MUSA_PAID_ACCESS_DAYS + 1L) * 24L * 60L * 60L),
+                now.minusSeconds(1));
+        persistAccess(grant);
+        return getWorkspace(token);
     }
 
     /** Libera compra paga consultada na Pepper quando o postback nao foi entregue. */
     public AccessResponse releasePepperPaidTransaction(
-            String productSlug, String buyerEmail, String transactionId, String offerHash) {
+            String productSlug,
+            String buyerEmail,
+            String transactionId,
+            String offerHash,
+            Integer amountCents,
+            String currency,
+            String paymentStatus) {
         productCatalogService.getProduct(productSlug);
         if (buyerEmail == null || buyerEmail.isBlank()) {
             throw new IllegalArgumentException("Transacao Pepper sem e-mail da compradora");
@@ -245,51 +276,40 @@ public class AccessService {
         if (offerHash != null && !offerHash.isBlank()) {
             metadata.put("pepperOfferHash", offerHash);
         }
+        metadata.put("pepperAmountCents", amountCents);
+        metadata.put("pepperCurrency", currency);
+        metadata.put("pepperPaymentStatus", paymentStatus);
         AccessGrant existingGrant = findGrantByEmail(productSlug, buyerEmail);
         if (existingGrant != null) {
             boolean promotedToPaid = shouldPromoteToPaidSource(existingGrant, "PEPPER");
             if (promotedToPaid) {
                 existingGrant.updateSource("PEPPER");
+                activatePaidTermIfApplicable(existingGrant);
                 persistAccess(existingGrant);
                 recordSubscriptionApprovedIfNeeded(existingGrant, "PEPPER", metadata);
             }
             return toAccessResponse(existingGrant);
         }
         String token = UUID.randomUUID().toString();
-        AccessGrant grant = new AccessGrant(token, productSlug, normalizeEmail(buyerEmail), "PEPPER", Instant.now());
+        Instant paidAt = Instant.now();
+        AccessGrant grant = new AccessGrant(
+                token, productSlug, normalizeEmail(buyerEmail), "PEPPER", paidAt);
+        activatePaidTermIfApplicable(grant);
         accessByToken.put(token, grant);
         persistAccess(grant);
         recordSubscriptionApprovedIfNeeded(grant, "PEPPER", metadata);
         return toAccessResponse(grant);
     }
 
-    /** Cadastra uma cliente do produto e retorna o acesso da Área MUSA. */
-    public AccessResponse registerCustomer(String productSlug, String email) {
-        return createAccess(productSlug, email, "CUSTOMER_REGISTRATION");
-    }
-
-    /** Recupera o acesso de uma cliente já cadastrada pelo e-mail informado. */
-    public AccessResponse loginCustomer(String productSlug, String email) {
-        productCatalogService.getProduct(productSlug);
-        AccessGrant grant = findGrantByEmail(productSlug, email);
-        if (grant == null) {
-            throw new IllegalArgumentException("Cadastro da Área MUSA não encontrado para este e-mail");
-        }
-        recordFunnelEvent(new FunnelEventRequest(
-                productSlug,
-                "LOGIN_COMPLETED",
-                grant.getToken(),
-                grant.getEmail(),
-                "EMAIL",
-                "pde-platform",
-                null,
-                Map.of("method", "legacy_email_login")));
-        return toAccessResponse(grant);
-    }
-
     /** Gera ou reutiliza o acesso e envia um link mágico para o e-mail da cliente. */
     public MagicLinkResponse requestMagicLink(String productSlug, String email) {
-        AccessResponse access = createAccess(productSlug, email, "MAGIC_LINK");
+        return requestMagicLink(productSlug, email, "");
+    }
+
+    /** Envia link mágico vinculado à versão comercial que iniciou a degustação. */
+    public MagicLinkResponse requestMagicLink(
+            String productSlug, String email, String experienceVersion) {
+        AccessResponse access = createAccess(productSlug, email, "MAGIC_LINK", experienceVersion);
         return sendAccessLink(productSlug, access.email(), access.accessUrl());
     }
 
@@ -349,13 +369,22 @@ public class AccessService {
             persistFunnelEventInDatabaseWithRetry(eventId, request, normalizedEventType, product);
         } else {
             log.info(
-                    "Evento PDE registrado sem persistência JDBC; eventId={}, productSlug={}, eventType={}, accessToken={}",
+                    "Evento PDE registrado sem persistência JDBC; eventId={}, productSlug={}, eventType={}, accessPresent={}",
                     eventId,
                     request.productSlug(),
                     normalizedEventType,
-                    request.accessToken());
+                    request.accessToken() != null && !request.accessToken().isBlank());
         }
         return new FunnelEventResponse(eventId, normalizedEventType, "RECORDED");
+    }
+
+    /** Registra somente eventos que podem ser declarados por navegadores sem fabricar compra ou liberação. */
+    public FunnelEventResponse recordPublicFunnelEvent(FunnelEventRequest request) {
+        String eventType = request.eventType() == null ? "" : request.eventType().trim().toUpperCase();
+        if (Set.of("PURCHASE_COMPLETED", "SUBSCRIPTION_APPROVED", "ACCESS_RELEASED").contains(eventType)) {
+            throw new SecurityException("Evento comercial final exige origem interna comprovada");
+        }
+        return recordFunnelEvent(request);
     }
 
     /** Converte a configuração textual em conjunto de IPs internos a ignorar. */
@@ -667,7 +696,7 @@ public class AccessService {
     /** Retorna a área de trabalho da cliente com produto e progresso atuais. */
     public WorkspaceResponse getWorkspace(String token) {
         AccessGrant grant = getGrant(token);
-        ProductExperienceResponse product = productCatalogService.getProduct(grant.getProductSlug());
+        ProductExperienceResponse product = resolveProduct(grant.getProductSlug(), grant.getExperienceVersion());
         Set<String> completedMissionIds = grant.getCompletedMissionIds();
         int totalMissions = product.missions().size();
         int completedMissions = completedMissionIds.size();
@@ -677,6 +706,8 @@ public class AccessService {
                 grant.getEmail(),
                 grant.getSource(),
                 resolveSubscriptionStatus(grant),
+                grant.getExperienceVersion(),
+                grant.getExpiresAt() == null ? null : grant.getExpiresAt().toString(),
                 completedMissions,
                 totalMissions,
                 progressPercent,
@@ -686,11 +717,23 @@ public class AccessService {
                 supportStatus(grant));
     }
 
+    /** Confirma que um material protegido pertence a um acesso pago ainda vigente. */
+    public void authorizeMaterialAccess(String token) {
+        if (token == null || token.isBlank()) {
+            throw new SecurityException("Token de acesso do material não informado");
+        }
+        AccessGrant grant = getGrant(token);
+        if (!"ACTIVE".equals(resolveSubscriptionStatus(grant))) {
+            throw new SecurityException("Material disponível somente durante o acesso pago vigente");
+        }
+    }
+
     /** Marca uma missão da cliente como concluída sem permitir avanço de etapas operacionais. */
     public void completeMission(String token, String missionId) {
         AccessGrant grant = getGrant(token);
-        ProductExperienceResponse product = productCatalogService.getProduct(grant.getProductSlug());
+        ProductExperienceResponse product = resolveProduct(grant.getProductSlug(), grant.getExperienceVersion());
         ProductExperienceResponse.MissionDto mission = validateMissionExists(product, missionId);
+        validateMissionAccess(product, grant, missionId);
         validateMissionRole(mission, "CUSTOMER");
         validateMissionOrder(product, grant, mission);
         validateCustomerCompletionEvidence(grant, missionId);
@@ -762,6 +805,126 @@ public class AccessService {
                 null,
                 Map.of("supportType", "CUSTOMER_REQUEST")));
         return getWorkspace(token);
+    }
+
+    /** Executa o direito solicitado pela titular e preserva uma trilha mínima sem dado sensível. */
+    public PrivacyActionResponse executePrivacyAction(String token, PrivacyActionRequest request) {
+        AccessGrant grant = getGrant(token);
+        Instant executedAt = Instant.now();
+        String action = request.action().trim().toUpperCase();
+        if ("DELETION".equals(action)) {
+            anonymizeAccess(grant, action, executedAt);
+            return new PrivacyActionResponse(action, "COMPLETED", executedAt.toString(), Map.of());
+        }
+        if ("CORRECTION".equals(action)) {
+            String correctedEmail = normalizeEmail(request.correctedEmail());
+            if (!correctedEmail.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+                throw new IllegalArgumentException("Informe o e-mail corrigido");
+            }
+            grant.updateEmail(correctedEmail);
+        }
+        grant.saveMissionInteraction("privacy", Map.of(
+                "requestType", action,
+                "requestStatus", "COMPLETED",
+                "executedAt", executedAt.toString()));
+        persistAccess(grant);
+        Map<String, Object> exportedData = new LinkedHashMap<>();
+        if ("ACCESS".equals(action)) {
+            exportedData.put("productSlug", grant.getProductSlug());
+            exportedData.put("email", grant.getEmail());
+            exportedData.put("source", grant.getSource());
+            exportedData.put("experienceVersion", grant.getExperienceVersion());
+            exportedData.put("paidAt", grant.getPaidAt() == null ? "" : grant.getPaidAt().toString());
+            exportedData.put("expiresAt", grant.getExpiresAt() == null ? "" : grant.getExpiresAt().toString());
+            exportedData.put("completedMissionIds", grant.getCompletedMissionIds());
+            exportedData.put("missionInteractions", grant.getMissionInteractions());
+        }
+        return new PrivacyActionResponse(action, "COMPLETED", executedAt.toString(), exportedData);
+    }
+
+    /** Anonimiza acessos cujo prazo comercial terminou há mais de 180 dias. */
+    public int enforceDataRetention(Instant now) {
+        Instant reference = now == null ? Instant.now() : now;
+        int anonymized = 0;
+        for (AccessGrant grant : List.copyOf(accessByToken.values())) {
+            if (grant.getExpiresAt() != null
+                    && !grant.getExpiresAt()
+                            .plusSeconds(CUSTOMER_DATA_RETENTION_DAYS_AFTER_EXPIRY * 24L * 60L * 60L)
+                            .isAfter(reference)
+                    && !"PRIVACY_DELETED".equals(grant.getSource())) {
+                anonymizeAccess(grant, "RETENTION_EXPIRED", reference);
+                anonymized++;
+            }
+        }
+        return anonymized;
+    }
+
+    /** Remove dados identificáveis do acesso e das tabelas funcionais antes de persistir a auditoria anônima. */
+    private void anonymizeAccess(AccessGrant grant, String reason, Instant executedAt) {
+        String originalToken = grant.getToken();
+        String originalEmail = grant.getEmail();
+        if (usesJdbcStorage()) {
+            scrubAccessDataInDatabase(originalToken, originalEmail);
+        }
+        AccessGrant anonymousAudit = new AccessGrant(
+                UUID.randomUUID().toString(),
+                grant.getProductSlug(),
+                "deleted-" + UUID.randomUUID() + "@privacy.invalid",
+                "PRIVACY_DELETED",
+                grant.getCreatedAt(),
+                grant.getExperienceVersion(),
+                null,
+                null);
+        anonymousAudit.anonymizeForPrivacy(anonymousAudit.getEmail(), reason, executedAt);
+        accessByToken.remove(originalToken);
+        accessByToken.put(anonymousAudit.getToken(), anonymousAudit);
+        persistAccess(anonymousAudit);
+    }
+
+    /** Apaga progresso e identificadores analíticos sem remover a trilha financeira mantida no provedor. */
+    private void scrubAccessDataInDatabase(String token, String email) {
+        String deleteInteractions = "DELETE FROM pde_access_mission_interaction_answer WHERE access_token = ?";
+        String deleteCompletions = "DELETE FROM pde_access_mission_completion WHERE access_token = ?";
+        String deleteGuidance = "DELETE FROM pde_ai_guidance_request WHERE access_token = ?";
+        String anonymizeEvents = """
+                UPDATE pde_funnel_event
+                SET access_token = NULL,
+                    email = NULL,
+                    normalized_email = NULL,
+                    page_url = NULL,
+                    client_ip = NULL,
+                    user_agent = NULL,
+                    referrer_url = NULL,
+                    session_id = NULL,
+                    visitor_id = NULL,
+                    metadata_json = NULL
+                WHERE access_token = ? OR normalized_email = ?
+                """;
+        String deleteAccessGrant = "DELETE FROM pde_access_grant WHERE token = ?";
+        try (Connection connection = openConnection()) {
+            connection.setAutoCommit(false);
+            executePrivacyStatement(connection, deleteGuidance, token);
+            executePrivacyStatement(connection, deleteInteractions, token);
+            executePrivacyStatement(connection, deleteCompletions, token);
+            try (PreparedStatement statement = connection.prepareStatement(anonymizeEvents)) {
+                statement.setString(1, token);
+                statement.setString(2, normalizeEmail(email));
+                statement.executeUpdate();
+            }
+            executePrivacyStatement(connection, deleteAccessGrant, token);
+            connection.commit();
+        } catch (SQLException ex) {
+            log.error("Falha ao anonimizar dados PDE; operation=privacy-deletion", ex);
+            throw new IllegalStateException("Não foi possível anonimizar os dados do acesso PDE", ex);
+        }
+    }
+
+    /** Executa uma exclusão de privacidade vinculada ao token dentro da transação atual. */
+    private void executePrivacyStatement(Connection connection, String sql, String token) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, token);
+            statement.executeUpdate();
+        }
     }
 
     /** Identifica os marcos que precisam materializar valor individual antes da conclusão. */
@@ -910,11 +1073,16 @@ public class AccessService {
     /** Salva respostas da cliente para personalizar a missão e medir engajamento real. */
     public void saveMissionInteraction(String token, String missionId, MissionInteractionRequest request) {
         AccessGrant grant = getGrant(token);
-        ProductExperienceResponse product = productCatalogService.getProduct(grant.getProductSlug());
+        ProductExperienceResponse product = resolveProduct(grant.getProductSlug(), grant.getExperienceVersion());
         ProductExperienceResponse.MissionDto mission = validateMissionExists(product, missionId);
+        validateMissionAccess(product, grant, missionId);
         validateMissionRole(mission, "CUSTOMER");
         validateMissionOrder(product, grant, mission);
         Map<String, String> sanitizedAnswers = sanitizeInteractionAnswers(request.answers());
+        if (MUSA_PRODUCT_SLUG.equals(product.slug())
+                && MUSA_V7_EXPERIENCE_VERSION.equals(product.experienceVersion())) {
+            MusaV7CategoricalContract.validate(sanitizedAnswers);
+        }
         grant.saveMissionInteraction(missionId, sanitizedAnswers);
         persistAccess(grant);
         recordFunnelEvent(new FunnelEventRequest(
@@ -949,14 +1117,16 @@ public class AccessService {
         }
     }
 
-    /** Exige conclusão sequencial somente nos contratos novos que declaram papéis operacionais. */
+    /** Exige conclusão sequencial em contratos operacionais e na jornada comercial MUSA v7. */
     private void validateMissionOrder(
             ProductExperienceResponse product,
             AccessGrant grant,
             ProductExperienceResponse.MissionDto requestedMission) {
         boolean roleAwareJourney = product.missions().stream()
                 .anyMatch(mission -> mission.completionRole() != null && !mission.completionRole().isBlank());
-        if (!roleAwareJourney) {
+        boolean musaV7Journey = MUSA_PRODUCT_SLUG.equals(product.slug())
+                && MUSA_V7_EXPERIENCE_VERSION.equals(product.experienceVersion());
+        if (!roleAwareJourney && !musaV7Journey) {
             return;
         }
         Set<String> completedMissionIds = grant.getCompletedMissionIds();
@@ -1012,6 +1182,9 @@ public class AccessService {
         if (grant == null) {
             throw new IllegalArgumentException("Acesso PDE não encontrado");
         }
+        if ("PRIVACY_DELETED".equals(grant.getSource())) {
+            throw new IllegalArgumentException("Os dados deste acesso foram removidos por solicitação de privacidade");
+        }
         return grant;
     }
 
@@ -1020,6 +1193,7 @@ public class AccessService {
         String normalizedEmail = normalizeEmail(email);
         return accessByToken.values().stream()
                 .filter(grant -> grant.getProductSlug().equals(productSlug))
+                .filter(grant -> !"PRIVACY_DELETED".equals(grant.getSource()))
                 .filter(grant -> normalizeEmail(grant.getEmail()).equals(normalizedEmail))
                 .findFirst()
                 .orElse(null);
@@ -1042,9 +1216,74 @@ public class AccessService {
 
     /** Resolve se o acesso atual representa assinatura ativa ou apenas entrada/logon na área. */
     private String resolveSubscriptionStatus(AccessGrant grant) {
-        return "CHECKOUT".equalsIgnoreCase(grant.getSource()) || "PEPPER".equalsIgnoreCase(grant.getSource())
-                ? "ACTIVE"
-                : "TRIAL";
+        if (!isPaidSource(grant.getSource())) {
+            return "TRIAL";
+        }
+        return grant.getExpiresAt() != null && !grant.getExpiresAt().isAfter(Instant.now())
+                ? "EXPIRED"
+                : "ACTIVE";
+    }
+
+    /** Garante que somente o primeiro dia gratuito fica disponível sem acesso comprado vigente. */
+    private void validateMissionAccess(
+            ProductExperienceResponse product, AccessGrant grant, String missionId) {
+        if (!MUSA_PRODUCT_SLUG.equals(grant.getProductSlug())) {
+            return;
+        }
+        if (product.missions().isEmpty() || product.missions().get(0).id().equals(missionId)) {
+            return;
+        }
+        String status = resolveSubscriptionStatus(grant);
+        if ("EXPIRED".equals(status)) {
+            throw new IllegalArgumentException("O acesso de 90 dias terminou; procure o suporte para revisar sua situação");
+        }
+        if (!"ACTIVE".equals(status)) {
+            throw new IllegalArgumentException("O acesso completo é necessário para continuar após o primeiro dia");
+        }
+    }
+
+    /** Registra noventa dias de acesso para novas compras do MUSA sem afetar produtos permanentes. */
+    private void activatePaidTermIfApplicable(AccessGrant grant) {
+        if (!MUSA_PRODUCT_SLUG.equals(grant.getProductSlug())) {
+            return;
+        }
+        Instant paidAt = Instant.now();
+        grant.activatePaidAccess(paidAt, paidAt.plusSeconds(MUSA_PAID_ACCESS_DAYS * 24L * 60L * 60L));
+    }
+
+    /** Identifica as origens que comprovam acesso comprado. */
+    private boolean isPaidSource(String source) {
+        return "CHECKOUT".equalsIgnoreCase(source)
+                || "PEPPER".equalsIgnoreCase(source)
+                || "INTERNAL_QA".equalsIgnoreCase(source);
+    }
+
+    /** Converte texto opcional em valor persistível sem espaços residuais. */
+    private String nullToBlank(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    /** Resolve a versão congelada quando informada e preserva contratos legados sem versão. */
+    private ProductExperienceResponse resolveProduct(String productSlug, String experienceVersion) {
+        if (experienceVersion == null || experienceVersion.isBlank()) {
+            return productCatalogService.getProduct(productSlug);
+        }
+        return productCatalogService.getProductForRequest(productSlug, "", "", experienceVersion);
+    }
+
+    /** Converte timestamp JDBC opcional em instante de domínio. */
+    private static Instant toInstant(Timestamp value) {
+        return value == null ? null : value.toInstant();
+    }
+
+    /** Converte instante opcional para persistência JDBC. */
+    private static Timestamp toTimestamp(Instant value) {
+        return value == null ? null : Timestamp.from(value);
+    }
+
+    /** Reconstrói instante opcional do armazenamento JSON legado ou versionado. */
+    private static Instant parseInstant(String value) {
+        return value == null || value.isBlank() ? null : Instant.parse(value);
     }
 
     /** Converte URL relativa em URL absoluta usando o domínio público do produto correto. */
@@ -1068,12 +1307,7 @@ public class AccessService {
                 mailService.sendMagicLink(email, absoluteUrl);
                 return new MagicLinkResponse(productSlug, email, "SENT", null);
             } catch (RuntimeException ex) {
-                log.error(
-                        "Falha ao entregar link mágico PDE; productSlug={}, email={}, accessUrl={}",
-                        productSlug,
-                        email,
-                        accessUrl,
-                        ex);
+                log.error("Falha ao entregar link mágico PDE; productSlug={}", productSlug, ex);
                 return new MagicLinkResponse(
                         productSlug,
                         email,
@@ -1119,9 +1353,12 @@ public class AccessService {
 
     /** Define se um acesso gratuito deve ser promovido para origem de assinatura paga. */
     private boolean shouldPromoteToPaidSource(AccessGrant grant, String source) {
-        return ("CHECKOUT".equalsIgnoreCase(source) || "PEPPER".equalsIgnoreCase(source))
+        return ("CHECKOUT".equalsIgnoreCase(source)
+                        || "PEPPER".equalsIgnoreCase(source)
+                        || "INTERNAL_QA".equalsIgnoreCase(source))
                 && !"CHECKOUT".equalsIgnoreCase(grant.getSource())
-                && !"PEPPER".equalsIgnoreCase(grant.getSource());
+                && !"PEPPER".equalsIgnoreCase(grant.getSource())
+                && !"INTERNAL_QA".equalsIgnoreCase(grant.getSource());
     }
 
     /** Normaliza e valida os tipos de evento aceitos pelo funil MUSA/PDE. */
@@ -1795,6 +2032,9 @@ public class AccessService {
                   g.email,
                   g.source,
                   g.created_at,
+                  g.experience_version,
+                  g.paid_at,
+                  g.expires_at,
                   c.mission_id AS completed_mission_id,
                   a.mission_id AS interaction_mission_id,
                   a.question_key,
@@ -1816,7 +2056,10 @@ public class AccessService {
                             resultSet.getString("product_slug"),
                             resultSet.getString("email"),
                             resultSet.getString("source"),
-                            resultSet.getTimestamp("created_at").toInstant());
+                            resultSet.getTimestamp("created_at").toInstant(),
+                            resultSet.getString("experience_version"),
+                            toInstant(resultSet.getTimestamp("paid_at")),
+                            toInstant(resultSet.getTimestamp("expires_at")));
                     builders.put(token, builder);
                 }
                 String missionId = resultSet.getString("completed_mission_id");
@@ -1842,11 +2085,18 @@ public class AccessService {
     /** Persiste o acesso alterado, suas missões concluídas e interações no MySQL do Marketing Hub. */
     private void persistAccessInDatabase(AccessGrant grant) {
         String upsertGrant = """
-                INSERT INTO pde_access_grant (token, product_slug, email, normalized_email, source, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                INSERT INTO pde_access_grant (
+                  token, product_slug, email, normalized_email, source, experience_version,
+                  paid_at, expires_at, created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 ON DUPLICATE KEY UPDATE
                   email = VALUES(email),
+                  normalized_email = VALUES(normalized_email),
                   source = VALUES(source),
+                  experience_version = VALUES(experience_version),
+                  paid_at = VALUES(paid_at),
+                  expires_at = VALUES(expires_at),
                   updated_at = CURRENT_TIMESTAMP
                 """;
         String insertMission = """
@@ -1870,7 +2120,10 @@ public class AccessService {
                 statement.setString(3, grant.getEmail());
                 statement.setString(4, normalizeEmail(grant.getEmail()));
                 statement.setString(5, grant.getSource());
-                statement.setTimestamp(6, Timestamp.from(grant.getCreatedAt()));
+                statement.setString(6, nullToBlank(grant.getExperienceVersion()));
+                statement.setTimestamp(7, toTimestamp(grant.getPaidAt()));
+                statement.setTimestamp(8, toTimestamp(grant.getExpiresAt()));
+                statement.setTimestamp(9, Timestamp.from(grant.getCreatedAt()));
                 statement.executeUpdate();
             }
             try (PreparedStatement statement = connection.prepareStatement(insertMission)) {
@@ -1896,7 +2149,7 @@ public class AccessService {
             }
             connection.commit();
         } catch (SQLException ex) {
-            log.error("Falha ao persistir acesso PDE no banco Marketing Hub; token={}", grant.getToken(), ex);
+            log.error("Falha ao persistir acesso PDE no banco Marketing Hub; productSlug={}", grant.getProductSlug(), ex);
             throw new IllegalStateException("Não foi possível persistir acesso PDE no banco Marketing Hub", ex);
         }
     }
@@ -2485,6 +2738,9 @@ public class AccessService {
             String email,
             String source,
             String createdAt,
+            String experienceVersion,
+            String paidAt,
+            String expiresAt,
             List<String> completedMissionIds,
             Map<String, Map<String, String>> missionInteractions) {
 
@@ -2495,6 +2751,9 @@ public class AccessService {
                     grant.getEmail(),
                     grant.getSource(),
                     grant.getCreatedAt().toString(),
+                    grant.getExperienceVersion(),
+                    grant.getPaidAt() == null ? null : grant.getPaidAt().toString(),
+                    grant.getExpiresAt() == null ? null : grant.getExpiresAt().toString(),
                     grant.getCompletedMissionIds().stream().toList(),
                     grant.getMissionInteractions());
         }
@@ -2507,6 +2766,9 @@ public class AccessService {
                     email,
                     source,
                     Instant.parse(createdAt),
+                    experienceVersion,
+                    parseInstant(paidAt),
+                    parseInstant(expiresAt),
                     completedMissionIds != null ? Set.copyOf(completedMissionIds) : Set.of(),
                     missionInteractions);
         }
@@ -2518,17 +2780,46 @@ public class AccessService {
             String email,
             String source,
             Instant createdAt,
+            String experienceVersion,
+            Instant paidAt,
+            Instant expiresAt,
             Set<String> completedMissionIds,
             Map<String, Map<String, String>> missionInteractions) {
 
         /** Cria o acumulador com conjunto mutável de missões concluídas. */
-        private StoredAccessGrantBuilder(String productSlug, String email, String source, Instant createdAt) {
-            this(productSlug, email, source, createdAt, ConcurrentHashMap.newKeySet(), new LinkedHashMap<>());
+        private StoredAccessGrantBuilder(
+                String productSlug,
+                String email,
+                String source,
+                Instant createdAt,
+                String experienceVersion,
+                Instant paidAt,
+                Instant expiresAt) {
+            this(
+                    productSlug,
+                    email,
+                    source,
+                    createdAt,
+                    experienceVersion,
+                    paidAt,
+                    expiresAt,
+                    ConcurrentHashMap.newKeySet(),
+                    new LinkedHashMap<>());
         }
 
         /** Reconstrói o acesso em memória a partir das linhas do banco. */
         private AccessGrant toAccessGrant(String token) {
-            return new AccessGrant(token, productSlug, email, source, createdAt, completedMissionIds, missionInteractions);
+            return new AccessGrant(
+                    token,
+                    productSlug,
+                    email,
+                    source,
+                    createdAt,
+                    experienceVersion,
+                    paidAt,
+                    expiresAt,
+                    completedMissionIds,
+                    missionInteractions);
         }
     }
 }

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   executionTimeout,
@@ -59,4 +60,29 @@ test("atualiza contexto somente com predecessores concluídos da mesma instânci
     )
   );
   assert.deepEqual(context.completedActivities.map(item => item.taskId), [5]);
+});
+
+test("preserva a fronteira do cartão de decisão na revisão de Têmis", async () => {
+  const prompt = await readFile(
+    new URL(
+      "../meta-ad-approver-worker/src/main/resources/prompts/pde-commercial-plan/v4/commercial-review.md",
+      import.meta.url
+    ),
+    "utf8"
+  );
+  assert.match(prompt, /Não exija que essa atividade antecipe as decisões de `distribution`/);
+  assert.match(prompt, /Cada atividade\s+seguinte continua responsável por aprovar ou bloquear/);
+});
+
+test("permite aprovar economia hipotética com envelope e travas futuras", async () => {
+  const prompt = await readFile(
+    new URL(
+      "../financial-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/economics.md",
+      import.meta.url
+    ),
+    "utf8"
+  );
+  assert.match(prompt, /três cenários e por envelopes máximos explícitos/);
+  assert.match(prompt, /Não retorne `ADJUST` apenas porque esses controles ainda não foram/);
+  assert.match(prompt, /nunca orçamento, campanha,\s+contato, publicação ou gasto/);
 });

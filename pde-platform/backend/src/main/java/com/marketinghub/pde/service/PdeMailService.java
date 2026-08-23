@@ -58,7 +58,7 @@ public class PdeMailService {
     /** Envia o link de acesso da cliente para o e-mail informado. */
     public void sendMagicLink(String to, String accessUrl) {
         if (!isConfigured()) {
-            log.info("Envio de e-mail PDE não configurado; link mágico não enviado para {}", to);
+            log.info("Envio de e-mail PDE não configurado; link mágico não enviado");
             return;
         }
         if ("ses".equalsIgnoreCase(transport)) {
@@ -86,7 +86,7 @@ public class PdeMailService {
             message.setText(buildMagicLinkText(accessUrl));
             sender.send(message);
         } catch (RuntimeException ex) {
-            log.error("Falha ao enviar magic link PDE por SMTP; to={}, accessUrl={}", to, accessUrl, ex);
+            log.error("Falha ao enviar magic link PDE por SMTP; transport=smtp", ex);
             throw ex;
         }
     }
@@ -115,13 +115,7 @@ public class PdeMailService {
                             .build())
                     .build());
         } catch (RuntimeException ex) {
-            log.error(
-                    "Falha ao enviar magic link PDE por SES; to={}, accessUrl={}, from={}, region={}",
-                    to,
-                    accessUrl,
-                    from,
-                    awsRegion,
-                    ex);
+            log.error("Falha ao enviar magic link PDE por SES; region={}", awsRegion, ex);
             throw ex;
         }
     }

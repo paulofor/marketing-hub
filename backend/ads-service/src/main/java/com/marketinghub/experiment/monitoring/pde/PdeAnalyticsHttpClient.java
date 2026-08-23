@@ -4,6 +4,9 @@ import java.net.http.HttpClient;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -14,26 +17,32 @@ import org.springframework.web.client.RestClientResponseException;
 @Component
 public class PdeAnalyticsHttpClient implements PdeAnalyticsClient {
 
+  private static final Logger log = LoggerFactory.getLogger(PdeAnalyticsHttpClient.class);
   private static final String DEFAULT_PDE_BASE_URL = "https://v5.clubemusa.com.br";
 
   private final String defaultBaseUrl;
   private final RestClient restClient;
   private final JdkClientHttpRequestFactory requestFactory;
+  private final String internalToken;
 
   /** Inicializa o cliente HTTP com timeouts configuráveis para não zerar o cockpit por lentidão. */
+  @Autowired
   public PdeAnalyticsHttpClient(
       @Value("${integrations.pde-platform.base-url:" + DEFAULT_PDE_BASE_URL + "}") String baseUrl,
       @Value("${integrations.pde-platform.connect-timeout:PT3S}") Duration connectTimeout,
-      @Value("${integrations.pde-platform.read-timeout:PT15S}") Duration readTimeout) {
+      @Value("${integrations.pde-platform.read-timeout:PT15S}") Duration readTimeout,
+      @Value("${integrations.pde-platform.internal-token:}") String internalToken) {
     HttpClient httpClient = HttpClient.newBuilder().connectTimeout(connectTimeout).build();
     this.defaultBaseUrl = trimTrailingSlash(baseUrl);
+    this.internalToken = internalToken == null ? "" : internalToken;
     this.requestFactory = new JdkClientHttpRequestFactory(httpClient);
     this.requestFactory.setReadTimeout(readTimeout);
-    this.restClient =
-        RestClient.builder()
-            .baseUrl(this.defaultBaseUrl)
-            .requestFactory(this.requestFactory)
-            .build();
+    this.restClient = buildClient(this.defaultBaseUrl);
+  }
+
+  /** Mantém testes existentes sem segredo, suficiente para contratos públicos agregados. */
+  PdeAnalyticsHttpClient(String baseUrl, Duration connectTimeout, Duration readTimeout) {
+    this(baseUrl, connectTimeout, readTimeout, "");
   }
 
   /** Busca o resumo consolidado de analytics do produto no backend PDE. */
@@ -58,6 +67,10 @@ public class PdeAnalyticsHttpClient implements PdeAnalyticsClient {
           .retrieve()
           .body(PdeBuildIdentity.class);
     } catch (RestClientResponseException ex) {
+      log.warn(
+          "Rota de identidade PDE indisponível; tentando manifesto de deploy; baseUrl={}",
+          baseUrl,
+          ex);
       return fetchBuildIdentityFromDeployStatus(monitoredClient, ex);
     }
   }
@@ -80,6 +93,7 @@ public class PdeAnalyticsHttpClient implements PdeAnalyticsClient {
       }
       return status.toBuildIdentity();
     } catch (RuntimeException fallbackException) {
+      log.error("Falha ao obter identidade PDE pelo manifesto de deploy", fallbackException);
       originalException.addSuppressed(fallbackException);
       throw originalException;
     }
@@ -87,7 +101,7 @@ public class PdeAnalyticsHttpClient implements PdeAnalyticsClient {
 
   /** Cria um client dedicado para a origem pública monitorada. */
   private RestClient monitoredClient(String baseUrl) {
-    return RestClient.builder().baseUrl(baseUrl).requestFactory(requestFactory).build();
+    return buildClient(baseUrl);
   }
 
   /**
@@ -116,10 +130,7 @@ public class PdeAnalyticsHttpClient implements PdeAnalyticsClient {
           .retrieve()
           .body(PdeAnalyticsSummary.class);
     }
-    return RestClient.builder()
-        .baseUrl(trimTrailingSlash(publicBaseUrl))
-        .requestFactory(requestFactory)
-        .build()
+    return buildClient(trimTrailingSlash(publicBaseUrl))
         .get()
         .uri(
             uriBuilder -> {
@@ -149,10 +160,7 @@ public class PdeAnalyticsHttpClient implements PdeAnalyticsClient {
           .retrieve()
           .body(PdeAnalyticsSummary.class);
     }
-    return RestClient.builder()
-        .baseUrl(trimTrailingSlash(publicBaseUrl))
-        .requestFactory(requestFactory)
-        .build()
+    return buildClient(trimTrailingSlash(publicBaseUrl))
         .get()
         .uri(
             uriBuilder ->
@@ -170,6 +178,16 @@ public class PdeAnalyticsHttpClient implements PdeAnalyticsClient {
       return DEFAULT_PDE_BASE_URL;
     }
     return value.replaceAll("/+$", "");
+  }
+
+  /** Cria cliente que apresenta o segredo somente ao backend PDE e nunca ao navegador. */
+  private RestClient buildClient(String baseUrl) {
+    RestClient.Builder builder =
+        RestClient.builder().baseUrl(baseUrl).requestFactory(requestFactory);
+    if (!internalToken.isBlank()) {
+      builder.defaultHeader("X-PDE-Internal-Token", internalToken);
+    }
+    return builder.build();
   }
 
   /** Representa o manifesto de deploy usado como fallback por versões antigas da PDE. */

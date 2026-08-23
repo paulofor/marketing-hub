@@ -8,6 +8,20 @@
 >
 > Uso obrigatório recomendado: antes de corrigir problema em GeraLanding, Facebook Ads, Lead Portal, OpenAI/schema, pipelines administrativos ou pipeline de hipótese, verificar se a solicitação reabre algum loop listado aqui.
 
+## LOOP-PDE-INTERFACE-SEGURA-COM-ROTA-LEGADA-INSEGURA — contrato contornado fora da tela
+
+- **Sintoma confirmado em 2026-08-23:** a jornada oficial MUSA v7 usava link mágico e respostas
+  categoriais, mas rotas públicas legadas devolviam o bearer token apenas com produto e e-mail e a
+  rota direta de interação ainda aceitava texto livre.
+- **Causa-raiz:** segurança e minimização foram testadas somente pelo caminho visual feliz, sem um
+  contrato único aplicado a toda a superfície HTTP.
+- **Correção sistêmica:** as rotas de login/cadastro que retornavam token foram removidas, logs foram
+  redigidos e a validação categorial por chave passou a ser central. Pepper exige preço e moeda exatos
+  e mantém auditoria financeira idempotente separada, sem PII ou credencial em claro.
+- **Prevenção:** testes negativos de controller, serviço e Playwright usam somente o e-mail conhecido,
+  chamam a rota de interação diretamente e tentam preço inferior, superior, moeda errada e transação
+  reutilizada. Toda correção reinicia as duas rodadas completas de homologação.
+
 ## LOOP-PDE-DEGUSTACAO-DECLARADA-SEM-VALOR — promessa de demonstração sem amostra materializada
 
 - **Sintoma confirmado em 2026-08-23:** a oferta do Kit WhatsApp dizia apresentar uma demonstração, mas a página apenas repetia um parágrafo de prova comercial e não entregava uma resposta aplicável antes do checkout.

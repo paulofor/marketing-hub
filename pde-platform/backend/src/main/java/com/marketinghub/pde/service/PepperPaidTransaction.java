@@ -7,4 +7,5 @@ public record PepperPaidTransaction(
         String paymentStatus,
         String offerHash,
         String offerTitle,
-        Integer amount) {}
+        Integer amount,
+        String currency) {}

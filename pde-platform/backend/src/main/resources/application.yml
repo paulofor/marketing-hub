@@ -6,6 +6,8 @@ spring:
     name: pde-platform-backend
 
 pde:
+  internal-api:
+    token: ${PDE_INTERNAL_API_TOKEN:}
   analytics:
     internal-excluded-ips: ${PDE_ANALYTICS_INTERNAL_EXCLUDED_IPS:179.210.58.3}
   catalog:
@@ -13,6 +15,7 @@ pde:
     experience-version-override: ${PDE_EXPERIENCE_VERSION_OVERRIDE:}
   access:
     dev-enabled: ${PDE_DEV_ACCESS_ENABLED:false}
+    internal-qa-enabled: ${PDE_INTERNAL_QA_ENABLED:false}
     storage-path: ${PDE_ACCESS_STORAGE_PATH:/data/pde/access-grants.json}
     jdbc-url: ${PDE_ACCESS_JDBC_URL:}
     jdbc-username: ${PDE_ACCESS_JDBC_USERNAME:}
@@ -26,7 +29,8 @@ pde:
       offer-hashes: ${PDE_PEPPER_OFFER_HASHES:owm6x,c8mnn}
       product-slug: ${PDE_PEPPER_PRODUCT_SLUG:metodo-musa-7-dias}
       sync-lookback-days: ${PDE_PEPPER_SYNC_LOOKBACK_DAYS:14}
-      minimum-paid-amount-cents: ${PDE_PEPPER_MINIMUM_PAID_AMOUNT_CENTS:6700}
+      expected-paid-amount-cents: ${PDE_PEPPER_EXPECTED_PAID_AMOUNT_CENTS:6700}
+      expected-currency: ${PDE_PEPPER_EXPECTED_CURRENCY:BRL}
   assisted-operation:
     enabled: ${PDE_ASSISTED_OPERATION_ENABLED:false}
     token: ${PDE_ASSISTED_OPERATION_TOKEN:}

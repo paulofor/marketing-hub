@@ -1,0 +1,41 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["agent", "decision", "rationale", "alternatives", "selectedApproach", "score", "evidence", "findings", "acceptanceCriteria", "requiredChanges"],
+  "properties": {
+    "agent": {"type": "string", "enum": ["DEDALO", "TEMIS", "PSIQUE"]},
+    "decision": {"type": "string", "enum": ["APPROVE", "ADJUST", "BLOCKED"]},
+    "rationale": {"type": "string", "minLength": 30, "maxLength": 1600},
+    "alternatives": {
+      "type": "array", "minItems": 3, "maxItems": 3,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["name", "benefit", "risk", "effort", "salesFit"],
+        "properties": {
+          "name": {"type": "string", "minLength": 3, "maxLength": 160},
+          "benefit": {"type": "string", "minLength": 10, "maxLength": 600},
+          "risk": {"type": "string", "minLength": 10, "maxLength": 600},
+          "effort": {"type": "string", "minLength": 3, "maxLength": 300},
+          "salesFit": {"type": "string", "minLength": 10, "maxLength": 600}
+        }
+      }
+    },
+    "selectedApproach": {"type": "string", "minLength": 20, "maxLength": 600},
+    "score": {"type": "integer", "minimum": 0, "maximum": 100},
+    "evidence": {"type": "array", "minItems": 4, "maxItems": 20, "items": {"type": "string", "minLength": 8, "maxLength": 500}},
+    "findings": {
+      "type": "array", "minItems": 3, "maxItems": 20,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["severity", "area", "observation"],
+        "properties": {
+          "severity": {"type": "string", "enum": ["INFO", "WARNING", "BLOCKER"]},
+          "area": {"type": "string", "minLength": 3, "maxLength": 120},
+          "observation": {"type": "string", "minLength": 10, "maxLength": 800}
+        }
+      }
+    },
+    "acceptanceCriteria": {"type": "array", "minItems": 6, "maxItems": 20, "items": {"type": "string", "minLength": 10, "maxLength": 400}},
+    "requiredChanges": {"type": "array", "maxItems": 16, "items": {"type": "string", "minLength": 5, "maxLength": 600}}
+  }
+}

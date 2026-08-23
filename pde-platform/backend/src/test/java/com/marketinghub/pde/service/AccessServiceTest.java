@@ -14,16 +14,19 @@ import com.marketinghub.pde.dto.AiGuidanceResultRequest;
 import com.marketinghub.pde.dto.MissionInteractionRequest;
 import com.marketinghub.pde.dto.OperationalMissionCompletionRequest;
 import com.marketinghub.pde.dto.OperationalMissionCompletionRequest.DeliverySectionRequest;
-import com.marketinghub.pde.dto.PepperWebhookRequest;
+import com.marketinghub.pde.dto.PublicPresenceDiagnosticRequest;
 import com.marketinghub.pde.dto.WorkspaceResponse;
 import com.marketinghub.pde.dto.ProductExperienceResponse;
+import com.marketinghub.pde.dto.PrivacyActionRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.nio.file.Path;
+import java.nio.file.Files;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.io.TempDir;
@@ -295,33 +298,15 @@ class AccessServiceTest {
         AccessResponse access = accessService.createAccess("metodo-musa-7-dias", "cliente@sandbox.local", "DEV");
         accessService.saveMissionInteraction(access.token(), "dia-1-ruido-visual", new MissionInteractionRequest(Map.of(
                 "presenceFocus", "Trabalho ou reunião",
-                "mainObstacle", "Roupa sem intenção",
-                "evidencePhrase", "Eu me sinto arrumada, mas pouco marcante quando a roupa não conversa comigo.")));
+                "mainObstacle", "Pareço comum",
+                "desiredSignal", "Elegância discreta")));
 
         AccessService restartedService = new AccessService(productCatalogService, new ObjectMapper(), storagePath);
         WorkspaceResponse workspace = restartedService.getWorkspace(access.token());
 
         assertThat(workspace.missionInteractions())
                 .extracting("questionKey")
-                .contains("presenceFocus", "mainObstacle", "evidencePhrase");
-    }
-
-    /** Confirma que cadastro e login reutilizam o mesmo acesso por produto e e-mail. */
-    @Test
-    void registersCustomerAndLogsInWithSameAccess() {
-        ProductCatalogService productCatalogService = new ProductCatalogService();
-        AccessService accessService = new AccessService(
-                productCatalogService,
-                new ObjectMapper(),
-                tempDir.resolve("access-grants.json").toString());
-
-        AccessResponse registered = accessService.registerCustomer("metodo-musa-7-dias", "Cliente@Sandbox.Local");
-        AccessResponse login = accessService.loginCustomer("metodo-musa-7-dias", "cliente@sandbox.local");
-        AccessResponse duplicateRegister = accessService.registerCustomer("metodo-musa-7-dias", "cliente@sandbox.local");
-
-        assertThat(login.token()).isEqualTo(registered.token());
-        assertThat(duplicateRegister.token()).isEqualTo(registered.token());
-        assertThat(login.accessUrl()).isEqualTo("/access/" + registered.token());
+                .contains("presenceFocus", "mainObstacle", "desiredSignal");
     }
 
     /** Confirma que o magic link cria acesso de entrada sem marcar assinatura ativa. */
@@ -439,6 +424,29 @@ class AccessServiceTest {
         assertThat(workspace.accessSource()).isEqualTo("CHECKOUT");
     }
 
+    /** Confirma que a compra da v7 preserva a versão e libera exatamente noventa dias. */
+    @Test
+    void grantsMusaV7PaidAccessForNinetyDays() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants-v7.json").toString());
+        Instant beforePurchase = Instant.now();
+
+        AccessResponse access = accessService.createAccess(
+                "metodo-musa-7-dias",
+                "cliente-v7@sandbox.local",
+                "CHECKOUT",
+                "musa-pde-entry-v7-espelho-antes-de-sair");
+        WorkspaceResponse workspace = accessService.getWorkspace(access.token());
+
+        assertThat(workspace.subscriptionStatus()).isEqualTo("ACTIVE");
+        assertThat(workspace.experienceVersion()).isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
+        assertThat(Instant.parse(workspace.accessExpiresAt()))
+                .isBetween(beforePurchase.plusSeconds(89L * 24 * 3600), beforePurchase.plusSeconds(91L * 24 * 3600));
+    }
+
     /** Confirma que uma assinatura aprovada promove acesso criado antes pelo magic link. */
     @Test
     void promotesMagicLinkAccessAfterCheckoutApproval() {
@@ -451,35 +459,6 @@ class AccessServiceTest {
         accessService.requestMagicLink("metodo-musa-7-dias", "cliente@sandbox.local");
         AccessResponse paidAccess = accessService.createAccess("metodo-musa-7-dias", "cliente@sandbox.local", "PEPPER");
         WorkspaceResponse workspace = accessService.getWorkspace(paidAccess.token());
-
-        assertThat(workspace.subscriptionStatus()).isEqualTo("ACTIVE");
-        assertThat(workspace.accessSource()).isEqualTo("PEPPER");
-    }
-
-    /** Confirma que o payload v2 da Pepper libera acesso somente quando a transação está paga. */
-    @Test
-    void releasesAccessFromPaidPepperWebhookV2() {
-        ProductCatalogService productCatalogService = new ProductCatalogService();
-        AccessService accessService = new AccessService(
-                productCatalogService,
-                new ObjectMapper(),
-                tempDir.resolve("access-grants.json").toString());
-
-        PepperWebhookRequest request = new PepperWebhookRequest(
-                null,
-                null,
-                null,
-                "paid",
-                new PepperWebhookRequest.PepperCustomer(
-                        "customer-1", "Cliente MUSA", "cliente@sandbox.local", "+5511999999999", "12345678901"),
-                new PepperWebhookRequest.PepperTransaction(
-                        "pepper-tx-67", "paid", "pix", "4700", "https://go.pepper.com.br/customer/pepper-tx-67"),
-                new PepperWebhookRequest.PepperOffer("offer-musa", "Clube MUSA", "4700"),
-                List.of(),
-                new PepperWebhookRequest.PepperTracking(null, null, null, null, null, null, "metodo-musa-7-dias"));
-
-        AccessResponse access = accessService.receivePepperWebhook(request);
-        WorkspaceResponse workspace = accessService.getWorkspace(access.token());
 
         assertThat(workspace.subscriptionStatus()).isEqualTo("ACTIVE");
         assertThat(workspace.accessSource()).isEqualTo("PEPPER");
@@ -498,34 +477,14 @@ class AccessServiceTest {
                 "metodo-musa-7-dias",
                 "cliente@sandbox.local",
                 "jft4eub7br",
-                "owm6x");
+                "owm6x",
+                6700,
+                "BRL",
+                "paid");
         WorkspaceResponse workspace = accessService.getWorkspace(access.token());
 
         assertThat(workspace.subscriptionStatus()).isEqualTo("ACTIVE");
         assertThat(workspace.accessSource()).isEqualTo("PEPPER");
-    }
-
-    /** Confirma que webhook Pepper aguardando pagamento não libera acesso completo. */
-    @Test
-    void rejectsPepperWebhookWithoutPaidStatus() {
-        ProductCatalogService productCatalogService = new ProductCatalogService();
-        AccessService accessService = new AccessService(
-                productCatalogService,
-                new ObjectMapper(),
-                tempDir.resolve("access-grants.json").toString());
-
-        PepperWebhookRequest request = new PepperWebhookRequest(
-                "metodo-musa-7-dias",
-                "cliente@sandbox.local",
-                "pepper-tx-67",
-                "waiting_payment",
-                null,
-                null,
-                null,
-                List.of(),
-                null);
-
-        assertThrows(IllegalArgumentException.class, () -> accessService.receivePepperWebhook(request));
     }
 
     /** Confirma que retry do checkout não altera o acesso ativo existente. */
@@ -1395,6 +1354,351 @@ class AccessServiceTest {
                 .contains("10.1016/j.jesp.2012.02.008");
     }
 
+    /** Confirma que todos os sete dias da v7 usam regras locais sem fila, tokens ou texto livre. */
+    @Test
+    void completesAllMusaV7GuidanceLocallyAndRejectsFreeText() {
+        ProductCatalogService productCatalogService = new ProductCatalogService();
+        ObjectMapper objectMapper = new ObjectMapper();
+        AccessService accessService = new AccessService(
+                productCatalogService,
+                objectMapper,
+                tempDir.resolve("access-grants-v7-local.json").toString());
+        AiGuidanceService aiGuidanceService = new AiGuidanceService(
+                accessService,
+                productCatalogService,
+                objectMapper,
+                tempDir.resolve("ai-guidance-v7-local.json").toString(),
+                "",
+                "",
+                "",
+                new PdeDatabaseMigrationService("", "", ""));
+        AccessResponse access = accessService.createAccess(
+                "metodo-musa-7-dias",
+                "local-v7@sandbox.local",
+                "CHECKOUT",
+                "musa-pde-entry-v7-espelho-antes-de-sair");
+
+        Map<String, AiGuidanceCreateRequest> requestsByMission = new LinkedHashMap<>();
+        requestsByMission.put(
+                "dia-1-ruido-visual",
+                new AiGuidanceCreateRequest(
+                        "MUSA_DAY_1_PRESENCE_DIAGNOSIS",
+                        Map.of(
+                                "presenceFocus", "Trabalho ou reunião",
+                                "mainObstacle", "Falta presença",
+                                "desiredSignal", "Elegância discreta"),
+                        "musa-pde-entry-v7-espelho-antes-de-sair"));
+        requestsByMission.put(
+                "dia-2-assinatura",
+                new AiGuidanceCreateRequest(
+                        "MUSA_DAY_2_SIGNATURE",
+                        Map.of(
+                                "finishSignal", "Cabelo polido",
+                                "baseColor", "Vinho discreto",
+                                "memorableSignal", "Brinco luminoso"),
+                        "musa-pde-entry-v7-espelho-antes-de-sair"));
+        requestsByMission.put(
+                "dia-3-base-acessivel",
+                new AiGuidanceCreateRequest(
+                        "MUSA_DAY_3_WARDROBE_REUSE",
+                        Map.of(
+                                "pieces", "Calça e camisa",
+                                "accessories", "Brinco e perfume",
+                                "realOccasion", "Rotina comum"),
+                        "musa-pde-entry-v7-espelho-antes-de-sair"));
+        requestsByMission.put(
+                "dia-4-checklist-12-minutos",
+                new AiGuidanceCreateRequest(
+                        "MUSA_DAY_4_FINISHING_RITUAL",
+                        Map.of(
+                                "availableMinutes", "10 minutos",
+                                "weakestFinish", "Cabelo",
+                                "desiredFeeling", "Mais segura"),
+                        "musa-pde-entry-v7-espelho-antes-de-sair"));
+        requestsByMission.put(
+                "dia-5-compra-inteligente",
+                new AiGuidanceCreateRequest(
+                        "MUSA_DAY_5_ANTI_IMPULSE_DECISION",
+                        Map.of(
+                                "desiredItem", "Roupa",
+                                "buyingReason", "Impulso ou novidade",
+                                "fitWithSignature", "Ainda não sei"),
+                        "musa-pde-entry-v7-espelho-antes-de-sair"));
+        requestsByMission.put(
+                "dia-6-situacao-chave",
+                new AiGuidanceCreateRequest(
+                        "MUSA_DAY_6_OCCASION_ENTRY",
+                        Map.of(
+                                "occasion", "Evento",
+                                "plannedLook", "Base neutra e detalhe",
+                                "presenceRisk", "Desconforto"),
+                        "musa-pde-entry-v7-espelho-antes-de-sair"));
+        requestsByMission.put(
+                "dia-7-plano-pessoal",
+                new AiGuidanceCreateRequest(
+                        "MUSA_DAY_7_MAINTENANCE_PLAN",
+                        Map.of(
+                                "bestSignal", "Acabamento",
+                                "hardestPoint", "Pouco tempo",
+                                "weeklyRitual", "Separar 3 combinações"),
+                        "musa-pde-entry-v7-espelho-antes-de-sair"));
+
+        requestsByMission.forEach((missionId, request) -> {
+            var guidance = aiGuidanceService.createGuidanceRequest(access.token(), missionId, request);
+            assertThat(guidance.status()).isEqualTo("COMPLETED");
+            assertThat(guidance.model()).isEqualTo("MUSA_LOCAL_RULES_V1");
+            assertThat(guidance.inputTokens()).isZero();
+            assertThat(guidance.outputTokens()).isZero();
+            assertThat(guidance.summary()).doesNotContainIgnoringCase("ciência", "garantia", "aprovação");
+            assertThat(guidance.caution()).contains("não avalia", "reação de terceiros");
+            accessService.completeMission(access.token(), missionId);
+        });
+        var neutralGuidance = aiGuidanceService.createPublicPresenceDiagnostic(
+                new PublicPresenceDiagnosticRequest(
+                        Map.of(
+                                "mainObstacle", "Minha imagem está coerente; quero apenas organizar minhas escolhas",
+                                "presenceFocus", "Rotina comum",
+                                "desiredSignal", "Elegância discreta",
+                                "startingResource", "Roupa que já tenho"),
+                        "musa-pde-entry-v7-espelho-antes-de-sair"));
+        assertThat(neutralGuidance.status()).isEqualTo("COMPLETED");
+        assertThat(neutralGuidance.headline()).isEqualTo("Sua escolha atual foi preservada");
+        assertThat(neutralGuidance.summary()).contains("não precisa corrigir sua imagem");
+        assertThat(neutralGuidance.microActions()).contains("Você pode seguir para o próximo dia sem realizar uma microação.");
+        assertThat(neutralGuidance.inputTokens()).isZero();
+        assertThat(neutralGuidance.outputTokens()).isZero();
+        assertThat(aiGuidanceService.getPendingGuidance()).isEmpty();
+        assertThrows(IllegalArgumentException.class, () -> aiGuidanceService.createGuidanceRequest(
+                access.token(),
+                "dia-3-base-acessivel",
+                new AiGuidanceCreateRequest(
+                        "MUSA_DAY_3_WARDROBE_REUSE",
+                        Map.of("pieces", "minha roupa favorita"),
+                        "musa-pde-entry-v7-espelho-antes-de-sair")));
+        assertThat(accessService.getWorkspace(access.token()).missionInteractions())
+                .noneMatch(interaction -> "minha roupa favorita".equals(interaction.answerText()));
+    }
+
+    /** Confirma que a v7 bloqueia salto de dia no backend e preserva a versão de uma compra existente. */
+    @Test
+    void blocksMusaV7DayJumpAndFreezesPaidExperienceVersion() {
+        ProductCatalogService catalog = new ProductCatalogService();
+        AccessService accessService = new AccessService(
+                catalog,
+                new ObjectMapper(),
+                tempDir.resolve("access-grants-v7-sequence.json").toString());
+        AccessResponse access = accessService.createInternalQaAccess(
+                "metodo-musa-7-dias",
+                "sequencia@sandbox.local",
+                "musa-pde-entry-v7-espelho-antes-de-sair");
+
+        assertThrows(IllegalArgumentException.class, () -> accessService.saveMissionInteraction(
+                access.token(),
+                "dia-2-assinatura",
+                new MissionInteractionRequest(Map.of(
+                        "finishSignal", "Cabelo polido",
+                        "baseColor", "Vinho discreto",
+                        "memorableSignal", "Brinco luminoso"))));
+
+        AccessResponse retryOnOldHost = accessService.createAccess(
+                "metodo-musa-7-dias",
+                "sequencia@sandbox.local",
+                "CUSTOMER_REGISTRATION",
+                "musa-pde-entry-v5-video-explicativo");
+        WorkspaceResponse workspace = accessService.getWorkspace(retryOnOldHost.token());
+        assertThat(workspace.experienceVersion()).isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
+    }
+
+    /** Impede texto livre, chave desconhecida e valor de outra pergunta pela rota direta da v7. */
+    @Test
+    void enforcesMusaV7CategoricalContractOnDirectMissionInteraction() {
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(),
+                new ObjectMapper(),
+                tempDir.resolve("access-grants-v7-categorical.json").toString());
+        AccessResponse access = accessService.createInternalQaAccess(
+                "metodo-musa-7-dias",
+                "categorias@sandbox.local",
+                "musa-pde-entry-v7-espelho-antes-de-sair");
+
+        assertThrows(IllegalArgumentException.class, () -> accessService.saveMissionInteraction(
+                access.token(),
+                "dia-1-ruido-visual",
+                new MissionInteractionRequest(Map.of("freeText", "conteúdo arbitrário"))));
+        assertThrows(IllegalArgumentException.class, () -> accessService.saveMissionInteraction(
+                access.token(),
+                "dia-1-ruido-visual",
+                new MissionInteractionRequest(Map.of("mainObstacle", "conteúdo arbitrário"))));
+        assertThrows(IllegalArgumentException.class, () -> accessService.saveMissionInteraction(
+                access.token(),
+                "dia-1-ruido-visual",
+                new MissionInteractionRequest(Map.of("mainObstacle", "Trabalho ou reunião"))));
+        assertThat(accessService.getWorkspace(access.token()).missionInteractions()).isEmpty();
+    }
+
+    /** Confirma que QA pago fica segregado e que material exige entitlement ainda ativo. */
+    @Test
+    void segregatesInternalQaAccessAndProtectsPaidMaterials() {
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(),
+                new ObjectMapper(),
+                tempDir.resolve("access-grants-v7-qa.json").toString());
+        AccessResponse access = accessService.createInternalQaAccess(
+                "metodo-musa-7-dias",
+                "material@sandbox.local",
+                "musa-pde-entry-v7-espelho-antes-de-sair");
+
+        WorkspaceResponse workspace = accessService.getWorkspace(access.token());
+        assertThat(workspace.subscriptionStatus()).isEqualTo("ACTIVE");
+        assertThat(workspace.accessSource()).isEqualTo("INTERNAL_QA");
+        accessService.authorizeMaterialAccess(access.token());
+        assertThrows(SecurityException.class, () -> accessService.authorizeMaterialAccess(""));
+        assertThrows(IllegalArgumentException.class, () -> accessService.createInternalQaAccess(
+                "metodo-musa-7-dias",
+                "cliente@exemplo.com",
+                "musa-pde-entry-v7-espelho-antes-de-sair"));
+    }
+
+    /** Confirma que o navegador não pode fabricar compra ou liberação por evento público. */
+    @Test
+    void rejectsFinalCommercialEventsFromPublicIngestion() {
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(),
+                new ObjectMapper(),
+                tempDir.resolve("access-grants-public-events.json").toString());
+
+        assertThrows(SecurityException.class, () -> accessService.recordPublicFunnelEvent(new FunnelEventRequest(
+                "metodo-musa-7-dias",
+                "SUBSCRIPTION_APPROVED",
+                null,
+                "teste@sandbox.local",
+                "browser",
+                "frontend",
+                null,
+                Map.of())));
+    }
+
+    /** Confirma exportação, exclusão e retenção auditáveis sem conservar respostas identificáveis. */
+    @Test
+    void executesPrivacyRightsAndRetention() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        Path activeStore = tempDir.resolve("access-grants-privacy.json");
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(), objectMapper, activeStore.toString());
+        AccessResponse access = accessService.createInternalQaAccess(
+                "metodo-musa-7-dias",
+                "privacidade@sandbox.local",
+                "musa-pde-entry-v7-espelho-antes-de-sair");
+        accessService.saveMissionInteraction(
+                access.token(),
+                "dia-1-ruido-visual",
+                new MissionInteractionRequest(Map.of("mainObstacle", "Manter como está por enquanto")));
+
+        var exported = accessService.executePrivacyAction(
+                access.token(), new PrivacyActionRequest("ACCESS", null));
+        assertThat(exported.status()).isEqualTo("COMPLETED");
+        assertThat(exported.data()).containsEntry("email", "privacidade@sandbox.local");
+
+        var deleted = accessService.executePrivacyAction(
+                access.token(), new PrivacyActionRequest("DELETION", null));
+        assertThat(deleted.status()).isEqualTo("COMPLETED");
+        assertThrows(IllegalArgumentException.class, () -> accessService.getWorkspace(access.token()));
+        assertThat(Files.readString(activeStore))
+                .doesNotContain("privacidade@sandbox.local", "Manter como está por enquanto")
+                .contains("PRIVACY_DELETED", "DELETION");
+
+        Path expiredStore = tempDir.resolve("access-grants-expired-retention.json");
+        String expiredToken = "expired-retention-token";
+        objectMapper.writerWithDefaultPrettyPrinter().writeValue(expiredStore.toFile(), Map.of(
+                expiredToken,
+                Map.of(
+                        "productSlug", "metodo-musa-7-dias",
+                        "email", "expirada@sandbox.local",
+                        "source", "PEPPER",
+                        "createdAt", "2025-01-01T00:00:00Z",
+                        "experienceVersion", "musa-pde-entry-v7-espelho-antes-de-sair",
+                        "paidAt", "2025-01-01T00:00:00Z",
+                        "expiresAt", "2025-04-01T00:00:00Z",
+                        "completedMissionIds", List.of("dia-1-ruido-visual"),
+                        "missionInteractions", Map.of("dia-1-ruido-visual", Map.of("mainObstacle", "Falta presença")))));
+        AccessService retentionService = new AccessService(
+                new ProductCatalogService(), objectMapper, expiredStore.toString());
+        assertThat(retentionService.enforceDataRetention(Instant.parse("2026-01-01T00:00:00Z"))).isEqualTo(1);
+        assertThat(Files.readString(expiredStore))
+                .doesNotContain("expirada@sandbox.local", "Falta presença")
+                .contains("RETENTION_EXPIRED");
+    }
+
+    /** Prova em persistência SQL que exclusão troca o token e apaga todos os correlatores do funil. */
+    @Test
+    void irreversiblyScrubsJdbcPrivacyCorrelators() throws Exception {
+        String jdbcUrl = "jdbc:h2:mem:pde_privacy_scrub;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createPrivacyPersistenceSchema(jdbcUrl);
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(),
+                new ObjectMapper(),
+                tempDir.resolve("privacy-jdbc.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                "",
+                mock(PdeDatabaseMigrationService.class),
+                null,
+                null);
+        AccessResponse access = accessService.createInternalQaAccess(
+                "metodo-musa-7-dias",
+                "correlacao@sandbox.local",
+                "musa-pde-entry-v7-espelho-antes-de-sair");
+        accessService.recordFunnelEvent(new FunnelEventRequest(
+                "metodo-musa-7-dias",
+                "MISSION_OPEN",
+                access.token(),
+                "correlacao@sandbox.local",
+                "INTERNAL_QA",
+                "playwright",
+                "https://v7.clubemusa.com.br/access/" + access.token(),
+                Map.of(
+                        "sessionId", "session-identificavel",
+                        "visitorId", "visitor-identificavel",
+                        "referrerUrl", "https://example.test/access/" + access.token(),
+                        "clickId", "click-identificavel")));
+
+        accessService.executePrivacyAction(access.token(), new PrivacyActionRequest("DELETION", null));
+
+        try (var connection = DriverManager.getConnection(jdbcUrl, "sa", "sa");
+                var oldGrant = connection.prepareStatement("SELECT COUNT(*) FROM pde_access_grant WHERE token = ?");
+                var auditGrant = connection.prepareStatement(
+                        "SELECT token, email, source FROM pde_access_grant WHERE source = 'PRIVACY_DELETED'");
+                var events = connection.prepareStatement("""
+                        SELECT access_token, email, normalized_email, page_url, client_ip, user_agent,
+                               referrer_url, session_id, visitor_id, metadata_json
+                        FROM pde_funnel_event
+                        """)) {
+            oldGrant.setString(1, access.token());
+            try (var result = oldGrant.executeQuery()) {
+                assertThat(result.next()).isTrue();
+                assertThat(result.getInt(1)).isZero();
+            }
+            try (var result = auditGrant.executeQuery()) {
+                assertThat(result.next()).isTrue();
+                assertThat(result.getString("token")).isNotEqualTo(access.token());
+                assertThat(result.getString("email")).endsWith("@privacy.invalid");
+                assertThat(result.getString("source")).isEqualTo("PRIVACY_DELETED");
+            }
+            try (var result = events.executeQuery()) {
+                assertThat(result.next()).isTrue();
+                for (String column : List.of(
+                        "access_token", "email", "normalized_email", "page_url", "client_ip", "user_agent",
+                        "referrer_url", "session_id", "visitor_id", "metadata_json")) {
+                    assertThat(result.getString(column)).as(column).isNull();
+                }
+            }
+        }
+    }
+
     /** Confirma que todos os 7 dias possuem contrato de orientação por IA no backend. */
     @Test
     void acceptsAiGuidanceForAllSevenMusaDays() {
@@ -1627,6 +1931,9 @@ class AccessServiceTest {
                       product_slug VARCHAR(120) NOT NULL,
                       email VARCHAR(191) NOT NULL,
                       source VARCHAR(80) NOT NULL,
+                      experience_version VARCHAR(80) NOT NULL DEFAULT '',
+                      paid_at TIMESTAMP NULL,
+                      expires_at TIMESTAMP NULL,
                       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                     )
                     """);
@@ -1673,6 +1980,9 @@ class AccessServiceTest {
                       product_slug VARCHAR(120) NOT NULL,
                       email VARCHAR(191) NOT NULL,
                       source VARCHAR(80) NOT NULL,
+                      experience_version VARCHAR(80) NOT NULL DEFAULT '',
+                      paid_at TIMESTAMP NULL,
+                      expires_at TIMESTAMP NULL,
                       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                     )
                     """);
@@ -1717,6 +2027,9 @@ class AccessServiceTest {
                       product_slug VARCHAR(120) NOT NULL,
                       email VARCHAR(191) NOT NULL,
                       source VARCHAR(80) NOT NULL,
+                      experience_version VARCHAR(80) NOT NULL DEFAULT '',
+                      paid_at TIMESTAMP NULL,
+                      expires_at TIMESTAMP NULL,
                       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                     )
                     """);
@@ -1771,6 +2084,73 @@ class AccessServiceTest {
                       section_id VARCHAR(120),
                       action_name VARCHAR(120),
                       metadata_json TEXT,
+                      occurred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """);
+        }
+    }
+
+    /** Cria o schema relacional completo exigido pelo teste de anonimização irreversível. */
+    private static void createPrivacyPersistenceSchema(String jdbcUrl) throws SQLException {
+        try (var connection = DriverManager.getConnection(jdbcUrl, "sa", "sa");
+                var statement = connection.createStatement()) {
+            statement.execute("""
+                    CREATE TABLE pde_access_grant (
+                      token VARCHAR(36) PRIMARY KEY,
+                      product_slug VARCHAR(191) NOT NULL,
+                      email VARCHAR(320) NOT NULL,
+                      normalized_email VARCHAR(320) NOT NULL,
+                      source VARCHAR(40) NOT NULL,
+                      experience_version VARCHAR(80) NOT NULL DEFAULT '',
+                      paid_at TIMESTAMP NULL,
+                      expires_at TIMESTAMP NULL,
+                      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                      UNIQUE (product_slug, normalized_email)
+                    )
+                    """);
+            statement.execute("""
+                    CREATE TABLE pde_access_mission_completion (
+                      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                      access_token VARCHAR(36) NOT NULL,
+                      mission_id VARCHAR(191) NOT NULL,
+                      completed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """);
+            statement.execute("""
+                    CREATE TABLE pde_access_mission_interaction_answer (
+                      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                      access_token VARCHAR(36) NOT NULL,
+                      product_slug VARCHAR(191) NOT NULL,
+                      mission_id VARCHAR(191) NOT NULL,
+                      question_key VARCHAR(100) NOT NULL,
+                      answer_text TEXT NOT NULL,
+                      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                      UNIQUE (access_token, mission_id, question_key)
+                    )
+                    """);
+            statement.execute("""
+                    CREATE TABLE pde_ai_guidance_request (
+                      request_id VARCHAR(36) PRIMARY KEY,
+                      access_token VARCHAR(120) NOT NULL
+                    )
+                    """);
+            statement.execute("""
+                    CREATE TABLE pde_funnel_event (
+                      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                      event_id VARCHAR(64) NOT NULL UNIQUE,
+                      product_slug VARCHAR(120) NOT NULL,
+                      experience_version VARCHAR(80),
+                      access_token VARCHAR(120), email VARCHAR(191), normalized_email VARCHAR(191),
+                      event_type VARCHAR(80) NOT NULL, provider VARCHAR(80), source VARCHAR(120),
+                      page_url VARCHAR(1024), client_ip VARCHAR(45), user_agent VARCHAR(512),
+                      traffic_quality VARCHAR(40), traffic_quality_reason VARCHAR(120), traffic_provider VARCHAR(80),
+                      referrer_url VARCHAR(1024), session_id VARCHAR(64), visitor_id VARCHAR(64),
+                      utm_source VARCHAR(120), utm_medium VARCHAR(120), utm_campaign VARCHAR(191),
+                      utm_content VARCHAR(191), utm_term VARCHAR(191), device_type VARCHAR(40),
+                      screen_width INT, screen_height INT, viewport_width INT, viewport_height INT,
+                      visible_ms BIGINT, section_id VARCHAR(120), action_name VARCHAR(120), metadata_json TEXT,
                       occurred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                     )
                     """);

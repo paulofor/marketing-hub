@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const backendUrl = (process.env.PDE_BACKEND_URL ?? 'http://pde-platform-backend:8096').replace(/\/+$/, '');
+const pdeInternalToken = (process.env.PDE_INTERNAL_API_TOKEN ?? '').trim();
 const pollIntervalMs = Number(process.env.POLL_INTERVAL_MS ?? '4000');
 const openaiModel = process.env.OPENAI_MODEL ?? 'gpt-5.5';
 const openaiApiKey = await resolveOpenAiApiKey();
@@ -43,6 +44,9 @@ const promptDefinitions = {
 };
 
 async function main() {
+  if (!pdeInternalToken) {
+    throw new Error('PDE_INTERNAL_API_TOKEN não configurado no pde-ai-worker');
+  }
   console.log(`PDE AI Worker iniciado; backendUrl=${backendUrl}, model=${openaiModel}`);
   while (true) {
     try {
@@ -55,7 +59,9 @@ async function main() {
 }
 
 async function processNextPending() {
-  const pending = await fetchJson(`${backendUrl}/api/internal/pde/ai-guidance/stage-executions/pending`);
+  const pending = await fetchJson(`${backendUrl}/api/internal/pde/ai-guidance/stage-executions/pending`, {
+    headers: { 'X-PDE-Internal-Token': pdeInternalToken },
+  });
   const [execution] = Array.isArray(pending) ? pending : [];
   if (!execution) {
     return;
@@ -244,7 +250,10 @@ function isTransient(status, body) {
 async function postResult(requestId, payload) {
   await fetchJson(`${backendUrl}/api/internal/pde/ai-guidance/stage-executions/${requestId}/result`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-PDE-Internal-Token': pdeInternalToken,
+    },
     body: JSON.stringify(payload),
   });
 }

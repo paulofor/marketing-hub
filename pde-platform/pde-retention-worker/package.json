@@ -1,0 +1,13 @@
+{
+  "name": "pde-retention-worker",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node src/worker.js",
+    "check": "node --check src/worker.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

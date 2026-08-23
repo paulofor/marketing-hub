@@ -44,6 +44,9 @@ public class AiGuidanceService {
     private static final String PUBLIC_ACCESS_PREFIX = "public-presence-diagnostic:";
     private static final String PUBLIC_DIAGNOSTIC_MISSION_ID = "diagnostico-presenca-publico";
     private static final String PUBLIC_DIAGNOSTIC_GUIDANCE_TYPE = "MUSA_PUBLIC_PRESENCE_DIAGNOSTIC";
+    private static final String MUSA_V7_EXPERIENCE_VERSION = "musa-pde-entry-v7-espelho-antes-de-sair";
+    private static final String LOCAL_RULES_MODEL = "MUSA_LOCAL_RULES_V1";
+    private static final String MUSA_NEUTRAL_CHOICE = "Manter como está por enquanto";
     private static final Set<String> ALLOWED_GUIDANCE_TYPES = Set.of(
             PUBLIC_DIAGNOSTIC_GUIDANCE_TYPE,
             "MUSA_DAY_1_PRESENCE_DIAGNOSIS",
@@ -88,9 +91,15 @@ public class AiGuidanceService {
     /** Cria uma solicitação de orientação por IA e salva as respostas da missão. */
     public AiGuidanceResponse createGuidanceRequest(String token, String missionId, AiGuidanceCreateRequest request) {
         validateGuidanceType(request.guidanceType());
-        accessService.saveMissionInteraction(token, missionId, new MissionInteractionRequest(request.answers()));
         WorkspaceResponse workspace = accessService.getWorkspace(token);
         validateMissionBelongsToWorkspace(workspace, missionId);
+        boolean useLocalRules = usesMusaV7LocalRules(
+                request.experienceVersion(), workspace.product().experienceVersion());
+        if (useLocalRules) {
+            validateMusaV7CategoricalAnswers(request.answers());
+        }
+        accessService.saveMissionInteraction(token, missionId, new MissionInteractionRequest(request.answers()));
+        workspace = accessService.getWorkspace(token);
         String requestId = UUID.randomUUID().toString();
         StoredAiGuidance stored = StoredAiGuidance.pending(
                 requestId,
@@ -102,6 +111,9 @@ public class AiGuidanceService {
                 sanitizeAnswers(request.answers()),
                 previousMissionAnswers(workspace, missionId),
                 Instant.now().toString());
+        if (useLocalRules) {
+            stored = completeWithLocalRules(stored);
+        }
         requestsById.put(requestId, stored);
         persistRequest(stored);
         accessService.recordFunnelEvent(new FunnelEventRequest(
@@ -130,6 +142,9 @@ public class AiGuidanceService {
                 sanitizeAnswers(request.answers()),
                 Map.of(),
                 Instant.now().toString());
+        if (usesMusaV7LocalRules(request.experienceVersion(), null)) {
+            stored = completeWithLocalRules(stored);
+        }
         requestsById.put(requestId, stored);
         persistRequest(stored);
         return toResponse(stored);
@@ -201,6 +216,82 @@ public class AiGuidanceService {
         boolean exists = workspace.product().missions().stream().anyMatch(mission -> mission.id().equals(missionId));
         if (!exists) {
             throw new IllegalArgumentException("Missão PDE não encontrada: " + missionId);
+        }
+    }
+
+    /** Confirma quando a versão aprovada exige regras locais e proíbe envio ao worker de IA. */
+    private boolean usesMusaV7LocalRules(String requestedVersion, String workspaceVersion) {
+        return MUSA_V7_EXPERIENCE_VERSION.equals(nullToBlank(requestedVersion))
+                || MUSA_V7_EXPERIENCE_VERSION.equals(nullToBlank(workspaceVersion));
+    }
+
+    /** Conclui a orientação por regras determinísticas, sem fila, tokens ou chamada externa. */
+    private StoredAiGuidance completeWithLocalRules(StoredAiGuidance pending) {
+        validateMusaV7CategoricalAnswers(pending.answers());
+        boolean neutralPath = pending.answers().values().stream()
+                .anyMatch(value -> MUSA_NEUTRAL_CHOICE.equals(value)
+                        || "Minha imagem está coerente; quero apenas organizar minhas escolhas".equals(value));
+        List<String> selectedSignals = pending.answers().values().stream()
+                .filter(value -> value != null && !value.isBlank())
+                .distinct()
+                .limit(3)
+                .toList();
+        String context = pending.answers().getOrDefault(
+                "presenceFocus", pending.answers().getOrDefault("realOccasion", "uma situação real"));
+        String desired = pending.answers().getOrDefault(
+                "desiredSignal", pending.answers().getOrDefault("bestSignal", "mais intenção"));
+        String resource = pending.answers().getOrDefault(
+                "startingResource", pending.answers().getOrDefault("pieces", "algo que você já possui"));
+        List<String> actions = neutralPath
+                ? List.of(
+                        "Mantenha sua escolha atual sem correção obrigatória.",
+                        "Se quiser, apenas observe o que já funciona para você.",
+                        "Você pode seguir para o próximo dia sem realizar uma microação.")
+                : List.of(
+                        "Prepare " + resource.toLowerCase() + " para " + context.toLowerCase() + ".",
+                        "Escolha somente um detalhe observável para reforçar " + desired.toLowerCase() + ".",
+                        "Se a situação não parecer segura ou útil, use o percurso neutro ou decida não agir.");
+        String headline = neutralPath
+                ? "Sua escolha atual foi preservada"
+                : "Seu primeiro ajuste possível está organizado";
+        String summary = neutralPath
+                ? "Você não precisa corrigir sua imagem. O MUSA registrou sua decisão e mantém a jornada disponível para organizar somente o que fizer sentido para você."
+                : "Suas escolhas foram combinadas por regras locais. Teste um ajuste pequeno com o que já possui e avalie o resultado por você mesma.";
+        String responseJson = serializeJson(Map.of(
+                "headline", headline,
+                "summary", summary,
+                "signals", selectedSignals,
+                "microActions", actions));
+        return pending.withResult(
+                "COMPLETED",
+                headline,
+                summary,
+                selectedSignals,
+                actions,
+                "A orientação não avalia corpo, emoção, personalidade ou reação de terceiros.",
+                LOCAL_RULES_MODEL,
+                "LOCAL",
+                serializeJson(Map.of("answers", pending.answers())),
+                responseJson,
+                0,
+                0,
+                BigDecimal.ZERO,
+                "",
+                Instant.now().toString());
+    }
+
+    /** Rejeita texto livre ou chave inesperada antes de persistir a versão categorial do MUSA. */
+    private void validateMusaV7CategoricalAnswers(Map<String, String> answers) {
+        MusaV7CategoricalContract.validate(answers);
+    }
+
+    /** Serializa auditoria local sem permitir que uma falha de log execute integração externa. */
+    private String serializeJson(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (IOException ex) {
+            log.error("Falha ao serializar auditoria das regras locais do MUSA v7", ex);
+            throw new IllegalStateException("Não foi possível auditar a orientação local do MUSA v7", ex);
         }
     }
 

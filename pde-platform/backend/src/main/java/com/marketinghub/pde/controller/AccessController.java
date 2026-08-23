@@ -15,8 +15,11 @@ import com.marketinghub.pde.dto.SupportRequest;
 import com.marketinghub.pde.dto.PepperWebhookRequest;
 import com.marketinghub.pde.dto.PepperSyncRequest;
 import com.marketinghub.pde.dto.PepperSyncResponse;
+import com.marketinghub.pde.dto.PrivacyActionRequest;
+import com.marketinghub.pde.dto.PrivacyActionResponse;
 import com.marketinghub.pde.dto.WorkspaceResponse;
 import com.marketinghub.pde.service.AccessService;
+import com.marketinghub.pde.service.InternalApiAuthorizer;
 import com.marketinghub.pde.service.PepperTransactionSyncService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -30,6 +33,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -43,47 +47,23 @@ public class AccessController {
 
     private final AccessService accessService;
     private final PepperTransactionSyncService pepperTransactionSyncService;
+    private final InternalApiAuthorizer internalApiAuthorizer;
 
     /** Recebe os serviços que controlam acessos liberados e reconciliação Pepper. */
-    public AccessController(AccessService accessService, PepperTransactionSyncService pepperTransactionSyncService) {
+    public AccessController(
+            AccessService accessService,
+            PepperTransactionSyncService pepperTransactionSyncService,
+            InternalApiAuthorizer internalApiAuthorizer) {
         this.accessService = accessService;
         this.pepperTransactionSyncService = pepperTransactionSyncService;
-    }
-
-    /** Libera acesso da cliente a partir do e-mail informado no fluxo de compra. */
-    @PostMapping("/checkout")
-    @ResponseStatus(HttpStatus.CREATED)
-    public AccessResponse createCheckoutAccess(@Valid @RequestBody AccessRequest request) {
-        return accessService.createAccess(request.productSlug(), request.email(), "CHECKOUT");
-    }
-
-    /** Cadastra uma nova cliente na Área MUSA ou reutiliza o acesso já existente para o e-mail. */
-    @PostMapping("/register")
-    @ResponseStatus(HttpStatus.CREATED)
-    public AccessResponse registerCustomer(@Valid @RequestBody AccessRequest request) {
-        return accessService.registerCustomer(request.productSlug(), request.email());
-    }
-
-    /** Autentica uma cliente já cadastrada pelo e-mail do produto. */
-    @PostMapping("/login")
-    public AccessResponse loginCustomer(@Valid @RequestBody AccessRequest request) {
-        try {
-            return accessService.loginCustomer(request.productSlug(), request.email());
-        } catch (IllegalArgumentException ex) {
-            log.info(
-                    "Login PDE sem acesso local, tentando reconciliacao Pepper; productSlug={}, email={}",
-                    request.productSlug(),
-                    request.email(),
-                    ex);
-            pepperTransactionSyncService.syncPaidTransactions(request.productSlug(), request.email());
-            return accessService.loginCustomer(request.productSlug(), request.email());
-        }
+        this.internalApiAuthorizer = internalApiAuthorizer;
     }
 
     /** Envia um link mágico para a cliente entrar sem senha na Área MUSA. */
     @PostMapping("/magic-link")
     public MagicLinkResponse requestMagicLink(@Valid @RequestBody AccessRequest request) {
-        return accessService.requestMagicLink(request.productSlug(), request.email());
+        return accessService.requestMagicLink(
+                request.productSlug(), request.email(), request.experienceVersion());
     }
 
     /** Envia um link mágico somente para cliente que já possui cadastro na Área MUSA. */
@@ -93,9 +73,8 @@ public class AccessController {
             return accessService.requestExistingMagicLink(request.productSlug(), request.email());
         } catch (IllegalArgumentException ex) {
             log.info(
-                    "Magic link PDE sem acesso local, tentando reconciliacao Pepper; productSlug={}, email={}",
+                    "Magic link PDE sem acesso local, tentando reconciliacao Pepper; productSlug={}",
                     request.productSlug(),
-                    request.email(),
                     ex);
             pepperTransactionSyncService.syncPaidTransactions(request.productSlug(), request.email());
             return accessService.requestExistingMagicLink(request.productSlug(), request.email());
@@ -113,7 +92,7 @@ public class AccessController {
     public FunnelEventResponse recordFunnelEvent(
             @Valid @RequestBody FunnelEventRequest request,
             HttpServletRequest httpRequest) {
-        return accessService.recordFunnelEvent(
+        return accessService.recordPublicFunnelEvent(
                 request.withRequestTrafficContext(resolveClientIp(httpRequest), httpRequest.getHeader("User-Agent")));
     }
 
@@ -135,7 +114,11 @@ public class AccessController {
     public FunnelAnalyticsSummaryResponse summarizeFunnelAnalytics(
             @PathVariable("productSlug") String productSlug,
             @RequestParam(name = "includeNonHumanTraffic", defaultValue = "false") boolean includeNonHumanTraffic,
-            @RequestParam(name = "experienceVersion", required = false) String experienceVersion) {
+            @RequestParam(name = "experienceVersion", required = false) String experienceVersion,
+            @RequestHeader(value = "X-PDE-Internal-Token", required = false) String internalToken) {
+        if (includeNonHumanTraffic) {
+            internalApiAuthorizer.requireAuthorized(internalToken);
+        }
         return accessService.summarizeFunnelAnalytics(productSlug, includeNonHumanTraffic, experienceVersion);
     }
 
@@ -143,14 +126,18 @@ public class AccessController {
     @GetMapping("/analytics/{productSlug}/journeys")
     public FunnelAnalyticsJourneyResponse summarizeSessionJourneys(
             @PathVariable("productSlug") String productSlug,
-            @RequestParam(name = "limit", defaultValue = "50") int limit) {
+            @RequestParam(name = "limit", defaultValue = "50") int limit,
+            @RequestHeader(value = "X-PDE-Internal-Token", required = false) String internalToken) {
+        internalApiAuthorizer.requireAuthorized(internalToken);
         return accessService.summarizeSessionJourneys(productSlug, limit);
     }
 
     /** Limpa métricas acumuladas antes da primeira impressão de campanha paga real. */
     @PostMapping("/analytics/{productSlug}/reset-campaign-start")
     public FunnelAnalyticsResetResponse resetFunnelAnalyticsForCampaignStart(
-            @PathVariable("productSlug") String productSlug) {
+            @PathVariable("productSlug") String productSlug,
+            @RequestHeader(value = "X-PDE-Internal-Token", required = false) String internalToken) {
+        internalApiAuthorizer.requireAuthorized(internalToken);
         return accessService.resetFunnelAnalyticsForCampaignStart(productSlug);
     }
 
@@ -158,12 +145,27 @@ public class AccessController {
     @PostMapping("/pepper/webhook")
     @ResponseStatus(HttpStatus.CREATED)
     public AccessResponse receivePepperWebhook(@Valid @RequestBody PepperWebhookRequest request) {
-        return accessService.receivePepperWebhook(request);
+        if (!"paid".equalsIgnoreCase(request.resolvedStatus())) {
+            throw new IllegalArgumentException("Webhook Pepper sem pagamento realizado");
+        }
+        String transactionId = request.resolvedTransactionId();
+        if (transactionId == null || transactionId.isBlank()) {
+            throw new IllegalArgumentException("Webhook Pepper sem identificador de transação");
+        }
+        PepperSyncResponse verified = pepperTransactionSyncService.syncPaidTransactions(
+                request.resolvedProductSlug("metodo-musa-7-dias"), null, transactionId);
+        if (verified.releasedAccesses() != 1 || verified.accesses().isEmpty()) {
+            throw new IllegalArgumentException("Transação Pepper não comprovada para a oferta e o valor aprovados");
+        }
+        return verified.accesses().getFirst();
     }
 
     /** Reconcila compras pagas na Pepper para liberar acessos quando o webhook nao chegou. */
     @PostMapping("/pepper/sync")
-    public PepperSyncResponse syncPepperTransactions(@RequestBody(required = false) PepperSyncRequest request) {
+    public PepperSyncResponse syncPepperTransactions(
+            @RequestBody(required = false) PepperSyncRequest request,
+            @RequestHeader(value = "X-PDE-Internal-Token", required = false) String internalToken) {
+        internalApiAuthorizer.requireAuthorized(internalToken);
         String productSlug = request == null ? null : request.productSlug();
         String search = request == null ? null : request.search();
         String transactionHash = request == null ? null : request.transactionHash();
@@ -214,5 +216,21 @@ public class AccessController {
             @PathVariable("token") String token,
             @Valid @RequestBody SupportRequest request) {
         return accessService.requestSupport(token, request.message());
+    }
+
+    /** Executa acesso, correção, exclusão ou objeção solicitada pela titular autenticada. */
+    @PostMapping("/{token}/privacy-requests")
+    public PrivacyActionResponse requestPrivacyAction(
+            @PathVariable("token") String token,
+            @Valid @RequestBody PrivacyActionRequest request) {
+        return accessService.executePrivacyAction(token, request);
+    }
+
+    /** Autoriza o proxy a servir um material somente para acesso pago ainda vigente. */
+    @GetMapping("/materials/authorize")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void authorizeMaterialAccess(
+            @RequestHeader(value = "X-PDE-Access-Token", required = false) String accessToken) {
+        accessService.authorizeMaterialAccess(accessToken);
     }
 }

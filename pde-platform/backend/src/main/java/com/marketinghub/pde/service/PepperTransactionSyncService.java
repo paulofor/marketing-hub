@@ -16,15 +16,18 @@ public class PepperTransactionSyncService {
 
     private final AccessService accessService;
     private final PepperTransactionGateway pepperTransactionGateway;
+    private final PaymentAuditService paymentAuditService;
     private final String defaultProductSlug;
 
     /** Recebe dependencias de acesso e consulta Pepper. */
     public PepperTransactionSyncService(
             AccessService accessService,
             PepperTransactionGateway pepperTransactionGateway,
+            PaymentAuditService paymentAuditService,
             @Value("${pde.access.pepper.product-slug:metodo-musa-7-dias}") String defaultProductSlug) {
         this.accessService = accessService;
         this.pepperTransactionGateway = pepperTransactionGateway;
+        this.paymentAuditService = paymentAuditService;
         this.defaultProductSlug = defaultProductSlug;
     }
 
@@ -42,11 +45,17 @@ public class PepperTransactionSyncService {
                 : pepperTransactionGateway.findPaidTransactionByHash(transactionHash);
         List<AccessResponse> accesses = new ArrayList<>();
         for (PepperPaidTransaction transaction : result.paidTransactions()) {
-            accesses.add(accessService.releasePepperPaidTransaction(
+            paymentAuditService.recordVerifiedPayment(resolvedProductSlug, transaction);
+            AccessResponse access = accessService.releasePepperPaidTransaction(
                     resolvedProductSlug,
                     transaction.buyerEmail(),
                     transaction.transactionId(),
-                    transaction.offerHash()));
+                    transaction.offerHash(),
+                    transaction.amount(),
+                    transaction.currency(),
+                    transaction.paymentStatus());
+            paymentAuditService.linkReleasedAccess(transaction.transactionId(), access.token());
+            accesses.add(access);
         }
         log.info(
                 "Reconciliacao Pepper concluida; productSlug={}, searchPresent={}, scanned={}, paid={}, released={}",

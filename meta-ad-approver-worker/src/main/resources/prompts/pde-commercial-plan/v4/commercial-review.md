@@ -25,6 +25,14 @@ real pertence à próxima etapa. Aprove a passagem à construção quando o plan
 coerente e os bloqueios futuros estiverem verificáveis, mesmo que implementação, transações sintéticas,
 operadores nominais e testes de homologação ainda devam ser executados depois.
 
+Respeite também a fronteira entre atividades do próprio processo. Em `decisionCard`, revise somente
+público adequado e inadequado, resultado, mecanismo, preço, entrega, prova, limites, privacidade,
+suporte e reembolso. Não exija que essa atividade antecipe as decisões de `distribution`, `control`,
+`economics` ou `review`, nem testes sintéticos pertencentes à Construção e à Homologação. Registre
+essas dependências como requisitos para os gates posteriores, mas não retorne `ADJUST` quando o
+cartão já as identifica como pendências verificáveis sem fingir que foram executadas. Cada atividade
+seguinte continua responsável por aprovar ou bloquear seu próprio contrato.
+
 Contexto da tarefa:
 
 {{TASK_CONTEXT}}

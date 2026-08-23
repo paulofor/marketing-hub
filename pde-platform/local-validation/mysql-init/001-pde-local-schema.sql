@@ -4,6 +4,9 @@ CREATE TABLE IF NOT EXISTS pde_access_grant (
   email VARCHAR(320) NOT NULL,
   normalized_email VARCHAR(320) NOT NULL,
   source VARCHAR(40) NOT NULL,
+  experience_version VARCHAR(80) NOT NULL DEFAULT '',
+  paid_at DATETIME NULL,
+  expires_at DATETIME NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (token),
@@ -91,4 +94,23 @@ CREATE TABLE IF NOT EXISTS pde_funnel_event (
   ),
   KEY idx_pde_funnel_product_event_time (product_slug, event_type, occurred_at),
   KEY idx_pde_funnel_session_time (session_id, occurred_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS pde_payment_audit (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  provider VARCHAR(40) NOT NULL,
+  transaction_id VARCHAR(191) NOT NULL,
+  product_slug VARCHAR(191) NOT NULL,
+  offer_hash VARCHAR(191) NOT NULL,
+  amount_cents INT NOT NULL,
+  currency VARCHAR(3) NOT NULL,
+  payment_status VARCHAR(40) NOT NULL,
+  buyer_reference_hash CHAR(64) NOT NULL,
+  access_reference_hash CHAR(64) NULL,
+  verified_at DATETIME NOT NULL,
+  access_released_at DATETIME NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_pde_payment_provider_transaction (provider, transaction_id),
+  KEY idx_pde_payment_product_verified (product_slug, verified_at),
+  KEY idx_pde_payment_buyer_reference (buyer_reference_hash)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

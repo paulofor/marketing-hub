@@ -41,6 +41,23 @@ class ProductCatalogServiceTest {
         assertThat(product.scientificEvidencePack().forbiddenClaims()).contains("garante elegância");
     }
 
+    /** Confirma que o catálogo público não entrega missões, materiais ou evidência interna pagos. */
+    @Test
+    void hidesPaidMusaContentFromPublicCatalog() {
+        ProductCatalogService service = new ProductCatalogService();
+
+        var publicProduct = service.getPublicProductForRequest(
+                "metodo-musa-7-dias",
+                "v7.clubemusa.com.br",
+                "v7",
+                "musa-pde-entry-v7-espelho-antes-de-sair");
+
+        assertThat(publicProduct.priceLabel()).isEqualTo("R$67");
+        assertThat(publicProduct.missions()).isEmpty();
+        assertThat(publicProduct.supportMaterials()).isEmpty();
+        assertThat(publicProduct.scientificEvidencePack()).isNull();
+    }
+
     /** Confirma que o catálogo prioriza o contrato PDE publicado pelo Marketing Hub. */
     @Test
     void returnsMarketingHubProductWhenConfigured() {
@@ -145,6 +162,47 @@ class ProductCatalogServiceTest {
         server.verify();
     }
 
+    /** Impede que um contrato v7 antigo do Hub substitua o contrato canônico homologado. */
+    @Test
+    void keepsCanonicalV7ContractWhenMarketingHubReturnsDriftedVersion() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        ProductCatalogService service = new ProductCatalogService(builder, "http://marketing-hub", "");
+        server.expect(requestTo("http://marketing-hub/api/products/public/metodo-musa-7-dias/pde-experience?slotCode=v7"))
+                .andRespond(withSuccess("""
+                        {
+                          "slug": "metodo-musa-7-dias",
+                          "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair",
+                          "layoutKey": "espelho-antes-de-sair",
+                          "name": "Contrato antigo baseado em vídeo",
+                          "promise": "Promessa divergente",
+                          "audience": "Mulheres urbanas",
+                          "priceLabel": "",
+                          "theme": {"primary":"#000000","accent":"#000000","background":"#ffffff","imageUrl":""},
+                          "diagnostic": {"title":"Antigo","intro":"Antigo","questions":[]},
+                          "missions": [],
+                          "supportMaterials": [],
+                          "heroVideos": [{"playbackUrl":"https://example.com/antigo.mp4"}],
+                          "completionOffer": "Assinatura antiga"
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        var product = service.getProductForHost("metodo-musa-7-dias", "v7.clubemusa.com.br");
+
+        assertThat(product.name()).isEqualTo("Método MUSA - Semana dos 7 Sinais de Presença");
+        assertThat(product.priceLabel()).isEqualTo("R$67");
+        assertThat(product.missions()).hasSize(7);
+        assertThat(product.heroVideos()).isEmpty();
+        assertThat(product.supportMaterials())
+                .extracting(ProductExperienceResponse.SupportMaterialDto::url)
+                .containsExactly(
+                        "/materials/musa-v7/mapa-dos-7-sinais.html",
+                        "/materials/musa-v7/checklist-antes-de-sair.html",
+                        "/materials/musa-v7/formula-musa-pessoal.csv");
+        assertThat(product.completionOffer()).contains("90 dias", "sem assinatura");
+        server.verify();
+    }
+
     /** Confirma que o slot enviado pelo frontend público sobrevive mesmo quando o proxy altera o Host. */
     @Test
     void requestsMarketingHubContractForExplicitSlotCodeWhenHostIsGeneric() {
@@ -246,9 +304,9 @@ class ProductCatalogServiceTest {
                 .isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
     }
 
-    /** Confirma que a v7 local preserva a proposta científica dos 7 sinais quando o Hub falha. */
+    /** Confirma que a v7 local preserva o método prático sem vídeo, IA ou assinatura. */
     @Test
-    void appliesScientificSevenSignalsFallbackForV7Host() {
+    void appliesPracticalSevenSignalsFallbackForV7Host() {
         ProductCatalogService service = new ProductCatalogService();
 
         var product = service.getProductForHost("metodo-musa-7-dias", "v7.clubemusa.com.br");
@@ -259,6 +317,9 @@ class ProductCatalogServiceTest {
         assertThat(product.publicFirstFold().headline()).contains("Sua roupa fala antes de você");
         assertThat(product.publicFirstFold().videoKicker()).isEqualTo("Método MUSA em 7 dias");
         assertThat(product.publicFirstFold().videoKicker()).doesNotContain("v7");
+        assertThat(product.heroVideos()).isEmpty();
+        assertThat(product.scientificEvidencePack()).isNull();
+        assertThat(product.completionOffer()).contains("90 dias", "sem assinatura").doesNotContain("desafios mensais");
         assertThat(product.missions()).hasSize(7);
         assertThat(product.missions()).extracting(ProductExperienceResponse.MissionDto::id)
                 .containsExactly(

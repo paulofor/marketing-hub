@@ -121,7 +121,7 @@ export type MusaPointedDomain = {
   url: string;
   observedAddress: string;
   label: string;
-  role: 'active' | 'legacy' | 'reserved';
+  role: 'pointed' | 'legacy' | 'reserved';
   experienceVersion: string;
 };
 
@@ -182,10 +182,10 @@ const musaV7PublicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
     key: 'mainObstacle',
     stageLabel: 'Mensagem visual',
     question: 'Se sua imagem falasse antes de você hoje, qual mensagem ela passaria sem intenção?',
-    options: ['Falta presença', 'Pareço comum', 'Estou improvisada', 'Não comunica meu momento'],
+    options: ['Falta presença', 'Pareço comum', 'Estou improvisada', 'Não comunica meu momento', 'Minha imagem está coerente; quero apenas organizar minhas escolhas'],
     imageUrl: '/assets/musa-diagnostic-slide-1.png',
     visualTitle: 'A jornada começa pelo idioma silencioso da roupa.',
-    visualText: 'O diagnóstico identifica o primeiro sinal visual que pode estar enfraquecendo sua presença antes de qualquer compra nova.',
+    visualText: 'A degustação organiza o primeiro sinal visual que você escolheu observar antes de qualquer compra nova.',
     journeyEventType: 'PROBLEM_RECOGNIZED',
   },
   {
@@ -194,8 +194,8 @@ const musaV7PublicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
     question: 'Em qual cena você quer ser lida com mais intenção primeiro?',
     options: ['Trabalho ou reunião', 'Encontro ou saída', 'Rotina comum', 'Foto ou conteúdo'],
     imageUrl: '/assets/musa-diagnostic-slide-2.png',
-    visualTitle: 'A ciência entra como prova de plausibilidade, não como aula.',
-    visualText: 'A roupa participa de leituras rápidas em contextos sociais. O MUSA transforma isso em uma escolha simples para sua rotina.',
+    visualTitle: 'A situação real orienta um ajuste pequeno e observável.',
+    visualText: 'A roupa participa da primeira impressão, mas o contexto e a preferência de cada pessoa importam. O MUSA transforma isso em uma escolha simples para sua rotina.',
     journeyEventType: 'REAL_INPUT_SUBMITTED',
   },
   {
@@ -214,7 +214,7 @@ const musaV7PublicDiagnosticQuestions: PublicDiagnosticQuestion[] = [
     question: 'Qual recurso você prefere usar primeiro sem comprar nada?',
     options: ['Roupa que já tenho', 'Cor e acabamento', 'Acessório ou perfume', 'Postura e presença'],
     imageUrl: '/assets/musa-diagnostic-slide-4.png',
-    visualTitle: 'A promessa é ciência traduzida em microação.',
+    visualTitle: 'A promessa é um método simples traduzido em microação.',
     visualText: 'Você recebe um primeiro ajuste agora e depois entende como os 7 sinais organizam uma presença mais coerente.',
     journeyEventType: 'CATEGORY_UNDERSTOOD',
   },
@@ -304,24 +304,24 @@ export const MUSA_POINTED_DOMAINS: MusaPointedDomain[] = [
     host: 'v5.clubemusa.com.br',
     url: 'https://v5.clubemusa.com.br',
     observedAddress: '163.245.200.7',
-    label: 'Campanha v5',
-    role: 'active',
+    label: 'Domínio apontado v5',
+    role: 'pointed',
     experienceVersion: MUSA_VIDEO_EXPLAINER_EXPERIENCE_VERSION,
   },
   {
     host: 'v6.clubemusa.com.br',
     url: 'https://v6.clubemusa.com.br',
     observedAddress: '163.245.200.7',
-    label: 'Campanha v6',
-    role: 'active',
+    label: 'Domínio apontado v6',
+    role: 'pointed',
     experienceVersion: MUSA_MOTIVATIONAL_VIDEO_EXPERIENCE_VERSION,
   },
   {
     host: 'v7.clubemusa.com.br',
     url: 'https://v7.clubemusa.com.br',
     observedAddress: '163.245.200.7',
-    label: 'Campanha v7',
-    role: 'active',
+    label: 'Domínio apontado v7',
+    role: 'pointed',
     experienceVersion: MUSA_V7_EXPERIENCE_VERSION,
   },
   {
@@ -436,10 +436,10 @@ export const musaV7FallbackProduct: ProductExperience = {
   layoutKey: 'espelho-antes-de-sair',
   name: 'Método MUSA - Semana dos 7 Sinais de Presença',
   promise: 'Descubra o idioma silencioso da sua imagem e organize em 7 dias os sinais que fazem sua presença parecer mais elegante, intencional e coerente usando o que você já tem.',
-  audience: 'Mulheres urbanas que querem elevar presença, cuidado percebido e segurança visual com ciência traduzida em microações acessíveis.',
+  audience: 'Mulheres urbanas que querem elevar presença, cuidado percebido e segurança visual com microações acessíveis.',
   diagnostic: {
-    title: 'Mapa Científico de Presença MUSA',
-    intro: 'Responda 4 escolhas rápidas. O MUSA identifica qual sinal visual pode estar enfraquecendo sua presença e mostra como a semana de 7 dias organiza isso com base nos artigos do produto.',
+    title: 'Primeiro ajuste MUSA',
+    intro: 'Responda 4 escolhas rápidas. O MUSA combina suas preferências por regras locais e sugere um ajuste pequeno para você testar com o que já possui.',
     questions: [
       'Que mensagem sua imagem comunica sem intenção?',
       'Em qual cena sua primeira impressão importa mais agora?',
@@ -460,7 +460,7 @@ export const musaV7FallbackProduct: ProductExperience = {
       id: 'dia-2-assinatura',
       day: 2,
       title: 'A peça que muda seu estado interno',
-      principle: 'A cognição vestida sugere que uma peça ganha força quando carrega significado para a pessoa e para a situação.',
+      principle: 'Uma peça pode ganhar força quando carrega significado para você e faz sentido na situação escolhida.',
       action: 'Escolha uma peça-sinal que represente presença, cuidado ou elegância para você. Use essa peça em uma cena simples do dia e registre como ela muda sua postura diante do espelho.',
       evidence: 'Peça-sinal escolhida com o significado que ela carrega.',
       visualCue: 'Priorize significado e intenção, não preço ou marca.',
@@ -469,7 +469,7 @@ export const musaV7FallbackProduct: ProductExperience = {
       id: 'dia-3-base-acessivel',
       day: 3,
       title: 'Formalidade sem rigidez',
-      principle: 'Sinais de estrutura e formalidade podem alterar a leitura de prontidão, presença e adequação ao contexto.',
+      principle: 'Sinais de estrutura e acabamento podem ajudar você a perceber mais intenção, sempre conforme seu contexto e sua preferência.',
       action: 'Eleve uma combinação comum com um sinal de estrutura: terceira peça, tecido mais firme, sapato, cabelo alinhado ou acabamento melhor definido.',
       evidence: 'Antes/depois registrado com o detalhe que deixou o look mais intencional.',
       visualCue: 'Procure o ponto em que o visual fica mais pronto sem parecer duro.',
@@ -478,7 +478,7 @@ export const musaV7FallbackProduct: ProductExperience = {
       id: 'dia-4-checklist-12-minutos',
       day: 4,
       title: 'Primeiras impressões são leituras rápidas',
-      principle: 'Roupa e acabamento participam dos primeiros julgamentos sociais e profissionais, especialmente quando a pessoa ainda falou pouco.',
+      principle: 'Roupa e acabamento participam da primeira impressão, sem determinar como outras pessoas irão reagir.',
       action: 'Escolha uma situação real dos próximos dias e monte o primeiro sinal que você quer transmitir ao entrar: calma, cuidado, presença, feminilidade ou segurança.',
       evidence: 'Cena escolhida com o primeiro sinal planejado.',
       visualCue: 'Imagine a primeira leitura do ambiente antes de escolher o detalhe final.',
@@ -487,7 +487,7 @@ export const musaV7FallbackProduct: ProductExperience = {
       id: 'dia-5-compra-inteligente',
       day: 5,
       title: 'Cor como direção, não decoração',
-      principle: 'Cores carregam significado contextual e podem orientar percepção, sensação e coerência visual.',
+      principle: 'Cores podem orientar a coerência visual quando escolhidas segundo a situação e a sua preferência.',
       action: 'Escolha uma cor-base e uma cor-sinal para comunicar calma, presença, suavidade ou força sem exagerar.',
       evidence: 'Paleta de 2 cores registrada para uma ocasião real.',
       visualCue: 'Use a cor como guia de intenção, não como enfeite isolado.',
@@ -496,7 +496,7 @@ export const musaV7FallbackProduct: ProductExperience = {
       id: 'dia-6-situacao-chave',
       day: 6,
       title: 'Assinatura pessoal: ser reconhecida sem esforço',
-      principle: 'Moda e escolhas repetidas ajudam a organizar autoconceito, autoapresentação e identidade social.',
+      principle: 'Escolhas repetidas podem facilitar uma assinatura pessoal reconhecível por você mesma.',
       action: 'Defina 3 sinais repetíveis da sua presença: cabelo, cor, acessório, perfume, textura, maquiagem leve ou acabamento.',
       evidence: 'Três sinais de assinatura MUSA definidos.',
       visualCue: 'Elegância fica mais fácil quando vira repetição inteligente.',
@@ -505,7 +505,7 @@ export const musaV7FallbackProduct: ProductExperience = {
       id: 'dia-7-plano-pessoal',
       day: 7,
       title: 'Seu algoritmo de presença elegante',
-      principle: 'Como escolhas de roupa dependem de pessoa, contexto e preferência, a orientação precisa ser personalizada e aplicável à rotina real.',
+      principle: 'Como escolhas de roupa dependem de pessoa, contexto e preferência, o método organiza opções sem prometer uma reação externa.',
       action: 'Transforme suas respostas da semana em uma fórmula pessoal: sinais, ocasiões, regra anti-compra impulsiva e checklist antes de sair.',
       evidence: 'Fórmula MUSA pessoal preenchida para repetir por 30 dias.',
       visualCue: 'Feche a semana com um jeito seu de se arrumar com menos dúvida.',
@@ -514,13 +514,14 @@ export const musaV7FallbackProduct: ProductExperience = {
   heroVideos: [],
   publicFirstFold: {
     headline: 'Sua roupa fala antes de você. Ela está falando com roteiro?',
-    supportingText: 'A nova Semana dos 7 Sinais transforma artigos científicos sobre roupa, percepção e autopercepção em microações simples para sua presença elegante.',
+    supportingText: 'A Semana dos 7 Sinais organiza escolhas de roupa, acabamento e presença em microações simples, sem exigir um guarda-roupa novo.',
     videoKicker: 'Método MUSA em 7 dias',
-    videoHeadline: 'Veja como cada dia usa uma ideia dos artigos do MUSA para organizar sua imagem sem comprar um guarda-roupa novo.',
+    videoHeadline: 'Veja como cada dia organiza um ajuste possível usando o que você já possui.',
     videoSupportingText: 'Mensagem visual, peça-sinal, formalidade leve, primeira impressão, cor, assinatura pessoal e fórmula MUSA viram uma jornada prática de 7 dias.',
-    videoExtraText: 'Depois do vídeo, responda 4 escolhas rápidas para receber o primeiro sinal que pode estar apagando sua presença hoje.',
-    videoCtaLabel: 'Ver meu plano científico MUSA de 7 dias',
+    videoExtraText: 'Responda 4 escolhas rápidas para organizar um primeiro ajuste possível com o que você já possui.',
+    videoCtaLabel: 'Ver meu primeiro ajuste MUSA',
   },
+  completionOffer: 'Ao concluir os 7 dias, sua fórmula MUSA e os materiais permanecem disponíveis durante os 90 dias do acesso, sem assinatura ou renovação automática.',
 };
 
 export function resolveMusaFallbackProduct(experienceVersion = '') {

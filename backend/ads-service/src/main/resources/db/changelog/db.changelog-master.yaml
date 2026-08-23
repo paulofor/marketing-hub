@@ -1594,6 +1594,10 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
   - include:
+      file: changesets/2026-08-23-musa-v7-commercial-access.yaml
+      relativeToChangelogFile: true
+
+  - include:
       file: changesets/2026-07-16-pde-funnel-events.yaml
       relativeToChangelogFile: true
 
@@ -1888,4 +1892,7 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changesets/2026-08-22-business-process-responsibility-boundaries.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-23-musa-v7-commercial-access.yaml
       relativeToChangelogFile: true

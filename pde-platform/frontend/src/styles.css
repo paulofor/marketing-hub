@@ -2180,6 +2180,29 @@ h3 {
   white-space: nowrap;
 }
 
+.subscription-expired-notice {
+  align-items: center;
+  background: #fff8f3;
+  border: 1px solid #d7c1af;
+  color: #443630;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin: 0 auto 18px;
+  max-width: 1220px;
+  padding: 24px;
+}
+
+.subscription-expired-notice h2,
+.subscription-expired-notice p {
+  margin-bottom: 0;
+}
+
+.subscription-expired-notice .secondary-button {
+  text-decoration: none;
+  white-space: nowrap;
+}
+
 .paywall-price-highlight {
   align-items: center;
   background: #fff8f3;
@@ -2651,6 +2674,95 @@ h3 {
   opacity: 0.62;
 }
 
+.neutral-mission-button {
+  background: transparent;
+  border: 1px solid #9b8173;
+  color: #5a4a42;
+  cursor: pointer;
+  font-weight: 800;
+  min-height: 42px;
+  padding: 0 14px;
+  width: fit-content;
+}
+
+.neutral-mission-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.musa-support-panel {
+  background: #fffdf9;
+  border: 1px solid #ead9ca;
+  display: grid;
+  gap: 16px;
+  margin: 24px auto;
+  max-width: 1220px;
+  padding: 22px;
+}
+
+.musa-support-panel label {
+  color: #5a4a42;
+  display: grid;
+  font-weight: 800;
+  gap: 8px;
+}
+
+.musa-support-panel textarea {
+  border: 1px solid #cdb8aa;
+  color: #302722;
+  font: inherit;
+  max-width: 720px;
+  padding: 12px;
+  resize: vertical;
+  width: 100%;
+}
+
+.support-data-guidance {
+  color: #6b5a51;
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.45;
+  max-width: 720px;
+}
+
+.support-open-status {
+  color: #2f5952;
+  font-weight: 850;
+  margin-top: 10px;
+}
+
+.privacy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.privacy-email-correction {
+  display: grid;
+  gap: 0.45rem;
+  flex: 1 1 100%;
+  font-weight: 700;
+}
+
+.privacy-email-correction input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid rgba(73, 43, 55, 0.25);
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+  font: inherit;
+}
+
+.privacy-delete-button {
+  background: transparent;
+  border: 1px solid #a43f52;
+  color: #7a2444;
+  cursor: pointer;
+  font-weight: 800;
+  min-height: 42px;
+  padding: 0 14px;
+}
+
 .library-section {
   margin: 24px auto;
   max-width: 1220px;
@@ -2692,11 +2804,15 @@ h3 {
   font-size: 0.94rem;
 }
 
-.material-card a {
+.material-card button {
+  background: transparent;
+  border: 0;
   color: #7a2444;
+  cursor: pointer;
   display: inline-flex;
   font-weight: 800;
   margin-top: 8px;
+  padding: 0;
   text-decoration: none;
 }
 
@@ -2725,7 +2841,8 @@ h3 {
   .musa-first-fold,
   .dashboard-overview,
   .dashboard-main,
-  .subscription-paywall {
+  .subscription-paywall,
+  .subscription-expired-notice {
     grid-template-columns: 1fr;
   }
 
@@ -2823,6 +2940,10 @@ h3 {
   }
 
   .subscription-paywall .primary-button {
+    width: 100%;
+  }
+
+  .subscription-expired-notice .secondary-button {
     width: 100%;
   }
 
@@ -3924,6 +4045,44 @@ h3 {
 
 .assisted-pde-state button {
   width: auto;
+}
+
+.musa-privacy-notice {
+  width: min(1120px, calc(100% - 32px));
+  margin: 20px auto 36px;
+  padding: 24px;
+  border: 1px solid color-mix(in srgb, #7a2444 20%, transparent);
+  border-radius: 18px;
+  background: #ffffff;
+  color: #442b35;
+}
+
+.musa-privacy-notice.compact {
+  margin-top: 28px;
+}
+
+.musa-privacy-notice h2,
+.musa-privacy-notice p {
+  margin-top: 0;
+}
+
+.musa-privacy-notice ul {
+  display: grid;
+  gap: 8px;
+  padding-left: 20px;
+}
+
+.musa-privacy-notice a {
+  color: #7a2444;
+  font-weight: 800;
+}
+
+.musa-local-rules-note {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, #d6a75c 14%, #ffffff);
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .assisted-pde-spinner {

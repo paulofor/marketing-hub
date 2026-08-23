@@ -143,6 +143,7 @@ const server = http.createServer((request, response) => {
   response.end(JSON.stringify({ ...baseProduct, ...slot }));
 });
 
-server.listen(port, '127.0.0.1', () => {
-  console.log(`Marketing Hub contract server listening on http://127.0.0.1:${port}`);
+const host = process.env.PDE_CONTRACT_SERVER_HOST ?? '127.0.0.1';
+server.listen(port, host, () => {
+  console.log(`Marketing Hub contract server listening on http://${host}:${port}`);
 });

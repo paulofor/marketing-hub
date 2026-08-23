@@ -17,12 +17,14 @@ import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 import { useNiches } from "../../api/niche/useNiches";
 
 type ProductFormValues = {
-  [K in keyof CreateProduct]-?: string;
-};
+  [K in Exclude<keyof CreateProduct, "aliases">]-?: string;
+} & { aliases: string };
 
 const defaultForm: ProductFormValues = {
   slug: "",
   name: "",
+  internalName: "",
+  aliases: "",
   publicUrl: "",
   logoUrl: "",
   colorPalette: "",
@@ -72,6 +74,8 @@ function toFormValues(product?: Product): ProductFormValues {
   return {
     slug: product.slug ?? "",
     name: product.name ?? "",
+    internalName: product.internalName ?? product.name ?? "",
+    aliases: product.aliases?.join("\n") ?? "",
     publicUrl: product.publicUrl ?? "",
     logoUrl: product.logoUrl ?? "",
     colorPalette: product.colorPalette ?? "",
@@ -127,6 +131,10 @@ function toFormValues(product?: Product): ProductFormValues {
 function toPayload(form: ProductFormValues): CreateProduct {
   return {
     ...form,
+    aliases: form.aliases
+      .split(/[,;\n]/)
+      .map((alias) => alias.trim())
+      .filter(Boolean),
     marketNicheId: Number(form.marketNicheId) || undefined,
     instagramAccountId: Number(form.instagramAccountId) || undefined,
     currentPriceBrl: Number(form.currentPriceBrl) || undefined,
@@ -145,6 +153,7 @@ type ProductFieldProps = {
   inputMode?: "decimal" | "numeric" | "text" | "url";
   placeholder?: string;
   maxLength?: number;
+  helpText?: string;
 };
 
 function ProductField({
@@ -158,6 +167,7 @@ function ProductField({
   inputMode = "text",
   placeholder,
   maxLength,
+  helpText,
 }: ProductFieldProps) {
   return (
     <div className="product-editor-field">
@@ -186,6 +196,7 @@ function ProductField({
           onChange={(e) => onChange(field, e.target.value)}
         />
       )}
+      {helpText && <div className="form-text">{helpText}</div>}
     </div>
   );
 }
@@ -338,6 +349,9 @@ export default function ProductForm({
           {form.commercialStatus || "Sem status"}
         </span>
         <h2>{form.name || "Produto sem nome"}</h2>
+        <p className="text-muted small mb-3">
+          Internamente: {form.internalName || "nome ainda não definido"}
+        </p>
         <dl>
           <div>
             <dt>Tipo</dt>
@@ -388,16 +402,27 @@ export default function ProductForm({
             <div className="product-editor-grid__wide">
               <ProductField
                 field="name"
-                label="Nome comercial"
+                label="Nome comercial (visível ao cliente)"
                 required
+                maxLength={191}
                 value={form.name}
                 onChange={setField}
               />
             </div>
             <ProductField
+              field="internalName"
+              label="Nome interno/de trabalho"
+              required
+              maxLength={191}
+              value={form.internalName}
+              onChange={setField}
+              helpText="Permanece estável enquanto o nome comercial evolui."
+            />
+            <ProductField
               field="slug"
               label="Slug"
               required
+              maxLength={191}
               value={form.slug}
               onChange={setField}
             />
@@ -409,6 +434,16 @@ export default function ProductForm({
               onChange={setField}
             />
           </div>
+          <ProductField
+            field="aliases"
+            label="Apelidos internos"
+            multiline
+            rows={3}
+            value={form.aliases}
+            onChange={setField}
+            placeholder="MUSA v7, vídeos orientados ao desejo, projeto presença"
+            helpText="Use vírgula ou uma linha por apelido. Eles servem para busca interna e nunca aparecem na oferta pública."
+          />
           <div className="product-editor-grid product-editor-grid--2">
             <ProductField
               field="publicUrl"

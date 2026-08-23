@@ -1,6 +1,7 @@
 package com.marketinghub.product.dto;
 
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import lombok.Data;
 
 /**
@@ -14,6 +15,12 @@ public class CreateProductRequest {
 
   @Size(max = 191)
   private String name;
+
+  @Size(max = 191)
+  private String internalName;
+
+  @Size(max = 20)
+  private List<@Size(max = 191) String> aliases;
 
   @Size(max = 512)
   private String publicUrl;

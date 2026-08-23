@@ -4,6 +4,27 @@
 
 Produto é um ativo comercial próprio do Marketing Hub, separado de campanha, experimento e entrega técnica.
 
+## Identidade interna e nome comercial
+
+Todo produto deve preservar uma única identidade estável ao longo da cadeia, mesmo quando o melhor
+nome para o mercado ainda estiver sendo descoberto. O contrato separa:
+
+- `id` e `slug`: identificadores estáveis usados em vínculos, contratos e URLs;
+- `internal_name`: nome de trabalho legível por pessoas e agentes dentro do Marketing Hub;
+- `name`: nome comercial mostrado ao cliente em oferta, página, checkout e entrega;
+- `product_alias`: apelidos internos alternativos ou históricos usados somente para localização.
+
+Alterar o nome comercial não cria outro produto nem reescreve seu histórico. Apelidos devem ser
+únicos no catálogo, não podem substituir `id` ou `slug` nos vínculos e nunca podem aparecer
+automaticamente em artefatos públicos. Pessoas e agentes podem pesquisar o catálogo por nome
+comercial, nome interno, apelido ou slug, mas devem persistir e propagar o produto resolvido por
+`id` e `slug`.
+
+O nome interno pode preservar a formulação que surgiu na descoberta, no plano ou em uma versão de
+trabalho, enquanto o nome comercial pode evoluir conforme clareza, desejo, diferenciação e vendas
+reais. A tela deve mostrar as duas camadas sem ambiguidade e identificar explicitamente os apelidos
+como internos.
+
 ## Descoberta modular de formatos
 
 O cadastro de produto deve separar o tipo amplo do formato comercial efetivamente testado. Todo
@@ -83,8 +104,10 @@ O produto não deve ficar preso a um único experimento. Experimento é evidênc
 
 ## Atributos iniciais obrigatórios
 
+- Nome interno/de trabalho.
 - Nome comercial.
 - Slug estável.
+- Apelidos internos quando houver nomes alternativos ou históricos.
 - URL pública.
 - Paleta de cores.
 - Público alvo.

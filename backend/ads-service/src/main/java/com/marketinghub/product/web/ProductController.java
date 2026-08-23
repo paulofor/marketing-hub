@@ -214,10 +214,10 @@ public class ProductController {
         product.getSlug(), slotCode, request);
   }
 
-  /** Lista os produtos comerciais cadastrados no Marketing Hub. */
+  /** Lista ou pesquisa produtos por nome comercial, nome interno, apelido ou slug. */
   @GetMapping
-  public List<ProductDto> list() {
-    return StreamSupport.stream(service.listProducts().spliterator(), false)
+  public List<ProductDto> list(@RequestParam(required = false) String query) {
+    return StreamSupport.stream(service.listProducts(query).spliterator(), false)
         .map(mapper::toDto)
         .toList();
   }

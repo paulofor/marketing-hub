@@ -2,6 +2,7 @@ package com.marketinghub.product.dto;
 
 import com.marketinghub.product.ProductVideoSeedImageReviewStatus;
 import java.time.Instant;
+import java.util.List;
 import lombok.Data;
 
 /** Responsabilidade: expor os dados do produto comercial para o frontend. */
@@ -10,6 +11,8 @@ public class ProductDto {
   private Long id;
   private String slug;
   private String name;
+  private String internalName;
+  private List<String> aliases;
   private String publicUrl;
   private String logoUrl;
   private String colorPalette;

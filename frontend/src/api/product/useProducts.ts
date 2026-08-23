@@ -5,6 +5,8 @@ export interface Product {
   id: number;
   slug?: string;
   name?: string;
+  internalName?: string;
+  aliases?: string[];
   publicUrl?: string;
   logoUrl?: string;
   colorPalette?: string;
@@ -57,11 +59,15 @@ export interface Product {
   updatedAt?: string;
 }
 
-export function useProducts() {
+export function useProducts(query?: string) {
   return useQuery({
-    queryKey: ["products"],
+    queryKey: ["products", query ?? ""],
     queryFn: async () => {
-      const { data } = await axios.get<Product[]>("/api/products");
+      const { data } = query?.trim()
+        ? await axios.get<Product[]>("/api/products", {
+            params: { query: query.trim() },
+          })
+        : await axios.get<Product[]>("/api/products");
       return data;
     },
   });

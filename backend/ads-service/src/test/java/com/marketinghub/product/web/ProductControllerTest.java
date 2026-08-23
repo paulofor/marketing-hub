@@ -46,6 +46,7 @@ import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlan
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -85,6 +86,8 @@ class ProductControllerTest {
   void updateProduct() throws Exception {
     CreateProductRequest request = new CreateProductRequest();
     request.setName("Método MUSA - Presença Elegante em 7 Dias");
+    request.setInternalName("MUSA desejo v7");
+    request.setAliases(List.of("MUSA v7", "Vídeos orientados ao desejo"));
     request.setMarketNicheId(10L);
     request.setCurrentPriceBrl(new BigDecimal("67.00"));
 
@@ -92,6 +95,8 @@ class ProductControllerTest {
     ProductDto response = new ProductDto();
     response.setId(1L);
     response.setName(request.getName());
+    response.setInternalName(request.getInternalName());
+    response.setAliases(request.getAliases());
     response.setLogoUrl("https://clubemusa.com.br/assets/logo-musa.svg");
     response.setCurrentPriceBrl(request.getCurrentPriceBrl());
 
@@ -106,8 +111,36 @@ class ProductControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value(1L))
         .andExpect(jsonPath("$.name").value(request.getName()))
+        .andExpect(jsonPath("$.internalName").value("MUSA desejo v7"))
+        .andExpect(jsonPath("$.aliases[0]").value("MUSA v7"))
         .andExpect(jsonPath("$.logoUrl").value("https://clubemusa.com.br/assets/logo-musa.svg"))
         .andExpect(jsonPath("$.currentPriceBrl").value(67.00));
+  }
+
+  /** Deve encaminhar a pesquisa por apelido ao serviço canônico de produtos. */
+  @Test
+  void listProductsByInternalAlias() throws Exception {
+    Product product =
+        Product.builder()
+            .id(4L)
+            .name("Método MUSA")
+            .internalName("MUSA desejo v7")
+            .aliases(Set.of("MUSA v7"))
+            .build();
+    ProductDto response = new ProductDto();
+    response.setId(4L);
+    response.setName("Método MUSA");
+    response.setInternalName("MUSA desejo v7");
+    response.setAliases(List.of("MUSA v7"));
+    when(service.listProducts("MUSA v7")).thenReturn(List.of(product));
+    when(mapper.toDto(product)).thenReturn(response);
+
+    mockMvc
+        .perform(get("/api/products").queryParam("query", "MUSA v7"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].id").value(4L))
+        .andExpect(jsonPath("$[0].internalName").value("MUSA desejo v7"))
+        .andExpect(jsonPath("$[0].aliases[0]").value("MUSA v7"));
   }
 
   /** Deve rejeitar campos maiores que a coluna antes de chegar ao banco. */

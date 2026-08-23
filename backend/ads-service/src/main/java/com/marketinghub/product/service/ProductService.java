@@ -51,6 +51,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Date;
 import java.sql.Timestamp;
+import java.text.Normalizer;
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -60,10 +61,12 @@ import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.http.HttpStatus;
@@ -79,6 +82,8 @@ public class ProductService {
   private static final Locale BRAZIL = Locale.forLanguageTag("pt-BR");
   private static final Pattern EXPERIMENT_ID_PATTERN =
       Pattern.compile("(?i)(?:experimento|experiment|exp)[^0-9]*(\\d+)|#(\\d+)");
+  private static final Pattern DIACRITICS_PATTERN = Pattern.compile("\\p{M}+");
+  private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
 
   private final ProductRepository repository;
   private final InstagramAccountRepository accountRepository;
@@ -1221,8 +1226,15 @@ public class ProductService {
 
   /** Aplica os campos editáveis do cadastro comercial ao produto informado. */
   private void applyRequest(Product product, CreateProductRequest request) {
-    product.setSlug(request.getSlug());
-    product.setName(request.getName());
+    String slug = normalizeOptional(request.getSlug());
+    String commercialName = normalizeOptional(request.getName());
+    String internalName = resolveInternalName(product, request, commercialName);
+    Set<String> aliases = resolveAliases(product, request, slug, commercialName, internalName);
+    validateProductIdentity(product.getId(), slug, commercialName, internalName, aliases);
+    product.setSlug(slug);
+    product.setName(commercialName);
+    product.setInternalName(internalName);
+    product.setAliases(aliases);
     product.setPublicUrl(request.getPublicUrl());
     product.setLogoUrl(request.getLogoUrl());
     product.setColorPalette(request.getColorPalette());
@@ -1269,6 +1281,96 @@ public class ProductService {
     product.setCreativeVolume(request.getCreativeVolume());
     product.setStorytelling(request.getStorytelling());
     product.setAiCost(request.getAiCost());
+  }
+
+  /** Preserva o nome interno existente ou deriva um nome inicial do nome comercial. */
+  private String resolveInternalName(
+      Product product, CreateProductRequest request, String commercialName) {
+    String requestedInternalName = normalizeOptional(request.getInternalName());
+    if (requestedInternalName != null) {
+      return requestedInternalName;
+    }
+    String currentInternalName = normalizeOptional(product.getInternalName());
+    return currentInternalName != null ? currentInternalName : commercialName;
+  }
+
+  /** Normaliza apelidos, remove redundâncias e preserva clientes antigos que não enviam o campo. */
+  private Set<String> resolveAliases(
+      Product product,
+      CreateProductRequest request,
+      String slug,
+      String commercialName,
+      String internalName) {
+    if (request.getAliases() == null) {
+      return product.getAliases() == null
+          ? new LinkedHashSet<>()
+          : new LinkedHashSet<>(product.getAliases());
+    }
+    if (request.getAliases().size() > 20) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Informe no máximo 20 apelidos internos por produto.");
+    }
+    Set<String> reservedIdentities =
+        new LinkedHashSet<>(
+            List.of(
+                canonicalIdentity(slug),
+                canonicalIdentity(commercialName),
+                canonicalIdentity(internalName)));
+    Map<String, String> uniqueAliases = new LinkedHashMap<>();
+    for (String rawAlias : request.getAliases()) {
+      String alias = normalizeOptional(rawAlias);
+      if (alias == null) {
+        continue;
+      }
+      if (alias.length() > 191) {
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST, "Cada apelido interno deve ter no máximo 191 caracteres.");
+      }
+      String canonicalAlias = canonicalIdentity(alias);
+      if (!reservedIdentities.contains(canonicalAlias)) {
+        uniqueAliases.putIfAbsent(canonicalAlias, alias);
+      }
+    }
+    return new LinkedHashSet<>(uniqueAliases.values());
+  }
+
+  /** Bloqueia nomes ou apelidos que identificariam mais de um produto. */
+  private void validateProductIdentity(
+      Long productId,
+      String slug,
+      String commercialName,
+      String internalName,
+      Set<String> aliases) {
+    Map<String, String> identities = new LinkedHashMap<>();
+    if (slug != null) {
+      identities.put(canonicalIdentity(slug), slug);
+    }
+    if (commercialName != null) {
+      identities.put(canonicalIdentity(commercialName), commercialName);
+    }
+    if (internalName != null) {
+      identities.put(canonicalIdentity(internalName), internalName);
+    }
+    aliases.forEach(alias -> identities.put(canonicalIdentity(alias), alias));
+    for (String identity : identities.values()) {
+      if (repository.countIdentityOnAnotherProduct(productId, identity) > 0) {
+        throw new ResponseStatusException(
+            HttpStatus.CONFLICT,
+            "O nome comercial, nome interno ou apelido '"
+                + identity
+                + "' já identifica outro produto. Escolha um nome inequívoco.");
+      }
+    }
+  }
+
+  /** Canonicaliza identidades internas para remover duplicidades de caixa, acento e espaço. */
+  private String canonicalIdentity(String value) {
+    if (value == null || value.isBlank()) {
+      return "";
+    }
+    String decomposed = Normalizer.normalize(value.trim(), Normalizer.Form.NFD);
+    String withoutDiacritics = DIACRITICS_PATTERN.matcher(decomposed).replaceAll("");
+    return WHITESPACE_PATTERN.matcher(withoutDiacritics).replaceAll(" ").toLowerCase(Locale.ROOT);
   }
 
   /** Normaliza campos opcionais removendo espaços inúteis antes de persistir. */
@@ -1547,6 +1649,14 @@ public class ProductService {
   /** Lista todos os produtos cadastrados para uso operacional no Marketing Hub. */
   public Iterable<Product> listProducts() {
     return repository.findAll();
+  }
+
+  /** Pesquisa produtos pela identidade comercial ou interna informada por pessoa ou agente. */
+  public Iterable<Product> listProducts(String identityQuery) {
+    String normalizedQuery = normalizeOptional(identityQuery);
+    return normalizedQuery == null
+        ? repository.findAll()
+        : repository.searchByIdentity(normalizedQuery);
   }
 
   /** Monta a definição pública de mercado do produto em Markdown. */

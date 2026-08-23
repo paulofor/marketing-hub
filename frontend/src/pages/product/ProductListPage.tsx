@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useMemo, type CSSProperties } from "react";
+import { useDeferredValue, useMemo, useState, type CSSProperties } from "react";
 import type { Product } from "../../api/product/useProducts";
 import { formatCommercialStatus } from "../../api/product/productStatus";
 import { useProductValueChainPositions } from "../../api/product/useProductValueChainPositions";
@@ -16,6 +16,7 @@ import {
   Megaphone,
   Pencil,
   PlaySquare,
+  Search,
   Video,
   Workflow,
 } from "lucide-react";
@@ -231,7 +232,9 @@ function getJourneyTrackedSections(step: {
 }
 
 export default function ProductListPage() {
-  const { data, isLoading } = useProducts();
+  const [identityQuery, setIdentityQuery] = useState("");
+  const deferredIdentityQuery = useDeferredValue(identityQuery.trim());
+  const { data, isLoading, isFetching } = useProducts(deferredIdentityQuery);
   const valueChainPositions = useProductValueChainPositions();
   const applyDefaultJourney = useApplyDefaultPdePersuasiveJourney();
   const products = useMemo(
@@ -267,15 +270,46 @@ export default function ProductListPage() {
         </Link>
       </div>
 
+      <div className="product-catalog-search mb-4">
+        <label className="form-label" htmlFor="product-identity-search">
+          Localizar produto por qualquer nome
+        </label>
+        <div className="input-group">
+          <span className="input-group-text" aria-hidden="true">
+            <Search size={18} />
+          </span>
+          <input
+            id="product-identity-search"
+            className="form-control"
+            type="search"
+            value={identityQuery}
+            onChange={(event) => setIdentityQuery(event.target.value)}
+            placeholder="Nome comercial, nome interno, apelido ou slug"
+          />
+        </div>
+        <div className="form-text" aria-live="polite">
+          {isFetching
+            ? "Buscando no catálogo..."
+            : `${products.length} produto${products.length === 1 ? "" : "s"} encontrado${products.length === 1 ? "" : "s"}.`}
+        </div>
+      </div>
+
       <div className="row g-3">
         {products.length === 0 && (
           <div className="col-12">
             <p className="text-muted mb-0">
-              Nenhum produto comercial cadastrado.
+              {deferredIdentityQuery
+                ? "Nenhum produto corresponde a esse nome ou apelido."
+                : "Nenhum produto comercial cadastrado."}
             </p>
           </div>
         )}
         {products.map((product) => {
+          const displayName =
+            product.name || product.niche || `Produto ${product.id}`;
+          const internalName = product.internalName?.trim();
+          const showInternalName =
+            Boolean(internalName) && internalName !== product.name?.trim();
           const colors = buildIdentityColors(product);
           const previewQaUrl = buildPreviewQaUrl(product);
           const persuasiveJourney = parsePdePersuasiveJourney(
@@ -307,10 +341,29 @@ export default function ProductListPage() {
                       Status comercial:{" "}
                       {formatCommercialStatus(product.commercialStatus)}
                     </span>
-                    <h2 className="h4 mb-1">
-                      {product.name || product.niche || `Produto ${product.id}`}
-                    </h2>
-                    <p className="text-muted mb-0">{product.slug}</p>
+                    <h2 className="h4 mb-1">{displayName}</h2>
+                    <p className="text-muted mb-1">{product.slug}</p>
+                    {showInternalName && (
+                      <p className="product-catalog-card__internal-name">
+                        <strong>Nome interno:</strong> {internalName}
+                      </p>
+                    )}
+                    {Boolean(product.aliases?.length) && (
+                      <div
+                        className="product-catalog-card__aliases"
+                        aria-label={`Apelidos internos de ${displayName}`}
+                      >
+                        <span>Apelidos:</span>
+                        {product.aliases?.map((alias) => (
+                          <span
+                            className="badge text-bg-light border"
+                            key={alias}
+                          >
+                            {alias}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="product-catalog-card__price">
                     {product.currentPriceBrl != null

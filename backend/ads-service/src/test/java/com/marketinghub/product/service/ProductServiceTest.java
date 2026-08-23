@@ -29,7 +29,9 @@ import com.marketinghub.repository.jpa.product.ProductVideoImageRepository;
 import com.marketinghub.repository.jpa.product.ProductVideoProviderAvatarRepository;
 import com.marketinghub.storage.AssetStorageService;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -151,6 +153,13 @@ class ProductServiceTest {
     MarketNiche niche = new MarketNiche();
     CreateProductRequest request = new CreateProductRequest();
     request.setName("Método MUSA - Presença Elegante em 7 Dias");
+    request.setInternalName("MUSA desejo v7");
+    request.setAliases(
+        List.of(
+            " MUSA v7 ",
+            "músa v7",
+            "Vídeos orientados ao desejo",
+            "Método MUSA - Presença Elegante em 7 Dias"));
     request.setSlug("metodo-musa-7-dias");
     request.setLogoUrl("https://clubemusa.com.br/assets/logo-musa.svg");
     request.setMarketNicheId(10L);
@@ -189,6 +198,8 @@ class ProductServiceTest {
     Product updated = service.updateProduct(1L, request);
 
     assertThat(updated.getName()).isEqualTo(request.getName());
+    assertThat(updated.getInternalName()).isEqualTo("MUSA desejo v7");
+    assertThat(updated.getAliases()).containsExactly("MUSA v7", "Vídeos orientados ao desejo");
     assertThat(updated.getSlug()).isEqualTo(request.getSlug());
     assertThat(updated.getLogoUrl()).isEqualTo("https://clubemusa.com.br/assets/logo-musa.svg");
     assertThat(updated.getCurrentPriceBrl()).isEqualByComparingTo("67.00");
@@ -210,6 +221,104 @@ class ProductServiceTest {
     assertThat(updated.getDesireAssociationMapVersion()).isEqualTo("v1");
     assertThat(updated.getDesireAssociationMapJson()).contains("PROFESSIONAL_PRIDE");
     assertThat(updated.getMarketNiche()).isSameAs(niche);
+  }
+
+  /** Deve preservar o nome interno quando um cliente antigo não envia o novo campo. */
+  @Test
+  void updateProductPreservesInternalIdentityForLegacyClient() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
+    ProductService service =
+        newService(
+            productRepository,
+            mock(InstagramAccountRepository.class),
+            marketNicheRepository,
+            mock(AssetRepository.class));
+    Product product =
+        Product.builder()
+            .id(1L)
+            .name("Nome comercial antigo")
+            .internalName("Projeto original")
+            .aliases(Set.of("Apelido histórico"))
+            .build();
+    CreateProductRequest request = new CreateProductRequest();
+    request.setName("Novo nome comercial");
+    request.setMarketNicheId(10L);
+    MarketNiche niche = new MarketNiche();
+
+    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+    when(marketNicheRepository.findById(10L)).thenReturn(Optional.of(niche));
+    when(productRepository.save(product)).thenReturn(product);
+
+    Product updated = service.updateProduct(1L, request);
+
+    assertThat(updated.getInternalName()).isEqualTo("Projeto original");
+    assertThat(updated.getAliases()).containsExactly("Apelido histórico");
+  }
+
+  /** Deve bloquear apelido que já identifica outro produto do catálogo. */
+  @Test
+  void updateProductRejectsAmbiguousAlias() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    ProductService service =
+        newService(
+            productRepository,
+            mock(InstagramAccountRepository.class),
+            mock(MarketNicheRepository.class),
+            mock(AssetRepository.class));
+    Product product = Product.builder().id(9L).name("Kit WhatsApp Pronto").build();
+    CreateProductRequest request = new CreateProductRequest();
+    request.setName("Kit WhatsApp Pronto");
+    request.setInternalName("Implantação WhatsApp 48h");
+    request.setAliases(List.of("MUSA v7"));
+
+    when(productRepository.findById(9L)).thenReturn(Optional.of(product));
+    when(productRepository.countIdentityOnAnotherProduct(9L, "MUSA v7")).thenReturn(1L);
+
+    assertThatThrownBy(() -> service.updateProduct(9L, request))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("já identifica outro produto");
+  }
+
+  /** Deve bloquear slug que já funciona como nome ou apelido de outro produto. */
+  @Test
+  void updateProductRejectsSlugThatIdentifiesAnotherProduct() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    ProductService service =
+        newService(
+            productRepository,
+            mock(InstagramAccountRepository.class),
+            mock(MarketNicheRepository.class),
+            mock(AssetRepository.class));
+    Product product = Product.builder().id(9L).name("Oferta WhatsApp").build();
+    CreateProductRequest request = new CreateProductRequest();
+    request.setSlug("musa-v7");
+    request.setName("Oferta WhatsApp");
+    request.setInternalName("Implantação WhatsApp 48h");
+    request.setAliases(List.of());
+
+    when(productRepository.findById(9L)).thenReturn(Optional.of(product));
+    when(productRepository.countIdentityOnAnotherProduct(9L, "musa-v7")).thenReturn(1L);
+
+    assertThatThrownBy(() -> service.updateProduct(9L, request))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("já identifica outro produto");
+  }
+
+  /** Deve pesquisar a mesma entidade por um apelido usado por pessoas ou agentes. */
+  @Test
+  void listProductsSearchesByInternalIdentity() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    ProductService service =
+        newService(
+            productRepository,
+            mock(InstagramAccountRepository.class),
+            mock(MarketNicheRepository.class),
+            mock(AssetRepository.class));
+    Product musa = Product.builder().id(4L).name("Método MUSA").build();
+    when(productRepository.searchByIdentity("MUSA v7")).thenReturn(List.of(musa));
+
+    assertThat(service.listProducts(" MUSA v7 ")).containsExactly(musa);
   }
 
   /** Rejeita mapa sem limite de verdade para impedir associação comercial enganosa. */
@@ -436,6 +545,8 @@ class ProductServiceTest {
             .id(1L)
             .slug("metodo-musa-7-dias")
             .name("Método MUSA - Presença Elegante em 7 Dias")
+            .internalName("MUSA v7 — vídeos orientados ao desejo")
+            .aliases(Set.of("Projeto desejo", "Versão sete"))
             .logoUrl("https://clubemusa.com.br/assets/logo-musa.svg")
             .productType("PDE")
             .commercialStatus("validação comercial")
@@ -503,6 +614,8 @@ class ProductServiceTest {
     assertThat(markdown).contains("afirmações proibidas");
     assertThat(markdown).doesNotContain("pde-platform");
     assertThat(markdown).doesNotContain("1.20");
+    assertThat(markdown).doesNotContain("MUSA v7 — vídeos orientados ao desejo");
+    assertThat(markdown).doesNotContain("Projeto desejo");
   }
 
   /** Deve aceitar o identificador interno como fallback quando o código for numérico. */

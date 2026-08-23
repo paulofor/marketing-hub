@@ -6,7 +6,9 @@ import com.marketinghub.memberarea.MemberArea;
 import com.marketinghub.niche.MarketNiche;
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -32,6 +34,17 @@ public class Product {
   /** Nome comercial público do produto. */
   @Column(name = "name", length = 191)
   private String name;
+
+  /** Nome de trabalho estável usado por pessoas e agentes dentro do Marketing Hub. */
+  @Column(name = "internal_name", length = 191)
+  private String internalName;
+
+  /** Nomes internos alternativos e históricos que permitem localizar o mesmo produto. */
+  @ElementCollection(fetch = FetchType.EAGER)
+  @CollectionTable(name = "product_alias", joinColumns = @JoinColumn(name = "product_id"))
+  @Column(name = "alias", nullable = false, length = 191)
+  @Builder.Default
+  private Set<String> aliases = new LinkedHashSet<>();
 
   /** URL pública da área, página ou experiência principal do produto. */
   @Column(name = "public_url", length = 512)

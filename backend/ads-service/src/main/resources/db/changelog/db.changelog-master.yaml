@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-23-product-internal-identity.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-22-experiment-platform-varchar.yaml
       relativeToChangelogFile: true
   - include:

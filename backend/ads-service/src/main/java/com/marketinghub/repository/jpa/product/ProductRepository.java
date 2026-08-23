@@ -4,6 +4,8 @@ import com.marketinghub.product.Product;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /** Repositório JPA responsável pela persistência de produtos digitais. */
 public interface ProductRepository extends JpaRepository<Product, Long> {
@@ -15,4 +17,35 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
   /** Lista produtos do nicho para impedir que agentes misturem mapas quando houver ambiguidade. */
   List<Product> findAllByMarketNiche_Id(Long marketNicheId);
+
+  /** Pesquisa o catálogo por nome comercial, nome interno, apelido ou slug. */
+  @Query(
+      """
+      SELECT DISTINCT product
+      FROM Product product
+      LEFT JOIN product.aliases alias
+      WHERE LOWER(COALESCE(product.name, '')) LIKE LOWER(CONCAT('%', :identityQuery, '%'))
+         OR LOWER(COALESCE(product.internalName, '')) LIKE LOWER(CONCAT('%', :identityQuery, '%'))
+         OR LOWER(COALESCE(product.slug, '')) LIKE LOWER(CONCAT('%', :identityQuery, '%'))
+         OR LOWER(COALESCE(alias, '')) LIKE LOWER(CONCAT('%', :identityQuery, '%'))
+      ORDER BY product.updatedAt DESC, product.id DESC
+      """)
+  List<Product> searchByIdentity(@Param("identityQuery") String identityQuery);
+
+  /** Conta conflitos exatos de identidade em outro produto do catálogo. */
+  @Query(
+      """
+      SELECT COUNT(DISTINCT product.id)
+      FROM Product product
+      LEFT JOIN product.aliases alias
+      WHERE (:productId IS NULL OR product.id <> :productId)
+        AND (
+          LOWER(COALESCE(product.name, '')) = LOWER(:identity)
+          OR LOWER(COALESCE(product.internalName, '')) = LOWER(:identity)
+          OR LOWER(COALESCE(product.slug, '')) = LOWER(:identity)
+          OR LOWER(COALESCE(alias, '')) = LOWER(:identity)
+        )
+      """)
+  long countIdentityOnAnotherProduct(
+      @Param("productId") Long productId, @Param("identity") String identity);
 }

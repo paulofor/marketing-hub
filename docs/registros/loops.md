@@ -1534,6 +1534,11 @@ Use este checklist quando o problema estiver em algum loop acima:
   somente requisitos Meta nesse canal, mantendo amostra, entrega, checkout, eventos e gate comercial.
 - **Prevenção:** testes de criação, atualização, readiness e transição para `RUNNING` comprovam que
   canal individual não recebe orçamento ou contas Meta e que Facebook preserva os bloqueios atuais.
+- **Recorrência fechada localmente em 2026-08-22:** a produção continuou rejeitando
+  `DIRECT_ONE_TO_ONE` com `Data truncated for column 'platform'` porque `experiment.platform`
+  permanecia como `ENUM('FACEBOOK')` no MySQL, apesar do contrato Java atualizado. O Liquibase
+  reconverte a coluna para `VARCHAR(40)`, a entidade fixa o tipo JDBC textual e um teste conjunto
+  protege enum Java, mapeamento JPA, changelog e include relativo.
 
 ## LOOP-LANDING-CHECKOUT-MESMO-CAMPO — URL de campanha substitui destino de pagamento
 

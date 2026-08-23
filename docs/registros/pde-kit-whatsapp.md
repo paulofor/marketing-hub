@@ -211,3 +211,29 @@ recriaria o contrato Meta conhecido e consumiria tokens sem possibilidade de apr
 deploy, o gate continua apenas se canal individual, checkout, eventos e entrega permanecerem íntegros;
 ajusta se a oferta for entendida como kit genérico; e para diante de falha de mensuração, privacidade,
 entrega ou margem.
+
+## Homologação real após o PR 5006
+
+O PR 5006 foi integrado e o backend e frontend administrativos foram publicados com saúde. Mesmo
+assim, salvar o experimento pela tela retornou HTTP 500. O log completo e o schema real confirmaram
+`Data truncated for column 'platform'`: o Java conhecia `DIRECT_ONE_TO_ONE`, mas o MySQL mantinha
+`experiment.platform` como `ENUM('FACEBOOK')`. A correção converte a coluna para `VARCHAR(40)`, fixa
+o tipo JDBC textual e adiciona teste conjunto de entidade, Liquibase e include relativo.
+
+A URL do Kit respondeu HTTP 200 e passou visualmente em desktop, iPhone 15 Pro e Pixel 7, mas era uma
+área de acesso pós-compra, sem preço ou CTA. O frontend PDE passa a consultar a oferta canônica do
+Marketing Hub e renderizar dor, prova, promessa, R$ 349, CTA, checkout, fornecedor, contato e
+políticas. O validador de slot deixa de aprovar apenas HTML e passa a exigir esse contrato comercial
+real. R$ 349 permanece válido somente para a implantação personalizada com revisão humana em até
+48 horas.
+
+A identidade comercial foi reconciliada com a fonte institucional já versionada no repositório e
+com consultas cadastrais recentes: PAULO ALEXANDRE LOPES FORESTIERI INFORMATICA, CNPJ
+25.215.414/0001-69, situação ativa, endereço cadastral no Rio de Janeiro e suporte em
+`contato@digicomdigital.com.br`. A configuração aceita override operacional, mas mantém esses dados
+como padrão coerente com a marca Digicom Digital. O endpoint continua falhando fechado quando razão
+social, registro fiscal, endereço ou contato estiverem ausentes ou inválidos.
+
+Fontes de conferência cadastral em 2026-08-23:
+[Casa dos Dados](https://casadosdados.com.br/solucao/cnpj/paulo-alexandre-lopes-forestieri-informatica-25215414000169)
+e [CNPJ.biz](https://cnpj.biz/25215414000169).

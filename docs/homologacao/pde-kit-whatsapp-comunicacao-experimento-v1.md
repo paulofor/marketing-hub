@@ -55,6 +55,8 @@ e [Decreto 7.962/2013](https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2013/
 | Mensagem | mostrar personalização, prazo, entregáveis e revisão | rejeitar promessa de bot, automação ou resultado garantido | contrato e copy versionados |
 | Prova | usar materiais reais do produto | rejeitar depoimento ou resultado inventado | linhagem dos materiais preservada |
 | Jornada | origem → landing → checkout → acesso → primeiro uso | falhas de checkout, e-mail, acesso e evento permanecem observáveis | URLs de landing, checkout e entrega separadas, eventos segregados e auditáveis |
+| Oferta pública | mostrar dor, prova, promessa, preço de R$ 349, CTA e fornecedor antes do checkout | bloquear slot quando a URL servir apenas a área pós-compra ou o contrato comercial estiver incompleto | contrato público derivado do produto, slot e experimento 89 |
+| Políticas | abrir termos, privacidade, cancelamento e contato em desktop e mobile | bloquear oferta sem razão social, registro fiscal, endereço ou suporte válidos | identidade institucional reconciliada com cadastro ativo e links públicos HTTPS |
 | Checkout | criar preferência autenticada pelo preço do experimento | bloquear entrega PDE não validada e impedir duplicata por clique repetido | R$ 349, produto 9 e experimento 89 na metadata |
 | Métricas | venda paga é o objetivo final | clique, score e teste não contam como venda | contadores comerciais zerados em QA |
 | Dados de teste | marcar auditoria local | impedir mistura com tráfego humano | `mh_test`/`mh_audit` segregados |
@@ -94,3 +96,25 @@ O deploy do PR 5004 confirmou o editor corrigido, mas o contrato produtivo ainda
 experimento orgânico como `FACEBOOK`. A correção causal torna o canal individual um enum persistido,
 separa landing de checkout e exige entrega PDE pública, validada e ativa antes de criar a cobrança.
 O preço permanece R$ 349; nenhuma preferência real é criada durante a homologação local.
+
+## Diagnóstico produtivo após os PRs 5005 e 5006
+
+Os dois PRs foram integrados e seus deploys terminaram saudáveis. A validação real encontrou dois
+gates que os testes anteriores não alcançavam:
+
+- a edição do experimento 89 chegava ao endpoint correto, mas o MySQL rejeitava
+  `DIRECT_ONE_TO_ONE` porque `experiment.platform` ainda era `ENUM('FACEBOOK')`;
+- a URL pública estava rápida e responsiva, mas renderizava somente o acesso de quem já comprou,
+  sem preço, oferta ou CTA para o checkout.
+
+Foram comparadas três alternativas para o canal: ampliar o `ENUM`, persistir `VARCHAR` ou criar uma
+tabela de domínio. Foi escolhido `VARCHAR`, com validação pelo enum Java, porque remove a recorrência
+para novos canais com menor complexidade imediata. Para a landing, foram comparadas a manutenção da
+área de acesso, um checkout hardcoded no frontend e um contrato comercial público do Marketing Hub.
+Foi escolhido o contrato público para preservar produto, experimento, preço, copy e checkout como
+fonte única.
+
+O gate passa a exigir também identidade ativa do fornecedor, contato e políticas antes de liberar o
+checkout. A razão social, o CNPJ e o contato já versionados no site institucional foram reconciliados
+com o cadastro público ativo e completados com o endereço cadastral. A configuração preserva override
+operacional, mas não permite renderizar checkout quando qualquer campo obrigatório estiver vazio.

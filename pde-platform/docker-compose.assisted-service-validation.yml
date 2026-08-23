@@ -64,7 +64,8 @@ services:
     environment:
       VITE_PDE_PRODUCT_SLUG: kit-whatsapp-pronto
       VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: kit-whatsapp-pronto-pde-v1
-      PDE_HEALTH_REQUIRED_TEXT: Experiência assistida e manual
+      PDE_HEALTH_REQUIRED_TEXT: Implantação personalizada
+      PDE_HEALTH_REQUIRED_SALES_TEXT: Quero meu atendimento sob medida
       PDE_FRONTEND_VERSION: kit-whatsapp-v1
       PDE_FRONTEND_PUBLIC_URL: http://pde-platform-frontend-kit-validation
       PDE_FRONTEND_VERSION_ID: kit-whatsapp-v1

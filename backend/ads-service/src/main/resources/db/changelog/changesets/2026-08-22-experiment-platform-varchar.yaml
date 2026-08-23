@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-22-experiment-platform-varchar-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment
+        - columnExists:
+            tableName: experiment
+            columnName: platform
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: >-
+              ALTER TABLE experiment
+              MODIFY COLUMN platform VARCHAR(40) NULL

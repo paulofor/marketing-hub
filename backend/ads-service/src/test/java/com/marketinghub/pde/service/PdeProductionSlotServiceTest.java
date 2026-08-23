@@ -346,6 +346,65 @@ class PdeProductionSlotServiceTest {
             org.mockito.ArgumentMatchers.any());
   }
 
+  /** Deve exigir oferta real com preço e checkout antes de aprovar um produto PDE comercial. */
+  @Test
+  void recordsOkValidationForCommercialPdeWithAttributedOffer() throws Exception {
+    PdeProductionSlot slot =
+        PdeProductionSlot.builder()
+            .id(7L)
+            .slotCode("v1")
+            .productSlug("kit-whatsapp-pronto")
+            .domain("kit-whatsapp-pronto.digicomdigital.com.br")
+            .publicUrl("https://kit-whatsapp-pronto.digicomdigital.com.br")
+            .experienceVersion("kit-whatsapp-pronto-pde-v1")
+            .targetEnvironment("production-v1")
+            .status(PdeProductionSlotStatus.ACTIVE)
+            .sourceExperimentId(89L)
+            .createdAt(Instant.parse("2026-08-22T10:00:00Z"))
+            .updatedAt(Instant.parse("2026-08-22T10:00:00Z"))
+            .build();
+    PdeProductionSlotService service =
+        new PdeProductionSlotService(
+            repository, videoAssetRepository, httpClient, new ObjectMapper());
+    when(repository.findByProductSlugAndSlotCode("kit-whatsapp-pronto", "v1"))
+        .thenReturn(Optional.of(slot));
+    HttpResponse<String> healthResponse = response(200, "{\"status\":\"UP\"}");
+    HttpResponse<String> contractResponse =
+        response(
+            200,
+            "{\"slug\":\"kit-whatsapp-pronto\",\"healthPath\":\"/\",\"commercialOfferPath\":\"/api/pde/products/kit-whatsapp-pronto/commercial-offer\",\"requiredTexts\":[\"Quero meu atendimento sob medida\"]}");
+    HttpResponse<String> offerResponse =
+        response(
+            200,
+            "{\"productSlug\":\"kit-whatsapp-pronto\",\"experimentId\":89,\"priceBrl\":349,\"promise\":\"Implantação personalizada em até 48 horas\",\"primaryCta\":\"Quero meu atendimento sob medida\",\"checkoutUrl\":\"https://pay.example/kit\",\"supplierLegalName\":\"Fornecedor de Homologação Ltda.\",\"supplierRegistrationNumber\":\"00.000.000/0001-00\",\"supplierAddress\":\"Endereço de homologação, 100\",\"supportEmail\":\"teste@sandbox.local\",\"termsUrl\":\"https://kit-whatsapp-pronto.digicomdigital.com.br/terms\",\"privacyUrl\":\"https://kit-whatsapp-pronto.digicomdigital.com.br/privacy\",\"refundPolicyUrl\":\"https://kit-whatsapp-pronto.digicomdigital.com.br/refund-policy\"}");
+    HttpResponse<String> pageResponse =
+        response(
+            200,
+            "<html><body><div id=\"root\"></div><script type=\"module\" src=\"/assets/index.js\"></script></body></html>");
+    HttpResponse<String> scriptResponse =
+        response(200, "const cta = 'Quero meu atendimento sob medida';");
+    org.mockito.Mockito.doReturn(healthResponse)
+        .doReturn(contractResponse)
+        .doReturn(offerResponse)
+        .doReturn(pageResponse)
+        .doReturn(scriptResponse)
+        .when(httpClient)
+        .send(
+            org.mockito.ArgumentMatchers.any(HttpRequest.class),
+            org.mockito.ArgumentMatchers.any());
+    when(repository.save(org.mockito.ArgumentMatchers.any(PdeProductionSlot.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    var response = service.validateProductionSlot("kit-whatsapp-pronto", "v1");
+
+    assertThat(response.validationStatus()).isEqualTo("OK");
+    assertThat(response.validationSummary()).isEqualTo("URL produtiva validada");
+    org.mockito.Mockito.verify(httpClient, org.mockito.Mockito.times(5))
+        .send(
+            org.mockito.ArgumentMatchers.any(HttpRequest.class),
+            org.mockito.ArgumentMatchers.any());
+  }
+
   /** Deve aprovar copy pública renderizada por bundle JavaScript em entrada SPA. */
   @Test
   void recordsOkValidationWhenRequiredCopyIsInsideSpaScriptBundle() throws Exception {

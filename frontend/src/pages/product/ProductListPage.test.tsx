@@ -49,6 +49,7 @@ describe("ProductListPage", () => {
           currentPriceBrl: 47,
           productType: "PDE - Produto Digital Experiencial",
           productTypeCode: "PDE",
+          productTypeInternalName: "Opala",
         },
       ],
     });
@@ -68,6 +69,7 @@ describe("ProductListPage", () => {
     ).toBeTruthy();
     expect(screen.getByText("PDE - Produto Digital Experiencial")).toBeTruthy();
     expect(screen.getByText("PDE")).toBeTruthy();
+    expect(screen.getByText("Família interna: Opala")).toBeTruthy();
   });
 
   it("shows and searches the internal identity without replacing the commercial name", async () => {

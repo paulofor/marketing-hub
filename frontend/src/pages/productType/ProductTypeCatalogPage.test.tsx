@@ -40,6 +40,7 @@ describe("ProductTypeCatalogPage", () => {
           id: 1,
           code: "PDE",
           name: "PDE - Produto Digital Experiencial",
+          internalName: "Opala",
           description: "Jornada de valor observável.",
           aliases: ["PDE", "Experiência guiada"],
           status: "ACTIVE",
@@ -53,6 +54,7 @@ describe("ProductTypeCatalogPage", () => {
     expect(
       await screen.findByText("PDE - Produto Digital Experiencial"),
     ).toBeTruthy();
+    expect(screen.getByText("Nome interno: Opala")).toBeTruthy();
     expect(screen.getByText("4")).toBeTruthy();
     const aliases = screen.getByLabelText(
       "Apelidos de PDE - Produto Digital Experiencial",
@@ -68,6 +70,7 @@ describe("ProductTypeCatalogPage", () => {
         id: 12,
         code: "EXPERIENCIA_IMERSIVA",
         name: "Experiência imersiva",
+        internalName: "Granada",
         aliases: ["Produto imersivo"],
         status: "PROPOSED",
         productCount: 0,
@@ -79,6 +82,9 @@ describe("ProductTypeCatalogPage", () => {
     fireEvent.change(screen.getByLabelText("Nome canônico *"), {
       target: { value: "Experiência imersiva" },
     });
+    fireEvent.change(screen.getByLabelText("Nome interno (mineral) *"), {
+      target: { value: "Granada" },
+    });
     fireEvent.change(screen.getByLabelText("Apelidos internos"), {
       target: { value: "Produto imersivo" },
     });
@@ -88,6 +94,7 @@ describe("ProductTypeCatalogPage", () => {
       expect(axios.post).toHaveBeenCalledWith("/api/product-types", {
         code: undefined,
         name: "Experiência imersiva",
+        internalName: "Granada",
         description: undefined,
         aliases: ["Produto imersivo"],
         status: "PROPOSED",

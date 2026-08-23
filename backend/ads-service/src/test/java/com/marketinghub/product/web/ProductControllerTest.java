@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -43,6 +44,7 @@ import com.marketinghub.product.service.financialsummary.ProductFinancialSummary
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoDecisionRuleResponse;
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanItemResponse;
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanResponse;
+import com.marketinghub.product.service.updateInternalName.UpdateProductInternalNameRequest;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -115,6 +117,40 @@ class ProductControllerTest {
         .andExpect(jsonPath("$.aliases[0]").value("MUSA v7"))
         .andExpect(jsonPath("$.logoUrl").value("https://clubemusa.com.br/assets/logo-musa.svg"))
         .andExpect(jsonPath("$.currentPriceBrl").value(67.00));
+  }
+
+  /** Deve atualizar o nome interno sem exigir o contrato comercial completo. */
+  @Test
+  void updateProductInternalName() throws Exception {
+    UpdateProductInternalNameRequest request = new UpdateProductInternalNameRequest("Vega");
+    Product product = Product.builder().id(1L).internalName("Vega").build();
+    ProductDto response = new ProductDto();
+    response.setId(1L);
+    response.setInternalName("Vega");
+
+    when(service.updateInternalName(eq(1L), any(UpdateProductInternalNameRequest.class)))
+        .thenReturn(product);
+    when(mapper.toDto(product)).thenReturn(response);
+
+    mockMvc
+        .perform(
+            patch("/api/products/{id}/internal-name", 1L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(1L))
+        .andExpect(jsonPath("$.internalName").value("Vega"));
+  }
+
+  /** Deve rejeitar nome interno vazio antes de executar a atualização. */
+  @Test
+  void rejectBlankProductInternalName() throws Exception {
+    mockMvc
+        .perform(
+            patch("/api/products/{id}/internal-name", 1L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"internalName\":\"   \"}"))
+        .andExpect(status().isBadRequest());
   }
 
   /** Deve encaminhar a pesquisa por apelido ao serviço canônico de produtos. */

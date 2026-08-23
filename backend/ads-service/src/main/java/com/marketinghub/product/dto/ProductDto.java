@@ -22,6 +22,7 @@ public class ProductDto {
   private String productType;
   private Long productTypeId;
   private String productTypeCode;
+  private String productTypeInternalName;
   private String productTypeStatus;
   private String productFormat;
   private String deliveryMode;

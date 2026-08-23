@@ -20,6 +20,7 @@ import com.marketinghub.product.ProductVideoProviderAvatar;
 import com.marketinghub.product.ProductVideoSeedImageReviewStatus;
 import com.marketinghub.product.dto.CreateProductRequest;
 import com.marketinghub.product.dto.RegisterProductVideoProviderAvatarRequest;
+import com.marketinghub.product.service.updateInternalName.UpdateProductInternalNameRequest;
 import com.marketinghub.product.service.updateVideoSeedImage.UpdateProductVideoSeedImageRequest;
 import com.marketinghub.producttype.ProductTypeDefinition;
 import com.marketinghub.producttype.ProductTypeStatus;
@@ -390,6 +391,57 @@ class ProductServiceTest {
 
     assertThat(updated.getInternalName()).isEqualTo("Projeto original");
     assertThat(updated.getAliases()).containsExactly("Apelido histórico");
+  }
+
+  /** Deve atualizar somente o nome interno de um produto legado ainda sem classificação. */
+  @Test
+  void updateInternalNameWithoutRewritingCommercialContract() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    ProductService service =
+        newService(productRepository, mock(ProductTypeDefinitionRepository.class));
+    Product product =
+        Product.builder()
+            .id(2L)
+            .name(null)
+            .slug(null)
+            .internalName(null)
+            .aliases(Set.of())
+            .productType(null)
+            .commercialNotes("Rascunho comercial preservado")
+            .build();
+
+    when(productRepository.findById(2L)).thenReturn(Optional.of(product));
+    when(productRepository.updateInternalName(2L, "Spica"))
+        .thenAnswer(
+            invocation -> {
+              product.setInternalName(invocation.getArgument(1));
+              return 1;
+            });
+
+    Product updated =
+        service.updateInternalName(2L, new UpdateProductInternalNameRequest(" Spica "));
+
+    assertThat(updated.getInternalName()).isEqualTo("Spica");
+    assertThat(updated.getProductType()).isNull();
+    assertThat(updated.getCommercialNotes()).isEqualTo("Rascunho comercial preservado");
+    verify(productRepository).updateInternalName(2L, "Spica");
+  }
+
+  /** Deve bloquear um codinome interno que já identifica outro produto. */
+  @Test
+  void updateInternalNameRejectsAmbiguousIdentity() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    ProductService service =
+        newService(productRepository, mock(ProductTypeDefinitionRepository.class));
+    Product product = Product.builder().id(5L).aliases(Set.of()).build();
+
+    when(productRepository.findById(5L)).thenReturn(Optional.of(product));
+    when(productRepository.countIdentityOnAnotherProduct(5L, "Vega")).thenReturn(1L);
+
+    assertThatThrownBy(
+            () -> service.updateInternalName(5L, new UpdateProductInternalNameRequest("Vega")))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("já identifica outro produto");
   }
 
   /** Deve bloquear apelido que já identifica outro produto do catálogo. */

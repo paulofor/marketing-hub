@@ -20,6 +20,7 @@ import com.marketinghub.product.service.adlibrary.ProductAdLibraryResponse;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonResponse;
 import com.marketinghub.product.service.financialsummary.ProductFinancialSummaryResponse;
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanResponse;
+import com.marketinghub.product.service.updateInternalName.UpdateProductInternalNameRequest;
 import com.marketinghub.product.service.updateVideoSeedImage.UpdateProductVideoSeedImageRequest;
 import com.marketinghub.product.service.videoimage.GenerateProductVideoImagesRequest;
 import com.marketinghub.product.service.videoimage.ProductVideoImageDto;
@@ -71,6 +72,13 @@ public class ProductController {
   public ProductDto update(
       @PathVariable Long id, @Valid @RequestBody CreateProductRequest request) {
     return mapper.toDto(service.updateProduct(id, request));
+  }
+
+  /** Atualiza somente o nome interno sem exigir ou regravar a classificação comercial. */
+  @PatchMapping("/{id}/internal-name")
+  public ProductDto updateInternalName(
+      @PathVariable Long id, @Valid @RequestBody UpdateProductInternalNameRequest request) {
+    return mapper.toDto(service.updateInternalName(id, request));
   }
 
   /** Retorna custos, receitas e lucro do produto para análise financeira. */

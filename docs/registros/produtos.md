@@ -26,3 +26,21 @@
   disponível durante a transição.
 - Prevenção: nome, código e apelidos são únicos entre tipos e a tela deixa de aceitar classificação
   livre no cadastro de produtos.
+
+## 2026-08-23 — Universos dos nomes internos
+
+- Decisão: produtos usam estrelas e tipos usam minerais, sem reutilização de codinomes.
+- Produtos cadastrados em produção: Vega/Método MUSA, Sirius/Anti-Invisibilidade,
+  Capella/Agenda Cheia, Altair/Especialista no WhatsApp e Rigel/Kit WhatsApp Pronto.
+- Codinomes reservados para cadastro após publicar a atualização isolada: Polaris/Nexo,
+  Antares/rascunho Personal Trainer, Spica/rascunho Manicure e Regulus/rascunho Autoridade e
+  negociação.
+- Minerais preservados na tela publicada como apelidos pesquisáveis: Opala/PDE, Quartzo/low-ticket,
+  Safira/Produto IA, Fluorita/atendimento por sandbox, Ágata/área de membros e
+  Labradorita/educação interativa. O cadastro no campo próprio aguarda a publicação da identidade
+  interna de tipos e será concluído pela tela.
+- Causa-raiz adicional: o formulário integral bloqueava produtos legados sem tipo e regravava todo o
+  contrato mesmo quando somente o nome interno mudava; a atualização isolada passa a proteger os
+  campos comerciais e permitir governar rascunhos sem inventar classificação.
+- Prevenção adicional: o tipo passa a ter `internal_name` próprio; minerais deixam de depender de
+  apelidos, aparecem como família interna nos produtos e continuam vedados nas superfícies públicas.

@@ -40,11 +40,17 @@ class ProductTypeServiceTest {
             new SaveProductTypeRequest(
                 null,
                 "Experiência guiada por desafios",
+                "Granada",
                 "Valor percebido pela prática.",
-                List.of("Desafio guiado", "desafio guiado", "Experiência guiada por desafios"),
+                List.of(
+                    "Desafio guiado",
+                    "desafio guiado",
+                    "Experiência guiada por desafios",
+                    "Granada"),
                 null));
 
     assertThat(response.code()).isEqualTo("EXPERIENCIA_GUIADA_POR_DESAFIOS");
+    assertThat(response.internalName()).isEqualTo("Granada");
     assertThat(response.status()).isEqualTo(ProductTypeStatus.PROPOSED);
     assertThat(response.aliases()).containsExactly("Desafio guiado");
   }
@@ -60,6 +66,7 @@ class ProductTypeServiceTest {
             .id(1L)
             .code("PDE")
             .name("Produto Digital Experiencial")
+            .internalName("Opala")
             .aliases(Set.of("Experiência guiada"))
             .status(ProductTypeStatus.ACTIVE)
             .build();
@@ -71,8 +78,40 @@ class ProductTypeServiceTest {
                     new SaveProductTypeRequest(
                         "GUIDED_PRODUCT",
                         "Produto guiado",
+                        "Granada",
                         null,
                         List.of("experiencia guiada"),
+                        ProductTypeStatus.PROPOSED)))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("já identifica outro tipo");
+  }
+
+  /** Deve impedir que o codinome mineral identifique dois tipos diferentes. */
+  @Test
+  void rejectInternalNameAlreadyUsedByAnotherType() {
+    ProductTypeDefinitionRepository repository = mock(ProductTypeDefinitionRepository.class);
+    ProductRepository productRepository = mock(ProductRepository.class);
+    ProductTypeService service = new ProductTypeService(repository, productRepository);
+    ProductTypeDefinition existing =
+        ProductTypeDefinition.builder()
+            .id(1L)
+            .code("PDE")
+            .name("Produto Digital Experiencial")
+            .internalName("Opala")
+            .aliases(Set.of())
+            .status(ProductTypeStatus.ACTIVE)
+            .build();
+    when(repository.findAllByOrderByNameAsc()).thenReturn(List.of(existing));
+
+    assertThatThrownBy(
+            () ->
+                service.create(
+                    new SaveProductTypeRequest(
+                        "GUIDED_PRODUCT",
+                        "Produto guiado",
+                        "ópala",
+                        null,
+                        List.of(),
                         ProductTypeStatus.PROPOSED)))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("já identifica outro tipo");
@@ -89,6 +128,7 @@ class ProductTypeServiceTest {
             .id(3L)
             .code("AI_PRODUCT")
             .name("Produto IA")
+            .internalName("Safira")
             .aliases(Set.of())
             .status(ProductTypeStatus.ACTIVE)
             .build();
@@ -104,6 +144,7 @@ class ProductTypeServiceTest {
         new SaveProductTypeRequest(
             "AI_PRODUCT",
             "Produto personalizado por IA",
+            "Safira",
             "Transforma entrada em saída útil.",
             List.of("Produto IA"),
             ProductTypeStatus.ACTIVE));
@@ -123,6 +164,7 @@ class ProductTypeServiceTest {
             .id(3L)
             .code("PDE")
             .name("Produto Digital Experiencial")
+            .internalName("Opala")
             .aliases(Set.of())
             .status(ProductTypeStatus.ACTIVE)
             .build();
@@ -134,7 +176,12 @@ class ProductTypeServiceTest {
                 service.update(
                     3L,
                     new SaveProductTypeRequest(
-                        "NOVO_CODIGO", type.getName(), null, List.of(), ProductTypeStatus.ACTIVE)))
+                        "NOVO_CODIGO",
+                        type.getName(),
+                        "Opala",
+                        null,
+                        List.of(),
+                        ProductTypeStatus.ACTIVE)))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("código do tipo não pode mudar");
   }
@@ -151,7 +198,12 @@ class ProductTypeServiceTest {
             () ->
                 service.create(
                     new SaveProductTypeRequest(
-                        "GUIDED", "Experiência guiada", null, List.of(), ProductTypeStatus.ACTIVE)))
+                        "GUIDED",
+                        "Experiência guiada",
+                        "Granada",
+                        null,
+                        List.of(),
+                        ProductTypeStatus.ACTIVE)))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("Explique quando usar");
   }
@@ -167,6 +219,7 @@ class ProductTypeServiceTest {
             .id(1L)
             .code("PDE")
             .name("Produto Digital Experiencial")
+            .internalName("Opala")
             .aliases(Set.of("Experiência guiada"))
             .status(ProductTypeStatus.ACTIVE)
             .build();
@@ -175,12 +228,14 @@ class ProductTypeServiceTest {
             .id(2L)
             .code("IMMERSIVE")
             .name("Produto imersivo")
+            .internalName("Ametista")
             .aliases(Set.of("Experiência experimental"))
             .status(ProductTypeStatus.PROPOSED)
             .build();
     when(repository.findAllByOrderByNameAsc()).thenReturn(List.of(active, proposed));
 
     assertThat(service.list("experiencia guiada", false)).extracting("id").containsExactly(1L);
+    assertThat(service.list("opala", false)).extracting("id").containsExactly(1L);
     assertThat(service.list(null, false)).extracting("id").containsExactly(1L);
   }
 }

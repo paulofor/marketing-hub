@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BrowserRouter } from "react-router-dom";
 import ProductForm from "./ProductForm";
+import { Product } from "../../api/product/useProducts";
 
 vi.mock("../../api/useInstagramAccounts", () => ({
   useInstagramAccounts: () => ({ data: [] }),
@@ -87,6 +88,106 @@ describe("ProductForm desire association map", () => {
     expect(screen.getByLabelText("Versão da definição")).toHaveAttribute(
       "maxlength",
       "32",
+    );
+  });
+
+  it("saves an internal name without requiring a type on a legacy product", () => {
+    const onSubmit = vi.fn();
+    const onInternalNameSubmit = vi.fn();
+    const legacyProduct = {
+      id: 2,
+      internalName: "",
+      aliases: [],
+      niche: "Manicure autônoma em domicílio",
+      avatar: "",
+      explicitPain: "",
+      promise: "",
+      uniqueMechanism: "",
+      tripwire: "",
+      riskReversal: "",
+      socialProof: "",
+      checkoutMonetization: "",
+      funnel: "",
+      creativeVolume: "",
+      storytelling: "",
+      aiCost: 0,
+    } satisfies Product;
+
+    render(
+      <BrowserRouter>
+        <ProductForm
+          initialProduct={legacyProduct}
+          isSaving={false}
+          onSubmit={onSubmit}
+          onInternalNameSubmit={onInternalNameSubmit}
+        />
+      </BrowserRouter>,
+    );
+
+    fireEvent.change(screen.getByLabelText(/Nome interno\/de trabalho/i), {
+      target: { value: "Spica" },
+    });
+    expect(screen.getByRole("button", { name: "Salvar" })).toBeDisabled();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Salvar somente nome interno" }),
+    );
+
+    expect(onInternalNameSubmit).toHaveBeenCalledWith({
+      internalName: "Spica",
+    });
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("shows loading and error states for the isolated internal-name request", () => {
+    const legacyProduct = {
+      id: 2,
+      internalName: "Spica",
+      aliases: [],
+      niche: "Manicure autônoma em domicílio",
+      avatar: "",
+      explicitPain: "",
+      promise: "",
+      uniqueMechanism: "",
+      tripwire: "",
+      riskReversal: "",
+      socialProof: "",
+      checkoutMonetization: "",
+      funnel: "",
+      creativeVolume: "",
+      storytelling: "",
+      aiCost: 0,
+    } satisfies Product;
+
+    const { rerender } = render(
+      <BrowserRouter>
+        <ProductForm
+          initialProduct={legacyProduct}
+          isSaving={false}
+          isSavingInternalName
+          onSubmit={vi.fn()}
+          onInternalNameSubmit={vi.fn()}
+        />
+      </BrowserRouter>,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Salvando nome interno..." }),
+    ).toBeDisabled();
+
+    rerender(
+      <BrowserRouter>
+        <ProductForm
+          initialProduct={legacyProduct}
+          isSaving={false}
+          internalNameSaveFailed
+          onSubmit={vi.fn()}
+          onInternalNameSubmit={vi.fn()}
+        />
+      </BrowserRouter>,
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Não foi possível salvar o nome interno.",
     );
   });
 

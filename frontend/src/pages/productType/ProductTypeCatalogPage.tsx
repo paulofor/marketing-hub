@@ -13,6 +13,7 @@ type ProductTypeForm = {
   id?: number;
   code: string;
   name: string;
+  internalName: string;
   description: string;
   aliases: string;
   status: ProductTypeStatus;
@@ -21,6 +22,7 @@ type ProductTypeForm = {
 const emptyForm: ProductTypeForm = {
   code: "",
   name: "",
+  internalName: "",
   description: "",
   aliases: "",
   status: "PROPOSED",
@@ -31,6 +33,7 @@ function toForm(type: ProductTypeDefinition): ProductTypeForm {
     id: type.id,
     code: type.code,
     name: type.name,
+    internalName: type.internalName ?? "",
     description: type.description ?? "",
     aliases: type.aliases.join("\n"),
     status: type.status,
@@ -61,6 +64,7 @@ export default function ProductTypeCatalogPage() {
         data: {
           code: form.code || undefined,
           name: form.name,
+          internalName: form.internalName,
           description: form.description || undefined,
           aliases: form.aliases
             .split(/[,;\n]/)
@@ -91,7 +95,8 @@ export default function ProductTypeCatalogPage() {
       <div className="alert alert-info" role="note">
         Novas ideias podem nascer como <strong>Em avaliação</strong>. Ative o
         tipo somente quando a fronteira estiver clara; apelidos ajudam pessoas e
-        agentes a encontrá-lo sem criar outra categoria.
+        agentes a encontrá-lo sem criar outra categoria. O nome interno usa um
+        mineral único e permanece estável mesmo quando o tipo evolui.
       </div>
 
       <div className="row g-4">
@@ -120,6 +125,31 @@ export default function ProductTypeCatalogPage() {
                   }))
                 }
               />
+
+              <label
+                className="form-label"
+                htmlFor="product-type-internal-name"
+              >
+                Nome interno (mineral) *
+              </label>
+              <input
+                id="product-type-internal-name"
+                className="form-control mb-1"
+                required
+                maxLength={191}
+                placeholder="Opala, Quartzo, Safira"
+                value={form.internalName}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    internalName: event.target.value,
+                  }))
+                }
+              />
+              <p className="form-text mb-3">
+                Identidade interna estável. Não aparece automaticamente na
+                comunicação pública.
+              </p>
 
               <label className="form-label" htmlFor="product-type-code">
                 Código estável
@@ -207,8 +237,8 @@ export default function ProductTypeCatalogPage() {
 
               {saveType.isError && (
                 <div className="alert alert-danger py-2" role="alert">
-                  Não foi possível salvar. Verifique se nome, código ou apelido
-                  já identificam outro tipo.
+                  Não foi possível salvar. Verifique se nome canônico, nome
+                  interno, código ou apelido já identificam outro tipo.
                 </div>
               )}
 
@@ -218,6 +248,7 @@ export default function ProductTypeCatalogPage() {
                   type="submit"
                   disabled={
                     saveType.isPending ||
+                    !form.internalName.trim() ||
                     (form.status === "ACTIVE" && !form.description.trim())
                   }
                 >
@@ -258,8 +289,8 @@ export default function ProductTypeCatalogPage() {
             </span>
             <input
               className="form-control"
-              aria-label="Buscar tipo por nome ou apelido"
-              placeholder="Nome, código ou apelido"
+              aria-label="Buscar tipo por nome, mineral, código ou apelido"
+              placeholder="Nome, mineral, código ou apelido"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
@@ -287,6 +318,9 @@ export default function ProductTypeCatalogPage() {
                         {statusLabel(type.status)}
                       </span>
                       <h2 className="h5 mb-1">{type.name}</h2>
+                      <span className="d-block text-muted small mb-1">
+                        Nome interno: {type.internalName || "Pendente"}
+                      </span>
                       <code>{type.code}</code>
                     </div>
                     <div className="text-end">

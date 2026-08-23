@@ -25,7 +25,7 @@ public class ProductTypeController {
     this.service = service;
   }
 
-  /** Lista tipos por nome, código ou apelido e permite consultar aposentados. */
+  /** Lista tipos por nome, codinome, código ou apelido e permite consultar aposentados. */
   @GetMapping
   public List<ProductTypeCatalogItemResponse> list(
       @RequestParam(required = false) String query,
@@ -39,7 +39,7 @@ public class ProductTypeController {
     return service.get(id);
   }
 
-  /** Cadastra um tipo extensível com seus apelidos internos. */
+  /** Cadastra um tipo extensível com codinome e apelidos internos. */
   @PostMapping
   public ProductTypeCatalogItemResponse create(@Valid @RequestBody SaveProductTypeRequest request) {
     return service.create(request);

@@ -398,6 +398,11 @@ export default function ProductListPage() {
                               {product.productTypeCode}
                             </small>
                           ) : null}
+                          {product.productTypeInternalName ? (
+                            <small className="d-block text-muted">
+                              Família interna: {product.productTypeInternalName}
+                            </small>
+                          ) : null}
                         </dd>
                       </div>
                       <div>

@@ -118,3 +118,24 @@ O gate passa a exigir também identidade ativa do fornecedor, contato e polític
 checkout. A razão social, o CNPJ e o contato já versionados no site institucional foram reconciliados
 com o cadastro público ativo e completados com o endereço cadastral. A configuração preserva override
 operacional, mas não permite renderizar checkout quando qualquer campo obrigatório estiver vazio.
+
+## Diagnóstico produtivo após o PR 5007
+
+O backend principal publicou o contrato comercial e passou a responder HTTP 200, mas o primeiro
+workflow dedicado expôs duas falhas que os testes locais anteriores não reproduziam:
+
+- o endpoint do backend PDE perdeu o nome de `productSlug` no bytecode e respondeu 404 antes de
+  consultar a oferta;
+- o deploy PDE publicou as imagens corretas, mas terminou vermelho ao tentar recriar o proxy com o
+  Compose de pagamentos, que exige secrets fora da responsabilidade do PDE.
+
+Foram comparados configurar globalmente `-parameters`, explicitar o contrato da rota ou manter um
+fallback no frontend. Foi escolhido explicitar `productSlug` e testar a chamada HTTP real, porque
+remove a dependência do compilador e mantém falha fechada. Para o proxy, foram comparados replicar os
+secrets, recriar o serviço por outro workflow ou integrar somente com o proxy existente. Foi escolhida
+a integração pelo proxy existente, preservando isolamento entre módulos e a responsabilidade do
+serviço de pagamentos.
+
+O experimento 89 foi salvo pela tela como `DIRECT_ONE_TO_ONE`, etapa `SALES`, variável de
+enquadramento da implantação personalizada, métrica `Pagamentos aprovados`, preço R$ 349 e promessa
+de entrega revisada em até 48 horas. Continua `PLANNED`, sem mídia ou orçamento.

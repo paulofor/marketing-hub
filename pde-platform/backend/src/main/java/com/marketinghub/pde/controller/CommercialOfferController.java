@@ -20,7 +20,7 @@ public class CommercialOfferController {
 
     /** Retorna a oferta que a superfície pré-compra deve renderizar. */
     @GetMapping("/{productSlug}/commercial-offer")
-    public CommercialOfferResponse getOffer(@PathVariable String productSlug) {
+    public CommercialOfferResponse getOffer(@PathVariable("productSlug") String productSlug) {
         return service.getOffer(productSlug);
     }
 }

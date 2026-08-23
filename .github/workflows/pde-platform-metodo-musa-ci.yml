@@ -495,35 +495,16 @@ jobs:
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused --output /dev/null https://kit-whatsapp-pronto.digicomdigital.com.br/
           fi
       - name: Set up Node for production rendering smoke
+        if: inputs.frontend_version != 'none'
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: pde-platform/frontend/package-lock.json
-      - name: Validate production public rendering
+      - name: Validate targeted production public contracts
+        if: inputs.frontend_version != 'none'
         working-directory: pde-platform/frontend
         run: |
           npm ci --include=dev
           npx playwright install --with-deps chromium
-          PDE_PUBLIC_HEALTH_URL=https://v5.clubemusa.com.br npm run test:public-health
-          PDE_PUBLIC_HEALTH_URL=https://v6.clubemusa.com.br npm run test:public-health
-          if [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "kit-whatsapp" ] || [ "${PDE_DEPLOY_FRONTEND_VERSION}" = "all" ]; then
-            PDE_PUBLIC_HEALTH_URL=https://kit-whatsapp-pronto.digicomdigital.com.br npm run test:public-health
-          fi
-      - name: Validate production public diagnostic smoke
-        working-directory: pde-platform/frontend
-        run: |
-          PDE_PUBLIC_HEALTH_URL=https://v5.clubemusa.com.br npm run test:public-diagnostic-smoke
-          PDE_PUBLIC_HEALTH_URL=https://v6.clubemusa.com.br npm run test:public-diagnostic-smoke
-      - name: Validate production versioned PDE contracts
-        run: |
-          PRODUCT_SLUG=metodo-musa-7-dias \
-          PDE_PUBLIC_BASE_URL=https://v5.clubemusa.com.br \
-          EXPECTED_EXPERIENCE_VERSION=musa-pde-entry-v5-video-explicativo \
-          bash scripts/check-musa-pde-public-consistency.sh
-
-          PRODUCT_SLUG=metodo-musa-7-dias \
-          PDE_PUBLIC_BASE_URL=https://v6.clubemusa.com.br \
-          EXPECTED_EXPERIENCE_VERSION=musa-pde-entry-v6-video-motivacional \
-          EXPECTED_PUBLIC_FIRST_FOLD_HEADLINE="Se o look parece certo, por que você ainda sente que falta presença?" \
-          bash scripts/check-musa-pde-public-consistency.sh
+          bash ../scripts/run-targeted-production-smokes.sh "${PDE_DEPLOY_FRONTEND_VERSION}"

@@ -19,11 +19,15 @@ for required_contract in \
   'PROXY_CONTAINERS=' \
   'docker network connect ${PDE_PLATFORM_NETWORK}' \
   'docker kill -s HUP' \
-  'Nenhum container de proxy HTTPS'; do
+  'Nenhum container de proxy HTTPS' \
+  'run-targeted-production-smokes.sh "${PDE_DEPLOY_FRONTEND_VERSION}"'; do
   if ! grep -Fq "${required_contract}" "${workflow}"; then
     echo "[ARQUITETURA] O deploy PDE perdeu o contrato de integração segura com o proxy existente: ${required_contract}" >&2
     exit 1
   fi
 done
+
+bash "${script_dir}/test-targeted-production-smokes.sh"
+bash "${script_dir}/test-public-health-commercial-source.sh"
 
 echo 'Contrato de isolamento do deploy PDE aprovado.'

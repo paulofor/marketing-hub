@@ -8,6 +8,13 @@
 >
 > Uso obrigatório recomendado: antes de corrigir problema em GeraLanding, Facebook Ads, Lead Portal, OpenAI/schema, pipelines administrativos ou pipeline de hipótese, verificar se a solicitação reabre algum loop listado aqui.
 
+## LOOP-PDE-TARGETED-DEPLOY-CROSS-SURFACE-SMOKE — publicação isolada falha por versão não publicada
+
+- **Sintoma confirmado em 2026-08-23:** o deploy direcionado ao frontend `kit-whatsapp` publicou a imagem correta, passou nos contratos públicos do Kit e terminou vermelho ao tentar validar `version-diagnostics.json` das versões v5 e v6 do MUSA.
+- **Causa-raiz:** a seleção do frontend controlava publicação, portas e HTTPS, mas o smoke Playwright e os contratos finais continuavam executando incondicionalmente para v5 e v6. Além disso, o contrato do Kit duplicava um CTA estático que já era governado pela oferta persistida no backend. Assim, uma superfície legada não alterada ou uma copy antiga podiam reprovar a entrega saudável.
+- **Correção sistêmica:** a homologação final passa a selecionar pelo mesmo `frontend_version` somente os testes de renderização, diagnóstico e consistência pertencentes à superfície publicada; `all` continua validando todas. CTA, preço e checkout passam a ser lidos da oferta pública canônica durante o smoke.
+- **Prevenção:** testes com executores falsos exigem isolamento para `kit-whatsapp` e v5, cobertura completa para `all`, rejeição de versão desconhecida e ausência de CTA comercial duplicado no contrato estático. A saúde básica das rotas compartilhadas continua sendo verificada antes do smoke direcionado.
+
 ## LOOP-EXPERIMENT-TERMINAL-STATE-DIVERGENCE — campanha pausada com run e agente ativos
 
 - **Sintoma confirmado em 2026-08-23:** o experimento #88 ficou `USER_STOPPED` e a campanha `PAUSED` após R$ 25,24 sem resultado primário, mas o run #6 permaneceu `RUNNING` e a tarefa de Hermes #188 ficou `PENDING`.

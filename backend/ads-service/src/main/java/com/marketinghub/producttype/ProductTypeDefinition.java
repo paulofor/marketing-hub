@@ -42,6 +42,10 @@ public class ProductTypeDefinition {
   @Column(name = "name", nullable = false, length = 191, unique = true)
   private String name;
 
+  /** Codinome mineral estável usado somente na operação interna do Marketing Hub. */
+  @Column(name = "internal_name", length = 191, unique = true)
+  private String internalName;
+
   /** Explicação curta do mecanismo de valor que caracteriza o tipo. */
   @Column(name = "description", length = 1000)
   private String description;

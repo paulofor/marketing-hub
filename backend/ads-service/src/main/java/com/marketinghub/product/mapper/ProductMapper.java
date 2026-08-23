@@ -16,6 +16,7 @@ public interface ProductMapper {
   @Mapping(target = "aliases", expression = "java(toSortedAliases(product))")
   @Mapping(target = "productTypeId", source = "productTypeDefinition.id")
   @Mapping(target = "productTypeCode", source = "productTypeDefinition.code")
+  @Mapping(target = "productTypeInternalName", source = "productTypeDefinition.internalName")
   @Mapping(target = "productTypeStatus", source = "productTypeDefinition.status")
   ProductDto toDto(Product product);
 

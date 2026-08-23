@@ -10,12 +10,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.TestPropertySource;
 
+/** Responsabilidade: validar a persistência e a pesquisa das identidades de produto. */
 @DataJpaTest
 @TestPropertySource(properties = "spring.liquibase.enabled=false")
 class ProductRepositoryTest {
 
   @Autowired ProductRepository repository;
 
+  /** Deve persistir, pesquisar e substituir os apelidos internos de um produto. */
   @Test
   void testSaveProduct() {
     Product product =
@@ -55,5 +57,24 @@ class ProductRepositoryTest {
     Product updated = repository.findById(product.getId()).orElseThrow();
     assertThat(updated.getAliases()).containsExactly("Energia Renovada");
     assertThat(repository.searchByIdentity("Plano Vital")).isEmpty();
+  }
+
+  /** Deve atualizar somente o nome interno e preservar os demais campos do produto. */
+  @Test
+  void updateOnlyInternalName() {
+    Product product =
+        repository.saveAndFlush(
+            Product.builder()
+                .name("Nexo — Clareza, Sentido e Ação")
+                .internalName("Nome anterior")
+                .commercialNotes("Contrato preservado")
+                .build());
+
+    assertThat(repository.updateInternalName(product.getId(), "Polaris")).isEqualTo(1);
+
+    Product updated = repository.findById(product.getId()).orElseThrow();
+    assertThat(updated.getInternalName()).isEqualTo("Polaris");
+    assertThat(updated.getName()).isEqualTo("Nexo — Clareza, Sentido e Ação");
+    assertThat(updated.getCommercialNotes()).isEqualTo("Contrato preservado");
   }
 }

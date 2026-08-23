@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-23-product-type-internal-identity
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product_type_definition
+        - not:
+            columnExists:
+              tableName: product_type_definition
+              columnName: internal_name
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_type_definition
+                ADD COLUMN internal_name VARCHAR(191) NULL AFTER name,
+                ADD UNIQUE KEY uk_product_type_definition_internal_name (internal_name);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_type_definition
+                DROP INDEX uk_product_type_definition_internal_name,
+                DROP COLUMN internal_name;

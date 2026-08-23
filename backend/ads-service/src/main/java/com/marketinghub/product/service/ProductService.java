@@ -33,6 +33,7 @@ import com.marketinghub.product.service.financialsummary.ProductFinancialSummary
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoDecisionRuleResponse;
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanItemResponse;
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanResponse;
+import com.marketinghub.product.service.updateInternalName.UpdateProductInternalNameRequest;
 import com.marketinghub.product.service.updateVideoSeedImage.UpdateProductVideoSeedImageRequest;
 import com.marketinghub.product.service.videoimage.GenerateProductVideoImagesRequest;
 import com.marketinghub.product.service.videoimage.ProductVideoImageDto;
@@ -198,6 +199,23 @@ public class ProductService {
     Product product = getProduct(id);
     applyRequest(product, request);
     return repository.save(product);
+  }
+
+  /** Atualiza apenas o nome interno sem regravar o contrato comercial completo do produto. */
+  @Transactional
+  public Product updateInternalName(Long id, UpdateProductInternalNameRequest request) {
+    Product product = getProduct(id);
+    String internalName = normalizeRequired(request.internalName(), "Informe o nome interno.");
+    Set<String> aliases =
+        product.getAliases() == null
+            ? new LinkedHashSet<>()
+            : new LinkedHashSet<>(product.getAliases());
+    validateProductIdentity(
+        product.getId(), product.getSlug(), product.getName(), internalName, aliases);
+    if (repository.updateInternalName(id, internalName) != 1) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado.");
+    }
+    return getProduct(id);
   }
 
   /** Insere a jornada persuasiva interativa padrão no contrato PDE do produto. */

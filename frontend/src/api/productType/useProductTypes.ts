@@ -7,6 +7,7 @@ export interface ProductTypeDefinition {
   id: number;
   code: string;
   name: string;
+  internalName?: string | null;
   description?: string | null;
   aliases: string[];
   status: ProductTypeStatus;
@@ -18,6 +19,7 @@ export interface ProductTypeDefinition {
 export interface SaveProductType {
   code?: string;
   name: string;
+  internalName: string;
   description?: string;
   aliases: string[];
   status: ProductTypeStatus;

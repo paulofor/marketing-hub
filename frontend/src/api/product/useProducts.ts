@@ -16,6 +16,7 @@ export interface Product {
   productType?: string;
   productTypeId?: number;
   productTypeCode?: string;
+  productTypeInternalName?: string;
   productTypeStatus?: "PROPOSED" | "ACTIVE" | "RETIRED";
   productFormat?: string;
   deliveryMode?: string;

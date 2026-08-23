@@ -234,15 +234,23 @@ function ProductEditorSection({
 type ProductFormProps = {
   initialProduct?: Product;
   isSaving: boolean;
+  isSavingInternalName?: boolean;
+  internalNameSaved?: boolean;
+  internalNameSaveFailed?: boolean;
   submitLabel?: string;
   onSubmit: (payload: CreateProduct) => void;
+  onInternalNameSubmit?: (payload: { internalName: string }) => void;
 };
 
 export default function ProductForm({
   initialProduct,
   isSaving,
+  isSavingInternalName = false,
+  internalNameSaved = false,
+  internalNameSaveFailed = false,
   submitLabel = "Salvar",
   onSubmit,
+  onInternalNameSubmit,
 }: ProductFormProps) {
   const { data: accountsData } = useInstagramAccounts();
   const { data: nichesData } = useNiches();
@@ -266,6 +274,12 @@ export default function ProductForm({
   const submit = () => {
     if (!form.productTypeId) return;
     onSubmit(toPayload(form));
+  };
+
+  const submitInternalName = () => {
+    const internalName = form.internalName.trim();
+    if (!internalName || !onInternalNameSubmit) return;
+    onInternalNameSubmit({ internalName });
   };
 
   const selectedProductType = productTypes.find(
@@ -464,6 +478,42 @@ export default function ProductForm({
             placeholder="MUSA v7, vídeos orientados ao desejo, projeto presença"
             helpText="Use vírgula ou uma linha por apelido. Eles servem para busca interna e nunca aparecem na oferta pública."
           />
+          {onInternalNameSubmit && (
+            <div className="d-flex flex-wrap align-items-center gap-2">
+              <button
+                className="btn btn-outline-primary"
+                type="button"
+                disabled={isSavingInternalName || !form.internalName.trim()}
+                onClick={submitInternalName}
+              >
+                {isSavingInternalName ? (
+                  <>
+                    <Loader2
+                      className="spinning me-2"
+                      size={16}
+                      aria-hidden="true"
+                    />
+                    Salvando nome interno...
+                  </>
+                ) : (
+                  "Salvar somente nome interno"
+                )}
+              </button>
+              <span className="form-text mb-0">
+                Não altera nome comercial, tipo, oferta ou entrega.
+              </span>
+              {internalNameSaved && (
+                <span className="text-success small" role="status">
+                  Nome interno salvo.
+                </span>
+              )}
+              {internalNameSaveFailed && (
+                <span className="text-danger small" role="alert">
+                  Não foi possível salvar o nome interno.
+                </span>
+              )}
+            </div>
+          )}
           <div className="product-editor-grid product-editor-grid--2">
             <ProductField
               field="publicUrl"

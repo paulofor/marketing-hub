@@ -97,6 +97,136 @@ paths:
                 $ref: "#/components/schemas/Product"
         "409":
           description: Nome ou apelido já identifica outro produto.
+  /api/products/{id}/internal-name:
+    patch:
+      tags:
+        - Products
+      summary: Atualiza somente o nome interno sem regravar o contrato comercial.
+      operationId: updateProductInternalName
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProductInternalNameRequest"
+      responses:
+        "200":
+          description: Nome interno atualizado sem alterar os demais campos do produto.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "409":
+          description: O nome interno já identifica outro produto.
+  /api/product-types:
+    get:
+      tags:
+        - Product Types
+      summary: Lista ou pesquisa tipos por nome, codinome, código ou apelido.
+      operationId: listProductTypes
+      parameters:
+        - name: query
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: includeRetired
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Tipos encontrados no catálogo administrativo.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductTypeDefinition"
+    post:
+      tags:
+        - Product Types
+      summary: Cadastra um tipo extensível com codinome mineral próprio.
+      operationId: createProductType
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveProductTypeRequest"
+      responses:
+        "200":
+          description: Tipo cadastrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductTypeDefinition"
+        "400":
+          description: Nome, codinome ou fronteira de uso inválidos.
+        "409":
+          description: Uma identidade já pertence a outro tipo.
+  /api/product-types/{id}:
+    get:
+      tags:
+        - Product Types
+      summary: Retorna uma definição do catálogo de tipos.
+      operationId: getProductType
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Tipo encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductTypeDefinition"
+        "404":
+          description: Tipo não encontrado.
+    put:
+      tags:
+        - Product Types
+      summary: Atualiza a definição e sua identidade interna governada.
+      operationId: updateProductType
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveProductTypeRequest"
+      responses:
+        "200":
+          description: Tipo atualizado e vínculos preservados.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductTypeDefinition"
+        "400":
+          description: Nome, codinome ou fronteira de uso inválidos.
+        "404":
+          description: Tipo não encontrado.
+        "409":
+          description: Identidade ambígua ou código em uso alterado.
   /api/products/{id}/financial-summary:
     get:
       tags:
@@ -509,6 +639,82 @@ paths:
           description: Produto não encontrado.
 components:
   schemas:
+    ProductTypeDefinition:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        code:
+          type: string
+          maxLength: 64
+        name:
+          type: string
+          maxLength: 191
+        internalName:
+          type: string
+          maxLength: 191
+          description: Codinome mineral estável usado somente na operação interna.
+        description:
+          type: string
+          maxLength: 1000
+        aliases:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 191
+        status:
+          type: string
+          enum:
+            - PROPOSED
+            - ACTIVE
+            - RETIRED
+        productCount:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    SaveProductTypeRequest:
+      type: object
+      required:
+        - name
+        - internalName
+        - aliases
+        - status
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          maxLength: 64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 191
+        internalName:
+          type: string
+          minLength: 1
+          maxLength: 191
+          description: Codinome mineral único e estável.
+        description:
+          type: string
+          maxLength: 1000
+        aliases:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 191
+        status:
+          type: string
+          enum:
+            - PROPOSED
+            - ACTIVE
+            - RETIRED
     Product:
       type: object
       properties:
@@ -540,6 +746,10 @@ components:
         productTypeCode:
           type: string
           maxLength: 64
+        productTypeInternalName:
+          type: string
+          maxLength: 191
+          description: Codinome mineral interno do tipo de produto.
         productTypeStatus:
           type: string
           enum:
@@ -594,6 +804,17 @@ components:
           maxLength: 191
           deprecated: true
           description: Identidade legada resolvida por nome, código ou apelido cadastrado.
+    UpdateProductInternalNameRequest:
+      type: object
+      required:
+        - internalName
+      additionalProperties: false
+      properties:
+        internalName:
+          type: string
+          minLength: 1
+          maxLength: 191
+          description: Codinome interno estável e não publicado ao cliente.
     ProductScientificArticle:
       type: object
       properties:

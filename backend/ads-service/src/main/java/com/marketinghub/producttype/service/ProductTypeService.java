@@ -20,7 +20,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-/** Responsabilidade: gerenciar o catálogo extensível de tipos de produto e seus apelidos. */
+/**
+ * Responsabilidade: gerenciar o catálogo extensível e a identidade interna dos tipos de produto.
+ */
 @Service
 public class ProductTypeService {
   private static final Pattern DIACRITICS_PATTERN = Pattern.compile("\\p{M}+");
@@ -37,7 +39,7 @@ public class ProductTypeService {
     this.productRepository = productRepository;
   }
 
-  /** Lista tipos ativos ou todo o histórico, com pesquisa por código, nome e apelido. */
+  /** Lista tipos ativos ou todo o histórico, com pesquisa por código, nome interno e apelido. */
   @Transactional(readOnly = true)
   public List<ProductTypeCatalogItemResponse> list(String query, boolean includeRetired) {
     String canonicalQuery = canonicalIdentity(query);
@@ -80,6 +82,8 @@ public class ProductTypeService {
   /** Aplica e valida a definição mantendo código estável quando já existem produtos vinculados. */
   private void apply(ProductTypeDefinition type, SaveProductTypeRequest request, boolean creating) {
     String name = normalizeRequired(request.name(), "Informe o nome do tipo de produto.");
+    String internalName =
+        normalizeRequired(request.internalName(), "Informe o nome interno do tipo de produto.");
     String requestedCode = normalizeCode(request.code(), name);
     long productCount =
         type.getId() == null ? 0 : productRepository.countByProductTypeDefinition_Id(type.getId());
@@ -91,8 +95,8 @@ public class ProductTypeService {
           HttpStatus.CONFLICT,
           "O código do tipo não pode mudar enquanto houver produtos vinculados.");
     }
-    Set<String> aliases = normalizeAliases(request.aliases(), requestedCode, name);
-    validateUniqueIdentity(type.getId(), requestedCode, name, aliases);
+    Set<String> aliases = normalizeAliases(request.aliases(), requestedCode, name, internalName);
+    validateUniqueIdentity(type.getId(), requestedCode, name, internalName, aliases);
     ProductTypeStatus status =
         request.status() == null ? ProductTypeStatus.PROPOSED : request.status();
     String description = normalizeOptional(request.description());
@@ -102,13 +106,15 @@ public class ProductTypeService {
     }
     type.setCode(requestedCode);
     type.setName(name);
+    type.setInternalName(internalName);
     type.setDescription(description);
     type.setAliases(aliases);
     type.setStatus(status);
   }
 
   /** Normaliza apelidos, remove redundâncias e limita o tamanho operacional do catálogo. */
-  private Set<String> normalizeAliases(List<String> requestedAliases, String code, String name) {
+  private Set<String> normalizeAliases(
+      List<String> requestedAliases, String code, String name, String internalName) {
     if (requestedAliases == null) {
       return new LinkedHashSet<>();
     }
@@ -116,7 +122,10 @@ public class ProductTypeService {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "Informe no máximo 20 apelidos por tipo de produto.");
     }
-    Set<String> reserved = Set.of(canonicalIdentity(code), canonicalIdentity(name));
+    Set<String> reserved =
+        new LinkedHashSet<>(
+            List.of(
+                canonicalIdentity(code), canonicalIdentity(name), canonicalIdentity(internalName)));
     Map<String, String> uniqueAliases = new LinkedHashMap<>();
     for (String rawAlias : requestedAliases) {
       String alias = normalizeOptional(rawAlias);
@@ -135,12 +144,13 @@ public class ProductTypeService {
     return new LinkedHashSet<>(uniqueAliases.values());
   }
 
-  /** Impede que código, nome ou apelido resolvam para mais de um tipo. */
+  /** Impede que código, nome interno, nome canônico ou apelido resolvam para mais de um tipo. */
   private void validateUniqueIdentity(
-      Long currentId, String code, String name, Set<String> aliases) {
+      Long currentId, String code, String name, String internalName, Set<String> aliases) {
     Map<String, String> requestedIdentities = new LinkedHashMap<>();
-    requestedIdentities.put(canonicalIdentity(code), code);
-    requestedIdentities.put(canonicalIdentity(name), name);
+    addRequestedIdentity(requestedIdentities, code);
+    addRequestedIdentity(requestedIdentities, name);
+    addRequestedIdentity(requestedIdentities, internalName);
     aliases.forEach(alias -> requestedIdentities.put(canonicalIdentity(alias), alias));
     for (ProductTypeDefinition existing : repository.findAllByOrderByNameAsc()) {
       if (existing.getId() != null && existing.getId().equals(currentId)) {
@@ -149,6 +159,7 @@ public class ProductTypeService {
       Set<String> existingIdentities = new LinkedHashSet<>();
       existingIdentities.add(canonicalIdentity(existing.getCode()));
       existingIdentities.add(canonicalIdentity(existing.getName()));
+      existingIdentities.add(canonicalIdentity(existing.getInternalName()));
       existing.getAliases().forEach(alias -> existingIdentities.add(canonicalIdentity(alias)));
       for (Map.Entry<String, String> requested : requestedIdentities.entrySet()) {
         if (existingIdentities.contains(requested.getKey())) {
@@ -162,10 +173,21 @@ public class ProductTypeService {
     }
   }
 
+  /** Impede que código, nome e codinome sejam variações da mesma identidade dentro do tipo. */
+  private void addRequestedIdentity(Map<String, String> identities, String value) {
+    String previous = identities.putIfAbsent(canonicalIdentity(value), value);
+    if (previous != null) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT,
+          "O nome interno, nome canônico e código do tipo devem ser identidades distintas.");
+    }
+  }
+
   /** Verifica se um tipo corresponde à busca canônica informada. */
   private boolean matches(ProductTypeDefinition type, String query) {
     return canonicalIdentity(type.getCode()).contains(query)
         || canonicalIdentity(type.getName()).contains(query)
+        || canonicalIdentity(type.getInternalName()).contains(query)
         || type.getAliases().stream()
             .map(this::canonicalIdentity)
             .anyMatch(value -> value.contains(query));
@@ -177,6 +199,7 @@ public class ProductTypeService {
         type.getId(),
         type.getCode(),
         type.getName(),
+        type.getInternalName(),
         type.getDescription(),
         type.getAliases().stream().sorted(String.CASE_INSENSITIVE_ORDER).toList(),
         type.getStatus(),

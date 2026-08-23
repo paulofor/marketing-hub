@@ -10,7 +10,7 @@ Todo produto deve preservar uma única identidade estável ao longo da cadeia, m
 nome para o mercado ainda estiver sendo descoberto. O contrato separa:
 
 - `id` e `slug`: identificadores estáveis usados em vínculos, contratos e URLs;
-- `internal_name`: nome de trabalho legível por pessoas e agentes dentro do Marketing Hub;
+- `internal_name`: codinome estável de uma estrela, usado por pessoas e agentes dentro do Marketing Hub;
 - `name`: nome comercial mostrado ao cliente em oferta, página, checkout e entrega;
 - `product_alias`: apelidos internos alternativos ou históricos usados somente para localização.
 
@@ -20,16 +20,37 @@ automaticamente em artefatos públicos. Pessoas e agentes podem pesquisar o cat�
 comercial, nome interno, apelido ou slug, mas devem persistir e propagar o produto resolvido por
 `id` e `slug`.
 
-O nome interno pode preservar a formulação que surgiu na descoberta, no plano ou em uma versão de
-trabalho, enquanto o nome comercial pode evoluir conforme clareza, desejo, diferenciação e vendas
-reais. A tela deve mostrar as duas camadas sem ambiguidade e identificar explicitamente os apelidos
-como internos.
+O universo canônico dos nomes internos de produtos é **Estrelas**. O codinome é atribuído uma única
+vez, não pode ser reutilizado e não muda quando o nome comercial, formato, tipo ou posicionamento
+evoluir. Formulações surgidas na descoberta, no plano ou em versões de trabalho devem ser
+preservadas como apelidos internos. A tela deve mostrar essas camadas sem ambiguidade e nunca
+propagar o codinome ou os apelidos automaticamente para superfícies públicas.
+
+O nome interno deve poder ser atualizado isoladamente em produtos legados ainda sem tipo, sem
+regravar oferta, entrega, preço, classificação ou os demais campos comerciais.
+
+Mapa inicial aprovado em 2026-08-23:
+
+- produto `1`, rascunho Personal Trainer: Antares;
+- produto `2`, rascunho Manicure em domicílio: Spica;
+- produto `3`, rascunho Autoridade e negociação: Regulus;
+- produto `4`, Método MUSA: Vega;
+- produto `5`, Nexo: Polaris;
+- produto `6`, Anti-Invisibilidade Profissional: Sirius;
+- produto `7`, Agenda Cheia Nail Design: Capella;
+- produto `8`, Especialista no WhatsApp: Altair;
+- produto `9`, Kit WhatsApp Pronto: Rigel.
 
 ## Classificação extensível por tipo
 
 Todo produto pode ser vinculado a uma definição do catálogo de tipos por `product_type_id`. O
 campo textual legado `product_type` permanece como nome canônico sincronizado para compatibilidade,
 mas a associação estável é o identificador do cadastro.
+
+O universo canônico dos nomes internos de tipos é **Minerais**. O mineral deve ser persistido no
+campo próprio `product_type_definition.internal_name`, sem substituir seu código, nome canônico ou
+apelidos. A transição de um mineral previamente cadastrado como apelido deve preservar a pesquisa,
+mas novos cadastros não devem confundir codinome com sinônimo.
 
 O cadastro de tipos deve permitir nome, código, descrição, apelidos internos e estado. Novas ideias
 nascem como `PROPOSED`; somente tipos `ACTIVE` podem receber novos produtos; tipos `RETIRED`

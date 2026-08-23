@@ -46,6 +46,7 @@ class ProductTypeControllerTest {
             1L,
             "PDE",
             "Produto Digital Experiencial",
+            "Opala",
             "Jornada de valor.",
             List.of("Experiência guiada"),
             ProductTypeStatus.ACTIVE,
@@ -61,11 +62,12 @@ class ProductTypeControllerTest {
                 .queryParam("includeRetired", "true"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].code").value("PDE"))
+        .andExpect(jsonPath("$[0].internalName").value("Opala"))
         .andExpect(jsonPath("$[0].aliases[0]").value("Experiência guiada"))
         .andExpect(jsonPath("$[0].productCount").value(4));
   }
 
-  /** Deve validar o nome obrigatório antes de criar um tipo. */
+  /** Deve validar nome canônico e nome interno obrigatórios antes de criar um tipo. */
   @Test
   void rejectBlankName() throws Exception {
     mockMvc
@@ -83,6 +85,7 @@ class ProductTypeControllerTest {
         new SaveProductTypeRequest(
             "PDE",
             "Produto Digital Experiencial",
+            "Opala",
             "Jornada de valor.",
             List.of("Experiência guiada"),
             ProductTypeStatus.ACTIVE);
@@ -91,6 +94,7 @@ class ProductTypeControllerTest {
             1L,
             request.code(),
             request.name(),
+            request.internalName(),
             request.description(),
             request.aliases(),
             request.status(),

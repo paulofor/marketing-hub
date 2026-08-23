@@ -2,6 +2,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import { useProduct } from "../../api/product/useProduct";
 import { useUpdateProduct } from "../../api/product/useUpdateProduct";
+import { useUpdateProductInternalName } from "../../api/product/useUpdateProductInternalName";
 import ProductForm from "./ProductForm";
 
 export default function EditProductPage() {
@@ -10,6 +11,7 @@ export default function EditProductPage() {
   const productId = Number(id);
   const { data: product, isLoading } = useProduct(productId);
   const update = useUpdateProduct();
+  const updateInternalName = useUpdateProductInternalName();
 
   if (isLoading || !product) return <p>Carregando...</p>;
 
@@ -30,7 +32,13 @@ export default function EditProductPage() {
       <ProductForm
         initialProduct={product}
         isSaving={update.isPending}
+        isSavingInternalName={updateInternalName.isPending}
+        internalNameSaved={updateInternalName.isSuccess}
+        internalNameSaveFailed={updateInternalName.isError}
         submitLabel="Salvar alterações"
+        onInternalNameSubmit={(data) =>
+          updateInternalName.mutate({ id: productId, data })
+        }
         onSubmit={(payload) =>
           update.mutate(
             { id: productId, data: payload },

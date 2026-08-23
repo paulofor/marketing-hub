@@ -26,6 +26,21 @@ Apelido não cria outro tipo e nunca substitui o código estável. Pessoas e age
 mesmo tipo por código, nome ou apelido, mas devem persistir o identificador canônico. Apelidos de
 tipo são internos e não entram automaticamente em oferta, landing, checkout ou entrega.
 
+O universo canônico dos nomes internos de tipos é **Minerais**. Cada tipo recebe um mineral único no
+campo próprio `internal_name`. O mineral não muda quando a descrição do tipo evoluir, nunca
+substitui `code`, `name` ou os apelidos e não pode ser reutilizado em outro tipo. Pesquisa e telas
+administrativas devem considerar o codinome; superfícies públicas não devem recebê-lo
+automaticamente.
+
+Mapa inicial aprovado em 2026-08-23:
+
+- `PDE`: Opala;
+- `LOW_TICKET_DIGITAL_PRODUCT`: Quartzo;
+- `AI_PRODUCT`: Safira;
+- `AI_SANDBOX_CONVERSATIONAL_PRODUCT`: Fluorita;
+- `EXTERNAL_MEMBERS_AREA_PRODUCT`: Ágata;
+- `AI_INTERACTIVE_EDUCATIONAL_EXPERIENCE`: Labradorita.
+
 Formato de entrega, canal, ativo comercial, mecanismo técnico e nome de trabalho do produto não
 devem virar novos tipos quando puderem ser representados pelo tipo vigente, modo comercial,
 subtipo, formato ou apelido. Antes de ativar uma categoria nova, comparar essa fronteira com as

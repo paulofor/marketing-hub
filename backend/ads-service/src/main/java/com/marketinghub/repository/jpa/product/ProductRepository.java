@@ -4,6 +4,7 @@ import com.marketinghub.product.Product;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -54,4 +55,15 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
       """)
   long countIdentityOnAnotherProduct(
       @Param("productId") Long productId, @Param("identity") String identity);
+
+  /** Atualiza somente o nome interno sem regravar os demais campos comerciais do produto. */
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query(
+      """
+      UPDATE Product product
+         SET product.internalName = :internalName
+       WHERE product.id = :productId
+      """)
+  int updateInternalName(
+      @Param("productId") Long productId, @Param("internalName") String internalName);
 }

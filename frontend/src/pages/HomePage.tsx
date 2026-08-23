@@ -2,8 +2,10 @@ import { Link } from "react-router-dom";
 import {
   ArrowRight,
   CircleDollarSign,
+  Gem,
   Package,
   Sparkles,
+  Star,
   Video,
 } from "lucide-react";
 import { useMemo, type CSSProperties } from "react";
@@ -138,6 +140,35 @@ export default function HomePage() {
                 <p className="home-product-card__slug">
                   {product.slug || "sem-slug"}
                 </p>
+                <section
+                  className="home-product-card__internal-identity"
+                  aria-label={`Identidade interna de ${getProductName(product)}`}
+                >
+                  <span className="home-product-card__internal-identity-title">
+                    Identidade interna
+                  </span>
+                  <div className="home-product-card__internal-identity-items">
+                    <div>
+                      <Star size={18} aria-hidden="true" />
+                      <span>
+                        <small>Produto · estrela</small>
+                        <strong>
+                          {product.internalName?.trim() || "Pendente"}
+                        </strong>
+                      </span>
+                    </div>
+                    <div>
+                      <Gem size={18} aria-hidden="true" />
+                      <span>
+                        <small>Tipo · mineral</small>
+                        <strong>
+                          {product.productTypeInternalName?.trim() ||
+                            "Pendente"}
+                        </strong>
+                      </span>
+                    </div>
+                  </div>
+                </section>
                 <ProductValueChainPosition
                   compact
                   productName={getProductName(product)}

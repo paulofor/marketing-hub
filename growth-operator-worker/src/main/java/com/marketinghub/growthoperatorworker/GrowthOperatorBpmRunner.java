@@ -204,7 +204,13 @@ public class GrowthOperatorBpmRunner {
     }
     if (COMMUNICATION_PROCESS.equals(processCode)
         && (result.path("communicationContract").isMissingNode()
-            || result.path("priceDecision").isMissingNode())) {
+            || result.path("priceDecision").isMissingNode()
+            || result.path("priceDecision").path("billingModel").asText().isBlank()
+            || result.path("priceDecision").path("billingDescription").asText().isBlank()
+            || result.path("communicationContract").path("includedItems").isEmpty()
+            || result.path("communicationContract").path("excludedItems").isEmpty()
+            || result.path("communicationContract").path("eventContracts").size() < 5
+            || result.path("communicationContract").path("refundGuardrail").asText().isBlank())) {
       throw new IllegalArgumentException("Contrato de comunicação do PDE incompleto.");
     }
   }

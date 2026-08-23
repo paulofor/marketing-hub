@@ -223,11 +223,14 @@ public class CommercialBpmTaskConsumer {
         .toBodilessEntity();
   }
 
-  /** Resolve o contexto congelado da tarefa no prompt versionado. */
+  /** Resolve o contexto congelado e injeta os artefatos da revisão comercial correspondente. */
   private String prompt(Map<String, Object> task) throws IOException {
     Map<String, Object> promptContext = new HashMap<>(task);
     if ("pde-construction-approval".equals(processCode(task))) {
       promptContext.put("versionedArtifactEvidence", pdeArtifactLoader.load());
+    } else if ("pde-communication-sales-journey".equals(processCode(task))) {
+      promptContext.put(
+          "versionedArtifactEvidence", pdeArtifactLoader.loadCommunicationContracts());
     }
     return read(promptResourceFor(processCode(task)))
         .replace("{{TASK_CONTEXT}}", json.writeValueAsString(promptContext));

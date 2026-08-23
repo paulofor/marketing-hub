@@ -25,11 +25,26 @@ envia mensagens e não avança o processo.
    subprocessos canônicos posteriores.
 6. Revise explicitamente o preço. Compare-o com alternativas do mercado presentes no contexto,
    margem e mecanismo de entrega. Não recomende desconto sem hipótese e métrica. Diferencie
-   biblioteca genérica de implantação personalizada.
+   biblioteca genérica de implantação personalizada. Declare `billingModel`, preço total,
+   recorrência ou ausência de recorrência e uma descrição inequívoca da cobrança. Repita essa
+   verdade no enquadramento da oferta, no briefing do criativo e no destino.
 7. Preserve controle humano, consentimento, privacidade, atribuição e tráfego de teste segregado.
-8. Defina métrica esperada e critérios objetivos para continuar, ajustar e parar.
-9. Use `BLOCKED` se faltar produto aprovado, preço íntegro, checkout/acesso possível, prova honesta,
-   fonte de tráfego autorizada ou mensuração mínima. Caso contrário use `COMPLETED`.
+8. Liste o que está incluído e excluído. Em `eventContracts`, declare pelo menos compra confirmada,
+   acesso liberado, entrega concluída, primeiro uso/aplicação e reembolso. Para cada evento informe
+   nome canônico, gatilho, metadados mínimos, chaves de correlação, fonte de verdade e significado
+   comercial. Não invente evento como se estivesse implementado: quando o contrato canônico não
+   existir, use `BLOCKED` e registre a lacuna. Quando o contrato existir, preserve a comprovação da
+   persistência, correlação, retomada e falhas como gate obrigatório do processo posterior de
+   Homologação e ativação; não duplique a homologação técnica nesta atividade.
+9. Defina métrica esperada e critérios objetivos para continuar, ajustar e parar. Em amostra inicial
+   pequena, use regra absoluta de reembolso; taxa percentual isolada não é estatisticamente coerente.
+   Qualquer reembolso pausa a coorte para análise de causa, e falha de promessa, entrega, privacidade
+   ou margem bloqueia novos contatos.
+10. Use `BLOCKED` se faltar produto aprovado, preço íntegro, URL e checkout configurados, rota de
+    acesso possível, prova honesta, fonte de tráfego autorizada ou contrato mínimo de mensuração.
+    Caso esses elementos estejam preparados, use `COMPLETED` e encaminhe sua comprovação ponta a
+    ponta ao processo posterior de Homologação e ativação, que continua bloqueando qualquer contato
+    ou gasto até aprovar o preflight.
 
 ## Restrições comerciais
 
@@ -38,4 +53,3 @@ envia mensagens e não avança o processo.
 - Não personalize preço ocultamente e não faça diagnóstico psicológico individual.
 - Não autorize comunicação em massa, mídia paga, publicação ou gasto.
 - O resultado deve ser JSON válido conforme o schema fornecido.
-

@@ -53,6 +53,35 @@ class GrowthOperatorBpmRunnerTest {
     assertThat(scope.reference()).isEqualTo("commercial-plan:4@v2");
   }
 
+  /** Bloqueia contrato sem cobrança, itens, eventos correlacionados e regra de reembolso. */
+  @Test
+  void shouldRejectIncompletePdeCommunicationContract() throws Exception {
+    var incomplete =
+        new ObjectMapper()
+            .readTree(
+                """
+                {
+                  "executionStatus":"COMPLETED",
+                  "activityOutcome":"Contrato antigo sem campos comerciais novos.",
+                  "observedFacts":["Produto aprovado"],
+                  "alternatives":[{"name":"A"},{"name":"B"},{"name":"C"}],
+                  "selectedAlternative":"A",
+                  "priceDecision":{},
+                  "communicationContract":{},
+                  "expectedMetric":"Três vendas",
+                  "continueCriteria":"Entrega íntegra",
+                  "adjustCriteria":"Sem checkout",
+                  "stopCriteria":"Falha de entrega",
+                  "recommendedAction":"Corrigir o contrato"
+                }
+                """);
+
+    assertThatThrownBy(
+            () -> GrowthOperatorBpmRunner.validate(incomplete, "pde-communication-sales-journey"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Contrato de comunicação");
+  }
+
   /** Mantém o Codex em sandbox somente leitura com saída estruturada e MCP local. */
   @Test
   void shouldBuildReadOnlyAuditableCommand() {
@@ -204,7 +233,7 @@ class GrowthOperatorBpmRunnerTest {
             shift
           done
           cat >/dev/null
-          printf '%s' '{"executionStatus":"COMPLETED","activityOutcome":"Contrato comercial pronto para subprocessos.","observedFacts":["Produto aprovado"],"inferences":[],"contradictoryEvidence":[],"evidenceGaps":[],"alternatives":[{"name":"A","benefit":"B","risk":"R","effort":"E","fit":"F"},{"name":"B","benefit":"B","risk":"R","effort":"E","fit":"F"},{"name":"C","benefit":"B","risk":"R","effort":"E","fit":"F"}],"selectedAlternative":"A","priceDecision":{"approvedPriceBrl":349,"decision":"KEEP","rationale":"Preço de implantação personalizada.","marketReference":"Bibliotecas genéricas são mais baratas.","marginGuardrail":"Margem positiva","comprehensionTest":"Testar entendimento antes de desconto."},"communicationContract":{"audience":"Prestadores locais","pain":"Demora no atendimento","promise":"Atendimento pronto","mechanism":"Personalização assistida","offerFraming":"Implantação em 48 horas","proof":["Materiais reais"],"limitations":["Sem garantia"],"primaryChannel":"Abordagem individual","creativeBrief":"Demonstrar antes e depois sem promessa falsa.","destinationBrief":"Explicar entrega e responder objeções prioritárias.","primaryCta":"Quero meu atendimento pronto","checkoutAndAccess":"Checkout único e acesso por link mágico.","events":["visit","cta","checkout","purchase"],"samplePlan":"Quinze contatos qualificados consentidos.","testTrafficSegregation":"mh_test"},"expectedMetric":"Três vendas","continueCriteria":"Compromisso comercial","adjustCriteria":"Sem checkout","stopCriteria":"Sem entrega","recommendedAction":"Produzir criativo e destino nos subprocessos."}' > "$answer"
+          printf '%s' '{"executionStatus":"COMPLETED","activityOutcome":"Contrato comercial pronto para subprocessos.","observedFacts":["Produto aprovado"],"inferences":[],"contradictoryEvidence":[],"evidenceGaps":[],"alternatives":[{"name":"A","benefit":"B","risk":"R","effort":"E","fit":"F"},{"name":"B","benefit":"B","risk":"R","effort":"E","fit":"F"},{"name":"C","benefit":"B","risk":"R","effort":"E","fit":"F"}],"selectedAlternative":"A","priceDecision":{"approvedPriceBrl":349,"billingModel":"ONE_TIME","billingDescription":"Pagamento único, sem recorrência.","decision":"KEEP","rationale":"Preço de implantação personalizada.","marketReference":"Bibliotecas genéricas são mais baratas.","marginGuardrail":"Margem positiva","comprehensionTest":"Testar entendimento antes de desconto."},"communicationContract":{"audience":"Prestadores locais","pain":"Demora no atendimento","promise":"Atendimento pronto","mechanism":"Personalização assistida","offerFraming":"Implantação em 48 horas","includedItems":["Respostas personalizadas"],"excludedItems":["Automação"],"proof":["Materiais reais"],"limitations":["Sem garantia"],"primaryChannel":"Abordagem individual","creativeBrief":"Demonstrar antes e depois sem promessa falsa.","destinationBrief":"Explicar entrega e responder objeções prioritárias.","primaryCta":"Quero meu atendimento pronto","checkoutAndAccess":"Checkout único e acesso por link mágico.","events":["visit","cta","checkout","purchase"],"eventContracts":[{"eventName":"PURCHASE_COMPLETED","trigger":"Pagamento aprovado","requiredMetadata":["paymentId"],"correlationKeys":["paymentId"],"authoritativeSource":"Pagamento","commercialMeaning":"Venda real"},{"eventName":"ACCESS_RELEASED","trigger":"Acesso liberado","requiredMetadata":["accessToken"],"correlationKeys":["accessToken"],"authoritativeSource":"PDE","commercialMeaning":"Acesso real"},{"eventName":"DELIVERY_COMPLETED","trigger":"Entrega concluída","requiredMetadata":["missionId"],"correlationKeys":["missionId"],"authoritativeSource":"PDE","commercialMeaning":"Entrega real"},{"eventName":"FIRST_USE","trigger":"Primeiro uso","requiredMetadata":["accessToken"],"correlationKeys":["accessToken"],"authoritativeSource":"PDE","commercialMeaning":"Uso real"},{"eventName":"REFUND_CONFIRMED","trigger":"Reembolso confirmado","requiredMetadata":["paymentId"],"correlationKeys":["paymentId"],"authoritativeSource":"Pagamento","commercialMeaning":"Receita revertida"}],"refundGuardrail":"Qualquer reembolso pausa a primeira coorte.","samplePlan":"Quinze contatos qualificados consentidos.","testTrafficSegregation":"mh_test"},"expectedMetric":"Três vendas","continueCriteria":"Compromisso comercial","adjustCriteria":"Sem checkout","stopCriteria":"Sem entrega","recommendedAction":"Produzir criativo e destino nos subprocessos."}' > "$answer"
           printf '%s\n' '{"usage":{"input_tokens":110,"cached_input_tokens":20,"output_tokens":35}}'
           """,
           StandardCharsets.UTF_8);
@@ -276,12 +305,19 @@ class GrowthOperatorBpmRunnerTest {
             "biblioteca genérica",
             "implantação personalizada",
             "não ativa mídia",
-            "tráfego de teste segregado");
+            "tráfego de teste segregado",
+            "billingModel",
+            "eventContracts",
+            "regra absoluta de reembolso",
+            "não duplique a homologação técnica");
     assertThat(schema)
         .contains(
             "priceDecision",
+            "billingModel",
             "communicationContract",
             "checkoutAndAccess",
+            "eventContracts",
+            "refundGuardrail",
             "continueCriteria",
             "stopCriteria");
     assertThat(GrowthOperatorBpmRunner.promptResourceFor("pde-communication-sales-journey"))

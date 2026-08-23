@@ -445,8 +445,9 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
                 {commercialOffer.primaryCta} <ChevronRight />
               </a>
               <small>
-                Você revisa os dados e as condições no checkout antes de
-                confirmar.
+                Pagamento único, sem recorrência. O briefing inicial está
+                incluído e o prazo de até 48 horas começa após o pagamento
+                confirmado e o recebimento das informações mínimas completas.
               </small>
               <nav
                 className="assisted-pde-offer-policies"

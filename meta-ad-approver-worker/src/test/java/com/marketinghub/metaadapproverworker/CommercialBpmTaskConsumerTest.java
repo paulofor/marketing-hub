@@ -71,6 +71,9 @@ class CommercialBpmTaskConsumerTest {
             "preço compreensível",
             "tráfego de teste segregado",
             "autorize mídia",
+            "compra, acesso, entrega, primeiro uso/aplicação e reembolso",
+            "Não crie subagente, worktree ou ambiente auxiliar",
+            "Não repita o preflight técnico do processo posterior",
             "80–100",
             "não reduz automaticamente");
     org.assertj.core.api.Assertions.assertThat(schema)

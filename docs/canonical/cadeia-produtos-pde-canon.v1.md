@@ -304,8 +304,18 @@ valor, oferta, compra e acesso, usando o produto real como fonte da comunicaçã
 - explicar qualquer recomendação personalizada com “por que você está vendo isto”, permitir ajustar
   preferências ou recusá-la e manter uma jornada neutra funcional;
 - configurar paywall, checkout e continuidade pós-compra;
+- declarar preço total e modelo de cobrança (`ONE_TIME` ou `RECURRING`) sem ambiguidade em contrato,
+  criativo, destino e checkout; compra única deve dizer explicitamente “pagamento único, sem
+  recorrência”;
 - garantir correspondência entre promessa, criativo, experiência, oferta e entrega;
-- instrumentar visita, interação de valor, CTA, checkout, compra, acesso e primeiro uso.
+- instrumentar visita, interação de valor, CTA, checkout, compra, acesso e primeiro uso;
+- versionar o contrato de eventos com nome, gatilho, metadados mínimos, chaves de correlação, fonte
+  de verdade e significado comercial. A jornada mínima usa `PURCHASE_COMPLETED`, `ACCESS_RELEASED`,
+  `MISSION_COMPLETED` para o marco de entrega, `FIRST_USE` e `REFUND_CONFIRMED`; a homologação deve
+  bloquear ativação se algum deles não possuir persistência e correlação comprovadas;
+- em coorte inicial de até cinco vendas, qualquer reembolso pausa novos contatos para análise de
+  causa-raiz. Reembolso causado por promessa, entrega, privacidade ou margem bloqueia a continuidade;
+  a taxa percentual isolada só passa a orientar decisão com amostra compatível.
 - para uma superfície que recebe aquisição, renderizar antes da compra a oferta canônica do
   experimento, incluindo dor, promessa, prova, CTA, preço, fornecedor, contato, políticas e checkout;
   uma área de acesso pós-compra isolada não pode ser homologada como landing comercial;
@@ -314,6 +324,12 @@ valor, oferta, compra e acesso, usando o produto real como fonte da comunicaçã
 
 **Saída final:** kit comercial aprovado com criativos, destino de campanha, jornada de venda,
 checkout, acesso e eventos preparados, sem ativação automática de mídia.
+
+Nesta etapa, `preparados` significa que URL, checkout, rota de acesso e contratos versionados de
+eventos existem, são coerentes e podem ser entregues à homologação. A comprovação com pagamento de
+teste, persistência, correlação, retomada e falhas pertence exclusivamente à Homologação e ativação
+comercial. Comunicação deve registrar essas verificações como próximo gate, sem duplicá-las nem
+bloquear seu próprio contrato apenas porque a homologação posterior ainda não foi executada.
 
 **Gate para avançar:** a cliente deve reconhecer para quem é, entender o benefício, encontrar resposta
 para as dúvidas prioritárias, verificar o produto real, saber o próximo passo e chegar à compra sem

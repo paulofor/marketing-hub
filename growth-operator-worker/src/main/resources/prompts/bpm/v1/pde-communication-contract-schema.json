@@ -47,9 +47,11 @@
     "priceDecision": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["approvedPriceBrl", "decision", "rationale", "marketReference", "marginGuardrail", "comprehensionTest"],
+      "required": ["approvedPriceBrl", "billingModel", "billingDescription", "decision", "rationale", "marketReference", "marginGuardrail", "comprehensionTest"],
       "properties": {
         "approvedPriceBrl": { "type": "number", "exclusiveMinimum": 0 },
+        "billingModel": { "type": "string", "enum": ["ONE_TIME", "RECURRING"] },
+        "billingDescription": { "type": "string", "minLength": 5 },
         "decision": { "type": "string", "enum": ["KEEP", "ADJUST", "BLOCK"] },
         "rationale": { "type": "string", "minLength": 10 },
         "marketReference": { "type": "string", "minLength": 10 },
@@ -60,13 +62,15 @@
     "communicationContract": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["audience", "pain", "promise", "mechanism", "offerFraming", "proof", "limitations", "primaryChannel", "creativeBrief", "destinationBrief", "primaryCta", "checkoutAndAccess", "events", "samplePlan", "testTrafficSegregation"],
+      "required": ["audience", "pain", "promise", "mechanism", "offerFraming", "includedItems", "excludedItems", "proof", "limitations", "primaryChannel", "creativeBrief", "destinationBrief", "primaryCta", "checkoutAndAccess", "events", "eventContracts", "refundGuardrail", "samplePlan", "testTrafficSegregation"],
       "properties": {
         "audience": { "type": "string", "minLength": 5 },
         "pain": { "type": "string", "minLength": 5 },
         "promise": { "type": "string", "minLength": 5 },
         "mechanism": { "type": "string", "minLength": 5 },
         "offerFraming": { "type": "string", "minLength": 5 },
+        "includedItems": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 3 } },
+        "excludedItems": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 3 } },
         "proof": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 3 } },
         "limitations": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 3 } },
         "primaryChannel": { "type": "string", "minLength": 3 },
@@ -75,6 +79,24 @@
         "primaryCta": { "type": "string", "minLength": 3 },
         "checkoutAndAccess": { "type": "string", "minLength": 10 },
         "events": { "type": "array", "minItems": 4, "items": { "type": "string", "minLength": 3 } },
+        "eventContracts": {
+          "type": "array",
+          "minItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["eventName", "trigger", "requiredMetadata", "correlationKeys", "authoritativeSource", "commercialMeaning"],
+            "properties": {
+              "eventName": { "type": "string", "minLength": 3 },
+              "trigger": { "type": "string", "minLength": 5 },
+              "requiredMetadata": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 2 } },
+              "correlationKeys": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 2 } },
+              "authoritativeSource": { "type": "string", "minLength": 3 },
+              "commercialMeaning": { "type": "string", "minLength": 5 }
+            }
+          }
+        },
+        "refundGuardrail": { "type": "string", "minLength": 10 },
         "samplePlan": { "type": "string", "minLength": 10 },
         "testTrafficSegregation": { "type": "string", "minLength": 5 }
       }

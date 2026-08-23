@@ -30,4 +30,30 @@ class PdeReviewArtifactLoaderTest {
               assertThat(artifact.get("contentChecksum").toString()).isNotBlank();
             });
   }
+
+  /** Descobre contratos comerciais novos sem exigir lista manual no executor de Têmis. */
+  @Test
+  void loadsAllCommunicationContractsForCurrentAndFutureProducts() throws Exception {
+    Path contracts = tempDir.resolve("pde-platform/contracts");
+    Files.createDirectories(contracts);
+    Files.writeString(contracts.resolve("produto-b-v1.json"), "{\"slug\":\"produto-b\"}");
+    Files.writeString(contracts.resolve("produto-a-v1.json"), "{\"slug\":\"produto-a\"}");
+    Files.writeString(contracts.resolve("nota.md"), "não é contrato");
+    Path outsideContract = tempDir.resolve("fora-do-diretorio.json");
+    Files.writeString(outsideContract, "{\"slug\":\"externo\"}");
+    Files.createSymbolicLink(contracts.resolve("atalho-externo.json"), outsideContract);
+
+    var evidence = new PdeReviewArtifactLoader(tempDir.toString()).loadCommunicationContracts();
+
+    assertThat(evidence)
+        .extracting(item -> item.get("path"))
+        .containsExactly(
+            "pde-platform/contracts/produto-a-v1.json", "pde-platform/contracts/produto-b-v1.json");
+    assertThat(evidence)
+        .allSatisfy(
+            artifact -> {
+              assertThat(artifact.get("content").toString()).contains("slug");
+              assertThat(artifact.get("contentChecksum").toString()).isNotBlank();
+            });
+  }
 }

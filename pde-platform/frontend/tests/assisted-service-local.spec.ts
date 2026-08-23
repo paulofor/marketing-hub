@@ -78,6 +78,15 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
   await expect(page.getByText("Microvalor em até 12 horas")).toBeVisible();
   await expect(page.getByText("Revisão humana antes do uso")).toBeVisible();
   await expect(page.getByTestId("commercial-offer")).toContainText("R$ 349");
+  await expect(page.getByTestId("commercial-offer")).toContainText(
+    "Pagamento único, sem recorrência",
+  );
+  await expect(page.getByTestId("commercial-offer")).toContainText(
+    /briefing inicial está incluído/i,
+  );
+  await expect(page.getByTestId("commercial-offer")).toContainText(
+    /prazo de até 48 horas começa após o pagamento confirmado/i,
+  );
   const checkout = page.getByRole("link", {
     name: "Quero meu atendimento sob medida",
   });

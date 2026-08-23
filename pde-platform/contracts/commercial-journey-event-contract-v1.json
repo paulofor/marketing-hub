@@ -1,0 +1,61 @@
+{
+  "contractVersion": "commercial-journey-event-contract-v1",
+  "purpose": "Correlacionar venda, acesso, entrega, primeiro uso e reembolso sem contar intenção ou tráfego de teste como receita.",
+  "activationRule": "A homologação comercial deve bloquear a ativação enquanto algum evento obrigatório não possuir fonte persistida e correlação comprovada.",
+  "events": [
+    {
+      "eventName": "PURCHASE_COMPLETED",
+      "trigger": "Pagamento aprovado e confirmado pelo provedor.",
+      "requiredMetadata": ["paymentId", "productSlug", "experimentId", "amountBrl", "currency", "approvedAt"],
+      "correlationKeys": ["paymentId", "productSlug", "experimentId"],
+      "authoritativeSource": "Webhook ou consulta autenticada do provedor de pagamentos.",
+      "commercialMeaning": "Único evento que incrementa venda e receita para produto de compra única."
+    },
+    {
+      "eventName": "ACCESS_RELEASED",
+      "trigger": "Acesso persistido depois da confirmação do pagamento.",
+      "requiredMetadata": ["paymentId", "accessToken", "productSlug", "experimentId", "releasedAt"],
+      "correlationKeys": ["paymentId", "accessToken", "experimentId"],
+      "authoritativeSource": "Backend PDE responsável pela concessão de acesso.",
+      "commercialMeaning": "Confirma que a compra produziu acesso retomável; não cria nova venda."
+    },
+    {
+      "eventName": "MISSION_COMPLETED",
+      "trigger": "Marco operacional de entrega concluído com artefato auditável.",
+      "requiredMetadata": ["accessToken", "productSlug", "experimentId", "missionId", "completedAt"],
+      "correlationKeys": ["accessToken", "missionId", "experimentId"],
+      "authoritativeSource": "Backend PDE no endpoint operacional autorizado.",
+      "commercialMeaning": "Com missionId entrega-completa-48h, comprova entrega; não cria nova venda."
+    },
+    {
+      "eventName": "FIRST_USE",
+      "trigger": "Primeiro uso autenticado registrado depois da liberação do acesso.",
+      "requiredMetadata": ["accessToken", "productSlug", "experimentId", "occurredAt"],
+      "correlationKeys": ["accessToken", "experimentId"],
+      "authoritativeSource": "Backend PDE após interação autenticada da cliente.",
+      "commercialMeaning": "Confirma início de uso do valor entregue; não cria nova venda."
+    },
+    {
+      "eventName": "MISSION_COMPLETED",
+      "trigger": "Primeira aplicação prática concluída com o material personalizado.",
+      "requiredMetadata": ["accessToken", "productSlug", "experimentId", "missionId", "completedAt"],
+      "correlationKeys": ["accessToken", "missionId", "experimentId"],
+      "authoritativeSource": "Backend PDE no endpoint operacional autorizado.",
+      "commercialMeaning": "Com missionId primeira-aplicacao-e-revisao, comprova aplicação real; não cria nova venda."
+    },
+    {
+      "eventName": "REFUND_CONFIRMED",
+      "trigger": "Provedor confirma reembolso, estorno ou chargeback de pagamento antes aprovado.",
+      "requiredMetadata": ["paymentId", "productSlug", "experimentId", "amountBrl", "providerStatus", "confirmedAt", "reason"],
+      "correlationKeys": ["paymentId", "productSlug", "experimentId"],
+      "authoritativeSource": "Webhook persistido do provedor de pagamentos e seu payload bruto auditável.",
+      "commercialMeaning": "Subtrai receita líquida e aciona o gate de causa-raiz; não deve ser inferido por pedido de suporte."
+    }
+  ],
+  "testTraffic": {
+    "requiredClassification": "INTERNAL_QA",
+    "requiredReason": "EXPLICIT_TEST_MARKER",
+    "countsAsSale": false
+  },
+  "firstCohortRefundGuardrail": "Até cinco vendas, qualquer reembolso pausa novos contatos e exige causa-raiz. Parar se decorrer de promessa, entrega, privacidade ou margem; percentuais só orientam decisão após amostra compatível."
+}

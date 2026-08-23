@@ -29,6 +29,22 @@ class BusinessProcessChainDefinitionRepositoryTest {
     assertThat(repository.count()).isEqualTo(2);
   }
 
+  /** Seleciona a versão publicada mais recente para sustentar a posição atual dos produtos. */
+  @Test
+  void findsLatestPublishedChainByCanonicalCode() {
+    repository.save(chain(3, "PUBLISHED"));
+    BusinessProcessChainDefinition current = repository.saveAndFlush(chain(5, "PUBLISHED"));
+    repository.save(chain(6, "DRAFT"));
+
+    var result =
+        repository.findAllByChainCodeAndStatusOrderByVersionNumberDesc(
+            "pde-value-creation-delivery", "PUBLISHED");
+
+    assertThat(result).isNotEmpty();
+    assertThat(result.getFirst().getId()).isEqualTo(current.getId());
+    assertThat(result.getFirst().getVersionNumber()).isEqualTo(5);
+  }
+
   /** Monta uma versão persistível da cadeia PDE para o cenário informado. */
   private BusinessProcessChainDefinition chain(int version, String status) {
     BusinessProcessChainDefinition chain = new BusinessProcessChainDefinition();

@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { useMemo, type CSSProperties } from "react";
 import type { Product } from "../../api/product/useProducts";
+import { formatCommercialStatus } from "../../api/product/productStatus";
+import { useProductValueChainPositions } from "../../api/product/useProductValueChainPositions";
 import {
   BookOpen,
   Clapperboard,
@@ -21,6 +23,7 @@ import { parsePdePersuasiveJourney } from "../../api/product/pdePersuasiveJourne
 import { useApplyDefaultPdePersuasiveJourney } from "../../api/product/useApplyDefaultPdePersuasiveJourney";
 import { useProducts } from "../../api/product/useProducts";
 import PageTitle from "../../components/PageTitle";
+import ProductValueChainPosition from "../../components/ProductValueChainPosition";
 
 const money = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -43,30 +46,40 @@ function normalizeProductStatus(value?: string) {
     .toUpperCase();
 }
 
-function isCommercialValidationProduct(product: Pick<Product, "commercialStatus">) {
-  return normalizeProductStatus(product.commercialStatus) === "VALIDACAO_COMERCIAL";
+function isCommercialValidationProduct(
+  product: Pick<Product, "commercialStatus">,
+) {
+  return (
+    normalizeProductStatus(product.commercialStatus) === "VALIDACAO_COMERCIAL"
+  );
 }
 
-function getProductActivityTime(product: Pick<Product, "updatedAt" | "createdAt">) {
+function getProductActivityTime(
+  product: Pick<Product, "updatedAt" | "createdAt">,
+) {
   const rawActivityTime = product.updatedAt || product.createdAt;
   if (!rawActivityTime) return 0;
   const activityTime = Date.parse(rawActivityTime);
   return Number.isNaN(activityTime) ? 0 : activityTime;
 }
 
-function getAssociatedExperimentCount(product: Pick<Product, "associatedExperiments">) {
+function getAssociatedExperimentCount(
+  product: Pick<Product, "associatedExperiments">,
+) {
   return splitText(product.associatedExperiments).length;
 }
 
 function compareProductsByCommercialActivity(a: Product, b: Product) {
   const validationDelta =
-    Number(isCommercialValidationProduct(b)) - Number(isCommercialValidationProduct(a));
+    Number(isCommercialValidationProduct(b)) -
+    Number(isCommercialValidationProduct(a));
   if (validationDelta !== 0) return validationDelta;
 
   const activityDelta = getProductActivityTime(b) - getProductActivityTime(a);
   if (activityDelta !== 0) return activityDelta;
 
-  const experimentsDelta = getAssociatedExperimentCount(b) - getAssociatedExperimentCount(a);
+  const experimentsDelta =
+    getAssociatedExperimentCount(b) - getAssociatedExperimentCount(a);
   if (experimentsDelta !== 0) return experimentsDelta;
 
   return b.id - a.id;
@@ -219,10 +232,24 @@ function getJourneyTrackedSections(step: {
 
 export default function ProductListPage() {
   const { data, isLoading } = useProducts();
+  const valueChainPositions = useProductValueChainPositions();
   const applyDefaultJourney = useApplyDefaultPdePersuasiveJourney();
   const products = useMemo(
-    () => (Array.isArray(data) ? [...data].sort(compareProductsByCommercialActivity) : []),
+    () =>
+      Array.isArray(data)
+        ? [...data].sort(compareProductsByCommercialActivity)
+        : [],
     [data],
+  );
+  const valueChainPositionByProductId = useMemo(
+    () =>
+      new Map(
+        (valueChainPositions.data ?? []).map((position) => [
+          position.productId,
+          position,
+        ]),
+      ),
+    [valueChainPositions.data],
   );
   if (isLoading) return <p>Carregando...</p>;
   return (
@@ -277,7 +304,8 @@ export default function ProductListPage() {
                 <div className="product-catalog-card__header">
                   <div>
                     <span className="badge text-bg-light border mb-2">
-                      {product.commercialStatus || "Sem status"}
+                      Status comercial:{" "}
+                      {formatCommercialStatus(product.commercialStatus)}
                     </span>
                     <h2 className="h4 mb-1">
                       {product.name || product.niche || `Produto ${product.id}`}
@@ -290,6 +318,15 @@ export default function ProductListPage() {
                       : "Preço aberto"}
                   </div>
                 </div>
+
+                <ProductValueChainPosition
+                  productName={
+                    product.name || product.niche || `Produto ${product.id}`
+                  }
+                  position={valueChainPositionByProductId.get(product.id)}
+                  isLoading={valueChainPositions.isLoading}
+                  isError={valueChainPositions.isError}
+                />
 
                 <div className="row g-3 mt-1">
                   <div className="col-12 col-xl-7">

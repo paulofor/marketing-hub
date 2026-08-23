@@ -3,6 +3,7 @@ import { expect, test, type APIRequestContext } from '@playwright/test';
 type PublicHealthContract = {
   slug?: string;
   healthPath?: string;
+  commercialOfferPath?: string;
   requiredTexts?: string[];
   forbiddenTexts?: string[];
 };
@@ -27,9 +28,16 @@ type PublicProductContract = {
   };
 };
 
+type PublicCommercialOffer = {
+  primaryCta?: string;
+  priceBrl?: number;
+  checkoutUrl?: string;
+};
+
 const defaultContract: Required<PublicHealthContract> = {
   slug: 'metodo-musa-7-dias',
   healthPath: '/',
+  commercialOfferPath: '',
   requiredTexts: [
     'Seu primeiro ajuste MUSA',
   ],
@@ -61,9 +69,33 @@ async function loadContract(request: APIRequestContext) {
   return {
     slug: process.env.PDE_PUBLIC_HEALTH_PRODUCT_SLUG || fileContract.slug || defaultContract.slug,
     healthPath: process.env.PDE_PUBLIC_HEALTH_PATH || fileContract.healthPath || defaultContract.healthPath,
+    commercialOfferPath: fileContract.commercialOfferPath || defaultContract.commercialOfferPath,
     requiredTexts: envRequiredTexts.length > 0 ? envRequiredTexts : fileContract.requiredTexts || defaultContract.requiredTexts,
     forbiddenTexts: envForbiddenTexts.length > 0 ? envForbiddenTexts : fileContract.forbiddenTexts || defaultContract.forbiddenTexts,
   };
+}
+
+async function loadCommercialOffer(request: APIRequestContext, commercialOfferPath: string) {
+  if (!commercialOfferPath) {
+    return null;
+  }
+
+  const response = await request.get(commercialOfferPath);
+  expect(response.ok(), `Oferta comercial publica indisponivel: ${commercialOfferPath}`).toBeTruthy();
+  const offer = (await response.json()) as PublicCommercialOffer;
+  expect(offer.primaryCta?.trim(), 'Oferta comercial sem CTA primario').toBeTruthy();
+  expect(offer.priceBrl, 'Oferta comercial sem preco positivo').toBeGreaterThan(0);
+  expect(offer.checkoutUrl?.trim(), 'Oferta comercial sem checkout').toBeTruthy();
+  return offer;
+}
+
+function formatBrl(value: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value);
 }
 
 async function loadPublishedFirstFoldTexts(request: APIRequestContext, slug: string, diagnostics: VersionDiagnostics) {
@@ -125,6 +157,7 @@ test('health publico renderiza app, javascript e texto comercial', async ({ page
     );
   }
   const publishedFirstFoldTexts = await loadPublishedFirstFoldTexts(request, contract.slug, diagnostics);
+  const commercialOffer = await loadCommercialOffer(request, contract.commercialOfferPath);
   const staticRequiredTexts = removeMutableFallbackTexts(contract.requiredTexts, publishedFirstFoldTexts);
 
   const response = await page.goto(contract.healthPath, { waitUntil: 'networkidle' });
@@ -133,6 +166,12 @@ test('health publico renderiza app, javascript e texto comercial', async ({ page
   await expect(page.locator('#root').locator(':scope > *').first()).toBeVisible();
   for (const text of [...publishedFirstFoldTexts, ...staticRequiredTexts]) {
     await expect(page.locator('body'), `Texto obrigatorio ausente no PDE ${contract.slug}: ${text}`).toContainText(text);
+  }
+  if (commercialOffer) {
+    const offerCard = page.getByTestId('commercial-offer');
+    await expect(offerCard).toContainText(commercialOffer.primaryCta!);
+    await expect(offerCard).toContainText(formatBrl(commercialOffer.priceBrl!));
+    await expect(offerCard.locator('.assisted-pde-checkout-cta')).toHaveAttribute('href', commercialOffer.checkoutUrl!);
   }
   const publicBodyText = await page.locator('body').innerText();
   for (const text of contract.forbiddenTexts) {

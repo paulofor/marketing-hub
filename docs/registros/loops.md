@@ -381,6 +381,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 | `LOOP-DEPLOY-COMPOSE-CROSS-SERVICE-SECRETS`         | ALTO       | Fechado em 2026-08-04            | Deploy por serviço                                    | descritor Compose isolado por destino + teste sem secrets alheios                            |
 | `LOOP-DEPLOY-STALE-IMAGE`                           | ALTO       | Fechado em 2026-08-04            | Detecção de mudanças do deploy                        | alteração de publicador/workflow força rebuild e teste do artefato                           |
 | `LOOP-DEPLOY-GLOBAL-TIMEOUT`                        | ALTO       | Fechado em 2026-08-06            | Deploy backend/frontend                               | limites próprios por operação + saúde obrigatória do backend                                 |
+| `LOOP-TEMIS-PDE-ARTIFACT-DEPLOY-DRIFT`              | ALTO       | Fechado localmente em 2026-08-23 | Evidência versionada de Têmis                         | sincronização allowlist + gatilho por artefato + readiness dentro do container                |
 | `LOOP-CUSTOMER-AGENT-OBSERVABILITY`                 | ALTO       | Fechado em 2026-08-06            | Agente Cliente                                        | logfile canônico do worker + alias MCP + teste ponta a ponta                                 |
 | `LOOP-CUSTOMER-AGENT-EVALUATION-TIMEOUT`            | ALTO       | Fechado em 2026-08-06            | Agente Cliente                                        | timeout adequado + erro persistido e integralmente visível no frontend + retry controlado    |
 | `LOOP-FINANCIAL-AGENT-OBSERVABILITY`                | ALTO       | Fechado em 2026-08-06            | Agente Financeiro                                     | logfile canônico do worker + alias MCP + teste ponta a ponta                                 |
@@ -1583,3 +1584,21 @@ Use este checklist quando o problema estiver em algum loop acima:
   compilador.
 - **Prevenção:** teste HTTP com `MockMvc` chama a rota empacotável e confirma produto, experimento e
   preço; a jornada assistida local também consulta o endpoint real antes de simular o checkout.
+
+## LOOP-TEMIS-PDE-ARTIFACT-DEPLOY-DRIFT — revisão não recebe o contrato publicado
+
+- **Data:** 2026-08-23.
+- **Sintoma:** a tarefa #195 de Têmis foi reservada e bloqueada antes de consumir o modelo com
+  `Diretório de contratos comerciais PDE não encontrado`, apesar de o PR #5011 e o deploy dos
+  workers estarem verdes.
+- **Causa-raiz confirmada:** o container monta o repositório do host como fonte somente leitura,
+  mas o workflow isolado sincronizava apenas `meta-ad-approver-worker/` e um script. Os contratos em
+  `pde-platform/contracts/` e os materiais em `pde-platform/frontend/public/materials/` nunca eram
+  entregues ao host. As revisões #190 e #193 já registravam evidência versionada limitada, confirmando
+  que a divergência antecedia a falha fechada da tarefa #195.
+- **Correção sistêmica:** o workflow passa a sincronizar apenas os dois diretórios de evidência
+  autorizados e o launcher Codex usado pelo Compose, dispara quando eles mudarem e preserva o
+  restante do repositório isolado.
+- **Prevenção:** o gate arquitetural exige os gatilhos e comandos de sincronização; o readiness do
+  deploy entra no container de Têmis e exige os contratos da oferta, dos eventos e ao menos um
+  material funcional antes de declarar o executor pronto.

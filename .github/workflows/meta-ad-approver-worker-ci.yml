@@ -5,18 +5,26 @@ on:
     branches: [main]
     paths:
       - meta-ad-approver-worker/**
+      - pde-platform/contracts/**
+      - pde-platform/frontend/public/materials/**
       - .github/workflows/meta-ad-approver-worker-ci.yml
+      - scripts/validate-premium-agents.sh
       - scripts/test-isolated-agent-codex-auth.sh
       - scripts/codex-app-server-device-login.mjs
+      - scripts/codex-oauth-session-safe.sh
   pull_request:
     paths:
       - meta-ad-approver-worker/**
       - ai-worker/src/main/java/com/marketinghub/worker/creativereview/**
       - ai-worker/src/test/java/com/marketinghub/worker/architecture/MetaAdApproverIsolationTest.java
       - docs/canonical/**
+      - pde-platform/contracts/**
+      - pde-platform/frontend/public/materials/**
       - .github/workflows/meta-ad-approver-worker-ci.yml
+      - scripts/validate-premium-agents.sh
       - scripts/test-isolated-agent-codex-auth.sh
       - scripts/codex-app-server-device-login.mjs
+      - scripts/codex-oauth-session-safe.sh
   workflow_dispatch:
 
 concurrency:
@@ -109,9 +117,16 @@ jobs:
       - name: Synchronize versioned repository
         run: |
           set -euo pipefail
-          ssh "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/meta-ad-approver-worker' '${REPOSITORY_DIR}/scripts'"
+          ssh "${VPS_USER}@${VPS_IP}" "mkdir -p \
+            '${REPOSITORY_DIR}/meta-ad-approver-worker' \
+            '${REPOSITORY_DIR}/pde-platform/contracts' \
+            '${REPOSITORY_DIR}/pde-platform/frontend/public/materials' \
+            '${REPOSITORY_DIR}/scripts'"
           rsync -az --delete meta-ad-approver-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/meta-ad-approver-worker/"
+          rsync -az --delete pde-platform/contracts/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/pde-platform/contracts/"
+          rsync -az --delete pde-platform/frontend/public/materials/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/pde-platform/frontend/public/materials/"
           rsync -az scripts/codex-app-server-device-login.mjs "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
+          rsync -az scripts/codex-oauth-session-safe.sh "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
       - name: Rebuild and restart agent
         run: |
           set -euo pipefail
@@ -141,6 +156,8 @@ jobs:
                    && curl -fsS http://127.0.0.1:8098/ops-meta-ad-approver-observability-v1/health | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' \
                    && docker compose exec -T themis-image-studio sh -c 'test -f /run/secrets/openai_api_key && test -r /run/secrets/openai_api_key && test -s /run/secrets/openai_api_key' \
                    && docker compose exec -T meta-ad-approver-worker sh -c 'test ! -e /run/secrets/openai_api_key' \
+                   && docker compose exec -T meta-ad-approver-worker sh -c 'test -x /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh' \
+                   && docker compose exec -T meta-ad-approver-worker sh -c 'test -s /workspace/marketing-hub/pde-platform/contracts/kit-whatsapp-pronto-v1.json && test -s /workspace/marketing-hub/pde-platform/contracts/commercial-journey-event-contract-v1.json && test -s /workspace/marketing-hub/pde-platform/frontend/public/materials/kit-whatsapp-v1/01-comece-aqui.md' \
                    && docker compose exec -T meta-ad-approver-worker node /app/agent-health-report.mjs \
                    && exit 0; \
                  sleep 5; \

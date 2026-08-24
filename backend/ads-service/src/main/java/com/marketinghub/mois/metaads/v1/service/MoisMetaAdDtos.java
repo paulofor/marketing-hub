@@ -24,6 +24,7 @@ public final class MoisMetaAdDtos {
       String searchTerms,
       String countryCode,
       String status,
+      CollectionState collection,
       String gateDecision,
       List<String> evidences,
       List<String> gaps,
@@ -32,6 +33,9 @@ public final class MoisMetaAdDtos {
       int adsObserved,
       Instant createdAt,
       Instant updatedAt) {}
+
+  /** Explica como a coleta pode ocorrer e quando a próxima evidência deve ser buscada. */
+  public record CollectionState(String mode, String reason, Instant nextObservationAt) {}
 
   /** Expõe um briefing original derivado somente de padrões comprovados e rastreáveis. */
   public record CreativeIntelligenceBrief(

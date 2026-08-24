@@ -1904,3 +1904,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-24-musa-v7-refund-reconciliation.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-24-product-discovery-execution-lease.yaml
+      relativeToChangelogFile: true

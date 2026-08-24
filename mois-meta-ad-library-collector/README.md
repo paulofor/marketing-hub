@@ -1,6 +1,10 @@
 # MOIS Meta Ad Library Collector
 
-Executor recorrente do Investigador Meta v1. Consome pendências do backend, consulta a API oficial `ads_archive`, envia payloads brutos e reporta conclusão.
+Executor do Investigador Meta v1 para categorias e territórios aceitos pela API oficial `ads_archive`. Consome pendências elegíveis do backend, envia payloads brutos e reporta conclusão.
+
+Anúncios comerciais gerais do Brasil usam acompanhamento supervisionado no Marketing Hub,
+pois a API oficial limita anúncios que não alcançaram a União Europeia a temas sociais,
+eleições ou política. O coletor nunca raspa a interface pública para contornar esse contrato.
 
 Configuração obrigatória:
 

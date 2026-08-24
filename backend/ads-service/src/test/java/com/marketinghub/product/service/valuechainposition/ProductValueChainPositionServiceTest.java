@@ -33,7 +33,9 @@ class ProductValueChainPositionServiceTest {
     when(chainRepository.findAllByChainCodeAndStatusOrderByVersionNumberDesc(
             "pde-value-creation-delivery", "PUBLISHED"))
         .thenReturn(List.of(chain));
-    var service = new ProductValueChainPositionService(productRepository, chainRepository);
+    var service =
+        new ProductValueChainPositionService(
+            productRepository, chainRepository, mock(ProductSubprocessPositionResolver.class));
 
     var positions = service.listPositions();
 
@@ -62,7 +64,9 @@ class ProductValueChainPositionServiceTest {
     when(chainRepository.findAllByChainCodeAndStatusOrderByVersionNumberDesc(
             "pde-value-creation-delivery", "PUBLISHED"))
         .thenReturn(List.of(chain()));
-    var service = new ProductValueChainPositionService(productRepository, chainRepository);
+    var service =
+        new ProductValueChainPositionService(
+            productRepository, chainRepository, mock(ProductSubprocessPositionResolver.class));
 
     var position = service.listPositions().getFirst();
 
@@ -81,7 +85,9 @@ class ProductValueChainPositionServiceTest {
     when(chainRepository.findAllByChainCodeAndStatusOrderByVersionNumberDesc(
             "pde-value-creation-delivery", "PUBLISHED"))
         .thenReturn(List.of());
-    var service = new ProductValueChainPositionService(productRepository, chainRepository);
+    var service =
+        new ProductValueChainPositionService(
+            productRepository, chainRepository, mock(ProductSubprocessPositionResolver.class));
 
     var position = service.listPositions().getFirst();
 

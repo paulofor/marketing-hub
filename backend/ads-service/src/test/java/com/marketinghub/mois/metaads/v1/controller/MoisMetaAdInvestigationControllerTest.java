@@ -32,6 +32,10 @@ class MoisMetaAdInvestigationControllerTest {
                 "agenda cheia",
                 "BR",
                 "ACTIVE_SUPERVISED",
+                new MoisMetaAdDtos.CollectionState(
+                    "SUPERVISED",
+                    "A API oficial não cobre anúncios comerciais gerais no Brasil",
+                    Instant.parse("2026-09-02T20:00:00Z")),
                 "INVESTIGAR",
                 List.of(),
                 List.of("Aguardar observações reais"),

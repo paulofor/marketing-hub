@@ -17,6 +17,11 @@ export interface MetaAdInvestigation {
   searchTerms: string;
   countryCode: string;
   status: string;
+  collection: {
+    mode: "SUPERVISED" | "OFFICIAL_API";
+    reason: string;
+    nextObservationAt: string;
+  };
   gateDecision: "INVESTIGAR" | "MODELAR" | "DESCARTAR";
   evidences: string[];
   gaps: string[];

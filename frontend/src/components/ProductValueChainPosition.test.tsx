@@ -26,6 +26,19 @@ describe("ProductValueChainPosition", () => {
             processVersion: 4,
             sequenceNumber: 4,
             processCount: 6,
+            subprocessPosition: {
+              trackingStatus: "IN_PROGRESS",
+              subprocessCount: 2,
+              currentActivityName: "Criar e aprovar peças",
+              currentSubprocessDefinitionId: 17,
+              currentSubprocessCode: "creative-production-approval",
+              currentSubprocessName: "Criação e aprovação de criativos",
+              currentSubprocessObjective: "Criativos aprovados e prontos.",
+              nextSubprocessDefinitionId: 18,
+              nextSubprocessCode: "landing-page-generation",
+              nextSubprocessName: "Geração de landing page",
+              nextSubprocessObjective: "Landing aprovada para publicação.",
+            },
           }}
         />
       </BrowserRouter>,
@@ -38,6 +51,14 @@ describe("ProductValueChainPosition", () => {
       }),
     ).toHaveAttribute("href", "/business-processes?processId=43");
     expect(screen.getByText(/Criação e entrega de valor/i)).toBeTruthy();
+    expect(screen.getByText("Subprocesso atual")).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "Criação e aprovação de criativos" }),
+    ).toHaveAttribute("href", "/business-processes?processId=17");
+    expect(screen.getByText("Próximo subprocesso")).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: /Geração de landing page/i }),
+    ).toHaveAttribute("href", "/business-processes?processId=18");
   });
 
   it("does not fabricate a process when the backend cannot identify it", () => {

@@ -153,6 +153,14 @@ técnicos. Status sem vínculo e cadeia indisponível devem aparecer como estado
 uma etapa fabricada. Novas versões publicadas da cadeia devem refletir automaticamente o nome, a
 ordem e o total de processos exibidos.
 
+Quando o processo atual possuir subprocessos, os cards administrativos também devem mostrar o
+subprocesso atual, seu objetivo final e o próximo subprocesso previsto com seu objetivo. A verdade
+deve ser resolvida pelo backend a partir da composição publicada e do histórico persistido da
+execução; o frontend não pode inferir progresso por nome, status visual ou ordem local. Quando a
+execução ainda estiver em uma atividade do processo pai, a tela deve declarar essa atividade e
+apresentar o próximo subprocesso. Ausência de histórico deve aparecer como planejamento, nunca como
+subprocesso concluído.
+
 ## 1. Descoberta e priorização da oportunidade PDE
 
 **Objetivo final:** comprovar que existe uma dor recorrente, relevante, mal atendida e com intenção

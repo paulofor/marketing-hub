@@ -4,6 +4,21 @@ info:
   version: 1.0.0
   description: Endpoints públicos e administrativos do cadastro comercial de produtos.
 paths:
+  /api/products/value-chain-positions:
+    get:
+      tags:
+        - Products
+      summary: Lista processo, subprocesso atual e próximo objetivo de cada produto.
+      operationId: listProductValueChainPositions
+      responses:
+        "200":
+          description: Posições resolvidas pelo backend a partir da cadeia e do histórico publicados.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductValueChainPosition"
   /api/products:
     get:
       tags:
@@ -639,6 +654,89 @@ paths:
           description: Produto não encontrado.
 components:
   schemas:
+    ProductValueChainPosition:
+      type: object
+      required:
+        - productId
+        - resolutionStatus
+        - resolutionMessage
+      properties:
+        productId:
+          type: integer
+          format: int64
+        commercialStatus:
+          type: string
+          nullable: true
+        resolutionStatus:
+          type: string
+          enum:
+            - IDENTIFIED
+            - NOT_IDENTIFIED
+            - CHAIN_UNAVAILABLE
+        resolutionMessage:
+          type: string
+        processDefinitionId:
+          type: integer
+          format: int64
+          nullable: true
+        processName:
+          type: string
+          nullable: true
+        sequenceNumber:
+          type: integer
+          nullable: true
+        processCount:
+          type: integer
+          nullable: true
+        subprocessPosition:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/ProductSubprocessPosition"
+    ProductSubprocessPosition:
+      type: object
+      required:
+        - trackingStatus
+        - subprocessCount
+      properties:
+        trackingStatus:
+          type: string
+          enum:
+            - NOT_APPLICABLE
+            - PLANNED
+            - IN_PROGRESS
+            - RECORDED
+        subprocessCount:
+          type: integer
+          minimum: 0
+        currentActivityName:
+          type: string
+          nullable: true
+        currentSubprocessDefinitionId:
+          type: integer
+          format: int64
+          nullable: true
+        currentSubprocessCode:
+          type: string
+          nullable: true
+        currentSubprocessName:
+          type: string
+          nullable: true
+        currentSubprocessObjective:
+          type: string
+          nullable: true
+        nextSubprocessDefinitionId:
+          type: integer
+          format: int64
+          nullable: true
+        nextSubprocessCode:
+          type: string
+          nullable: true
+        nextSubprocessName:
+          type: string
+          nullable: true
+        nextSubprocessObjective:
+          type: string
+          nullable: true
     ProductTypeDefinition:
       type: object
       properties:

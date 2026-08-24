@@ -47,6 +47,7 @@ const automaticExecution = createAutomaticExecutionControl({
   backendBaseUrl,
   logger: operationalLogger,
 });
+const pollLock = createPollLock();
 
 async function main() {
   operationalLogger.info(
@@ -72,6 +73,12 @@ async function main() {
 }
 
 async function runCycle() {
+  if (!pollLock.tryAcquire()) {
+    operationalLogger.info(
+      "[product-discovery-worker] polling anterior ainda está em execução; nova rodada ignorada",
+    );
+    return;
+  }
   markPollStarted(healthState);
   try {
     if (!(await automaticExecution.allowsAutomaticExecution())) {
@@ -88,6 +95,8 @@ async function runCycle() {
   } catch (error) {
     markPollFailed(healthState, error);
     operationalLogger.error("[product-discovery-worker] cycle failed", error);
+  } finally {
+    pollLock.release();
   }
 }
 
@@ -102,11 +111,11 @@ async function processJob(job) {
     );
     await postJson(
       `${backendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${job.cycleId}/plan`,
-      {
+      withExecutionLease(job, {
         planJson: JSON.stringify(directed.plan),
         rawResponse: directed.rawResponse,
         model: directed.model,
-      },
+      }),
     );
     const results = await searchInternet(
       { ...job, directedQueries: directed.plan.publicQueries },
@@ -135,7 +144,7 @@ async function processJob(job) {
     });
     await postJson(
       `${backendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${job.cycleId}/complete`,
-      report,
+      withExecutionLease(job, report),
     );
     markCycleCompleted(healthState, job, report);
     operationalLogger.info(
@@ -145,13 +154,35 @@ async function processJob(job) {
     markCycleFailed(healthState, job, error);
     await postJson(
       `${backendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${job.cycleId}/fail`,
-      { errorMessage: error.message || "Falha desconhecida na pesquisa PDE" },
+      withExecutionLease(job, {
+        errorMessage: error.message || "Falha desconhecida na pesquisa PDE",
+      }),
     );
     operationalLogger.error(
       `[product-discovery-worker] failed cycle=${job.cycleId}`,
       error,
     );
   }
+}
+
+/** Vincula cada callback ao lease entregue pelo backend sem alterar o resultado funcional. */
+export function withExecutionLease(job, payload) {
+  return { executionLeaseId: job.executionLeaseId, ...payload };
+}
+
+/** Impede polls sobrepostos sem deslocar a decisão de fila para o executor. */
+export function createPollLock() {
+  let running = false;
+  return {
+    tryAcquire() {
+      if (running) return false;
+      running = true;
+      return true;
+    },
+    release() {
+      running = false;
+    },
+  };
 }
 
 /** Remove a mesma alternativa observada por consultas diferentes sem inflar o gate. */

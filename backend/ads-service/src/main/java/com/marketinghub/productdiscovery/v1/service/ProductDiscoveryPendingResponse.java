@@ -12,4 +12,6 @@ public record ProductDiscoveryPendingResponse(
     String acquisitionChannel,
     String commercialConstraints,
     String forbiddenCategories,
-    String objective) {}
+    String objective,
+    String executionLeaseId,
+    int executionAttempt) {}

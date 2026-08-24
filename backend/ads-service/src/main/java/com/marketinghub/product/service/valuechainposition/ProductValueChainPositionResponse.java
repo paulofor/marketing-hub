@@ -14,4 +14,5 @@ public record ProductValueChainPositionResponse(
     String processName,
     Integer processVersion,
     Integer sequenceNumber,
-    Integer processCount) {}
+    Integer processCount,
+    ProductSubprocessPositionResponse subprocessPosition) {}

@@ -25,6 +25,7 @@ export default function ProductValueChainPosition({
     ? ""
     : " product-value-chain-position--unresolved";
   const compactClass = compact ? " product-value-chain-position--compact" : "";
+  const subprocess = position?.subprocessPosition;
 
   return (
     <section
@@ -64,6 +65,56 @@ export default function ProductValueChainPosition({
               ? ` · cadeia v${position.chainVersion}`
               : ""}
           </small>
+          {subprocess &&
+          subprocess.trackingStatus !== "NOT_APPLICABLE" &&
+          subprocess.subprocessCount > 0 ? (
+            <div className="product-value-chain-position__subprocesses">
+              <span className="product-value-chain-position__subprocesses-title">
+                Subprocessos para atingir o objetivo
+              </span>
+              {subprocess.currentSubprocessDefinitionId != null ? (
+                <div className="product-value-chain-position__subprocess product-value-chain-position__subprocess--current">
+                  <span>Subprocesso atual</span>
+                  <Link
+                    to={`/business-processes?processId=${subprocess.currentSubprocessDefinitionId}`}
+                  >
+                    {subprocess.currentSubprocessName}
+                  </Link>
+                  {subprocess.currentSubprocessObjective ? (
+                    <small>
+                      Objetivo: {subprocess.currentSubprocessObjective}
+                    </small>
+                  ) : null}
+                </div>
+              ) : subprocess.currentActivityName ? (
+                <div className="product-value-chain-position__subprocess product-value-chain-position__subprocess--parent">
+                  <span>Agora no processo principal</span>
+                  <strong>{subprocess.currentActivityName}</strong>
+                </div>
+              ) : null}
+              {subprocess.nextSubprocessDefinitionId != null ? (
+                <div className="product-value-chain-position__subprocess product-value-chain-position__subprocess--next">
+                  <span>Próximo subprocesso</span>
+                  <Link
+                    to={`/business-processes?processId=${subprocess.nextSubprocessDefinitionId}`}
+                  >
+                    {subprocess.nextSubprocessName}
+                    <ArrowRight size={15} aria-hidden="true" />
+                  </Link>
+                  {subprocess.nextSubprocessObjective ? (
+                    <small>
+                      Objetivo: {subprocess.nextSubprocessObjective}
+                    </small>
+                  ) : null}
+                </div>
+              ) : (
+                <small className="product-value-chain-position__subprocess-complete">
+                  Não há outro subprocesso previsto; o próximo objetivo está no
+                  processo principal.
+                </small>
+              )}
+            </div>
+          ) : null}
         </>
       ) : (
         <>

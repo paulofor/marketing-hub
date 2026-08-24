@@ -34,7 +34,8 @@ class ProductValueChainPositionControllerTest {
                     "Comunicação e jornada de venda do PDE",
                     4,
                     4,
-                    6)));
+                    6,
+                    null)));
     var mockMvc =
         MockMvcBuilders.standaloneSetup(new ProductValueChainPositionController(service)).build();
 

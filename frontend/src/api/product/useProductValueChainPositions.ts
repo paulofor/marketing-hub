@@ -15,6 +15,19 @@ export type ProductValueChainPosition = {
   processVersion?: number | null;
   sequenceNumber?: number | null;
   processCount?: number | null;
+  subprocessPosition?: {
+    trackingStatus: "NOT_APPLICABLE" | "PLANNED" | "IN_PROGRESS" | "RECORDED";
+    subprocessCount: number;
+    currentActivityName?: string | null;
+    currentSubprocessDefinitionId?: number | null;
+    currentSubprocessCode?: string | null;
+    currentSubprocessName?: string | null;
+    currentSubprocessObjective?: string | null;
+    nextSubprocessDefinitionId?: number | null;
+    nextSubprocessCode?: string | null;
+    nextSubprocessName?: string | null;
+    nextSubprocessObjective?: string | null;
+  } | null;
 };
 
 export function useProductValueChainPositions() {

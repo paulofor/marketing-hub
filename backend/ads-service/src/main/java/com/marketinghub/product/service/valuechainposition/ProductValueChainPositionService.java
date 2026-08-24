@@ -46,6 +46,7 @@ public class ProductValueChainPositionService {
 
   private final ProductRepository productRepository;
   private final BusinessProcessChainDefinitionRepository chainRepository;
+  private final ProductSubprocessPositionResolver subprocessResolver;
 
   /** Lista a posição de todos os produtos usando somente a versão publicada da cadeia PDE. */
   @Transactional(readOnly = true)
@@ -101,7 +102,8 @@ public class ProductValueChainPositionService {
         process.getName(),
         process.getVersionNumber(),
         item.getSequenceNumber(),
-        processCount);
+        processCount,
+        subprocessResolver.resolve(product, process));
   }
 
   /**
@@ -139,7 +141,8 @@ public class ProductValueChainPositionService {
         null,
         null,
         null,
-        processCount);
+        processCount,
+        null);
   }
 
   /** Expõe explicitamente a indisponibilidade da cadeia em vez de fabricar uma posição. */
@@ -149,6 +152,7 @@ public class ProductValueChainPositionService {
         product.getCommercialStatus(),
         "CHAIN_UNAVAILABLE",
         "Cadeia de valor PDE publicada não encontrada.",
+        null,
         null,
         null,
         null,

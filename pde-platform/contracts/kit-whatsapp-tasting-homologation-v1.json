@@ -17,7 +17,7 @@
     },
     {
       "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
-      "sha256": "e335cf2adc684a034fa075336270d7a9ac685d43ab90da6bd186a3df8d55e1cc"
+      "sha256": "827104147119ac47edf0a6fd72efa19564bcff752fced4d483d50dadb608f052"
     }
   ],
   "executableEvidence": [
@@ -61,7 +61,7 @@
     },
     {
       "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/AccessServiceTest.java",
-      "sha256": "44b9fcb1f1f48069c5195f6d2a186584be55004adfa9fd289b7aecd8e8eda184",
+      "sha256": "51446bf113ae96f6ebcb1c634569f6390d014ee50228c012d72eaf3a96e4e20f",
       "proves": [
         "os eventos canônicos da degustação são aceitos",
         "evento fora do contrato continua rejeitado",

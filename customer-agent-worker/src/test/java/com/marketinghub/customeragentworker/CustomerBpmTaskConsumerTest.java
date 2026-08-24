@@ -81,6 +81,26 @@ class CustomerBpmTaskConsumerTest {
         .isEqualTo("prompts/bpm/pde-experience-review-schema.json");
   }
 
+  /** Seleciona o gate específico da cliente para homologação comercial do PDE. */
+  @Test
+  void selectsVersionedPdeCommercialHomologationContract() {
+    org.assertj.core.api.Assertions.assertThat(
+            CustomerBpmTaskConsumer.promptResourceFor("pde-commercial-homologation-activation"))
+        .isEqualTo("prompts/bpm/pde-commercial-homologation-customer-review.md");
+    org.assertj.core.api.Assertions.assertThat(
+            CustomerBpmTaskConsumer.schemaResourceFor("pde-commercial-homologation-activation"))
+        .isEqualTo("prompts/bpm/pde-commercial-homologation-customer-review-schema.json");
+  }
+
+  /** Exige Flex no gate de IA para manter custo e contrato operacional auditáveis. */
+  @Test
+  void usesFlexServiceTier() {
+    org.assertj.core.api.Assertions.assertThat(CustomerBpmTaskConsumer.serviceTier())
+        .isEqualTo("flex");
+    org.assertj.core.api.Assertions.assertThat(CustomerBpmTaskConsumer.effectiveServiceTier())
+        .isEqualTo("STANDARD");
+  }
+
   /** Exige o núcleo afetivo, a surpresa segura e o desejo de amor nos contratos BPM. */
   @Test
   void requiresSharedBehavioralCoreInEveryBpmReview() throws Exception {
@@ -95,13 +115,18 @@ class CustomerBpmTaskConsumerTest {
     String pde =
         Files.readString(
             Path.of("src/main/resources/prompts/bpm/pde-experience-review-schema.json"));
+    String commercialHomologation =
+        Files.readString(
+            Path.of(
+                "src/main/resources/prompts/bpm/pde-commercial-homologation-customer-review-schema.json"));
 
     org.assertj.core.api.Assertions.assertThat(core)
         .contains("reação afetiva rápida")
         .contains("faixa de novidade segura")
         .contains("amada")
         .contains("Não recomende explorar vergonha");
-    org.assertj.core.api.Assertions.assertThat(java.util.List.of(creative, landing, pde))
+    org.assertj.core.api.Assertions.assertThat(
+            java.util.List.of(creative, landing, pde, commercialHomologation))
         .allSatisfy(
             schema ->
                 org.assertj.core.api.Assertions.assertThat(schema)
@@ -140,6 +165,9 @@ class CustomerBpmTaskConsumerTest {
         .containsEntry("sourceReference", "experiment:88")
         .containsEntry("activityId", "customer")
         .containsEntry("accessMode", "READ_ONLY")
-        .containsEntry("externalSideEffects", false);
+        .containsEntry("externalSideEffects", false)
+        .containsEntry("requestedServiceTier", "FLEX")
+        .containsEntry("effectiveServiceTier", "STANDARD")
+        .containsKey("serviceTierException");
   }
 }

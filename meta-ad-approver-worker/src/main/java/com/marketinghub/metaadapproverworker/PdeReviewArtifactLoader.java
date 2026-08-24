@@ -12,6 +12,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -23,6 +24,7 @@ import java.util.zip.CRC32;
 final class PdeReviewArtifactLoader {
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
   private static final String COMMUNICATION_CONTRACT_DIRECTORY = "pde-platform/contracts";
+  private static final String COMMERCIAL_HOMOLOGATION_SUFFIX = "-commercial-homologation-v1.json";
   private static final List<String> EVIDENCE_COLLECTIONS =
       List.of("implementationEvidence", "executableEvidence");
   private static final List<String> COMMUNICATION_IMPLEMENTATION_EVIDENCE_PATHS =
@@ -116,6 +118,43 @@ final class PdeReviewArtifactLoader {
     return evidence;
   }
 
+  /** Descobre manifestos de homologação comercial e entrega somente suas provas íntegras. */
+  List<Map<String, Object>> loadCommercialHomologationEvidence() throws IOException {
+    Path contractsDirectory = repositoryRoot.resolve(COMMUNICATION_CONTRACT_DIRECTORY).normalize();
+    if (!contractsDirectory.startsWith(repositoryRoot) || !Files.isDirectory(contractsDirectory)) {
+      throw new IOException("Diretório de contratos comerciais PDE não encontrado");
+    }
+    Map<String, Map<String, Object>> evidence = new LinkedHashMap<>();
+    try (Stream<Path> files = Files.list(contractsDirectory)) {
+      for (Path manifest :
+          files
+              .filter(path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
+              .filter(
+                  path -> path.getFileName().toString().endsWith(COMMERCIAL_HOMOLOGATION_SUFFIX))
+              .sorted(Comparator.comparing(path -> path.getFileName().toString()))
+              .toList()) {
+        String manifestPath = repositoryRoot.relativize(manifest).toString();
+        Map<String, Object> manifestEvidence = readAuthorizedEvidence(manifestPath);
+        evidence.put(manifestPath, manifestEvidence);
+        JsonNode contract = JSON_MAPPER.readTree(manifestEvidence.get("content").toString());
+        JsonNode declaredEvidence = contract.path("homologationEvidence");
+        if (!declaredEvidence.isArray() || declaredEvidence.isEmpty()) {
+          throw new IOException("Manifesto comercial sem evidências: " + manifestPath);
+        }
+        for (JsonNode declared : declaredEvidence) {
+          String relativePath = declared.path("path").asText("");
+          Map<String, Object> artifact = readAuthorizedEvidence(relativePath);
+          validateExpectedHash(relativePath, declared.path("sha256").asText(""), artifact);
+          evidence.putIfAbsent(relativePath, artifact);
+        }
+      }
+    }
+    if (evidence.isEmpty()) {
+      throw new IOException("Nenhum manifesto de homologação comercial PDE foi encontrado");
+    }
+    return new ArrayList<>(evidence.values());
+  }
+
   /** Expõe a lista fixa apenas para testes de contrato do carregador. */
   static List<String> artifactPaths() {
     return ARTIFACT_PATHS;
@@ -128,6 +167,9 @@ final class PdeReviewArtifactLoader {
 
   /** Lê uma prova de implementação somente dentro da raiz autorizada do repositório. */
   private Map<String, Object> readAuthorizedEvidence(String relativePath) throws IOException {
+    if (relativePath == null || relativePath.isBlank() || Path.of(relativePath).isAbsolute()) {
+      throw new IOException("Caminho de prova PDE inválido");
+    }
     Path artifact = repositoryRoot.resolve(relativePath).normalize();
     if (!artifact.startsWith(repositoryRoot)
         || !Files.isRegularFile(artifact, LinkOption.NOFOLLOW_LINKS)) {
@@ -141,8 +183,22 @@ final class PdeReviewArtifactLoader {
         content.length(),
         "contentChecksum",
         checksum(content),
+        "sha256",
+        sha256(content.getBytes(StandardCharsets.UTF_8)),
         "content",
         content);
+  }
+
+  /** Compara o hash declarado com a prova lida antes de entregar o contexto ao revisor. */
+  private void validateExpectedHash(
+      String relativePath, String expectedHash, Map<String, Object> artifact) throws IOException {
+    String actualHash = artifact.get("sha256").toString();
+    if (expectedHash.isBlank()
+        || !MessageDigest.isEqual(
+            expectedHash.getBytes(StandardCharsets.UTF_8),
+            actualHash.getBytes(StandardCharsets.UTF_8))) {
+      throw new IOException("SHA-256 divergente para a prova de homologação: " + relativePath);
+    }
   }
 
   /** Bloqueia a revisão quando um manifesto aponta para uma prova ausente ou alterada. */

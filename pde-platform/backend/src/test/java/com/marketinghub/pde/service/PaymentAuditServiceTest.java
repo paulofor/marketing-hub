@@ -22,6 +22,7 @@ class PaymentAuditServiceTest {
                       provider VARCHAR(40) NOT NULL,
                       transaction_id VARCHAR(191) NOT NULL,
                       product_slug VARCHAR(191) NOT NULL,
+                      experience_version VARCHAR(80),
                       offer_hash VARCHAR(191) NOT NULL,
                       amount_cents INT NOT NULL,
                       currency VARCHAR(3) NOT NULL,
@@ -30,12 +31,13 @@ class PaymentAuditServiceTest {
                       access_reference_hash CHAR(64),
                       verified_at DATETIME NOT NULL,
                       access_released_at DATETIME,
+                      refunded_at DATETIME,
                       UNIQUE (provider, transaction_id)
                     )
                     """);
         }
         PepperPaidTransaction transaction = new PepperPaidTransaction(
-                "tx-durable", "cliente@sandbox.local", "paid", "owm6x", "MUSA", 6700, "BRL");
+                "tx-durable", "cliente@sandbox.local", "paid", "owm6x", "MUSA", 6700, "BRL", "musa-v7");
         PaymentAuditService service = new PaymentAuditService(jdbcUrl, "sa", "");
 
         service.recordVerifiedPayment("metodo-musa-7-dias", transaction);
@@ -45,12 +47,34 @@ class PaymentAuditServiceTest {
 
         assertThat(audit.amountCents()).isEqualTo(6700);
         assertThat(audit.currency()).isEqualTo("BRL");
+        assertThat(audit.experienceVersion()).isEqualTo("musa-v7");
         assertThat(audit.buyerReferenceHash()).hasSize(64).doesNotContain("cliente");
         assertThat(audit.accessReferenceHash()).hasSize(64).doesNotContain("bearer");
         assertThat(audit.accessReleasedAt()).isNotNull();
         assertThrows(IllegalArgumentException.class, () -> restarted.recordVerifiedPayment(
                 "outro-produto",
                 new PepperPaidTransaction(
-                        "tx-durable", "cliente@sandbox.local", "paid", "owm6x", "MUSA", 6700, "BRL")));
+                        "tx-durable", "cliente@sandbox.local", "paid", "owm6x", "MUSA", 6700, "BRL", "musa-v7")));
+    }
+
+    /** Registra o reembolso uma vez e preserva a referência do acesso para revogação. */
+    @Test
+    void recordsVerifiedRefundIdempotently() {
+        PaymentAuditService service = new PaymentAuditService("", "", "");
+        PepperPaidTransaction payment = new PepperPaidTransaction(
+                "tx-refund", "cliente@sandbox.local", "paid", "owm6x", "MUSA", 6700, "BRL", "musa-v7");
+        service.recordVerifiedPayment("metodo-musa-7-dias", payment);
+        service.linkReleasedAccess("tx-refund", "token-refund");
+        PepperTransactionSnapshot refund = new PepperTransactionSnapshot(
+                "tx-refund", "cliente@sandbox.local", "refunded", "owm6x", "MUSA", 6700, "BRL", "musa-v7");
+
+        var first = service.recordVerifiedRefund("metodo-musa-7-dias", refund);
+        var retry = service.recordVerifiedRefund("metodo-musa-7-dias", refund);
+
+        assertThat(first.newlyRecorded()).isTrue();
+        assertThat(first.accessReferenceHash()).hasSize(64);
+        assertThat(retry.newlyRecorded()).isFalse();
+        assertThat(service.findForTesting("tx-refund").orElseThrow().paymentStatus())
+                .isEqualTo("refunded");
     }
 }

@@ -1,4 +1,24 @@
 services:
+  pde-contract-server:
+    profiles: ["local-e2e"]
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile.contract-server
+    image: marketing-hub/pde-contract-server:validation
+    environment:
+      PDE_CONTRACT_SERVER_HOST: 0.0.0.0
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:57181/api/products/public/metodo-musa-7-dias/pde-experience?slotCode=v7').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
   pde-platform-local-mysql:
     build:
       context: ./local-validation
@@ -22,11 +42,58 @@ services:
     depends_on:
       pde-platform-local-mysql:
         condition: service_healthy
+      pde-contract-server:
+        condition: service_healthy
     environment:
+      PDE_MARKETING_HUB_BASE_URL: http://pde-contract-server:57181
       PDE_ACCESS_JDBC_URL: jdbc:mysql://pde-platform-local-mysql:3306/pde_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       PDE_ACCESS_JDBC_USERNAME: pde
       PDE_ACCESS_JDBC_PASSWORD: pde
       PDE_ACCESS_REQUIRE_JDBC: "true"
+      PDE_PEPPER_API_BASE_URL: http://pde-contract-server:57181/public/v1
+      PDE_PEPPER_API_TOKEN: pde-local-pepper-token
+      PDE_PEPPER_OFFER_HASHES: owm6x
+      PDE_PEPPER_EXPECTED_PAID_AMOUNT_CENTS: "6700"
+      PDE_PEPPER_EXPECTED_CURRENCY: BRL
+      PDE_PEPPER_FALLBACK_EXPERIENCE_VERSION: musa-pde-entry-v7-espelho-antes-de-sair
+      PDE_EXPERIENCE_VERSION_OVERRIDE: musa-pde-entry-v7-espelho-antes-de-sair
+
+  pde-platform-frontend:
+    depends_on:
+      pde-platform-backend:
+        condition: service_healthy
+    environment:
+      VITE_MUSA_CHECKOUT_URL: https://go.pepper.com.br/owm6x
+      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: musa-pde-entry-v7-espelho-antes-de-sair
+      PDE_FRONTEND_PUBLIC_URL: http://pde-platform-frontend
+      PDE_FRONTEND_VERSION: musa-v7-commercial-homologation
+      PDE_FRONTEND_IMAGE: marketing-hub/pde-platform-frontend
+      PDE_FRONTEND_VERSION_ID: local-musa-v7-commercial-homologation
+      PDE_DEPLOY_IMAGE_TAG: local-validation
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  pde-playwright-validation:
+    profiles: ["local-e2e"]
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.local-integration
+    image: marketing-hub/pde-playwright:validation
+    environment:
+      PDE_TEST_BACKEND_URL: http://pde-platform-backend:8096
+      PDE_TEST_FRONTEND_URL: http://pde-platform-frontend
+      PDE_TEST_CONTRACT_SERVER_URL: http://pde-contract-server:57181
+      PDE_TEST_INTERNAL_TOKEN: pde-local-internal-test
+    depends_on:
+      pde-contract-server:
+        condition: service_healthy
+      pde-platform-backend:
+        condition: service_healthy
+      pde-platform-frontend:
+        condition: service_healthy
 
   pde-liquibase-validation:
     profiles: ["liquibase-validation"]

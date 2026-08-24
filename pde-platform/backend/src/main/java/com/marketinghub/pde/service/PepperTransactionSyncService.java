@@ -45,7 +45,7 @@ public class PepperTransactionSyncService {
                 : pepperTransactionGateway.findPaidTransactionByHash(transactionHash);
         List<AccessResponse> accesses = new ArrayList<>();
         for (PepperPaidTransaction transaction : result.paidTransactions()) {
-            paymentAuditService.recordVerifiedPayment(resolvedProductSlug, transaction);
+            boolean newlyVerifiedPayment = paymentAuditService.recordVerifiedPayment(resolvedProductSlug, transaction);
             AccessResponse access = accessService.releasePepperPaidTransaction(
                     resolvedProductSlug,
                     transaction.buyerEmail(),
@@ -53,7 +53,9 @@ public class PepperTransactionSyncService {
                     transaction.offerHash(),
                     transaction.amount(),
                     transaction.currency(),
-                    transaction.paymentStatus());
+                    transaction.paymentStatus(),
+                    transaction.experienceVersion(),
+                    newlyVerifiedPayment);
             paymentAuditService.linkReleasedAccess(transaction.transactionId(), access.token());
             accesses.add(access);
         }

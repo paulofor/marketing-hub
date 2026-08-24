@@ -27,6 +27,7 @@ class PepperTransactionClientTest {
                       "payment_status": "paid",
                       "amount": 6700,
                       "currency": "BRL",
+                      "utm_content": "criativo-a__pde_version__musa-pde-entry-v7-espelho-antes-de-sair",
                       "offer": {"hash": "owm6x", "title": "Método MUSA em 7 dias"},
                       "customer": {"email": "cliente@sandbox.local"}
                     }
@@ -41,7 +42,8 @@ class PepperTransactionClientTest {
                     "owm6x",
                     14,
                     6700,
-                    "BRL");
+                    "BRL",
+                    "musa-pde-entry-v7-fallback");
 
             var result = client.findPaidTransactionByHash("tx-real-67");
 
@@ -52,8 +54,50 @@ class PepperTransactionClientTest {
                 assertThat(transaction.offerHash()).isEqualTo("owm6x");
                 assertThat(transaction.amount()).isEqualTo(6700);
                 assertThat(transaction.currency()).isEqualTo("BRL");
+                assertThat(transaction.experienceVersion())
+                        .isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
             });
             assertThat(authorization).hasValue("Bearer token-sandbox");
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    /** Preserva o estado reembolsado depois de validar oferta, preço, moeda e cliente. */
+    @Test
+    void parsesRefundedTransactionForFinancialReconciliation() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/public/v1/transactions/tx-refund-67", exchange -> respond(exchange, 200, """
+                {
+                  "hash": "tx-refund-67",
+                  "payment_status": "refunded",
+                  "amount": 6700,
+                  "currency": "BRL",
+                  "utm_content": "direct__pde_version__musa-pde-entry-v7-espelho-antes-de-sair",
+                  "offer": {"hash": "owm6x", "title": "Método MUSA em 7 dias"},
+                  "customer": {"email": "cliente@sandbox.local"}
+                }
+                """));
+        server.start();
+        try {
+            PepperTransactionClient client = new PepperTransactionClient(
+                    new ObjectMapper(),
+                    "http://127.0.0.1:" + server.getAddress().getPort() + "/public/v1",
+                    "token-sandbox",
+                    "owm6x",
+                    14,
+                    6700,
+                    "BRL",
+                    "musa-pde-entry-v7-fallback");
+
+            PepperTransactionSnapshot snapshot = client.findTransactionByHash("tx-refund-67");
+
+            assertThat(snapshot.transactionId()).isEqualTo("tx-refund-67");
+            assertThat(snapshot.paymentStatus()).isEqualTo("refunded");
+            assertThat(snapshot.amount()).isEqualTo(6700);
+            assertThat(snapshot.currency()).isEqualTo("BRL");
+            assertThat(snapshot.experienceVersion())
+                    .isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
         } finally {
             server.stop(0);
         }
@@ -85,7 +129,8 @@ class PepperTransactionClientTest {
                     "owm6x",
                     14,
                     6700,
-                    "BRL");
+                    "BRL",
+                    "musa-pde-entry-v7-fallback");
 
             var result = client.findPaidTransactions("d@sandbox.local");
 
@@ -93,6 +138,8 @@ class PepperTransactionClientTest {
             assertThat(result.paidTransactions()).singleElement()
                     .extracting(PepperPaidTransaction::transactionId)
                     .isEqualTo("valida");
+            assertThat(result.paidTransactions().getFirst().experienceVersion())
+                    .isEqualTo("musa-pde-entry-v7-fallback");
         } finally {
             server.stop(0);
         }

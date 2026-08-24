@@ -2,8 +2,11 @@ package com.marketinghub.customeragentworker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -33,5 +36,36 @@ class PdeExperienceEvidenceLoaderTest {
                   .isEqualTo(artifact.get("content").toString().length());
               assertThat(artifact.get("contentChecksum")).asString().isNotBlank();
             });
+  }
+
+  /** Carrega manifesto comercial descoberto e bloqueia provas que não correspondam ao hash. */
+  @Test
+  void loadsCommercialHomologationEvidenceFromManifest() throws Exception {
+    Path proof = tempDir.resolve("pde-platform/frontend/tests/product-journey.spec.ts");
+    Files.createDirectories(proof.getParent());
+    Files.writeString(proof, "prova comercial íntegra");
+    String hash =
+        HexFormat.of()
+            .formatHex(
+                MessageDigest.getInstance("SHA-256")
+                    .digest(Files.readString(proof).getBytes(StandardCharsets.UTF_8)));
+    Path manifest =
+        tempDir.resolve("pde-platform/contracts/product-commercial-homologation-v1.json");
+    Files.createDirectories(manifest.getParent());
+    Files.writeString(
+        manifest,
+        """
+        {"homologationEvidence":[{"path":"pde-platform/frontend/tests/product-journey.spec.ts","sha256":"%s"}]}
+        """
+            .formatted(hash));
+
+    var evidence =
+        new PdeExperienceEvidenceLoader(tempDir.toString()).loadCommercialHomologationEvidence();
+
+    assertThat(evidence)
+        .extracting(item -> item.get("path"))
+        .containsExactly(
+            "pde-platform/contracts/product-commercial-homologation-v1.json",
+            "pde-platform/frontend/tests/product-journey.spec.ts");
   }
 }

@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-24-musa-v7-refund-reconciliation
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_payment_audit
+        - not:
+            - columnExists:
+                tableName: pde_payment_audit
+                columnName: refunded_at
+      changes:
+        - addColumn:
+            tableName: pde_payment_audit
+            columns:
+              - column:
+                  name: refunded_at
+                  type: DATETIME
+              - column:
+                  name: experience_version
+                  type: VARCHAR(80)
+      rollback:
+        - dropColumn:
+            tableName: pde_payment_audit
+            columnName: refunded_at
+        - dropColumn:
+            tableName: pde_payment_audit
+            columnName: experience_version

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PDE_LIQUIBASE_PROJECT="${PDE_LIQUIBASE_PROJECT:-aihub-92719989-567c-41cc-b7d5-524d61d943ea-8ed7f19b24}"
+PDE_LIQUIBASE_PROJECT="${PDE_LIQUIBASE_PROJECT:-aihub-8b839b4d-30f5-46ba-8e6f-35ae06a26cc8-e60d0ea702}"
 PDE_LIQUIBASE_DATABASE="musa_v7_liquibase_validation"
 PDE_LIQUIBASE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PDE_LIQUIBASE_ROOT="$(cd "${PDE_LIQUIBASE_SCRIPT_DIR}/../.." && pwd)"
@@ -10,6 +10,8 @@ PDE_LIQUIBASE_COMPOSE=(
   -p "${PDE_LIQUIBASE_PROJECT}"
   -f "${PDE_LIQUIBASE_ROOT}/pde-platform/docker-compose.yml"
   -f "${PDE_LIQUIBASE_ROOT}/pde-platform/docker-compose.local-validation.yml"
+  --profile local-e2e
+  --profile liquibase-validation
 )
 PDE_LIQUIBASE_MYSQL_CONTAINER="$("${PDE_LIQUIBASE_COMPOSE[@]}" ps -q pde-platform-local-mysql)"
 test -n "${PDE_LIQUIBASE_MYSQL_CONTAINER}"
@@ -60,7 +62,41 @@ for PDE_LIQUIBASE_ROUND in 1 2; do
     --search-path=/liquibase/changelog \
     --changelog-file=changesets/2026-08-23-musa-v7-commercial-access.yaml \
     update >/dev/null
+  "${PDE_LIQUIBASE_COMPOSE[@]}" --profile liquibase-validation run --rm --no-deps pde-liquibase-validation \
+    --url="jdbc:mysql://pde-platform-local-mysql:3306/${PDE_LIQUIBASE_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC" \
+    --username=root \
+    --password=pde-root \
+    --search-path=/liquibase/changelog \
+    --changelog-file=changesets/2026-08-24-musa-v7-refund-reconciliation.yaml \
+    update >/dev/null
 done
+
+"${PDE_LIQUIBASE_COMPOSE[@]}" run --rm --no-deps pde-liquibase-validation \
+  --url="jdbc:mysql://pde-platform-local-mysql:3306/${PDE_LIQUIBASE_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC" \
+  --username=root \
+  --password=pde-root \
+  --search-path=/liquibase/changelog \
+  --changelog-file=changesets/2026-08-24-musa-v7-refund-reconciliation.yaml \
+  rollback-count 1 >/dev/null
+
+PDE_LIQUIBASE_ROLLBACK_RESULT="$(docker exec "${PDE_LIQUIBASE_MYSQL_CONTAINER}" mysql -N -u root -ppde-root \
+  --database "${PDE_LIQUIBASE_DATABASE}" --execute "
+    SELECT CONCAT(
+      (SELECT COUNT(*) FROM information_schema.columns
+       WHERE table_schema = DATABASE() AND table_name = 'pde_payment_audit'
+         AND column_name IN ('refunded_at', 'experience_version')),
+      ':', (SELECT COUNT(*) FROM DATABASECHANGELOG)
+    );
+  ")"
+test "${PDE_LIQUIBASE_ROLLBACK_RESULT}" = "0:3"
+
+"${PDE_LIQUIBASE_COMPOSE[@]}" run --rm --no-deps pde-liquibase-validation \
+  --url="jdbc:mysql://pde-platform-local-mysql:3306/${PDE_LIQUIBASE_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC" \
+  --username=root \
+  --password=pde-root \
+  --search-path=/liquibase/changelog \
+  --changelog-file=changesets/2026-08-24-musa-v7-refund-reconciliation.yaml \
+  update >/dev/null
 
 PDE_LIQUIBASE_RESULT="$(docker exec "${PDE_LIQUIBASE_MYSQL_CONTAINER}" mysql -N -u root -ppde-root \
   --database "${PDE_LIQUIBASE_DATABASE}" --execute "
@@ -74,11 +110,14 @@ PDE_LIQUIBASE_RESULT="$(docker exec "${PDE_LIQUIBASE_MYSQL_CONTAINER}" mysql -N 
       ':', (p.pde_experience_json = s.published_experience_json),
       ':', (SELECT COUNT(*) FROM information_schema.tables
              WHERE table_schema = DATABASE() AND table_name = 'pde_payment_audit'),
+      ':', (SELECT COUNT(*) FROM information_schema.columns
+             WHERE table_schema = DATABASE() AND table_name = 'pde_payment_audit'
+               AND column_name IN ('refunded_at', 'experience_version')),
       ':', (SELECT COUNT(*) FROM DATABASECHANGELOG)
     )
     FROM product p
     JOIN pde_production_slot s ON s.product_slug = p.slug;
   ")"
 
-test "${PDE_LIQUIBASE_RESULT}" = "3:1:musa-pde-entry-v7-espelho-antes-de-sair:1:1:1:3"
-echo "Liquibase MUSA v7 aprovado duas vezes no MySQL 5.7: acesso, contrato e auditoria financeira idempotentes."
+test "${PDE_LIQUIBASE_RESULT}" = "3:1:musa-pde-entry-v7-espelho-antes-de-sair:1:1:1:2:4"
+echo "Liquibase MUSA v7 aprovado no MySQL 5.7: duas aplicações, rollback e reaplicação idempotentes."

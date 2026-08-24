@@ -133,6 +133,12 @@ public class AccessGrant {
         this.expiresAt = expiresAt;
     }
 
+    /** Revoga a continuidade paga após reembolso confirmado sem apagar o histórico da cliente. */
+    public void revokePaidAccess(Instant refundedAt) {
+        this.source = "PEPPER_REFUNDED";
+        this.expiresAt = refundedAt;
+    }
+
     /** Corrige o e-mail do acesso após solicitação autenticada da titular. */
     public void updateEmail(String email) {
         this.email = email;

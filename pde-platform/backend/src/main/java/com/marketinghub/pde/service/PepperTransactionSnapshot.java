@@ -1,7 +1,7 @@
 package com.marketinghub.pde.service;
 
-/** Compra paga da Pepper ja filtrada para ser reconciliada com o acesso PDE. */
-public record PepperPaidTransaction(
+/** Representa uma transação Pepper consultada no provedor antes de aplicar mudança financeira. */
+public record PepperTransactionSnapshot(
         String transactionId,
         String buyerEmail,
         String paymentStatus,

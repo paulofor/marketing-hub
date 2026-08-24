@@ -480,7 +480,9 @@ class AccessServiceTest {
                 "owm6x",
                 6700,
                 "BRL",
-                "paid");
+                "paid",
+                "musa-pde-entry-v7-espelho-antes-de-sair",
+                true);
         WorkspaceResponse workspace = accessService.getWorkspace(access.token());
 
         assertThat(workspace.subscriptionStatus()).isEqualTo("ACTIVE");
@@ -598,6 +600,104 @@ class AccessServiceTest {
 
             assertThat(response.eventType()).isEqualTo(eventType);
         });
+    }
+
+    /** Prova que o replay dos marcos comerciais da v7 não duplica o funil persistido. */
+    @Test
+    void deduplicatesMusaV7CommercialJourneyEventsByStableKey() throws SQLException {
+        String jdbcUrl = "jdbc:h2:mem:pde_v7_event_replay;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createPdeFunnelEventSchema(jdbcUrl);
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(),
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                null,
+                null);
+
+        for (String eventType : List.of("TASTING_STARTED", "VALUE_MOMENT", "PAYWALL_VIEWED", "CHECKOUT_STARTED")) {
+            FunnelEventRequest request = new FunnelEventRequest(
+                    "metodo-musa-7-dias",
+                    eventType,
+                    null,
+                    null,
+                    "FRONTEND",
+                    "pde-platform-frontend",
+                    "https://v7.clubemusa.com.br/",
+                    Map.of(
+                            "experienceVersion", "musa-pde-entry-v7-espelho-antes-de-sair",
+                            "sessionId", "session-v7-replay",
+                            "visitorId", "visitor-v7-replay",
+                            "idempotencyKey", eventType.toLowerCase() + ":once"));
+
+            var first = accessService.recordFunnelEvent(request);
+            var replay = accessService.recordFunnelEvent(request);
+
+            assertThat(first.status()).isEqualTo("RECORDED");
+            assertThat(replay.status()).isEqualTo("DUPLICATE_IGNORED");
+            assertThat(replay.eventId()).isEqualTo(first.eventId());
+        }
+
+        try (var connection = DriverManager.getConnection(jdbcUrl, "sa", "sa");
+                var statement = connection.createStatement();
+                var result = statement.executeQuery("SELECT COUNT(*) FROM pde_funnel_event")) {
+            assertThat(result.next()).isTrue();
+            assertThat(result.getLong(1)).isEqualTo(4);
+        }
+    }
+
+    /** Mantém todo o ciclo Pepper de sandbox na auditoria bruta e fora dos resultados humanos. */
+    @Test
+    void excludesSandboxPepperLifecycleFromCommercialMetrics() throws SQLException {
+        String jdbcUrl = "jdbc:h2:mem:pde_pepper_sandbox_qa;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createPdeFunnelEventSchema(jdbcUrl);
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(),
+                new ObjectMapper(),
+                tempDir.resolve("access-grants.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                null,
+                null);
+
+        for (String eventType :
+                List.of("PURCHASE_COMPLETED", "ACCESS_RELEASED", "DELIVERY_COMPLETED", "REFUND_CONFIRMED")) {
+            accessService.recordFunnelEvent(new FunnelEventRequest(
+                    "metodo-musa-7-dias",
+                    eventType,
+                    "sandbox-access-token",
+                    "teste+pepper-lifecycle@sandbox.local",
+                    "PEPPER",
+                    "pde-platform",
+                    null,
+                    Map.of("experienceVersion", "musa-pde-entry-v7-espelho-antes-de-sair")));
+        }
+
+        var summary = accessService.summarizeFunnelAnalytics("metodo-musa-7-dias");
+
+        assertThat(summary.totalEvents()).isZero();
+        assertThat(summary.rawTotalEvents()).isEqualTo(4);
+        assertThat(summary.purchaseCompleted()).isZero();
+        assertThat(summary.accessReleased()).isZero();
+        assertThat(summary.deliveryCompleted()).isZero();
+        assertThat(summary.refundsConfirmed()).isZero();
+        assertThat(summary.netSalesApproved()).isZero();
+        assertThat(summary.humanSessions()).isZero();
+        assertThat(summary.trafficQualityBreakdown())
+                .singleElement()
+                .satisfies(metric -> {
+                    assertThat(metric.trafficQuality()).isEqualTo("INTERNAL_QA");
+                    assertThat(metric.events()).isEqualTo(4);
+                });
     }
 
     /** Confirma que o resumo retorna vazio no modo local sem banco analítico. */
@@ -774,7 +874,7 @@ class AccessServiceTest {
                 "metodo-musa-7-dias",
                 "PAGE_VIEW",
                 null,
-                "cliente@sandbox.local",
+                "cliente@example.com",
                 "TEST",
                 "test",
                 "http://localhost:5176/?utm_source=ig&utm_campaign=campanha&utm_content=criativo",
@@ -926,7 +1026,7 @@ class AccessServiceTest {
                 "metodo-musa-7-dias",
                 "PAGE_VIEW",
                 null,
-                "cliente@sandbox.local",
+                "cliente@example.com",
                 "TEST",
                 "test",
                 "http://localhost:5176/?utm_source=instagram&utm_medium=remarketing&utm_campaign=exp-71-remarketing",
@@ -1023,7 +1123,7 @@ class AccessServiceTest {
                 "metodo-musa-7-dias",
                 "PAGE_VIEW",
                 null,
-                "cliente@sandbox.local",
+                "cliente@example.com",
                 "TEST",
                 "test",
                 "https://clubemusa.com.br/?utm_source=ig&utm_campaign=campanha",
@@ -1414,69 +1514,22 @@ class AccessServiceTest {
                 "musa-pde-entry-v7-espelho-antes-de-sair");
 
         Map<String, AiGuidanceCreateRequest> requestsByMission = new LinkedHashMap<>();
-        requestsByMission.put(
-                "dia-1-ruido-visual",
-                new AiGuidanceCreateRequest(
-                        "MUSA_DAY_1_PRESENCE_DIAGNOSIS",
-                        Map.of(
-                                "presenceFocus", "Trabalho ou reunião",
-                                "mainObstacle", "Falta presença",
-                                "desiredSignal", "Elegância discreta"),
-                        "musa-pde-entry-v7-espelho-antes-de-sair"));
-        requestsByMission.put(
-                "dia-2-assinatura",
-                new AiGuidanceCreateRequest(
-                        "MUSA_DAY_2_SIGNATURE",
-                        Map.of(
-                                "finishSignal", "Cabelo polido",
-                                "baseColor", "Vinho discreto",
-                                "memorableSignal", "Brinco luminoso"),
-                        "musa-pde-entry-v7-espelho-antes-de-sair"));
-        requestsByMission.put(
-                "dia-3-base-acessivel",
-                new AiGuidanceCreateRequest(
-                        "MUSA_DAY_3_WARDROBE_REUSE",
-                        Map.of(
-                                "pieces", "Calça e camisa",
-                                "accessories", "Brinco e perfume",
-                                "realOccasion", "Rotina comum"),
-                        "musa-pde-entry-v7-espelho-antes-de-sair"));
-        requestsByMission.put(
-                "dia-4-checklist-12-minutos",
-                new AiGuidanceCreateRequest(
-                        "MUSA_DAY_4_FINISHING_RITUAL",
-                        Map.of(
-                                "availableMinutes", "10 minutos",
-                                "weakestFinish", "Cabelo",
-                                "desiredFeeling", "Mais segura"),
-                        "musa-pde-entry-v7-espelho-antes-de-sair"));
-        requestsByMission.put(
-                "dia-5-compra-inteligente",
-                new AiGuidanceCreateRequest(
-                        "MUSA_DAY_5_ANTI_IMPULSE_DECISION",
-                        Map.of(
-                                "desiredItem", "Roupa",
-                                "buyingReason", "Impulso ou novidade",
-                                "fitWithSignature", "Ainda não sei"),
-                        "musa-pde-entry-v7-espelho-antes-de-sair"));
-        requestsByMission.put(
-                "dia-6-situacao-chave",
-                new AiGuidanceCreateRequest(
-                        "MUSA_DAY_6_OCCASION_ENTRY",
-                        Map.of(
-                                "occasion", "Evento",
-                                "plannedLook", "Base neutra e detalhe",
-                                "presenceRisk", "Desconforto"),
-                        "musa-pde-entry-v7-espelho-antes-de-sair"));
-        requestsByMission.put(
-                "dia-7-plano-pessoal",
-                new AiGuidanceCreateRequest(
-                        "MUSA_DAY_7_MAINTENANCE_PLAN",
-                        Map.of(
-                                "bestSignal", "Acabamento",
-                                "hardestPoint", "Pouco tempo",
-                                "weeklyRitual", "Separar 3 combinações"),
-                        "musa-pde-entry-v7-espelho-antes-de-sair"));
+        productCatalogService.getProductForHost("metodo-musa-7-dias", "v7.clubemusa.com.br")
+                .missions()
+                .forEach(mission -> {
+                    Map<String, String> answers = mission.interaction().fields().stream()
+                            .collect(java.util.stream.Collectors.toMap(
+                                    ProductExperienceResponse.MissionInteractionFieldDto::key,
+                                    field -> field.options().get(0),
+                                    (first, ignored) -> first,
+                                    LinkedHashMap::new));
+                    requestsByMission.put(
+                            mission.id(),
+                            new AiGuidanceCreateRequest(
+                                    mission.interaction().guidanceType(),
+                                    answers,
+                                    "musa-pde-entry-v7-espelho-antes-de-sair"));
+                });
 
         requestsByMission.forEach((missionId, request) -> {
             var guidance = aiGuidanceService.createGuidanceRequest(access.token(), missionId, request);
@@ -1488,6 +1541,17 @@ class AccessServiceTest {
             assertThat(guidance.caution()).contains("não avalia", "reação de terceiros");
             accessService.completeMission(access.token(), missionId);
         });
+        assertThat(requestsByMission).hasSize(7);
+        assertThat(requestsByMission.get("dia-2-assinatura").answers())
+                .containsOnlyKeys("pieceSignal", "personalMeaning", "realScene");
+        assertThat(requestsByMission.get("dia-3-base-acessivel").answers())
+                .containsOnlyKeys("commonLook", "structureSignal", "desiredFinish");
+        assertThat(requestsByMission.get("dia-5-compra-inteligente").answers())
+                .containsOnlyKeys("baseColor", "signalColor", "realOccasion");
+        assertThat(requestsByMission.get("dia-6-situacao-chave").answers())
+                .containsOnlyKeys("finishSignal", "signatureBase", "memorableSignal");
+        assertThat(requestsByMission.get("dia-7-plano-pessoal").answers())
+                .containsOnlyKeys("bestSignal", "mostRelevantOccasion", "antiImpulseRule", "checklistPriority");
         var neutralGuidance = aiGuidanceService.createPublicPresenceDiagnostic(
                 new PublicPresenceDiagnosticRequest(
                         Map.of(
@@ -1507,8 +1571,8 @@ class AccessServiceTest {
                 access.token(),
                 "dia-3-base-acessivel",
                 new AiGuidanceCreateRequest(
-                        "MUSA_DAY_3_WARDROBE_REUSE",
-                        Map.of("pieces", "minha roupa favorita"),
+                        "MUSA_V7_DAY_3_STRUCTURE_WITHOUT_RIGIDITY",
+                        Map.of("commonLook", "minha roupa favorita"),
                         "musa-pde-entry-v7-espelho-antes-de-sair")));
         assertThat(accessService.getWorkspace(access.token()).missionInteractions())
                 .noneMatch(interaction -> "minha roupa favorita".equals(interaction.answerText()));
@@ -1569,6 +1633,21 @@ class AccessServiceTest {
                 "dia-1-ruido-visual",
                 new MissionInteractionRequest(Map.of("mainObstacle", "Trabalho ou reunião"))));
         assertThat(accessService.getWorkspace(access.token()).missionInteractions()).isEmpty();
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> accessService.completeMission(access.token(), "dia-1-ruido-visual"));
+
+        accessService.saveMissionInteraction(
+                access.token(),
+                "dia-1-ruido-visual",
+                new MissionInteractionRequest(Map.of(
+                        "presenceFocus", "Trabalho ou reunião",
+                        "mainObstacle", "Falta presença",
+                        "desiredSignal", "Elegância discreta",
+                        "startingResource", "Roupa que já tenho")));
+        accessService.completeMission(access.token(), "dia-1-ruido-visual");
+        assertThat(accessService.getWorkspace(access.token()).completedMissionIds())
+                .containsExactly("dia-1-ruido-visual");
     }
 
     /** Confirma que QA pago fica segregado e que material exige entitlement ainda ativo. */
@@ -1627,7 +1706,11 @@ class AccessServiceTest {
         accessService.saveMissionInteraction(
                 access.token(),
                 "dia-1-ruido-visual",
-                new MissionInteractionRequest(Map.of("mainObstacle", "Manter como está por enquanto")));
+                new MissionInteractionRequest(Map.of(
+                        "presenceFocus", "Manter como está por enquanto",
+                        "mainObstacle", "Manter como está por enquanto",
+                        "desiredSignal", "Manter como está por enquanto",
+                        "startingResource", "Manter como está por enquanto")));
 
         var exported = accessService.executePrivacyAction(
                 access.token(), new PrivacyActionRequest("ACCESS", null));

@@ -9,6 +9,7 @@ import com.marketinghub.pde.dto.AiGuidanceResultRequest;
 import com.marketinghub.pde.dto.FunnelEventRequest;
 import com.marketinghub.pde.dto.MissionInteractionRequest;
 import com.marketinghub.pde.dto.ProductExperienceResponse;
+import com.marketinghub.pde.dto.ProductExperienceResponse.MissionDto;
 import com.marketinghub.pde.dto.PublicPresenceDiagnosticRequest;
 import com.marketinghub.pde.dto.WorkspaceResponse;
 import java.io.IOException;
@@ -55,7 +56,14 @@ public class AiGuidanceService {
             "MUSA_DAY_4_FINISHING_RITUAL",
             "MUSA_DAY_5_ANTI_IMPULSE_DECISION",
             "MUSA_DAY_6_OCCASION_ENTRY",
-            "MUSA_DAY_7_MAINTENANCE_PLAN");
+            "MUSA_DAY_7_MAINTENANCE_PLAN",
+            "MUSA_V7_DAY_1_VISUAL_MESSAGE",
+            "MUSA_V7_DAY_2_PIECE_SIGNAL",
+            "MUSA_V7_DAY_3_STRUCTURE_WITHOUT_RIGIDITY",
+            "MUSA_V7_DAY_4_FIRST_IMPRESSION",
+            "MUSA_V7_DAY_5_COLOR_DIRECTION",
+            "MUSA_V7_DAY_6_PERSONAL_SIGNATURE",
+            "MUSA_V7_DAY_7_PERSONAL_FORMULA");
 
     private final AccessService accessService;
     private final ProductCatalogService productCatalogService;
@@ -92,11 +100,15 @@ public class AiGuidanceService {
     public AiGuidanceResponse createGuidanceRequest(String token, String missionId, AiGuidanceCreateRequest request) {
         validateGuidanceType(request.guidanceType());
         WorkspaceResponse workspace = accessService.getWorkspace(token);
-        validateMissionBelongsToWorkspace(workspace, missionId);
+        MissionDto mission = validateMissionBelongsToWorkspace(workspace, missionId);
         boolean useLocalRules = usesMusaV7LocalRules(
                 request.experienceVersion(), workspace.product().experienceVersion());
         if (useLocalRules) {
-            validateMusaV7CategoricalAnswers(request.answers());
+            if (mission.interaction() == null
+                    || !request.guidanceType().equals(mission.interaction().guidanceType())) {
+                throw new IllegalArgumentException("Tipo de orientação divergente da missão MUSA v7");
+            }
+            MusaV7CategoricalContract.validateMission(mission, request.answers());
         }
         accessService.saveMissionInteraction(token, missionId, new MissionInteractionRequest(request.answers()));
         workspace = accessService.getWorkspace(token);
@@ -131,6 +143,11 @@ public class AiGuidanceService {
     /** Cria um diagnóstico público de presença sem exigir e-mail antes da entrega. */
     public AiGuidanceResponse createPublicPresenceDiagnostic(PublicPresenceDiagnosticRequest request) {
         validateGuidanceType(PUBLIC_DIAGNOSTIC_GUIDANCE_TYPE);
+        ProductExperienceResponse product = productCatalogService.getProductForRequest(
+                MUSA_PRODUCT_SLUG, "v7.clubemusa.com.br", "v7", request.experienceVersion());
+        if (usesMusaV7LocalRules(request.experienceVersion(), product.experienceVersion())) {
+            MusaV7CategoricalContract.validatePublicDiagnostic(product.publicDiagnosticQuestions(), request.answers());
+        }
         String requestId = UUID.randomUUID().toString();
         StoredAiGuidance stored = StoredAiGuidance.pending(
                 requestId,
@@ -212,11 +229,11 @@ public class AiGuidanceService {
     }
 
     /** Confirma que a missão solicitada pertence ao produto da cliente. */
-    private void validateMissionBelongsToWorkspace(WorkspaceResponse workspace, String missionId) {
-        boolean exists = workspace.product().missions().stream().anyMatch(mission -> mission.id().equals(missionId));
-        if (!exists) {
-            throw new IllegalArgumentException("Missão PDE não encontrada: " + missionId);
-        }
+    private MissionDto validateMissionBelongsToWorkspace(WorkspaceResponse workspace, String missionId) {
+        return workspace.product().missions().stream()
+                .filter(mission -> mission.id().equals(missionId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Missão PDE não encontrada: " + missionId));
     }
 
     /** Confirma quando a versão aprovada exige regras locais e proíbe envio ao worker de IA. */
@@ -227,7 +244,6 @@ public class AiGuidanceService {
 
     /** Conclui a orientação por regras determinísticas, sem fila, tokens ou chamada externa. */
     private StoredAiGuidance completeWithLocalRules(StoredAiGuidance pending) {
-        validateMusaV7CategoricalAnswers(pending.answers());
         boolean neutralPath = pending.answers().values().stream()
                 .anyMatch(value -> MUSA_NEUTRAL_CHOICE.equals(value)
                         || "Minha imagem está coerente; quero apenas organizar minhas escolhas".equals(value));
@@ -236,27 +252,18 @@ public class AiGuidanceService {
                 .distinct()
                 .limit(3)
                 .toList();
-        String context = pending.answers().getOrDefault(
-                "presenceFocus", pending.answers().getOrDefault("realOccasion", "uma situação real"));
-        String desired = pending.answers().getOrDefault(
-                "desiredSignal", pending.answers().getOrDefault("bestSignal", "mais intenção"));
-        String resource = pending.answers().getOrDefault(
-                "startingResource", pending.answers().getOrDefault("pieces", "algo que você já possui"));
         List<String> actions = neutralPath
                 ? List.of(
                         "Mantenha sua escolha atual sem correção obrigatória.",
                         "Se quiser, apenas observe o que já funciona para você.",
                         "Você pode seguir para o próximo dia sem realizar uma microação.")
-                : List.of(
-                        "Prepare " + resource.toLowerCase() + " para " + context.toLowerCase() + ".",
-                        "Escolha somente um detalhe observável para reforçar " + desired.toLowerCase() + ".",
-                        "Se a situação não parecer segura ou útil, use o percurso neutro ou decida não agir.");
+                : localActionsForMission(pending.missionId(), pending.answers());
         String headline = neutralPath
                 ? "Sua escolha atual foi preservada"
-                : "Seu primeiro ajuste possível está organizado";
+                : localHeadlineForMission(pending.missionId());
         String summary = neutralPath
                 ? "Você não precisa corrigir sua imagem. O MUSA registrou sua decisão e mantém a jornada disponível para organizar somente o que fizer sentido para você."
-                : "Suas escolhas foram combinadas por regras locais. Teste um ajuste pequeno com o que já possui e avalie o resultado por você mesma.";
+                : localSummaryForMission(pending.missionId());
         String responseJson = serializeJson(Map.of(
                 "headline", headline,
                 "summary", summary,
@@ -280,9 +287,72 @@ public class AiGuidanceService {
                 Instant.now().toString());
     }
 
-    /** Rejeita texto livre ou chave inesperada antes de persistir a versão categorial do MUSA. */
-    private void validateMusaV7CategoricalAnswers(Map<String, String> answers) {
-        MusaV7CategoricalContract.validate(answers);
+    /** Produz microações determinísticas aderentes ao propósito comercial de cada dia da v7. */
+    private List<String> localActionsForMission(String missionId, Map<String, String> answers) {
+        return switch (missionId) {
+            case PUBLIC_DIAGNOSTIC_MISSION_ID, "dia-1-ruido-visual" -> List.of(
+                    "Observe a mensagem " + lowerAnswer(answers, "mainObstacle") + " em "
+                            + lowerAnswer(answers, "presenceFocus") + ".",
+                    "Use " + lowerAnswer(answers, "startingResource") + " para aproximar o sinal de "
+                            + lowerAnswer(answers, "desiredSignal") + ".",
+                    "Registre a mensagem percebida antes e depois do ajuste.");
+            case "dia-2-assinatura" -> List.of(
+                    "Use " + lowerAnswer(answers, "pieceSignal") + " em " + lowerAnswer(answers, "realScene") + ".",
+                    "Observe se a peça reforça " + lowerAnswer(answers, "personalMeaning") + " para você.",
+                    "Registre o significado sem considerar preço, marca ou reação de terceiros.");
+            case "dia-3-base-acessivel" -> List.of(
+                    "Vista " + lowerAnswer(answers, "commonLook") + " como base do antes.",
+                    "Inclua apenas " + lowerAnswer(answers, "structureSignal") + " e compare o depois.",
+                    "Registre o detalhe que deixou o conjunto " + lowerAnswer(answers, "desiredFinish") + ".");
+            case "dia-4-checklist-12-minutos" -> List.of(
+                    "Prepare " + lowerAnswer(answers, "occasion") + " com intenção de "
+                            + lowerAnswer(answers, "firstSignal") + ".",
+                    "Use " + lowerAnswer(answers, "finalDetail") + " como detalhe final observável.",
+                    "Confira sua própria leitura antes de sair, sem prever a reação do ambiente.");
+            case "dia-5-compra-inteligente" -> List.of(
+                    "Monte para " + lowerAnswer(answers, "realOccasion") + " uma base "
+                            + lowerAnswer(answers, "baseColor") + ".",
+                    "Acrescente " + lowerAnswer(answers, "signalColor") + " somente como direção de intenção.",
+                    "Avalie a coerência das duas cores usando o que você já possui.");
+            case "dia-6-situacao-chave" -> List.of(
+                    "Repita " + lowerAnswer(answers, "finishSignal") + " como acabamento reconhecível por você.",
+                    "Combine a base " + lowerAnswer(answers, "signatureBase") + " com "
+                            + lowerAnswer(answers, "memorableSignal") + ".",
+                    "Teste os três sinais juntos em uma situação real.");
+            case "dia-7-plano-pessoal" -> List.of(
+                    "Use " + lowerAnswer(answers, "bestSignal") + " em "
+                            + lowerAnswer(answers, "mostRelevantOccasion") + ".",
+                    "Aplique a regra: " + lowerAnswer(answers, "antiImpulseRule") + ".",
+                    "Comece o checklist por " + lowerAnswer(answers, "checklistPriority")
+                            + " e repita a fórmula por 30 dias.");
+            default -> throw new IllegalArgumentException("Missão MUSA v7 sem regra local: " + missionId);
+        };
+    }
+
+    /** Identifica de forma clara qual resultado funcional a orientação local entrega. */
+    private String localHeadlineForMission(String missionId) {
+        return switch (missionId) {
+            case PUBLIC_DIAGNOSTIC_MISSION_ID, "dia-1-ruido-visual" ->
+                    "Sua mensagem visual e o primeiro ajuste estão organizados";
+            case "dia-2-assinatura" -> "Sua peça-sinal ganhou um significado prático";
+            case "dia-3-base-acessivel" -> "Seu antes e depois de estrutura está organizado";
+            case "dia-4-checklist-12-minutos" -> "Seu primeiro sinal para a situação está planejado";
+            case "dia-5-compra-inteligente" -> "Sua direção de duas cores está organizada";
+            case "dia-6-situacao-chave" -> "Seus três sinais de assinatura estão definidos";
+            case "dia-7-plano-pessoal" -> "Sua fórmula MUSA pessoal está pronta para repetir";
+            default -> throw new IllegalArgumentException("Missão MUSA v7 sem título local: " + missionId);
+        };
+    }
+
+    /** Explica o limite do resultado local sem prometer transformação ou reação externa. */
+    private String localSummaryForMission(String missionId) {
+        return localHeadlineForMission(missionId)
+                + ". As escolhas foram combinadas por regras locais para você testar e avaliar por si mesma.";
+    }
+
+    /** Recupera uma escolha já validada e a normaliza somente para composição da frase. */
+    private String lowerAnswer(Map<String, String> answers, String key) {
+        return answers.get(key).toLowerCase();
     }
 
     /** Serializa auditoria local sem permitir que uma falha de log execute integração externa. */

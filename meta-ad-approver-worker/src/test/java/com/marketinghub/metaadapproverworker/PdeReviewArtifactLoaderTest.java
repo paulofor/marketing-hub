@@ -4,8 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -115,5 +118,36 @@ class PdeReviewArtifactLoaderTest {
     assertThat(evidence)
         .extracting(item -> item.get("path"))
         .contains("pde-platform/contracts/kit-whatsapp-tasting-homologation-v1.json");
+  }
+
+  /** Entrega à revisão independente somente a prova comercial declarada e íntegra. */
+  @Test
+  void loadsCommercialHomologationManifestAndEvidence() throws Exception {
+    Path proof = tempDir.resolve("pde-platform/frontend/tests/product-journey.spec.ts");
+    Files.createDirectories(proof.getParent());
+    Files.writeString(proof, "prova comercial íntegra");
+    String hash =
+        HexFormat.of()
+            .formatHex(
+                MessageDigest.getInstance("SHA-256")
+                    .digest(Files.readString(proof).getBytes(StandardCharsets.UTF_8)));
+    Path manifest =
+        tempDir.resolve("pde-platform/contracts/product-commercial-homologation-v1.json");
+    Files.createDirectories(manifest.getParent());
+    Files.writeString(
+        manifest,
+        """
+        {"homologationEvidence":[{"path":"pde-platform/frontend/tests/product-journey.spec.ts","sha256":"%s"}]}
+        """
+            .formatted(hash));
+
+    var evidence =
+        new PdeReviewArtifactLoader(tempDir.toString()).loadCommercialHomologationEvidence();
+
+    assertThat(evidence)
+        .extracting(item -> item.get("path"))
+        .containsExactly(
+            "pde-platform/contracts/product-commercial-homologation-v1.json",
+            "pde-platform/frontend/tests/product-journey.spec.ts");
   }
 }

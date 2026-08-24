@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class PepperTransactionClient implements PepperTransactionGateway {
     private static final Logger log = LoggerFactory.getLogger(PepperTransactionClient.class);
+    private static final String EXPERIENCE_VERSION_MARKER = "__pde_version__";
 
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
@@ -34,6 +35,7 @@ public class PepperTransactionClient implements PepperTransactionGateway {
     private final int syncLookbackDays;
     private final int expectedPaidAmountCents;
     private final String expectedCurrency;
+    private final String fallbackExperienceVersion;
 
     /** Recebe configuracoes da API Pepper e prepara o cliente HTTP. */
     public PepperTransactionClient(
@@ -43,7 +45,9 @@ public class PepperTransactionClient implements PepperTransactionGateway {
             @Value("${pde.access.pepper.offer-hashes:owm6x,c8mnn}") String offerHashes,
             @Value("${pde.access.pepper.sync-lookback-days:14}") int syncLookbackDays,
             @Value("${pde.access.pepper.expected-paid-amount-cents:6700}") int expectedPaidAmountCents,
-            @Value("${pde.access.pepper.expected-currency:BRL}") String expectedCurrency) {
+            @Value("${pde.access.pepper.expected-currency:BRL}") String expectedCurrency,
+            @Value("${pde.access.pepper.fallback-experience-version:musa-pde-entry-v7-espelho-antes-de-sair}")
+                    String fallbackExperienceVersion) {
         this.objectMapper = objectMapper;
         this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
         this.apiBaseUrl = trimTrailingSlash(apiBaseUrl);
@@ -52,6 +56,7 @@ public class PepperTransactionClient implements PepperTransactionGateway {
         this.syncLookbackDays = Math.max(1, syncLookbackDays);
         this.expectedPaidAmountCents = Math.max(1, expectedPaidAmountCents);
         this.expectedCurrency = expectedCurrency == null ? "" : expectedCurrency.trim().toUpperCase();
+        this.fallbackExperienceVersion = fallbackExperienceVersion == null ? "" : fallbackExperienceVersion.trim();
     }
 
     /** Busca transacoes pagas e filtra somente ofertas comerciais aceitas pelo Clube MUSA. */
@@ -69,7 +74,9 @@ public class PepperTransactionClient implements PepperTransactionGateway {
                 .GET()
                 .build();
         try {
+            log.info("Request Pepper enviado; method=GET, url={}, searchPresent={}", url, search != null && !search.isBlank());
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            log.info("Response bruto Pepper recebido; status={}, url={}, payload={}", response.statusCode(), url, response.body());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 log.error("Falha ao consultar transacoes Pepper; status={}, url={}", response.statusCode(), url);
                 throw new IllegalStateException("API Pepper recusou a consulta de transacoes");
@@ -88,6 +95,32 @@ public class PepperTransactionClient implements PepperTransactionGateway {
     /** Busca uma transacao especifica por hash e aplica os mesmos filtros comerciais. */
     @Override
     public PepperTransactionSearchResult findPaidTransactionByHash(String transactionHash) {
+        try {
+            return parseSinglePaidTransaction(requestTransactionByHash(transactionHash));
+        } catch (IOException ex) {
+            log.error("Resposta inválida ao consultar transacao Pepper; transactionHash={}", transactionHash, ex);
+            throw new IllegalStateException("A Pepper respondeu uma transação inválida", ex);
+        }
+    }
+
+    /** Consulta uma transação aceita sem descartar o estado de reembolso ou chargeback. */
+    @Override
+    public PepperTransactionSnapshot findTransactionByHash(String transactionHash) {
+        try {
+            PepperTransactionSnapshot snapshot = toTransactionSnapshot(
+                    objectMapper.readTree(requestTransactionByHash(transactionHash)));
+            if (snapshot == null) {
+                throw new IllegalArgumentException("Transação Pepper fora da oferta, valor ou moeda aprovados");
+            }
+            return snapshot;
+        } catch (IOException ex) {
+            log.error("Resposta inválida ao consultar estado Pepper; transactionHash={}", transactionHash, ex);
+            throw new IllegalStateException("A Pepper respondeu um estado de transação inválido", ex);
+        }
+    }
+
+    /** Executa a consulta autenticada por hash preservando URL e stack trace no diagnóstico. */
+    private String requestTransactionByHash(String transactionHash) {
         if (apiToken == null || apiToken.isBlank()) {
             throw new IllegalStateException("Token da API Pepper nao configurado para reconciliacao PDE");
         }
@@ -103,12 +136,14 @@ public class PepperTransactionClient implements PepperTransactionGateway {
                 .GET()
                 .build();
         try {
+            log.info("Request Pepper enviado; method=GET, url={}, transactionHash={}", url, transactionHash.trim());
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            log.info("Response bruto Pepper recebido; status={}, url={}, payload={}", response.statusCode(), url, response.body());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 log.error("Falha ao consultar transacao Pepper; status={}, url={}", response.statusCode(), url);
                 throw new IllegalStateException("API Pepper recusou a consulta da transacao");
             }
-            return parseSinglePaidTransaction(response.body());
+            return response.body();
         } catch (IOException ex) {
             log.error("Falha de IO ao consultar transacao Pepper; url={}", url, ex);
             throw new IllegalStateException("Nao foi possivel consultar transacao Pepper", ex);
@@ -163,31 +198,75 @@ public class PepperTransactionClient implements PepperTransactionGateway {
 
     /** Converte uma transacao Pepper paga e aceita em contrato interno. */
     private PepperPaidTransaction toPaidTransaction(JsonNode transaction) {
+        PepperTransactionSnapshot snapshot = toTransactionSnapshot(transaction);
+        if (snapshot == null || !"paid".equalsIgnoreCase(snapshot.paymentStatus())) {
+            return null;
+        }
+        return new PepperPaidTransaction(
+                snapshot.transactionId(),
+                snapshot.buyerEmail(),
+                snapshot.paymentStatus(),
+                snapshot.offerHash(),
+                snapshot.offerTitle(),
+                snapshot.amount(),
+                snapshot.currency(),
+                snapshot.experienceVersion());
+    }
+
+    /** Converte uma transação aceita preservando seu estado financeiro atual. */
+    private PepperTransactionSnapshot toTransactionSnapshot(JsonNode transaction) {
         String status = text(transaction, "payment_status");
         String offerHash = text(transaction.path("offer"), "hash");
         Integer amount = integer(transaction, "amount");
         String currency = resolvedCurrency(transaction);
-        if (!"paid".equalsIgnoreCase(status)
+        String buyerEmail = text(transaction.path("customer"), "email");
+        String transactionId = resolvedTransactionId(transaction);
+        if (status == null
+                || transactionId == null
+                || transactionId.isBlank()
+                || buyerEmail == null
+                || buyerEmail.isBlank()
                 || !isAcceptedOfferHash(offerHash)
                 || !isAcceptedAmountAndCurrency(amount, currency)) {
-            return null;
-        }
-        String buyerEmail = text(transaction.path("customer"), "email");
-        if (buyerEmail == null || buyerEmail.isBlank()) {
             log.warn(
-                    "Transacao Pepper paga ignorada sem e-mail; transactionId={}, offerHash={}",
-                    resolvedTransactionId(transaction),
-                    offerHash);
+                    "Transacao Pepper ignorada por contrato comercial; transactionPresent={}, status={}, offerHash={}, amount={}, currency={}, buyerPresent={}",
+                    transactionId != null && !transactionId.isBlank(),
+                    status,
+                    offerHash,
+                    amount,
+                    currency,
+                    buyerEmail != null && !buyerEmail.isBlank());
             return null;
         }
-        return new PepperPaidTransaction(
-                resolvedTransactionId(transaction),
+        return new PepperTransactionSnapshot(
+                transactionId,
                 buyerEmail,
                 status,
                 offerHash,
                 text(transaction.path("offer"), "title"),
                 amount,
-                currency);
+                currency,
+                resolveExperienceVersion(transaction));
+    }
+
+    /** Extrai a versão imutável anexada ao UTM sem confundir o criativo original. */
+    private String resolveExperienceVersion(JsonNode transaction) {
+        String utmContent = text(transaction, "utm_content");
+        if (utmContent == null) {
+            log.warn(
+                    "Transação Pepper sem UTM de versão; fallbackExperienceVersion={}",
+                    fallbackExperienceVersion);
+            return fallbackExperienceVersion;
+        }
+        int markerIndex = utmContent.lastIndexOf(EXPERIENCE_VERSION_MARKER);
+        if (markerIndex < 0) {
+            log.warn(
+                    "Transação Pepper sem versão atribuída no UTM; fallbackExperienceVersion={}",
+                    fallbackExperienceVersion);
+            return fallbackExperienceVersion;
+        }
+        String version = utmContent.substring(markerIndex + EXPERIENCE_VERSION_MARKER.length()).trim();
+        return version.isBlank() || version.length() > 80 ? fallbackExperienceVersion : version;
     }
 
     /** Resolve o identificador mais estavel disponivel no payload da Pepper. */

@@ -1649,6 +1649,69 @@ Use este checklist quando o problema estiver em algum loop acima:
   envia eventos, `mh_test=1` ou `mh_preview=qa` usa `mh_test`, e somente a navegação normal usa
   `pde-assisted-service`. Um teste Playwright sobe explicitamente o build público, comprova os três
   modos e impede que a flag de acesso volte a controlar a classificação comercial.
+- **Fechamento complementar em 2026-08-24:** a homologação Pepper da Vega preservava o comprador
+  `@sandbox.local`, mas os eventos funcionais derivados usavam provider `PEPPER` e eram promovidos a
+  `HUMAN`. A classificação passa a reconhecer o domínio reservado e a origem do acesso antes do
+  tipo funcional. O E2E exige compra, acesso, entrega, reembolso e venda líquida humanos em zero e
+  preserva o ciclo somente no breakdown bruto `INTERNAL_QA`.
+
+## LOOP-PDE-COMPRA-SEM-VERSAO-E-REEMBOLSO — receita não fecha o ciclo da experiência
+
+- **Data:** 2026-08-24.
+- **Sintoma:** a Vega possuía checkout e liberação de acesso, mas a compra não comprovava qual versão
+  foi vendida e o reembolso não revogava o conteúdo nem reduzia a venda líquida de forma auditável.
+- **Causa-raiz confirmada:** a reconciliação aceitava apenas o estado pago e vinculava oferta, valor e
+  moeda, mas descartava a UTM de versão e não modelava `refunded`/`chargeback`. Assim, uma aprovação
+  técnica poderia misturar versões e superestimar receita líquida.
+- **Correção sistêmica:** o checkout envia a identidade da experiência; a API Pepper é relida para
+  validar produto, oferta, valor, moeda, comprador, status e versão; compra, acesso, entrega e
+  reembolso ficam idempotentes e o reembolso revoga o acesso preservando a auditoria.
+- **Prevenção:** testes unitários e jornada Compose em desktop, iPhone 15 Pro e Pixel 7 repetem os
+  callbacks de compra, entrega e reembolso, exigem contagens unitárias e zero venda líquida após a
+  devolução. Liquibase é exercitado com aplicação dupla, rollback e reaplicação no MySQL 5.7.
+
+## LOOP-PDE-TELEMETRIA-EXPOE-TOKEN-NA-URL — navegação autenticada vaza segredo
+
+- **Data:** 2026-08-24.
+- **Sintoma:** eventos da área paga enviavam `pageUrl`, `path` e `referrerUrl` contendo o token bruto
+  presente em `/access/<token>`; as chamadas também serializavam `accessToken` no payload do
+  navegador.
+- **Causa-raiz:** o construtor genérico de telemetria copiava `window.location.href` e
+  `window.location.pathname` sem distinguir rota pública de credencial por URL.
+- **Correção sistêmica:** telemetria do navegador nunca serializa o token, representa a rota como
+  `/access/:token` e remove query e fragmento das URLs de página e referência antes do envio.
+- **Prevenção:** teste Playwright percorre uma rota autenticada com token sentinela, captura todos os
+  eventos e bloqueia qualquer payload que contenha o segredo, em desktop e mobile.
+
+## LOOP-PDE-MISSAO-DIVERGE-DA-INTERACAO — jornada conclui IDs sem entregar a promessa
+
+- **Data:** 2026-08-24.
+- **Sintoma:** a Vega concluía sete IDs e emitia `DELIVERY_COMPLETED`, embora os formulários dos Dias
+  2, 3, 5, 6 e 7 ainda executassem mecanismos de uma versão anterior, diferentes das missões v7.
+- **Causa-raiz:** missão, formulário e opções categoriais possuíam fontes independentes; os testes
+  comprovavam sequência e quantidade, mas não paridade semântica do que a cliente recebia.
+- **Correção sistêmica:** cada missão passa a carregar seu contrato de interação no catálogo
+  canônico. Frontend, validador backend e test double consomem a mesma definição; a conclusão exige
+  todas e somente as escolhas daquela missão.
+- **Prevenção:** testes de catálogo, backend e jornada em três dispositivos comparam título,
+  formulário, campos e orientação de cada dia e bloqueiam conclusão por simples contagem de IDs.
+
+## LOOP-PDE-EVENTO-LEGADO-DIVERGE-DO-FUNIL — jornada visual e métrica canônica se separam
+
+- **Data:** 2026-08-24.
+- **Sintoma:** a degustação v7 entregava o primeiro ajuste, mas emitia
+  `MICRO_EXPERIENCE_STARTED`, `MICRO_RESULT_RECEIVED` e `PAID_CONTINUATION_VIEWED`, enquanto o
+  contrato homologado exigia `TASTING_STARTED`, `VALUE_MOMENT` e `PAYWALL_VIEWED`. Retentativas dos
+  eventos comportamentais também podiam criar novas linhas.
+- **Causa-raiz:** nomes de telemetria e regras de idempotência estavam separados do contrato
+  comercial versionado; o frontend ainda duplicava `FIRST_USE`, `MISSION_COMPLETED` e
+  `JOURNEY_COMPLETED`, que já eram materializados pelo backend.
+- **Correção sistêmica:** a v7 emite os marcos canônicos; o backend deriva `event_id` determinístico
+  de produto, versão, correlação, tipo e chave idempotente e usa inserção tolerante a replay. Marcos
+  finais ficam exclusivamente sob a fonte funcional do backend.
+- **Prevenção:** testes de frontend exigem nomes e chaves da degustação; teste JDBC repete cada
+  marco e comprova uma única linha por evento; a jornada Compose reconcilia os eventos finais com
+  compra, acesso, entrega e reembolso idempotentes.
 
 ## LOOP-PLANO-COMERCIAL-COAUTORIA-LIBERA-SUCESSORA — atividade avança com um revisor pendente
 

@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ads.AdsServiceApplication;
 import com.marketinghub.creative.label.Angle;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentCampaignObjective;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.run.service.create.CreateExperimentRunRequest;
@@ -206,6 +207,53 @@ class BackendExperimentRunControllerTest {
                 .value(hasItem("e2e://journey/round-1")));
   }
 
+  /** Libera venda direta somente com checkout, entrega, canal consentido e métricas comprovados. */
+  @Test
+  void directSalesPreflightUsesCommercialJourneyAndDistributionGates() throws Exception {
+    Long experimentId = createDirectSalesExperiment();
+    createRelevantCommercialDossier();
+    Long runId = createRun(experimentId);
+
+    mockMvc
+        .perform(post("/api/experiment-runs/{runId}/preflight", runId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.runStatus").value("PREFLIGHT_PENDING"))
+        .andExpect(
+            jsonPath("$.gates[?(@.gateCode == 'SALES_VALIDATION_TARGET_DEFINED')].status")
+                .value(hasItem("PASS")))
+        .andExpect(
+            jsonPath("$.gates[?(@.gateCode == 'CHECKOUT_AND_DELIVERY_CAN_BE_COMPLETED')].status")
+                .value(hasItem("PENDING")))
+        .andExpect(
+            jsonPath("$.gates[?(@.gateCode == 'DIRECT_CHANNEL_READINESS_CONFIRMED')].status")
+                .value(hasItem("PENDING")))
+        .andExpect(jsonPath("$.gates[?(@.gateCode == 'KPI_TARGET_CPL_VALID')]").isEmpty())
+        .andExpect(jsonPath("$.gates[?(@.gateCode == 'FORM_CAN_BE_SUBMITTED')]").isEmpty())
+        .andExpect(
+            jsonPath("$.gates[?(@.gateCode == 'META_EFFECTIVE_STATUS_CONFIRMED')]").isEmpty());
+
+    String evidence =
+        """
+        {
+          "gates":[
+            {"gateCode":"LANDING_QUALITY_REVIEW_APPROVED","status":"PASS","summary":"Oferta responsiva aprovada","evidenceReference":"e2e://musa-v7/landing"},
+            {"gateCode":"CHECKOUT_AND_DELIVERY_CAN_BE_COMPLETED","status":"PASS","summary":"Pagamento de teste, acesso e entrega concluídos","evidenceReference":"e2e://musa-v7/journey"},
+            {"gateCode":"DIRECT_CHANNEL_READINESS_CONFIRMED","status":"PASS","summary":"Canal consentido sem gasto ou disparo automático","evidenceReference":"contract://musa-v7/direct-channel"},
+            {"gateCode":"DATA_FRESHNESS_VALID","status":"PASS","summary":"QA segregado, correlacionado e deduplicado","evidenceReference":"db://musa-v7/measurement"}
+          ]
+        }
+        """;
+
+    mockMvc
+        .perform(
+            post("/api/experiment-runs/{runId}/homologation-results", runId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(evidence))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.runStatus").value("READY_TO_PUBLISH"))
+        .andExpect(jsonPath("$.hasBlockers").value(false));
+  }
+
   /** Deve impedir que producao use NOT_APPLICABLE para ignorar a confirmacao da Meta. */
   @Test
   void homologationRejectsMetaNotApplicableInProduction() throws Exception {
@@ -304,6 +352,43 @@ class BackendExperimentRunControllerTest {
             .primaryVariable("Ângulo de dor")
             .primaryMetric("Envio de formulário")
             .kpiTargetCpl(new BigDecimal("45"))
+            .build();
+    return experimentRepository.save(experiment).getId();
+  }
+
+  /** Cria um experimento de venda direta que não depende de formulário, Meta ou CPL. */
+  private Long createDirectSalesExperiment() {
+    MarketNiche niche =
+        marketNicheRepository.save(MarketNiche.builder().name("Doces Finos Venda Direta").build());
+    Angle angle = angleRepository.save(Angle.builder().name("Ângulo Venda Direta").build());
+    Hypothesis hypothesis =
+        hypothesisRepository.save(
+            Hypothesis.builder()
+                .marketNiche(niche)
+                .title("Venda direta de doces finos")
+                .premiseAngle(angle)
+                .promise("Cobrar mais por doces finos premium")
+                .problem("Confeiteiras trabalham muito e cobram pouco")
+                .persona("Confeiteira autônoma")
+                .offerType(OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .mechanism("Reposicionamento premium")
+                .entrega("Plano de precificação")
+                .build());
+    Experiment experiment =
+        Experiment.builder()
+            .niche(niche)
+            .name("Experimento Venda Direta")
+            .hypothesisRef(hypothesis)
+            .hypothesis("Venda direta de doces finos premium")
+            .status(ExperimentStatus.PLANNED)
+            .platform(ExperimentPlatform.DIRECT_ONE_TO_ONE)
+            .campaignObjective(ExperimentCampaignObjective.SALES)
+            .primaryVariable("Enquadramento da oferta")
+            .primaryMetric("Venda líquida reconciliada")
+            .unitPrice(new BigDecimal("67"))
+            .sampleSize(100)
+            .targetCvr(new BigDecimal("0.80"))
             .build();
     return experimentRepository.save(experiment).getId();
   }

@@ -1,6 +1,8 @@
 package com.marketinghub.experiment.run.service;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentCampaignObjective;
+import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.run.ExperimentEvidenceValidity;
 import com.marketinghub.experiment.run.ExperimentRun;
 import com.marketinghub.experiment.run.ExperimentRunDataQualityStatus;
@@ -38,12 +40,12 @@ public class BackendExperimentRunService {
   private final ExperimentRepository experimentRepository;
   private static final String EVALUATOR_VERSION = "experiment-run-preflight.v1";
   private static final String HOMOLOGATION_EVALUATOR_VERSION = "experiment-run-homologation.v1";
-  private static final Set<String> HOMOLOGATION_GATE_CODES =
-      Set.of(
-          "LANDING_QUALITY_REVIEW_APPROVED",
-          "FORM_CAN_BE_SUBMITTED",
-          "META_EFFECTIVE_STATUS_CONFIRMED",
-          "DATA_FRESHNESS_VALID");
+  private static final String LANDING_GATE = "LANDING_QUALITY_REVIEW_APPROVED";
+  private static final String FORM_GATE = "FORM_CAN_BE_SUBMITTED";
+  private static final String SALES_JOURNEY_GATE = "CHECKOUT_AND_DELIVERY_CAN_BE_COMPLETED";
+  private static final String META_DISTRIBUTION_GATE = "META_EFFECTIVE_STATUS_CONFIRMED";
+  private static final String DIRECT_DISTRIBUTION_GATE = "DIRECT_CHANNEL_READINESS_CONFIRMED";
+  private static final String DATA_GATE = "DATA_FRESHNESS_VALID";
 
   private final ExperimentRunRepository experimentRunRepository;
   private final ExperimentRunGateResultRepository gateResultRepository;
@@ -141,10 +143,12 @@ public class BackendExperimentRunService {
     if (gates.isEmpty()) {
       throw new IllegalStateException("Execute o preflight inicial antes da homologação funcional");
     }
-    Map<String, GateEvidence> evidenceByCode = validateHomologationRequest(run, request);
+    Set<String> expectedGateCodes = homologationGateCodes(run.getExperiment());
+    Map<String, GateEvidence> evidenceByCode =
+        validateHomologationRequest(run, request, expectedGateCodes);
     Instant evaluatedAt = Instant.now();
     gates.stream()
-        .filter(gate -> HOMOLOGATION_GATE_CODES.contains(gate.getGateCode()))
+        .filter(gate -> expectedGateCodes.contains(gate.getGateCode()))
         .forEach(
             gate ->
                 applyHomologationEvidence(
@@ -240,39 +244,97 @@ public class BackendExperimentRunService {
             "Métrica primária ausente.",
             "DEFINE_PRIMARY_METRIC",
             evaluatedAt),
-        gate(
-            run,
-            "KPI_TARGET_CPL_VALID",
-            ExperimentRunGateGroup.EXPERIMENT_DESIGN,
-            experiment.getKpiTargetCpl() != null && experiment.getKpiTargetCpl().signum() > 0,
-            "KPI alvo de CPL definido com valor positivo.",
-            "KPI alvo de CPL ausente ou igual a zero.",
-            "DEFINE_KPI_TARGET_CPL",
-            evaluatedAt),
+        commercialTargetGate(run, experiment, evaluatedAt),
         pendingGate(
             run,
-            "LANDING_QUALITY_REVIEW_APPROVED",
+            LANDING_GATE,
             ExperimentRunGateGroup.ASSET_QUALITY,
-            "Revisão da landing ainda não avaliada neste incremento.",
+            "Revisão da superfície comercial ainda não avaliada neste run.",
             evaluatedAt),
         pendingGate(
             run,
-            "FORM_CAN_BE_SUBMITTED",
+            journeyGateCode(experiment),
             ExperimentRunGateGroup.FUNCTIONAL_E2E,
-            "Teste E2E do formulário será executado em incremento posterior.",
+            isSalesExperiment(experiment)
+                ? "Checkout, pagamento de teste, acesso e entrega ainda não foram comprovados neste run."
+                : "Submissão funcional ainda não foi comprovada neste run.",
             evaluatedAt),
         pendingGate(
             run,
-            "META_EFFECTIVE_STATUS_CONFIRMED",
-            ExperimentRunGateGroup.META_PUBLICATION,
-            "Publicação Meta será vinculada ao run em incremento posterior.",
+            distributionGateCode(experiment),
+            distributionGateGroup(experiment),
+            experiment.getPlatform() == ExperimentPlatform.DIRECT_ONE_TO_ONE
+                ? "Canal direto consentido, origem, amostra e ausência de gasto ainda não foram comprovados neste run."
+                : "Status efetivo da distribuição Meta ainda não foi comprovado neste run.",
             evaluatedAt),
         pendingGate(
             run,
-            "DATA_FRESHNESS_VALID",
+            DATA_GATE,
             ExperimentRunGateGroup.MEASUREMENT,
-            "Freshness de dados comerciais será calculado em incremento posterior.",
+            "Freshness, correlação, deduplicação e segregação de QA ainda não foram comprovadas neste run.",
             evaluatedAt));
+  }
+
+  /** Exige meta econômica coerente com venda ou preserva o CPL para captação de leads. */
+  private ExperimentRunGateResult commercialTargetGate(
+      ExperimentRun run, Experiment experiment, Instant evaluatedAt) {
+    if (isSalesExperiment(experiment)) {
+      boolean complete =
+          experiment.getUnitPrice() != null
+              && experiment.getUnitPrice().signum() > 0
+              && experiment.getSampleSize() != null
+              && experiment.getSampleSize() > 0
+              && experiment.getTargetCvr() != null
+              && experiment.getTargetCvr().signum() > 0;
+      return gate(
+          run,
+          "SALES_VALIDATION_TARGET_DEFINED",
+          ExperimentRunGateGroup.EXPERIMENT_DESIGN,
+          complete,
+          "Preço, amostra e conversão-alvo de venda estão definidos.",
+          "Experimento de venda sem preço, amostra ou conversão-alvo positiva.",
+          "DEFINE_SALES_VALIDATION_TARGET",
+          evaluatedAt);
+    }
+    return gate(
+        run,
+        "KPI_TARGET_CPL_VALID",
+        ExperimentRunGateGroup.EXPERIMENT_DESIGN,
+        experiment.getKpiTargetCpl() != null && experiment.getKpiTargetCpl().signum() > 0,
+        "KPI alvo de CPL definido com valor positivo.",
+        "KPI alvo de CPL ausente ou igual a zero.",
+        "DEFINE_KPI_TARGET_CPL",
+        evaluatedAt);
+  }
+
+  /** Resolve os quatro gates funcionais conforme objetivo e canal congelados no experimento. */
+  private Set<String> homologationGateCodes(Experiment experiment) {
+    return Set.of(
+        LANDING_GATE, journeyGateCode(experiment), distributionGateCode(experiment), DATA_GATE);
+  }
+
+  /** Usa jornada de compra e entrega para vendas e mantém formulário para captação de leads. */
+  private String journeyGateCode(Experiment experiment) {
+    return isSalesExperiment(experiment) ? SALES_JOURNEY_GATE : FORM_GATE;
+  }
+
+  /** Exige evidência do canal efetivamente escolhido, sem forçar contrato Meta no canal direto. */
+  private String distributionGateCode(Experiment experiment) {
+    return experiment.getPlatform() == ExperimentPlatform.DIRECT_ONE_TO_ONE
+        ? DIRECT_DISTRIBUTION_GATE
+        : META_DISTRIBUTION_GATE;
+  }
+
+  /** Separa distribuição direta da publicação Meta na persistência do relatório de preflight. */
+  private ExperimentRunGateGroup distributionGateGroup(Experiment experiment) {
+    return experiment.getPlatform() == ExperimentPlatform.DIRECT_ONE_TO_ONE
+        ? ExperimentRunGateGroup.DISTRIBUTION
+        : ExperimentRunGateGroup.META_PUBLICATION;
+  }
+
+  /** Reconhece venda como objetivo do experimento independentemente do canal de aquisição. */
+  private boolean isSalesExperiment(Experiment experiment) {
+    return experiment.getCampaignObjective() == ExperimentCampaignObjective.SALES;
   }
 
   /** Cria o gate que exige dossiê comercial MOIS aderente antes de liberar mídia. */
@@ -340,13 +402,13 @@ public class BackendExperimentRunService {
 
   /** Valida completude, unicidade e estados aceitos nas evidencias da rodada de homologacao. */
   private Map<String, GateEvidence> validateHomologationRequest(
-      ExperimentRun run, ExperimentRunHomologationRequest request) {
+      ExperimentRun run, ExperimentRunHomologationRequest request, Set<String> expectedGateCodes) {
     if (request == null || request.gates() == null) {
       throw new IllegalArgumentException("Resultados de homologação são obrigatórios");
     }
     Map<String, GateEvidence> evidenceByCode = new HashMap<>();
     for (GateEvidence evidence : request.gates()) {
-      if (evidence == null || !HOMOLOGATION_GATE_CODES.contains(evidence.gateCode())) {
+      if (evidence == null || !expectedGateCodes.contains(evidence.gateCode())) {
         throw new IllegalArgumentException("Gate funcional desconhecido na homologação");
       }
       if (evidenceByCode.putIfAbsent(evidence.gateCode(), evidence) != null) {
@@ -354,7 +416,7 @@ public class BackendExperimentRunService {
       }
       validateHomologationEvidence(run, evidence);
     }
-    if (!evidenceByCode.keySet().equals(HOMOLOGATION_GATE_CODES)) {
+    if (!evidenceByCode.keySet().equals(expectedGateCodes)) {
       throw new IllegalArgumentException("A homologação deve informar os quatro gates funcionais");
     }
     return evidenceByCode;
@@ -369,7 +431,7 @@ public class BackendExperimentRunService {
           "Gate homologado deve terminar como PASS, FAIL ou NOT_APPLICABLE");
     }
     if (evidence.status() == ExperimentRunGateStatus.NOT_APPLICABLE
-        && (!"META_EFFECTIVE_STATUS_CONFIRMED".equals(evidence.gateCode())
+        && (!META_DISTRIBUTION_GATE.equals(evidence.gateCode())
             || run.getMode() != ExperimentRunMode.TEST)) {
       throw new IllegalArgumentException(
           "NOT_APPLICABLE só é permitido para Meta em run técnico de teste");

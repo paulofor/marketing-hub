@@ -4,6 +4,20 @@ info:
   version: 1.0.0
   description: Endpoints administrativos e internos da descoberta de produtos PDE.
 paths:
+  /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending:
+    get:
+      tags: [Product Discovery]
+      summary: Reserva uma execução nova ou recupera lease expirado
+      responses:
+        '200':
+          description: Lista com no máximo uma execução e seu lease exclusivo
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 1
+                items:
+                  $ref: '#/components/schemas/ProductDiscoveryPendingExecution'
   /api/product-discovery/v1/cycles/{cycleId}/research-plan:
     get:
       tags: [Product Discovery]
@@ -31,14 +45,41 @@ paths:
           application/json:
             schema:
               type: object
-              required: [planJson, rawResponse, model]
+              required: [executionLeaseId, planJson, rawResponse, model]
               properties:
+                executionLeaseId: { type: string, format: uuid }
                 planJson: { type: string }
                 rawResponse: { type: string }
                 model: { type: string }
       responses:
         '200':
           description: Plano auditado
+        '409':
+          description: Lease expirado ou substituído
+  /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/{cycleId}/complete:
+    post:
+      tags: [Product Discovery]
+      summary: Conclui somente a tentativa que possui o lease vigente
+      parameters:
+        - in: path
+          name: cycleId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200': { description: Pesquisa concluída }
+        '409': { description: Lease expirado ou substituído }
+  /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/{cycleId}/fail:
+    post:
+      tags: [Product Discovery]
+      summary: Registra falha somente para o lease vigente
+      parameters:
+        - in: path
+          name: cycleId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200': { description: Falha auditada }
+        '409': { description: Lease expirado ou substituído }
   /api/product-discovery/v1/maturity-ranking:
     get:
       tags:
@@ -108,6 +149,15 @@ paths:
                 $ref: "#/components/schemas/ProductDiscoveryLegacyCleanup"
 components:
   schemas:
+    ProductDiscoveryPendingExecution:
+      type: object
+      required: [cycleId, executionLeaseId, executionAttempt]
+      properties:
+        cycleId: { type: integer, format: int64 }
+        executionLeaseId: { type: string, format: uuid }
+        executionAttempt: { type: integer, minimum: 1 }
+        theme: { type: string }
+        targetAudience: { type: string, nullable: true }
     ProductDiscoveryLegacyCleanup:
       type: object
       properties:

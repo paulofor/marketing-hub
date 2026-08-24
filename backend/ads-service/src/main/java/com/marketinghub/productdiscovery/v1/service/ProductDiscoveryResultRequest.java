@@ -7,5 +7,6 @@ import java.util.List;
 
 /** Contrato de resultado completo de pesquisa enviado pelo worker. */
 public record ProductDiscoveryResultRequest(
+    @NotBlank String executionLeaseId,
     @NotBlank String decisionSummary,
     @NotNull List<@Valid ProductDiscoveryOpportunityResultRequest> opportunities) {}

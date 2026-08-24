@@ -2,6 +2,9 @@ package com.marketinghub.productdiscovery.v1.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.opportunitydossier.service.OpportunityDossierResearchSyncService;
@@ -12,12 +15,15 @@ import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunityDecision;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryCycleRepository;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryOpportunityRepository;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 
 /** Responsabilidade: valida regras comerciais do serviço de descoberta PDE. */
 @ExtendWith(MockitoExtension.class)
@@ -35,6 +41,7 @@ class ProductDiscoveryServiceTest {
     ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
     cycle.setId(20L);
     cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-20");
     when(cycleRepository.findById(20L)).thenReturn(Optional.of(cycle));
     when(cycleRepository.save(cycle)).thenReturn(cycle);
     ProductDiscoveryService service =
@@ -45,6 +52,7 @@ class ProductDiscoveryServiceTest {
         service.registerResearchPlan(
             20L,
             new ProductDiscoveryResearchPlanRequest(
+                "lease-20",
                 "{\"marketplaceRequests\":[{\"marketplace\":\"HOTMART\"}]}",
                 "{\"questions\":[\"Quais produtos vendem?\"]}",
                 "gpt-5.6-sol"));
@@ -60,6 +68,7 @@ class ProductDiscoveryServiceTest {
     ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
     cycle.setId(20L);
     cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-20");
     when(cycleRepository.findById(20L)).thenReturn(Optional.of(cycle));
     when(cycleRepository.save(cycle)).thenReturn(cycle);
     when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(20L)).thenReturn(List.of());
@@ -71,7 +80,7 @@ class ProductDiscoveryServiceTest {
         service.complete(
             20L,
             new ProductDiscoveryResultRequest(
-                "Nenhuma evidência real encontrada; pesquisar mais.", List.of()));
+                "lease-20", "Nenhuma evidência real encontrada; pesquisar mais.", List.of()));
 
     assertThat(response.cycle().status()).isEqualTo(ProductDiscoveryCycleStatus.COMPLETED);
     assertThat(response.opportunities()).isEmpty();
@@ -84,6 +93,7 @@ class ProductDiscoveryServiceTest {
     ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
     cycle.setId(21L);
     cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-21");
     cycle.setResearchPlanJson("{\"marketplaceRequests\":[{\"marketplace\":\"HOTMART\"}]}");
     when(cycleRepository.findById(21L)).thenReturn(Optional.of(cycle));
     ProductDiscoveryService service =
@@ -108,8 +118,61 @@ class ProductDiscoveryServiceTest {
     assertThatThrownBy(
             () ->
                 service.complete(
-                    21L, new ProductDiscoveryResultRequest("Pesquisar mais", List.of(opportunity))))
+                    21L,
+                    new ProductDiscoveryResultRequest(
+                        "lease-21", "Pesquisar mais", List.of(opportunity))))
         .hasMessageContaining("10 ofertas reais comparaveis");
+  }
+
+  /** Deve recuperar ciclo abandonado com novo lease e tentativa auditável. */
+  @Test
+  void recoversExpiredResearchExecution() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(22L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-expirado");
+    cycle.setLeaseExpiresAt(Instant.parse("2026-08-24T08:00:00Z"));
+    cycle.setExecutionAttempt(1);
+    ArgumentCaptor<Pageable> page = ArgumentCaptor.forClass(Pageable.class);
+    when(cycleRepository.findClaimableForUpdate(
+            eq(ProductDiscoveryCycleStatus.READY_FOR_RESEARCH),
+            eq(ProductDiscoveryCycleStatus.RESEARCHING),
+            any(Instant.class),
+            any(Instant.class),
+            page.capture()))
+        .thenReturn(List.of(cycle));
+    when(cycleRepository.save(cycle)).thenReturn(cycle);
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService);
+
+    List<ProductDiscoveryPendingResponse> pending = service.pending();
+
+    assertThat(pending).hasSize(1);
+    assertThat(pending.getFirst().executionAttempt()).isEqualTo(2);
+    assertThat(pending.getFirst().executionLeaseId()).isNotBlank().isNotEqualTo("lease-expirado");
+    assertThat(cycle.getLeaseExpiresAt()).isAfter(Instant.now());
+    assertThat(page.getValue().getPageSize()).isEqualTo(1);
+    verify(dossierResearchSyncService).start(22L);
+  }
+
+  /** Deve rejeitar callback atrasado depois que outra tentativa assumiu o ciclo. */
+  @Test
+  void rejectsCallbackFromReplacedExecution() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(23L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-atual");
+    when(cycleRepository.findById(23L)).thenReturn(Optional.of(cycle));
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService);
+
+    assertThatThrownBy(
+            () ->
+                service.fail(
+                    23L, new ProductDiscoveryFailureRequest("lease-antigo", "worker interrompido")))
+        .hasMessageContaining("Lease da execução");
   }
 
   /** Deve manter renda extra como primeira trilha de pesquisa recomendada com travas comerciais. */

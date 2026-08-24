@@ -9,6 +9,11 @@ Worker operacional da Descoberta de Produtos PDE v1.
 - gerar oportunidades PDE com evidências, score e decisão;
 - reportar sucesso ou falha ao backend.
 
+Cada pendência chega com lease exclusivo. O worker processa uma execução por vez,
+renova o lease ao registrar o plano e o repete nos callbacks. Se o processo cair, o
+backend recupera o ciclo após vinte minutos; uma tentativa antiga não pode sobrescrever
+a retomada.
+
 O worker não cria produto, hipótese, landing, campanha ou gasto de mídia.
 
 ## Variáveis

@@ -31,13 +31,14 @@ public class MoisMetaAdInvestigationService {
   private static final int MIN_LONGEVITY_DAYS = 30;
   private static final int MIN_OBSERVATIONS = 2;
   private static final int MIN_VARIATIONS = 3;
+  private static final String SUPERVISED_COLLECTION_REASON =
+      "A API oficial da Meta não disponibiliza anúncios comerciais gerais que não alcançaram a União Europeia; no Brasil, a observação deve ser supervisionada.";
 
   private final JdbcTemplate jdbcTemplate;
   private final ObjectMapper objectMapper;
 
   /**
-   * Cria uma investigação recorrente para a API oficial, mantendo o cadastro supervisionado como
-   * complemento.
+   * Cria um acompanhamento supervisionado coerente com a cobertura comercial disponível no Brasil.
    */
   public MoisMetaAdDtos.InvestigationResponse create(
       MoisMetaAdDtos.CreateInvestigationRequest request) {
@@ -51,7 +52,7 @@ public class MoisMetaAdInvestigationService {
                   INSERT INTO mois_meta_ad_investigation
                     (workspace_id, search_terms, country_code, status, gate_decision, evidence_json,
                      gaps_json, ethical_modeling_json, created_at, updated_at)
-                  VALUES (?, ?, ?, 'PENDING', 'INVESTIGAR', '[]', ?, ?, ?, ?)
+                  VALUES (?, ?, ?, 'ACTIVE_SUPERVISED', 'INVESTIGAR', '[]', ?, ?, ?, ?)
                   """,
                   java.sql.Statement.RETURN_GENERATED_KEYS);
           statement.setString(1, request.workspaceId());
@@ -61,7 +62,7 @@ public class MoisMetaAdInvestigationService {
               4,
               json(
                   List.of(
-                      "Aguardar a primeira coleta pela API oficial da Meta",
+                      "Registrar a primeira observação real pela Biblioteca pública da Meta",
                       "Reobservar o mesmo anúncio em datas distintas para comprovar longevidade")));
           statement.setString(5, json(MoisMetaAdDtos.EthicalModelingCard.empty()));
           statement.setTimestamp(6, Timestamp.from(now));
@@ -88,7 +89,9 @@ public class MoisMetaAdInvestigationService {
     return jdbcTemplate
         .query(
             """
-            SELECT i.*, (SELECT COUNT(*) FROM mois_meta_ad_observation o WHERE o.investigation_id = i.id) ads_observed
+            SELECT i.*,
+                   (SELECT COUNT(*) FROM mois_meta_ad_observation o WHERE o.investigation_id = i.id) ads_observed,
+                   (SELECT MIN(o.observed_at) FROM mois_meta_ad_observation o WHERE o.investigation_id = i.id) first_observed_at
             FROM mois_meta_ad_investigation i WHERE i.id = ?
             """,
             (rs, rowNum) ->
@@ -98,6 +101,11 @@ public class MoisMetaAdInvestigationService {
                     rs.getString("search_terms"),
                     rs.getString("country_code"),
                     rs.getString("status"),
+                    collectionState(
+                        rs.getTimestamp("first_observed_at") == null
+                            ? null
+                            : rs.getTimestamp("first_observed_at").toInstant(),
+                        rs.getTimestamp("created_at").toInstant()),
                     rs.getString("gate_decision"),
                     stringList(rs.getString("evidence_json")),
                     stringList(rs.getString("gaps_json")),
@@ -246,10 +254,16 @@ public class MoisMetaAdInvestigationService {
             request.commercialSignal(),
             json(request));
     String collectorRunId = "supervised-" + observedAt.toString().replace(":", "").replace(".", "");
-    return ingest(
-        investigationId,
-        new MoisMetaAdDtos.ObservationBatchRequest(
-            collectorRunId, List.of(observation), observedAt));
+    MoisMetaAdDtos.ObservationBatchResponse response =
+        ingest(
+            investigationId,
+            new MoisMetaAdDtos.ObservationBatchRequest(
+                collectorRunId, List.of(observation), observedAt));
+    jdbcTemplate.update(
+        "UPDATE mois_meta_ad_investigation SET status = 'ACTIVE_SUPERVISED', error_message = NULL, next_run_at = NULL, updated_at = ? WHERE id = ?",
+        Timestamp.from(Instant.now()),
+        investigationId);
+    return response;
   }
 
   /** Impede que retry do mesmo lote infle artificialmente a contagem temporal. */
@@ -410,6 +424,16 @@ public class MoisMetaAdInvestigationService {
   /** Normaliza o país para o padrão usado pela API da Meta. */
   private String normalizedCountry(String country) {
     return country == null || country.isBlank() ? "BR" : country.trim().toUpperCase();
+  }
+
+  /** Expõe o modo brasileiro real e a data mínima para comprovar trinta dias de longevidade. */
+  MoisMetaAdDtos.CollectionState collectionState(Instant firstObservedAt, Instant createdAt) {
+    Instant nextObservationAt =
+        firstObservedAt == null
+            ? createdAt
+            : firstObservedAt.plus(Duration.ofDays(MIN_LONGEVITY_DAYS));
+    return new MoisMetaAdDtos.CollectionState(
+        "SUPERVISED", SUPERVISED_COLLECTION_REASON, nextObservationAt);
   }
 
   /** Converte texto opcional vazio em nulo para preservar a ausência de evidência. */

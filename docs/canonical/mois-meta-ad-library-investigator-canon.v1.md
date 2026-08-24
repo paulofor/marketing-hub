@@ -6,11 +6,12 @@ Encontrar padrões comerciais já expostos ao mercado sem afirmar venda, sucesso
 
 ## Fonte e coleta recorrente
 
-- Para anúncios comerciais no Brasil, o fluxo canônico consulta recorrentemente a API oficial da Meta e aceita cadastro supervisionado como complemento.
-- A investigação criada no Marketing Hub entra em `PENDING`; o executor isolado consome o endpoint canônico, consulta `ads_archive`, persiste o payload bruto e agenda nova observação diária.
+- A API oficial `ads_archive` limita anúncios que não alcançaram a União Europeia a temas sociais, eleições ou política. Portanto, ela não é fonte automática válida para o radar de produtos comerciais no Brasil.
+- A investigação comercial brasileira criada no Marketing Hub entra em `ACTIVE_SUPERVISED`; a pessoa registra observações reais pela Biblioteca pública e o backend agenda o objetivo de reobservar o mesmo anúncio após 30 dias.
+- O executor oficial só pode ser ativado para categoria e território aceitos pelo contrato vigente da Meta, após preflight real da permissão do aplicativo. Uma credencial válida com `ads_read` não comprova acesso à Biblioteca.
 - A pessoa também pode abrir a Biblioteca pública, selecionar um anúncio e cadastrar ID, anunciante, URL pública, texto visível e sinais comerciais verificáveis.
 - O backend valida, normaliza, deduplica, persiste observações e decide o gate. A tela nunca publica campanha ou consome orçamento.
-- O `mois-meta-ad-library-collector` é o executor canônico e recebe somente token dedicado por variável protegida de deploy; Argos nunca recebe a credencial.
+- Quando elegível, o `mois-meta-ad-library-collector` é o executor canônico e recebe somente token dedicado por variável protegida de deploy; Argos nunca recebe a credencial.
 - Cada cadastro bruto recebido deve ser persistido e correlacionado à investigação.
 - O mesmo anúncio observado novamente na mesma investigação não aumenta sua contagem temporal.
 - Cada observação supervisionada recebe identificador próprio para construir histórico sem inflar retries.
@@ -48,4 +49,4 @@ Toda decisão deve expor evidências e lacunas. O score mínimo de uma consulta 
 
 ## Fontes na tela
 
-Fontes sem coletor real devem aparecer desabilitadas e identificadas como `em implantação`. O Radar Meta comercial usa o executor oficial recorrente e cadastro supervisionado complementar.
+Fontes sem coletor real devem aparecer desabilitadas e identificadas como `em implantação`. No Brasil, o Radar Meta comercial deve aparecer explicitamente como supervisionado; ele nunca pode prometer coleta automática, raspar a interface pública ou tratar ausência causada pelo contrato da API como ausência de mercado.

@@ -369,6 +369,14 @@ Antes de implementar uma correção em tema com histórico de loop:
 - **Reabertura complementar em homologação (2026-08-20)**: o cliente reduzia o locale canônico `pt-br` para `pt`, valor que a Brave rejeita. O fallback mínimo respondia, mas perdia a localização brasileira e mascarava o defeito como uma pesquisa bem-sucedida. O cliente agora preserva `pt-br`, e a versão de health padrão de Argos acompanha a versão 2 cadastrada no backend.
 - **Prevenção**: testes de contrato impedem converter falha total do provider em zero evidências, validam a rota operacional sem expor segredo, bloqueiam consultas Brave acima de 400 caracteres ou 50 palavras, exigem `search_lang=pt-br` para a pesquisa brasileira e mantêm fallback mínimo auditável somente para falhas externas reais.
 
+## LOOP-PRODUCT-DISCOVERY-ORPHANED-LEASE — pesquisa interrompida bloqueia a fila
+
+- **Severidade**: ALTO.
+- **Status**: fechado localmente em 2026-08-24; aguarda publicação.
+- **Causa-raiz confirmada**: o backend mudava o ciclo para `RESEARCHING` sem lease, expiração ou identidade da tentativa. Se o worker caísse antes do callback, o ciclo nunca voltava ao endpoint `pending`.
+- **Correção efetiva**: cada reserva recebe lease único de vinte minutos e contador auditável; o backend entrega uma execução por claim, o worker impede polls sobrepostos, leases expirados voltam à fila e callbacks antigos são rejeitados depois da retomada.
+- **Prevenção**: testes devem comprovar retomada de ciclo expirado, renovação ao registrar o plano, single-flight do polling e rejeição de callback pertencente a uma tentativa substituída.
+
 Cada loop possui dois tipos de informação:
 
 - **Correção efetiva**: aquilo que, no histórico real do projeto, reduziu ou encerrou o ciclo de retrabalho.

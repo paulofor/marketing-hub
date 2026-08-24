@@ -8,8 +8,12 @@ import com.marketinghub.productdiscovery.v1.ProductDiscoveryCycleStatus;
 import com.marketinghub.productdiscovery.v1.ProductDiscoveryOpportunity;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryCycleRepository;
 import com.marketinghub.repository.jpa.productdiscovery.ProductDiscoveryOpportunityRepository;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.IntStream;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +28,7 @@ public class ProductDiscoveryService {
   private static final ObjectMapper JSON = new ObjectMapper();
   private static final int MINIMUM_COMPARABLE_MARKETPLACE_OFFERS = 10;
   private static final String STAGE_CODE = "research";
+  private static final Duration EXECUTION_LEASE_DURATION = Duration.ofMinutes(20);
   private static final List<String> LEGACY_ARTIFICIAL_EVIDENCE_MARKERS =
       List.of(
           "não retornou resultados estruturados suficientes",
@@ -85,6 +90,7 @@ public class ProductDiscoveryService {
   public ProductDiscoveryResearchPlanResponse registerResearchPlan(
       Long cycleId, ProductDiscoveryResearchPlanRequest request) {
     ProductDiscoveryCycle cycle = findCycle(cycleId);
+    validateExecutionLease(cycle, request.executionLeaseId());
     if (cycle.getStatus() != ProductDiscoveryCycleStatus.RESEARCHING) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "O plano só pode ser registrado durante a pesquisa");
@@ -92,6 +98,7 @@ public class ProductDiscoveryService {
     cycle.setResearchPlanJson(requiredText(request.planJson(), "planJson"));
     cycle.setResearchPlanRawResponse(requiredText(request.rawResponse(), "rawResponse"));
     cycle.setResearchPlanModel(requiredText(request.model(), "model"));
+    cycle.setLeaseExpiresAt(Instant.now().plus(EXECUTION_LEASE_DURATION));
     ProductDiscoveryCycle saved = cycleRepository.save(cycle);
     return new ProductDiscoveryResearchPlanResponse(
         saved.getId(),
@@ -285,15 +292,23 @@ public class ProductDiscoveryService {
   /** Entrega pendências ao worker e marca ciclos como em pesquisa para evitar consumo duplicado. */
   @Transactional
   public List<ProductDiscoveryPendingResponse> pending() {
+    Instant now = Instant.now();
     return cycleRepository
-        .findTop5ByStatusInOrderByUpdatedAtAsc(
-            List.of(ProductDiscoveryCycleStatus.READY_FOR_RESEARCH))
+        .findClaimableForUpdate(
+            ProductDiscoveryCycleStatus.READY_FOR_RESEARCH,
+            ProductDiscoveryCycleStatus.RESEARCHING,
+            now,
+            now.minus(EXECUTION_LEASE_DURATION),
+            PageRequest.of(0, 1))
         .stream()
         .map(
             cycle -> {
               cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
               cycle.setStageCode(STAGE_CODE);
               cycle.setErrorMessage(null);
+              cycle.setExecutionLeaseId(UUID.randomUUID().toString());
+              cycle.setLeaseExpiresAt(now.plus(EXECUTION_LEASE_DURATION));
+              cycle.setExecutionAttempt(cycle.getExecutionAttempt() + 1);
               dossierResearchSyncService.start(cycle.getId());
               return toPendingResponse(cycleRepository.save(cycle));
             })
@@ -305,6 +320,7 @@ public class ProductDiscoveryService {
   public ProductDiscoveryCycleDetailResponse complete(
       Long cycleId, ProductDiscoveryResultRequest request) {
     ProductDiscoveryCycle cycle = findCycle(cycleId);
+    validateExecutionLease(cycle, request.executionLeaseId());
     validateMarketplaceEvidenceGate(cycle, request);
     opportunityRepository.deleteAllByCycleId(cycleId);
     for (ProductDiscoveryOpportunityResultRequest item : request.opportunities()) {
@@ -329,6 +345,7 @@ public class ProductDiscoveryService {
     cycle.setStatus(ProductDiscoveryCycleStatus.COMPLETED);
     cycle.setStageCode("opportunity-gate");
     cycle.setErrorMessage(null);
+    clearExecutionLease(cycle);
     cycleRepository.save(cycle);
     dossierResearchSyncService.synchronize(
         cycleId, opportunityRepository.findAllByCycleIdOrderByScoreDesc(cycleId));
@@ -417,8 +434,10 @@ public class ProductDiscoveryService {
   @Transactional
   public ProductDiscoveryCycleResponse fail(Long cycleId, ProductDiscoveryFailureRequest request) {
     ProductDiscoveryCycle cycle = findCycle(cycleId);
+    validateExecutionLease(cycle, request.executionLeaseId());
     cycle.setStatus(ProductDiscoveryCycleStatus.FAILED);
     cycle.setErrorMessage(requiredText(request.errorMessage(), "errorMessage"));
+    clearExecutionLease(cycle);
     dossierResearchSyncService.fail(cycleId);
     return toCycleResponse(cycleRepository.save(cycle));
   }
@@ -476,7 +495,25 @@ public class ProductDiscoveryService {
         cycle.getAcquisitionChannel(),
         cycle.getCommercialConstraints(),
         cycle.getForbiddenCategories(),
-        cycle.getObjective());
+        cycle.getObjective(),
+        cycle.getExecutionLeaseId(),
+        cycle.getExecutionAttempt());
+  }
+
+  /** Impede que uma execução expirada sobrescreva o resultado de uma retomada mais recente. */
+  private void validateExecutionLease(ProductDiscoveryCycle cycle, String executionLeaseId) {
+    if (cycle.getStatus() != ProductDiscoveryCycleStatus.RESEARCHING
+        || !StringUtils.hasText(executionLeaseId)
+        || !executionLeaseId.equals(cycle.getExecutionLeaseId())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Lease da execução de descoberta expirou ou foi substituído");
+    }
+  }
+
+  /** Encerra a reserva operacional depois de um callback terminal aceito. */
+  private void clearExecutionLease(ProductDiscoveryCycle cycle) {
+    cycle.setExecutionLeaseId(null);
+    cycle.setLeaseExpiresAt(null);
   }
 
   /** Busca ciclo por id ou responde 404. */

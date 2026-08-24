@@ -58,6 +58,15 @@ public class ProductDiscoveryCycle {
   @Column(name = "error_message", columnDefinition = "LONGTEXT")
   private String errorMessage;
 
+  @Column(name = "execution_lease_id", length = 36)
+  private String executionLeaseId;
+
+  @Column(name = "lease_expires_at")
+  private Instant leaseExpiresAt;
+
+  @Column(name = "execution_attempt", nullable = false)
+  private int executionAttempt;
+
   @Column(name = "research_plan_json", columnDefinition = "LONGTEXT")
   private String researchPlanJson;
 
@@ -221,6 +230,36 @@ public class ProductDiscoveryCycle {
   /** Define a mensagem de erro do ciclo. */
   public void setErrorMessage(String errorMessage) {
     this.errorMessage = errorMessage;
+  }
+
+  /** Retorna o identificador da reserva operacional vigente. */
+  public String getExecutionLeaseId() {
+    return executionLeaseId;
+  }
+
+  /** Define o identificador que protege os callbacks da execução vigente. */
+  public void setExecutionLeaseId(String executionLeaseId) {
+    this.executionLeaseId = executionLeaseId;
+  }
+
+  /** Retorna quando a reserva pode ser recuperada por outro worker. */
+  public Instant getLeaseExpiresAt() {
+    return leaseExpiresAt;
+  }
+
+  /** Define o limite da reserva operacional atual. */
+  public void setLeaseExpiresAt(Instant leaseExpiresAt) {
+    this.leaseExpiresAt = leaseExpiresAt;
+  }
+
+  /** Retorna quantas vezes o ciclo foi reservado para execução. */
+  public int getExecutionAttempt() {
+    return executionAttempt;
+  }
+
+  /** Atualiza o contador auditável de tentativas. */
+  public void setExecutionAttempt(int executionAttempt) {
+    this.executionAttempt = executionAttempt;
   }
 
   /** Retorna o plano dirigido e auditável definido por Argos. */

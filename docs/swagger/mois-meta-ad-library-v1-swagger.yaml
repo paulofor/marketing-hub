@@ -5,7 +5,7 @@ info:
 paths:
   /api/v1/mois/meta-ad-investigations:
     post:
-      summary: Cria uma investigação recorrente de anúncios pela API oficial da Meta
+      summary: Cria acompanhamento supervisionado de anúncios comerciais no Brasil
       responses:
         '201': { description: Investigação criada }
     get:
@@ -19,7 +19,7 @@ paths:
         '200': { description: Investigação retornada }
   /api/internal/mois/meta-ad-library/v1/investigations/pending:
     get:
-      summary: Reserva a próxima investigação pendente para o coletor
+      summary: Reserva investigação elegível para o coletor oficial
       responses:
         '200': { description: Pendência reservada }
         '204': { description: Sem pendência }
@@ -40,3 +40,17 @@ paths:
       summary: Registra a conclusão técnica da coleta
       responses:
         '200': { description: Execução concluída }
+components:
+  schemas:
+    CollectionState:
+      type: object
+      required: [mode, reason, nextObservationAt]
+      properties:
+        mode:
+          type: string
+          enum: [SUPERVISED, OFFICIAL_API]
+        reason:
+          type: string
+        nextObservationAt:
+          type: string
+          format: date-time

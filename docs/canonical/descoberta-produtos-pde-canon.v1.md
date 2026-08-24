@@ -196,6 +196,11 @@ termos da investigação e devolve um contrato normalizado; o worker nunca acess
 credencial ou controller de outro módulo. As ofertas usadas devem entrar no dossiê com
 marketplace, referência, URL, coleta, preço e sinal de tração disponíveis.
 
+Cada pendência deve ser entregue com lease único e prazo limitado. Plano, conclusão e falha
+devem repetir o lease vigente; callback de uma tentativa substituída é rejeitado. Ciclo em
+`RESEARCHING` cujo lease expirou deve voltar à fila automaticamente com nova tentativa
+auditável, evitando bloqueio permanente após queda ou interrupção do worker.
+
 Um ciclo dirigido não pode concluir nem marcar a tarefa do dossiê como concluída com menos
 de dez ofertas únicas comparáveis, vindas dos marketplaces autorizados ou de páginas
 comerciais públicas aderentes ao problema quando o formato pesquisado não for coberto pelos

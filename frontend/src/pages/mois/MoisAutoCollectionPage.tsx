@@ -442,12 +442,19 @@ export default function MoisAutoCollectionPage() {
       <article className="card shadow-sm">
         <div className="card-body d-flex flex-column gap-3">
           <div>
-            <h2 className="h5 mb-1">Radar recorrente de anúncios comerciais</h2>
+            <h2 className="h5 mb-1">
+              Radar supervisionado de anúncios comerciais
+            </h2>
             <p className="text-secondary mb-0">
-              Crie uma investigação para coleta pela API oficial da Meta. O
-              cadastro supervisionado complementa o histórico, e a modelagem só
+              No Brasil, registre anúncios reais pela Biblioteca pública e
+              reobserve os mesmos IDs para comprovar longevidade. A modelagem só
               é liberada após sinais comprovados.
             </p>
+            <div className="alert alert-info small mt-3 mb-0" role="status">
+              A API oficial não fornece anúncios comerciais gerais do Brasil.
+              Por isso, o Marketing Hub usa observação supervisionada, sem
+              raspagem ou evidência fabricada.
+            </div>
           </div>
           <form
             className="row g-2"
@@ -477,7 +484,7 @@ export default function MoisAutoCollectionPage() {
               >
                 {createMetaInvestigation.isPending
                   ? "Criando..."
-                  : "Iniciar coleta recorrente"}
+                  : "Criar acompanhamento"}
               </button>
             </div>
           </form>
@@ -666,7 +673,15 @@ export default function MoisAutoCollectionPage() {
               </div>
               <div className="small text-secondary mb-2">
                 {investigation.status} · {investigation.adsObserved} observações
-                nesta execução
+                auditáveis
+              </div>
+              <div className="alert alert-light border small py-2">
+                <strong>Coleta supervisionada.</strong>{" "}
+                {investigation.collection.reason} Próximo objetivo:{" "}
+                {new Date(
+                  investigation.collection.nextObservationAt,
+                ).toLocaleDateString("pt-BR")}
+                .
               </div>
               <div className="row g-3">
                 <div className="col-md-6">

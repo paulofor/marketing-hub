@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/changesets/2026-08-24-product-discovery-execution-lease.yaml
+  - changeSet:
+      id: 2026-08-24-product-discovery-execution-lease
+      author: codex
+      preConditions:
+        onFail: HALT
+        dbms:
+          type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_discovery_cycle
+                ADD COLUMN execution_lease_id VARCHAR(36) NULL AFTER error_message,
+                ADD COLUMN lease_expires_at DATETIME NULL AFTER execution_lease_id,
+                ADD COLUMN execution_attempt INT NOT NULL DEFAULT 0 AFTER lease_expires_at,
+                ADD KEY idx_product_discovery_claim (status, lease_expires_at, updated_at);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product_discovery_cycle
+                DROP KEY idx_product_discovery_claim,
+                DROP COLUMN execution_attempt,
+                DROP COLUMN lease_expires_at,
+                DROP COLUMN execution_lease_id;

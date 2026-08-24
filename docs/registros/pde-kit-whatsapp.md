@@ -240,8 +240,7 @@ e [CNPJ.biz](https://cnpj.biz/25215414000169).
 
 ## Fechamento local de Comunicação e jornada
 
-Em 2026-08-24, Rigel continuava no processo `Comunicação e jornada de venda do PDE v4`, etapa 4 de
-6. A oferta produtiva estava saudável e o parecer mais recente de Têmis permanecia aprovado com
+Em 2026-08-24, Rigel continuava no processo `Comunicação e jornada de venda do PDE v4`, etapa 4 de 6. A oferta produtiva estava saudável e o parecer mais recente de Têmis permanecia aprovado com
 98/100, mas a superfície publicada ainda não continha a degustação versionada. Por isso, o processo
 foi revalidado integralmente em ambiente local antes de qualquer avanço de status.
 
@@ -273,3 +272,35 @@ Duas rodadas finais consecutivas passaram, cada uma com 110 testes do backend PD
 de Hermes, três contratos do build público, build e 12 jornadas em desktop, iPhone 15 Pro e Pixel 7,
 com MySQL 5.7 e SMTP descartável em topologia nova. A correção permanece local até passar pelo fluxo
 de PR e deploy; Rigel não deve avançar à etapa 5 enquanto a produção ainda puder misturar QA e pessoas.
+
+## Criação e aprovação de criativos v6
+
+Em 2026-08-24, o subprocesso local foi reestruturado para distinguir `PRODUCT_PROOF`, evidência
+fiel de um produto não visual, de `DELIVERY`, quando a própria imagem é entregue à cliente. A causa
+era o contrato anterior generalizar para todos os produtos o fluxo visual de Agenda Cheia, além de
+tratar os sete modelos-base complementares de Rigel como se fossem sua entrega principal.
+
+Foram comparados vídeo generativo com avatar, imagem genérica de WhatsApp e sequência estática com
+movimento determinístico baseado na interface real. A terceira rota foi selecionada para o piloto de
+15 contatos diretos consentidos, por manter cada prova integral e legível, demonstrar o mecanismo com
+custo externo zero e não sugerir bot, automação ou resultado inexistente.
+
+O pacote local aprovado contém:
+
+- sequência de seis cards 1080x1350 para o primeiro contato consentido, cobrindo capa, resposta,
+  pergunta, três follow-ups e a oferta em duas partes sobrepostas, sem redesenhar as provas;
+- vídeo vertical H.264 1080x1920 de 30 segundos, planejado por Apolo e composto com Playwright e
+  ffmpeg;
+- resposta, pergunta e três follow-ups capturados da PDE Platform em cenário fictício e segregado;
+- oferta coerente com 10–20 respostas, 5–10 perguntas, 3–5 follow-ups manuais, revisão humana,
+  R$ 349 em pagamento único e entrega em até 48 horas após pagamento e briefing completos;
+- manifesto com origem, direitos, hashes, destino em desktop/mobile e separação entre produção e
+  revisão.
+
+Psique e uma execução independente de Têmis aprovaram os dois formatos sem mudança obrigatória. As
+duas rodadas finais consecutivas passaram, cada uma com 18 testes direcionados do backend, 32 do
+worker de Psique, 59 do worker de Têmis, 63 de Apolo/Estúdio, 388 do frontend administrativo, 12
+jornadas da PDE em desktop, iPhone 15 Pro e Pixel 7, captura da prova e reprodução nativa do vídeo
+nos dois celulares. O pacote permanece `LOCAL_QA`: nenhum provider visual, publicação, contato,
+pagamento, gasto ou venda foi produzido. A persistência operacional pela tela depende da publicação
+do lote versionado e não pode reutilizar pareceres se os hashes dos arquivos mudarem.

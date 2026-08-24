@@ -54,4 +54,30 @@ class BusinessProcessChangelogTest {
         .contains(
             "file: changesets/2026-08-22-business-process-responsibility-boundaries.yaml\n      relativeToChangelogFile: true");
   }
+
+  /** Exige criativos v6 neutros quanto a formato, apoiados em prova e com revisão independente. */
+  @Test
+  void declaresFormatNeutralCreativeProductionV6() throws Exception {
+    String change =
+        Files.readString(
+            Path.of(
+                "src/main/resources/db/changelog/changesets/2026-08-24-creative-production-approval-format-neutral-v6.yaml"));
+    String master =
+        Files.readString(Path.of("src/main/resources/db/changelog/db.changelog-master.yaml"));
+
+    assertThat(change)
+        .contains("dbms:\n            type: mysql")
+        .contains("'creative-production-approval'")
+        .contains("PRODUCT_PROOF ou DELIVERY aprovado")
+        .contains("\"label\":\"Escolher rota e formatos pelo canal\"")
+        .contains("\"label\":\"Avaliar percepção da cliente\"")
+        .contains("\"label\":\"Revisar coerência comercial\"")
+        .contains("version_number <> 6")
+        .doesNotContain("TIMESTAMP NOT NULL")
+        .doesNotContain("UPDATE business_process_definition ps")
+        .doesNotContain("WHERE id IN (SELECT");
+    assertThat(master)
+        .contains(
+            "file: changesets/2026-08-24-creative-production-approval-format-neutral-v6.yaml\n      relativeToChangelogFile: true");
+  }
 }

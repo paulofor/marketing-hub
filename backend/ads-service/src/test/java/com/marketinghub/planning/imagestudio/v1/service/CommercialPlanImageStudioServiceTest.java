@@ -114,9 +114,9 @@ class CommercialPlanImageStudioServiceTest {
     verify(jobRepository).findSummariesByCommercialPlanId(2L);
   }
 
-  /** Exige que toda produção seja um entregável antes de poder servir landing ou anúncio. */
+  /** Bloqueia peça comercial gerada sem uma prova real aprovada do produto. */
   @Test
-  void requiresDeliveryPurpose() {
+  void rejectsCommercialCreationWithoutApprovedProductProof() {
     when(planService.getPlan(2L)).thenReturn(plan(2L));
 
     assertThatThrownBy(
@@ -133,7 +133,38 @@ class CommercialPlanImageStudioServiceTest {
                         "1024x1536",
                         "high")))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("DELIVERY");
+        .hasMessageContaining("PRODUCT_PROOF");
+  }
+
+  /** Aceita peça comercial apoiada em prova aprovada sem classificá-la como entrega ao cliente. */
+  @Test
+  void createsCommercialAssetFromApprovedProductProof() {
+    CommercialPlan plan = plan(2L);
+    CommercialPlanVisualAsset proof = asset(12L, plan, "/assets/product-proof.png");
+    proof.setPurpose("PRODUCT_PROOF");
+    proof.setPurposesJson("[\"PRODUCT_PROOF\"]");
+    proof.setStatus(CommercialPlanVisualAssetStatus.APPROVED);
+    when(planService.getPlan(2L)).thenReturn(plan);
+    when(visualAssetRepository.findById(12L)).thenReturn(Optional.of(proof));
+
+    CommercialPlanImageStudioJobDto result =
+        service.create(
+            2L,
+            new CreateCommercialPlanImageStudioJobRequest(
+                CommercialPlanImageStudioOperation.CREATE,
+                null,
+                List.of(12L),
+                "Compor peça comercial usando somente a prova real",
+                "Convite direto Rigel",
+                List.of("ADS", "SOCIAL"),
+                "1024x1536",
+                "high"));
+
+    assertThat(result.purposes()).containsExactly("ADS", "SOCIAL");
+    ArgumentCaptor<CommercialPlanImageStudioJob> captor =
+        ArgumentCaptor.forClass(CommercialPlanImageStudioJob.class);
+    verify(jobRepository).save(captor.capture());
+    assertThat(captor.getValue().getReferenceAssetIdsJson()).isEqualTo("[12]");
   }
 
   /** Preserva origem e referências do próprio plano numa edição não destrutiva. */

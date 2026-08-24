@@ -1412,6 +1412,14 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção atualizada:** o mesmo artefato versionado declara dois schedulers condicionais e mutuamente exclusivos, um por papel de container. O Compose monta a chave OpenAI somente no produtor e a identidade Codex somente no revisor; CI constrói as duas imagens, exige ambos os healths e comprova que o segredo visual não existe no container revisor. Produção e revisão continuam usando apenas filas e callbacks do backend, sem chamada direta entre containers.
 - **Homologação local:** ao iniciar o revisor sem backend, a reserva da fila principal ainda escapava ao tratador do Spring. O ciclo agora registra a falha de `claimPending` com stack trace e a contém no próprio scheduler; teste de contrato garante que indisponibilidade temporária do backend não encerre a entrada operacional nem contamine o health.
 
+## LOOP-CREATIVE-PRODUCTION-DELIVERY-ONLY — criativo de produto não visual vira entregável fictício
+
+- **Data:** 2026-08-24.
+- **Sintoma:** o subprocesso `creative-production-approval` e os prompts de Psique e Têmis tratavam qualquer produto como kit visual de posts e stories; o Estúdio exigia `DELIVERY` até para anúncios. Em Rigel, um serviço assistido por WhatsApp seria representado como um produto diferente.
+- **Causa-raiz confirmada pelo histórico:** a prevenção do `LOOP-CREATIVE-IMPROVEMENT-WITHOUT-PRODUCT-REFERENCES` foi criada para Agenda Cheia, cujo próprio entregável é visual, e foi generalizada sem separar entrega visual de prova de produto não visual.
+- **Correção sistêmica:** a Biblioteca distingue `PRODUCT_PROOF`, `DELIVERY` e peça comercial; criação comercial sem prova aprovada bloqueia antes do modelo; Psique e Têmis avaliam produto, formato e canal persistidos; o subprocesso v6 compara imagem, movimento simples e vídeo antes da produção.
+- **Prevenção:** testes de contrato impedem a volta de nicho/formato hardcoded, exigem linhagem para peça comercial e mantêm produção, revisão independente, decisão humana e publicação como responsabilidades separadas.
+
 ## LOOP-MUSA-PROJETO-LEGADO-PLANO-OBRIGATORIO — perfil de Apolo não é salvo
 
 - **Data:** 2026-08-12.

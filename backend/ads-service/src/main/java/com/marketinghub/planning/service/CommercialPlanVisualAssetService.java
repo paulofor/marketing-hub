@@ -8,6 +8,7 @@ import com.marketinghub.planning.dto.CommercialPlanVisualAssetDto;
 import com.marketinghub.planning.dto.CreateCommercialPlanVisualAssetRequest;
 import com.marketinghub.repository.jpa.planning.CommercialPlanVisualAssetRepository;
 import java.util.List;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,8 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @Service
 public class CommercialPlanVisualAssetService {
+  private static final Set<String> PURPOSES =
+      Set.of("ADS", "LANDING", "SOCIAL", "DELIVERY", "PRODUCT_PROOF");
   private final CommercialPlanService planService;
   private final CommercialPlanVisualAssetRepository repository;
   private final ObjectMapper objectMapper;
@@ -65,7 +68,7 @@ public class CommercialPlanVisualAssetService {
     asset.setAssetUrl(request.assetUrl().trim());
     asset.setMediaType(normalizeMediaType(request.mediaType()));
     asset.setLabel(request.label().trim());
-    asset.setPurpose(request.purpose().trim().toUpperCase());
+    asset.setPurpose(normalizePurpose(request.purpose()));
     asset.setPurposesJson(writePurposes(List.of(asset.getPurpose())));
     asset.setOrigin(request.origin().trim());
     asset.setRightsStatement(request.rightsStatement().trim());
@@ -178,6 +181,17 @@ public class CommercialPlanVisualAssetService {
     String normalized = mediaType.trim().toUpperCase();
     if (!normalized.equals("IMAGE") && !normalized.equals("VIDEO")) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "mediaType must be IMAGE or VIDEO");
+    }
+    return normalized;
+  }
+
+  /** Normaliza e restringe a finalidade aos papéis canônicos da biblioteca audiovisual. */
+  private String normalizePurpose(String purpose) {
+    String normalized = purpose.trim().toUpperCase();
+    if (!PURPOSES.contains(normalized)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "purpose must be ADS, LANDING, SOCIAL, DELIVERY or PRODUCT_PROOF");
     }
     return normalized;
   }

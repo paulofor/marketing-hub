@@ -1,0 +1,123 @@
+{
+  "contractVersion": "rigel-creative-contract-v4",
+  "product": {
+    "id": 9,
+    "internalName": "Rigel",
+    "commercialName": "Kit WhatsApp Pronto",
+    "experimentId": 89,
+    "commercialPlanId": 4,
+    "channel": "DIRECT_ONE_TO_ONE",
+    "audience": "Pequenos prestadores que atendem clientes pelo WhatsApp",
+    "priceBrl": 349,
+    "payment": "Pagamento único, sem recorrência",
+    "format": "Implantação personalizada e assistida",
+    "delivery": "Em até 48 horas após pagamento confirmado e briefing completo",
+    "primaryCta": "Quero meu atendimento sob medida",
+    "destination": "https://kit-whatsapp-pronto.digicomdigital.com.br"
+  },
+  "routeDecision": {
+    "selected": "STATIC_CAROUSEL_PLUS_DETERMINISTIC_MOTION",
+    "rationale": "O primeiro piloto usa 15 contatos diretos consentidos. Uma sequência curta preserva as provas integrais e legíveis; o movimento opcional demonstra o mecanismo com custo zero de provider e menor risco de parecer automação ou produto genérico.",
+    "alternatives": [
+      {
+        "route": "GENERATIVE_VIDEO_WITH_AVATAR",
+        "benefit": "Maior demonstração narrativa",
+        "risk": "Custo, tempo e complexidade antes de qualquer resposta comercial",
+        "effort": "ALTO",
+        "decision": "DEFER"
+      },
+      {
+        "route": "GENERIC_WHATSAPP_IMAGE",
+        "benefit": "Produção rápida",
+        "risk": "Não comprova Rigel e pode sugerir automação inexistente",
+        "effort": "BAIXO",
+        "decision": "REJECT"
+      },
+      {
+        "route": "STATIC_CAROUSEL_PLUS_DETERMINISTIC_MOTION",
+        "benefit": "Provas reais integrais, clareza no canal e custo externo zero",
+        "risk": "A sequência exige navegar por seis cards",
+        "effort": "MEDIO",
+        "decision": "SELECT"
+      }
+    ]
+  },
+  "sourceProofs": [
+    {
+      "file": "rigel-tasting-response.png",
+      "purpose": "PRODUCT_PROOF",
+      "origin": "Resposta da PDE Platform local responsiva com mh_test=1 e cenário sintético",
+      "rightsStatement": "Código e interface próprios do Marketing Hub; cenário de QA sem dados pessoais"
+    },
+    {
+      "file": "rigel-tasting-question.png",
+      "purpose": "PRODUCT_PROOF",
+      "origin": "Pergunta da PDE Platform local responsiva com mh_test=1 e cenário sintético",
+      "rightsStatement": "Código e interface próprios do Marketing Hub; cenário de QA sem dados pessoais"
+    },
+    {
+      "file": "rigel-tasting-followups.png",
+      "purpose": "PRODUCT_PROOF",
+      "origin": "Três follow-ups da PDE Platform local responsiva com mh_test=1 e cenário sintético",
+      "rightsStatement": "Código e interface próprios do Marketing Hub; cenário de QA sem dados pessoais"
+    },
+    {
+      "file": "rigel-offer-proof.png",
+      "purpose": "PRODUCT_PROOF",
+      "origin": "PDE Platform local com contrato comercial de Rigel",
+      "rightsStatement": "Código e interface próprios do Marketing Hub; oferta pertencente ao produto"
+    }
+  ],
+  "formats": [
+    {
+      "id": "direct-carousel",
+      "role": "FIRST_CONSENTED_CONTACT_SEQUENCE",
+      "width": 1080,
+      "height": 1350,
+      "files": [
+        "rigel-direct-card-1080x1350.png",
+        "rigel-direct-response-1080x1350.png",
+        "rigel-direct-question-1080x1350.png",
+        "rigel-direct-followups-1080x1350.png",
+        "rigel-direct-offer-1080x1350.png",
+        "rigel-direct-conditions-1080x1350.png"
+      ]
+    },
+    {
+      "id": "vertical-demo",
+      "role": "OPTIONAL_PRODUCT_DEMONSTRATION",
+      "width": 1080,
+      "height": 1920,
+      "durationSeconds": 30,
+      "file": "rigel-vertical-demo-1080x1920.mp4"
+    }
+  ],
+  "copy": {
+    "hook": "Seu atendimento no WhatsApp ainda depende do improviso?",
+    "mechanism": "Transformamos suas situações em 10 a 20 respostas personalizadas, 5 a 10 perguntas e 3 a 5 follow-ups manuais.",
+    "proof": "Interface real; exemplo fictício: uma resposta, uma pergunta e três follow-ups.",
+    "offer": "Implantação personalizada e assistida do seu atendimento no WhatsApp",
+    "price": "R$ 349 em pagamento único",
+    "delivery": "Em até 48 horas após pagamento confirmado e briefing completo.",
+    "control": "Você revisa antes de usar. Sem bot, disparo em massa ou envio automático.",
+    "cta": "Quero meu atendimento sob medida"
+  },
+  "prohibitedClaims": [
+    "vendas garantidas",
+    "responde sozinho",
+    "disparo em massa",
+    "inteligência artificial atende por você",
+    "entrega imediata",
+    "depoimento de cliente"
+  ],
+  "futureMeasurement": {
+    "denominator": "15 contatos diretos qualificados e consentidos",
+    "primary": "3 pagamentos aprovados, atribuídos e entregues satisfatoriamente",
+    "diagnostic": [
+      "resposta ao contato",
+      "clique no destino",
+      "checkout iniciado"
+    ],
+    "notSales": ["arquivo criado", "parecer aprovado", "visualização local"]
+  }
+}

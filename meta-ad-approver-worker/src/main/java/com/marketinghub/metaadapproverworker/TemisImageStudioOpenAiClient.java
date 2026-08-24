@@ -159,6 +159,7 @@ public class TemisImageStudioOpenAiClient {
       return new String(input.readAllBytes(), StandardCharsets.UTF_8)
           .replace("{{JOB_PROMPT}}", job.prompt().trim())
           .replace("{{PURPOSES}}", String.join(", ", job.purposes()))
+          .replace("{{ASSET_ROLE_CONTRACT}}", assetRoleContract(job))
           .replace("{{LEARNING_PLAYBOOK}}", playbookText(job.visualPlaybook()))
           .replace(
               "{{FORMAT_CONSTRAINT}}",
@@ -179,6 +180,15 @@ public class TemisImageStudioOpenAiClient {
           ex);
       throw new IllegalStateException("Prompt do Estúdio Visual indisponível", ex);
     }
+  }
+
+  /** Diferencia entregável real de peça comercial sem permitir prova inventada do produto. */
+  private String assetRoleContract(TemisImageStudioJob job) {
+    if (job.purposes().contains("DELIVERY")) {
+      return "- Este arquivo é um entregável real do produto e deve ser útil para a cliente final.";
+    }
+    return "- Este arquivo é uma peça comercial, não um entregável. Demonstre somente o produto "
+        + "comprovado nas referências aprovadas, sem inventar tela, resultado, depoimento ou recurso.";
   }
 
   /** Baixa referências autorizadas e bloqueia payloads fora do contrato de imagem. */

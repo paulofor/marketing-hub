@@ -61,13 +61,18 @@ class CustomerBpmTaskConsumerTest {
 
   /** Exige prompt e schema próprios para a percepção do criativo. */
   @Test
-  void selectsVersionedCreativeContract() {
+  void selectsVersionedCreativeContract() throws Exception {
     org.assertj.core.api.Assertions.assertThat(
             CustomerBpmTaskConsumer.promptResourceFor("creative-production-approval"))
         .isEqualTo("prompts/bpm/creative-customer-review.md");
     org.assertj.core.api.Assertions.assertThat(
             CustomerBpmTaskConsumer.schemaResourceFor("creative-production-approval"))
         .isEqualTo("prompts/bpm/creative-customer-review-schema.json");
+    String prompt =
+        Files.readString(Path.of("src/main/resources/prompts/bpm/creative-customer-review.md"));
+    org.assertj.core.api.Assertions.assertThat(prompt)
+        .contains("formato e canal declarados", "PRODUCT_PROOF", "dois primeiros segundos")
+        .doesNotContain("nail designer", "posts e stories prontos");
   }
 
   /** Seleciona o contrato de revisão integral da experiência do PDE. */

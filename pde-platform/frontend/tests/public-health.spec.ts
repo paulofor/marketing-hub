@@ -29,6 +29,7 @@ type VersionDiagnostics = {
 type PublicProductContract = {
   publicFirstFold?: {
     headline?: string;
+    supportingText?: string;
     videoCtaLabel?: string;
   };
 };
@@ -160,7 +161,7 @@ async function loadPublishedFirstFoldTexts(
   const product = (await response.json()) as PublicProductContract;
   return [
     product.publicFirstFold?.headline,
-    product.publicFirstFold?.videoCtaLabel,
+    product.publicFirstFold?.supportingText,
   ]
     .map((item) => item?.trim())
     .filter((item): item is string => Boolean(item));

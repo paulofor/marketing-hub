@@ -71,4 +71,46 @@ class CommercialPlanVisualAssetServiceTest {
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("mediaType must be IMAGE or VIDEO");
   }
+
+  /** Cadastra captura fiel do produto como prova distinta de peça comercial ou entrega. */
+  @Test
+  void createsProductProofReference() {
+    CommercialPlan plan = new CommercialPlan();
+    plan.setId(2L);
+    when(planService.getPlan(2L)).thenReturn(plan);
+    when(repository.save(any(CommercialPlanVisualAsset.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    var result =
+        service.create(
+            2L,
+            new CreateCommercialPlanVisualAssetRequest(
+                "https://cdn.example/rigel-tasting.png",
+                "image",
+                "Degustação real de Rigel",
+                "product_proof",
+                "Homologação local",
+                "Uso autorizado"));
+
+    assertThat(result.purpose()).isEqualTo("PRODUCT_PROOF");
+    assertThat(result.purposes()).containsExactly("PRODUCT_PROOF");
+  }
+
+  /** Bloqueia finalidade livre que fragmentaria a biblioteca e sua linhagem. */
+  @Test
+  void rejectsUnsupportedPurpose() {
+    assertThatThrownBy(
+            () ->
+                service.create(
+                    2L,
+                    new CreateCommercialPlanVisualAssetRequest(
+                        "https://cdn.example/generic.png",
+                        "IMAGE",
+                        "Imagem genérica",
+                        "MOCKUP",
+                        "Desconhecida",
+                        "Uso autorizado")))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("PRODUCT_PROOF");
+  }
 }

@@ -43,7 +43,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-/** Responsabilidade: orquestrar criação, edição, persistência e revisão de imagens por Têmis. */
+/**
+ * Responsabilidade: orquestrar criação, edição, persistência e revisão de ativos visuais por Têmis.
+ */
 @Service
 public class CommercialPlanImageStudioService {
   private static final Logger log = LoggerFactory.getLogger(CommercialPlanImageStudioService.class);
@@ -98,6 +100,7 @@ public class CommercialPlanImageStudioService {
     TemisVisualPlaybookDto playbook = playbookService.resolve(plan, label, purposes, size);
     CommercialPlanVisualAsset source = resolveSource(planId, operation, request.sourceAssetId());
     List<Long> references = normalizeReferences(planId, source, request.referenceAssetIds());
+    validateCommercialReferences(operation, purposes, references);
     Optional<CommercialPlanImageStudioJobSummary> equivalent =
         jobRepository
             .findEquivalentSummaries(
@@ -150,7 +153,7 @@ public class CommercialPlanImageStudioService {
         .toList();
   }
 
-  /** Conclui a produção, cria um novo entregável DRAFT e abre revisão independente. */
+  /** Conclui a produção, cria um novo ativo visual DRAFT e abre revisão independente. */
   @Transactional
   public CommercialPlanImageStudioJobDto complete(
       Long jobId,
@@ -170,7 +173,9 @@ public class CommercialPlanImageStudioService {
         assetStorageService.store(
             file,
             new AssetUploadContext(
-                AssetUploadCategory.COMMERCIAL_PLAN_DELIVERABLE,
+                readStrings(job.getPurposesJson()).contains("DELIVERY")
+                    ? AssetUploadCategory.COMMERCIAL_PLAN_DELIVERABLE
+                    : AssetUploadCategory.COMMERCIAL_PLAN_VISUAL_ASSET,
                 job.getCommercialPlan().getExperiment() != null
                     ? job.getCommercialPlan().getExperiment().getId()
                     : null,
@@ -199,7 +204,10 @@ public class CommercialPlanImageStudioService {
     visual.setPurpose(purposes.getFirst());
     visual.setPurposesJson(job.getPurposesJson());
     visual.setOrigin("Têmis / GPT Image 2");
-    visual.setRightsStatement("Gerado para uso comercial e entrega deste produto");
+    visual.setRightsStatement(
+        purposes.contains("DELIVERY")
+            ? "Gerado para uso comercial e entrega deste produto"
+            : "Gerado para uso comercial deste produto a partir de prova aprovada");
     visual.setVersionNumber(nextVersion(job));
     visual.setStatus(CommercialPlanVisualAssetStatus.DRAFT);
     visual.setAgentReviewStatus(CommercialPlanVisualAssetReviewStatus.PENDING);
@@ -217,7 +225,7 @@ public class CommercialPlanImageStudioService {
     return dto(jobRepository.save(job));
   }
 
-  /** Registra falha técnica sem apagar a origem nem promover um entregável incompleto. */
+  /** Registra falha técnica sem apagar a origem nem promover um ativo visual incompleto. */
   @Transactional
   public CommercialPlanImageStudioJobDto fail(
       Long jobId,
@@ -234,7 +242,7 @@ public class CommercialPlanImageStudioService {
     return dto(jobRepository.save(job));
   }
 
-  /** Reserva entregáveis DRAFT para uma execução de revisão distinta da produção. */
+  /** Reserva ativos visuais DRAFT para uma execução de revisão distinta da produção. */
   @Transactional
   public List<CommercialPlanVisualAssetReviewPendingDto> claimReviews(int limit) {
     return visualAssetRepository
@@ -456,7 +464,7 @@ public class CommercialPlanImageStudioService {
     return unique;
   }
 
-  /** Exige DELIVERY e restringe o reuso às finalidades canônicas do produto. */
+  /** Exige ao menos uma finalidade e restringe o reuso às finalidades canônicas. */
   private List<String> normalizePurposes(List<String> values) {
     List<String> normalized =
         values == null
@@ -466,12 +474,46 @@ public class CommercialPlanImageStudioService {
                 .map(value -> value.trim().toUpperCase())
                 .distinct()
                 .toList();
-    if (!normalized.contains("DELIVERY")
-        || normalized.stream().anyMatch(value -> !PURPOSES.contains(value))) {
+    if (normalized.isEmpty() || normalized.stream().anyMatch(value -> !PURPOSES.contains(value))) {
       throw new IllegalArgumentException(
-          "Entregáveis de Têmis exigem DELIVERY e aceitam apenas DELIVERY, LANDING, ADS e SOCIAL");
+          "Ativos de Têmis exigem ao menos uma finalidade entre DELIVERY, LANDING, ADS e SOCIAL");
     }
     return normalized;
+  }
+
+  /**
+   * Bloqueia a criação de peça comercial livre quando não houver prova real aprovada do produto.
+   */
+  private void validateCommercialReferences(
+      CommercialPlanImageStudioOperation operation, List<String> purposes, List<Long> references) {
+    boolean commercialOnly =
+        !purposes.contains("DELIVERY")
+            && purposes.stream().anyMatch(Set.of("LANDING", "ADS", "SOCIAL")::contains);
+    if (!commercialOnly || operation == CommercialPlanImageStudioOperation.EDIT) {
+      return;
+    }
+    boolean hasProductEvidence =
+        references.stream()
+            .map(visualAssetRepository::findById)
+            .flatMap(Optional::stream)
+            .anyMatch(
+                asset -> {
+                  List<String> sourcePurposes = assetPurposes(asset);
+                  return sourcePurposes.contains("PRODUCT_PROOF")
+                      || sourcePurposes.contains("DELIVERY");
+                });
+    if (!hasProductEvidence) {
+      throw new IllegalArgumentException(
+          "Criação comercial exige referência APPROVED com finalidade PRODUCT_PROOF ou DELIVERY");
+    }
+  }
+
+  /** Lê as finalidades de uma referência e preserva compatibilidade com o vínculo legado. */
+  private List<String> assetPurposes(CommercialPlanVisualAsset asset) {
+    if (StringUtils.hasText(asset.getPurposesJson())) {
+      return readStrings(asset.getPurposesJson());
+    }
+    return StringUtils.hasText(asset.getPurpose()) ? List.of(asset.getPurpose()) : List.of();
   }
 
   /** Garante que o callback pertence à reserva vigente do backend. */

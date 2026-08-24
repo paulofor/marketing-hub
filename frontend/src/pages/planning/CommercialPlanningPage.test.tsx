@@ -189,6 +189,9 @@ const updateWeekMutate = vi.fn();
 const requestRevenueProjectionMutate = vi.fn();
 const requestCommercialAssumptionsMutate = vi.fn();
 const requestJourneyHomologationMutate = vi.fn();
+const createVisualAssetMutate = vi.fn();
+const createImageStudioJobMutate = vi.fn();
+let mockVisualAssets: unknown[] = [];
 
 vi.mock("../../api/planning/useCommercialPlans", async () => {
   const actual = await vi.importActual<
@@ -409,12 +412,12 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
       isSuccess: false,
     }),
     useCommercialPlanVisualAssets: () => ({
-      data: [],
+      data: mockVisualAssets,
       isLoading: false,
       isError: false,
     }),
     useCreateCommercialPlanVisualAsset: () => ({
-      mutate: vi.fn(),
+      mutate: createVisualAssetMutate,
       isPending: false,
     }),
     useUpdateCommercialPlanVisualAssetStatus: () => ({
@@ -427,7 +430,7 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
       isError: false,
     }),
     useCreateCommercialPlanImageStudioJob: () => ({
-      mutate: vi.fn(),
+      mutate: createImageStudioJobMutate,
       isPending: false,
     }),
   };
@@ -500,6 +503,9 @@ function renderPage(path?: string) {
 afterEach(() => {
   createPlanMutate.mockReset();
   updatePlanMutate.mockReset();
+  createVisualAssetMutate.mockReset();
+  createImageStudioJobMutate.mockReset();
+  mockVisualAssets = [];
   mockPlans = defaultPlans;
   lastReferenceMonth = null;
   mockWeeks = [
@@ -681,6 +687,54 @@ describe("CommercialPlanningPage", () => {
     expect(screen.queryByText("Plano ativo")).toBeNull();
     expect(screen.queryByText("Planos de Primeira Venda")).toBeNull();
     expect(screen.queryByText("Novo Plano de Primeira Venda")).toBeNull();
+  });
+
+  it("cria peça comercial somente após selecionar prova real aprovada", async () => {
+    const user = userEvent.setup();
+    mockVisualAssets = [
+      {
+        id: 901,
+        assetUrl: "/evidence/rigel-tasting.png",
+        mediaType: "IMAGE",
+        label: "Rigel · degustação real",
+        purpose: "PRODUCT_PROOF",
+        purposes: ["PRODUCT_PROOF"],
+        origin: "Captura da homologação local",
+        rightsStatement: "Uso autorizado para este produto",
+        versionNumber: 1,
+        status: "APPROVED",
+        createdAt: "2026-08-24T10:00:00Z",
+        updatedAt: "2026-08-24T10:00:00Z",
+      },
+    ];
+    renderPage();
+
+    await user.click(screen.getByRole("checkbox", { name: "DELIVERY" }));
+    await user.click(screen.getByRole("checkbox", { name: "ADS" }));
+    expect(screen.getByText(/Selecione uma referência APPROVED/i)).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Solicitar criação" }),
+    ).toBeDisabled();
+
+    await user.click(screen.getByRole("checkbox", { name: "#901" }));
+    await user.type(
+      screen.getByLabelText("Nome do ativo visual *"),
+      "Rigel · convite direto",
+    );
+    await user.type(
+      screen.getByLabelText("Orientação de criação/edição *"),
+      "Preservar a degustação real e apresentar a implantação personalizada.",
+    );
+    await user.click(screen.getByRole("button", { name: "Solicitar criação" }));
+
+    expect(createImageStudioJobMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        label: "Rigel · convite direto",
+        purposes: ["ADS"],
+        referenceAssetIds: [901],
+      }),
+      expect.any(Object),
+    );
   });
 
   it("permite editar as decisoes comerciais do plano pela tela", async () => {

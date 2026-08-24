@@ -11,6 +11,7 @@ public enum AssetUploadCategory {
   SALES_VIDEO("sales-videos"),
   AGENT_PORTRAIT("agents/portraits"),
   COMMERCIAL_PLAN_DELIVERABLE("commercial-plans/deliverables"),
+  COMMERCIAL_PLAN_VISUAL_ASSET("commercial-plans/visual-assets"),
   GENERIC("uploads");
 
   private final String rootFolder;

@@ -79,7 +79,7 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
     referenceAssetIds: [],
     prompt: "",
     label: "",
-    purposes: ["DELIVERY", "LANDING", "ADS", "SOCIAL"],
+    purposes: ["DELIVERY"],
     size: "1024x1536",
     quality: "high",
   });
@@ -111,7 +111,6 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
     );
   };
   const togglePurpose = (purpose: string) => {
-    if (purpose === "DELIVERY") return;
     setStudioDraft((current) => ({
       ...current,
       purposes: current.purposes.includes(purpose)
@@ -127,6 +126,20 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
         : [...current.referenceAssetIds, assetId].slice(0, 4),
     }));
   };
+  const requiresProductEvidence =
+    !studioDraft.purposes.includes("DELIVERY") &&
+    studioDraft.purposes.some((purpose) =>
+      ["LANDING", "ADS", "SOCIAL"].includes(purpose),
+    );
+  const hasProductEvidence = studioDraft.referenceAssetIds.some((assetId) => {
+    const asset = imageAssets.find((candidate) => candidate.id === assetId);
+    const purposes = asset?.purposes?.length
+      ? asset.purposes
+      : asset?.purpose
+        ? [asset.purpose]
+        : [];
+    return purposes.includes("PRODUCT_PROOF") || purposes.includes("DELIVERY");
+  });
   return (
     <section className="card" aria-labelledby="visual-kit-title">
       <div className="card-body d-flex flex-column gap-3">
@@ -142,8 +155,9 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
         <div className="border rounded p-3 bg-body-tertiary">
           <h3 className="h6">Estúdio de Imagens de Têmis</h3>
           <p className="small text-body-secondary">
-            Crie ou edite entregáveis reais com GPT Image 2. O resultado entra
-            como rascunho e só é aprovado por uma execução independente.
+            Crie entregáveis ou peças comerciais com GPT Image 2. Peça comercial
+            exige uma prova real aprovada; todo resultado entra como rascunho e
+            só é aprovado por uma execução independente.
           </p>
           <form className="row g-2" onSubmit={submitStudio}>
             <div className="col-md-2">
@@ -194,7 +208,7 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
             )}
             <div className="col-md-4">
               <label className="form-label" htmlFor="temis-image-label">
-                Nome do entregável *
+                Nome do ativo visual *
               </label>
               <input
                 id="temis-image-label"
@@ -249,7 +263,6 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
                     className="form-check-input"
                     type="checkbox"
                     checked={studioDraft.purposes.includes(purpose)}
-                    disabled={purpose === "DELIVERY"}
                     onChange={() => togglePurpose(purpose)}
                   />
                   <span className="form-check-label">{purpose}</span>
@@ -261,7 +274,8 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
               <div className="d-flex flex-wrap gap-2">
                 {imageAssets.length === 0 && (
                   <small className="text-body-secondary">
-                    Nenhuma imagem disponível; Têmis criará do zero.
+                    Nenhuma imagem disponível. Entregáveis podem ser criados;
+                    peças comerciais aguardam uma prova real do produto.
                   </small>
                 )}
                 {imageAssets.map((asset) => (
@@ -280,11 +294,21 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
                   </label>
                 ))}
               </div>
+              {requiresProductEvidence && !hasProductEvidence && (
+                <small className="text-danger d-block mt-1">
+                  Selecione uma referência APPROVED com finalidade PRODUCT_PROOF
+                  ou DELIVERY.
+                </small>
+              )}
             </div>
             <div className="col-12 d-flex justify-content-end">
               <button
                 className="btn btn-primary"
-                disabled={createImageStudioJob.isPending}
+                disabled={
+                  createImageStudioJob.isPending ||
+                  studioDraft.purposes.length === 0 ||
+                  (requiresProductEvidence && !hasProductEvidence)
+                }
               >
                 {createImageStudioJob.isPending ? (
                   <>
@@ -358,6 +382,7 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
               <option>LANDING</option>
               <option>SOCIAL</option>
               <option>DELIVERY</option>
+              <option>PRODUCT_PROOF</option>
             </select>
           </div>
           <div className="col-lg-3">

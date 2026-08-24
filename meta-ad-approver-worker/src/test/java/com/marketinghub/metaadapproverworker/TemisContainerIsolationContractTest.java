@@ -82,7 +82,8 @@ class TemisContainerIsolationContractTest {
 
     assertThat(client).contains("prompts/image-studio/v1/production.md");
     assertThat(prompt)
-        .contains("{{JOB_PROMPT}}", "{{PURPOSES}}", "{{EDIT_CONSTRAINT}}")
+        .contains(
+            "{{JOB_PROMPT}}", "{{PURPOSES}}", "{{ASSET_ROLE_CONTRACT}}", "{{EDIT_CONSTRAINT}}")
         .contains("não redesenhe o produto");
   }
 
@@ -96,6 +97,8 @@ class TemisContainerIsolationContractTest {
         .contains(
             "não exija que esse arquivo venda o kit Agenda Cheia",
             "demonstração enquadrada do que o comprador recebe",
+            "`PRODUCT_PROOF` é captura",
+            "peça como comunicação comercial",
             "homologação sintética",
             "proporção nativa `9:16`",
             "campo `issues` deve ser obrigatoriamente um array vazio",

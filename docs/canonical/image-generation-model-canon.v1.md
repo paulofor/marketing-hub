@@ -1,7 +1,7 @@
 # Modelo canônico para geração de imagens
 
 > STATUS: CANÔNICO
-> ÚLTIMA VALIDAÇÃO: 2026-08-16
+> ÚLTIMA VALIDAÇÃO: 2026-08-24
 
 ## Decisão
 
@@ -41,7 +41,7 @@ O binário retornado em `b64_json` deve ser decodificado e persistido uma única
 
 O executor calcula e reporta `costUsd` pela composição detalhada de tokens de imagem e texto, entrada e saída, retornada pelo provedor. Para `gpt-image-2`, a tabela vigente em 2026-08-16 usa por milhão de tokens: imagem de entrada US$ 8, texto de entrada US$ 5, imagem de saída US$ 30 e texto de saída US$ 10. Mudança de preço exige atualização desta fonte canônica e do teste de cálculo antes de nova produção.
 
-Criação sem referência usa a Image API. Edição e composição híbrida usam o endpoint de edições com os arquivos reais da Biblioteca Audiovisual. Uma edição pode evoluir seu arquivo de origem ainda em `DRAFT`, mas referências adicionais de composição precisam estar `APPROVED`, ser imagens ativas e pertencer ao mesmo plano comercial. O backend revalida essas condições ao entregar a fila: referência removida, aposentada ou reprovada falha o job antes do consumo e nunca transforma silenciosamente uma edição em geração livre. Cada edição gera uma nova versão; o arquivo anterior permanece íntegro. Uma segunda execução independente no `meta-ad-approver-worker` revisa o resultado já persistido e a execução produtora é tecnicamente impedida de aprovar o próprio trabalho. Falha, reinício, timeout, falta de credencial ou pressão de memória do Estúdio não pode derrubar o health nem interromper as filas de revisão.
+Criação de um entregável visual pode usar a Image API sem referência quando o contrato do produto permitir. Edição e composição híbrida usam o endpoint de edições com os arquivos reais da Biblioteca Audiovisual. Peça comercial de produto não visual nunca usa geração livre: precisa partir de `PRODUCT_PROOF` ou `DELIVERY` aprovado. Uma edição pode evoluir seu arquivo de origem ainda em `DRAFT`, mas referências adicionais de composição precisam estar `APPROVED`, ser imagens ativas e pertencer ao mesmo plano comercial. O backend revalida essas condições ao entregar a fila: referência removida, aposentada ou reprovada falha o job antes do consumo e nunca transforma silenciosamente uma edição em geração livre. Cada edição gera uma nova versão; o arquivo anterior permanece íntegro. Uma segunda execução independente no `meta-ad-approver-worker` revisa o resultado já persistido e a execução produtora é tecnicamente impedida de aprovar o próprio trabalho. Falha, reinício, timeout, falta de credencial ou pressão de memória do Estúdio não pode derrubar o health nem interromper as filas de revisão.
 
 Em criativos que demonstram uma entrega visual, o backend deve selecionar referências complementares por formato, no mínimo um post e um story quando ambos fizerem parte da promessa. O cenário pode ser gerado pelo GPT Image 2, mas os entregáveis aprovados são sobrepostos pelo compositor determinístico versionado, sem redesenho. A peça final precisa preservar pixels, proporções e legibilidade dos arquivos reais, registrar seus IDs/versões e voltar aos gates independentes de Psique e Têmis antes de ficar `READY`.
 

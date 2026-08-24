@@ -1,0 +1,56 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision",
+    "chosenRoute",
+    "commercialRationale",
+    "formatBriefs",
+    "blockingRisks"
+  ],
+  "properties": {
+    "decision": { "type": "string", "enum": ["SELECTED", "ADJUST", "BLOCKED"] },
+    "chosenRoute": {
+      "type": "string",
+      "enum": [
+        "STATIC_CAROUSEL_PLUS_DETERMINISTIC_MOTION",
+        "GENERATIVE_VIDEO_WITH_AVATAR",
+        "GENERIC_WHATSAPP_IMAGE"
+      ]
+    },
+    "commercialRationale": { "type": "string", "minLength": 20 },
+    "formatBriefs": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "formatId",
+          "role",
+          "firstTwoSeconds",
+          "proof",
+          "cta",
+          "approvalCriteria"
+        ],
+        "properties": {
+          "formatId": {
+            "type": "string",
+            "enum": ["direct-carousel", "vertical-demo"]
+          },
+          "role": { "type": "string" },
+          "firstTwoSeconds": { "type": "string" },
+          "proof": { "type": "string" },
+          "cta": { "type": "string" },
+          "approvalCriteria": {
+            "type": "array",
+            "minItems": 2,
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "blockingRisks": { "type": "array", "items": { "type": "string" } }
+  }
+}

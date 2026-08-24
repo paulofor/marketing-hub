@@ -34,13 +34,16 @@ class CommercialBpmTaskConsumerTest {
 
   /** Exige prompt e schema próprios para o gate comercial do criativo. */
   @Test
-  void selectsVersionedCreativeContract() {
+  void selectsVersionedCreativeContract() throws Exception {
     org.assertj.core.api.Assertions.assertThat(
             CommercialBpmTaskConsumer.promptResourceFor("creative-production-approval"))
         .isEqualTo("prompts/bpm/creative-commercial-review.md");
     org.assertj.core.api.Assertions.assertThat(
             CommercialBpmTaskConsumer.schemaResourceFor("creative-production-approval"))
         .isEqualTo("prompts/bpm/creative-commercial-review-schema.json");
+    org.assertj.core.api.Assertions.assertThat(read("prompts/bpm/creative-commercial-review.md"))
+        .contains("PRODUCT_PROOF", "Só aplique limites da Meta", "contato direto consentido")
+        .doesNotContain("demonstra inequivocamente o kit digital");
   }
 
   /** Seleciona o contrato independente de revisão dos entregáveis do PDE. */

@@ -59,6 +59,32 @@ class TemisImageStudioOpenAiClientTest {
     assertThat(requestBody.get()).contains("\"model\":\"gpt-image-2\"");
   }
 
+  /** Diferencia uma peça comercial de um entregável e proíbe prova visual inventada. */
+  @Test
+  void createsCommercialAssetFromApprovedProofWithoutCallingItDelivery() {
+    String referenceUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/reference.png";
+    TemisImageStudioJob commercial =
+        new TemisImageStudioJob(
+            23L,
+            4L,
+            "CREATE",
+            "Crie convite direto para o Kit WhatsApp Pronto",
+            "Rigel - convite direto",
+            List.of("ADS", "SOCIAL"),
+            "1024x1536",
+            "high",
+            List.of(referenceUrl),
+            "producer-23",
+            playbook());
+
+    TemisImageStudioOpenAiClient.Result result = client().execute(commercial);
+
+    assertThat(result.requestJson())
+        .contains("peça comercial, não um entregável")
+        .contains("sem inventar tela, resultado, depoimento ou recurso")
+        .doesNotContain("deve ser útil para a cliente final");
+  }
+
   /** Confirma edição multipart usando a imagem real como referência, sem redesenho silencioso. */
   @Test
   void editsExistingDeliverableWithMultipartReference() {

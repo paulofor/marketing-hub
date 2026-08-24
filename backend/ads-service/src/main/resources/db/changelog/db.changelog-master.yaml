@@ -1907,3 +1907,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-24-product-discovery-execution-lease.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-24-creative-production-approval-format-neutral-v6.yaml
+      relativeToChangelogFile: true

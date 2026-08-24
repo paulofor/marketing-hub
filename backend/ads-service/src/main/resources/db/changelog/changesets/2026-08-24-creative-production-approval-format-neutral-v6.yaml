@@ -1,0 +1,51 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-24-creative-production-approval-format-neutral-v6
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT
+                'creative-production-approval',
+                'Criação e Aprovação de Criativos',
+                'Transformar prova real e oferta vigente em peças adequadas ao canal, aprovadas por percepção e revisão comercial independentes.',
+                'Têmis, Psique e Apolo quando vídeo for a rota escolhida',
+                'Produto real, plano comercial, canal, oferta, CTA, destino e prova aprovada estão congelados.',
+                'Ao menos uma peça por formato necessário do canal, com linhagem até PRODUCT_PROOF ou DELIVERY aprovado, parecer favorável de Psique e aprovação comercial de uma execução independente de Têmis, sem publicação ou gasto.',
+                6,
+                'PUBLISHED',
+                'creative-production-approval-format-neutral-v6 / commercial-planning-canon.v1 / rigel-creative-production-v6',
+                'SUBPROCESS',
+                'pde-communication-sales-journey',
+                '{"nodes":[{"id":"start","type":"START","label":"Contrato comercial congelado","owner":"Backend","description":"Produto, oferta, canal, destino, CTA e métricas chegam versionados."},{"id":"route","type":"TASK","label":"Escolher rota e formatos pelo canal","owner":"Têmis e Apolo","description":"Compara imagem, movimento simples e vídeo e escolhe somente os formatos necessários, registrando custo, risco e hipótese."},{"id":"library","type":"TASK","label":"Selecionar prova real aprovada","owner":"Têmis","description":"Usa PRODUCT_PROOF para produto não visual ou DELIVERY quando o próprio arquivo é parte da entrega."},{"id":"libraryGate","type":"GATEWAY","label":"Produto está comprovado sem invenção?","owner":"Backend","description":"Bloqueia ausência de linhagem, referência não aprovada ou formato prometido sem prova."},{"id":"brief","type":"TASK","label":"Congelar briefing por formato","owner":"Têmis","description":"Define percepção em dois segundos, promessa, prova, preço, entrega, CTA, canal, destino e critérios observáveis."},{"id":"produce","type":"TASK","label":"Produzir peças versionadas","owner":"Têmis ou Apolo","description":"Têmis produz imagem; Apolo e o Estúdio Áudio Vídeo produzem vídeo apenas quando essa rota foi escolhida. Nenhum executor publica."},{"id":"customer","type":"TASK","label":"Avaliar percepção da cliente","owner":"Psique","description":"Inspeciona cada formato no canal declarado e registra reação inicial, clareza, desejo, confiança e esforço."},{"id":"commercial","type":"TASK","label":"Revisar coerência comercial","owner":"Têmis independente","description":"Execução diferente da produtora valida linhagem, oferta, preço, entrega, CTA, direitos, destino e regras específicas do canal."},{"id":"gate","type":"GATEWAY","label":"Todos os formatos necessários foram aprovados?","owner":"Backend","description":"Exige prova vigente, Psique favorável, Têmis independente favorável e zero bloqueio crítico em cada formato."},{"id":"human","type":"TASK","label":"Registrar decisão humana de uso","owner":"Operador humano","description":"Seleciona as peças elegíveis sem publicar, gastar ou alterar o experimento."},{"id":"end","type":"END","label":"Pacote criativo aprovado e rastreável","owner":"Backend","description":"Peças e pareceres ficam prontos para integração e homologação, sem ativação comercial."}],"flows":[{"from":"start","to":"route"},{"from":"route","to":"library"},{"from":"library","to":"libraryGate"},{"from":"libraryGate","to":"brief"},{"from":"brief","to":"produce"},{"from":"produce","to":"customer"},{"from":"customer","to":"commercial"},{"from":"commercial","to":"gate"},{"from":"gate","to":"human"},{"from":"human","to":"end"}]}',
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'creative-production-approval' AND version_number = 6
+              );
+
+              UPDATE business_process_definition
+              SET status = 'RETIRED'
+              WHERE process_code = 'creative-production-approval'
+                AND version_number <> 6
+                AND status = 'PUBLISHED';
+
+              UPDATE business_process_definition
+              SET status = 'PUBLISHED',
+                  process_type = 'SUBPROCESS',
+                  parent_process_code = 'pde-communication-sales-journey',
+                  published_at = COALESCE(published_at, UTC_TIMESTAMP())
+              WHERE process_code = 'creative-production-approval'
+                AND version_number = 6;

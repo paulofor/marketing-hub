@@ -6635,3 +6635,11 @@
 - **Gate:** continuar apenas com prova materializada e eventos íntegros; ajustar se houver valor sem avanço para checkout; parar diante de vazamento de dados, canibalização da entrega, custo inesperado ou contaminação de vendas.
 - **Revisão independente:** Têmis bloqueou corretamente a tarefa #197 por ausência de provas executáveis no pacote de revisão. Depois que código, testes, duas rodadas e autoridade dos eventos foram injetados como evidência versionada, a tarefa #198 terminou `APPROVED`, com clareza de preço 98/100 e nenhuma mudança pendente.
 - **Telemetria das revisões #197–198:** 322.520 tokens de entrada, 159.232 em cache, 2.814 de saída e custo estimado de US$ 0,77312480. Nenhum contato, publicação, pagamento, gasto ou venda foi gerado.
+
+## 2026-08-24 — Vega v7: preflight produtivo auditável pela tela
+
+- **Evidência operacional:** a versão `musa-pde-entry-v7-espelho-antes-de-sair` foi publicada e respondeu com identidade exata, mas o smoke exigia um CTA de vídeo condicional que a v7 não renderiza; além disso, a tela permitia iniciar o preflight, mas não registrar seus quatro resultados funcionais.
+- **Causa-raiz:** o smoke confundia configuração opcional com primeira dobra efetiva, e o frontend não consumia o endpoint canônico de homologação já disponível no backend.
+- **Correção:** o smoke valida headline e texto de apoio sempre renderizados, permanece sem analytics, e o painel do run passa a exigir resultado, conclusão e referência auditável para os quatro gates funcionais.
+- **Prevenção:** ausência de qualquer evidência mantém o comando desabilitado; `FAIL` permanece registrável; grupos de evidência comercial e distribuição são representados no contrato frontend; teste impede envio incompleto.
+- **Estado comercial preservado:** a Vega continua em `VALIDACAO_COMERCIAL` até a nova tela ser publicada e o run produtivo terminar `READY_TO_PUBLISH`; não houve contato, gasto, pagamento humano ou venda.

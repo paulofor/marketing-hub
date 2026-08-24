@@ -26,11 +26,7 @@ export type ExperimentEvidenceValidity =
   | "INSUFFICIENT_DATA"
   | "COMMERCIALLY_VALID";
 export type ExperimentRunDataQualityStatus =
-  | "UNKNOWN"
-  | "VALID"
-  | "WARNING"
-  | "BLOCKED"
-  | "STALE";
+  "UNKNOWN" | "VALID" | "WARNING" | "BLOCKED" | "STALE";
 export type ExperimentRunStopPolicy =
   | "FIRST_VALID_LEAD_STANDBY"
   | "FIXED_WINDOW"
@@ -38,19 +34,24 @@ export type ExperimentRunStopPolicy =
   | "STOP_LOSS"
   | "MANUAL_ONLY";
 export type ExperimentRunGateStatus =
-  | "PASS"
-  | "WARNING"
-  | "FAIL"
-  | "NOT_APPLICABLE"
-  | "PENDING";
+  "PASS" | "WARNING" | "FAIL" | "NOT_APPLICABLE" | "PENDING";
 export type ExperimentRunGateSeverity = "INFO" | "WARNING" | "BLOCKER";
 export type ExperimentRunGateGroup =
   | "UPSTREAM_QUALITY"
+  | "COMMERCIAL_EVIDENCE"
   | "EXPERIMENT_DESIGN"
   | "ASSET_QUALITY"
   | "FUNCTIONAL_E2E"
+  | "DISTRIBUTION"
   | "META_PUBLICATION"
   | "MEASUREMENT";
+
+export type ExperimentRunHomologationGateEvidence = {
+  gateCode: string;
+  status: Extract<ExperimentRunGateStatus, "PASS" | "FAIL">;
+  summary: string;
+  evidenceReference: string;
+};
 
 export type ExperimentRun = {
   id: number;
@@ -149,6 +150,37 @@ export function useRunExperimentPreflight(experimentId?: string | number) {
     mutationFn: async (runId: number) => {
       const { data } = await axios.post<ExperimentRunPreflight>(
         `/api/experiment-runs/${runId}/preflight`,
+      );
+      return data;
+    },
+    onSuccess: async (preflight) => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: experimentRunsQueryKey(experimentId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: experimentRunPreflightQueryKey(preflight.runId),
+        }),
+      ]);
+    },
+  });
+}
+
+export function useRecordExperimentRunHomologation(
+  experimentId?: string | number,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      runId,
+      gates,
+    }: {
+      runId: number;
+      gates: ExperimentRunHomologationGateEvidence[];
+    }) => {
+      const { data } = await axios.post<ExperimentRunPreflight>(
+        `/api/experiment-runs/${runId}/homologation-results`,
+        { gates },
       );
       return data;
     },

@@ -1731,6 +1731,9 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz:** o executor local não possuía limite operacional nem callback de falha técnica.
 - **Prevenção:** o runner aplica timeout validado, encerra o processo e persiste erro técnico e uso
   parcial quando disponível; uma nova tarefa auditável pode então retomar a atividade.
+- **Aplicação complementar em 2026-08-24:** o executor local de Descoberta PDE passou a usar timeout
+  próprio, sem herdar variável genérica, com limite validado, tentativas transitórias dentro do
+  prazo total e auditoria separada da URL, request e response do provedor.
 
 ## LOOP-PRODUTO-CAMPO-MAIOR-QUE-SCHEMA — tela aceita texto e backend responde 500
 
@@ -1741,3 +1744,20 @@ Use este checklist quando o problema estiver em algum loop acima:
   reproduziam os mesmos máximos.
 - **Prevenção:** validação Bean Validation rejeita o payload antes do banco e o formulário limita os
   campos conforme o schema. Testes REST e de interface protegem a concordância.
+
+## LOOP-PDE-DESCOBERTA-AGENTE-SUBSTITUI-FATO-E-GATE — parecer altera auditoria e hierarquia
+
+- **Data:** 2026-08-24.
+- **Sintoma:** Argos contou dois relatos de assinantes como novas ofertas pagas e mudou o total
+  auditável de 19 para 21; em outra rodada, Hermes retornou `APPROVE` mesmo com Argos em
+  `RESEARCH_MORE`; por fim, o gate consolidado suavizou um `REJECT` de Dédalo para `RESEARCH_MORE`.
+- **Causa-raiz:** fatos objetivos e precedência de decisões apareciam apenas em instruções
+  narrativas. O modelo precisava recontar fontes e podia interpretar aprovação de sua etapa como
+  autorização para superar o gate anterior.
+- **Correção sistêmica:** o executor calcula candidatos, fontes, ofertas únicas e ofertas por
+  candidato em `auditFacts`; Argos apenas copia a contagem. Hermes recebe regra explícita de não
+  aprovação quando Argos não aprova, a validação funcional bloqueia divergência e o gate preserva
+  `REJECT` como a decisão mais restritiva.
+- **Prevenção:** testes alteram propositalmente a contagem, promovem relato a oferta, tentam aprovar
+  a jusante e misturam `REJECT` com `RESEARCH_MORE`. Qualquer divergência encerra a execução com
+  artefato de erro, sem correção silenciosa e sem avançar o gate.

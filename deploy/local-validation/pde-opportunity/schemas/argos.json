@@ -1,27 +1,18 @@
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["decision", "signalPattern", "audience", "rootPain", "desiredOutcome", "currentFailedAttempts", "independentEvidence", "alternatives", "recommendedOpportunity", "validationGaps", "confidence"],
+  "required": ["decision", "evidenceSummary", "alternatives", "recommendedOpportunity", "portfolioComparison", "validationGaps", "confidence"],
   "properties": {
     "decision": { "type": "string", "enum": ["APPROVE", "RESEARCH_MORE", "REJECT"] },
-    "signalPattern": { "type": "string" },
-    "audience": { "type": "string" },
-    "rootPain": { "type": "string" },
-    "desiredOutcome": { "type": "string" },
-    "currentFailedAttempts": { "type": "array", "items": { "type": "string" } },
-    "independentEvidence": {
-      "type": "array",
-      "minItems": 6,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["sourceUrl", "sourceType", "observedSignal", "supports"],
-        "properties": {
-          "sourceUrl": { "type": "string" },
-          "sourceType": { "type": "string", "enum": ["HUMAN_SIGNAL", "SURVEY", "COMMERCIAL_OFFER", "COMMUNITY", "SPECIALIST_CONTENT"] },
-          "observedSignal": { "type": "string" },
-          "supports": { "type": "array", "items": { "type": "string", "enum": ["RECURRENCE", "UNMETNESS", "PURCHASE_INTENT", "RISK"] } }
-        }
+    "evidenceSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cycleOfferCount", "sourceDiversity", "strongestSignal", "principalLimitation"],
+      "properties": {
+        "cycleOfferCount": { "type": "integer", "minimum": 0 },
+        "sourceDiversity": { "type": "string" },
+        "strongestSignal": { "type": "string" },
+        "principalLimitation": { "type": "string" }
       }
     },
     "alternatives": {
@@ -31,20 +22,37 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["name", "targetSegment", "jobToBeDone", "pdeExperience", "demandEvidence", "commercialSignal", "risk", "score"],
+        "required": ["name", "targetSegment", "rootPain", "desiredOutcome", "jobToBeDone", "currentFailedAttempts", "pdeMechanism", "microexperience", "differentiationFromPortfolio", "freeAlternative", "evidenceSourceIds", "paidOfferSourceIds", "independentEvidencePaths", "principalRisk", "evidenceStrength"],
         "properties": {
           "name": { "type": "string" },
           "targetSegment": { "type": "string" },
+          "rootPain": { "type": "string" },
+          "desiredOutcome": { "type": "string" },
           "jobToBeDone": { "type": "string" },
-          "pdeExperience": { "type": "string" },
-          "demandEvidence": { "type": "string" },
-          "commercialSignal": { "type": "string" },
-          "risk": { "type": "string" },
-          "score": { "type": "integer", "minimum": 0, "maximum": 100 }
+          "currentFailedAttempts": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+          "pdeMechanism": { "type": "string" },
+          "microexperience": { "type": "string" },
+          "differentiationFromPortfolio": { "type": "string" },
+          "freeAlternative": { "type": "string" },
+          "evidenceSourceIds": { "type": "array", "minItems": 6, "items": { "type": "string" } },
+          "paidOfferSourceIds": { "type": "array", "minItems": 3, "items": { "type": "string" } },
+          "independentEvidencePaths": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["recurrence", "unmetness", "purchaseIntent"],
+            "properties": {
+              "recurrence": { "type": "array", "minItems": 2, "items": { "type": "string" } },
+              "unmetness": { "type": "array", "minItems": 2, "items": { "type": "string" } },
+              "purchaseIntent": { "type": "array", "minItems": 2, "items": { "type": "string" } }
+            }
+          },
+          "principalRisk": { "type": "string" },
+          "evidenceStrength": { "type": "string", "enum": ["STRONG", "MODERATE", "WEAK"] }
         }
       }
     },
     "recommendedOpportunity": { "type": "string" },
+    "portfolioComparison": { "type": "string" },
     "validationGaps": { "type": "array", "items": { "type": "string" } },
     "confidence": { "type": "integer", "minimum": 0, "maximum": 100 }
   }

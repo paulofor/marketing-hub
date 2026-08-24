@@ -181,15 +181,31 @@ function removeMutableFallbackTexts(
   return requiredTexts.filter((text) => !mutableFallbackTexts.has(text));
 }
 
+function safeSmokeHealthPath(healthPath: string) {
+  const url = new URL(healthPath, "http://pde-smoke.local");
+  url.searchParams.set("mh_preview", "qa");
+  url.searchParams.set("pde_analytics", "off");
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
 test("health publico renderiza app, javascript e texto comercial", async ({
   page,
   request,
 }) => {
   const pageErrors: string[] = [];
+  const analyticsRequests: string[] = [];
   const contract = await loadContract(request);
 
   page.on("pageerror", (error) => {
     pageErrors.push(error.message);
+  });
+  page.on("request", (browserRequest) => {
+    if (
+      browserRequest.method() === "POST" &&
+      browserRequest.url().includes("/api/pde/access/events")
+    ) {
+      analyticsRequests.push(browserRequest.url());
+    }
   });
 
   const staticHealth = await request.get("/healthz");
@@ -206,7 +222,9 @@ test("health publico renderiza app, javascript e texto comercial", async ({
   expect(diagnostics.imageVersionId).toBeTruthy();
   expect(diagnostics.commitSha).toBeTruthy();
   if (contract.slug === "metodo-musa-7-dias") {
-    expect(diagnostics.knownPointedDomains?.map((domain) => domain.role)).not.toContain("active");
+    expect(
+      diagnostics.knownPointedDomains?.map((domain) => domain.role),
+    ).not.toContain("active");
     expect(
       diagnostics.knownPointedDomains?.map((domain) => domain.host),
     ).toEqual(
@@ -231,7 +249,7 @@ test("health publico renderiza app, javascript e texto comercial", async ({
     publishedFirstFoldTexts,
   );
 
-  const response = await page.goto(contract.healthPath, {
+  const response = await page.goto(safeSmokeHealthPath(contract.healthPath), {
     waitUntil: "networkidle",
   });
   expect(response?.ok()).toBeTruthy();
@@ -276,5 +294,9 @@ test("health publico renderiza app, javascript e texto comercial", async ({
   expect(
     pageErrors,
     `Erros de execucao no health publico: ${pageErrors.join(" | ")}`,
+  ).toEqual([]);
+  expect(
+    analyticsRequests,
+    "O smoke publico nao pode alterar metricas humanas ou de QA.",
   ).toEqual([]);
 });

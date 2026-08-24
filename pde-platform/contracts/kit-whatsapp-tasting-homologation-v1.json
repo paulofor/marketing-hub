@@ -2,9 +2,9 @@
   "evidenceVersion": "kit-whatsapp-tasting-homologation-v1",
   "productSlug": "kit-whatsapp-pronto",
   "experimentId": 89,
-  "verifiedAt": "2026-08-24T02:48:27Z",
+  "verifiedAt": "2026-08-24T12:53:01Z",
   "status": "PASSED",
-  "revalidationReason": "Revisão aprovada após preservar o contexto de QA e preview em toda a jornada pública, inclusive políticas abertas em nova aba.",
+  "revalidationReason": "Revisão aprovada após preservar o contexto de QA e preview em toda a jornada pública, inclusive políticas e o smoke automatizado do deploy.",
   "scope": "Degustação determinística, privacidade, eventos, segregação de QA no build público, fronteira paga, checkout e experiência responsiva.",
   "implementationEvidence": [
     {
@@ -53,10 +53,11 @@
     },
     {
       "path": "pde-platform/frontend/tests/public-health.spec.ts",
-      "sha256": "9a7547e8294ba950dbb055c7cf9752c9f0abe5f608f00ae8eccf282f46ddb21a",
+      "sha256": "a7f09ea360ed62231d212d66fa6acf351933950a1ab5186beedcaf37b0bfb52b",
       "proves": [
         "o deploy do Kit falha se a degustação não estiver renderizada",
-        "oferta, preço, checkout e degustação pertencem à mesma superfície pública"
+        "oferta, preço, checkout e degustação pertencem à mesma superfície pública",
+        "o smoke público usa preview sem analytics e falha diante de qualquer tentativa de registrar evento"
       ]
     },
     {

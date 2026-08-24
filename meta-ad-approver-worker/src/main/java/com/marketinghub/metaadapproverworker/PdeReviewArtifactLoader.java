@@ -1,12 +1,17 @@
 package com.marketinghub.metaadapproverworker;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -16,7 +21,10 @@ import java.util.zip.CRC32;
  * Responsabilidade: carregar evidências versionadas do PDE para a revisão independente de Têmis.
  */
 final class PdeReviewArtifactLoader {
+  private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
   private static final String COMMUNICATION_CONTRACT_DIRECTORY = "pde-platform/contracts";
+  private static final List<String> EVIDENCE_COLLECTIONS =
+      List.of("implementationEvidence", "executableEvidence");
   private static final List<String> COMMUNICATION_IMPLEMENTATION_EVIDENCE_PATHS =
       List.of(
           "pde-platform/frontend/src/AssistedServiceApp.tsx",
@@ -84,6 +92,7 @@ final class PdeReviewArtifactLoader {
           throw new IllegalArgumentException("Contrato comercial fora do diretório autorizado");
         }
         String content = Files.readString(artifact, StandardCharsets.UTF_8);
+        validateDeclaredEvidenceHashes(content, artifact);
         evidence.add(
             Map.of(
                 "path",
@@ -132,6 +141,54 @@ final class PdeReviewArtifactLoader {
         checksum(content),
         "content",
         content);
+  }
+
+  /** Bloqueia a revisão quando um manifesto aponta para uma prova ausente ou alterada. */
+  private void validateDeclaredEvidenceHashes(String contractContent, Path contractPath)
+      throws IOException {
+    JsonNode contract = JSON_MAPPER.readTree(contractContent);
+    for (String collectionName : EVIDENCE_COLLECTIONS) {
+      JsonNode collection = contract.path(collectionName);
+      if (!collection.isMissingNode() && !collection.isArray()) {
+        throw new IOException(
+            "Coleção de evidências inválida em " + repositoryRoot.relativize(contractPath));
+      }
+      for (JsonNode evidence : collection) {
+        validateDeclaredEvidenceHash(evidence, contractPath);
+      }
+    }
+  }
+
+  /** Confere caminho e SHA-256 de uma prova declarada pelo manifesto de homologação. */
+  private void validateDeclaredEvidenceHash(JsonNode evidence, Path contractPath)
+      throws IOException {
+    String relativePath = evidence.path("path").asText("");
+    String expectedHash = evidence.path("sha256").asText("");
+    if (relativePath.isBlank() || expectedHash.isBlank()) {
+      throw new IOException(
+          "Evidência sem path ou sha256 em " + repositoryRoot.relativize(contractPath));
+    }
+    Path artifact = repositoryRoot.resolve(relativePath).normalize();
+    if (!artifact.startsWith(repositoryRoot)
+        || !Files.isRegularFile(artifact, LinkOption.NOFOLLOW_LINKS)
+        || !artifact.toRealPath().startsWith(repositoryRoot.toRealPath())) {
+      throw new IOException("Prova de homologação fora do repositório ou ausente: " + relativePath);
+    }
+    String actualHash = sha256(Files.readAllBytes(artifact));
+    if (!MessageDigest.isEqual(
+        expectedHash.getBytes(StandardCharsets.UTF_8),
+        actualHash.getBytes(StandardCharsets.UTF_8))) {
+      throw new IOException("SHA-256 divergente para a prova de homologação: " + relativePath);
+    }
+  }
+
+  /** Calcula o SHA-256 hexadecimal usado pelos manifestos de homologação. */
+  private String sha256(byte[] content) {
+    try {
+      return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
+    } catch (NoSuchAlgorithmException ex) {
+      throw new IllegalStateException("SHA-256 indisponível na JVM", ex);
+    }
   }
 
   /** Calcula checksum determinístico para comprovar qual conteúdo foi revisado. */

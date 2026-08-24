@@ -32,6 +32,8 @@ services:
       PDE_DEV_ACCESS_ENABLED: "true"
       PDE_ASSISTED_OPERATION_ENABLED: "true"
       PDE_ASSISTED_OPERATION_TOKEN: pde-local-operation-test
+      PDE_INTERNAL_API_TOKEN: pde-local-internal-test
+      PDE_INTERNAL_QA_ENABLED: "true"
       PDE_ACCESS_JDBC_URL: jdbc:mysql://pde-platform-local-mysql:3306/pde_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       PDE_ACCESS_JDBC_USERNAME: pde
       PDE_ACCESS_JDBC_PASSWORD: pde
@@ -86,6 +88,7 @@ services:
       PDE_ASSISTED_FRONTEND_URL: http://pde-platform-frontend-kit-validation
       PDE_ASSISTED_BACKEND_URL: http://pde-platform-backend-kit-validation:8096
       PDE_ASSISTED_MAIL_URL: http://sandbox-mail:8025
+      PDE_ASSISTED_INTERNAL_TOKEN: pde-local-internal-test
     depends_on:
       pde-platform-backend-kit-validation:
         condition: service_healthy

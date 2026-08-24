@@ -5,6 +5,9 @@ const backendBaseUrl =
   process.env.PDE_ASSISTED_BACKEND_URL ?? "http://127.0.0.1:8096";
 const mailBaseUrl =
   process.env.PDE_ASSISTED_MAIL_URL ?? "http://sandbox-mail:8025";
+const internalToken =
+  process.env.PDE_ASSISTED_INTERNAL_TOKEN ?? "pde-local-internal-test";
+const internalHeaders = { "X-PDE-Internal-Token": internalToken };
 
 test.beforeEach(async ({ context, page, request }) => {
   await context.route(
@@ -50,9 +53,11 @@ test.beforeEach(async ({ context, page, request }) => {
       body: "<html><body><h1>Checkout de homologação</h1></body></html>",
     });
   });
-  await request.post(
+  const resetResponse = await request.post(
     `${backendBaseUrl}/api/pde/access/analytics/${productSlug}/reset-campaign-start`,
+    { headers: internalHeaders },
   );
+  expect(resetResponse.ok()).toBeTruthy();
   await page.goto("/?mh_test=1");
 });
 
@@ -137,7 +142,7 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
       );
     }
   }
-  expect(materializedResponses).toHaveSize(6);
+  expect(materializedResponses.size).toBe(6);
   await expect(tastingResult).toContainText(
     "A implantação paga inclui briefing",
   );
@@ -199,8 +204,16 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
   });
 
   const email = `teste+kit-whatsapp-${testInfo.project.name}-${Date.now()}@sandbox.local`;
-  await page.getByLabel("E-mail").fill(email);
-  await page.getByRole("button", { name: "Entrar na homologação" }).click();
+  const qaAccessResponse = await request.post(
+    `${backendBaseUrl}/api/internal/pde/test-access`,
+    {
+      headers: internalHeaders,
+      data: { productSlug, email },
+    },
+  );
+  expect(qaAccessResponse.status()).toBe(201);
+  const qaAccess = (await qaAccessResponse.json()) as { token: string };
+  await page.goto(`/access/${qaAccess.token}?mh_test=1`);
 
   await expect(page.getByTestId("assisted-workspace")).toBeVisible();
   await expect(page.getByText(email)).toBeVisible();
@@ -403,6 +416,21 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
     7,
   );
 
+  const firstMaterialUrl = await page
+    .getByRole("link", { name: "Abrir material" })
+    .first()
+    .getAttribute("href");
+  expect(firstMaterialUrl).toBeTruthy();
+  const unauthenticatedMaterial = await request.get(firstMaterialUrl!);
+  expect(unauthenticatedMaterial.status()).toBe(403);
+  const protectedMaterialRequest = page.waitForRequest(
+    (browserRequest) =>
+      browserRequest.url().includes(firstMaterialUrl!) &&
+      browserRequest.headers()["x-pde-access-token"] === accessToken,
+  );
+  await page.getByRole("link", { name: "Abrir material" }).first().click();
+  await protectedMaterialRequest;
+
   for (const link of await page
     .getByRole("link", { name: "Baixar entrega personalizada" })
     .evaluateAll((nodes) =>
@@ -422,7 +450,9 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
     .evaluateAll((nodes) =>
       nodes.map((node) => (node as HTMLAnchorElement).href),
     )) {
-    const response = await request.get(link);
+    const response = await request.get(link, {
+      headers: { "X-PDE-Access-Token": accessToken! },
+    });
     expect(response.ok(), `material indisponível: ${link}`).toBeTruthy();
     expect((await response.text()).length).toBeGreaterThan(150);
   }

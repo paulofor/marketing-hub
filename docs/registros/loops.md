@@ -28,6 +28,12 @@
 - **Causa-raiz:** o campo textual `proof` da oferta era usado simultaneamente como promessa e como suposta evidência, sem contrato funcional, fronteira paga ou evento de ativação que comprovasse a entrega da degustação.
 - **Correção sistêmica:** a degustação passa a ter contrato versionado próprio e demonstração determinística interativa. A visitante informa somente um serviço genérico, escolhe situação e tom e recebe uma resposta, uma pergunta de qualificação e três follow-ups; o texto informado nunca é persistido. A implantação completa permanece claramente reservada à oferta paga.
 - **Prevenção:** a homologação pública exige a interface de degustação no Kit; a jornada ponta a ponta valida materialização, privacidade, fronteira paga e a sequência atribuível `TASTING_STARTED`, `VALUE_MOMENT`, `PAYWALL_VIEWED` e `CHECKOUT_STARTED`. Texto promocional isolado não satisfaz mais o gate de prova de valor.
+- **Fechamento complementar em 2026-08-24:** a jornada completa encontrou os materiais pagos no
+  container, mas os links comuns não enviavam o token de acesso exigido pelo proxy e recebiam 403.
+  Além disso, a homologação usava acesso `DEV`, incompatível com o direito pós-compra que pretendia
+  comprovar. A interface agora baixa materiais protegidos com o token da sessão e só registra a
+  abertura após sucesso; a matriz usa `INTERNAL_QA`, prova 403 sem credencial, conteúdo autorizado e
+  mantém toda a sessão fora das métricas humanas e comerciais.
 
 ## LOOP-PDE-TARGETED-DEPLOY-CROSS-SURFACE-SMOKE — publicação isolada falha por versão não publicada
 
@@ -1623,6 +1629,11 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** o gate arquitetural exige os gatilhos e comandos de sincronização; o readiness do
   deploy entra no container de Têmis e exige os contratos da oferta, dos eventos e ao menos um
   material funcional antes de declarar o executor pronto.
+- **Fechamento complementar em 2026-08-24:** a presença do manifesto ainda permitia parecer baseado
+  em uma revisão anterior, porque os hashes declarados não eram comparados aos arquivos atuais. O
+  carregador de evidências de Têmis passa a resolver caminhos dentro da raiz autorizada, rejeitar
+  links simbólicos e exigir SHA-256 exato de toda evidência de implementação e execução. Testes
+  negativos comprovam que qualquer artefato alterado ou manifesto desatualizado bloqueia a revisão.
 
 ## LOOP-PLANO-COMERCIAL-COAUTORIA-LIBERA-SUCESSORA — atividade avança com um revisor pendente
 

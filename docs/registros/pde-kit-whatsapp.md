@@ -237,3 +237,22 @@ social, registro fiscal, endereço ou contato estiverem ausentes ou inválidos.
 Fontes de conferência cadastral em 2026-08-23:
 [Casa dos Dados](https://casadosdados.com.br/solucao/cnpj/paulo-alexandre-lopes-forestieri-informatica-25215414000169)
 e [CNPJ.biz](https://cnpj.biz/25215414000169).
+
+## Fechamento local de Comunicação e jornada
+
+Em 2026-08-24, Rigel continuava no processo `Comunicação e jornada de venda do PDE v4`, etapa 4 de
+6. A oferta produtiva estava saudável e o parecer mais recente de Têmis permanecia aprovado com
+98/100, mas a superfície publicada ainda não continha a degustação versionada. Por isso, o processo
+foi revalidado integralmente em ambiente local antes de qualquer avanço de status.
+
+A homologação encontrou e corrigiu a divergência entre materiais protegidos e links sem autorização,
+o uso inadequado de acesso `DEV` para simular pós-compra e a possibilidade de Têmis aceitar um
+manifesto com hashes desatualizados. A jornada passou a usar acesso `INTERNAL_QA`, sem contaminar
+métricas, e o carregador de evidências passou a comparar o SHA-256 de cada arquivo dentro da raiz
+autorizada.
+
+Duas rodadas finais consecutivas passaram com 110 testes do backend PDE, 55 de Têmis, 23 de Hermes,
+build e 12 jornadas em desktop, iPhone 15 Pro e Pixel 7 por rodada. Foram comprovados degustação,
+checkout de teste, acesso, entrega, materiais protegidos, suporte, retomada e observabilidade, sem
+criar venda, contato, pagamento ou gasto. O objetivo local da etapa 4 está concluído; a transição
+produtiva para a etapa 5 depende da publicação da mesma revisão e de smoke público satisfatório.

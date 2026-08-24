@@ -70,7 +70,7 @@ class BackendRestClientFactoryTest {
       properties.setBackendConnectTimeout(Duration.ofMillis(100));
       properties.setBackendReadTimeout(Duration.ofMillis(50));
 
-      BackendRestClientFactory.create(properties, Duration.ofSeconds(1))
+      BackendRestClientFactory.create(properties, Duration.ofSeconds(30))
           .get()
           .uri("/artifact")
           .retrieve()

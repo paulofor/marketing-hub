@@ -2,13 +2,14 @@
   "evidenceVersion": "kit-whatsapp-tasting-homologation-v1",
   "productSlug": "kit-whatsapp-pronto",
   "experimentId": 89,
-  "verifiedAt": "2026-08-23T08:22:00Z",
+  "verifiedAt": "2026-08-24T01:58:06Z",
   "status": "PASSED",
+  "revalidationReason": "Revisão atual validada após proteger materiais, segregar INTERNAL_QA e bloquear hashes obsoletos no gate de Têmis.",
   "scope": "Degustação determinística, privacidade, eventos, fronteira paga, checkout e experiência responsiva.",
   "implementationEvidence": [
     {
       "path": "pde-platform/frontend/src/AssistedServiceApp.tsx",
-      "sha256": "8fabb3deea3a2b57c16a7829236d0f881ee595d6c2b2299552cbd6d0159c7e17"
+      "sha256": "2274216f1368b302a677701437ccaf697d77b1b1c1df480b284d400a5d289b71"
     },
     {
       "path": "pde-platform/frontend/src/assistedServiceTastingContracts.ts",
@@ -16,25 +17,26 @@
     },
     {
       "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
-      "sha256": "0752c32b6e4634948b52d03d50dd7056ac0bd3602457a4c16fcdf3dbf1109b3f"
+      "sha256": "e335cf2adc684a034fa075336270d7a9ac685d43ab90da6bd186a3df8d55e1cc"
     }
   ],
   "executableEvidence": [
     {
       "path": "pde-platform/frontend/tests/assisted-service-local.spec.ts",
-      "sha256": "f93530b32bbbb3cba57e14c1b0d7d3e883abf9ea4e771c660dfb775c45f6bffd",
+      "sha256": "c16fd13bc944f9d81fc9f4660a4caa0d6c8a840fc125ae60474af5490ed407c8",
       "proves": [
         "as seis combinações de duas situações por três tons materializam respostas distintas",
         "cada combinação entrega uma resposta, uma pergunta e três follow-ups",
         "o nome genérico do serviço não aparece no payload de telemetria",
         "TASTING_STARTED ocorre uma vez e VALUE_MOMENT e PAYWALL_VIEWED ocorrem uma vez por resultado",
         "CHECKOUT_STARTED preserva experimento, preço, host e contractVersion",
-        "mh_test permanece segregado da amostra humana"
+        "material sem token retorna 403 e acesso INTERNAL_QA vigente recebe o conteúdo",
+        "mh_test e INTERNAL_QA permanecem segregados da amostra humana"
       ]
     },
     {
       "path": "pde-platform/frontend/tests/public-health.spec.ts",
-      "sha256": "6daa7500b3355d4ed2c4fce1874228ff592a534bd11c3d1a9177edf75cec7283",
+      "sha256": "9a7547e8294ba950dbb055c7cf9752c9f0abe5f608f00ae8eccf282f46ddb21a",
       "proves": [
         "o deploy do Kit falha se a degustação não estiver renderizada",
         "oferta, preço, checkout e degustação pertencem à mesma superfície pública"
@@ -42,11 +44,11 @@
     },
     {
       "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/AccessServiceTest.java",
-      "sha256": "40b7e5c0495e5babe53e9a7edd36203de267d6ff04553e72a1ae32dc329ec6ce",
+      "sha256": "44b9fcb1f1f48069c5195f6d2a186584be55004adfa9fd289b7aecd8e8eda184",
       "proves": [
         "os eventos canônicos da degustação são aceitos",
         "evento fora do contrato continua rejeitado",
-        "tráfego de teste e interno permanece segregado"
+        "FIRST_USE de INTERNAL_QA permanece fora das métricas humanas e comerciais"
       ]
     }
   ],
@@ -54,15 +56,12 @@
     {
       "round": 1,
       "result": "PASSED",
-      "metaAdApproverUnitTests": 53,
-      "pdeBackendUnitTests": 83,
+      "metaAdApproverUnitTests": 55,
+      "growthOperatorUnitTests": 23,
+      "pdeBackendUnitTests": 110,
       "assistedJourneyTests": 12,
       "publicHealthTests": 2,
-      "browsers": [
-        "Desktop Chrome",
-        "iPhone 15 Pro",
-        "Pixel 7"
-      ],
+      "browsers": ["Desktop Chrome", "iPhone 15 Pro", "Pixel 7"],
       "infrastructure": [
         "MySQL 5.7",
         "SMTP descartável",
@@ -72,15 +71,12 @@
     {
       "round": 2,
       "result": "PASSED",
-      "metaAdApproverUnitTests": 53,
-      "pdeBackendUnitTests": 83,
+      "metaAdApproverUnitTests": 55,
+      "growthOperatorUnitTests": 23,
+      "pdeBackendUnitTests": 110,
       "assistedJourneyTests": 12,
       "publicHealthTests": 2,
-      "browsers": [
-        "Desktop Chrome",
-        "iPhone 15 Pro",
-        "Pixel 7"
-      ],
+      "browsers": ["Desktop Chrome", "iPhone 15 Pro", "Pixel 7"],
       "infrastructure": [
         "MySQL 5.7 com volume novo",
         "SMTP descartável com topologia nova",

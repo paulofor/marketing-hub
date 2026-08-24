@@ -1158,6 +1158,41 @@ class AccessServiceTest {
         assertThat(summary.internalQaSessions()).isEqualTo(1);
     }
 
+    /** Mantém a ativação INTERNAL_QA fora dos indicadores mesmo sem marcador na página. */
+    @Test
+    void excludesInternalQaAccessEventsWithoutDependingOnPageMarkers() throws SQLException {
+        String jdbcUrl = "jdbc:h2:mem:pde_internal_qa_access;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1";
+        createPdeFunnelEventSchema(jdbcUrl);
+        AccessService accessService = new AccessService(
+                new ProductCatalogService(),
+                new ObjectMapper(),
+                tempDir.resolve("access-grants-internal-qa.json").toString(),
+                jdbcUrl,
+                "sa",
+                "sa",
+                true,
+                "http://localhost:5176",
+                true,
+                null,
+                null);
+
+        accessService.recordFunnelEvent(new FunnelEventRequest(
+                "metodo-musa-7-dias",
+                "FIRST_USE",
+                "internal-qa-token",
+                "teste+internal-qa@sandbox.local",
+                "INTERNAL_QA",
+                "pde-platform",
+                null,
+                Map.of("missionId", "dia-1-ruido-visual")));
+
+        var summary = accessService.summarizeFunnelAnalytics("metodo-musa-7-dias");
+
+        assertThat(summary.totalEvents()).isZero();
+        assertThat(summary.humanSessions()).isZero();
+        assertThat(summary.internalQaSessions()).isEqualTo(1);
+    }
+
     /** Confirma que jornadas por sessão retornam vazio no modo local sem banco analítico. */
     @Test
     void returnsEmptySessionJourneysWithoutJdbcStorage() {

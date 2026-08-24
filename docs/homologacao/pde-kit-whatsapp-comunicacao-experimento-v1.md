@@ -139,3 +139,30 @@ serviço de pagamentos.
 O experimento 89 foi salvo pela tela como `DIRECT_ONE_TO_ONE`, etapa `SALES`, variável de
 enquadramento da implantação personalizada, métrica `Pagamentos aprovados`, preço R$ 349 e promessa
 de entrega revisada em até 48 horas. Continua `PLANNED`, sem mídia ou orçamento.
+
+## Fechamento local do processo de Comunicação em 2026-08-24
+
+O produto 9, codinome Rigel, permanece na etapa 4 de 6, `Comunicação e jornada de venda do PDE v4`.
+O parecer mais recente de Têmis, tarefa 198, já havia aprovado o contrato com 98/100. A revalidação
+local não repetiu consumo de modelo: carregou os mesmos contratos versionados nos módulos de Hermes
+e Têmis e comprovou tecnicamente a jornada que sustenta o parecer.
+
+A primeira rodada revelou três lacunas causais: o manifesto de evidências aceitava hashes antigos,
+os materiais protegidos eram abertos sem o token da sessão e o acesso local `DEV` não representava
+uma entrega pós-compra. O gate de Têmis agora falha fechado diante de evidência alterada; a interface
+busca o material com autorização e registra o evento somente após resposta bem-sucedida; a jornada
+usa `INTERNAL_QA` e esse provedor é classificado como teste desde o primeiro uso.
+
+Depois da última correção, duas rodadas completas e consecutivas passaram. Cada rodada executou 110
+testes do backend PDE, 55 do módulo de Têmis, 23 do módulo de Hermes, build do frontend e 12 jornadas
+Playwright em Chromium desktop, iPhone 15 Pro e Pixel 7, além de dois smokes públicos. A topologia
+usou MySQL 5.7, SMTP descartável e imagens Docker versionadas; foi removida ao final de cada rodada.
+
+As jornadas comprovaram as seis combinações da degustação, validações de entrada, fronteira paga,
+checkout de teste, acesso, primeiro uso, seis etapas, entrega, suporte, retomada por link mágico,
+materiais negados sem credencial e autorizados com credencial. Métricas de teste ficaram segregadas:
+nenhuma venda, receita, contato ou gasto foi produzido.
+
+O objetivo local da etapa 4 está atingido. O avanço produtivo para `Homologação comercial e
+ativação` permanece bloqueado até a publicação desta revisão e a repetição do smoke na superfície
+pública; não se deve mudar o status com a versão anterior ainda em execução.

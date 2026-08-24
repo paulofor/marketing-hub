@@ -1,7 +1,9 @@
 package com.marketinghub.metaadapproverworker;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -66,5 +68,52 @@ class PdeReviewArtifactLoaderTest {
                   .containsAnyOf("slug", "prova executável");
               assertThat(artifact.get("contentChecksum").toString()).isNotBlank();
             });
+  }
+
+  /** Impede que Têmis use um parecer anterior depois de qualquer prova ter sido alterada. */
+  @Test
+  void rejectsHomologationManifestWithStaleEvidenceHash() throws Exception {
+    Path contracts = tempDir.resolve("pde-platform/contracts");
+    Files.createDirectories(contracts);
+    Files.writeString(
+        contracts.resolve("produto-homologation-v1.json"),
+        """
+        {
+          "implementationEvidence": [
+            {
+              "path": "pde-platform/frontend/src/AssistedServiceApp.tsx",
+              "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          ]
+        }
+        """);
+    for (String relativePath : PdeReviewArtifactLoader.communicationImplementationEvidencePaths()) {
+      Path artifact = tempDir.resolve(relativePath);
+      Files.createDirectories(artifact.getParent());
+      Files.writeString(artifact, "prova executável de " + relativePath);
+    }
+
+    var loader = new PdeReviewArtifactLoader(tempDir.toString());
+
+    assertThatThrownBy(loader::loadCommunicationContracts)
+        .isInstanceOf(IOException.class)
+        .hasMessageContaining("SHA-256 divergente")
+        .hasMessageContaining("AssistedServiceApp.tsx");
+  }
+
+  /** Confirma que o manifesto versionado do repositório aponta somente para a revisão atual. */
+  @Test
+  void validatesCurrentRepositoryHomologationManifest() throws Exception {
+    Path moduleDirectory = Path.of("").toAbsolutePath().normalize();
+    Path repository =
+        moduleDirectory.getFileName().toString().equals("meta-ad-approver-worker")
+            ? moduleDirectory.getParent()
+            : moduleDirectory;
+
+    var evidence = new PdeReviewArtifactLoader(repository.toString()).loadCommunicationContracts();
+
+    assertThat(evidence)
+        .extracting(item -> item.get("path"))
+        .contains("pde-platform/contracts/kit-whatsapp-tasting-homologation-v1.json");
   }
 }

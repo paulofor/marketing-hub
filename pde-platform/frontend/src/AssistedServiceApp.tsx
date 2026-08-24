@@ -12,7 +12,7 @@ import {
   RotateCcw,
   ShieldCheck,
 } from "lucide-react";
-import type { ProductExperience } from "./musaExperiences";
+import type { ProductExperience, SupportMaterial } from "./musaExperiences";
 import { resolveAssistedServiceTastingContract } from "./assistedServiceTastingContracts";
 
 type MissionInteraction = {
@@ -381,6 +381,42 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
           : {}),
       },
     });
+  }
+
+  /** Abre um material protegido sem expor o token na URL ou enviá-lo a outro domínio. */
+  async function openProtectedMaterial(
+    event: React.MouseEvent<HTMLAnchorElement>,
+    material: SupportMaterial,
+  ) {
+    event.preventDefault();
+    if (!accessToken || !workspace || !material.url.startsWith("/materials/")) {
+      setError("Este material não possui uma rota protegida válida.");
+      return;
+    }
+    setError("");
+    try {
+      const response = await fetch(material.url, {
+        headers: { "X-PDE-Access-Token": accessToken },
+      });
+      if (!response.ok) throw new Error("Material não autorizado");
+      const objectUrl = URL.createObjectURL(await response.blob());
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+      void trackEvent("MATERIAL_OPEN", workspace.product, {
+        accessToken,
+        email: workspace.email,
+        provider: workspace.accessSource,
+        metadata: { materialTitle: material.title },
+      });
+    } catch {
+      setError(
+        "Não conseguimos abrir este material agora. Confirme seu acesso ou peça ajuda ao suporte.",
+      );
+    }
   }
 
   /** Registra uma única entrada na degustação sem persistir o texto informado pela visitante. */
@@ -1052,13 +1088,8 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
                   href={material.url}
                   target="_blank"
                   rel="noreferrer"
-                  onClick={() =>
-                    void trackEvent("MATERIAL_OPEN", workspace.product, {
-                      accessToken,
-                      email: workspace.email,
-                      provider: workspace.accessSource,
-                      metadata: { materialTitle: material.title },
-                    })
+                  onClick={(event) =>
+                    void openProtectedMaterial(event, material)
                   }
                 >
                   Abrir material

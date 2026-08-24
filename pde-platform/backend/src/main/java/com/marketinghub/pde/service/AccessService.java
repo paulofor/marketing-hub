@@ -2252,7 +2252,9 @@ public class AccessService {
 
     /** Reconhece homologações declaradas antes de classificar eventos finais como comerciais. */
     private boolean isExplicitTestTraffic(FunnelEventRequest request, Map<String, Object> metadata) {
-        if ("DEV".equalsIgnoreCase(request.provider()) || "DEV".equalsIgnoreCase(request.source())) {
+        if (Set.of("DEV", "INTERNAL_QA").stream()
+                .anyMatch(marker -> marker.equalsIgnoreCase(request.provider())
+                        || marker.equalsIgnoreCase(request.source()))) {
             return true;
         }
         String markers = normalizeTrafficText(String.join(

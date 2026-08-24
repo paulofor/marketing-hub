@@ -2,14 +2,14 @@
   "evidenceVersion": "kit-whatsapp-tasting-homologation-v1",
   "productSlug": "kit-whatsapp-pronto",
   "experimentId": 89,
-  "verifiedAt": "2026-08-24T01:58:06Z",
+  "verifiedAt": "2026-08-24T02:48:27Z",
   "status": "PASSED",
-  "revalidationReason": "Revisão atual validada após proteger materiais, segregar INTERNAL_QA e bloquear hashes obsoletos no gate de Têmis.",
-  "scope": "Degustação determinística, privacidade, eventos, fronteira paga, checkout e experiência responsiva.",
+  "revalidationReason": "Revisão aprovada após preservar o contexto de QA e preview em toda a jornada pública, inclusive políticas abertas em nova aba.",
+  "scope": "Degustação determinística, privacidade, eventos, segregação de QA no build público, fronteira paga, checkout e experiência responsiva.",
   "implementationEvidence": [
     {
       "path": "pde-platform/frontend/src/AssistedServiceApp.tsx",
-      "sha256": "2274216f1368b302a677701437ccaf697d77b1b1c1df480b284d400a5d289b71"
+      "sha256": "7100246afd9eaf9de2567744ba11b523bfa00c13fa6f2ac1cbb24f65fe66ea6c"
     },
     {
       "path": "pde-platform/frontend/src/assistedServiceTastingContracts.ts",
@@ -32,6 +32,23 @@
         "CHECKOUT_STARTED preserva experimento, preço, host e contractVersion",
         "material sem token retorna 403 e acesso INTERNAL_QA vigente recebe o conteúdo",
         "mh_test e INTERNAL_QA permanecem segregados da amostra humana"
+      ]
+    },
+    {
+      "path": "pde-platform/frontend/tests/assisted-service-public-analytics.spec.ts",
+      "sha256": "f7edf63972af17327695210ae99c0cfc771541b2c4f5c3cac0ed36d5fcd8d0c6",
+      "proves": [
+        "mh_test usa source mh_test mesmo quando VITE_PDE_ENABLE_DEV_ACCESS está desativado",
+        "mh_preview com pde_analytics=off não envia telemetria",
+        "a jornada humana normal preserva source pde-assisted-service",
+        "as políticas internas abertas em nova aba preservam o modo de QA ou preview"
+      ]
+    },
+    {
+      "path": "pde-platform/frontend/playwright.assisted-service-public-analytics.config.ts",
+      "sha256": "b787b6a339d8159e12bfb1e3b5369bc21be5d9b39221b9a4acaea0d3dfd8003c",
+      "proves": [
+        "o contrato de segregação é executado contra o build público sem acesso DEV"
       ]
     },
     {
@@ -59,12 +76,12 @@
       "metaAdApproverUnitTests": 55,
       "growthOperatorUnitTests": 23,
       "pdeBackendUnitTests": 110,
+      "publicBuildAnalyticsTests": 3,
       "assistedJourneyTests": 12,
-      "publicHealthTests": 2,
       "browsers": ["Desktop Chrome", "iPhone 15 Pro", "Pixel 7"],
       "infrastructure": [
-        "MySQL 5.7",
-        "SMTP descartável",
+        "MySQL 5.7 com volume novo",
+        "SMTP descartável com topologia nova",
         "imagem Docker versionada"
       ]
     },
@@ -74,12 +91,12 @@
       "metaAdApproverUnitTests": 55,
       "growthOperatorUnitTests": 23,
       "pdeBackendUnitTests": 110,
+      "publicBuildAnalyticsTests": 3,
       "assistedJourneyTests": 12,
-      "publicHealthTests": 2,
       "browsers": ["Desktop Chrome", "iPhone 15 Pro", "Pixel 7"],
       "infrastructure": [
-        "MySQL 5.7 com volume novo",
-        "SMTP descartável com topologia nova",
+        "MySQL 5.7 com segundo volume novo",
+        "SMTP descartável com segunda topologia nova",
         "imagem Docker versionada"
       ]
     }

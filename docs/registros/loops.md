@@ -1635,6 +1635,21 @@ Use este checklist quando o problema estiver em algum loop acima:
   links simbólicos e exigir SHA-256 exato de toda evidência de implementação e execução. Testes
   negativos comprovam que qualquer artefato alterado ou manifesto desatualizado bloqueia a revisão.
 
+## LOOP-PDE-QA-REGISTRADO-COMO-HUMANO — preview contamina o funil comercial
+
+- **Data:** 2026-08-24.
+- **Sintoma:** a degustação produtiva de Rigel funcionava visualmente com `mh_test=1`, mas tentava
+  registrar `PAGE_VIEW`, `TASTING_STARTED`, `VALUE_MOMENT` e `PAYWALL_VIEWED` com origem humana
+  `pde-assisted-service`.
+- **Causa-raiz:** a origem de QA dependia apenas de uma flag compilada no build local; a imagem
+  pública desabilitava corretamente o acesso de desenvolvimento, mas também perdia a segregação de
+  analytics em runtime. O preview administrativo já enviava `pde_analytics=off`, porém o frontend
+  assistido ignorava esse contrato.
+- **Prevenção:** a política de analytics passa a ser resolvida em runtime: `pde_analytics=off` não
+  envia eventos, `mh_test=1` ou `mh_preview=qa` usa `mh_test`, e somente a navegação normal usa
+  `pde-assisted-service`. Um teste Playwright sobe explicitamente o build público, comprova os três
+  modos e impede que a flag de acesso volte a controlar a classificação comercial.
+
 ## LOOP-PLANO-COMERCIAL-COAUTORIA-LIBERA-SUCESSORA — atividade avança com um revisor pendente
 
 - **Data:** 2026-08-23.

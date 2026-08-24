@@ -31,6 +31,8 @@ final class PdeReviewArtifactLoader {
           "pde-platform/frontend/src/assistedServiceTastingContracts.ts",
           "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
           "pde-platform/frontend/tests/assisted-service-local.spec.ts",
+          "pde-platform/frontend/tests/assisted-service-public-analytics.spec.ts",
+          "pde-platform/frontend/playwright.assisted-service-public-analytics.config.ts",
           "pde-platform/frontend/tests/public-health.spec.ts",
           "pde-platform/backend/src/test/java/com/marketinghub/pde/service/AccessServiceTest.java");
   private static final List<String> ARTIFACT_PATHS =

@@ -35,7 +35,10 @@ O health check publico do frontend fica em `GET /healthz` para validar resposta
 HTTP simples do container. Para validar o que evita tela branca comercial, use
 `npm run test:public-health` com `PDE_PUBLIC_HEALTH_URL`: o teste abre a URL
 publicada, exige JavaScript carregado e confere os textos comerciais obrigatorios
-do contrato publico em `GET /pde-health-contract.json`.
+do contrato publico em `GET /pde-health-contract.json`. A navegacao automatizada
+usa obrigatoriamente `mh_preview=qa&pde_analytics=off` e falha se o navegador
+tentar enviar qualquer evento de funil, impedindo que smoke de deploy seja contado
+como visita humana ou mesmo como amostra de QA.
 
 Cada versao publica tambem deve expor `GET /version-diagnostics.json`, com
 `version`, `publicUrl`, `experienceVersion`, `image`, `imageVersionId`,

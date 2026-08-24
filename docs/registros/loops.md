@@ -1654,6 +1654,13 @@ Use este checklist quando o problema estiver em algum loop acima:
   `HUMAN`. A classificação passa a reconhecer o domínio reservado e a origem do acesso antes do
   tipo funcional. O E2E exige compra, acesso, entrega, reembolso e venda líquida humanos em zero e
   preserva o ciclo somente no breakdown bruto `INTERNAL_QA`.
+- **Fechamento complementar do smoke público em 2026-08-24:** o deploy direcionado de Rigel abriu a
+  raiz pública com os perfis Desktop Chrome e Pixel 5 sem marcador de homologação e registrou dois
+  `PAGE_VIEW` como `HUMAN`, apesar de a navegação manual de QA já estar segregada. O runner agora
+  impõe `mh_preview=qa&pde_analytics=off`; o próprio Playwright normaliza qualquer `healthPath` para
+  esse modo e reprova se houver tentativa de `POST /api/pde/access/events`. O contrato falso do
+  deploy exige o parâmetro seguro em todas as superfícies, evitando dependência de IP ou User-Agent
+  volátil do GitHub Actions.
 
 ## LOOP-PDE-COMPRA-SEM-VERSAO-E-REEMBOLSO — receita não fecha o ciclo da experiência
 

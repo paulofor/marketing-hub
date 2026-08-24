@@ -13,7 +13,10 @@ fake_consistency="${temporary_dir}/consistency.sh"
 cat >"${fake_npm}" <<'FAKE_NPM'
 #!/usr/bin/env bash
 set -euo pipefail
-printf 'npm\t%s\t%s\n' "${PDE_PUBLIC_HEALTH_URL:-}" "$*" >>"${PDE_SMOKE_INVOCATION_LOG}"
+printf 'npm\t%s\t%s\t%s\n' \
+  "${PDE_PUBLIC_HEALTH_URL:-}" \
+  "${PDE_PUBLIC_HEALTH_PATH:-}" \
+  "$*" >>"${PDE_SMOKE_INVOCATION_LOG}"
 FAKE_NPM
 
 cat >"${fake_consistency}" <<'FAKE_CONSISTENCY'
@@ -37,15 +40,15 @@ run_target() {
 }
 
 run_target kit-whatsapp
-grep -Fqx $'npm\thttps://kit-whatsapp-pronto.digicomdigital.com.br\trun test:public-health' "${invocation_log}"
+grep -Fqx $'npm\thttps://kit-whatsapp-pronto.digicomdigital.com.br\t/?mh_preview=qa&pde_analytics=off\trun test:public-health' "${invocation_log}"
 if grep -Fq 'clubemusa.com.br' "${invocation_log}" || grep -Fq 'consistency' "${invocation_log}"; then
   echo '[ARQUITETURA] O deploy direcionado ao Kit WhatsApp validou um produto nao publicado.' >&2
   exit 1
 fi
 
 run_target v5
-grep -Fqx $'npm\thttps://v5.clubemusa.com.br\trun test:public-health' "${invocation_log}"
-grep -Fqx $'npm\thttps://v5.clubemusa.com.br\trun test:public-diagnostic-smoke' "${invocation_log}"
+grep -Fqx $'npm\thttps://v5.clubemusa.com.br\t/?mh_preview=qa&pde_analytics=off\trun test:public-health' "${invocation_log}"
+grep -Fqx $'npm\thttps://v5.clubemusa.com.br\t\trun test:public-diagnostic-smoke' "${invocation_log}"
 grep -Fqx $'consistency\thttps://v5.clubemusa.com.br\tmusa-pde-entry-v5-video-explicativo\t' "${invocation_log}"
 if grep -Fq 'v6.clubemusa.com.br' "${invocation_log}" || grep -Fq 'kit-whatsapp-pronto' "${invocation_log}"; then
   echo '[ARQUITETURA] O deploy direcionado ao v5 validou um produto nao publicado.' >&2
@@ -53,8 +56,8 @@ if grep -Fq 'v6.clubemusa.com.br' "${invocation_log}" || grep -Fq 'kit-whatsapp-
 fi
 
 run_target all
-test "$(grep -c $'npm\t.*\trun test:public-health' "${invocation_log}")" -eq 4
-test "$(grep -c $'npm\t.*\trun test:public-diagnostic-smoke' "${invocation_log}")" -eq 2
+test "$(grep -c $'npm\t.*\t/?mh_preview=qa&pde_analytics=off\trun test:public-health' "${invocation_log}")" -eq 4
+test "$(grep -c $'npm\t.*\t\trun test:public-diagnostic-smoke' "${invocation_log}")" -eq 2
 test "$(grep -c '^consistency' "${invocation_log}")" -eq 2
 
 if PDE_SMOKE_NPM_COMMAND="${fake_npm}" \

@@ -12,7 +12,9 @@ run_public_health() {
   local public_url="$1"
   (
     cd "${frontend_dir}"
-    PDE_PUBLIC_HEALTH_URL="${public_url}" "${npm_command}" run test:public-health
+    PDE_PUBLIC_HEALTH_URL="${public_url}" \
+      PDE_PUBLIC_HEALTH_PATH='/?mh_preview=qa&pde_analytics=off' \
+      "${npm_command}" run test:public-health
   )
 }
 

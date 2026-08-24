@@ -111,6 +111,7 @@ Deploy de produção:
 - Defina `PDE_PEPPER_API_TOKEN` em produção para reconciliar compras pagas quando o postback da Pepper não for entregue.
 - Mantenha `PDE_PEPPER_OFFER_HASHES=owm6x,c8mnn` durante a transição: `owm6x` é a oferta atual e `c8mnn` cobre compras reais antigas.
 - `PDE_PEPPER_EXPECTED_PAID_AMOUNT_CENTS=6700` e `PDE_PEPPER_EXPECTED_CURRENCY=BRL` exigem exatamente o preço e a moeda aprovados antes de liberar acesso.
+- `PDE_PEPPER_FALLBACK_EXPERIENCE_VERSION` mantém a versão comercial na compra legada sem UTM; checkouts novos enviam a versão no `utm_content` e têm prioridade.
 - `PDE_PEPPER_SYNC_LOOKBACK_DAYS` define a janela de busca de transações recentes; o padrão é 14 dias.
 - Em produção, `PDE_ACCESS_REQUIRE_JDBC=true` é obrigatório para bloquear o backend quando a persistência analítica não estiver configurada.
 - Quando `PDE_APP_BASE_URL` apontar para `clubemusa.com.br`, incluindo subdomínios versionados como `v5.clubemusa.com.br`, o backend também bloqueia início sem JDBC mesmo se a flag operacional estiver ausente.

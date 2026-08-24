@@ -39,8 +39,23 @@ public record ProductExperienceResponse(
             String evidence,
             String visualCue,
             String completionRole,
-            DeliveryContractDto deliveryContract
+            DeliveryContractDto deliveryContract,
+            MissionInteractionContractDto interaction
     ) {
+        /** Mantém compatibilidade com contratos que já declaram uma entrega estruturada. */
+        public MissionDto(
+                String id,
+                int day,
+                String title,
+                String principle,
+                String action,
+                String evidence,
+                String visualCue,
+                String completionRole,
+                DeliveryContractDto deliveryContract) {
+            this(id, day, title, principle, action, evidence, visualCue, completionRole, deliveryContract, null);
+        }
+
         /** Mantém compatibilidade com contratos que já declaram somente o papel de conclusão. */
         public MissionDto(
                 String id,
@@ -51,7 +66,7 @@ public record ProductExperienceResponse(
                 String evidence,
                 String visualCue,
                 String completionRole) {
-            this(id, day, title, principle, action, evidence, visualCue, completionRole, null);
+            this(id, day, title, principle, action, evidence, visualCue, completionRole, null, null);
         }
 
         /** Mantém compatibilidade com contratos anteriores em que toda missão pertence à cliente. */
@@ -63,9 +78,33 @@ public record ProductExperienceResponse(
                 String action,
                 String evidence,
                 String visualCue) {
-            this(id, day, title, principle, action, evidence, visualCue, null, null);
+            this(id, day, title, principle, action, evidence, visualCue, null, null, null);
         }
     }
+
+    /** Define o formulário e a orientação que materializam semanticamente uma missão. */
+    public record MissionInteractionContractDto(
+            String guidanceType,
+            String kicker,
+            String title,
+            String helperText,
+            String buttonLabel,
+            String loadingLabel,
+            String pendingLabel,
+            String failedLabel,
+            String completedKicker,
+            String nextStepTitle,
+            String nextStepText,
+            List<MissionInteractionFieldDto> fields
+    ) {}
+
+    /** Define uma escolha categorial autorizada dentro do formulário da missão. */
+    public record MissionInteractionFieldDto(
+            String key,
+            String label,
+            String placeholder,
+            List<String> options
+    ) {}
 
     /** Define as seções materiais obrigatórias de uma entrega operacional estruturada. */
     public record DeliveryContractDto(List<DeliverySectionDto> sections) {}

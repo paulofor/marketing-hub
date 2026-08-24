@@ -256,3 +256,20 @@ build e 12 jornadas em desktop, iPhone 15 Pro e Pixel 7 por rodada. Foram compro
 checkout de teste, acesso, entrega, materiais protegidos, suporte, retomada e observabilidade, sem
 criar venda, contato, pagamento ou gasto. O objetivo local da etapa 4 está concluído; a transição
 produtiva para a etapa 5 depende da publicação da mesma revisão e de smoke público satisfatório.
+
+## Correção da telemetria de homologação no build público
+
+Após o PR 5015 e o deploy direcionado, a degustação, a oferta de R$ 349, o checkout e as políticas
+passaram a renderizar corretamente em desktop e mobile. A inspeção com requests interceptados revelou
+que `mh_test=1` ainda seria persistido como origem humana porque o build público desativa o acesso de
+desenvolvimento. A mesma perda ocorreria ao abrir termos, privacidade ou reembolso em nova aba.
+
+A política runtime agora mantém três modos explícitos: visita normal como `pde-assisted-service`,
+homologação como `mh_test` e preview administrativo sem analytics. O contexto é preservado somente
+nos links do mesmo domínio, evitando alterar checkout ou URLs externas. O manifesto de Têmis inclui
+o teste do build público e bloqueia hashes divergentes.
+
+Duas rodadas finais consecutivas passaram, cada uma com 110 testes do backend PDE, 55 de Têmis, 23
+de Hermes, três contratos do build público, build e 12 jornadas em desktop, iPhone 15 Pro e Pixel 7,
+com MySQL 5.7 e SMTP descartável em topologia nova. A correção permanece local até passar pelo fluxo
+de PR e deploy; Rigel não deve avançar à etapa 5 enquanto a produção ainda puder misturar QA e pessoas.

@@ -12,6 +12,8 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,11 +42,12 @@ public class PaymentAuditService {
     }
 
     /** Registra a comprovação do provedor e bloqueia reutilização incompatível da mesma transação. */
-    public void recordVerifiedPayment(String productSlug, PepperPaidTransaction transaction) {
+    public boolean recordVerifiedPayment(String productSlug, PepperPaidTransaction transaction) {
         PaymentAuditRecord candidate = new PaymentAuditRecord(
                 PROVIDER,
                 required(transaction.transactionId(), "Transação Pepper sem identificador"),
                 required(productSlug, "Produto PDE não informado para auditoria financeira"),
+                required(transaction.experienceVersion(), "Transação Pepper sem versão comercial"),
                 required(transaction.offerHash(), "Transação Pepper sem oferta"),
                 transaction.amount(),
                 required(transaction.currency(), "Transação Pepper sem moeda"),
@@ -52,18 +55,24 @@ public class PaymentAuditService {
                 sha256(required(transaction.buyerEmail(), "Transação Pepper sem compradora")),
                 null,
                 Instant.now(),
+                null,
                 null);
         if (candidate.amountCents() == null || candidate.amountCents() <= 0) {
             throw new IllegalArgumentException("Transação Pepper sem valor auditável");
         }
         if (usesJdbcStorage()) {
-            insertOrValidateDatabaseRecord(candidate);
-            return;
+            return insertOrValidateDatabaseRecord(candidate);
         }
+        AtomicBoolean inserted = new AtomicBoolean(false);
         inMemoryRecords.compute(candidate.transactionId(), (transactionId, existing) -> {
             validateIdempotentReuse(existing, candidate);
-            return existing == null ? candidate : existing;
+            if (existing == null) {
+                inserted.set(true);
+                return candidate;
+            }
+            return existing;
         });
+        return inserted.get();
     }
 
     /** Vincula a liberação ao pagamento usando somente hash não reutilizável do token. */
@@ -98,6 +107,45 @@ public class PaymentAuditService {
         });
     }
 
+    /** Confirma reembolso no provedor, atualiza a trilha uma vez e devolve o acesso correlacionado. */
+    public RefundAuditResult recordVerifiedRefund(
+            String productSlug, PepperTransactionSnapshot transaction) {
+        String status = required(transaction.paymentStatus(), "Reembolso Pepper sem status").toLowerCase();
+        if (!Set.of("refunded", "chargeback").contains(status)) {
+            throw new IllegalArgumentException("Transação Pepper ainda não possui reembolso confirmado");
+        }
+        PaymentAuditRecord refund = new PaymentAuditRecord(
+                PROVIDER,
+                required(transaction.transactionId(), "Reembolso Pepper sem identificador"),
+                required(productSlug, "Produto PDE não informado no reembolso"),
+                required(transaction.experienceVersion(), "Reembolso Pepper sem versão comercial"),
+                required(transaction.offerHash(), "Reembolso Pepper sem oferta"),
+                transaction.amount(),
+                required(transaction.currency(), "Reembolso Pepper sem moeda"),
+                status,
+                sha256(required(transaction.buyerEmail(), "Reembolso Pepper sem compradora")),
+                null,
+                Instant.now(),
+                null,
+                Instant.now());
+        if (refund.amountCents() == null || refund.amountCents() <= 0) {
+            throw new IllegalArgumentException("Reembolso Pepper sem valor auditável");
+        }
+        if (usesJdbcStorage()) {
+            return recordDatabaseRefund(refund);
+        }
+        AtomicBoolean changed = new AtomicBoolean(false);
+        PaymentAuditRecord updated = inMemoryRecords.compute(refund.transactionId(), (ignored, existing) -> {
+            validateRefundReuse(existing, refund);
+            if (existing.paymentStatus().equalsIgnoreCase(status)) {
+                return existing;
+            }
+            changed.set(true);
+            return existing.withRefund(status, refund.refundedAt());
+        });
+        return new RefundAuditResult(updated.accessReferenceHash(), changed.get(), updated.refundedAt());
+    }
+
     /** Retorna um registro somente para testes do contrato idempotente sem expor uma API pública. */
     Optional<PaymentAuditRecord> findForTesting(String transactionId) {
         if (usesJdbcStorage()) {
@@ -107,27 +155,29 @@ public class PaymentAuditService {
     }
 
     /** Insere a trilha financeira ou confere que o retry representa exatamente a mesma compra. */
-    private void insertOrValidateDatabaseRecord(PaymentAuditRecord candidate) {
+    private boolean insertOrValidateDatabaseRecord(PaymentAuditRecord candidate) {
         String sql = "INSERT INTO pde_payment_audit "
-                + "(provider, transaction_id, product_slug, offer_hash, amount_cents, currency, payment_status, "
-                + "buyer_reference_hash, verified_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                + "(provider, transaction_id, product_slug, experience_version, offer_hash, amount_cents, currency, payment_status, "
+                + "buyer_reference_hash, verified_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection connection = openConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, candidate.provider());
             statement.setString(2, candidate.transactionId());
             statement.setString(3, candidate.productSlug());
-            statement.setString(4, candidate.offerHash());
-            statement.setInt(5, candidate.amountCents());
-            statement.setString(6, candidate.currency());
-            statement.setString(7, candidate.paymentStatus());
-            statement.setString(8, candidate.buyerReferenceHash());
-            statement.setTimestamp(9, Timestamp.from(candidate.verifiedAt()));
+            statement.setString(4, candidate.experienceVersion());
+            statement.setString(5, candidate.offerHash());
+            statement.setInt(6, candidate.amountCents());
+            statement.setString(7, candidate.currency());
+            statement.setString(8, candidate.paymentStatus());
+            statement.setString(9, candidate.buyerReferenceHash());
+            statement.setTimestamp(10, Timestamp.from(candidate.verifiedAt()));
             statement.executeUpdate();
+            return true;
         } catch (SQLException ex) {
             if (isConstraintViolation(ex)) {
                 PaymentAuditRecord existing = loadDatabaseRecord(candidate.transactionId())
                         .orElseThrow(() -> new IllegalStateException("Conflito financeiro sem trilha recuperável", ex));
                 validateIdempotentReuse(existing, candidate);
-                return;
+                return false;
             }
             log.error("Falha ao persistir auditoria financeira; provider={}", PROVIDER, ex);
             throw new IllegalStateException("Não foi possível persistir a auditoria financeira", ex);
@@ -136,8 +186,8 @@ public class PaymentAuditService {
 
     /** Lê uma compra pelo identificador idempotente do provedor. */
     private Optional<PaymentAuditRecord> loadDatabaseRecord(String transactionId) {
-        String sql = "SELECT provider, transaction_id, product_slug, offer_hash, amount_cents, currency, "
-                + "payment_status, buyer_reference_hash, access_reference_hash, verified_at, access_released_at "
+        String sql = "SELECT provider, transaction_id, product_slug, experience_version, offer_hash, amount_cents, currency, "
+                + "payment_status, buyer_reference_hash, access_reference_hash, verified_at, access_released_at, refunded_at "
                 + "FROM pde_payment_audit WHERE provider = ? AND transaction_id = ?";
         try (Connection connection = openConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, PROVIDER);
@@ -147,10 +197,12 @@ public class PaymentAuditService {
                     return Optional.empty();
                 }
                 Timestamp releasedAt = resultSet.getTimestamp("access_released_at");
+                Timestamp refundedAt = resultSet.getTimestamp("refunded_at");
                 return Optional.of(new PaymentAuditRecord(
                         resultSet.getString("provider"),
                         resultSet.getString("transaction_id"),
                         resultSet.getString("product_slug"),
+                        resultSet.getString("experience_version"),
                         resultSet.getString("offer_hash"),
                         resultSet.getInt("amount_cents"),
                         resultSet.getString("currency"),
@@ -158,11 +210,64 @@ public class PaymentAuditService {
                         resultSet.getString("buyer_reference_hash"),
                         resultSet.getString("access_reference_hash"),
                         resultSet.getTimestamp("verified_at").toInstant(),
-                        releasedAt == null ? null : releasedAt.toInstant()));
+                        releasedAt == null ? null : releasedAt.toInstant(),
+                        refundedAt == null ? null : refundedAt.toInstant()));
             }
         } catch (SQLException ex) {
             log.error("Falha ao ler auditoria financeira; provider={}", PROVIDER, ex);
             throw new IllegalStateException("Não foi possível ler a auditoria financeira", ex);
+        }
+    }
+
+    /** Atualiza o pagamento confirmado com trava de concorrência e retry idempotente. */
+    private RefundAuditResult recordDatabaseRefund(PaymentAuditRecord refund) {
+        PaymentAuditRecord existing = loadDatabaseRecord(refund.transactionId())
+                .orElseThrow(() -> new IllegalArgumentException("Pagamento original não encontrado para reembolso"));
+        validateRefundReuse(existing, refund);
+        if (existing.paymentStatus().equalsIgnoreCase(refund.paymentStatus())) {
+            return new RefundAuditResult(existing.accessReferenceHash(), false, existing.refundedAt());
+        }
+        String sql = "UPDATE pde_payment_audit SET payment_status = ?, refunded_at = ? "
+                + "WHERE provider = ? AND transaction_id = ? AND payment_status = ?";
+        try (Connection connection = openConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, refund.paymentStatus());
+            statement.setTimestamp(2, Timestamp.from(refund.refundedAt()));
+            statement.setString(3, PROVIDER);
+            statement.setString(4, refund.transactionId());
+            statement.setString(5, existing.paymentStatus());
+            if (statement.executeUpdate() == 1) {
+                return new RefundAuditResult(existing.accessReferenceHash(), true, refund.refundedAt());
+            }
+            PaymentAuditRecord concurrent = loadDatabaseRecord(refund.transactionId())
+                    .orElseThrow(() -> new IllegalStateException("Reembolso perdeu a trilha financeira original"));
+            validateRefundReuse(concurrent, refund);
+            if (!concurrent.paymentStatus().equalsIgnoreCase(refund.paymentStatus())) {
+                throw new IllegalStateException("Estado financeiro mudou durante a conciliação do reembolso");
+            }
+            return new RefundAuditResult(concurrent.accessReferenceHash(), false, concurrent.refundedAt());
+        } catch (SQLException ex) {
+            log.error(
+                    "Falha ao persistir reembolso na auditoria financeira; provider={}, transactionId={}",
+                    PROVIDER,
+                    refund.transactionId(),
+                    ex);
+            throw new IllegalStateException("Não foi possível persistir a auditoria do reembolso", ex);
+        }
+    }
+
+    /** Confere que o reembolso pertence exatamente à compra original já auditada. */
+    private void validateRefundReuse(PaymentAuditRecord existing, PaymentAuditRecord refund) {
+        if (existing == null) {
+            throw new IllegalArgumentException("Pagamento original não encontrado para reembolso");
+        }
+        boolean samePayment = existing.productSlug().equals(refund.productSlug())
+                && java.util.Objects.equals(existing.experienceVersion(), refund.experienceVersion())
+                && existing.offerHash().equals(refund.offerHash())
+                && existing.amountCents().equals(refund.amountCents())
+                && existing.currency().equalsIgnoreCase(refund.currency())
+                && existing.buyerReferenceHash().equals(refund.buyerReferenceHash());
+        if (!samePayment) {
+            throw new IllegalArgumentException("Reembolso Pepper diverge da compra original auditada");
         }
     }
 
@@ -172,6 +277,7 @@ public class PaymentAuditService {
             return;
         }
         boolean samePayment = existing.productSlug().equals(candidate.productSlug())
+                && java.util.Objects.equals(existing.experienceVersion(), candidate.experienceVersion())
                 && existing.offerHash().equals(candidate.offerHash())
                 && existing.amountCents().equals(candidate.amountCents())
                 && existing.currency().equalsIgnoreCase(candidate.currency())
@@ -221,6 +327,7 @@ public class PaymentAuditService {
             String provider,
             String transactionId,
             String productSlug,
+            String experienceVersion,
             String offerHash,
             Integer amountCents,
             String currency,
@@ -228,7 +335,8 @@ public class PaymentAuditService {
             String buyerReferenceHash,
             String accessReferenceHash,
             Instant verifiedAt,
-            Instant accessReleasedAt) {
+            Instant accessReleasedAt,
+            Instant refundedAt) {
 
         /** Vincula o hash do acesso sem alterar a identidade financeira original. */
         PaymentAuditRecord withReleasedAccess(String accessReferenceHash, Instant accessReleasedAt) {
@@ -236,6 +344,7 @@ public class PaymentAuditService {
                     provider,
                     transactionId,
                     productSlug,
+                    experienceVersion,
                     offerHash,
                     amountCents,
                     currency,
@@ -243,7 +352,29 @@ public class PaymentAuditService {
                     buyerReferenceHash,
                     accessReferenceHash,
                     verifiedAt,
-                    accessReleasedAt);
+                    accessReleasedAt,
+                    refundedAt);
+        }
+
+        /** Atualiza somente o estado e o horário final do reembolso confirmado. */
+        PaymentAuditRecord withRefund(String paymentStatus, Instant refundedAt) {
+            return new PaymentAuditRecord(
+                    provider,
+                    transactionId,
+                    productSlug,
+                    experienceVersion,
+                    offerHash,
+                    amountCents,
+                    currency,
+                    paymentStatus,
+                    buyerReferenceHash,
+                    accessReferenceHash,
+                    verifiedAt,
+                    accessReleasedAt,
+                    refundedAt);
         }
     }
+
+    /** Expõe ao reconciliador somente a referência mínima para revogar o acesso uma vez. */
+    public record RefundAuditResult(String accessReferenceHash, boolean newlyRecorded, Instant refundedAt) {}
 }

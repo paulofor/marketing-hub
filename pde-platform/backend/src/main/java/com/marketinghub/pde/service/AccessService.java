@@ -27,6 +27,9 @@ import com.marketinghub.pde.model.AccessGrant;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -264,8 +267,10 @@ public class AccessService {
             String offerHash,
             Integer amountCents,
             String currency,
-            String paymentStatus) {
-        productCatalogService.getProduct(productSlug);
+            String paymentStatus,
+            String experienceVersion,
+            boolean newlyVerifiedPayment) {
+        ProductExperienceResponse paidProduct = resolveProduct(productSlug, experienceVersion);
         if (buyerEmail == null || buyerEmail.isBlank()) {
             throw new IllegalArgumentException("Transacao Pepper sem e-mail da compradora");
         }
@@ -279,11 +284,13 @@ public class AccessService {
         metadata.put("pepperAmountCents", amountCents);
         metadata.put("pepperCurrency", currency);
         metadata.put("pepperPaymentStatus", paymentStatus);
+        metadata.put("experienceVersion", paidProduct.experienceVersion());
         AccessGrant existingGrant = findGrantByEmail(productSlug, buyerEmail);
         if (existingGrant != null) {
             boolean promotedToPaid = shouldPromoteToPaidSource(existingGrant, "PEPPER");
-            if (promotedToPaid) {
+            if (promotedToPaid || newlyVerifiedPayment) {
                 existingGrant.updateSource("PEPPER");
+                existingGrant.updateExperienceVersion(paidProduct.experienceVersion());
                 activatePaidTermIfApplicable(existingGrant);
                 persistAccess(existingGrant);
                 recordSubscriptionApprovedIfNeeded(existingGrant, "PEPPER", metadata);
@@ -293,12 +300,55 @@ public class AccessService {
         String token = UUID.randomUUID().toString();
         Instant paidAt = Instant.now();
         AccessGrant grant = new AccessGrant(
-                token, productSlug, normalizeEmail(buyerEmail), "PEPPER", paidAt);
+                token,
+                productSlug,
+                normalizeEmail(buyerEmail),
+                "PEPPER",
+                paidAt,
+                paidProduct.experienceVersion(),
+                null,
+                null);
         activatePaidTermIfApplicable(grant);
         accessByToken.put(token, grant);
         persistAccess(grant);
         recordSubscriptionApprovedIfNeeded(grant, "PEPPER", metadata);
         return toAccessResponse(grant);
+    }
+
+    /** Revoga o acesso correlacionado ao pagamento e registra o reembolso comercial uma única vez. */
+    public boolean revokePepperPaidAccess(
+            String accessReferenceHash, String transactionId, String refundStatus) {
+        if (accessReferenceHash == null || accessReferenceHash.isBlank()) {
+            throw new IllegalArgumentException("Reembolso Pepper sem acesso financeiro correlacionado");
+        }
+        AccessGrant grant = accessByToken.values().stream()
+                .filter(candidate -> accessReferenceHash.equals(hashAccessToken(candidate.getToken())))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Acesso da compra reembolsada não encontrado"));
+        if ("PEPPER_REFUNDED".equals(grant.getSource())) {
+            return false;
+        }
+        if (!"PEPPER".equals(grant.getSource())) {
+            throw new IllegalArgumentException("Acesso correlacionado não pertence a uma compra Pepper ativa");
+        }
+        Instant refundedAt = Instant.now();
+        grant.revokePaidAccess(refundedAt);
+        persistAccess(grant);
+        recordFunnelEvent(new FunnelEventRequest(
+                grant.getProductSlug(),
+                "REFUND_CONFIRMED",
+                grant.getToken(),
+                grant.getEmail(),
+                "PEPPER",
+                "pde-platform",
+                null,
+                Map.of(
+                        "pepperTransactionId", transactionId,
+                        "pepperPaymentStatus", refundStatus,
+                        "experienceVersion", grant.getExperienceVersion(),
+                        "refundedAt", refundedAt.toString(),
+                        "idempotencyKey", "refund:" + transactionId)));
+        return true;
     }
 
     /** Gera ou reutiliza o acesso e envia um link mágico para o e-mail da cliente. */
@@ -326,9 +376,11 @@ public class AccessService {
                 grant.getToken(),
                 grant.getEmail(),
                 "EMAIL_MAGIC_LINK",
-                "pde-platform",
-                null,
-                Map.of("method", "existing_customer_magic_link")));
+                    "pde-platform",
+                    null,
+                    Map.of(
+                            "method", "existing_customer_magic_link",
+                            "experienceVersion", grant.getExperienceVersion())));
         return sendAccessLink(productSlug, grant.getEmail(), "/access/" + grant.getToken());
     }
 
@@ -355,7 +407,7 @@ public class AccessService {
     public FunnelEventResponse recordFunnelEvent(FunnelEventRequest request) {
         ProductExperienceResponse product = productCatalogService.getProduct(request.productSlug());
         String normalizedEventType = normalizeEventType(request.eventType());
-        String eventId = UUID.randomUUID().toString();
+        String eventId = resolveFunnelEventId(request, normalizedEventType, product);
         if (isInternalExcludedIp(request.clientIp())) {
             log.info(
                     "Evento PDE ignorado por IP interno; eventId={}, productSlug={}, eventType={}, clientIp={}",
@@ -365,8 +417,9 @@ public class AccessService {
                     request.clientIp().trim());
             return new FunnelEventResponse(eventId, normalizedEventType, "IGNORED_INTERNAL_IP");
         }
+        boolean persisted = true;
         if (usesJdbcStorage()) {
-            persistFunnelEventInDatabaseWithRetry(eventId, request, normalizedEventType, product);
+            persisted = persistFunnelEventInDatabaseWithRetry(eventId, request, normalizedEventType, product);
         } else {
             log.info(
                     "Evento PDE registrado sem persistência JDBC; eventId={}, productSlug={}, eventType={}, accessPresent={}",
@@ -375,13 +428,20 @@ public class AccessService {
                     normalizedEventType,
                     request.accessToken() != null && !request.accessToken().isBlank());
         }
-        return new FunnelEventResponse(eventId, normalizedEventType, "RECORDED");
+        return new FunnelEventResponse(
+                eventId, normalizedEventType, persisted ? "RECORDED" : "DUPLICATE_IGNORED");
     }
 
     /** Registra somente eventos que podem ser declarados por navegadores sem fabricar compra ou liberação. */
     public FunnelEventResponse recordPublicFunnelEvent(FunnelEventRequest request) {
         String eventType = request.eventType() == null ? "" : request.eventType().trim().toUpperCase();
-        if (Set.of("PURCHASE_COMPLETED", "SUBSCRIPTION_APPROVED", "ACCESS_RELEASED").contains(eventType)) {
+        if (Set.of(
+                        "PURCHASE_COMPLETED",
+                        "SUBSCRIPTION_APPROVED",
+                        "ACCESS_RELEASED",
+                        "DELIVERY_COMPLETED",
+                        "REFUND_CONFIRMED")
+                .contains(eventType)) {
             throw new SecurityException("Evento comercial final exige origem interna comprovada");
         }
         return recordFunnelEvent(request);
@@ -404,12 +464,12 @@ public class AccessService {
     }
 
     /** Persiste evento comercial com retentativa para oscilação transitória do MySQL. */
-    private void persistFunnelEventInDatabaseWithRetry(
+    private boolean persistFunnelEventInDatabaseWithRetry(
             String eventId, FunnelEventRequest request, String eventType, ProductExperienceResponse product) {
         RuntimeException lastFailure = null;
         for (int attempt = 1; attempt <= FUNNEL_EVENT_PERSIST_ATTEMPTS; attempt++) {
             try {
-                persistFunnelEventInDatabase(eventId, request, eventType, product);
+                boolean persisted = persistFunnelEventInDatabase(eventId, request, eventType, product);
                 if (attempt > 1) {
                     log.info(
                             "Evento PDE persistido após retentativa; eventId={}, productSlug={}, eventType={}, attempt={}",
@@ -418,7 +478,7 @@ public class AccessService {
                             eventType,
                             attempt);
                 }
-                return;
+                return persisted;
             } catch (IllegalStateException ex) {
                 lastFailure = ex;
                 if (attempt == FUNNEL_EVENT_PERSIST_ATTEMPTS) {
@@ -496,6 +556,19 @@ public class AccessService {
                     THEN 1 ELSE 0 END) AS first_use,
                   SUM(CASE WHEN event_type = 'CHECKOUT_STARTED' AND """ + COMMERCIAL_TRAFFIC_FILTER + """
                     THEN 1 ELSE 0 END) AS checkout_started,
+                  SUM(CASE WHEN event_type = 'PURCHASE_COMPLETED' AND """ + COMMERCIAL_TRAFFIC_FILTER + """
+                    THEN 1 ELSE 0 END) AS purchase_completed,
+                  SUM(CASE WHEN event_type = 'DELIVERY_COMPLETED' AND """ + COMMERCIAL_TRAFFIC_FILTER + """
+                    THEN 1 ELSE 0 END) AS delivery_completed,
+                  SUM(CASE WHEN event_type = 'REFUND_CONFIRMED' AND """ + COMMERCIAL_TRAFFIC_FILTER + """
+                    THEN 1 ELSE 0 END) AS refunds_confirmed,
+                  GREATEST(
+                    SUM(CASE WHEN event_type = 'PURCHASE_COMPLETED' AND """ + COMMERCIAL_TRAFFIC_FILTER + """
+                      THEN 1 ELSE 0 END)
+                    - SUM(CASE WHEN event_type = 'REFUND_CONFIRMED' AND """ + COMMERCIAL_TRAFFIC_FILTER + """
+                      THEN 1 ELSE 0 END),
+                    0
+                  ) AS net_sales_approved,
                   COALESCE(SUM(CASE WHEN """ + COMMERCIAL_TRAFFIC_FILTER + """
                     THEN visible_ms ELSE 0 END), 0) AS total_visible_ms,
                   MAX(occurred_at) AS last_event_at
@@ -533,6 +606,10 @@ public class AccessService {
                             resultSet.getLong("access_released"),
                             resultSet.getLong("first_use"),
                             resultSet.getLong("checkout_started"),
+                            resultSet.getLong("purchase_completed"),
+                            resultSet.getLong("delivery_completed"),
+                            resultSet.getLong("refunds_confirmed"),
+                            resultSet.getLong("net_sales_approved"),
                             resultSet.getLong("total_visible_ms"),
                             timestampAsOperationalText(resultSet, "last_event_at"),
                             loadFunnelEventMetrics(connection, productSlug, normalizedExperienceVersion),
@@ -736,8 +813,12 @@ public class AccessService {
         validateMissionAccess(product, grant, missionId);
         validateMissionRole(mission, "CUSTOMER");
         validateMissionOrder(product, grant, mission);
-        validateCustomerCompletionEvidence(grant, missionId);
+        validateCustomerCompletionEvidence(product, grant, mission);
         boolean firstCompletedMission = grant.getCompletedMissionIds().isEmpty();
+        boolean alreadyCompleted = grant.getCompletedMissionIds().contains(missionId);
+        if (alreadyCompleted) {
+            return;
+        }
         grant.completeMission(missionId);
         persistAccess(grant);
         if (firstCompletedMission) {
@@ -749,7 +830,48 @@ public class AccessService {
                     grant.getSource(),
                     "pde-platform",
                     null,
-                    Map.of("activationType", "mission_completion", "missionId", missionId)));
+                    Map.of(
+                            "activationType", "mission_completion",
+                            "missionId", missionId,
+                            "experienceVersion", grant.getExperienceVersion(),
+                            "idempotencyKey", "first-use")));
+        }
+        recordFunnelEvent(new FunnelEventRequest(
+                grant.getProductSlug(),
+                "MISSION_COMPLETED",
+                grant.getToken(),
+                grant.getEmail(),
+                grant.getSource(),
+                "pde-platform",
+                null,
+                Map.of(
+                        "missionId", missionId,
+                        "experienceVersion", grant.getExperienceVersion(),
+                        "idempotencyKey", "mission-completed:" + missionId)));
+        if (grant.getCompletedMissionIds().size() == product.missions().size()) {
+            Map<String, Object> completionMetadata = Map.of(
+                    "missionId", missionId,
+                    "completedMissions", grant.getCompletedMissionIds().size(),
+                    "experienceVersion", grant.getExperienceVersion(),
+                    "idempotencyKey", "journey-delivered");
+            recordFunnelEvent(new FunnelEventRequest(
+                    grant.getProductSlug(),
+                    "JOURNEY_COMPLETED",
+                    grant.getToken(),
+                    grant.getEmail(),
+                    grant.getSource(),
+                    "pde-platform",
+                    null,
+                    completionMetadata));
+            recordFunnelEvent(new FunnelEventRequest(
+                    grant.getProductSlug(),
+                    "DELIVERY_COMPLETED",
+                    grant.getToken(),
+                    grant.getEmail(),
+                    grant.getSource(),
+                    "pde-platform",
+                    null,
+                    completionMetadata));
         }
     }
 
@@ -1014,9 +1136,17 @@ public class AccessService {
         }
     }
 
-    /** Exige entrada real e primeiro uso real nos dois marcos que pertencem à cliente. */
-    private void validateCustomerCompletionEvidence(AccessGrant grant, String missionId) {
+    /** Exige a evidência canônica da cliente antes de concluir uma missão comercial. */
+    private void validateCustomerCompletionEvidence(
+            ProductExperienceResponse product,
+            AccessGrant grant,
+            ProductExperienceResponse.MissionDto mission) {
+        String missionId = mission.id();
         Map<String, String> answers = grant.getMissionInteractions().getOrDefault(missionId, Map.of());
+        if (MUSA_PRODUCT_SLUG.equals(product.slug())
+                && MUSA_V7_EXPERIENCE_VERSION.equals(product.experienceVersion())) {
+            MusaV7CategoricalContract.validateMission(mission, answers);
+        }
         if ("entrada-guiada".equals(missionId)) {
             requireAnswers(answers, Set.of(
                     "services", "repeatedQuestions", "policies", "tone", "anonymousScenarios"));
@@ -1081,7 +1211,7 @@ public class AccessService {
         Map<String, String> sanitizedAnswers = sanitizeInteractionAnswers(request.answers());
         if (MUSA_PRODUCT_SLUG.equals(product.slug())
                 && MUSA_V7_EXPERIENCE_VERSION.equals(product.experienceVersion())) {
-            MusaV7CategoricalContract.validate(sanitizedAnswers);
+            MusaV7CategoricalContract.validateMission(mission, sanitizedAnswers);
         }
         grant.saveMissionInteraction(missionId, sanitizedAnswers);
         persistAccess(grant);
@@ -1216,6 +1346,9 @@ public class AccessService {
 
     /** Resolve se o acesso atual representa assinatura ativa ou apenas entrada/logon na área. */
     private String resolveSubscriptionStatus(AccessGrant grant) {
+        if ("PEPPER_REFUNDED".equals(grant.getSource())) {
+            return "REFUNDED";
+        }
         if (!isPaidSource(grant.getSource())) {
             return "TRIAL";
         }
@@ -1236,6 +1369,9 @@ public class AccessService {
         String status = resolveSubscriptionStatus(grant);
         if ("EXPIRED".equals(status)) {
             throw new IllegalArgumentException("O acesso de 90 dias terminou; procure o suporte para revisar sua situação");
+        }
+        if ("REFUNDED".equals(status)) {
+            throw new IllegalArgumentException("O pagamento foi reembolsado e o acesso completo foi encerrado");
         }
         if (!"ACTIVE".equals(status)) {
             throw new IllegalArgumentException("O acesso completo é necessário para continuar após o primeiro dia");
@@ -1330,6 +1466,17 @@ public class AccessService {
             if (metadata != null) {
                 eventMetadata.putAll(metadata);
             }
+            eventMetadata.put("experienceVersion", grant.getExperienceVersion());
+            eventMetadata.put("idempotencyKey", "paid-access-activation");
+            recordFunnelEvent(new FunnelEventRequest(
+                    grant.getProductSlug(),
+                    "PURCHASE_COMPLETED",
+                    grant.getToken(),
+                    grant.getEmail(),
+                    source,
+                    "pde-platform",
+                    null,
+                    eventMetadata));
             recordFunnelEvent(new FunnelEventRequest(
                     grant.getProductSlug(),
                     "SUBSCRIPTION_APPROVED",
@@ -1415,6 +1562,8 @@ public class AccessService {
                 "MISSION_COMPLETED",
                 "MISSION_FEEDBACK_SUBMITTED",
                 "JOURNEY_COMPLETED",
+                "DELIVERY_COMPLETED",
+                "REFUND_CONFIRMED",
                 "MISSION_INTERACTION_SAVED",
                 "AI_GUIDANCE_REQUESTED",
                 "MATERIAL_OPEN",
@@ -1437,6 +1586,10 @@ public class AccessService {
         return new FunnelAnalyticsSummaryResponse(
                 productSlug,
                 null,
+                0,
+                0,
+                0,
+                0,
                 0,
                 0,
                 0,
@@ -2155,10 +2308,10 @@ public class AccessService {
     }
 
     /** Persiste evento comercial PED/MUSA no banco Marketing Hub. */
-    private void persistFunnelEventInDatabase(
+    private boolean persistFunnelEventInDatabase(
             String eventId, FunnelEventRequest request, String eventType, ProductExperienceResponse product) {
         String sql = """
-                INSERT INTO pde_funnel_event (
+                INSERT IGNORE INTO pde_funnel_event (
                   event_id, product_slug, experience_version, access_token, email, normalized_email, event_type,
                   provider, source, page_url, client_ip, user_agent, traffic_quality, traffic_quality_reason,
                   traffic_provider, referrer_url, session_id, visitor_id,
@@ -2204,7 +2357,7 @@ public class AccessService {
             statement.setString(30, blankToNull(metadataString(metadata, "sectionId")));
             statement.setString(31, blankToNull(metadataString(metadata, "actionName")));
             statement.setString(32, metadata == null ? null : objectMapper.writeValueAsString(metadata));
-            statement.executeUpdate();
+            return statement.executeUpdate() > 0;
         } catch (SQLException | IOException ex) {
             log.error(
                     "Falha ao persistir evento PDE no banco Marketing Hub; eventId={}, productSlug={}, eventType={}",
@@ -2252,6 +2405,9 @@ public class AccessService {
 
     /** Reconhece homologações declaradas antes de classificar eventos finais como comerciais. */
     private boolean isExplicitTestTraffic(FunnelEventRequest request, Map<String, Object> metadata) {
+        if (isSandboxTestEmail(request.email()) || belongsToInternalQaAccess(request.accessToken())) {
+            return true;
+        }
         if (Set.of("DEV", "INTERNAL_QA").stream()
                 .anyMatch(marker -> marker.equalsIgnoreCase(request.provider())
                         || marker.equalsIgnoreCase(request.source()))) {
@@ -2267,10 +2423,77 @@ public class AccessService {
         return containsAny(markers, "mh_test", "mh_audit", "mh_preview=qa", "pde_analytics=off");
     }
 
+    /** Reconhece o domínio reservado pelo ambiente para compradores e destinatários de homologação. */
+    private boolean isSandboxTestEmail(String email) {
+        return email != null && email.trim().toLowerCase().endsWith("@sandbox.local");
+    }
+
+    /** Preserva a qualidade de tráfego quando um evento derivado omite a origem inicial do acesso. */
+    private boolean belongsToInternalQaAccess(String accessToken) {
+        if (accessToken == null || accessToken.isBlank()) {
+            return false;
+        }
+        AccessGrant grant = accessByToken.get(accessToken.trim());
+        return grant != null
+                && ("INTERNAL_QA".equalsIgnoreCase(grant.getSource()) || isSandboxTestEmail(grant.getEmail()));
+    }
+
     /** Trata eventos finais de compra/acesso como resultado funcional, não como pageview de robô. */
     private boolean isFunctionalPurchaseEvent(String eventType) {
-        return Set.of("SUBSCRIPTION_APPROVED", "ACCESS_RELEASED", "FIRST_USE", "PURCHASE_COMPLETED")
+        return Set.of(
+                        "SUBSCRIPTION_APPROVED",
+                        "ACCESS_RELEASED",
+                        "FIRST_USE",
+                        "PURCHASE_COMPLETED",
+                        "MISSION_COMPLETED",
+                        "JOURNEY_COMPLETED",
+                        "DELIVERY_COMPLETED",
+                        "REFUND_CONFIRMED")
                 .contains(eventType);
+    }
+
+    /** Resolve uma referência determinística quando o emissor declara replay idempotente. */
+    private String resolveFunnelEventId(
+            FunnelEventRequest request, String eventType, ProductExperienceResponse product) {
+        Map<String, Object> metadata = request.metadata();
+        String idempotencyKey = blankToNull(metadataString(metadata, "idempotencyKey"));
+        if (idempotencyKey == null) {
+            return UUID.randomUUID().toString();
+        }
+        if (idempotencyKey.length() > 160 || !idempotencyKey.matches("[A-Za-z0-9._:-]+")) {
+            throw new IllegalArgumentException("Chave idempotente do evento PDE inválida");
+        }
+        String correlationReference = blankToNull(request.accessToken());
+        if (correlationReference == null) {
+            correlationReference = blankToNull(metadataString(metadata, "sessionId"));
+        }
+        if (correlationReference == null) {
+            correlationReference = blankToNull(metadataString(metadata, "visitorId"));
+        }
+        if (correlationReference == null) {
+            throw new IllegalArgumentException("Evento idempotente exige correlação de acesso, sessão ou visitante");
+        }
+        String experienceVersion = resolveExperienceVersion(metadata, product);
+        String reference = String.join(
+                ":", request.productSlug(), experienceVersion, correlationReference, eventType, idempotencyKey);
+        return sha256Hex(reference);
+    }
+
+    /** Calcula SHA-256 para não persistir a referência bruta usada na deduplicação. */
+    private String sha256Hex(String reference) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(reference.getBytes(StandardCharsets.UTF_8));
+            return java.util.HexFormat.of().formatHex(digest);
+        } catch (NoSuchAlgorithmException ex) {
+            log.error("Algoritmo de hash indisponível para deduplicar evento PDE", ex);
+            throw new IllegalStateException("Não foi possível deduplicar o evento PDE", ex);
+        }
+    }
+
+    /** Produz a mesma referência não reutilizável usada na auditoria financeira. */
+    private String hashAccessToken(String token) {
+        return sha256Hex(token.trim().toLowerCase());
     }
 
     /** Resolve o user-agent mais confiável entre header recebido e metadado legado. */

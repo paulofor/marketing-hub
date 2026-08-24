@@ -1,0 +1,8 @@
+FROM node:22-alpine
+
+WORKDIR /app
+COPY frontend/tests/marketing-hub-contract-server.mjs ./marketing-hub-contract-server.mjs
+COPY backend/src/main/resources/contracts/musa-v7-product-v1.json ./musa-v7-product-v1.json
+ENV PDE_MUSA_V7_CONTRACT_PATH=/app/musa-v7-product-v1.json
+
+ENTRYPOINT ["node", "marketing-hub-contract-server.mjs"]

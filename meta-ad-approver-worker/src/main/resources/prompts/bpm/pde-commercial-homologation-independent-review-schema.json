@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision",
+    "activationRecommendation",
+    "commercialRationale",
+    "priceClarityScore",
+    "gateChecks",
+    "evidence",
+    "risks",
+    "requiredChanges"
+  ],
+  "properties": {
+    "decision": {"type": "string", "enum": ["APPROVED", "ADJUST", "BLOCKED"]},
+    "activationRecommendation": {
+      "type": "string",
+      "enum": ["READY_FOR_PREFLIGHT", "ADJUST_BEFORE_PREFLIGHT", "BLOCK_ACTIVATION"]
+    },
+    "commercialRationale": {"type": "string", "minLength": 20, "maxLength": 2000},
+    "priceClarityScore": {"type": "integer", "minimum": 0, "maximum": 100},
+    "gateChecks": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 24,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["gate", "status", "evidence", "commercialImpact"],
+        "properties": {
+          "gate": {"type": "string", "minLength": 3, "maxLength": 140},
+          "status": {"type": "string", "enum": ["PASS", "ADJUST", "BLOCK"]},
+          "evidence": {"type": "string", "minLength": 10, "maxLength": 700},
+          "commercialImpact": {"type": "string", "minLength": 10, "maxLength": 700}
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 30,
+      "items": {"type": "string", "minLength": 10, "maxLength": 700}
+    },
+    "risks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "items": {"type": "string", "minLength": 5, "maxLength": 700}
+    },
+    "requiredChanges": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {"type": "string", "minLength": 5, "maxLength": 700}
+    }
+  }
+}

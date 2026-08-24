@@ -166,3 +166,29 @@ nenhuma venda, receita, contato ou gasto foi produzido.
 O objetivo local da etapa 4 está atingido. O avanço produtivo para `Homologação comercial e
 ativação` permanece bloqueado até a publicação desta revisão e a repetição do smoke na superfície
 pública; não se deve mudar o status com a versão anterior ainda em execução.
+
+## Diagnóstico após a publicação do PR 5015
+
+O lote correto de Rigel foi integrado pelo PR 5015 e publicado pelo workflow direcionado. A oferta,
+o preço de R$ 349, o checkout, as políticas e a degustação renderizaram corretamente em desktop,
+iPhone 15 Pro e Pixel 7. Os requests analíticos foram interceptados durante a inspeção visual para
+não alterar métricas reais.
+
+A interceptação revelou que `mh_test=1` ainda produziria origem `pde-assisted-service`, pois o modo
+de teste dependia da flag de acesso de desenvolvimento removida do build público. O avanço para a
+etapa 5 permanece bloqueado até a correção da política runtime e sua publicação. O contrato corrigido
+desliga analytics no preview administrativo, segrega uma homologação interativa como `mh_test` e
+preserva `pde-assisted-service` exclusivamente para visitantes normais.
+
+A revisão da navegação encontrou a mesma consequência nas políticas abertas em nova aba: ao perder
+os parâmetros da URL, o `PAGE_VIEW` voltaria a parecer humano. Os links do mesmo domínio agora
+preservam o contexto de QA ou preview; URLs externas permanecem inalteradas. O teste do build público
+com acesso de desenvolvimento desativado comprova os três contratos: homologação como `mh_test`,
+preview sem requests analíticos e visita normal como `pde-assisted-service`, inclusive após abrir os
+termos.
+
+Depois da última correção, duas rodadas completas e consecutivas passaram. Cada uma executou 110
+testes do backend PDE, 55 de Têmis, 23 de Hermes, três jornadas analíticas do build público, build e
+12 jornadas completas em desktop, iPhone 15 Pro e Pixel 7. As topologias independentes usaram MySQL
+5.7, SMTP descartável e imagens Docker versionadas e foram removidas ao final. Nenhum evento, contato,
+pagamento, venda ou gasto produtivo foi criado.

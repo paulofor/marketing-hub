@@ -189,7 +189,7 @@ class ProductCatalogServiceTest {
 
         var product = service.getProductForHost("metodo-musa-7-dias", "v7.clubemusa.com.br");
 
-        assertThat(product.name()).isEqualTo("Método MUSA - Semana dos 7 Sinais de Presença");
+        assertThat(product.name()).isEqualTo("Método MUSA - Presença Elegante em 7 Dias");
         assertThat(product.priceLabel()).isEqualTo("R$67");
         assertThat(product.missions()).hasSize(7);
         assertThat(product.heroVideos()).isEmpty();
@@ -304,16 +304,18 @@ class ProductCatalogServiceTest {
                 .isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
     }
 
-    /** Confirma que a v7 local preserva o método prático sem vídeo, IA ou assinatura. */
+    /** Confirma que a v7 local preserva a identidade comercial canônica sem vídeo, IA ou assinatura. */
     @Test
-    void appliesPracticalSevenSignalsFallbackForV7Host() {
+    void appliesCanonicalCommercialIdentityForV7Host() {
         ProductCatalogService service = new ProductCatalogService();
 
         var product = service.getProductForHost("metodo-musa-7-dias", "v7.clubemusa.com.br");
 
         assertThat(product.experienceVersion()).isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
         assertThat(product.layoutKey()).isEqualTo("espelho-antes-de-sair");
-        assertThat(product.name()).contains("7 Sinais");
+        assertThat(product.name()).isEqualTo("Método MUSA - Presença Elegante em 7 Dias");
+        assertThat(product.promise())
+                .isEqualTo("Organizar em sete dias escolhas práticas de presença elegante prioritariamente com o que a cliente já possui, sem promessa de transformação garantida.");
         assertThat(product.publicFirstFold().headline()).contains("Sua roupa fala antes de você");
         assertThat(product.publicFirstFold().videoKicker()).isEqualTo("Método MUSA em 7 dias");
         assertThat(product.publicFirstFold().videoKicker()).doesNotContain("v7");
@@ -330,6 +332,19 @@ class ProductCatalogServiceTest {
                         "dia-5-compra-inteligente",
                         "dia-6-situacao-chave",
                         "dia-7-plano-pessoal");
+        assertThat(product.missions()).allSatisfy(mission -> {
+            assertThat(mission.interaction()).as(mission.id()).isNotNull();
+            assertThat(mission.interaction().fields()).as(mission.id()).hasSizeGreaterThanOrEqualTo(3);
+            assertThat(mission.interaction().fields()).allSatisfy(field -> {
+                assertThat(field.key()).isNotBlank();
+                assertThat(field.options()).hasSizeGreaterThanOrEqualTo(4);
+            });
+        });
+        assertThat(product.missions().get(1).interaction().title()).contains("peça-sinal");
+        assertThat(product.missions().get(2).interaction().title()).contains("sinal de estrutura");
+        assertThat(product.missions().get(4).interaction().title()).contains("duas cores");
+        assertThat(product.missions().get(5).interaction().title()).contains("três sinais repetíveis");
+        assertThat(product.missions().get(6).interaction().title()).contains("fórmula MUSA");
     }
 
     /** Confirma que slots legados continuam funcionais na experiência estável de entrada. */

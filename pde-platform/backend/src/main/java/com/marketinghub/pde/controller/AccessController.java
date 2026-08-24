@@ -15,12 +15,14 @@ import com.marketinghub.pde.dto.SupportRequest;
 import com.marketinghub.pde.dto.PepperWebhookRequest;
 import com.marketinghub.pde.dto.PepperSyncRequest;
 import com.marketinghub.pde.dto.PepperSyncResponse;
+import com.marketinghub.pde.dto.PepperRefundResponse;
 import com.marketinghub.pde.dto.PrivacyActionRequest;
 import com.marketinghub.pde.dto.PrivacyActionResponse;
 import com.marketinghub.pde.dto.WorkspaceResponse;
 import com.marketinghub.pde.service.AccessService;
 import com.marketinghub.pde.service.InternalApiAuthorizer;
 import com.marketinghub.pde.service.PepperTransactionSyncService;
+import com.marketinghub.pde.service.PepperRefundSyncService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -47,15 +49,18 @@ public class AccessController {
 
     private final AccessService accessService;
     private final PepperTransactionSyncService pepperTransactionSyncService;
+    private final PepperRefundSyncService pepperRefundSyncService;
     private final InternalApiAuthorizer internalApiAuthorizer;
 
     /** Recebe os serviços que controlam acessos liberados e reconciliação Pepper. */
     public AccessController(
             AccessService accessService,
             PepperTransactionSyncService pepperTransactionSyncService,
+            PepperRefundSyncService pepperRefundSyncService,
             InternalApiAuthorizer internalApiAuthorizer) {
         this.accessService = accessService;
         this.pepperTransactionSyncService = pepperTransactionSyncService;
+        this.pepperRefundSyncService = pepperRefundSyncService;
         this.internalApiAuthorizer = internalApiAuthorizer;
     }
 
@@ -141,16 +146,22 @@ public class AccessController {
         return accessService.resetFunnelAnalyticsForCampaignStart(productSlug);
     }
 
-    /** Recebe webhook de compra aprovada pela Pepper e libera acesso ao produto. */
+    /** Recebe pagamento ou reembolso Pepper e aplica somente o estado confirmado no provedor. */
     @PostMapping("/pepper/webhook")
     @ResponseStatus(HttpStatus.CREATED)
-    public AccessResponse receivePepperWebhook(@Valid @RequestBody PepperWebhookRequest request) {
-        if (!"paid".equalsIgnoreCase(request.resolvedStatus())) {
-            throw new IllegalArgumentException("Webhook Pepper sem pagamento realizado");
-        }
+    public Object receivePepperWebhook(@Valid @RequestBody PepperWebhookRequest request) {
         String transactionId = request.resolvedTransactionId();
         if (transactionId == null || transactionId.isBlank()) {
             throw new IllegalArgumentException("Webhook Pepper sem identificador de transação");
+        }
+        if ("refunded".equalsIgnoreCase(request.resolvedStatus())
+                || "chargeback".equalsIgnoreCase(request.resolvedStatus())) {
+            PepperRefundResponse refund = pepperRefundSyncService.reconcile(
+                    request.resolvedProductSlug("metodo-musa-7-dias"), transactionId);
+            return refund;
+        }
+        if (!"paid".equalsIgnoreCase(request.resolvedStatus())) {
+            throw new IllegalArgumentException("Webhook Pepper sem estado financeiro final suportado");
         }
         PepperSyncResponse verified = pepperTransactionSyncService.syncPaidTransactions(
                 request.resolvedProductSlug("metodo-musa-7-dias"), null, transactionId);

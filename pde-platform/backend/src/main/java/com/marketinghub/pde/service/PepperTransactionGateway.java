@@ -11,6 +11,9 @@ public interface PepperTransactionGateway {
     /** Busca uma transacao Pepper especifica para reconciliar uma compra conhecida. */
     PepperTransactionSearchResult findPaidTransactionByHash(String transactionHash);
 
+    /** Consulta o estado atual de uma transação para comprovar pagamento, reembolso ou chargeback. */
+    PepperTransactionSnapshot findTransactionByHash(String transactionHash);
+
     /** Resultado da consulta de transacoes pagas na Pepper. */
     record PepperTransactionSearchResult(int scannedTransactions, List<PepperPaidTransaction> paidTransactions) {}
 }

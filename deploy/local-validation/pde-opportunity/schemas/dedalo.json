@@ -11,20 +11,41 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["name", "benefit", "risk", "implementationEffort", "evidenceQuality", "revenuePath", "pdeMechanism", "evidenceScore", "purchaseIntentScore", "simplicityScore", "riskSafetyScore", "rapidValueScore", "totalScore"],
+        "required": ["name", "benefit", "risk", "evidenceQuality", "revenuePath", "formats", "chosenFormat", "pdeMechanism", "evidenceScore", "purchaseIntentScore", "painValueScore", "pdeFitScore", "differentiationScore", "distributionScore", "economicsScalabilityScore", "riskSafetyScore", "totalScore"],
         "properties": {
           "name": { "type": "string" },
           "benefit": { "type": "string" },
           "risk": { "type": "string" },
-          "implementationEffort": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
           "evidenceQuality": { "type": "string" },
           "revenuePath": { "type": "string" },
+          "formats": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "benefit", "adoptionEffort", "variableCostRisk", "scalePotential", "rejectionReason"],
+              "properties": {
+                "name": { "type": "string", "enum": ["STATIC_MATERIAL", "GUIDED_WEBAPP", "ASSISTED_EXECUTION"] },
+                "benefit": { "type": "string" },
+                "adoptionEffort": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
+                "variableCostRisk": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
+                "scalePotential": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
+                "rejectionReason": { "type": "string" }
+              }
+            }
+          },
+          "chosenFormat": { "type": "string", "enum": ["STATIC_MATERIAL", "GUIDED_WEBAPP", "ASSISTED_EXECUTION"] },
           "pdeMechanism": { "type": "string" },
           "evidenceScore": { "type": "integer", "minimum": 0, "maximum": 20 },
           "purchaseIntentScore": { "type": "integer", "minimum": 0, "maximum": 20 },
-          "simplicityScore": { "type": "integer", "minimum": 0, "maximum": 20 },
-          "riskSafetyScore": { "type": "integer", "minimum": 0, "maximum": 20 },
-          "rapidValueScore": { "type": "integer", "minimum": 0, "maximum": 20 },
+          "painValueScore": { "type": "integer", "minimum": 0, "maximum": 15 },
+          "pdeFitScore": { "type": "integer", "minimum": 0, "maximum": 15 },
+          "differentiationScore": { "type": "integer", "minimum": 0, "maximum": 10 },
+          "distributionScore": { "type": "integer", "minimum": 0, "maximum": 10 },
+          "economicsScalabilityScore": { "type": "integer", "minimum": 0, "maximum": 5 },
+          "riskSafetyScore": { "type": "integer", "minimum": 0, "maximum": 5 },
           "totalScore": { "type": "integer", "minimum": 0, "maximum": 100 }
         }
       }
@@ -32,17 +53,32 @@
     "chosenOpportunity": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["sourceAlternativeName", "name", "targetSegment", "jobToBeDone", "promise", "experienceSteps", "priceHypothesis", "acquisitionAngle", "firstTest"],
+      "required": ["sourceAlternativeName", "workingProductName", "targetSegment", "jobToBeDone", "promise", "chosenFormat", "experienceSteps", "commercialModelHypothesis", "acquisitionAngle", "firstTest", "economicBoundary", "ethicalBoundary", "benchmark"],
       "properties": {
         "sourceAlternativeName": { "type": "string" },
-        "name": { "type": "string" },
+        "workingProductName": { "type": "string" },
         "targetSegment": { "type": "string" },
         "jobToBeDone": { "type": "string" },
         "promise": { "type": "string" },
-        "experienceSteps": { "type": "array", "minItems": 3, "maxItems": 6, "items": { "type": "string" } },
-        "priceHypothesis": { "type": "string" },
+        "chosenFormat": { "type": "string", "enum": ["STATIC_MATERIAL", "GUIDED_WEBAPP", "ASSISTED_EXECUTION"] },
+        "experienceSteps": { "type": "array", "minItems": 3, "maxItems": 7, "items": { "type": "string" } },
+        "commercialModelHypothesis": { "type": "string" },
         "acquisitionAngle": { "type": "string" },
-        "firstTest": { "type": "string" }
+        "firstTest": { "type": "string" },
+        "economicBoundary": { "type": "string" },
+        "ethicalBoundary": { "type": "string" },
+        "benchmark": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "score", "candidateScore", "result", "comparisonRationale"],
+          "properties": {
+            "name": { "type": "string" },
+            "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "candidateScore": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "result": { "type": "string", "enum": ["EXCEEDS", "MEETS", "BELOW"] },
+            "comparisonRationale": { "type": "string" }
+          }
+        }
       }
     },
     "rejectedReasons": { "type": "array", "items": { "type": "string" } },

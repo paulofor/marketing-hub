@@ -3,8 +3,8 @@
   "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair",
   "layoutKey": "espelho-antes-de-sair",
   "funnelVersion": "musa-membership-funnel-v1",
-  "name": "Método MUSA - Semana dos 7 Sinais de Presença",
-  "promise": "Descubra o idioma silencioso da sua imagem e organize em 7 dias os sinais que fazem sua presença parecer mais elegante, intencional e coerente usando o que você já tem.",
+  "name": "Método MUSA - Presença Elegante em 7 Dias",
+  "promise": "Organizar em sete dias escolhas práticas de presença elegante prioritariamente com o que a cliente já possui, sem promessa de transformação garantida.",
   "audience": "Mulheres urbanas que querem elevar presença, cuidado percebido e segurança visual com microações acessíveis.",
   "priceLabel": "R$67",
   "theme": {
@@ -30,7 +30,26 @@
       "principle": "A vestimenta participa da percepção de pessoa: antes de explicar quem você é, sua imagem já envia sinais.",
       "action": "Vista uma combinação real e escreva a mensagem que ela parece transmitir hoje. Depois escolha um ajuste pequeno para aproximar essa mensagem da mulher que você quer comunicar.",
       "evidence": "Frase preenchida: hoje minha imagem parece dizer...",
-      "visualCue": "Observe roupa, cabelo, pele e detalhe final como um conjunto de sinais, não como peças soltas."
+      "visualCue": "Observe roupa, cabelo, pele e detalhe final como um conjunto de sinais, não como peças soltas.",
+      "interaction": {
+        "guidanceType": "MUSA_V7_DAY_1_VISUAL_MESSAGE",
+        "kicker": "Consultora MUSA",
+        "title": "Organize a mensagem que sua imagem parece transmitir hoje.",
+        "helperText": "Escolha uma situação, o sinal percebido e um recurso que você já possui. O resultado transforma isso em um primeiro ajuste observável.",
+        "buttonLabel": "Organizar meu primeiro ajuste",
+        "loadingLabel": "Organizando ajuste...",
+        "pendingLabel": "Sua orientação está sendo organizada.",
+        "failedLabel": "Suas escolhas ficaram salvas. Tente novamente em alguns instantes.",
+        "completedKicker": "Minha mensagem visual",
+        "nextStepTitle": "O que fazer agora",
+        "nextStepText": "Teste somente o ajuste indicado e registre o Dia 1 quando conseguir descrever a mensagem percebida.",
+        "fields": [
+          {"key": "presenceFocus", "label": "Em qual situação você quer observar sua presença?", "placeholder": "Escolha uma situação", "options": ["Trabalho ou reunião", "Encontro ou saída", "Rotina comum", "Foto ou conteúdo"]},
+          {"key": "mainObstacle", "label": "Que mensagem sua imagem parece transmitir sem intenção?", "placeholder": "Escolha uma mensagem", "options": ["Falta presença", "Pareço comum", "Estou improvisada", "Não comunica meu momento", "Minha imagem está coerente; quero apenas organizar minhas escolhas"]},
+          {"key": "desiredSignal", "label": "Qual sinal você quer aproximar dessa mensagem?", "placeholder": "Escolha um sinal", "options": ["Elegância discreta", "Segurança calma", "Cuidado percebido", "Imagem mais marcante"]},
+          {"key": "startingResource", "label": "Qual recurso existente você prefere ajustar primeiro?", "placeholder": "Escolha um recurso", "options": ["Roupa que já tenho", "Cor e acabamento", "Acessório ou perfume", "Postura e presença"]}
+        ]
+      }
     },
     {
       "id": "dia-2-assinatura",
@@ -39,7 +58,25 @@
       "principle": "Uma peça pode ganhar força quando carrega significado para você e faz sentido na situação escolhida.",
       "action": "Escolha uma peça-sinal que represente presença, cuidado ou elegância para você. Use essa peça em uma cena simples do dia e registre como ela muda sua postura diante do espelho.",
       "evidence": "Peça-sinal escolhida com o significado que ela carrega.",
-      "visualCue": "Priorize significado e intenção, não preço ou marca."
+      "visualCue": "Priorize significado e intenção, não preço ou marca.",
+      "interaction": {
+        "guidanceType": "MUSA_V7_DAY_2_PIECE_SIGNAL",
+        "kicker": "Consultora MUSA",
+        "title": "Escolha uma peça-sinal que tenha significado para você.",
+        "helperText": "A peça-sinal é um recurso que você já possui e decide repetir com intenção em uma cena real.",
+        "buttonLabel": "Definir minha peça-sinal",
+        "loadingLabel": "Organizando peça-sinal...",
+        "pendingLabel": "Sua orientação está conectando peça, significado e situação.",
+        "failedLabel": "Suas escolhas ficaram salvas. Use a peça na cena escolhida e tente novamente depois.",
+        "completedKicker": "Minha peça-sinal",
+        "nextStepTitle": "O que fazer agora",
+        "nextStepText": "Use a peça escolhida na situação real e observe, diante do espelho, se ela reforça o significado definido por você.",
+        "fields": [
+          {"key": "pieceSignal", "label": "Qual peça ou detalhe existente será seu sinal hoje?", "placeholder": "Escolha uma peça-sinal", "options": ["Terceira peça", "Acessório", "Sapato ou bolsa", "Perfume ou acabamento"]},
+          {"key": "personalMeaning", "label": "Que significado essa escolha tem para você?", "placeholder": "Escolha um significado", "options": ["Presença", "Cuidado", "Elegância", "Conforto com intenção"]},
+          {"key": "realScene", "label": "Em qual cena simples você vai testá-la?", "placeholder": "Escolha uma cena", "options": ["Trabalho ou reunião", "Encontro ou saída", "Rotina comum", "Foto ou conteúdo"]}
+        ]
+      }
     },
     {
       "id": "dia-3-base-acessivel",
@@ -48,7 +85,25 @@
       "principle": "Sinais de estrutura e acabamento podem ajudar você a perceber mais intenção, sempre conforme seu contexto e sua preferência.",
       "action": "Eleve uma combinação comum com um sinal de estrutura: terceira peça, tecido mais firme, sapato, cabelo alinhado ou acabamento melhor definido.",
       "evidence": "Antes/depois registrado com o detalhe que deixou o look mais intencional.",
-      "visualCue": "Procure o ponto em que o visual fica mais pronto sem parecer duro."
+      "visualCue": "Procure o ponto em que o visual fica mais pronto sem parecer duro.",
+      "interaction": {
+        "guidanceType": "MUSA_V7_DAY_3_STRUCTURE_WITHOUT_RIGIDITY",
+        "kicker": "Consultora MUSA",
+        "title": "Eleve uma combinação comum com um sinal de estrutura.",
+        "helperText": "Escolha uma base que você já usa e apenas um acabamento que a deixe mais intencional sem rigidez.",
+        "buttonLabel": "Montar meu antes e depois",
+        "loadingLabel": "Organizando estrutura...",
+        "pendingLabel": "Sua orientação está combinando base, estrutura e acabamento.",
+        "failedLabel": "Suas escolhas ficaram salvas. Faça a comparação com a estrutura selecionada.",
+        "completedKicker": "Meu sinal de estrutura",
+        "nextStepTitle": "O que fazer agora",
+        "nextStepText": "Compare a combinação antes e depois de incluir somente o sinal de estrutura escolhido e registre o detalhe que funcionou.",
+        "fields": [
+          {"key": "commonLook", "label": "Qual combinação comum você vai usar como base?", "placeholder": "Escolha uma base", "options": ["Calça e camisa", "Vestido", "Jeans e blusa", "Saia e blusa"]},
+          {"key": "structureSignal", "label": "Qual sinal de estrutura você já pode aplicar?", "placeholder": "Escolha uma estrutura", "options": ["Terceira peça", "Tecido mais firme", "Sapato estruturado", "Cabelo alinhado"]},
+          {"key": "desiredFinish", "label": "Como o resultado deve parecer para você?", "placeholder": "Escolha um resultado", "options": ["Mais pronto", "Mais cuidado", "Mais intencional", "Mais leve sem rigidez"]}
+        ]
+      }
     },
     {
       "id": "dia-4-checklist-12-minutos",
@@ -57,7 +112,25 @@
       "principle": "Roupa e acabamento participam da primeira impressão, sem determinar como outras pessoas irão reagir.",
       "action": "Escolha uma situação real dos próximos dias e monte o primeiro sinal que você quer transmitir ao entrar: calma, cuidado, presença, feminilidade ou segurança.",
       "evidence": "Cena escolhida com o primeiro sinal planejado.",
-      "visualCue": "Imagine a primeira leitura do ambiente antes de escolher o detalhe final."
+      "visualCue": "Imagine a primeira leitura do ambiente antes de escolher o detalhe final.",
+      "interaction": {
+        "guidanceType": "MUSA_V7_DAY_4_FIRST_IMPRESSION",
+        "kicker": "Consultora MUSA",
+        "title": "Planeje o primeiro sinal de uma situação real.",
+        "helperText": "A missão organiza o que você quer transmitir ao entrar, sem prometer como outras pessoas reagirão.",
+        "buttonLabel": "Planejar meu primeiro sinal",
+        "loadingLabel": "Organizando primeira impressão...",
+        "pendingLabel": "Sua orientação está alinhando situação, sinal e detalhe final.",
+        "failedLabel": "Seu plano ficou salvo. Use as escolhas diretamente na situação prevista.",
+        "completedKicker": "Minha primeira leitura planejada",
+        "nextStepTitle": "O que fazer agora",
+        "nextStepText": "Prepare a composição para a situação escolhida e confira se o primeiro sinal corresponde à sua intenção.",
+        "fields": [
+          {"key": "occasion", "label": "Em qual situação real você quer planejar a primeira leitura?", "placeholder": "Escolha uma situação", "options": ["Trabalho ou reunião", "Encontro ou saída", "Evento", "Foto ou conteúdo"]},
+          {"key": "firstSignal", "label": "Qual será o primeiro sinal que você quer transmitir?", "placeholder": "Escolha um sinal", "options": ["Calma", "Cuidado", "Presença", "Feminilidade", "Segurança"]},
+          {"key": "finalDetail", "label": "Qual detalhe existente vai sustentar esse sinal?", "placeholder": "Escolha um detalhe", "options": ["Cor", "Acabamento", "Acessório", "Postura"]}
+        ]
+      }
     },
     {
       "id": "dia-5-compra-inteligente",
@@ -66,7 +139,25 @@
       "principle": "Cores podem orientar a coerência visual quando escolhidas segundo a situação e a sua preferência.",
       "action": "Escolha uma cor-base e uma cor-sinal para comunicar calma, presença, suavidade ou força sem exagerar.",
       "evidence": "Paleta de 2 cores registrada para uma ocasião real.",
-      "visualCue": "Use a cor como guia de intenção, não como enfeite isolado."
+      "visualCue": "Use a cor como guia de intenção, não como enfeite isolado.",
+      "interaction": {
+        "guidanceType": "MUSA_V7_DAY_5_COLOR_DIRECTION",
+        "kicker": "Consultora MUSA",
+        "title": "Monte uma direção de duas cores para uma ocasião real.",
+        "helperText": "Escolha uma cor-base e uma cor-sinal entre opções que você já consegue usar, sem criar uma lista de compras.",
+        "buttonLabel": "Organizar minha direção de cores",
+        "loadingLabel": "Organizando cores...",
+        "pendingLabel": "Sua orientação está conectando cor-base, cor-sinal e intenção.",
+        "failedLabel": "Sua paleta ficou salva. Teste as duas cores juntas na ocasião escolhida.",
+        "completedKicker": "Minha direção de cores",
+        "nextStepTitle": "O que fazer agora",
+        "nextStepText": "Monte uma combinação com as duas cores para a ocasião escolhida e avalie a coerência por você mesma.",
+        "fields": [
+          {"key": "baseColor", "label": "Qual será sua cor-base?", "placeholder": "Escolha uma cor-base", "options": ["Preto", "Off-white", "Azul-marinho", "Bege", "Verde oliva"]},
+          {"key": "signalColor", "label": "Qual cor-sinal vai orientar a intenção?", "placeholder": "Escolha uma cor-sinal", "options": ["Vinho", "Azul", "Verde", "Rosa queimado", "Dourado suave"]},
+          {"key": "realOccasion", "label": "Para qual situação real essa paleta deve funcionar?", "placeholder": "Escolha uma situação", "options": ["Trabalho ou reunião", "Encontro ou saída", "Rotina comum", "Foto ou conteúdo"]}
+        ]
+      }
     },
     {
       "id": "dia-6-situacao-chave",
@@ -75,7 +166,25 @@
       "principle": "Escolhas repetidas podem facilitar uma assinatura pessoal reconhecível por você mesma.",
       "action": "Defina 3 sinais repetíveis da sua presença: cabelo, cor, acessório, perfume, textura, maquiagem leve ou acabamento.",
       "evidence": "Três sinais de assinatura MUSA definidos.",
-      "visualCue": "Elegância fica mais fácil quando vira repetição inteligente."
+      "visualCue": "Elegância fica mais fácil quando vira repetição inteligente.",
+      "interaction": {
+        "guidanceType": "MUSA_V7_DAY_6_PERSONAL_SIGNATURE",
+        "kicker": "Consultora MUSA",
+        "title": "Defina três sinais repetíveis da sua assinatura pessoal.",
+        "helperText": "Escolha um acabamento, uma base recorrente e um detalhe memorável que façam sentido para você.",
+        "buttonLabel": "Definir minha assinatura MUSA",
+        "loadingLabel": "Organizando assinatura...",
+        "pendingLabel": "Sua orientação está combinando os três sinais repetíveis.",
+        "failedLabel": "Seus sinais ficaram salvos. Teste a repetição diretamente nesta semana.",
+        "completedKicker": "Minha assinatura MUSA",
+        "nextStepTitle": "O que fazer agora",
+        "nextStepText": "Repita os três sinais em uma situação real e registre se a combinação ficou mais fácil de reconhecer por você mesma.",
+        "fields": [
+          {"key": "finishSignal", "label": "Qual acabamento você consegue repetir?", "placeholder": "Escolha um acabamento", "options": ["Cabelo alinhado", "Pele cuidada", "Maquiagem leve", "Roupa com caimento limpo"]},
+          {"key": "signatureBase", "label": "Qual base recorrente representa sua presença?", "placeholder": "Escolha uma base", "options": ["Preto limpo", "Off-white", "Azul-marinho", "Verde oliva", "Jeans escuro"]},
+          {"key": "memorableSignal", "label": "Qual detalhe memorável faz sentido para você?", "placeholder": "Escolha um detalhe", "options": ["Perfume assinatura", "Brinco luminoso", "Batom discreto", "Bolsa estruturada", "Lenço ou textura suave"]}
+        ]
+      }
     },
     {
       "id": "dia-7-plano-pessoal",
@@ -84,7 +193,26 @@
       "principle": "Como escolhas de roupa dependem de pessoa, contexto e preferência, o método organiza opções sem prometer uma reação externa.",
       "action": "Transforme suas respostas da semana em uma fórmula pessoal: sinais, ocasiões, regra anti-compra impulsiva e checklist antes de sair.",
       "evidence": "Fórmula MUSA pessoal preenchida para repetir por 30 dias.",
-      "visualCue": "Feche a semana com um jeito seu de se arrumar com menos dúvida."
+      "visualCue": "Feche a semana com um jeito seu de se arrumar com menos dúvida.",
+      "interaction": {
+        "guidanceType": "MUSA_V7_DAY_7_PERSONAL_FORMULA",
+        "kicker": "Consultora MUSA",
+        "title": "Transforme a semana em sua fórmula MUSA pessoal.",
+        "helperText": "Reúna o sinal principal, a ocasião, a regra anti-impulso e o checklist que você quer repetir por 30 dias.",
+        "buttonLabel": "Salvar minha fórmula MUSA",
+        "loadingLabel": "Organizando fórmula...",
+        "pendingLabel": "Sua orientação está reunindo os elementos da fórmula pessoal.",
+        "failedLabel": "Sua fórmula ficou salva. Use as escolhas como roteiro antes de sair.",
+        "completedKicker": "Minha fórmula MUSA pessoal",
+        "nextStepTitle": "O que fazer agora",
+        "nextStepText": "Repita a fórmula nas próximas semanas e ajuste apenas o que deixar de fazer sentido para sua rotina.",
+        "fields": [
+          {"key": "bestSignal", "label": "Qual sinal da semana você quer repetir?", "placeholder": "Escolha um sinal", "options": ["Peça-sinal", "Estrutura", "Cor", "Acabamento", "Assinatura pessoal"]},
+          {"key": "mostRelevantOccasion", "label": "Em qual ocasião sua fórmula será mais útil?", "placeholder": "Escolha uma ocasião", "options": ["Trabalho ou reunião", "Encontro ou saída", "Rotina comum", "Foto ou conteúdo"]},
+          {"key": "antiImpulseRule", "label": "Qual regra vai evitar compra impulsiva?", "placeholder": "Escolha uma regra", "options": ["Testar primeiro o que já tenho", "Esperar 48 horas", "Exigir três combinações possíveis", "Comprar apenas para uma necessidade definida"]},
+          {"key": "checklistPriority", "label": "Qual ponto entra primeiro no checklist antes de sair?", "placeholder": "Escolha uma prioridade", "options": ["Mensagem visual", "Estrutura", "Cor", "Acabamento", "Conforto"]}
+        ]
+      }
     }
   ],
   "supportMaterials": [
@@ -152,7 +280,7 @@
   ],
   "publicFirstFold": {
     "headline": "Sua roupa fala antes de você. Ela está falando com roteiro?",
-    "supportingText": "A Semana dos 7 Sinais organiza escolhas de roupa, acabamento e presença em microações simples, sem exigir um guarda-roupa novo.",
+    "supportingText": "O Método MUSA organiza escolhas de roupa, acabamento e presença em microações simples, sem exigir um guarda-roupa novo.",
     "videoKicker": "Método MUSA em 7 dias",
     "videoHeadline": "Veja como cada dia organiza um ajuste possível usando o que você já possui.",
     "videoSupportingText": "Mensagem visual, peça-sinal, formalidade leve, primeira impressão, cor, assinatura pessoal e fórmula MUSA viram uma jornada prática de 7 dias.",

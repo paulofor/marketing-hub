@@ -80,6 +80,38 @@ class CommercialBpmTaskConsumerTest {
         .contains("priceClarityScore", "commercialRationale", "requiredChanges");
   }
 
+  /** Seleciona o gate independente que antecede o preflight e a autorização humana. */
+  @Test
+  void selectsVersionedPdeCommercialHomologationContract() throws Exception {
+    org.assertj.core.api.Assertions.assertThat(
+            CommercialBpmTaskConsumer.promptResourceFor("pde-commercial-homologation-activation"))
+        .isEqualTo("prompts/bpm/pde-commercial-homologation-independent-review.md");
+    org.assertj.core.api.Assertions.assertThat(
+            CommercialBpmTaskConsumer.schemaResourceFor("pde-commercial-homologation-activation"))
+        .isEqualTo("prompts/bpm/pde-commercial-homologation-independent-review-schema.json");
+
+    String prompt = read("prompts/bpm/pde-commercial-homologation-independent-review.md");
+    String schema = read("prompts/bpm/pde-commercial-homologation-independent-review-schema.json");
+    org.assertj.core.api.Assertions.assertThat(prompt)
+        .contains(
+            "READY_FOR_PREFLIGHT",
+            "SHA-256",
+            "não autoriza `RUNNING`",
+            "canal efetivo proposto",
+            "QA excluído");
+    org.assertj.core.api.Assertions.assertThat(schema)
+        .contains("activationRecommendation", "gateChecks", "priceClarityScore");
+  }
+
+  /** Exige Flex no gate de IA para manter custo e contrato operacional auditáveis. */
+  @Test
+  void usesFlexServiceTier() {
+    org.assertj.core.api.Assertions.assertThat(CommercialBpmTaskConsumer.serviceTier())
+        .isEqualTo("flex");
+    org.assertj.core.api.Assertions.assertThat(CommercialBpmTaskConsumer.effectiveServiceTier())
+        .isEqualTo("STANDARD");
+  }
+
   /** Lê integralmente um contrato versionado do classpath. */
   private String read(String resource) throws Exception {
     try (var input = new ClassPathResource(resource).getInputStream()) {
@@ -120,6 +152,9 @@ class CommercialBpmTaskConsumerTest {
         .containsEntry("sourceReference", "experiment:88")
         .containsEntry("activityId", "commercial")
         .containsEntry("accessMode", "READ_ONLY")
-        .containsEntry("externalSideEffects", false);
+        .containsEntry("externalSideEffects", false)
+        .containsEntry("requestedServiceTier", "FLEX")
+        .containsEntry("effectiveServiceTier", "STANDARD")
+        .containsKey("serviceTierException");
   }
 }

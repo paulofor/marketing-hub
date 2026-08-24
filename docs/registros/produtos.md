@@ -1,5 +1,16 @@
 # Registro de evolução do catálogo de produtos
 
+## 2026-08-24 — Descoberta encerrada sem novo produto aprovado
+
+- Processo executado: `pde-opportunity-discovery` v4, com Rigel 82/100 como benchmark fixo.
+- Resultado: `PESQUISAR MAIS`; Pedido no Azul liderou duas rodadas finais com 73 e 70, sem alcançar
+  o benchmark e com valor percebido de 72 nas duas execuções.
+- Decisão de portfólio: nenhum produto, tipo, estrela, oferta ou experimento foi cadastrado. Pedido
+  no Azul permanece somente como sinal prioritário, evitando transformar nota ou parecer em venda.
+- Lacunas para reabrir a pesquisa: preferência observada frente à calculadora gratuita, intenção de
+  pagar, conclusão sem assistência e rota orgânica atribuível.
+- Evidência completa: `docs/marketing/descoberta-oportunidade-pde-2026-08-24.md`.
+
 ## 2026-08-23 — Identidade interna separada do nome comercial
 
 - Evidência: o cadastro persistia somente `product.name`; produtos como “PDE Anti-Invisibilidade

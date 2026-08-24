@@ -567,21 +567,23 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
                 aria-label="Condições da compra"
               >
                 <a
-                  href={commercialOffer.termsUrl}
+                  href={withAssistedAnalyticsPolicy(commercialOffer.termsUrl)}
                   target="_blank"
                   rel="noreferrer"
                 >
                   Termos
                 </a>
                 <a
-                  href={commercialOffer.privacyUrl}
+                  href={withAssistedAnalyticsPolicy(commercialOffer.privacyUrl)}
                   target="_blank"
                   rel="noreferrer"
                 >
                   Privacidade
                 </a>
                 <a
-                  href={commercialOffer.refundPolicyUrl}
+                  href={withAssistedAnalyticsPolicy(
+                    commercialOffer.refundPolicyUrl,
+                  )}
                   target="_blank"
                   rel="noreferrer"
                 >
@@ -1203,7 +1205,10 @@ function CommercialPolicyPage({
           };
   return (
     <main className="assisted-pde-policy">
-      <a href="/" className="assisted-pde-policy-back">
+      <a
+        href={withAssistedAnalyticsPolicy("/")}
+        className="assisted-pde-policy-back"
+      >
         ← Voltar para a oferta
       </a>
       <span className="assisted-pde-kicker">Kit WhatsApp Pronto</span>
@@ -1233,13 +1238,25 @@ function CommercialLegalFooter({ offer }: { offer: CommercialOffer }) {
         </a>
       </div>
       <nav aria-label="Informações legais">
-        <a href={offer.termsUrl} target="_blank" rel="noreferrer">
+        <a
+          href={withAssistedAnalyticsPolicy(offer.termsUrl)}
+          target="_blank"
+          rel="noreferrer"
+        >
           Termos
         </a>
-        <a href={offer.privacyUrl} target="_blank" rel="noreferrer">
+        <a
+          href={withAssistedAnalyticsPolicy(offer.privacyUrl)}
+          target="_blank"
+          rel="noreferrer"
+        >
           Privacidade
         </a>
-        <a href={offer.refundPolicyUrl} target="_blank" rel="noreferrer">
+        <a
+          href={withAssistedAnalyticsPolicy(offer.refundPolicyUrl)}
+          target="_blank"
+          rel="noreferrer"
+        >
           Cancelamento e reembolso
         </a>
       </nav>
@@ -1351,12 +1368,51 @@ type TrackingOptions = {
   metadata?: Record<string, unknown>;
 };
 
+type AssistedAnalyticsPolicy = {
+  enabled: boolean;
+  source: "mh_test" | "pde-assisted-service";
+};
+
+/** Resolve em runtime se a navegação é humana, homologação segregada ou preview sem analytics. */
+export function resolveAssistedAnalyticsPolicy(
+  search: string,
+  devAccessEnabled: boolean,
+): AssistedAnalyticsPolicy {
+  const params = new URLSearchParams(search);
+  const analyticsDisabled =
+    params.get("pde_analytics")?.trim().toLowerCase() === "off";
+  const segregatedQa =
+    params.get("mh_test") === "1" || params.get("mh_preview") === "qa";
+  return {
+    enabled: !analyticsDisabled,
+    source:
+      devAccessEnabled || segregatedQa ? "mh_test" : "pde-assisted-service",
+  };
+}
+
+/** Preserva o modo analítico somente ao navegar entre páginas do mesmo produto e domínio. */
+function withAssistedAnalyticsPolicy(url: string) {
+  const target = new URL(url, window.location.origin);
+  if (target.origin !== window.location.origin) return url;
+  const current = new URLSearchParams(window.location.search);
+  for (const key of ["mh_test", "mh_preview", "pde_analytics"]) {
+    const value = current.get(key);
+    if (value !== null) target.searchParams.set(key, value);
+  }
+  return `${target.pathname}${target.search}${target.hash}`;
+}
+
 /** Registra observabilidade funcional sem bloquear o acesso ou a entrega do produto. */
 async function trackEvent(
   eventType: string,
   product: ProductExperience,
   options: TrackingOptions = {},
 ) {
+  const analyticsPolicy = resolveAssistedAnalyticsPolicy(
+    window.location.search,
+    testAccessEnabled,
+  );
+  if (!analyticsPolicy.enabled) return;
   try {
     await fetch("/api/pde/access/events", {
       method: "POST",
@@ -1367,7 +1423,7 @@ async function trackEvent(
         accessToken: options.accessToken,
         email: options.email,
         provider: options.provider,
-        source: testAccessEnabled ? "mh_test" : "pde-assisted-service",
+        source: analyticsPolicy.source,
         pageUrl: window.location.href,
         metadata: {
           visitorId: stableTrackingId(

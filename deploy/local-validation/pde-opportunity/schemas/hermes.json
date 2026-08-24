@@ -1,0 +1,50 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "journeyComparison", "recommendedOpportunity", "rationale", "nextValidation"],
+  "properties": {
+    "decision": { "type": "string", "enum": ["APPROVE", "RESEARCH_MORE", "REJECT"] },
+    "journeyComparison": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["candidateName", "decisionTriggers", "decisionQuestions", "objections", "trustSignals", "currentAlternative", "distributionRoutes", "chosenInitialRouteIndex", "commercialRisk", "journeyVerdict"],
+        "properties": {
+          "candidateName": { "type": "string" },
+          "decisionTriggers": { "type": "array", "minItems": 2, "items": { "type": "string" } },
+          "decisionQuestions": { "type": "array", "minItems": 3, "items": { "type": "string" } },
+          "objections": { "type": "array", "minItems": 3, "items": { "type": "string" } },
+          "trustSignals": { "type": "array", "minItems": 3, "items": { "type": "string" } },
+          "currentAlternative": { "type": "string" },
+          "distributionRoutes": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "asset", "attribution", "externalSpend", "risk", "fitScore"],
+              "properties": {
+                "name": { "type": "string" },
+                "asset": { "type": "string" },
+                "attribution": { "type": "string" },
+                "externalSpend": { "type": "string", "enum": ["NONE", "FUTURE"] },
+                "risk": { "type": "string" },
+                "fitScore": { "type": "integer", "minimum": 0, "maximum": 20 }
+              }
+            }
+          },
+          "chosenInitialRouteIndex": { "type": "integer", "minimum": 0, "maximum": 2 },
+          "commercialRisk": { "type": "string" },
+          "journeyVerdict": { "type": "string", "enum": ["VIABLE", "NEEDS_EVIDENCE", "NOT_VIABLE"] }
+        }
+      }
+    },
+    "recommendedOpportunity": { "type": "string" },
+    "rationale": { "type": "string" },
+    "nextValidation": { "type": "string" }
+  }
+}

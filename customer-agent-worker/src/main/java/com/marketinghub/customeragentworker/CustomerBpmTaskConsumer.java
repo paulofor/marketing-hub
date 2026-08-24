@@ -26,10 +26,15 @@ import org.springframework.web.client.RestClient;
 public class CustomerBpmTaskConsumer {
   private static final Logger log = LoggerFactory.getLogger(CustomerBpmTaskConsumer.class);
   private static final String AGENT_KEY = "customer-agent";
+  private static final String REQUESTED_SERVICE_TIER = "flex";
+  private static final String EFFECTIVE_SERVICE_TIER = "STANDARD";
+  private static final String SERVICE_TIER_EXCEPTION =
+      "O catálogo do Codex não anuncia Flex para gpt-5.6-sol; a CLI omite o tier solicitado e usa o tier padrão.";
   private static final List<BpmContract> CONTRACTS =
       List.of(
           new BpmContract("creative-production-approval", "customer"),
           new BpmContract("landing-page-generation", "customer"),
+          new BpmContract("pde-commercial-homologation-activation", "pdeGate"),
           new BpmContract("pde-construction-approval", "review"));
   private final RestClient backend;
   private final ObjectMapper json;
@@ -109,6 +114,8 @@ public class CustomerBpmTaskConsumer {
                   codex,
                   "--search",
                   "exec",
+                  "-c",
+                  "service_tier=\"" + REQUESTED_SERVICE_TIER + "\"",
                   "-",
                   "--skip-git-repo-check",
                   "--sandbox",
@@ -220,6 +227,10 @@ public class CustomerBpmTaskConsumer {
     Map<String, Object> promptContext = new HashMap<>(task);
     if ("pde-construction-approval".equals(processCode(task))) {
       promptContext.put("versionedExperienceEvidence", pdeExperienceEvidenceLoader.load());
+    } else if ("pde-commercial-homologation-activation".equals(processCode(task))) {
+      promptContext.put(
+          "versionedCommercialHomologationEvidence",
+          pdeExperienceEvidenceLoader.loadCommercialHomologationEvidence());
     }
     return read(promptResourceFor(processCode(task)))
         .replace("{{PSIQUE_BEHAVIORAL_CORE_V2}}", behavioralCoreV2())
@@ -235,6 +246,8 @@ public class CustomerBpmTaskConsumer {
   static String promptResourceFor(String processCode) {
     return switch (processCode) {
       case "creative-production-approval" -> "prompts/bpm/creative-customer-review.md";
+      case "pde-commercial-homologation-activation" ->
+          "prompts/bpm/pde-commercial-homologation-customer-review.md";
       case "pde-construction-approval" -> "prompts/bpm/pde-experience-review.md";
       default -> "prompts/bpm/landing-customer-review.md";
     };
@@ -244,6 +257,8 @@ public class CustomerBpmTaskConsumer {
   static String schemaResourceFor(String processCode) {
     return switch (processCode) {
       case "creative-production-approval" -> "prompts/bpm/creative-customer-review-schema.json";
+      case "pde-commercial-homologation-activation" ->
+          "prompts/bpm/pde-commercial-homologation-customer-review-schema.json";
       case "pde-construction-approval" -> "prompts/bpm/pde-experience-review-schema.json";
       default -> "prompts/bpm/landing-customer-review-schema.json";
     };
@@ -331,22 +346,20 @@ public class CustomerBpmTaskConsumer {
     return json.writeValueAsString(evidenceFields("Psique", model, task));
   }
 
-  /** Monta os campos mínimos que tornam sucesso e falha reconstruíveis na mesma tarefa. */
+  /** Monta os campos mínimos, inclusive a exceção de tier, para reconstruir a mesma tarefa. */
   static Map<String, Object> evidenceFields(
       String reviewer, String model, Map<String, Object> task) {
-    return Map.of(
-        "reviewer",
-        reviewer,
-        "model",
-        model,
-        "sourceReference",
-        String.valueOf(task.get("sourceReference")),
-        "activityId",
-        String.valueOf(task.get("activityId")),
-        "accessMode",
-        "READ_ONLY",
-        "externalSideEffects",
-        false);
+    return Map.ofEntries(
+        Map.entry("reviewer", reviewer),
+        Map.entry("model", model),
+        Map.entry("sourceReference", String.valueOf(task.get("sourceReference"))),
+        Map.entry("activityId", String.valueOf(task.get("activityId"))),
+        Map.entry("accessMode", "READ_ONLY"),
+        Map.entry("externalSideEffects", false),
+        Map.entry(
+            "requestedServiceTier", REQUESTED_SERVICE_TIER.toUpperCase(java.util.Locale.ROOT)),
+        Map.entry("effectiveServiceTier", EFFECTIVE_SERVICE_TIER),
+        Map.entry("serviceTierException", SERVICE_TIER_EXCEPTION));
   }
 
   /** Acrescenta ao callback somente uma medição real informada pelo Codex. */
@@ -357,10 +370,20 @@ public class CustomerBpmTaskConsumer {
         List.of(
             Map.of(
                 "modelCode", model,
-                "serviceTier", "STANDARD",
+                "serviceTier", EFFECTIVE_SERVICE_TIER,
                 "inputTokens", usage.inputTokens(),
                 "cachedInputTokens", usage.cachedInputTokens(),
                 "outputTokens", usage.outputTokens())));
+  }
+
+  /** Informa o tier efetivamente solicitado ao Codex para auditoria e teste de contrato. */
+  static String serviceTier() {
+    return REQUESTED_SERVICE_TIER;
+  }
+
+  /** Informa o tier aplicado quando o modelo Codex não anuncia suporte ao Flex solicitado. */
+  static String effectiveServiceTier() {
+    return EFFECTIVE_SERVICE_TIER;
   }
 
   /** Extrai o identificador estável da tarefa reservada. */

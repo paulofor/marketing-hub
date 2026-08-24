@@ -31,7 +31,8 @@ class PepperTransactionSyncServiceTest {
                         "owm6x",
                         "Metodo MUSA",
                         6700,
-                        "BRL"))),
+                        "BRL",
+                        "musa-pde-entry-v7-espelho-antes-de-sair"))),
                 new PaymentAuditService("", "", ""),
                 "metodo-musa-7-dias");
 
@@ -44,6 +45,8 @@ class PepperTransactionSyncServiceTest {
         assertThat(response.releasedAccesses()).isEqualTo(1);
         assertThat(workspace.subscriptionStatus()).isEqualTo("ACTIVE");
         assertThat(workspace.accessSource()).isEqualTo("PEPPER");
+        assertThat(workspace.experienceVersion())
+                .isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
     }
 
     /** Confirma que repetir a reconciliacao nao cria outro acesso para a mesma compradora. */
@@ -63,7 +66,8 @@ class PepperTransactionSyncServiceTest {
                         "owm6x",
                         "Metodo MUSA",
                         6700,
-                        "BRL"))),
+                        "BRL",
+                        "musa-pde-entry-v7-espelho-antes-de-sair"))),
                 paymentAuditService,
                 "metodo-musa-7-dias");
 
@@ -75,6 +79,8 @@ class PepperTransactionSyncServiceTest {
             assertThat(audit.productSlug()).isEqualTo("metodo-musa-7-dias");
             assertThat(audit.amountCents()).isEqualTo(6700);
             assertThat(audit.currency()).isEqualTo("BRL");
+            assertThat(audit.experienceVersion())
+                    .isEqualTo("musa-pde-entry-v7-espelho-antes-de-sair");
             assertThat(audit.accessReferenceHash()).hasSize(64);
         });
     }
@@ -84,9 +90,9 @@ class PepperTransactionSyncServiceTest {
     void blocksReuseOfTransactionWithDifferentFinancialContract() {
         PaymentAuditService paymentAuditService = new PaymentAuditService("", "", "");
         PepperPaidTransaction original = new PepperPaidTransaction(
-                "tx-reused", "cliente@sandbox.local", "paid", "owm6x", "MUSA", 6700, "BRL");
+                "tx-reused", "cliente@sandbox.local", "paid", "owm6x", "MUSA", 6700, "BRL", "musa-v7");
         PepperPaidTransaction collision = new PepperPaidTransaction(
-                "tx-reused", "outra@sandbox.local", "paid", "owm6x", "MUSA", 6700, "BRL");
+                "tx-reused", "outra@sandbox.local", "paid", "owm6x", "MUSA", 6700, "BRL", "musa-v7");
 
         paymentAuditService.recordVerifiedPayment("metodo-musa-7-dias", original);
 
@@ -108,6 +114,21 @@ class PepperTransactionSyncServiceTest {
         @Override
         public PepperTransactionSearchResult findPaidTransactionByHash(String transactionHash) {
             return new PepperTransactionSearchResult(transactions.size(), transactions);
+        }
+
+        /** Converte a primeira compra fixa no snapshot financeiro exigido pelo novo contrato. */
+        @Override
+        public PepperTransactionSnapshot findTransactionByHash(String transactionHash) {
+            PepperPaidTransaction transaction = transactions.getFirst();
+            return new PepperTransactionSnapshot(
+                    transaction.transactionId(),
+                    transaction.buyerEmail(),
+                    transaction.paymentStatus(),
+                    transaction.offerHash(),
+                    transaction.offerTitle(),
+                    transaction.amount(),
+                    transaction.currency(),
+                    transaction.experienceVersion());
         }
     }
 }

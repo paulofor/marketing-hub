@@ -53,7 +53,7 @@
     },
     {
       "path": "pde-platform/frontend/tests/public-health.spec.ts",
-      "sha256": "a7f09ea360ed62231d212d66fa6acf351933950a1ab5186beedcaf37b0bfb52b",
+      "sha256": "7962c91752e9ebd883ba84e467b8f824819226727fb41b53e3d53a4592018cd1",
       "proves": [
         "o deploy do Kit falha se a degustação não estiver renderizada",
         "oferta, preço, checkout e degustação pertencem à mesma superfície pública",

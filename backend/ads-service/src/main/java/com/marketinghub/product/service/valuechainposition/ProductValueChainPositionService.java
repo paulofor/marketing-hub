@@ -5,6 +5,7 @@ import com.marketinghub.businessprocesschain.BusinessProcessChainItem;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainDefinitionRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
+import jakarta.persistence.EntityNotFoundException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,21 @@ public class ProductValueChainPositionService {
         .findFirst()
         .map(chain -> positionsInChain(products, chain))
         .orElseGet(() -> products.stream().map(this::chainUnavailablePosition).toList());
+  }
+
+  /** Retorna o histórico e a posição de um único produto na cadeia PDE publicada. */
+  @Transactional(readOnly = true)
+  public ProductValueChainPositionResponse getPosition(Long productId) {
+    Product product =
+        productRepository
+            .findById(productId)
+            .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado: " + productId));
+    return chainRepository
+        .findAllByChainCodeAndStatusOrderByVersionNumberDesc(PDE_CHAIN_CODE, PUBLISHED_STATUS)
+        .stream()
+        .findFirst()
+        .map(chain -> positionsInChain(List.of(product), chain).getFirst())
+        .orElseGet(() -> chainUnavailablePosition(product));
   }
 
   /** Resolve todos os produtos contra os processos ordenados da cadeia vigente. */

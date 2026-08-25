@@ -65,6 +65,9 @@ describe("ProductListPage", () => {
     const editLink = await screen.findByRole("link", { name: /Editar dados/i });
     expect(editLink).toHaveAttribute("href", "/products/1/edit");
     expect(
+      screen.getByRole("link", { name: "Histórico da cadeia" }),
+    ).toHaveAttribute("href", "/products/1/value-chain-history");
+    expect(
       await screen.findByText("PDE Anti-Invisibilidade Profissional"),
     ).toBeTruthy();
     expect(screen.getByText("PDE - Produto Digital Experiencial")).toBeTruthy();

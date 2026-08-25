@@ -533,6 +533,13 @@ especializados, como fabricação de entregáveis, criativos, landing, homologa�
 operação de venda, continuam referenciados dentro dos macroprocessos e não são duplicados como uma
 segunda orquestração.
 
+Cada produto deve oferecer, a partir do catálogo administrativo, uma tela própria de histórico da
+cadeia. Essa visão usa um endpoint backend filtrado pelo produto e mostra somente a verdade
+persistida: processo ou subprocesso, data e hora de entrada e saída, permanência, objetivo atingido,
+evidência temporal, custo estimado conhecido e cobertura financeira. Ausência de data, execução ou
+custo deve permanecer explícita; a tela não pode inferir conclusão, preencher lacunas ou somar
+processo e subprocesso quando houver risco de dupla contagem.
+
 ## Métricas da cadeia
 
 A cadeia deve permitir medir, no mínimo:

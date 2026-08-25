@@ -1,5 +1,16 @@
 # Registro de evolução do catálogo de produtos
 
+## 2026-08-25 — Tela dedicada do histórico da cadeia
+
+- Evidência produtiva: o backend já entregava períodos e custos por etapa, mas o catálogo expunha o
+  histórico somente dentro do card e não possuía o botão ou a rota individual solicitados.
+- Decisão: adicionar consulta backend por produto e uma tela cronológica navegável pelo card, sem
+  filtrar todo o catálogo no navegador.
+- Verdade operacional: datas ausentes, saídas não comprovadas e cobertura financeira parcial ou não
+  reportada ficam explícitas; processo e subprocesso não são somados para evitar dupla contagem.
+- Critério: botão, endpoint individual, histórico e estados de falha devem funcionar em desktop,
+  iPhone 15 Pro e Pixel 7 sem alterar dados produtivos.
+
 ## 2026-08-25 — Permanência e custo por processo e subprocesso
 
 - Gargalo: os cards indicavam posição e próximo objetivo, mas não mostravam há quanto tempo o produto

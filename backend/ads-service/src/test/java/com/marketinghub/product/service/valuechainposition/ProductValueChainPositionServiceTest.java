@@ -12,6 +12,7 @@ import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChain
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: comprovar a resolução canônica do produto na cadeia de valor PDE. */
@@ -106,6 +107,40 @@ class ProductValueChainPositionServiceTest {
     assertThat(position.resolutionStatus()).isEqualTo("CHAIN_UNAVAILABLE");
     assertThat(position.chainDefinitionId()).isNull();
     assertThat(position.resolutionMessage()).contains("não encontrada");
+  }
+
+  /** Consulta apenas o produto solicitado e preserva suas medições auditáveis. */
+  @Test
+  void resolvesSingleProductPosition() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    BusinessProcessChainDefinitionRepository chainRepository =
+        mock(BusinessProcessChainDefinitionRepository.class);
+    ProductStageMeasurementResolver measurementResolver =
+        mock(ProductStageMeasurementResolver.class);
+    Product rigel = product(9L, "COMUNICACAO_E_JORNADA");
+    when(productRepository.findById(9L)).thenReturn(Optional.of(rigel));
+    when(chainRepository.findAllByChainCodeAndStatusOrderByVersionNumberDesc(
+            "pde-value-creation-delivery", "PUBLISHED"))
+        .thenReturn(List.of(chain()));
+    when(measurementResolver.resolveProcessMeasurements(
+            org.mockito.ArgumentMatchers.eq(rigel),
+            org.mockito.ArgumentMatchers.anyList(),
+            org.mockito.ArgumentMatchers.any(BusinessProcessDefinition.class)))
+        .thenReturn(List.of());
+    var service =
+        new ProductValueChainPositionService(
+            productRepository,
+            chainRepository,
+            mock(ProductSubprocessPositionResolver.class),
+            new PdeProcessCodeResolver(),
+            measurementResolver);
+
+    var position = service.getPosition(9L);
+
+    assertThat(position.productId()).isEqualTo(9L);
+    assertThat(position.processName()).isEqualTo("Comunicação e jornada de venda do PDE");
+    assertThat(position.sequenceNumber()).isEqualTo(4);
+    assertThat(position.processCount()).isEqualTo(6);
   }
 
   /** Monta um produto enxuto para representar um estado comercial. */

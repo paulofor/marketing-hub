@@ -10,14 +10,14 @@ CREATE TABLE business_process_definition (
     id BIGINT NOT NULL PRIMARY KEY,
     process_code VARCHAR(100) NOT NULL,
     name VARCHAR(160) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE business_process_chain_definition (
     id BIGINT NOT NULL PRIMARY KEY,
     chain_code VARCHAR(100) NOT NULL,
     version_number INT NOT NULL,
     status VARCHAR(40) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE business_process_chain_item (
     id BIGINT NOT NULL PRIMARY KEY,
@@ -28,7 +28,7 @@ CREATE TABLE business_process_chain_item (
       FOREIGN KEY (chain_definition_id) REFERENCES business_process_chain_definition(id),
     CONSTRAINT fk_process_period_fixture_definition
       FOREIGN KEY (process_definition_id) REFERENCES business_process_definition(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 INSERT INTO business_process_definition (id, process_code, name)
 VALUES

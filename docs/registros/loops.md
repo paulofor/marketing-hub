@@ -1867,3 +1867,25 @@ Use este checklist quando o problema estiver em algum loop acima:
   e os parâmetros obrigatórios `splitStatements` e `stripComments`; o workflow executa no MySQL 5.7
   banco limpo, rollback e reaplicação, checksum legado, tabela órfã vazia e reaplicação sem
   duplicidade.
+- **Fechamento complementar em 2026-08-25:** a retomada superou a tabela órfã, mas o backfill falhou
+  com `Illegal mix of collations`: `product.commercial_status` usa `utf8mb4_unicode_ci` em produção,
+  enquanto `business_process_definition.process_code` usa `utf8mb4_general_ci`. A fixture anterior
+  uniformizava artificialmente todas as tabelas em `unicode_ci` e mascarava a divergência. A
+  comparação do backfill agora converte ambos os lados para `utf8mb4_unicode_ci`, e a homologação
+  física preserva deliberadamente a mistura real de collations para impedir recorrência.
+
+## LOOP-AGENTE-REVISOR-DEPENDE-DE-SHELL-ANINHADO — parecer bloqueia evidência já verificável
+
+- **Data:** 2026-08-25.
+- **Sintoma:** a segunda rodada de Rigel chegou com ativos íntegros, Psique aprovou, mas Têmis
+  retornou `BLOCKED` porque o `bwrap` da sandbox aninhada impediu o próprio agente de executar
+  `sha256` e `ffprobe` sobre os arquivos locais.
+- **Causa-raiz:** o julgamento independente também recebeu a responsabilidade de repetir inspeção
+  técnica por shell. Essa capacidade ambiental não pertence ao raciocínio comercial do agente e
+  tornou a aprovação não determinística, apesar de manifesto e arquivos permanecerem iguais.
+- **Correção sistêmica:** um verificador determinístico versionado recalcula antes dos pareceres os
+  hashes de 30 arquivos, dimensões, codec, pixel format, duração e plano de cortes. Psique e Têmis
+  recebem o relatório estruturado e continuam bloqueando divergências comerciais ou contratuais,
+  sem depender de shell dentro da execução read-only.
+- **Prevenção:** a matriz e o empacotamento exigem `technical-verification.json`; o validador final
+  rejeita relatório incompleto, hash divergente ou MP4 fora do contrato antes de aceitar o parecer.

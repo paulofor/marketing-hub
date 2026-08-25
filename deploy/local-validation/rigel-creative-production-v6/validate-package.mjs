@@ -21,6 +21,9 @@ const apollo = await readJson(join(evidence, "apollo-storyboard.json"));
 const manifest = await readJson(
   join(artifacts, "rigel-creative-manifest.json"),
 );
+const technicalVerification = await readJson(
+  join(evidence, "technical-verification.json"),
+);
 const psique = await readJson(join(evidence, "psique-review.json"));
 const temis = await readJson(join(evidence, "temis-independent-review.json"));
 const executions = await readJson(join(evidence, "agent-executions.json"));
@@ -63,6 +66,24 @@ assert(
 assert(
   temis.requiredChanges.length === 0,
   "Temis deixou mudancas obrigatorias",
+);
+assert(
+  technicalVerification.status === "APPROVED" &&
+    technicalVerification.verifier ===
+      "RIGEL_DETERMINISTIC_TECHNICAL_VERIFIER_V1" &&
+    technicalVerification.allHashesMatch === true &&
+    technicalVerification.verifiedFileCount === 30,
+  "A verificacao tecnica deterministica nao aprovou todos os arquivos",
+);
+assert(
+  technicalVerification.video.width === 1080 &&
+    technicalVerification.video.height === 1920 &&
+    technicalVerification.video.codec === "h264" &&
+    technicalVerification.video.pixelFormat === "yuv420p" &&
+    Math.abs(technicalVerification.video.durationSeconds - 30) < 0.15 &&
+    JSON.stringify(technicalVerification.video.cutDurationsSeconds) ===
+      JSON.stringify([4, 3, 12, 5, 6]),
+  "O relatorio tecnico nao comprova o MP4 contratado",
 );
 
 assert(

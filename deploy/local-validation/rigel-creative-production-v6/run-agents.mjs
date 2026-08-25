@@ -157,6 +157,9 @@ if (phase === "reviews") {
   const manifestText = await read(
     join(artifacts, "rigel-creative-manifest.json"),
   );
+  const technicalVerificationText = await read(
+    join(evidence, "technical-verification.json"),
+  );
   const apolloText = await read(join(evidence, "apollo-storyboard.json"));
   const directionText = await read(
     join(evidence, "temis-creative-direction.json"),
@@ -186,6 +189,9 @@ if (phase === "reviews") {
       process: "creative-production-approval-v6",
       productContract: contract,
       manifest: JSON.parse(manifestText),
+      deterministicTechnicalVerification: JSON.parse(
+        technicalVerificationText,
+      ),
       direction: JSON.parse(directionText),
       apolloStoryboard: JSON.parse(apolloText),
       localVideo: join(artifacts, "rigel-vertical-demo-1080x1920.mp4"),
@@ -193,9 +199,9 @@ if (phase === "reviews") {
       destinationContinuity:
         "As capturas rigel-destination-desktop.png e rigel-destination-mobile.png e destinationEvidence do manifesto comprovam localmente produto, oferta, preco, entrega e CTA. Este gate não exige rede pública nem autoriza deploy; o smoke produtivo pertence ao processo posterior.",
       productionSeparation:
-        "O produtor é o compositor determinístico versionado identificado no manifesto. Psique e Têmis usam novas invocações Codex read-only; Têmis independente não executou o compositor.",
+        "O produtor é o compositor determinístico versionado identificado no manifesto. Um verificador versionado separado recalculou hashes e executou ffprobe antes dos pareceres. Psique e Têmis usam novas invocações Codex read-only; Têmis independente não executou o compositor nem precisa abrir shell para repetir a prova técnica já auditada.",
       reviewInstruction:
-        "Avalie os dois formatos como pacote do canal DIRECT_ONE_TO_ONE. A sequência estática possui seis cards reduzidos a 360x450; a oferta aparece em duas partes sobrepostas, sem redesenho. As cinco imagens verticais a 360x640 são a pré-visualização realista no celular dos cortes do MP4 opcional de 30 segundos, com durações [4, 3, 12, 5, 6].",
+        "Avalie os dois formatos como pacote do canal DIRECT_ONE_TO_ONE. A sequência estática possui seis cards reduzidos a 360x450; a oferta aparece em duas partes sobrepostas, sem redesenho. As cinco imagens verticais a 360x640 são a pré-visualização realista no celular dos cortes do MP4 opcional de 30 segundos, com durações [4, 3, 12, 5, 6]. Use deterministicTechnicalVerification como evidência canônica de hashes, dimensões, codec e duração; bloqueie qualquer divergência entre esse relatório, manifesto, contrato e imagens, mas não tente executar shell dentro da sandbox read-only do parecer.",
     },
     null,
     2,

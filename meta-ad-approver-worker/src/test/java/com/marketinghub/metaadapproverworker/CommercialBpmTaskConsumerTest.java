@@ -32,6 +32,18 @@ class CommercialBpmTaskConsumerTest {
         .isInstanceOf(IllegalArgumentException.class);
   }
 
+  /** Rejeita aprovação que interprete equivocadamente a escala percentual de clareza do preço. */
+  @Test
+  void rejectsApprovedReviewWithLowPriceClarityScore() throws Exception {
+    var result =
+        json.readTree(
+            "{\"decision\":\"APPROVED\",\"commercialRationale\":\"Preço supostamente claro\",\"priceClarityScore\":10,\"evidence\":[\"Preço de R$ 67\"],\"requiredChanges\":[]}");
+
+    assertThatThrownBy(() -> CommercialBpmTaskConsumer.validate(result))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("80/100");
+  }
+
   /** Exige prompt e schema próprios para o gate comercial do criativo. */
   @Test
   void selectsVersionedCreativeContract() throws Exception {
@@ -101,7 +113,9 @@ class CommercialBpmTaskConsumerTest {
             "SHA-256",
             "não autoriza `RUNNING`",
             "canal efetivo proposto",
-            "QA excluído");
+            "QA excluído",
+            "Nunca use escala de 0 a 10",
+            "nota mínima de 80");
     org.assertj.core.api.Assertions.assertThat(schema)
         .contains("activationRecommendation", "gateChecks", "priceClarityScore");
   }

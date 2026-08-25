@@ -41,6 +41,18 @@ class CustomerBpmTaskConsumerTest {
         .isInstanceOf(IllegalArgumentException.class);
   }
 
+  /** Rejeita decisão aprovada que ainda preserve gate funcional em ajuste. */
+  @Test
+  void rejectsApprovedReviewWithAdjustedGate() throws Exception {
+    var result =
+        json.readTree(
+            "{\"decision\":\"APPROVED\",\"customerPerspective\":\"Oferta clara e utilizável\",\"behavioralResponse\":{\"firstImpulse\":\"Curiosidade segura\",\"belongingAdmirationLove\":\"Desejo sem pressão\"},\"gateChecks\":[{\"status\":\"ADJUST\"}],\"evidence\":[\"Jornada comprovada\"],\"requiredChanges\":[]}");
+
+    assertThatThrownBy(() -> CustomerBpmTaskConsumer.validate(result))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("gate não aprovado");
+  }
+
   /** Rejeita um parecer racionalmente correto que omita impulso e valor relacional. */
   @Test
   void rejectsFullyRationalReviewWithoutHumanBehavior() throws Exception {
@@ -88,13 +100,22 @@ class CustomerBpmTaskConsumerTest {
 
   /** Seleciona o gate específico da cliente para homologação comercial do PDE. */
   @Test
-  void selectsVersionedPdeCommercialHomologationContract() {
+  void selectsVersionedPdeCommercialHomologationContract() throws Exception {
     org.assertj.core.api.Assertions.assertThat(
             CustomerBpmTaskConsumer.promptResourceFor("pde-commercial-homologation-activation"))
         .isEqualTo("prompts/bpm/pde-commercial-homologation-customer-review.md");
     org.assertj.core.api.Assertions.assertThat(
             CustomerBpmTaskConsumer.schemaResourceFor("pde-commercial-homologation-activation"))
         .isEqualTo("prompts/bpm/pde-commercial-homologation-customer-review-schema.json");
+    String prompt =
+        Files.readString(
+            Path.of(
+                "src/main/resources/prompts/bpm/pde-commercial-homologation-customer-review.md"));
+    org.assertj.core.api.Assertions.assertThat(prompt)
+        .contains(
+            "fronteira externa esperada",
+            "Use `ADJUST` somente para defeito corrigível na candidata local",
+            "todos os itens de `gateChecks` em `PASS`");
   }
 
   /** Exige Flex no gate de IA para manter custo e contrato operacional auditáveis. */

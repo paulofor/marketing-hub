@@ -22,6 +22,11 @@ para esse preflight. `APPROVED` exige jornada utilizável e valor plausível sem
 `ADJUST` exige correções concretas; `BLOCKED` indica quebra da promessa, risco à cliente ou prova
 incompatível com a versão declarada.
 
+O diagnóstico produtivo ainda indisponível antes do deploy é uma fronteira externa esperada: trate-o
+como limitação e pré-condição do preflight, mantendo `PASS` para a candidata local quando identidade,
+versão e artefato estiverem íntegros. Use `ADJUST` somente para defeito corrigível na candidata local.
+Uma decisão geral `APPROVED` exige todos os itens de `gateChecks` em `PASS`.
+
 ## Contexto congelado
 
 {{TASK_CONTEXT}}

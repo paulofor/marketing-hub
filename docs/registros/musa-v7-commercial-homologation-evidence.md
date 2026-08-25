@@ -69,34 +69,46 @@
     classificação passa a reconhecer o domínio reservado e o acesso de QA antes de qualquer regra
     funcional. Compra, acesso, primeira utilização, missões, entrega e reembolso de homologação
     permanecem auditáveis no total bruto, mas todos os indicadores humanos ficam em zero.
+11. A inspeção final encontrou que a API do Marketing Hub ainda persistia o seed anterior da v7 e
+    que o backend PDE substituía silenciosamente essa resposta pelo fallback homologado. Foram
+    comparadas três alternativas: ampliar o smoke mantendo o fallback, corrigir somente o banco ou
+    corrigir a persistência e remover a substituição. A terceira foi escolhida por eliminar as duas
+    fontes operacionais. O novo changelog grava o contrato completo em produto e slot, o PDE respeita
+    a resposta do Hub e testes bloqueiam divergência sem depender de deploy.
+12. A repetição de Têmis aprovou os doze gates, mas produziu `priceClarityScore: 10` enquanto tratava
+    o preço como completamente claro. O schema aceitava 0–100 sem explicar a escala, permitindo a
+    interpretação 10/10. O prompt agora define extremos e exige no mínimo 80/100 para aprovação; o
+    validator e um teste negativo impedem que uma nota numericamente incoerente libere o gate.
 
 Os estados `paid`, `refunded` e `chargeback` usados na reconciliação seguem o contrato oficial de
 [status de pagamento da Pepper](https://docs.pepper.com.br/webhooks/status-de-pagamento), e produto,
 valor, moeda e UTMs são confirmados pela
 [consulta oficial da transação](https://docs.pepper.com.br/api-reference/obter-transacao-especifica).
 
-## Provas executadas antes dos pareceres finais
+## Provas finais executadas
 
-- 116 testes do backend PDE, zero falhas.
-- 9 jornadas completas em Chromium desktop, iPhone 15 Pro e Pixel 7 dentro da rede Compose isolada.
+- Após a última correção, duas rodadas completas e consecutivas terminaram sem falhas. Cada rodada
+  executou 1.788 testes aprovados do Marketing Hub com um teste intencionalmente ignorado, 116 do
+  backend PDE, 33 de Psique, 60 de Têmis, 10 do worker de IA, 4 do worker de retenção, build do
+  frontend e 9 jornadas em Chromium desktop, iPhone 15 Pro e Pixel 7.
 - Compra Pepper repetida gerou, na auditoria bruta de QA, uma compra e um acesso; sete missões e a
   repetição da última geraram uma entrega; reembolso repetido gerou um reembolso e revogou o acesso.
   Compra, acesso, entrega, reembolso e venda líquida permaneceram em zero nas métricas humanas.
 - MySQL 5.7 físico: duas aplicações idempotentes, rollback e reaplicação do Liquibase.
+- O mesmo MySQL 5.7 confirmou que produto, rascunho e publicação possuem JSON idêntico, nome público
+  canônico, versão exata, sete missões e interação estruturada desde o primeiro dia.
 - Diagnóstico local: `UP`, produto `metodo-musa-7-dias`, versão
   `musa-pde-entry-v7-espelho-antes-de-sair`, imagem e tag de validação explícitas.
 - Teste visual de preço e checkout aprovado em desktop e mobile, incluindo atribuição da versão no
   `utm_content`.
 - Nenhum e-mail real, contato, campanha, publicação, gasto ou venda foi produzido. Endereços de
   teste usam somente `@sandbox.local`.
-- Psique aprovou a candidata semanticamente corrigida com 89/100. Têmis confirmou preço, entrega,
-  reembolso, privacidade e economia, mas exigiu alinhar os eventos da degustação e comprovar replay
-  idempotente. A correção foi materializada e os dois pareceres serão repetidos sobre os novos hashes
-  antes de qualquer preflight.
+- O manifesto final contém 33 evidências íntegras. Os pareceres e sua telemetria ficam no registro
+  separado `musa-v7-commercial-homologation-agent-results.md`, evitando que a saída do próprio
+  revisor altere retroativamente o conjunto de provas que ele recebeu.
 - O tier Flex foi solicitado aos dois agentes, mas o catálogo do Codex informou que
-  `gpt-5.6-sol` não o suporta e omitiu a configuração. Psique e a retomada de Têmis executaram no
-  tier padrão; a primeira tentativa de Têmis atingiu 40 minutos sem resposta final ou telemetria e
-  não é contabilizada como custo zero.
+  `gpt-5.6-sol` não o suporta e omitiu a configuração. As execuções efetivas usaram o tier padrão;
+  tentativas sem resposta final não são contabilizadas como custo zero.
 
 ## Métrica e decisão operacional futura
 

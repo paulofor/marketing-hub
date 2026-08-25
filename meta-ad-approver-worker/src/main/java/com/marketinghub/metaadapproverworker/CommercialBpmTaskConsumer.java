@@ -277,7 +277,7 @@ public class CommercialBpmTaskConsumer {
     return value == null ? "" : value.toString();
   }
 
-  /** Exige decisão, evidências e coerência explícita com o plano comercial. */
+  /** Exige decisão, evidências e nota de preço coerente quando o contrato a declarar. */
   static void validate(JsonNode result) {
     if (!List.of("APPROVED", "ADJUST", "BLOCKED").contains(result.path("decision").asText())) {
       throw new IllegalArgumentException("Gate de Têmis sem decisão válida");
@@ -286,6 +286,11 @@ public class CommercialBpmTaskConsumer {
         || result.path("evidence").isEmpty()
         || result.path("requiredChanges").isMissingNode()) {
       throw new IllegalArgumentException("Gate de Têmis sem evidências suficientes");
+    }
+    if ("APPROVED".equals(result.path("decision").asText())
+        && result.has("priceClarityScore")
+        && result.path("priceClarityScore").asInt() < 80) {
+      throw new IllegalArgumentException("Gate de Têmis aprovou preço com nota inferior a 80/100");
     }
   }
 

@@ -84,15 +84,7 @@ public class ProductCatalogService {
         Optional<ProductExperienceResponse> marketingHubProduct =
                 loadMarketingHubProduct(slug, host, requestedSlotCode, requestedExperienceVersion);
         if (marketingHubProduct.isPresent()) {
-            ProductExperienceResponse loadedProduct = applyDefaultLayout(marketingHubProduct.get());
-            String requestedVersion = StringUtils.hasText(requestedExperienceVersion)
-                    ? requestedExperienceVersion.trim()
-                    : resolveHostExperienceVersion(host);
-            if (MUSA_V7_EXPERIENCE_VERSION.equals(loadedProduct.experienceVersion())
-                    || MUSA_V7_EXPERIENCE_VERSION.equals(requestedVersion)) {
-                return createMusaV7Product();
-            }
-            return loadedProduct;
+            return applyDefaultLayout(marketingHubProduct.get());
         }
         ProductExperienceResponse product = products.get(slug);
         if (product == null) {

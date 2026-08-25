@@ -37,4 +37,9 @@ public class AgentDto {
   private Instant createdAt;
   private Instant updatedAt;
   private Instant lastContractChangeAt;
+  private Instant lastWorkflowRunAt;
+  private String workflowName;
+  private String workflowFile;
+  private String workflowConclusion;
+  private String workflowUrl;
 }

@@ -30,7 +30,36 @@ function daysWithoutContractChange(value?: string, now = Date.now()) {
 function formatDaysWithoutContractChange(value?: string) {
   const days = daysWithoutContractChange(value);
   if (days === null) return "Tempo não informado";
-  return `${days} ${days === 1 ? "dia" : "dias"} sem alteração`;
+  return `${days} ${days === 1 ? "dia" : "dias"} sem alteração do contrato`;
+}
+
+function formatWorkflowRunDate(value?: string) {
+  if (!value) return "Não comprovado";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Não comprovado";
+  return parsed.toLocaleDateString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+  });
+}
+
+function daysWithoutWorkflowRun(value?: string, now = Date.now()) {
+  if (!value) return null;
+  const completedAt = new Date(value).getTime();
+  if (Number.isNaN(completedAt)) return null;
+  return Math.max(0, Math.floor((now - completedAt) / MILLISECONDS_PER_DAY));
+}
+
+function formatDaysWithoutWorkflowRun(value?: string) {
+  const days = daysWithoutWorkflowRun(value);
+  if (days === null) return "Tempo não comprovado";
+  return `${days} ${days === 1 ? "dia" : "dias"} desde o workflow`;
+}
+
+function formatWorkflowConclusion(value?: string) {
+  if (value === "success") return "sucesso";
+  if (value === "failure") return "falha";
+  if (value === "cancelled") return "cancelado";
+  return value;
 }
 
 const CODEX_EXECUTORS = new Set([
@@ -183,9 +212,7 @@ export default function AgentListPage() {
                               aria-hidden="true"
                             />
                           ) : null}
-                          {item.automaticExecutionEnabled
-                            ? "■ Stop"
-                            : "▶ Play"}
+                          {item.automaticExecutionEnabled ? "■ Stop" : "▶ Play"}
                         </button>
                       </div>
                     </td>
@@ -398,7 +425,7 @@ export default function AgentListPage() {
                           data-agent-contract-recency={agent.id}
                         >
                           <div className="fw-semibold">
-                            Última alteração:{" "}
+                            Última alteração do contrato:{" "}
                             {formatContractChangeDate(
                               agent.lastContractChangeAt,
                             )}
@@ -411,6 +438,37 @@ export default function AgentListPage() {
                               agent.lastContractChangeAt,
                             )}
                           </div>
+                          <div className="fw-semibold mt-1">
+                            Último workflow do executor:{" "}
+                            {formatWorkflowRunDate(agent.lastWorkflowRunAt)}
+                            {agent.workflowConclusion
+                              ? ` (${formatWorkflowConclusion(agent.workflowConclusion)})`
+                              : ""}
+                          </div>
+                          {agent.workflowName || agent.workflowFile ? (
+                            <div className="small text-body-secondary">
+                              Workflow:{" "}
+                              {agent.workflowName || agent.workflowFile}
+                            </div>
+                          ) : null}
+                          <div
+                            className="text-body-secondary"
+                            title="Fonte: GitHub Actions, workflow concluído na branch main"
+                          >
+                            {formatDaysWithoutWorkflowRun(
+                              agent.lastWorkflowRunAt,
+                            )}
+                          </div>
+                          {agent.workflowUrl ? (
+                            <a
+                              className="small"
+                              href={agent.workflowUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Ver evidência no GitHub
+                            </a>
+                          ) : null}
                         </div>
                       </div>
                     </div>

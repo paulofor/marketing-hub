@@ -17,6 +17,11 @@ vi.mock("../../api/agent/useAgents", () => ({
         status: "TEST",
         currentVersion: 1,
         lastContractChangeAt: "2026-08-20T10:00:00Z",
+        lastWorkflowRunAt: "2026-08-24T00:00:00Z",
+        workflowName: "Landing Generator Agent CI/CD",
+        workflowFile: "landing-generator-agent-worker-ci.yml",
+        workflowConclusion: "success",
+        workflowUrl: "https://github.com/paulofor/marketing-hub/actions/runs/1",
         executionMode: "EVENT_DRIVEN",
         themeId: 1,
         inputs: [],
@@ -220,10 +225,19 @@ describe("AgentListPage", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText(/Última alteração:/)).toHaveTextContent(
-      "Última alteração: 20/08/2026",
+    expect(screen.getByText(/Última alteração do contrato:/)).toHaveTextContent(
+      "Última alteração do contrato: 20/08/2026",
     );
-    expect(screen.getByText("5 dias sem alteração")).toBeInTheDocument();
+    expect(
+      screen.getByText("5 dias sem alteração do contrato"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Último workflow do executor: 23\/08\/2026 \(sucesso\)/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Workflow: Landing Generator Agent CI/CD"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("1 dia desde o workflow")).toBeInTheDocument();
   });
 
   it("distingue o health pronto do parecer canônico bloqueado de Atena", () => {

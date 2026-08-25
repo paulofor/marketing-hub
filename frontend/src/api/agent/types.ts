@@ -48,6 +48,11 @@ export interface Agent {
   createdAt?: string;
   updatedAt?: string;
   lastContractChangeAt?: string;
+  lastWorkflowRunAt?: string;
+  workflowName?: string;
+  workflowFile?: string;
+  workflowConclusion?: string;
+  workflowUrl?: string;
 }
 
 export interface AgentPayload {

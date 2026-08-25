@@ -68,7 +68,8 @@ public class CommercialProductCheckoutService {
                 request.experimentId(),
                 request.amount(),
                 deliveryPageUrl);
-        String idempotencyKey = commercialPreferenceIdempotencyKey(request.experimentId());
+        String idempotencyKey = commercialPreferenceIdempotencyKey(
+                request, productKey, productName, deliveryPageUrl);
         MercadoPagoPreferenceResponse response =
                 mercadoPagoClient.createPreference(preference, idempotencyKey);
         if (response == null || !StringUtils.hasText(response.initPoint())) {
@@ -85,10 +86,21 @@ public class CommercialProductCheckoutService {
                 deliveryPageUrl);
     }
 
-    /** Gera uma chave estável por experimento para impedir preferências duplicadas em retries. */
-    private String commercialPreferenceIdempotencyKey(Long experimentId) {
+    /** Gera chave estável por contrato para reutilizar retries sem preservar preço ou entrega antigos. */
+    private String commercialPreferenceIdempotencyKey(
+            CommercialProductCheckoutRequest request,
+            String productKey,
+            String productName,
+            String deliveryPageUrl) {
+        String normalizedAmount = request.amount().stripTrailingZeros().toPlainString();
         return UUID.nameUUIDFromBytes(
-                        ("marketing-hub:commercial-checkout:experiment:" + experimentId)
+                        ("marketing-hub:commercial-checkout:experiment:" + request.experimentId()
+                                + ":product:" + request.productId()
+                                + ":key:" + productKey
+                                + ":name:" + productName
+                                + ":amount:" + normalizedAmount
+                                + ":currency:BRL"
+                                + ":delivery:" + deliveryPageUrl)
                                 .getBytes(StandardCharsets.UTF_8))
                 .toString();
     }

@@ -1694,6 +1694,14 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes unitários e jornada Compose em desktop, iPhone 15 Pro e Pixel 7 repetem os
   callbacks de compra, entrega e reembolso, exigem contagens unitárias e zero venda líquida após a
   devolução. Liquibase é exercitado com aplicação dupla, rollback e reaplicação no MySQL 5.7.
+- **Recorrência fechada localmente em 2026-08-25:** ao criar o checkout do experimento #90, o
+  backend escolheu o primeiro slot ativo por ordem de código (`v5`), embora o destino canônico do
+  experimento fosse `v7`. O log confirmou que a URL errada saiu do Marketing Hub antes da chamada ao
+  serviço de pagamentos. A seleção agora exige correspondência com o domínio do experimento ou com
+  sua associação explícita; múltiplas versões ativas sem vínculo causam bloqueio, nunca escolha
+  silenciosa. O comando revalida checkout já persistido, e a idempotência do provedor passa a incluir
+  produto, preço, moeda e URL de entrega, permitindo corrigir contratos alterados sem duplicar
+  retries idênticos. Testes nos dois módulos impedem retorno de versão, preço ou entrega antigos.
 
 ## LOOP-PDE-TELEMETRIA-EXPOE-TOKEN-NA-URL — navegação autenticada vaza segredo
 

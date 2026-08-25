@@ -3,10 +3,14 @@ package com.marketinghub.experiment.service;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.leadportal.integration.LeadPortalPaymentsClient;
+import com.marketinghub.pde.PdeProductionSlot;
 import com.marketinghub.pde.PdeProductionSlotStatus;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.pde.PdeProductionSlotRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,29 +62,8 @@ public class ExperimentCommercialCheckoutService {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "Experimento sem preço comercial válido");
     }
-    if (StringUtils.hasText(experiment.getCommercialCheckoutUrl())) {
-      return new LeadPortalPaymentsClient.CommercialProductCheckoutResponse(
-          experiment.getProduct().getSlug(),
-          experiment.getProduct().getId(),
-          experiment.getId(),
-          null,
-          experiment.getCommercialCheckoutUrl(),
-          experiment.getUnitPrice(),
-          "BRL",
-          experiment.getProduct().getPublicUrl());
-    }
     var product = experiment.getProduct();
-    var activeSlot =
-        pdeProductionSlotRepository.findByProductSlugOrderBySlotCodeAsc(product.getSlug()).stream()
-            .filter(slot -> slot.getStatus() == PdeProductionSlotStatus.ACTIVE)
-            .filter(slot -> VALIDATION_OK.equals(slot.getValidationStatus()))
-            .filter(slot -> StringUtils.hasText(slot.getPublicUrl()))
-            .findFirst()
-            .orElseThrow(
-                () ->
-                    new ResponseStatusException(
-                        HttpStatus.CONFLICT,
-                        "Publique, valide e ative a área de entrega PDE antes de criar o checkout"));
+    var activeSlot = resolveDeliverySlot(experiment, product.getSlug());
     var response =
         paymentsClient.createCommercialProductCheckout(
             new LeadPortalPaymentsClient.CommercialProductCheckoutRequest(
@@ -90,10 +73,100 @@ public class ExperimentCommercialCheckoutService {
                 experiment.getId(),
                 experiment.getUnitPrice(),
                 activeSlot.getPublicUrl()));
+    validateCheckoutContract(experiment, activeSlot, response);
     experiment.setCommercialCheckoutUrl(response.checkoutUrl());
     product.setPublicUrl(activeSlot.getPublicUrl());
     productRepository.save(product);
     experimentRepository.save(experiment);
     return response;
+  }
+
+  /** Resolve a entrega pela URL do experimento e bloqueia seleção ambígua entre versões ativas. */
+  private PdeProductionSlot resolveDeliverySlot(Experiment experiment, String productSlug) {
+    List<PdeProductionSlot> activeSlots =
+        pdeProductionSlotRepository.findByProductSlugOrderBySlotCodeAsc(productSlug).stream()
+            .filter(slot -> slot.getStatus() == PdeProductionSlotStatus.ACTIVE)
+            .filter(slot -> VALIDATION_OK.equals(slot.getValidationStatus()))
+            .filter(slot -> StringUtils.hasText(slot.getPublicUrl()))
+            .toList();
+    Optional<String> destinationDomain = normalizeDomain(experiment.getFollowUpActionUrl());
+    List<PdeProductionSlot> destinationMatches =
+        destinationDomain
+            .map(
+                domain ->
+                    activeSlots.stream()
+                        .filter(
+                            slot ->
+                                normalizeDomain(slot.getPublicUrl())
+                                    .filter(domain::equals)
+                                    .isPresent())
+                        .toList())
+            .orElseGet(List::of);
+    if (destinationMatches.size() == 1) {
+      return destinationMatches.get(0);
+    }
+    List<PdeProductionSlot> experimentMatches =
+        activeSlots.stream()
+            .filter(slot -> experiment.getId().equals(slot.getSourceExperimentId()))
+            .toList();
+    if (experimentMatches.size() == 1) {
+      return experimentMatches.get(0);
+    }
+    if (activeSlots.size() == 1) {
+      return activeSlots.get(0);
+    }
+    throw new ResponseStatusException(
+        HttpStatus.CONFLICT,
+        "Publique, valide e ative uma única área de entrega PDE correspondente ao destino do experimento antes de criar o checkout");
+  }
+
+  /** Extrai o domínio de uma URL para comparar a landing com seu slot PDE versionado. */
+  private Optional<String> normalizeDomain(String url) {
+    if (!StringUtils.hasText(url)) {
+      return Optional.empty();
+    }
+    String normalized = url.trim().replaceFirst("^https?://", "").replaceFirst("^//", "");
+    int separator = normalized.indexOf('/');
+    if (separator >= 0) {
+      normalized = normalized.substring(0, separator);
+    }
+    separator = normalized.indexOf('?');
+    if (separator >= 0) {
+      normalized = normalized.substring(0, separator);
+    }
+    separator = normalized.indexOf('#');
+    if (separator >= 0) {
+      normalized = normalized.substring(0, separator);
+    }
+    separator = normalized.indexOf(':');
+    if (separator >= 0) {
+      normalized = normalized.substring(0, separator);
+    }
+    if (!StringUtils.hasText(normalized) || !normalized.contains(".")) {
+      return Optional.empty();
+    }
+    return Optional.of(normalized.toLowerCase(Locale.ROOT));
+  }
+
+  /** Confirma que o serviço de pagamentos devolveu o mesmo produto, preço e destino solicitados. */
+  private void validateCheckoutContract(
+      Experiment experiment,
+      PdeProductionSlot activeSlot,
+      LeadPortalPaymentsClient.CommercialProductCheckoutResponse response) {
+    boolean valid =
+        response != null
+            && experiment.getProduct().getSlug().equals(response.productKey())
+            && experiment.getProduct().getId().equals(response.productId())
+            && experiment.getId().equals(response.experimentId())
+            && response.amount() != null
+            && experiment.getUnitPrice().compareTo(response.amount()) == 0
+            && "BRL".equals(response.currency())
+            && normalizeDomain(activeSlot.getPublicUrl())
+                .equals(normalizeDomain(response.deliveryPageUrl()))
+            && StringUtils.hasText(response.checkoutUrl());
+    if (!valid) {
+      throw new IllegalStateException(
+          "Serviço de pagamentos devolveu checkout divergente do contrato comercial solicitado");
+    }
   }
 }

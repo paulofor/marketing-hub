@@ -4,6 +4,8 @@ import com.marketinghub.agent.Agent;
 import com.marketinghub.agent.dto.AgentDto;
 import com.marketinghub.agent.dto.AgentMaturityDto;
 import com.marketinghub.agent.dto.SaveAgentRequest;
+import com.marketinghub.agent.integration.AgentWorkflowFreshness;
+import com.marketinghub.agent.integration.AgentWorkflowFreshnessService;
 import com.marketinghub.agent.mapper.AgentMapper;
 import com.marketinghub.agent.service.AgentMaturityService;
 import com.marketinghub.agent.service.AgentService;
@@ -31,13 +33,18 @@ public class AgentController {
   private final AgentService service;
   private final AgentMapper mapper;
   private final AgentMaturityService maturityService;
+  private final AgentWorkflowFreshnessService workflowFreshnessService;
 
   /** Configura o servico e o conversor usados pelos endpoints. */
   public AgentController(
-      AgentService service, AgentMapper mapper, AgentMaturityService maturityService) {
+      AgentService service,
+      AgentMapper mapper,
+      AgentMaturityService maturityService,
+      AgentWorkflowFreshnessService workflowFreshnessService) {
     this.service = service;
     this.mapper = mapper;
     this.maturityService = maturityService;
+    this.workflowFreshnessService = workflowFreshnessService;
   }
 
   /** Cria um agente e sua primeira versao de contrato. */
@@ -57,7 +64,11 @@ public class AgentController {
   public List<AgentDto> list() {
     List<Agent> agents = service.list();
     Map<Long, Instant> changes = service.currentVersionChanges(agents);
-    return agents.stream().map(agent -> mapper.toDto(agent, changes.get(agent.getId()))).toList();
+    Map<Long, AgentWorkflowFreshness> workflows =
+        workflowFreshnessService.currentWorkflowRuns(agents);
+    return agents.stream()
+        .map(agent -> mapper.toDto(agent, changes.get(agent.getId()), workflows.get(agent.getId())))
+        .toList();
   }
 
   /** Recupera um agente pelo identificador. */

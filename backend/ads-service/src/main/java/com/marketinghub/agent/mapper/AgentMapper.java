@@ -8,6 +8,7 @@ import com.marketinghub.agent.AgentTheme;
 import com.marketinghub.agent.dto.AgentDto;
 import com.marketinghub.agent.dto.AgentItemDto;
 import com.marketinghub.agent.dto.AgentThemeDto;
+import com.marketinghub.agent.integration.AgentWorkflowFreshness;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -20,6 +21,12 @@ public class AgentMapper {
 
   /** Converte um agente completo e a data auditavel de sua versao para o contrato de leitura. */
   public AgentDto toDto(Agent agent, Instant lastContractChangeAt) {
+    return toDto(agent, lastContractChangeAt, null);
+  }
+
+  /** Converte um agente com a data do contrato e a recência operacional do executor. */
+  public AgentDto toDto(
+      Agent agent, Instant lastContractChangeAt, AgentWorkflowFreshness workflowFreshness) {
     AgentDto dto = new AgentDto();
     dto.setId(agent.getId());
     dto.setName(agent.getName());
@@ -53,6 +60,13 @@ public class AgentMapper {
     dto.setCreatedAt(agent.getCreatedAt());
     dto.setUpdatedAt(agent.getUpdatedAt());
     dto.setLastContractChangeAt(lastContractChangeAt);
+    if (workflowFreshness != null) {
+      dto.setLastWorkflowRunAt(workflowFreshness.lastWorkflowRunAt());
+      dto.setWorkflowName(workflowFreshness.workflowName());
+      dto.setWorkflowFile(workflowFreshness.workflowFile());
+      dto.setWorkflowConclusion(workflowFreshness.workflowConclusion());
+      dto.setWorkflowUrl(workflowFreshness.workflowUrl());
+    }
     return dto;
   }
 

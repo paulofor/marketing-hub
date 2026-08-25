@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,12 +54,46 @@ class CommercialProductCheckoutServiceTest {
                 ArgumentCaptor.forClass(MercadoPagoPreferenceRequest.class);
         ArgumentCaptor<String> idempotencyKey = ArgumentCaptor.forClass(String.class);
         verify(mercadoPagoClient).createPreference(captor.capture(), idempotencyKey.capture());
-        assertThat(idempotencyKey.getValue()).isEqualTo("a80b2c6f-d0e3-3adc-b491-6784edcf6aa4");
+        assertThat(idempotencyKey.getValue())
+                .matches("[0-9a-f]{8}-[0-9a-f]{4}-3[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}");
         assertThat(captor.getValue().externalReference()).isEqualTo("kit-whatsapp-pronto");
         assertThat(captor.getValue().metadata())
                 .containsEntry("productId", 9L)
                 .containsEntry("experimentId", 89L)
                 .containsEntry("delivery_url", "https://kit-whatsapp-pronto.digicomdigital.com.br");
+    }
+
+    /** Mantém a chave em retries equivalentes e cria outra quando a versão de entrega muda. */
+    @Test
+    void versionsIdempotencyByCompleteCommercialContract() {
+        when(mercadoPagoClient.createPreference(any(), anyString()))
+                .thenReturn(new MercadoPagoPreferenceResponse("pref-kit", "https://mercadopago.com/kit"));
+        service.create(new CommercialProductCheckoutRequest(
+                "kit-whatsapp-pronto",
+                "Kit WhatsApp Pronto",
+                9L,
+                89L,
+                new BigDecimal("349.00"),
+                "https://v5.produto.test"));
+        service.create(new CommercialProductCheckoutRequest(
+                "kit-whatsapp-pronto",
+                "Kit WhatsApp Pronto",
+                9L,
+                89L,
+                new BigDecimal("349.0"),
+                "https://v5.produto.test"));
+        service.create(new CommercialProductCheckoutRequest(
+                "kit-whatsapp-pronto",
+                "Kit WhatsApp Pronto",
+                9L,
+                89L,
+                new BigDecimal("349.00"),
+                "https://v7.produto.test"));
+
+        ArgumentCaptor<String> keys = ArgumentCaptor.forClass(String.class);
+        verify(mercadoPagoClient, times(3)).createPreference(any(), keys.capture());
+        assertThat(keys.getAllValues().get(0)).isEqualTo(keys.getAllValues().get(1));
+        assertThat(keys.getAllValues().get(2)).isNotEqualTo(keys.getAllValues().get(0));
     }
 
     /** Bloqueia página de entrega insegura antes de chamar o provedor. */

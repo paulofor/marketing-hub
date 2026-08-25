@@ -688,6 +688,11 @@ components:
         processCount:
           type: integer
           nullable: true
+        processMeasurements:
+          type: array
+          description: Histórico auditável de entrada, saída, permanência e custo conhecido dos macroprocessos do produto.
+          items:
+            $ref: "#/components/schemas/ProductStageMeasurement"
         subprocessPosition:
           nullable: true
           allOf:
@@ -737,6 +742,82 @@ components:
         nextSubprocessObjective:
           type: string
           nullable: true
+        measurements:
+          type: array
+          description: Medições dos subprocessos com execução persistida no processo atual.
+          items:
+            $ref: "#/components/schemas/ProductStageMeasurement"
+    ProductStageMeasurement:
+      type: object
+      required:
+        - stageType
+        - trackingStatus
+        - processDefinitionId
+        - processCode
+        - processName
+        - entryEvidence
+        - objectiveAchieved
+        - knownEstimatedCostUsd
+        - costCoverage
+        - costedExecutionCount
+        - uncostedExecutionCount
+      properties:
+        stageType:
+          type: string
+          enum:
+            - PROCESS
+            - SUBPROCESS
+        trackingStatus:
+          type: string
+          enum:
+            - CURRENT
+            - COMPLETED
+            - RECORDED
+        processDefinitionId:
+          type: integer
+          format: int64
+        processCode:
+          type: string
+        processName:
+          type: string
+        enteredAt:
+          type: string
+          format: date-time
+          nullable: true
+        entryEvidence:
+          type: string
+          description: Origem auditável do marco de entrada; backfills históricos são identificados explicitamente.
+        exitedAt:
+          type: string
+          format: date-time
+          nullable: true
+        exitEvidence:
+          type: string
+          nullable: true
+        objectiveAchieved:
+          type: boolean
+        elapsedDays:
+          type: integer
+          format: int64
+          minimum: 0
+          nullable: true
+        knownEstimatedCostUsd:
+          type: number
+          format: double
+          minimum: 0
+        costCoverage:
+          type: string
+          enum:
+            - COMPLETE
+            - PARTIAL
+            - NOT_REPORTED
+            - NO_EXECUTIONS
+        costedExecutionCount:
+          type: integer
+          minimum: 0
+        uncostedExecutionCount:
+          type: integer
+          minimum: 0
     ProductTypeDefinition:
       type: object
       properties:

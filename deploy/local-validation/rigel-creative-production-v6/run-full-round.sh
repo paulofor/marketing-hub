@@ -5,7 +5,7 @@ ROUND=${1:?Informe o identificador da rodada}
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPOSITORY_ROOT=$(cd "${SCRIPT_DIR}/../../.." && pwd)
 EVIDENCE_DIR="${SCRIPT_DIR}/evidence/rounds/${ROUND}"
-COMPOSE_PROJECT=aihub-3be557b7-fe0c-442b-9b45-f14678482e3d-2708e83e18
+COMPOSE_PROJECT=aihub-04f755ef-c3c0-43b2-ba12-14fdd53b0762-d879448de8
 CAPTURE_CONTAINER="${COMPOSE_PROJECT}-rigel-creative-capture-${ROUND//[^a-zA-Z0-9_.-]/-}"
 COMPOSE_FILES=(
   -f "${REPOSITORY_ROOT}/pde-platform/docker-compose.assisted-service-validation.yml"

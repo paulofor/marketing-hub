@@ -144,6 +144,28 @@ components:
           format: date-time
           nullable: true
           description: Criação da versão atual do contrato imutável do agente.
+        lastWorkflowRunAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Data da última execução concluída do workflow do executor na branch operacional.
+        workflowName:
+          type: string
+          nullable: true
+          description: Nome do workflow do GitHub associado ao executor.
+        workflowFile:
+          type: string
+          nullable: true
+          description: Arquivo versionado do workflow associado ao executor.
+        workflowConclusion:
+          type: string
+          nullable: true
+          description: Conclusão registrada pelo GitHub para a última execução concluída.
+        workflowUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Link da execução usada como evidência operacional.
     AgentWorkMonitor:
       type: object
       required:

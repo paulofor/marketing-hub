@@ -1,5 +1,7 @@
 package com.marketinghub.product.service.valuechainposition;
 
+import java.util.List;
+
 /** Contrato que explica o subprocesso atual e o próximo objetivo especializado do produto. */
 public record ProductSubprocessPositionResponse(
     String trackingStatus,
@@ -12,4 +14,5 @@ public record ProductSubprocessPositionResponse(
     Long nextSubprocessDefinitionId,
     String nextSubprocessCode,
     String nextSubprocessName,
-    String nextSubprocessObjective) {}
+    String nextSubprocessObjective,
+    List<ProductStageMeasurementResponse> measurements) {}

@@ -22,6 +22,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
@@ -114,9 +115,9 @@ class ExperimentCommercialCheckoutServiceTest {
     verify(paymentsClient, never()).createCommercialProductCheckout(any());
   }
 
-  /** Deve devolver o checkout já persistido sem criar outra preferência no provedor. */
+  /** Deve revalidar checkout persistido para substituir preferência ligada a uma entrega antiga. */
   @Test
-  void reusesExistingCheckoutIdempotently() {
+  void refreshesExistingCheckoutAgainstCurrentContractIdempotently() {
     Product product =
         Product.builder()
             .id(9L)
@@ -132,11 +133,147 @@ class ExperimentCommercialCheckoutServiceTest {
             .unitPrice(new BigDecimal("349.00"))
             .commercialCheckoutUrl("https://checkout.mercadopago.com.br/pref-89")
             .build();
+    PdeProductionSlot slot =
+        PdeProductionSlot.builder()
+            .productSlug(product.getSlug())
+            .slotCode("v7")
+            .publicUrl("https://v7.produto.test")
+            .status(PdeProductionSlotStatus.ACTIVE)
+            .validationStatus("OK")
+            .sourceExperimentId(89L)
+            .build();
     when(experimentRepository.findById(89L)).thenReturn(Optional.of(experiment));
+    when(pdeProductionSlotRepository.findByProductSlugOrderBySlotCodeAsc(product.getSlug()))
+        .thenReturn(List.of(slot));
+    when(paymentsClient.createCommercialProductCheckout(any()))
+        .thenReturn(
+            new LeadPortalPaymentsClient.CommercialProductCheckoutResponse(
+                product.getSlug(),
+                product.getId(),
+                experiment.getId(),
+                "pref-v7",
+                "https://checkout.mercadopago.com.br/pref-v7",
+                experiment.getUnitPrice(),
+                "BRL",
+                slot.getPublicUrl()));
 
     var response = service.create(89L);
 
-    assertThat(response.checkoutUrl()).isEqualTo(experiment.getCommercialCheckoutUrl());
+    assertThat(response.checkoutUrl()).endsWith("pref-v7");
+    assertThat(experiment.getCommercialCheckoutUrl()).endsWith("pref-v7");
+    verify(paymentsClient).createCommercialProductCheckout(any());
+  }
+
+  /** Deve escolher o slot cujo domínio corresponde ao destino mesmo com versões antigas ativas. */
+  @Test
+  void selectsDestinationSlotInsteadOfFirstActiveVersion() {
+    Product product =
+        Product.builder().id(4L).slug("metodo-musa-7-dias").name("Método MUSA").build();
+    Experiment experiment =
+        Experiment.builder()
+            .id(90L)
+            .product(product)
+            .status(ExperimentStatus.PLANNED)
+            .unitPrice(new BigDecimal("67.00"))
+            .followUpActionUrl("https://v7.clubemusa.com.br?mh_preview=qa")
+            .build();
+    PdeProductionSlot v5 = activeSlot("v5", "https://v5.clubemusa.com.br", 74L);
+    PdeProductionSlot v7 = activeSlot("v7", "https://v7.clubemusa.com.br", 90L);
+    when(experimentRepository.findById(90L)).thenReturn(Optional.of(experiment));
+    when(pdeProductionSlotRepository.findByProductSlugOrderBySlotCodeAsc(product.getSlug()))
+        .thenReturn(List.of(v5, v7));
+    when(paymentsClient.createCommercialProductCheckout(any()))
+        .thenReturn(
+            new LeadPortalPaymentsClient.CommercialProductCheckoutResponse(
+                product.getSlug(),
+                product.getId(),
+                experiment.getId(),
+                "pref-v7",
+                "https://checkout.mercadopago.com.br/pref-v7",
+                experiment.getUnitPrice(),
+                "BRL",
+                v7.getPublicUrl()));
+
+    service.create(90L);
+
+    ArgumentCaptor<LeadPortalPaymentsClient.CommercialProductCheckoutRequest> request =
+        ArgumentCaptor.forClass(LeadPortalPaymentsClient.CommercialProductCheckoutRequest.class);
+    verify(paymentsClient).createCommercialProductCheckout(request.capture());
+    assertThat(request.getValue().deliveryPageUrl()).isEqualTo(v7.getPublicUrl());
+    assertThat(product.getPublicUrl()).isEqualTo(v7.getPublicUrl());
+  }
+
+  /** Deve bloquear quando o provedor devolver versão ou valor divergente do contrato solicitado. */
+  @Test
+  void rejectsCheckoutResponseFromDifferentDeliveryVersion() {
+    Product product =
+        Product.builder().id(4L).slug("metodo-musa-7-dias").name("Método MUSA").build();
+    Experiment experiment =
+        Experiment.builder()
+            .id(90L)
+            .product(product)
+            .status(ExperimentStatus.PLANNED)
+            .unitPrice(new BigDecimal("67.00"))
+            .followUpActionUrl("https://v7.clubemusa.com.br")
+            .build();
+    PdeProductionSlot v7 = activeSlot("v7", "https://v7.clubemusa.com.br", 90L);
+    when(experimentRepository.findById(90L)).thenReturn(Optional.of(experiment));
+    when(pdeProductionSlotRepository.findByProductSlugOrderBySlotCodeAsc(product.getSlug()))
+        .thenReturn(List.of(v7));
+    when(paymentsClient.createCommercialProductCheckout(any()))
+        .thenReturn(
+            new LeadPortalPaymentsClient.CommercialProductCheckoutResponse(
+                product.getSlug(),
+                product.getId(),
+                experiment.getId(),
+                "pref-v5",
+                "https://checkout.mercadopago.com.br/pref-v5",
+                experiment.getUnitPrice(),
+                "BRL",
+                "https://v5.clubemusa.com.br"));
+
+    assertThatThrownBy(() -> service.create(90L))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("divergente");
+    verify(productRepository, never()).save(any());
+    verify(experimentRepository, never()).save(any());
+  }
+
+  /** Deve bloquear versões ativas concorrentes quando nenhuma corresponde ao destino informado. */
+  @Test
+  void blocksAmbiguousActiveDeliveryVersions() {
+    Product product =
+        Product.builder().id(4L).slug("metodo-musa-7-dias").name("Método MUSA").build();
+    Experiment experiment =
+        Experiment.builder()
+            .id(90L)
+            .product(product)
+            .status(ExperimentStatus.PLANNED)
+            .unitPrice(new BigDecimal("67.00"))
+            .followUpActionUrl("https://v8.clubemusa.com.br")
+            .build();
+    when(experimentRepository.findById(90L)).thenReturn(Optional.of(experiment));
+    when(pdeProductionSlotRepository.findByProductSlugOrderBySlotCodeAsc(product.getSlug()))
+        .thenReturn(
+            List.of(
+                activeSlot("v5", "https://v5.clubemusa.com.br", 74L),
+                activeSlot("v7", "https://v7.clubemusa.com.br", 91L)));
+
+    assertThatThrownBy(() -> service.create(90L))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("correspondente ao destino");
     verify(paymentsClient, never()).createCommercialProductCheckout(any());
+  }
+
+  /** Monta um slot ativo e validado para cenários com versões paralelas do PDE. */
+  private PdeProductionSlot activeSlot(String slotCode, String publicUrl, Long experimentId) {
+    return PdeProductionSlot.builder()
+        .productSlug("metodo-musa-7-dias")
+        .slotCode(slotCode)
+        .publicUrl(publicUrl)
+        .status(PdeProductionSlotStatus.ACTIVE)
+        .validationStatus("OK")
+        .sourceExperimentId(experimentId)
+        .build();
   }
 }

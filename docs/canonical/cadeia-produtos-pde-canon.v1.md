@@ -161,6 +161,21 @@ execução ainda estiver em uma atividade do processo pai, a tela deve declarar 
 apresentar o próximo subprocesso. Ausência de histórico deve aparecer como planejamento, nunca como
 subprocesso concluído.
 
+Cada permanência de produto em processo ou subprocesso deve expor data de entrada, data de saída
+quando houver avanço comprovado, dias corridos e custo estimado conhecido em dólares. O backend é a
+fonte desses cálculos: macroprocessos usam períodos auditáveis abertos e fechados na mudança real de
+estado comercial; subprocessos usam a primeira tarefa persistida e a entrada no subprocesso seguinte
+como evidência preferencial de saída. A conclusão isolada de uma tarefa não comprova o objetivo do
+processo quando não existir avanço posterior; atualização, entrega ou bloqueio isolado permanece
+apenas como atividade registrada, sem data de saída nem objetivo atingido. Registros anteriores ao
+rastreamento podem usar backfill, mas a interface deve identificá-los como estimados.
+
+O custo agrega somente execuções atribuídas ao produto no intervalo da etapa, incluindo uso de
+modelo registrado nas tarefas e tentativas do ledger do Estúdio. O subtotal conhecido nunca pode ser
+apresentado como total exato quando existirem execuções sem preço: a cobertura deve ser classificada
+como completa, parcial, não reportada ou sem execuções. Dias são derivados dos marcos persistidos e
+não gravados como contador mutável.
+
 ## 1. Descoberta e priorização da oportunidade PDE
 
 **Objetivo final:** comprovar que existe uma dor recorrente, relevante, mal atendida e com intenção
@@ -523,6 +538,8 @@ segunda orquestração.
 A cadeia deve permitir medir, no mínimo:
 
 - tempo da oportunidade até Plano Comercial aprovado;
+- permanência em cada processo e subprocesso, com entrada, saída, dias corridos e cobertura do custo
+  estimado em dólares;
 - alternativas de formato comparadas, formato escolhido e motivo da decisão;
 - tempo do plano até PDE aprovado;
 - aprovação do produto e dos criativos na primeira tentativa;

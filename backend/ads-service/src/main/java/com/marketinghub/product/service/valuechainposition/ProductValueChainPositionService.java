@@ -5,14 +5,11 @@ import com.marketinghub.businessprocesschain.BusinessProcessChainItem;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.businessprocesschain.BusinessProcessChainDefinitionRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
-import java.text.Normalizer;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,33 +17,29 @@ import org.springframework.transaction.annotation.Transactional;
  * Responsabilidade: localizar produtos na cadeia de valor PDE vigente sem inferência no frontend.
  */
 @Service
-@RequiredArgsConstructor
 public class ProductValueChainPositionService {
   private static final String PDE_CHAIN_CODE = "pde-value-creation-delivery";
   private static final String PUBLISHED_STATUS = "PUBLISHED";
-  private static final Map<String, String> LEGACY_STATUS_PROCESS_CODES =
-      Map.ofEntries(
-          Map.entry("OPORTUNIDADE_EM_DESCOBERTA", "pde-opportunity-discovery"),
-          Map.entry("DESCOBERTA_E_PRIORIZACAO", "pde-opportunity-discovery"),
-          Map.entry("IDEIA_PRIORIZADA_PARA_TESTE", "pde-commercial-plan-offer"),
-          Map.entry("PLANO_COMERCIAL", "pde-commercial-plan-offer"),
-          Map.entry("PLANO_COMERCIAL_E_OFERTA", "pde-commercial-plan-offer"),
-          Map.entry("CONSTRUCAO_E_APROVACAO", "pde-construction-approval"),
-          Map.entry("COMUNICACAO_E_JORNADA", "pde-communication-sales-journey"),
-          Map.entry("COMUNICACAO_E_JORNADA_DE_VENDA", "pde-communication-sales-journey"),
-          Map.entry("VALIDACAO_COMERCIAL", "pde-commercial-homologation-activation"),
-          Map.entry("HOMOLOGACAO_E_ATIVACAO", "pde-commercial-homologation-activation"),
-          Map.entry("HOMOLOGACAO_COMERCIAL_E_ATIVACAO", "pde-commercial-homologation-activation"),
-          Map.entry("ATIVO", "pde-sales-delivery-learning"),
-          Map.entry("ACTIVE", "pde-sales-delivery-learning"),
-          Map.entry("RUNNING", "pde-sales-delivery-learning"),
-          Map.entry("ESCALA", "pde-sales-delivery-learning"),
-          Map.entry("ESCALANDO", "pde-sales-delivery-learning"),
-          Map.entry("VENDA_ENTREGA_E_APRENDIZADO", "pde-sales-delivery-learning"));
 
   private final ProductRepository productRepository;
   private final BusinessProcessChainDefinitionRepository chainRepository;
   private final ProductSubprocessPositionResolver subprocessResolver;
+  private final PdeProcessCodeResolver processCodeResolver;
+  private final ProductStageMeasurementResolver stageMeasurementResolver;
+
+  /** Configura as fontes canônicas usadas para resolver a cadeia e os subprocessos. */
+  public ProductValueChainPositionService(
+      ProductRepository productRepository,
+      BusinessProcessChainDefinitionRepository chainRepository,
+      ProductSubprocessPositionResolver subprocessResolver,
+      PdeProcessCodeResolver processCodeResolver,
+      ProductStageMeasurementResolver stageMeasurementResolver) {
+    this.productRepository = productRepository;
+    this.chainRepository = chainRepository;
+    this.subprocessResolver = subprocessResolver;
+    this.processCodeResolver = processCodeResolver;
+    this.stageMeasurementResolver = stageMeasurementResolver;
+  }
 
   /** Lista a posição de todos os produtos usando somente a versão publicada da cadeia PDE. */
   @Transactional(readOnly = true)
@@ -73,7 +66,7 @@ public class ProductValueChainPositionService {
                 Collectors.toMap(
                     item -> item.getProcessDefinition().getProcessCode(), Function.identity()));
     return products.stream()
-        .map(product -> resolvePosition(product, chain, orderedItems.size(), itemByCode))
+        .map(product -> resolvePosition(product, chain, orderedItems, itemByCode))
         .toList();
   }
 
@@ -81,12 +74,12 @@ public class ProductValueChainPositionService {
   private ProductValueChainPositionResponse resolvePosition(
       Product product,
       BusinessProcessChainDefinition chain,
-      int processCount,
+      List<BusinessProcessChainItem> orderedItems,
       Map<String, BusinessProcessChainItem> itemByCode) {
     String processCode = resolveProcessCode(product.getCommercialStatus(), itemByCode);
     BusinessProcessChainItem item = processCode == null ? null : itemByCode.get(processCode);
     if (item == null) {
-      return unresolvedPosition(product, chain, processCount);
+      return unresolvedPosition(product, chain, orderedItems.size());
     }
     var process = item.getProcessDefinition();
     return new ProductValueChainPositionResponse(
@@ -102,7 +95,8 @@ public class ProductValueChainPositionService {
         process.getName(),
         process.getVersionNumber(),
         item.getSequenceNumber(),
-        processCount,
+        orderedItems.size(),
+        stageMeasurementResolver.resolveProcessMeasurements(product, orderedItems, process),
         subprocessResolver.resolve(product, process));
   }
 
@@ -111,14 +105,7 @@ public class ProductValueChainPositionService {
    */
   private String resolveProcessCode(
       String commercialStatus, Map<String, BusinessProcessChainItem> itemByCode) {
-    String normalizedStatus = normalize(commercialStatus);
-    if (normalizedStatus == null) {
-      return null;
-    }
-    return itemByCode.keySet().stream()
-        .filter(processCode -> normalize(processCode).equals(normalizedStatus))
-        .findFirst()
-        .orElse(LEGACY_STATUS_PROCESS_CODES.get(normalizedStatus));
+    return processCodeResolver.resolve(commercialStatus, itemByCode.keySet());
   }
 
   /** Expõe explicitamente quando o status do produto ainda não possui vínculo canônico. */
@@ -142,6 +129,7 @@ public class ProductValueChainPositionService {
         null,
         null,
         processCount,
+        List.of(),
         null);
   }
 
@@ -161,19 +149,7 @@ public class ProductValueChainPositionService {
         null,
         null,
         null,
+        List.of(),
         null);
-  }
-
-  /** Normaliza códigos antigos, acentos e separadores antes da resolução do vínculo. */
-  private String normalize(String value) {
-    if (value == null || value.isBlank()) {
-      return null;
-    }
-    return Normalizer.normalize(value, Normalizer.Form.NFD)
-        .replaceAll("\\p{M}", "")
-        .trim()
-        .toUpperCase(Locale.ROOT)
-        .replaceAll("[^A-Z0-9]+", "_")
-        .replaceAll("^_+|_+$", "");
   }
 }

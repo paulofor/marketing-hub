@@ -35,6 +35,7 @@ class ProductValueChainPositionControllerTest {
                     4,
                     4,
                     6,
+                    List.of(),
                     null)));
     var mockMvc =
         MockMvcBuilders.standaloneSetup(new ProductValueChainPositionController(service)).build();

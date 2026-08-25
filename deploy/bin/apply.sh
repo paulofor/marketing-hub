@@ -16,7 +16,9 @@ DIAGNOSTIC_COMMAND_TIMEOUT=${DIAGNOSTIC_COMMAND_TIMEOUT:-20s}
 BACKEND_HEALTH_URL=${BACKEND_HEALTH_URL:-http://localhost:8000/ops-mh-observability-v2/health}
 FRONTEND_HEALTH_URL=${FRONTEND_HEALTH_URL:-http://localhost:5173/healthz}
 BACKEND_HEALTH_ATTEMPTS=${BACKEND_HEALTH_ATTEMPTS:-60}
-BACKEND_HEALTH_INTERVAL=${BACKEND_HEALTH_INTERVAL:-10}
+BACKEND_HEALTH_INTERVAL=${BACKEND_HEALTH_INTERVAL:-5}
+BACKEND_MAX_RESTARTS=${BACKEND_MAX_RESTARTS:-2}
+BACKEND_HEALTH_SUCCESSES_REQUIRED=${BACKEND_HEALTH_SUCCESSES_REQUIRED:-2}
 PAYMENTS_AUTH_TOKEN_VALUE=${LEAD_PORTAL_PAYMENTS_AUTH_TOKEN:-}
 
 if [[ ${#PAYMENTS_AUTH_TOKEN_VALUE} -lt 32 ]]; then
@@ -75,6 +77,8 @@ dump_app_diagnostics() {
   log "Últimas linhas do frontend"
   timeout -k 5s "${DIAGNOSTIC_COMMAND_TIMEOUT}" docker logs --tail 80 marketinghub-frontend 2>&1 || true
 }
+
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/backend-health.sh"
 
 run_with_timeout_and_diagnostics() {
   local description="$1"
@@ -197,7 +201,14 @@ rollback_app_stack() {
     env BACKEND_IMAGE_TAG=latest FRONTEND_IMAGE_TAG=latest VIDEO_MGMT_IMAGE_TAG=latest \
     docker compose up -d --force-recreate --remove-orphans backend backend-log-reader frontend
 
-  if ! wait_http "backend restaurado" "${BACKEND_HEALTH_URL}" "${BACKEND_HEALTH_ATTEMPTS}" "${BACKEND_HEALTH_INTERVAL}"; then
+  if ! wait_backend_container_http \
+    "backend restaurado" \
+    "${BACKEND_HEALTH_URL}" \
+    "${BACKEND_HEALTH_ATTEMPTS}" \
+    "${BACKEND_HEALTH_INTERVAL}" \
+    "marketinghub-backend" \
+    "${BACKEND_MAX_RESTARTS}" \
+    "${BACKEND_HEALTH_SUCCESSES_REQUIRED}"; then
     log "Erro crítico: rollback executado, mas o backend anterior também não ficou saudável."
     return 1
   fi
@@ -263,7 +274,14 @@ if ! run_with_timeout_and_diagnostics \
   exit 1
 fi
 
-if ! wait_http "backend" "${BACKEND_HEALTH_URL}" "${BACKEND_HEALTH_ATTEMPTS}" "${BACKEND_HEALTH_INTERVAL}"; then
+if ! wait_backend_container_http \
+  "backend" \
+  "${BACKEND_HEALTH_URL}" \
+  "${BACKEND_HEALTH_ATTEMPTS}" \
+  "${BACKEND_HEALTH_INTERVAL}" \
+  "marketinghub-backend" \
+  "${BACKEND_MAX_RESTARTS}" \
+  "${BACKEND_HEALTH_SUCCESSES_REQUIRED}"; then
   rollback_app_stack || true
   exit 1
 fi

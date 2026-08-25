@@ -27,6 +27,16 @@ export function parseOptionalPositiveAmount(
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
+export function parseOptionalConversionRate(
+  value: string,
+): number | undefined | null {
+  if (!value.trim()) return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 && parsed <= 100
+    ? parsed
+    : null;
+}
+
 export function parseOptionalEntityId(value: string): number | null {
   if (!value.trim()) return null;
   const parsed = Number(value);

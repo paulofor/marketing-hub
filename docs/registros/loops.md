@@ -1819,3 +1819,19 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes alteram propositalmente a contagem, promovem relato a oferta, tentam aprovar
   a jusante e misturam `REJECT` com `RESEARCH_MORE`. Qualquer divergência encerra a execução com
   artefato de erro, sem correção silenciosa e sem avançar o gate.
+
+## LOOP-EXPERIMENTO-META-CONVERSAO-INACESSIVEL — preflight exige dado que a tela não coleta
+
+- **Data:** 2026-08-25.
+- **Sintoma:** um experimento de vendas criado pela tela administrativa não conseguia chegar a
+  `READY_TO_PUBLISH`, porque o preflight exigia conversão-alvo positiva, mas criação e edição não
+  ofereciam campo para persistir `targetCvr`.
+- **Causa-raiz confirmada:** o backend já aceitava a meta na criação e a entidade a persistia, porém
+  o contrato TypeScript e os formulários omitiam o campo. A criação também ocultava dor, promessa e
+  CTA atrás da geração opcional por IA, mesmo quando havia contrato comercial aprovado.
+- **Correção sistêmica:** criação e edição passam a coletar conversão atual e meta percentual,
+  validar intervalo e evolução esperada e enviar os valores ao backend; o contrato comercial pode
+  ser preenchido manualmente, mantendo a IA apenas como apoio opcional.
+- **Prevenção:** testes de contrato protegem a faixa percentual, o frontend exige meta positiva em
+  experimentos de vendas e o backend permite atualizar as metas sem substituir os demais dados do
+  experimento.

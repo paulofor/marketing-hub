@@ -3,6 +3,7 @@ import type { Product } from "../../api/product/useProducts";
 import { productsEligibleForNiche } from "./NewExperimentPage";
 import {
   experimentIdentityFields,
+  parseOptionalConversionRate,
   parseOptionalEntityId,
   parseOptionalPositiveAmount,
   productAiSubtypeForExperiment,
@@ -57,6 +58,15 @@ describe("contrato de planejamento do experimento", () => {
   it("mantém meta de KPI opcional em uma amostra individual planejada", () => {
     expect(parseOptionalPositiveAmount(" ")).toBe(undefined);
     expect(parseOptionalPositiveAmount("3")).toBe(3);
+  });
+
+  it("valida as metas percentuais usadas pelo preflight comercial", () => {
+    expect(parseOptionalConversionRate("")).toBe(undefined);
+    expect(parseOptionalConversionRate("0")).toBe(0);
+    expect(parseOptionalConversionRate("5")).toBe(5);
+    expect(parseOptionalConversionRate("100")).toBe(100);
+    expect(parseOptionalConversionRate("-1")).toBe(null);
+    expect(parseOptionalConversionRate("100.01")).toBe(null);
   });
 
   it("mantém Instagram opcional nos experimentos orgânicos", () => {

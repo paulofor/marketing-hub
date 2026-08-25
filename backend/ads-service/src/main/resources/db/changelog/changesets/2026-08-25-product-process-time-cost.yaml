@@ -2,6 +2,8 @@ databaseChangeLog:
   - changeSet:
       id: 2026-08-25-product-process-time-cost
       author: codex
+      validCheckSum:
+        - 9:68a4881abf2d9f1f338200f937b3b4c5
       preConditions:
         - onFail: HALT
         - onError: HALT
@@ -12,7 +14,7 @@ databaseChangeLog:
             splitStatements: true
             stripComments: true
             sql: |
-              CREATE TABLE product_process_period (
+              CREATE TABLE IF NOT EXISTS product_process_period (
                 id BIGINT NOT NULL AUTO_INCREMENT,
                 product_id BIGINT NOT NULL,
                 process_definition_id BIGINT NOT NULL,
@@ -36,7 +38,95 @@ databaseChangeLog:
                 CONSTRAINT fk_product_process_period_definition
                   FOREIGN KEY (process_definition_id) REFERENCES business_process_definition(id)
               ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE product_process_period;
 
+  - changeSet:
+      id: 2026-08-25-product-process-time-cost-backfill
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product_process_period
+        - columnExists:
+            tableName: product_process_period
+            columnName: id
+        - columnExists:
+            tableName: product_process_period
+            columnName: product_id
+        - columnExists:
+            tableName: product_process_period
+            columnName: process_definition_id
+        - columnExists:
+            tableName: product_process_period
+            columnName: process_code_snapshot
+        - columnExists:
+            tableName: product_process_period
+            columnName: process_name_snapshot
+        - columnExists:
+            tableName: product_process_period
+            columnName: sequence_number
+        - columnExists:
+            tableName: product_process_period
+            columnName: entered_at
+        - columnExists:
+            tableName: product_process_period
+            columnName: exited_at
+        - columnExists:
+            tableName: product_process_period
+            columnName: entry_evidence
+        - columnExists:
+            tableName: product_process_period
+            columnName: exit_evidence
+        - columnExists:
+            tableName: product_process_period
+            columnName: objective_achieved
+        - columnExists:
+            tableName: product_process_period
+            columnName: open_slot
+        - columnExists:
+            tableName: product_process_period
+            columnName: created_at
+        - columnExists:
+            tableName: product_process_period
+            columnName: updated_at
+        - sqlCheck:
+            expectedResult: 14
+            sql: |
+              SELECT COUNT(*)
+                FROM information_schema.columns
+               WHERE table_schema = DATABASE()
+                 AND table_name = 'product_process_period'
+        - sqlCheck:
+            expectedResult: 4
+            sql: |
+              SELECT COUNT(*)
+                FROM information_schema.table_constraints
+               WHERE table_schema = DATABASE()
+                 AND table_name = 'product_process_period'
+        - indexExists:
+            tableName: product_process_period
+            indexName: idx_product_process_period_timeline
+        - indexExists:
+            tableName: product_process_period
+            indexName: idx_product_process_period_open
+        - foreignKeyConstraintExists:
+            foreignKeyTableName: product_process_period
+            foreignKeyName: fk_product_process_period_product
+        - foreignKeyConstraintExists:
+            foreignKeyTableName: product_process_period
+            foreignKeyName: fk_product_process_period_definition
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
               INSERT INTO product_process_period
                 (product_id, process_definition_id, process_code_snapshot,
                  process_name_snapshot, sequence_number, entered_at, entry_evidence,
@@ -64,7 +154,11 @@ databaseChangeLog:
                   ON chain_item.chain_definition_id = chain_definition.id
                 JOIN business_process_definition process_definition
                   ON process_definition.id = chain_item.process_definition_id
+                LEFT JOIN product_process_period existing_period
+                  ON existing_period.product_id = p.id
+                 AND existing_period.exited_at IS NULL
                WHERE newer_chain.id IS NULL
+                 AND existing_period.id IS NULL
                  AND process_definition.process_code = CASE
                    WHEN UPPER(REPLACE(COALESCE(p.commercial_status, ''), '-', '_'))
                      IN ('OPORTUNIDADE_EM_DESCOBERTA', 'DESCOBERTA_E_PRIORIZACAO')
@@ -92,4 +186,6 @@ databaseChangeLog:
         - sql:
             splitStatements: true
             stripComments: true
-            sql: DROP TABLE product_process_period;
+            sql: |
+              DELETE FROM product_process_period
+               WHERE entry_evidence = 'BACKFILLED_PRODUCT_UPDATE';

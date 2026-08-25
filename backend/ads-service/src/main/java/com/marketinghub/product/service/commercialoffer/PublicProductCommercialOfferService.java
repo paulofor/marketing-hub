@@ -1,5 +1,8 @@
 package com.marketinghub.product.service.commercialoffer;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.pde.PdeProductionSlot;
@@ -11,6 +14,8 @@ import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -21,8 +26,11 @@ import org.springframework.web.server.ResponseStatusException;
 /** Monta a oferta pública de um produto a partir do produto, slot e experimento canônicos. */
 @Service
 public class PublicProductCommercialOfferService {
+  private static final Logger log =
+      LoggerFactory.getLogger(PublicProductCommercialOfferService.class);
   private static final Set<ExperimentStatus> SALEABLE_EXPERIMENT_STATUSES =
       Set.of(ExperimentStatus.PLANNED, ExperimentStatus.RUNNING);
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final ProductRepository productRepository;
   private final PdeProductionSlotRepository slotRepository;
@@ -79,15 +87,20 @@ public class PublicProductCommercialOfferService {
           HttpStatus.PRECONDITION_FAILED, "Contato de suporte do fornecedor é inválido.");
     }
     String salesPageUrl = slot.getPublicUrl().replaceAll("/+$", "");
+    String primaryCta =
+        firstRequired(experiment.getPrimaryCta(), product.getPrimaryCta(), "Oferta sem CTA.");
+    validateVersionedCommercialBinding(slot, experiment, primaryCta);
     return new PublicProductCommercialOfferResponse(
         product.getSlug(),
+        slot.getExperienceVersion(),
+        slot.getLayoutKey(),
         experiment.getId(),
         experiment.getStatus().name(),
         experiment.getPlatform() != null ? experiment.getPlatform().name() : null,
         normalizeRequired(experiment.getSinglePain(), "Oferta sem dor principal."),
         normalizeRequired(experiment.getFreeReward(), "Oferta sem prova de valor."),
         normalizeRequired(experiment.getFunnelPromise(), "Oferta sem promessa comercial."),
-        firstRequired(experiment.getPrimaryCta(), product.getPrimaryCta(), "Oferta sem CTA."),
+        primaryCta,
         experiment.getUnitPrice(),
         experiment.getCommercialCheckoutUrl().trim(),
         salesPageUrl,
@@ -102,6 +115,52 @@ public class PublicProductCommercialOfferService {
         salesPageUrl + "/terms",
         salesPageUrl + "/privacy",
         salesPageUrl + "/refund-policy");
+  }
+
+  /**
+   * Impede que a experiência assistida v2 combine versão, CTA, preço ou experimento divergentes.
+   */
+  private void validateVersionedCommercialBinding(
+      PdeProductionSlot slot, Experiment experiment, String primaryCta) {
+    boolean requiresBinding =
+        "assisted-service-v2".equals(slot.getLayoutKey())
+            || (StringUtils.hasText(slot.getExperienceVersion())
+                && slot.getExperienceVersion().contains("pde-v2"));
+    if (!requiresBinding) {
+      return;
+    }
+    String contract =
+        normalizeRequired(
+            slot.getPublishedExperienceJson(), "Experiência v2 sem contrato publicado.");
+    try {
+      JsonNode root = OBJECT_MAPPER.readTree(contract);
+      JsonNode binding = root.path("commercialBinding");
+      String funnelPromise =
+          normalizeRequired(experiment.getFunnelPromise(), "Oferta sem promessa comercial.");
+      boolean aligned =
+          slot.getProductSlug().equals(root.path("slug").asText())
+              && slot.getExperienceVersion().equals(root.path("experienceVersion").asText())
+              && slot.getLayoutKey().equals(root.path("layoutKey").asText())
+              && funnelPromise.equals(root.path("promise").asText())
+              && experiment.getId().equals(binding.path("experimentId").longValue())
+              && primaryCta.equals(binding.path("primaryCta").asText())
+              && experiment.getUnitPrice().compareTo(binding.path("priceBrl").decimalValue()) == 0
+              && "ONE_TIME".equals(binding.path("billingModel").asText());
+      if (!aligned) {
+        throw new ResponseStatusException(
+            HttpStatus.PRECONDITION_FAILED,
+            "Contrato PDE v2 diverge da oferta comercial canônica.");
+      }
+    } catch (JsonProcessingException ex) {
+      log.error(
+          "Falha ao validar contrato comercial PDE v2: productSlug={}, slotCode={}, experimentId={}",
+          slot.getProductSlug(),
+          slot.getSlotCode(),
+          experiment.getId(),
+          ex);
+      throw new ResponseStatusException(
+          HttpStatus.PRECONDITION_FAILED, "Contrato PDE v2 publicado é inválido.", ex);
+    }
   }
 
   /**

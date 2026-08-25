@@ -169,12 +169,12 @@ services:
     environment:
       VITE_PDE_PRODUCT_SLUG: kit-whatsapp-pronto
       VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
-      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: kit-whatsapp-pronto-pde-v1
+      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: kit-whatsapp-pronto-pde-v2
       PDE_HEALTH_REQUIRED_TEXT: Implantação personalizada
-      PDE_FRONTEND_VERSION: kit-whatsapp-v1
+      PDE_FRONTEND_VERSION: kit-whatsapp-v2
       PDE_FRONTEND_PUBLIC_URL: https://kit-whatsapp-pronto.digicomdigital.com.br
       PDE_FRONTEND_IMAGE: ${PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_IMAGE:-}
-      PDE_FRONTEND_VERSION_ID: kit-whatsapp-v1
+      PDE_FRONTEND_VERSION_ID: kit-whatsapp-v2
       PDE_DEPLOY_COMMIT_SHA: ${PDE_DEPLOY_COMMIT_SHA:-unknown}
       PDE_DEPLOY_IMAGE_TAG: ${PDE_DEPLOY_IMAGE_TAG:-unknown}
       PDE_DEPLOY_DEPLOYED_AT: ${PDE_DEPLOY_DEPLOYED_AT:-}

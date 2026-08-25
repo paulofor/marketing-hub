@@ -75,10 +75,14 @@ public class CommercialPlanLandingAssetService implements ApprovedLandingProduct
         .toList();
   }
 
-  /** Informa quantas provas distintas precisam aparecer na página do experimento. */
+  /** Exige ao menos uma prova aprovada e limita a quatro arquivos distintos por página. */
   @Transactional(readOnly = true)
   public int requiredReferenceCount(Long experimentId) {
-    return Math.min(MAX_REQUIRED_REFERENCES, referencesForExperiment(experimentId).size());
+    if (experimentId == null) {
+      return 0;
+    }
+    return Math.max(
+        1, Math.min(MAX_REQUIRED_REFERENCES, referencesForExperiment(experimentId).size()));
   }
 
   /** Confirma se o HTML contém a quantidade mínima de arquivos aprovados sem reconstrução. */
@@ -86,7 +90,7 @@ public class CommercialPlanLandingAssetService implements ApprovedLandingProduct
   public boolean hasRequiredApprovedAssetReferences(Long experimentId, String html) {
     List<LandingAssetReference> references = referencesForExperiment(experimentId);
     if (references.isEmpty()) {
-      return true;
+      return false;
     }
     if (!StringUtils.hasText(html)) {
       return false;
@@ -108,25 +112,28 @@ public class CommercialPlanLandingAssetService implements ApprovedLandingProduct
   public void validateApprovedAssetReferences(Long experimentId, String html) {
     int required = requiredReferenceCount(experimentId);
     if (required > 0 && !hasRequiredApprovedAssetReferences(experimentId, html)) {
+      String fileLabel = required == 1 ? "arquivo" : "arquivos";
       throw new IllegalArgumentException(
-          "Landing deve exibir ao menos %d arquivos APPROVED da Biblioteca Audiovisual sem redesenho"
-              .formatted(required));
+          "Landing deve exibir ao menos %d %s APPROVED da Biblioteca Audiovisual sem redesenho"
+              .formatted(required, fileLabel));
     }
   }
 
-  /** Confirma finalidade LANDING e revisão independente aprovada no mesmo arquivo. */
+  /** Aceita prova real ou finalidade LANDING quando o mesmo arquivo possui revisão independente. */
   private boolean isIndependentlyApprovedForLanding(CommercialPlanVisualAsset asset) {
     return asset.getAgentReviewStatus() == CommercialPlanVisualAssetReviewStatus.APPROVED
         && ("LANDING".equalsIgnoreCase(asset.getPurpose())
-            || containsLandingPurpose(asset.getPurposesJson()));
+            || "PRODUCT_PROOF".equalsIgnoreCase(asset.getPurpose())
+            || containsEligiblePurpose(asset.getPurposesJson()));
   }
 
-  /** Reconhece a finalidade no JSON persistido sem aceitar palavras parciais. */
-  private boolean containsLandingPurpose(String purposesJson) {
+  /** Reconhece LANDING ou PRODUCT_PROOF no JSON persistido sem aceitar palavras parciais. */
+  private boolean containsEligiblePurpose(String purposesJson) {
     if (!StringUtils.hasText(purposesJson)) {
       return false;
     }
-    return purposesJson.toUpperCase(Locale.ROOT).contains("\"LANDING\"");
+    String normalized = purposesJson.toUpperCase(Locale.ROOT);
+    return normalized.contains("\"LANDING\"") || normalized.contains("\"PRODUCT_PROOF\"");
   }
 
   /** Reduz a entidade JPA ao contrato imutável necessário para compor a landing. */

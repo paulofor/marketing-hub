@@ -3,23 +3,34 @@ import { resolve } from "node:path";
 import { expect, test } from "@playwright/test";
 
 const productSlug = "kit-whatsapp-pronto";
-const productContract = JSON.parse(
+const productContractV1 = JSON.parse(
   readFileSync(
     resolve(process.cwd(), "../contracts/kit-whatsapp-pronto-v1.json"),
     "utf8",
   ),
 );
+const productContractV2 = JSON.parse(
+  readFileSync(
+    resolve(
+      process.cwd(),
+      "../contracts/kit-whatsapp-pronto-commercial-v2.json",
+    ),
+    "utf8",
+  ),
+);
+const productContract = { ...productContractV1, ...productContractV2 };
 
 const commercialOffer = {
   productSlug,
+  experienceVersion: "kit-whatsapp-pronto-pde-v2",
+  layoutKey: "assisted-service-v2",
   experimentId: 89,
   experimentStatus: "PLANNED",
   acquisitionChannel: "DIRECT_ONE_TO_ONE",
   pain: "Você perde oportunidades no WhatsApp porque improvisa respostas e follow-ups.",
   proof:
     "Veja uma resposta e duas perguntas personalizadas para um cenário real do seu atendimento.",
-  promise:
-    "Em até 48 horas, receba seu atendimento no WhatsApp sob medida e revisado por uma pessoa.",
+  promise: productContract.promise,
   primaryCta: "Quero meu atendimento sob medida",
   priceBrl: 349,
   checkoutUrl: "https://pay.example/kit-whatsapp",
@@ -117,6 +128,60 @@ test("não envia analytics no preview administrativo", async ({
   await page.waitForTimeout(300);
 
   expect(analyticsRequests).toBe(0);
+});
+
+test("bloqueia checkout quando oferta e experiência usam versões diferentes", async ({
+  context,
+  page,
+}) => {
+  await context.route("**/api/pde/access/events", async (route) => {
+    await route.fulfill({ status: 204, body: "" });
+  });
+  await context.route(
+    `**/api/pde/products/${productSlug}/commercial-offer`,
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ...commercialOffer,
+          experienceVersion: "kit-whatsapp-pronto-pde-v1",
+        }),
+      });
+    },
+  );
+
+  await page.goto("/?mh_test=1");
+
+  await expect(page.getByTestId("commercial-offer")).toHaveCount(0);
+  await expect(page.getByText(/checkout foi bloqueado/i)).toBeVisible();
+});
+
+test("bloqueia checkout quando a promessa não pertence à experiência publicada", async ({
+  context,
+  page,
+}) => {
+  await context.route("**/api/pde/access/events", async (route) => {
+    await route.fulfill({ status: 204, body: "" });
+  });
+  await context.route(
+    `**/api/pde/products/${productSlug}/commercial-offer`,
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ...commercialOffer,
+          promise: "Promessa antiga de outra versão",
+        }),
+      });
+    },
+  );
+
+  await page.goto("/?mh_test=1");
+
+  await expect(page.getByTestId("commercial-offer")).toHaveCount(0);
+  await expect(page.getByText(/checkout foi bloqueado/i)).toBeVisible();
 });
 
 test("preserva a origem humana na navegação pública normal", async ({

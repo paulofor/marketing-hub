@@ -216,7 +216,7 @@ jobs:
           tags: ${{ steps.image_metadata.outputs.frontend_kit_whatsapp_tags }}
           labels: ${{ steps.image_metadata.outputs.labels }}
           build-args: |
-            PDE_FRONTEND_VERSION_ID=kit-whatsapp-v1
+            PDE_FRONTEND_VERSION_ID=kit-whatsapp-v2
           cache-from: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_KIT_WHATSAPP_IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAMESPACE }}/${{ env.FRONTEND_KIT_WHATSAPP_IMAGE_NAME }}:buildcache,mode=max
       - name: Build and push PDE AI worker image
@@ -459,6 +459,8 @@ jobs:
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT}/healthz"
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT}/pde-health-contract.json" | grep -q '"slug": "kit-whatsapp-pronto"'
             curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT}/version-diagnostics.json" | grep -q '"productSlug": "kit-whatsapp-pronto"'
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT}/version-diagnostics.json" | grep -q '"imageVersionId": "kit-whatsapp-v2"'
+            curl --fail --show-error --silent --retry 6 --retry-delay 10 --retry-connrefused "http://${DEPLOY_HOST}:${PDE_PLATFORM_FRONTEND_KIT_WHATSAPP_PORT}/version-diagnostics.json" | grep -q '"experienceVersion": "kit-whatsapp-pronto-pde-v2"'
           fi
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
             && cd ${REMOTE_PATH} \
@@ -531,6 +533,7 @@ jobs:
             validate_dns_points_to_deploy_host kit-whatsapp-pronto.digicomdigital.com.br
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused https://kit-whatsapp-pronto.digicomdigital.com.br/healthz | grep -q '"status":"UP"'
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused https://kit-whatsapp-pronto.digicomdigital.com.br/pde-health-contract.json | grep -q '"slug": "kit-whatsapp-pronto"'
+            curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused https://kit-whatsapp-pronto.digicomdigital.com.br/version-diagnostics.json | grep -q '"experienceVersion": "kit-whatsapp-pronto-pde-v2"'
             curl --fail --show-error --silent --retry 12 --retry-delay 10 --retry-connrefused --output /dev/null https://kit-whatsapp-pronto.digicomdigital.com.br/
           fi
       - name: Set up Node for production rendering smoke

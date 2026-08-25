@@ -146,6 +146,13 @@
 - Causa-raiz: o worker corretamente não fabrica evidência, mas o contrato backend exigia ao menos uma oportunidade.
 - Prevenção: aceitar lista vazia de oportunidades, concluir o ciclo auditavelmente como pesquisa insuficiente e manter teste de contrato que proíba a reintrodução de fallback artificial.
 
+## LOOP-PDE-OFERTA-EXPERIENCIA-DIVERGENTE — Checkout exposto por contratos diferentes
+
+- **Sintoma:** a página funciona, mas diagnóstico, experiência, CTA ou versão do checkout representam contratos diferentes; a ausência de prova visual pode ser tratada como aprovação.
+- **Causa-raiz confirmada em 2026-08-25:** produto, slot, experimento e biblioteca de provas eram lidos separadamente, sem binding comercial obrigatório, e o gate retornava sucesso para lista vazia.
+- **Correção efetiva:** a experiência assistida v2 congela experimento, CTA, preço e cobrança; backend e frontend bloqueiam divergências; `PRODUCT_PROOF` aprovado passa a ser elegível e zero referências reprova o gate.
+- **Prevenção:** testes contratuais cobrem binding divergente, versão divergente, prova de produto não visual e ausência total de evidência.
+
 ## LOOP-PDE-EVIDENCIA-IRRELEVANTE — Descoberta PDE
 
 - Sintoma: o dossiê alcança o volume mínimo com ofertas Hotmart ou anúncios que mencionam termos genéricos como `WhatsApp`, `cliente` ou `serviço`, embora não sejam alternativas para a dor pesquisada.

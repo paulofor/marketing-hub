@@ -104,6 +104,39 @@ class ProductCatalogServiceTest {
         server.verify();
     }
 
+    /** Preserva escopo, provas, processo e binding comercial ao reduzir o contrato para uso público. */
+    @Test
+    void preservesAssistedCommercialV2FieldsInPublicContract() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        ProductCatalogService service = new ProductCatalogService(builder, "http://marketing-hub", "");
+        server.expect(requestTo("http://marketing-hub/api/products/public/kit-whatsapp-pronto/pde-experience"))
+                .andRespond(withSuccess("""
+                        {
+                          "slug":"kit-whatsapp-pronto",
+                          "experienceVersion":"kit-whatsapp-pronto-pde-v2",
+                          "layoutKey":"assisted-service-v2",
+                          "promise":"Promessa canônica",
+                          "serviceScope":{"includedItems":["10 a 20 respostas"],"excludedItems":["bot"],"deadlineStartsWhen":"Após briefing completo"},
+                          "publicProofs":[{"id":"sample-response","type":"RESPONSE","title":"Resposta","content":"Prova fiel","items":[],"evidenceLabel":"Interface real","source":"tasting-v1"}],
+                          "commercialProcess":[{"order":1,"title":"Briefing","description":"Entrada guiada","timing":"Após pagamento"}],
+                          "commercialBinding":{"experimentId":89,"primaryCta":"Quero meu atendimento sob medida","priceBrl":349,"billingModel":"ONE_TIME"},
+                          "missions":[],"supportMaterials":[]
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        var product = service.getPublicProductForRequest("kit-whatsapp-pronto", "", "", "");
+
+        assertThat(product.serviceScope().includedItems()).containsExactly("10 a 20 respostas");
+        assertThat(product.publicProofs()).singleElement().satisfies(proof ->
+                assertThat(proof.source()).isEqualTo("tasting-v1"));
+        assertThat(product.commercialProcess()).singleElement().satisfies(step ->
+                assertThat(step.title()).isEqualTo("Briefing"));
+        assertThat(product.commercialBinding().experimentId()).isEqualTo(89L);
+        assertThat(product.missions()).isEmpty();
+        server.verify();
+    }
+
     /** Confirma que host versionado pede ao Marketing Hub o contrato publicado do slot. */
     @Test
     void requestsMarketingHubContractForVersionedSlotHost() {

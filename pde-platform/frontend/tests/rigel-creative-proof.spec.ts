@@ -16,6 +16,8 @@ test("captura prova real da degustacao e da oferta de Rigel", async ({
         contentType: "application/json",
         body: JSON.stringify({
           productSlug: "kit-whatsapp-pronto",
+          experienceVersion: "kit-whatsapp-pronto-pde-v2",
+          layoutKey: "assisted-service-v2",
           experimentId: 89,
           experimentStatus: "PLANNED",
           acquisitionChannel: "DIRECT_ONE_TO_ONE",
@@ -23,7 +25,7 @@ test("captura prova real da degustacao e da oferta de Rigel", async ({
           proof:
             "Veja uma resposta e duas perguntas personalizadas para um cenario real do seu atendimento.",
           promise:
-            "Em ate 48 horas, receba seu atendimento no WhatsApp sob medida e revisado por uma pessoa.",
+            "Após o pagamento confirmado e o briefing mínimo completo, em até 48 horas receba seu atendimento de WhatsApp personalizado e revisado: respostas, perguntas, follow-ups e regras prontas para conduzir cada conversa ao próximo passo com mais clareza e menos improviso.",
           primaryCta: "Quero meu atendimento sob medida",
           priceBrl: 349,
           checkoutUrl: "https://pay.example/kit-whatsapp",
@@ -47,7 +49,9 @@ test("captura prova real da degustacao e da oferta de Rigel", async ({
   await page.setViewportSize({ width: 1440, height: 1900 });
   await page.goto("/?mh_test=1");
   await expect(
-    page.getByRole("heading", { name: "Kit WhatsApp Pronto" }),
+    page.getByRole("heading", {
+      name: "Retome conversas no WhatsApp sem improvisar a próxima mensagem",
+    }),
   ).toBeVisible();
   await page.screenshot({
     path: `${evidenceDir}/rigel-destination-desktop.png`,
@@ -66,7 +70,9 @@ test("captura prova real da degustacao e da oferta de Rigel", async ({
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/?mh_test=1");
   await expect(
-    page.getByRole("heading", { name: "Kit WhatsApp Pronto" }),
+    page.getByRole("heading", {
+      name: "Retome conversas no WhatsApp sem improvisar a próxima mensagem",
+    }),
   ).toBeVisible();
   await page.screenshot({
     path: `${evidenceDir}/rigel-destination-mobile.png`,

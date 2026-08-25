@@ -25,6 +25,8 @@ class CommercialOfferServiceTest {
                         """
                         {
                           "productSlug": "kit-whatsapp-pronto",
+                          "experienceVersion": "kit-whatsapp-pronto-pde-v2",
+                          "layoutKey": "assisted-service-v2",
                           "experimentId": 89,
                           "experimentStatus": "PLANNED",
                           "acquisitionChannel": "DIRECT_ONE_TO_ONE",
@@ -53,6 +55,7 @@ class CommercialOfferServiceTest {
         var offer = service.getOffer("kit-whatsapp-pronto");
 
         assertThat(offer.experimentId()).isEqualTo(89L);
+        assertThat(offer.experienceVersion()).isEqualTo("kit-whatsapp-pronto-pde-v2");
         assertThat(offer.priceBrl()).isEqualByComparingTo(new BigDecimal("349"));
         assertThat(offer.checkoutUrl()).isEqualTo("https://pay.example/kit");
         assertThat(offer.supplierRegistrationNumber()).isEqualTo("00.000.000/0001-00");

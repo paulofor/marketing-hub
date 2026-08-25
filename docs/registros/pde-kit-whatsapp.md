@@ -319,3 +319,24 @@ jornadas da PDE em desktop, iPhone 15 Pro e Pixel 7, captura da prova e reprodu�
 nos dois celulares. O pacote permanece `LOCAL_QA`: nenhum provider visual, publicação, contato,
 pagamento, gasto ou venda foi produzido. A persistência operacional pela tela depende da publicação
 do lote versionado e não pode reutilizar pareceres se os hashes dos arquivos mudarem.
+
+## Microexperiência comercial v2
+
+Em 2026-08-25, a landing existente foi mantida como destino único e evoluída para
+`kit-whatsapp-pronto-pde-v2`. A causa-raiz era a leitura independente de produto, slot, oferta e
+provas: a página podia exibir CTA e versão divergentes, e uma lista vazia de assets desativava o gate
+de evidência.
+
+A v2 congela experimento 89, CTA “Quero meu atendimento sob medida”, R$ 349 e pagamento único;
+expõe escopo completo, quatro provas fiéis e o processo de briefing, prévia para validar o tom,
+entrega e primeira aplicação; move o acesso pós-compra para rota secundária; e bloqueia checkout
+quando qualquer fonte divergir. Para produto não visual, `PRODUCT_PROOF` aprovado passa a cumprir o
+gate, mas ausência de prova reprova explicitamente.
+
+O primeiro Quality Review reprovou a centralidade em “pacote de textos”, a distância entre prova e
+CTA e os dados fictícios da fixture. A oferta pública confirmou em leitura somente o fornecedor,
+políticas e checkout reais; a página passou a vender a melhoria da rotina sem prometer conversão,
+mostrar antes/depois, repetir o CTA depois da prova e apresentar a mesma sequência contínua de
+orçamento ignorado na resposta, qualificação e três follow-ups. Depois das correções, Quality Review
+aprovou com 88/100, Psique aprovou a percepção da cliente e uma nova execução independente de Têmis
+aprovou a coerência comercial. Nenhum parecer autoriza publicação, contato ou gasto.

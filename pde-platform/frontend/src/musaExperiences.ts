@@ -105,6 +105,32 @@ export type ProductExperience = {
   publicFirstFold?: PublicFirstFold;
   scientificEvidencePack?: ScientificEvidencePack;
   completionOffer: string;
+  serviceScope?: {
+    includedItems: string[];
+    excludedItems: string[];
+    deadlineStartsWhen: string;
+  };
+  publicProofs?: {
+    id: string;
+    type: "RESPONSE" | "QUALIFICATION_QUESTION" | "FOLLOW_UPS" | "OFFER";
+    title: string;
+    content?: string;
+    items?: string[];
+    evidenceLabel: string;
+    source: string;
+  }[];
+  commercialProcess?: {
+    order: number;
+    title: string;
+    description: string;
+    timing: string;
+  }[];
+  commercialBinding?: {
+    experimentId: number;
+    primaryCta: string;
+    priceBrl: number;
+    billingModel: "ONE_TIME";
+  };
 };
 
 export type PublicFirstFold = {

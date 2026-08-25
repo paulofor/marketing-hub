@@ -26,6 +26,7 @@ final class PdeExperienceEvidenceLoader {
   private static final List<String> EVIDENCE_PATHS =
       List.of(
           "pde-platform/contracts/kit-whatsapp-pronto-v1.json",
+          "pde-platform/contracts/kit-whatsapp-pronto-commercial-v2.json",
           "pde-platform/frontend/src/AssistedServiceApp.tsx",
           "pde-platform/frontend/tests/assisted-service-local.spec.ts",
           "docs/homologacao/pde-kit-whatsapp-construcao-v1.md");

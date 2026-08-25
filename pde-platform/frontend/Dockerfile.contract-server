@@ -3,6 +3,10 @@ FROM node:22-alpine
 WORKDIR /app
 COPY frontend/tests/marketing-hub-contract-server.mjs ./marketing-hub-contract-server.mjs
 COPY backend/src/main/resources/contracts/musa-v7-product-v1.json ./musa-v7-product-v1.json
+COPY contracts/kit-whatsapp-pronto-v1.json ./kit-whatsapp-pronto-v1.json
+COPY contracts/kit-whatsapp-pronto-commercial-v2.json ./kit-whatsapp-pronto-commercial-v2.json
 ENV PDE_MUSA_V7_CONTRACT_PATH=/app/musa-v7-product-v1.json
+ENV PDE_KIT_WHATSAPP_V1_CONTRACT_PATH=/app/kit-whatsapp-pronto-v1.json
+ENV PDE_KIT_WHATSAPP_V2_CONTRACT_PATH=/app/kit-whatsapp-pronto-commercial-v2.json
 
 ENTRYPOINT ["node", "marketing-hub-contract-server.mjs"]

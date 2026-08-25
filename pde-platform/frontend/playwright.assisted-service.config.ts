@@ -26,9 +26,15 @@ export default defineConfig({
   },
   webServer: [
     {
+      command: "node tests/marketing-hub-contract-server.mjs",
+      url: "http://127.0.0.1:57181/api/products/public/kit-whatsapp-pronto/pde-experience",
+      reuseExistingServer: false,
+      timeout: 30_000,
+    },
+    {
       command: [
         "env",
-        "PDE_MARKETING_HUB_BASE_URL=http://191.252.181.168",
+        "PDE_MARKETING_HUB_BASE_URL=http://127.0.0.1:57181",
         "PDE_DEV_ACCESS_ENABLED=true",
         "PDE_ASSISTED_OPERATION_ENABLED=true",
         "PDE_ASSISTED_OPERATION_TOKEN=pde-local-operation-test",

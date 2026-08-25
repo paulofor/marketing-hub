@@ -80,6 +80,9 @@ describe("ProductValueChainPosition", () => {
 
     expect(screen.getByText("Etapa 4 de 6")).toBeTruthy();
     expect(
+      screen.getByRole("link", { name: "Histórico da cadeia" }),
+    ).toHaveAttribute("href", "/products/9/value-chain-history");
+    expect(
       screen.getByRole("link", {
         name: /Comunicação e jornada de venda do PDE/i,
       }),
@@ -120,7 +123,10 @@ describe("ProductValueChainPosition", () => {
     );
 
     expect(screen.getByText("Processo ainda não identificado")).toBeTruthy();
-    expect(screen.queryByRole("link")).toBeNull();
+    expect(
+      screen.getByRole("link", { name: "Histórico da cadeia" }),
+    ).toHaveAttribute("href", "/products/12/value-chain-history");
+    expect(screen.getAllByRole("link")).toHaveLength(1);
   });
 
   it("does not mark a subprocess as finished without evidence of the next entry", () => {

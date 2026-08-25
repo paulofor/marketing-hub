@@ -1,4 +1,4 @@
-import { ArrowRight, Workflow } from "lucide-react";
+import { ArrowRight, History, Workflow } from "lucide-react";
 import { Link } from "react-router-dom";
 import type {
   ProductStageMeasurement,
@@ -96,6 +96,7 @@ function StageMeasurement({
 }
 
 type Props = {
+  productId?: number;
   productName: string;
   position?: Position;
   isLoading?: boolean;
@@ -104,6 +105,7 @@ type Props = {
 };
 
 export default function ProductValueChainPosition({
+  productId,
   productName,
   position,
   isLoading = false,
@@ -141,6 +143,7 @@ export default function ProductValueChainPosition({
   );
   const latestVisibleSubprocessMeasurement =
     latestCompletedSubprocessMeasurement ?? recordedSubprocessMeasurement;
+  const historyProductId = productId ?? position?.productId;
 
   return (
     <section
@@ -152,13 +155,24 @@ export default function ProductValueChainPosition({
           <Workflow size={16} aria-hidden="true" />
           Processo atual da cadeia
         </span>
-        {identified &&
-        position.sequenceNumber != null &&
-        position.processCount != null ? (
-          <strong>
-            Etapa {position.sequenceNumber} de {position.processCount}
-          </strong>
-        ) : null}
+        <div className="product-value-chain-position__heading-actions">
+          {identified &&
+          position.sequenceNumber != null &&
+          position.processCount != null ? (
+            <strong>
+              Etapa {position.sequenceNumber} de {position.processCount}
+            </strong>
+          ) : null}
+          {historyProductId != null ? (
+            <Link
+              className="product-value-chain-position__history-link"
+              to={`/products/${historyProductId}/value-chain-history`}
+            >
+              <History size={15} aria-hidden="true" />
+              Histórico da cadeia
+            </Link>
+          ) : null}
+        </div>
       </div>
 
       {isLoading && !position ? (

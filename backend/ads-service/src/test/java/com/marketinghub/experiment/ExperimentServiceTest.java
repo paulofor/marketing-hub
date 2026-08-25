@@ -10,6 +10,12 @@ import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.funnel.ExperimentFunnelEvent;
 import com.marketinghub.experiment.funnel.ExperimentFunnelStage;
 import com.marketinghub.experiment.funnel.ExperimentLandingAnalyticsEvent;
+import com.marketinghub.experiment.run.ExperimentEvidenceValidity;
+import com.marketinghub.experiment.run.ExperimentRun;
+import com.marketinghub.experiment.run.ExperimentRunDataQualityStatus;
+import com.marketinghub.experiment.run.ExperimentRunMode;
+import com.marketinghub.experiment.run.ExperimentRunStatus;
+import com.marketinghub.experiment.run.ExperimentRunStopPolicy;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.facebookads.BudgetMode;
 import com.marketinghub.facebookads.FacebookAdStatus;
@@ -26,6 +32,7 @@ import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
 import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRunRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentStatusChangeRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
@@ -67,6 +74,7 @@ class ExperimentServiceTest {
   com.marketinghub.repository.jpa.experiment.MetricPresetRepository metricPresetRepository;
 
   @Autowired ExperimentRepository experimentRepository;
+  @Autowired ExperimentRunRepository experimentRunRepository;
   @Autowired ExperimentStatusChangeRepository experimentStatusChangeRepository;
   @Autowired JourneyTemplateRepository journeyTemplateRepository;
   @Autowired TargetingElementRepository targetingElementRepository;
@@ -1194,6 +1202,87 @@ class ExperimentServiceTest {
         .hasMessageContaining("Versão PDE v99 está PLANNED");
     assertThat(experimentRepository.findById(experiment.getId()).orElseThrow().getStatus())
         .isEqualTo(ExperimentStatus.PLANNED);
+  }
+
+  /** Ativa run, experimento e produto juntos após homologação da abordagem PDE direta. */
+  @Test
+  void updateStatusRunningActivatesReadyDirectPdeCommercialWindow() {
+    MarketNiche niche =
+        nicheRepository.save(MarketNiche.builder().name("Niche PDE Direct Activation").build());
+    var angle =
+        angleRepository.save(
+            com.marketinghub.creative.label.Angle.builder().name("APDEDirect").build());
+    var hypothesis =
+        hypothesisRepository.save(
+            com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .product(productRepository.getReferenceById(testProductId))
+                .title("HPDEDirect")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .build());
+    Product product = productRepository.findById(testProductId).orElseThrow();
+    product.setCommercialStatus("VALIDACAO_COMERCIAL");
+    productRepository.save(product);
+
+    CreateExperimentRequest request = new CreateExperimentRequest();
+    applyStageDefaults(request);
+    request.setMarketNicheId(niche.getId());
+    request.setHypothesisId(hypothesis.getId());
+    request.setName("ExpPdeDirectActivation");
+    request.setHypothesis("H");
+    request.setExperimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL);
+    request.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    request.setSampleSize(15);
+    request.setFollowUpActionUrl("https://v7.clubemusa.com.br");
+    request.setJourneyTemplateId(createJourneyTemplate().getId());
+    Experiment experiment = service.create(request);
+    completeCommercialContract(experiment);
+
+    pdeProductionSlotRepository.save(
+        PdeProductionSlot.builder()
+            .slotCode("v7-direct")
+            .productSlug("metodo-musa-7-dias")
+            .domain("v7.clubemusa.com.br")
+            .publicUrl("https://v7.clubemusa.com.br")
+            .experienceVersion("musa-pde-entry-v7")
+            .targetEnvironment("production-v7")
+            .status(PdeProductionSlotStatus.ACTIVE)
+            .validationStatus("OK")
+            .sourceExperimentId(experiment.getId())
+            .notes("Versão homologada para abordagem direta.")
+            .build());
+    ExperimentRun run =
+        experimentRunRepository.save(
+            ExperimentRun.builder()
+                .experiment(experiment)
+                .runNumber(1)
+                .mode(ExperimentRunMode.PRODUCTION)
+                .status(ExperimentRunStatus.READY_TO_PUBLISH)
+                .evidenceValidity(ExperimentEvidenceValidity.NOT_EVALUATED)
+                .stopPolicy(ExperimentRunStopPolicy.MANUAL_ONLY)
+                .dataQualityStatus(ExperimentRunDataQualityStatus.VALID)
+                .requestedAt(Instant.now())
+                .build());
+
+    Experiment running = service.updateStatus(experiment.getId(), ExperimentStatus.RUNNING);
+
+    ExperimentRun activatedRun = experimentRunRepository.findById(run.getId()).orElseThrow();
+    assertThat(running.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
+    assertThat(activatedRun.getStatus()).isEqualTo(ExperimentRunStatus.RUNNING);
+    assertThat(activatedRun.getCommercialWindowStartedAt()).isNotNull();
+    assertThat(productRepository.findById(testProductId).orElseThrow().getCommercialStatus())
+        .isEqualTo("ATIVO");
+    assertThat(experimentStatusChangeRepository.findAll())
+        .anySatisfy(
+            change -> {
+              assertThat(change.getExperiment().getId()).isEqualTo(experiment.getId());
+              assertThat(change.getAction()).isEqualTo("START");
+              assertThat(change.getChangedBy()).isEqualTo("ADMIN_UI");
+            });
   }
 
   @Test

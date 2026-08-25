@@ -179,6 +179,13 @@ Regras obrigatórias:
 - status operacional do run e validade comercial da evidência são dimensões independentes;
 - run tecnicamente inválido continua visível para aprendizado operacional, mas não pode reprovar hipótese, materialização comercial ou mercado;
 - somente run com validade `COMMERCIALLY_VALID` pode alimentar comparação, declaração de vencedor, decisão de escala, reprovação comercial ou recomendação de próximo teste baseada em resultado.
+- em PDE de abordagem individual consentida, um run `PRODUCTION` em `READY_TO_PUBLISH` substitui
+  somente a exigência de criativo de mídia paga quando sua homologação já cobriu o material da
+  abordagem e a microexperiência; ele não substitui gates de landing, checkout, entrega,
+  distribuição, segregação de QA ou qualidade dos dados;
+- a ativação administrativa desse canal deve sincronizar na mesma transação `Experiment`,
+  `ExperimentRun`, janela comercial e processo atual do produto, impedindo que o painel declare
+  homologação enquanto o experimento já recebe mercado real ou vice-versa.
 
 Validades canônicas iniciais:
 - `NOT_EVALUATED`: evidência ainda não avaliada ou legado migrado sem reclassificação segura;

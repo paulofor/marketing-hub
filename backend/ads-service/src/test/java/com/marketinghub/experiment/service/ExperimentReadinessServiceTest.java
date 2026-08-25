@@ -26,6 +26,7 @@ import com.marketinghub.leadportal.LeadPortalFlowQuestion;
 import com.marketinghub.leadportal.LeadPortalQuestionType;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
+import com.marketinghub.product.Product;
 import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
@@ -61,6 +62,7 @@ class ExperimentReadinessServiceTest {
   @Mock private ExperimentSalesPageAbTestService salesPageAbTestService;
   @Mock private ExperimentSalesPageTypeSelectionRepository salesPageTypeSelectionRepository;
   @Mock private CommercialPlanLandingAssetService landingAssetService;
+  @Mock private ExperimentDirectPdeActivationService directPdeActivationService;
 
   private ExperimentReadinessService service;
 
@@ -79,7 +81,8 @@ class ExperimentReadinessServiceTest {
             experimentVideoAssetService,
             salesPageAbTestService,
             salesPageTypeSelectionRepository,
-            landingAssetService);
+            landingAssetService,
+            directPdeActivationService);
     lenient()
         .when(
             landingAssetService.hasRequiredApprovedAssetReferences(
@@ -89,6 +92,11 @@ class ExperimentReadinessServiceTest {
     lenient()
         .when(salesPageAbTestService.hasReadyActiveTest(org.mockito.ArgumentMatchers.anyLong()))
         .thenReturn(true);
+    lenient()
+        .when(
+            directPdeActivationService.appliesTo(
+                org.mockito.ArgumentMatchers.any(Experiment.class)))
+        .thenReturn(false);
   }
 
   @Test
@@ -685,6 +693,40 @@ class ExperimentReadinessServiceTest {
     assertThat(summary.issues()).isEmpty();
     assertThat(summary.hasCreatives()).isTrue();
     assertThat(summary.hasCompleteTargeting()).isTrue();
+  }
+
+  /** Libera abordagem PDE direta pelo run homologado sem inventar um criativo de mídia paga. */
+  @Test
+  void shouldUseReadyProductionRunForDirectPdeReadiness() {
+    Long experimentId = 90L;
+    Experiment experiment = buildExperiment(experimentId, 79L);
+    experiment.setExperimentType(ExperimentType.PDE_MEMBERSHIP_SUBSCRIPTION_FUNNEL);
+    experiment.setPlatform(ExperimentPlatform.DIRECT_ONE_TO_ONE);
+    experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
+    experiment.setFollowUpActionUrl("https://v7.clubemusa.com.br");
+    experiment.setProduct(Product.builder().id(4L).build());
+    completeCommercialContract(experiment);
+
+    when(experimentService.get(experimentId)).thenReturn(experiment);
+    when(creativeRepository.countByExperimentIdAndStatusAndUsableImage(
+            experimentId, CreativeStatus.READY))
+        .thenReturn(0L);
+    when(directPdeActivationService.appliesTo(experiment)).thenReturn(true);
+    when(directPdeActivationService.isReadyForActivation(experiment)).thenReturn(true);
+
+    ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
+
+    assertThat(summary.hasCreatives()).isFalse();
+    assertThat(summary.issues()).isEmpty();
+    assertThat(summary.eligibleForRunning()).isTrue();
+    assertThat(summary.runningGateRequirements())
+        .filteredOn(requirement -> requirement.code().equals("CREATIVE_APPROVED"))
+        .singleElement()
+        .satisfies(
+            requirement -> {
+              assertThat(requirement.ready()).isTrue();
+              assertThat(requirement.title()).isEqualTo("Material da abordagem pronto");
+            });
   }
 
   @Test

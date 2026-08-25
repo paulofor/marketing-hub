@@ -4,6 +4,7 @@ import {
   buildPdeInternalPreviewUrl,
   canAccessExperimentConstruction,
   canManageGeraSalesPage,
+  canStartDirectExperiment,
   experimentDetailTabs,
   resolveGeraSalesPageCommand,
 } from "./ExperimentDetailPage";
@@ -21,6 +22,21 @@ describe("canManageGeraSalesPage", () => {
 describe("resolveGeraSalesPageCommand", () => {
   it("sempre inicia uma rodada auditavel nova, mesmo sem publicação anterior", () => {
     expect(resolveGeraSalesPageCommand()).toBe("rebuild");
+  });
+});
+
+describe("canStartDirectExperiment", () => {
+  it("libera somente o canal individual planejado com todos os gates aprovados", () => {
+    expect(canStartDirectExperiment("PLANNED", "DIRECT_ONE_TO_ONE", true)).toBe(
+      true,
+    );
+    expect(canStartDirectExperiment("PLANNED", "FACEBOOK", true)).toBe(false);
+    expect(
+      canStartDirectExperiment("PLANNED", "DIRECT_ONE_TO_ONE", false),
+    ).toBe(false);
+    expect(canStartDirectExperiment("RUNNING", "DIRECT_ONE_TO_ONE", true)).toBe(
+      false,
+    );
   });
 });
 

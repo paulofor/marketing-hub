@@ -110,6 +110,22 @@ valor, moeda e UTMs são confirmados pela
   `gpt-5.6-sol` não o suporta e omitiu a configuração. As execuções efetivas usaram o tier padrão;
   tentativas sem resposta final não são contabilizadas como custo zero.
 
+## Revalidação produtiva de 2026-08-25
+
+- O checkout do experimento 90 foi renovado pela tela e retornou R$ 67, BRL, produto 4 e entrega
+  `https://v7.clubemusa.com.br`; nenhuma cobrança foi criada.
+- A microexperiência v7 concluiu a jornada gratuita por regras locais em Chromium desktop, iPhone
+  15 Pro e Pixel 7, sem overflow, erro JavaScript ou evento humano de QA.
+- O run produtivo 7 foi novamente submetido ao preflight pela tela. Landing, checkout, distribuição
+  direta e qualidade dos dados foram registrados como `PASS`, completando onze gates e levando o
+  run a `READY_TO_PUBLISH` sem bloqueadores.
+- A produção ainda manteve experimento `PLANNED` e produto `VALIDACAO_COMERCIAL`, pois o comando
+  anterior atualizaria somente o experimento. A ativação ficou retida até existir transição atômica
+  entre experimento, run, janela comercial e processo do produto.
+- A linha de base permaneceu com zero pagamentos e zero acessos da Vega. Os eventos conhecidos
+  eram 126 humanos em 16 sessões, 28 de QA em 3 sessões, 203 suspeitos de automação em 25 sessões e
+  27 crawlers em 2 sessões.
+
 ## Métrica e decisão operacional futura
 
 - Continuar: compra, acesso, entrega e contribuição positiva permanecem reconciliados após

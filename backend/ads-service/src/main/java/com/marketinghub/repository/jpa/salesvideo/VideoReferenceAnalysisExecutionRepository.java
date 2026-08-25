@@ -3,6 +3,7 @@ package com.marketinghub.repository.jpa.salesvideo;
 import com.marketinghub.salesvideo.VideoReferenceAnalysisExecution;
 import com.marketinghub.salesvideo.VideoReferenceAnalysisStatus;
 import jakarta.persistence.LockModeType;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -35,4 +36,13 @@ public interface VideoReferenceAnalysisExecutionRepository
   /** Consulta o maior número de tentativa já persistido para a referência. */
   Optional<VideoReferenceAnalysisExecution> findFirstByReferenceIdOrderByAttemptNumberDesc(
       Long referenceId);
+
+  /** Soma o custo conhecido já consumido para aplicar o teto persistente após reinícios. */
+  @Query(
+      "select coalesce(sum(e.costUsd), 0) from VideoReferenceAnalysisExecution e "
+          + "where e.costUsd is not null")
+  BigDecimal sumKnownCostUsd();
+
+  /** Conta reservas ativas para impedir que workers concorrentes ultrapassem o teto. */
+  long countByStatus(VideoReferenceAnalysisStatus status);
 }

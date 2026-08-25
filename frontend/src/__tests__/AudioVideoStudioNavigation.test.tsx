@@ -491,6 +491,52 @@ describe("audio video studio navigation", () => {
     ).toBeNull();
   });
 
+  it("shows a financial block without offering an ineffective retry", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/reference-videos/22") {
+        return Promise.resolve({
+          data: {
+            id: 22,
+            title: "Rio Antigo",
+            sourceUrl: "https://cdn.example/rio-antigo.mp4",
+            status: "REJECTED",
+          },
+        });
+      }
+      if (
+        url === "/api/sales-videos/reference-analysis/v1/references/22/latest"
+      ) {
+        return Promise.resolve({
+          data: {
+            executionId: 82,
+            referenceId: 22,
+            attemptNumber: 1,
+            status: "BUDGET_BLOCKED",
+            input: { title: "Rio Antigo" },
+            error:
+              "Teto da análise atingido: custo conhecido US$ 0.60, reserva US$ 0.25, limite US$ 0.75",
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    setup(<App />, ["/audio-video-studio/videos-analysis/22/results"]);
+
+    expect(
+      await screen.findByText(/teto financeiro atingido antes do consumo/i),
+    ).toBeTruthy();
+    expect(screen.getByText(/limite US\$ 0\.75/i)).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: /tentar novamente/i }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("form", {
+        name: /registrar analise comercial do video/i,
+      }),
+    ).toBeNull();
+  });
+
   it("submits structured commercial video analysis to backend", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url === "/api/sales-videos/reference-videos/22") {

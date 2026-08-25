@@ -1,5 +1,12 @@
 # Registro operacional — Sales Video
 
+## 2026-08-25 — Teto da homologação multimodal
+
+- Gargalo confirmado: a análise de referências persistia tokens, mas concluía com custo nulo e podia continuar consumindo a fila sem envelope financeiro bloqueante.
+- Decisão: reservar US$ 0,25 por referência e limitar as três análises a US$ 0,75; o cálculo usa a tarifa padrão integral do GPT-5.6 como teto conservador, sem descontar cache ou Flex.
+- Render QA: um único ciclo separado de até US$ 2,00, aprovado por Plutus, para vídeo original de até dez segundos; nenhum asset será publicado ou usado em campanha nesta homologação.
+- Prevenção: o backend soma custos persistidos e reservas ativas antes do `pending`; ao exceder US$ 0,75, marca a execução como `BUDGET_BLOCKED` antes de qualquer chamada externa.
+
 ## 2026-07-28 — Bloqueio de vídeos MUSA gerados por slides
 
 - Problema observado: v5/v6 do PDE MUSA estavam usando MP4/HLS gerados a partir de slides do diagnóstico como se fossem vídeos comerciais.

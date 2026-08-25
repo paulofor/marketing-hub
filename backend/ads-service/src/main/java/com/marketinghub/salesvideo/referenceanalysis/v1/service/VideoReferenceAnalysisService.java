@@ -17,6 +17,7 @@ import com.marketinghub.salesvideo.referenceanalysis.v1.service.fail.FailureRequ
 import com.marketinghub.salesvideo.referenceanalysis.v1.service.pending.Pending;
 import com.marketinghub.salesvideo.service.VideoReferenceAnalysisPort;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -75,7 +76,10 @@ public class VideoReferenceAnalysisService implements VideoReferenceAnalysisPort
 
   /** Entrega uma única pendência com lease, recuperando execuções abandonadas sem sobreposição. */
   @Transactional
-  public List<Pending> claimPending(String workerId) {
+  public List<Pending> claimPending(
+      String workerId, BigDecimal budgetLimitUsd, BigDecimal reservationUsd) {
+    BigDecimal limit = positive(budgetLimitUsd, "budgetLimitUsd");
+    BigDecimal reservation = positive(reservationUsd, "reservationUsd");
     List<VideoReferenceAnalysisExecution> claimable =
         executionRepository.findClaimable(
             VideoReferenceAnalysisStatus.QUEUED,
@@ -86,6 +90,19 @@ public class VideoReferenceAnalysisService implements VideoReferenceAnalysisPort
       return List.of();
     }
     VideoReferenceAnalysisExecution execution = claimable.getFirst();
+    BigDecimal knownCost = executionRepository.sumKnownCostUsd();
+    if (knownCost == null) {
+      knownCost = BigDecimal.ZERO;
+    }
+    long activeExecutions = executionRepository.countByStatus(VideoReferenceAnalysisStatus.RUNNING);
+    BigDecimal reservedCost = reservation.multiply(BigDecimal.valueOf(activeExecutions));
+    if (execution.getStatus() == VideoReferenceAnalysisStatus.QUEUED) {
+      reservedCost = reservedCost.add(reservation);
+    }
+    if (knownCost.add(reservedCost).compareTo(limit) > 0) {
+      blockByBudget(execution, knownCost, reservedCost, limit);
+      return List.of();
+    }
     Instant now = Instant.now();
     execution.setStatus(VideoReferenceAnalysisStatus.RUNNING);
     execution.setWorkerId(required(workerId, "workerId"));
@@ -107,6 +124,33 @@ public class VideoReferenceAnalysisService implements VideoReferenceAnalysisPort
             saved.getProducerExecutionId(),
             readJson(saved.getInputJson()),
             saved.getClaimedAt()));
+  }
+
+  /** Bloqueia a tentativa antes da chamada externa quando o envelope financeiro acabou. */
+  private void blockByBudget(
+      VideoReferenceAnalysisExecution execution,
+      BigDecimal knownCost,
+      BigDecimal reservedCost,
+      BigDecimal limit) {
+    String detail =
+        "Teto da análise atingido: custo conhecido US$ "
+            + knownCost
+            + ", reserva US$ "
+            + reservedCost
+            + ", limite US$ "
+            + limit;
+    execution.setStatus(VideoReferenceAnalysisStatus.BUDGET_BLOCKED);
+    execution.setError(detail);
+    execution.setFinishedAt(Instant.now());
+    executionRepository.save(execution);
+    VideoReference reference = reference(execution.getReferenceId());
+    reference.setStatus(VideoReferenceStatus.REJECTED);
+    referenceRepository.save(reference);
+    log.warn(
+        "Análise bloqueada antes de gasto; executionId={} referenceId={} detalhe={}",
+        execution.getId(),
+        execution.getReferenceId(),
+        detail);
   }
 
   /** Persiste resultado funcional, auditoria da IA, artefatos e tokens no mesmo callback. */
@@ -314,6 +358,15 @@ public class VideoReferenceAnalysisService implements VideoReferenceAnalysisPort
           VideoModuleErrorCode.BAD_REQUEST, field + " é obrigatório");
     }
     return value.trim();
+  }
+
+  /** Exige valor financeiro estritamente positivo nos parâmetros operacionais do executor. */
+  private BigDecimal positive(BigDecimal value, String field) {
+    if (value == null || value.compareTo(BigDecimal.ZERO) <= 0) {
+      throw VideoModuleException.badRequest(
+          VideoModuleErrorCode.BAD_REQUEST, field + " deve ser maior que zero");
+    }
+    return value;
   }
 
   /** Snapshot estável da referência entregue ao executor sem acesso direto ao banco. */

@@ -5,5 +5,6 @@ public enum VideoReferenceAnalysisStatus {
   QUEUED,
   RUNNING,
   COMPLETED,
-  FAILED
+  FAILED,
+  BUDGET_BLOCKED
 }

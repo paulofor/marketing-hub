@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 import java.net.URI;
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,6 +57,12 @@ public class VideoManagementProperties {
         private String apiKey;
         private String apiKeyFile;
         private String model = "gpt-5.6";
+        @Min(1)
+        private int maxOutputTokens = 4000;
+        private BigDecimal budgetLimitUsd = new BigDecimal("0.75");
+        private BigDecimal reservationUsd = new BigDecimal("0.25");
+        private BigDecimal inputPricePerMillionUsd = new BigDecimal("4.00");
+        private BigDecimal outputPricePerMillionUsd = new BigDecimal("20.00");
         private String ffmpegPath = "ffmpeg";
         private String ffprobePath = "ffprobe";
         private long maxDownloadBytes = 536870912L;

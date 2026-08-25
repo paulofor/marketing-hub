@@ -547,7 +547,7 @@ export interface VideoReferenceUploadPayload {
 }
 
 export type VideoReferenceAnalysisExecutionStatus =
-  "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED";
+  "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED" | "BUDGET_BLOCKED";
 
 export interface VideoReferenceProductionBlueprint {
   archetype: string;
@@ -622,6 +622,13 @@ export interface VideoReferenceAnalysisExecution {
     truePeakDbfs?: number;
     sceneChangeCount?: number;
     sceneChangeThreshold?: number;
+    costEstimate?: {
+      usd?: number;
+      method?: string;
+      serviceTier?: string;
+      inputTokensChargedAtFullRate?: number;
+      outputTokens?: number;
+    };
   } | null;
   model?: string | null;
   inputTokens?: number | null;

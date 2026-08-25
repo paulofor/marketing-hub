@@ -5,7 +5,7 @@ ROUND=${1:?Informe o identificador da rodada}
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPOSITORY_ROOT=$(cd "${SCRIPT_DIR}/../../.." && pwd)
 EVIDENCE_DIR="${SCRIPT_DIR}/evidence/rounds/${ROUND}"
-COMPOSE_PROJECT=aihub-04f755ef-c3c0-43b2-ba12-14fdd53b0762-d879448de8
+COMPOSE_PROJECT=${COMPOSE_PROJECT:-aihub-04f755ef-c3c0-43b2-ba12-14fdd53b0762-d879448de8}
 CAPTURE_CONTAINER="${COMPOSE_PROJECT}-rigel-creative-capture-${ROUND//[^a-zA-Z0-9_.-]/-}"
 COMPOSE_FILES=(
   -f "${REPOSITORY_ROOT}/pde-platform/docker-compose.assisted-service-validation.yml"
@@ -23,6 +23,9 @@ cleanup() {
 trap cleanup EXIT
 
 scripts/validate-liquibase-mysql57.sh 2>&1 | tee "${EVIDENCE_DIR}/liquibase.log"
+PRODUCT_PROCESS_COMPOSE_PROJECT="${COMPOSE_PROJECT}" \
+  scripts/validate-product-process-recovery-mysql57.sh \
+  2>&1 | tee "${EVIDENCE_DIR}/product-process-mysql57.log"
 
 (
   cd backend/ads-service
@@ -105,6 +108,8 @@ node "${SCRIPT_DIR}/generate-assets.mjs" \
   "${SCRIPT_DIR}/evidence/artifacts" \
   "${SCRIPT_DIR}/evidence/apollo-storyboard.json" \
   >"${EVIDENCE_DIR}/asset-generation.json"
+node "${SCRIPT_DIR}/verify-technical-evidence.mjs" "${SCRIPT_DIR}" \
+  >"${EVIDENCE_DIR}/technical-verification.json"
 node "${SCRIPT_DIR}/run-agents.mjs" reviews \
   2>&1 | tee "${EVIDENCE_DIR}/agents-reviews.log"
 node "${SCRIPT_DIR}/validate-package.mjs" "${SCRIPT_DIR}" \

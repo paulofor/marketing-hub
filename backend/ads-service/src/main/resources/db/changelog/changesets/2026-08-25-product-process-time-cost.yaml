@@ -159,7 +159,9 @@ databaseChangeLog:
                  AND existing_period.exited_at IS NULL
                WHERE newer_chain.id IS NULL
                  AND existing_period.id IS NULL
-                 AND process_definition.process_code = CASE
+                 AND CONVERT(process_definition.process_code USING utf8mb4)
+                       COLLATE utf8mb4_unicode_ci =
+                     CONVERT((CASE
                    WHEN UPPER(REPLACE(COALESCE(p.commercial_status, ''), '-', '_'))
                      IN ('OPORTUNIDADE_EM_DESCOBERTA', 'DESCOBERTA_E_PRIORIZACAO')
                      THEN 'pde-opportunity-discovery'
@@ -181,7 +183,7 @@ databaseChangeLog:
                          'VENDA_ENTREGA_E_APRENDIZADO')
                      THEN 'pde-sales-delivery-learning'
                    ELSE p.commercial_status
-                 END;
+                 END) USING utf8mb4) COLLATE utf8mb4_unicode_ci;
       rollback:
         - sql:
             splitStatements: true

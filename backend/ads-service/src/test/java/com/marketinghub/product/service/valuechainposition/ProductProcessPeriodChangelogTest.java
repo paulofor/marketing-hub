@@ -32,6 +32,8 @@ class ProductProcessPeriodChangelogTest {
     assertThat(changelog.substring(backfillStart))
         .contains("LEFT JOIN product_process_period existing_period")
         .contains("AND existing_period.id IS NULL")
+        .contains("CONVERT(process_definition.process_code USING utf8mb4)")
+        .contains("COLLATE utf8mb4_unicode_ci")
         .contains("expectedResult: 14")
         .contains("expectedResult: 4")
         .contains("indexName: idx_product_process_period_timeline")
@@ -40,7 +42,7 @@ class ProductProcessPeriodChangelogTest {
         .contains("stripComments: true");
   }
 
-  /** Mantém a fixture física MySQL 5.7 alinhada aos contratos mínimos da migração. */
+  /** Mantém a fixture física alinhada aos contratos e às collations divergentes da produção. */
   @Test
   void keepsMysql57RecoveryFixtureVersioned() throws Exception {
     String baseline = Files.readString(MYSQL57_BASELINE);
@@ -50,6 +52,8 @@ class ProductProcessPeriodChangelogTest {
         .contains("CREATE TABLE business_process_definition")
         .contains("CREATE TABLE business_process_chain_definition")
         .contains("CREATE TABLE business_process_chain_item")
+        .contains("COLLATE=utf8mb4_unicode_ci")
+        .contains("COLLATE=utf8mb4_general_ci")
         .contains("'Rigel', 'COMUNICACAO_E_JORNADA'")
         .doesNotContain("CREATE TABLE product_process_period");
   }

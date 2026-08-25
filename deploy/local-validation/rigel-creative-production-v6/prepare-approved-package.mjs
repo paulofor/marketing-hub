@@ -30,6 +30,7 @@ const metadata = [
   [join(evidence, "apollo-storyboard.json"), "apollo-storyboard.json"],
   [join(evidence, "psique-review.json"), "psique-review.json"],
   [join(evidence, "temis-independent-review.json"), "temis-review.json"],
+  [join(evidence, "technical-verification.json"), "technical-verification.json"],
 ];
 for (const [source, destination] of metadata) {
   await cp(source, join(stage, "metadata", destination));

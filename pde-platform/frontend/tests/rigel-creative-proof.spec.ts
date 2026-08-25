@@ -82,7 +82,10 @@ test("captura prova real da degustacao e da oferta de Rigel", async ({
 
   await page.getByLabel("Qual serviço você oferece?").fill("manicure");
   await page.getByLabel("Situação").selectOption("pedido-de-preco");
-  await page.getByLabel("Tom").selectOption("acolhedor");
+  await page
+    .getByTestId("assisted-tasting")
+    .getByLabel("Tom", { exact: true })
+    .selectOption("acolhedor");
   await page.getByRole("button", { name: "Gerar minha amostra" }).click();
   const tastingResult = page.getByTestId("assisted-tasting-result");
   await expect(tastingResult).toContainText("Resposta inicial");

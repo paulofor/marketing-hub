@@ -35,6 +35,7 @@ import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlan
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanResponse;
 import com.marketinghub.product.service.updateInternalName.UpdateProductInternalNameRequest;
 import com.marketinghub.product.service.updateVideoSeedImage.UpdateProductVideoSeedImageRequest;
+import com.marketinghub.product.service.valuechainposition.ProductProcessPeriodService;
 import com.marketinghub.product.service.videoimage.GenerateProductVideoImagesRequest;
 import com.marketinghub.product.service.videoimage.ProductVideoImageDto;
 import com.marketinghub.producttype.ProductTypeDefinition;
@@ -73,6 +74,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -100,6 +102,7 @@ public class ProductService {
   private final AssetStorageService assetStorageService;
   private final ObjectMapper objectMapper;
   private final JdbcTemplate jdbcTemplate;
+  private final ProductProcessPeriodService processPeriodService;
   private static final BigDecimal BRL_PER_USD = new BigDecimal("5.00");
 
   /** Inicializa o serviço com os repositórios necessários para cadastro de produtos. */
@@ -115,6 +118,36 @@ public class ProductService {
       AssetStorageService assetStorageService,
       ObjectMapper objectMapper,
       JdbcTemplate jdbcTemplate) {
+    this(
+        repository,
+        accountRepository,
+        marketNicheRepository,
+        assetRepository,
+        productVideoImageRepository,
+        productVideoProviderAvatarRepository,
+        productTypeDefinitionRepository,
+        imageGeneratorService,
+        assetStorageService,
+        objectMapper,
+        jdbcTemplate,
+        null);
+  }
+
+  /** Inicializa o serviço produtivo com o rastreamento auditável de macroprocessos. */
+  @Autowired
+  public ProductService(
+      ProductRepository repository,
+      InstagramAccountRepository accountRepository,
+      MarketNicheRepository marketNicheRepository,
+      AssetRepository assetRepository,
+      ProductVideoImageRepository productVideoImageRepository,
+      ProductVideoProviderAvatarRepository productVideoProviderAvatarRepository,
+      ProductTypeDefinitionRepository productTypeDefinitionRepository,
+      ImageGeneratorService imageGeneratorService,
+      AssetStorageService assetStorageService,
+      ObjectMapper objectMapper,
+      JdbcTemplate jdbcTemplate,
+      ProductProcessPeriodService processPeriodService) {
     this.repository = repository;
     this.accountRepository = accountRepository;
     this.marketNicheRepository = marketNicheRepository;
@@ -126,6 +159,7 @@ public class ProductService {
     this.assetStorageService = assetStorageService;
     this.objectMapper = objectMapper;
     this.jdbcTemplate = jdbcTemplate;
+    this.processPeriodService = processPeriodService;
   }
 
   /** Lista personagens de vídeo cadastrados por provider para um produto. */
@@ -190,15 +224,22 @@ public class ProductService {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "Selecione um tipo em uso antes de cadastrar o produto.");
     }
-    return repository.save(product);
+    Product saved = repository.save(product);
+    if (processPeriodService != null) processPeriodService.recordInitialPosition(saved);
+    return saved;
   }
 
-  /** Atualiza um produto comercial existente com os dados informados pela tela. */
+  /** Atualiza o produto e registra qualquer transição real de macroprocesso. */
   @Transactional
   public Product updateProduct(Long id, CreateProductRequest request) {
     Product product = getProduct(id);
+    String previousCommercialStatus = product.getCommercialStatus();
     applyRequest(product, request);
-    return repository.save(product);
+    Product saved = repository.save(product);
+    if (processPeriodService != null) {
+      processPeriodService.recordTransition(saved, previousCommercialStatus);
+    }
+    return saved;
   }
 
   /** Atualiza apenas o nome interno sem regravar o contrato comercial completo do produto. */

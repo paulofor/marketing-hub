@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -35,6 +36,7 @@ public class ProductSubprocessPositionResolver {
   private final CommercialPlanRepository commercialPlanRepository;
   private final AgentTaskRepository taskRepository;
   private final ObjectMapper objectMapper;
+  private final ProductStageMeasurementResolver stageMeasurementResolver;
 
   /** Configura as fontes persistidas usadas para localizar atividades e subprocessos. */
   public ProductSubprocessPositionResolver(
@@ -42,10 +44,22 @@ public class ProductSubprocessPositionResolver {
       CommercialPlanRepository commercialPlanRepository,
       AgentTaskRepository taskRepository,
       ObjectMapper objectMapper) {
+    this(processRepository, commercialPlanRepository, taskRepository, objectMapper, null);
+  }
+
+  /** Configura o resolvedor produtivo com a consolidação temporal e financeira. */
+  @Autowired
+  public ProductSubprocessPositionResolver(
+      BusinessProcessDefinitionRepository processRepository,
+      CommercialPlanRepository commercialPlanRepository,
+      AgentTaskRepository taskRepository,
+      ObjectMapper objectMapper,
+      ProductStageMeasurementResolver stageMeasurementResolver) {
     this.processRepository = processRepository;
     this.commercialPlanRepository = commercialPlanRepository;
     this.taskRepository = taskRepository;
     this.objectMapper = objectMapper;
+    this.stageMeasurementResolver = stageMeasurementResolver;
   }
 
   /** Resolve a atividade atual e os subprocessos atual e seguinte sem inferência no frontend. */
@@ -54,7 +68,7 @@ public class ProductSubprocessPositionResolver {
     List<BusinessProcessDefinition> subprocesses = orderedSubprocesses(parentProcess);
     if (subprocesses.isEmpty()) {
       return new ProductSubprocessPositionResponse(
-          "NOT_APPLICABLE", 0, null, null, null, null, null, null, null, null, null);
+          "NOT_APPLICABLE", 0, null, null, null, null, null, null, null, null, null, List.of());
     }
 
     List<AgentTask> tasks = productTasks(product).stream().filter(this::hasProcess).toList();
@@ -80,7 +94,7 @@ public class ProductSubprocessPositionResolver {
               : nextSubprocess(current, subprocesses);
       status = current == null ? "PLANNED" : "IN_PROGRESS";
     }
-    return response(status, subprocesses.size(), activityName, current, next);
+    return response(product, status, subprocesses, activityName, current, next);
   }
 
   /** Ordena subprocessos pela posição em que são delegados no diagrama do processo pai. */
@@ -276,14 +290,15 @@ public class ProductSubprocessPositionResolver {
 
   /** Monta o contrato enxuto usado pelos cards administrativos. */
   private ProductSubprocessPositionResponse response(
+      Product product,
       String status,
-      int subprocessCount,
+      List<BusinessProcessDefinition> subprocesses,
       String activityName,
       BusinessProcessDefinition current,
       BusinessProcessDefinition next) {
     return new ProductSubprocessPositionResponse(
         status,
-        subprocessCount,
+        subprocesses.size(),
         activityName,
         current == null ? null : current.getId(),
         current == null ? null : current.getProcessCode(),
@@ -292,7 +307,11 @@ public class ProductSubprocessPositionResolver {
         next == null ? null : next.getId(),
         next == null ? null : next.getProcessCode(),
         next == null ? null : next.getName(),
-        next == null ? null : next.getOutcomeDescription());
+        next == null ? null : next.getOutcomeDescription(),
+        stageMeasurementResolver == null
+            ? List.of()
+            : stageMeasurementResolver.resolveSubprocessMeasurements(
+                product, subprocesses, current));
   }
 
   /** Representa a posição calculada dentro do processo pai. */

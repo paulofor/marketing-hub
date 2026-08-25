@@ -17,6 +17,13 @@ public interface StudioCostLedgerEntryRepository
   /** Lista as tentativas atribuídas a um plano comercial. */
   List<StudioCostLedgerEntry> findByCommercialPlanIdOrderByCreatedAtAsc(Long commercialPlanId);
 
+  /** Lista tentativas atribuídas diretamente a um produto. */
+  List<StudioCostLedgerEntry> findByProductIdOrderByCreatedAtAsc(Long productId);
+
+  /** Lista tentativas atribuídas a qualquer plano comercial do produto. */
+  List<StudioCostLedgerEntry> findByCommercialPlanIdInOrderByCreatedAtAsc(
+      List<Long> commercialPlanIds);
+
   /** Lista tentativas ainda sem atribuição a um planejamento comercial. */
   List<StudioCostLedgerEntry> findByCommercialPlanIdIsNullOrderByCreatedAtAsc();
 

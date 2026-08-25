@@ -35,7 +35,11 @@ class ProductValueChainPositionServiceTest {
         .thenReturn(List.of(chain));
     var service =
         new ProductValueChainPositionService(
-            productRepository, chainRepository, mock(ProductSubprocessPositionResolver.class));
+            productRepository,
+            chainRepository,
+            mock(ProductSubprocessPositionResolver.class),
+            new PdeProcessCodeResolver(),
+            mock(ProductStageMeasurementResolver.class));
 
     var positions = service.listPositions();
 
@@ -66,7 +70,11 @@ class ProductValueChainPositionServiceTest {
         .thenReturn(List.of(chain()));
     var service =
         new ProductValueChainPositionService(
-            productRepository, chainRepository, mock(ProductSubprocessPositionResolver.class));
+            productRepository,
+            chainRepository,
+            mock(ProductSubprocessPositionResolver.class),
+            new PdeProcessCodeResolver(),
+            mock(ProductStageMeasurementResolver.class));
 
     var position = service.listPositions().getFirst();
 
@@ -87,7 +95,11 @@ class ProductValueChainPositionServiceTest {
         .thenReturn(List.of());
     var service =
         new ProductValueChainPositionService(
-            productRepository, chainRepository, mock(ProductSubprocessPositionResolver.class));
+            productRepository,
+            chainRepository,
+            mock(ProductSubprocessPositionResolver.class),
+            new PdeProcessCodeResolver(),
+            mock(ProductStageMeasurementResolver.class));
 
     var position = service.listPositions().getFirst();
 

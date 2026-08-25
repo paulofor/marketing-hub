@@ -1,5 +1,7 @@
 package com.marketinghub.product.service.valuechainposition;
 
+import java.util.List;
+
 /** Contrato que localiza um produto dentro da cadeia de valor publicada. */
 public record ProductValueChainPositionResponse(
     Long productId,
@@ -15,4 +17,5 @@ public record ProductValueChainPositionResponse(
     Integer processVersion,
     Integer sequenceNumber,
     Integer processCount,
+    List<ProductStageMeasurementResponse> processMeasurements,
     ProductSubprocessPositionResponse subprocessPosition) {}

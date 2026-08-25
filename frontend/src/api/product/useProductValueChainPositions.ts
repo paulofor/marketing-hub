@@ -1,6 +1,24 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
+export type ProductStageMeasurement = {
+  stageType: "PROCESS" | "SUBPROCESS";
+  trackingStatus: "CURRENT" | "COMPLETED" | "RECORDED";
+  processDefinitionId: number;
+  processCode: string;
+  processName: string;
+  enteredAt?: string | null;
+  entryEvidence: string;
+  exitedAt?: string | null;
+  exitEvidence?: string | null;
+  objectiveAchieved: boolean;
+  elapsedDays?: number | null;
+  knownEstimatedCostUsd: number;
+  costCoverage: "COMPLETE" | "PARTIAL" | "NOT_REPORTED" | "NO_EXECUTIONS";
+  costedExecutionCount: number;
+  uncostedExecutionCount: number;
+};
+
 export type ProductValueChainPosition = {
   productId: number;
   commercialStatus?: string | null;
@@ -15,6 +33,7 @@ export type ProductValueChainPosition = {
   processVersion?: number | null;
   sequenceNumber?: number | null;
   processCount?: number | null;
+  processMeasurements?: ProductStageMeasurement[];
   subprocessPosition?: {
     trackingStatus: "NOT_APPLICABLE" | "PLANNED" | "IN_PROGRESS" | "RECORDED";
     subprocessCount: number;
@@ -27,6 +46,7 @@ export type ProductValueChainPosition = {
     nextSubprocessCode?: string | null;
     nextSubprocessName?: string | null;
     nextSubprocessObjective?: string | null;
+    measurements?: ProductStageMeasurement[];
   } | null;
 };
 

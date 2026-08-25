@@ -1,5 +1,18 @@
 # Registro de evolução do catálogo de produtos
 
+## 2026-08-25 — Permanência e custo por processo e subprocesso
+
+- Gargalo: os cards indicavam posição e próximo objetivo, mas não mostravam há quanto tempo o produto
+  estava parado nem quanto custo conhecido havia acumulado na etapa.
+- Alternativas descartadas: commits do Git medem código, não movimento do produto; `product.updated_at`
+  muda em qualquer edição e não constitui histórico de transição.
+- Decisão: o backend preserva períodos dos macroprocessos e consolida subprocessos pela trilha de
+  `agent_task`; a saída preferencial é a entrada comprovada na etapa seguinte.
+- Custos: uso de modelo nas tarefas e ledger do Estúdio são agregados por intervalo. Cobertura parcial
+  ou ausente permanece explícita, sem transformar subtotal conhecido em total exato.
+- Compatibilidade histórica: a posição vigente recebe backfill identificado como estimado; novas
+  transições são registradas no instante da alteração do estado comercial.
+
 ## 2026-08-24 — Descoberta encerrada sem novo produto aprovado
 
 - Processo executado: `pde-opportunity-discovery` v4, com Rigel 82/100 como benchmark fixo.

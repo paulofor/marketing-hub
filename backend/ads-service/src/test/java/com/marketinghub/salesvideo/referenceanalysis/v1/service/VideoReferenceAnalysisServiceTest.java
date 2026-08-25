@@ -16,6 +16,7 @@ import com.marketinghub.salesvideo.VideoReferenceStatus;
 import com.marketinghub.salesvideo.referenceanalysis.v1.service.complete.CompleteRequest;
 import com.marketinghub.salesvideo.tenant.TenantContext;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -72,14 +73,38 @@ class VideoReferenceAnalysisServiceTest {
     VideoReferenceAnalysisExecution execution = execution(VideoReferenceAnalysisStatus.QUEUED);
     given(executionRepository.findClaimable(any(), any(), any(), any()))
         .willReturn(List.of(execution));
+    given(executionRepository.sumKnownCostUsd()).willReturn(new BigDecimal("0.10"));
+    given(executionRepository.countByStatus(VideoReferenceAnalysisStatus.RUNNING)).willReturn(0L);
     given(referenceRepository.findById(31L)).willReturn(Optional.of(reference));
 
-    var pending = service.claimPending("worker-local");
+    var pending =
+        service.claimPending("worker-local", new BigDecimal("0.75"), new BigDecimal("0.25"));
 
     assertThat(pending).hasSize(1);
     assertThat(pending.getFirst().producerExecutionId()).isNotBlank();
     assertThat(execution.getStatus()).isEqualTo(VideoReferenceAnalysisStatus.RUNNING);
     assertThat(reference.getStatus()).isEqualTo(VideoReferenceStatus.ANALYZING);
+  }
+
+  /** Bloqueia a referência antes do consumo quando custo e reserva ultrapassam o teto. */
+  @Test
+  void shouldBlockBeforeExternalSpendWhenBudgetIsExhausted() {
+    saveReturnsArgument();
+    VideoReference reference = reference();
+    VideoReferenceAnalysisExecution execution = execution(VideoReferenceAnalysisStatus.QUEUED);
+    given(executionRepository.findClaimable(any(), any(), any(), any()))
+        .willReturn(List.of(execution));
+    given(executionRepository.sumKnownCostUsd()).willReturn(new BigDecimal("0.60"));
+    given(executionRepository.countByStatus(VideoReferenceAnalysisStatus.RUNNING)).willReturn(0L);
+    given(referenceRepository.findById(31L)).willReturn(Optional.of(reference));
+
+    var pending =
+        service.claimPending("worker-local", new BigDecimal("0.75"), new BigDecimal("0.25"));
+
+    assertThat(pending).isEmpty();
+    assertThat(execution.getStatus()).isEqualTo(VideoReferenceAnalysisStatus.BUDGET_BLOCKED);
+    assertThat(execution.getError()).contains("limite US$ 0.75");
+    assertThat(reference.getStatus()).isEqualTo(VideoReferenceStatus.REJECTED);
   }
 
   /** Persiste resultado e libera o aprendizado apenas com UUID da execução ativa. */
@@ -108,11 +133,11 @@ class VideoReferenceAnalysisServiceTest {
                 100L,
                 20L,
                 30L,
-                null,
+                new BigDecimal("0.010000"),
                 "APOLLO_READY"));
 
     assertThat(response.status()).isEqualTo(VideoReferenceAnalysisStatus.COMPLETED);
-    assertThat(response.costUsd()).isNull();
+    assertThat(response.costUsd()).isEqualByComparingTo("0.010000");
     assertThat(reference.getStatus()).isEqualTo(VideoReferenceStatus.ANALYZED);
     assertThat(reference.getAnalysisNotes()).contains("Receita aprovada");
   }

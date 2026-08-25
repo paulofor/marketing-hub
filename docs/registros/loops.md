@@ -1419,6 +1419,8 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Causa-raiz confirmada pelo histórico:** a prevenção do `LOOP-CREATIVE-IMPROVEMENT-WITHOUT-PRODUCT-REFERENCES` foi criada para Agenda Cheia, cujo próprio entregável é visual, e foi generalizada sem separar entrega visual de prova de produto não visual.
 - **Correção sistêmica:** a Biblioteca distingue `PRODUCT_PROOF`, `DELIVERY` e peça comercial; criação comercial sem prova aprovada bloqueia antes do modelo; Psique e Têmis avaliam produto, formato e canal persistidos; o subprocesso v6 compara imagem, movimento simples e vídeo antes da produção.
 - **Prevenção:** testes de contrato impedem a volta de nicho/formato hardcoded, exigem linhagem para peça comercial e mantêm produção, revisão independente, decisão humana e publicação como responsabilidades separadas.
+- **Recorrência fechada localmente em 2026-08-25:** embora o pacote de Rigel estivesse aprovado fora da produção, a biblioteca aceitava somente URL manual e não preservava manifesto, hashes, requests/responses nem os pareceres de Psique e Têmis. O polling de Têmis também procurava a atividade legada `generate`, inexistente no processo v6, que usa `produce`. A tela passa a importar um único ZIP auditável mediante seleção humana explícita, o backend valida contrato, SHA-256, direitos, zero gasto, independência e ledger bruto antes de persistir ativos e tarefas BPM, e o worker usa os identificadores publicados `route` e `produce`.
+- **Prevenção atualizada:** testes de contrato rejeitam adulteração, plano divergente, falta de auditoria e atividade BPM legada; a importação idempotente não publica nem contabiliza o pacote como venda.
 
 ## LOOP-MUSA-PROJETO-LEGADO-PLANO-OBRIGATORIO — perfil de Apolo não é salvo
 
@@ -1817,3 +1819,19 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes alteram propositalmente a contagem, promovem relato a oferta, tentam aprovar
   a jusante e misturam `REJECT` com `RESEARCH_MORE`. Qualquer divergência encerra a execução com
   artefato de erro, sem correção silenciosa e sem avançar o gate.
+
+## LOOP-EXPERIMENTO-META-CONVERSAO-INACESSIVEL — preflight exige dado que a tela não coleta
+
+- **Data:** 2026-08-25.
+- **Sintoma:** um experimento de vendas criado pela tela administrativa não conseguia chegar a
+  `READY_TO_PUBLISH`, porque o preflight exigia conversão-alvo positiva, mas criação e edição não
+  ofereciam campo para persistir `targetCvr`.
+- **Causa-raiz confirmada:** o backend já aceitava a meta na criação e a entidade a persistia, porém
+  o contrato TypeScript e os formulários omitiam o campo. A criação também ocultava dor, promessa e
+  CTA atrás da geração opcional por IA, mesmo quando havia contrato comercial aprovado.
+- **Correção sistêmica:** criação e edição passam a coletar conversão atual e meta percentual,
+  validar intervalo e evolução esperada e enviar os valores ao backend; o contrato comercial pode
+  ser preenchido manualmente, mantendo a IA apenas como apoio opcional.
+- **Prevenção:** testes de contrato protegem a faixa percentual, o frontend exige meta positiva em
+  experimentos de vendas e o backend permite atualizar as metas sem substituir os demais dados do
+  experimento.

@@ -171,6 +171,16 @@ paths:
           name: workerId
           required: true
           schema: { type: string }
+        - in: query
+          name: budgetLimitUsd
+          required: true
+          description: Teto persistente para o lote de análises.
+          schema: { type: number, minimum: 0.01 }
+        - in: query
+          name: reservationUsd
+          required: true
+          description: Reserva máxima assumida antes de cada chamada multimodal.
+          schema: { type: number, minimum: 0.01 }
       responses:
         "200":
           description: Lista com zero ou uma execução pendente.
@@ -268,7 +278,7 @@ components:
         attemptNumber: { type: integer, minimum: 1 }
         status:
           type: string
-          enum: [QUEUED, RUNNING, COMPLETED, FAILED]
+          enum: [QUEUED, RUNNING, COMPLETED, FAILED, BUDGET_BLOCKED]
         input: { type: object, additionalProperties: true }
         output:
           type: object
@@ -317,6 +327,7 @@ components:
         - rawRequest
         - rawResponse
         - model
+        - costUsd
         - decision
       properties:
         producerExecutionId: { type: string }
@@ -329,7 +340,7 @@ components:
         inputTokens: { type: integer, format: int64, nullable: true }
         cachedInputTokens: { type: integer, format: int64, nullable: true }
         outputTokens: { type: integer, format: int64, nullable: true }
-        costUsd: { type: number, nullable: true }
+        costUsd: { type: number, minimum: 0 }
         decision: { type: string }
     FailVideoReferenceAnalysis:
       type: object

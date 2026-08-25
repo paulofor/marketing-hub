@@ -26,6 +26,7 @@ import { salesPageDestinationCopy } from "./experimentDestinationCopy";
 import { experimentStageLabels } from "./stageLabels";
 import {
   parseOptionalEntityId,
+  parseOptionalConversionRate,
   parseOptionalPositiveAmount,
   productAiSubtypeForExperiment,
 } from "./experimentPlanningContract";
@@ -43,6 +44,8 @@ interface FormData {
   platform: ExperimentPlatform;
   name: string;
   kpiTarget: string;
+  baselineCvr: string;
+  targetCvr: string;
   dailyBudget: string;
   unitPrice: string;
   followUpActionUrl: string;
@@ -104,6 +107,8 @@ export default function EditExperimentPage() {
       platform: "FACEBOOK",
       name: "",
       kpiTarget: "",
+      baselineCvr: "",
+      targetCvr: "",
       dailyBudget: "",
       unitPrice: "",
       followUpActionUrl: "",
@@ -146,6 +151,8 @@ export default function EditExperimentPage() {
         name: data.name || "",
         kpiTarget:
           currentKpi != null && currentKpi > 0 ? String(currentKpi) : "",
+        baselineCvr: data.baselineCvr != null ? String(data.baselineCvr) : "",
+        targetCvr: data.targetCvr != null ? String(data.targetCvr) : "",
         dailyBudget:
           data.dailyBudget != null && data.dailyBudget > 0
             ? String(data.dailyBudget)
@@ -469,6 +476,28 @@ export default function EditExperimentPage() {
         alert("Informe uma meta de KPI válida ou deixe o campo vazio");
         return;
       }
+      const parsedBaselineCvr = parseOptionalConversionRate(values.baselineCvr);
+      if (parsedBaselineCvr === null) {
+        alert("Informe uma conversão atual entre 0% e 100%");
+        return;
+      }
+      const parsedTargetCvr = parseOptionalConversionRate(values.targetCvr);
+      if (
+        parsedTargetCvr === null ||
+        (isSalesObjectiveExperiment &&
+          (parsedTargetCvr == null || parsedTargetCvr <= 0))
+      ) {
+        alert("Informe uma meta de conversão entre 0,01% e 100%");
+        return;
+      }
+      if (
+        parsedBaselineCvr != null &&
+        parsedTargetCvr != null &&
+        parsedBaselineCvr >= parsedTargetCvr
+      ) {
+        alert("A conversão-alvo deve ser maior que a conversão atual");
+        return;
+      }
       const parsedUnitPrice = Number(values.unitPrice);
       if (
         !values.unitPrice ||
@@ -544,6 +573,8 @@ export default function EditExperimentPage() {
         unitPrice: parsedUnitPrice,
         metricPresetId: values.metricPresetId || undefined,
         sampleSize: data.sampleSize ?? undefined,
+        baselineCvr: parsedBaselineCvr,
+        targetCvr: parsedTargetCvr,
         mde: data.mdePercent ?? undefined,
         startDate: values.startDate || undefined,
         endDate: values.endDate || undefined,
@@ -1005,6 +1036,45 @@ export default function EditExperimentPage() {
                     />
                     <div className="form-text">
                       Usado no link do Mercado Pago.
+                    </div>
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="baselineCvr">
+                      Conversão atual (%)
+                    </label>
+                    <input
+                      id="baselineCvr"
+                      className="form-control"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      placeholder="Ex.: 0,8"
+                      {...register("baselineCvr")}
+                    />
+                    <div className="form-text">
+                      Opcional quando ainda não há tráfego humano comparável.
+                    </div>
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="targetCvr">
+                      Meta de conversão (%){" "}
+                      {isSalesObjectiveExperiment && (
+                        <span className="text-danger">*</span>
+                      )}
+                    </label>
+                    <input
+                      id="targetCvr"
+                      className="form-control"
+                      type="number"
+                      min="0.01"
+                      max="100"
+                      step="0.01"
+                      placeholder="Ex.: 5"
+                      {...register("targetCvr")}
+                    />
+                    <div className="form-text">
+                      Necessária para o preflight de experimentos de vendas.
                     </div>
                   </div>
                   <div>

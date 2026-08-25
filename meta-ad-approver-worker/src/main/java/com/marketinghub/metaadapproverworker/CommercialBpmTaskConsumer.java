@@ -39,9 +39,10 @@ public class CommercialBpmTaskConsumer {
       List.of(
           new BpmContract("pde-communication-sales-journey", "contract"),
           new BpmContract("pde-commercial-homologation-activation", "pdeGate"),
+          new BpmContract("creative-production-approval", "route"),
           new BpmContract("creative-production-approval", "library"),
           new BpmContract("creative-production-approval", "brief"),
-          new BpmContract("creative-production-approval", "generate"),
+          new BpmContract("creative-production-approval", "produce"),
           new BpmContract("creative-production-approval", "commercial"),
           new BpmContract("landing-page-generation", "commercial"),
           new BpmContract("pde-construction-approval", "deliverables"));
@@ -109,6 +110,15 @@ public class CommercialBpmTaskConsumer {
       if (pending != null && !pending.isEmpty()) return pending.get(0);
     }
     return null;
+  }
+
+  /** Confirma que o polling conhece uma atividade publicada do contrato BPM. */
+  static boolean supportsContract(String processCode, String activityId) {
+    return CONTRACTS.stream()
+        .anyMatch(
+            contract ->
+                contract.processCode().equals(processCode)
+                    && contract.activityId().equals(activityId));
   }
 
   /** Executa o prompt versionado e valida coerência, compliance e prontidão comercial. */

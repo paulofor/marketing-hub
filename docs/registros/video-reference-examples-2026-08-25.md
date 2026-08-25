@@ -79,3 +79,10 @@ Continuar para um render de teste somente quando produto, oferta, CTA, direitos,
 revisão estiverem aprovados. Ajustar a receita quando o gate de continuidade, áudio, legenda ou
 clareza comercial falhar. Parar antes de gasto ou publicação quando houver semelhança protegida,
 custo desconhecido, ausência de consentimento ou falta de atribuição mensurável.
+
+## Envelope financeiro da homologação
+
+- três leituras multimodais: teto conjunto de US$ 0,75 e reserva de US$ 0,25 por execução;
+- cálculo conservador: tarifa padrão integral do GPT-5.6, sem descontar cache ou Flex;
+- primeiro render original: ciclo separado de até US$ 2,00, bloqueado por Plutus e limitado a dez segundos;
+- teto total: US$ 2,75, sem campanha, publicação, contato ou registro de venda.

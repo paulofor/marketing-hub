@@ -43,6 +43,8 @@ public class UpdateExperimentRequest {
 
   private String metricPresetId;
   private Integer sampleSize;
+  private BigDecimal baselineCvr;
+  private BigDecimal targetCvr;
 
   @JsonProperty("mde")
   private BigDecimal mdePercent;

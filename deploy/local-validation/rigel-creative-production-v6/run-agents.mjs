@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -16,9 +16,11 @@ const artifacts = join(evidence, "artifacts");
 const proof = join(evidence, "proof");
 const logs = join(evidence, "agent-logs");
 const requests = join(evidence, "agent-requests");
+const responses = join(evidence, "agent-responses");
 const agentModel = "gpt-5.6-sol";
 await mkdir(logs, { recursive: true });
 await mkdir(requests, { recursive: true });
+await mkdir(responses, { recursive: true });
 
 const read = async (file) => readFile(file, "utf8");
 const contractText = await read(
@@ -52,6 +54,7 @@ async function runCodex({ agent, prompt, schema, output, images = [] }) {
   const executionSlug = `${agent.toLowerCase()}-${executionId}`;
   const requestFile = join(requests, `${executionSlug}.md`);
   const logFile = join(logs, `${executionSlug}.jsonl`);
+  const responseFile = join(responses, `${executionSlug}.json`);
   await writeFile(requestFile, prompt);
   const args = [
     "exec",
@@ -63,7 +66,7 @@ async function runCodex({ agent, prompt, schema, output, images = [] }) {
     "--output-schema",
     schema,
     "-o",
-    output,
+    responseFile,
     "--json",
     "-C",
     root,
@@ -90,7 +93,7 @@ async function runCodex({ agent, prompt, schema, output, images = [] }) {
     costStatus: "NOT_EXPOSED_BY_CODEX",
     exitCode: result.status,
     requestFile,
-    responseFile: output,
+    responseFile,
     logFile,
     usage: usageFromJsonl(log),
   });
@@ -100,6 +103,7 @@ async function runCodex({ agent, prompt, schema, output, images = [] }) {
       `${agent} falhou localmente; consulte ${join(logs, `${agent.toLowerCase()}-${executionId}.jsonl`)}`,
     );
   }
+  await cp(responseFile, output);
 }
 
 if (phase === "planning") {

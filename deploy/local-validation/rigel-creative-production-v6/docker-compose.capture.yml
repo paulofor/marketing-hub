@@ -5,14 +5,12 @@ services:
       dockerfile: Dockerfile.assisted-service-e2e
     environment:
       PDE_ASSISTED_FRONTEND_URL: http://pde-platform-frontend-kit-validation
-      RIGEL_CREATIVE_EVIDENCE_DIR: /evidence/proof
+      RIGEL_CREATIVE_EVIDENCE_DIR: /tmp/rigel-creative-proof
     depends_on:
       pde-platform-backend-kit-validation:
         condition: service_healthy
       pde-platform-frontend-kit-validation:
         condition: service_healthy
-    volumes:
-      - ../deploy/local-validation/rigel-creative-production-v6/evidence:/evidence
     command:
       - npx
       - playwright

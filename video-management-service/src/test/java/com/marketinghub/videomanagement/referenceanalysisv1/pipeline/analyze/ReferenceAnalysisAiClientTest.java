@@ -61,6 +61,7 @@ class ReferenceAnalysisAiClientTest {
         assertThat(payload.path("model").asText()).isEqualTo("gpt-5.6");
         assertThat(payload.path("service_tier").asText()).isEqualTo("flex");
         assertThat(payload.path("store").asBoolean()).isFalse();
+        assertThat(payload.path("max_output_tokens").asLong()).isEqualTo(4000);
         assertThat(payload.path("input").get(0).path("content")).hasSize(3);
         assertThat(payload.path("text").path("format").path("type").asText()).isEqualTo("json_schema");
         assertThat(payload.path("text").path("format").path("strict").asBoolean()).isTrue();

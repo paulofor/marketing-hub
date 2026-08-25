@@ -26,6 +26,8 @@ export interface UpdateExperiment {
   kpiTarget?: number;
   metricPresetId?: string;
   sampleSize?: number;
+  baselineCvr?: number;
+  targetCvr?: number;
   mde?: number;
   dailyBudget?: number | null;
   unitPrice?: number | null;

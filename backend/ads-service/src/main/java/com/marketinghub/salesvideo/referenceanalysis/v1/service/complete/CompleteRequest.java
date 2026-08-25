@@ -1,6 +1,7 @@
 package com.marketinghub.salesvideo.referenceanalysis.v1.service.complete;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
@@ -17,5 +18,5 @@ public record CompleteRequest(
     Long inputTokens,
     Long cachedInputTokens,
     Long outputTokens,
-    BigDecimal costUsd,
+    @NotNull @DecimalMin("0.0") BigDecimal costUsd,
     @NotBlank String decision) {}

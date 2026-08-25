@@ -2,12 +2,15 @@ package com.marketinghub.videomanagement.referenceanalysisv1.pipeline.analyze;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.videomanagement.config.VideoManagementProperties;
 import com.marketinghub.videomanagement.referenceanalysisv1.pipeline.ReferenceAnalysisStageContext;
 import com.marketinghub.videomanagement.referenceanalysisv1.pipeline.ReferenceAnalysisStageProcessor;
 import com.marketinghub.videomanagement.referenceanalysisv1.pipeline.ReferenceAnalysisStageResult;
 import java.util.ArrayList;
 import java.util.List;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -67,18 +70,46 @@ public class ApolloReferenceAnalysisProcessor implements ReferenceAnalysisStageP
                     properties.getReferenceAnalysis().getModel());
         }
         JsonNode usage = interaction.response().path("usage");
+        Long inputTokens = requiredUsage(usage, "input_tokens");
+        Long outputTokens = requiredUsage(usage, "output_tokens");
+        BigDecimal costUsd = conservativeCost(inputTokens, outputTokens);
+        ObjectNode auditArtifacts = evidence.artifacts().deepCopy();
+        ObjectNode costEvidence = auditArtifacts.putObject("costEstimate");
+        costEvidence.put("usd", costUsd);
+        costEvidence.put("method", "GPT_5_6_STANDARD_UPPER_BOUND");
+        costEvidence.put("serviceTier", "flex");
+        costEvidence.put("inputTokensChargedAtFullRate", inputTokens);
+        costEvidence.put("outputTokens", outputTokens);
         return new ReferenceAnalysisStageResult(
-                summary(context, evidence.artifacts(), output),
+                summary(context, auditArtifacts, output),
                 output,
-                evidence.artifacts(),
+                auditArtifacts,
                 interaction.request(),
                 interaction.response(),
                 properties.getReferenceAnalysis().getModel(),
-                nullableLong(usage, "input_tokens"),
+                inputTokens,
                 nullableLong(usage.path("input_tokens_details"), "cached_tokens"),
-                nullableLong(usage, "output_tokens"),
-                null,
+                outputTokens,
+                costUsd,
                 output.path("operationalDecision").asText());
+    }
+
+    /** Calcula um teto conservador sem descontar cache ou Flex, evitando subestimar o gasto. */
+    private BigDecimal conservativeCost(long inputTokens, long outputTokens) {
+        BigDecimal input = properties.getReferenceAnalysis().getInputPricePerMillionUsd()
+                .multiply(BigDecimal.valueOf(inputTokens));
+        BigDecimal output = properties.getReferenceAnalysis().getOutputPricePerMillionUsd()
+                .multiply(BigDecimal.valueOf(outputTokens));
+        return input.add(output).divide(BigDecimal.valueOf(1_000_000), 6, RoundingMode.HALF_UP);
+    }
+
+    /** Exige usage para que nenhuma análise concluída permaneça com custo desconhecido. */
+    private Long requiredUsage(JsonNode usage, String field) {
+        Long value = nullableLong(usage, field);
+        if (value == null || value < 0) {
+            throw new IllegalStateException("OpenAI não informou " + field + " para auditar o custo");
+        }
+        return value;
     }
 
     /** Extrai o texto estruturado da Responses API e rejeita resposta incompleta. */

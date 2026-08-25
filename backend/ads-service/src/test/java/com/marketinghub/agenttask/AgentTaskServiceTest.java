@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -144,6 +145,61 @@ class AgentTaskServiceTest {
     assertThat(response.assignedAgentKey()).isEqualTo("growth-operator");
     assertThat(response.sourceReference()).isEqualTo("experiment:88");
     assertThat(response.processActivityName()).isEqualTo("Montar HTML");
+  }
+
+  /** Importa um parecer real já concluído com evidência e consumo no vínculo BPM publicado. */
+  @Test
+  void recordsImportedCompletedReview() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    BusinessProcessDefinitionRepository processes = mock(BusinessProcessDefinitionRepository.class);
+    Agent psique = agent(2L, "customer-agent", "Psique");
+    BusinessProcessDefinition process = process("PUBLISHED", "Psique");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"customer\",\"type\":\"TASK\",\"label\":\"Avaliar percepção\",\"owner\":\"Psique\"}]}");
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(processes.findById(9L)).thenReturn(Optional.of(process));
+    AtomicReference<AgentTask> saved = new AtomicReference<>();
+    when(repository.save(any(AgentTask.class)))
+        .thenAnswer(
+            invocation -> {
+              AgentTask task = invocation.getArgument(0);
+              task.setId(72L);
+              saved.set(task);
+              return task;
+            });
+    when(repository.findById(72L)).thenAnswer(ignored -> Optional.ofNullable(saved.get()));
+    Instant now = Instant.parse("2026-08-25T12:00:00Z");
+    AgentTaskService service =
+        new AgentTaskService(
+            repository,
+            agents,
+            processes,
+            new ObjectMapper(),
+            null,
+            Clock.fixed(now, ZoneOffset.UTC));
+
+    AgentTaskResponse response =
+        service.recordImportedCompletedTask(
+            new ImportedCompletedAgentTask(
+                "customer-agent",
+                "Operador humano",
+                "Parecer importado",
+                "Preserva o parecer local.",
+                "commercial-plan:4@v3",
+                9L,
+                "customer",
+                "{\"decision\":\"APPROVED\"}",
+                "{\"creativePackageId\":\"abc\"}",
+                List.of(
+                    new AgentTaskModelUsageRequest("gpt-5.6-sol", "STANDARD", 100L, 20L, 10L))));
+
+    assertThat(response.status()).isEqualTo("COMPLETED");
+    assertThat(response.resultJson()).contains("APPROVED");
+    assertThat(response.evidenceJson()).contains("creativePackageId");
+    assertThat(response.inputTokens()).isEqualTo(100L);
+    assertThat(response.receivedAt()).isEqualTo(now);
+    assertThat(response.deliveredAt()).isEqualTo(now);
   }
 
   /** Vincula uma tarefa excepcional pendente sem perder sua identidade e seu histórico. */

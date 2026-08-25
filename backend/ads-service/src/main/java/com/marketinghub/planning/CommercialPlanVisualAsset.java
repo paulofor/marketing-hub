@@ -59,6 +59,14 @@ public class CommercialPlanVisualAsset {
   @Column(name = "rights_statement", nullable = false, length = 512)
   private String rightsStatement;
 
+  /** SHA-256 calculado antes da importação para detectar qualquer troca posterior do arquivo. */
+  @Column(name = "content_sha256", length = 64)
+  private String contentSha256;
+
+  /** Identidade do manifesto que mantém todas as peças e pareceres na mesma revisão. */
+  @Column(name = "creative_package_id", length = 64)
+  private String creativePackageId;
+
   @Column(name = "version_number", nullable = false)
   private Integer versionNumber;
 
@@ -95,6 +103,19 @@ public class CommercialPlanVisualAsset {
   /** Response bruta da revisão independente. */
   @Column(name = "agent_review_response_json", columnDefinition = "LONGTEXT")
   private String agentReviewResponseJson;
+
+  /** Estado da avaliação independente de percepção feita por Psique sobre o pacote. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "customer_review_status", length = 24)
+  private CommercialPlanVisualAssetReviewStatus customerReviewStatus;
+
+  /** Identidade da execução de Psique que avaliou o mesmo manifesto. */
+  @Column(name = "customer_reviewer_execution_id", length = 64)
+  private String customerReviewerExecutionId;
+
+  /** Parecer bruto de Psique preservado junto do ativo selecionado. */
+  @Column(name = "customer_review_json", columnDefinition = "LONGTEXT")
+  private String customerReviewJson;
 
   @CreationTimestamp
   @Column(name = "created_at", nullable = false)

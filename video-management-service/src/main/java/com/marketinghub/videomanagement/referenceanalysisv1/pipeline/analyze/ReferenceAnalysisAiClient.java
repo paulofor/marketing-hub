@@ -76,6 +76,7 @@ public class ReferenceAnalysisAiClient {
         request.put("model", properties.getReferenceAnalysis().getModel());
         request.put("service_tier", "flex");
         request.put("store", false);
+        request.put("max_output_tokens", properties.getReferenceAnalysis().getMaxOutputTokens());
         ArrayNode input = request.putArray("input");
         ObjectNode message = input.addObject();
         message.put("role", "user");

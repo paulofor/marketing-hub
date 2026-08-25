@@ -1051,6 +1051,15 @@ public class ExperimentService {
     if (request.getSampleSize() != null && request.getSampleSize() < 1) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "sampleSize must be at least 1");
     }
+    BigDecimal resolvedBaselineCvr =
+        request.getBaselineCvr() != null ? request.getBaselineCvr() : exp.getBaselineCvr();
+    BigDecimal resolvedTargetCvr =
+        request.getTargetCvr() != null ? request.getTargetCvr() : exp.getTargetCvr();
+    if (resolvedBaselineCvr != null
+        && resolvedTargetCvr != null
+        && resolvedBaselineCvr.compareTo(resolvedTargetCvr) >= 0) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "baselineCvr must be < targetCvr");
+    }
 
     MetricPreset preset =
         StringUtils.hasText(request.getMetricPresetId())
@@ -1150,6 +1159,12 @@ public class ExperimentService {
       exp.setSampleSize(request.getSampleSize());
     } else if (preset != null && exp.getSampleSize() == null) {
       exp.setSampleSize(preset.getSampleSize());
+    }
+    if (request.getBaselineCvr() != null) {
+      exp.setBaselineCvr(request.getBaselineCvr());
+    }
+    if (request.getTargetCvr() != null) {
+      exp.setTargetCvr(request.getTargetCvr());
     }
     if (request.getMdePercent() != null) {
       exp.setMdePercent(request.getMdePercent());

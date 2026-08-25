@@ -6,15 +6,20 @@ cd "${DEPLOY_DIR}"
 
 unset LEAD_PORTAL_PAYMENTS_AUTH_TOKEN
 
-docker compose -f docker-compose.video.yml config --quiet
-video_config="$(docker compose -f docker-compose.video.yml config)"
+OPENAI_API_KEY=contract-test docker compose -f docker-compose.video.yml config --quiet
+video_config="$(OPENAI_API_KEY=contract-test docker compose -f docker-compose.video.yml config)"
 grep -Fq 'BACKEND_URL: http://191.252.181.168' <<<"${video_config}"
 grep -Fq 'AGENT_HEALTH_KEY: videomaker' <<<"${video_config}"
 grep -Fq 'MARKETING_HUB_REPOSITORY: /app' <<<"${video_config}"
 grep -Fq 'CODEX_HOME: /root/.codex' <<<"${video_config}"
 grep -Fq 'target: /root/.codex' <<<"${video_config}"
-grep -Fq 'VIDEO_REFERENCE_ANALYSIS_ENABLED: "false"' <<<"${video_config}"
+grep -Fq 'VIDEO_REFERENCE_ANALYSIS_ENABLED: "true"' <<<"${video_config}"
 grep -Fq 'VIDEO_REFERENCE_ANALYSIS_MODEL: gpt-5.6' <<<"${video_config}"
+grep -Fq 'VIDEO_REFERENCE_ANALYSIS_MAX_OUTPUT_TOKENS: "4000"' <<<"${video_config}"
+grep -Fq 'VIDEO_REFERENCE_ANALYSIS_BUDGET_LIMIT_USD: "0.75"' <<<"${video_config}"
+grep -Fq 'VIDEO_REFERENCE_ANALYSIS_RESERVATION_USD: "0.25"' <<<"${video_config}"
+grep -Fq 'VIDEO_REFERENCE_ANALYSIS_INPUT_PRICE_PER_MILLION_USD: "4.00"' <<<"${video_config}"
+grep -Fq 'VIDEO_REFERENCE_ANALYSIS_OUTPUT_PRICE_PER_MILLION_USD: "20.00"' <<<"${video_config}"
 MYSQL_PASS=contract-test MCP_GITHUB_TOKEN=contract-test docker compose -f docker-compose.mcp.yml config --quiet
 
 grep -Fq 'MCP_GITHUB_ENABLED: ${MCP_GITHUB_ENABLED:-true}' docker-compose.mcp.yml
@@ -68,6 +73,14 @@ fi
 grep -q 'docker/build-push-action@v6' ../.github/workflows/deploy-containers.yml
 grep -q 'cache-to: type=registry' ../.github/workflows/deploy-containers.yml
 grep -q 'docker compose -f docker-compose.mcp.yml up' bin/apply-mcp-only.sh
+
+# Os testes de inspeção audiovisual exercitam os binários reais. O job isolado
+# deve instalar a mesma dependência que existe na imagem de produção.
+video_build_job="$(sed -n '/^  video-management-image:/,/^  deploy-app:/p' ../.github/workflows/deploy-containers.yml)"
+if ! grep -Fq 'sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg' <<<"${video_build_job}"; then
+  echo "[CONTRATO] O job de vídeo deve instalar ffmpeg antes de executar a suíte." >&2
+  exit 1
+fi
 
 # Alterar o publicador isolado exige reconstruir a imagem para que um deploy
 # recuperado não termine verde mantendo código antigo no container de vídeo.

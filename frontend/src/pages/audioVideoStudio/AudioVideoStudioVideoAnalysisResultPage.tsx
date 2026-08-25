@@ -326,6 +326,17 @@ export default function AudioVideoStudioVideoAnalysisResultPage() {
               </article>
             ) : null}
 
+            {automaticAnalysis.data?.status === "BUDGET_BLOCKED" ? (
+              <article className="audio-video-studio-page__project-card">
+                <strong>Teto financeiro atingido antes do consumo</strong>
+                <p>{automaticAnalysis.data.error}</p>
+                <small>
+                  A execução permaneceu bloqueada sem chamar o modelo. Revise o
+                  envelope antes de solicitar outra tentativa.
+                </small>
+              </article>
+            ) : null}
+
             {automaticAnalysis.data?.status === "COMPLETED" &&
             automaticAnalysis.data.output ? (
               <>

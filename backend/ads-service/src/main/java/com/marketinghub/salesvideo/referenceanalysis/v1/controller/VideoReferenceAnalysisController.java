@@ -6,6 +6,7 @@ import com.marketinghub.salesvideo.referenceanalysis.v1.service.execution.VideoR
 import com.marketinghub.salesvideo.referenceanalysis.v1.service.fail.FailureRequest;
 import com.marketinghub.salesvideo.referenceanalysis.v1.service.pending.Pending;
 import jakarta.validation.Valid;
+import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,8 +27,11 @@ public class VideoReferenceAnalysisController {
 
   /** Entrega ao executor no máximo uma pendência com lease atômico. */
   @GetMapping("/api/internal/sales-videos/reference-analysis/v1/analyze/stage-executions/pending")
-  public List<Pending> pending(@RequestParam String workerId) {
-    return service.claimPending(workerId);
+  public List<Pending> pending(
+      @RequestParam String workerId,
+      @RequestParam BigDecimal budgetLimitUsd,
+      @RequestParam BigDecimal reservationUsd) {
+    return service.claimPending(workerId, budgetLimitUsd, reservationUsd);
   }
 
   /** Recebe o resultado completo e auditável produzido pelo executor. */

@@ -47,7 +47,9 @@ class ApolloReferenceAnalysisProcessorTest {
         var result = processor.process(context);
 
         assertThat(result.decision()).isEqualTo("NEEDS_PROVIDER_HOMOLOGATION");
-        assertThat(result.costUsd()).isNull();
+        assertThat(result.costUsd()).isEqualByComparingTo("0.010000");
+        assertThat(result.artifacts().path("costEstimate").path("method").asText())
+                .isEqualTo("GPT_5_6_STANDARD_UPPER_BOUND");
         assertThat(result.summaryMarkdown()).contains("24 frames-chave", "EXTEND_APOLLO", "execução #").doesNotContain("NEW_AGENT");
         assertThat(result.output().path("productionBlueprint").path("scenePlan")).hasSize(4);
     }

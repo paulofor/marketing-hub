@@ -2073,7 +2073,7 @@ class ExperimentServiceTest {
   }
 
   @Test
-  void updateAllowsSampleSizeBelowOneHundred() {
+  void updateAllowsSampleSizeAndConversionTargetsForCommercialPreflight() {
     MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
     var angle =
         angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
@@ -2121,10 +2121,27 @@ class ExperimentServiceTest {
     updateReq.setMetricPresetId("LEAN_150");
     updateReq.setJourneyTemplateId(template.getId());
     updateReq.setSampleSize(5);
+    updateReq.setBaselineCvr(new BigDecimal("0.80"));
+    updateReq.setTargetCvr(new BigDecimal("5.00"));
 
     Experiment updated = service.update(exp.getId(), updateReq);
 
     assertThat(updated.getSampleSize()).isEqualTo(5);
+    assertThat(updated.getBaselineCvr()).isEqualByComparingTo("0.80");
+    assertThat(updated.getTargetCvr()).isEqualByComparingTo("5.00");
+
+    UpdateExperimentRequest invalidTarget = new UpdateExperimentRequest();
+    applyStageDefaults(invalidTarget);
+    invalidTarget.setName("Exp1");
+    invalidTarget.setHypothesis("Teste");
+    invalidTarget.setKpiTargetCpl(new BigDecimal("45"));
+    invalidTarget.setMetricPresetId("LEAN_150");
+    invalidTarget.setJourneyTemplateId(template.getId());
+    invalidTarget.setTargetCvr(new BigDecimal("0.50"));
+
+    assertThatThrownBy(() -> service.update(exp.getId(), invalidTarget))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("baselineCvr must be < targetCvr");
   }
 
   @Test

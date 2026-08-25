@@ -31,6 +31,8 @@ export interface CreateExperiment {
   kpiTarget?: number;
   metricPresetId?: string;
   sampleSize?: number;
+  baselineCvr?: number;
+  targetCvr?: number;
   mde?: number;
   dailyBudget?: number;
   unitPrice: number;

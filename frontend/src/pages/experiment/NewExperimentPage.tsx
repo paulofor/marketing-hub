@@ -33,6 +33,7 @@ import type {
 import type { Product } from "../../api/product/useProducts";
 import {
   experimentIdentityFields,
+  parseOptionalConversionRate,
   parseOptionalPositiveAmount,
   productAiSubtypeForExperiment,
 } from "./experimentPlanningContract";
@@ -79,6 +80,8 @@ type FormState = {
   kpiTarget: string;
   metricPresetId: string;
   sampleSize: string;
+  baselineCvr: string;
+  targetCvr: string;
   mde: string;
   dailyBudget: string;
   unitPrice: string;
@@ -126,6 +129,8 @@ export default function NewExperimentPage() {
     kpiTarget: "",
     metricPresetId: "",
     sampleSize: "",
+    baselineCvr: "",
+    targetCvr: "",
     mde: "",
     dailyBudget: "",
     unitPrice: "",
@@ -494,6 +499,28 @@ export default function NewExperimentPage() {
         alert("Informe uma amostra inteira maior que zero");
         return;
       }
+      const parsedBaselineCvr = parseOptionalConversionRate(form.baselineCvr);
+      if (parsedBaselineCvr === null) {
+        alert("Informe uma conversão atual entre 0% e 100%");
+        return;
+      }
+      const parsedTargetCvr = parseOptionalConversionRate(form.targetCvr);
+      if (
+        parsedTargetCvr === null ||
+        (isSalesObjectiveExperiment &&
+          (parsedTargetCvr == null || parsedTargetCvr <= 0))
+      ) {
+        alert("Informe uma meta de conversão entre 0,01% e 100%");
+        return;
+      }
+      if (
+        parsedBaselineCvr != null &&
+        parsedTargetCvr != null &&
+        parsedBaselineCvr >= parsedTargetCvr
+      ) {
+        alert("A conversão-alvo deve ser maior que a conversão atual");
+        return;
+      }
       const parsedUnitPrice = Number(unitPriceForSubmit);
       if (
         !unitPriceForSubmit ||
@@ -530,6 +557,8 @@ export default function NewExperimentPage() {
         kpiTarget: parsedKpiTarget,
         metricPresetId: form.metricPresetId || undefined,
         sampleSize: parsedSampleSize,
+        baselineCvr: parsedBaselineCvr,
+        targetCvr: parsedTargetCvr,
         mde: form.mde ? Number(form.mde) : undefined,
         dailyBudget: parsedDailyBudget,
         unitPrice: parsedUnitPrice,
@@ -573,6 +602,8 @@ export default function NewExperimentPage() {
         kpiTarget: "",
         metricPresetId: "",
         sampleSize: "",
+        baselineCvr: "",
+        targetCvr: "",
         mde: "",
         dailyBudget: "",
         unitPrice: "",
@@ -1130,14 +1161,85 @@ export default function NewExperimentPage() {
               ))}
             </div>
           )}
+          <div className="row g-2 mb-3">
+            <div className="col-12 col-lg-6">
+              <label className="form-label" htmlFor="singlePain">
+                Dor única <span className="text-danger">*</span>
+              </label>
+              <input
+                id="singlePain"
+                className="form-control"
+                value={form.singlePain}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    singlePain: event.target.value,
+                  }))
+                }
+                placeholder="Ex.: ainda não consigo me expressar com segurança"
+              />
+            </div>
+            <div className="col-12 col-lg-6">
+              <label className="form-label" htmlFor="freeReward">
+                {freeRewardLabel}{" "}
+                {!isSalesObjectiveExperiment && (
+                  <span className="text-danger">*</span>
+                )}
+              </label>
+              <input
+                id="freeReward"
+                className="form-control"
+                value={form.freeReward}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    freeReward: event.target.value,
+                  }))
+                }
+                placeholder={freeRewardPlaceholder}
+              />
+            </div>
+            <div className="col-12 col-lg-6">
+              <label className="form-label" htmlFor="funnelPromise">
+                Promessa do funil <span className="text-danger">*</span>
+              </label>
+              <input
+                id="funnelPromise"
+                className="form-control"
+                value={form.funnelPromise}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    funnelPromise: event.target.value,
+                  }))
+                }
+                placeholder="Resultado específico que a oferta entrega"
+              />
+            </div>
+            <div className="col-12 col-lg-6">
+              <label className="form-label" htmlFor="primaryCta">
+                CTA principal <span className="text-danger">*</span>
+              </label>
+              <input
+                id="primaryCta"
+                className="form-control"
+                value={form.primaryCta}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    primaryCta: event.target.value,
+                  }))
+                }
+                placeholder="Ex.: Começar agora"
+              />
+            </div>
+          </div>
           {form.singlePain &&
           (isLowTicketProduct || form.freeReward) &&
           form.funnelPromise &&
           form.primaryCta ? (
             <div className="alert alert-success py-2 mb-3" role="status">
-              <div className="fw-semibold mb-1">
-                Contrato selecionado pela IA
-              </div>
+              <div className="fw-semibold mb-1">Contrato comercial pronto</div>
               <div className="small">
                 <strong>Dor:</strong> {form.singlePain}
               </div>
@@ -1160,10 +1262,10 @@ export default function NewExperimentPage() {
           ) : (
             <div className="alert alert-secondary py-2 mb-3" role="status">
               {isPdeMembershipSubscriptionFunnel
-                ? "Solicite as opções por IA e escolha uma delas para fixar a dor, a assinatura PDE, a promessa, a prova de valor e o CTA do experimento."
+                ? "Informe o contrato aprovado ou use a IA como apoio opcional para propor alternativas."
                 : isLowTicketProduct
-                  ? "Solicite as opções por IA e escolha uma delas para fixar a dor, o produto low-ticket, a promessa e o CTA de checkout do experimento."
-                  : "Solicite as opções por IA e escolha uma delas para fixar a dor, a isca digital, o produto de entrada, a promessa e o CTA do experimento."}
+                  ? "Informe o contrato aprovado ou use a IA como apoio opcional para propor alternativas."
+                  : "Informe o contrato aprovado ou use a IA como apoio opcional para propor alternativas."}
             </div>
           )}
           <div className="alert alert-info py-2 mb-0">
@@ -1218,6 +1320,59 @@ export default function NewExperimentPage() {
               }))
             }
           />
+        </div>
+      </div>
+      <div className="row g-2 mb-2">
+        <div className="col-12 col-md-6">
+          <label className="form-label" htmlFor="baselineCvr">
+            Conversão atual (%)
+          </label>
+          <input
+            id="baselineCvr"
+            className="form-control"
+            placeholder="Ex.: 0,8"
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            value={form.baselineCvr}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                baselineCvr: event.target.value,
+              }))
+            }
+          />
+          <div className="form-text">
+            Opcional quando ainda não há tráfego humano comparável.
+          </div>
+        </div>
+        <div className="col-12 col-md-6">
+          <label className="form-label" htmlFor="targetCvr">
+            Meta de conversão (%){" "}
+            {isSalesObjectiveExperiment && (
+              <span className="text-danger">*</span>
+            )}
+          </label>
+          <input
+            id="targetCvr"
+            className="form-control"
+            placeholder="Ex.: 5"
+            type="number"
+            min="0.01"
+            max="100"
+            step="0.01"
+            value={form.targetCvr}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                targetCvr: event.target.value,
+              }))
+            }
+          />
+          <div className="form-text">
+            Necessária para o preflight de experimentos de vendas.
+          </div>
         </div>
       </div>
       {form.platform === "FACEBOOK" && (

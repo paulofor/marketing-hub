@@ -40,7 +40,12 @@ public class ReferenceAnalysisBackendClient {
                     properties.getReferenceAnalysis().getWorkerId());
             List<ReferenceAnalysisStageContext> response = authorized(backend.get()
                     .uri(uri -> uri.path(url)
-                            .queryParam("workerId", properties.getReferenceAnalysis().getWorkerId()).build()))
+                            .queryParam("workerId", properties.getReferenceAnalysis().getWorkerId())
+                            .queryParam("budgetLimitUsd",
+                                    properties.getReferenceAnalysis().getBudgetLimitUsd())
+                            .queryParam("reservationUsd",
+                                    properties.getReferenceAnalysis().getReservationUsd())
+                            .build()))
                     .retrieve().bodyToMono(PENDING_TYPE).block();
             log.info("Response backend análise de referência; url={} quantidade={}", url,
                     response == null ? 0 : response.size());

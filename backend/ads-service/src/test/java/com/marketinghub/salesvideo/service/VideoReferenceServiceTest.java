@@ -28,13 +28,14 @@ import org.springframework.mock.web.MockMultipartFile;
 class VideoReferenceServiceTest {
   @Mock private VideoReferenceRepository repository;
   @Mock private AssetStorageService storageService;
+  @Mock private VideoReferenceAnalysisPort analysisPort;
 
   private VideoReferenceService service;
 
   @BeforeEach
   void setUp() {
     TenantContextHolder.set(new TenantContext("tenant-musa", "editor@marketinghub.io", false));
-    service = new VideoReferenceService(repository, storageService);
+    service = new VideoReferenceService(repository, storageService, analysisPort);
   }
 
   @AfterEach
@@ -67,6 +68,7 @@ class VideoReferenceServiceTest {
 
     ArgumentCaptor<VideoReference> captor = ArgumentCaptor.forClass(VideoReference.class);
     org.mockito.Mockito.verify(repository).save(captor.capture());
+    org.mockito.Mockito.verify(analysisPort).enqueue(captor.getValue());
     assertThat(captor.getValue().getTenantId()).isEqualTo("tenant-musa");
     assertThat(captor.getValue().getStatus()).isEqualTo(VideoReferenceStatus.QUEUED);
     assertThat(result.id()).isEqualTo(41L);
@@ -163,6 +165,7 @@ class VideoReferenceServiceTest {
                 "Usar como referência de roteiro para criativo de aquisição.",
                 "editor@marketinghub.io"));
 
+    org.mockito.Mockito.verify(analysisPort).assertManualContingencyAllowed(44L);
     assertThat(result.status()).isEqualTo(VideoReferenceStatus.ANALYZED);
     assertThat(result.analyzedAt()).isNotNull();
     assertThat(result.analysisNotes()).contains("**Evidencias usadas**");

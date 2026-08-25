@@ -13,6 +13,8 @@ grep -Fq 'AGENT_HEALTH_KEY: videomaker' <<<"${video_config}"
 grep -Fq 'MARKETING_HUB_REPOSITORY: /app' <<<"${video_config}"
 grep -Fq 'CODEX_HOME: /root/.codex' <<<"${video_config}"
 grep -Fq 'target: /root/.codex' <<<"${video_config}"
+grep -Fq 'VIDEO_REFERENCE_ANALYSIS_ENABLED: "false"' <<<"${video_config}"
+grep -Fq 'VIDEO_REFERENCE_ANALYSIS_MODEL: gpt-5.6' <<<"${video_config}"
 MYSQL_PASS=contract-test MCP_GITHUB_TOKEN=contract-test docker compose -f docker-compose.mcp.yml config --quiet
 
 grep -Fq 'MCP_GITHUB_ENABLED: ${MCP_GITHUB_ENABLED:-true}' docker-compose.mcp.yml

@@ -270,7 +270,7 @@ public class CustomerBpmTaskConsumer {
     return value == null ? "" : value.toString();
   }
 
-  /** Valida que a decisão inclui evidência e uma resposta humana não plenamente racional. */
+  /** Valida que a decisão inclui evidência, resposta humana e gates internamente coerentes. */
   static void validate(JsonNode result) {
     if (!List.of("APPROVED", "ADJUST", "BLOCKED").contains(result.path("decision").asText())) {
       throw new IllegalArgumentException("Parecer de Psique sem decisão válida");
@@ -282,6 +282,14 @@ public class CustomerBpmTaskConsumer {
         || result.path("evidence").isEmpty()
         || result.path("requiredChanges").isMissingNode()) {
       throw new IllegalArgumentException("Parecer de Psique sem evidências suficientes");
+    }
+    if ("APPROVED".equals(result.path("decision").asText())
+        && result.path("gateChecks").isArray()) {
+      for (JsonNode gate : result.path("gateChecks")) {
+        if (!"PASS".equals(gate.path("status").asText())) {
+          throw new IllegalArgumentException("Parecer de Psique aprovou com gate não aprovado");
+        }
+      }
     }
   }
 

@@ -380,6 +380,12 @@ describe("audio video studio navigation", () => {
         });
       }
 
+      if (
+        url === "/api/sales-videos/reference-analysis/v1/references/22/latest"
+      ) {
+        return Promise.reject({ response: { status: 404 } });
+      }
+
       return Promise.resolve({ data: [] });
     });
 
@@ -406,6 +412,85 @@ describe("audio video studio navigation", () => {
     ).toBeTruthy();
   });
 
+  it("shows automated evidence and an importable Apollo recipe", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/reference-videos/22") {
+        return Promise.resolve({
+          data: {
+            id: 22,
+            title: "Rio Antigo",
+            sourceUrl: "https://cdn.example/rio-antigo.mp4",
+            primaryLearningGoal: "Aprender continuidade.",
+            status: "ANALYZED",
+          },
+        });
+      }
+      if (
+        url === "/api/sales-videos/reference-analysis/v1/references/22/latest"
+      ) {
+        return Promise.resolve({
+          data: {
+            executionId: 81,
+            referenceId: 22,
+            attemptNumber: 1,
+            status: "COMPLETED",
+            input: { title: "Rio Antigo" },
+            artifacts: {
+              durationSeconds: 162,
+              width: 576,
+              height: 1024,
+              sceneChangeCount: 35,
+              integratedLoudnessLufs: -17.8,
+            },
+            output: {
+              operationalDecision: "NEEDS_PROVIDER_HOMOLOGATION",
+              hook: "Historiador entra na reconstrução do evento.",
+              narrativePattern: "Apresentador alterna com prova visual.",
+              visualDirection: "Reconstrução histórica autoral.",
+              continuityStrategy: "Mesmo apresentador e cenário por ato.",
+              audioStrategy: "Narração original e paisagem sonora licenciada.",
+              captionStrategy: "Legendas curtas em área segura.",
+              salesApplications: {
+                campaign: "Gancho educativo para campanha.",
+                product: "Aula premium dentro do produto.",
+                organic: "Série histórica autoral.",
+              },
+              rightsRisks: ["Não copiar pessoa, obra ou trilha da referência."],
+              productionBlueprint: {
+                archetype: "Apresentador dentro da história",
+                targetDurationSeconds: 120,
+                scenePlan: ["Cena 1", "Cena 2", "Cena 3", "Cena 4"],
+                estimatedGeneratedClips: 12,
+                apolloCapability: "EXTEND_APOLLO",
+              },
+            },
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    setup(<App />, ["/audio-video-studio/videos-analysis/22/results"]);
+
+    expect(
+      await screen.findByText(/apresentador dentro da história/i),
+    ).toBeTruthy();
+    expect(screen.getByText(/162\.0s · 576×1024/i)).toBeTruthy();
+    expect(screen.getByText(/35 viradas visuais/i)).toBeTruthy();
+    const link = screen.getByRole("link", {
+      name: /produzir com esta receita/i,
+    });
+    expect(link.getAttribute("href")).toBe(
+      "/audio-video-studio?referenceId=22",
+    );
+    expect(screen.getByText(/não copiar pessoa, obra ou trilha/i)).toBeTruthy();
+    expect(
+      screen.queryByRole("form", {
+        name: /registrar analise comercial do video/i,
+      }),
+    ).toBeNull();
+  });
+
   it("submits structured commercial video analysis to backend", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url === "/api/sales-videos/reference-videos/22") {
@@ -421,6 +506,12 @@ describe("audio video studio navigation", () => {
             status: "QUEUED",
           },
         });
+      }
+
+      if (
+        url === "/api/sales-videos/reference-analysis/v1/references/22/latest"
+      ) {
+        return Promise.reject({ response: { status: 404 } });
       }
 
       return Promise.resolve({ data: [] });

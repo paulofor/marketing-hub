@@ -8,6 +8,7 @@ import com.marketinghub.agent.AgentTheme;
 import com.marketinghub.agent.dto.AgentDto;
 import com.marketinghub.agent.dto.AgentItemDto;
 import com.marketinghub.agent.dto.AgentThemeDto;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -17,8 +18,8 @@ import org.springframework.stereotype.Component;
 /** Responsabilidade: converter entidades de agentes e temas em contratos da API. */
 public class AgentMapper {
 
-  /** Converte um agente completo para o contrato de leitura. */
-  public AgentDto toDto(Agent agent) {
+  /** Converte um agente completo e a data auditavel de sua versao para o contrato de leitura. */
+  public AgentDto toDto(Agent agent, Instant lastContractChangeAt) {
     AgentDto dto = new AgentDto();
     dto.setId(agent.getId());
     dto.setName(agent.getName());
@@ -51,6 +52,7 @@ public class AgentMapper {
     dto.setInternalFunctions(mapInternalFunctions(agent.getInternalFunctions()));
     dto.setCreatedAt(agent.getCreatedAt());
     dto.setUpdatedAt(agent.getUpdatedAt());
+    dto.setLastContractChangeAt(lastContractChangeAt);
     return dto;
   }
 

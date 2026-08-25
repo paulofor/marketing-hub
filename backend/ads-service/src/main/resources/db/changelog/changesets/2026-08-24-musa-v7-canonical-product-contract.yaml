@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-24-musa-v7-canonical-product-contract
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - columnExists:
+            tableName: product
+            columnName: pde_experience_json
+        - tableExists:
+            tableName: pde_production_slot
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: published_experience_json
+      changes:
+        - sqlFile:
+            path: 2026-08-24-musa-v7-canonical-product-contract.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true

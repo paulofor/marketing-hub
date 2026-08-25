@@ -21,6 +21,11 @@ Verifique obrigatoriamente:
   diferente daquele declarado;
 - fatos observados separados de hipóteses que só vendas reais poderão validar.
 
+Use `priceClarityScore` obrigatoriamente como percentual de 0 a 100: `0` significa preço e cobrança
+incompreensíveis; `100` significa preço, moeda, cobrança única, duração e ausência de renovação
+completamente claros e coerentes em todas as provas. Uma decisão `APPROVED` com recomendação
+`READY_FOR_PREFLIGHT` exige nota mínima de 80. Nunca use escala de 0 a 10 nesse campo.
+
 Não repita o preflight técnico do backend. Recomende `READY_FOR_PREFLIGHT` apenas quando as provas
 podem alimentá-lo integralmente. Use `ADJUST` para lacuna corrigível e `BLOCKED` para risco comercial,
 legal, financeiro, de privacidade ou de entrega. Aprovação não autoriza `RUNNING`, gasto ou contato.

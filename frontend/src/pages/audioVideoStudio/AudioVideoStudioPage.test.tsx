@@ -11,6 +11,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import axios from "axios";
 import AudioVideoStudioPage, {
+  actTwoConfigurationIssue,
   buildStudioSceneMetadata,
   readStudioSceneOrder,
   findProviderFromPlan,
@@ -103,6 +104,59 @@ describe("selecao de clipes por cena", () => {
       animation_provider: "KLING_3_0",
     });
   });
+
+  it("monta o contrato Act-Two sem enviar as provas juridicas ao provider", () => {
+    const provider = SALES_VIDEO_PROVIDER_OPTIONS.find(
+      (option) => option.providerName === "RUNWAY_ACT_TWO",
+    );
+    const project = {
+      id: 9,
+      campaignKey: "performance-original",
+      characterPerformanceType: "image",
+      characterPerformanceUri:
+        "https://assets.example/personagem-autorizada.png",
+      referencePerformanceUri:
+        "https://assets.example/performance-autorizada.mp4",
+      referencePerformanceDurationSeconds: 12,
+      performanceConsentEvidence: "consentimento-9",
+      performanceRightsEvidence: "direitos-9",
+    } as any;
+
+    const metadata = JSON.parse(
+      buildStudioSceneMetadata(
+        project,
+        provider!,
+        "Performance original com câmera e função comercial.",
+        0,
+      ),
+    );
+
+    expect(actTwoConfigurationIssue(project)).toBe("");
+    expect(metadata.characterPerformance).toEqual({
+      characterType: "image",
+      characterUri: "https://assets.example/personagem-autorizada.png",
+      referencePerformanceUri:
+        "https://assets.example/performance-autorizada.mp4",
+      referencePerformanceDurationSeconds: 12,
+      consentEvidence: "consentimento-9",
+      performanceRightsEvidence: "direitos-9",
+      bodyControl: true,
+      expressionIntensity: 3,
+    });
+  });
+
+  it("bloqueia Act-Two sem consentimento antes de formar uma chamada paga", () => {
+    expect(
+      actTwoConfigurationIssue({
+        characterPerformanceType: "image",
+        characterPerformanceUri: "https://assets.example/personagem.png",
+        referencePerformanceUri: "https://assets.example/performance.mp4",
+        referencePerformanceDurationSeconds: 12,
+        performanceConsentEvidence: "",
+        performanceRightsEvidence: "direitos-9",
+      } as any),
+    ).toMatch(/consentimento/i);
+  });
 });
 
 function setup() {
@@ -128,6 +182,24 @@ function setupProject() {
         <Routes>
           <Route
             path="/audio-video-studio/projects/:projectId"
+            element={<AudioVideoStudioPage />}
+          />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+function setupReferenceRecipe() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={["/audio-video-studio?referenceId=3"]}>
+        <Routes>
+          <Route
+            path="/audio-video-studio"
             element={<AudioVideoStudioPage />}
           />
         </Routes>
@@ -164,6 +236,81 @@ describe("AudioVideoStudioPage", () => {
     (axios.patch as any).mockResolvedValue({ data: {} });
   });
 
+  it("aplica a receita sem inventar produto, oferta ou CTA", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/sales-videos/studio/catalog") {
+        return Promise.resolve({ data: studioCatalog });
+      }
+      if (
+        url === "/api/sales-videos/reference-analysis/v1/references/3/latest"
+      ) {
+        return Promise.resolve({
+          data: {
+            executionId: 9,
+            referenceId: 3,
+            attemptNumber: 1,
+            status: "COMPLETED",
+            input: { title: "Madonna" },
+            output: {
+              commercialDiagnosis: "Performance premium com recompensa visual.",
+              narrativePattern: "Gancho, performance e recompensa.",
+              rightsRisks: ["Usar somente personagem, voz e música originais."],
+              productionBlueprint: {
+                archetype: "Performance musical original",
+                targetDurationSeconds: 60,
+                format: "VERTICAL_9_16",
+                story:
+                  "Uma artista fictícia conduz uma história original em quatro atos.",
+                scenePlan: [
+                  "Cena 1 com ação e câmera.",
+                  "Cena 2 com ação e câmera.",
+                  "Cena 3 com ação e câmera.",
+                  "Cena 4 com ação e câmera.",
+                ],
+                characterBible: "Artista fictícia com consentimento.",
+                environmentBible: "Clube autoral com mapa de luz.",
+                objectBible: "Objetos sem marca.",
+                visualStyleGuide: "Luz cinematográfica original.",
+                imageGenerationPlan: "Gerar frames mestres.",
+                continuityRules: "Preservar artista e figurino.",
+                providerPlan: "Act-Two somente após homologação.",
+                voiceoverPlan: "Voz original autorizada.",
+                soundtrackPlan: "Música original licenciada.",
+                captionPlan: "Legenda sincronizada.",
+                editingNotes: "Alternar planos e detalhes.",
+                qualityGate: "Bloquear sem direitos e revisão humana.",
+              },
+            },
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    setupReferenceRecipe();
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: /aplicar receita ao projeto/i,
+      }),
+    );
+
+    expect(
+      (screen.getByLabelText(/id do produto/i) as HTMLInputElement).value,
+    ).toBe("");
+    expect(
+      (screen.getByLabelText(/historia inicial/i) as HTMLTextAreaElement).value,
+    ).toContain("artista fictícia");
+    expect((screen.getByLabelText(/^cta$/i) as HTMLInputElement).value).toBe(
+      "Fazer o diagnostico MUSA",
+    );
+    expect(
+      screen.getByText(/selecione o produto, ajuste a oferta/i),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /criar blueprint/i }),
+    ).toBeDisabled();
+  });
+
   it("explica os gates de curadoria autônoma do Videomaker", async () => {
     setup();
 
@@ -171,6 +318,23 @@ describe("AudioVideoStudioPage", () => {
       await screen.findByText(/curadoria autônoma do videomaker/i),
     ).toBeTruthy();
     expect(screen.getByText(/anúncio de exportação 4k/i)).toBeTruthy();
+  });
+
+  it("exibe os campos auditaveis da performance ao selecionar Act-Two", async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(
+      await screen.findByRole("button", { name: /runway act-two/i }),
+    );
+
+    expect(screen.getByLabelText(/url https da personagem/i)).toBeRequired();
+    expect(screen.getByLabelText(/url https da performance/i)).toBeRequired();
+    expect(screen.getByLabelText(/evidencia de consentimento/i)).toBeRequired();
+    expect(
+      screen.getByLabelText(/evidencia dos direitos da performance/i),
+    ).toBeRequired();
+    expect(screen.getByText(/permanece em homologacao/i)).toBeTruthy();
   });
 
   it("mostra baseline, candidata, custo, memoria e decisao do piloto de Apolo", async () => {

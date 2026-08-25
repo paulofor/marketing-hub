@@ -3,6 +3,7 @@ package com.marketinghub.videomanagement.service.provider;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.videomanagement.client.dto.AssetType;
 import com.marketinghub.videomanagement.client.dto.SalesVideoJob;
@@ -258,6 +259,52 @@ class RunwayVideoProviderTest {
         }
     }
 
+    /** Deve usar Act-Two somente com personagem, performance e direitos comprovados. */
+    @Test
+    void shouldRenderAuthorizedCharacterPerformanceWithActTwo() throws Exception {
+        server.enqueue(json("{\"id\":\"act-two-task\"}"));
+        server.enqueue(json("""
+                {"id":"act-two-task","status":"SUCCEEDED","output":["%s/download/act-two.mp4"]}
+                """.formatted(server.url("/").toString().replaceAll("/$", ""))));
+        server.enqueue(mp4Response());
+        RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+        ProviderArtifacts artifacts = provider.render(actTwoJob(true), profile(), (percent, status, message) -> { });
+
+        RecordedRequest request = server.takeRequest();
+        JsonNode body = new ObjectMapper().readTree(request.getBody().readUtf8());
+        assertThat(request.getPath()).isEqualTo("/v1/character_performance");
+        assertThat(body.path("model").asText()).isEqualTo("act_two");
+        assertThat(body.path("character").path("type").asText()).isEqualTo("image");
+        assertThat(body.path("character").path("uri").asText())
+                .isEqualTo("https://assets.example/original-character.png");
+        assertThat(body.path("reference").path("type").asText()).isEqualTo("video");
+        assertThat(body.path("reference").path("uri").asText())
+                .isEqualTo("https://assets.example/authorized-performance.mp4");
+        assertThat(body.path("bodyControl").asBoolean()).isTrue();
+        assertThat(body.path("expressionIntensity").asInt()).isEqualTo(3);
+        assertThat(body.has("consentEvidence")).isFalse();
+        assertThat(body.has("performanceRightsEvidence")).isFalse();
+        assertThat(artifacts.metadata())
+                .containsEntry("model", "act_two")
+                .containsEntry("duration_seconds", 10)
+                .containsEntry("cost_usd", new BigDecimal("0.50"));
+        server.takeRequest();
+        server.takeRequest();
+    }
+
+    /** Deve bloquear Act-Two sem consentimento antes de chamar o provider pago. */
+    @Test
+    void shouldRejectActTwoWithoutConsentAndPerformanceRights() {
+        RunwayVideoProvider provider = new RunwayVideoProvider(properties(), new ObjectMapper(), WebClient.builder());
+
+        assertThatThrownBy(() -> provider.render(actTwoJob(false), profile(), (percent, status, message) -> { }))
+                .isInstanceOf(VideoProviderException.class)
+                .hasMessageContaining("consentimento")
+                .hasMessageContaining("direitos");
+        assertThat(server.getRequestCount()).isZero();
+    }
+
     /** Deve bloquear Grok Imagine sem imagem-base antes de consumir créditos. */
     @Test
     void shouldRejectGrokImagineWithoutReferenceImage() {
@@ -457,6 +504,30 @@ class RunwayVideoProviderTest {
                 base.finishedAt(), base.expiresAt(), base.assetId(), base.posterAssetId(), base.vttAssetId(),
                 "{\"generation_strategy\":\"SCENE_BY_SCENE_MONTAGE\",\"scene\":{\"role\":\"MECANISMO\"}}",
                 base.createdAt(), base.updatedAt());
+    }
+
+    /** Cria job Act-Two com referências originais e evidências opcionais de direitos. */
+    private SalesVideoJob actTwoJob(boolean withRights) {
+        SalesVideoJob base = job("RUNWAY_ACT_TWO");
+        String rights = withRights
+                ? "\"consentEvidence\":\"consentimento-42\",\"performanceRightsEvidence\":\"performance-original-42\","
+                : "";
+        String metadata = """
+                {"characterPerformance":{
+                  "characterType":"image",
+                  "characterUri":"https://assets.example/original-character.png",
+                  "referencePerformanceUri":"https://assets.example/authorized-performance.mp4",
+                  "referencePerformanceDurationSeconds":10,
+                  %s
+                  "bodyControl":true,"expressionIntensity":3}}
+                """.formatted(rights);
+        return new SalesVideoJob(
+                base.id(), base.profileId(), base.scriptId(), base.tenantId(), base.providerFamily(),
+                base.providerName(), base.providerJobId(), base.jobType(), base.status(), base.retryAttempt(),
+                base.retryReason(), base.retryOfJobId(), base.retryNotes(), base.progressPercent(),
+                base.failureCode(), base.failureDetail(), base.requestedBy(), base.requestedAt(), base.startedAt(),
+                base.finishedAt(), base.expiresAt(), base.assetId(), base.posterAssetId(), base.vttAssetId(),
+                metadata, base.createdAt(), base.updatedAt());
     }
 
     /** Cria um perfil com roteiro aprovado para o Runway. */

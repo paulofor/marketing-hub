@@ -114,6 +114,7 @@
     "humanDeliveryCompletedAfterReplay": 0,
     "humanRefundsConfirmedAfterReplay": 0,
     "humanNetSalesApprovedAfterRefund": 0,
+    "marketingHubSourceParity": "PRODUCT_AND_PUBLISHED_SLOT_MATCH_VERSIONED_CONTRACT",
     "liquibaseMysql57": "DOUBLE_UPDATE_ROLLBACK_REAPPLY_PASSED",
     "externalSpendBrl": 0,
     "boundary": "Aprovação local não autoriza publicação, contato, mídia, gasto ou RUNNING. A produção continua bloqueada até publicar este artefato e repetir o preflight."
@@ -161,8 +162,13 @@
     },
     {
       "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/ProductCatalogServiceTest.java",
-      "sha256": "e977a6e1a5e110159780e3f646af449c8f1094222f9416616751a8513f736279",
-      "role": "Contrato que impede nova divergência de identidade na v7."
+      "sha256": "edf4910bbbc48bf697caa4257123d22581bede35a87549eff37e3916a54c6ca1",
+      "role": "Contrato que comprova que a resposta publicada pelo Hub não é mascarada pelo fallback."
+    },
+    {
+      "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/ProductCatalogService.java",
+      "sha256": "9fcb605a3fbcba0ba8a0cc0e14420e26be46655b5f202f57a14e1e204302c61c",
+      "role": "Integração que usa o Marketing Hub como fonte e reserva fallback para indisponibilidade real."
     },
     {
       "path": "pde-platform/backend/src/test/java/com/marketinghub/pde/service/AccessServiceTest.java",
@@ -205,13 +211,78 @@
       "role": "Persistência versionada da compra e do reembolso no MySQL 5.7."
     },
     {
+      "path": "backend/ads-service/src/main/resources/db/changelog/changesets/2026-08-24-musa-v7-canonical-product-contract.yaml",
+      "sha256": "c4bfc4a66225ee5e19176d618a94f5a44c230537e143d5c65b0c28d7e8b19e71",
+      "role": "Changeset corretivo que aplica o contrato canônico no produto e no slot v7."
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/db/changelog/changesets/2026-08-24-musa-v7-canonical-product-contract.sql",
+      "sha256": "b2cc21dbb3b166c9e44f84376da73ffa8be84e26effb21ed510dc386e3e46701",
+      "role": "Contrato integral persistido no Marketing Hub sem subconsulta da tabela-alvo."
+    },
+    {
+      "path": "backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml",
+      "sha256": "5f643f3347c30a8f6dfc227408b0a93481359beed4ec3b72af9e491f51b024b8",
+      "role": "Inclusão relativa obrigatória da correção na sequência principal do Liquibase."
+    },
+    {
+      "path": "backend/ads-service/src/test/java/com/marketinghub/pde/MusaV7CanonicalProductContractChangelogTest.java",
+      "sha256": "e9405743b74fc615c7264f3b152619ce3bdba81bedfb75bb90d9b7dac8812df2",
+      "role": "Teste preventivo de paridade semântica, include relativo e compatibilidade MySQL 5.7."
+    },
+    {
+      "path": "pde-platform/local-validation/test-musa-v7-liquibase-mysql57.sh",
+      "sha256": "86567c446e354c1703024bfa493e16b7af4cfd41d7e38daa6172324d7195b1ed",
+      "role": "Homologação física idempotente do contrato no MySQL 5.7 com rollback e reaplicação."
+    },
+    {
+      "path": "scripts/generate-musa-v7-canonical-contract-changelog.mjs",
+      "sha256": "fbef274ef599f223b5c2814006ca5d12e72346eec08f2c035b1f50e01eaf92e0",
+      "role": "Geração determinística do SQL a partir do contrato versionado homologado."
+    },
+    {
+      "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-commercial-homologation-independent-review.md",
+      "sha256": "8bf07bb9b88e12104ab1893047c489ca27001df0babb2efa09d758724f5eef2b",
+      "role": "Prompt de Têmis com escala percentual inequívoca para clareza do preço."
+    },
+    {
+      "path": "meta-ad-approver-worker/src/main/java/com/marketinghub/metaadapproverworker/CommercialBpmTaskConsumer.java",
+      "sha256": "123dbccd88c0cbe9c81e89ff268c3fbc6df841972c5b711668e5d310ac800f0c",
+      "role": "Validator que bloqueia aprovação comercial com nota de preço inferior a 80/100."
+    },
+    {
+      "path": "meta-ad-approver-worker/src/test/java/com/marketinghub/metaadapproverworker/CommercialBpmTaskConsumerTest.java",
+      "sha256": "ad204c3705db71f866ff2b349b13fd987c054d711cb5deef9364d1ef6e395ddf",
+      "role": "Teste preventivo da escala de Têmis e do piso coerente de aprovação."
+    },
+    {
+      "path": "customer-agent-worker/src/main/resources/prompts/bpm/pde-commercial-homologation-customer-review.md",
+      "sha256": "f395ff6123010d6fd58336fa1caf7959e95955c52c9db01cc092474654db7a39",
+      "role": "Prompt de Psique que separa defeito local da confirmação produtiva pós-deploy."
+    },
+    {
+      "path": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/CustomerBpmTaskConsumer.java",
+      "sha256": "6ff6d059daa4cb3ae4d74b4c7a137ebbf1414cc241431a59157aa681b3046d91",
+      "role": "Validator que impede decisão APPROVED com gate funcional ainda em ajuste."
+    },
+    {
+      "path": "customer-agent-worker/src/test/java/com/marketinghub/customeragentworker/CustomerBpmTaskConsumerTest.java",
+      "sha256": "d2eefacc4b43027b0edb1cce2c5959d93c3128e6adf49d72844c8b31b1ee4232",
+      "role": "Teste preventivo de coerência entre decisão geral e gates de Psique."
+    },
+    {
+      "path": "docs/registros/loops.md",
+      "sha256": "ede447004292249e14045c8f8efa61e8b9c81cf3a2bece1de64f6a2daf4f82bc",
+      "role": "Registro da causa-raiz e da prevenção contra fallback que mascara a fonte central."
+    },
+    {
       "path": "docs/registros/musa-v7-construction-evidence.md",
       "sha256": "6b84b9e2361d2eef0b1be721348ba808e6903647c7096345c960c6eb1a2892f5",
       "role": "Evidência congelada dos gates anteriores consumida sem recomputação."
     },
     {
       "path": "docs/registros/musa-v7-commercial-homologation-evidence.md",
-      "sha256": "38bed9ae7fb0af93a894e3b0b9df46f4fbeabc3420e2bf9f96aaebc0273e40ec",
+      "sha256": "f0ff2848c2df82173e8e2a27fdcd4a1718c988b05a69019f4a5a2a5dc4797969",
       "role": "Evidência operacional e comercial da homologação atual."
     }
   ]

@@ -235,7 +235,7 @@ class VideoProductionCycleServiceTest {
         .contains(
             "\"providerClipDurationSeconds\":15",
             "\"sceneCount\":4",
-            "\"cutCount\":12",
+            "\"cutCount\":15",
             "\"text_rendering\":\"DETERMINISTIC_OVERLAY\"");
     assertThat(result.status()).isEqualTo("QUEUED_FOR_APOLLO");
     assertThat(result.salesVideoJobId()).isEqualTo(321L);

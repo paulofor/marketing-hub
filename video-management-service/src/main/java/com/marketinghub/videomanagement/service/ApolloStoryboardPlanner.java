@@ -180,7 +180,7 @@ public class ApolloStoryboardPlanner {
         int sceneCount = metadata.path("sceneCount").asInt(0);
         int cutCount = metadata.path("cut_plan").size();
         if (target < 15 || clipDuration < 1 || sceneCount != (target + clipDuration - 1) / clipDuration
-                || cutCount < 5 || cutCount > 12) {
+                || cutCount < 5 || cutCount > 48) {
             throw blocked("duração, clipes do provider e plano de cortes ainda não estão consistentes");
         }
     }

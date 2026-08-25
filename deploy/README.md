@@ -32,6 +32,9 @@ Antes de publicar ou recriar containers, consulte o inventário central de secre
 | `EXPERIMENT_STRATEGIST_MEMORY_REGION` | Região AWS do bucket do Estrategista | `us-east-1` |
 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | Credencial IAM mínima do backend para o prefixo da memória | sem padrão; manter somente no `.env` protegido |
 | `VIDEO_JOBS_POLLING_ENABLED` | Ativa o polling automático no módulo de vídeo | `true` |
+| `VIDEO_REFERENCE_ANALYSIS_ENABLED` | Ativa a leitura multimodal automática de referências por Apolo; requer autorização explícita de custo | `false` |
+| `VIDEO_REFERENCE_ANALYSIS_POLL_INTERVAL` | Intervalo do polling da fila de análise de referências | `PT30S` |
+| `VIDEO_REFERENCE_ANALYSIS_MODEL` | Modelo multimodal usado na análise auditável de referências | `gpt-5.6` |
 | `VIDEO_PROVIDERS_VEO_ENABLED` | Habilita o adapter direto VEO/Gemini no módulo de vídeo | `true` |
 | `VIDEO_PROVIDERS_VEO_API_KEY` | Chave Gemini usada pelo adapter VEO; pode vir de `GEMINI_API_KEY` | vazio |
 | `VIDEO_PROVIDERS_VEO_MODEL` | Modelo VEO usado no render | `veo-3.1-generate-preview` |

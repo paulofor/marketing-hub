@@ -239,3 +239,15 @@
 - Correção: o executor usa prompt e schema versionados para planejar o storyboard, preserva request/response e bloqueia o provider se duração, diversidade, funções comerciais, pós-produção ou teto financeiro não forem aprovados deterministicamente.
 - Prevenção: testes de contrato cobrem caminho aprovado, orçamento excedido e texto indevidamente delegado ao gerador de vídeo; o Estúdio expõe modelo, estado do planejador, gate e custo previsto.
 - Prevenção: arquivo gerado só recebe aproveitamento positivo quando estiver referenciado por montagem `VIDEO_READY`; cenas sem task, liquidação ou arquivo permanecem explicitamente pendentes e testes protegem payload incompleto.
+
+## 2026-08-25 — Referências viram receitas executáveis de Apolo
+
+- Evidência: os três uploads do Estúdio tinham 63,7s, 131,4s e 162,0s, com 10, 39 e 35 viradas visuais detectadas; dois permaneciam na fila porque não existia executor para essa fila.
+- Causa-raiz: a tela gravava apenas um relatório manual em Markdown. Não havia `pending`, inspeção de mídia, leitura multimodal, execução auditável nem ponte entre aprendizado e projeto.
+- Decisão: manter Apolo como diretor audiovisual e criar a etapa `reference-analysis-v1` no `video-management-service`; um novo estilo não constitui nova responsabilidade de agente.
+- Correção: upload enfileira execução; o executor mede arquivo e áudio, cria dois contact sheets, usa prompt/schema versionados em Flex e persiste receita, artefatos, auditoria, tokens e decisão. A tela mostra o relatório e aplica a receita explicitamente ao projeto.
+- Direitos: a referência ensina ritmo, linguagem e mecanismo; imagem pública, marca, voz, música, letra e gravação nunca são copiadas. Provider pago permanece bloqueado sem preço, licença, consentimento e QA.
+- Prevenção: lease recupera execução abandonada, callback é correlacionado por UUID, retry é explícito e storyboards aceitam até 48 beats sem convertê-los automaticamente em 48 chamadas pagas.
+- Extensão técnica: o adapter Runway aceita `act_two` apenas com personagem e performance HTTPS, duração medida de 3 a 30 segundos, consentimento e direitos persistidos; o modelo nasce em `HOMOLOGATION`, sem ativação ou consumo de créditos.
+- Controle de gasto: o analisador nasce desligado no Compose; ativação de `VIDEO_REFERENCE_ANALYSIS_ENABLED` é decisão operacional explícita. Testes usam OpenAI simulada, e a request produtiva usa Flex, schema raiz `object` e `store=false`.
+- Auditoria preventiva: resposta ausente, JSON inválido, sugestão injustificada de novo agente ou falha de integração preservam artefatos, request e response disponíveis antes de liberar retry.

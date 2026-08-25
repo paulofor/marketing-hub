@@ -9,6 +9,30 @@ import CodexAuthReconnectPanel from "./CodexAuthReconnectPanel";
 import AgentSessionSetupWizard from "./AgentSessionSetupWizard";
 import { useAgentAutomaticExecution } from "../../api/agent/useAgentAutomaticExecution";
 
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function formatContractChangeDate(value?: string) {
+  if (!value) return "Não informada";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Não informada";
+  return parsed.toLocaleDateString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+  });
+}
+
+function daysWithoutContractChange(value?: string, now = Date.now()) {
+  if (!value) return null;
+  const changedAt = new Date(value).getTime();
+  if (Number.isNaN(changedAt)) return null;
+  return Math.max(0, Math.floor((now - changedAt) / MILLISECONDS_PER_DAY));
+}
+
+function formatDaysWithoutContractChange(value?: string) {
+  const days = daysWithoutContractChange(value);
+  if (days === null) return "Tempo não informado";
+  return `${days} ${days === 1 ? "dia" : "dias"} sem alteração`;
+}
+
 const CODEX_EXECUTORS = new Set([
   "customer-agent",
   "financial-agent",
@@ -159,7 +183,9 @@ export default function AgentListPage() {
                               aria-hidden="true"
                             />
                           ) : null}
-                          {item.automaticExecutionEnabled ? "■ Stop" : "▶ Play"}
+                          {item.automaticExecutionEnabled
+                            ? "■ Stop"
+                            : "▶ Play"}
                         </button>
                       </div>
                     </td>
@@ -366,6 +392,25 @@ export default function AgentListPage() {
                         </div>
                         <div className="text-body-secondary small">
                           {agent.description || "Sem descrição"}
+                        </div>
+                        <div
+                          className="small mt-1"
+                          data-agent-contract-recency={agent.id}
+                        >
+                          <div className="fw-semibold">
+                            Última alteração:{" "}
+                            {formatContractChangeDate(
+                              agent.lastContractChangeAt,
+                            )}
+                          </div>
+                          <div
+                            className="text-body-secondary"
+                            title="Fonte: criação da versão atual do contrato auditável do agente"
+                          >
+                            {formatDaysWithoutContractChange(
+                              agent.lastContractChangeAt,
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>

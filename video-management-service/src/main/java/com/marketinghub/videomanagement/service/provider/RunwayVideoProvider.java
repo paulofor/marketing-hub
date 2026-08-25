@@ -102,13 +102,16 @@ public class RunwayVideoProvider implements VideoProvider {
         JsonNode finalStatus = null;
         for (int scene = 1; scene <= sceneCount; scene++) {
             payload = buildPayload(job, profile, script, scene, sceneCount);
-            if (sceneCount > 1) {
+            boolean characterPerformance = "act_two".equals(payload.get("model"));
+            if (sceneCount > 1 && !characterPerformance) {
                 payload.put("promptText", sceneDirective(scene, sceneCount) + " " + payload.get("promptText"));
             }
             String taskId = submitRender(job, payload);
             taskIds.add(taskId);
             String model = String.valueOf(payload.get("model"));
-            int durationSeconds = ((Number) payload.get("duration")).intValue();
+            int durationSeconds = characterPerformance
+                    ? resolveDuration(job, properties.getProviders().getRunway(), jobMetadata)
+                    : ((Number) payload.get("duration")).intValue();
             int estimatedCredits = estimateCredits(model, durationSeconds);
             progressCallback.onProgress(10 + (scene * 65 / sceneCount), SalesVideoStatus.VIDEO_PROCESSING,
                     "Runway aceitou cena %d/%d; taskId=%s".formatted(scene, sceneCount, taskId),
@@ -186,9 +189,14 @@ public class RunwayVideoProvider implements VideoProvider {
 
     /** Cria a tarefa image-to-video ou text-to-video na Runway. */
     private String submitRender(SalesVideoJob job, Map<String, Object> payload) {
-        String path = payload.containsKey("promptImage")
-                ? properties.getProviders().getRunway().getCreatePath()
-                : properties.getProviders().getRunway().getTextCreatePath();
+        String path;
+        if ("act_two".equals(payload.get("model"))) {
+            path = properties.getProviders().getRunway().getCharacterPerformancePath();
+        } else {
+            path = payload.containsKey("promptImage")
+                    ? properties.getProviders().getRunway().getCreatePath()
+                    : properties.getProviders().getRunway().getTextCreatePath();
+        }
         log.info("Chamando Runway para criar vídeo; jobId={} url={} request={}", job.id(), resolveBaseUrl() + path, payload);
         JsonNode response;
         try {
@@ -273,6 +281,9 @@ public class RunwayVideoProvider implements VideoProvider {
                                              int sceneCount) {
         VideoManagementProperties.Runway config = properties.getProviders().getRunway();
         JsonNode metadata = readMetadata(job);
+        if ("RUNWAY_ACT_TWO".equals(normalize(job.providerName()))) {
+            return buildCharacterPerformancePayload(job, config, metadata, sceneCount);
+        }
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", resolveModel(job, config));
         payload.put("promptText", limitPrompt(buildPrompt(job, profile, script, metadata, scene, sceneCount), 1000));
@@ -295,6 +306,54 @@ public class RunwayVideoProvider implements VideoProvider {
         return payload;
     }
 
+    /** Monta o contrato oficial Act-Two e exige consentimento e direitos antes do consumo. */
+    private Map<String, Object> buildCharacterPerformancePayload(SalesVideoJob job,
+                                                                  VideoManagementProperties.Runway config,
+                                                                  JsonNode metadata,
+                                                                  int sceneCount) {
+        if (sceneCount != 1) {
+            throw new VideoProviderException("PROVIDER_INPUT_INVALID",
+                    "Act-Two aceita uma performance de 3 a 30 segundos por job; divida a montagem em jobs auditáveis");
+        }
+        String characterUri = firstText(metadata,
+                "/characterPerformance/characterUri", "/character_performance/character_uri");
+        String referenceUri = firstText(metadata,
+                "/characterPerformance/referencePerformanceUri",
+                "/character_performance/reference_performance_uri");
+        String characterType = normalize(firstText(metadata,
+                "/characterPerformance/characterType", "/character_performance/character_type"));
+        String consent = firstText(metadata,
+                "/characterPerformance/consentEvidence", "/character_performance/consent_evidence");
+        String performanceRights = firstText(metadata,
+                "/characterPerformance/performanceRightsEvidence",
+                "/character_performance/performance_rights_evidence");
+        if (!isHttps(characterUri) || !isHttps(referenceUri)
+                || !("IMAGE".equals(characterType) || "VIDEO".equals(characterType))) {
+            throw new VideoProviderException("PROVIDER_INPUT_INVALID",
+                    "Act-Two exige personagem image/video e performance de referência em URLs HTTPS aprovadas");
+        }
+        if (!StringUtils.hasText(consent) || !StringUtils.hasText(performanceRights)) {
+            throw new VideoProviderException("PROVIDER_INPUT_INVALID",
+                    "Act-Two exige evidência de consentimento da personagem e direitos da performance");
+        }
+        int duration = resolveDuration(job, config, metadata);
+        if (duration < 3 || duration > 30) {
+            throw new VideoProviderException("PROVIDER_INPUT_INVALID",
+                    "A performance de referência do Act-Two deve ter entre 3 e 30 segundos");
+        }
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("model", "act_two");
+        payload.put("character", Map.of("type", characterType.toLowerCase(Locale.ROOT), "uri", characterUri));
+        payload.put("reference", Map.of("type", "video", "uri", referenceUri));
+        payload.put("bodyControl", metadata.at("/characterPerformance/bodyControl").asBoolean(true));
+        payload.put("expressionIntensity",
+                Math.max(1, Math.min(5, metadata.at("/characterPerformance/expressionIntensity").asInt(3))));
+        payload.put("ratio", config.getRatio());
+        log.info("Gate Act-Two aprovado; jobId={} duração={}s consentimentoPresente={} direitosPerformancePresentes={}",
+                job.id(), duration, true, true);
+        return payload;
+    }
+
     /** Resolve o modelo pelo contrato do job, mantendo Gen-4.5 como padrão da Runway. */
     private String resolveModel(SalesVideoJob job, VideoManagementProperties.Runway config) {
         String providerName = normalize(job.providerName());
@@ -303,6 +362,7 @@ public class RunwayVideoProvider implements VideoProvider {
             case "RUNWAY_SEEDANCE_2_5" -> "seedance2_5";
             case "RUNWAY_HAILUO_3" -> "hailuo3";
             case "RUNWAY_GROK_IMAGINE_1_5" -> "grok_imagine_1_5";
+            case "RUNWAY_ACT_TWO" -> "act_two";
             case "RUNWAY_GEN_4_TURBO" -> "gen4_turbo";
             case "RUNWAY_VEO_3_1" -> "veo3.1";
             case "RUNWAY_VEO_3_1_FAST" -> "veo3.1_fast";
@@ -315,6 +375,9 @@ public class RunwayVideoProvider implements VideoProvider {
                                 VideoManagementProperties.Runway config,
                                 JsonNode metadata) {
         String providerName = normalize(job.providerName());
+        if (providerName.equals("RUNWAY_ACT_TWO")) {
+            return metadata.at("/characterPerformance/referencePerformanceDurationSeconds").asInt(0);
+        }
         if (providerName.equals("RUNWAY_VEO_3_1") || providerName.equals("RUNWAY_VEO_3_1_FAST")) {
             return Math.min(config.getDurationSeconds(), 8);
         }
@@ -448,7 +511,9 @@ public class RunwayVideoProvider implements VideoProvider {
         metadata.put("provider", "RUNWAY");
         metadata.put("provider_job_id", taskId);
         String model = String.valueOf(request.get("model"));
-        int clipDurationSeconds = ((Number) request.get("duration")).intValue();
+        int clipDurationSeconds = "act_two".equals(model)
+                ? resolveDuration(job, properties.getProviders().getRunway(), readMetadata(job))
+                : ((Number) request.get("duration")).intValue();
         metadata.put("model", model);
         metadata.put("ratio", properties.getProviders().getRunway().getRatio());
         metadata.put("duration_seconds", clipDurationSeconds * sceneCount);
@@ -474,10 +539,16 @@ public class RunwayVideoProvider implements VideoProvider {
     private int estimateCredits(String model, int durationSeconds) {
         int creditsPerSecond = switch (model.toLowerCase(Locale.ROOT)) {
             case "gen4_turbo" -> 5;
+            case "act_two" -> 5;
             case "seedance2_5" -> 30;
             default -> 12;
         };
         return creditsPerSecond * Math.max(1, durationSeconds);
+    }
+
+    /** Aceita somente referências HTTPS persistíveis nos contratos do provider. */
+    private boolean isHttps(String value) {
+        return StringUtils.hasText(value) && value.startsWith("https://");
     }
 
     /** Serializa o evento financeiro idempotente vinculado à task e à cena. */

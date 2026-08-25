@@ -162,9 +162,9 @@ class ProductCatalogServiceTest {
         server.verify();
     }
 
-    /** Impede que um contrato v7 antigo do Hub substitua o contrato canônico homologado. */
+    /** Confirma que a v7 publicada pelo Hub não é mascarada pelo fallback local. */
     @Test
-    void keepsCanonicalV7ContractWhenMarketingHubReturnsDriftedVersion() {
+    void returnsPublishedV7ContractWithoutReplacingItWithLocalFallback() {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         ProductCatalogService service = new ProductCatalogService(builder, "http://marketing-hub", "");
@@ -174,8 +174,8 @@ class ProductCatalogServiceTest {
                           "slug": "metodo-musa-7-dias",
                           "experienceVersion": "musa-pde-entry-v7-espelho-antes-de-sair",
                           "layoutKey": "espelho-antes-de-sair",
-                          "name": "Contrato antigo baseado em vídeo",
-                          "promise": "Promessa divergente",
+                          "name": "Contrato publicado pelo Marketing Hub",
+                          "promise": "Promessa publicada pela fonte canônica",
                           "audience": "Mulheres urbanas",
                           "priceLabel": "",
                           "theme": {"primary":"#000000","accent":"#000000","background":"#ffffff","imageUrl":""},
@@ -189,17 +189,12 @@ class ProductCatalogServiceTest {
 
         var product = service.getProductForHost("metodo-musa-7-dias", "v7.clubemusa.com.br");
 
-        assertThat(product.name()).isEqualTo("Método MUSA - Presença Elegante em 7 Dias");
-        assertThat(product.priceLabel()).isEqualTo("R$67");
-        assertThat(product.missions()).hasSize(7);
-        assertThat(product.heroVideos()).isEmpty();
-        assertThat(product.supportMaterials())
-                .extracting(ProductExperienceResponse.SupportMaterialDto::url)
-                .containsExactly(
-                        "/materials/musa-v7/mapa-dos-7-sinais.html",
-                        "/materials/musa-v7/checklist-antes-de-sair.html",
-                        "/materials/musa-v7/formula-musa-pessoal.csv");
-        assertThat(product.completionOffer()).contains("90 dias", "sem assinatura");
+        assertThat(product.name()).isEqualTo("Contrato publicado pelo Marketing Hub");
+        assertThat(product.promise()).isEqualTo("Promessa publicada pela fonte canônica");
+        assertThat(product.priceLabel()).isEmpty();
+        assertThat(product.missions()).isEmpty();
+        assertThat(product.heroVideos()).singleElement();
+        assertThat(product.completionOffer()).isEqualTo("Assinatura antiga");
         server.verify();
     }
 

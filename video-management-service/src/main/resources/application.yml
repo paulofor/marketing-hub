@@ -37,6 +37,19 @@ video:
       reasoning-effort: ${APOLLO_CODEX_REASONING_EFFORT:high}
       working-directory: ${APOLLO_CODEX_WORKING_DIRECTORY:/app}
       timeout: ${APOLLO_CODEX_TIMEOUT:PT10M}
+  reference-analysis:
+    enabled: ${VIDEO_REFERENCE_ANALYSIS_ENABLED:false}
+    poll-interval: ${VIDEO_REFERENCE_ANALYSIS_POLL_INTERVAL:PT30S}
+    worker-id: ${VIDEO_REFERENCE_ANALYSIS_WORKER_ID:apollo-reference-analysis-v1}
+    open-ai-base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    api-key: ${OPENAI_API_KEY:}
+    api-key-file: ${OPENAI_API_KEY_FILE:}
+    model: ${VIDEO_REFERENCE_ANALYSIS_MODEL:gpt-5.6}
+    ffmpeg-path: ${VIDEO_REFERENCE_ANALYSIS_FFMPEG_PATH:ffmpeg}
+    ffprobe-path: ${VIDEO_REFERENCE_ANALYSIS_FFPROBE_PATH:ffprobe}
+    max-download-bytes: ${VIDEO_REFERENCE_ANALYSIS_MAX_DOWNLOAD_BYTES:536870912}
+    scene-threshold: ${VIDEO_REFERENCE_ANALYSIS_SCENE_THRESHOLD:0.22}
+    allow-private-source-urls: false
   providers:
     luma:
       enabled: false
@@ -90,6 +103,7 @@ video:
         - RUNWAY_SEEDANCE_2_5
         - RUNWAY_HAILUO_3
         - RUNWAY_GROK_IMAGINE_1_5
+        - RUNWAY_ACT_TWO
         - RUNAWAY
       base-url: https://api.dev.runwayml.com
       api-key: ${RUNWAY_API_KEY:${VIDEO_PROVIDERS_RUNWAY_API_KEY:}}
@@ -97,6 +111,7 @@ video:
       api-version: ${VIDEO_PROVIDERS_RUNWAY_API_VERSION:2024-11-06}
       model: ${VIDEO_PROVIDERS_RUNWAY_MODEL:gen4.5}
       create-path: /v1/image_to_video
+      character-performance-path: /v1/character_performance
       status-path-template: /v1/tasks/{taskId}
       ratio: "720:1280"
       duration-seconds: ${VIDEO_PROVIDERS_RUNWAY_DURATION_SECONDS:10}

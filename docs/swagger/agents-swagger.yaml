@@ -1,8 +1,20 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Gestão de Agentes
-  version: 1.3.0
+  version: 1.4.0
 paths:
+  /api/agents:
+    get:
+      summary: Lista os cadastros e contratos atuais dos agentes
+      responses:
+        "200":
+          description: Agentes com a data auditável da versão contratual atual.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Agent"
   /api/agents/work-monitor:
     get:
       summary: Lista o trabalho e o consumo diário de tokens dos agentes
@@ -92,6 +104,46 @@ paths:
           description: Arquivo vazio, grande ou em formato não permitido.
 components:
   schemas:
+    Agent:
+      type: object
+      required:
+        - id
+        - name
+        - nickname
+        - status
+        - currentVersion
+        - executionMode
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        nickname:
+          type: string
+        agentKey:
+          type: string
+          nullable: true
+        status:
+          type: string
+        currentVersion:
+          type: integer
+        executionMode:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Última alteração da linha, incluindo controles operacionais como PLAY/STOP.
+        lastContractChangeAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Criação da versão atual do contrato imutável do agente.
     AgentWorkMonitor:
       type: object
       required:

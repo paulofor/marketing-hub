@@ -91,6 +91,19 @@ public class VideoProjectService {
                     validatedVideoCategory(request.videoCategory()),
                     request.targetDurationSeconds()))
             .providerPlan(trimToNull(request.providerPlan()))
+            .characterPerformanceType(
+                validatedCharacterPerformanceType(request.characterPerformanceType()))
+            .characterPerformanceUri(
+                validatedHttpsOptional(
+                    request.characterPerformanceUri(), "Personagem da performance"))
+            .referencePerformanceUri(
+                validatedHttpsOptional(
+                    request.referencePerformanceUri(), "Performance de referência"))
+            .referencePerformanceDurationSeconds(
+                validatedReferencePerformanceDuration(
+                    request.referencePerformanceDurationSeconds()))
+            .performanceConsentEvidence(trimToNull(request.performanceConsentEvidence()))
+            .performanceRightsEvidence(trimToNull(request.performanceRightsEvidence()))
             .editingNotes(trimToNull(request.editingNotes()))
             .qualityGate(trimToNull(request.qualityGate()))
             .status(validatedStatus(request.status(), request))
@@ -153,6 +166,16 @@ public class VideoProjectService {
         validatedTargetDurationSeconds(
             validatedVideoCategory(request.videoCategory()), request.targetDurationSeconds()));
     project.setProviderPlan(trimToNull(request.providerPlan()));
+    project.setCharacterPerformanceType(
+        validatedCharacterPerformanceType(request.characterPerformanceType()));
+    project.setCharacterPerformanceUri(
+        validatedHttpsOptional(request.characterPerformanceUri(), "Personagem da performance"));
+    project.setReferencePerformanceUri(
+        validatedHttpsOptional(request.referencePerformanceUri(), "Performance de referência"));
+    project.setReferencePerformanceDurationSeconds(
+        validatedReferencePerformanceDuration(request.referencePerformanceDurationSeconds()));
+    project.setPerformanceConsentEvidence(trimToNull(request.performanceConsentEvidence()));
+    project.setPerformanceRightsEvidence(trimToNull(request.performanceRightsEvidence()));
     project.setEditingNotes(trimToNull(request.editingNotes()));
     project.setQualityGate(trimToNull(request.qualityGate()));
     project.setStatus(validatedStatus(request.status(), request));
@@ -194,6 +217,37 @@ public class VideoProjectService {
       return null;
     }
     return value.trim();
+  }
+
+  /** Aceita somente os tipos de personagem previstos pelo contrato do provider de performance. */
+  private static String validatedCharacterPerformanceType(String value) {
+    String normalized = trimToNull(value);
+    if (normalized == null || normalized.equals("image") || normalized.equals("video")) {
+      return normalized;
+    }
+    throw VideoModuleException.badRequest(
+        VideoModuleErrorCode.BAD_REQUEST,
+        "Tipo de personagem da performance deve ser image ou video");
+  }
+
+  /** Valida URL HTTPS opcional antes de persistir uma referência de mídia externa. */
+  private static String validatedHttpsOptional(String value, String fieldName) {
+    String normalized = trimToNull(value);
+    if (normalized == null || normalized.startsWith("https://")) {
+      return normalized;
+    }
+    throw VideoModuleException.badRequest(
+        VideoModuleErrorCode.BAD_REQUEST, fieldName + " deve usar URL HTTPS");
+  }
+
+  /** Preserva ausência ou exige o intervalo oficial de 3 a 30 segundos da performance. */
+  private static Integer validatedReferencePerformanceDuration(Integer value) {
+    if (value == null || (value >= 3 && value <= 30)) {
+      return value;
+    }
+    throw VideoModuleException.badRequest(
+        VideoModuleErrorCode.BAD_REQUEST,
+        "Performance de referência deve ter duração medida entre 3 e 30 segundos");
   }
 
   /** Valida a decisao de aprendizado sem inferir resultado comercial no backend. */
@@ -360,6 +414,12 @@ public class VideoProjectService {
         project.getCtaText(),
         project.getTargetDurationSeconds(),
         project.getProviderPlan(),
+        project.getCharacterPerformanceType(),
+        project.getCharacterPerformanceUri(),
+        project.getReferencePerformanceUri(),
+        project.getReferencePerformanceDurationSeconds(),
+        project.getPerformanceConsentEvidence(),
+        project.getPerformanceRightsEvidence(),
         project.getEditingNotes(),
         project.getQualityGate(),
         project.getStatus(),

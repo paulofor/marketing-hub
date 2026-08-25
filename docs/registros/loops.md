@@ -1736,6 +1736,39 @@ Use este checklist quando o problema estiver em algum loop acima:
   marco e comprova uma única linha por evento; a jornada Compose reconcilia os eventos finais com
   compra, acesso, entrega e reembolso idempotentes.
 
+## LOOP-PDE-HUB-FALLBACK-MASCARA-CONTRATO — fallback faz a superfície divergir da fonte canônica
+
+- **Data:** 2026-08-24.
+- **Sintoma:** a Vega v7 parecia correta na jornada local e no smoke, mas a API pública do Marketing
+  Hub ainda entregava nome, promessa e missões de uma versão anterior.
+- **Causa-raiz confirmada pelo histórico:** o changelog aplicado em 23/08 persistiu o contrato
+  anterior, enquanto o `ProductCatalogService` substituía qualquer resposta v7 do Hub pelo JSON
+  local homologado. Os testes protegiam o fallback e, por isso, aprovavam a superfície sem comprovar
+  a fonte central.
+- **Correção sistêmica:** um novo changelog idempotente atualiza produto e slot com o contrato v7
+  completo; o PDE passa a usar a resposta do Hub quando ela existe e mantém o JSON local somente
+  para indisponibilidade real da integração.
+- **Prevenção:** o SQL é gerado deterministicamente do contrato versionado; teste de contrato compara
+  semanticamente o JSON persistido com o fallback, exige include relativo e bloqueia subconsulta da
+  tabela-alvo; a homologação física no MySQL 5.7 verifica nome, versão, sete missões, interação e
+  paridade entre produto, rascunho e publicação.
+
+## LOOP-AGENTE-NOTA-SEM-ESCALA — parecer aprova nota numericamente incompatível
+
+- **Data:** 2026-08-24.
+- **Sintoma:** Têmis aprovou todos os gates e descreveu o preço como completamente claro, mas
+  devolveu `priceClarityScore: 10` em um schema cujo máximo era 100.
+- **Causa-raiz:** o schema declarava apenas limites numéricos e o prompt não definia semanticamente a
+  escala; o modelo interpretou 10 como nota máxima em escala 0–10.
+- **Correção sistêmica:** o prompt define explicitamente 0–100, extremos e piso de 80 para aprovação;
+  o validator rejeita qualquer `APPROVED` com `priceClarityScore` abaixo desse piso.
+- **Prevenção:** teste de contrato exige a instrução da escala e teste negativo comprova que nota 10
+  não pode liberar o gate, mesmo quando justificativa e evidências estão preenchidas.
+- **Fechamento complementar:** Psique ainda podia retornar decisão geral `APPROVED` com um item de
+  `gateChecks` em `ADJUST`, tratando a confirmação pós-deploy como defeito da candidata local. O
+  prompt agora classifica diagnóstico produtivo pré-deploy como fronteira externa e o validator
+  rejeita deterministicamente qualquer aprovação com gate diferente de `PASS`.
+
 ## LOOP-PLANO-COMERCIAL-COAUTORIA-LIBERA-SUCESSORA — atividade avança com um revisor pendente
 
 - **Data:** 2026-08-23.

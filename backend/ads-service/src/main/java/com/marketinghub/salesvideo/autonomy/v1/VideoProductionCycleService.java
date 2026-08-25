@@ -341,9 +341,10 @@ public class VideoProductionCycleService {
 
   /** Cria cortes comerciais curtos que serão agrupados nos clipes cobrados pelo provider. */
   private List<LinkedHashMap<String, Object>> cutPlan(VideoProject project, int duration) {
-    int cutCount = Math.max(4, Math.min(12, (int) Math.ceil(duration / 4.0)));
+    int cutCount = Math.max(4, Math.min(48, (int) Math.ceil(duration / 4.0)));
     int baseDuration = duration / cutCount;
     int remainder = duration % cutCount;
+    List<String> sceneObjectives = sceneObjectives(project.getScenePlan());
     List<LinkedHashMap<String, Object>> cuts = new ArrayList<>();
     for (int index = 0; index < cutCount; index++) {
       LinkedHashMap<String, Object> cut = new LinkedHashMap<>();
@@ -351,7 +352,7 @@ public class VideoProductionCycleService {
       cut.put("duration_seconds", baseDuration + (index < remainder ? 1 : 0));
       cut.put("role", cutRole(index, cutCount));
       cut.put("narrative_phase", narrativePhase(index, cutCount));
-      cut.put("visual_objective", cutObjective(index, cutCount));
+      cut.put("visual_objective", cutObjective(index, cutCount, sceneObjectives));
       cut.put("continuity_anchor", "Mesma personagem, figurino, ambiente e luz do plano anterior.");
       cut.put("source_scene_plan", nullToEmpty(project.getScenePlan()));
       cuts.add(cut);
@@ -380,7 +381,15 @@ public class VideoProductionCycleService {
   }
 
   /** Define uma ação visual única para impedir clipes longos, genéricos ou repetitivos. */
-  private String cutObjective(int index, int count) {
+  private String cutObjective(int index, int count, List<String> sceneObjectives) {
+    if (!sceneObjectives.isEmpty()) {
+      int sourceIndex =
+          Math.min(
+              sceneObjectives.size() - 1,
+              (int) Math.floor(index * sceneObjectives.size() / (double) count));
+      return "Beat editorial %d/%d: %s"
+          .formatted(index + 1, count, sceneObjectives.get(sourceIndex));
+    }
     if (index == 0) return "Abrir com dor reconhecível e ação imediata, sem texto embutido.";
     if (index == 1) return "Situar a dor no cotidiano e criar expectativa para a descoberta.";
     if (index == count - 1)
@@ -390,6 +399,14 @@ public class VideoProductionCycleService {
     if (index >= Math.max(3, count / 2))
       return "Mostrar transformação plausível causada pelas microações já demonstradas.";
     return "Demonstrar uma única microação do mecanismo, preservando continuidade visual.";
+  }
+
+  /** Extrai cenas persistidas para que o plano automático não substitua a receita aprovada. */
+  private List<String> sceneObjectives(String scenePlan) {
+    if (scenePlan == null || scenePlan.isBlank()) {
+      return List.of();
+    }
+    return scenePlan.lines().map(String::trim).filter(value -> !value.isBlank()).limit(48).toList();
   }
 
   /** Normaliza campos opcionais do plano usados na auditoria de pós-produção. */

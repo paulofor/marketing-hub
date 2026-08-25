@@ -36,4 +36,5 @@ public class AgentDto {
   private List<AgentItemDto> internalFunctions;
   private Instant createdAt;
   private Instant updatedAt;
+  private Instant lastContractChangeAt;
 }

@@ -1,0 +1,125 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-25-video-reference-analysis-v1-001
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE video_reference_analysis_execution (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                reference_id BIGINT NOT NULL,
+                tenant_id VARCHAR(64) NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                attempt_number INT NOT NULL,
+                worker_id VARCHAR(191) NULL,
+                producer_execution_id VARCHAR(64) NULL,
+                input_json LONGTEXT NOT NULL,
+                output_json LONGTEXT NULL,
+                artifacts_json LONGTEXT NULL,
+                raw_request_json LONGTEXT NULL,
+                raw_response_json LONGTEXT NULL,
+                model VARCHAR(120) NULL,
+                input_tokens BIGINT NULL,
+                cached_input_tokens BIGINT NULL,
+                output_tokens BIGINT NULL,
+                cost_usd DECIMAL(14,6) NULL,
+                decision VARCHAR(64) NULL,
+                error LONGTEXT NULL,
+                claimed_at DATETIME NULL,
+                started_at DATETIME NULL,
+                finished_at DATETIME NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_video_reference_analysis_attempt (reference_id, attempt_number),
+                INDEX idx_video_reference_analysis_queue (status, created_at),
+                INDEX idx_video_reference_analysis_latest (tenant_id, reference_id, id),
+                CONSTRAINT fk_video_reference_analysis_reference
+                  FOREIGN KEY (reference_id) REFERENCES video_reference(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              INSERT INTO video_reference_analysis_execution (
+                reference_id,
+                tenant_id,
+                status,
+                attempt_number,
+                input_json,
+                created_at,
+                updated_at
+              )
+              SELECT
+                vr.id,
+                vr.tenant_id,
+                'QUEUED',
+                1,
+                JSON_OBJECT(
+                  'referenceId', vr.id,
+                  'title', vr.title,
+                  'sourceUrl', vr.source_url,
+                  'sourcePlatform', vr.source_platform,
+                  'niche', vr.niche,
+                  'funnelStage', vr.funnel_stage,
+                  'primaryLearningGoal', vr.primary_learning_goal,
+                  'successEvidence', vr.success_evidence
+                ),
+                NOW(),
+                NOW()
+              FROM video_reference vr
+              LEFT JOIN video_reference_analysis_execution execution
+                ON execution.reference_id = vr.id
+              WHERE execution.id IS NULL;
+  - changeSet:
+      id: 2026-08-25-video-reference-analysis-v1-002
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO sales_video_provider_model
+                (code, display_name, provider_name, provider_family, adapter_key, external_model_id,
+                 recommended_use, lifecycle_status, clip_duration_seconds, max_direct_duration_seconds,
+                 supports_hero_video, supports_scene_assembly, requires_source_image, credits_url,
+                 documentation_url, adapter_verified, pricing_verified, commercial_license_verified,
+                 quality_gate_verified, notes, created_at, updated_at)
+              VALUES
+                ('runway-act-two','Runway Act-Two','RUNWAY_ACT_TWO','EXTERNAL_VIDEO_MODULE','RUNWAY','act_two',
+                 'Performance facial e corporal original de 3 a 30 segundos com personagem autorizada.',
+                 'HOMOLOGATION',10,30,1,1,1,'https://dev.runwayml.com/',
+                 'https://docs.dev.runwayml.com/api/#tag/Tasks/paths/~1v1~1character_performance/post',
+                 1,1,0,0,
+                 'Adapter e preço oficial preparados; ativação exige consentimento, licença da performance e QA comercial.',
+                 NOW(),NOW())
+              ON DUPLICATE KEY UPDATE display_name = VALUES(display_name), updated_at = VALUES(updated_at);
+  - changeSet:
+      id: 2026-08-25-video-reference-analysis-v1-003
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE video_project
+                ADD COLUMN character_performance_type VARCHAR(16) NULL AFTER provider_plan,
+                ADD COLUMN character_performance_uri VARCHAR(2048) NULL AFTER character_performance_type,
+                ADD COLUMN reference_performance_uri VARCHAR(2048) NULL AFTER character_performance_uri,
+                ADD COLUMN reference_performance_duration_seconds INT NULL AFTER reference_performance_uri,
+                ADD COLUMN performance_consent_evidence VARCHAR(2048) NULL AFTER reference_performance_duration_seconds,
+                ADD COLUMN performance_rights_evidence VARCHAR(2048) NULL AFTER performance_consent_evidence;

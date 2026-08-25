@@ -86,6 +86,12 @@ class VideoProjectServiceTest {
             "Fazer diagnóstico",
             30,
             "Runway para cenas, FFmpeg para montagem",
+            "image",
+            "https://assets.example/personagem-autorizada.png",
+            "https://assets.example/performance-autorizada.mp4",
+            12,
+            "consentimento-91",
+            "direitos-91",
             "Corte rápido",
             "Audio audível e CTA claro",
             VideoProjectStatus.READY_FOR_SCRIPT,
@@ -107,6 +113,8 @@ class VideoProjectServiceTest {
     assertThat(result.contextType()).isEqualTo("ORGANIC");
     assertThat(result.videoCategory()).isEqualTo("COMMERCIAL_SHORT");
     assertThat(result.storyText()).contains("presença digital");
+    assertThat(result.referencePerformanceDurationSeconds()).isEqualTo(12);
+    assertThat(result.performanceConsentEvidence()).isEqualTo("consentimento-91");
     assertThat(result.status()).isEqualTo(VideoProjectStatus.READY_FOR_SCRIPT);
   }
 
@@ -168,6 +176,12 @@ class VideoProjectServiceTest {
             "Comprar agora",
             210,
             "Provider plan",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
             "Notas",
             "Gate",
             VideoProjectStatus.READY_FOR_RENDER,
@@ -231,6 +245,12 @@ class VideoProjectServiceTest {
             "Fazer diagnóstico",
             30,
             "Runway para cenas, FFmpeg para montagem",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
             "Corte rápido",
             "Audio audível e CTA claro",
             VideoProjectStatus.READY_FOR_SCRIPT,
@@ -308,6 +328,12 @@ class VideoProjectServiceTest {
             "Comprar agora",
             120,
             "Provider plan",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
             "Notas",
             "Gate",
             VideoProjectStatus.READY_FOR_RENDER,
@@ -364,6 +390,12 @@ class VideoProjectServiceTest {
             "Fazer diagnostico",
             180,
             "Provider plan",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
             "Notas",
             "Gate",
             VideoProjectStatus.READY_FOR_RENDER,

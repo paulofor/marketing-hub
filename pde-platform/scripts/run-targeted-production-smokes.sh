@@ -7,6 +7,7 @@ repository_root="$(cd "${script_dir}/../.." && pwd)"
 frontend_dir="${repository_root}/pde-platform/frontend"
 npm_command="${PDE_SMOKE_NPM_COMMAND:-npm}"
 consistency_script="${PDE_SMOKE_CONSISTENCY_SCRIPT:-${repository_root}/scripts/check-musa-pde-public-consistency.sh}"
+rigel_consistency_script="${PDE_SMOKE_RIGEL_CONSISTENCY_SCRIPT:-${script_dir}/check-rigel-pde-public-consistency.sh}"
 
 run_public_health() {
   local public_url="$1"
@@ -61,6 +62,8 @@ validate_v7() {
 
 validate_kit_whatsapp() {
   run_public_health https://kit-whatsapp-pronto.digicomdigital.com.br
+  PDE_PUBLIC_BASE_URL=https://kit-whatsapp-pronto.digicomdigital.com.br \
+    bash "${rigel_consistency_script}"
 }
 
 case "${target_frontend}" in

@@ -29,7 +29,7 @@ class CommercialPlanLandingAssetServiceTest {
         .thenReturn(
             List.of(
                 asset(133L, "https://assets.example/post-01.png", "LANDING", true),
-                asset(134L, "https://assets.example/story-01.png", "DELIVERY", true),
+                asset(134L, "https://assets.example/story-01.png", "PRODUCT_PROOF", true),
                 asset(135L, "https://assets.example/rejected.png", "LANDING", false)));
 
     CommercialPlanLandingAssetService service =
@@ -39,6 +39,27 @@ class CommercialPlanLandingAssetServiceTest {
         .extracting(CommercialPlanLandingAssetService.LandingAssetReference::assetId)
         .containsExactly(133L, 134L);
     assertThat(service.requiredReferenceCount(88L)).isEqualTo(2);
+  }
+
+  /** Deve bloquear a landing quando nenhuma prova aprovada foi disponibilizada. */
+  @Test
+  void blocksEmptyApprovedEvidenceInsteadOfDisablingTheGate() {
+    CommercialPlanRepository planRepository = mock(CommercialPlanRepository.class);
+    CommercialPlanVisualAssetRepository assetRepository =
+        mock(CommercialPlanVisualAssetRepository.class);
+    CommercialPlan plan = CommercialPlan.builder().id(4L).name("Rigel").build();
+    when(planRepository.findByExperimentReference(89L)).thenReturn(List.of(plan));
+    when(assetRepository.findByCommercialPlanIdAndStatusOrderByCreatedAtAsc(
+            4L, CommercialPlanVisualAssetStatus.APPROVED))
+        .thenReturn(List.of());
+    CommercialPlanLandingAssetService service =
+        new CommercialPlanLandingAssetService(planRepository, assetRepository);
+
+    assertThat(service.requiredReferenceCount(89L)).isEqualTo(1);
+    assertThat(service.hasRequiredApprovedAssetReferences(89L, "<main>Sem prova</main>")).isFalse();
+    assertThatThrownBy(() -> service.validateApprovedAssetReferences(89L, "<main>Sem prova</main>"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("1 arquivo APPROVED");
   }
 
   /** Deve exigir quatro URLs exatas quando a biblioteca possui ao menos quatro provas aprovadas. */
@@ -85,7 +106,7 @@ class CommercialPlanLandingAssetServiceTest {
     asset.setLabel("Entregavel " + id);
     asset.setVersionNumber(1);
     asset.setPurpose(purpose);
-    asset.setPurposesJson("[\"DELIVERY\",\"LANDING\",\"ADS\",\"SOCIAL\"]");
+    asset.setPurposesJson("[\"" + purpose + "\"]");
     asset.setStatus(CommercialPlanVisualAssetStatus.APPROVED);
     asset.setAgentReviewStatus(
         independentlyApproved

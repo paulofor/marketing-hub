@@ -1,0 +1,11 @@
+FROM maven:3.9.8-eclipse-temurin-21
+
+WORKDIR /workspace
+
+COPY pom.xml ./
+COPY src ./src
+
+RUN mvn -q -DskipTests compile dependency:build-classpath \
+    -Dmdep.outputFile=target/liquibase.classpath
+
+CMD ["sh", "-lc", "ADS_LIQUIBASE_CP=target/classes:$(sed -n '1p' target/liquibase.classpath) && java -cp \"${ADS_LIQUIBASE_CP}\" liquibase.integration.commandline.Main --driver=com.mysql.cj.jdbc.Driver --url=\"${ADS_LIQUIBASE_URL}\" --username=\"${ADS_LIQUIBASE_USERNAME}\" --password=\"${ADS_LIQUIBASE_PASSWORD}\" --changeLogFile=\"${ADS_LIQUIBASE_CHANGELOG_FILE}\" update"]

@@ -1,0 +1,48 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-25-rigel-commercial-experience-v2
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product
+        - columnExists:
+            tableName: product
+            columnName: pde_experience_json
+        - columnExists:
+            tableName: product
+            columnName: primary_cta
+        - tableExists:
+            tableName: experiment
+        - columnExists:
+            tableName: experiment
+            columnName: funnel_promise
+        - columnExists:
+            tableName: experiment
+            columnName: primary_cta
+        - columnExists:
+            tableName: experiment
+            columnName: updated_at
+        - tableExists:
+            tableName: pde_production_slot
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: published_experience_json
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: draft_experience_json
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: experience_version
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: layout_key
+      changes:
+        - sqlFile:
+            path: 2026-08-25-rigel-commercial-experience-v2.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true

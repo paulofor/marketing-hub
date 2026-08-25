@@ -5,6 +5,8 @@ import java.math.BigDecimal;
 /** Espelha a oferta comercial pública entregue pelo Marketing Hub ao frontend PDE. */
 public record CommercialOfferResponse(
         String productSlug,
+        String experienceVersion,
+        String layoutKey,
         Long experimentId,
         String experimentStatus,
         String acquisitionChannel,

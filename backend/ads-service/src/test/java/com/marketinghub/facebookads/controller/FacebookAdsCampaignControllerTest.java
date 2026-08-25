@@ -51,6 +51,7 @@ import com.marketinghub.leadportal.dto.LeadPortalExperimentMetricsDto;
 import com.marketinghub.leadportal.dto.LeadPortalExperimentUserDto;
 import com.marketinghub.leadportal.service.LeadPortalMetricsService;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
 import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.repository.jpa.experiment.AdSetRepository;
@@ -117,9 +118,10 @@ class FacebookAdsCampaignControllerTest {
   @MockBean ExperimentFunnelAutoStopService funnelAutoStopService;
   @MockBean ExperimentCampaignMetricService campaignMetricService;
   @MockBean ExperimentVideoAssetService experimentVideoAssetService;
+  @MockBean CommercialPlanLandingAssetService landingAssetService;
 
   @BeforeEach
-  // Mantem o comportamento real: sem teste A/B ativo, nao ha bloqueio de publicacao por A/B.
+  // Mantém prontos os gates que não são o objeto dos contratos HTTP exercitados nesta classe.
   void configureDefaultSalesPageAbTestReadiness() {
     lenient()
         .when(salesPageAbTestService.hasReadyActiveTest(org.mockito.ArgumentMatchers.anyLong()))
@@ -127,6 +129,9 @@ class FacebookAdsCampaignControllerTest {
     lenient()
         .when(salesPageAbTestService.findActiveForCampaign(org.mockito.ArgumentMatchers.anyLong()))
         .thenReturn(Optional.empty());
+    lenient()
+        .when(landingAssetService.hasRequiredApprovedAssetReferences(any(), any()))
+        .thenReturn(true);
   }
 
   @Test

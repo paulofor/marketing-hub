@@ -5,6 +5,8 @@ import java.math.BigDecimal;
 /** Contrato público da oferta comercial vinculada a um slot PDE validável. */
 public record PublicProductCommercialOfferResponse(
     String productSlug,
+    String experienceVersion,
+    String layoutKey,
     Long experimentId,
     String experimentStatus,
     String acquisitionChannel,

@@ -34,13 +34,15 @@ class CommercialOfferControllerTest {
     private CommercialOfferResponse offer() {
         return new CommercialOfferResponse(
                 "kit-whatsapp-pronto",
+                "kit-whatsapp-pronto-pde-v2",
+                "assisted-service-v2",
                 89L,
                 "PLANNED",
                 "DIRECT_ONE_TO_ONE",
                 "Dor real",
                 "Prova real",
                 "Implantação em até 48 horas",
-                "Quero meu atendimento personalizado",
+                "Quero meu atendimento sob medida",
                 new BigDecimal("349.00"),
                 "https://pay.example/kit",
                 "https://kit-whatsapp-pronto.digicomdigital.com.br",

@@ -40,6 +40,7 @@ final class PdeReviewArtifactLoader {
   private static final List<String> ARTIFACT_PATHS =
       List.of(
           "pde-platform/contracts/kit-whatsapp-pronto-v1.json",
+          "pde-platform/contracts/kit-whatsapp-pronto-commercial-v2.json",
           "pde-platform/frontend/public/materials/kit-whatsapp-v1/01-comece-aqui.md",
           "pde-platform/frontend/public/materials/kit-whatsapp-v1/02-roteiro-de-briefing.md",
           "pde-platform/frontend/public/materials/kit-whatsapp-v1/03-biblioteca-de-respostas.md",

@@ -61,6 +61,8 @@ type MagicLinkResponse = {
 
 type CommercialOffer = {
   productSlug: string;
+  experienceVersion: string;
+  layoutKey: string;
   experimentId: number;
   experimentStatus: string;
   acquisitionChannel?: string;
@@ -115,6 +117,12 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [showAccess, setShowAccess] = useState(
+    () =>
+      window.location.pathname === "/access" ||
+      window.location.pathname.startsWith("/access/") ||
+      Boolean(accessToken),
+  );
   const [tastingService, setTastingService] = useState("");
   const [tastingScenarioId, setTastingScenarioId] = useState(
     tastingContract?.scenarios[0]?.id ?? "",
@@ -148,9 +156,18 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
         if (!active) return;
         setProduct(loadedProduct);
         if (commercialOfferResponse.ok) {
-          setCommercialOffer(
-            (await commercialOfferResponse.json()) as CommercialOffer,
+          const loadedOffer =
+            (await commercialOfferResponse.json()) as CommercialOffer;
+          const contractError = validateCommercialAlignment(
+            loadedProduct,
+            loadedOffer,
           );
+          if (contractError) {
+            setCommercialOffer(null);
+            setError(contractError);
+          } else {
+            setCommercialOffer(loadedOffer);
+          }
         }
         document.title = loadedProduct.name;
         void trackEvent("PAGE_VIEW", loadedProduct);
@@ -368,6 +385,16 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
     setMessage("Sessão encerrada. Seu progresso permanece salvo.");
   }
 
+  /** Abre a rota secundária de acesso sem misturá-la à sequência principal de venda. */
+  function openExistingAccess(event: React.MouseEvent<HTMLAnchorElement>) {
+    event.preventDefault();
+    window.history.pushState({}, "", "/access");
+    setShowAccess(true);
+    window.requestAnimationFrame(() =>
+      document.getElementById("assisted-access-title")?.focus(),
+    );
+  }
+
   /** Registra a intenção comercial antes de abrir o checkout oficial em nova aba. */
   function startCheckout() {
     if (!product || !commercialOffer) return;
@@ -508,6 +535,7 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
     return (
       <main
         className="assisted-pde-shell"
+        data-experience-version={product.experienceVersion}
         style={
           {
             "--assisted-primary": product.theme.primary,
@@ -518,15 +546,20 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
       >
         <section className="assisted-pde-entry" data-testid="assisted-entry">
           <div className="assisted-pde-copy">
+            <strong className="assisted-pde-product-label">
+              {product.name} · implantação personalizada
+            </strong>
             <span className="assisted-pde-kicker">
-              Implantação personalizada · revisão humana
+              Para prestadores que enviam orçamentos pelo WhatsApp
             </span>
-            <h1>{product.name}</h1>
+            <h1>
+              Retome conversas no WhatsApp sem improvisar a próxima mensagem
+            </h1>
             <p className="assisted-pde-pain">{commercialOffer?.pain}</p>
             <p className="assisted-pde-promise">{publicPromise}</p>
             <div className="assisted-pde-trust-grid">
               <span>
-                <Clock3 /> Microvalor em até 12 horas
+                <Clock3 /> Prévia para validar o tom em até 12 horas
               </span>
               <span>
                 <ShieldCheck /> Revisão humana antes do uso
@@ -599,8 +632,8 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
               <ShieldCheck />
               <h2>Oferta temporariamente indisponível</h2>
               <p>
-                Não abriremos um checkout sem validar preço, entrega e
-                atribuição.
+                {error ||
+                  "Não abriremos um checkout sem validar preço, entrega e atribuição."}
               </p>
             </aside>
           )}
@@ -718,49 +751,264 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
             <p>{commercialOffer.proof}</p>
           </section>
         ) : null}
-        <section
-          className="assisted-pde-existing-access"
-          aria-labelledby="assisted-access-title"
+        {commercialOffer ? (
+          <section
+            className="assisted-pde-transformation"
+            aria-labelledby="assisted-transformation-title"
+            data-testid="assisted-transformation"
+          >
+            <div>
+              <span className="assisted-pde-kicker">
+                Antes e depois do mecanismo
+              </span>
+              <h2 id="assisted-transformation-title">
+                Da resposta solta para uma conversa com próximo passo
+              </h2>
+            </div>
+            <div className="assisted-pde-transformation-grid">
+              <article>
+                <span>Sem uma sequência</span>
+                <strong>
+                  Você responde o orçamento, o cliente some e a conversa esfria.
+                </strong>
+                <p>Cada retomada vira improviso e consome atenção de novo.</p>
+              </article>
+              <span
+                className="assisted-pde-transformation-arrow"
+                aria-hidden="true"
+              >
+                →
+              </span>
+              <article>
+                <span>Com atendimento sob medida</span>
+                <strong>
+                  Você escolhe uma mensagem revisada para conduzir o próximo
+                  passo.
+                </strong>
+                <p>
+                  Resposta, qualificação e follow-up continuam sob seu controle,
+                  sem automação.
+                </p>
+              </article>
+            </div>
+          </section>
+        ) : null}
+        {product.serviceScope ? (
+          <section
+            className="assisted-pde-scope"
+            aria-labelledby="assisted-scope-title"
+            data-testid="assisted-scope"
+          >
+            <div>
+              <span className="assisted-pde-kicker">Escopo sem surpresa</span>
+              <h2 id="assisted-scope-title">
+                Saiba o que responder, perguntar e sugerir em seguida
+              </h2>
+              <p>{product.serviceScope.deadlineStartsWhen}</p>
+            </div>
+            <div className="assisted-pde-scope-columns">
+              <article>
+                <h3>Incluído na implantação</h3>
+                <ul>
+                  {product.serviceScope.includedItems.map((item) => (
+                    <li key={item}>
+                      <Check /> {item}
+                    </li>
+                  ))}
+                </ul>
+              </article>
+              <article>
+                <h3>O que não está sendo vendido</h3>
+                <ul>
+                  {product.serviceScope.excludedItems.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </article>
+            </div>
+          </section>
+        ) : null}
+        {product.publicProofs?.length ? (
+          <section
+            className="assisted-pde-proof-library"
+            aria-labelledby="assisted-proof-title"
+            data-testid="assisted-public-proofs"
+          >
+            <div className="assisted-pde-section-heading">
+              <ClipboardCheck />
+              <div>
+                <span className="assisted-pde-kicker">
+                  Demonstração do mecanismo
+                </span>
+                <h2 id="assisted-proof-title">
+                  Uma retomada completa, do orçamento ao encerramento respeitoso
+                </h2>
+                <p>
+                  Recorte contínuo de uma entrega demonstrativa: exemplo
+                  fictício, sem dados pessoais e sem promessa de bot ou
+                  automação.
+                </p>
+              </div>
+            </div>
+            <div className="assisted-pde-proof-grid">
+              {product.publicProofs.map((proof, index) => (
+                <article
+                  key={proof.id}
+                  data-proof-id={proof.id}
+                  data-proof-source={proof.source}
+                >
+                  <span className="assisted-pde-proof-step">{index + 1}</span>
+                  <div>
+                    <span>{proof.evidenceLabel}</span>
+                    <h3>{proof.title}</h3>
+                    {proof.content ? <p>{proof.content}</p> : null}
+                    {proof.items?.length ? (
+                      <ol>
+                        {proof.items.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ol>
+                    ) : null}
+                  </div>
+                </article>
+              ))}
+            </div>
+            {commercialOffer ? (
+              <div className="assisted-pde-proof-cta">
+                <p>
+                  Na implantação, esta estrutura é adaptada ao seu serviço, às
+                  suas regras e ao seu tom — e você revisa tudo antes de usar.
+                </p>
+                <a
+                  className="assisted-pde-checkout-cta"
+                  href={commercialOffer.checkoutUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={startCheckout}
+                >
+                  {commercialOffer.primaryCta} <ChevronRight />
+                </a>
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+        {product.commercialProcess?.length ? (
+          <section
+            className="assisted-pde-process"
+            aria-labelledby="assisted-process-title"
+            data-testid="assisted-process"
+          >
+            <div>
+              <span className="assisted-pde-kicker">Da compra ao uso</span>
+              <h2 id="assisted-process-title">
+                Quatro passos, com uma pessoa no controle
+              </h2>
+            </div>
+            <ol>
+              {product.commercialProcess.map((step) => (
+                <li key={step.order}>
+                  <span>{step.order}</span>
+                  <div>
+                    <strong>{step.title}</strong>
+                    <p>{step.description}</p>
+                    <small>{step.timing}</small>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+        ) : null}
+        {commercialOffer ? (
+          <section
+            className="assisted-pde-closing-offer"
+            aria-labelledby="assisted-closing-offer-title"
+            data-testid="assisted-closing-offer"
+          >
+            <div>
+              <span className="assisted-pde-kicker">Próximo passo simples</span>
+              <h2 id="assisted-closing-offer-title">
+                Tenha a próxima mensagem pronta antes de a conversa esfriar
+              </h2>
+              <p>
+                Receba uma implantação personalizada e revisada para usar
+                manualmente no seu atendimento, sem assinatura e sem promessas
+                de conversão automática.
+              </p>
+            </div>
+            <div>
+              <strong className="assisted-pde-price">
+                {formatBrl(commercialOffer.priceBrl)}
+              </strong>
+              <a
+                className="assisted-pde-checkout-cta"
+                href={commercialOffer.checkoutUrl}
+                target="_blank"
+                rel="noreferrer"
+                onClick={startCheckout}
+              >
+                {commercialOffer.primaryCta} <ChevronRight />
+              </a>
+              <small>
+                Pagamento único · briefing incluído · revisão humana
+              </small>
+            </div>
+          </section>
+        ) : null}
+        <nav
+          className="assisted-pde-access-link"
+          aria-label="Acesso pós-compra"
         >
-          <aside className="assisted-pde-access-card">
-            <KeyRound />
-            <h2 id="assisted-access-title">Já comprou? Acesse sua área</h2>
-            <p>Use o e-mail informado na compra. Não pedimos senha.</p>
-            <form onSubmit={requestAccess}>
-              <label htmlFor="assisted-email">E-mail</label>
-              <input
-                id="assisted-email"
-                type="email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="voce@empresa.com.br"
-              />
-              <button type="submit" disabled={submitting}>
-                {submitting ? (
-                  <LoaderCircle className="assisted-pde-spinner" />
-                ) : (
-                  <Mail />
-                )}
-                {testAccessEnabled
-                  ? "Entrar na homologação"
-                  : "Receber link de acesso"}
-              </button>
-            </form>
-            {message ? (
-              <p className="assisted-pde-success" role="status">
-                {message}
-              </p>
-            ) : null}
-            {error ? (
-              <p className="assisted-pde-form-error" role="alert">
-                {error}
-              </p>
-            ) : null}
-            <small>{product.audience}</small>
-          </aside>
-        </section>
+          <a href="/access" onClick={openExistingAccess}>
+            <KeyRound /> Já comprou? Acesse sua área
+          </a>
+        </nav>
+        {showAccess ? (
+          <section
+            className="assisted-pde-existing-access"
+            aria-labelledby="assisted-access-title"
+          >
+            <aside className="assisted-pde-access-card">
+              <KeyRound />
+              <h2 id="assisted-access-title" tabIndex={-1}>
+                Acesse sua área
+              </h2>
+              <p>Use o e-mail informado na compra. Não pedimos senha.</p>
+              <form onSubmit={requestAccess}>
+                <label htmlFor="assisted-email">E-mail</label>
+                <input
+                  id="assisted-email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="voce@empresa.com.br"
+                />
+                <button type="submit" disabled={submitting}>
+                  {submitting ? (
+                    <LoaderCircle className="assisted-pde-spinner" />
+                  ) : (
+                    <Mail />
+                  )}
+                  {testAccessEnabled
+                    ? "Entrar na homologação"
+                    : "Receber link de acesso"}
+                </button>
+              </form>
+              {message ? (
+                <p className="assisted-pde-success" role="status">
+                  {message}
+                </p>
+              ) : null}
+              {error ? (
+                <p className="assisted-pde-form-error" role="alert">
+                  {error}
+                </p>
+              ) : null}
+              <small>{product.audience}</small>
+            </aside>
+          </section>
+        ) : null}
         <section
           className="assisted-pde-preview"
           aria-labelledby="assisted-diagnostic-title"
@@ -1344,6 +1592,33 @@ function readError(error: unknown) {
   return error instanceof Error
     ? error.message
     : "A solicitação não pôde ser concluída.";
+}
+
+/** Falha fechado quando experiência e oferta não representam o mesmo contrato comercial. */
+function validateCommercialAlignment(
+  product: ProductExperience,
+  offer: CommercialOffer,
+) {
+  if (
+    offer.productSlug !== product.slug ||
+    !product.experienceVersion ||
+    offer.experienceVersion !== product.experienceVersion ||
+    (product.layoutKey && offer.layoutKey !== product.layoutKey) ||
+    offer.promise !== product.promise
+  ) {
+    return "A versão ou a promessa da oferta não coincide com a experiência publicada. O checkout foi bloqueado.";
+  }
+  const binding = product.commercialBinding;
+  if (
+    binding &&
+    (binding.experimentId !== offer.experimentId ||
+      binding.primaryCta !== offer.primaryCta ||
+      binding.priceBrl !== offer.priceBrl ||
+      binding.billingModel !== "ONE_TIME")
+  ) {
+    return "CTA, preço ou experimento divergem do contrato publicado. O checkout foi bloqueado.";
+  }
+  return "";
 }
 
 /** Formata o preço canônico em reais sem manter uma cópia textual no frontend. */

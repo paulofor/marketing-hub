@@ -118,7 +118,11 @@ public class ProductCatalogService {
                 product.publicDiagnosticQuestions(),
                 product.publicFirstFold(),
                 null,
-                product.completionOffer());
+                product.completionOffer(),
+                product.serviceScope(),
+                product.publicProofs(),
+                product.commercialProcess(),
+                product.commercialBinding());
     }
 
     /** Aplica override operacional ou versão derivada do hostname sem alterar o contrato base. */
@@ -161,7 +165,11 @@ public class ProductCatalogService {
                 product.publicDiagnosticQuestions(),
                 product.publicFirstFold(),
                 product.scientificEvidencePack(),
-                product.completionOffer());
+                product.completionOffer(),
+                product.serviceScope(),
+                product.publicProofs(),
+                product.commercialProcess(),
+                product.commercialBinding());
     }
 
     /** Garante compatibilidade para contratos antigos do Hub que ainda não declaram layout. */
@@ -186,7 +194,11 @@ public class ProductCatalogService {
                 product.publicDiagnosticQuestions(),
                 product.publicFirstFold(),
                 product.scientificEvidencePack(),
-                product.completionOffer());
+                product.completionOffer(),
+                product.serviceScope(),
+                product.publicProofs(),
+                product.commercialProcess(),
+                product.commercialBinding());
     }
 
     /** Deriva a chave de layout conhecida a partir da versão quando o contrato for legado. */

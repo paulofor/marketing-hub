@@ -18,6 +18,8 @@ test.beforeEach(async ({ context, page, request }) => {
         contentType: "application/json",
         body: JSON.stringify({
           productSlug,
+          experienceVersion: "kit-whatsapp-pronto-pde-v2",
+          layoutKey: "assisted-service-v2",
           experimentId: 89,
           experimentStatus: "PLANNED",
           acquisitionChannel: "DIRECT_ONE_TO_ONE",
@@ -25,7 +27,7 @@ test.beforeEach(async ({ context, page, request }) => {
           proof:
             "Veja uma resposta e duas perguntas personalizadas para um cenário real do seu atendimento.",
           promise:
-            "Em até 48 horas, receba seu atendimento no WhatsApp sob medida e revisado por uma pessoa.",
+            "Após o pagamento confirmado e o briefing mínimo completo, em até 48 horas receba seu atendimento de WhatsApp personalizado e revisado: respostas, perguntas, follow-ups e regras prontas para conduzir cada conversa ao próximo passo com mais clareza e menos improviso.",
           primaryCta: "Quero meu atendimento sob medida",
           priceBrl: 349,
           checkoutUrl: "https://pay.example/kit-whatsapp",
@@ -83,15 +85,26 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
   const canonicalOffer = await canonicalOfferResponse.json();
   expect(canonicalOffer).toMatchObject({
     productSlug,
+    experienceVersion: "kit-whatsapp-pronto-pde-v2",
+    layoutKey: "assisted-service-v2",
     experimentId: 89,
     acquisitionChannel: "DIRECT_ONE_TO_ONE",
     priceBrl: 349,
   });
 
   await expect(
-    page.getByRole("heading", { name: "Kit WhatsApp Pronto" }),
+    page.getByRole("heading", {
+      name: "Retome conversas no WhatsApp sem improvisar a próxima mensagem",
+    }),
   ).toBeVisible();
-  await expect(page.getByText("Microvalor em até 12 horas")).toBeVisible();
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(
+    await page.evaluate(() => document.documentElement.clientWidth),
+  );
+  await expect(
+    page.getByText("Prévia para validar o tom em até 12 horas"),
+  ).toBeVisible();
   await expect(page.getByText("Revisão humana antes do uso")).toBeVisible();
   await expect(page.getByTestId("commercial-offer")).toContainText("R$ 349");
   await expect(page.getByTestId("commercial-offer")).toContainText(
@@ -110,30 +123,73 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
     "href",
     "https://pay.example/kit-whatsapp",
   );
+  await expect(page.getByTestId("assisted-scope")).toContainText(
+    "10 a 20 respostas personalizadas",
+  );
+  await expect(page.getByTestId("assisted-public-proofs")).toContainText(
+    "Três follow-ups manuais",
+  );
+  await expect(page.getByTestId("assisted-process")).toContainText(
+    "Primeira aplicação",
+  );
+  await expect(page.getByTestId("assisted-transformation")).toContainText(
+    "Da resposta solta para uma conversa com próximo passo",
+  );
+  await expect(page.getByTestId("assisted-closing-offer")).toContainText(
+    "Tenha a próxima mensagem pronta antes de a conversa esfriar",
+  );
   await expect(
-    page.getByRole("heading", { name: "Já comprou? Acesse sua área" }),
+    page
+      .getByTestId("assisted-closing-offer")
+      .getByRole("link", { name: "Quero meu atendimento sob medida" }),
+  ).toHaveAttribute("href", "https://pay.example/kit-whatsapp");
+  await expect(
+    page.getByRole("heading", { name: "Acesse sua área" }),
+  ).toHaveCount(0);
+  await page.getByRole("link", { name: "Já comprou? Acesse sua área" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Acesse sua área" }),
+  ).toBeVisible();
+  await page.goBack();
+  await expect(
+    page.getByRole("heading", {
+      name: "Retome conversas no WhatsApp sem improvisar a próxima mensagem",
+    }),
   ).toBeVisible();
   await expect(page.getByText("Fornecedor de Homologação Ltda.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Termos" })).toHaveCount(2);
-  await expect(page.getByTestId("assisted-tasting")).toContainText(
+  const tasting = page.getByTestId("assisted-tasting");
+  await expect(tasting).toContainText(
     "Experimente uma sequência antes de comprar",
   );
-  await page.getByLabel("Qual serviço você oferece?").fill("m");
-  await page.getByRole("button", { name: "Gerar minha amostra" }).click();
+  await tasting.getByLabel("Qual serviço você oferece?").fill("m");
+  await tasting.getByRole("button", { name: "Gerar minha amostra" }).click();
   await expect(page.getByRole("alert")).toContainText(
     "Informe um serviço genérico",
   );
-  await page.getByLabel("Qual serviço você oferece?").fill("manicure");
+  await tasting.getByLabel("Qual serviço você oferece?").fill("manicure");
+  const publicResponseProof = await page
+    .locator('[data-proof-id="sample-response"] p')
+    .innerText();
   const tastingResult = page.getByTestId("assisted-tasting-result");
   const materializedResponses = new Set<string>();
   for (const scenarioId of ["orcamento-sem-resposta", "pedido-de-preco"]) {
     for (const toneId of ["acolhedor", "direto", "profissional"]) {
-      await page.getByLabel("Situação").selectOption(scenarioId);
-      await page.getByLabel("Tom").selectOption(toneId);
-      await page.getByRole("button", { name: "Gerar minha amostra" }).click();
+      await tasting.getByLabel("Situação").selectOption(scenarioId);
+      await tasting.getByLabel("Tom").selectOption(toneId);
+      await tasting
+        .getByRole("button", { name: "Gerar minha amostra" })
+        .click();
       await expect(tastingResult).toContainText("manicure");
       await expect(tastingResult).toContainText("Pergunta de qualificação");
       await expect(tastingResult.locator("ol li")).toHaveCount(3);
+      if (scenarioId === "orcamento-sem-resposta" && toneId === "acolhedor") {
+        const tastingResponseProof = await tastingResult
+          .getByRole("heading", { name: "Resposta inicial" })
+          .locator("xpath=following-sibling::p[1]")
+          .innerText();
+        expect(tastingResponseProof).toBe(publicResponseProof);
+      }
       materializedResponses.add(
         await tastingResult
           .getByRole("heading", { name: "Resposta inicial" })
@@ -582,7 +638,9 @@ test("bloqueia e orienta acesso inválido sem perder o contrato público", async
 }) => {
   await page.goto("/?access=token-invalido&mh_test=1");
   await expect(
-    page.getByRole("heading", { name: "Kit WhatsApp Pronto" }),
+    page.getByRole("heading", {
+      name: "Retome conversas no WhatsApp sem improvisar a próxima mensagem",
+    }),
   ).toBeVisible();
   await expect(page.getByRole("alert")).toContainText(
     /acesso|encontrado|solicitação/i,
@@ -616,6 +674,7 @@ test("publica termos, privacidade e reembolso com o fornecedor da oferta", async
 test("exige e-mail válido antes de criar acesso segregado", async ({
   page,
 }) => {
+  await page.getByRole("link", { name: "Já comprou? Acesse sua área" }).click();
   await page.getByLabel("E-mail").fill("email-invalido");
   await page.getByRole("button", { name: "Entrar na homologação" }).click();
   await expect(page.getByTestId("assisted-workspace")).toHaveCount(0);

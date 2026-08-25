@@ -13,6 +13,27 @@ const canonicalV7ContractPath =
 const canonicalV7Product = JSON.parse(
   readFileSync(canonicalV7ContractPath, "utf8"),
 );
+const kitWhatsAppV1 = JSON.parse(
+  readFileSync(
+    process.env.PDE_KIT_WHATSAPP_V1_CONTRACT_PATH ??
+      path.resolve(
+        currentDirectory,
+        "../../contracts/kit-whatsapp-pronto-v1.json",
+      ),
+    "utf8",
+  ),
+);
+const kitWhatsAppV2 = JSON.parse(
+  readFileSync(
+    process.env.PDE_KIT_WHATSAPP_V2_CONTRACT_PATH ??
+      path.resolve(
+        currentDirectory,
+        "../../contracts/kit-whatsapp-pronto-commercial-v2.json",
+      ),
+    "utf8",
+  ),
+);
+const kitWhatsAppProduct = { ...kitWhatsAppV1, ...kitWhatsAppV2 };
 
 const port = Number(process.env.MARKETING_HUB_CONTRACT_SERVER_PORT ?? 57181);
 const productSlug = "metodo-musa-7-dias";
@@ -20,6 +41,36 @@ const v5ExperienceVersion = "musa-pde-entry-v5-video-explicativo";
 const v6ExperienceVersion = "musa-pde-entry-v6-video-motivacional";
 const v7ExperienceVersion = "musa-pde-entry-v7-espelho-antes-de-sair";
 const pepperTransactions = new Map();
+const kitWhatsAppOffer = {
+  productSlug: "kit-whatsapp-pronto",
+  experienceVersion: "kit-whatsapp-pronto-pde-v2",
+  layoutKey: "assisted-service-v2",
+  experimentId: 89,
+  experimentStatus: "PLANNED",
+  acquisitionChannel: "DIRECT_ONE_TO_ONE",
+  pain: "Você responde um orçamento no WhatsApp, o cliente some e você fica sem saber qual mensagem mandar depois sem parecer insistente — aí a conversa morre e você perde o timing do ‘fechamos ou não?’.",
+  proof:
+    "Demonstração real na página: uma sequência completa para retomar um orçamento sem parecer insistente, com três follow-ups respeitosos e perguntas de qualificação. A demonstração prova o método sem prometer conversão nem entregar gratuitamente a implantação completa.",
+  promise: kitWhatsAppProduct.promise,
+  primaryCta: "Quero meu atendimento sob medida",
+  priceBrl: 349,
+  checkoutUrl:
+    "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=133771061-472e4ef4-5d13-4122-831a-706d12435081",
+  salesPageUrl: "https://kit-whatsapp-pronto.digicomdigital.com.br",
+  targetAudience: kitWhatsAppProduct.audience,
+  productFormat: "IMPLANTACAO_PERSONALIZADA",
+  deliveryMode: "ASSISTIDA_MANUAL",
+  valueUnit: "Respostas, perguntas e follow-ups prontos para revisar e usar",
+  supplierLegalName: "PAULO ALEXANDRE LOPES FORESTIERI INFORMATICA",
+  supplierRegistrationNumber: "25.215.414/0001-69",
+  supplierAddress:
+    "Rua Antonio Basilio, 204, apto 805 - Tijuca - Rio de Janeiro/RJ - CEP 20511-190",
+  supportEmail: "contato@digicomdigital.com.br",
+  termsUrl: "https://kit-whatsapp-pronto.digicomdigital.com.br/terms",
+  privacyUrl: "https://kit-whatsapp-pronto.digicomdigital.com.br/privacy",
+  refundPolicyUrl:
+    "https://kit-whatsapp-pronto.digicomdigital.com.br/refund-policy",
+};
 
 const baseProduct = {
   slug: productSlug,
@@ -136,6 +187,28 @@ async function readJsonBody(request) {
 
 const server = http.createServer(async (request, response) => {
   const url = new URL(request.url ?? "/", `http://${request.headers.host}`);
+  if (
+    request.method === "GET" &&
+    url.pathname === "/api/products/public/kit-whatsapp-pronto/pde-experience"
+  ) {
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+    });
+    response.end(JSON.stringify(kitWhatsAppProduct));
+    return;
+  }
+  if (
+    request.method === "GET" &&
+    url.pathname === "/api/products/public/kit-whatsapp-pronto/commercial-offer"
+  ) {
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+    });
+    response.end(JSON.stringify(kitWhatsAppOffer));
+    return;
+  }
   const pepperControlMatch = url.pathname.match(
     /^\/test\/pepper\/transactions\/([^/]+)$/,
   );

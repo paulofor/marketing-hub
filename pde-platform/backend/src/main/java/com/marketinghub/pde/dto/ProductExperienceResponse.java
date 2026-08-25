@@ -20,8 +20,55 @@ public record ProductExperienceResponse(
         List<PublicDiagnosticQuestionDto> publicDiagnosticQuestions,
         PublicFirstFoldDto publicFirstFold,
         ScientificEvidencePackDto scientificEvidencePack,
-        String completionOffer
+        String completionOffer,
+        ServiceScopeDto serviceScope,
+        List<PublicProofDto> publicProofs,
+        List<CommercialProcessStepDto> commercialProcess,
+        CommercialBindingDto commercialBinding
 ) {
+
+    /** Mantém compatibilidade com os contratos anteriores à experiência comercial assistida v2. */
+    public ProductExperienceResponse(
+            String slug,
+            String experienceVersion,
+            String layoutKey,
+            String funnelVersion,
+            String name,
+            String promise,
+            String audience,
+            String priceLabel,
+            ThemeDto theme,
+            DiagnosticDto diagnostic,
+            List<MissionDto> missions,
+            List<SupportMaterialDto> supportMaterials,
+            List<HeroVideoDto> heroVideos,
+            List<PublicDiagnosticQuestionDto> publicDiagnosticQuestions,
+            PublicFirstFoldDto publicFirstFold,
+            ScientificEvidencePackDto scientificEvidencePack,
+            String completionOffer) {
+        this(
+                slug,
+                experienceVersion,
+                layoutKey,
+                funnelVersion,
+                name,
+                promise,
+                audience,
+                priceLabel,
+                theme,
+                diagnostic,
+                missions,
+                supportMaterials,
+                heroVideos,
+                publicDiagnosticQuestions,
+                publicFirstFold,
+                scientificEvidencePack,
+                completionOffer,
+                null,
+                List.of(),
+                List.of(),
+                null);
+    }
 
     /** Define a identidade visual básica do produto. */
     public record ThemeDto(String primary, String accent, String background, String imageUrl) {}
@@ -171,4 +218,38 @@ public record ProductExperienceResponse(
 
     /** Define uma referência científica rastreável usada na criação do produto. */
     public record ScientificReferenceDto(String authors, String year, String title, String source, String doi) {}
+
+    /** Define o escopo pago que precisa aparecer integralmente antes do checkout. */
+    public record ServiceScopeDto(
+            List<String> includedItems,
+            List<String> excludedItems,
+            String deadlineStartsWhen
+    ) {}
+
+    /** Transporta uma prova fiel do produto real sem criar depoimento ou resultado fictício. */
+    public record PublicProofDto(
+            String id,
+            String type,
+            String title,
+            String content,
+            List<String> items,
+            String evidenceLabel,
+            String source
+    ) {}
+
+    /** Explica uma etapa observável entre a compra e a primeira aplicação do produto. */
+    public record CommercialProcessStepDto(
+            int order,
+            String title,
+            String description,
+            String timing
+    ) {}
+
+    /** Congela a identidade comercial que deve coincidir com a oferta canônica do experimento. */
+    public record CommercialBindingDto(
+            Long experimentId,
+            String primaryCta,
+            java.math.BigDecimal priceBrl,
+            String billingModel
+    ) {}
 }

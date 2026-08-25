@@ -1,4 +1,23 @@
 services:
+  pde-kit-contract-server:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile.contract-server
+    image: marketing-hub/pde-kit-contract-server:validation
+    environment:
+      PDE_CONTRACT_SERVER_HOST: 0.0.0.0
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:57181/api/products/public/kit-whatsapp-pronto/pde-experience').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
   pde-platform-local-mysql:
     build:
       context: ./local-validation
@@ -11,7 +30,8 @@ services:
       MYSQL_PASSWORD: pde
       MYSQL_ROOT_PASSWORD: pde-root
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "pde", "-ppde"]
+      test:
+        ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "pde", "-ppde"]
       interval: 5s
       timeout: 5s
       retries: 30
@@ -28,7 +48,7 @@ services:
     build:
       context: ./backend
     environment:
-      PDE_MARKETING_HUB_BASE_URL: http://191.252.181.168
+      PDE_MARKETING_HUB_BASE_URL: http://pde-kit-contract-server:57181
       PDE_DEV_ACCESS_ENABLED: "true"
       PDE_ASSISTED_OPERATION_ENABLED: "true"
       PDE_ASSISTED_OPERATION_TOKEN: pde-local-operation-test
@@ -45,12 +65,21 @@ services:
       PDE_SMTP_HOST: sandbox-mail
       PDE_SMTP_PORT: "1025"
     depends_on:
+      pde-kit-contract-server:
+        condition: service_healthy
       pde-platform-local-mysql:
         condition: service_healthy
       sandbox-mail:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8096/actuator/health"]
+      test:
+        [
+          "CMD",
+          "curl",
+          "--fail",
+          "--silent",
+          "http://127.0.0.1:8096/actuator/health",
+        ]
       interval: 5s
       timeout: 5s
       retries: 30
@@ -61,21 +90,25 @@ services:
     build:
       context: ./frontend
       args:
-        PDE_FRONTEND_VERSION_ID: kit-whatsapp-v1
+        PDE_FRONTEND_VERSION_ID: kit-whatsapp-v2
         VITE_PDE_ENABLE_DEV_ACCESS: "true"
     environment:
       VITE_PDE_PRODUCT_SLUG: kit-whatsapp-pronto
-      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: kit-whatsapp-pronto-pde-v1
+      VITE_MUSA_EXPERIENCE_VERSION_OVERRIDE: kit-whatsapp-pronto-pde-v2
       PDE_HEALTH_REQUIRED_TEXT: Implantação personalizada
-      PDE_FRONTEND_VERSION: kit-whatsapp-v1
+      PDE_FRONTEND_VERSION: kit-whatsapp-v2
       PDE_FRONTEND_PUBLIC_URL: http://pde-platform-frontend-kit-validation
-      PDE_FRONTEND_VERSION_ID: kit-whatsapp-v1
+      PDE_FRONTEND_VERSION_ID: kit-whatsapp-v2
       PDE_BACKEND_UPSTREAM: pde-platform-backend-kit-validation:8096
     depends_on:
       pde-platform-backend-kit-validation:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/pde-health-contract.json | grep -q 'kit-whatsapp-pronto'"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1/pde-health-contract.json | grep -q 'kit-whatsapp-pronto'",
+        ]
       interval: 5s
       timeout: 5s
       retries: 20

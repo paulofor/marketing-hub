@@ -9,11 +9,11 @@
   "implementationEvidence": [
     {
       "path": "pde-platform/frontend/src/AssistedServiceApp.tsx",
-      "sha256": "7100246afd9eaf9de2567744ba11b523bfa00c13fa6f2ac1cbb24f65fe66ea6c"
+      "sha256": "9d361f7d0ca02ad266f2a700ded96066f288ee968b6f9f9d6e7f01d488d7bfa5"
     },
     {
       "path": "pde-platform/frontend/src/assistedServiceTastingContracts.ts",
-      "sha256": "d6ce39486cb797c01b9e440f143cf509909ea97100043d353e81c410f82c9755"
+      "sha256": "6268c42b64dc0da5003516e8f58eeb29fcaa8e267733785355715fa70c1f912d"
     },
     {
       "path": "pde-platform/backend/src/main/java/com/marketinghub/pde/service/AccessService.java",
@@ -23,7 +23,7 @@
   "executableEvidence": [
     {
       "path": "pde-platform/frontend/tests/assisted-service-local.spec.ts",
-      "sha256": "c16fd13bc944f9d81fc9f4660a4caa0d6c8a840fc125ae60474af5490ed407c8",
+      "sha256": "5524624ca2cb2f0a201d7ab55a871dcd97b647bed24645f4de3c1a2231345541",
       "proves": [
         "as seis combinações de duas situações por três tons materializam respostas distintas",
         "cada combinação entrega uma resposta, uma pergunta e três follow-ups",
@@ -36,7 +36,7 @@
     },
     {
       "path": "pde-platform/frontend/tests/assisted-service-public-analytics.spec.ts",
-      "sha256": "f7edf63972af17327695210ae99c0cfc771541b2c4f5c3cac0ed36d5fcd8d0c6",
+      "sha256": "f8d7d5c01377e193eed5ac696b6372ec328f08d5053fec0a5651244dca1e0a9d",
       "proves": [
         "mh_test usa source mh_test mesmo quando VITE_PDE_ENABLE_DEV_ACCESS está desativado",
         "mh_preview com pde_analytics=off não envia telemetria",

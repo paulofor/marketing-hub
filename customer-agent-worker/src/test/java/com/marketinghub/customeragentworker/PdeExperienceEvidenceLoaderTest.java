@@ -16,7 +16,7 @@ import org.junit.jupiter.api.io.TempDir;
 class PdeExperienceEvidenceLoaderTest {
   @TempDir Path tempDir;
 
-  /** Carrega conteúdo, comprimento e checksum dos quatro artefatos fixados. */
+  /** Carrega conteúdo, comprimento e checksum de todos os artefatos fixados. */
   @Test
   void loadsVersionedExperienceEvidence() throws Exception {
     for (String relativePath : PdeExperienceEvidenceLoader.evidencePaths()) {
@@ -27,7 +27,7 @@ class PdeExperienceEvidenceLoaderTest {
 
     var evidence = new PdeExperienceEvidenceLoader(tempDir.toString()).load();
 
-    assertThat(evidence).hasSize(4);
+    assertThat(evidence).hasSize(PdeExperienceEvidenceLoader.evidencePaths().size());
     assertThat(evidence)
         .allSatisfy(
             artifact -> {

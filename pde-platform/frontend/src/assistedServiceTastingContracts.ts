@@ -66,11 +66,11 @@ const kitWhatsAppTastingV1: AssistedServiceTastingContract = {
       response:
         "Oi! Passando com calma para saber se ficou alguma dúvida sobre o orçamento de {servico}. Se quiser, eu explico o que está incluído antes de você decidir.",
       qualificationQuestion:
-        "O que você precisa confirmar primeiro para avaliar o {servico}: prazo, disponibilidade ou forma de pagamento?",
+        "O que você precisa confirmar primeiro sobre {servico}: prazo, disponibilidade ou forma de pagamento?",
       followUps: [
         "Se ainda estiver avaliando, posso resumir as opções de {servico} em uma mensagem curta.",
         "Quer que eu verifique uma data específica antes de você decidir?",
-        "Vou encerrar por aqui para não incomodar. Se quiser retomar o {servico}, é só me chamar.",
+        "Vou encerrar por aqui para não incomodar. Se quiser retomar a conversa sobre {servico}, é só me chamar.",
       ],
     },
     {
@@ -103,9 +103,9 @@ const kitWhatsAppTastingV1: AssistedServiceTastingContract = {
       scenarioId: "pedido-de-preco",
       toneId: "acolhedor",
       response:
-        "Claro! O valor do {servico} depende do que você precisa. Se me contar só um pouco do seu caso, eu explico a opção mais adequada sem compromisso.",
+        "Claro! O valor para {servico} depende do que você precisa. Se me contar só um pouco do seu caso, eu explico a opção mais adequada sem compromisso.",
       qualificationQuestion:
-        "Qual resultado você espera do {servico} e para quando precisa?",
+        "Qual resultado você espera com {servico} e para quando precisa?",
       followUps: [
         "Com essas duas informações, consigo indicar a opção de {servico} sem fazer você perder tempo.",
         "Quer que eu apresente a alternativa mais simples primeiro?",

@@ -44,6 +44,8 @@ class PublicProductCommercialOfferServiceTest {
     var offer = service().getOffer("kit-whatsapp-pronto");
 
     assertThat(offer.experimentId()).isEqualTo(89L);
+    assertThat(offer.experienceVersion()).isEqualTo("kit-whatsapp-pronto-pde-v2");
+    assertThat(offer.layoutKey()).isEqualTo("assisted-service-v2");
     assertThat(offer.acquisitionChannel()).isEqualTo("DIRECT_ONE_TO_ONE");
     assertThat(offer.priceBrl()).isEqualByComparingTo("349.00");
     assertThat(offer.primaryCta()).isEqualTo("Quero meu atendimento sob medida");
@@ -67,6 +69,40 @@ class PublicProductCommercialOfferServiceTest {
     assertThatThrownBy(() -> service().getOffer("kit-whatsapp-pronto"))
         .isInstanceOf(ResponseStatusException.class)
         .hasMessageContaining("Checkout comercial precisa usar HTTPS");
+  }
+
+  /** Bloqueia a oferta quando o contrato publicado preserva CTA de outra versão. */
+  @Test
+  void rejectsDivergentVersionedCommercialBinding() {
+    Product product = product();
+    PdeProductionSlot slot = slot();
+    slot.setPublishedExperienceJson(
+        slot.getPublishedExperienceJson().replace("sob medida", "personalizado"));
+    Experiment experiment = experiment(product);
+    when(productRepository.findBySlug("kit-whatsapp-pronto")).thenReturn(Optional.of(product));
+    when(slotRepository.findByProductSlugOrderBySlotCodeAsc("kit-whatsapp-pronto"))
+        .thenReturn(List.of(slot));
+    when(experimentRepository.findById(89L)).thenReturn(Optional.of(experiment));
+
+    assertThatThrownBy(() -> service().getOffer("kit-whatsapp-pronto"))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("diverge da oferta comercial canônica");
+  }
+
+  /** Bloqueia a oferta quando a promessa do experimento não pertence à experiência publicada. */
+  @Test
+  void rejectsDivergentVersionedPromise() {
+    Product product = product();
+    Experiment experiment = experiment(product);
+    experiment.setFunnelPromise("Promessa antiga de outra versão");
+    when(productRepository.findBySlug("kit-whatsapp-pronto")).thenReturn(Optional.of(product));
+    when(slotRepository.findByProductSlugOrderBySlotCodeAsc("kit-whatsapp-pronto"))
+        .thenReturn(List.of(slot()));
+    when(experimentRepository.findById(89L)).thenReturn(Optional.of(experiment));
+
+    assertThatThrownBy(() -> service().getOffer("kit-whatsapp-pronto"))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("diverge da oferta comercial canônica");
   }
 
   /** Cria o serviço isolado usado pelos cenários de contrato. */
@@ -96,10 +132,15 @@ class PublicProductCommercialOfferServiceTest {
   /** Cria o slot produtivo diretamente vinculado ao experimento da oferta. */
   private PdeProductionSlot slot() {
     return PdeProductionSlot.builder()
+        .slotCode("v2")
         .productSlug("kit-whatsapp-pronto")
+        .experienceVersion("kit-whatsapp-pronto-pde-v2")
+        .layoutKey("assisted-service-v2")
         .status(PdeProductionSlotStatus.ACTIVE)
         .sourceExperimentId(89L)
         .publicUrl("https://kit-whatsapp-pronto.digicomdigital.com.br")
+        .publishedExperienceJson(
+            "{\"slug\":\"kit-whatsapp-pronto\",\"experienceVersion\":\"kit-whatsapp-pronto-pde-v2\",\"layoutKey\":\"assisted-service-v2\",\"promise\":\"Após o pagamento confirmado e o briefing mínimo completo, em até 48 horas receba seu atendimento de WhatsApp personalizado e revisado: respostas, perguntas, follow-ups e regras prontas para conduzir cada conversa ao próximo passo com mais clareza e menos improviso.\",\"commercialBinding\":{\"experimentId\":89,\"primaryCta\":\"Quero meu atendimento sob medida\",\"priceBrl\":349,\"billingModel\":\"ONE_TIME\"}}")
         .updatedAt(Instant.parse("2026-08-22T20:00:00Z"))
         .build();
   }
@@ -113,7 +154,8 @@ class PublicProductCommercialOfferServiceTest {
         .platform(ExperimentPlatform.DIRECT_ONE_TO_ONE)
         .singlePain("Conversas improvisadas terminam sem próximo passo")
         .freeReward("Demonstração personalizada do método")
-        .funnelPromise("Implantação personalizada em até 48 horas")
+        .funnelPromise(
+            "Após o pagamento confirmado e o briefing mínimo completo, em até 48 horas receba seu atendimento de WhatsApp personalizado e revisado: respostas, perguntas, follow-ups e regras prontas para conduzir cada conversa ao próximo passo com mais clareza e menos improviso.")
         .primaryCta("Quero meu atendimento sob medida")
         .unitPrice(new BigDecimal("349.00"))
         .commercialCheckoutUrl("https://pay.example/kit-whatsapp")

@@ -27,7 +27,7 @@ class PdeReviewArtifactLoaderTest {
 
     var evidence = new PdeReviewArtifactLoader(tempDir.toString()).load();
 
-    assertThat(evidence).hasSize(8);
+    assertThat(evidence).hasSize(PdeReviewArtifactLoader.artifactPaths().size());
     assertThat(evidence)
         .allSatisfy(
             artifact -> {

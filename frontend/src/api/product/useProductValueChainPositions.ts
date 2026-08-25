@@ -61,3 +61,16 @@ export function useProductValueChainPositions() {
       ).data,
   });
 }
+
+export function useProductValueChainPosition(productId?: string | number) {
+  return useQuery({
+    queryKey: ["products", "value-chain-positions", productId],
+    enabled: Boolean(productId),
+    queryFn: async () =>
+      (
+        await axios.get<ProductValueChainPosition>(
+          `/api/products/value-chain-positions/${productId}`,
+        )
+      ).data,
+  });
+}

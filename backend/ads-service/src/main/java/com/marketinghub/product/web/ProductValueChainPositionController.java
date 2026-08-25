@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,5 +22,12 @@ public class ProductValueChainPositionController {
   @GetMapping
   public List<ProductValueChainPositionResponse> listPositions() {
     return service.listPositions();
+  }
+
+  /** Retorna a passagem auditável de um produto pelos processos e subprocessos da cadeia. */
+  @Operation(summary = "Retorna o histórico de um produto na cadeia de valor vigente")
+  @GetMapping("/{productId}")
+  public ProductValueChainPositionResponse getPosition(@PathVariable Long productId) {
+    return service.getPosition(productId);
   }
 }

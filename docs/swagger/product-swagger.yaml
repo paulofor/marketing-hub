@@ -19,6 +19,28 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ProductValueChainPosition"
+  /api/products/value-chain-positions/{productId}:
+    get:
+      tags:
+        - Products
+      summary: Retorna a passagem auditável de um produto pela cadeia de valor vigente.
+      operationId: getProductValueChainPosition
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Processos e subprocessos percorridos, com entrada, saída, permanência e custo conhecido.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductValueChainPosition"
+        "404":
+          description: Produto não encontrado.
   /api/products:
     get:
       tags:

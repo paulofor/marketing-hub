@@ -11,7 +11,6 @@ import {
   Eye,
   FileText,
   GitCompare,
-  History,
   Image as ImageIcon,
   Loader2,
   Megaphone,
@@ -379,6 +378,7 @@ export default function ProductListPage() {
                 </div>
 
                 <ProductValueChainPosition
+                  productId={product.id}
                   productName={
                     product.name || product.niche || `Produto ${product.id}`
                   }
@@ -539,13 +539,6 @@ export default function ProductListPage() {
                       >
                         <CircleDollarSign size={16} aria-hidden="true" />
                         Financeiro
-                      </Link>
-                      <Link
-                        className="product-catalog-card__action-button product-catalog-card__action-button--secondary"
-                        to={`/products/${product.id}/value-chain-history`}
-                      >
-                        <History size={16} aria-hidden="true" />
-                        Histórico da cadeia
                       </Link>
                       <Link
                         className="product-catalog-card__action-button product-catalog-card__action-button--secondary"

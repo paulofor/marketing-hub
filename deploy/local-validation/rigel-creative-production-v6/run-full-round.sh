@@ -30,7 +30,7 @@ PRODUCT_PROCESS_COMPOSE_PROJECT="${COMPOSE_PROJECT}" \
 (
   cd backend/ads-service
   mvn -q spotless:check \
-    -Dtest=CommercialPlanControllerTest,CommercialPlanImageStudioServiceTest,CommercialPlanVisualAssetServiceTest,ApprovedCreativePackageArchiveTest,AgentTaskServiceTest,BusinessProcessChangelogTest \
+    -Dtest=CommercialPlanControllerTest,CommercialPlanImageStudioServiceTest,CommercialPlanVisualAssetServiceTest,ApprovedCreativePackageArchiveTest,AgentTaskServiceTest,BusinessProcessChangelogTest,ProductStageMeasurementResolverTest,ProductSubprocessPositionResolverTest,ProductValueChainPositionServiceTest,ProductValueChainPositionControllerTest \
     test
 ) 2>&1 | tee "${EVIDENCE_DIR}/backend.log"
 

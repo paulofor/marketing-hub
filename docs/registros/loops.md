@@ -1894,3 +1894,19 @@ Use este checklist quando o problema estiver em algum loop acima:
   sem depender de shell dentro da execução read-only.
 - **Prevenção:** a matriz e o empacotamento exigem `technical-verification.json`; o validador final
   rejeita relatório incompleto, hash divergente ou MP4 fora do contrato antes de aceitar o parecer.
+
+## LOOP-PDE-ATIVACAO-DIRETA-ESTADOS-DIVERGENTES — preflight aprovado sem avanço comercial
+
+- **Data:** 2026-08-25.
+- **Sintoma:** Vega possuía run produtivo com onze gates aprovados e checkout v7 íntegro, mas a
+  prontidão continuava pendente por ausência de criativo Meta e a tela não oferecia ativação. Ao
+  mesmo tempo, o endpoint genérico aceitava alterar apenas o experimento para `RUNNING`, deixando o
+  run e o processo do produto na homologação.
+- **Causa-raiz:** a prontidão reutilizava requisitos de campanha paga no canal
+  `DIRECT_ONE_TO_ONE`, enquanto a transição de status não tratava a ativação como unidade atômica do
+  experimento, run, janela comercial e produto.
+- **Correção sistêmica:** o run produtivo homologado passa a ser a autoridade do material da
+  abordagem direta; o comando de ativação valida esse run e sincroniza os quatro estados na mesma
+  transação, com histórico auditável e botão exclusivo na tela.
+- **Prevenção:** testes bloqueiam ativação sem `READY_TO_PUBLISH`, comprovam que não é necessário
+  inventar criativo Meta e exigem rollback integral diante de qualquer falha de persistência.

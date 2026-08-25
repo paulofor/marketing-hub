@@ -271,6 +271,19 @@ ausência de publicação, aprovação sem ajustes e separação entre Psique, p
 independente. A confirmação da tela representa a decisão humana de uso, mas não autoriza campanha,
 contato ou gasto. Os pareceres passam à trilha BPM do plano e o worker reconhece `route` e `produce`.
 
+Em 2026-08-25, o pacote foi efetivamente importado pela tela no plano 4. O banco confirmou 11
+ativos `APPROVED` sob um único hash de pacote: quatro `PRODUCT_PROOF`, seis imagens e um vídeo. As
+quatro execuções de Têmis, Apolo, Psique e Têmis independente foram persistidas com custo conhecido
+de US$ 0,577952 e sem mídia externa ou publicação. O card deixou de tratar a criação de criativos
+como subprocesso atual e passou a apontar `landing-page-generation` como próximo.
+
+A homologação também revelou que a medição confundia objetivo atingido com início do subprocesso
+seguinte. O
+objetivo criativo agora é reconhecido somente quando as atividades `route`, `produce`, `customer` e
+`commercial` estão concluídas sobre o mesmo pacote, com decisão humana, ativos presentes, gasto
+externo zero e ausência de publicação. A saída usa a data da última atividade obrigatória concluída;
+a entrada na landing page continua ausente até seu início real, sem fabricar transição.
+
 ## Correção da telemetria de homologação no build público
 
 Após o PR 5015 e o deploy direcionado, a degustação, a oferta de R$ 349, o checkout e as políticas

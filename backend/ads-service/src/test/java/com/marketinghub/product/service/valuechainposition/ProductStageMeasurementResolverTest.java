@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocesschain.BusinessProcessChainItem;
@@ -35,6 +36,7 @@ class ProductStageMeasurementResolverTest {
           plans,
           tasks,
           ledger,
+          new ObjectMapper(),
           Clock.fixed(Instant.parse("2026-08-25T12:00:00Z"), ZoneOffset.UTC));
 
   /** Soma custos conhecidos, preserva lacunas e corrige o backfill pela primeira execução. */
@@ -107,6 +109,37 @@ class ProductStageMeasurementResolverTest {
     assertThat(result.get(1).elapsedDays()).isEqualTo(3L);
   }
 
+  /** Encerra o subprocesso no objetivo criativo aprovado sem fabricar a entrada no seguinte. */
+  @Test
+  void recognizesApprovedCreativePackageBeforeNextSubprocessStarts() {
+    Product product = Product.builder().id(9L).build();
+    CommercialPlan plan = CommercialPlan.builder().id(4L).build();
+    BusinessProcessDefinition creative =
+        process(48L, "creative-production-approval", "communication");
+    BusinessProcessDefinition landing = process(18L, "landing-page-generation", "communication");
+    List<AgentTask> approvedTasks =
+        List.of(
+            approvedCreativeTask(1L, creative, "route"),
+            approvedCreativeTask(2L, creative, "produce"),
+            approvedCreativeTask(3L, creative, "customer"),
+            approvedCreativeTask(4L, creative, "commercial"));
+    when(plans.findByProductId(9L)).thenReturn(List.of(plan));
+    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("commercial-plan:4@"))
+        .thenReturn(approvedTasks);
+    when(ledger.findByProductIdOrderByCreatedAtAsc(9L)).thenReturn(List.of());
+    when(ledger.findByCommercialPlanIdInOrderByCreatedAtAsc(List.of(4L))).thenReturn(List.of());
+
+    ProductStageMeasurementResponse result =
+        resolver
+            .resolveSubprocessMeasurements(product, List.of(creative, landing), null)
+            .getFirst();
+
+    assertThat(result.trackingStatus()).isEqualTo("COMPLETED");
+    assertThat(result.objectiveAchieved()).isTrue();
+    assertThat(result.exitedAt()).isEqualTo(Instant.parse("2026-08-25T10:00:00Z"));
+    assertThat(result.exitEvidence()).isEqualTo("SUBPROCESS_OBJECTIVE_ACHIEVED");
+  }
+
   /** Não confunde atualização de tarefa bloqueada com objetivo do macroprocesso atingido. */
   @Test
   void keepsHistoricalProcessRecordedWithoutDownstreamEntryEvidence() {
@@ -143,6 +176,18 @@ class ProductStageMeasurementResolverTest {
     task.setCreatedAt(Instant.parse(createdAt));
     task.setUpdatedAt(task.getCreatedAt());
     task.setEstimatedCostUsd(costUsd == null ? null : new BigDecimal(costUsd));
+    return task;
+  }
+
+  /** Monta uma atividade criativa concluída com decisão humana e pacote íntegro. */
+  private AgentTask approvedCreativeTask(
+      Long id, BusinessProcessDefinition process, String activityId) {
+    AgentTask task = task(id, process, "2026-08-25T10:00:00Z", "0.10000000", "COMPLETED");
+    task.setProcessActivityId(activityId);
+    task.setEvidenceJson(
+        """
+        {"creativePackageId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","assets":[{"url":"https://cdn.example/asset.png"}],"importedByHuman":true,"published":false,"externalMediaSpendUsd":0}
+        """);
     return task;
   }
 

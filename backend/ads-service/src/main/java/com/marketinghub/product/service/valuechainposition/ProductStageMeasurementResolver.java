@@ -1,5 +1,8 @@
 package com.marketinghub.product.service.valuechainposition;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocesschain.BusinessProcessChainItem;
@@ -23,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -31,14 +35,18 @@ import org.springframework.stereotype.Component;
  * oficiais.
  */
 @Component
+@Slf4j
 public class ProductStageMeasurementResolver {
   private static final Set<String> ACTIVE_TASK_STATUSES =
       Set.of("PENDING", "IN_PROGRESS", "BLOCKED");
+  private static final Set<String> CREATIVE_APPROVAL_ACTIVITIES =
+      Set.of("route", "produce", "customer", "commercial");
 
   private final ProductProcessPeriodRepository periodRepository;
   private final CommercialPlanRepository commercialPlanRepository;
   private final AgentTaskRepository taskRepository;
   private final StudioCostLedgerEntryRepository studioLedgerRepository;
+  private final ObjectMapper objectMapper;
   private final Clock clock;
 
   /** Configura as trilhas de permanência, tarefas, custos externos e o relógio UTC. */
@@ -47,12 +55,14 @@ public class ProductStageMeasurementResolver {
       ProductProcessPeriodRepository periodRepository,
       CommercialPlanRepository commercialPlanRepository,
       AgentTaskRepository taskRepository,
-      StudioCostLedgerEntryRepository studioLedgerRepository) {
+      StudioCostLedgerEntryRepository studioLedgerRepository,
+      ObjectMapper objectMapper) {
     this(
         periodRepository,
         commercialPlanRepository,
         taskRepository,
         studioLedgerRepository,
+        objectMapper,
         Clock.systemUTC());
   }
 
@@ -62,11 +72,13 @@ public class ProductStageMeasurementResolver {
       CommercialPlanRepository commercialPlanRepository,
       AgentTaskRepository taskRepository,
       StudioCostLedgerEntryRepository studioLedgerRepository,
+      ObjectMapper objectMapper,
       Clock clock) {
     this.periodRepository = periodRepository;
     this.commercialPlanRepository = commercialPlanRepository;
     this.taskRepository = taskRepository;
     this.studioLedgerRepository = studioLedgerRepository;
+    this.objectMapper = objectMapper;
     this.clock = clock;
   }
 
@@ -130,9 +142,16 @@ public class ProductStageMeasurementResolver {
       boolean current =
           currentSubprocess != null && subprocess.getId().equals(currentSubprocess.getId());
       boolean transitioned = nextEntry != null;
-      Instant exitedAt = transitioned ? nextEntry : null;
+      Instant objectiveAchievedAt =
+          persistedSubprocessObjectiveAchievedAt(subprocess, matchingTasks);
+      boolean objectiveAchieved = transitioned || objectiveAchievedAt != null;
+      Instant exitedAt = objectiveAchievedAt != null ? objectiveAchievedAt : nextEntry;
       String trackingStatus =
-          transitioned ? "COMPLETED" : current || active ? "CURRENT" : "RECORDED";
+          objectiveAchieved ? "COMPLETED" : current || active ? "CURRENT" : "RECORDED";
+      String exitEvidence =
+          objectiveAchievedAt != null
+              ? "SUBPROCESS_OBJECTIVE_ACHIEVED"
+              : transitioned ? "NEXT_SUBPROCESS_STARTED" : null;
       measurements.add(
           measurement(
               "SUBPROCESS",
@@ -141,12 +160,71 @@ public class ProductStageMeasurementResolver {
               enteredAt,
               "FIRST_SUBPROCESS_TASK",
               exitedAt,
-              exitedAt == null ? null : "NEXT_SUBPROCESS_STARTED",
-              transitioned,
+              exitEvidence,
+              objectiveAchieved,
               matchingTasks,
               ledgerWithin(context.ledger(), enteredAt, exitedAt)));
     }
     return measurements;
+  }
+
+  /**
+   * Obtém o horário auditável em que todas as atividades criativas obrigatórias foram concluídas.
+   */
+  private Instant persistedSubprocessObjectiveAchievedAt(
+      BusinessProcessDefinition subprocess, List<AgentTask> matchingTasks) {
+    if (!"creative-production-approval".equals(subprocess.getProcessCode())) return null;
+    Set<String> packageIds = new java.util.HashSet<>();
+    List<Instant> completionTimes = new ArrayList<>();
+    for (String activityId : CREATIVE_APPROVAL_ACTIVITIES) {
+      AgentTask latest = latestActivityTask(matchingTasks, activityId);
+      if (latest == null || !"COMPLETED".equals(latest.getStatus())) return null;
+      String packageId = acceptedCreativePackageId(latest);
+      Instant completionTime =
+          latest.getDeliveredAt() != null ? latest.getDeliveredAt() : latest.getUpdatedAt();
+      if (packageId == null || completionTime == null) return null;
+      packageIds.add(packageId);
+      completionTimes.add(completionTime);
+    }
+    return packageIds.size() == 1
+        ? completionTimes.stream().max(Comparator.naturalOrder()).orElse(null)
+        : null;
+  }
+
+  /** Seleciona a execução mais recente de uma atividade específica do subprocesso. */
+  private AgentTask latestActivityTask(List<AgentTask> tasks, String activityId) {
+    return tasks.stream()
+        .filter(task -> activityId.equals(task.getProcessActivityId()))
+        .max(
+            Comparator.comparing(
+                    AgentTask::getUpdatedAt, Comparator.nullsFirst(Comparator.naturalOrder()))
+                .thenComparing(AgentTask::getId, Comparator.nullsFirst(Comparator.naturalOrder())))
+        .orElse(null);
+  }
+
+  /** Valida a evidência humana, os ativos e a ausência de publicação ou gasto do mesmo pacote. */
+  private String acceptedCreativePackageId(AgentTask task) {
+    try {
+      JsonNode evidence = objectMapper.readTree(task.getEvidenceJson());
+      String packageId = evidence.path("creativePackageId").asText();
+      boolean accepted =
+          evidence.path("importedByHuman").asBoolean(false)
+              && evidence.has("published")
+              && !evidence.path("published").asBoolean(true)
+              && evidence.has("externalMediaSpendUsd")
+              && evidence.path("externalMediaSpendUsd").decimalValue().signum() == 0
+              && evidence.path("assets").isArray()
+              && !evidence.path("assets").isEmpty()
+              && packageId.matches("[0-9a-f]{64}");
+      return accepted ? packageId : null;
+    } catch (JsonProcessingException | IllegalArgumentException ex) {
+      log.warn(
+          "Evidência criativa inválida ao medir objetivo do subprocesso. taskId={} processCode={}",
+          task.getId(),
+          task.getProcessDefinition() == null ? null : task.getProcessDefinition().getProcessCode(),
+          ex);
+      return null;
+    }
   }
 
   /** Mede um período explícito registrado pelo backend nas transições comerciais. */

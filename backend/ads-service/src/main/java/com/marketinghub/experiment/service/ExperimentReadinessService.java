@@ -84,6 +84,7 @@ public class ExperimentReadinessService {
   private final ExperimentSalesPageAbTestService salesPageAbTestService;
   private final ExperimentSalesPageTypeSelectionRepository salesPageTypeSelectionRepository;
   private final CommercialPlanLandingAssetService landingAssetService;
+  private final ExperimentDirectPdeActivationService directPdeActivationService;
 
   /** Cria o serviço com as fontes canônicas de prontidão do experimento. */
   public ExperimentReadinessService(
@@ -95,7 +96,8 @@ public class ExperimentReadinessService {
       ExperimentVideoAssetService experimentVideoAssetService,
       ExperimentSalesPageAbTestService salesPageAbTestService,
       ExperimentSalesPageTypeSelectionRepository salesPageTypeSelectionRepository,
-      CommercialPlanLandingAssetService landingAssetService) {
+      CommercialPlanLandingAssetService landingAssetService,
+      ExperimentDirectPdeActivationService directPdeActivationService) {
     this.experimentService = experimentService;
     this.creativeRepository = creativeRepository;
     this.targetingSelectionRepository = targetingSelectionRepository;
@@ -105,6 +107,7 @@ public class ExperimentReadinessService {
     this.salesPageAbTestService = salesPageAbTestService;
     this.salesPageTypeSelectionRepository = salesPageTypeSelectionRepository;
     this.landingAssetService = landingAssetService;
+    this.directPdeActivationService = directPdeActivationService;
   }
 
   /** Resume a prontidão do experimento usando apenas dados canônicos aprovados para publicação. */
@@ -152,11 +155,15 @@ public class ExperimentReadinessService {
                         ? experiment.getLandingPageHtml()
                         : experiment.getHtmlGeraLanding());
     int requiredApprovedLandingAssets = landingAssetService.requiredReferenceCount(experimentId);
+    boolean directPdeReady = directPdeActivationService.isReadyForActivation(experiment);
+    boolean commercialMaterialReady = hasCreatives || directPdeReady;
     boolean landingAssetLineageReady =
-        landingAssetService.hasRequiredApprovedAssetReferences(experimentId, currentLandingHtml);
+        directPdeReady
+            || landingAssetService.hasRequiredApprovedAssetReferences(
+                experimentId, currentLandingHtml);
 
     List<ExperimentReadinessIssueDto> issues = new ArrayList<>();
-    if (!hasCreatives) {
+    if (!commercialMaterialReady) {
       issues.add(
           new ExperimentReadinessIssueDto(
               ExperimentReadinessIssueType.CREATIVE,
@@ -338,12 +345,16 @@ public class ExperimentReadinessService {
                 "Conclua a geração, a revisão de qualidade e a publicação auditada da página."),
             runningRequirement(
                 "CREATIVE_APPROVED",
-                "Criativo aprovado",
-                hasCreatives,
-                hasCreatives
-                    ? creativeCount + " criativo(s) publicável(is)."
-                    : "Nenhum criativo publicável foi aprovado.",
-                "Aprove ao menos um criativo com mídia e copy válidas."),
+                directPdeReady ? "Material da abordagem pronto" : "Criativo aprovado",
+                commercialMaterialReady,
+                directPdeReady
+                    ? "O run produtivo homologou a microexperiência e os materiais da abordagem individual."
+                    : hasCreatives
+                        ? creativeCount + " criativo(s) publicável(is)."
+                        : "Nenhum criativo publicável foi aprovado.",
+                directPdeActivationService.appliesTo(experiment)
+                    ? "Conclua o preflight produtivo e registre a homologação da abordagem individual."
+                    : "Aprove ao menos um criativo com mídia e copy válidas."),
             runningRequirement(
                 "CHECKOUT_READY",
                 "Checkout configurado",

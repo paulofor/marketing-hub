@@ -104,6 +104,7 @@ public class ExperimentService {
   private final PdeProductionSlotRepository pdeProductionSlotRepository;
   private final CommercialPlanRepository commercialPlanRepository;
   private final CommercialPlanVisualAssetRepository commercialPlanVisualAssetRepository;
+  private final ExperimentDirectPdeActivationService directPdeActivationService;
   private static final String VALIDATION_OK = "OK";
 
   /** Inicializa o serviço com repositórios, integrações e validadores usados pelos experimentos. */
@@ -138,7 +139,8 @@ public class ExperimentService {
       ExperimentFunnelStandbyService experimentFunnelStandbyService,
       PdeProductionSlotRepository pdeProductionSlotRepository,
       CommercialPlanRepository commercialPlanRepository,
-      CommercialPlanVisualAssetRepository commercialPlanVisualAssetRepository) {
+      CommercialPlanVisualAssetRepository commercialPlanVisualAssetRepository,
+      ExperimentDirectPdeActivationService directPdeActivationService) {
     this.repository = repository;
     this.statusChangeRepository = statusChangeRepository;
     this.promiseGenerationRequestRepository = promiseGenerationRequestRepository;
@@ -170,6 +172,7 @@ public class ExperimentService {
     this.pdeProductionSlotRepository = pdeProductionSlotRepository;
     this.commercialPlanRepository = commercialPlanRepository;
     this.commercialPlanVisualAssetRepository = commercialPlanVisualAssetRepository;
+    this.directPdeActivationService = directPdeActivationService;
   }
 
   /**
@@ -807,6 +810,7 @@ public class ExperimentService {
   @Transactional
   public Experiment updateStatus(Long id, ExperimentStatus status) {
     Experiment exp = repository.findById(id).orElseThrow();
+    ExperimentStatus previousStatus = exp.getStatus();
     if (status == ExperimentStatus.RUNNING) {
       validateRunningStatusTransition(exp);
     }
@@ -814,6 +818,10 @@ public class ExperimentService {
       validateFinishedStatusTransition(exp);
     }
     exp.setStatus(status);
+    if (status == ExperimentStatus.RUNNING) {
+      directPdeActivationService.activate(exp);
+      recordDirectPdeActivation(exp, previousStatus);
+    }
     if (status == ExperimentStatus.PAUSED) {
       experimentFunnelStandbyService.requestFacebookCampaignStops(
           exp.getId(),
@@ -884,6 +892,7 @@ public class ExperimentService {
     }
     validateRunningStatusTransition(exp);
     exp.setStatus(ExperimentStatus.RUNNING);
+    directPdeActivationService.activate(exp);
     exp.setLastStatusChangeAction("REACTIVATE");
     exp.setLastStatusChangeReason(reason);
     exp.setLastStatusChangedAt(Instant.now());
@@ -962,6 +971,31 @@ public class ExperimentService {
           "Facebook campaign must be registered before setting experiment RUNNING");
     }
     validateActivePdeDestination(exp);
+    directPdeActivationService.validateReadyForActivation(exp);
+  }
+
+  /** Registra a origem e o motivo da ativação comercial direta quando o estado realmente muda. */
+  private void recordDirectPdeActivation(Experiment experiment, ExperimentStatus previousStatus) {
+    if (!directPdeActivationService.appliesTo(experiment)
+        || previousStatus == ExperimentStatus.RUNNING) {
+      return;
+    }
+    Instant changedAt = Instant.now();
+    String reason =
+        "Preflight produtivo aprovado; janela comercial direta liberada pelo painel administrativo";
+    experiment.setLastStatusChangeAction("START");
+    experiment.setLastStatusChangeReason(reason);
+    experiment.setLastStatusChangedAt(changedAt);
+    statusChangeRepository.save(
+        ExperimentStatusChange.builder()
+            .experiment(experiment)
+            .previousStatus(previousStatus)
+            .newStatus(ExperimentStatus.RUNNING)
+            .action("START")
+            .reason(reason)
+            .changedBy("ADMIN_UI")
+            .changedAt(changedAt)
+            .build());
   }
 
   /** Bloqueia tráfego para versão PDE planejada, pausada ou encerrada. */

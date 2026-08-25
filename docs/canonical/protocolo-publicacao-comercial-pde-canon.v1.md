@@ -136,6 +136,13 @@ Um PDE so pode liberar experimento/campanha para `RUNNING` quando todos os ponto
 
 Se o PDE depender de video caro, avatar, HLS ou render externo, a geracao de custo alto deve ocorrer somente depois da validacao da experiencia sem o ativo caro, salvo decisao comercial explicita registrada.
 
+Para PDE em canal `DIRECT_ONE_TO_ONE`, o material comercial não precisa fingir ser um criativo de
+mídia paga. O run produtivo mais recente em `READY_TO_PUBLISH`, com todos os gates da experiência,
+checkout, entrega, distribuição individual e dados aprovados, é a autoridade para a ativação. O
+comando administrativo deve alterar atomicamente o experimento para `RUNNING`, o run para `RUNNING`,
+abrir sua janela comercial e mover o produto para Venda, Entrega e Aprendizado. Se qualquer uma
+dessas alterações não puder ser persistida, nenhuma delas deve permanecer aplicada.
+
 ## Registro de decisao
 
 Cada publicacao comercial de PDE deve deixar evidencia operacional no Marketing Hub ou na documentacao do experimento:

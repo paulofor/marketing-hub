@@ -145,9 +145,11 @@ try {
     );
     await page.goto(`${baseUrl}/planning/4`, { waitUntil: "networkidle" });
     const packageInput = page.getByLabel("Pacote ZIP aprovado *");
-    if ((await packageInput.count()) === 0) {
+    try {
+      await packageInput.waitFor({ state: "visible", timeout: 15_000 });
+    } catch (error) {
       throw new Error(
-        `${name}: formulário não renderizado. URL=${page.url()} BODY=${(await page.locator("body").innerText()).slice(0, 1200)} ERRORS=${errors.join(" | ")}`,
+        `${name}: formulário não renderizado após a hidratação. URL=${page.url()} BODY=${(await page.locator("body").innerText()).slice(0, 4000)} ERRORS=${errors.join(" | ")} CAUSE=${error instanceof Error ? error.message : String(error)}`,
       );
     }
     await packageInput.setInputFiles({
@@ -177,6 +179,9 @@ try {
     await page.screenshot({
       path: join(outputDirectory, `${name}.png`),
       fullPage: true,
+      animations: "disabled",
+      caret: "hide",
+      timeout: 90_000,
     });
     results.push({
       device: name,

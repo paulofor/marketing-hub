@@ -17,6 +17,7 @@ import { useBreadcrumbs } from "../../app/breadcrumbs";
 import * as Tabs from "@radix-ui/react-tabs";
 import { useExperimentFacebookCampaigns } from "../../api/experiment/useExperimentFacebookCampaigns";
 import { useExperimentReadiness } from "../../api/experiment/useExperimentReadiness";
+import { useUpdateExperimentStatus } from "../../api/experiment/useUpdateExperimentStatus";
 import {
   useExperimentCampaignReset,
   useExperimentCampaignResetPreview,
@@ -387,6 +388,18 @@ export function resolveGeraSalesPageCommand() {
   return "rebuild" as const;
 }
 
+export function canStartDirectExperiment(
+  status?: string | null,
+  platform?: string | null,
+  eligibleForRunning?: boolean,
+) {
+  return (
+    status === "PLANNED" &&
+    platform === "DIRECT_ONE_TO_ONE" &&
+    eligibleForRunning === true
+  );
+}
+
 export default function ExperimentDetailPage() {
   const { id } = useParams();
   const expId = id as string;
@@ -551,6 +564,7 @@ export default function ExperimentDetailPage() {
   } = useExperimentCampaignResetPreview(expId);
   const resetCampaigns = useExperimentCampaignReset(expId);
   const releaseExperiment = useExperimentFacebookRelease(expId);
+  const updateExperimentStatus = useUpdateExperimentStatus();
   const completeMarkdownReport = useExperimentCompleteMarkdownReport(expId);
   const frameworkImagePendingCount = useMemo(
     () =>
@@ -1776,6 +1790,29 @@ export default function ExperimentDetailPage() {
   };
   const openLandingActions = () => openExperimentTab("landing");
 
+  const handleStartDirectExperiment = async () => {
+    if (
+      updateExperimentStatus.isPending ||
+      !window.confirm(
+        "Iniciar a janela comercial deste experimento? O run homologado e o produto serão movidos juntos para RUNNING, sem criar campanha paga.",
+      )
+    ) {
+      return;
+    }
+    try {
+      await updateExperimentStatus.mutateAsync({
+        id: expId,
+        status: "RUNNING",
+      });
+      toast.success("Experimento e janela comercial iniciados.");
+    } catch (error) {
+      const message = axios.isAxiosError(error)
+        ? error.response?.data?.message || error.message
+        : "Não foi possível iniciar o experimento.";
+      toast.error(message);
+    }
+  };
+
   const isReadyForRunning = readinessSummary?.eligibleForRunning ?? false;
   const releaseInProgress = releaseExperiment.isPending;
   const lastReleaseAt = data.facebookReleaseRequestedAt;
@@ -1792,10 +1829,10 @@ export default function ExperimentDetailPage() {
 
   const hasExperimentPipelineContent = Boolean(
     data.campaignAngle ||
-      data.adCopy ||
-      data.adImageBriefing ||
-      data.creativeTextPrompt ||
-      data.creativeImagePrompt,
+    data.adCopy ||
+    data.adImageBriefing ||
+    data.creativeTextPrompt ||
+    data.creativeImagePrompt,
   );
   const hasGeraLandingPipelineReady =
     readinessSummary?.hasGeraLandingPipeline ?? false;
@@ -2537,6 +2574,36 @@ export default function ExperimentDetailPage() {
               )}
             </div>
           )}
+          {canStartDirectExperiment(
+            data.status,
+            data.platform,
+            readinessSummary?.eligibleForRunning,
+          ) ? (
+            <div className="border-top mt-3 pt-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+              <div className="small text-body-secondary">
+                A ativação abre o piloto individual consentido e avança o
+                produto para Venda, Entrega e Aprendizado. Não cria mídia paga.
+              </div>
+              <button
+                type="button"
+                className="btn btn-success text-nowrap"
+                disabled={updateExperimentStatus.isPending}
+                onClick={handleStartDirectExperiment}
+              >
+                {updateExperimentStatus.isPending ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      aria-hidden="true"
+                    />
+                    Iniciando...
+                  </>
+                ) : (
+                  "Colocar experimento em RUNNING"
+                )}
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
       <div className="card border-0 shadow-sm rounded-3 mt-3">

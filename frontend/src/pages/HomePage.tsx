@@ -171,6 +171,7 @@ export default function HomePage() {
                 </section>
                 <ProductValueChainPosition
                   compact
+                  productId={product.id}
                   productName={getProductName(product)}
                   position={valueChainPositionByProductId.get(product.id)}
                   isLoading={valueChainPositions.isLoading}

@@ -256,6 +256,21 @@ checkout de teste, acesso, entrega, materiais protegidos, suporte, retomada e ob
 criar venda, contato, pagamento ou gasto. O objetivo local da etapa 4 está concluído; a transição
 produtiva para a etapa 5 depende da publicação da mesma revisão e de smoke público satisfatório.
 
+## Importação auditável do pacote criativo
+
+Em 2026-08-25, a produção local de seis cards e um vídeo vertical permanecia fora da biblioteca
+produtiva: o plano 4 possuía zero ativos visuais e a tela aceitava somente URL manual. Esse atalho
+perderia hashes, linhagem, requests/responses e os pareceres independentes, além de fazer o card do
+produto avançar sem evidência persistida. Também foi confirmado que Têmis ainda consultava a
+atividade legada `generate`, enquanto o subprocesso v6 publica `produce`.
+
+Foi escolhida a importação única e idempotente pela tela. O pacote ZIP contém contrato, manifesto,
+provas `PRODUCT_PROOF`, entregáveis, frames, previews e auditoria bruta das quatro execuções. Antes
+de armazenar qualquer ativo, o backend confere plano e experimento, SHA-256, direitos, zero gasto,
+ausência de publicação, aprovação sem ajustes e separação entre Psique, produção e Têmis
+independente. A confirmação da tela representa a decisão humana de uso, mas não autoriza campanha,
+contato ou gasto. Os pareceres passam à trilha BPM do plano e o worker reconhece `route` e `produce`.
+
 ## Correção da telemetria de homologação no build público
 
 Após o PR 5015 e o deploy direcionado, a degustação, a oferta de R$ 349, o checkout e as políticas

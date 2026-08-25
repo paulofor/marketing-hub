@@ -23,6 +23,10 @@ public interface CommercialPlanVisualAssetRepository
   /** Calcula a próxima versão da mesma referência dentro do plano. */
   long countByCommercialPlanIdAndAssetUrl(Long planId, String assetUrl);
 
+  /** Localiza uma importação já concluída para tornar o envio do pacote idempotente. */
+  List<CommercialPlanVisualAsset> findByCommercialPlanIdAndCreativePackageIdOrderByCreatedAtAsc(
+      Long planId, String creativePackageId);
+
   /** Lista entregáveis gerados que aguardam parecer independente. */
   List<CommercialPlanVisualAsset> findByAgentReviewStatusOrderByCreatedAtAsc(
       com.marketinghub.planning.imagestudio.v1.CommercialPlanVisualAssetReviewStatus status);

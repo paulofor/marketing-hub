@@ -26,6 +26,7 @@ import {
   useRequestCommercialPlanJourneyHomologation,
   useCommercialPlanVisualAssets,
   useCreateCommercialPlanVisualAsset,
+  useImportCommercialPlanCreativePackage,
   useUpdateCommercialPlanVisualAssetStatus,
   useCommercialPlanImageStudioJobs,
   useCreateCommercialPlanImageStudioJob,
@@ -42,6 +43,7 @@ const LEGACY_PLAN_REFERENCE_MONTH = "2026-07";
 function CommercialPlanVisualKit({ planId }: { planId: number }) {
   const query = useCommercialPlanVisualAssets(planId);
   const createAsset = useCreateCommercialPlanVisualAsset(planId);
+  const importCreativePackage = useImportCommercialPlanCreativePackage(planId);
   const updateStatus = useUpdateCommercialPlanVisualAssetStatus(planId);
   const imageStudioJobs = useCommercialPlanImageStudioJobs(planId);
   const createImageStudioJob = useCreateCommercialPlanImageStudioJob(planId);
@@ -60,6 +62,11 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
     origin: "Produto",
     rightsStatement: "Uso autorizado para este produto",
   });
+  const [creativePackageFile, setCreativePackageFile] = useState<File | null>(
+    null,
+  );
+  const [creativePackageConfirmed, setCreativePackageConfirmed] =
+    useState(false);
   const assets = query.data ?? [];
   const imageAssets = assets.filter(
     (asset) => asset.mediaType === "IMAGE" && asset.status !== "RETIRED",
@@ -87,6 +94,16 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
     event.preventDefault();
     createAsset.mutate(draft, {
       onSuccess: () => setDraft({ ...draft, assetUrl: "", label: "" }),
+    });
+  };
+  const submitCreativePackage = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!creativePackageFile || !creativePackageConfirmed) return;
+    importCreativePackage.mutate(creativePackageFile, {
+      onSuccess: () => {
+        setCreativePackageFile(null);
+        setCreativePackageConfirmed(false);
+      },
     });
   };
   const submitStudio = (event: React.FormEvent) => {
@@ -151,6 +168,76 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
             Mídias aprovadas do produto orientam Têmis e os executores em
             anúncios, landing, social e entrega.
           </p>
+        </div>
+        <div className="border rounded p-3 bg-body-tertiary">
+          <h3 className="h6">Importar pacote criativo aprovado</h3>
+          <p className="small text-body-secondary">
+            Registra em conjunto as peças, provas, hashes e pareceres reais de
+            Psique e Têmis. A importação não publica campanha nem gera gasto.
+          </p>
+          <form
+            className="row g-2 align-items-end"
+            onSubmit={submitCreativePackage}
+          >
+            <div className="col-lg-6">
+              <label className="form-label" htmlFor="approved-creative-package">
+                Pacote ZIP aprovado *
+              </label>
+              <input
+                id="approved-creative-package"
+                className="form-control"
+                type="file"
+                accept=".zip,application/zip"
+                onChange={(event) =>
+                  setCreativePackageFile(event.target.files?.[0] ?? null)
+                }
+              />
+            </div>
+            <div className="col-lg-4">
+              <label className="form-check">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={creativePackageConfirmed}
+                  onChange={(event) =>
+                    setCreativePackageConfirmed(event.target.checked)
+                  }
+                />
+                <span className="form-check-label">
+                  Selecionei este pacote para uso no plano *
+                </span>
+              </label>
+            </div>
+            <div className="col-lg-2">
+              <button
+                className="btn btn-primary w-100"
+                disabled={
+                  importCreativePackage.isPending ||
+                  !creativePackageFile ||
+                  !creativePackageConfirmed
+                }
+              >
+                {importCreativePackage.isPending ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" />
+                    Importando...
+                  </>
+                ) : (
+                  "Importar pacote"
+                )}
+              </button>
+            </div>
+          </form>
+          {importCreativePackage.isSuccess && (
+            <div className="alert alert-success mt-3 mb-0" role="status">
+              Pacote importado com peças e pareceres auditáveis.
+            </div>
+          )}
+          {importCreativePackage.isError && (
+            <div className="alert alert-danger mt-3 mb-0" role="alert">
+              O pacote foi rejeitado. Confira integridade, contrato e pareceres.
+            </div>
+          )}
         </div>
         <div className="border rounded p-3 bg-body-tertiary">
           <h3 className="h6">Estúdio de Imagens de Têmis</h3>
@@ -455,6 +542,20 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
                     {asset.agentReviewSummary
                       ? ` · ${asset.agentReviewSummary}`
                       : ""}
+                  </small>
+                )}
+                {asset.customerReviewStatus && (
+                  <small className="d-block text-body-secondary">
+                    Percepção de Psique: {asset.customerReviewStatus}
+                    {asset.customerReviewSummary
+                      ? ` · ${asset.customerReviewSummary}`
+                      : ""}
+                  </small>
+                )}
+                {asset.creativePackageId && (
+                  <small className="d-block text-body-secondary">
+                    Pacote: {asset.creativePackageId.slice(0, 12)} · SHA-256:{" "}
+                    {asset.contentSha256?.slice(0, 12) ?? "não informado"}
                   </small>
                 )}
                 <div className="d-flex gap-2 mt-2">

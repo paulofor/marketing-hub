@@ -118,11 +118,33 @@ paths:
               properties:
                 assetUrl: { type: string }
                 label: { type: string }
-                purpose: { type: string, enum: [ADS, LANDING, SOCIAL, DELIVERY] }
+                purpose: { type: string, enum: [ADS, LANDING, SOCIAL, DELIVERY, PRODUCT_PROOF] }
                 origin: { type: string }
                 rightsStatement: { type: string }
       responses:
         '200': { description: Referência criada como DRAFT }
+  /api/planning/commercial-plans/{id}/visual-assets/approved-package:
+    post:
+      summary: Importa um pacote criativo aprovado com arquivos, hashes e pareceres auditáveis
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200': { description: Ativos aprovados importados de forma idempotente }
+        '400': { description: Pacote, hashes, contrato ou pareceres inválidos }
   /api/planning/commercial-plans/{id}/visual-assets/{assetId}/status:
     patch:
       summary: Aprova ou retira uma referência do Kit Visual

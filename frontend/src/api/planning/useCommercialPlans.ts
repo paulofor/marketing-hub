@@ -122,12 +122,17 @@ export interface CommercialPlanVisualAsset {
   purposes: string[];
   origin: string;
   rightsStatement: string;
+  contentSha256?: string | null;
+  creativePackageId?: string | null;
   versionNumber: number;
   status: "DRAFT" | "APPROVED" | "RETIRED";
   sourceAssetId?: number | null;
   agentReviewStatus?:
     "PENDING" | "PROCESSING" | "APPROVED" | "ADJUST" | "FAILED" | null;
   agentReviewSummary?: string | null;
+  customerReviewStatus?:
+    "PENDING" | "PROCESSING" | "APPROVED" | "ADJUST" | "FAILED" | null;
+  customerReviewSummary?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -459,6 +464,32 @@ export function useCreateCommercialPlanVisualAsset(planId?: number | null) {
       queryClient.invalidateQueries({
         queryKey: ["commercial-plan-visual-assets", planId],
       }),
+  });
+}
+
+/** Importa pela tela um pacote criativo já aprovado e preserva sua auditoria. */
+export function useImportCommercialPlanCreativePackage(planId?: number | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const form = new FormData();
+      form.append("file", file);
+      const { data } = await axios.post<CommercialPlanVisualAsset[]>(
+        `/api/planning/commercial-plans/${planId}/visual-assets/approved-package`,
+        form,
+      );
+      return data;
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["commercial-plan-visual-assets", planId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["products", "value-chain-positions"],
+        }),
+      ]);
+    },
   });
 }
 

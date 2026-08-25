@@ -127,6 +127,48 @@ public class AgentTaskService {
         binding);
   }
 
+  /** Importa uma execução já validada, preservando resultado, evidência e consumo reais. */
+  @Transactional
+  public AgentTaskResponse recordImportedCompletedTask(ImportedCompletedAgentTask importedTask) {
+    requireValidJson(importedTask.resultJson(), "resultado");
+    requireValidJson(importedTask.evidenceJson(), "evidência");
+    CreateAgentTaskRequest request =
+        new CreateAgentTaskRequest(
+            importedTask.assignedAgentKey(),
+            importedTask.requestedByName(),
+            importedTask.title(),
+            importedTask.description(),
+            "HIGH",
+            importedTask.sourceReference(),
+            importedTask.processDefinitionId(),
+            importedTask.processActivityId(),
+            false,
+            null);
+    Agent assignee = agent(request.assignedAgentKey());
+    ProcessBinding binding = validateProcessBinding(request, assignee);
+    AgentTaskResponse created =
+        save(
+            assignee,
+            null,
+            "HUMAN",
+            request.requestedByName(),
+            request.title(),
+            request.description(),
+            request.priority(),
+            request.sourceReference(),
+            binding);
+    AgentTask task = repository.findById(created.id()).orElseThrow();
+    Instant now = Instant.now(clock);
+    task.setResultJson(importedTask.resultJson());
+    task.setEvidenceJson(importedTask.evidenceJson());
+    applyModelUsage(task, importedTask.modelUsages());
+    task.setStatus("COMPLETED");
+    task.setReceivedAt(now);
+    task.setDeliveredAt(now);
+    task.setUpdatedAt(now);
+    return response(repository.save(task));
+  }
+
   /** Abre uma delegação entre agentes preservando remetente e destinatário. */
   @Transactional
   public AgentTaskResponse createByAgent(CreateAgentTaskByAgentRequest request) {
@@ -555,6 +597,20 @@ public class AgentTaskService {
       log.warn(
           "Evidência inválida ao reconstruir o log governado da tarefa. taskId={}", taskId, ex);
       return false;
+    }
+  }
+
+  /** Bloqueia a importação quando resultado ou evidência não são JSON auditável. */
+  private void requireValidJson(String value, String label) {
+    if (value == null || value.isBlank()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, label + " obrigatória.");
+    }
+    try {
+      objectMapper.readTree(value);
+    } catch (Exception ex) {
+      log.error("Falha ao validar JSON de execução importada. campo={}", label, ex);
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, label + " deve ser um JSON válido.", ex);
     }
   }
 

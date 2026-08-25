@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-25-approved-creative-package-import
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE commercial_plan_visual_asset
+                ADD COLUMN content_sha256 CHAR(64) NULL AFTER rights_statement,
+                ADD COLUMN creative_package_id CHAR(64) NULL AFTER content_sha256,
+                ADD COLUMN customer_review_status VARCHAR(24) NULL AFTER agent_review_response_json,
+                ADD COLUMN customer_reviewer_execution_id VARCHAR(64) NULL AFTER customer_review_status,
+                ADD COLUMN customer_review_json LONGTEXT NULL AFTER customer_reviewer_execution_id,
+                ADD UNIQUE KEY uk_plan_creative_package_asset
+                  (commercial_plan_id, creative_package_id, content_sha256);

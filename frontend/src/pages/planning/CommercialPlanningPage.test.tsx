@@ -190,6 +190,7 @@ const requestRevenueProjectionMutate = vi.fn();
 const requestCommercialAssumptionsMutate = vi.fn();
 const requestJourneyHomologationMutate = vi.fn();
 const createVisualAssetMutate = vi.fn();
+const importCreativePackageMutate = vi.fn();
 const createImageStudioJobMutate = vi.fn();
 let mockVisualAssets: unknown[] = [];
 
@@ -420,6 +421,12 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
       mutate: createVisualAssetMutate,
       isPending: false,
     }),
+    useImportCommercialPlanCreativePackage: () => ({
+      mutate: importCreativePackageMutate,
+      isPending: false,
+      isSuccess: false,
+      isError: false,
+    }),
     useUpdateCommercialPlanVisualAssetStatus: () => ({
       mutate: vi.fn(),
       isPending: false,
@@ -504,6 +511,7 @@ afterEach(() => {
   createPlanMutate.mockReset();
   updatePlanMutate.mockReset();
   createVisualAssetMutate.mockReset();
+  importCreativePackageMutate.mockReset();
   createImageStudioJobMutate.mockReset();
   mockVisualAssets = [];
   mockPlans = defaultPlans;
@@ -733,6 +741,35 @@ describe("CommercialPlanningPage", () => {
         purposes: ["ADS"],
         referenceAssetIds: [901],
       }),
+      expect.any(Object),
+    );
+  });
+
+  it("importa pacote aprovado somente após decisão humana explícita", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const file = new File(["pacote-auditavel"], "rigel-approved.zip", {
+      type: "application/zip",
+    });
+
+    await user.upload(screen.getByLabelText("Pacote ZIP aprovado *"), file);
+    expect(
+      screen.getByRole("button", { name: "Importar pacote" }),
+    ).toBeDisabled();
+
+    await user.click(
+      screen.getByRole("checkbox", {
+        name: "Selecionei este pacote para uso no plano *",
+      }),
+    );
+    const importButton = screen.getByRole("button", {
+      name: "Importar pacote",
+    });
+    expect(importButton).toBeEnabled();
+    await user.click(importButton);
+
+    expect(importCreativePackageMutate).toHaveBeenCalledWith(
+      file,
       expect.any(Object),
     );
   });

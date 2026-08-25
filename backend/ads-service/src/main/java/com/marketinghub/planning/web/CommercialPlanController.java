@@ -28,6 +28,7 @@ import com.marketinghub.planning.service.CommercialPlanVersionService;
 import com.marketinghub.planning.service.CommercialPlanVisualAssetService;
 import com.marketinghub.planning.service.CommercialPlanWeeklyExperimentService;
 import java.util.List;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,7 +37,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /** Responsabilidade: expor endpoints do modulo de planejamento comercial. */
 @RestController
@@ -51,6 +54,7 @@ public class CommercialPlanController {
   private final CommercialPlanOperationalFlowService operationalFlowService;
   private final CommercialPlanVisualAssetService visualAssetService;
 
+  /** Configura os serviços responsáveis pelos contratos do planejamento comercial. */
   public CommercialPlanController(
       CommercialPlanService service,
       CommercialPlanWeeklyExperimentService weeklyExperimentService,
@@ -81,6 +85,15 @@ public class CommercialPlanController {
   public CommercialPlanVisualAssetDto createVisualAsset(
       @PathVariable Long id, @RequestBody CreateCommercialPlanVisualAssetRequest request) {
     return visualAssetService.create(id, request);
+  }
+
+  /** Importa um pacote criativo aprovado, íntegro e selecionado pela pessoa operadora. */
+  @PostMapping(
+      value = "/{id}/visual-assets/approved-package",
+      consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public List<CommercialPlanVisualAssetDto> importApprovedCreativePackage(
+      @PathVariable Long id, @RequestPart("file") MultipartFile file) throws java.io.IOException {
+    return visualAssetService.importApprovedPackage(id, file.getBytes());
   }
 
   /** Aprova ou retira uma referência visual sem apagar seu histórico. */

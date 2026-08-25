@@ -58,6 +58,20 @@ class CommercialBpmTaskConsumerTest {
         .doesNotContain("demonstra inequivocamente o kit digital");
   }
 
+  /** Mantém o polling de Têmis alinhado aos identificadores publicados no processo v6. */
+  @Test
+  void supportsPublishedCreativeProductionActivities() {
+    org.assertj.core.api.Assertions.assertThat(
+            CommercialBpmTaskConsumer.supportsContract("creative-production-approval", "route"))
+        .isTrue();
+    org.assertj.core.api.Assertions.assertThat(
+            CommercialBpmTaskConsumer.supportsContract("creative-production-approval", "produce"))
+        .isTrue();
+    org.assertj.core.api.Assertions.assertThat(
+            CommercialBpmTaskConsumer.supportsContract("creative-production-approval", "generate"))
+        .isFalse();
+  }
+
   /** Seleciona o contrato independente de revisão dos entregáveis do PDE. */
   @Test
   void selectsVersionedPdeDeliverablesContract() {

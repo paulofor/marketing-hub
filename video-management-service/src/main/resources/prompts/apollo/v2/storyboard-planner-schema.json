@@ -7,7 +7,7 @@
     "cuts": {
       "type": "array",
       "minItems": 5,
-      "maxItems": 12,
+      "maxItems": 48,
       "items": {
         "type": "object",
         "additionalProperties": false,

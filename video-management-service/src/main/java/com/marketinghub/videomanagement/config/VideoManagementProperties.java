@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
+/** Centraliza as configurações operacionais do executor de produção e análise de vídeos. */
 @Getter
 @Setter
 @Component("videoManagementProperties")
@@ -38,6 +39,29 @@ public class VideoManagementProperties {
 
     @NotNull
     private ApolloPlanner apolloPlanner = new ApolloPlanner();
+
+    @NotNull
+    private ReferenceAnalysis referenceAnalysis = new ReferenceAnalysis();
+
+    /** Configura a etapa v1 que transforma vídeos de referência em receitas executáveis por Apolo. */
+    @Getter
+    @Setter
+    public static class ReferenceAnalysis {
+        private boolean enabled = false;
+        @NotNull
+        private Duration pollInterval = Duration.ofSeconds(30);
+        private String workerId = "apollo-reference-analysis-v1";
+        @NotNull
+        private URI openAiBaseUrl = URI.create("https://api.openai.com/v1");
+        private String apiKey;
+        private String apiKeyFile;
+        private String model = "gpt-5.6";
+        private String ffmpegPath = "ffmpeg";
+        private String ffprobePath = "ffprobe";
+        private long maxDownloadBytes = 536870912L;
+        private double sceneThreshold = 0.22;
+        private boolean allowPrivateSourceUrls = false;
+    }
 
     /** Configura o planejador criativo que antecede qualquer render pago de Apolo. */
     @Getter
@@ -66,6 +90,7 @@ public class VideoManagementProperties {
         private Duration timeout = Duration.ofMinutes(10);
     }
 
+    /** Configura polling, recuperação e comunicação dos jobs de renderização. */
     @Getter
     @Setter
     public static class Jobs {
@@ -88,6 +113,7 @@ public class VideoManagementProperties {
         private int backendCallMaxAttempts = 3;
     }
 
+    /** Agrupa as configurações de todos os provedores de mídia suportados pelo executor. */
     @Getter
     @Setter
     public static class Providers {
@@ -113,6 +139,7 @@ public class VideoManagementProperties {
         private PostProduction postProduction = new PostProduction();
     }
 
+    /** Configura o provedor Luma e a preparação opcional de imagens de referência. */
     @Getter
     @Setter
     public static class Luma {
@@ -161,6 +188,7 @@ public class VideoManagementProperties {
         private String openAiImageToolModel = "gpt-image-2";
     }
 
+    /** Configura o provedor Kling para renderizações de texto ou imagem para vídeo. */
     @Getter
     @Setter
     public static class Kling {
@@ -205,6 +233,7 @@ public class VideoManagementProperties {
         private int maxPollAttempts = 120;
     }
 
+    /** Configura o provedor Runway, inclusive o modo de performance Act-Two. */
     @Getter
     @Setter
     public static class Runway {
@@ -217,6 +246,7 @@ public class VideoManagementProperties {
         private List<String> acceptedNames = new ArrayList<>(List.of(
                 "RUNWAY", "RUNWAY_GEN_4_5", "RUNWAY_SEEDANCE_2", "RUNWAY_SEEDANCE_2_5", "RUNWAY_HAILUO_3",
                 "RUNWAY_GROK_IMAGINE_1_5",
+                "RUNWAY_ACT_TWO",
                 "RUNWAY_GEN_4_TURBO", "RUNWAY_VEO_3_1", "RUNWAY_VEO_3_1_FAST", "RUNAWAY"));
 
         /**
@@ -239,6 +269,7 @@ public class VideoManagementProperties {
         private String model = "gen4.5";
         private String createPath = "/v1/image_to_video";
         private String textCreatePath = "/v1/text_to_video";
+        private String characterPerformancePath = "/v1/character_performance";
         private String statusPathTemplate = "/v1/tasks/{taskId}";
         private String ratio = "720:1280";
         private int durationSeconds = 10;
@@ -250,6 +281,7 @@ public class VideoManagementProperties {
         private int maxPollAttempts = 120;
     }
 
+    /** Configura o provedor HeyGen para vídeos com avatares. */
     @Getter
     @Setter
     public static class HeyGen {
@@ -298,6 +330,7 @@ public class VideoManagementProperties {
         private int maxPollAttempts = 120;
     }
 
+    /** Configura o provedor determinístico usado em homologações locais. */
     @Getter
     @Setter
     public static class Real {
@@ -329,6 +362,7 @@ public class VideoManagementProperties {
         private int maxPollAttempts = 120;
     }
 
+    /** Configura o provedor Veo para geração de cenas em vídeo. */
     @Getter
     @Setter
     public static class Veo {
@@ -369,6 +403,7 @@ public class VideoManagementProperties {
         private int maxPollAttempts = 120;
     }
 
+    /** Configura a montagem, normalização e entrega dos vídeos renderizados. */
     @Getter
     @Setter
     public static class PostProduction {

@@ -170,6 +170,54 @@ fila, organizada em etapas semelhantes ao Studio principal:
 O resultado deve ser ligado ao video de referencia e exposto pelo backend, para que o frontend
 mostre relatorio auditavel sem depender de logs tecnicos ou recomputacao local.
 
+Desde 2026-08-25, o caminho principal da fila e a etapa versionada
+`reference-analysis-v1`. O backend cria a execucao junto com a referencia, publica a pendencia no
+endpoint canonico da etapa e persiste entrada, saida estruturada, artefatos, request/response bruto,
+modelo, tokens, custo quando reportado, erro e decisao. O `video-management-service` executa a etapa;
+nenhum frontend analisa o arquivo nem decide o proximo estado.
+
+A analise automatica deve combinar evidencias deterministicas (`ffprobe`, deteccao de cenas,
+loudness, true peak e hashes) com leitura multimodal de contact sheets. O resultado minimo inclui:
+
+- decupagem temporal e funcao comercial de cada bloco;
+- gancho, narrativa, direcao visual, continuidade, audio, legenda e ritmo;
+- aplicacoes separadas para campanha, produto e organico;
+- riscos de pessoa, voz, marca, musica, letra, gravacao e outros direitos;
+- receita de producao importavel pelo Estudio, incluindo cenas, biblias, providers condicionais,
+  edicao, qualidade e lacunas de capacidade;
+- decisao explicita entre prontidao de Apolo, homologacao de provider ou bloqueio de direitos.
+
+O executor deve nascer com `VIDEO_REFERENCE_ANALYSIS_ENABLED=false`. A ativacao produtiva exige
+decisao explicita porque cada referencia consome leitura multimodal; homologacoes locais usam API
+simulada. A request usa Flex, schema estrito e `store=false`, enquanto request e response brutos
+ficam auditados no backend. Resposta ausente, JSON invalido ou quebra do contrato funcional deve
+persistir como falha com toda a evidencia disponivel, nunca como analise concluida.
+
+Apolo permanece o diretor audiovisual dessas receitas. Um estilo novo pode exigir extensao tecnica
+do Estudio ou de um adapter, mas nao justifica por si so criar outro agente. Novo agente exige uma
+responsabilidade cognitiva independente da estrategia, direcao e producao audiovisual ja atribuida
+a Apolo.
+
+A tela deve oferecer importacao explicita da receita. Essa importacao pode preencher narrativa,
+cenas, biblias, audio, legenda, providers e gates, mas nunca pode inventar ou sobrescrever
+silenciosamente produto, oferta, promessa, prova ou CTA. O operador deve selecionar o produto,
+alinhar a oferta e salvar o projeto antes de qualquer render. Analise manual permanece apenas como
+contingencia auditavel.
+
+Videos longos ou de montagem rapida podem usar ate 48 beats editoriais no storyboard de Apolo.
+Beat editorial nao equivale a uma chamada paga: o plano de provider deve agrupar beats em clipes
+gerados e reservar corte, texto, legenda, mixagem e CTA para pos-producao deterministica. Musica,
+voz, performance e imagem reconhecivel da referencia nunca devem ser copiadas; producao paga fica
+bloqueada ate preco, licenca, consentimento e QA estarem persistidos.
+
+Performance facial ou corporal autorizada pode usar `RUNWAY_ACT_TWO` somente em homologacao. Cada
+job aceita uma unica performance de referencia entre 3 e 30 segundos e deve persistir URL HTTPS da
+personagem, tipo `image` ou `video`, URL HTTPS da performance, duracao medida da performance,
+evidencia de consentimento e evidencia dos direitos da performance. A duracao medida alimenta o
+ledger; nunca deve ser inferida por um valor padrao. As evidencias juridicas nao sao enviadas ao
+provider, mas bloqueiam localmente a chamada quando ausentes. O modelo permanece impedido em
+producao ate licenca comercial e gate de qualidade serem homologados.
+
 ## Etapas premium de producao com IA
 
 A tela do Estudio de Audio e Video deve organizar projetos premium pelas seguintes etapas operacionais:

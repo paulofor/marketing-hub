@@ -32,12 +32,16 @@ public class VideoReferenceService {
 
   private final VideoReferenceRepository repository;
   private final AssetStorageService storageService;
+  private final VideoReferenceAnalysisPort analysisPort;
 
   /** Inicializa o serviço com repositório e storage canônicos de referências de vídeo. */
   public VideoReferenceService(
-      VideoReferenceRepository repository, AssetStorageService storageService) {
+      VideoReferenceRepository repository,
+      AssetStorageService storageService,
+      VideoReferenceAnalysisPort analysisPort) {
     this.repository = repository;
     this.storageService = storageService;
+    this.analysisPort = analysisPort;
   }
 
   /** Lista vídeos de referência do tenant atual. */
@@ -71,7 +75,9 @@ public class VideoReferenceService {
             .successEvidence(trimToNull(request.successEvidence()))
             .createdBy(trimToNull(request.createdBy()))
             .build();
-    return toDto(repository.save(reference));
+    VideoReference saved = repository.save(reference);
+    analysisPort.enqueue(saved);
+    return toDto(saved);
   }
 
   /** Registra análise comercial estruturada e libera o aprendizado para a tela de resultado. */
@@ -79,6 +85,7 @@ public class VideoReferenceService {
   public VideoReferenceDto analyzeReference(
       Long referenceId, AnalyzeVideoReferenceRequest request) {
     VideoReference reference = loadReference(referenceId);
+    analysisPort.assertManualContingencyAllowed(referenceId);
     reference.setAnalysisNotes(buildAnalysisNotes(reference, request));
     reference.setStatus(VideoReferenceStatus.ANALYZED);
     reference.setAnalyzedAt(Instant.now());

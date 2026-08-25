@@ -6,13 +6,17 @@ import {
   ExternalLink,
   FileText,
   Lightbulb,
+  RefreshCcw,
   Save,
   Target,
+  Wand2,
 } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   useAnalyzeVideoReference,
+  useLatestVideoReferenceAnalysis,
+  useRetryVideoReferenceAnalysis,
   useVideoReference,
 } from "../../api/salesVideo/useVideoReferences";
 import type { VideoReference } from "../../api/salesVideo/types";
@@ -179,6 +183,8 @@ function getReferenceSummary(reference: VideoReference) {
 export default function AudioVideoStudioVideoAnalysisResultPage() {
   const { referenceId } = useParams();
   const referenceQuery = useVideoReference(referenceId);
+  const automaticAnalysis = useLatestVideoReferenceAnalysis(referenceId);
+  const retryAnalysis = useRetryVideoReferenceAnalysis(referenceId);
   const analyzeReference = useAnalyzeVideoReference(referenceId);
   const reference = referenceQuery.data;
   const stages = reference ? buildStages(reference) : [];
@@ -261,139 +267,327 @@ export default function AudioVideoStudioVideoAnalysisResultPage() {
           </section>
 
           <section className="audio-video-studio-page__section">
-            <div className="audio-video-studio-page__section-heading">
+            <div className="audio-video-studio-page__section-heading audio-video-studio-page__section-heading--actions">
               <div>
-                <h2>Registrar analise comercial</h2>
+                <h2>Leitura automática de Apolo</h2>
                 <p>
-                  Transforme a observação do vídeo em aprendizado pronto para
-                  roteiro, criativo, prova e chamada de venda.
+                  O executor mede o arquivo, lê 24 frames-chave e transforma o
+                  padrão observado em uma receita original e importável.
                 </p>
               </div>
+              {automaticAnalysis.data?.status === "COMPLETED" &&
+              automaticAnalysis.data.output ? (
+                <Link
+                  className="audio-video-studio-page__primary-action"
+                  to={`/audio-video-studio?referenceId=${reference.id}`}
+                >
+                  <Wand2 size={17} aria-hidden="true" />
+                  Produzir com esta receita
+                </Link>
+              ) : null}
             </div>
 
-            <form
-              className="audio-video-studio-page__analysis-form"
-              onSubmit={handleAnalysisSubmit}
-              aria-label="Registrar analise comercial do video"
-            >
-              <label>
-                Evidencias usadas *
-                <textarea
-                  value={analysisForm.evidence}
-                  onChange={(event) =>
-                    updateAnalysisField("evidence", event.target.value)
-                  }
-                  placeholder="Formato, duração, plataforma, cortes, áudio, sinais de retenção e prova observável."
-                  rows={4}
-                  required
-                />
-              </label>
-
-              <label>
-                Diagnostico comercial *
-                <textarea
-                  value={analysisForm.commercialDiagnosis}
-                  onChange={(event) =>
-                    updateAnalysisField(
-                      "commercialDiagnosis",
-                      event.target.value,
-                    )
-                  }
-                  placeholder="Papel no funil, promessa, tensão, emoção, prova, objeção e potencial de conversão."
-                  rows={4}
-                  required
-                />
-              </label>
-
-              <label>
-                Analise por sequencia *
-                <textarea
-                  value={analysisForm.sequenceAnalysis}
-                  onChange={(event) =>
-                    updateAnalysisField("sequenceAnalysis", event.target.value)
-                  }
-                  placeholder="0s-3s gancho, 4s-12s desenvolvimento, viradas visuais, CTA e fechamento."
-                  rows={4}
-                  required
-                />
-              </label>
-
-              <label>
-                Aprendizados do sistema *
-                <textarea
-                  value={analysisForm.systemLearnings}
-                  onChange={(event) =>
-                    updateAnalysisField("systemLearnings", event.target.value)
-                  }
-                  placeholder="Padrões de gancho, ritmo, prova, promessa, objeções, legenda, câmera e template reutilizável."
-                  rows={4}
-                  required
-                />
-              </label>
-
-              <label>
-                Melhorias para vendas *
-                <textarea
-                  value={analysisForm.salesImprovements}
-                  onChange={(event) =>
-                    updateAnalysisField("salesImprovements", event.target.value)
-                  }
-                  placeholder="Ações para gerar clique, cadastro, checkout, compra, retargeting ou novos testes de criativo."
-                  rows={4}
-                  required
-                />
-              </label>
-
-              <label>
-                Decisao operacional *
-                <textarea
-                  value={analysisForm.operationalDecision}
-                  onChange={(event) =>
-                    updateAnalysisField(
-                      "operationalDecision",
-                      event.target.value,
-                    )
-                  }
-                  placeholder="O que fazer agora com esse aprendizado: novo roteiro, variação, anúncio, landing, CTA ou descarte."
-                  rows={4}
-                  required
-                />
-              </label>
-
-              <label>
-                Responsavel pela analise *
-                <input
-                  value={analysisForm.analyzedBy}
-                  onChange={(event) =>
-                    updateAnalysisField("analyzedBy", event.target.value)
-                  }
-                  required
-                />
-              </label>
-
-              <button
-                className="audio-video-studio-page__primary-action"
-                type="submit"
-                disabled={analyzeReference.isPending}
-              >
-                <Save size={18} aria-hidden="true" />
-                {analyzeReference.isPending
-                  ? "Salvando analise..."
-                  : "Salvar analise"}
-              </button>
-            </form>
-
-            {analyzeReference.isSuccess ? (
-              <p className="audio-video-studio-page__feedback">
-                Analise registrada e aprendizado liberado para uso comercial.
-              </p>
+            {automaticAnalysis.isLoading ? (
+              <article className="audio-video-studio-page__project-card">
+                Consultando a execução automática...
+              </article>
             ) : null}
-            {analyzeReference.isError ? (
-              <p className="audio-video-studio-page__duration-block">
-                Nao foi possivel registrar a analise agora.
-              </p>
+
+            {automaticAnalysis.data?.status === "QUEUED" ||
+            automaticAnalysis.data?.status === "RUNNING" ? (
+              <article className="audio-video-studio-page__project-card">
+                <strong>
+                  {automaticAnalysis.data.status === "QUEUED"
+                    ? "Na fila de Apolo"
+                    : "Apolo está analisando"}
+                </strong>
+                <p>
+                  Tentativa #{automaticAnalysis.data.attemptNumber}. A tela será
+                  atualizada sem transformar hipótese em resultado.
+                </p>
+              </article>
+            ) : null}
+
+            {automaticAnalysis.data?.status === "FAILED" ? (
+              <article className="audio-video-studio-page__project-card">
+                <strong>Análise automática bloqueada</strong>
+                <p>{automaticAnalysis.data.error}</p>
+                <button
+                  className="audio-video-studio-page__secondary-action"
+                  type="button"
+                  disabled={retryAnalysis.isPending}
+                  onClick={() => retryAnalysis.mutate()}
+                >
+                  <RefreshCcw size={16} aria-hidden="true" />
+                  {retryAnalysis.isPending
+                    ? "Reenfileirando..."
+                    : "Tentar novamente"}
+                </button>
+              </article>
+            ) : null}
+
+            {automaticAnalysis.data?.status === "COMPLETED" &&
+            automaticAnalysis.data.output ? (
+              <>
+                <div className="audio-video-studio-page__grid">
+                  <article className="audio-video-studio-page__project-card">
+                    <span>Decisão</span>
+                    <strong>
+                      {getStudioCommercialLabel(
+                        automaticAnalysis.data.output.operationalDecision,
+                      )}
+                    </strong>
+                    <p>
+                      Apolo:{" "}
+                      {
+                        automaticAnalysis.data.output.productionBlueprint
+                          .apolloCapability
+                      }
+                    </p>
+                  </article>
+                  <article className="audio-video-studio-page__project-card">
+                    <span>Evidência técnica</span>
+                    <strong>
+                      {automaticAnalysis.data.artifacts?.durationSeconds?.toFixed(
+                        1,
+                      )}
+                      s · {automaticAnalysis.data.artifacts?.width}×
+                      {automaticAnalysis.data.artifacts?.height}
+                    </strong>
+                    <p>
+                      {automaticAnalysis.data.artifacts?.sceneChangeCount}{" "}
+                      viradas visuais ·{" "}
+                      {automaticAnalysis.data.artifacts?.integratedLoudnessLufs}{" "}
+                      LUFS
+                    </p>
+                  </article>
+                  <article className="audio-video-studio-page__project-card">
+                    <span>Receita de produção</span>
+                    <strong>
+                      {
+                        automaticAnalysis.data.output.productionBlueprint
+                          .scenePlan.length
+                      }{" "}
+                      cenas ·{" "}
+                      {
+                        automaticAnalysis.data.output.productionBlueprint
+                          .targetDurationSeconds
+                      }
+                      s
+                    </strong>
+                    <p>
+                      {
+                        automaticAnalysis.data.output.productionBlueprint
+                          .estimatedGeneratedClips
+                      }{" "}
+                      clipes gerados previstos; edição e legenda
+                      determinísticas.
+                    </p>
+                    <p>
+                      {
+                        automaticAnalysis.data.output.productionBlueprint
+                          .archetype
+                      }
+                    </p>
+                  </article>
+                </div>
+
+                <div className="audio-video-studio-page__stage-grid">
+                  <article className="audio-video-studio-page__stage-card">
+                    <h3>Gancho e narrativa</h3>
+                    <p>{automaticAnalysis.data.output.hook}</p>
+                    <small>
+                      {automaticAnalysis.data.output.narrativePattern}
+                    </small>
+                  </article>
+                  <article className="audio-video-studio-page__stage-card">
+                    <h3>Direção e continuidade</h3>
+                    <p>{automaticAnalysis.data.output.visualDirection}</p>
+                    <small>
+                      {automaticAnalysis.data.output.continuityStrategy}
+                    </small>
+                  </article>
+                  <article className="audio-video-studio-page__stage-card">
+                    <h3>Áudio e legenda</h3>
+                    <p>{automaticAnalysis.data.output.audioStrategy}</p>
+                    <small>
+                      {automaticAnalysis.data.output.captionStrategy}
+                    </small>
+                  </article>
+                  <article className="audio-video-studio-page__stage-card">
+                    <h3>Uso em campanha</h3>
+                    <p>
+                      {automaticAnalysis.data.output.salesApplications.campaign}
+                    </p>
+                  </article>
+                  <article className="audio-video-studio-page__stage-card">
+                    <h3>Uso no produto</h3>
+                    <p>
+                      {automaticAnalysis.data.output.salesApplications.product}
+                    </p>
+                  </article>
+                  <article className="audio-video-studio-page__stage-card">
+                    <h3>Uso orgânico</h3>
+                    <p>
+                      {automaticAnalysis.data.output.salesApplications.organic}
+                    </p>
+                  </article>
+                  <article className="audio-video-studio-page__stage-card">
+                    <h3>Direitos e limites</h3>
+                    <ul className="audio-video-studio-page__analysis-list">
+                      {automaticAnalysis.data.output.rightsRisks.map((risk) => (
+                        <li key={risk}>{risk}</li>
+                      ))}
+                    </ul>
+                  </article>
+                </div>
+              </>
             ) : null}
           </section>
+
+          {automaticAnalysis.isError ||
+          automaticAnalysis.data?.status === "FAILED" ? (
+            <section className="audio-video-studio-page__section">
+              <div className="audio-video-studio-page__section-heading">
+                <div>
+                  <h2>Contingencia de analise manual</h2>
+                  <p>
+                    Use somente se a leitura automática estiver indisponível e
+                    preserve evidências observáveis no relatório.
+                  </p>
+                </div>
+              </div>
+
+              <form
+                className="audio-video-studio-page__analysis-form"
+                onSubmit={handleAnalysisSubmit}
+                aria-label="Registrar analise comercial do video"
+              >
+                <label>
+                  Evidencias usadas *
+                  <textarea
+                    value={analysisForm.evidence}
+                    onChange={(event) =>
+                      updateAnalysisField("evidence", event.target.value)
+                    }
+                    placeholder="Formato, duração, plataforma, cortes, áudio, sinais de retenção e prova observável."
+                    rows={4}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Diagnostico comercial *
+                  <textarea
+                    value={analysisForm.commercialDiagnosis}
+                    onChange={(event) =>
+                      updateAnalysisField(
+                        "commercialDiagnosis",
+                        event.target.value,
+                      )
+                    }
+                    placeholder="Papel no funil, promessa, tensão, emoção, prova, objeção e potencial de conversão."
+                    rows={4}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Analise por sequencia *
+                  <textarea
+                    value={analysisForm.sequenceAnalysis}
+                    onChange={(event) =>
+                      updateAnalysisField(
+                        "sequenceAnalysis",
+                        event.target.value,
+                      )
+                    }
+                    placeholder="0s-3s gancho, 4s-12s desenvolvimento, viradas visuais, CTA e fechamento."
+                    rows={4}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Aprendizados do sistema *
+                  <textarea
+                    value={analysisForm.systemLearnings}
+                    onChange={(event) =>
+                      updateAnalysisField("systemLearnings", event.target.value)
+                    }
+                    placeholder="Padrões de gancho, ritmo, prova, promessa, objeções, legenda, câmera e template reutilizável."
+                    rows={4}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Melhorias para vendas *
+                  <textarea
+                    value={analysisForm.salesImprovements}
+                    onChange={(event) =>
+                      updateAnalysisField(
+                        "salesImprovements",
+                        event.target.value,
+                      )
+                    }
+                    placeholder="Ações para gerar clique, cadastro, checkout, compra, retargeting ou novos testes de criativo."
+                    rows={4}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Decisao operacional *
+                  <textarea
+                    value={analysisForm.operationalDecision}
+                    onChange={(event) =>
+                      updateAnalysisField(
+                        "operationalDecision",
+                        event.target.value,
+                      )
+                    }
+                    placeholder="O que fazer agora com esse aprendizado: novo roteiro, variação, anúncio, landing, CTA ou descarte."
+                    rows={4}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Responsavel pela analise *
+                  <input
+                    value={analysisForm.analyzedBy}
+                    onChange={(event) =>
+                      updateAnalysisField("analyzedBy", event.target.value)
+                    }
+                    required
+                  />
+                </label>
+
+                <button
+                  className="audio-video-studio-page__primary-action"
+                  type="submit"
+                  disabled={analyzeReference.isPending}
+                >
+                  <Save size={18} aria-hidden="true" />
+                  {analyzeReference.isPending
+                    ? "Salvando analise..."
+                    : "Salvar analise"}
+                </button>
+              </form>
+
+              {analyzeReference.isSuccess ? (
+                <p className="audio-video-studio-page__feedback">
+                  Analise registrada e aprendizado liberado para uso comercial.
+                </p>
+              ) : null}
+              {analyzeReference.isError ? (
+                <p className="audio-video-studio-page__duration-block">
+                  Nao foi possivel registrar a analise agora.
+                </p>
+              ) : null}
+            </section>
+          ) : null}
 
           <section className="audio-video-studio-page__section">
             <div className="audio-video-studio-page__section-heading audio-video-studio-page__section-heading--actions">

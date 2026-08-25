@@ -118,7 +118,7 @@ paths:
   /api/sales-videos/reference-videos/{referenceId}/analysis:
     patch:
       tags: [VideoStudio]
-      summary: Registra análise comercial estruturada de um vídeo externo.
+      summary: Registra contingência manual somente após falha da análise automática.
       parameters:
         - $ref: "#/components/parameters/ReferenceId"
       requestBody:
@@ -134,6 +134,97 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VideoReferenceDto"
+        "400":
+          description: Execução automática ativa ou concluída impede sobrescrita manual.
+  /api/sales-videos/reference-analysis/v1/references/{referenceId}/latest:
+    get:
+      tags: [VideoStudio]
+      summary: Consulta a execução automática mais recente da referência.
+      parameters:
+        - $ref: "#/components/parameters/ReferenceId"
+      responses:
+        "200":
+          description: Execução e receita auditável encontradas.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoReferenceAnalysisExecution"
+  /api/sales-videos/reference-analysis/v1/references/{referenceId}/retry:
+    post:
+      tags: [VideoStudio]
+      summary: Reenfileira a análise quando não existe tentativa ativa.
+      parameters:
+        - $ref: "#/components/parameters/ReferenceId"
+      responses:
+        "200":
+          description: Nova tentativa persistida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoReferenceAnalysisExecution"
+  /api/internal/sales-videos/reference-analysis/v1/analyze/stage-executions/pending:
+    get:
+      tags: [VideoStudio]
+      summary: Entrega uma pendência com lease ao executor Apolo.
+      parameters:
+        - in: query
+          name: workerId
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Lista com zero ou uma execução pendente.
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 1
+                items:
+                  $ref: "#/components/schemas/PendingVideoReferenceAnalysis"
+  /api/internal/sales-videos/reference-analysis/v1/analyze/stage-executions/{executionId}/complete:
+    post:
+      tags: [VideoStudio]
+      summary: Persiste saída, artefatos e auditoria completos da etapa.
+      parameters:
+        - in: path
+          name: executionId
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteVideoReferenceAnalysis"
+      responses:
+        "200":
+          description: Execução concluída.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoReferenceAnalysisExecution"
+  /api/internal/sales-videos/reference-analysis/v1/analyze/stage-executions/{executionId}/fail:
+    post:
+      tags: [VideoStudio]
+      summary: Persiste falha e toda auditoria disponível da etapa.
+      parameters:
+        - in: path
+          name: executionId
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FailVideoReferenceAnalysis"
+      responses:
+        "200":
+          description: Falha auditada e referência liberada para retry ou contingência.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoReferenceAnalysisExecution"
 components:
   parameters:
     ProjectId:
@@ -168,6 +259,88 @@ components:
         - ANALYZING
         - ANALYZED
         - REJECTED
+    VideoReferenceAnalysisExecution:
+      type: object
+      required: [executionId, referenceId, attemptNumber, status, input]
+      properties:
+        executionId: { type: integer, format: int64 }
+        referenceId: { type: integer, format: int64 }
+        attemptNumber: { type: integer, minimum: 1 }
+        status:
+          type: string
+          enum: [QUEUED, RUNNING, COMPLETED, FAILED]
+        input: { type: object, additionalProperties: true }
+        output:
+          type: object
+          nullable: true
+          description: Diagnóstico, sequência, aplicações e receita importável produzidos por Apolo.
+          additionalProperties: true
+        artifacts:
+          type: object
+          nullable: true
+          description: Hash, mídia, loudness, cortes e hashes dos contact sheets.
+          additionalProperties: true
+        model: { type: string, nullable: true }
+        inputTokens: { type: integer, format: int64, nullable: true }
+        cachedInputTokens: { type: integer, format: int64, nullable: true }
+        outputTokens: { type: integer, format: int64, nullable: true }
+        costUsd: { type: number, nullable: true }
+        decision: { type: string, nullable: true }
+        error: { type: string, nullable: true }
+        startedAt: { type: string, format: date-time, nullable: true }
+        finishedAt: { type: string, format: date-time, nullable: true }
+    PendingVideoReferenceAnalysis:
+      type: object
+      required:
+        - executionId
+        - referenceId
+        - tenantId
+        - attemptNumber
+        - producerExecutionId
+        - input
+        - claimedAt
+      properties:
+        executionId: { type: integer, format: int64 }
+        referenceId: { type: integer, format: int64 }
+        tenantId: { type: string }
+        attemptNumber: { type: integer, minimum: 1 }
+        producerExecutionId: { type: string }
+        input: { type: object, additionalProperties: true }
+        claimedAt: { type: string, format: date-time }
+    CompleteVideoReferenceAnalysis:
+      type: object
+      required:
+        - producerExecutionId
+        - summaryMarkdown
+        - output
+        - artifacts
+        - rawRequest
+        - rawResponse
+        - model
+        - decision
+      properties:
+        producerExecutionId: { type: string }
+        summaryMarkdown: { type: string }
+        output: { type: object, additionalProperties: true }
+        artifacts: { type: object, additionalProperties: true }
+        rawRequest: { type: object, additionalProperties: true }
+        rawResponse: { type: object, additionalProperties: true }
+        model: { type: string }
+        inputTokens: { type: integer, format: int64, nullable: true }
+        cachedInputTokens: { type: integer, format: int64, nullable: true }
+        outputTokens: { type: integer, format: int64, nullable: true }
+        costUsd: { type: number, nullable: true }
+        decision: { type: string }
+    FailVideoReferenceAnalysis:
+      type: object
+      required: [producerExecutionId, error]
+      properties:
+        producerExecutionId: { type: string }
+        error: { type: string }
+        artifacts: { type: object, additionalProperties: true, nullable: true }
+        rawRequest: { type: object, additionalProperties: true, nullable: true }
+        rawResponse: { type: object, additionalProperties: true, nullable: true }
+        model: { type: string, nullable: true }
     CreateVideoReferenceRequest:
       type: object
       required:
@@ -354,6 +527,35 @@ components:
           description: Vídeo comercial curto aceita 6-60s; vídeo longo/VSL aceita 180s ou mais.
           nullable: true
         providerPlan: { type: string, nullable: true }
+        characterPerformanceType:
+          type: string
+          enum: [image, video]
+          nullable: true
+        characterPerformanceUri:
+          type: string
+          format: uri
+          maxLength: 2048
+          nullable: true
+          description: URL HTTPS da personagem original e autorizada usada pelo Act-Two.
+        referencePerformanceUri:
+          type: string
+          format: uri
+          maxLength: 2048
+          nullable: true
+          description: URL HTTPS da gravação de performance original e autorizada.
+        referencePerformanceDurationSeconds:
+          type: integer
+          minimum: 3
+          maximum: 30
+          nullable: true
+        performanceConsentEvidence:
+          type: string
+          maxLength: 2048
+          nullable: true
+        performanceRightsEvidence:
+          type: string
+          maxLength: 2048
+          nullable: true
         editingNotes: { type: string, nullable: true }
         qualityGate: { type: string, nullable: true }
         status:

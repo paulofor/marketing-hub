@@ -14,6 +14,7 @@ Regras obrigatorias:
 - reserve textos, narracao, legendas e CTA para pos-producao;
 - nao invente evidencia, depoimento, resultado ou demonstracao inexistente;
 - mantenha o numero e a duracao total dos cortes recebidos;
+- aceite narrativas de ate 48 beats editoriais quando a duracao e o ritmo da referencia exigirem, sem transformar cada beat em uma chamada paga independente;
 - reutilize material aprovado quando o contexto indicar que ele existe.
 
 Contexto persistido:

@@ -3,6 +3,7 @@ import axios from "axios";
 import {
   AnalyzeVideoReferencePayload,
   VideoReference,
+  VideoReferenceAnalysisExecution,
   VideoReferencePayload,
   VideoReferenceUploadPayload,
 } from "./types";
@@ -15,6 +16,42 @@ export function useVideoReferences() {
         "/api/sales-videos/reference-videos",
       );
       return data;
+    },
+  });
+}
+
+export function useLatestVideoReferenceAnalysis(referenceId?: string) {
+  return useQuery({
+    queryKey: ["sales-video-reference-analysis", referenceId],
+    enabled: Boolean(referenceId),
+    retry: false,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === "QUEUED" || status === "RUNNING" ? 5000 : false;
+    },
+    queryFn: async () => {
+      const { data } = await axios.get<VideoReferenceAnalysisExecution>(
+        `/api/sales-videos/reference-analysis/v1/references/${referenceId}/latest`,
+      );
+      return data;
+    },
+  });
+}
+
+export function useRetryVideoReferenceAnalysis(referenceId?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await axios.post<VideoReferenceAnalysisExecution>(
+        `/api/sales-videos/reference-analysis/v1/references/${referenceId}/retry`,
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["sales-video-reference-analysis", referenceId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["sales-video-references"] });
     },
   });
 }

@@ -76,6 +76,20 @@ export const SALES_VIDEO_PROVIDER_OPTIONS: SalesVideoProviderOption[] = [
     creditsUrl: "https://dev.runwayml.com/",
   },
   {
+    key: "runway-act-two",
+    label: "Runway Act-Two",
+    providerName: "RUNWAY_ACT_TWO",
+    providerFamily: "EXTERNAL_VIDEO_MODULE",
+    recommendedUse:
+      "Performance facial e corporal original com personagem e gravação autorizadas; permanece em homologação.",
+    clipDurationSeconds: 10,
+    maxDirectDurationSeconds: 30,
+    supportsHeroVideo: true,
+    supportsSceneAssembly: true,
+    supportsOpenAiReferenceImage: false,
+    creditsUrl: "https://dev.runwayml.com/",
+  },
+  {
     key: "runway-seedance-2",
     label: "Seedance 2.0 via Runway",
     providerName: "RUNWAY_SEEDANCE_2",

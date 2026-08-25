@@ -1,0 +1,132 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "commercialDiagnosis",
+    "hook",
+    "narrativePattern",
+    "visualDirection",
+    "continuityStrategy",
+    "audioStrategy",
+    "captionStrategy",
+    "sequence",
+    "reusableLearnings",
+    "salesApplications",
+    "rightsRisks",
+    "productionBlueprint",
+    "operationalDecision"
+  ],
+  "properties": {
+    "commercialDiagnosis": {"type": "string", "minLength": 40},
+    "hook": {"type": "string", "minLength": 20},
+    "narrativePattern": {"type": "string", "minLength": 30},
+    "visualDirection": {"type": "string", "minLength": 30},
+    "continuityStrategy": {"type": "string", "minLength": 30},
+    "audioStrategy": {"type": "string", "minLength": 30},
+    "captionStrategy": {"type": "string", "minLength": 20},
+    "sequence": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 48,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["startSeconds", "endSeconds", "role", "visualAction", "audioFunction", "editing"],
+        "properties": {
+          "startSeconds": {"type": "number", "minimum": 0},
+          "endSeconds": {"type": "number", "exclusiveMinimum": 0},
+          "role": {"type": "string"},
+          "visualAction": {"type": "string"},
+          "audioFunction": {"type": "string"},
+          "editing": {"type": "string"}
+        }
+      }
+    },
+    "reusableLearnings": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 12,
+      "items": {"type": "string", "minLength": 15}
+    },
+    "salesApplications": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["campaign", "product", "organic"],
+      "properties": {
+        "campaign": {"type": "string", "minLength": 20},
+        "product": {"type": "string", "minLength": 20},
+        "organic": {"type": "string", "minLength": 20}
+      }
+    },
+    "rightsRisks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": {"type": "string", "minLength": 12}
+    },
+    "productionBlueprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "archetype",
+        "targetDurationSeconds",
+        "format",
+        "hook",
+        "story",
+        "scenePlan",
+        "characterBible",
+        "environmentBible",
+        "objectBible",
+        "visualStyleGuide",
+        "imageGenerationPlan",
+        "continuityRules",
+        "voiceoverPlan",
+        "soundtrackPlan",
+        "captionPlan",
+        "providerPlan",
+        "editingNotes",
+        "qualityGate",
+        "estimatedGeneratedClips",
+        "requiresLipSync",
+        "requiresLicensedMusic",
+        "apolloCapability",
+        "capabilityGaps"
+      ],
+      "properties": {
+        "archetype": {"type": "string", "minLength": 10},
+        "targetDurationSeconds": {"type": "integer", "minimum": 15, "maximum": 600},
+        "format": {"type": "string", "enum": ["VERTICAL_9_16", "HORIZONTAL_16_9", "SQUARE_1_1"]},
+        "hook": {"type": "string", "minLength": 15},
+        "story": {"type": "string", "minLength": 40},
+        "scenePlan": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 48,
+          "items": {"type": "string", "minLength": 20}
+        },
+        "characterBible": {"type": "string", "minLength": 20},
+        "environmentBible": {"type": "string", "minLength": 20},
+        "objectBible": {"type": "string", "minLength": 20},
+        "visualStyleGuide": {"type": "string", "minLength": 20},
+        "imageGenerationPlan": {"type": "string", "minLength": 20},
+        "continuityRules": {"type": "string", "minLength": 20},
+        "voiceoverPlan": {"type": "string", "minLength": 20},
+        "soundtrackPlan": {"type": "string", "minLength": 20},
+        "captionPlan": {"type": "string", "minLength": 20},
+        "providerPlan": {"type": "string", "minLength": 20},
+        "editingNotes": {"type": "string", "minLength": 20},
+        "qualityGate": {"type": "string", "minLength": 30},
+        "estimatedGeneratedClips": {"type": "integer", "minimum": 1, "maximum": 60},
+        "requiresLipSync": {"type": "boolean"},
+        "requiresLicensedMusic": {"type": "boolean"},
+        "apolloCapability": {"type": "string", "enum": ["CURRENT", "EXTEND_APOLLO", "NEW_AGENT"]},
+        "capabilityGaps": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {"type": "string"}
+        }
+      }
+    },
+    "operationalDecision": {"type": "string", "enum": ["APOLLO_READY", "NEEDS_PROVIDER_HOMOLOGATION", "BLOCKED_BY_RIGHTS"]}
+  }
+}

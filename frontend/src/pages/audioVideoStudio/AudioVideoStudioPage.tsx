@@ -19,7 +19,7 @@ import {
   Wand2,
 } from "lucide-react";
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   useCreateVideoProject,
   useUpdateVideoProject,
@@ -53,6 +53,7 @@ import {
   useVideoStoryboard,
 } from "../../api/salesVideo/useVideoStoryboard";
 import { useAsset } from "../../api/media/useAsset";
+import { useLatestVideoReferenceAnalysis } from "../../api/salesVideo/useVideoReferences";
 import { useTenantContext } from "../../utils/tenantContext";
 import type {
   VideoProject,
@@ -115,6 +116,12 @@ type StudioBriefing = {
   confirmedLearning: string;
   nextVersionRecommendation: string;
   providerPlan: string;
+  characterPerformanceType: "image" | "video";
+  characterPerformanceUri: string;
+  referencePerformanceUri: string;
+  referencePerformanceDurationSeconds: string;
+  performanceConsentEvidence: string;
+  performanceRightsEvidence: string;
   voiceoverPlan: string;
   soundtrackPlan: string;
   captionPlan: string;
@@ -583,7 +590,7 @@ const musaV7ScenePrompts = [
   "Cena 7 (3-4s): ela confere no espelho o resultado coerente, com sorriso discreto e composicao antes/depois compreensivel.",
   "Cena 8 (3-4s): mulher segura o celular, inicia o diagnostico sem UI legivel e encerra com gesto claro de proximo passo.",
 ];
-const MAX_CINEMATIC_SCENES = 12;
+const MAX_CINEMATIC_SCENES = 48;
 
 export function resolveStudioSceneRole(sceneIndex: number, sceneCount: number) {
   if (sceneIndex === 0) return "DOR";
@@ -628,6 +635,20 @@ export function buildStudioSceneMetadata(
       provider_name: provider.providerName,
       expected_clip_duration_seconds: provider.clipDurationSeconds,
     },
+    characterPerformance:
+      provider.providerName === "RUNWAY_ACT_TWO"
+        ? {
+            characterType: project.characterPerformanceType,
+            characterUri: project.characterPerformanceUri,
+            referencePerformanceUri: project.referencePerformanceUri,
+            referencePerformanceDurationSeconds:
+              project.referencePerformanceDurationSeconds,
+            consentEvidence: project.performanceConsentEvidence,
+            performanceRightsEvidence: project.performanceRightsEvidence,
+            bodyControl: true,
+            expressionIntensity: 3,
+          }
+        : undefined,
     image_to_video: {
       enabled: Boolean(sourceImage),
       source_image_provider: sourceImage ? "APPROVED_ASSET" : null,
@@ -636,6 +657,32 @@ export function buildStudioSceneMetadata(
       animation_provider: provider.providerName,
     },
   });
+}
+
+export function actTwoConfigurationIssue(project: VideoProject) {
+  if (
+    project.characterPerformanceType !== "image" &&
+    project.characterPerformanceType !== "video"
+  ) {
+    return "Selecione se a personagem autorizada e uma imagem ou um video.";
+  }
+  if (!project.characterPerformanceUri?.startsWith("https://")) {
+    return "Informe a URL HTTPS da personagem autorizada.";
+  }
+  if (!project.referencePerformanceUri?.startsWith("https://")) {
+    return "Informe a URL HTTPS da performance de referencia autorizada.";
+  }
+  const duration = project.referencePerformanceDurationSeconds;
+  if (!duration || duration < 3 || duration > 30) {
+    return "Informe a duracao medida da performance entre 3 e 30 segundos.";
+  }
+  if (!project.performanceConsentEvidence?.trim()) {
+    return "Registre a evidencia de consentimento da personagem.";
+  }
+  if (!project.performanceRightsEvidence?.trim()) {
+    return "Registre a evidencia dos direitos da performance.";
+  }
+  return "";
 }
 
 export function readStudioSceneOrder(
@@ -734,6 +781,12 @@ const defaultBriefing: StudioBriefing = {
   nextVersionRecommendation: "",
   providerPlan:
     "Comecar com roteiro e storyboard; depois testar narracao, cenas-chave e montagem em jobs auditaveis.",
+  characterPerformanceType: "image",
+  characterPerformanceUri: "",
+  referencePerformanceUri: "",
+  referencePerformanceDurationSeconds: "",
+  performanceConsentEvidence: "",
+  performanceRightsEvidence: "",
   voiceoverPlan:
     "Voz proxima, confiante e acolhedora, com ritmo medio e pausas curtas para reforcar pontos de virada.",
   soundtrackPlan:
@@ -803,6 +856,12 @@ const musaV7Briefing: StudioBriefing = {
   nextVersionRecommendation: "",
   providerPlan:
     "Luma Ray como principal para cenas editoriais e movimento; Kling como alternativa de realismo/custo; HeyGen apenas se a decisao mudar para apresentadora/avatar.",
+  characterPerformanceType: "image",
+  characterPerformanceUri: "",
+  referencePerformanceUri: "",
+  referencePerformanceDurationSeconds: "",
+  performanceConsentEvidence: "",
+  performanceRightsEvidence: "",
   voiceoverPlan:
     "Opcional. Se usar voz, pt-BR feminina, intima, baixa, segura e sem entusiasmo artificial. A peca precisa vender mesmo com audio desligado.",
   soundtrackPlan:
@@ -893,6 +952,15 @@ function buildBriefingFromProject(project: VideoProject): StudioBriefing {
     confirmedLearning: project.confirmedLearning || "",
     nextVersionRecommendation: project.nextVersionRecommendation || "",
     providerPlan: project.providerPlan || defaultBriefing.providerPlan,
+    characterPerformanceType:
+      project.characterPerformanceType ||
+      defaultBriefing.characterPerformanceType,
+    characterPerformanceUri: project.characterPerformanceUri || "",
+    referencePerformanceUri: project.referencePerformanceUri || "",
+    referencePerformanceDurationSeconds:
+      project.referencePerformanceDurationSeconds?.toString() || "",
+    performanceConsentEvidence: project.performanceConsentEvidence || "",
+    performanceRightsEvidence: project.performanceRightsEvidence || "",
     voiceoverPlan: project.voiceoverPlan || defaultBriefing.voiceoverPlan,
     soundtrackPlan: project.soundtrackPlan || defaultBriefing.soundtrackPlan,
     captionPlan: project.captionPlan || defaultBriefing.captionPlan,
@@ -957,6 +1025,9 @@ function durationValidationMessage(
 
 export default function AudioVideoStudioPage() {
   const tenantContext = useTenantContext();
+  const [searchParams] = useSearchParams();
+  const referenceId = searchParams.get("referenceId") ?? undefined;
+  const referenceAnalysis = useLatestVideoReferenceAnalysis(referenceId);
   const { projectId } = useParams<{ projectId: string }>();
   const parsedProjectId = projectId ? Number(projectId) : undefined;
   const editableProjectId =
@@ -1100,6 +1171,56 @@ export default function AudioVideoStudioPage() {
     setSaveFeedback("");
   };
 
+  const applyReferenceRecipe = () => {
+    const analysis = referenceAnalysis.data?.output;
+    if (!analysis) {
+      setSaveFeedback("A receita de Apolo ainda nao esta disponivel.");
+      return;
+    }
+    const blueprint = analysis.productionBlueprint;
+    const category =
+      blueprint.targetDurationSeconds <= 60
+        ? "COMMERCIAL_SHORT"
+        : blueprint.targetDurationSeconds >= 180
+          ? "LONG_FORM"
+          : "INSTITUTIONAL_CONTENT";
+    const sourceTitle = String(
+      referenceAnalysis.data?.input.title ?? "referencia",
+    );
+    setBriefing((current) => ({
+      ...current,
+      videoCategory: category,
+      productionMode: "REFERENCE_RECIPE_V1",
+      format: blueprint.format,
+      title: `${current.product || "Novo produto"} - receita ${sourceTitle}`,
+      story: blueprint.story,
+      commercialHypothesis: analysis.commercialDiagnosis,
+      persuasionFramework: analysis.narrativePattern,
+      characterBible: blueprint.characterBible,
+      environmentBible: blueprint.environmentBible,
+      objectBible: blueprint.objectBible,
+      visualStyleGuide: blueprint.visualStyleGuide,
+      imageGenerationPlan: blueprint.imageGenerationPlan,
+      continuityRules: blueprint.continuityRules,
+      scenePlan: blueprint.scenePlan.join("\n"),
+      targetDurationSeconds: String(blueprint.targetDurationSeconds),
+      providerPlan: blueprint.providerPlan,
+      voiceoverPlan: blueprint.voiceoverPlan,
+      soundtrackPlan: blueprint.soundtrackPlan,
+      captionPlan: blueprint.captionPlan,
+      editingNotes: blueprint.editingNotes,
+      qualityGate: [
+        blueprint.qualityGate,
+        "Bloqueios de direitos herdados da referencia:",
+        ...analysis.rightsRisks.map((risk) => `- ${risk}`),
+      ].join("\n"),
+      status: "READY_FOR_SCRIPT",
+    }));
+    setSaveFeedback(
+      `Receita #${referenceId} aplicada. Selecione o produto, ajuste a oferta e salve antes de gerar qualquer cena.`,
+    );
+  };
+
   const applyCharacterOption = (option: StudioCharacterOption) => {
     setBriefing((current) => ({
       ...current,
@@ -1183,6 +1304,14 @@ export default function AudioVideoStudioPage() {
     ctaText: briefing.cta,
     targetDurationSeconds: targetDurationSeconds ?? null,
     providerPlan: briefing.providerPlan,
+    characterPerformanceType: briefing.characterPerformanceType,
+    characterPerformanceUri: briefing.characterPerformanceUri,
+    referencePerformanceUri: briefing.referencePerformanceUri,
+    referencePerformanceDurationSeconds: parseOptionalNumber(
+      briefing.referencePerformanceDurationSeconds,
+    ),
+    performanceConsentEvidence: briefing.performanceConsentEvidence,
+    performanceRightsEvidence: briefing.performanceRightsEvidence,
     editingNotes: briefing.editingNotes,
     qualityGate: briefing.qualityGate,
     status: briefing.status || selectedProject?.status || "READY_FOR_SCRIPT",
@@ -1252,7 +1381,18 @@ export default function AudioVideoStudioPage() {
       );
       return;
     }
-    if (!parsedSourceImageAssetId || !sourceImageAssetQuery.data?.publicUrl) {
+    const usesActTwo = selectedProvider.providerName === "RUNWAY_ACT_TWO";
+    const actTwoIssue = usesActTwo
+      ? actTwoConfigurationIssue(selectedProject)
+      : "";
+    if (actTwoIssue) {
+      setSaveFeedback(actTwoIssue);
+      return;
+    }
+    if (
+      !usesActTwo &&
+      (!parsedSourceImageAssetId || !sourceImageAssetQuery.data?.publicUrl)
+    ) {
       setSaveFeedback(
         "Selecione uma imagem-base valida antes de gerar a cena com Kling ou Runway.",
       );
@@ -1271,10 +1411,12 @@ export default function AudioVideoStudioPage() {
           selectedProvider,
           selectedScenePrompts[sceneIndex],
           sceneIndex,
-          {
-            assetId: parsedSourceImageAssetId,
-            url: sourceImageAssetQuery.data.publicUrl,
-          },
+          usesActTwo
+            ? undefined
+            : {
+                assetId: parsedSourceImageAssetId!,
+                url: sourceImageAssetQuery.data!.publicUrl!,
+              },
           selectedScenePrompts.length,
         ),
       });
@@ -1381,6 +1523,42 @@ export default function AudioVideoStudioPage() {
         </article>
       ) : null}
 
+      {referenceId ? (
+        <section className="audio-video-studio-page__section">
+          <article className="audio-video-studio-page__project-card">
+            <span>Receita de video #{referenceId}</span>
+            {referenceAnalysis.isLoading ? (
+              <p>Carregando a análise de Apolo...</p>
+            ) : referenceAnalysis.data?.status === "COMPLETED" &&
+              referenceAnalysis.data.output ? (
+              <>
+                <strong>
+                  {referenceAnalysis.data.output.productionBlueprint.archetype}
+                </strong>
+                <p>
+                  A receita preenche narrativa, cenas, continuidade, audio,
+                  legenda, providers e gate. Produto, oferta e CTA permanecem
+                  sob controle deste projeto.
+                </p>
+                <button
+                  className="audio-video-studio-page__primary-action"
+                  type="button"
+                  onClick={applyReferenceRecipe}
+                >
+                  <Wand2 size={17} aria-hidden="true" />
+                  Aplicar receita ao projeto
+                </button>
+              </>
+            ) : (
+              <p>
+                A receita ainda não está concluída. Volte ao resultado da
+                análise para acompanhar ou reenfileirar.
+              </p>
+            )}
+          </article>
+        </section>
+      ) : null}
+
       <section className="audio-video-studio-page__intro">
         <div>
           <p className="audio-video-studio-page__eyebrow">
@@ -1462,9 +1640,10 @@ export default function AudioVideoStudioPage() {
       </section>
 
       <section className="audio-video-studio-page__workspace">
-        <form
+        <div
           id="audio-video-stage-estrategia"
           className="audio-video-studio-page__briefing"
+          role="form"
           aria-label="Blueprint operacional de video comercial"
         >
           <div className="audio-video-studio-page__stage-heading">
@@ -2386,6 +2565,84 @@ export default function AudioVideoStudioPage() {
                   );
                 })}
               </div>
+              {selectedProvider.providerName === "RUNWAY_ACT_TWO" ? (
+                <article className="audio-video-studio-page__project-card">
+                  <strong>Gate de performance autorizada</strong>
+                  <p>
+                    Estes dados ficam no projeto e bloqueiam a chamada paga se
+                    estiverem ausentes. Use somente personagem, voz, movimento e
+                    gravacao próprios ou licenciados.
+                  </p>
+                  <div className="audio-video-studio-page__briefing-grid">
+                    <label>
+                      Tipo da personagem *
+                      <select
+                        value={briefing.characterPerformanceType}
+                        onChange={updateBriefing("characterPerformanceType")}
+                        required
+                      >
+                        <option value="image">Imagem autorizada</option>
+                        <option value="video">Video autorizado</option>
+                      </select>
+                    </label>
+                    <label>
+                      URL HTTPS da personagem *
+                      <input
+                        type="url"
+                        value={briefing.characterPerformanceUri}
+                        onChange={updateBriefing("characterPerformanceUri")}
+                        placeholder="https://.../personagem-aprovada.png"
+                        required
+                      />
+                    </label>
+                    <label>
+                      URL HTTPS da performance *
+                      <input
+                        type="url"
+                        value={briefing.referencePerformanceUri}
+                        onChange={updateBriefing("referencePerformanceUri")}
+                        placeholder="https://.../performance-autorizada.mp4"
+                        required
+                      />
+                    </label>
+                    <label>
+                      Duracao medida da performance *
+                      <input
+                        type="number"
+                        min="3"
+                        max="30"
+                        value={briefing.referencePerformanceDurationSeconds}
+                        onChange={updateBriefing(
+                          "referencePerformanceDurationSeconds",
+                        )}
+                        required
+                      />
+                    </label>
+                    <label>
+                      Evidencia de consentimento *
+                      <input
+                        value={briefing.performanceConsentEvidence}
+                        onChange={updateBriefing("performanceConsentEvidence")}
+                        placeholder="Documento, asset ou aprovacao auditavel"
+                        required
+                      />
+                    </label>
+                    <label>
+                      Evidencia dos direitos da performance *
+                      <input
+                        value={briefing.performanceRightsEvidence}
+                        onChange={updateBriefing("performanceRightsEvidence")}
+                        placeholder="Contrato, licenca ou asset auditavel"
+                        required
+                      />
+                    </label>
+                  </div>
+                  <small>
+                    Act-Two permanece em homologacao. Salvar o projeto nao
+                    autoriza gasto, publicacao ou uso de pessoa reconhecivel.
+                  </small>
+                </article>
+              ) : null}
               {isEditingProject && selectedProject ? (
                 <div className="audio-video-studio-page__scene-production">
                   <div className="audio-video-studio-page__section-heading">
@@ -2395,22 +2652,24 @@ export default function AudioVideoStudioPage() {
                       cena reprovada pode ser refeita sem descartar as demais.
                     </p>
                   </div>
-                  <label>
-                    Imagem-base aprovada para animacao
-                    <input
-                      type="number"
-                      min="1"
-                      value={sourceImageAssetId}
-                      onChange={(event) =>
-                        setSourceImageAssetId(event.target.value)
-                      }
-                    />
-                    <small>
-                      {sourceImageAssetQuery.data?.publicUrl
-                        ? `Asset #${sourceImageAssetQuery.data.id} sera enviado como image_to_video.`
-                        : "Informe o ID de um asset de imagem aprovado no Marketing Hub."}
-                    </small>
-                  </label>
+                  {selectedProvider.providerName !== "RUNWAY_ACT_TWO" ? (
+                    <label>
+                      Imagem-base aprovada para animacao
+                      <input
+                        type="number"
+                        min="1"
+                        value={sourceImageAssetId}
+                        onChange={(event) =>
+                          setSourceImageAssetId(event.target.value)
+                        }
+                      />
+                      <small>
+                        {sourceImageAssetQuery.data?.publicUrl
+                          ? `Asset #${sourceImageAssetQuery.data.id} sera enviado como image_to_video.`
+                          : "Informe o ID de um asset de imagem aprovado no Marketing Hub."}
+                      </small>
+                    </label>
+                  ) : null}
                   <div className="audio-video-studio-page__scene-production-grid">
                     {selectedScenePrompts.map((prompt, index) => {
                       const jobs = studioSceneJobs.filter(
@@ -2761,7 +3020,7 @@ export default function AudioVideoStudioPage() {
           {saveFeedback ? (
             <p className="audio-video-studio-page__feedback">{saveFeedback}</p>
           ) : null}
-        </form>
+        </div>
       </section>
 
       {isEditingProject ? (

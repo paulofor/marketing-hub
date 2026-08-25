@@ -156,6 +156,24 @@ public class VideoProject {
   @Column(name = "provider_plan", columnDefinition = "LONGTEXT")
   private String providerPlan;
 
+  @Column(name = "character_performance_type", length = 16)
+  private String characterPerformanceType;
+
+  @Column(name = "character_performance_uri", length = 2048)
+  private String characterPerformanceUri;
+
+  @Column(name = "reference_performance_uri", length = 2048)
+  private String referencePerformanceUri;
+
+  @Column(name = "reference_performance_duration_seconds")
+  private Integer referencePerformanceDurationSeconds;
+
+  @Column(name = "performance_consent_evidence", length = 2048)
+  private String performanceConsentEvidence;
+
+  @Column(name = "performance_rights_evidence", length = 2048)
+  private String performanceRightsEvidence;
+
   @Column(name = "editing_notes", columnDefinition = "LONGTEXT")
   private String editingNotes;
 

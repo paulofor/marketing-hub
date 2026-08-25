@@ -423,6 +423,12 @@ export interface VideoProject {
   ctaText?: string | null;
   targetDurationSeconds?: number | null;
   providerPlan?: string | null;
+  characterPerformanceType?: "image" | "video" | null;
+  characterPerformanceUri?: string | null;
+  referencePerformanceUri?: string | null;
+  referencePerformanceDurationSeconds?: number | null;
+  performanceConsentEvidence?: string | null;
+  performanceRightsEvidence?: string | null;
   editingNotes?: string | null;
   qualityGate?: string | null;
   status: VideoProjectStatus;
@@ -474,6 +480,12 @@ export interface VideoProjectPayload {
   ctaText?: string;
   targetDurationSeconds?: number | null;
   providerPlan?: string;
+  characterPerformanceType?: "image" | "video";
+  characterPerformanceUri?: string;
+  referencePerformanceUri?: string;
+  referencePerformanceDurationSeconds?: number | null;
+  performanceConsentEvidence?: string;
+  performanceRightsEvidence?: string;
   editingNotes?: string;
   qualityGate?: string;
   status?: VideoProjectStatus;
@@ -532,4 +544,94 @@ export interface VideoReferenceUploadPayload {
   primaryLearningGoal: string;
   successEvidence?: string;
   createdBy?: string;
+}
+
+export type VideoReferenceAnalysisExecutionStatus =
+  "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED";
+
+export interface VideoReferenceProductionBlueprint {
+  archetype: string;
+  targetDurationSeconds: number;
+  format: "VERTICAL_9_16" | "HORIZONTAL_16_9" | "SQUARE_1_1";
+  hook: string;
+  story: string;
+  scenePlan: string[];
+  characterBible: string;
+  environmentBible: string;
+  objectBible: string;
+  visualStyleGuide: string;
+  imageGenerationPlan: string;
+  continuityRules: string;
+  voiceoverPlan: string;
+  soundtrackPlan: string;
+  captionPlan: string;
+  providerPlan: string;
+  editingNotes: string;
+  qualityGate: string;
+  estimatedGeneratedClips: number;
+  requiresLipSync: boolean;
+  requiresLicensedMusic: boolean;
+  apolloCapability: "CURRENT" | "EXTEND_APOLLO" | "NEW_AGENT";
+  capabilityGaps: string[];
+}
+
+export interface VideoReferenceAnalysisOutput {
+  commercialDiagnosis: string;
+  hook: string;
+  narrativePattern: string;
+  visualDirection: string;
+  continuityStrategy: string;
+  audioStrategy: string;
+  captionStrategy: string;
+  sequence: Array<{
+    startSeconds: number;
+    endSeconds: number;
+    role: string;
+    visualAction: string;
+    audioFunction: string;
+    editing: string;
+  }>;
+  reusableLearnings: string[];
+  salesApplications: {
+    campaign: string;
+    product: string;
+    organic: string;
+  };
+  rightsRisks: string[];
+  productionBlueprint: VideoReferenceProductionBlueprint;
+  operationalDecision:
+    "APOLLO_READY" | "NEEDS_PROVIDER_HOMOLOGATION" | "BLOCKED_BY_RIGHTS";
+}
+
+export interface VideoReferenceAnalysisExecution {
+  executionId: number;
+  referenceId: number;
+  attemptNumber: number;
+  status: VideoReferenceAnalysisExecutionStatus;
+  input: Record<string, unknown>;
+  output?: VideoReferenceAnalysisOutput | null;
+  artifacts?: {
+    sha256?: string;
+    bytes?: number;
+    durationSeconds?: number;
+    width?: number;
+    height?: number;
+    videoCodec?: string;
+    audioCodec?: string;
+    integratedLoudnessLufs?: number;
+    truePeakDbfs?: number;
+    sceneChangeCount?: number;
+    sceneChangeThreshold?: number;
+  } | null;
+  model?: string | null;
+  inputTokens?: number | null;
+  cachedInputTokens?: number | null;
+  outputTokens?: number | null;
+  costUsd?: number | null;
+  decision?: string | null;
+  error?: string | null;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }

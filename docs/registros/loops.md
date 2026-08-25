@@ -1850,3 +1850,20 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes de contrato protegem a faixa percentual, o frontend exige meta positiva em
   experimentos de vendas e o backend permite atualizar as metas sem substituir os demais dados do
   experimento.
+
+## LOOP-LIQUIBASE-DDL-BACKFILL-INTERROMPIDO — tabela órfã bloqueia todo deploy
+
+- **Data:** 2026-08-25.
+- **Sintoma:** os deploys dos PRs #5023 e #5024 reiniciavam o backend até o rollback, sempre com
+  `Table 'product_process_period' already exists`; o changeset não aparecia em `DATABASECHANGELOG`.
+- **Causa-raiz confirmada:** o mesmo changeset executava `CREATE TABLE` e o backfill. O MySQL 5.7
+  persistiu o DDL às 09:42, mas a execução foi interrompida antes de confirmar o backfill e registrar
+  o changeset. A tabela permaneceu vazia, e toda retomada repetia o `CREATE TABLE` não idempotente.
+- **Correção sistêmica:** criação e backfill ficam em changesets separados; o DDL aceita a retomada
+  da tabela já criada, o backfill valida colunas, índices e relacionamentos e ignora apenas períodos
+  abertos já existentes. O checksum da versão anterior é aceito explicitamente para ambientes que
+  concluíram o changeset original.
+- **Prevenção:** teste de contrato exige separação entre DDL e carga, junção idempotente no backfill
+  e os parâmetros obrigatórios `splitStatements` e `stripComments`; o workflow executa no MySQL 5.7
+  banco limpo, rollback e reaplicação, checksum legado, tabela órfã vazia e reaplicação sem
+  duplicidade.

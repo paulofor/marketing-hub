@@ -1,10 +1,15 @@
-name: Validação estática Liquibase
+name: Validação Liquibase MySQL 5.7
 
 on:
   pull_request:
     paths:
       - "backend/ads-service/src/main/resources/db/changelog/**"
+      - "backend/ads-service/src/test/resources/liquibase-mysql57/**"
+      - "backend/ads-service/Dockerfile.liquibase-mysql57"
+      - "backend/ads-service/Dockerfile.mysql57-product-process"
+      - "backend/ads-service/docker-compose.product-process-mysql57.yml"
       - "scripts/validate-liquibase-mysql57.sh"
+      - "scripts/validate-product-process-recovery-mysql57.sh"
       - ".github/workflows/liquibase-mysql57.yml"
   workflow_dispatch:
 
@@ -31,3 +36,17 @@ jobs:
         env:
           LIQUIBASE_VALIDATE_SCOPE: changed
         run: bash scripts/validate-liquibase-mysql57.sh
+
+  validate-product-process-recovery:
+    name: Validar retomada da migração de períodos
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Validar migração física no MySQL 5.7
+        env:
+          PRODUCT_PROCESS_COMPOSE_PROJECT: liquibase-product-process-${{ github.run_id }}
+        run: bash scripts/validate-product-process-recovery-mysql57.sh

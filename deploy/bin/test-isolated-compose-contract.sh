@@ -74,6 +74,14 @@ grep -q 'docker/build-push-action@v6' ../.github/workflows/deploy-containers.yml
 grep -q 'cache-to: type=registry' ../.github/workflows/deploy-containers.yml
 grep -q 'docker compose -f docker-compose.mcp.yml up' bin/apply-mcp-only.sh
 
+# Os testes de inspeção audiovisual exercitam os binários reais. O job isolado
+# deve instalar a mesma dependência que existe na imagem de produção.
+video_build_job="$(sed -n '/^  video-management-image:/,/^  deploy-app:/p' ../.github/workflows/deploy-containers.yml)"
+if ! grep -Fq 'sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg' <<<"${video_build_job}"; then
+  echo "[CONTRATO] O job de vídeo deve instalar ffmpeg antes de executar a suíte." >&2
+  exit 1
+fi
+
 # Alterar o publicador isolado exige reconstruir a imagem para que um deploy
 # recuperado não termine verde mantendo código antigo no container de vídeo.
 grep -Fq 'deploy/bin/apply-video-only.sh) video=true; video_deploy_descriptor=true ;;' \

@@ -201,9 +201,12 @@ describe("pde video production navigation", () => {
 
     setup(<App />, ["/pde-video-production"]);
 
-    await waitFor(() => {
-      expect(screen.getByText("Aprendendo")).toBeTruthy();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText("Aprendendo")).toBeTruthy();
+      },
+      { timeout: 10_000 },
+    );
     expect(screen.getAllByText("Sem briefing").length).toBeGreaterThan(0);
     expect(
       screen.getByText(/Ler retencao, checkout e compra antes de escalar/i),

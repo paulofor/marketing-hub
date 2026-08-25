@@ -181,6 +181,59 @@ describe("ProductValueChainPosition", () => {
     expect(screen.queryByText("Último subprocesso concluído")).toBeNull();
   });
 
+  it("shows the objective completion without inventing the next subprocess entry", () => {
+    render(
+      <BrowserRouter>
+        <ProductValueChainPosition
+          productName="Rigel"
+          position={{
+            productId: 9,
+            commercialStatus: "COMUNICACAO_E_JORNADA",
+            resolutionStatus: "IDENTIFIED",
+            resolutionMessage: "Posição identificada.",
+            processDefinitionId: 43,
+            processCode: "pde-communication-sales-journey",
+            processName: "Comunicação e jornada",
+            processCount: 6,
+            sequenceNumber: 4,
+            processMeasurements: [],
+            subprocessPosition: {
+              trackingStatus: "RECORDED",
+              subprocessCount: 2,
+              nextSubprocessDefinitionId: 18,
+              nextSubprocessCode: "landing-page-generation",
+              nextSubprocessName: "Geração de landing page",
+              measurements: [
+                {
+                  stageType: "SUBPROCESS",
+                  trackingStatus: "COMPLETED",
+                  processDefinitionId: 48,
+                  processCode: "creative-production-approval",
+                  processName: "Criação e aprovação de criativos",
+                  enteredAt: "2026-08-25T21:33:22Z",
+                  entryEvidence: "FIRST_SUBPROCESS_TASK",
+                  exitedAt: "2026-08-25T21:33:22Z",
+                  exitEvidence: "SUBPROCESS_OBJECTIVE_ACHIEVED",
+                  objectiveAchieved: true,
+                  elapsedDays: 0,
+                  knownEstimatedCostUsd: 0.577952,
+                  costCoverage: "COMPLETE",
+                  costedExecutionCount: 4,
+                  uncostedExecutionCount: 0,
+                },
+              ],
+            },
+          }}
+        />
+      </BrowserRouter>,
+    );
+
+    expect(screen.getByText("Último subprocesso concluído")).toBeTruthy();
+    expect(screen.getAllByText(/25\/08\/2026/).length).toBeGreaterThanOrEqual(
+      2,
+    );
+  });
+
   it("makes loading and integration failures explicit", () => {
     const { rerender } = render(
       <BrowserRouter>

@@ -24,6 +24,8 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -116,6 +118,21 @@ public class AgentService {
     List<Agent> agents = repository.findAllByOrderByNicknameAsc();
     agents.forEach(this::initialize);
     return agents;
+  }
+
+  /** Resolve em uma consulta a ultima alteracao contratual auditada de cada agente informado. */
+  @Transactional(readOnly = true)
+  public Map<Long, Instant> currentVersionChanges(List<Agent> agents) {
+    if (agents.isEmpty()) {
+      return Map.of();
+    }
+    List<Long> agentIds = agents.stream().map(Agent::getId).toList();
+    return versionRepository.findCurrentVersionChanges(agentIds).stream()
+        .collect(
+            Collectors.toUnmodifiableMap(
+                AgentVersionRepository.CurrentVersionChange::getAgentId,
+                AgentVersionRepository.CurrentVersionChange::getChangedAt,
+                (first, ignored) -> first));
   }
 
   /** Inicializa relacionamentos necessarios para leitura fora da transacao. */

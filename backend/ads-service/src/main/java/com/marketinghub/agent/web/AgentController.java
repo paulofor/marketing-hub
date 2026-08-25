@@ -1,5 +1,6 @@
 package com.marketinghub.agent.web;
 
+import com.marketinghub.agent.Agent;
 import com.marketinghub.agent.dto.AgentDto;
 import com.marketinghub.agent.dto.AgentMaturityDto;
 import com.marketinghub.agent.dto.SaveAgentRequest;
@@ -8,7 +9,9 @@ import com.marketinghub.agent.service.AgentMaturityService;
 import com.marketinghub.agent.service.AgentService;
 import com.marketinghub.agent.service.uploadportrait.AgentPortraitUploadResponse;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,25 +43,33 @@ public class AgentController {
   /** Cria um agente e sua primeira versao de contrato. */
   @PostMapping
   public AgentDto create(@RequestBody SaveAgentRequest request) {
-    return mapper.toDto(service.create(request));
+    return toDtoWithContractChange(service.create(request));
   }
 
   /** Atualiza um agente criando uma nova versao auditavel. */
   @PutMapping("/{id}")
   public AgentDto update(@PathVariable Long id, @RequestBody SaveAgentRequest request) {
-    return mapper.toDto(service.update(id, request));
+    return toDtoWithContractChange(service.update(id, request));
   }
 
   /** Lista todos os agentes cadastrados. */
   @GetMapping
   public List<AgentDto> list() {
-    return service.list().stream().map(mapper::toDto).toList();
+    List<Agent> agents = service.list();
+    Map<Long, Instant> changes = service.currentVersionChanges(agents);
+    return agents.stream().map(agent -> mapper.toDto(agent, changes.get(agent.getId()))).toList();
   }
 
   /** Recupera um agente pelo identificador. */
   @GetMapping("/{id}")
   public AgentDto get(@PathVariable Long id) {
-    return mapper.toDto(service.get(id));
+    return toDtoWithContractChange(service.get(id));
+  }
+
+  /** Combina o cadastro com a data imutavel da versao contratual atual. */
+  private AgentDto toDtoWithContractChange(Agent agent) {
+    Instant changedAt = service.currentVersionChanges(List.of(agent)).get(agent.getId());
+    return mapper.toDto(agent, changedAt);
   }
 
   /** Recebe a imagem mitológica usada para identificar visualmente um agente. */

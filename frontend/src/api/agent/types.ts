@@ -47,6 +47,7 @@ export interface Agent {
   internalFunctions: AgentItem[];
   createdAt?: string;
   updatedAt?: string;
+  lastContractChangeAt?: string;
 }
 
 export interface AgentPayload {

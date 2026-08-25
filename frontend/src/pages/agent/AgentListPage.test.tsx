@@ -16,6 +16,7 @@ vi.mock("../../api/agent/useAgents", () => ({
         nickname: "Dédalo",
         status: "TEST",
         currentVersion: 1,
+        lastContractChangeAt: "2026-08-20T10:00:00Z",
         executionMode: "EVENT_DRIVEN",
         themeId: 1,
         inputs: [],
@@ -186,7 +187,10 @@ vi.mock("../../api/agent/useAgentExecutorOperation", () => ({
 }));
 
 describe("AgentListPage", () => {
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
 
   it("exibe o apelido e preserva o nome formal no quadro de maturidade", () => {
     render(
@@ -204,6 +208,22 @@ describe("AgentListPage", () => {
     expect(
       within(maturitySection!).getByText("Agente Gerador de Landing"),
     ).toBeInTheDocument();
+  });
+
+  it("mostra a data auditavel e os dias sem alteracao do contrato do agente", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-25T12:00:00Z"));
+
+    render(
+      <MemoryRouter>
+        <AgentListPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText(/Última alteração:/)).toHaveTextContent(
+      "Última alteração: 20/08/2026",
+    );
+    expect(screen.getByText("5 dias sem alteração")).toBeInTheDocument();
   });
 
   it("distingue o health pronto do parecer canônico bloqueado de Atena", () => {

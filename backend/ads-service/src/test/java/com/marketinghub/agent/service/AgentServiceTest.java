@@ -16,6 +16,8 @@ import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agent.AgentVersionRepository;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.storage.AssetStorageService;
+import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockMultipartFile;
@@ -23,6 +25,31 @@ import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: validar a persistência e a auditoria do contrato operacional dos agentes. */
 class AgentServiceTest {
+
+  /** Usa a versao contratual atual sem confundir alteracoes operacionais do cadastro. */
+  @Test
+  void resolvesCurrentVersionChangeForAgentsInBatch() {
+    AgentVersionRepository versionRepository = mock(AgentVersionRepository.class);
+    AgentVersionRepository.CurrentVersionChange change =
+        mock(AgentVersionRepository.CurrentVersionChange.class);
+    Instant changedAt = Instant.parse("2026-08-12T16:36:24Z");
+    when(change.getAgentId()).thenReturn(8L);
+    when(change.getChangedAt()).thenReturn(changedAt);
+    when(versionRepository.findCurrentVersionChanges(List.of(8L))).thenReturn(List.of(change));
+    Agent agent = new Agent();
+    agent.setId(8L);
+    AgentService service =
+        new AgentService(
+            mock(AgentRepository.class),
+            mock(AgentThemeService.class),
+            versionRepository,
+            new ObjectMapper(),
+            mock(AssetRepository.class),
+            mock(AssetStorageService.class));
+
+    assertThat(service.currentVersionChanges(List.of(agent))).containsEntry(8L, changedAt);
+    verify(versionRepository).findCurrentVersionChanges(List.of(8L));
+  }
 
   /** Persiste uma imagem válida no storage oficial e no catálogo de assets. */
   @Test

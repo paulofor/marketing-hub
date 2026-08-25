@@ -19,9 +19,14 @@ require_contract() {
 }
 
 require_contract 'BACKEND_HEALTH_ATTEMPTS=${BACKEND_HEALTH_ATTEMPTS:-60}' 'janela de saúde independente para o backend'
+require_contract 'BACKEND_HEALTH_INTERVAL=${BACKEND_HEALTH_INTERVAL:-5}' 'sondagem frequente sem reduzir a janela de inicialização'
+require_contract 'BACKEND_MAX_RESTARTS=${BACKEND_MAX_RESTARTS:-2}' 'falha antecipada em ciclo de reinício'
+require_contract 'BACKEND_HEALTH_SUCCESSES_REQUIRED=${BACKEND_HEALTH_SUCCESSES_REQUIRED:-2}' 'confirmação de estabilidade antes do sucesso'
 require_contract 'preserve_current_image "${BACKEND_IMAGE}:latest" "${BACKEND_IMAGE}:rollback"' 'preservação da imagem backend anterior'
 require_contract 'rollback_app_stack || true' 'rollback quando a aplicação da nova versão falha'
-require_contract 'wait_http "backend restaurado"' 'validação de saúde após o rollback'
+require_contract 'wait_backend_container_http' 'validação do estado do container e da saúde HTTP'
+
+bash "$(dirname "$0")/test-backend-health-wait.sh"
 
 if ! grep -A4 '^concurrency:' "${WORKFLOW_FILE}" | grep -Fq 'cancel-in-progress: false'; then
   printf '[ARQUITETURA] workflow pode cancelar um deploy válido por causa de push posterior sem mudança operacional.\n' >&2

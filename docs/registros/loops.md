@@ -1873,6 +1873,11 @@ Use este checklist quando o problema estiver em algum loop acima:
   uniformizava artificialmente todas as tabelas em `unicode_ci` e mascarava a divergência. A
   comparação do backfill agora converte ambos os lados para `utf8mb4_unicode_ci`, e a homologação
   física preserva deliberadamente a mistura real de collations para impedir recorrência.
+- **Fechamento operacional em 2026-08-25:** o run `32876703058` ainda aguardou dez minutos mesmo
+  com o backend reiniciando por falha terminal do Liquibase. A espera de deploy passa a observar
+  estado, OOM e contador de reinícios do container, falhar no segundo reinício e exigir duas
+  respostas HTTP consecutivas antes de considerar a versão estável. Um teste simula reinício,
+  encerramento e inicialização lenta para manter o rollback seguro sem desperdiçar toda a janela.
 
 ## LOOP-AGENTE-REVISOR-DEPENDE-DE-SHELL-ANINHADO — parecer bloqueia evidência já verificável
 

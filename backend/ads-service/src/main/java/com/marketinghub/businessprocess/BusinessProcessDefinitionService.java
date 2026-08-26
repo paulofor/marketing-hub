@@ -348,6 +348,7 @@ public class BusinessProcessDefinitionService {
   private void synchronizeActivities(BusinessProcessDefinition process) {
     if (activityRepository == null) return;
     activityRepository.deleteByProcessDefinitionId(process.getId());
+    activityRepository.flush();
     JsonNode nodes = read(process.getDiagramJson()).path("nodes");
     for (JsonNode node : nodes) {
       if (!"TASK".equals(node.path("type").asText())) continue;

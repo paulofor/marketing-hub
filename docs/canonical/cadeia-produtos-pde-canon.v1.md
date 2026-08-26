@@ -182,13 +182,21 @@ não gravados como contador mutável.
 de compra, para a qual uma solução digital plausível pode gerar valor percebido.
 
 **Entrada mínima:** sinais de mercado, linguagem do público, conversas ou pedidos espontâneos,
-reclamações, buscas, concorrentes e alternativas existentes. Uma história individual inicia pesquisa,
+reclamações, buscas, concorrentes e alternativas existentes, além dos artigos vigentes em
+`pesquisas/gartner`, `pesquisas/ia-aplicada` e dos produtos Hotmart que o Marketing Hub tenha
+identificado com sinais de sucesso. Uma história individual ou inspiração isolada inicia pesquisa,
 mas não comprova sozinha uma oportunidade.
 
 **Trabalho essencial:**
 
 - identificar público e cena concreta da dor;
 - capturar e anonimizar a fala observada, separando desejo, dor, tentativa frustrada e inferências;
+- consultar novamente, em cada ciclo, todos os artigos disponíveis nas coleções vivas
+  `pesquisas/gartner` e `pesquisas/ia-aplicada`, sem congelar uma lista de arquivos;
+- consultar pelo contrato oficial do Marketing Hub os produtos Hotmart identificados com sinais de
+  sucesso e registrar padrões aproveitáveis sem tratar score, temperatura ou ranking como venda;
+- derivar hipóteses originais de mecanismo, formato e comunicação, preservando fonte, data, insight,
+  evidência de confirmação e limite contra cópia;
 - comprovar escala e recorrência por fontes independentes;
 - entender por que as soluções atuais não satisfazem;
 - mapear como pessoas pesquisam, comparam e pedem recomendação, incluindo consultas assistidas por IA
@@ -203,13 +211,16 @@ mas não comprova sozinha uma oportunidade.
   antecipar que kit, webapp ou qualquer outra implementação será a vencedora;
 - comparar de duas a três oportunidades antes de priorizar uma.
 
-**Saída final:** dossiê de oportunidade com evidências, público, dor raiz, lacuna, intenção de compra,
-perguntas prioritárias, sinais de confiança, ativos de distribuição, formatos digitais candidatos,
-risco principal e decisão `APROVAR`, `PESQUISAR MAIS` ou `REJEITAR`.
+**Saída final:** dossiê de oportunidade com matriz rastreável de inspirações e evidências, público,
+dor raiz, lacuna, intenção de compra, perguntas prioritárias, sinais de confiança, ativos de
+distribuição, formatos digitais candidatos, risco principal e decisão `APROVAR`, `PESQUISAR MAIS` ou
+`REJEITAR`.
 
 **Gate para avançar:** somente oportunidade `APROVADA`, sem evidência fabricada e com encaixe PDE.
 Pedido espontâneo ou conversa individual deve permanecer como `SINAL`, até ser confirmado por pelo
-menos dois caminhos independentes de recorrência, desatendimento e intenção de compra.
+menos dois caminhos independentes de recorrência, desatendimento e intenção de compra. Artigo de
+tendência ou produto Hotmart permanece como `INSPIRACAO` até essa confirmação e não pode aprovar a
+oportunidade sozinho.
 
 ## 2. Plano comercial e desenho da oferta PDE
 

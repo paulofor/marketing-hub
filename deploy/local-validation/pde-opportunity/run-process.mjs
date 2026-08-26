@@ -7,13 +7,22 @@ import {
   selectActiveResearch,
   validateResearchInput,
 } from "./contract.mjs";
+import {
+  attachLiveArticleInspirations,
+  loadLiveArticleInspirations,
+} from "./live-inspirations.mjs";
 
 const moduleDirectory = dirname(fileURLToPath(import.meta.url));
+const repositoryRoot = resolve(moduleDirectory, "../../..");
 const inputPath = process.argv[2];
 if (!inputPath) throw new Error("Informe o arquivo JSON de evidências.");
 
+const liveArticleInspirations = await loadLiveArticleInspirations(repositoryRoot);
 const research = selectActiveResearch(
-  JSON.parse(await readFile(resolve(inputPath), "utf8")),
+  attachLiveArticleInspirations(
+    JSON.parse(await readFile(resolve(inputPath), "utf8")),
+    liveArticleInspirations,
+  ),
 );
 validateResearchInput(research);
 const correlationId = String(research.cycleId).replace(/[^a-zA-Z0-9_-]/g, "_");
@@ -55,6 +64,7 @@ const report = {
   processCode: research.processCode,
   processVersion: research.processVersion,
   generatedAt: new Date().toISOString(),
+  inspirationAudit: research.inspirations,
   finalDecision,
   usage,
   cost,

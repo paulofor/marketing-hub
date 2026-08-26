@@ -79,6 +79,44 @@ class ProductSubprocessPositionResolverTest {
     assertThat(result.nextSubprocessName()).isEqualTo("Geração de landing page");
   }
 
+  /** Avança ao objetivo principal seguinte quando a landing já atingiu o gate persistido. */
+  @Test
+  void exposesCommercialIntegrationAfterApprovedLanding() {
+    Product product = Product.builder().id(9L).build();
+    BusinessProcessDefinition parent = parentProcess();
+    List<BusinessProcessDefinition> children = children();
+    CommercialPlan plan = CommercialPlan.builder().id(31L).build();
+    AgentTask task = new AgentTask();
+    task.setId(89L);
+    task.setProcessDefinition(children.get(1));
+    task.setProcessActivityId("commercial");
+    task.setProcessActivityName("Executar revisão comercial independente");
+    task.setStatus("COMPLETED");
+    task.setUpdatedAt(Instant.parse("2026-08-26T12:00:00Z"));
+    ProductStageMeasurementResolver measurements = mock(ProductStageMeasurementResolver.class);
+    ProductSubprocessPositionResolver completedResolver =
+        new ProductSubprocessPositionResolver(
+            processRepository, planRepository, taskRepository, new ObjectMapper(), measurements);
+    when(processRepository.findAllByParentProcessCodeAndStatusOrderByNameAscVersionNumberDesc(
+            parent.getProcessCode(), "PUBLISHED"))
+        .thenReturn(children);
+    when(planRepository.findByProductId(9L)).thenReturn(List.of(plan));
+    when(taskRepository.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
+            "commercial-plan:31@"))
+        .thenReturn(List.of(task));
+    when(measurements.objectiveAchieved(product, children.get(1))).thenReturn(true);
+    when(measurements.resolveSubprocessMeasurements(product, children, null, null))
+        .thenReturn(List.of());
+
+    var result = completedResolver.resolve(product, parent);
+
+    assertThat(result.trackingStatus()).isEqualTo("COMPLETED");
+    assertThat(result.currentSubprocessDefinitionId()).isNull();
+    assertThat(result.currentActivityName())
+        .isEqualTo("Integrar canal, checkout, acesso e eventos");
+    assertThat(result.nextSubprocessDefinitionId()).isNull();
+  }
+
   /** Não cria informação de subprocesso em processo que não possui composição especializada. */
   @Test
   void reportsNotApplicableForProcessWithoutSubprocesses() {
@@ -105,10 +143,12 @@ class ProductSubprocessPositionResolverTest {
           {"id":"contract","type":"TASK","label":"Congelar contrato da jornada"},
           {"id":"creatives","type":"TASK","label":"Criar peças","subprocessCode":"creative-production-approval"},
           {"id":"destination","type":"TASK","label":"Criar destino","subprocessCode":"landing-page-generation"},
+          {"id":"integration","type":"TASK","label":"Integrar canal, checkout, acesso e eventos"},
           {"id":"end","type":"END","label":"Fim"}
         ],"flows":[
           {"from":"start","to":"contract"},{"from":"contract","to":"creatives"},
-          {"from":"creatives","to":"destination"},{"from":"destination","to":"end"}
+          {"from":"creatives","to":"destination"},{"from":"destination","to":"integration"},
+          {"from":"integration","to":"end"}
         ]}
         """);
     return process;

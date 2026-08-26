@@ -143,6 +143,38 @@ class ProductStageMeasurementResolverTest {
     assertThat(result.exitEvidence()).isEqualTo("SUBPROCESS_OBJECTIVE_ACHIEVED");
   }
 
+  /** Encerra 4.2 somente com Quality Review, Psique e Têmis aprovando a mesma landing. */
+  @Test
+  void recognizesApprovedLandingBeforeCommercialIntegrationStarts() {
+    Product product = Product.builder().id(9L).build();
+    CommercialPlan plan = CommercialPlan.builder().id(4L).build();
+    BusinessProcessDefinition creative =
+        process(17L, "creative-production-approval", "communication");
+    BusinessProcessDefinition landing = process(18L, "landing-page-generation", "communication");
+    List<AgentTask> approvedTasks =
+        List.of(
+            approvedLandingTask(1L, landing, "html", "2026-08-26T10:00:00Z"),
+            approvedLandingTask(2L, landing, "customer", "2026-08-26T10:01:00Z"),
+            approvedLandingTask(3L, landing, "commercial", "2026-08-26T10:02:00Z"));
+    when(plans.findByProductId(9L)).thenReturn(List.of(plan));
+    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("commercial-plan:4@"))
+        .thenReturn(approvedTasks.reversed());
+    when(ledger.findByProductIdOrderByCreatedAtAsc(9L)).thenReturn(List.of());
+    when(ledger.findByCommercialPlanIdInOrderByCreatedAtAsc(List.of(4L))).thenReturn(List.of());
+
+    ProductStageMeasurementResponse result =
+        resolver
+            .resolveSubprocessMeasurements(product, List.of(creative, landing), null, 4)
+            .getFirst();
+
+    assertThat(result.sequenceLabel()).isEqualTo("4.2");
+    assertThat(result.trackingStatus()).isEqualTo("COMPLETED");
+    assertThat(result.objectiveAchieved()).isTrue();
+    assertThat(result.exitedAt()).isEqualTo(Instant.parse("2026-08-26T10:02:00Z"));
+    assertThat(result.exitEvidence()).isEqualTo("SUBPROCESS_OBJECTIVE_ACHIEVED");
+    assertThat(resolver.objectiveAchieved(product, landing)).isTrue();
+  }
+
   /** Não confunde atualização de tarefa bloqueada com objetivo do macroprocesso atingido. */
   @Test
   void keepsHistoricalProcessRecordedWithoutDownstreamEntryEvidence() {
@@ -191,6 +223,24 @@ class ProductStageMeasurementResolverTest {
         """
         {"creativePackageId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","assets":[{"url":"https://cdn.example/asset.png"}],"importedByHuman":true,"published":false,"externalMediaSpendUsd":0}
         """);
+    return task;
+  }
+
+  /** Monta uma aprovação funcional da mesma execução oficial de landing. */
+  private AgentTask approvedLandingTask(
+      Long id, BusinessProcessDefinition process, String activityId, String completedAt) {
+    AgentTask task = task(id, process, completedAt, "0.10000000", "COMPLETED");
+    task.setProcessActivityId(activityId);
+    task.setSourceReference("commercial-plan:4@v3:journey");
+    task.setDeliveredAt(Instant.parse(completedAt));
+    if ("html".equals(activityId)) {
+      task.setEvidenceJson(
+          """
+          {"approvalRecommendation":"APPROVE_FOR_PUBLICATION","landingHtml":"<html>Rigel</html>","checkoutUrl":"https://www.mercadopago.com.br/checkout"}
+          """);
+    } else {
+      task.setResultJson("{\"decision\":\"APPROVED\"}");
+    }
     return task;
   }
 

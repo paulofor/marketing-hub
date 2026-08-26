@@ -8,6 +8,23 @@
 >
 > Uso obrigatório recomendado: antes de corrigir problema em GeraLanding, Facebook Ads, Lead Portal, OpenAI/schema, pipelines administrativos ou pipeline de hipótese, verificar se a solicitação reabre algum loop listado aqui.
 
+## LOOP-GERALANDING-HOMOLOGACAO-FORA-DO-BPM — sucesso técnico não conclui o subprocesso
+
+- **Data:** 2026-08-26.
+- **Sintoma:** Rigel recebeu HTML do Dédalo e Quality Review 88/100, mas 4.2 continuou planejado e
+  o fluxo comercial permaneceu bloqueado mesmo com a execução persistida como `CONCLUIDO`.
+- **Causa-raiz:** o botão de homologação criava um ciclo técnico `cph-*` diretamente no
+  GeraLanding, fora das atividades oficiais de Dédalo, Psique e Têmis. O resumo tentava usar o
+  status técnico `CONCLUIDO` como se fosse o objetivo funcional completo.
+- **Correção sistêmica:** o comando da tela passa a abrir `html`, `customer` e `commercial` na
+  mesma execução do subprocesso publicado `landing-page-generation`. O backend mantém o ciclo
+  legado apenas como diagnóstico técnico e só conclui o objetivo com Quality Review, checkout
+  preservado e decisões `APPROVED` de Psique e Têmis; publicação e mídia permanecem em gate humano
+  separado.
+- **Prevenção:** testes de contrato exigem a criação idempotente das três atividades BPM, impedem
+  que uma aprovação técnica isolada avance 4.2 e comprovam a passagem para `Integrar canal,
+  checkout, acesso e eventos` somente após o objetivo persistido.
+
 ## LOOP-PDE-INTERFACE-SEGURA-COM-ROTA-LEGADA-INSEGURA — contrato contornado fora da tela
 
 - **Sintoma confirmado em 2026-08-23:** a jornada oficial MUSA v7 usava link mágico e respostas
@@ -160,6 +177,7 @@
 - Causa-raiz confirmada em 2026-08-22: consultas dirigidas extensas expulsavam as buscas científicas e comerciais do limite operacional; em seguida, o worker aceitava integralmente snapshots cujo filtro amplo havia coincidido com apenas um termo genérico.
 - Prevenção: reservar espaço do lote para pesquisa científica e comercial, retirar termos de público/canal da pontuação e exigir pelo menos dois termos específicos antes de anexar uma oferta ou anúncio. Como a cadeia aceita webapps e outros formatos, páginas comerciais públicas aderentes podem completar o conjunto comparável, deduplicadas por domínio e separadas de conteúdo editorial, arquivos públicos e agregadores. Evidência científica deve tratar do mecanismo causal da oportunidade; a palavra “proposta” em um artigo de projetos não valida um gerador de propostas comerciais. O gate continua contando fonte como evidência, nunca como venda.
 - Proteção: testes de contrato cobrem plano dirigido extenso e rejeição de oferta coincidente apenas por `WhatsApp`, público ou canal.
+- Recorrência fechada localmente em 2026-08-26: o endpoint oficial de ofertas do marketplace não conseguia fornecer nenhuma referência Hotmart porque o filtro SQL dinâmico concatenava o último parâmetro diretamente com `ORDER BY`, gerando `?ORDER BY` e HTTP 500. A montagem agora preserva a quebra de linha antes da ordenação, e o teste de persistência protege explicitamente o SQL produzido. O executor local da Descoberta v5 também exige as duas coleções vivas, pelo menos uma referência Hotmart e o marcador que impede tratar score ou temperatura como venda.
 
 ## LOOP-PRODUCT-AI-PAID-DELIVERY-CONTRACT-DRIFT — Entrega paga sem template ativo
 

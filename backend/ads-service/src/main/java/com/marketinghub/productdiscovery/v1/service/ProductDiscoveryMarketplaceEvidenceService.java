@@ -84,7 +84,7 @@ public class ProductDiscoveryMarketplaceEvidenceService {
                     java.util.Collections.nCopies(
                         terms.size(),
                         "CASE WHEN LOWER(CONCAT_WS(' ', product_name, title, hotmart_description)) LIKE ? THEN 1 ELSE 0 END"))
-                + ") >= ?";
+                + ") >= ?\n";
     List<Object> parameters = new ArrayList<>();
     parameters.add(source);
     terms.forEach(term -> parameters.add("%" + term + "%"));

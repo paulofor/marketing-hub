@@ -180,6 +180,29 @@ public class AgentTaskService {
         binding);
   }
 
+  /**
+   * Reutiliza a atividade humana já aberta para a mesma execução e impede delegações duplicadas.
+   */
+  @Transactional
+  public AgentTaskResponse createByHumanIfAbsent(CreateAgentTaskRequest request) {
+    String sourceReference = trimToNull(request.sourceReference());
+    if (sourceReference == null) {
+      throw new IllegalArgumentException("Tarefa idempotente exige referência de origem.");
+    }
+    return repository.findBySourceReferenceOrderByCreatedAtAscIdAsc(sourceReference).stream()
+        .filter(
+            task -> task.getAssignedAgent().getAgentKey().equals(request.assignedAgentKey().trim()))
+        .filter(
+            task ->
+                task.getProcessDefinition() != null
+                    && task.getProcessDefinition().getId().equals(request.processDefinitionId()))
+        .filter(task -> Objects.equals(task.getProcessActivityId(), request.processActivityId()))
+        .filter(task -> !"CANCELLED".equals(task.getStatus()))
+        .findFirst()
+        .map(this::response)
+        .orElseGet(() -> createByHuman(request));
+  }
+
   /** Importa uma execução já validada, preservando resultado, evidência e consumo reais. */
   @Transactional
   public AgentTaskResponse recordImportedCompletedTask(ImportedCompletedAgentTask importedTask) {

@@ -21,6 +21,7 @@ class ProductDiscoveryMarketplaceEvidenceServiceTest {
         "HOTMART", "gerador proposta comercial para prestadores de serviços no WhatsApp", 10);
 
     assertThat(jdbc.sql).contains(") >= ?");
+    assertThat(jdbc.sql).contains(") >= ?\nORDER BY collected_at DESC");
     assertThat(jdbc.parameters).containsExactly("HOTMART", "%gerador%", "%proposta%", 2, 250);
   }
 

@@ -29,6 +29,7 @@ describe("ProductValueChainPosition", () => {
             processMeasurements: [
               {
                 stageType: "PROCESS",
+                sequenceLabel: "4",
                 trackingStatus: "CURRENT",
                 processDefinitionId: 43,
                 processCode: "pde-communication-sales-journey",
@@ -48,16 +49,19 @@ describe("ProductValueChainPosition", () => {
               subprocessCount: 2,
               currentActivityName: "Criar e aprovar peças",
               currentSubprocessDefinitionId: 17,
+              currentSubprocessSequenceNumber: 1,
               currentSubprocessCode: "creative-production-approval",
               currentSubprocessName: "Criação e aprovação de criativos",
               currentSubprocessObjective: "Criativos aprovados e prontos.",
               nextSubprocessDefinitionId: 18,
+              nextSubprocessSequenceNumber: 2,
               nextSubprocessCode: "landing-page-generation",
               nextSubprocessName: "Geração de landing page",
               nextSubprocessObjective: "Landing aprovada para publicação.",
               measurements: [
                 {
                   stageType: "SUBPROCESS",
+                  sequenceLabel: "4.1",
                   trackingStatus: "CURRENT",
                   processDefinitionId: 17,
                   processCode: "creative-production-approval",
@@ -79,6 +83,9 @@ describe("ProductValueChainPosition", () => {
     );
 
     expect(screen.getByText("Etapa 4 de 6")).toBeTruthy();
+    expect(screen.getByLabelText("Etapa 4")).toBeTruthy();
+    expect(screen.getByLabelText("Etapa 4.1")).toBeTruthy();
+    expect(screen.getByLabelText("Etapa 4.2")).toBeTruthy();
     expect(
       screen.getByRole("link", { name: "Histórico da cadeia" }),
     ).toHaveAttribute("href", "/products/9/value-chain-history");
@@ -90,7 +97,9 @@ describe("ProductValueChainPosition", () => {
     expect(screen.getByText(/Criação e entrega de valor/i)).toBeTruthy();
     expect(screen.getByText("Subprocesso atual")).toBeTruthy();
     expect(
-      screen.getByRole("link", { name: "Criação e aprovação de criativos" }),
+      screen.getByRole("link", {
+        name: /Criação e aprovação de criativos/i,
+      }),
     ).toHaveAttribute("href", "/business-processes?processId=17");
     expect(screen.getByText("Próximo subprocesso")).toBeTruthy();
     expect(

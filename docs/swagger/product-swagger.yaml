@@ -742,6 +742,10 @@ components:
           type: integer
           format: int64
           nullable: true
+        currentSubprocessSequenceNumber:
+          type: integer
+          nullable: true
+          description: Posição do subprocesso atual dentro do processo pai.
         currentSubprocessCode:
           type: string
           nullable: true
@@ -755,6 +759,10 @@ components:
           type: integer
           format: int64
           nullable: true
+        nextSubprocessSequenceNumber:
+          type: integer
+          nullable: true
+          description: Posição do próximo subprocesso dentro do processo pai.
         nextSubprocessCode:
           type: string
           nullable: true
@@ -773,6 +781,7 @@ components:
       type: object
       required:
         - stageType
+        - sequenceLabel
         - trackingStatus
         - processDefinitionId
         - processCode
@@ -789,6 +798,9 @@ components:
           enum:
             - PROCESS
             - SUBPROCESS
+        sequenceLabel:
+          type: string
+          description: Numeração canônica hierárquica, como 2 para processo e 2.1 para subprocesso.
         trackingStatus:
           type: string
           enum:

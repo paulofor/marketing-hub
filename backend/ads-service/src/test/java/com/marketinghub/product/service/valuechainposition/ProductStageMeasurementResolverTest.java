@@ -72,6 +72,7 @@ class ProductStageMeasurementResolverTest {
     ProductStageMeasurementResponse result =
         resolver.resolveProcessMeasurements(product, List.of(item(process, 4)), process).getFirst();
 
+    assertThat(result.sequenceLabel()).isEqualTo("4");
     assertThat(result.enteredAt()).isEqualTo(Instant.parse("2026-08-20T12:00:00Z"));
     assertThat(result.entryEvidence()).isEqualTo("BACKFILLED_EXECUTION_HISTORY");
     assertThat(result.elapsedDays()).isEqualTo(5L);
@@ -97,15 +98,17 @@ class ProductStageMeasurementResolverTest {
     when(ledger.findByCommercialPlanIdInOrderByCreatedAtAsc(List.of(4L))).thenReturn(List.of());
 
     List<ProductStageMeasurementResponse> result =
-        resolver.resolveSubprocessMeasurements(product, List.of(creative, landing), landing);
+        resolver.resolveSubprocessMeasurements(product, List.of(creative, landing), landing, 4);
 
     assertThat(result).hasSize(2);
+    assertThat(result.getFirst().sequenceLabel()).isEqualTo("4.1");
     assertThat(result.getFirst().trackingStatus()).isEqualTo("COMPLETED");
     assertThat(result.getFirst().exitedAt()).isEqualTo(landingTask.getCreatedAt());
     assertThat(result.getFirst().exitEvidence()).isEqualTo("NEXT_SUBPROCESS_STARTED");
     assertThat(result.getFirst().objectiveAchieved()).isTrue();
     assertThat(result.getFirst().elapsedDays()).isEqualTo(2L);
     assertThat(result.get(1).trackingStatus()).isEqualTo("CURRENT");
+    assertThat(result.get(1).sequenceLabel()).isEqualTo("4.2");
     assertThat(result.get(1).elapsedDays()).isEqualTo(3L);
   }
 

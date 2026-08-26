@@ -164,7 +164,12 @@ export default function ProductValueChainHistoryPage() {
               <span>
                 <Workflow size={16} aria-hidden="true" /> Processo atual
               </span>
-              <strong>{position.processName}</strong>
+              <strong>
+                <span className="product-value-chain__stage-number">
+                  {position.sequenceNumber}
+                </span>
+                {position.processName}
+              </strong>
               <small>
                 {position.chainName} · cadeia v{position.chainVersion}
               </small>
@@ -225,6 +230,11 @@ export default function ProductValueChainHistoryPage() {
                     <div className="product-value-chain-history__item-heading">
                       <div>
                         <span className="product-value-chain-history__stage-type">
+                          {measurement.sequenceLabel ? (
+                            <span className="product-value-chain__stage-number">
+                              {measurement.sequenceLabel}
+                            </span>
+                          ) : null}
                           {measurement.stageType === "PROCESS"
                             ? "Processo"
                             : "Subprocesso"}

@@ -3,6 +3,7 @@ import axios from "axios";
 
 export type ProductStageMeasurement = {
   stageType: "PROCESS" | "SUBPROCESS";
+  sequenceLabel?: string | null;
   trackingStatus: "CURRENT" | "COMPLETED" | "RECORDED";
   processDefinitionId: number;
   processCode: string;
@@ -39,10 +40,12 @@ export type ProductValueChainPosition = {
     subprocessCount: number;
     currentActivityName?: string | null;
     currentSubprocessDefinitionId?: number | null;
+    currentSubprocessSequenceNumber?: number | null;
     currentSubprocessCode?: string | null;
     currentSubprocessName?: string | null;
     currentSubprocessObjective?: string | null;
     nextSubprocessDefinitionId?: number | null;
+    nextSubprocessSequenceNumber?: number | null;
     nextSubprocessCode?: string | null;
     nextSubprocessName?: string | null;
     nextSubprocessObjective?: string | null;

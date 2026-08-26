@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
   buildFinalDecision,
@@ -6,6 +8,40 @@ import {
   validateFunctionalResult,
   validateResearchInput,
 } from "./contract.mjs";
+import {
+  attachLiveArticleInspirations,
+  loadLiveArticleInspirations,
+} from "./live-inspirations.mjs";
+
+test("valida o ciclo v5 com coleções vivas e Hotmart sem inventar vendas", async () => {
+  const repositoryRoot = fileURLToPath(new URL("../../..", import.meta.url));
+  const input = JSON.parse(
+    await readFile(new URL("./inputs/LOCAL_QA-2026-08-26-v5.json", import.meta.url), "utf8"),
+  );
+  const inventory = await loadLiveArticleInspirations(
+    repositoryRoot,
+    new Date("2026-08-26T12:00:00Z"),
+  );
+  const research = selectActiveResearch(attachLiveArticleInspirations(input, inventory));
+
+  assert.doesNotThrow(() => validateResearchInput(research));
+
+  const withoutGartner = structuredClone(research);
+  withoutGartner.inspirations.articles = withoutGartner.inspirations.articles.filter(
+    (article) => article.origin !== "GARTNER",
+  );
+  assert.throws(
+    () => validateResearchInput(withoutGartner),
+    /coleção viva GARTNER/,
+  );
+
+  const fakeSale = structuredClone(research);
+  fakeSale.inspirations.hotmartProducts[0].tractionIsNotSale = false;
+  assert.throws(
+    () => validateResearchInput(fakeSale),
+    /não pode transformar score ou temperatura em venda/,
+  );
+});
 
 test("separa fontes históricas das oportunidades ativas", () => {
   const research = researchFixture();

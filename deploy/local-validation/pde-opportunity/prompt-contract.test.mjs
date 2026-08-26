@@ -24,6 +24,16 @@ test("Argos usa a contagem determinística sem promover relatos a ofertas", asyn
   assert.match(prompt, /auditFacts\.paidOfferCount/);
   assert.match(prompt, /não são novas ofertas\s+pagas/);
   assert.match(prompt, /COMMERCIAL_OFFER/);
+  assert.match(prompt, /executando Descoberta e priorização da\s+oportunidade PDE v5/);
+  assert.match(prompt, /são inspirações, não evidências de demanda/);
+  assert.match(prompt, /Temperatura, score, ranking e presença na Hotmart não são vendas/);
+});
+
+test("Dédalo usa padrões sem copiar nem pontuar inspiração", async () => {
+  const prompt = await readFile(new URL("./prompts/dedalo.md", import.meta.url), "utf8");
+
+  assert.match(prompt, /Não copie\s+produto, marca, promessa, texto, criativo ou estrutura proprietária/);
+  assert.match(prompt, /não aumenta score nem substitui evidência independente/);
 });
 
 test("Hermes não supera uma decisão de evidência não aprovada", async () => {

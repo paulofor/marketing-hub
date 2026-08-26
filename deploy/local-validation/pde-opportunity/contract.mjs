@@ -32,6 +32,7 @@ export function selectActiveResearch(research) {
 
 /** Valida as evidências antes de qualquer consumo de modelo. */
 export function validateResearchInput(research) {
+  if (research?.processVersion === 5) validateInspirationContract(research);
   const candidates = research?.candidates || [];
   if (candidates.length !== 3) {
     throw new Error("A pesquisa deve comparar exatamente três oportunidades.");
@@ -81,6 +82,59 @@ export function validateResearchInput(research) {
     );
     if (new Set(candidateOffers.map((source) => source.offerKey)).size < 3) {
       throw new Error(`${candidate.name} precisa de ao menos três ofertas pagas comparáveis.`);
+    }
+  }
+}
+
+/** Protege a consulta dinâmica e separa inspiração de evidência independente. */
+function validateInspirationContract(research) {
+  const inspirations = research?.inspirations || {};
+  const articles = inspirations.articles || [];
+  for (const origin of ["GARTNER", "IA_APLICADA"]) {
+    if (!articles.some((article) => article.origin === origin)) {
+      throw new Error(`A Descoberta v5 precisa consultar a coleção viva ${origin}.`);
+    }
+  }
+  if ((inspirations.hotmartProducts || []).length === 0) {
+    throw new Error("A Descoberta v5 precisa registrar a consulta aos produtos Hotmart.");
+  }
+  for (const product of inspirations.hotmartProducts || []) {
+    if (product.tractionIsNotSale !== true) {
+      throw new Error("Produto Hotmart não pode transformar score ou temperatura em venda.");
+    }
+  }
+
+  const inspirationIds = new Set([
+    ...articles.map((article) => article.id),
+    ...(inspirations.hotmartProducts || []).map((product) => product.id),
+  ]);
+  const sourceById = new Map((research.sources || []).map((source) => [source.id, source]));
+  for (const candidate of research.candidates || []) {
+    const usages = (inspirations.usages || []).filter(
+      (usage) => usage.candidateName === candidate.name,
+    );
+    if (usages.length < 2) {
+      throw new Error(`${candidate.name} precisa registrar ao menos duas inspirações rastreáveis.`);
+    }
+    for (const usage of usages) {
+      if (!inspirationIds.has(usage.inspirationId)) {
+        throw new Error(`Inspiração inexistente em ${candidate.name}: ${usage.inspirationId}.`);
+      }
+      if (!usage.originalValueHypothesis?.trim() || !usage.copyBoundary?.trim()) {
+        throw new Error(`${candidate.name} possui inspiração sem hipótese original ou limite de cópia.`);
+      }
+      const confirmations = (usage.confirmingSourceIds || []).map((sourceId) =>
+        sourceById.get(sourceId),
+      );
+      if (
+        confirmations.length < 2 ||
+        confirmations.some((source) => !source || source.candidateName !== candidate.name) ||
+        new Set(confirmations.map((source) => source.pathway)).size < 2
+      ) {
+        throw new Error(
+          `${candidate.name} precisa confirmar ou descartar cada inspiração por duas vias independentes.`,
+        );
+      }
     }
   }
 }

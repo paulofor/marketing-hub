@@ -15,6 +15,18 @@ Regras:
 - quando o ciclo declarar Instagram e B2C, compare somente consumidor final, cena pessoal concreta,
   desejo reconhecivel, microvalor demonstravel no celular em ate dez minutos e gancho honesto para
   Reel; bloqueie B2B disfarcado, operacao empresarial e curso generico;
-- nesse recorte, exija evidencia de canal em anuncio Meta ou presenca publica aderente ao Instagram e
-  preserve a jornada atribuivel de impressao, clique, inicio, momento de valor e checkout;
+- nesse recorte, exija cobertura atual e aderente da Biblioteca Meta especificamente na plataforma
+  Instagram; presenca publica generica nao substitui essa medicao e indisponibilidade deve manter a
+  oportunidade em `RESEARCH_MORE`;
+- preserve status da fonte, modo de coleta, quantidade de anuncios ativos, anunciantes, data da
+  ultima observacao e a jornada atribuivel de impressao, clique, inicio, momento de valor e checkout;
 - preserve evidencias e riscos para revisao humana.
+- no recorte B2C/Instagram, uma pesquisa favoravel abre a Validacao do Momento de Compra, mas nao
+  aprova a priorizacao final: fontes comerciais devem ser atuais e nominais, e o prototipo privado
+  ainda precisa de duas leituras consistentes de inicio, microvalor, uso do resultado pronto sem
+  montagem, preferencia sobre o gratuito e checkout, sem bloqueio de Psique ou Temis;
+- nesse recorte, cada oportunidade deve ligar afeto e pertencimento, reconhecimento ou alivio de
+  esforco a duas fontes independentes e devolver um resultado utilizavel sem prompt, montagem ou
+  conhecimento de IA pelo consumidor;
+- nunca invente eventos do prototipo, trate checkout de teste como venda ou use score para contornar
+  esse gate.

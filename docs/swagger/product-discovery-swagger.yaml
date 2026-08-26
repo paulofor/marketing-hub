@@ -9,7 +9,7 @@ paths:
       tags: [Product Discovery]
       summary: Reserva uma execução nova ou recupera lease expirado
       responses:
-        '200':
+        "200":
           description: Lista com no máximo uma execução e seu lease exclusivo
           content:
             application/json:
@@ -17,7 +17,7 @@ paths:
                 type: array
                 maxItems: 1
                 items:
-                  $ref: '#/components/schemas/ProductDiscoveryPendingExecution'
+                  $ref: "#/components/schemas/ProductDiscoveryPendingExecution"
   /api/product-discovery/v1/cycles/{cycleId}/research-plan:
     get:
       tags: [Product Discovery]
@@ -28,7 +28,7 @@ paths:
           required: true
           schema: { type: integer, format: int64 }
       responses:
-        '200':
+        "200":
           description: Plano persistido sem credenciais dos marketplaces
   /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/{cycleId}/plan:
     post:
@@ -52,10 +52,62 @@ paths:
                 rawResponse: { type: string }
                 model: { type: string }
       responses:
-        '200':
+        "200":
           description: Plano auditado
-        '409':
+        "409":
           description: Lease expirado ou substituído
+  /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/{cycleId}/meta-ad-evidence:
+    post:
+      tags: [Product Discovery]
+      summary: Solicita e consulta a cobertura atual da categoria na Meta Ads Library
+      description: Cria ou reutiliza uma investigação canônica sem expor a credencial Meta ao Argos. Anúncios são sinais de investimento, não vendas comprovadas.
+      parameters:
+        - in: path
+          name: cycleId
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductDiscoveryMetaAdEvidenceRequest"
+      responses:
+        "200":
+          description: Cobertura auditável da categoria no Instagram
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDiscoveryMetaAdEvidenceList"
+        "400":
+          description: País, plataforma ou limite inválido
+        "409":
+          description: Lease expirado ou substituído
+  /api/internal/product-discovery/productdiscovery/v1/meta-ad-evidence:
+    get:
+      tags: [Product Discovery]
+      summary: Consulta evidências Meta já persistidas sem iniciar coleta
+      parameters:
+        - in: query
+          name: query
+          required: true
+          schema: { type: string }
+        - in: query
+          name: country
+          schema: { type: string, default: BR, pattern: "^[A-Za-z]{2}$" }
+        - in: query
+          name: publisherPlatform
+          schema: { type: string, default: INSTAGRAM, enum: [INSTAGRAM] }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 50, default: 25 }
+      responses:
+        "200":
+          description: Evidências persistidas e métricas de cobertura
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDiscoveryMetaAdEvidenceList"
   /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/{cycleId}/complete:
     post:
       tags: [Product Discovery]
@@ -66,8 +118,8 @@ paths:
           required: true
           schema: { type: integer, format: int64 }
       responses:
-        '200': { description: Pesquisa concluída }
-        '409': { description: Lease expirado ou substituído }
+        "200": { description: Pesquisa concluída }
+        "409": { description: Lease expirado ou substituído }
   /api/internal/product-discovery/productdiscovery/v1/research/stage-executions/{cycleId}/fail:
     post:
       tags: [Product Discovery]
@@ -78,8 +130,8 @@ paths:
           required: true
           schema: { type: integer, format: int64 }
       responses:
-        '200': { description: Falha auditada }
-        '409': { description: Lease expirado ou substituído }
+        "200": { description: Falha auditada }
+        "409": { description: Lease expirado ou substituído }
   /api/product-discovery/v1/maturity-ranking:
     get:
       tags:
@@ -149,6 +201,81 @@ paths:
                 $ref: "#/components/schemas/ProductDiscoveryLegacyCleanup"
 components:
   schemas:
+    ProductDiscoveryMetaAdEvidenceRequest:
+      type: object
+      required: [executionLeaseId, query]
+      properties:
+        executionLeaseId: { type: string }
+        query: { type: string }
+        country: { type: string, default: BR, pattern: "^[A-Za-z]{2}$" }
+        publisherPlatform:
+          { type: string, default: INSTAGRAM, enum: [INSTAGRAM] }
+        limit: { type: integer, minimum: 1, maximum: 50, default: 25 }
+    ProductDiscoveryMetaAdEvidenceList:
+      type: object
+      required:
+        - query
+        - country
+        - publisherPlatform
+        - sourceStatus
+        - collectionMode
+        - adsObserved
+        - activeAds
+        - advertisersObserved
+        - interpretation
+        - items
+      properties:
+        cycleId: { type: integer, format: int64, nullable: true }
+        query: { type: string }
+        country: { type: string }
+        publisherPlatform: { type: string, enum: [INSTAGRAM] }
+        sourceStatus:
+          type: string
+          enum:
+            - OBSERVED
+            - STALE
+            - NO_ACTIVE_ADS
+            - NOT_REQUESTED
+            - NO_RELEVANT_PLATFORM_EVIDENCE
+            - AWAITING_OFFICIAL_COLLECTION
+            - AWAITING_SUPERVISED_OBSERVATION
+        collectionMode:
+          { type: string, enum: [PERSISTED_ONLY, OFFICIAL_API, SUPERVISED] }
+        investigationId: { type: integer, format: int64, nullable: true }
+        searchUrl: { type: string, format: uri, nullable: true }
+        adsObserved: { type: integer, minimum: 0 }
+        activeAds: { type: integer, minimum: 0 }
+        advertisersObserved: { type: integer, minimum: 0 }
+        latestObservationAt: { type: string, format: date-time, nullable: true }
+        interpretation: { type: string }
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductDiscoveryMetaAdEvidence"
+    ProductDiscoveryMetaAdEvidence:
+      type: object
+      properties:
+        metaAdId: { type: string }
+        advertiserName: { type: string, nullable: true }
+        adTexts:
+          type: array
+          items: { type: string }
+        publisherPlatforms:
+          type: array
+          items: { type: string }
+        formatTypes:
+          type: array
+          items: { type: string }
+        destinationUrl: { type: string, nullable: true }
+        snapshotUrl: { type: string, nullable: true }
+        active: { type: boolean }
+        commercialSignal: { type: boolean }
+        observations: { type: integer, minimum: 1 }
+        longevityDays: { type: integer, minimum: 0 }
+        sustainedInvestmentSignal: { type: boolean }
+        evidenceConfidence: { type: string, enum: [LOW, MEDIUM, HIGH] }
+        firstObservedAt: { type: string, format: date-time }
+        lastObservedAt: { type: string, format: date-time }
     ProductDiscoveryPendingExecution:
       type: object
       required: [cycleId, executionLeaseId, executionAttempt]

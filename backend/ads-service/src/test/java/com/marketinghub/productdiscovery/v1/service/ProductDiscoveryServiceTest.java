@@ -124,6 +124,222 @@ class ProductDiscoveryServiceTest {
         .hasMessageContaining("10 ofertas reais comparaveis");
   }
 
+  /** Deve impedir que o worker aprove B2C no Instagram antes das duas leituras privadas. */
+  @Test
+  void blocksInstagramB2cApprovalWithoutPurchaseMomentReadings() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(24L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-24");
+    cycle.setAcquisitionChannel("Instagram");
+    cycle.setCommercialConstraints("B2C e mobile");
+    when(cycleRepository.findById(24L)).thenReturn(Optional.of(cycle));
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService);
+    ProductDiscoveryOpportunityResultRequest opportunity =
+        new ProductDiscoveryOpportunityResultRequest(
+            "Ensaio profissional",
+            "Pessoa física com entrevista marcada",
+            "Receio de travar na entrevista",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "{\"purchaseMomentGate\":{\"required\":true,\"sourceQualityPassed\":true,\"finalPrioritizationEligible\":false}}",
+            new BigDecimal("83"),
+            ProductDiscoveryOpportunityDecision.APPROVE);
+
+    assertThatThrownBy(
+            () ->
+                service.complete(
+                    24L,
+                    new ProductDiscoveryResultRequest(
+                        "lease-24", "Aprovar candidata", List.of(opportunity))))
+        .hasMessageContaining("duas leituras válidas do Momento de Compra");
+  }
+
+  /** Deve rejeitar booleanos de aprovação quando as leituras auditáveis não foram enviadas. */
+  @Test
+  void blocksPurchaseMomentBooleanClaimWithoutAuditableReadings() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(25L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-25");
+    cycle.setAcquisitionChannel("Instagram");
+    cycle.setCommercialConstraints("B2C e mobile");
+    when(cycleRepository.findById(25L)).thenReturn(Optional.of(cycle));
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService);
+    ProductDiscoveryOpportunityResultRequest opportunity =
+        new ProductDiscoveryOpportunityResultRequest(
+            "Ensaio profissional",
+            "Pessoa física com entrevista marcada",
+            "Receio de travar na entrevista",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            """
+            {"purchaseMomentGate":{"required":true,"status":"PASS","sourceQualityPassed":true,"finalPrioritizationEligible":true,"minimumIndependentReadings":2,"sourceQuality":{"passed":true,"evaluatedAt":"2026-08-26T10:00:00Z","maxAgeDays":30,"reasons":[]},"eligibleCandidateNames":["Ensaio profissional"],"candidates":[]}}
+            """,
+            new BigDecimal("83"),
+            ProductDiscoveryOpportunityDecision.APPROVE);
+
+    assertThatThrownBy(
+            () ->
+                service.complete(
+                    25L,
+                    new ProductDiscoveryResultRequest(
+                        "lease-25", "Aprovar candidata", List.of(opportunity))))
+        .hasMessageContaining("duas leituras válidas do Momento de Compra");
+  }
+
+  /** Deve aceitar a aprovação somente quando o backend recalcula duas leituras privadas válidas. */
+  @Test
+  void acceptsInstagramB2cApprovalWithCanonicalPurchaseMomentGate() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(26L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-26");
+    cycle.setAcquisitionChannel("Instagram");
+    cycle.setCommercialConstraints("B2C e mobile");
+    when(cycleRepository.findById(26L)).thenReturn(Optional.of(cycle));
+    when(cycleRepository.save(cycle)).thenReturn(cycle);
+    when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(26L)).thenReturn(List.of());
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService);
+    ProductDiscoveryOpportunityResultRequest opportunity =
+        new ProductDiscoveryOpportunityResultRequest(
+            "Ensaio profissional",
+            "Pessoa física com entrevista marcada",
+            "Receio de travar na entrevista",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            """
+            {
+              "purchaseMomentGate": {
+                "required": true,
+                "status": "PASS",
+                "sourceQualityPassed": true,
+                "finalPrioritizationEligible": true,
+                "minimumIndependentReadings": 2,
+                "sourceQuality": {
+                  "passed": true,
+                  "evaluatedAt": "2026-08-26T10:00:00Z",
+                  "maxAgeDays": 30,
+                  "reasons": []
+                },
+                "successCriteria": {
+                  "declaredAt": "2026-08-25T08:00:00Z",
+                  "minimumEligibleParticipantsPerReading": 5,
+                  "minimumExperienceStartRate": 0.7,
+                  "minimumValueMomentRate": 0.6,
+                  "minimumReadyResultUseRate": 0.6,
+                  "minimumPrototypePreferenceRate": 0.6,
+                  "minimumCheckoutStartRate": 0.2
+                },
+                "eligibleCandidateNames": ["Ensaio profissional"],
+                "candidates": [{
+                  "candidateName": "Ensaio profissional",
+                  "status": "PASS",
+                  "eligibleForFinalPrioritization": true,
+                  "scene": {
+                    "trigger": "Entrevista marcada",
+                    "deadline": "Sete dias",
+                    "costOfError": "Perda de renda",
+                    "budgetEvidence": "Compara simuladores pagos",
+                    "failedAttempt": "Ensaio sem feedback",
+                    "currentPaidBehavior": "Compra preparação profissional"
+                  },
+                  "freeAlternative": {
+                    "name": "Ensaio sozinho com ChatGPT",
+                    "prototypeAdvantage": "Compara duas respostas faladas"
+                  },
+                  "humanValueDelivery": {
+                    "territories": ["RECOGNITION", "EFFORT_RELIEF"],
+                    "desiredTransformation": "Demonstrar a própria capacidade com menos esforço",
+                    "evidenceSourceIds": ["study-1", "community-1"],
+                    "evidencePathways": ["STRUCTURED_TRAINING", "CURRENT_LANGUAGE"],
+                    "readyMadeOutcome": "Diagnóstico visual pronto para novo ensaio",
+                    "minimumCustomerInput": "Vaga, pergunta e gravação curta",
+                    "requiresPromptEngineering": false,
+                    "requiresManualAssembly": false,
+                    "usableWithoutAiKnowledge": true,
+                    "customerStepsToValue": 3,
+                    "timeToUsableResultMinutes": 8,
+                    "automationBoundary": "A pessoa revisa e nenhuma experiência é inventada"
+                  },
+                  "prototype": {
+                    "prototypeId": "PRIVATE-1",
+                    "private": true,
+                    "published": false,
+                    "paymentEnabled": false,
+                    "mediaSpend": 0,
+                    "testMarker": "PRIVATE_PROTOTYPE"
+                  },
+                  "readings": [
+                    {
+                      "readingId": "R1",
+                      "observedAt": "2026-08-25T12:00:00Z",
+                      "eligibleParticipants": 5,
+                      "experienceStarted": 5,
+                      "valueMoments": 4,
+                      "readyResultsUsedWithoutAssembly": 4,
+                      "prototypePreferredOverFree": 4,
+                      "checkoutStarted": 2,
+                      "psiqueDecision": "APPROVE",
+                      "temisDecision": "APPROVE",
+                      "eventSource": "FIRST_PARTY_EVENTS",
+                      "testMarker": "PRIVATE_PROTOTYPE",
+                      "passed": true
+                    },
+                    {
+                      "readingId": "R2",
+                      "observedAt": "2026-08-26T12:00:00Z",
+                      "eligibleParticipants": 5,
+                      "experienceStarted": 4,
+                      "valueMoments": 3,
+                      "readyResultsUsedWithoutAssembly": 3,
+                      "prototypePreferredOverFree": 4,
+                      "checkoutStarted": 1,
+                      "psiqueDecision": "APPROVE",
+                      "temisDecision": "APPROVE",
+                      "eventSource": "FIRST_PARTY_EVENTS",
+                      "testMarker": "PRIVATE_PROTOTYPE",
+                      "passed": true
+                    }
+                  ]
+                }]
+              }
+            }
+            """,
+            new BigDecimal("83"),
+            ProductDiscoveryOpportunityDecision.APPROVE);
+
+    ProductDiscoveryCycleDetailResponse response =
+        service.complete(
+            26L,
+            new ProductDiscoveryResultRequest(
+                "lease-26", "Aprovar candidata", List.of(opportunity)));
+
+    assertThat(response.cycle().status()).isEqualTo(ProductDiscoveryCycleStatus.COMPLETED);
+    verify(opportunityRepository).save(any(ProductDiscoveryOpportunity.class));
+  }
+
   /** Deve recuperar ciclo abandonado com novo lease e tentativa auditável. */
   @Test
   void recoversExpiredResearchExecution() {
@@ -232,7 +448,8 @@ class ProductDiscoveryServiceTest {
     cycle.setStatus(ProductDiscoveryCycleStatus.COMPLETED);
     ProductDiscoveryOpportunity opportunity = new ProductDiscoveryOpportunity();
     opportunity.setEvidenceJson(
-        "[{\"snippet\":\"Busca brave não retornou resultados estruturados suficientes; pesquisar mais.\"}]");
+        "[{\"snippet\":\"Busca brave não retornou resultados estruturados suficientes; pesquisar"
+            + " mais.\"}]");
     when(cycleRepository.findTop50ByOrderByUpdatedAtDesc()).thenReturn(List.of(cycle));
     when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(17L))
         .thenReturn(List.of(opportunity));
@@ -257,7 +474,8 @@ class ProductDiscoveryServiceTest {
     cycle.setStatus(ProductDiscoveryCycleStatus.COMPLETED);
     ProductDiscoveryOpportunity opportunity = new ProductDiscoveryOpportunity();
     opportunity.setEvidenceJson(
-        "[{\"snippet\":\"Busca pública não retornou tópicos estruturados suficientes; pesquisar mais.\"}]");
+        "[{\"snippet\":\"Busca pública não retornou tópicos estruturados suficientes; pesquisar"
+            + " mais.\"}]");
     when(cycleRepository.findTop50ByOrderByUpdatedAtDesc()).thenReturn(List.of(cycle));
     when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(1L))
         .thenReturn(List.of(opportunity));

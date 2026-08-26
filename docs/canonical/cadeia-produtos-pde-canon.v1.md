@@ -198,6 +198,20 @@ mas não comprova sozinha uma oportunidade.
 - quando o canal informado for Instagram, comparar primeiro oportunidades B2C com cena pessoal,
   desejo reconhecível, gancho nativo para Reel/anúncio, microvalor mobile demonstrável e jornada
   atribuível até o checkout, sem aceitar B2B disfarçado nem curso genérico como produto;
+- pesquisar afeto e pertencimento, reconhecimento e alivio de esforco como territorios prioritarios,
+  exigindo duas evidencias independentes para o territorio usado por cada candidata;
+- exigir entrega pronta e utilizavel com entrada minima, sem prompting, montagem manual ou
+  conhecimento de IA pelo cliente, preservando controle humano e limites de seguranca;
+- consultar em cada ciclo a coleção viva `pesquisas/momentos-de-compra-b2c` e registrar como lacuna
+  real quando ainda não houver resumo datado aderente;
+- bloquear fontes Hotmart ou comerciais com placeholder, identidade ou URL incompleta, ausência
+  simultânea de preço e sinal de tração, coleta vencida ou indisponibilidade, preservando o último
+  snapshot nominal somente como inspiração histórica;
+- antes da priorização final, validar prazo, consequência, tentativa frustrada, comportamento pago e
+  vantagem sobre a alternativa gratuita em protótipo privado com critérios predeclarados;
+- exigir duas leituras independentes e consistentes de início, microvalor, uso do resultado pronto
+  sem montagem, preferência e avanço ao checkout, sem bloqueio de Psique ou Têmis; evento privado ou
+  checkout sem pagamento não é venda;
 - derivar hipóteses originais de mecanismo, formato e comunicação, preservando fonte, data, insight,
   evidência de confirmação e limite contra cópia;
 - comprovar escala e recorrência por fontes independentes;
@@ -216,14 +230,17 @@ mas não comprova sozinha uma oportunidade.
 
 **Saída final:** dossiê de oportunidade com matriz rastreável de inspirações e evidências, público,
 dor raiz, lacuna, intenção de compra, perguntas prioritárias, sinais de confiança, ativos de
-distribuição, formatos digitais candidatos, risco principal e decisão `APROVAR`, `PESQUISAR MAIS` ou
-`REJEITAR`.
+distribuição, formatos digitais candidatos, qualidade das fontes, contrato e leituras do protótipo
+privado, risco principal e decisão `APROVAR`, `PESQUISAR MAIS` ou `REJEITAR`.
 
 **Gate para avançar:** somente oportunidade `APROVADA`, sem evidência fabricada e com encaixe PDE.
 Pedido espontâneo ou conversa individual deve permanecer como `SINAL`, até ser confirmado por pelo
 menos dois caminhos independentes de recorrência, desatendimento e intenção de compra. Artigo de
 tendência ou produto Hotmart permanece como `INSPIRACAO` até essa confirmação e não pode aprovar a
-oportunidade sozinho.
+oportunidade sozinho. No recorte B2C/Instagram, score e comparação com benchmark também exigem duas
+leituras privadas consistentes, vantagem observada sobre a alternativa gratuita e ausência de
+bloqueio de Psique ou Têmis. A candidata também deve provar uso do resultado pronto sem transferir
+ao consumidor o trabalho de operar a IA.
 
 ## 2. Plano comercial e desenho da oferta PDE
 

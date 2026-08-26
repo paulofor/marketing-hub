@@ -3,6 +3,7 @@ import {
   CheckCircle2,
   Clock3,
   GitBranch,
+  ListTree,
   Workflow,
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
@@ -67,6 +68,7 @@ function formatEvidence(value?: string | null) {
 
 function statusLabel(status: ProductStageMeasurement["trackingStatus"]) {
   if (status === "COMPLETED") return "Objetivo atingido";
+  if (status === "PLANNED") return "Pronto para iniciar";
   if (status === "RECORDED") return "Registrado sem saída comprovada";
   return "Em andamento";
 }
@@ -130,7 +132,12 @@ export default function ProductValueChainHistoryPage() {
   const displayName =
     product.name || product.internalName || `Produto ${product.id}`;
   const identified = position.resolutionStatus === "IDENTIFIED";
+  const subprocessPosition = position.subprocessPosition;
+  const currentSubprocess = subprocessPosition?.currentSubprocessName;
   const nextSubprocess = position.subprocessPosition?.nextSubprocessName;
+  const subprocessAwaitingFirstExecution =
+    subprocessPosition?.trackingStatus === "PLANNED" &&
+    Boolean(currentSubprocess);
 
   return (
     <div className="product-value-chain-history">
@@ -188,12 +195,21 @@ export default function ProductValueChainHistoryPage() {
             </article>
             <article>
               <span>
-                <Clock3 size={16} aria-hidden="true" /> Próximo marco
+                <Clock3 size={16} aria-hidden="true" />
+                {subprocessAwaitingFirstExecution
+                  ? "Subprocesso atual"
+                  : "Próximo marco"}
               </span>
-              <strong>{nextSubprocess || "Conclusão do processo atual"}</strong>
+              <strong>
+                {subprocessAwaitingFirstExecution
+                  ? currentSubprocess
+                  : nextSubprocess || "Conclusão do processo atual"}
+              </strong>
               <small>
-                {position.subprocessPosition?.nextSubprocessObjective ||
-                  "O próximo objetivo será definido pela cadeia publicada."}
+                {subprocessAwaitingFirstExecution
+                  ? "Subprocesso atual preparado; ainda aguarda a primeira execução."
+                  : position.subprocessPosition?.nextSubprocessObjective ||
+                    "O próximo objetivo será definido pela cadeia publicada."}
               </small>
             </article>
           </section>
@@ -242,10 +258,13 @@ export default function ProductValueChainHistoryPage() {
                             ? "Processo"
                             : "Subprocesso"}
                         </span>
+                        <h3 className="h6 mb-1">{measurement.processName}</h3>
                         <Link
+                          className="product-value-chain-history__activities-link"
                           to={`/business-processes?processId=${measurement.processDefinitionId}`}
                         >
-                          {measurement.processName}
+                          <ListTree size={15} aria-hidden="true" />
+                          Detalhar atividades
                         </Link>
                       </div>
                       <span className="product-value-chain-history__status">
@@ -271,7 +290,9 @@ export default function ProductValueChainHistoryPage() {
                         <dd>
                           {measurement.exitedAt
                             ? formatDateTime(measurement.exitedAt)
-                            : "Objetivo ainda sem saída comprovada"}
+                            : measurement.trackingStatus === "PLANNED"
+                              ? "Aguardando a primeira execução"
+                              : "Objetivo ainda sem saída comprovada"}
                         </dd>
                         <small>
                           {formatEvidence(measurement.exitEvidence)}

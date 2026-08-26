@@ -141,6 +141,19 @@ public class ProductStageMeasurementResolver {
       List<BusinessProcessDefinition> subprocesses,
       BusinessProcessDefinition currentSubprocess,
       Integer parentSequenceNumber) {
+    return resolveSubprocessMeasurements(
+        product, subprocesses, currentSubprocess, parentSequenceNumber, false);
+  }
+
+  /**
+   * Consolida subprocessos e distingue o próximo estágio pronto daquele que já possui execução.
+   */
+  public List<ProductStageMeasurementResponse> resolveSubprocessMeasurements(
+      Product product,
+      List<BusinessProcessDefinition> subprocesses,
+      BusinessProcessDefinition currentSubprocess,
+      Integer parentSequenceNumber,
+      boolean currentSubprocessAwaitingFirstExecution) {
     MeasurementContext context = context(product);
     List<ProductStageMeasurementResponse> measurements = new ArrayList<>();
     for (int index = 0; index < subprocesses.size(); index++) {
@@ -151,7 +164,11 @@ public class ProductStageMeasurementResolver {
       if (matchingTasks.isEmpty()) {
         if (currentSubprocess != null && subprocess.getId().equals(currentSubprocess.getId())) {
           measurements.add(
-              noEvidenceMeasurement("SUBPROCESS", sequenceLabel, subprocess, "CURRENT"));
+              noEvidenceMeasurement(
+                  "SUBPROCESS",
+                  sequenceLabel,
+                  subprocess,
+                  currentSubprocessAwaitingFirstExecution ? "PLANNED" : "CURRENT"));
         }
         continue;
       }

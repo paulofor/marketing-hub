@@ -10,7 +10,12 @@ public final class MetaAdLibraryContracts {
   private MetaAdLibraryContracts() {}
 
   /** Representa uma investigação reservada no backend. */
-  public record PendingInvestigation(long id, String workspaceId, String searchTerms, String countryCode) {}
+  public record PendingInvestigation(
+      long id,
+      String workspaceId,
+      String searchTerms,
+      String countryCode,
+      String publisherPlatform) {}
 
   /** Representa um anúncio normalizado sem perder seu payload bruto. */
   public record Observation(
@@ -18,6 +23,7 @@ public final class MetaAdLibraryContracts {
       String advertiserId,
       String advertiserName,
       String status,
+      List<String> publisherPlatforms,
       List<String> formatTypes,
       List<String> texts,
       List<String> mediaUrls,
@@ -32,4 +38,13 @@ public final class MetaAdLibraryContracts {
 
   /** Registra o resultado técnico sem alterar a decisão comercial. */
   public record Completion(boolean success, String errorMessage) {}
+
+  /** Resume o preflight real da permissão `ads_archive` sem transportar credenciais. */
+  public record AccessPreflight(
+      boolean authorized,
+      String status,
+      Integer errorCode,
+      Integer errorSubcode,
+      String message,
+      Instant checkedAt) {}
 }

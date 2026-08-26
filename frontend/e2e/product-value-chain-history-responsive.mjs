@@ -84,25 +84,45 @@ const position = {
     },
   ],
   subprocessPosition: {
-    trackingStatus: "IN_PROGRESS",
+    trackingStatus: "PLANNED",
     subprocessCount: 2,
-    currentActivityName: "Executar criação e aprovação de criativos",
-    currentSubprocessDefinitionId: 48,
-    currentSubprocessCode: "creative-production-approval",
-    currentSubprocessName: "Criação e Aprovação de Criativos",
-    currentSubprocessObjective: "Criativos aprovados.",
-    nextSubprocessDefinitionId: 18,
-    nextSubprocessCode: "landing-page-generation",
-    nextSubprocessName: "Geração de landing page",
-    nextSubprocessObjective:
+    currentActivityName: null,
+    currentSubprocessDefinitionId: 18,
+    currentSubprocessSequenceNumber: 2,
+    currentSubprocessCode: "landing-page-generation",
+    currentSubprocessName: "Geração de landing page",
+    currentSubprocessObjective:
       "Landing aprovada e pronta para publicação humana.",
+    nextSubprocessDefinitionId: null,
+    nextSubprocessCode: null,
+    nextSubprocessName: null,
+    nextSubprocessObjective: null,
     measurements: [
       {
         stageType: "SUBPROCESS",
-        trackingStatus: "CURRENT",
+        sequenceLabel: "4.1",
+        trackingStatus: "COMPLETED",
         processDefinitionId: 48,
         processCode: "creative-production-approval",
         processName: "Criação e Aprovação de Criativos",
+        enteredAt: "2026-08-25T21:33:22Z",
+        entryEvidence: "FIRST_SUBPROCESS_TASK",
+        exitedAt: "2026-08-25T21:33:22Z",
+        exitEvidence: "SUBPROCESS_OBJECTIVE_ACHIEVED",
+        objectiveAchieved: true,
+        elapsedDays: 0,
+        knownEstimatedCostUsd: 0.577952,
+        costCoverage: "COMPLETE",
+        costedExecutionCount: 4,
+        uncostedExecutionCount: 0,
+      },
+      {
+        stageType: "SUBPROCESS",
+        sequenceLabel: "4.2",
+        trackingStatus: "PLANNED",
+        processDefinitionId: 18,
+        processCode: "landing-page-generation",
+        processName: "Geração de landing page",
         enteredAt: null,
         entryEvidence: "NOT_RECORDED",
         exitedAt: null,
@@ -151,6 +171,11 @@ try {
       page.getByRole("heading", { name: "Histórico da cadeia de valor" }),
     ).toBeVisible();
     await expect(page.getByText("Etapa 4 de 6")).toBeVisible();
+    await expect(
+      page.getByText("Subprocesso atual", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("Pronto para iniciar")).toBeVisible();
+    await expect(page.getByText("4.2", { exact: true })).toBeVisible();
     await expect(page.getByText("21/08/2026, 03:55 UTC")).toBeVisible();
     await expect(page.getByText(/cobertura parcial/i)).toBeVisible();
     await expect(

@@ -90,5 +90,48 @@ export type BusinessProcessActivityDocument = {
   outputTokens?: number;
   estimatedCostUsd?: number;
   costEstimationStatus: string;
-  generatedAt: string;
+  startedAt?: string;
+  finishedAt: string;
+  modelCode?: string;
+  reasoningEffort?: string;
+  productInternalName?: string;
+  promptSent?: string;
+};
+
+export type BusinessProcessActivityExecution = {
+  taskId: number;
+  processDefinitionId: number;
+  processVersionNumber: number;
+  title: string;
+  status: string;
+  sourceReference?: string;
+  assignedAgentKey: string;
+  assignedAgentNickname: string;
+  comments?: string;
+  evidenceJson?: string;
+  executionError?: string;
+  inputTokens?: number;
+  cachedInputTokens?: number;
+  outputTokens?: number;
+  estimatedCostUsd?: number;
+  costEstimationStatus: string;
+  createdAt: string;
+  startedAt?: string;
+  finishedAt?: string;
+  modelCode?: string;
+  reasoningEffort?: string;
+  productInternalName?: string;
+  promptSent?: string;
+};
+
+export type BusinessProcessActivityExecutionHistory = {
+  selectedProcessDefinitionId: number;
+  processCode: string;
+  processName: string;
+  selectedProcessVersionNumber: number;
+  selectedProcessStatus: "DRAFT" | "PUBLISHED" | "RETIRED";
+  activityId: string;
+  activityName: string;
+  activityOwnerName?: string;
+  executions: BusinessProcessActivityExecution[];
 };

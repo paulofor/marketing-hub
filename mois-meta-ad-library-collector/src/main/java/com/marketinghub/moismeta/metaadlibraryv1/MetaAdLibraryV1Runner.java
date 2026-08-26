@@ -16,10 +16,22 @@ public class MetaAdLibraryV1Runner {
 
   private final MarketingHubBackendClient backendClient;
   private final MetaAdLibraryApiClient metaClient;
+  private final MetaAdLibraryAccessHealthIndicator accessHealth;
 
   /** Consulta a fila em intervalo fixo sem transferir a decisão comercial ao coletor. */
   @Scheduled(cron = "0 */15 * * * *")
   public void poll() {
+    MetaAdLibraryContracts.AccessPreflight preflight = metaClient.preflight();
+    accessHealth.record(preflight);
+    if (!preflight.authorized()) {
+      log.warn(
+          "Coleta Meta aguardando autorização oficial status={} code={} subcode={} message={}",
+          preflight.status(),
+          preflight.errorCode(),
+          preflight.errorSubcode(),
+          preflight.message());
+      return;
+    }
     backendClient.pending().ifPresent(this::execute);
   }
 

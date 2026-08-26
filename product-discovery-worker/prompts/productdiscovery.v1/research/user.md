@@ -17,4 +17,9 @@ Compare de 2 a 3 oportunidades realmente distintas e registre fontes de dor, art
 
 Quando Canal provavel for Instagram e as restricoes declararem B2C, descreva para cada oportunidade
 a pessoa fisica, a cena de urgencia, o gancho de tres segundos, o primeiro valor mobile e as
-dependencias operacionais. Seguidores, alcance, temperatura Hotmart e anuncio ativo nao sao vendas.
+dependencias operacionais. Registre tambem prazo, consequencia, tentativa frustrada, comportamento
+pago atual, alternativa gratuita e vantagem que precisara ser observada no prototipo privado.
+Registre o territorio humano sustentado por evidencia, o resultado pronto, a entrada minima e o
+trabalho de IA que o produto elimina. O consumidor nao pode precisar escrever prompts, configurar
+ferramentas ou montar a saida.
+Seguidores, alcance, temperatura Hotmart e anuncio ativo nao sao vendas.

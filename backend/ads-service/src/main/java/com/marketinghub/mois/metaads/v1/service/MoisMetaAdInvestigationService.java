@@ -3,13 +3,17 @@ package com.marketinghub.mois.metaads.v1.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,16 +37,24 @@ public class MoisMetaAdInvestigationService {
   private static final int MIN_VARIATIONS = 3;
   private static final String SUPERVISED_COLLECTION_REASON =
       "A API oficial da Meta não disponibiliza anúncios comerciais gerais que não alcançaram a União Europeia; no Brasil, a observação deve ser supervisionada.";
+  private static final String OFFICIAL_API_COLLECTION_REASON =
+      "Território coberto para anúncios comerciais pela API oficial; a execução depende de preflight real da autorização do aplicativo.";
+  private static final Set<String> OFFICIAL_COMMERCIAL_API_COUNTRIES =
+      Set.of(
+          "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT",
+          "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE", "GB");
 
   private final JdbcTemplate jdbcTemplate;
   private final ObjectMapper objectMapper;
 
-  /**
-   * Cria um acompanhamento supervisionado coerente com a cobertura comercial disponível no Brasil.
-   */
+  /** Cria um acompanhamento no modo compatível com a cobertura comercial do território. */
   public MoisMetaAdDtos.InvestigationResponse create(
       MoisMetaAdDtos.CreateInvestigationRequest request) {
     Instant now = Instant.now();
+    String country = normalizedCountry(request.countryCode());
+    String publisherPlatform = normalizedPublisherPlatform(request.publisherPlatform());
+    boolean officialApi = supportsOfficialCommercialApi(country);
+    String status = officialApi ? "PENDING" : "ACTIVE_SUPERVISED";
     KeyHolder keyHolder = new GeneratedKeyHolder();
     jdbcTemplate.update(
         connection -> {
@@ -50,28 +62,67 @@ public class MoisMetaAdInvestigationService {
               connection.prepareStatement(
                   """
                   INSERT INTO mois_meta_ad_investigation
-                    (workspace_id, search_terms, country_code, status, gate_decision, evidence_json,
-                     gaps_json, ethical_modeling_json, created_at, updated_at)
-                  VALUES (?, ?, ?, 'ACTIVE_SUPERVISED', 'INVESTIGAR', '[]', ?, ?, ?, ?)
+                    (workspace_id, search_terms, country_code, publisher_platform, status,
+                     gate_decision, evidence_json, gaps_json, ethical_modeling_json, created_at,
+                     updated_at)
+                  VALUES (?, ?, ?, ?, ?, 'INVESTIGAR', '[]', ?, ?, ?, ?)
                   """,
                   java.sql.Statement.RETURN_GENERATED_KEYS);
           statement.setString(1, request.workspaceId());
-          statement.setString(2, request.searchTerms());
-          statement.setString(3, normalizedCountry(request.countryCode()));
+          statement.setString(2, request.searchTerms().trim());
+          statement.setString(3, country);
+          statement.setString(4, publisherPlatform);
+          statement.setString(5, status);
           statement.setString(
-              4,
+              6,
               json(
-                  List.of(
-                      "Registrar a primeira observação real pela Biblioteca pública da Meta",
-                      "Reobservar o mesmo anúncio em datas distintas para comprovar longevidade")));
-          statement.setString(5, json(MoisMetaAdDtos.EthicalModelingCard.empty()));
-          statement.setTimestamp(6, Timestamp.from(now));
-          statement.setTimestamp(7, Timestamp.from(now));
+                  officialApi
+                      ? List.of(
+                          "Concluir o preflight da autorização oficial da Meta",
+                          "Coletar a primeira observação real na plataforma solicitada")
+                      : List.of(
+                          "Registrar a primeira observação real pela Biblioteca pública da Meta",
+                          "Reobservar o mesmo anúncio em datas distintas para comprovar longevidade")));
+          statement.setString(7, json(MoisMetaAdDtos.EthicalModelingCard.empty()));
+          statement.setTimestamp(8, Timestamp.from(now));
+          statement.setTimestamp(9, Timestamp.from(now));
           return statement;
         },
         keyHolder);
     Number id = keyHolder.getKey();
     return get(id == null ? 0 : id.longValue()).orElseThrow();
+  }
+
+  /** Reutiliza ou cria de forma idempotente o acompanhamento solicitado por Argos. */
+  @Transactional
+  public MoisMetaAdDtos.InvestigationResponse ensureForProductDiscovery(
+      String workspaceId, String searchTerms, String countryCode, String publisherPlatform) {
+    String normalizedCountry = normalizedCountry(countryCode);
+    String normalizedPlatform = normalizedPublisherPlatform(publisherPlatform);
+    String normalizedTerms = searchTerms == null ? "" : searchTerms.trim();
+    List<Long> existing =
+        jdbcTemplate.query(
+            """
+            SELECT id
+            FROM mois_meta_ad_investigation
+            WHERE workspace_id = ?
+              AND country_code = ?
+              AND publisher_platform = ?
+              AND LOWER(TRIM(search_terms)) = LOWER(?)
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            (rs, rowNum) -> rs.getLong("id"),
+            workspaceId,
+            normalizedCountry,
+            normalizedPlatform,
+            normalizedTerms);
+    if (!existing.isEmpty()) {
+      return required(existing.getFirst());
+    }
+    return create(
+        new MoisMetaAdDtos.CreateInvestigationRequest(
+            workspaceId, normalizedTerms, normalizedCountry, normalizedPlatform));
   }
 
   /** Lista investigações recentes de um workspace. */
@@ -100,12 +151,19 @@ public class MoisMetaAdInvestigationService {
                     rs.getString("workspace_id"),
                     rs.getString("search_terms"),
                     rs.getString("country_code"),
+                    rs.getString("publisher_platform"),
                     rs.getString("status"),
                     collectionState(
+                        rs.getString("country_code"),
+                        rs.getString("publisher_platform"),
+                        rs.getString("search_terms"),
                         rs.getTimestamp("first_observed_at") == null
                             ? null
                             : rs.getTimestamp("first_observed_at").toInstant(),
-                        rs.getTimestamp("created_at").toInstant()),
+                        rs.getTimestamp("created_at").toInstant(),
+                        rs.getTimestamp("next_run_at") == null
+                            ? null
+                            : rs.getTimestamp("next_run_at").toInstant()),
                     rs.getString("gate_decision"),
                     stringList(rs.getString("evidence_json")),
                     stringList(rs.getString("gaps_json")),
@@ -161,7 +219,7 @@ public class MoisMetaAdInvestigationService {
     List<MoisMetaAdDtos.PendingInvestigationResponse> pending =
         jdbcTemplate.query(
             """
-            SELECT id, workspace_id, search_terms, country_code
+            SELECT id, workspace_id, search_terms, country_code, publisher_platform
             FROM mois_meta_ad_investigation
             WHERE status = 'PENDING' OR (status = 'COMPLETED' AND next_run_at <= ?)
             ORDER BY COALESCE(next_run_at, created_at) LIMIT 1
@@ -171,7 +229,8 @@ public class MoisMetaAdInvestigationService {
                     rs.getLong("id"),
                     rs.getString("workspace_id"),
                     rs.getString("search_terms"),
-                    rs.getString("country_code")),
+                    rs.getString("country_code"),
+                    rs.getString("publisher_platform")),
             Timestamp.from(Instant.now()));
     if (pending.isEmpty()) return Optional.empty();
     MoisMetaAdDtos.PendingInvestigationResponse item = pending.getFirst();
@@ -241,6 +300,8 @@ public class MoisMetaAdInvestigationService {
             null,
             request.advertiserName().trim(),
             "ACTIVE",
+            normalizePublisherPlatforms(
+                request.publisherPlatforms(), required(investigationId).publisherPlatform()),
             request.formatType() == null || request.formatType().isBlank()
                 ? List.of()
                 : List.of(request.formatType().trim()),
@@ -309,14 +370,16 @@ public class MoisMetaAdInvestigationService {
     jdbcTemplate.update(
         """
         INSERT INTO mois_meta_ad_asset
-          (workspace_id, meta_ad_id, advertiser_id, advertiser_name, ad_status, format_types_json,
-           ad_texts_json, media_json, destination_url, snapshot_url, first_observed_at,
-           last_observed_at, observation_count, page_active, commercial_signal, raw_payload_json,
-           created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)
+          (workspace_id, meta_ad_id, advertiser_id, advertiser_name, ad_status,
+           publisher_platforms_json, format_types_json, ad_texts_json, media_json,
+           destination_url, snapshot_url, first_observed_at, last_observed_at, observation_count,
+           page_active, commercial_signal, raw_payload_json, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
           advertiser_id = VALUES(advertiser_id), advertiser_name = VALUES(advertiser_name),
-          ad_status = VALUES(ad_status), format_types_json = VALUES(format_types_json),
+          ad_status = VALUES(ad_status),
+          publisher_platforms_json = VALUES(publisher_platforms_json),
+          format_types_json = VALUES(format_types_json),
           ad_texts_json = VALUES(ad_texts_json), media_json = VALUES(media_json),
           destination_url = COALESCE(VALUES(destination_url), destination_url),
           snapshot_url = COALESCE(VALUES(snapshot_url), snapshot_url),
@@ -330,6 +393,7 @@ public class MoisMetaAdInvestigationService {
         item.advertiserId(),
         item.advertiserName(),
         item.status(),
+        json(item.publisherPlatforms()),
         json(item.formatTypes()),
         json(item.texts()),
         json(item.mediaUrls()),
@@ -423,17 +487,66 @@ public class MoisMetaAdInvestigationService {
 
   /** Normaliza o país para o padrão usado pela API da Meta. */
   private String normalizedCountry(String country) {
-    return country == null || country.isBlank() ? "BR" : country.trim().toUpperCase();
+    return country == null || country.isBlank() ? "BR" : country.trim().toUpperCase(Locale.ROOT);
   }
 
-  /** Expõe o modo brasileiro real e a data mínima para comprovar trinta dias de longevidade. */
-  MoisMetaAdDtos.CollectionState collectionState(Instant firstObservedAt, Instant createdAt) {
+  /** Expõe o modo real de coleta, a busca oficial e a próxima observação esperada. */
+  MoisMetaAdDtos.CollectionState collectionState(
+      String country,
+      String publisherPlatform,
+      String searchTerms,
+      Instant firstObservedAt,
+      Instant createdAt,
+      Instant nextRunAt) {
+    boolean officialApi = supportsOfficialCommercialApi(country);
     Instant nextObservationAt =
-        firstObservedAt == null
-            ? createdAt
-            : firstObservedAt.plus(Duration.ofDays(MIN_LONGEVITY_DAYS));
+        officialApi
+            ? (nextRunAt == null ? createdAt : nextRunAt)
+            : firstObservedAt == null
+                ? createdAt
+                : firstObservedAt.plus(Duration.ofDays(MIN_LONGEVITY_DAYS));
     return new MoisMetaAdDtos.CollectionState(
-        "SUPERVISED", SUPERVISED_COLLECTION_REASON, nextObservationAt);
+        officialApi ? "OFFICIAL_API" : "SUPERVISED",
+        officialApi ? OFFICIAL_API_COLLECTION_REASON : SUPERVISED_COLLECTION_REASON,
+        buildPublicSearchUrl(country, publisherPlatform, searchTerms),
+        nextObservationAt);
+  }
+
+  /** Informa se anúncios comerciais gerais podem ser consultados oficialmente no território. */
+  boolean supportsOfficialCommercialApi(String country) {
+    return OFFICIAL_COMMERCIAL_API_COUNTRIES.contains(normalizedCountry(country));
+  }
+
+  /** Normaliza a plataforma pedida para uma tecnologia aceita pela Biblioteca Meta. */
+  private String normalizedPublisherPlatform(String publisherPlatform) {
+    String normalized =
+        publisherPlatform == null || publisherPlatform.isBlank()
+            ? "INSTAGRAM"
+            : publisherPlatform.trim().toUpperCase(Locale.ROOT);
+    if (!Set.of("FACEBOOK", "INSTAGRAM", "AUDIENCE_NETWORK", "MESSENGER", "WHATSAPP")
+        .contains(normalized)) {
+      throw new IllegalArgumentException("Plataforma da Biblioteca Meta não suportada");
+    }
+    return normalized;
+  }
+
+  /** Preserva somente plataformas declaradas e usa a investigação como fallback compatível. */
+  private List<String> normalizePublisherPlatforms(
+      List<String> publisherPlatforms, String investigationPlatform) {
+    if (publisherPlatforms == null || publisherPlatforms.isEmpty()) {
+      return List.of(normalizedPublisherPlatform(investigationPlatform));
+    }
+    return publisherPlatforms.stream().map(this::normalizedPublisherPlatform).distinct().toList();
+  }
+
+  /** Monta um atalho para a busca pública sem autenticar nem raspar a interface da Meta. */
+  private String buildPublicSearchUrl(
+      String country, String publisherPlatform, String searchTerms) {
+    return "https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country="
+        + URLEncoder.encode(normalizedCountry(country), StandardCharsets.UTF_8)
+        + "&media_type=all&q="
+        + URLEncoder.encode(searchTerms == null ? "" : searchTerms.trim(), StandardCharsets.UTF_8)
+        + "&search_type=keyword_unordered";
   }
 
   /** Converte texto opcional vazio em nulo para preservar a ausência de evidência. */

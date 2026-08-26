@@ -9,6 +9,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,9 @@ public class MetaAdLibraryApiClient {
 
   private static final String FIELDS =
       "id,page_id,page_name,ad_creation_time,ad_delivery_start_time,ad_delivery_stop_time,ad_snapshot_url,publisher_platforms,ad_creative_bodies,ad_creative_link_captions,ad_creative_link_descriptions,ad_creative_link_titles";
+  private static final String PREFLIGHT_SEARCH_TERMS = "produto digital";
+  private static final String PREFLIGHT_COUNTRY = "PT";
+  private static final String PREFLIGHT_PUBLISHER_PLATFORM = "INSTAGRAM";
 
   private final HttpClient httpClient =
       HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(20)).build();
@@ -48,7 +52,7 @@ public class MetaAdLibraryApiClient {
     if (accessToken == null || accessToken.isBlank()) {
       throw new IllegalStateException("META_AD_LIBRARY_ACCESS_TOKEN não configurado");
     }
-    String url = buildUrl(investigation);
+    String url = buildUrl(investigation, 100);
     log.info(
         "MOIS Meta request investigationId={} url={} terms={} country={}",
         investigation.id(),
@@ -83,16 +87,91 @@ public class MetaAdLibraryApiClient {
     }
   }
 
+  /** Confirma autorização real no `ads_archive`, pois `ads_read` isolado não é suficiente. */
+  public MetaAdLibraryContracts.AccessPreflight preflight() {
+    Instant checkedAt = Instant.now();
+    if (accessToken == null || accessToken.isBlank()) {
+      return new MetaAdLibraryContracts.AccessPreflight(
+          false,
+          "MISSING_TOKEN",
+          null,
+          null,
+          "META_AD_LIBRARY_ACCESS_TOKEN não configurado",
+          checkedAt);
+    }
+    MetaAdLibraryContracts.PendingInvestigation probe =
+        new MetaAdLibraryContracts.PendingInvestigation(
+            -1L,
+            "preflight",
+            PREFLIGHT_SEARCH_TERMS,
+            PREFLIGHT_COUNTRY,
+            PREFLIGHT_PUBLISHER_PLATFORM);
+    String url = buildUrl(probe, 1);
+    try {
+      log.info(
+          "MOIS Meta preflight request url={} country={} publisherPlatform={}",
+          url,
+          PREFLIGHT_COUNTRY,
+          PREFLIGHT_PUBLISHER_PLATFORM);
+      HttpResponse<String> response = send(url);
+      log.info(
+          "MOIS Meta preflight response url={} status={} payload={}",
+          url,
+          response.statusCode(),
+          response.body());
+      if (response.statusCode() / 100 == 2) {
+        return new MetaAdLibraryContracts.AccessPreflight(
+            true, "AUTHORIZED", null, null, "Acesso oficial confirmado", checkedAt);
+      }
+      JsonNode error = objectMapper.readTree(response.body()).path("error");
+      return new MetaAdLibraryContracts.AccessPreflight(
+          false,
+          "UNAUTHORIZED",
+          error.path("code").isNumber() ? error.path("code").asInt() : null,
+          error.path("error_subcode").isNumber()
+              ? error.path("error_subcode").asInt()
+              : null,
+          error.path("message").asText("Permissão oficial não confirmada"),
+          checkedAt);
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
+      log.error("Preflight da API Meta interrompido url={}", url, ex);
+      return new MetaAdLibraryContracts.AccessPreflight(
+          false, "ERROR", null, null, "Preflight interrompido", checkedAt);
+    } catch (Exception ex) {
+      log.error("Falha no preflight da API Meta url={}", url, ex);
+      return new MetaAdLibraryContracts.AccessPreflight(
+          false, "ERROR", null, null, "Falha técnica no preflight", checkedAt);
+    }
+  }
+
   /** Monta a URL oficial sem incluir credenciais. */
-  private String buildUrl(MetaAdLibraryContracts.PendingInvestigation investigation) {
+  private String buildUrl(
+      MetaAdLibraryContracts.PendingInvestigation investigation, int limit) {
     String countries = "[\"" + investigation.countryCode() + "\"]";
+    String publisherPlatforms = "[\"" + investigation.publisherPlatform() + "\"]";
     return graphBaseUrl
-        + "/ads_archive?ad_active_status=ALL&ad_type=ALL&limit=100&fields="
+        + "/ads_archive?ad_active_status=ALL&ad_type=ALL&limit="
+        + limit
+        + "&search_type=KEYWORD_UNORDERED&fields="
         + encode(FIELDS)
         + "&search_terms="
-        + encode(investigation.searchTerms())
+        + encode(normalizedSearchTerms(investigation.searchTerms()))
         + "&ad_reached_countries="
-        + encode(countries);
+        + encode(countries)
+        + "&publisher_platforms="
+        + encode(publisherPlatforms);
+  }
+
+  /** Executa o GET oficial com token somente no cabeçalho de autorização. */
+  private HttpResponse<String> send(String url) throws Exception {
+    HttpRequest request =
+        HttpRequest.newBuilder(URI.create(url))
+            .timeout(Duration.ofSeconds(60))
+            .header("Authorization", "Bearer " + accessToken)
+            .GET()
+            .build();
+    return httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
   }
 
   /** Normaliza somente campos comprovados pela resposta oficial. */
@@ -109,8 +188,13 @@ public class MetaAdLibraryApiClient {
               ad.path("id").asText(),
               ad.path("page_id").asText(null),
               ad.path("page_name").asText(null),
-              ad.path("ad_delivery_stop_time").isMissingNode() ? "ACTIVE" : "INACTIVE",
+              ad.path("ad_delivery_stop_time").isMissingNode()
+                      || ad.path("ad_delivery_stop_time").isNull()
+                      || ad.path("ad_delivery_stop_time").asText().isBlank()
+                  ? "ACTIVE"
+                  : "INACTIVE",
               strings(ad.path("publisher_platforms")),
+              List.of(),
               combinedTexts(ad),
               List.of(),
               destinationUrl,
@@ -146,5 +230,11 @@ public class MetaAdLibraryApiClient {
   /** Escapa parâmetros conforme UTF-8. */
   private String encode(String value) {
     return URLEncoder.encode(value, StandardCharsets.UTF_8);
+  }
+
+  /** Respeita o limite de cem caracteres do parâmetro oficial `search_terms`. */
+  private String normalizedSearchTerms(String value) {
+    String normalized = value == null ? "" : value.trim().replaceAll("\\s+", " ");
+    return normalized.length() <= 100 ? normalized : normalized.substring(0, 100).trim();
   }
 }

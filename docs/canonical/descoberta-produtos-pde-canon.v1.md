@@ -155,11 +155,139 @@ Nesse recorte, cada candidata deve registrar:
 - dependencia de outra pessoa, conta, integracao ou operacao humana que possa impedir a primeira
   entrega de valor.
 
+## Territorios humanos e entrega pronta
+
+Por decisao de 2026-08-26, a Descoberta PDE deve pesquisar prioritariamente oportunidades que
+ajudem a pessoa a experimentar pelo menos um destes territorios de valor: **afeto e pertencimento**,
+**reconhecimento** ou **alivio de esforco**. Esses territorios orientam a busca, mas nao constituem
+prova universal de demanda. Cada candidata ainda deve vincular o territorio escolhido a pelo menos
+duas evidencias independentes do publico e preservar a linguagem observada.
+
+No recorte B2C, a IA deve trabalhar nos bastidores. A proposta nao pode transferir ao cliente o
+trabalho de aprender prompting, pesquisar ferramentas, combinar respostas, configurar automacoes ou
+montar manualmente o resultado. A candidata deve declarar um contrato `humanValueDelivery` com:
+
+- um ou mais territorios entre `AFFECTION_AND_BELONGING`, `RECOGNITION` e `EFFORT_RELIEF`;
+- transformacao percebida e fontes independentes que sustentam sua relevancia para a cena;
+- resultado ou artefato pronto que a pessoa consegue usar;
+- entrada minima que somente o cliente pode fornecer para personalizar o resultado;
+- no maximo cinco passos do inicio ao primeiro resultado utilizavel e valor em ate dez minutos;
+- `requiresPromptEngineering: false`, `requiresManualAssembly: false` e
+  `usableWithoutAiKnowledge: true`;
+- limite de automacao que preserve controle, privacidade, autenticidade e responsabilidade humana.
+
+Template, curso, lista de prompts, tutorial de ferramenta ou conjunto de pecas ainda dependente de
+montagem nao atende entrega pronta. Uma ferramenta guiada pode atender quando recebe apenas a entrada
+minima, executa o trabalho complexo e devolve uma saida final utilizavel. Afeto nao autoriza promessa
+de controlar outra pessoa; reconhecimento nao autoriza vergonha, comparacao humilhante ou status
+falso; alivio de esforco nao autoriza esconder trabalho essencial nem prometer resultado garantido.
+
+No prototipo privado, cada leitura deve observar tambem `READY_RESULT_USED`: participante que usou o
+resultado pronto sem prompting ou montagem externa. O criterio minimo dessa taxa deve ser maior que
+zero, declarado antes do uso, calculado sobre quem iniciou a experiencia e aprovado nas duas
+leituras. Interesse, elogio ou entrega gerada sem uso nao substituem esse fato.
+
 O gate deve rejeitar B2B disfarçado de B2C, curso generico sem microexperiencia, produto que dependa
 de operacao empresarial para gerar valor e ideia cuja aquisicao no Instagram seja apenas uma
 suposicao. Temperatura Hotmart, anuncio ativo, audiencia e pontuacao continuam sendo sinais, nao
 vendas. Para declarar uma nova oportunidade superior ao benchmark Rigel, a pontuacao auditavel deve
 ser **estritamente maior**, com consenso dos agentes e valor percebido minimo preservado.
+
+## Validacao obrigatoria do momento de compra
+
+Por decisao de 2026-08-26, no recorte B2C para Instagram a priorizacao final deve ser precedida por
+uma etapa independente de **Validacao do Momento de Compra**. Artigos, ofertas, anuncios, reviews,
+temperatura, ranking, score de agente e intencao declarada podem orientar a hipotese, mas nao
+autorizam compara-la com o benchmark nem aprova-la como produto.
+
+Antes dessa etapa, o processo deve qualificar as fontes comerciais. Snapshot Hotmart ou outra fonte
+com placeholder, identidade ou URL incompleta, item sem preco e sem qualquer sinal de tracao, data
+ausente quando a atualidade for necessaria, vencimento definido pelo plano, erro de coleta ou falta
+de aderencia deve ficar com status explicito e bloquear a priorizacao. O ultimo snapshot nominal
+pode permanecer como inspiracao historica, mas nao substitui uma leitura atual nem entra como
+comportamento recente.
+
+Cada candidata deve registrar uma cena de compra estruturada com:
+
+- pessoa fisica e situacao exata;
+- gatilho e prazo;
+- consequencia pratica ou financeira de nao agir;
+- tentativa frustrada e solucao atual;
+- gasto, assinatura, comparacao de preco ou outro comportamento pago observavel;
+- orcamento ou limite de gasto quando existir evidencia, sem inventar capacidade de pagamento;
+- alternativa gratuita mais forte, incluindo Google, ChatGPT, planilha, amigo ou conteudo;
+- vantagem funcional que o prototipo pretende demonstrar sobre essa alternativa.
+
+Depois da pesquisa e antes do score final, Dedalo pode materializar um prototipo privado, limitado e
+sem publicacao; Hermes define a jornada atribuivel; Psique revisa valor e esforco; Temis revisa
+promessa, seguranca e comunicacao. Os criterios de sucesso devem ser declarados antes do primeiro
+uso e preservar denominadores para, no minimo, inicio da experiencia, chegada ao microvalor,
+preferencia sobre a alternativa gratuita e inicio de checkout. O checkout do prototipo nao realiza
+pagamento e seus eventos devem usar marcador explicito de teste ou validacao privada.
+
+Somente duas leituras independentes e consistentes, ambas acima dos criterios predeclarados e sem
+bloqueio de Psique ou Temis, liberam a candidata para priorizacao final e comparacao com Rigel. Uma
+leitura favoravel isolada, media que esconda uma leitura reprovada ou nova amostragem do modelo nao
+atende o gate. O backend persiste entradas, contagens, taxas, decisoes, evidencias e motivos e e a
+unica autoridade para liberar a etapa seguinte.
+
+O contrato persistivel `purchaseMomentGate` deve expor, de forma coerente, `required`, `status`,
+`sourceQualityPassed`, `finalPrioritizationEligible`, `minimumIndependentReadings`, criterios,
+candidatas elegiveis, `humanValueDelivery` e leituras. Em uma aprovacao, o backend nao pode confiar somente nos booleanos
+do worker: deve confirmar o vinculo nominal da candidata, a cena e o prototipo privado, recalcular
+as taxas de inicio, microvalor, uso do resultado pronto, preferencia e checkout pelas contagens,
+exigir IDs distintos, validar a ordem temporal e confirmar as decisoes de Psique e Temis.
+Divergencia entre resumo e fatos bloqueia a conclusao.
+
+O resultado deve seguir estas regras:
+
+- `CONTINUAR`: duas leituras aprovadas, preferencia observada e compromisso comercial mensuravel;
+- `AJUSTAR`: existe uso ou microvalor, mas algum criterio predeclarado nao foi atingido;
+- `PARAR`: a alternativa gratuita vence, a fonte e invalida ou existe risco relevante nao
+  controlavel;
+- `AGUARDAR_VALIDACAO`: o prototipo ou as duas leituras ainda nao existem.
+
+Intencao, inicio de checkout de teste e parecer de agente continuam separados de venda. Somente
+pagamento reconciliado no contrato comercial oficial pode contar como venda ou receita.
+
+## Colecao viva de momentos de compra B2C
+
+Cada ciclo B2C deve consultar novamente `pesquisas/momentos-de-compra-b2c`, incluindo todos os
+resumos datados existentes no momento da execucao. A ausencia de resumo diario deve ser registrada
+como fonte vazia e manter o gate aberto; `ini.md` define o tema e nao conta como artigo ou evidencia.
+
+O tema canonico da colecao e: **momentos de decisao B2C iminente no Brasil, com situacao pessoal,
+prazo, dinheiro ou consequencia material em jogo, tentativa frustrada e solucao paga mal atendida**.
+Cada resumo preserva cena, gatilho, prazo, custo do erro, gastos atuais, ofertas pagas, reclamacoes,
+alternativa gratuita, linguagem do consumidor, demonstracao em Reel, microvalor em ate dez minutos
+e limites de seguranca.
+
+### Cobertura real da categoria na Meta Ads Library
+
+Por decisao de 2026-08-26, Argos deve incluir no plano dirigido de todo ciclo B2C para Instagram uma
+consulta de categoria com `country`, `publisherPlatform=INSTAGRAM`, termos especificos e limite de
+coleta. O Product Discovery Worker envia essa solicitacao somente ao endpoint interno do proprio
+dominio; o backend cria ou reutiliza a investigacao canonica no radar MOIS e devolve evidencias ja
+persistidas, sem expor token, cookie ou controller de outro modulo ao executor.
+
+O dossie deve persistir separadamente:
+
+- status da fonte, modo de coleta e identificador da investigacao;
+- quantidade de anuncios aderentes, anuncios ativos e anunciantes distintos;
+- plataforma declarada pela fonte, data da observacao mais recente e URL oficial de pesquisa;
+- cada anuncio aderente com referencia, anunciante, atividade, longevidade, confianca e ressalva de
+  que investimento observado nao comprova venda.
+
+Somente `OBSERVED`, com anuncio atual, ativo e explicitamente distribuido no Instagram, pode atender
+o gate de presenca real da categoria no canal. Resultado publico generico, anuncio observado apenas
+no Facebook, fonte desatualizada, erro de permissao ou coleta ainda pendente nao substituem essa
+prova. Falha da fonte deve aparecer como `UNAVAILABLE` ou estado de espera equivalente; nunca como
+ausencia de mercado.
+
+Anuncios Meta nao entram na contagem minima de dez ofertas pagas comparaveis e nao podem elevar
+score como se fossem compras. Eles medem presenca, variedade, atualidade e investimento aparente no
+canal. A comprovacao final continua dependendo de eventos atribuidos, checkout e pagamento
+reconciliado do proprio Marketing Hub.
 
 ## Caixa de sinais humanos observados
 
@@ -236,7 +364,8 @@ mas deve preservar a diferença entre evidência observada e decisão de posicio
 
 Argos atua como investigador Codex, mas não recebe login, senha, cookie ou token de
 marketplace. Antes da coleta, ele deve persistir um plano versionado com perguntas,
-consultas públicas, marketplaces autorizados, limite de produtos e condições de parada.
+consultas públicas, marketplaces autorizados, pedidos de cobertura Meta, limites de produtos e
+anuncios e condições de parada.
 
 Hotmart e ClickBank permanecem como coletores autenticados isolados. O plano de Argos
 funciona como solicitação dirigida; os coletores são responsáveis por autenticação e
@@ -408,7 +537,7 @@ validacao PDE atual superar os motivos historicos de baixa conversao.
 
 ## Gates de negocio
 
-O modulo deve ter pelo menos cinco gates:
+O modulo deve ter pelo menos sete gates:
 
 1. Gate de escala: bloqueia dores pequenas demais ou sem evidencias independentes.
 2. Gate de desatendimento: bloqueia dores ja bem atendidas por solucoes simples e baratas.
@@ -417,6 +546,12 @@ O modulo deve ter pelo menos cinco gates:
    exige salto mental grande demais.
 5. Gate de mecanismo: bloqueia aprovacao sem base cientifica candidata verificavel e sem
    limites de promessa coerentes com essa evidencia.
+6. Gate de momento de compra: no recorte B2C/Instagram, bloqueia priorizacao final sem fontes
+   atuais, prototipo privado, criterios predeclarados, duas leituras consistentes, vantagem
+   observada sobre o gratuito e ausencia de bloqueio de Psique ou Temis.
+7. Gate de valor humano e entrega pronta: bloqueia candidata sem territorio sustentado por evidencia,
+   resultado final utilizavel, entrada minima, baixo numero de passos e uso observado sem prompting
+   ou montagem manual.
 
 ## Relacao com outros modulos
 
@@ -436,7 +571,8 @@ Uma oportunidade de produto PDE so e boa se puder ser resumida assim:
 
 ```text
 Muitas pessoas vivem [dor concreta], as solucoes atuais deixam [lacuna clara], e podemos
-entregar [microexperiencia digital] que gera [valor percebido rapido] com baixo esforco.
+entregar [resultado pronto e utilizavel] que gera [afeto, reconhecimento ou alivio de esforco]
+com entrada minima e baixo esforco.
 ```
 
 Se essa frase nao puder ser preenchida com evidencia, a oportunidade nao deve avancar.

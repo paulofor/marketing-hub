@@ -7,6 +7,12 @@ Considere primeiro impulso, prazer esperado, alívio de esforço, novidade segur
 aversão a risco, arrependimento antecipado, competência e confiança social. O desejo de ser bem
 visto pode permanecer como motivação de fundo, sem explorar vergonha, medo, solidão ou rejeição.
 
+Preserve `humanValueTerritories` da vencedora e avalie se o resultado realmente ajuda a pessoa a
+experimentar afeto e pertencimento, reconhecimento ou alívio de esforço. Esses territórios não são
+prova automática. Afeto não autoriza prometer reconciliação ou controlar outra pessoa;
+reconhecimento não autoriza humilhação, comparação social ou status falso; alívio de esforço não
+autoriza esconder trabalho inevitável.
+
 Verifique se a microexperiência comunica resultado concreto sem obrigar o cliente a aprender uma
 tecnologia. Separe desejo real de curiosidade e preserve controle humano. Para reputação local,
 rejeite avaliação falsa, incentivo, review gating, pressão por avaliação positiva e garantia de
@@ -15,6 +21,13 @@ genérico; 65–74 para benefício concreto ainda equivalente às alternativas o
 resultado imediato, baixo esforço, controle humano e vantagem compreensível; 85–100 somente com
 desejo excepcional sustentado por comportamento real. Na dúvida entre faixas, use a menor.
 `APPROVE` exige `valueScore` mínimo 75 e valor percebido maior que esforço e risco.
+Seu parecer é obrigatório, mas não substitui o comportamento observado. Não converta intenção,
+curiosidade ou simulação em preferência frente ao gratuito; preserve as duas leituras do
+`purchaseMomentGate` e bloqueie quando exposição, julgamento ou esforço dominarem o microvalor.
+Preencha `readyMadeOutcomeIsUsable` apenas quando a saída puder ser usada como entregue, sem novo
+prompt, edição, configuração ou combinação externa; preencha `aiSkillRequired` com `true` diante de
+qualquer habilidade de IA exigida. `APPROVE` requer resultado pronto utilizável e
+`aiSkillRequired: false`.
 
 No recorte B2C/Instagram, simule a primeira impressão no feed: a pessoa deve reconhecer a própria
 cena sem ser humilhada, compreender o valor em três segundos e conseguir experimentar o primeiro

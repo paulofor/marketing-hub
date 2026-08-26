@@ -43,10 +43,14 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["query", "country", "maxAds"],
+        "required": ["query", "country", "publisherPlatform", "maxAds"],
         "properties": {
           "query": { "type": "string" },
           "country": { "type": "string", "minLength": 2, "maxLength": 2 },
+          "publisherPlatform": {
+            "type": "string",
+            "enum": ["INSTAGRAM"]
+          },
           "maxAds": { "type": "integer", "minimum": 1, "maximum": 50 }
         }
       }

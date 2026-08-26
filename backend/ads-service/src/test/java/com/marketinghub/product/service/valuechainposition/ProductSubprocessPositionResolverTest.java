@@ -79,6 +79,42 @@ class ProductSubprocessPositionResolverTest {
     assertThat(result.nextSubprocessName()).isEqualTo("Geração de landing page");
   }
 
+  /** Expõe o próximo subprocesso como atual somente depois do objetivo anterior comprovado. */
+  @Test
+  void exposesReadySubprocessWithoutFabricatingItsFirstExecution() {
+    Product product = Product.builder().id(9L).build();
+    BusinessProcessDefinition parent = parentProcess();
+    List<BusinessProcessDefinition> children = children();
+    CommercialPlan plan = CommercialPlan.builder().id(31L).build();
+    AgentTask completedCreativeTask = new AgentTask();
+    completedCreativeTask.setId(90L);
+    completedCreativeTask.setProcessDefinition(children.getFirst());
+    completedCreativeTask.setStatus("COMPLETED");
+    completedCreativeTask.setUpdatedAt(Instant.parse("2026-08-25T12:00:00Z"));
+    ProductStageMeasurementResolver measurements = mock(ProductStageMeasurementResolver.class);
+    ProductSubprocessPositionResolver readyResolver =
+        new ProductSubprocessPositionResolver(
+            processRepository, planRepository, taskRepository, new ObjectMapper(), measurements);
+    when(processRepository.findAllByParentProcessCodeAndStatusOrderByNameAscVersionNumberDesc(
+            parent.getProcessCode(), "PUBLISHED"))
+        .thenReturn(children);
+    when(planRepository.findByProductId(9L)).thenReturn(List.of(plan));
+    when(taskRepository.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
+            "commercial-plan:31@"))
+        .thenReturn(List.of(completedCreativeTask));
+    when(measurements.objectiveAchieved(product, children.getFirst())).thenReturn(true);
+    when(measurements.resolveSubprocessMeasurements(product, children, children.get(1), null, true))
+        .thenReturn(List.of());
+
+    var result = readyResolver.resolve(product, parent);
+
+    assertThat(result.trackingStatus()).isEqualTo("PLANNED");
+    assertThat(result.currentSubprocessSequenceNumber()).isEqualTo(2);
+    assertThat(result.currentSubprocessName()).isEqualTo("Geração de landing page");
+    assertThat(result.currentActivityName()).isNull();
+    assertThat(result.nextSubprocessDefinitionId()).isNull();
+  }
+
   /** Avança ao objetivo principal seguinte quando a landing já atingiu o gate persistido. */
   @Test
   void exposesCommercialIntegrationAfterApprovedLanding() {

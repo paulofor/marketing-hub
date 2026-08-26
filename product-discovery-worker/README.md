@@ -6,6 +6,7 @@ Worker operacional da Descoberta de Produtos PDE v1.
 
 - consumir pendências do backend em `/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending`;
 - pesquisar sinais públicos sem coletar dados pessoais;
+- solicitar ao backend a cobertura persistida da categoria no Instagram, sem receber a credencial Meta;
 - gerar oportunidades PDE com evidências, score e decisão;
 - reportar sucesso ou falha ao backend.
 
@@ -15,6 +16,17 @@ backend recupera o ciclo após vinte minutos; uma tentativa antiga não pode sob
 a retomada.
 
 O worker não cria produto, hipótese, landing, campanha ou gasto de mídia.
+
+Em ciclos B2C para Instagram, Argos registra no plano uma consulta Meta com país,
+plataforma e termos específicos. O backend cria ou reutiliza o acompanhamento canônico e
+retorna status, modo de coleta, anúncios aderentes, anúncios ativos, anunciantes e
+atualidade. A evidência Meta fica separada das ofertas comparáveis: anúncio ativo indica
+presença e investimento aparente, nunca venda comprovada.
+
+O mesmo plano pesquisa afeto e pertencimento, reconhecimento e alívio de esforço como territórios
+de valor que precisam de evidência. A candidata deve entregar um resultado pronto com entrada
+mínima, sem transferir prompting, configuração, montagem ou conhecimento de IA ao consumidor. O
+gate privado observa `READY_RESULT_USED` antes de permitir priorização final.
 
 ## Variáveis
 

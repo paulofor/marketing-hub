@@ -11,9 +11,15 @@ import {
   attachLiveArticleInspirations,
   loadLiveArticleInspirations,
 } from "./live-inspirations.mjs";
+import { buildPurchaseMomentGate } from "./purchase-moment-validation.mjs";
 
 const moduleDirectory = dirname(fileURLToPath(import.meta.url));
-const repositoryRoot = resolve(moduleDirectory, "../../..");
+const repositoryRoot = process.env.PDE_OPPORTUNITY_REPOSITORY_ROOT
+  ? resolve(process.env.PDE_OPPORTUNITY_REPOSITORY_ROOT)
+  : resolve(moduleDirectory, "../../..");
+const agentRunnerPath = process.env.PDE_OPPORTUNITY_AGENT_RUNNER
+  ? resolve(process.env.PDE_OPPORTUNITY_AGENT_RUNNER)
+  : "run-agent.mjs";
 const inputPath = process.argv[2];
 if (!inputPath) throw new Error("Informe o arquivo JSON de evidências.");
 
@@ -37,25 +43,43 @@ executions.hermes = await executeAgent("hermes", {
   research,
   argos: executions.argos.result,
 });
-executions.dedalo = await executeAgent("dedalo", {
-  research,
-  argos: executions.argos.result,
-  hermes: executions.hermes.result,
-});
-executions.psique = await executeAgent("psique", {
-  research,
-  argos: executions.argos.result,
-  hermes: executions.hermes.result,
-  dedalo: executions.dedalo.result,
-});
+const purchaseMomentGate = buildPurchaseMomentGate(research);
+await writeFile(
+  `${auditDirectory}/purchase-moment-gate.json`,
+  `${JSON.stringify(purchaseMomentGate, null, 2)}\n`,
+  "utf8",
+);
 
-const finalDecision = buildFinalDecision({
-  research,
-  argos: executions.argos.result,
-  hermes: executions.hermes.result,
-  dedalo: executions.dedalo.result,
-  psique: executions.psique.result,
-});
+let finalDecision;
+if (purchaseMomentGate.required && purchaseMomentGate.eligibleCandidateNames.length === 0) {
+  finalDecision = buildBlockedPurchaseMomentDecision(
+    research,
+    executions,
+    purchaseMomentGate,
+  );
+} else {
+  executions.dedalo = await executeAgent("dedalo", {
+    research,
+    argos: executions.argos.result,
+    hermes: executions.hermes.result,
+    purchaseMomentGate,
+  });
+  executions.psique = await executeAgent("psique", {
+    research,
+    argos: executions.argos.result,
+    hermes: executions.hermes.result,
+    purchaseMomentGate,
+    dedalo: executions.dedalo.result,
+  });
+
+  finalDecision = buildFinalDecision({
+    research,
+    argos: executions.argos.result,
+    hermes: executions.hermes.result,
+    dedalo: executions.dedalo.result,
+    psique: executions.psique.result,
+  });
+}
 const usage = summarizeUsage(executions);
 const cost = calculateFlexCost(executions);
 const report = {
@@ -65,6 +89,7 @@ const report = {
   processVersion: research.processVersion,
   generatedAt: new Date().toISOString(),
   inspirationAudit: research.inspirations,
+  purchaseMomentGate,
   finalDecision,
   usage,
   cost,
@@ -106,10 +131,37 @@ process.stdout.write(
   })}\n`,
 );
 
+/** Encerra a pesquisa antes do score quando nenhum protótipo possui duas leituras válidas. */
+function buildBlockedPurchaseMomentDecision(researchInput, agentExecutions, gate) {
+  const candidateReasons = gate.candidates.flatMap((candidate) =>
+    candidate.reasons.map((reason) => `${candidate.candidateName}: ${reason}`),
+  );
+  return {
+    decision: gate.status === "STOP" ? "REJECT" : "RESEARCH_MORE",
+    chosenOpportunity: null,
+    workingProductName: null,
+    totalScore: null,
+    benchmarkName: researchInput.benchmark.name,
+    benchmarkScore: researchInput.benchmark.score,
+    benchmarkResult: "NOT_EVALUATED",
+    agentDecisions: {
+      argos: agentExecutions.argos.result.decision,
+      hermes: agentExecutions.hermes.result.decision,
+      dedalo: "NOT_EXECUTED",
+      psique: "NOT_EXECUTED",
+    },
+    purchaseMomentGate: {
+      status: gate.status,
+      eligibleCandidateNames: gate.eligibleCandidateNames,
+    },
+    reasons: [...gate.reasons, ...candidateReasons],
+  };
+}
+
 /** Executa um agente isolado e mantém stderr separado da resposta funcional. */
 async function executeAgent(agentRole, context) {
   return await new Promise((resolveExecution, rejectExecution) => {
-    const child = spawn(process.execPath, ["run-agent.mjs"], {
+    const child = spawn(process.execPath, [agentRunnerPath], {
       cwd: moduleDirectory,
       env: {
         ...process.env,

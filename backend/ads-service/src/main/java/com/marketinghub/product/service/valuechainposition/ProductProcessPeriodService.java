@@ -57,7 +57,7 @@ public class ProductProcessPeriodService {
     openCurrentPeriod(product, Instant.now(clock), "PRODUCT_CREATED");
   }
 
-  /** Fecha o macroprocesso anterior e abre o novo somente quando o estado realmente muda. */
+  /** Fecha e efetiva o macroprocesso anterior antes de abrir o novo quando o estado muda. */
   @Transactional
   public void recordTransition(Product product, String previousCommercialStatus) {
     if (product == null || product.getId() == null) return;
@@ -78,7 +78,8 @@ public class ProductProcessPeriodService {
               period.setObjectiveAchieved(currentCode != null);
               period.setOpenSlot(null);
               period.setUpdatedAt(changedAt);
-              periodRepository.save(period);
+              // Libera no banco o slot único do período aberto antes do INSERT do próximo período.
+              periodRepository.saveAndFlush(period);
             });
     openPeriod(product, chain, currentCode, changedAt, "COMMERCIAL_STATUS_TRANSITION");
   }

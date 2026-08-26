@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   executionTimeout,
+  executionAudit,
   parseUsage,
   refreshedProcessContext,
   resolveContract,
@@ -32,6 +33,14 @@ test("preserva a última telemetria cumulativa", () => {
     cachedInputTokens: 45,
     outputTokens: 60,
     serviceTier: "flex"
+  });
+});
+
+test("registra o modelo, o esforço e o prompt final enviados ao Codex", () => {
+  assert.deepEqual(executionAudit("Prompt final", "high"), {
+    modelCode: "gpt-5.6-sol",
+    reasoningEffort: "high",
+    promptSent: "Prompt final"
   });
 });
 

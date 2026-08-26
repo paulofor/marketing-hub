@@ -6,17 +6,12 @@ import {
 } from "../../api/businessProcess/useBusinessProcessDocuments";
 import { useBusinessProcesses } from "../../api/businessProcess/useBusinessProcesses";
 import PageTitle from "../../components/PageTitle";
+import {
+  formattedDateTime,
+  formattedDuration,
+  StructuredExecutionContent,
+} from "./BusinessProcessExecutionPresentation";
 import "./BusinessProcessesPage.css";
-
-/** Formata JSON legível sem ocultar resultados textuais legados. */
-function formattedContent(value?: string) {
-  if (!value) return "Não informado.";
-  try {
-    return JSON.stringify(JSON.parse(value), null, 2);
-  } catch {
-    return value;
-  }
-}
 
 /** Exibe os dez documentos mais recentes de uma atividade, com sua auditoria de execução. */
 export default function BusinessProcessActivityDocumentsPage() {
@@ -31,7 +26,9 @@ export default function BusinessProcessActivityDocumentsPage() {
     activityId,
   );
   const processDocuments = useBusinessProcessDocuments(
-    !activityId && Number.isSafeInteger(processDefinitionId) && processDefinitionId > 0
+    !activityId &&
+      Number.isSafeInteger(processDefinitionId) &&
+      processDefinitionId > 0
       ? processDefinitionId
       : undefined,
   );
@@ -46,6 +43,9 @@ export default function BusinessProcessActivityDocumentsPage() {
     process?.status === "RETIRED"
       ? `/business-processes/retired?processId=${processDefinitionId}`
       : `/business-processes?processId=${processDefinitionId}`;
+  const screenTitle = `${process?.name ?? "Processo"} · ${
+    activityId ? (activity?.label ?? activityId) : "Objetivos documentais"
+  }`;
 
   if (!Number.isSafeInteger(processDefinitionId) || processDefinitionId <= 0) {
     return <div className="alert alert-danger">Processo inválido.</div>;
@@ -55,10 +55,9 @@ export default function BusinessProcessActivityDocumentsPage() {
     <div className="business-process-documents-page">
       <header className="business-process-documents-toolbar mb-4">
         <div>
-          <PageTitle>Últimos 10 documentos</PageTitle>
+          <PageTitle>{screenTitle}</PageTitle>
           <p className="text-body-secondary mb-0">
-            {process?.name ?? "Processo"}
-            {activityId ? ` · ${activity?.label ?? activityId}` : " · Todos os objetivos documentais"}
+            Últimas 10 execuções documentadas
           </p>
         </div>
         <Link className="btn btn-outline-primary" to={backPath}>
@@ -94,8 +93,9 @@ export default function BusinessProcessActivityDocumentsPage() {
                   <span className="flex-grow-1">
                     <strong>{document.title}</strong>
                     <small className="d-block text-body-secondary mt-1">
-                      Tarefa #{document.taskId} · {document.assignedAgentNickname} ·{" "}
-                      {new Date(document.generatedAt).toLocaleString("pt-BR")}
+                      Tarefa #{document.taskId} ·{" "}
+                      {document.assignedAgentNickname} · encerrada em{" "}
+                      {formattedDateTime(document.finishedAt)}
                     </small>
                   </span>
                 </summary>
@@ -104,6 +104,35 @@ export default function BusinessProcessActivityDocumentsPage() {
                     <div>
                       <dt>Origem</dt>
                       <dd>{document.sourceReference ?? "Não informada"}</dd>
+                    </div>
+                    <div>
+                      <dt>Início</dt>
+                      <dd>{formattedDateTime(document.startedAt)}</dd>
+                    </div>
+                    <div>
+                      <dt>Término</dt>
+                      <dd>{formattedDateTime(document.finishedAt)}</dd>
+                    </div>
+                    <div>
+                      <dt>Duração</dt>
+                      <dd>
+                        {formattedDuration(
+                          document.startedAt,
+                          document.finishedAt,
+                        )}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Modelo utilizado</dt>
+                      <dd>{document.modelCode ?? "Não registrado"}</dd>
+                    </div>
+                    <div>
+                      <dt>Raciocínio</dt>
+                      <dd>{document.reasoningEffort ?? "Não registrado"}</dd>
+                    </div>
+                    <div>
+                      <dt>Produto interno</dt>
+                      <dd>{document.productInternalName ?? "Não vinculado"}</dd>
                     </div>
                     <div>
                       <dt>Tokens</dt>
@@ -123,15 +152,17 @@ export default function BusinessProcessActivityDocumentsPage() {
                       </dd>
                     </div>
                   </dl>
+                  <h2 className="h6">Prompt enviado ao modelo</h2>
+                  <StructuredExecutionContent value={document.promptSent} />
                   <h2 className="h6">Documento gerado</h2>
-                  <pre className="business-process-document__content">
-                    {formattedContent(document.resultJson)}
-                  </pre>
+                  <StructuredExecutionContent value={document.resultJson} />
                   <details className="mt-3">
                     <summary className="fw-semibold">Evidências</summary>
-                    <pre className="business-process-document__content mt-2">
-                      {formattedContent(document.evidenceJson)}
-                    </pre>
+                    <div className="mt-2">
+                      <StructuredExecutionContent
+                        value={document.evidenceJson}
+                      />
+                    </div>
                   </details>
                 </div>
               </details>
@@ -141,9 +172,7 @@ export default function BusinessProcessActivityDocumentsPage() {
             <div className="business-process-documents-empty">
               <FileText size={32} aria-hidden="true" />
               <strong>Nenhum documento concluído</strong>
-              <span>
-                Esta atividade ainda não possui documento concluído.
-              </span>
+              <span>Esta atividade ainda não possui documento concluído.</span>
             </div>
           ) : null}
         </section>

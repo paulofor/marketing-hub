@@ -1,6 +1,7 @@
 package com.marketinghub.product.service.valuechainposition;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 /** Responsabilidade: comprovar o registro auditável das transições de macroprocesso. */
 class ProductProcessPeriodServiceTest {
@@ -34,9 +36,9 @@ class ProductProcessPeriodServiceTest {
           new PdeProcessCodeResolver(),
           Clock.fixed(now, ZoneOffset.UTC));
 
-  /** Fecha o período anterior e abre o próximo no mesmo instante da transição. */
+  /** Efetiva o fechamento antes da abertura para preservar o slot único do produto. */
   @Test
-  void closesPreviousAndOpensCurrentProcess() {
+  void closesPreviousBeforeOpeningCurrentProcess() {
     Product product = Product.builder().id(9L).commercialStatus("VALIDACAO_COMERCIAL").build();
     BusinessProcessChainDefinition chain = chain();
     ProductProcessPeriod previous = new ProductProcessPeriod();
@@ -55,14 +57,18 @@ class ProductProcessPeriodServiceTest {
     assertThat(previous.getExitedAt()).isEqualTo(now);
     assertThat(previous.getExitEvidence()).isEqualTo("COMMERCIAL_STATUS_TRANSITION");
     assertThat(previous.isObjectiveAchieved()).isTrue();
-    ArgumentCaptor<ProductProcessPeriod> saved =
+    assertThat(previous.getOpenSlot()).isNull();
+    ArgumentCaptor<ProductProcessPeriod> openedPeriod =
         ArgumentCaptor.forClass(ProductProcessPeriod.class);
-    verify(periodRepository, org.mockito.Mockito.times(2)).save(saved.capture());
-    ProductProcessPeriod current = saved.getAllValues().get(1);
+    InOrder persistenceOrder = inOrder(periodRepository);
+    persistenceOrder.verify(periodRepository).saveAndFlush(previous);
+    persistenceOrder.verify(periodRepository).save(openedPeriod.capture());
+    ProductProcessPeriod current = openedPeriod.getValue();
     assertThat(current.getProcessCodeSnapshot())
         .isEqualTo("pde-commercial-homologation-activation");
     assertThat(current.getEnteredAt()).isEqualTo(now);
     assertThat(current.isObjectiveAchieved()).isFalse();
+    assertThat(current.getOpenSlot()).isEqualTo(1);
   }
 
   /** Não cria outro período quando uma edição mantém o mesmo macroprocesso. */

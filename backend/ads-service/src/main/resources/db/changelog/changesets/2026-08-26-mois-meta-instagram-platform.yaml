@@ -1,0 +1,94 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-26-mois-meta-instagram-platform-investigation-column
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_meta_ad_investigation
+        - not:
+            columnExists:
+              tableName: mois_meta_ad_investigation
+              columnName: publisher_platform
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE mois_meta_ad_investigation
+                ADD COLUMN publisher_platform VARCHAR(32) NOT NULL DEFAULT 'INSTAGRAM' AFTER country_code;
+
+  - changeSet:
+      id: 2026-08-26-mois-meta-instagram-platform-asset-column
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_meta_ad_asset
+        - not:
+            columnExists:
+              tableName: mois_meta_ad_asset
+              columnName: publisher_platforms_json
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE mois_meta_ad_asset
+                ADD COLUMN publisher_platforms_json TEXT NULL AFTER ad_status;
+
+  - changeSet:
+      id: 2026-08-26-mois-meta-instagram-platform-backfill
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_meta_ad_investigation
+        - tableExists:
+            tableName: mois_meta_ad_asset
+        - sqlCheck:
+            expectedResult: 1
+            sql: |
+              SELECT COUNT(*)
+              FROM information_schema.columns
+              WHERE table_schema = DATABASE()
+                AND table_name = 'mois_meta_ad_investigation'
+                AND column_name = 'publisher_platform'
+                AND data_type = 'varchar'
+                AND character_maximum_length = 32
+                AND is_nullable = 'NO'
+                AND column_default = 'INSTAGRAM'
+        - sqlCheck:
+            expectedResult: 1
+            sql: |
+              SELECT COUNT(*)
+              FROM information_schema.columns
+              WHERE table_schema = DATABASE()
+                AND table_name = 'mois_meta_ad_asset'
+                AND column_name = 'publisher_platforms_json'
+                AND data_type = 'text'
+                AND is_nullable = 'YES'
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE mois_meta_ad_asset
+              SET publisher_platforms_json = format_types_json
+              WHERE publisher_platforms_json IS NULL
+                AND format_types_json IS NOT NULL
+                AND (
+                  LOWER(format_types_json) LIKE '%instagram%'
+                  OR LOWER(format_types_json) LIKE '%facebook%'
+                  OR LOWER(format_types_json) LIKE '%messenger%'
+                  OR LOWER(format_types_json) LIKE '%audience_network%'
+                );

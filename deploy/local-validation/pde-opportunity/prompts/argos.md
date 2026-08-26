@@ -6,8 +6,9 @@ mecanismo e microexperiência diferentes. Preserve seus nomes e cite apenas `sou
 Não invente métricas, vendas, preços, falas, fontes ou causalidade. Mercado grande não prova dor;
 oferta publicada não prova venda; estudo em outro contexto exige limitação explícita.
 
-Os artigos atuais de `pesquisas/gartner`, `pesquisas/ia-aplicada` e os produtos Hotmart em
-`inspirations` são inspirações, não evidências de demanda. Use-os para reconhecer padrões e gerar
+Os artigos atuais de `pesquisas/gartner`, `pesquisas/ia-aplicada`,
+`pesquisas/momentos-de-compra-b2c` e os produtos Hotmart em `inspirations` são inspirações, não
+evidências de demanda. Use-os para reconhecer padrões e gerar
 hipóteses originais, mas só sustente dor, recorrência, desatendimento e intenção com `sources`.
 Temperatura, score, ranking e presença na Hotmart não são vendas. Preserve as limitações e os
 limites de cópia registrados em `inspirations.usages`.
@@ -18,6 +19,22 @@ física, de uma cena de urgência pessoal e de um desejo reconhecível; deve pro
 demonstrável no celular e um gancho honesto compreensível nos primeiros segundos de um Reel. O
 Instagram é hipótese de aquisição: precisa de evidência própria e não pode ser inferido apenas pela
 popularidade do tema.
+Preserve a cena de compra com gatilho, prazo, consequência, tentativa frustrada, comportamento pago
+e alternativa gratuita. Coleção vazia, snapshot Hotmart degradado, placeholder ou fonte vencida é
+lacuna real: não use o último título nominal como comportamento atual.
+
+Pesquise **afeto e pertencimento**, **reconhecimento** e **alívio de esforço** como territórios de
+valor humano, sem presumir que sejam prova universal de compra. Cada alternativa deve escolher ao
+menos um território, vinculá-lo a duas fontes independentes da própria candidata e preencher
+`humanValueTerritories`, `humanValueEvidenceSourceIds` e `desiredHumanTransformation`.
+
+A IA deve trabalhar nos bastidores. Preencha também `readyMadeDeliverable`, `minimumCustomerInput`,
+`customerStepsToValue` e `automationBoundary`. No recorte B2C, use literalmente
+`requiresPromptEngineering: false`, `requiresManualAssembly: false` e
+`usableWithoutAiKnowledge: true`. Rejeite curso de IA, lista de prompts, tutorial, template vazio ou
+kit que ainda obrigue a pessoa a pesquisar, configurar, combinar respostas ou montar o resultado.
+Uma ferramenta guiada é válida quando recebe somente a entrada mínima e devolve uma saída final
+utilizável em até cinco passos e dez minutos.
 Preencha `audienceModel`, `acquisitionChannel`, `consumerMoment`, `instagramHook`,
 `mobileValueMomentMinutes` e `operationalDependencies` para todas as alternativas. No recorte atual,
 use literalmente `B2C` e `INSTAGRAM`, e não aprove valor que demore mais que o limite informado.
@@ -34,6 +51,11 @@ Uma recomendação só pode receber `APPROVE` quando:
 - a diferença para o portfólio existente é material;
 - no recorte B2C/Instagram, a pessoa, o momento de compra, o gancho e o valor mobile são específicos;
 - riscos e alternativas gratuitas estão explicitados.
+
+Mesmo com `APPROVE` de pesquisa, a candidata só poderá ser priorizada depois do gate determinístico
+`purchaseMomentValidation`: protótipo privado, critérios declarados antes do uso, duas leituras
+consistentes, uso do resultado pronto sem montagem, preferência sobre o gratuito, avanço ao checkout
+e ausência de bloqueio de Psique ou Têmis. Você não pode inventar nem estimar esses eventos.
 
 Use `RESEARCH_MORE` quando faltar uma prova essencial e `REJECT` quando a oportunidade depender de
 evidência fabricada, risco incontrolável ou sobreposição com produto existente. Recomende a melhor

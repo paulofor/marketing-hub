@@ -16,10 +16,12 @@ export interface MetaAdInvestigation {
   workspaceId: string;
   searchTerms: string;
   countryCode: string;
+  publisherPlatform: "INSTAGRAM" | "FACEBOOK";
   status: string;
   collection: {
     mode: "SUPERVISED" | "OFFICIAL_API";
     reason: string;
+    searchUrl: string;
     nextObservationAt: string;
   };
   gateDecision: "INVESTIGAR" | "MODELAR" | "DESCARTAR";
@@ -79,6 +81,7 @@ export function useCreateMoisMetaAdInvestigation() {
       workspaceId: string;
       searchTerms: string;
       countryCode: string;
+      publisherPlatform: "INSTAGRAM" | "FACEBOOK";
     }) => {
       const { data } = await axios.post<MetaAdInvestigation>(
         "/api/v1/mois/meta-ad-investigations",
@@ -98,6 +101,7 @@ export interface SupervisedMetaAdObservation {
   advertiserName: string;
   adLibraryUrl: string;
   adText: string;
+  publisherPlatforms: Array<"INSTAGRAM" | "FACEBOOK">;
   formatType?: string;
   mediaUrl?: string;
   destinationUrl?: string;

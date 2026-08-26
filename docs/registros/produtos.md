@@ -1,5 +1,18 @@
 # Registro de evolução do catálogo de produtos
 
+## 2026-08-26 — Transição de processo libera o período aberto antes do próximo
+
+- Evidência produtiva: a ativação autorizada da Vega pelo experimento 90 retornou HTTP 500 e foi
+  integralmente revertida; o MySQL registrou `Duplicate entry '4-1'` na restrição
+  `uk_product_process_period_open`.
+- Causa-raiz confirmada: o serviço marcava o período vigente como fechado e criava o seguinte na
+  mesma transação, mas o Hibernate ordenava o `INSERT` antes do `UPDATE` ainda não efetivado.
+- Decisão: efetivar o fechamento do período antes de inserir o próximo, preservando a transação
+  atômica e a restrição que impede dois períodos abertos para o mesmo produto.
+- Prevenção: o teste do serviço exige explicitamente `saveAndFlush` do período fechado antes do
+  `save` do período seguinte. Falha na ativação não pode deixar experimento, run, produto ou janela
+  comercial em estado parcial.
+
 ## 2026-08-25 — Tela dedicada do histórico da cadeia
 
 - Evidência produtiva: o backend já entregava períodos e custos por etapa, mas o catálogo expunha o

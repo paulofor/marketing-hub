@@ -4,7 +4,7 @@ import axios from "axios";
 export type ProductStageMeasurement = {
   stageType: "PROCESS" | "SUBPROCESS";
   sequenceLabel?: string | null;
-  trackingStatus: "CURRENT" | "COMPLETED" | "RECORDED";
+  trackingStatus: "CURRENT" | "COMPLETED" | "RECORDED" | "PLANNED";
   processDefinitionId: number;
   processCode: string;
   processName: string;

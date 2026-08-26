@@ -179,6 +179,13 @@
 - Proteção: testes de contrato cobrem plano dirigido extenso e rejeição de oferta coincidente apenas por `WhatsApp`, público ou canal.
 - Recorrência fechada localmente em 2026-08-26: o endpoint oficial de ofertas do marketplace não conseguia fornecer nenhuma referência Hotmart porque o filtro SQL dinâmico concatenava o último parâmetro diretamente com `ORDER BY`, gerando `?ORDER BY` e HTTP 500. A montagem agora preserva a quebra de linha antes da ordenação, e o teste de persistência protege explicitamente o SQL produzido. O executor local da Descoberta v5 também exige as duas coleções vivas, pelo menos uma referência Hotmart e o marcador que impede tratar score ou temperatura como venda.
 
+## LOOP-META-AD-LIBRARY-TOKEN-SEM-AUTORIZACAO — Token válido interpretado como acesso à Biblioteca
+
+- **Sintoma:** a integração parece configurada porque existe token e `ads_read=granted`, mas ciclos da Descoberta não recebem cobertura real da categoria ou podem interpretar resposta vazia como ausência de anúncios.
+- **Causa-raiz confirmada em 2026-08-26:** os tokens operacionais existentes passam na consulta de permissões, porém uma chamada real a `ads_archive` é rejeitada pela Meta com OAuth `code=10` e `error_subcode=2332002`; configuração da credencial não comprova autorização do aplicativo para esse endpoint.
+- **Correção efetiva local:** o coletor realiza preflight real em `ads_archive` antes de reservar uma pendência, publica diagnóstico sanitizado na saúde e mantém a fila intacta quando a autorização externa não foi concedida. Argos recebe status explícito de espera ou indisponibilidade e nunca converte a falha em ausência de mercado.
+- **Prevenção:** teste de contrato cobre token ausente, rejeição da Meta, token fora da URL, bloqueio da reserva e consulta Instagram normalizada. No Brasil, o caminho permanece supervisionado pela Biblioteca pública, sem scraping ou contorno de controle de acesso.
+
 ## LOOP-PRODUCT-AI-PAID-DELIVERY-CONTRACT-DRIFT — Entrega paga sem template ativo
 
 - **Severidade**: CRÍTICO.
@@ -1923,6 +1930,22 @@ Use este checklist quando o problema estiver em algum loop acima:
   estado, OOM e contador de reinícios do container, falhar no segundo reinício e exigir duas
   respostas HTTP consecutivas antes de considerar a versão estável. Um teste simula reinício,
   encerramento e inicialização lenta para manter o rollback seguro sem desperdiçar toda a janela.
+
+## LOOP-JPA-FECHA-ABRE-PERIODO-SEM-FLUSH — INSERT disputa o slot ainda aberto
+
+- **Data:** 2026-08-26.
+- **Sintoma:** a ativação administrativa da Vega falhou com HTTP 500 e
+  `Duplicate entry '4-1' for key 'uk_product_process_period_open'`, embora o serviço fechasse o
+  período anterior antes de construir o novo.
+- **Causa-raiz confirmada:** ambos os comandos estavam na mesma unidade de trabalho e o Hibernate
+  executou o `INSERT` do próximo período antes de enviar o `UPDATE` que anulava `open_slot` no
+  período vigente. O teste com repository mockado validava somente duas chamadas a `save` e não
+  protegia a ordem SQL exigida pela restrição.
+- **Correção sistêmica:** o fechamento usa `saveAndFlush` antes da abertura seguinte; o flush não
+  confirma a transação e, portanto, experimento, run, produto, janela e histórico continuam
+  revertendo juntos diante de qualquer falha posterior.
+- **Prevenção:** teste de contrato verifica a ordem `saveAndFlush(período fechado)` e depois
+  `save(período novo)`, mantendo a restrição de um único período aberto em vez de enfraquecê-la.
 
 ## LOOP-AGENTE-REVISOR-DEPENDE-DE-SHELL-ANINHADO — parecer bloqueia evidência já verificável
 

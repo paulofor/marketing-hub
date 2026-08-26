@@ -96,11 +96,21 @@ export default function BusinessProcessDiagram({
                   <small>Código: {node.subprocessCode}</small>
                 </div>
               ) : null}
-              {node.description ? (
+              {node.description || node.type === "TASK" ? (
                 <div className="process-node__objective">
-                  <p>
-                    <strong>Objetivo:</strong> {node.description}
-                  </p>
+                  {node.description ? (
+                    <p>
+                      <strong>Objetivo:</strong> {node.description}
+                    </p>
+                  ) : null}
+                  {node.type === "TASK" ? (
+                    <Link
+                      className="process-node__executions-link"
+                      to={`/business-processes/${processDefinitionId}/activities/${encodeURIComponent(node.id)}/executions`}
+                    >
+                      Ver as 10 execuções mais recentes
+                    </Link>
+                  ) : null}
                   {node.type === "TASK" &&
                   (node.documentOutput ||
                     documentActivityIds.includes(node.id)) ? (

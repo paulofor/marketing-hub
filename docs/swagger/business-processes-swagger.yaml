@@ -98,6 +98,23 @@ paths:
                 items:
                   $ref: "#/components/schemas/BusinessProcessActivityDocument"
         "404": { description: Processo ou atividade TASK não encontrada }
+  /api/business-processes/{processDefinitionId}/activities/{activityId}/executions:
+    get:
+      summary: Lista as dez tarefas mais recentes da atividade no processo canônico
+      parameters:
+        - $ref: "#/components/parameters/ProcessDefinitionId"
+        - name: activityId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Atividade selecionada e execuções de todas as versões do mesmo processo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusinessProcessActivityExecutionHistory"
+        "404": { description: Processo ou atividade TASK não encontrada }
 components:
   parameters:
     ProcessDefinitionId:
@@ -264,3 +281,64 @@ components:
         estimatedCostUsd: { type: number, format: decimal, nullable: true }
         costEstimationStatus: { type: string }
         generatedAt: { type: string, format: date-time }
+    BusinessProcessActivityExecutionHistory:
+      type: object
+      required:
+        - selectedProcessDefinitionId
+        - processCode
+        - processName
+        - selectedProcessVersionNumber
+        - selectedProcessStatus
+        - activityId
+        - activityName
+        - executions
+      properties:
+        selectedProcessDefinitionId: { type: integer, format: int64 }
+        processCode: { type: string }
+        processName: { type: string }
+        selectedProcessVersionNumber: { type: integer }
+        selectedProcessStatus: { type: string, enum: [DRAFT, PUBLISHED, RETIRED] }
+        activityId: { type: string }
+        activityName: { type: string }
+        activityOwnerName: { type: string, nullable: true }
+        executions:
+          type: array
+          maxItems: 10
+          items:
+            $ref: "#/components/schemas/BusinessProcessActivityExecution"
+    BusinessProcessActivityExecution:
+      type: object
+      required:
+        - taskId
+        - processDefinitionId
+        - processVersionNumber
+        - title
+        - status
+        - assignedAgentKey
+        - assignedAgentNickname
+        - costEstimationStatus
+        - createdAt
+      properties:
+        taskId: { type: integer, format: int64 }
+        processDefinitionId: { type: integer, format: int64 }
+        processVersionNumber: { type: integer }
+        title: { type: string }
+        status: { type: string, enum: [PENDING, IN_PROGRESS, COMPLETED, BLOCKED, CANCELLED] }
+        sourceReference: { type: string, nullable: true }
+        assignedAgentKey: { type: string }
+        assignedAgentNickname: { type: string }
+        comments: { type: string, nullable: true }
+        evidenceJson: { type: string, nullable: true }
+        executionError: { type: string, nullable: true }
+        inputTokens: { type: integer, format: int64, nullable: true }
+        cachedInputTokens: { type: integer, format: int64, nullable: true }
+        outputTokens: { type: integer, format: int64, nullable: true }
+        estimatedCostUsd: { type: number, format: decimal, nullable: true }
+        costEstimationStatus: { type: string }
+        createdAt: { type: string, format: date-time }
+        startedAt: { type: string, format: date-time, nullable: true }
+        finishedAt: { type: string, format: date-time, nullable: true }
+        modelCode: { type: string, nullable: true }
+        reasoningEffort: { type: string, nullable: true }
+        productInternalName: { type: string, nullable: true }
+        promptSent: { type: string, nullable: true }

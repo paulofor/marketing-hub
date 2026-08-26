@@ -98,3 +98,16 @@ copy.
 
 Enquanto esses sinais não existirem, Entrevista sem Branco deve permanecer como hipótese de pesquisa
 e não consumir a fábrica de produto antes de Rigel.
+
+## Integração Meta preparada localmente
+
+Em 2026-08-26, a Descoberta passou a solicitar por ciclo a cobertura real da categoria no Instagram.
+Argos registra país, plataforma e termos no plano; o backend cria ou reutiliza um acompanhamento no
+radar MOIS e devolve contagens de anúncios aderentes, ativos, anunciantes e atualidade. Essas métricas
+ficam separadas das dez ofertas pagas comparáveis e não são interpretadas como venda.
+
+O preflight operacional confirmou que os tokens atuais possuem `ads_read`, mas a Meta rejeita a
+consulta real a `ads_archive` com `code=10` e `error_subcode=2332002`. Por isso, o modo automático
+permanece bloqueado até a autorização externa do aplicativo. No Brasil, a coleta continua pelo fluxo
+oficial supervisionado da Biblioteca pública; falha de autorização nunca é convertida em ausência de
+anúncio ou de mercado.

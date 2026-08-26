@@ -105,8 +105,16 @@ test("buildSearchQueries inclui pesquisa de canal no recorte B2C Instagram", () 
     commercialConstraints: "B2C e mobile",
   });
 
-  assert.ok(queries.some((query) => query.includes("anúncio Instagram Reel demonstração")));
-  assert.ok(queries.some((query) => query.includes("aplicativo preço review pessoa física")));
+  assert.ok(
+    queries.some((query) =>
+      query.includes("anúncio Instagram Reel demonstração"),
+    ),
+  );
+  assert.ok(
+    queries.some((query) =>
+      query.includes("aplicativo preço review pessoa física"),
+    ),
+  );
 });
 
 test("analyzeSearchResults não presume Instagram no ciclo B2C", () => {
@@ -132,10 +140,81 @@ test("analyzeSearchResults não presume Instagram no ciclo B2C", () => {
   );
 
   assert.equal(report.opportunities[0].decision, "RESEARCH_MORE");
-  assert.match(report.opportunities[0].commercialRisk, /canal não pode ser presumido/i);
+  assert.match(
+    report.opportunities[0].commercialRisk,
+    /cobertura Meta\/Instagram/i,
+  );
   const evidence = JSON.parse(report.opportunities[0].evidenceJson);
   assert.equal(evidence.instagramB2cRequired, true);
   assert.equal(evidence.instagramB2cGatePassed, false);
+  assert.deepEqual(evidence.metaCoverage, []);
+});
+
+test("analyzeSearchResults aceita o gate de canal somente com cobertura Meta Instagram atual", () => {
+  const job = {
+    theme: "entrevista de emprego",
+    targetAudience: "pessoa física buscando recolocação",
+    acquisitionChannel: "Instagram",
+    commercialConstraints: "B2C e mobile",
+  };
+  const results = [
+    {
+      title: "Dificuldade em entrevistas",
+      url: "https://forum.example/a",
+      snippet: "problema insegurança caro complicado comprar curso review",
+    },
+    {
+      title: "Interview training systematic review",
+      url: "https://pubmed.ncbi.nlm.nih.gov/123456/",
+      snippet: "systematic review interview training intervention",
+    },
+  ];
+  const offers = Array.from({ length: 10 }, (_, index) => ({
+    marketplace: "HOTMART",
+    referenceId: String(index),
+    title: `Treino entrevista emprego ${index}`,
+    url: `https://hotmart.com/${index}`,
+    price: "R$ 29,00",
+    collectedAt: "2026-08-25T00:00:00Z",
+  }));
+  const report = analyzeSearchResults(job, results, offers, {
+    minimumComparableOffers: 10,
+    metaAdEvidence: [
+      {
+        referenceId: "ad-1",
+        title: "Treino entrevista emprego",
+        active: true,
+      },
+    ],
+    metaCoverage: [
+      {
+        publisherPlatform: "INSTAGRAM",
+        sourceStatus: "OBSERVED",
+        activeAds: 1,
+        advertisersObserved: 1,
+      },
+    ],
+    sourceEvaluatedAt: "2026-08-26T00:00:00Z",
+  });
+
+  const evidence = JSON.parse(report.opportunities[0].evidenceJson);
+  assert.equal(evidence.instagramB2cGatePassed, true);
+  assert.equal(evidence.marketplaceOffers.length, 10);
+  assert.equal(evidence.metaAdEvidence.length, 1);
+  assert.equal(evidence.metaCoverage[0].advertisersObserved, 1);
+  assert.equal(evidence.purchaseMomentGate.status, "WAITING_PRIVATE_PROTOTYPE");
+  assert.equal(evidence.purchaseMomentGate.finalPrioritizationEligible, false);
+  assert.ok(
+    evidence.purchaseMomentGate.requiredObservedSignals.includes(
+      "READY_RESULT_USED",
+    ),
+  );
+  assert.equal(
+    evidence.purchaseMomentGate.humanValueDeliveryRequirements
+      .requiresManualAssembly,
+    false,
+  );
+  assert.equal(report.opportunities[0].decision, "RESEARCH_MORE");
 });
 
 test("analyzeSearchResults approves strong non-sensitive PDE opportunity", () => {
@@ -377,12 +456,14 @@ test("mecanismo de propostas exige ciência sobre decisão, clareza e confiança
       {
         title: "Information overload and online purchase decision",
         url: "https://frontiersin.org/journals/psychology/articles/1/full",
-        snippet: "Information clarity reduces cognitive load and purchase decision difficulty.",
+        snippet:
+          "Information clarity reduces cognitive load and purchase decision difficulty.",
       },
       {
         title: "Software de proposta preço",
         url: "https://produto.example/propostas",
-        snippet: "Comprar plano por R$ 29 para resolver problema confuso e manual.",
+        snippet:
+          "Comprar plano por R$ 29 para resolver problema confuso e manual.",
       },
     ],
   );
@@ -482,7 +563,10 @@ test("searchInternet sends the canonical Brazilian locale accepted by Brave", as
   const calls = [];
 
   await searchInternet(
-    { theme: "solução pronta de IA", targetAudience: "profissionais brasileiros" },
+    {
+      theme: "solução pronta de IA",
+      targetAudience: "profissionais brasileiros",
+    },
     {
       maxSearchResults: 1,
       minSearchQueries: 1,
@@ -686,8 +770,16 @@ test("analyzeSearchResults bloqueia dossie sem dez ofertas comparaveis", () => {
   const report = analyzeSearchResults(
     { theme: "leads", targetAudience: "manicures" },
     [
-      { title: "Preço curso leads", url: "https://example.com/a", snippet: "curso comprar preço" },
-      { title: "Estudo", url: "https://pubmed.ncbi.nlm.nih.gov/1", snippet: "scientific study" },
+      {
+        title: "Preço curso leads",
+        url: "https://example.com/a",
+        snippet: "curso comprar preço",
+      },
+      {
+        title: "Estudo",
+        url: "https://pubmed.ncbi.nlm.nih.gov/1",
+        snippet: "scientific study",
+      },
     ],
     Array.from({ length: 9 }, (_, index) => ({
       marketplace: "HOTMART",
@@ -697,8 +789,13 @@ test("analyzeSearchResults bloqueia dossie sem dez ofertas comparaveis", () => {
     })),
   );
   assert.match(report.decisionSummary, /9 ofertas comparáveis/);
-  assert.ok(report.opportunities.every((item) => item.decision === "RESEARCH_MORE"));
-  assert.equal(JSON.parse(report.opportunities[0].evidenceJson).marketplaceOffers.length, 9);
+  assert.ok(
+    report.opportunities.every((item) => item.decision === "RESEARCH_MORE"),
+  );
+  assert.equal(
+    JSON.parse(report.opportunities[0].evidenceJson).marketplaceOffers.length,
+    9,
+  );
 });
 
 test("scientific and commercial queries are inside the operational query limit", () => {
@@ -720,7 +817,10 @@ test("plano dirigido extenso não elimina pesquisa científica e comercial", () 
   const queries = buildSearchQueries({
     theme: "propostas comerciais para prestadores",
     targetAudience: "prestadores locais",
-    directedQueries: Array.from({ length: 16 }, (_, index) => `consulta dirigida ${index}`),
+    directedQueries: Array.from(
+      { length: 16 },
+      (_, index) => `consulta dirigida ${index}`,
+    ),
   }).slice(0, 14);
 
   assert.ok(

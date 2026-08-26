@@ -31,10 +31,12 @@ class MoisMetaAdInvestigationControllerTest {
                 "workspace-001",
                 "agenda cheia",
                 "BR",
+                "INSTAGRAM",
                 "ACTIVE_SUPERVISED",
                 new MoisMetaAdDtos.CollectionState(
                     "SUPERVISED",
                     "A API oficial não cobre anúncios comerciais gerais no Brasil",
+                    "https://www.facebook.com/ads/library/?q=agenda+cheia",
                     Instant.parse("2026-09-02T20:00:00Z")),
                 "INVESTIGAR",
                 List.of(),
@@ -54,7 +56,7 @@ class MoisMetaAdInvestigationControllerTest {
                     new ObjectMapper()
                         .writeValueAsString(
                             new MoisMetaAdDtos.CreateInvestigationRequest(
-                                "workspace-001", "agenda cheia", "BR"))))
+                                "workspace-001", "agenda cheia", "BR", "INSTAGRAM"))))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.gateDecision").value("INVESTIGAR"))
         .andExpect(jsonPath("$.adsObserved").value(0));
@@ -96,6 +98,7 @@ class MoisMetaAdInvestigationControllerTest {
                       "advertiserName":"Marca exemplo",
                       "adLibraryUrl":"https://www.facebook.com/ads/library/?id=123456",
                       "adText":"Promessa observada sem copiar o criativo",
+                      "publisherPlatforms":["INSTAGRAM"],
                       "pageActive":true,
                       "commercialSignal":true
                     }

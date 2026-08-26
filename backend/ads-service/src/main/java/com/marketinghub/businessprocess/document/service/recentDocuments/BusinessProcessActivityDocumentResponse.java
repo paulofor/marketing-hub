@@ -17,4 +17,9 @@ public record BusinessProcessActivityDocumentResponse(
     Long outputTokens,
     BigDecimal estimatedCostUsd,
     String costEstimationStatus,
-    Instant generatedAt) {}
+    Instant startedAt,
+    Instant finishedAt,
+    String modelCode,
+    String reasoningEffort,
+    String productInternalName,
+    String promptSent) {}

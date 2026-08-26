@@ -84,27 +84,23 @@ test("aceita três oportunidades com doze ofertas pagas deduplicadas", () => {
 
 test("bloqueia B2B disfarçado no recorte Instagram", () => {
   const research = researchFixture();
-  research.commercialFocus = {
-    audienceModel: "B2C",
-    acquisitionChannel: "INSTAGRAM",
-    benchmarkRule: "STRICTLY_EXCEEDS",
-    maxMinutesToValue: 10,
-  };
-  for (const candidate of research.candidates) {
-    Object.assign(candidate, {
-      audienceModel: "B2C",
-      acquisitionChannel: "INSTAGRAM",
-      requiresBusinessOperation: false,
-      consumerMoment: "Uma situação pessoal concreta",
-      instagramHook: "Veja a saída concreta no celular",
-      mobileValueMoment: "Recebe uma primeira resposta útil em cinco minutos",
-    });
-  }
+  addB2cResearchFields(research);
   research.candidates[1].requiresBusinessOperation = true;
 
   assert.throws(
     () => validateResearchInput(research),
     /não cumpre o contrato B2C\/Instagram/,
+  );
+});
+
+test("bloqueia B2C que transfere prompting ao consumidor", () => {
+  const research = researchFixture();
+  addB2cResearchFields(research);
+  research.candidates[0].requiresPromptEngineering = true;
+
+  assert.throws(
+    () => validateResearchInput(research),
+    /território humano e entrega pronta/,
   );
 });
 
@@ -474,8 +470,19 @@ function addB2cComparisonFields(result) {
       consumerMoment: "Uma situação pessoal concreta",
       instagramHook: "Veja a saída concreta no celular",
       mobileValueMomentMinutes: 8,
+      humanValueTerritories: ["RECOGNITION", "EFFORT_RELIEF"],
+      readyMadeOutcome: "Resultado final pronto para uso",
+      requiresPromptEngineering: false,
+      requiresManualAssembly: false,
+      usableWithoutAiKnowledge: true,
     });
   }
+  Object.assign(result.chosenOpportunity, {
+    readyMadeOutcome: "Resultado final pronto para uso",
+    requiresPromptEngineering: false,
+    requiresManualAssembly: false,
+    usableWithoutAiKnowledge: true,
+  });
 }
 
 function psiqueFixture() {
@@ -483,6 +490,40 @@ function psiqueFixture() {
     decision: "APPROVE",
     sourceAlternativeName: "A",
     workingProductName: "Produto A",
+    readyMadeOutcomeIsUsable: true,
+    aiSkillRequired: false,
     valueScore: 80,
   };
+}
+
+function addB2cResearchFields(research) {
+  research.commercialFocus = {
+    audienceModel: "B2C",
+    acquisitionChannel: "INSTAGRAM",
+    benchmarkRule: "STRICTLY_EXCEEDS",
+    maxMinutesToValue: 10,
+  };
+  for (const candidate of research.candidates) {
+    Object.assign(candidate, {
+      audienceModel: "B2C",
+      acquisitionChannel: "INSTAGRAM",
+      requiresBusinessOperation: false,
+      consumerMoment: "Uma situação pessoal concreta",
+      instagramHook: "Veja a saída concreta no celular",
+      mobileValueMoment: "Recebe uma primeira resposta útil em cinco minutos",
+      humanValueTerritories: ["RECOGNITION", "EFFORT_RELIEF"],
+      humanValueEvidenceSourceIds: [
+        `${candidate.name}-pain`,
+        `${candidate.name}-official`,
+      ],
+      desiredHumanTransformation: "Sentir progresso reconhecível com menos esforço",
+      readyMadeDeliverable: "Resultado final pronto para uso",
+      minimumCustomerInput: "Uma resposta curta da própria pessoa",
+      requiresPromptEngineering: false,
+      requiresManualAssembly: false,
+      usableWithoutAiKnowledge: true,
+      customerStepsToValue: 3,
+      automationBoundary: "A pessoa revisa e decide antes de usar",
+    });
+  }
 }

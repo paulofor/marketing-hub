@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import test from "node:test";
 import {
   deterministicPlan,
@@ -32,8 +32,23 @@ test("plano bloqueia marketplace e volume não autorizados", () => {
   assert.throws(() => validatePlan(result.plan), /Marketplace não autorizado/);
 });
 
+test("plano B2C para Instagram pesquisa cena pessoal e microvalor mobile", () => {
+  const result = deterministicPlan({
+    theme: "preparação para entrevista de emprego",
+    targetAudience: "pessoa física em busca de emprego",
+    acquisitionChannel: "Instagram",
+    commercialConstraints: "B2C, oferta simples e mobile",
+  });
+
+  assert.match(result.plan.questions[0], /cena pessoal/i);
+  assert.ok(result.plan.publicQueries.some((query) => /Instagram Reel/.test(query)));
+  assert.match(result.plan.metaAdRequests[0].query, /consumidor/);
+  assert.ok(result.plan.stopConditions.some((condition) => /depende de empresa/i.test(condition)));
+});
+
 test("planejamento envia o contexto pela entrada padrão e lê a saída estruturada", async () => {
   let receivedInput;
+  let receivedSchema;
   const expected = deterministicPlan({
     theme: "propostas comerciais",
     targetAudience: "prestadores locais",
@@ -50,6 +65,8 @@ test("planejamento envia o contexto pela entrada padrão e lê a saída estrutur
       model: "modelo-teste",
       execute: async (_command, args, input) => {
         receivedInput = input;
+        const schemaIndex = args.indexOf("--output-schema") + 1;
+        receivedSchema = JSON.parse(await readFile(args[schemaIndex], "utf8"));
         const outputIndex = args.indexOf("--output-last-message") + 1;
         await writeFile(args[outputIndex], JSON.stringify(expected));
       },
@@ -58,6 +75,10 @@ test("planejamento envia o contexto pela entrada padrão e lê a saída estrutur
 
   assert.match(receivedInput, /ciclo 33/);
   assert.match(receivedInput, /propostas comerciais/);
+  assert.match(receivedInput, /B2B disfarçado/);
+  assert.doesNotMatch(receivedInput, /{{[^}]+}}/);
+  assert.equal(receivedSchema.additionalProperties, false);
+  assert.ok(receivedSchema.required.includes("minimumComparableOffers"));
   assert.deepEqual(result.plan, expected);
   assert.equal(result.model, "modelo-teste");
 });

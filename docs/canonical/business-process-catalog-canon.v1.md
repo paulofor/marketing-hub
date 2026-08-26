@@ -85,6 +85,27 @@ legíveis como legado até poderem ser vinculados sem fabricar dados.
 - A tela renderiza o grafo persistido pelo backend e não infere status ou regra de negócio.
 - Publicar uma definição não publica landing, campanha, oferta ou conteúdo e não autoriza gasto.
 
+## Commits por produto e processo
+
+Toda alteração versionada realizada para um produto durante um processo ou subprocesso deve ser
+registrada de forma estruturada contra o `product_id` e a versão exata da
+`business_process_definition`. O registro deve preservar, no mínimo, repositório, SHA completo do
+commit, resumo funcional, responsável e data do registro. O mesmo commit pode atender mais de um
+produto ou processo somente quando cada vínculo for declarado separadamente; inferência por nome,
+status comercial, branch, PR ou commit atual da build é proibida.
+
+O histórico da cadeia de valor do produto é a superfície administrativa canônica para consultar e
+registrar esses vínculos. A inclusão deve ser idempotente para a combinação produto, processo,
+repositório e SHA, sem apagar vínculos anteriores quando o produto avançar de processo. Commits são
+evidência de implementação, não evidência de venda, qualidade, deploy ou objetivo funcional atingido;
+o processo continua sujeito aos próprios gates e critérios de conclusão.
+
+Os contratos canônicos são `GET /api/products/{productId}/process-commits` para consulta,
+`GET /api/products/{productId}/process-commits/{commitId}` para detalhe segregado e
+`POST /api/products/{productId}/process-commits` para registro. O backend deve rejeitar produto,
+processo ou SHA inválidos e impedir que a tela vincule silenciosamente um commit a um processo fora
+do histórico conhecido daquele produto.
+
 ## Recursos especializados por atividade
 
 Uma atividade `TASK` pode declarar opcionalmente `executionResourceCode` quando o agente precisar de

@@ -2,13 +2,22 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-COMPOSE_FILE="${ROOT_DIR}/docker-compose.local-validation.yml"
+BASE_COMPOSE_FILE="${ROOT_DIR}/docker-compose.yml"
+VALIDATION_COMPOSE_FILE="${ROOT_DIR}/docker-compose.local-validation.yml"
 MYSQL_SERVICE="pde-platform-local-mysql"
-MYSQL_STARTED=0
+TOPOLOGY_STARTED=0
+
+compose() {
+  docker compose \
+    -f "${BASE_COMPOSE_FILE}" \
+    -f "${VALIDATION_COMPOSE_FILE}" \
+    --profile local-e2e \
+    "$@"
+}
 
 cleanup() {
-  if [[ "${MYSQL_STARTED}" == "1" && "${PDE_KEEP_LOCAL_DB:-0}" != "1" ]]; then
-    docker compose -f "${COMPOSE_FILE}" down --volumes --remove-orphans
+  if [[ "${TOPOLOGY_STARTED}" == "1" && "${PDE_KEEP_LOCAL_DB:-0}" != "1" ]]; then
+    compose down --volumes --remove-orphans
   fi
 }
 
@@ -21,23 +30,12 @@ fi
 
 docker version >/dev/null
 docker compose version >/dev/null
-docker compose -f "${COMPOSE_FILE}" up -d "${MYSQL_SERVICE}"
-MYSQL_STARTED=1
-
-for _ in {1..60}; do
-  status="$(docker inspect -f '{{.State.Health.Status}}' "${MYSQL_SERVICE}" 2>/dev/null || true)"
-  if [[ "${status}" == "healthy" ]]; then
-    break
-  fi
-  sleep 2
-done
-
-if [[ "$(docker inspect -f '{{.State.Health.Status}}' "${MYSQL_SERVICE}" 2>/dev/null || true)" != "healthy" ]]; then
-  docker compose -f "${COMPOSE_FILE}" logs "${MYSQL_SERVICE}"
-  exit 1
-fi
-
-(
-  cd "${ROOT_DIR}/frontend"
-  npm run test:local-integration
-)
+compose config --quiet
+TOPOLOGY_STARTED=1
+compose up -d --build --wait \
+  pde-contract-server \
+  "${MYSQL_SERVICE}" \
+  pde-platform-backend \
+  pde-platform-frontend
+compose build pde-playwright-validation
+compose run --rm --no-deps pde-playwright-validation

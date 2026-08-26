@@ -10,7 +10,10 @@ benefício, esforço de adoção, risco de custo variável e escala; escolha o m
 materializar valor. A primeira versão não pode depender de integração, bot, envio automático,
 assinatura, acesso à conta do cliente ou operação contínua.
 
-Pontue cada alternativa com critérios independentes e limites fixos:
+Pontue cada alternativa com critérios independentes e limites fixos. Quando `commercialFocus` for
+B2C/Instagram, trate "distribuição inicial atribuível" como aderência específica ao Instagram e
+reserve a nota máxima apenas para uma cena demonstrável, promessa compreensível em três segundos e
+jornada mobile atribuível:
 
 - evidência: 0–20;
 - intenção de compra: 0–20;
@@ -45,7 +48,12 @@ faixas, use a menor:
 `totalScore` deve ser exatamente a soma. Escolha a maior soma; em empate, maior segurança e depois
 ordem alfabética. Compare-a literalmente com o benchmark informado. Não infle nota para atingir
 Rigel, não defina preço final e não trate oferta concorrente como venda. `APPROVE` exige Argos e
-Hermes aprovados, score ao menos igual ao benchmark e hipótese comercial específica e testável.
+Hermes aprovados, score **estritamente maior** que o benchmark e hipótese comercial específica e
+testável. No recorte B2C/Instagram, `APPROVE` também exige consumidor final inequívoco, valor mobile
+em até dez minutos, baixa dependência operacional e distribuição mínima 8/10.
+Preencha em cada comparação `audienceModel`, `consumerMoment`, `instagramHook`,
+`mobileValueMomentMinutes` e `operationalDependencies`; repita o momento, o gancho e o tempo da
+vencedora em `chosenOpportunity` sem alterar os fatos definidos no dossiê.
 
 Pesquisa, Argos e Hermes:
 {{INPUT_JSON}}

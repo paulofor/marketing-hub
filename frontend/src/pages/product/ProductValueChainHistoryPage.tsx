@@ -8,11 +8,13 @@ import {
 import { Link, useParams } from "react-router-dom";
 import { formatCommercialStatus } from "../../api/product/productStatus";
 import { useProduct } from "../../api/product/useProduct";
+import { useProductProcessCommits } from "../../api/product/useProductProcessCommits";
 import {
   type ProductStageMeasurement,
   useProductValueChainPosition,
 } from "../../api/product/useProductValueChainPositions";
 import PageTitle from "../../components/PageTitle";
+import ProductProcessCommitLedger from "../../components/ProductProcessCommitLedger";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
   day: "2-digit",
@@ -99,6 +101,7 @@ export default function ProductValueChainHistoryPage() {
   const { productId } = useParams();
   const productQuery = useProduct(productId);
   const positionQuery = useProductValueChainPosition(productId);
+  const commitsQuery = useProductProcessCommits(productId);
   const product = productQuery.data;
   const position = positionQuery.data;
   const measurements = [
@@ -293,10 +296,26 @@ export default function ProductValueChainHistoryPage() {
                         </small>
                       </div>
                     </dl>
+                    <ProductProcessCommitLedger
+                      productId={product.id}
+                      processDefinitionId={measurement.processDefinitionId}
+                      processName={measurement.processName}
+                      commits={(commitsQuery.data ?? []).filter(
+                        (commit) =>
+                          commit.processDefinitionId ===
+                          measurement.processDefinitionId,
+                      )}
+                    />
                   </li>
                 ))}
               </ol>
             )}
+            {commitsQuery.isError ? (
+              <div className="alert alert-warning mt-3 mb-0" role="alert">
+                O histórico de commits está temporariamente indisponível. As
+                datas, custos e demais evidências do processo continuam válidos.
+              </div>
+            ) : null}
           </section>
         </>
       )}

@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import axios from "axios";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -136,6 +137,7 @@ function renderPage() {
 describe("ProductValueChainHistoryPage", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    window.localStorage.clear();
     window.history.pushState({}, "", "/products/9/value-chain-history");
   });
 
@@ -146,6 +148,9 @@ describe("ProductValueChainHistoryPage", () => {
       if (url === "/api/products/9") return Promise.resolve({ data: product });
       if (url === "/api/products/value-chain-positions/9") {
         return Promise.resolve({ data: position });
+      }
+      if (url === "/api/products/9/process-commits") {
+        return Promise.resolve({ data: [] });
       }
       return Promise.reject(new Error(`Unexpected URL: ${url}`));
     });
@@ -184,6 +189,77 @@ describe("ProductValueChainHistoryPage", () => {
     expect(
       within(timeline).getAllByText("Objetivo ainda sem saída comprovada"),
     ).toHaveLength(2);
+    expect(
+      within(timeline).getAllByRole("button", { name: "Registrar commit" }),
+    ).toHaveLength(3);
+  });
+
+  it("registers and displays a commit in the exact product process", async () => {
+    const user = userEvent.setup();
+    const sha = "a".repeat(40);
+    let commits: any[] = [];
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/products/9") return Promise.resolve({ data: product });
+      if (url === "/api/products/value-chain-positions/9") {
+        return Promise.resolve({ data: position });
+      }
+      if (url === "/api/products/9/process-commits") {
+        return Promise.resolve({ data: commits });
+      }
+      return Promise.reject(new Error(`Unexpected URL: ${url}`));
+    });
+    (axios.post as any).mockImplementation((url: string, payload: any) => {
+      commits = [
+        {
+          id: 71,
+          productId: 9,
+          processDefinitionId: payload.processDefinitionId,
+          processCode: "pde-commercial-plan-offer",
+          processName: "Plano Comercial e desenho da oferta PDE",
+          processVersion: 4,
+          repositoryName: payload.repositoryName,
+          commitSha: payload.commitSha,
+          commitSummary: payload.commitSummary,
+          commitUrl: payload.commitUrl,
+          recordedBy: payload.recordedBy,
+          recordedAt: "2026-08-26T12:30:00Z",
+        },
+      ];
+      return Promise.resolve({ data: commits[0] });
+    });
+
+    renderPage();
+
+    await screen.findByRole("heading", {
+      name: "Histórico da cadeia de valor",
+    });
+    await user.click(
+      screen.getAllByRole("button", { name: "Registrar commit" })[0],
+    );
+    await user.type(screen.getByLabelText("SHA completo"), sha);
+    await user.type(
+      screen.getByLabelText("Resumo funcional"),
+      "Preserva os commits por produto e processo",
+    );
+    await user.click(screen.getByRole("button", { name: "Salvar vínculo" }));
+
+    expect(axios.post).toHaveBeenCalledWith(
+      "/api/products/9/process-commits",
+      expect.objectContaining({
+        processDefinitionId: 38,
+        repositoryName: "paulofor/marketing-hub",
+        commitSha: sha,
+        commitSummary: "Preserva os commits por produto e processo",
+        recordedBy: "time@marketinghub.io",
+      }),
+    );
+    expect(
+      await screen.findByText("Preserva os commits por produto e processo"),
+    ).toBeTruthy();
+    expect(screen.getByRole("link", { name: /aaaaaaaaaaaa/ })).toHaveAttribute(
+      "target",
+      "_blank",
+    );
   });
 
   it("makes an integration failure explicit without fabricating history", async () => {

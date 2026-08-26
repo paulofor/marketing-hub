@@ -82,6 +82,32 @@ test("aceita três oportunidades com doze ofertas pagas deduplicadas", () => {
   assert.doesNotThrow(() => validateResearchInput(researchFixture()));
 });
 
+test("bloqueia B2B disfarçado no recorte Instagram", () => {
+  const research = researchFixture();
+  research.commercialFocus = {
+    audienceModel: "B2C",
+    acquisitionChannel: "INSTAGRAM",
+    benchmarkRule: "STRICTLY_EXCEEDS",
+    maxMinutesToValue: 10,
+  };
+  for (const candidate of research.candidates) {
+    Object.assign(candidate, {
+      audienceModel: "B2C",
+      acquisitionChannel: "INSTAGRAM",
+      requiresBusinessOperation: false,
+      consumerMoment: "Uma situação pessoal concreta",
+      instagramHook: "Veja a saída concreta no celular",
+      mobileValueMoment: "Recebe uma primeira resposta útil em cinco minutos",
+    });
+  }
+  research.candidates[1].requiresBusinessOperation = true;
+
+  assert.throws(
+    () => validateResearchInput(research),
+    /não cumpre o contrato B2C\/Instagram/,
+  );
+});
+
 test("bloqueia ciclo com menos de dez ofertas pagas", () => {
   const research = researchFixture();
   research.sources = research.sources.filter(
@@ -167,10 +193,53 @@ test("Dédalo aceita a maior soma preservando formatos e benchmark", () => {
   );
 });
 
+test("Dédalo preserva alternativa B2C abaixo do gate de distribuição para comparação", () => {
+  const context = {
+    research: researchFixture(),
+    argos: argosFixture(),
+    hermes: hermesFixture(),
+  };
+  context.research.commercialFocus = {
+    audienceModel: "B2C",
+    acquisitionChannel: "INSTAGRAM",
+    benchmarkRule: "STRICTLY_EXCEEDS",
+    maxMinutesToValue: 10,
+  };
+  const result = dedaloFixture();
+  addB2cComparisonFields(result);
+  result.comparison[1].distributionScore = 6;
+  result.comparison[1].totalScore -= 2;
+
+  assert.doesNotThrow(() => validateFunctionalResult("dedalo", context, result));
+});
+
+test("Dédalo bloqueia aprovação da vencedora sem distribuição mínima no Instagram", () => {
+  const context = {
+    research: researchFixture(),
+    argos: argosFixture(),
+    hermes: hermesFixture(),
+  };
+  context.research.commercialFocus = {
+    audienceModel: "B2C",
+    acquisitionChannel: "INSTAGRAM",
+    benchmarkRule: "STRICTLY_EXCEEDS",
+    maxMinutesToValue: 10,
+  };
+  const result = dedaloFixture();
+  addB2cComparisonFields(result);
+  result.comparison[0].distributionScore = 6;
+  result.comparison[0].evidenceScore += 2;
+
+  assert.throws(
+    () => validateFunctionalResult("dedalo", context, result),
+    /sem distribuição mínima para Instagram/,
+  );
+});
+
 test("Dédalo bloqueia score cuja soma não corresponde ao total", () => {
   const invalid = dedaloFixture();
-  invalid.comparison[0].totalScore = 83;
-  invalid.chosenOpportunity.benchmark.candidateScore = 83;
+  invalid.comparison[0].totalScore = 84;
+  invalid.chosenOpportunity.benchmark.candidateScore = 84;
   invalid.chosenOpportunity.benchmark.result = "EXCEEDS";
   assert.throws(
     () =>
@@ -212,16 +281,16 @@ test("Psique avalia somente a vencedora e exige valor mínimo", () => {
   );
 });
 
-test("gate final aprova somente consenso que alcança Rigel", () => {
+test("gate final aprova somente consenso que supera Rigel", () => {
   const context = fullContext();
   assert.deepEqual(buildFinalDecision(context), {
     decision: "APPROVE",
     chosenOpportunity: "A",
     workingProductName: "Produto A",
-    totalScore: 82,
+    totalScore: 83,
     benchmarkName: "Rigel",
     benchmarkScore: 82,
-    benchmarkResult: "MEETS",
+    benchmarkResult: "EXCEEDS",
     agentDecisions: {
       argos: "APPROVE",
       hermes: "APPROVE",
@@ -359,7 +428,7 @@ function dedaloFixture() {
   return {
     decision: "APPROVE",
     comparison: [
-      scoredAlternative("A", 82),
+      scoredAlternative("A", 83),
       scoredAlternative("B", 76),
       scoredAlternative("C", 70),
     ],
@@ -370,8 +439,8 @@ function dedaloFixture() {
       benchmark: {
         name: "Rigel",
         score: 82,
-        candidateScore: 82,
-        result: "MEETS",
+        candidateScore: 83,
+        result: "EXCEEDS",
       },
     },
   };
@@ -396,6 +465,17 @@ function scoredAlternative(name, totalScore) {
     riskSafetyScore: 4,
     totalScore,
   };
+}
+
+function addB2cComparisonFields(result) {
+  for (const item of result.comparison) {
+    Object.assign(item, {
+      audienceModel: "B2C",
+      consumerMoment: "Uma situação pessoal concreta",
+      instagramHook: "Veja a saída concreta no celular",
+      mobileValueMomentMinutes: 8,
+    });
+  }
 }
 
 function psiqueFixture() {

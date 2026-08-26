@@ -33,6 +33,7 @@ export function selectActiveResearch(research) {
 /** Valida as evidências antes de qualquer consumo de modelo. */
 export function validateResearchInput(research) {
   if (research?.processVersion === 5) validateInspirationContract(research);
+  validateCommercialFocus(research);
   const candidates = research?.candidates || [];
   if (candidates.length !== 3) {
     throw new Error("A pesquisa deve comparar exatamente três oportunidades.");
@@ -82,6 +83,32 @@ export function validateResearchInput(research) {
     );
     if (new Set(candidateOffers.map((source) => source.offerKey)).size < 3) {
       throw new Error(`${candidate.name} precisa de ao menos três ofertas pagas comparáveis.`);
+    }
+  }
+}
+
+/** Protege o recorte comercial sem transformar qualquer tema popular em oportunidade B2C. */
+function validateCommercialFocus(research) {
+  const focus = research?.commercialFocus;
+  if (!focus) return;
+  if (
+    focus.audienceModel !== "B2C" ||
+    focus.acquisitionChannel !== "INSTAGRAM" ||
+    focus.benchmarkRule !== "STRICTLY_EXCEEDS" ||
+    focus.maxMinutesToValue !== 10
+  ) {
+    throw new Error("O recorte comercial deve ser B2C/Instagram, com valor em até dez minutos e benchmark estrito.");
+  }
+  for (const candidate of research.candidates || []) {
+    if (
+      candidate.audienceModel !== "B2C" ||
+      candidate.acquisitionChannel !== "INSTAGRAM" ||
+      candidate.requiresBusinessOperation !== false ||
+      !candidate.consumerMoment?.trim() ||
+      !candidate.instagramHook?.trim() ||
+      !candidate.mobileValueMoment?.trim()
+    ) {
+      throw new Error(`${candidate.name} não cumpre o contrato B2C/Instagram.`);
     }
   }
 }
@@ -163,8 +190,8 @@ export function buildFinalDecision(context) {
   for (const [agent, decision] of Object.entries(decisions)) {
     if (decision !== "APPROVE") reasons.push(`${agent} decidiu ${decision}.`);
   }
-  if (scored.totalScore < benchmarkScore) {
-    reasons.push(`Score ${scored.totalScore} abaixo do benchmark ${benchmarkScore}.`);
+  if (scored.totalScore <= benchmarkScore) {
+    reasons.push(`Score ${scored.totalScore} não supera o benchmark ${benchmarkScore}.`);
   }
   if (context.psique.valueScore < 75) {
     reasons.push(`Valor percebido ${context.psique.valueScore} abaixo do mínimo 75.`);
@@ -234,6 +261,17 @@ function validateArgos(research, result) {
         throw new Error(`Argos classificou como oferta paga uma fonte inválida: ${sourceId}.`);
       }
     }
+    if (research.commercialFocus) {
+      if (
+        alternative.audienceModel !== "B2C" ||
+        alternative.acquisitionChannel !== "INSTAGRAM" ||
+        alternative.mobileValueMomentMinutes > research.commercialFocus.maxMinutesToValue ||
+        !alternative.consumerMoment?.trim() ||
+        !alternative.instagramHook?.trim()
+      ) {
+        throw new Error(`${alternative.name} saiu de Argos sem recorte B2C/Instagram executável.`);
+      }
+    }
   }
 
   const recommended = result.alternatives.find(
@@ -282,6 +320,18 @@ function validateHermes(context, result) {
     if (item.distributionRoutes.some((route) => route.externalSpend !== "NONE")) {
       throw new Error("Hermes não pode autorizar gasto externo na Descoberta.");
     }
+    if (context.research.commercialFocus) {
+      const chosenRoute = item.distributionRoutes[item.chosenInitialRouteIndex];
+      if (chosenRoute.channel !== "INSTAGRAM") {
+        throw new Error(`Hermes não escolheu Instagram como rota inicial de ${item.candidateName}.`);
+      }
+      const eventPath = new Set(chosenRoute.eventPath || []);
+      for (const event of ["IMPRESSION", "CLICK", "EXPERIENCE_STARTED", "VALUE_MOMENT", "CHECKOUT_STARTED"]) {
+        if (!eventPath.has(event)) {
+          throw new Error(`Hermes não tornou a rota de ${item.candidateName} atribuível até checkout.`);
+        }
+      }
+    }
   }
   if (result.decision === "APPROVE" && context.argos.decision !== "APPROVE") {
     throw new Error("Hermes aprovou uma pesquisa não aprovada por Argos.");
@@ -314,6 +364,16 @@ function validateDedalo(context, result) {
     if (sum !== item.totalScore) {
       throw new Error(`Score total inconsistente em ${item.name}.`);
     }
+    if (context.research.commercialFocus) {
+      if (
+        item.audienceModel !== "B2C" ||
+        item.mobileValueMomentMinutes > context.research.commercialFocus.maxMinutesToValue ||
+        !item.consumerMoment?.trim() ||
+        !item.instagramHook?.trim()
+      ) {
+        throw new Error(`${item.name} não atingiu o gate B2C/Instagram de Dédalo.`);
+      }
+    }
   }
 
   const winner = [...result.comparison].sort(
@@ -327,6 +387,13 @@ function validateDedalo(context, result) {
   }
   if (result.chosenOpportunity.chosenFormat !== winner.chosenFormat) {
     throw new Error("Dédalo divergiu sobre o formato da oportunidade vencedora.");
+  }
+  if (
+    context.research.commercialFocus &&
+    result.decision === "APPROVE" &&
+    winner.distributionScore < 8
+  ) {
+    throw new Error("Dédalo aprovou vencedora sem distribuição mínima para Instagram.");
   }
 
   const benchmark = result.chosenOpportunity.benchmark;
@@ -348,7 +415,7 @@ function validateDedalo(context, result) {
   }
   if (
     result.decision === "APPROVE" &&
-    (winner.totalScore < benchmark.score ||
+    (winner.totalScore <= benchmark.score ||
       context.argos.decision !== "APPROVE" ||
       context.hermes.decision !== "APPROVE")
   ) {
@@ -366,6 +433,13 @@ function validatePsique(context, result) {
   }
   if (result.decision === "APPROVE" && result.valueScore < 75) {
     throw new Error("Psique aprovou valor percebido inferior ao mínimo de 75.");
+  }
+  if (
+    context.research?.commercialFocus &&
+    result.decision === "APPROVE" &&
+    (!result.canReachValueAlone || result.manipulationRisk !== "LOW")
+  ) {
+    throw new Error("Psique aprovou B2C sem valor autônomo ou com risco de manipulação.");
   }
 }
 

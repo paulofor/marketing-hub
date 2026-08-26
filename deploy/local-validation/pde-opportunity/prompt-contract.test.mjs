@@ -34,6 +34,21 @@ test("Dédalo usa padrões sem copiar nem pontuar inspiração", async () => {
 
   assert.match(prompt, /Não copie\s+produto, marca, promessa, texto, criativo ou estrutura proprietária/);
   assert.match(prompt, /não aumenta score nem substitui evidência independente/);
+  assert.match(prompt, /score \*\*estritamente maior\*\* que o benchmark/);
+  assert.match(prompt, /distribuição mínima 8\/10/);
+});
+
+test("agentes preservam o gate B2C e a atribuição Instagram", async () => {
+  const argos = await readFile(new URL("./prompts/argos.md", import.meta.url), "utf8");
+  const hermes = await readFile(new URL("./prompts/hermes.md", import.meta.url), "utf8");
+  const psique = await readFile(new URL("./prompts/psique.md", import.meta.url), "utf8");
+
+  assert.match(argos, /bloqueie\s+B2B disfarçado/);
+  assert.match(argos, /mobileValueMomentMinutes/);
+  assert.match(hermes, /IMPRESSION.*CHECKOUT_STARTED/s);
+  assert.match(hermes, /rota escolhida.*INSTAGRAM/s);
+  assert.match(psique, /canReachValueAlone/);
+  assert.match(psique, /manipulationRisk.*LOW/s);
 });
 
 test("Hermes não supera uma decisão de evidência não aprovada", async () => {

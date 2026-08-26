@@ -26,11 +26,13 @@
             "items": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["name", "asset", "attribution", "externalSpend", "risk", "fitScore"],
+              "required": ["name", "channel", "asset", "attribution", "eventPath", "externalSpend", "risk", "fitScore"],
               "properties": {
                 "name": { "type": "string" },
+                "channel": { "type": "string", "enum": ["INSTAGRAM", "ORGANIC_SEARCH", "CREATOR_OR_COMMUNITY"] },
                 "asset": { "type": "string" },
                 "attribution": { "type": "string" },
+                "eventPath": { "type": "array", "minItems": 5, "items": { "type": "string" } },
                 "externalSpend": { "type": "string", "enum": ["NONE", "FUTURE"] },
                 "risk": { "type": "string" },
                 "fitScore": { "type": "integer", "minimum": 0, "maximum": 20 }

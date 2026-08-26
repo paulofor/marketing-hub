@@ -48,6 +48,7 @@ local/
 
 # Artefatos gerados e caches locais
 /artifacts/
+/deploy/local-validation/pde-opportunity/artifacts/
 /codex-cache/
 
 # Chaves SSH e identidades locais nunca devem ser versionadas

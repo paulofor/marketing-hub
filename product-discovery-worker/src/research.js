@@ -181,6 +181,14 @@ const SCIENTIFIC_RESEARCH_TEMPLATES = [
   "{base} site:doi.org",
 ];
 
+const INSTAGRAM_B2C_TEMPLATES = [
+  "{base} consumidor situação real Instagram",
+  "{base} aplicativo preço review pessoa física",
+  "{base} anúncio Instagram Reel demonstração",
+  "{base} antes e depois experiência mobile",
+  "{base} comentário cliente vale a pena",
+];
+
 const SCIENTIFIC_SOURCE_DOMAINS = [
   "pubmed.ncbi.nlm.nih.gov",
   "ncbi.nlm.nih.gov",
@@ -229,6 +237,9 @@ export function buildSearchQueries(job) {
   const genericScientificQueries = SCIENTIFIC_RESEARCH_TEMPLATES.map(
     (template) => template.replace("{base}", base),
   );
+  const instagramB2cQueries = requiresConsumerInstagramFocus(job)
+    ? INSTAGRAM_B2C_TEMPLATES.map((template) => template.replace("{base}", base))
+    : [];
   const scientificResearchQueries =
     /propost|or[cç]ament|cota[cç]/i.test(base)
       ? [
@@ -241,6 +252,7 @@ export function buildSearchQueries(job) {
 
   return deduplicateQueries([
     ...(Array.isArray(job.directedQueries) ? job.directedQueries.slice(0, 5) : []),
+    ...instagramB2cQueries,
     ...domainQueries.slice(0, 2),
     ...commercialSignalQueries.slice(0, 2),
     ...scientificResearchQueries.slice(0, 3),
@@ -496,6 +508,14 @@ export function analyzeSearchResults(job, results, marketplaceOffers = null, opt
   const metaAdEvidence = normalizedMarketplaceOffers.filter(
     (offer) => offer.marketplace === "META_AD_LIBRARY",
   );
+  const instagramB2cRequired = requiresConsumerInstagramFocus(job);
+  const instagramPublicEvidence = evidence.filter((item) => {
+    const domain = safeDomain(item.url);
+    const text = `${item.title} ${item.snippet}`;
+    return domain.includes("instagram.com") || /\binstagram\b|\breels?\b/i.test(text);
+  });
+  const instagramB2cGatePassed =
+    !instagramB2cRequired || metaAdEvidence.length > 0 || instagramPublicEvidence.length > 0;
   const minimumComparableOffers = Number(options.minimumComparableOffers || 10);
   const marketplaceGatePassed =
     !directedMarketplaceResearch ||
@@ -520,6 +540,8 @@ export function analyzeSearchResults(job, results, marketplaceOffers = null, opt
     evidence.length === 0
       ? "RESEARCH_MORE"
       : !marketplaceGatePassed
+        ? "RESEARCH_MORE"
+      : !instagramB2cGatePassed
         ? "RESEARCH_MORE"
       : highRiskHits > 0
         ? "HUMAN_REVIEW"
@@ -581,6 +603,8 @@ export function analyzeSearchResults(job, results, marketplaceOffers = null, opt
   const commercialRisk =
     !marketplaceGatePassed
       ? `Foram encontradas ${comparableMarketplaceOffers.length} de ${minimumComparableOffers} ofertas comparáveis; o dossiê deve permanecer bloqueado para enriquecimento.`
+      : !instagramB2cGatePassed
+        ? "O ciclo B2C não encontrou anúncio Meta nem evidência pública aderente ao Instagram; o canal não pode ser presumido."
       : highRiskHits > 0
       ? "Tema contém sinais sensíveis e exige revisão humana antes de qualquer experimento."
       : scientificArticles.length === 0
@@ -590,7 +614,7 @@ export function analyzeSearchResults(job, results, marketplaceOffers = null, opt
           : "Evitar extrapolar evidência científica para promessa absoluta e validar disposição de compra em experimento controlado.";
 
   return {
-    decisionSummary: `Ciclo pesquisado com ${evidence.length} evidências públicas, ${comparableMarketplaceOffers.length} ofertas comparáveis, ${metaAdEvidence.length} anúncios Meta observados, ${independentDomains} domínios independentes, ${scientificArticles.length} artigos científicos candidatos e ${commercialIntentHits} sinais de intenção comercial. Principal decisão: ${decision}.`,
+    decisionSummary: `Ciclo pesquisado com ${evidence.length} evidências públicas, ${comparableMarketplaceOffers.length} ofertas comparáveis, ${metaAdEvidence.length} anúncios Meta observados, ${instagramPublicEvidence.length} evidências públicas de Instagram, ${independentDomains} domínios independentes, ${scientificArticles.length} artigos científicos candidatos e ${commercialIntentHits} sinais de intenção comercial. Principal decisão: ${decision}.`,
     opportunities: opportunityBlueprints.map((blueprint, index) => ({
       ...blueprint,
       scaleEvidence: `${independentDomains} domínios independentes e ${painHits} sinais de dor recorrente foram encontrados nos resultados públicos.`,
@@ -603,6 +627,9 @@ export function analyzeSearchResults(job, results, marketplaceOffers = null, opt
         metaAdEvidence,
         metaAdInterpretation:
           "Atividade e longevidade sugerem investimento sustentado, mas não comprovam vendas isoladamente.",
+        instagramB2cRequired,
+        instagramB2cGatePassed,
+        instagramPublicEvidence,
         scientificArticles,
         commercialIntentHits,
       }),
@@ -995,6 +1022,16 @@ function normalizeSearchText(value) {
     .replace(/[+]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/** Ativa o gate de canal somente quando o ciclo declara Instagram e consumidor final. */
+function requiresConsumerInstagramFocus(job) {
+  return (
+    /instagram/i.test(String(job?.acquisitionChannel || "")) &&
+    /\bb2c\b|consumidor|pessoa f[ií]sica/i.test(
+      `${job?.commercialConstraints || ""} ${job?.targetAudience || ""}`,
+    )
+  );
 }
 
 function inferDomainPainQueries(base) {

@@ -1,0 +1,61 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "questions",
+    "publicQueries",
+    "marketplaceRequests",
+    "metaAdRequests",
+    "minimumComparableOffers",
+    "stopConditions"
+  ],
+  "properties": {
+    "questions": {
+      "type": "array",
+      "minItems": 3,
+      "items": { "type": "string" }
+    },
+    "publicQueries": {
+      "type": "array",
+      "minItems": 3,
+      "items": { "type": "string" }
+    },
+    "marketplaceRequests": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["marketplace", "query", "maxProducts"],
+        "properties": {
+          "marketplace": {
+            "type": "string",
+            "enum": ["HOTMART", "CLICKBANK"]
+          },
+          "query": { "type": "string" },
+          "maxProducts": { "type": "integer", "minimum": 1, "maximum": 25 }
+        }
+      }
+    },
+    "metaAdRequests": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["query", "country", "maxAds"],
+        "properties": {
+          "query": { "type": "string" },
+          "country": { "type": "string", "minLength": 2, "maxLength": 2 },
+          "maxAds": { "type": "integer", "minimum": 1, "maximum": 50 }
+        }
+      }
+    },
+    "minimumComparableOffers": { "type": "integer", "minimum": 10 },
+    "stopConditions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    }
+  }
+}

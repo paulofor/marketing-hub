@@ -11,9 +11,14 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["name", "benefit", "risk", "evidenceQuality", "revenuePath", "formats", "chosenFormat", "pdeMechanism", "evidenceScore", "purchaseIntentScore", "painValueScore", "pdeFitScore", "differentiationScore", "distributionScore", "economicsScalabilityScore", "riskSafetyScore", "totalScore"],
+        "required": ["name", "audienceModel", "consumerMoment", "instagramHook", "mobileValueMomentMinutes", "operationalDependencies", "benefit", "risk", "evidenceQuality", "revenuePath", "formats", "chosenFormat", "pdeMechanism", "evidenceScore", "purchaseIntentScore", "painValueScore", "pdeFitScore", "differentiationScore", "distributionScore", "economicsScalabilityScore", "riskSafetyScore", "totalScore"],
         "properties": {
           "name": { "type": "string" },
+          "audienceModel": { "type": "string", "enum": ["B2C", "B2B"] },
+          "consumerMoment": { "type": "string" },
+          "instagramHook": { "type": "string" },
+          "mobileValueMomentMinutes": { "type": "integer", "minimum": 1, "maximum": 120 },
+          "operationalDependencies": { "type": "array", "items": { "type": "string" } },
           "benefit": { "type": "string" },
           "risk": { "type": "string" },
           "evidenceQuality": { "type": "string" },
@@ -53,11 +58,14 @@
     "chosenOpportunity": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["sourceAlternativeName", "workingProductName", "targetSegment", "jobToBeDone", "promise", "chosenFormat", "experienceSteps", "commercialModelHypothesis", "acquisitionAngle", "firstTest", "economicBoundary", "ethicalBoundary", "benchmark"],
+      "required": ["sourceAlternativeName", "workingProductName", "targetSegment", "consumerMoment", "instagramCreativeHook", "mobileValueMomentMinutes", "jobToBeDone", "promise", "chosenFormat", "experienceSteps", "commercialModelHypothesis", "acquisitionAngle", "firstTest", "economicBoundary", "ethicalBoundary", "benchmark"],
       "properties": {
         "sourceAlternativeName": { "type": "string" },
         "workingProductName": { "type": "string" },
         "targetSegment": { "type": "string" },
+        "consumerMoment": { "type": "string" },
+        "instagramCreativeHook": { "type": "string" },
+        "mobileValueMomentMinutes": { "type": "integer", "minimum": 1, "maximum": 120 },
         "jobToBeDone": { "type": "string" },
         "promise": { "type": "string" },
         "chosenFormat": { "type": "string", "enum": ["STATIC_MATERIAL", "GUIDED_WEBAPP", "ASSISTED_EXECUTION"] },

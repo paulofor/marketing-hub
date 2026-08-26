@@ -136,6 +136,31 @@ Fonte vazia, indisponivel ou sem item aderente deve ficar registrada como result
 consulta. O processo pode pesquisar mais, mas nunca preencher a lacuna com referencia
 inventada nem aprovar uma oportunidade sustentada apenas pela inspiracao.
 
+## Recorte B2C para aquisicao no Instagram
+
+Por decisao de 2026-08-26, quando o canal comercial informado para o ciclo for Instagram, a
+Descoberta deve comparar primeiro oportunidades **B2C**, ligadas a uma cena pessoal concreta e a um
+desejo que o proprio consumidor reconhece. Crescimento profissional, comunicacao, aprendizagem,
+relacionamentos, hobbies, organizacao e experiencias fora da tela sao territorios permitidos; a
+categoria nao substitui a comprovacao da dor nem autoriza promessa sensivel.
+
+Nesse recorte, cada candidata deve registrar:
+
+- uma pessoa fisica especifica, o momento em que a necessidade fica urgente e o resultado desejado;
+- um gancho compreensivel nos primeiros segundos de um anuncio ou Reel, sem explorar vergonha,
+  medo, solidao, rejeicao ou promessa garantida;
+- microvalor demonstravel no celular antes da compra e valor principal entregue com baixo esforco;
+- uma rota atribuivel entre impressao, clique, inicio da experiencia, momento de valor e checkout;
+- alternativas gratuitas e pagas, sinais observaveis de compra e o que torna o mecanismo original;
+- dependencia de outra pessoa, conta, integracao ou operacao humana que possa impedir a primeira
+  entrega de valor.
+
+O gate deve rejeitar B2B disfarçado de B2C, curso generico sem microexperiencia, produto que dependa
+de operacao empresarial para gerar valor e ideia cuja aquisicao no Instagram seja apenas uma
+suposicao. Temperatura Hotmart, anuncio ativo, audiencia e pontuacao continuam sendo sinais, nao
+vendas. Para declarar uma nova oportunidade superior ao benchmark Rigel, a pontuacao auditavel deve
+ser **estritamente maior**, com consenso dos agentes e valor percebido minimo preservado.
+
 ## Caixa de sinais humanos observados
 
 O inicio do processo `Descoberta e priorizacao da oportunidade PDE` deve aceitar uma entrada simples

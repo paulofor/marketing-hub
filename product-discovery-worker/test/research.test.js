@@ -97,6 +97,47 @@ test("buildSearchQueries uses domain language for style and routine cycles", () 
   assert.ok(routineQueries.includes("guarda roupa cheio e nada para vestir"));
 });
 
+test("buildSearchQueries inclui pesquisa de canal no recorte B2C Instagram", () => {
+  const queries = buildSearchQueries({
+    theme: "entrevista de emprego",
+    targetAudience: "pessoa física buscando recolocação",
+    acquisitionChannel: "Instagram",
+    commercialConstraints: "B2C e mobile",
+  });
+
+  assert.ok(queries.some((query) => query.includes("anúncio Instagram Reel demonstração")));
+  assert.ok(queries.some((query) => query.includes("aplicativo preço review pessoa física")));
+});
+
+test("analyzeSearchResults não presume Instagram no ciclo B2C", () => {
+  const report = analyzeSearchResults(
+    {
+      theme: "entrevista de emprego",
+      targetAudience: "pessoa física buscando recolocação",
+      acquisitionChannel: "Instagram",
+      commercialConstraints: "B2C e mobile",
+    },
+    [
+      {
+        title: "Dificuldade em entrevistas",
+        url: "https://forum.example/a",
+        snippet: "problema insegurança caro complicado comprar curso review",
+      },
+      {
+        title: "Interview training systematic review",
+        url: "https://pubmed.ncbi.nlm.nih.gov/123456/",
+        snippet: "systematic review interview training intervention",
+      },
+    ],
+  );
+
+  assert.equal(report.opportunities[0].decision, "RESEARCH_MORE");
+  assert.match(report.opportunities[0].commercialRisk, /canal não pode ser presumido/i);
+  const evidence = JSON.parse(report.opportunities[0].evidenceJson);
+  assert.equal(evidence.instagramB2cRequired, true);
+  assert.equal(evidence.instagramB2cGatePassed, false);
+});
+
 test("analyzeSearchResults approves strong non-sensitive PDE opportunity", () => {
   const report = analyzeSearchResults(
     {

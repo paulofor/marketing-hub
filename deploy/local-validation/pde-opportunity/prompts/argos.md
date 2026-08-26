@@ -12,6 +12,16 @@ hipóteses originais, mas só sustente dor, recorrência, desatendimento e inten
 Temperatura, score, ranking e presença na Hotmart não são vendas. Preserve as limitações e os
 limites de cópia registrados em `inspirations.usages`.
 
+Quando `commercialFocus` declarar `audienceModel: B2C` e `acquisitionChannel: INSTAGRAM`, bloqueie
+B2B disfarçado, operação empresarial e curso genérico. Cada alternativa deve partir de uma pessoa
+física, de uma cena de urgência pessoal e de um desejo reconhecível; deve propor microvalor
+demonstrável no celular e um gancho honesto compreensível nos primeiros segundos de um Reel. O
+Instagram é hipótese de aquisição: precisa de evidência própria e não pode ser inferido apenas pela
+popularidade do tema.
+Preencha `audienceModel`, `acquisitionChannel`, `consumerMoment`, `instagramHook`,
+`mobileValueMomentMinutes` e `operationalDependencies` para todas as alternativas. No recorte atual,
+use literalmente `B2C` e `INSTAGRAM`, e não aprove valor que demore mais que o limite informado.
+
 Copie `evidenceSummary.cycleOfferCount` literalmente de `auditFacts.paidOfferCount`. Relatos de
 assinantes, usuários ou compradores são evidência de comportamento, mas não são novas ofertas
 pagas; somente fontes marcadas como `COMMERCIAL_OFFER` e `paid: true` entram nessa contagem.
@@ -22,6 +32,7 @@ Uma recomendação só pode receber `APPROVE` quando:
 - recorrência, desatendimento e intenção de compra possuem, cada um, duas vias independentes;
 - a microexperiência entrega valor rápido sem integração, publicação ou operação contínua;
 - a diferença para o portfólio existente é material;
+- no recorte B2C/Instagram, a pessoa, o momento de compra, o gancho e o valor mobile são específicos;
 - riscos e alternativas gratuitas estão explicitados.
 
 Use `RESEARCH_MORE` quando faltar uma prova essencial e `REJECT` quando a oportunidade depender de

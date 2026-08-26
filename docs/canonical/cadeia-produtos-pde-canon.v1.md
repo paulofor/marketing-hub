@@ -195,6 +195,9 @@ mas não comprova sozinha uma oportunidade.
   `pesquisas/gartner` e `pesquisas/ia-aplicada`, sem congelar uma lista de arquivos;
 - consultar pelo contrato oficial do Marketing Hub os produtos Hotmart identificados com sinais de
   sucesso e registrar padrões aproveitáveis sem tratar score, temperatura ou ranking como venda;
+- quando o canal informado for Instagram, comparar primeiro oportunidades B2C com cena pessoal,
+  desejo reconhecível, gancho nativo para Reel/anúncio, microvalor mobile demonstrável e jornada
+  atribuível até o checkout, sem aceitar B2B disfarçado nem curso genérico como produto;
 - derivar hipóteses originais de mecanismo, formato e comunicação, preservando fonte, data, insight,
   evidência de confirmação e limite contra cópia;
 - comprovar escala e recorrência por fontes independentes;

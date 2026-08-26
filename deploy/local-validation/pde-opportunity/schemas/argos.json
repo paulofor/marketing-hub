@@ -22,10 +22,16 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["name", "targetSegment", "rootPain", "desiredOutcome", "jobToBeDone", "currentFailedAttempts", "pdeMechanism", "microexperience", "differentiationFromPortfolio", "freeAlternative", "evidenceSourceIds", "paidOfferSourceIds", "independentEvidencePaths", "principalRisk", "evidenceStrength"],
+        "required": ["name", "targetSegment", "audienceModel", "acquisitionChannel", "consumerMoment", "instagramHook", "mobileValueMomentMinutes", "operationalDependencies", "rootPain", "desiredOutcome", "jobToBeDone", "currentFailedAttempts", "pdeMechanism", "microexperience", "differentiationFromPortfolio", "freeAlternative", "evidenceSourceIds", "paidOfferSourceIds", "independentEvidencePaths", "principalRisk", "evidenceStrength"],
         "properties": {
           "name": { "type": "string" },
           "targetSegment": { "type": "string" },
+          "audienceModel": { "type": "string", "enum": ["B2C", "B2B"] },
+          "acquisitionChannel": { "type": "string", "enum": ["INSTAGRAM", "OTHER"] },
+          "consumerMoment": { "type": "string" },
+          "instagramHook": { "type": "string" },
+          "mobileValueMomentMinutes": { "type": "integer", "minimum": 1, "maximum": 120 },
+          "operationalDependencies": { "type": "array", "items": { "type": "string" } },
           "rootPain": { "type": "string" },
           "desiredOutcome": { "type": "string" },
           "jobToBeDone": { "type": "string" },

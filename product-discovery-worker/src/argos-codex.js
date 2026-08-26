@@ -7,11 +7,20 @@ import { join } from "node:path";
 export async function planDirectedResearch(job, options = {}) {
   const enabled = String(options.enabled ?? process.env.ARGOS_CODEX_ENABLED) === "true";
   if (!enabled) return deterministicPlan(job);
+  const prompt = await buildPrompt(job);
+  const schemaContract = await readFile(
+    new URL(
+      "../prompts/productdiscovery.v1/plan/plan-schema.json",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  JSON.parse(schemaContract);
   const directory = await mkdtemp(join(tmpdir(), "argos-plan-"));
   const output = join(directory, "output.json");
   const schema = join(directory, "schema.json");
   try {
-    await writeFile(schema, JSON.stringify(RESEARCH_PLAN_SCHEMA));
+    await writeFile(schema, schemaContract);
     const command = options.command || process.env.ARGOS_CODEX_COMMAND || "codex";
     const args = [
       "exec",
@@ -30,7 +39,7 @@ export async function planDirectedResearch(job, options = {}) {
     const model = options.model || process.env.ARGOS_CODEX_MODEL;
     if (model) args.push("--model", model);
     const execute = options.execute || executeCodexWithInput;
-    const execution = await execute(command, args, buildPrompt(job), {
+    const execution = await execute(command, args, prompt, {
       timeoutMs: Number(options.timeoutMs || process.env.ARGOS_CODEX_TIMEOUT_MS || 600000),
       maxBuffer: 10 * 1024 * 1024,
     });
@@ -160,27 +169,49 @@ export function parseCodexUsage(stdout) {
 /** Produz um plano seguro quando o piloto Codex está desligado ou ainda sem sessão. */
 export function deterministicPlan(job) {
   const theme = [job.theme, job.targetAudience].filter(Boolean).join(" ");
+  const consumerInstagramFocus = requiresConsumerInstagramFocus(job);
   const plan = {
-    questions: [
-      `Quais produtos pagos resolvem ${theme}?`,
-      `Quais promessas, preços e mecanismos se repetem em ${theme}?`,
-      `Quais reclamações revelam uma lacuna explorável em ${theme}?`,
-    ],
-    publicQueries: [
-      `${theme} preço review reclamação`,
-      `${theme} curso produto digital vale a pena`,
-      `${theme} anúncio oferta depoimento`,
-    ],
+    questions: consumerInstagramFocus
+      ? [
+          `Em qual cena pessoal o consumidor reconhece a urgência de ${theme}?`,
+          `Quais produtos B2C pagos e alternativas gratuitas resolvem ${theme}?`,
+          `Qual microvalor mobile de ${theme} pode ser demonstrado honestamente em um Reel?`,
+        ]
+      : [
+          `Quais produtos pagos resolvem ${theme}?`,
+          `Quais promessas, preços e mecanismos se repetem em ${theme}?`,
+          `Quais reclamações revelam uma lacuna explorável em ${theme}?`,
+        ],
+    publicQueries: consumerInstagramFocus
+      ? [
+          `${theme} consumidor preço review reclamação`,
+          `${theme} aplicativo curso assinatura vale a pena`,
+          `${theme} anúncio Instagram Reel demonstração`,
+        ]
+      : [
+          `${theme} preço review reclamação`,
+          `${theme} curso produto digital vale a pena`,
+          `${theme} anúncio oferta depoimento`,
+        ],
     marketplaceRequests: [
       { marketplace: "HOTMART", query: theme, maxProducts: 10 },
       { marketplace: "CLICKBANK", query: theme, maxProducts: 10 },
     ],
-    metaAdRequests: [{ query: theme, country: "BR", maxAds: 25 }],
+    metaAdRequests: [
+      {
+        query: consumerInstagramFocus ? `${theme} consumidor` : theme,
+        country: "BR",
+        maxAds: 25,
+      },
+    ],
     minimumComparableOffers: 10,
     stopConditions: [
       "menos de duas fontes independentes",
       "ausência de sinal de compra",
       "credencial ou marketplace indisponível",
+      ...(consumerInstagramFocus
+        ? ["oportunidade depende de empresa ou não possui cena demonstrável no Instagram"]
+        : []),
     ],
   };
   return {
@@ -221,55 +252,52 @@ export function validatePlan(plan) {
   }
 }
 
-function buildPrompt(job) {
-  return `Você é Argos, investigador comercial do Marketing Hub. Crie somente um plano de pesquisa estruturado para o ciclo ${job.cycleId}.
-Tema: ${job.theme}. Público: ${job.targetAudience || "não informado"}. Objetivo: ${job.objective || "não informado"}.
-Formule perguntas, buscas públicas, pedidos direcionados aos coletores HOTMART/CLICKBANK e consultas à Biblioteca Meta. Anúncio ativo e longevo é apenas sinal de investimento sustentado, nunca prova isolada de vendas. Exija ao menos 10 ofertas comparáveis. Não navegue em áreas autenticadas, não solicite credenciais, não invente vendas e não publique nem compre nada.`;
+async function buildPrompt(job) {
+  const [systemPrompt, userPrompt] = await Promise.all([
+    readFile(
+      new URL(
+        "../prompts/productdiscovery.v1/plan/system.md",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+    readFile(
+      new URL(
+        "../prompts/productdiscovery.v1/plan/user.md",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  ]);
+  const values = {
+    cycleId: job.cycleId,
+    theme: job.theme,
+    targetAudience: job.targetAudience || "não informado",
+    acquisitionChannel: job.acquisitionChannel || "não informado",
+    commercialConstraints: job.commercialConstraints || "não informadas",
+    objective: job.objective || "não informado",
+  };
+  return `${systemPrompt.trim()}\n\n${resolvePromptPlaceholders(userPrompt, values).trim()}`;
 }
 
-const RESEARCH_PLAN_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: [
-    "questions",
-    "publicQueries",
-    "marketplaceRequests",
-    "metaAdRequests",
-    "minimumComparableOffers",
-    "stopConditions",
-  ],
-  properties: {
-    questions: { type: "array", minItems: 3, items: { type: "string" } },
-    publicQueries: { type: "array", minItems: 3, items: { type: "string" } },
-    marketplaceRequests: {
-      type: "array",
-      minItems: 1,
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["marketplace", "query", "maxProducts"],
-        properties: {
-          marketplace: { type: "string", enum: ["HOTMART", "CLICKBANK"] },
-          query: { type: "string" },
-          maxProducts: { type: "integer", minimum: 1, maximum: 25 },
-        },
-      },
-    },
-    metaAdRequests: {
-      type: "array",
-      minItems: 1,
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["query", "country", "maxAds"],
-        properties: {
-          query: { type: "string" },
-          country: { type: "string", minLength: 2, maxLength: 2 },
-          maxAds: { type: "integer", minimum: 1, maximum: 50 },
-        },
-      },
-    },
-    minimumComparableOffers: { type: "integer", minimum: 10 },
-    stopConditions: { type: "array", minItems: 1, items: { type: "string" } },
-  },
-};
+/** Resolve somente os placeholders conhecidos e preserva o restante como erro visível. */
+function resolvePromptPlaceholders(template, values) {
+  let prompt = template;
+  for (const [key, value] of Object.entries(values)) {
+    prompt = prompt.replaceAll(`{{${key}}}`, String(value));
+  }
+  if (/{{[^}]+}}/.test(prompt)) {
+    throw new Error("Prompt de planejamento de Argos possui placeholder não resolvido");
+  }
+  return prompt;
+}
+
+/** Identifica o contrato comercial explícito sem inferir B2C apenas pelo tema. */
+function requiresConsumerInstagramFocus(job) {
+  return (
+    /instagram/i.test(String(job?.acquisitionChannel || "")) &&
+    /\bb2c\b|consumidor|pessoa f[ií]sica/i.test(
+      `${job?.commercialConstraints || ""} ${job?.targetAudience || ""}`,
+    )
+  );
+}

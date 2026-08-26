@@ -16,5 +16,13 @@ resultado imediato, baixo esforço, controle humano e vantagem compreensível; 8
 desejo excepcional sustentado por comportamento real. Na dúvida entre faixas, use a menor.
 `APPROVE` exige `valueScore` mínimo 75 e valor percebido maior que esforço e risco.
 
+No recorte B2C/Instagram, simule a primeira impressão no feed: a pessoa deve reconhecer a própria
+cena sem ser humilhada, compreender o valor em três segundos e conseguir experimentar o primeiro
+benefício sozinha no celular. Reduza a avaliação quando o produto exigir parceiro, empresa, conta
+externa, configuração longa ou exposição de dados íntimos antes de provar valor. Relacionamento não
+autoriza manipulação do parceiro, diagnóstico psicológico nem promessa de reconciliação.
+Preencha `instagramFirstImpression`, `canReachValueAlone` e `manipulationRisk`. `APPROVE` exige que a
+pessoa alcance o primeiro valor sozinha e que `manipulationRisk` seja literalmente `LOW`.
+
 Pesquisa e decisões anteriores:
 {{INPUT_JSON}}

@@ -113,6 +113,11 @@ export function executionTimeout(value) {
   return timeoutMs;
 }
 
+/** Monta o registro imutável da chamada final sem expor configuração fora da execução. */
+export function executionAudit(promptSent, reasoningEffort) {
+  return { modelCode: MODEL, reasoningEffort, promptSent };
+}
+
 /** Consolida resultados atuais de todos os agentes ao retomar uma atividade corrigida. */
 export function refreshedProcessContext(taskLists, sourceReference) {
   const latestByOwnerActivity = new Map();
@@ -229,7 +234,7 @@ async function runCodex(prompt, schemaPath, outputPath, logPath, reasoningEffort
 }
 
 /** Persiste falha técnica e eventual telemetria parcial para não deixar atividade órfã. */
-async function reportTechnicalFailure(backendUrl, agentKey, task, error) {
+async function reportTechnicalFailure(backendUrl, agentKey, task, error, executionAudit) {
   const usage = parseUsage(error.codexLog ?? "");
   const body = {
     error: error.message,
@@ -243,6 +248,7 @@ async function reportTechnicalFailure(backendUrl, agentKey, task, error) {
       technicalFailure: true
     })
   };
+  if (executionAudit) body.executionAudit = executionAudit;
   if (usage.informed) {
     body.modelUsages = [{
       modelCode: MODEL,
@@ -267,7 +273,7 @@ async function reportTechnicalFailure(backendUrl, agentKey, task, error) {
 }
 
 /** Envia resultado, evidência e uso medido pela mesma execução ao backend. */
-async function callback(backendUrl, agentKey, task, result, usage, contract) {
+async function callback(backendUrl, agentKey, task, result, usage, contract, executionAudit) {
   const approved = result.decision === "APPROVE";
   const endpoint = approved ? "result" : "failure";
   const evidence = {
@@ -285,7 +291,8 @@ async function callback(backendUrl, agentKey, task, result, usage, contract) {
   };
   const body = {
     resultJson: JSON.stringify(result),
-    evidenceJson: JSON.stringify(evidence)
+    evidenceJson: JSON.stringify(evidence),
+    executionAudit
   };
   if (!approved) body.error = `Agente decidiu ${result.decision}: ${result.rationale}`;
   if (usage.informed) {
@@ -329,6 +336,8 @@ export async function main(argv = process.argv.slice(2)) {
   try {
     const template = await readFile(resolve(REPOSITORY, contract.prompt), "utf8");
     const prompt = template.replace("{{TASK_CONTEXT}}", JSON.stringify(task));
+    const reasoningEffort = args["reasoning-effort"] || "high";
+    const executionAuditPayload = executionAudit(prompt, reasoningEffort);
     let log;
     try {
       log = await runCodex(
@@ -336,11 +345,11 @@ export async function main(argv = process.argv.slice(2)) {
         resolve(REPOSITORY, contract.schema),
         outputPath,
         logPath,
-        args["reasoning-effort"] || "high",
+        reasoningEffort,
         executionTimeout(args["timeout-ms"] || process.env.COMMERCIAL_PLAN_AGENT_TIMEOUT_MS)
       );
     } catch (error) {
-      await reportTechnicalFailure(backendUrl, agentKey, task, error);
+      await reportTechnicalFailure(backendUrl, agentKey, task, error, executionAuditPayload);
       throw error;
     }
     const result = JSON.parse(await readFile(outputPath, "utf8"));
@@ -354,7 +363,7 @@ export async function main(argv = process.argv.slice(2)) {
       );
     }
     if (args["dry-run"] !== "true") {
-      await callback(backendUrl, agentKey, task, result, usage, contract);
+      await callback(backendUrl, agentKey, task, result, usage, contract, executionAuditPayload);
     }
     process.stdout.write(`${JSON.stringify({ taskId: task.taskId, activityId, decision: result.decision, usage })}\n`);
     return { task, result, usage };

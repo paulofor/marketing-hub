@@ -43,6 +43,11 @@ class BusinessProcessActivityDocumentServiceTest {
     assertThat(result.get(0).sourceReference()).isEqualTo("opportunity:1");
     assertThat(result.get(0).assignedAgentNickname()).isEqualTo("Argos");
     assertThat(result.get(0).estimatedCostUsd()).isEqualByComparingTo("0.12000000");
+    assertThat(result.get(0).startedAt()).isEqualTo(Instant.parse("2026-08-20T21:40:24Z"));
+    assertThat(result.get(0).finishedAt()).isEqualTo(Instant.parse("2026-08-20T21:41:24Z"));
+    assertThat(result.get(0).modelCode()).isEqualTo("gpt-5.6-sol");
+    assertThat(result.get(0).reasoningEffort()).isEqualTo("high");
+    assertThat(result.get(0).promptSent()).isEqualTo("Prompt final enviado ao modelo.");
     ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
     verify(tasks).findRecentActivityDocuments(eq(22L), eq("evidence"), pageable.capture());
     assertThat(pageable.getValue().getPageSize()).isEqualTo(10);
@@ -56,6 +61,23 @@ class BusinessProcessActivityDocumentServiceTest {
 
     assertThat(service.documentActivityIds(22L)).containsExactly("evidence", "compare");
     verify(tasks).findDocumentActivityIds(22L);
+  }
+
+  /** Recupera o modelo das evidências legadas sem atribuir esforço de raciocínio inexistente. */
+  @Test
+  void recoversLegacyModelFromEvidenceWithoutInventingReasoning() {
+    when(processes.findById(22L)).thenReturn(Optional.of(process()));
+    AgentTask legacy = documentTask(1L);
+    legacy.setExecutionModelCode(null);
+    legacy.setExecutionReasoningEffort(null);
+    legacy.setEvidenceJson("{\"model\":\"gpt-5.6-sol\"}");
+    when(tasks.findRecentActivityDocuments(eq(22L), eq("evidence"), any(Pageable.class)))
+        .thenReturn(List.of(legacy));
+
+    var result = service.recentDocuments(22L, "evidence").getFirst();
+
+    assertThat(result.modelCode()).isEqualTo("gpt-5.6-sol");
+    assertThat(result.reasoningEffort()).isNull();
   }
 
   /** Limita o histórico do objetivo do processo aos dez documentos mais recentes. */
@@ -113,6 +135,10 @@ class BusinessProcessActivityDocumentServiceTest {
     task.setOutputTokens(40L);
     task.setEstimatedCostUsd(new BigDecimal("0.12000000"));
     task.setCostEstimationStatus("ESTIMATED");
+    task.setReceivedAt(Instant.parse("2026-08-20T21:40:24Z"));
+    task.setExecutionModelCode("gpt-5.6-sol");
+    task.setExecutionReasoningEffort("high");
+    task.setExecutionPrompt("Prompt final enviado ao modelo.");
     task.setDeliveredAt(Instant.parse("2026-08-20T21:41:24Z"));
     task.setUpdatedAt(task.getDeliveredAt());
     return task;

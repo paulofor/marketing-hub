@@ -928,6 +928,9 @@ public class AgentTaskService {
         task.getEstimatedCostUsd(),
         task.getCostEstimationStatus(),
         task.getModelUsageUpdatedAt(),
+        task.getExecutionModelCode(),
+        task.getExecutionReasoningEffort(),
+        task.getExecutionPrompt(),
         task.getReceivedAt(),
         task.getDeliveredAt(),
         task.getCreatedAt(),
@@ -1349,6 +1352,7 @@ public class AgentTaskService {
     task.setResultJson(request.resultJson());
     task.setEvidenceJson(request.evidenceJson());
     applyModelUsage(task, request.modelUsages());
+    applyExecutionAudit(task, request.executionAudit());
     task.setExecutionError(null);
     task.setStatus("COMPLETED");
     if (task.getDeliveredAt() == null) task.setDeliveredAt(now);
@@ -1365,6 +1369,7 @@ public class AgentTaskService {
     task.setResultJson(request.resultJson());
     task.setEvidenceJson(request.evidenceJson());
     applyModelUsage(task, request.modelUsages());
+    applyExecutionAudit(task, request.executionAudit());
     task.setStatus("BLOCKED");
     Instant now = Instant.now(clock);
     task.setUpdatedAt(now);
@@ -1428,6 +1433,14 @@ public class AgentTaskService {
             ? (hasKnownCost ? "PARTIALLY_ESTIMATED" : "PRICING_UNAVAILABLE")
             : "ESTIMATED");
     task.setModelUsageUpdatedAt(now);
+  }
+
+  /** Preserva o modelo, o esforço e o prompt exato usados pelo executor na tentativa. */
+  private void applyExecutionAudit(AgentTask task, AgentTaskExecutionAuditRequest audit) {
+    if (audit == null) return;
+    task.setExecutionModelCode(audit.modelCode().trim());
+    task.setExecutionReasoningEffort(audit.reasoningEffort().trim());
+    task.setExecutionPrompt(audit.promptSent());
   }
 
   /** Revalida contadores para chamadas internas que não passam pela validação HTTP. */

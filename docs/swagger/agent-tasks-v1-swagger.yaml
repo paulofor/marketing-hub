@@ -317,6 +317,14 @@ components:
           minimum: 0
           description: Parcela de inputTokens atendida pelo cache; não pode exceder a entrada.
         outputTokens: {type: integer, format: int64, minimum: 0}
+    ExecutionAudit:
+      type: object
+      required: [modelCode, reasoningEffort, promptSent]
+      description: Registro imutável da chamada de IA que gerou ou bloqueou a tarefa.
+      properties:
+        modelCode: {type: string, maxLength: 128}
+        reasoningEffort: {type: string, maxLength: 32}
+        promptSent: {type: string, description: Prompt final enviado ao modelo, após resolver o contexto.}
     CompleteTaskRequest:
       type: object
       required: [resultJson, evidenceJson]
@@ -327,6 +335,9 @@ components:
           type: array
           description: Chamadas feitas durante esta tentativa; vazio significa que a atividade não usou modelo.
           items: {$ref: '#/components/schemas/ModelUsage'}
+        executionAudit:
+          nullable: true
+          allOf: [{$ref: '#/components/schemas/ExecutionAudit'}]
     FailTaskRequest:
       type: object
       required: [error]
@@ -337,6 +348,9 @@ components:
         modelUsages:
           type: array
           items: {$ref: '#/components/schemas/ModelUsage'}
+        executionAudit:
+          nullable: true
+          allOf: [{$ref: '#/components/schemas/ExecutionAudit'}]
     HumanTaskRequest:
       type: object
       required: [assignedAgentKey, requestedByName, title, description, priority, exceptional]

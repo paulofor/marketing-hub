@@ -40,12 +40,12 @@ class AgentTaskServiceTest {
   void reusesExistingHumanTaskForTheSameExecution() {
     AgentTaskRepository repository = mock(AgentTaskRepository.class);
     Agent dedalo = agent(7L, "landing-generator", "Dédalo");
-    AgentTask existing = processTask(601L, dedalo, process("PUBLISHED", "Dédalo"), "html", "PENDING");
+    AgentTask existing =
+        processTask(601L, dedalo, process("PUBLISHED", "Dédalo"), "html", "PENDING");
     existing.setSourceReference("experiment:88");
     when(repository.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:88"))
         .thenReturn(List.of(existing));
-    AgentTaskService service =
-        service(repository, mock(AgentRepository.class), Clock.systemUTC());
+    AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
 
     AgentTaskResponse result =
         service.createByHumanIfAbsent(regularActivityRequest("Montar landing"));
@@ -1187,6 +1187,36 @@ class AgentTaskServiceTest {
     assertThat(task.getDeliveredAt()).isEqualTo(delivered);
     assertThat(task.getResultJson()).contains("READY");
     assertThat(task.getEvidenceJson()).contains("htmlVersion");
+  }
+
+  /** Preserva a chamada final para tornar a execução reproduzível pela auditoria BPM. */
+  @Test
+  void preservesExecutionModelReasoningAndPrompt() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task =
+        processTask(
+            30L,
+            agent(7L, "landing-generator", "Dédalo"),
+            process("PUBLISHED", "Dédalo"),
+            "html",
+            "IN_PROGRESS");
+    when(repository.findById(30L)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+
+    service.completeClaimedProcessTask(
+        "landing-generator",
+        30L,
+        new CompleteAgentTaskRequest(
+            "{\"decision\":\"READY\"}",
+            "{\"htmlVersion\":2}",
+            null,
+            new AgentTaskExecutionAuditRequest(
+                "gpt-5.6-sol", "high", "Prompt final enviado ao modelo.")));
+
+    assertThat(task.getExecutionModelCode()).isEqualTo("gpt-5.6-sol");
+    assertThat(task.getExecutionReasoningEffort()).isEqualTo("high");
+    assertThat(task.getExecutionPrompt()).isEqualTo("Prompt final enviado ao modelo.");
   }
 
   /** Persiste tokens e acumula o custo calculado pelo backend em tentativas da mesma tarefa. */

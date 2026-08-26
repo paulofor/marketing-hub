@@ -90,5 +90,10 @@ export type BusinessProcessActivityDocument = {
   outputTokens?: number;
   estimatedCostUsd?: number;
   costEstimationStatus: string;
-  generatedAt: string;
+  startedAt?: string;
+  finishedAt: string;
+  modelCode?: string;
+  reasoningEffort?: string;
+  productInternalName?: string;
+  promptSent?: string;
 };

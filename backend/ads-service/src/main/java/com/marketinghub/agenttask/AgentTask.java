@@ -115,6 +115,15 @@ public class AgentTask {
   @Column(name = "model_usage_updated_at")
   private Instant modelUsageUpdatedAt;
 
+  @Column(name = "execution_model_code", length = 128)
+  private String executionModelCode;
+
+  @Column(name = "execution_reasoning_effort", length = 32)
+  private String executionReasoningEffort;
+
+  @Column(name = "execution_prompt", columnDefinition = "LONGTEXT")
+  private String executionPrompt;
+
   @Column(name = "created_at", nullable = false)
   private Instant createdAt;
 

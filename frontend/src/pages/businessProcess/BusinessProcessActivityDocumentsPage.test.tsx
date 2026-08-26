@@ -13,7 +13,7 @@ describe("BusinessProcessActivityDocumentsPage", () => {
     vi.clearAllMocks();
   });
 
-  it("exibe os dez documentos recentes com origem, conteúdo, tokens e custo", async () => {
+  it("exibe os dez documentos recentes com auditoria operacional e JSON em árvore", async () => {
     const process = {
       id: 22,
       processCode: "pde-opportunity-discovery",
@@ -52,7 +52,12 @@ describe("BusinessProcessActivityDocumentsPage", () => {
       outputTokens: 500,
       estimatedCostUsd: 0.12345678,
       costEstimationStatus: "ESTIMATED",
-      generatedAt: "2026-08-20T21:41:24Z",
+      startedAt: "2026-08-20T21:40:00Z",
+      finishedAt: "2026-08-20T21:41:24Z",
+      modelCode: "gpt-5.6-sol",
+      reasoningEffort: "high",
+      productInternalName: "RIGEL-01",
+      promptSent: JSON.stringify({ instruction: "Comprove a dor" }),
     }));
     vi.mocked(axios.get).mockImplementation(
       async (url) =>
@@ -88,7 +93,17 @@ describe("BusinessProcessActivityDocumentsPage", () => {
       screen.getAllByText(/entrada 1000 · cache 200 · saída 500/),
     ).toHaveLength(10);
     expect(screen.getAllByText("US$ 0.12345678")).toHaveLength(10);
-    expect(screen.getAllByText(/"decision": "APPROVE"/)).toHaveLength(10);
+    expect(screen.getAllByText("gpt-5.6-sol")).toHaveLength(10);
+    expect(screen.getAllByText("high")).toHaveLength(10);
+    expect(screen.getAllByText("RIGEL-01")).toHaveLength(10);
+    expect(
+      screen.getAllByText("Visualizar JSON em árvore"),
+    ).toHaveLength(30);
+    expect(
+      screen.getByRole("heading", {
+        name: "Descoberta da oportunidade PDE · Comprovar dor e demanda",
+      }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Voltar ao BPM" })).toHaveAttribute(
       "href",
       "/business-processes?processId=22",
@@ -140,7 +155,7 @@ describe("BusinessProcessActivityDocumentsPage", () => {
               assignedAgentNickname: "Argos",
               resultJson: "{\"decision\":\"APPROVE\"}",
               costEstimationStatus: "ESTIMATED",
-              generatedAt: "2026-08-20T21:41:24Z",
+              finishedAt: "2026-08-20T21:41:24Z",
             },
           ],
         } as never;
@@ -169,7 +184,7 @@ describe("BusinessProcessActivityDocumentsPage", () => {
       "/api/business-processes/22/documents",
     );
     expect(
-      screen.getByText(/Todos os objetivos documentais/),
+      screen.getByRole("heading", { name: "Processo · Objetivos documentais" }),
     ).toBeInTheDocument();
   });
 });

@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-26-agent-task-execution-audit
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent_task
+                ADD COLUMN execution_model_code VARCHAR(128) NULL AFTER model_usage_updated_at,
+                ADD COLUMN execution_reasoning_effort VARCHAR(32) NULL AFTER execution_model_code,
+                ADD COLUMN execution_prompt LONGTEXT NULL AFTER execution_reasoning_effort;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent_task
+                DROP COLUMN execution_prompt,
+                DROP COLUMN execution_reasoning_effort,
+                DROP COLUMN execution_model_code;

@@ -1,0 +1,106 @@
+{
+  "executionId": "local-rigel-landing-v1",
+  "experimentId": 89,
+  "context": {
+    "qualityReview": {
+      "approvalRecommendation": "REGENERATE_BEFORE_PUBLICATION",
+      "score": 0,
+      "summary": "Rigel ainda não possui landing. Criar a primeira candidata integral sem publicar, preservando oferta, checkout e provas aprovadas.",
+      "blockingIssues": [
+        {
+          "code": "LANDING_MISSING",
+          "rootCause": "Nenhuma execução ou artefato de landing foi persistido para o experimento 89.",
+          "impact": "O piloto comercial não tem destino verificável para explicar a oferta e conduzir ao checkout.",
+          "requiredChange": "Criar landing responsiva, acessível, fiel ao serviço personalizado e pronta para revisão independente.",
+          "evidence": "Backend produtivo sem wireframe, copy, HTML ou Quality Review para o experimento 89."
+        }
+      ],
+      "acceptanceCriteria": [
+        "Exibir a oferta personalizada de R$ 349 sem parecer um kit genérico.",
+        "Explicar entrega em até 48 horas após pagamento e briefing mínimo.",
+        "Usar exatamente o checkout canônico em todos os CTAs de compra.",
+        "Exibir pelo menos quatro provas visuais APPROVED sem redesenho.",
+        "Passar em desktop, iPhone 15 Pro e Pixel 7 sem overflow ou scripts."
+      ]
+    },
+    "agentKey": "landing-generator",
+    "authority": "DRAFT_ONLY_NO_PUBLICATION",
+    "generationApproachCatalog": [
+      {
+        "approachCode": "GERALANDING_PIPELINE",
+        "available": true,
+        "executorContract": "canonical-stages-v1"
+      },
+      {
+        "approachCode": "COMPONENT_TEMPLATE_COMPOSER",
+        "available": false,
+        "executorContract": "NOT_REGISTERED"
+      },
+      {
+        "approachCode": "CODEX_CODE_IMPLEMENTATION",
+        "available": true,
+        "executorContract": "governed-full-html-v1"
+      }
+    ],
+    "experimentName": "MPDS-H003-E001",
+    "productName": "Kit WhatsApp Pronto",
+    "pain": "Você responde um orçamento no WhatsApp, o cliente some e você fica sem saber qual mensagem mandar depois sem parecer insistente — aí a conversa morre e você perde o timing do ‘fechamos ou não?’.",
+    "freeReward": "Demonstração real na página: uma sequência completa para retomar um orçamento sem parecer insistente, com três follow-ups respeitosos e perguntas de qualificação. A demonstração prova o método sem prometer conversão nem entregar gratuitamente a implantação completa.",
+    "promise": "Após o pagamento confirmado e o briefing mínimo completo, em até 48 horas receba seu atendimento de WhatsApp personalizado e revisado: respostas, perguntas, follow-ups e regras prontas para conduzir cada conversa ao próximo passo com mais clareza e menos improviso.",
+    "primaryCta": "Quero meu atendimento sob medida",
+    "unitPriceBrl": 349,
+    "commercialObjective": "Validar se a implantação assistida e personalizada por R$ 349 transforma 15 conversas individuais consentidas em pelo menos 3 pagamentos, com promessa compreendida, checkout íntegro e entrega em até 48 horas. Continuar com avanço qualificado e margem positiva; ajustar se a oferta for percebida como kit genérico; parar diante de falha de mensuração, entrega, privacidade ou contribuição não positiva.",
+    "primaryVariable": "Enquadramento da oferta como implantação personalizada e revisada",
+    "primaryMetric": "Pagamentos aprovados",
+    "desireTerritorySnapshotJson": "{\"code\":\"CONVERSA_QUE_AVANCA\",\"name\":\"Conversa que avança\",\"idea\":\"Saber qual pergunta ou follow-up usar para transformar interesse difuso em próximo passo comercial claro.\",\"truthBoundary\":\"Pode demonstrar uma sequência de atendimento; não pode garantir conversão, faturamento ou agenda cheia.\"}",
+    "approvedLandingVisualAssets": [
+      {
+        "assetId": 185,
+        "assetUrl": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/commercial-plans/visual-assets/2026/08/25/misc/182deed413e5-rigel-tasting-response.png",
+        "label": "rigel-tasting-response.png",
+        "version": 1,
+        "status": "APPROVED",
+        "agentReviewStatus": "APPROVED",
+        "requiredUsage": "PRESERVE_EXACT_FILE_NO_REDRAW"
+      },
+      {
+        "assetId": 186,
+        "assetUrl": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/commercial-plans/visual-assets/2026/08/25/misc/17c1af1709af-rigel-tasting-question.png",
+        "label": "rigel-tasting-question.png",
+        "version": 1,
+        "status": "APPROVED",
+        "agentReviewStatus": "APPROVED",
+        "requiredUsage": "PRESERVE_EXACT_FILE_NO_REDRAW"
+      },
+      {
+        "assetId": 187,
+        "assetUrl": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/commercial-plans/visual-assets/2026/08/25/misc/f25cb72bf5e3-rigel-tasting-followups.png",
+        "label": "rigel-tasting-followups.png",
+        "version": 1,
+        "status": "APPROVED",
+        "agentReviewStatus": "APPROVED",
+        "requiredUsage": "PRESERVE_EXACT_FILE_NO_REDRAW"
+      },
+      {
+        "assetId": 188,
+        "assetUrl": "https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev/commercial-plans/visual-assets/2026/08/25/misc/61511a55e5ee-rigel-offer-proof.png",
+        "label": "rigel-offer-proof.png",
+        "version": 1,
+        "status": "APPROVED",
+        "agentReviewStatus": "APPROVED",
+        "requiredUsage": "PRESERVE_EXACT_FILE_NO_REDRAW"
+      }
+    ],
+    "minimumApprovedLandingVisualAssets": 4,
+    "visualAssetRule": "Reutilize os arquivos APPROVED literalmente; não redesenhe o produto. A landing deve exibir ao menos quatro URLs distintas do catálogo.",
+    "checkoutUrl": "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=133771061-472e4ef4-5d13-4122-831a-706d12435081",
+    "checkoutContract": {
+      "canonicalUrl": "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=133771061-472e4ef4-5d13-4122-831a-706d12435081",
+      "requiredMarkers": [
+        "checkout-cta-primary",
+        "primary-checkout"
+      ],
+      "rule": "Todo CTA de compra deve usar literalmente canonicalUrl; são proibidos #, placeholders e destinos alternativos."
+    }
+  }
+}

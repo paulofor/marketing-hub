@@ -152,6 +152,7 @@
 - **Causa-raiz confirmada em 2026-08-25:** produto, slot, experimento e biblioteca de provas eram lidos separadamente, sem binding comercial obrigatório, e o gate retornava sucesso para lista vazia.
 - **Correção efetiva:** a experiência assistida v2 congela experimento, CTA, preço e cobrança; backend e frontend bloqueiam divergências; `PRODUCT_PROOF` aprovado passa a ser elegível e zero referências reprova o gate.
 - **Prevenção:** testes contratuais cobrem binding divergente, versão divergente, prova de produto não visual e ausência total de evidência.
+- **Recorrência fechada localmente em 2026-08-26:** produto e experimento da Rigel chegaram à v2, mas o slot público ativo permaneceu na v1. O backfill exigia `draft_experience_json` preenchido, embora um slot publicado possa legitimamente manter o rascunho nulo; assim, o `UPDATE` inteiro era ignorado. Um changeset complementar atualiza o contrato publicado válido sem exigir rascunho, preserva `NULL` quando ele não existe e atualiza o rascunho válido quando presente. Teste físico no MySQL 5.7 cobre instalação, slot sem/com rascunho, reaplicação e retomada após interrupção.
 
 ## LOOP-PDE-EVIDENCIA-IRRELEVANTE — Descoberta PDE
 
@@ -891,6 +892,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - **Regra preventiva**:
   - nenhuma decisão de Quality Review deve ser analisada sem conferir qual screenshot/hash foi avaliado.
 - **Recalibração em 2026-08-11:** 44 revisões produtivas mostraram teto de score 88 e apenas uma aprovação histórica, com score 86, enquanto avaliações recentes entre 84 e 88 ainda misturavam bloqueios reais com refinamentos opcionais. O gate deixou de depender do corte isolado de 90 e passou a exigir score mínimo 85, piso 8/10 por dimensão, prontidão comercial, especificidade e ausência de bloqueios; melhorias opcionais foram separadas em `improvementOpportunities`. O validator determinístico impede aprovação inconsistente.
+- **Recorrência fechada localmente em 2026-08-26:** na homologação da Rigel, os screenshots full-page preservavam a sequência, porém comprimiam previews legíveis até o modelo percebê-los como grandes áreas vazias; substituir a captura integral por recortes repetiria a perda de contexto já observada no histórico. O Quality Review passa a enviar evidência híbrida e correlacionada do mesmo HTML: full-page mobile/desktop mais a seção com maior concentração de imagens em resolução útil. O prompt define os papéis complementares e testes impedem selecionar seção com menos de duas provas.
 
 ## LOOP-LANDING-ANALYTICS-FUNNEL — Analytics, funil e submissão
 
@@ -1496,6 +1498,31 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes bloqueiam destinos inventados e comprovam a troca segura da âncora pelo checkout canônico.
 - **Fechamento complementar em 2026-08-14:** o extrator do CTA protegido deixa de depender da ordem textual dos atributos HTML. Dédalo pode produzir tanto `id` antes de `href` quanto `href` antes de `id`; o backend continua exigindo o mesmo identificador e a URL canônica, com teste de contrato para ambas as ordens.
 - **Fechamento complementar em 2026-08-15:** o HTML autônomo do experimento #88 preservou a URL oficial em quatro CTAs, mas usou o hook semântico `data-analytics-role="primary-checkout"` em vez do identificador legado. O gate passa a reconhecer os dois contratos e valida todos os CTAs marcados contra o checkout canônico; qualquer destino divergente continua bloqueado. A tarefa BPM recebe uma única retomada automática após essa rejeição corrigível, sem liberar Psique ou Têmis antes da aprovação técnica.
+- **Recorrência fechada localmente em 2026-08-26:** a primeira landing da Rigel possuía `commercial_checkout_url`, mas ainda não tinha auditoria de publicação; o snapshot e o gate consultavam somente o histórico publicado, criando uma dependência circular que impedia usar o checkout aprovado na primeira candidata. Um resolvedor único agora prioriza o checkout comercial do experimento e usa a última auditoria apenas como compatibilidade legada. Os testes cobrem primeira publicação, prioridade do contrato atual e fallback histórico.
+
+## LOOP-LANDING-GENERATOR-MCP-ESM-TEMP-PATH — Dédalo não encontra dependências do MCP
+
+- **Data:** 2026-08-26.
+- **Sintoma:** o processo Codex iniciava, mas o MCP do GeraLanding falhava antes de expor as ferramentas por não resolver seus pacotes Node.
+- **Causa-raiz:** o worker copiava o módulo ESM para `/tmp`; a resolução de `node_modules` parte do caminho físico do script, portanto deixava de enxergar as dependências instaladas em `/app`.
+- **Correção sistêmica:** a imagem instala o MCP em `/app/mcp/landing-generator.mjs` e o runner exige esse caminho estável, sem cópia nem remoção temporária.
+- **Prevenção:** teste do runner e handshake dentro da imagem validam o arquivo instalado e a abertura real das ferramentas MCP.
+
+## LOOP-LANDING-MCP-CANDIDATE-BEFORE-PERSISTENCE — inspeção audita versão antiga
+
+- **Data:** 2026-08-26.
+- **Sintoma:** Dédalo gerava uma candidata corrigida, mas as ferramentas de inspeção continuavam avaliando apenas o HTML já persistido e podiam orientar nova correção sobre a versão anterior.
+- **Causa-raiz:** os contratos MCP de inspeção não recebiam a candidata ainda não aplicada.
+- **Correção sistêmica:** as ferramentas aceitam `html` ou `generatedHtml` opcional e auditam esse conteúdo antes do fallback persistido, mantendo a publicação proibida.
+- **Prevenção:** o handshake executa uma inspeção inline e comprova que o resultado pertence à candidata enviada.
+
+## LOOP-LANDING-GENERATOR-CONTEXTO-COMERCIAL-INCOMPLETO — landing bonita omite contrato de entrega
+
+- **Data:** 2026-08-26.
+- **Sintoma:** Quality Review aprovava a composição visual da Rigel, mas Psique bloqueava escopo, formato, pós-compra, fornecedor e políticas ausentes.
+- **Causa-raiz:** o snapshot de Dédalo levava dor, promessa, CTA e HTML, porém não carregava o contrato PDE estruturado nem o contrato público de confiança da mesma oferta.
+- **Correção sistêmica:** um resolvedor auditável injeta público, formato, entrega, mecanismo, reversão de risco, escopo, processo comercial, provas, fornecedor e políticas; indisponibilidade da oferta pública fica explícita e JSON inválido falha com log correlacionado.
+- **Prevenção:** testes exigem contexto completo da mesma experiência, bloqueio explícito para outra oferta e ausência de fatos fabricados quando a fonte não existe.
 
 ## LOOP-LANDING-GENERATOR-DECISAO-SEM-ARTEFATO — Dédalo descreve código sem entregar HTML
 

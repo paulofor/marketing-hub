@@ -1,0 +1,3 @@
+FROM mysql:5.7
+
+COPY src/test/resources/liquibase-mysql57/rigel-commercial-slot-baseline.sql /docker-entrypoint-initdb.d/10-rigel-commercial-slot-baseline.sql

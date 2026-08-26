@@ -353,3 +353,31 @@ mostrar antes/depois, repetir o CTA depois da prova e apresentar a mesma sequên
 orçamento ignorado na resposta, qualificação e três follow-ups. Depois das correções, Quality Review
 aprovou com 88/100, Psique aprovou a percepção da cliente e uma nova execução independente de Têmis
 aprovou a coerência comercial. Nenhum parecer autoriza publicação, contato ou gasto.
+
+## Fechamento local da geração de landing
+
+Em 2026-08-26, a Rigel ainda não possuía entrada oficial no subprocesso de landing: a cadeia pública
+registrava a conclusão de `4.1` e indicava `4.2 Geração de landing page` como próximo movimento. A
+homologação local encontrou que a experiência v2 já estava no produto e no experimento, mas não no
+slot público ativo, porque o backfill anterior exigia um rascunho que legitimamente estava nulo.
+
+O reparo versionado torna a migração retomável no MySQL 5.7 e o GeraLanding passa a receber, no mesmo
+snapshot, checkout, escopo, processo de entrega, provas, fornecedor e políticas da oferta. Também
+foram corrigidos o caminho ESM do MCP, a inspeção da candidata antes da persistência e a evidência
+visual do Quality Review, que agora combina página integral e recorte legível das provas.
+
+A candidata final usa três CTAs canônicos, quatro provas aprovadas e descreve exatamente 10–20
+respostas, 5–10 perguntas, 3–5 follow-ups manuais, regras de escalonamento, guia, checklist, revisão
+humana, prévia em até 12 horas e entrega em até 48 horas após pagamento e briefing completos. Ela
+não promete automação, recorrência ou resultado garantido. Quality Review aprovou com 89/100, Psique
+aprovou a percepção da cliente e Têmis aprovou todos os gates comerciais sobre a mesma evidência.
+
+Os onze ativos foram conferidos por hash; as seis imagens foram inspecionadas e o vídeo H.264
+1080×1920 de 30 segundos foi reproduzido em iPhone 15 Pro e Pixel 7. O checkout segregado confirmou
+R$ 349, pagamento único, fornecedor e ausência de recorrência. A inspeção direta do Mercado Pago sem
+pagamento recebeu HTTP 403 antibot, que permanece como validação humana no preflight produtivo.
+
+Nenhum artefato foi publicado e não houve contato, gasto, evento comercial ou venda. Depois da
+publicação do lote versionado, a execução oficial deve ser iniciada pela tela, persistir as mesmas
+evidências e concluir `4.2`; a atividade seguinte é `Integrar canal, checkout, acesso e eventos`,
+ainda dentro do processo 4, antes da Homologação e ativação comercial.

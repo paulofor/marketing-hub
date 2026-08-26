@@ -52,7 +52,15 @@ test.beforeEach(async ({ context, page, request }) => {
     await route.fulfill({
       status: 200,
       contentType: "text/html; charset=utf-8",
-      body: "<html><body><h1>Checkout de homologação</h1></body></html>",
+      body: `<!doctype html>
+        <html lang="pt-BR"><head><meta charset="utf-8"><title>Checkout de homologação</title></head>
+        <body>
+          <h1>Checkout de homologação — Kit WhatsApp Pronto</h1>
+          <p>R$ 349</p>
+          <p>Pagamento único, sem recorrência</p>
+          <p>PAULO ALEXANDRE LOPES FORESTIERI INFORMATICA</p>
+          <p>Nenhuma cobrança adicional será criada neste ambiente local.</p>
+        </body></html>`,
     });
   });
   const resetResponse = await request.post(
@@ -239,7 +247,21 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
   await checkout.click();
   const checkoutPage = await popupPromise;
   await expect(
-    checkoutPage.getByRole("heading", { name: "Checkout de homologação" }),
+    checkoutPage.getByRole("heading", {
+      name: "Checkout de homologação — Kit WhatsApp Pronto",
+    }),
+  ).toBeVisible();
+  await expect(checkoutPage.getByText("R$ 349")).toBeVisible();
+  await expect(
+    checkoutPage.getByText("Pagamento único, sem recorrência"),
+  ).toBeVisible();
+  await expect(
+    checkoutPage.getByText("PAULO ALEXANDRE LOPES FORESTIERI INFORMATICA"),
+  ).toBeVisible();
+  await expect(
+    checkoutPage.getByText(
+      "Nenhuma cobrança adicional será criada neste ambiente local.",
+    ),
   ).toBeVisible();
   await checkoutPage.close();
   await expect

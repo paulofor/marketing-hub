@@ -2,7 +2,7 @@
   "evidenceVersion": "kit-whatsapp-tasting-homologation-v1",
   "productSlug": "kit-whatsapp-pronto",
   "experimentId": 89,
-  "verifiedAt": "2026-08-24T12:53:01Z",
+  "verifiedAt": "2026-08-26T05:43:17Z",
   "status": "PASSED",
   "revalidationReason": "Revisão aprovada após preservar o contexto de QA e preview em toda a jornada pública, inclusive políticas e o smoke automatizado do deploy.",
   "scope": "Degustação determinística, privacidade, eventos, segregação de QA no build público, fronteira paga, checkout e experiência responsiva.",
@@ -23,13 +23,15 @@
   "executableEvidence": [
     {
       "path": "pde-platform/frontend/tests/assisted-service-local.spec.ts",
-      "sha256": "5524624ca2cb2f0a201d7ab55a871dcd97b647bed24645f4de3c1a2231345541",
+      "sha256": "2f54cdf453e33718445a9fda10b123b22b3622faedea8b2ce37d1e42f2b7f57b",
       "proves": [
         "as seis combinações de duas situações por três tons materializam respostas distintas",
         "cada combinação entrega uma resposta, uma pergunta e três follow-ups",
         "o nome genérico do serviço não aparece no payload de telemetria",
         "TASTING_STARTED ocorre uma vez e VALUE_MOMENT e PAYWALL_VIEWED ocorrem uma vez por resultado",
         "CHECKOUT_STARTED preserva experimento, preço, host e contractVersion",
+        "o checkout segregado exibe Kit WhatsApp Pronto, R$ 349, pagamento único, ausência de recorrência e fornecedor",
+        "o checkout local declara que nenhuma cobrança adicional é criada",
         "material sem token retorna 403 e acesso INTERNAL_QA vigente recebe o conteúdo",
         "mh_test e INTERNAL_QA permanecem segregados da amostra humana"
       ]

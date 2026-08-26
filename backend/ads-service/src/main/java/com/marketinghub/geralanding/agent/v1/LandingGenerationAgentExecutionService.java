@@ -8,7 +8,6 @@ import com.marketinghub.geralanding.qualityreview.service.LandingQualityReviewed
 import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
-import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -46,7 +45,8 @@ public class LandingGenerationAgentExecutionService {
   private final GeraLandingStageExecutionRepository repository;
   private final LandingGenerationAgentCoordinator coordinator;
   private final ExperimentRepository experimentRepository;
-  private final GeraSalesPagePublicationAuditRepository publicationRepository;
+  private final LandingCheckoutContractResolver checkoutContractResolver;
+  private final LandingCommercialContextResolver commercialContextResolver;
   private final ObjectMapper objectMapper;
   private final AgentTaskService agentTaskService;
   private final LandingGenerationResultApplicationService resultApplicationService;
@@ -57,7 +57,8 @@ public class LandingGenerationAgentExecutionService {
       GeraLandingStageExecutionRepository repository,
       LandingGenerationAgentCoordinator coordinator,
       ExperimentRepository experimentRepository,
-      GeraSalesPagePublicationAuditRepository publicationRepository,
+      LandingCheckoutContractResolver checkoutContractResolver,
+      LandingCommercialContextResolver commercialContextResolver,
       ObjectMapper objectMapper,
       AgentTaskService agentTaskService,
       LandingGenerationResultApplicationService resultApplicationService,
@@ -65,7 +66,8 @@ public class LandingGenerationAgentExecutionService {
     this.repository = repository;
     this.coordinator = coordinator;
     this.experimentRepository = experimentRepository;
-    this.publicationRepository = publicationRepository;
+    this.checkoutContractResolver = checkoutContractResolver;
+    this.commercialContextResolver = commercialContextResolver;
     this.objectMapper = objectMapper;
     this.agentTaskService = agentTaskService;
     this.resultApplicationService = resultApplicationService;
@@ -602,9 +604,24 @@ public class LandingGenerationAgentExecutionService {
           .ifPresent(
               experiment -> {
                 putWhenPresent(context, "experimentName", experiment.getName());
+                if (experiment.getProduct() != null) {
+                  putWhenPresent(context, "productName", experiment.getProduct().getName());
+                }
+                context.putAll(commercialContextResolver.resolve(experiment));
                 putWhenPresent(context, "pain", experiment.getSinglePain());
+                putWhenPresent(context, "freeReward", experiment.getFreeReward());
                 putWhenPresent(context, "promise", experiment.getFunnelPromise());
                 putWhenPresent(context, "primaryCta", experiment.getPrimaryCta());
+                putWhenPresent(context, "unitPriceBrl", experiment.getUnitPrice());
+                putWhenPresent(context, "commercialObjective", experiment.getCommercialObjective());
+                putWhenPresent(
+                    context,
+                    "desireTerritorySnapshotJson",
+                    experiment.getDesireTerritorySnapshotJson());
+                putWhenPresent(context, "primaryVariable", experiment.getPrimaryVariable());
+                putWhenPresent(context, "primaryMetric", experiment.getPrimaryMetric());
+                putWhenPresent(context, "adCopy", experiment.getAdCopy());
+                putWhenPresent(context, "adImageBriefing", experiment.getAdImageBriefing());
                 putWhenPresent(context, "landingHtml", experiment.getHtmlGeraLanding());
                 context.put(
                     "approvedLandingVisualAssets",
@@ -615,23 +632,19 @@ public class LandingGenerationAgentExecutionService {
                 context.put(
                     "visualAssetRule",
                     "Reutilize os arquivos APPROVED literalmente; não redesenhe o produto. A landing deve exibir ao menos minimumApprovedLandingVisualAssets URLs distintas do catálogo.");
-                publicationRepository
-                    .findTopByExperimentIdOrderByPublishedAtDesc(experiment.getId())
-                    .filter(publication -> StringUtils.hasText(publication.getCheckoutUrl()))
-                    .ifPresent(
-                        publication -> {
-                          String checkoutUrl = publication.getCheckoutUrl();
-                          context.put("checkoutUrl", checkoutUrl);
-                          context.put(
-                              "checkoutContract",
-                              Map.of(
-                                  "canonicalUrl",
-                                  checkoutUrl,
-                                  "requiredMarkers",
-                                  List.of("checkout-cta-primary", "primary-checkout"),
-                                  "rule",
-                                  "Todo CTA de compra deve usar literalmente canonicalUrl; são proibidos #, placeholders e destinos alternativos."));
-                        });
+                String checkoutUrl = checkoutContractResolver.resolve(experiment);
+                if (StringUtils.hasText(checkoutUrl)) {
+                  context.put("checkoutUrl", checkoutUrl);
+                  context.put(
+                      "checkoutContract",
+                      Map.of(
+                          "canonicalUrl",
+                          checkoutUrl,
+                          "requiredMarkers",
+                          List.of("checkout-cta-primary", "primary-checkout"),
+                          "rule",
+                          "Todo CTA de compra deve usar literalmente canonicalUrl; são proibidos #, placeholders e destinos alternativos."));
+                }
               });
       return new LandingAgentPendingResponse(
           textId(execution),
@@ -639,6 +652,11 @@ public class LandingGenerationAgentExecutionService {
           execution.getExecutionRequestedAt(),
           Map.copyOf(context));
     } catch (Exception ex) {
+      log.error(
+          "Falha ao montar snapshot do Agente Gerador de Landing. experimentId={} executionId={}",
+          execution.getExperimentId(),
+          textId(execution),
+          ex);
       throw new IllegalStateException("Snapshot inválido do Agente Gerador de Landing", ex);
     }
   }

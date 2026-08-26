@@ -1,0 +1,23 @@
+{
+  "mode": "READ_ONLY_DIRECT_NAVIGATION_NO_CTA_NO_SUBMISSION",
+  "requestedUrl": "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=133771061-472e4ef4-5d13-4122-831a-706d12435081",
+  "finalUrl": "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=133771061-472e4ef4-5d13-4122-831a-706d12435081",
+  "httpStatus": 403,
+  "offerExpectation": {
+    "productSlug": "kit-whatsapp-pronto",
+    "experimentId": 89,
+    "priceBrl": 349,
+    "billingModel": "ONE_TIME",
+    "supplierLegalName": "PAULO ALEXANDRE LOPES FORESTIERI INFORMATICA"
+  },
+  "rendered": {
+    "title": "",
+    "visibleText": "Mercado Libre - Donde comprar y vender de todo Hubo un error accediendo a esta pagina... Ir a la página principal",
+    "forms": 0,
+    "buttons": []
+  },
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 403 ()",
+    "Failed to load resource: the server responded with a status of 403 ()"
+  ]
+}

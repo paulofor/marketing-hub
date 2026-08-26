@@ -9,8 +9,8 @@ const experimentId = positive(required('MCP_EXPERIMENT_ID'));
 const server = new McpServer({ name: 'landing-generator', version: '1.0.0' });
 
 server.registerTool('consultar_contexto', { description: 'Consulta o snapshot congelado da landing e do Quality Review.', inputSchema: {}, annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false } }, async () => ({ content: [text(await context())] }));
-server.registerTool('inspecionar_landing_desktop_mobile', { description: 'Renderiza o rascunho HTML em desktop, iPhone e Android sem publicar.', inputSchema: {}, annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false } }, async () => inspectLanding());
-server.registerTool('auditar_jornada_funcional', { description: 'Audita DOM, overflow, CTAs, links, formulário e instrumentação sem publicar nem enviar eventos.', inputSchema: {}, annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false } }, async () => auditJourney());
+server.registerTool('inspecionar_landing_desktop_mobile', { description: 'Renderiza o rascunho HTML em desktop, iPhone e Android sem publicar.', inputSchema: { html: z.string().min(100).max(200000).optional(), generatedHtml: z.string().min(100).max(200000).optional() }, annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false } }, async args => inspectLanding(args));
+server.registerTool('auditar_jornada_funcional', { description: 'Audita DOM, overflow, CTAs, links, formulário e instrumentação sem publicar nem enviar eventos.', inputSchema: { html: z.string().min(100).max(200000).optional(), generatedHtml: z.string().min(100).max(200000).optional() }, annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false } }, async args => auditJourney(args));
 server.registerTool('recuperar_memoria_especializada', { description: 'Recupera aprendizados confirmados ou candidatos vigentes deste experimento.', inputSchema: {}, annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false } }, async () => memory('GET', {}));
 server.registerTool('recuperar_estrategias_promovidas', { description: 'Recupera somente estratégias que venceram replay, holdout e regressão locais.', inputSchema: {}, annotations: { readOnlyHint: true, openWorldHint: false, destructiveHint: false } }, async () => promotedLearning());
 server.registerTool('registrar_aprendizado_candidato', { description: 'Registra uma hipótese de melhoria sem permitir autopromoção.', inputSchema: { specialty: z.string().min(3).max(120), content: z.string().min(10).max(4000), evidence: z.string().min(10).max(4000), sourceReference: z.string().max(700).optional(), confidence: z.number().min(0).max(1) }, annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false } }, async args => memory('POST', args));
@@ -22,11 +22,9 @@ async function context() {
   return { audit: audit('consultar_contexto'), data: await response.json() };
 }
 
-async function inspectLanding() {
-  const snapshot = await context();
-  const html = snapshot.data?.context?.landingHtml;
-  if (typeof html !== 'string' || html.length < 100) throw new Error('Rascunho HTML ausente ou incompleto');
-  const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'] });
+async function inspectLanding(args) {
+  const html = await draftHtml(args);
+  const browser = await launchBrowser();
   try {
     const result = [text({ audit: audit('inspecionar_landing_desktop_mobile'), views: ['desktop', 'iPhone 15 Pro', 'Pixel 7'] })];
     for (const viewport of [{ width: 1440, height: 1000 }, { width: 393, height: 852 }, { width: 412, height: 915 }]) {
@@ -40,11 +38,9 @@ async function inspectLanding() {
   } finally { await browser.close(); }
 }
 
-async function auditJourney() {
-  const snapshot = await context();
-  const html = snapshot.data?.context?.landingHtml;
-  if (typeof html !== 'string' || html.length < 100) throw new Error('Rascunho HTML ausente ou incompleto');
-  const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'] });
+async function auditJourney(args) {
+  const html = await draftHtml(args);
+  const browser = await launchBrowser();
   try {
     const devices = [{ name: 'desktop', width: 1440, height: 1000 }, { name: 'iPhone 15 Pro', width: 393, height: 852 }, { name: 'Pixel 7', width: 412, height: 915 }];
     const audits = [];
@@ -63,6 +59,20 @@ async function auditJourney() {
     }
     return { content: [text({ audit: audit('auditar_jornada_funcional'), eventsEmitted: false, formSubmitted: false, audits })] };
   } finally { await browser.close(); }
+}
+
+async function draftHtml(args) {
+  const supplied = args?.generatedHtml ?? args?.html;
+  if (typeof supplied === 'string' && supplied.length >= 100) return supplied;
+  const snapshot = await context();
+  const persisted = snapshot.data?.context?.landingHtml;
+  if (typeof persisted !== 'string' || persisted.length < 100) throw new Error('Rascunho HTML ausente ou incompleto');
+  return persisted;
+}
+
+async function launchBrowser() {
+  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || process.env.CHROMIUM_BIN || process.env.CHROME_BIN;
+  return chromium.launch({ headless: true, ...(executablePath ? { executablePath } : {}), args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'] });
 }
 
 async function memory(method, args) {

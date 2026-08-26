@@ -9,6 +9,7 @@ public class LandingGeneratorAgentProperties {
   private String backendUrl = "http://backend:8000";
   private String marketingHubUrl = "http://backend:8000";
   private String repositoryPath = "/workspace/marketing-hub";
+  private String mcpScriptPath = "/app/mcp/landing-generator.mjs";
   private String codexCommand = "codex";
   private String model = "gpt-5.6-sol";
   private String reasoningEffort = "high";
@@ -43,6 +44,16 @@ public class LandingGeneratorAgentProperties {
   /** Define o repositório somente leitura. */
   public void setRepositoryPath(String value) {
     repositoryPath = value;
+  }
+
+  /** Retorna o script MCP instalado junto das dependências Node da imagem. */
+  public String getMcpScriptPath() {
+    return mcpScriptPath;
+  }
+
+  /** Define o script MCP executável sem cópia para diretório temporário. */
+  public void setMcpScriptPath(String value) {
+    mcpScriptPath = value;
   }
 
   /** Retorna o comando Codex. */

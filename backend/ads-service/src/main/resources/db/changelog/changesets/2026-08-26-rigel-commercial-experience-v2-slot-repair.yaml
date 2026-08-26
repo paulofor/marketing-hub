@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-26-rigel-commercial-experience-v2-slot-repair
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pde_production_slot
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: published_experience_json
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: draft_experience_json
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: experience_version
+        - columnExists:
+            tableName: pde_production_slot
+            columnName: layout_key
+      changes:
+        - sqlFile:
+            path: 2026-08-26-rigel-commercial-experience-v2-slot-repair.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: true

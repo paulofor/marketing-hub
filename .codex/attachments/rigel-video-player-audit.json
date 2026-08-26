@@ -1,0 +1,20 @@
+[
+  {
+    "device": "iphone15pro",
+    "paused": false,
+    "currentTime": 4.729168,
+    "duration": 30,
+    "videoWidth": 1080,
+    "videoHeight": 1920,
+    "readyState": 4
+  },
+  {
+    "device": "pixel7",
+    "paused": false,
+    "currentTime": 2.008644,
+    "duration": 30,
+    "videoWidth": 1080,
+    "videoHeight": 1920,
+    "readyState": 4
+  }
+]

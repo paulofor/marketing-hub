@@ -44,6 +44,11 @@ Se esses campos estiverem preenchidos, penalize qualquer landing que troque a pr
 {{renderedLandingScreenshots}}
 ```
 
+Os screenshots `*-full-page` preservam a composição e a sequência completas. Quando houver
+screenshots `*-proof-section`, use-os para julgar legibilidade, densidade e força das provas sem
+inferir vazio ou baixa qualidade apenas pela redução necessária da página inteira. As duas visões
+são complementares e devem representar o mesmo HTML e a mesma execução auditável.
+
 Ao preencher `blockingIssues` e `recommendedRegeneration`, cite apenas problemas observáveis no `htmlGeraLanding` e nos screenshots renderizados. Quando recomendar regeneração, diferencie pela evidência final observada:
 
 - `LANDING_PAGE_WIREFRAME`: quando a falha principal estiver na ordem, estrutura, promessa, prova, CTA ou conteúdo planejado;

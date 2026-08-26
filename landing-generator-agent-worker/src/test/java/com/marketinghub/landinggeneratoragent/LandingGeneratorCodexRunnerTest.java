@@ -41,6 +41,37 @@ class LandingGeneratorCodexRunnerTest {
     assertTrue(command.stream().anyMatch(value -> value.contains("mcp_servers.landing_generator")));
   }
 
+  /** Deve executar o MCP no caminho instalado sem copiá-lo para fora do node_modules da imagem. */
+  @Test
+  void shouldUseInstalledMcpScript() throws Exception {
+    Path installedMcp = Path.of("src/main/resources/mcp/landing-generator.mjs").toAbsolutePath();
+    LandingGeneratorAgentProperties properties = new LandingGeneratorAgentProperties();
+    properties.setMcpScriptPath(installedMcp.toString());
+    LandingGeneratorCodexRunner runner =
+        new LandingGeneratorCodexRunner(
+            properties,
+            new ObjectMapper(),
+            mock(CodexTelemetryReporter.class),
+            mock(LandingHtmlCodexGenerator.class));
+
+    assertTrue(runner.requiredMcpScript().equals(installedMcp.normalize()));
+  }
+
+  /** Deve falhar cedo quando a imagem não contém o MCP no caminho configurado. */
+  @Test
+  void shouldRejectMissingInstalledMcpScript() {
+    LandingGeneratorAgentProperties properties = new LandingGeneratorAgentProperties();
+    properties.setMcpScriptPath("/tmp/landing-generator-mcp-inexistente.mjs");
+    LandingGeneratorCodexRunner runner =
+        new LandingGeneratorCodexRunner(
+            properties,
+            new ObjectMapper(),
+            mock(CodexTelemetryReporter.class),
+            mock(LandingHtmlCodexGenerator.class));
+
+    assertThrows(IllegalStateException.class, runner::requiredMcpScript);
+  }
+
   /** Deve versionar modelagem sem cópia e aprendizado por recompensa independente. */
   @Test
   void shouldDeclareReferenceModelingAndReinforcementContract() throws Exception {

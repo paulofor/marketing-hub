@@ -35,6 +35,26 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: comprovar autoria, segregação e ciclo de vida das tarefas dos agentes. */
 class AgentTaskServiceTest {
 
+  /** Reutiliza a atividade oficial existente quando a tela repete o mesmo comando. */
+  @Test
+  void reusesExistingHumanTaskForTheSameExecution() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    AgentTask existing = processTask(601L, dedalo, process("PUBLISHED", "Dédalo"), "html", "PENDING");
+    existing.setSourceReference("experiment:88");
+    when(repository.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:88"))
+        .thenReturn(List.of(existing));
+    AgentTaskService service =
+        service(repository, mock(AgentRepository.class), Clock.systemUTC());
+
+    AgentTaskResponse result =
+        service.createByHumanIfAbsent(regularActivityRequest("Montar landing"));
+
+    assertThat(result.id()).isEqualTo(601L);
+    assertThat(result.status()).isEqualTo("PENDING");
+    verify(repository, never()).save(any());
+  }
+
   /** Persiste atividade, instância e tentativas como níveis distintos do mesmo trabalho. */
   @Test
   void persistsActivityInstanceAndGroupsItsAttempts() {

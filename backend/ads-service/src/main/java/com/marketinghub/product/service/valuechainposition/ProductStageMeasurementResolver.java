@@ -41,6 +41,8 @@ public class ProductStageMeasurementResolver {
       Set.of("PENDING", "IN_PROGRESS", "BLOCKED");
   private static final Set<String> CREATIVE_APPROVAL_ACTIVITIES =
       Set.of("route", "produce", "customer", "commercial");
+  private static final Set<String> LANDING_APPROVAL_ACTIVITIES =
+      Set.of("html", "customer", "commercial");
 
   private final ProductProcessPeriodRepository periodRepository;
   private final CommercialPlanRepository commercialPlanRepository;
@@ -186,11 +188,22 @@ public class ProductStageMeasurementResolver {
     return measurements;
   }
 
+  /** Confirma o objetivo persistido de um subprocesso sem inferir avanço por simples status. */
+  public boolean objectiveAchieved(Product product, BusinessProcessDefinition subprocess) {
+    MeasurementContext context = context(product);
+    return persistedSubprocessObjectiveAchievedAt(
+            subprocess, subprocessTasks(context.tasks(), subprocess))
+        != null;
+  }
+
   /**
    * Obtém o horário auditável em que todas as atividades criativas obrigatórias foram concluídas.
    */
   private Instant persistedSubprocessObjectiveAchievedAt(
       BusinessProcessDefinition subprocess, List<AgentTask> matchingTasks) {
+    if ("landing-page-generation".equals(subprocess.getProcessCode())) {
+      return approvedLandingAchievedAt(matchingTasks);
+    }
     if (!"creative-production-approval".equals(subprocess.getProcessCode())) return null;
     Set<String> packageIds = new java.util.HashSet<>();
     List<Instant> completionTimes = new ArrayList<>();
@@ -207,6 +220,81 @@ public class ProductStageMeasurementResolver {
     return packageIds.size() == 1
         ? completionTimes.stream().max(Comparator.naturalOrder()).orElse(null)
         : null;
+  }
+
+  /**
+   * Reconhece a landing aprovada somente quando Dédalo, Quality Review, Psique e Têmis fecharam a
+   * mesma execução; publicação humana permanece fora deste objetivo.
+   */
+  private Instant approvedLandingAchievedAt(List<AgentTask> matchingTasks) {
+    Map<String, List<AgentTask>> byExecution =
+        matchingTasks.stream()
+            .filter(task -> task.getSourceReference() != null)
+            .collect(java.util.stream.Collectors.groupingBy(AgentTask::getSourceReference));
+    return byExecution.values().stream()
+        .map(this::approvedLandingExecutionAchievedAt)
+        .filter(Objects::nonNull)
+        .max(Comparator.naturalOrder())
+        .orElse(null);
+  }
+
+  /** Valida decisões e evidências estruturadas dos três gates da mesma execução de landing. */
+  private Instant approvedLandingExecutionAchievedAt(List<AgentTask> tasks) {
+    Map<String, AgentTask> latestByActivity = new LinkedHashMap<>();
+    tasks.stream()
+        .filter(task -> LANDING_APPROVAL_ACTIVITIES.contains(task.getProcessActivityId()))
+        .sorted(
+            Comparator.comparing(
+                    AgentTask::getUpdatedAt, Comparator.nullsFirst(Comparator.naturalOrder()))
+                .thenComparing(AgentTask::getId, Comparator.nullsFirst(Comparator.naturalOrder())))
+        .forEach(task -> latestByActivity.put(task.getProcessActivityId(), task));
+    if (!LANDING_APPROVAL_ACTIVITIES.stream()
+        .allMatch(
+            activityId ->
+                latestByActivity.containsKey(activityId)
+                    && "COMPLETED".equals(latestByActivity.get(activityId).getStatus()))) {
+      return null;
+    }
+    if (!approvedLandingHtml(latestByActivity.get("html"))
+        || !approvedDecision(latestByActivity.get("customer"))
+        || !approvedDecision(latestByActivity.get("commercial"))) {
+      return null;
+    }
+    return latestByActivity.values().stream()
+        .map(task -> task.getDeliveredAt() != null ? task.getDeliveredAt() : task.getUpdatedAt())
+        .filter(Objects::nonNull)
+        .max(Comparator.naturalOrder())
+        .orElse(null);
+  }
+
+  /** Exige a aprovação independente, o HTML final e o checkout preservado por Dédalo. */
+  private boolean approvedLandingHtml(AgentTask task) {
+    try {
+      JsonNode evidence = objectMapper.readTree(task.getEvidenceJson());
+      return "APPROVE_FOR_PUBLICATION".equals(evidence.path("approvalRecommendation").asText())
+          && !evidence.path("landingHtml").asText().isBlank()
+          && !evidence.path("checkoutUrl").asText().isBlank();
+    } catch (JsonProcessingException | IllegalArgumentException ex) {
+      log.warn(
+          "Evidência da landing inválida ao medir objetivo do subprocesso. taskId={}",
+          task.getId(),
+          ex);
+      return false;
+    }
+  }
+
+  /** Aceita somente parecer funcional explícito e aprovado de Psique ou Têmis. */
+  private boolean approvedDecision(AgentTask task) {
+    try {
+      return "APPROVED"
+          .equals(objectMapper.readTree(task.getResultJson()).path("decision").asText());
+    } catch (JsonProcessingException | IllegalArgumentException ex) {
+      log.warn(
+          "Parecer de landing inválido ao medir objetivo do subprocesso. taskId={}",
+          task.getId(),
+          ex);
+      return false;
+    }
   }
 
   /** Seleciona a execução mais recente de uma atividade específica do subprocesso. */

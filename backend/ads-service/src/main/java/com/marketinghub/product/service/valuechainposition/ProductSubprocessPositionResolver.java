@@ -103,6 +103,15 @@ public class ProductSubprocessPositionResolver {
     String status =
         activeChildTask != null ? "IN_PROGRESS" : lastRecorded != null ? "RECORDED" : "PLANNED";
 
+    if (current == null
+        && lastRecorded != null
+        && next == null
+        && stageMeasurementResolver != null
+        && stageMeasurementResolver.objectiveAchieved(product, lastRecorded)) {
+      activityName = nextParentActivityName(parentProcess, lastRecorded.getProcessCode());
+      status = "COMPLETED";
+    }
+
     if (current == null && lastRecorded == null) {
       ParentProgress parentProgress = parentProgress(tasks, parentProcess);
       activityName = parentProgress.activityName();
@@ -115,6 +124,25 @@ public class ProductSubprocessPositionResolver {
     }
     return response(
         product, status, subprocesses, activityName, current, next, parentSequenceNumber);
+  }
+
+  /** Localiza a primeira atividade do processo pai depois do subprocesso concluído. */
+  private String nextParentActivityName(
+      BusinessProcessDefinition parentProcess, String completedSubprocessCode) {
+    List<JsonNode> nodes = orderedNodes(parentProcess);
+    boolean completedFound = false;
+    for (JsonNode node : nodes) {
+      if (completedSubprocessCode.equals(node.path("subprocessCode").asText(null))) {
+        completedFound = true;
+        continue;
+      }
+      if (completedFound
+          && "TASK".equals(node.path("type").asText())
+          && !node.hasNonNull("subprocessCode")) {
+        return node.path("label").asText(null);
+      }
+    }
+    return null;
   }
 
   /** Ordena subprocessos pela posição em que são delegados no diagrama do processo pai. */

@@ -1,16 +1,22 @@
 package com.marketinghub.planning.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.geralanding.agent.v1.LandingGenerationAgentExecutionService;
+import com.marketinghub.agenttask.AgentTaskService;
+import com.marketinghub.agenttask.CreateAgentTaskRequest;
+import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.planning.CommercialPlan;
+import com.marketinghub.planning.dto.CommercialPlanVersionDto;
+import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
+import java.time.Instant;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -18,7 +24,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CommercialPlanJourneyHomologationServiceTest {
   @Mock private CommercialPlanService commercialPlanService;
-  @Mock private LandingGenerationAgentExecutionService executionService;
+  @Mock private CommercialPlanVersionService versionService;
+  @Mock private BusinessProcessDefinitionRepository processRepository;
+  @Mock private AgentTaskService agentTaskService;
 
   /** Confirma que o experimento escolhido recebe uma homologação segregada e sem gasto. */
   @Test
@@ -33,9 +41,23 @@ class CommercialPlanJourneyHomologationServiceTest {
                 .rootCause("Contrato sem critério observável")
                 .nextAction("Dédalo itera na sandbox e Têmis revisa")
                 .build());
+    when(versionService.current(2L))
+        .thenReturn(
+            new CommercialPlanVersionDto(
+                9L, 2L, 3, "{}", "teste", "versão de teste", Instant.now()));
+    BusinessProcessDefinition process = new BusinessProcessDefinition();
+    process.setId(18L);
+    process.setProcessCode("landing-page-generation");
+    when(processRepository.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
+            "landing-page-generation", "PUBLISHED"))
+        .thenReturn(Optional.of(process));
     var service =
         new CommercialPlanJourneyHomologationService(
-            commercialPlanService, executionService, new ObjectMapper());
+            commercialPlanService,
+            versionService,
+            processRepository,
+            agentTaskService,
+            new ObjectMapper());
 
     var result = service.request(2L, 88L);
 
@@ -43,15 +65,26 @@ class CommercialPlanJourneyHomologationServiceTest {
     assertThat(result.experimentId()).isEqualTo(88L);
     assertThat(result.status()).isEqualTo("INICIADO");
     verify(commercialPlanService).requireExperiment(2L, 88L);
-    verify(executionService)
-        .enqueue(
-            eq(88L),
-            argThat(cycleId -> cycleId.startsWith("cph-2-") && cycleId.length() <= 36),
-            argThat(
-                brief ->
-                    brief.contains("\"mediaSpendAuthorized\":false")
-                        && brief.contains("\"recoveryPolicy\":\"RETRY_ON_EXECUTOR_DEPLOY\"")
-                        && brief.contains("quatro exemplos finais")
-                        && brief.contains("Dédalo itera na sandbox")));
+    ArgumentCaptor<CreateAgentTaskRequest> tasks =
+        ArgumentCaptor.forClass(CreateAgentTaskRequest.class);
+    verify(agentTaskService, times(3)).createByHumanIfAbsent(tasks.capture());
+    assertThat(tasks.getAllValues())
+        .extracting(CreateAgentTaskRequest::assignedAgentKey)
+        .containsExactly("landing-generator", "customer-agent", "meta-ad-approver");
+    assertThat(tasks.getAllValues())
+        .extracting(CreateAgentTaskRequest::processActivityId)
+        .containsExactly("html", "customer", "commercial");
+    assertThat(tasks.getAllValues())
+        .allSatisfy(
+            task -> {
+              assertThat(task.sourceReference()).isEqualTo("commercial-plan:2@v3:journey");
+              assertThat(task.processDefinitionId()).isEqualTo(18L);
+              assertThat(task.title()).contains("Experimento #88");
+            });
+    assertThat(tasks.getAllValues().getFirst().description())
+        .contains("\"mediaSpendAuthorized\":false")
+        .contains("BPM_TASK_RETRY_WITH_PERSISTED_CAUSE")
+        .contains("quatro exemplos finais")
+        .contains("Dédalo itera na sandbox");
   }
 }

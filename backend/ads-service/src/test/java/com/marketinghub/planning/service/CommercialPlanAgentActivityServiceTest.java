@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.experimentstrategist.ExperimentStrategistExecution;
 import com.marketinghub.experimentstrategist.ExperimentStrategistExecutionStatus;
 import com.marketinghub.planning.CommercialPlan;
@@ -25,6 +26,54 @@ import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: validar a segregação e a prestação de contas dos agentes no plano. */
 class CommercialPlanAgentActivityServiceTest {
+
+  /** Consolida a landing somente depois dos três gates da mesma execução oficial. */
+  @Test
+  void consolidatesOfficialLandingJourneyFromBpmGates() {
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
+    GeraLandingStageExecutionRepository landings = mock(GeraLandingStageExecutionRepository.class);
+    ExperimentStrategistExecutionRepository strategists =
+        mock(ExperimentStrategistExecutionRepository.class);
+    FinancialAgentExecutionRepository financials = mock(FinancialAgentExecutionRepository.class);
+    GrowthOperatorExecutionRepository growthOperators =
+        mock(GrowthOperatorExecutionRepository.class);
+    CommercialPlanVersionService versions = mock(CommercialPlanVersionService.class);
+    CommercialPlanAgentActivityService service =
+        new CommercialPlanAgentActivityService(
+            tasks, cycles, landings, strategists, financials, growthOperators, versions);
+    Instant now = Instant.parse("2026-08-26T10:00:00Z");
+    CommercialPlan plan = CommercialPlan.builder().id(4L).build();
+    List<AgentTask> journey =
+        List.of(
+            journeyTask(1L, "landing-generator", "Dédalo", "html", "COMPLETED", now),
+            journeyTask(
+                2L, "customer-agent", "Psique", "customer", "COMPLETED", now.plusSeconds(1)),
+            journeyTask(
+                3L, "meta-ad-approver", "Têmis", "commercial", "COMPLETED", now.plusSeconds(2)));
+    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("commercial-plan:4@v"))
+        .thenReturn(journey.reversed());
+    when(cycles.findByCommercialPlanIdOrderByUpdatedAtDesc(4L)).thenReturn(List.of());
+    when(strategists.findByCommercialPlanIdOrderByCreatedAtDesc(4L)).thenReturn(List.of());
+    when(financials.findByCommercialPlanIdOrderByCreatedAtDesc(4L)).thenReturn(List.of());
+    when(growthOperators.findByCommercialPlanIdOrderByCreatedAtDesc(4L)).thenReturn(List.of());
+    when(versions.current(4L))
+        .thenReturn(new CommercialPlanVersionDto(3L, 4L, 3, "{}", "USER", "Atualização", now));
+
+    CommercialPlanAgentActivityDto result = service.activity(plan);
+
+    assertThat(result.entries())
+        .filteredOn(entry -> "JOURNEY_HOMOLOGATION".equals(entry.recordType()))
+        .singleElement()
+        .satisfies(
+            entry -> {
+              assertThat(entry.status()).isEqualTo("COMPLETED");
+              assertThat(entry.detail())
+                  .contains("html=COMPLETED", "customer=COMPLETED", "commercial=COMPLETED");
+              assertThat(entry.sourceReference())
+                  .isEqualTo("commercial-plan-journey-homologation:commercial-plan:4@v3:journey");
+            });
+  }
 
   /** Consolida tarefa e ciclo financeiro exclusivamente pelo identificador do plano. */
   @Test
@@ -96,5 +145,30 @@ class CommercialPlanAgentActivityServiceTest {
         .containsExactlyInAnyOrder("Plutus", "Plutus", "Apolo", "Atena");
     assertThat(result.entries().get(0).finalOpinion()).contains("Validar demonstração paga");
     assertThat(result.entries()).allMatch(entry -> entry.sourceReference() != null);
+  }
+
+  /** Monta um gate de landing vinculado à mesma execução BPM. */
+  private AgentTask journeyTask(
+      Long id,
+      String agentKey,
+      String nickname,
+      String activityId,
+      String status,
+      Instant updatedAt) {
+    BusinessProcessDefinition process = new BusinessProcessDefinition();
+    process.setId(18L);
+    process.setProcessCode("landing-page-generation");
+    AgentTask task = new AgentTask();
+    task.setId(id);
+    task.setAssignedAgent(Agent.builder().agentKey(agentKey).nickname(nickname).build());
+    task.setTitle("Gate " + activityId);
+    task.setDescription("Homologar landing");
+    task.setStatus(status);
+    task.setTaskKind("WORK");
+    task.setProcessDefinition(process);
+    task.setProcessActivityId(activityId);
+    task.setSourceReference("commercial-plan:4@v3:journey");
+    task.setUpdatedAt(updatedAt);
+    return task;
   }
 }

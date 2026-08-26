@@ -19,14 +19,19 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /** Responsabilidade: consolidar a prestação de contas dos agentes por plano comercial. */
 @Service
 public class CommercialPlanAgentActivityService {
+  private static final Set<String> JOURNEY_ACTIVITY_IDS = Set.of("html", "customer", "commercial");
   private final AgentTaskRepository taskRepository;
   private final VideoProductionCycleRepository videoCycleRepository;
   private final GeraLandingStageExecutionRepository landingRepository;
@@ -63,6 +68,7 @@ public class CommercialPlanAgentActivityService {
         videoCycleRepository.findByCommercialPlanIdOrderByUpdatedAtDesc(plan.getId());
     List<Entry> entries = new ArrayList<>();
     tasks.forEach(task -> entries.add(taskEntry(task)));
+    journeyHomologationEntry(tasks).ifPresent(entries::add);
     cycles.forEach(cycle -> entries.add(videoEntry(cycle, "financial-agent", "Plutus")));
     cycles.forEach(cycle -> entries.add(videoEntry(cycle, "videomaker", "Apolo")));
     strategistRepository
@@ -152,6 +158,96 @@ public class CommercialPlanAgentActivityService {
         task.getUpdatedAt());
   }
 
+  /** Consolida os três gates oficiais da landing sem confundir conclusão técnica isolada. */
+  private Optional<Entry> journeyHomologationEntry(List<AgentTask> tasks) {
+    Map<String, List<AgentTask>> byExecution = new LinkedHashMap<>();
+    tasks.stream()
+        .filter(task -> task.getProcessDefinition() != null)
+        .filter(
+            task -> "landing-page-generation".equals(task.getProcessDefinition().getProcessCode()))
+        .filter(task -> JOURNEY_ACTIVITY_IDS.contains(task.getProcessActivityId()))
+        .filter(task -> task.getSourceReference() != null)
+        .forEach(
+            task ->
+                byExecution
+                    .computeIfAbsent(task.getSourceReference(), ignored -> new ArrayList<>())
+                    .add(task));
+    return byExecution.entrySet().stream()
+        .max(Comparator.comparing(entry -> latestActivity(entry.getValue())))
+        .map(entry -> aggregateJourneyEntry(entry.getKey(), entry.getValue()));
+  }
+
+  /** Produz um único estado funcional a partir da tentativa atual de cada gate obrigatório. */
+  private Entry aggregateJourneyEntry(String sourceReference, List<AgentTask> tasks) {
+    Map<String, AgentTask> latestByActivity = new LinkedHashMap<>();
+    tasks.stream()
+        .sorted(
+            Comparator.comparing(
+                    AgentTask::getUpdatedAt, Comparator.nullsFirst(Comparator.naturalOrder()))
+                .thenComparing(AgentTask::getId, Comparator.nullsFirst(Comparator.naturalOrder())))
+        .forEach(task -> latestByActivity.put(task.getProcessActivityId(), task));
+    boolean complete =
+        JOURNEY_ACTIVITY_IDS.stream()
+            .allMatch(
+                activityId ->
+                    latestByActivity.containsKey(activityId)
+                        && "COMPLETED".equals(latestByActivity.get(activityId).getStatus()));
+    boolean blocked =
+        latestByActivity.values().stream().anyMatch(task -> "BLOCKED".equals(task.getStatus()));
+    boolean processing =
+        latestByActivity.values().stream().anyMatch(task -> "IN_PROGRESS".equals(task.getStatus()));
+    String status =
+        complete ? "COMPLETED" : blocked ? "BLOCKED" : processing ? "IN_PROGRESS" : "PENDING";
+    BigDecimal cost =
+        latestByActivity.values().stream()
+            .map(AgentTask::getEstimatedCostUsd)
+            .filter(java.util.Objects::nonNull)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    String detail =
+        JOURNEY_ACTIVITY_IDS.stream()
+            .sorted()
+            .map(
+                activityId ->
+                    activityId
+                        + "="
+                        + Optional.ofNullable(latestByActivity.get(activityId))
+                            .map(AgentTask::getStatus)
+                            .orElse("AUSENTE"))
+            .collect(java.util.stream.Collectors.joining(", "));
+    String difficulty =
+        latestByActivity.values().stream()
+            .filter(task -> "BLOCKED".equals(task.getStatus()))
+            .map(AgentTask::getExecutionError)
+            .filter(java.util.Objects::nonNull)
+            .findFirst()
+            .orElse(null);
+    return new Entry(
+        "JOURNEY_HOMOLOGATION",
+        "landing-generator",
+        "Dédalo",
+        "Homologação oficial da landing",
+        status,
+        detail,
+        null,
+        difficulty,
+        false,
+        null,
+        "commercial-plan-journey-homologation:" + sourceReference,
+        null,
+        cost.signum() == 0 ? null : cost,
+        null,
+        latestActivity(latestByActivity.values().stream().toList()));
+  }
+
+  /** Seleciona o último instante auditável de uma coleção de tarefas. */
+  private Instant latestActivity(List<AgentTask> tasks) {
+    return tasks.stream()
+        .map(AgentTask::getUpdatedAt)
+        .filter(java.util.Objects::nonNull)
+        .max(Comparator.naturalOrder())
+        .orElse(Instant.EPOCH);
+  }
+
   /** Converte o ciclo audiovisual na visão financeira ou criativa correspondente. */
   private Entry videoEntry(VideoProductionCycle cycle, String agentKey, String nickname) {
     boolean plutus = "financial-agent".equals(agentKey);
@@ -180,7 +276,7 @@ public class CommercialPlanAgentActivityService {
   private Entry landingEntry(GeraLandingStageExecution execution) {
     boolean journeyHomologation = isJourneyHomologation(execution);
     return new Entry(
-        journeyHomologation ? "JOURNEY_HOMOLOGATION" : "LANDING",
+        journeyHomologation ? "LANDING_TECHNICAL_HOMOLOGATION" : "LANDING",
         "landing-generator",
         "Dédalo",
         journeyHomologation

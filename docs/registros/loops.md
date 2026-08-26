@@ -8,6 +8,23 @@
 >
 > Uso obrigatório recomendado: antes de corrigir problema em GeraLanding, Facebook Ads, Lead Portal, OpenAI/schema, pipelines administrativos ou pipeline de hipótese, verificar se a solicitação reabre algum loop listado aqui.
 
+## LOOP-GERALANDING-HOMOLOGACAO-FORA-DO-BPM — sucesso técnico não conclui o subprocesso
+
+- **Data:** 2026-08-26.
+- **Sintoma:** Rigel recebeu HTML do Dédalo e Quality Review 88/100, mas 4.2 continuou planejado e
+  o fluxo comercial permaneceu bloqueado mesmo com a execução persistida como `CONCLUIDO`.
+- **Causa-raiz:** o botão de homologação criava um ciclo técnico `cph-*` diretamente no
+  GeraLanding, fora das atividades oficiais de Dédalo, Psique e Têmis. O resumo tentava usar o
+  status técnico `CONCLUIDO` como se fosse o objetivo funcional completo.
+- **Correção sistêmica:** o comando da tela passa a abrir `html`, `customer` e `commercial` na
+  mesma execução do subprocesso publicado `landing-page-generation`. O backend mantém o ciclo
+  legado apenas como diagnóstico técnico e só conclui o objetivo com Quality Review, checkout
+  preservado e decisões `APPROVED` de Psique e Têmis; publicação e mídia permanecem em gate humano
+  separado.
+- **Prevenção:** testes de contrato exigem a criação idempotente das três atividades BPM, impedem
+  que uma aprovação técnica isolada avance 4.2 e comprovam a passagem para `Integrar canal,
+  checkout, acesso e eventos` somente após o objetivo persistido.
+
 ## LOOP-PDE-INTERFACE-SEGURA-COM-ROTA-LEGADA-INSEGURA — contrato contornado fora da tela
 
 - **Sintoma confirmado em 2026-08-23:** a jornada oficial MUSA v7 usava link mágico e respostas

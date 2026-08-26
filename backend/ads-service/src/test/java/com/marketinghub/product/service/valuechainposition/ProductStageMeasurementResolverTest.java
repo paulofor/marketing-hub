@@ -143,6 +143,40 @@ class ProductStageMeasurementResolverTest {
     assertThat(result.exitEvidence()).isEqualTo("SUBPROCESS_OBJECTIVE_ACHIEVED");
   }
 
+  /** Mostra o subprocesso pronto sem inventar sua entrada, duração ou custo. */
+  @Test
+  void showsReadySubprocessWithoutExecutionEvidence() {
+    Product product = Product.builder().id(9L).build();
+    CommercialPlan plan = CommercialPlan.builder().id(4L).build();
+    BusinessProcessDefinition creative =
+        process(48L, "creative-production-approval", "communication");
+    BusinessProcessDefinition landing = process(18L, "landing-page-generation", "communication");
+    List<AgentTask> approvedTasks =
+        List.of(
+            approvedCreativeTask(1L, creative, "route"),
+            approvedCreativeTask(2L, creative, "produce"),
+            approvedCreativeTask(3L, creative, "customer"),
+            approvedCreativeTask(4L, creative, "commercial"));
+    when(plans.findByProductId(9L)).thenReturn(List.of(plan));
+    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("commercial-plan:4@"))
+        .thenReturn(approvedTasks);
+    when(ledger.findByProductIdOrderByCreatedAtAsc(9L)).thenReturn(List.of());
+    when(ledger.findByCommercialPlanIdInOrderByCreatedAtAsc(List.of(4L))).thenReturn(List.of());
+
+    List<ProductStageMeasurementResponse> result =
+        resolver.resolveSubprocessMeasurements(
+            product, List.of(creative, landing), landing, 4, true);
+
+    assertThat(result).hasSize(2);
+    ProductStageMeasurementResponse readyLanding = result.get(1);
+    assertThat(readyLanding.sequenceLabel()).isEqualTo("4.2");
+    assertThat(readyLanding.trackingStatus()).isEqualTo("PLANNED");
+    assertThat(readyLanding.enteredAt()).isNull();
+    assertThat(readyLanding.elapsedDays()).isNull();
+    assertThat(readyLanding.knownEstimatedCostUsd()).isZero();
+    assertThat(readyLanding.costCoverage()).isEqualTo("NO_EXECUTIONS");
+  }
+
   /** Encerra 4.2 somente com Quality Review, Psique e Têmis aprovando a mesma landing. */
   @Test
   void recognizesApprovedLandingBeforeCommercialIntegrationStarts() {

@@ -749,6 +749,7 @@
 
 .product-value-chain-history {
   --history-accent: #7a2444;
+  --history-ready: #2563eb;
   --history-success: #16734b;
 }
 
@@ -866,6 +867,15 @@
   border-color: var(--history-accent);
 }
 
+.product-value-chain-history__item--planned {
+  background: #f8fbff;
+  border-left-color: var(--history-ready);
+}
+
+.product-value-chain-history__item--planned::before {
+  border-color: var(--history-ready);
+}
+
 .product-value-chain-history__item-heading {
   align-items: start;
   display: flex;
@@ -923,6 +933,11 @@
 .product-value-chain-history__item--completed
   .product-value-chain-history__status {
   color: var(--history-success);
+}
+
+.product-value-chain-history__item--planned
+  .product-value-chain-history__status {
+  color: var(--history-ready);
 }
 
 .product-value-chain-history__facts {

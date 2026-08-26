@@ -98,9 +98,11 @@ function StageMeasurement({
         <dd>
           {measurement.exitedAt
             ? formatDate(measurement.exitedAt)
-            : measurement.trackingStatus === "RECORDED"
-              ? "Objetivo ainda sem saída comprovada"
-              : "Em andamento"}
+            : measurement.trackingStatus === "PLANNED"
+              ? "Aguardando a primeira execução"
+              : measurement.trackingStatus === "RECORDED"
+                ? "Objetivo ainda sem saída comprovada"
+                : "Em andamento"}
         </dd>
       </div>
       <div>
@@ -151,7 +153,8 @@ export default function ProductValueChainPosition({
   const currentSubprocessMeasurement = subprocessMeasurements.find(
     (measurement) =>
       measurement.processCode === subprocess?.currentSubprocessCode &&
-      measurement.trackingStatus === "CURRENT",
+      (measurement.trackingStatus === "CURRENT" ||
+        measurement.trackingStatus === "PLANNED"),
   );
   const completedSubprocessMeasurements = subprocessMeasurements.filter(
     (measurement) => measurement.trackingStatus === "COMPLETED",

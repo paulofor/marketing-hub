@@ -81,26 +81,45 @@ const position = {
     },
   ],
   subprocessPosition: {
-    trackingStatus: "IN_PROGRESS",
+    trackingStatus: "PLANNED",
     subprocessCount: 2,
-    currentActivityName: "Executar criação e aprovação de criativos",
-    currentSubprocessDefinitionId: 48,
-    currentSubprocessCode: "creative-production-approval",
-    currentSubprocessName: "Criação e Aprovação de Criativos",
-    currentSubprocessObjective: "Criativos aprovados.",
-    nextSubprocessDefinitionId: 18,
-    nextSubprocessCode: "landing-page-generation",
-    nextSubprocessName: "Geração de landing page",
-    nextSubprocessObjective:
+    currentActivityName: null,
+    currentSubprocessDefinitionId: 18,
+    currentSubprocessSequenceNumber: 2,
+    currentSubprocessCode: "landing-page-generation",
+    currentSubprocessName: "Geração de landing page",
+    currentSubprocessObjective:
       "Landing aprovada e pronta para publicação humana.",
+    nextSubprocessDefinitionId: null,
+    nextSubprocessCode: null,
+    nextSubprocessName: null,
+    nextSubprocessObjective: null,
     measurements: [
       {
         stageType: "SUBPROCESS",
         sequenceLabel: "4.1",
-        trackingStatus: "CURRENT",
+        trackingStatus: "COMPLETED",
         processDefinitionId: 48,
         processCode: "creative-production-approval",
         processName: "Criação e Aprovação de Criativos",
+        enteredAt: "2026-08-25T21:33:22Z",
+        entryEvidence: "FIRST_SUBPROCESS_TASK",
+        exitedAt: "2026-08-25T21:33:22Z",
+        exitEvidence: "SUBPROCESS_OBJECTIVE_ACHIEVED",
+        objectiveAchieved: true,
+        elapsedDays: 0,
+        knownEstimatedCostUsd: 0.577952,
+        costCoverage: "COMPLETE",
+        costedExecutionCount: 4,
+        uncostedExecutionCount: 0,
+      },
+      {
+        stageType: "SUBPROCESS",
+        sequenceLabel: "4.2",
+        trackingStatus: "PLANNED",
+        processDefinitionId: 18,
+        processCode: "landing-page-generation",
+        processName: "Geração de landing page",
         enteredAt: null,
         entryEvidence: "NOT_RECORDED",
         exitedAt: null,
@@ -165,17 +184,20 @@ describe("ProductValueChainHistoryPage", () => {
     expect(screen.getByText(/Kit WhatsApp Pronto/)).toBeTruthy();
     expect(screen.getByText("Nome interno: Rigel")).toBeTruthy();
     expect(screen.getByText("Etapa 4 de 6")).toBeTruthy();
-    expect(screen.getByText("Geração de landing page")).toBeTruthy();
+    expect(screen.getByText("Subprocesso atual")).toBeTruthy();
+    expect(screen.getAllByText("Geração de landing page")).toHaveLength(2);
 
     const timeline = screen.getByRole("list", {
       name: "Histórico dos processos e subprocessos",
     });
-    expect(within(timeline).getAllByRole("listitem")).toHaveLength(3);
+    expect(within(timeline).getAllByRole("listitem")).toHaveLength(4);
     expect(within(timeline).getByText("3")).toBeTruthy();
     expect(within(timeline).getByText("4.1")).toBeTruthy();
+    expect(within(timeline).getByText("4.2")).toBeTruthy();
+    expect(within(timeline).getByText("Pronto para iniciar")).toBeTruthy();
     expect(within(timeline).getByText("21/08/2026, 03:55 UTC")).toBeTruthy();
     expect(within(timeline).getByText("21/08/2026, 17:22 UTC")).toBeTruthy();
-    expect(within(timeline).getAllByText("Menos de 1 dia")).toHaveLength(1);
+    expect(within(timeline).getAllByText("Menos de 1 dia")).toHaveLength(2);
     expect(within(timeline).getByText(/US\$\s*1,4776/)).toBeTruthy();
     expect(
       within(timeline).getByText(/US\$\s*3,5888.*cobertura parcial/i),
@@ -188,10 +210,13 @@ describe("ProductValueChainHistoryPage", () => {
     ).toBeTruthy();
     expect(
       within(timeline).getAllByText("Objetivo ainda sem saída comprovada"),
-    ).toHaveLength(2);
+    ).toHaveLength(1);
+    expect(
+      within(timeline).getByText("Aguardando a primeira execução"),
+    ).toBeTruthy();
     expect(
       within(timeline).getAllByRole("button", { name: "Registrar commit" }),
-    ).toHaveLength(3);
+    ).toHaveLength(4);
   });
 
   it("registers and displays a commit in the exact product process", async () => {

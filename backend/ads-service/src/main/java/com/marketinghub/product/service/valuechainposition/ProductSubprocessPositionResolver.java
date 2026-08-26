@@ -99,17 +99,24 @@ public class ProductSubprocessPositionResolver {
         current != null
             ? nextSubprocess(current, subprocesses)
             : nextSubprocess(lastRecorded, subprocesses);
+    boolean currentAwaitingFirstExecution = false;
     String activityName = activeChildTask == null ? null : activeChildTask.getProcessActivityName();
     String status =
         activeChildTask != null ? "IN_PROGRESS" : lastRecorded != null ? "RECORDED" : "PLANNED";
 
     if (current == null
         && lastRecorded != null
-        && next == null
         && stageMeasurementResolver != null
         && stageMeasurementResolver.objectiveAchieved(product, lastRecorded)) {
-      activityName = nextParentActivityName(parentProcess, lastRecorded.getProcessCode());
-      status = "COMPLETED";
+      if (next != null) {
+        current = next;
+        next = nextSubprocess(current, subprocesses);
+        currentAwaitingFirstExecution = true;
+        status = "PLANNED";
+      } else {
+        activityName = nextParentActivityName(parentProcess, lastRecorded.getProcessCode());
+        status = "COMPLETED";
+      }
     }
 
     if (current == null && lastRecorded == null) {
@@ -123,7 +130,14 @@ public class ProductSubprocessPositionResolver {
       status = current == null ? "PLANNED" : "IN_PROGRESS";
     }
     return response(
-        product, status, subprocesses, activityName, current, next, parentSequenceNumber);
+        product,
+        status,
+        subprocesses,
+        activityName,
+        current,
+        next,
+        parentSequenceNumber,
+        currentAwaitingFirstExecution);
   }
 
   /** Localiza a primeira atividade do processo pai depois do subprocesso concluído. */
@@ -344,7 +358,8 @@ public class ProductSubprocessPositionResolver {
       String activityName,
       BusinessProcessDefinition current,
       BusinessProcessDefinition next,
-      Integer parentSequenceNumber) {
+      Integer parentSequenceNumber,
+      boolean currentAwaitingFirstExecution) {
     Integer currentSequenceNumber = current == null ? null : subprocesses.indexOf(current) + 1;
     Integer nextSequenceNumber = next == null ? null : subprocesses.indexOf(next) + 1;
     return new ProductSubprocessPositionResponse(
@@ -363,8 +378,11 @@ public class ProductSubprocessPositionResolver {
         next == null ? null : next.getOutcomeDescription(),
         stageMeasurementResolver == null
             ? List.of()
-            : stageMeasurementResolver.resolveSubprocessMeasurements(
-                product, subprocesses, current, parentSequenceNumber));
+            : currentAwaitingFirstExecution
+                ? stageMeasurementResolver.resolveSubprocessMeasurements(
+                    product, subprocesses, current, parentSequenceNumber, true)
+                : stageMeasurementResolver.resolveSubprocessMeasurements(
+                    product, subprocesses, current, parentSequenceNumber));
   }
 
   /** Representa a posição calculada dentro do processo pai. */

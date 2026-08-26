@@ -9,6 +9,7 @@ import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMarketplaceE
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMarketplaceOfferListResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMaturityRankingResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdEvidenceListResponse;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdEvidenceRequest;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdEvidenceService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryPendingResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryResearchPlanRequest;
@@ -107,8 +108,20 @@ public class ProductDiscoveryController {
   public ResponseEntity<ProductDiscoveryMetaAdEvidenceListResponse> metaAdEvidence(
       @RequestParam String query,
       @RequestParam(defaultValue = "BR") String country,
+      @RequestParam(defaultValue = "INSTAGRAM") String publisherPlatform,
       @RequestParam(defaultValue = "25") Integer limit) {
-    return ResponseEntity.ok(metaAdEvidenceService.search(query, country, limit));
+    return ResponseEntity.ok(
+        metaAdEvidenceService.searchExisting(query, country, publisherPlatform, limit));
+  }
+
+  /** Solicita a cobertura Meta da categoria vinculada ao lease vigente de Argos. */
+  @PostMapping(
+      "/internal/product-discovery/productdiscovery/v1/research/stage-executions/{cycleId}/meta-ad-evidence")
+  public ResponseEntity<ProductDiscoveryMetaAdEvidenceListResponse> requestMetaAdEvidence(
+      @PathVariable Long cycleId,
+      @Valid @RequestBody ProductDiscoveryMetaAdEvidenceRequest request) {
+    service.validateActiveExecution(cycleId, request.executionLeaseId());
+    return ResponseEntity.ok(metaAdEvidenceService.requestAndSearch(cycleId, request));
   }
 
   /** Expõe o plano dirigido sem expor cookies, senhas ou tokens dos coletores. */

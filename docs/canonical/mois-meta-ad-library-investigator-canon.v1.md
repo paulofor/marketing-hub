@@ -9,12 +9,22 @@ Encontrar padrões comerciais já expostos ao mercado sem afirmar venda, sucesso
 - A API oficial `ads_archive` limita anúncios que não alcançaram a União Europeia a temas sociais, eleições ou política. Portanto, ela não é fonte automática válida para o radar de produtos comerciais no Brasil.
 - A investigação comercial brasileira criada no Marketing Hub entra em `ACTIVE_SUPERVISED`; a pessoa registra observações reais pela Biblioteca pública e o backend agenda o objetivo de reobservar o mesmo anúncio após 30 dias.
 - O executor oficial só pode ser ativado para categoria e território aceitos pelo contrato vigente da Meta, após preflight real da permissão do aplicativo. Uma credencial válida com `ads_read` não comprova acesso à Biblioteca.
+- O preflight deve executar uma consulta mínima real em `ads_archive`, sem reservar a fila antes da resposta. Presença do token, introspecção ou `ads_read=granted` isoladamente nunca podem marcar a integração como autorizada. Código e subcódigo devolvidos pela Meta devem aparecer sanitizados na saúde operacional, sem expor a credencial.
 - A pessoa também pode abrir a Biblioteca pública, selecionar um anúncio e cadastrar ID, anunciante, URL pública, texto visível e sinais comerciais verificáveis.
 - O backend valida, normaliza, deduplica, persiste observações e decide o gate. A tela nunca publica campanha ou consome orçamento.
 - Quando elegível, o `mois-meta-ad-library-collector` é o executor canônico e recebe somente token dedicado por variável protegida de deploy; Argos nunca recebe a credencial.
 - Cada cadastro bruto recebido deve ser persistido e correlacionado à investigação.
 - O mesmo anúncio observado novamente na mesma investigação não aumenta sua contagem temporal.
 - Cada observação supervisionada recebe identificador próprio para construir histórico sem inflar retries.
+- Toda investigação declara `publisher_platform`; cada ativo preserva `publisher_platforms` exatamente como observado. Instagram e Facebook nunca podem ser presumidos equivalentes para validar um canal de aquisição.
+
+## Uso pela Descoberta PDE
+
+- Argos declara a consulta de categoria no plano, sempre com país, plataforma, termos específicos e limite.
+- O Product Discovery Worker chama somente o endpoint interno do próprio domínio com o lease vigente. O backend cria ou reutiliza uma investigação MOIS idempotente e devolve a cobertura persistida; nenhuma credencial Meta deixa o coletor dedicado.
+- A resposta separa `sourceStatus`, modo de coleta, investigação, URL oficial, anúncios aderentes, anúncios ativos, anunciantes distintos e data da última observação.
+- Para ciclos B2C adquiridos no Instagram, somente evidência atual, ativa e explicitamente marcada como `INSTAGRAM` atende o gate de presença da categoria no canal.
+- Anúncio é sinal de presença e investimento. Ele não conta como oferta paga comparável, compra, venda ou receita e nunca substitui checkout e pagamento reconciliados do Marketing Hub.
 
 ## Assistência por agente
 
@@ -50,3 +60,8 @@ Toda decisão deve expor evidências e lacunas. O score mínimo de uma consulta 
 ## Fontes na tela
 
 Fontes sem coletor real devem aparecer desabilitadas e identificadas como `em implantação`. No Brasil, o Radar Meta comercial deve aparecer explicitamente como supervisionado; ele nunca pode prometer coleta automática, raspar a interface pública ou tratar ausência causada pelo contrato da API como ausência de mercado.
+
+A tela deve oferecer o atalho oficial de pesquisa em nova aba e capturar a plataforma realmente
+observada. Enquanto o aplicativo não passar no preflight de `ads_archive`, o coletor automático não
+deve reservar pendências; a saúde do módulo permanece disponível, mas informa autorização externa
+separadamente da saúde do processo.

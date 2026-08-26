@@ -128,19 +128,23 @@ async function processJob(job) {
         logger: operationalLogger,
       },
     );
-    const marketplaceOffers = await collectMarketplaceEvidence(directed.plan, {
+    const commercialEvidence = await collectMarketplaceEvidence(directed.plan, {
       backendBaseUrl,
       logger: operationalLogger,
+      cycleId: job.cycleId,
+      executionLeaseId: job.executionLeaseId,
       researchContext: [job.theme, job.targetAudience, job.objective]
         .filter(Boolean)
         .join(" "),
     });
     const comparableOffers = deduplicateOffers([
-      ...marketplaceOffers,
+      ...commercialEvidence.marketplaceOffers,
       ...extractPublicComparableOffers(results),
     ]);
     const report = analyzeSearchResults(job, results, comparableOffers, {
       minimumComparableOffers: directed.plan.minimumComparableOffers,
+      metaAdEvidence: commercialEvidence.metaAdEvidence,
+      metaCoverage: commercialEvidence.metaCoverage,
     });
     await postJson(
       `${backendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${job.cycleId}/complete`,

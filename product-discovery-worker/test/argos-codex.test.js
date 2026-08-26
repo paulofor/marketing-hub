@@ -11,7 +11,10 @@ import {
 } from "../src/argos-codex.js";
 
 test("plano seguro direciona Hotmart e ClickBank sem credenciais", () => {
-  const result = deterministicPlan({ theme: "leads no WhatsApp", targetAudience: "nail designers" });
+  const result = deterministicPlan({
+    theme: "leads no WhatsApp",
+    targetAudience: "nail designers",
+  });
   validatePlan(result.plan);
   assert.equal(result.plan.minimumComparableOffers, 10);
   assert.deepEqual(
@@ -19,11 +22,15 @@ test("plano seguro direciona Hotmart e ClickBank sem credenciais", () => {
     ["HOTMART", "CLICKBANK"],
   );
   assert.equal(result.plan.metaAdRequests[0].country, "BR");
+  assert.equal(result.plan.metaAdRequests[0].publisherPlatform, "INSTAGRAM");
   assert.doesNotMatch(result.rawResponse, /password|senha|token|cookie/i);
 });
 
 test("plano bloqueia marketplace e volume não autorizados", () => {
-  const result = deterministicPlan({ theme: "agenda", targetAudience: "manicures" });
+  const result = deterministicPlan({
+    theme: "agenda",
+    targetAudience: "manicures",
+  });
   result.plan.marketplaceRequests[0] = {
     marketplace: "OUTRO",
     query: "agenda",
@@ -41,9 +48,16 @@ test("plano B2C para Instagram pesquisa cena pessoal e microvalor mobile", () =>
   });
 
   assert.match(result.plan.questions[0], /cena pessoal/i);
-  assert.ok(result.plan.publicQueries.some((query) => /Instagram Reel/.test(query)));
+  assert.ok(
+    result.plan.publicQueries.some((query) => /Instagram Reel/.test(query)),
+  );
   assert.match(result.plan.metaAdRequests[0].query, /consumidor/);
-  assert.ok(result.plan.stopConditions.some((condition) => /depende de empresa/i.test(condition)));
+  assert.equal(result.plan.metaAdRequests[0].publisherPlatform, "INSTAGRAM");
+  assert.ok(
+    result.plan.stopConditions.some((condition) =>
+      /depende de empresa/i.test(condition),
+    ),
+  );
 });
 
 test("planejamento envia o contexto pela entrada padrão e lê a saída estruturada", async () => {

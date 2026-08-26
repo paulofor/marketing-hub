@@ -6,51 +6,140 @@ paths:
   /api/v1/mois/meta-ad-investigations:
     post:
       summary: Cria acompanhamento supervisionado de anúncios comerciais no Brasil
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInvestigationRequest"
       responses:
-        '201': { description: Investigação criada }
+        "201":
+          description: Investigação criada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Investigation"
     get:
       summary: Lista investigações por workspace
       responses:
-        '200': { description: Lista retornada }
+        "200": { description: Lista retornada }
   /api/v1/mois/meta-ad-investigations/{id}:
     get:
       summary: Consulta gate, evidências, lacunas e ficha ética
       responses:
-        '200': { description: Investigação retornada }
+        "200":
+          description: Investigação retornada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Investigation"
+  /api/v1/mois/meta-ad-investigations/{id}/observations:
+    post:
+      summary: Registra observação real feita na Biblioteca pública
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupervisedObservationRequest"
+      responses:
+        "200": { description: Observação persistida e gate recalculado }
   /api/internal/mois/meta-ad-library/v1/investigations/pending:
     get:
       summary: Reserva investigação elegível para o coletor oficial
       responses:
-        '200': { description: Pendência reservada }
-        '204': { description: Sem pendência }
+        "200": { description: Pendência reservada }
+        "204": { description: Sem pendência }
   /api/v1/mois/meta-ad-investigations/{id}/creative-brief:
     post:
       summary: Gera briefing original a partir de padrões com gate MODELAR
       description: O briefing preserva evidências e permanece bloqueado para publicação até avaliação do Agente Aprovador.
       responses:
-        '200': { description: Briefing original criado }
-        '409': { description: Evidência insuficiente para modelagem }
+        "200": { description: Briefing original criado }
+        "409": { description: Evidência insuficiente para modelagem }
   /api/internal/mois/meta-ad-library/v1/investigations/{id}/observations:
     post:
       summary: Persiste observações brutas reais e recalcula o gate
       responses:
-        '200': { description: Observações persistidas }
+        "200": { description: Observações persistidas }
   /api/internal/mois/meta-ad-library/v1/investigations/{id}/complete:
     post:
       summary: Registra a conclusão técnica da coleta
       responses:
-        '200': { description: Execução concluída }
+        "200": { description: Execução concluída }
 components:
   schemas:
+    CreateInvestigationRequest:
+      type: object
+      required: [workspaceId, searchTerms]
+      properties:
+        workspaceId: { type: string }
+        searchTerms: { type: string }
+        countryCode: { type: string, default: BR, pattern: "^[A-Za-z]{2}$" }
+        publisherPlatform:
+          type: string
+          default: INSTAGRAM
+          enum: [INSTAGRAM, FACEBOOK, AUDIENCE_NETWORK, MESSENGER, WHATSAPP]
+    Investigation:
+      type: object
+      required:
+        [
+          id,
+          workspaceId,
+          searchTerms,
+          countryCode,
+          publisherPlatform,
+          status,
+          collection,
+          gateDecision,
+          adsObserved,
+        ]
+      properties:
+        id: { type: integer, format: int64 }
+        workspaceId: { type: string }
+        searchTerms: { type: string }
+        countryCode: { type: string }
+        publisherPlatform: { type: string }
+        status: { type: string }
+        collection: { $ref: "#/components/schemas/CollectionState" }
+        gateDecision: { type: string, enum: [INVESTIGAR, MODELAR, DESCARTAR] }
+        evidences: { type: array, items: { type: string } }
+        gaps: { type: array, items: { type: string } }
+        adsObserved: { type: integer, minimum: 0 }
+    SupervisedObservationRequest:
+      type: object
+      required: [adReference, advertiserName, adLibraryUrl, adText]
+      properties:
+        adReference: { type: string }
+        advertiserName: { type: string }
+        adLibraryUrl:
+          type: string
+          format: uri
+          pattern: '^https://(www\\.)?facebook\\.com/ads/library/.*$'
+        adText: { type: string }
+        publisherPlatforms:
+          type: array
+          items:
+            type: string
+            enum: [INSTAGRAM, FACEBOOK, AUDIENCE_NETWORK, MESSENGER, WHATSAPP]
+        formatType: { type: string, nullable: true }
+        mediaUrl: { type: string, nullable: true }
+        destinationUrl: { type: string, nullable: true }
+        pageActive: { type: boolean, default: false }
+        commercialSignal: { type: boolean, default: false }
+        observedAt: { type: string, format: date-time, nullable: true }
     CollectionState:
       type: object
-      required: [mode, reason, nextObservationAt]
+      required: [mode, reason, searchUrl, nextObservationAt]
       properties:
         mode:
           type: string
           enum: [SUPERVISED, OFFICIAL_API]
         reason:
           type: string
+        searchUrl:
+          type: string
+          format: uri
         nextObservationAt:
           type: string
           format: date-time

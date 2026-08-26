@@ -179,6 +179,13 @@
 - Proteção: testes de contrato cobrem plano dirigido extenso e rejeição de oferta coincidente apenas por `WhatsApp`, público ou canal.
 - Recorrência fechada localmente em 2026-08-26: o endpoint oficial de ofertas do marketplace não conseguia fornecer nenhuma referência Hotmart porque o filtro SQL dinâmico concatenava o último parâmetro diretamente com `ORDER BY`, gerando `?ORDER BY` e HTTP 500. A montagem agora preserva a quebra de linha antes da ordenação, e o teste de persistência protege explicitamente o SQL produzido. O executor local da Descoberta v5 também exige as duas coleções vivas, pelo menos uma referência Hotmart e o marcador que impede tratar score ou temperatura como venda.
 
+## LOOP-META-AD-LIBRARY-TOKEN-SEM-AUTORIZACAO — Token válido interpretado como acesso à Biblioteca
+
+- **Sintoma:** a integração parece configurada porque existe token e `ads_read=granted`, mas ciclos da Descoberta não recebem cobertura real da categoria ou podem interpretar resposta vazia como ausência de anúncios.
+- **Causa-raiz confirmada em 2026-08-26:** os tokens operacionais existentes passam na consulta de permissões, porém uma chamada real a `ads_archive` é rejeitada pela Meta com OAuth `code=10` e `error_subcode=2332002`; configuração da credencial não comprova autorização do aplicativo para esse endpoint.
+- **Correção efetiva local:** o coletor realiza preflight real em `ads_archive` antes de reservar uma pendência, publica diagnóstico sanitizado na saúde e mantém a fila intacta quando a autorização externa não foi concedida. Argos recebe status explícito de espera ou indisponibilidade e nunca converte a falha em ausência de mercado.
+- **Prevenção:** teste de contrato cobre token ausente, rejeição da Meta, token fora da URL, bloqueio da reserva e consulta Instagram normalizada. No Brasil, o caminho permanece supervisionado pela Biblioteca pública, sem scraping ou contorno de controle de acesso.
+
 ## LOOP-PRODUCT-AI-PAID-DELIVERY-CONTRACT-DRIFT — Entrega paga sem template ativo
 
 - **Severidade**: CRÍTICO.

@@ -56,7 +56,14 @@ const COMMERCIAL_INTENT_TERMS = [
 
 const DOMAIN_PAIN_QUERIES = [
   {
-    match: ["proposta", "propostas", "orcamento", "orçamento", "cotacao", "cotação"],
+    match: [
+      "proposta",
+      "propostas",
+      "orcamento",
+      "orçamento",
+      "cotacao",
+      "cotação",
+    ],
     queries: [
       "software proposta comercial preço",
       "gerador de orçamento online preço",
@@ -238,20 +245,23 @@ export function buildSearchQueries(job) {
     (template) => template.replace("{base}", base),
   );
   const instagramB2cQueries = requiresConsumerInstagramFocus(job)
-    ? INSTAGRAM_B2C_TEMPLATES.map((template) => template.replace("{base}", base))
+    ? INSTAGRAM_B2C_TEMPLATES.map((template) =>
+        template.replace("{base}", base),
+      )
     : [];
-  const scientificResearchQueries =
-    /propost|or[cç]ament|cota[cç]/i.test(base)
-      ? [
-          "information clarity trust purchase intention online service study",
-          "information overload purchase decision clarity decision support study",
-          "transparent AI decision support trust purchase intention study",
-          ...genericScientificQueries,
-        ]
-      : genericScientificQueries;
+  const scientificResearchQueries = /propost|or[cç]ament|cota[cç]/i.test(base)
+    ? [
+        "information clarity trust purchase intention online service study",
+        "information overload purchase decision clarity decision support study",
+        "transparent AI decision support trust purchase intention study",
+        ...genericScientificQueries,
+      ]
+    : genericScientificQueries;
 
   return deduplicateQueries([
-    ...(Array.isArray(job.directedQueries) ? job.directedQueries.slice(0, 5) : []),
+    ...(Array.isArray(job.directedQueries)
+      ? job.directedQueries.slice(0, 5)
+      : []),
     ...instagramB2cQueries,
     ...domainQueries.slice(0, 2),
     ...commercialSignalQueries.slice(0, 2),
@@ -443,12 +453,15 @@ export function extractPublicComparableOffers(results) {
 }
 
 function isPublicComparableOffer(result) {
-  if (!hasSearchResultShape(result) || isScientificArticleCandidate(result)) return false;
+  if (!hasSearchResultShape(result) || isScientificArticleCandidate(result))
+    return false;
   const url = new URL(result.url);
   const domain = url.hostname.toLowerCase();
   const path = url.pathname.toLowerCase();
   if (
-    /(^|\.)(reddit|youtube|facebook|instagram|tiktok|quora)\.com$/.test(domain) ||
+    /(^|\.)(reddit|youtube|facebook|instagram|tiktok|quora)\.com$/.test(
+      domain,
+    ) ||
     /(^|\.)(blog\.|capterra\.|getapp\.|techtudo\.|portalinsights\.|neon\.)/.test(
       domain,
     ) ||
@@ -462,7 +475,8 @@ function isPublicComparableOffer(result) {
     return false;
   }
   const text = `${result.title} ${result.snippet}`.toLowerCase();
-  if (/or[cç]amento pessoal|planejador.*or[cç]amento pessoal/.test(text)) return false;
+  if (/or[cç]amento pessoal|planejador.*or[cç]amento pessoal/.test(text))
+    return false;
   const commercialSignal =
     /r\$\s?\d|pre[cç]o|planos?|assinatura|mensal|teste gr[aá]tis|comece gr[aá]tis|contratar|comprar|software|plataforma|aplicativo|\bapp\b/.test(
       text,
@@ -474,7 +488,12 @@ function isPublicComparableOffer(result) {
   return commercialSignal && productSignal;
 }
 
-export function analyzeSearchResults(job, results, marketplaceOffers = null, options = {}) {
+export function analyzeSearchResults(
+  job,
+  results,
+  marketplaceOffers = null,
+  options = {},
+) {
   const evidence = results.slice(0, 12).map((result) => ({
     title: result.title,
     url: result.url,
@@ -505,17 +524,29 @@ export function analyzeSearchResults(job, results, marketplaceOffers = null, opt
   const comparableMarketplaceOffers = normalizedMarketplaceOffers.filter(
     (offer) => offer.marketplace !== "META_AD_LIBRARY",
   );
-  const metaAdEvidence = normalizedMarketplaceOffers.filter(
-    (offer) => offer.marketplace === "META_AD_LIBRARY",
-  );
+  const metaAdEvidence = Array.isArray(options.metaAdEvidence)
+    ? options.metaAdEvidence
+    : [];
+  const metaCoverage = Array.isArray(options.metaCoverage)
+    ? options.metaCoverage
+    : [];
   const instagramB2cRequired = requiresConsumerInstagramFocus(job);
   const instagramPublicEvidence = evidence.filter((item) => {
     const domain = safeDomain(item.url);
     const text = `${item.title} ${item.snippet}`;
-    return domain.includes("instagram.com") || /\binstagram\b|\breels?\b/i.test(text);
+    return (
+      domain.includes("instagram.com") || /\binstagram\b|\breels?\b/i.test(text)
+    );
   });
   const instagramB2cGatePassed =
-    !instagramB2cRequired || metaAdEvidence.length > 0 || instagramPublicEvidence.length > 0;
+    !instagramB2cRequired ||
+    (metaAdEvidence.some((item) => item.active) &&
+      metaCoverage.some(
+        (coverage) =>
+          coverage.publisherPlatform === "INSTAGRAM" &&
+          coverage.sourceStatus === "OBSERVED" &&
+          Number(coverage.activeAds || 0) > 0,
+      ));
   const minimumComparableOffers = Number(options.minimumComparableOffers || 10);
   const marketplaceGatePassed =
     !directedMarketplaceResearch ||
@@ -541,19 +572,19 @@ export function analyzeSearchResults(job, results, marketplaceOffers = null, opt
       ? "RESEARCH_MORE"
       : !marketplaceGatePassed
         ? "RESEARCH_MORE"
-      : !instagramB2cGatePassed
-        ? "RESEARCH_MORE"
-      : highRiskHits > 0
-        ? "HUMAN_REVIEW"
-        : scientificArticles.length === 0
+        : !instagramB2cGatePassed
           ? "RESEARCH_MORE"
-          : commercialIntentHits === 0
-            ? "RESEARCH_MORE"
-            : score >= 70 && independentDomains >= 2
-              ? "APPROVE"
-              : score >= 45
+          : highRiskHits > 0
+            ? "HUMAN_REVIEW"
+            : scientificArticles.length === 0
+              ? "RESEARCH_MORE"
+              : commercialIntentHits === 0
                 ? "RESEARCH_MORE"
-                : "REJECT";
+                : score >= 70 && independentDomains >= 2
+                  ? "APPROVE"
+                  : score >= 45
+                    ? "RESEARCH_MORE"
+                    : "REJECT";
   const mechanismEvidence =
     scientificArticles.length > 0
       ? `${scientificArticles.length} artigo(s) científico(s) candidato(s) coletado(s) para sustentar ou limitar o mecanismo.`
@@ -600,21 +631,20 @@ export function analyzeSearchResults(job, results, marketplaceOffers = null, opt
             firstCampaignAngle: `Teste sua próxima decisão sobre ${job.theme} antes de colocá-la em prática.`,
           },
         ];
-  const commercialRisk =
-    !marketplaceGatePassed
-      ? `Foram encontradas ${comparableMarketplaceOffers.length} de ${minimumComparableOffers} ofertas comparáveis; o dossiê deve permanecer bloqueado para enriquecimento.`
-      : !instagramB2cGatePassed
-        ? "O ciclo B2C não encontrou anúncio Meta nem evidência pública aderente ao Instagram; o canal não pode ser presumido."
+  const commercialRisk = !marketplaceGatePassed
+    ? `Foram encontradas ${comparableMarketplaceOffers.length} de ${minimumComparableOffers} ofertas comparáveis; o dossiê deve permanecer bloqueado para enriquecimento.`
+    : !instagramB2cGatePassed
+      ? `A cobertura Meta/Instagram não foi comprovada (${metaCoverage.map((item) => item.sourceStatus).join(", ") || "NOT_REQUESTED"}); ausência ou indisponibilidade da fonte não significa ausência de mercado.`
       : highRiskHits > 0
-      ? "Tema contém sinais sensíveis e exige revisão humana antes de qualquer experimento."
-      : scientificArticles.length === 0
-        ? "Sem sustentação científica candidata do mecanismo; nova pesquisa é obrigatória antes de campanha."
-        : commercialIntentHits === 0
-          ? "Não há sinal verificável de intenção de compra; pesquisar preços, concorrentes, reviews e anúncios antes de campanha."
-          : "Evitar extrapolar evidência científica para promessa absoluta e validar disposição de compra em experimento controlado.";
+        ? "Tema contém sinais sensíveis e exige revisão humana antes de qualquer experimento."
+        : scientificArticles.length === 0
+          ? "Sem sustentação científica candidata do mecanismo; nova pesquisa é obrigatória antes de campanha."
+          : commercialIntentHits === 0
+            ? "Não há sinal verificável de intenção de compra; pesquisar preços, concorrentes, reviews e anúncios antes de campanha."
+            : "Evitar extrapolar evidência científica para promessa absoluta e validar disposição de compra em experimento controlado.";
 
   return {
-    decisionSummary: `Ciclo pesquisado com ${evidence.length} evidências públicas, ${comparableMarketplaceOffers.length} ofertas comparáveis, ${metaAdEvidence.length} anúncios Meta observados, ${instagramPublicEvidence.length} evidências públicas de Instagram, ${independentDomains} domínios independentes, ${scientificArticles.length} artigos científicos candidatos e ${commercialIntentHits} sinais de intenção comercial. Principal decisão: ${decision}.`,
+    decisionSummary: `Ciclo pesquisado com ${evidence.length} evidências públicas, ${comparableMarketplaceOffers.length} ofertas comparáveis, ${metaAdEvidence.length} anúncios Meta/Instagram aderentes, cobertura ${metaCoverage.map((item) => item.sourceStatus).join(", ") || "NOT_REQUESTED"}, ${instagramPublicEvidence.length} evidências públicas auxiliares de Instagram, ${independentDomains} domínios independentes, ${scientificArticles.length} artigos científicos candidatos e ${commercialIntentHits} sinais de intenção comercial. Principal decisão: ${decision}.`,
     opportunities: opportunityBlueprints.map((blueprint, index) => ({
       ...blueprint,
       scaleEvidence: `${independentDomains} domínios independentes e ${painHits} sinais de dor recorrente foram encontrados nos resultados públicos.`,
@@ -623,8 +653,9 @@ export function analyzeSearchResults(job, results, marketplaceOffers = null, opt
       commercialRisk,
       evidenceJson: JSON.stringify({
         publicEvidence: evidence,
-        marketplaceOffers: normalizedMarketplaceOffers,
+        marketplaceOffers: comparableMarketplaceOffers,
         metaAdEvidence,
+        metaCoverage,
         metaAdInterpretation:
           "Atividade e longevidade sugerem investimento sustentado, mas não comprovam vendas isoladamente.",
         instagramB2cRequired,
@@ -660,7 +691,11 @@ function normalizeProvider(value) {
 }
 
 function inferProvider(env = process.env) {
-  if (env.BRAVE_SEARCH_API_KEY || env.BRAVE_API_KEY || env.BRAVE_SEARCH_API_KEY_FILE) {
+  if (
+    env.BRAVE_SEARCH_API_KEY ||
+    env.BRAVE_API_KEY ||
+    env.BRAVE_SEARCH_API_KEY_FILE
+  ) {
     return SEARCH_PROVIDERS.BRAVE;
   }
   if (env.TAVILY_API_KEY) {
@@ -695,7 +730,10 @@ async function searchBrave(query, config, fetchFn, logger) {
   const url = new URL(config.braveEndpoint);
   url.searchParams.set("q", normalizedQuery);
   url.searchParams.set("country", config.country.toUpperCase());
-  url.searchParams.set("search_lang", normalizeBraveSearchLanguage(config.language));
+  url.searchParams.set(
+    "search_lang",
+    normalizeBraveSearchLanguage(config.language),
+  );
   url.searchParams.set("count", "10");
   const headers = {
     Accept: "application/json",
@@ -946,7 +984,8 @@ function extractScientificArticles(results, job) {
   return deduplicateResults(results)
     .filter(
       (result) =>
-        isScientificArticleCandidate(result) && isScientificMechanismRelevant(result, job),
+        isScientificArticleCandidate(result) &&
+        isScientificMechanismRelevant(result, job),
     )
     .map((result) => {
       const summary =
@@ -966,7 +1005,9 @@ function isScientificMechanismRelevant(result, job) {
   if (!/propost|or[cç]ament|cota[cç]/i.test(context)) return true;
   const text = `${result.title} ${result.snippet}`.toLowerCase();
   const decisionMechanism =
-    /purchase decision|purchase intention|decision support|information overload/.test(text);
+    /purchase decision|purchase intention|decision support|information overload/.test(
+      text,
+    );
   const explanatoryMechanism =
     /clarity|trust|price|information processing|uncertainty|transparency|cognitive load/.test(
       text,

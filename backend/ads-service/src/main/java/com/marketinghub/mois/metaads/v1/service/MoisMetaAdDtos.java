@@ -15,7 +15,13 @@ public final class MoisMetaAdDtos {
 
   /** Solicita uma investigação recorrente sem autorizar publicação ou gasto. */
   public record CreateInvestigationRequest(
-      @NotBlank String workspaceId, @NotBlank String searchTerms, String countryCode) {}
+      @NotBlank String workspaceId,
+      @NotBlank String searchTerms,
+      @Pattern(regexp = "(?i)[A-Z]{2}") String countryCode,
+      @Pattern(
+              regexp = "(?i)INSTAGRAM|FACEBOOK|AUDIENCE_NETWORK|MESSENGER|WHATSAPP",
+              message = "publisherPlatform deve identificar uma plataforma suportada pela Meta")
+          String publisherPlatform) {}
 
   /** Expõe o estado, as evidências e as lacunas de uma investigação. */
   public record InvestigationResponse(
@@ -23,6 +29,7 @@ public final class MoisMetaAdDtos {
       String workspaceId,
       String searchTerms,
       String countryCode,
+      String publisherPlatform,
       String status,
       CollectionState collection,
       String gateDecision,
@@ -35,7 +42,8 @@ public final class MoisMetaAdDtos {
       Instant updatedAt) {}
 
   /** Explica como a coleta pode ocorrer e quando a próxima evidência deve ser buscada. */
-  public record CollectionState(String mode, String reason, Instant nextObservationAt) {}
+  public record CollectionState(
+      String mode, String reason, String searchUrl, Instant nextObservationAt) {}
 
   /** Expõe um briefing original derivado somente de padrões comprovados e rastreáveis. */
   public record CreativeIntelligenceBrief(
@@ -62,7 +70,11 @@ public final class MoisMetaAdDtos {
 
   /** Entrega ao coletor uma investigação pendente. */
   public record PendingInvestigationResponse(
-      long id, String workspaceId, String searchTerms, String countryCode) {}
+      long id,
+      String workspaceId,
+      String searchTerms,
+      String countryCode,
+      String publisherPlatform) {}
 
   /** Representa uma observação bruta obtida pela API oficial da Meta. */
   public record MetaAdObservation(
@@ -70,6 +82,7 @@ public final class MoisMetaAdDtos {
       String advertiserId,
       String advertiserName,
       @NotBlank String status,
+      List<String> publisherPlatforms,
       List<String> formatTypes,
       List<String> texts,
       List<String> mediaUrls,
@@ -96,6 +109,12 @@ public final class MoisMetaAdDtos {
       @NotBlank @Pattern(regexp = "https://(www\\.)?facebook\\.com/ads/library/.*")
           String adLibraryUrl,
       @NotBlank String adText,
+      List<
+              @Pattern(
+                  regexp = "(?i)INSTAGRAM|FACEBOOK|AUDIENCE_NETWORK|MESSENGER|WHATSAPP",
+                  message = "publisherPlatforms deve conter somente plataformas suportadas")
+              String>
+          publisherPlatforms,
       String formatType,
       String mediaUrl,
       String destinationUrl,

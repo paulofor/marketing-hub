@@ -161,6 +161,33 @@ suposicao. Temperatura Hotmart, anuncio ativo, audiencia e pontuacao continuam s
 vendas. Para declarar uma nova oportunidade superior ao benchmark Rigel, a pontuacao auditavel deve
 ser **estritamente maior**, com consenso dos agentes e valor percebido minimo preservado.
 
+### Cobertura real da categoria na Meta Ads Library
+
+Por decisao de 2026-08-26, Argos deve incluir no plano dirigido de todo ciclo B2C para Instagram uma
+consulta de categoria com `country`, `publisherPlatform=INSTAGRAM`, termos especificos e limite de
+coleta. O Product Discovery Worker envia essa solicitacao somente ao endpoint interno do proprio
+dominio; o backend cria ou reutiliza a investigacao canonica no radar MOIS e devolve evidencias ja
+persistidas, sem expor token, cookie ou controller de outro modulo ao executor.
+
+O dossie deve persistir separadamente:
+
+- status da fonte, modo de coleta e identificador da investigacao;
+- quantidade de anuncios aderentes, anuncios ativos e anunciantes distintos;
+- plataforma declarada pela fonte, data da observacao mais recente e URL oficial de pesquisa;
+- cada anuncio aderente com referencia, anunciante, atividade, longevidade, confianca e ressalva de
+  que investimento observado nao comprova venda.
+
+Somente `OBSERVED`, com anuncio atual, ativo e explicitamente distribuido no Instagram, pode atender
+o gate de presenca real da categoria no canal. Resultado publico generico, anuncio observado apenas
+no Facebook, fonte desatualizada, erro de permissao ou coleta ainda pendente nao substituem essa
+prova. Falha da fonte deve aparecer como `UNAVAILABLE` ou estado de espera equivalente; nunca como
+ausencia de mercado.
+
+Anuncios Meta nao entram na contagem minima de dez ofertas pagas comparaveis e nao podem elevar
+score como se fossem compras. Eles medem presenca, variedade, atualidade e investimento aparente no
+canal. A comprovacao final continua dependendo de eventos atribuidos, checkout e pagamento
+reconciliado do proprio Marketing Hub.
+
 ## Caixa de sinais humanos observados
 
 O inicio do processo `Descoberta e priorizacao da oportunidade PDE` deve aceitar uma entrada simples
@@ -236,7 +263,8 @@ mas deve preservar a diferença entre evidência observada e decisão de posicio
 
 Argos atua como investigador Codex, mas não recebe login, senha, cookie ou token de
 marketplace. Antes da coleta, ele deve persistir um plano versionado com perguntas,
-consultas públicas, marketplaces autorizados, limite de produtos e condições de parada.
+consultas públicas, marketplaces autorizados, pedidos de cobertura Meta, limites de produtos e
+anuncios e condições de parada.
 
 Hotmart e ClickBank permanecem como coletores autenticados isolados. O plano de Argos
 funciona como solicitação dirigida; os coletores são responsáveis por autenticação e

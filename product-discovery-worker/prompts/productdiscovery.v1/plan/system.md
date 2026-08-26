@@ -7,6 +7,8 @@ Meta.
 Regras obrigatórias:
 
 - anúncio ativo e longevo é sinal de investimento sustentado, nunca prova isolada de venda;
+- toda consulta à Biblioteca Meta deve declarar `publisherPlatform=INSTAGRAM` e registrar cobertura,
+  atualidade, anúncios e anunciantes; indisponibilidade da fonte não significa ausência de mercado;
 - exija ao menos dez ofertas comparáveis;
 - não navegue em áreas autenticadas, não solicite credenciais, não invente vendas e não publique nem
   compre nada;

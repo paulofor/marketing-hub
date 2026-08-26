@@ -5,7 +5,8 @@ import { join } from "node:path";
 
 /** Cria com Codex um plano de investigação; nenhuma credencial de marketplace entra no prompt. */
 export async function planDirectedResearch(job, options = {}) {
-  const enabled = String(options.enabled ?? process.env.ARGOS_CODEX_ENABLED) === "true";
+  const enabled =
+    String(options.enabled ?? process.env.ARGOS_CODEX_ENABLED) === "true";
   if (!enabled) return deterministicPlan(job);
   const prompt = await buildPrompt(job);
   const schemaContract = await readFile(
@@ -21,7 +22,8 @@ export async function planDirectedResearch(job, options = {}) {
   const schema = join(directory, "schema.json");
   try {
     await writeFile(schema, schemaContract);
-    const command = options.command || process.env.ARGOS_CODEX_COMMAND || "codex";
+    const command =
+      options.command || process.env.ARGOS_CODEX_COMMAND || "codex";
     const args = [
       "exec",
       "-",
@@ -40,7 +42,9 @@ export async function planDirectedResearch(job, options = {}) {
     if (model) args.push("--model", model);
     const execute = options.execute || executeCodexWithInput;
     const execution = await execute(command, args, prompt, {
-      timeoutMs: Number(options.timeoutMs || process.env.ARGOS_CODEX_TIMEOUT_MS || 600000),
+      timeoutMs: Number(
+        options.timeoutMs || process.env.ARGOS_CODEX_TIMEOUT_MS || 600000,
+      ),
       maxBuffer: 10 * 1024 * 1024,
     });
     let rawResponse;
@@ -48,9 +52,12 @@ export async function planDirectedResearch(job, options = {}) {
       rawResponse = await readFile(output, "utf8");
     } catch (error) {
       if (error?.code === "ENOENT") {
-        throw new Error("Codex terminou sem produzir o plano estruturado de Argos", {
-          cause: error,
-        });
+        throw new Error(
+          "Codex terminou sem produzir o plano estruturado de Argos",
+          {
+            cause: error,
+          },
+        );
       }
       throw error;
     }
@@ -90,7 +97,9 @@ export function executeCodexWithInput(command, args, input, options = {}) {
       const next = current + String(chunk);
       if (next.length > maxBuffer) {
         child?.kill("SIGTERM");
-        rejectOnce(new Error("Saída do planejamento de Argos excedeu o limite seguro"));
+        rejectOnce(
+          new Error("Saída do planejamento de Argos excedeu o limite seguro"),
+        );
       }
       return next;
     };
@@ -98,13 +107,19 @@ export function executeCodexWithInput(command, args, input, options = {}) {
     try {
       child = spawnProcess(command, args, { stdio: ["pipe", "pipe", "pipe"] });
     } catch (error) {
-      rejectOnce(new Error(`Falha ao iniciar o Codex para Argos: ${error.message}`, { cause: error }));
+      rejectOnce(
+        new Error(`Falha ao iniciar o Codex para Argos: ${error.message}`, {
+          cause: error,
+        }),
+      );
       return;
     }
 
     timeout = setTimeout(() => {
       child.kill("SIGTERM");
-      rejectOnce(new Error(`Planejamento de Argos excedeu o timeout de ${timeoutMs} ms`));
+      rejectOnce(
+        new Error(`Planejamento de Argos excedeu o timeout de ${timeoutMs} ms`),
+      );
     }, timeoutMs);
 
     child.stdout.setEncoding("utf8");
@@ -116,7 +131,11 @@ export function executeCodexWithInput(command, args, input, options = {}) {
       stderr = appendOutput(stderr, chunk);
     });
     child.on("error", (error) => {
-      rejectOnce(new Error(`Falha ao executar o Codex para Argos: ${error.message}`, { cause: error }));
+      rejectOnce(
+        new Error(`Falha ao executar o Codex para Argos: ${error.message}`, {
+          cause: error,
+        }),
+      );
     });
     child.on("close", (code, signal) => {
       if (settled) return;
@@ -136,9 +155,12 @@ export function executeCodexWithInput(command, args, input, options = {}) {
     child.stdin.on("error", (error) => {
       if (error?.code !== "EPIPE") {
         rejectOnce(
-          new Error(`Falha ao enviar o contexto de Argos ao Codex: ${error.message}`, {
-            cause: error,
-          }),
+          new Error(
+            `Falha ao enviar o contexto de Argos ao Codex: ${error.message}`,
+            {
+              cause: error,
+            },
+          ),
         );
       }
     });
@@ -201,6 +223,7 @@ export function deterministicPlan(job) {
       {
         query: consumerInstagramFocus ? `${theme} consumidor` : theme,
         country: "BR",
+        publisherPlatform: "INSTAGRAM",
         maxAds: 25,
       },
     ],
@@ -210,7 +233,9 @@ export function deterministicPlan(job) {
       "ausência de sinal de compra",
       "credencial ou marketplace indisponível",
       ...(consumerInstagramFocus
-        ? ["oportunidade depende de empresa ou não possui cena demonstrável no Instagram"]
+        ? [
+            "oportunidade depende de empresa ou não possui cena demonstrável no Instagram",
+          ]
         : []),
     ],
   };
@@ -246,8 +271,16 @@ export function validatePlan(plan) {
     }
   }
   for (const request of plan.metaAdRequests) {
-    if (!request.query || !request.country || request.maxAds < 1 || request.maxAds > 50) {
-      throw new Error("Limite inválido de pesquisa dirigida na Biblioteca Meta");
+    if (
+      !request.query ||
+      !request.country ||
+      request.publisherPlatform !== "INSTAGRAM" ||
+      request.maxAds < 1 ||
+      request.maxAds > 50
+    ) {
+      throw new Error(
+        "Limite inválido de pesquisa dirigida na Biblioteca Meta",
+      );
     }
   }
 }
@@ -255,17 +288,11 @@ export function validatePlan(plan) {
 async function buildPrompt(job) {
   const [systemPrompt, userPrompt] = await Promise.all([
     readFile(
-      new URL(
-        "../prompts/productdiscovery.v1/plan/system.md",
-        import.meta.url,
-      ),
+      new URL("../prompts/productdiscovery.v1/plan/system.md", import.meta.url),
       "utf8",
     ),
     readFile(
-      new URL(
-        "../prompts/productdiscovery.v1/plan/user.md",
-        import.meta.url,
-      ),
+      new URL("../prompts/productdiscovery.v1/plan/user.md", import.meta.url),
       "utf8",
     ),
   ]);
@@ -287,7 +314,9 @@ function resolvePromptPlaceholders(template, values) {
     prompt = prompt.replaceAll(`{{${key}}}`, String(value));
   }
   if (/{{[^}]+}}/.test(prompt)) {
-    throw new Error("Prompt de planejamento de Argos possui placeholder não resolvido");
+    throw new Error(
+      "Prompt de planejamento de Argos possui placeholder não resolvido",
+    );
   }
   return prompt;
 }

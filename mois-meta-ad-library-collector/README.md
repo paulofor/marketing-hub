@@ -11,4 +11,12 @@ Configuração obrigatória:
 - `META_AD_LIBRARY_ACCESS_TOKEN`: token autorizado para a API da Biblioteca de Anúncios;
 - `BACKEND_URL`: URL do backend principal.
 
-Sem token, a execução falha explicitamente e nenhuma evidência é criada.
+Antes de reservar qualquer pendência, o coletor faz um preflight real no endpoint
+`ads_archive`, com uma consulta mínima do Instagram. Token configurado e permissão
+`ads_read` não são tratados como autorização suficiente. A saúde do processo expõe em
+`metaAdLibraryAccess` o status sanitizado, código, subcódigo e instante da última
+verificação, sem revelar a credencial.
+
+Sem token ou sem autorização oficial do aplicativo, nenhuma pendência é reservada e
+nenhuma ausência de anúncio é inferida. Para anúncios comerciais do Brasil, a tela do
+Marketing Hub mantém o fluxo oficial supervisionado pela Biblioteca pública.

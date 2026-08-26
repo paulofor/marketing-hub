@@ -1934,3 +1934,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-26-rigel-commercial-experience-v2-slot-repair.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-26-mois-meta-instagram-platform.yaml
+      relativeToChangelogFile: true

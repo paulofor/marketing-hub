@@ -2,12 +2,14 @@ package com.marketinghub.productdiscovery.v1.web;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMarketplaceEvidenceService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMaturityItemResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMaturityRankingResponse;
+import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdEvidenceListResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryMetaAdEvidenceService;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryResearchTrackResponse;
 import com.marketinghub.productdiscovery.v1.service.ProductDiscoveryService;
@@ -17,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -80,5 +83,49 @@ class ProductDiscoveryControllerTest {
         .andExpect(jsonPath("$.items[0].maturity").value("Oportunidade promissora"))
         .andExpect(
             jsonPath("$.recommendedTracks[0].theme").value("renda extra para autonomos e MEIs"));
+  }
+
+  /** Deve correlacionar a solicitação Meta ao lease vigente e expor a cobertura Instagram. */
+  @Test
+  void requestMetaAdEvidenceForActiveCycle() throws Exception {
+    when(metaAdEvidenceService.requestAndSearch(
+            org.mockito.ArgumentMatchers.eq(81L), org.mockito.ArgumentMatchers.any()))
+        .thenReturn(
+            new ProductDiscoveryMetaAdEvidenceListResponse(
+                81L,
+                "entrevista emprego",
+                "BR",
+                "INSTAGRAM",
+                "AWAITING_SUPERVISED_OBSERVATION",
+                "SUPERVISED",
+                7L,
+                "https://www.facebook.com/ads/library/?q=entrevista+emprego",
+                0,
+                0,
+                0,
+                null,
+                "Cobertura aguardando observação",
+                List.of()));
+
+    mockMvc
+        .perform(
+            post("/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/81/meta-ad-evidence")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "executionLeaseId":"lease-81",
+                      "query":"entrevista emprego",
+                      "country":"BR",
+                      "publisherPlatform":"INSTAGRAM",
+                      "limit":25
+                    }
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.cycleId").value(81))
+        .andExpect(jsonPath("$.publisherPlatform").value("INSTAGRAM"))
+        .andExpect(jsonPath("$.sourceStatus").value("AWAITING_SUPERVISED_OBSERVATION"));
+
+    org.mockito.Mockito.verify(service).validateActiveExecution(81L, "lease-81");
   }
 }

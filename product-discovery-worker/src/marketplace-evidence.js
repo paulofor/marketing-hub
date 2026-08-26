@@ -3,7 +3,9 @@ export async function collectMarketplaceEvidence(plan, options = {}) {
   const backendBaseUrl = options.backendBaseUrl;
   const fetchFn = options.fetchFn || fetch;
   const logger = options.logger || console;
-  const collected = [];
+  const marketplaceOffers = [];
+  const metaAdEvidence = [];
+  const metaCoverage = [];
   for (const request of plan.marketplaceRequests || []) {
     const url = new URL(
       "/api/internal/product-discovery/productdiscovery/v1/marketplace-offers",
@@ -12,7 +14,9 @@ export async function collectMarketplaceEvidence(plan, options = {}) {
     url.searchParams.set("marketplace", request.marketplace);
     url.searchParams.set("query", request.query);
     url.searchParams.set("limit", String(request.maxProducts));
-    const response = await fetchFn(url, { headers: { Accept: "application/json" } });
+    const response = await fetchFn(url, {
+      headers: { Accept: "application/json" },
+    });
     if (!response.ok) {
       logger.warn?.(
         `[product-discovery-worker] marketplace request failed marketplace=${request.marketplace} status=${response.status}`,
@@ -29,61 +33,118 @@ export async function collectMarketplaceEvidence(plan, options = {}) {
     logger.info?.(
       `[product-discovery-worker] marketplace snapshot marketplace=${request.marketplace} jobId=${payload.collectionJobId || "none"} offers=${normalizedOffers.length} relevant=${relevantOffers.length}`,
     );
-    collected.push(...relevantOffers);
+    marketplaceOffers.push(...relevantOffers);
   }
   for (const request of plan.metaAdRequests || []) {
     const url = new URL(
-      "/api/internal/product-discovery/productdiscovery/v1/meta-ad-evidence",
+      `/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${options.cycleId}/meta-ad-evidence`,
       backendBaseUrl,
     );
-    url.searchParams.set("query", request.query);
-    url.searchParams.set("country", request.country);
-    url.searchParams.set("limit", String(request.maxAds));
-    const response = await fetchFn(url, { headers: { Accept: "application/json" } });
+    const response = await fetchFn(url, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        executionLeaseId: options.executionLeaseId,
+        query: request.query,
+        country: request.country,
+        publisherPlatform: request.publisherPlatform,
+        limit: request.maxAds,
+      }),
+    });
     if (!response.ok) {
       logger.warn?.(
-        `[product-discovery-worker] Meta Ad Library evidence failed status=${response.status}`,
+        `[product-discovery-worker] Meta Ad Library evidence failed cycle=${options.cycleId} status=${response.status}`,
       );
+      metaCoverage.push({
+        query: request.query,
+        country: request.country,
+        publisherPlatform: request.publisherPlatform,
+        sourceStatus: "UNAVAILABLE",
+        collectionMode: "UNKNOWN",
+        adsObserved: 0,
+        activeAds: 0,
+        advertisersObserved: 0,
+        latestObservationAt: null,
+        searchUrl: null,
+        interpretation:
+          "A fonte Meta não respondeu; isso não comprova ausência de anúncios ou de mercado.",
+      });
       continue;
     }
     const payload = await response.json();
-    const normalizedAds = normalizeMetaAdEvidence(payload);
+    const normalizedAds = normalizeMetaAdEvidence(
+      payload,
+      request.publisherPlatform,
+    );
     const relevantAds = filterRelevantOffers(
       normalizedAds,
       request.query,
       options.researchContext,
     );
     logger.info?.(
-      `[product-discovery-worker] Meta Ad Library evidence ads=${normalizedAds.length} relevant=${relevantAds.length}`,
+      `[product-discovery-worker] Meta Ad Library evidence cycle=${options.cycleId} platform=${request.publisherPlatform} sourceStatus=${payload.sourceStatus} ads=${normalizedAds.length} relevant=${relevantAds.length} advertisers=${payload.advertisersObserved ?? 0}`,
     );
-    collected.push(...relevantAds);
+    metaAdEvidence.push(...relevantAds);
+    metaCoverage.push({
+      query: payload.query || request.query,
+      country: payload.country || request.country,
+      publisherPlatform: payload.publisherPlatform || request.publisherPlatform,
+      sourceStatus: payload.sourceStatus || "UNKNOWN",
+      collectionMode: payload.collectionMode || "UNKNOWN",
+      investigationId: payload.investigationId ?? null,
+      adsObserved: Number(payload.adsObserved || 0),
+      activeAds: Number(payload.activeAds || 0),
+      advertisersObserved: Number(payload.advertisersObserved || 0),
+      latestObservationAt: payload.latestObservationAt || null,
+      searchUrl: payload.searchUrl || null,
+      interpretation: payload.interpretation || "Cobertura não informada.",
+    });
   }
-  return deduplicateMarketplaceOffers(collected);
+  return {
+    marketplaceOffers: deduplicateMarketplaceOffers(marketplaceOffers),
+    metaAdEvidence: deduplicateMarketplaceOffers(metaAdEvidence),
+    metaCoverage,
+  };
 }
 
 /** Normaliza anuncios Meta como sinais comerciais sem declara-los vendas comprovadas. */
-export function normalizeMetaAdEvidence(payload) {
+export function normalizeMetaAdEvidence(
+  payload,
+  requestedPublisherPlatform = "INSTAGRAM",
+) {
   return (Array.isArray(payload?.items) ? payload.items : [])
-    .map((item) => ({
-      marketplace: "META_AD_LIBRARY",
-      referenceId: item.metaAdId,
-      title: item.advertiserName || `Anúncio Meta ${item.metaAdId}`,
-      url: item.snapshotUrl || item.destinationUrl,
-      description: item.adText || "",
-      producer: item.advertiserName || "",
-      category: "PAID_AD",
-      format: item.formatTypes || null,
-      observations: item.observations ?? 1,
-      firstObservedAt: item.firstObservedAt || null,
-      collectedAt: item.lastObservedAt || null,
-      longevityDays: item.longevityDays ?? 0,
-      active: Boolean(item.active),
-      commercialSignal: Boolean(item.commercialSignal),
-      sustainedInvestmentSignal: Boolean(item.sustainedInvestmentSignal),
-      evidenceConfidence: item.evidenceConfidence || "LOW",
-      signalDisclaimer:
-        "Longevidade e atividade indicam investimento sustentado, não venda comprovada.",
-    }))
+    .map((item) => {
+      const publisherPlatforms = normalizeStringList(item.publisherPlatforms);
+      return {
+        marketplace: "META_AD_LIBRARY",
+        referenceId: item.metaAdId,
+        title: item.advertiserName || `Anúncio Meta ${item.metaAdId}`,
+        url: item.snapshotUrl || item.destinationUrl,
+        description: normalizeStringList(item.adTexts || item.adText).join(" "),
+        producer: item.advertiserName || "",
+        category: "PAID_AD",
+        publisherPlatforms,
+        format: normalizeStringList(item.formatTypes).join(", ") || null,
+        observations: item.observations ?? 1,
+        firstObservedAt: item.firstObservedAt || null,
+        collectedAt: item.lastObservedAt || null,
+        longevityDays: item.longevityDays ?? 0,
+        active: Boolean(item.active),
+        commercialSignal: Boolean(item.commercialSignal),
+        sustainedInvestmentSignal: Boolean(item.sustainedInvestmentSignal),
+        evidenceConfidence: item.evidenceConfidence || "LOW",
+        signalDisclaimer:
+          "Longevidade e atividade indicam investimento sustentado, não venda comprovada.",
+      };
+    })
+    .filter((item) =>
+      item.publisherPlatforms.includes(
+        String(requestedPublisherPlatform || "INSTAGRAM").toUpperCase(),
+      ),
+    )
     .filter((item) => item.referenceId && item.title && item.url);
 }
 
@@ -113,7 +174,9 @@ export function normalizeMarketplaceOffers(payload) {
       collectedAt: item.collectedAt || null,
       collectionJobId: payload.collectionJobId || null,
     }))
-    .filter((item) => item.marketplace && item.referenceId && item.title && item.url);
+    .filter(
+      (item) => item.marketplace && item.referenceId && item.title && item.url,
+    );
 }
 
 /** Mantém somente ofertas que correspondem a pelo menos dois termos específicos da consulta. */
@@ -133,8 +196,13 @@ export function filterRelevantOffers(offers, query, researchContext = "") {
       ].join(" "),
     );
     const matches = terms.filter((term) => searchable.includes(term)).length;
-    const contextMatches = contextTerms.filter((term) => searchable.includes(term)).length;
-    return matches >= minimumMatches && (contextTerms.length === 0 || contextMatches >= 1);
+    const contextMatches = contextTerms.filter((term) =>
+      searchable.includes(term),
+    ).length;
+    return (
+      matches >= minimumMatches &&
+      (contextTerms.length === 0 || contextMatches >= 1)
+    );
   });
 }
 
@@ -190,6 +258,20 @@ function normalizeText(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
+}
+
+function normalizeStringList(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).toUpperCase());
+  }
+  try {
+    const parsed = JSON.parse(String(value || "[]"));
+    return Array.isArray(parsed)
+      ? parsed.map((item) => String(item).toUpperCase())
+      : [];
+  } catch {
+    return [];
+  }
 }
 
 function deduplicateMarketplaceOffers(offers) {

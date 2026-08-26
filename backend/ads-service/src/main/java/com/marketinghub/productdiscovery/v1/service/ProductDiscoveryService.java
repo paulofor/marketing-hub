@@ -121,6 +121,12 @@ public class ProductDiscoveryService {
         cycle.getUpdatedAt());
   }
 
+  /** Confirma que uma integração auxiliar pertence à tentativa vigente do ciclo. */
+  @Transactional(readOnly = true)
+  public void validateActiveExecution(Long cycleId, String executionLeaseId) {
+    validateExecutionLease(findCycle(cycleId), executionLeaseId);
+  }
+
   /** Retorna o ranking gerencial atual por maturidade comercial para orientar novos ciclos PDE. */
   @Transactional(readOnly = true)
   public ProductDiscoveryMaturityRankingResponse getMaturityRanking() {

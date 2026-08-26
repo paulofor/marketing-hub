@@ -34,12 +34,18 @@ export default function MoisAutoCollectionPage() {
   const [minSuccessScore, setMinSuccessScore] = useState(60);
   const [activeJobId, setActiveJobId] = useState("");
   const [metaSearchTerms, setMetaSearchTerms] = useState("");
+  const [metaInvestigationPlatform, setMetaInvestigationPlatform] = useState<
+    "INSTAGRAM" | "FACEBOOK"
+  >("INSTAGRAM");
   const [selectedMetaInvestigationId, setSelectedMetaInvestigationId] =
     useState(0);
   const [metaAdReference, setMetaAdReference] = useState("");
   const [metaAdvertiserName, setMetaAdvertiserName] = useState("");
   const [metaLibraryUrl, setMetaLibraryUrl] = useState("");
   const [metaAdText, setMetaAdText] = useState("");
+  const [metaObservedPlatform, setMetaObservedPlatform] = useState<
+    "INSTAGRAM" | "FACEBOOK"
+  >("INSTAGRAM");
   const [metaDestinationUrl, setMetaDestinationUrl] = useState("");
   const [metaPageActive, setMetaPageActive] = useState(false);
   const [metaCommercialSignal, setMetaCommercialSignal] = useState(false);
@@ -464,11 +470,12 @@ export default function MoisAutoCollectionPage() {
                 workspaceId: WORKSPACE_ID,
                 searchTerms: metaSearchTerms,
                 countryCode: "BR",
+                publisherPlatform: metaInvestigationPlatform,
               });
               setMetaSearchTerms("");
             }}
           >
-            <div className="col-md-9">
+            <div className="col-md-7">
               <input
                 className="form-control"
                 value={metaSearchTerms}
@@ -476,6 +483,24 @@ export default function MoisAutoCollectionPage() {
                 placeholder="Produto, dor ou promessa a investigar"
                 required
               />
+            </div>
+            <div className="col-md-2">
+              <label className="visually-hidden" htmlFor="meta-platform">
+                Plataforma
+              </label>
+              <select
+                id="meta-platform"
+                className="form-select"
+                value={metaInvestigationPlatform}
+                onChange={(event) =>
+                  setMetaInvestigationPlatform(
+                    event.target.value as "INSTAGRAM" | "FACEBOOK",
+                  )
+                }
+              >
+                <option value="INSTAGRAM">Instagram</option>
+                <option value="FACEBOOK">Facebook</option>
+              </select>
             </div>
             <div className="col-md-3 d-grid">
               <button
@@ -500,6 +525,7 @@ export default function MoisAutoCollectionPage() {
                     advertiserName: metaAdvertiserName,
                     adLibraryUrl: metaLibraryUrl,
                     adText: metaAdText,
+                    publisherPlatforms: [metaObservedPlatform],
                     destinationUrl: metaDestinationUrl || undefined,
                     pageActive: metaPageActive,
                     commercialSignal: metaCommercialSignal,
@@ -556,6 +582,25 @@ export default function MoisAutoCollectionPage() {
                   onChange={(event) => setMetaAdReference(event.target.value)}
                   required
                 />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label" htmlFor="meta-observed-platform">
+                  Plataforma observada *
+                </label>
+                <select
+                  id="meta-observed-platform"
+                  className="form-select"
+                  value={metaObservedPlatform}
+                  onChange={(event) =>
+                    setMetaObservedPlatform(
+                      event.target.value as "INSTAGRAM" | "FACEBOOK",
+                    )
+                  }
+                  required
+                >
+                  <option value="INSTAGRAM">Instagram</option>
+                  <option value="FACEBOOK">Facebook</option>
+                </select>
               </div>
               <div className="col-md-6">
                 <label className="form-label" htmlFor="meta-advertiser">
@@ -672,16 +717,27 @@ export default function MoisAutoCollectionPage() {
                 </span>
               </div>
               <div className="small text-secondary mb-2">
-                {investigation.status} · {investigation.adsObserved} observações
-                auditáveis
+                {investigation.publisherPlatform} · {investigation.status} ·{" "}
+                {investigation.adsObserved} observações auditáveis
               </div>
               <div className="alert alert-light border small py-2">
-                <strong>Coleta supervisionada.</strong>{" "}
+                <strong>
+                  {investigation.collection.mode === "OFFICIAL_API"
+                    ? "Coleta pela API oficial."
+                    : "Coleta supervisionada."}
+                </strong>{" "}
                 {investigation.collection.reason} Próximo objetivo:{" "}
                 {new Date(
                   investigation.collection.nextObservationAt,
                 ).toLocaleDateString("pt-BR")}
-                .
+                .{" "}
+                <a
+                  href={investigation.collection.searchUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Abrir busca oficial
+                </a>
               </div>
               <div className="row g-3">
                 <div className="col-md-6">

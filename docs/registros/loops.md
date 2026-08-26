@@ -1931,6 +1931,22 @@ Use este checklist quando o problema estiver em algum loop acima:
   respostas HTTP consecutivas antes de considerar a versão estável. Um teste simula reinício,
   encerramento e inicialização lenta para manter o rollback seguro sem desperdiçar toda a janela.
 
+## LOOP-JPA-FECHA-ABRE-PERIODO-SEM-FLUSH — INSERT disputa o slot ainda aberto
+
+- **Data:** 2026-08-26.
+- **Sintoma:** a ativação administrativa da Vega falhou com HTTP 500 e
+  `Duplicate entry '4-1' for key 'uk_product_process_period_open'`, embora o serviço fechasse o
+  período anterior antes de construir o novo.
+- **Causa-raiz confirmada:** ambos os comandos estavam na mesma unidade de trabalho e o Hibernate
+  executou o `INSERT` do próximo período antes de enviar o `UPDATE` que anulava `open_slot` no
+  período vigente. O teste com repository mockado validava somente duas chamadas a `save` e não
+  protegia a ordem SQL exigida pela restrição.
+- **Correção sistêmica:** o fechamento usa `saveAndFlush` antes da abertura seguinte; o flush não
+  confirma a transação e, portanto, experimento, run, produto, janela e histórico continuam
+  revertendo juntos diante de qualquer falha posterior.
+- **Prevenção:** teste de contrato verifica a ordem `saveAndFlush(período fechado)` e depois
+  `save(período novo)`, mantendo a restrição de um único período aberto em vez de enfraquecê-la.
+
 ## LOOP-AGENTE-REVISOR-DEPENDE-DE-SHELL-ANINHADO — parecer bloqueia evidência já verificável
 
 - **Data:** 2026-08-25.

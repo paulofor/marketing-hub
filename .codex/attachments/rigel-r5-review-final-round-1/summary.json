@@ -1,0 +1,94 @@
+{
+  "round": "final-round-1",
+  "qualityReview": {
+    "score": 88,
+    "targetAudienceSpecificity": "high",
+    "commercialReadiness": "strong",
+    "criteriaScores": {
+      "firstFoldClarity": 9,
+      "painResultMechanism": 9,
+      "proofStrength": 9,
+      "offerDesirability": 8,
+      "ctaAndFormStrength": 9,
+      "visualPremiumFeel": 8,
+      "mobileDesktopExecution": 9
+    },
+    "blockingIssues": [],
+    "improvementOpportunities": [
+      "[Prova social] A página demonstra muito bem o método, mas não apresenta depoimento, caso ou evidência de satisfação de cliente → testar futuramente prova social verificável próxima à oferta para reduzir ainda mais o risco percebido.",
+      "[Oferta] O valor funcional está claro, porém o ganho econômico permanece implícito → testar uma comparação sóbria entre o preço e o custo de perder oportunidades por falta de follow-up, sem prometer conversão.",
+      "[Galeria] O terceiro recorte repete visualmente a própria oferta e o CTA → testar uma amostra adicional da entrega personalizada, como uma regra de escalonamento ou trecho do guia, para ampliar a variedade da prova."
+    ],
+    "recommendedRegeneration": [],
+    "approvalRecommendation": "APPROVE_FOR_PUBLICATION"
+  },
+  "psiqueReview": {
+    "decision": "APPROVED",
+    "customerPerspective": "Sinto alívio imediato porque a página reconhece uma situação concreta: enviei o orçamento, a pessoa sumiu e não sei como retomar sem parecer insistente. Entendo que compro uma implantação personalizada do meu atendimento — respostas, perguntas, follow-ups e regras para revisar e usar manualmente — por R$ 349, uma única vez. As amostras, o processo em quatro passos, o prazo condicionado e a distinção explícita de bot ou automação tornam a oferta compreensível e confiável. A página é longa no celular, mas a progressão preserva clareza e não cria um bloqueio crítico de percepção.",
+    "behavioralResponse": {
+      "firstImpulse": "Alívio e curiosidade: “isso pode tirar de mim o desconforto de improvisar e cobrar resposta”. O título apresenta uma dor familiar e promete um próximo passo mais claro sem agressividade.",
+      "pleasureAndEffort": "A recompensa percebida é economizar esforço mental e abordar clientes com mais segurança. O briefing de 15 a 25 minutos e a aplicação manual reduzem um pouco o valor subjetivo, mas parecem proporcionais porque a página explica que esse trabalho permite personalização, prévia e revisão.",
+      "noveltyAndFamiliarity": "A combinação é segura: follow-ups estruturados e regras personalizadas trazem novidade suficiente, enquanto WhatsApp, exemplos de mensagens, Mercado Pago e um processo em quatro passos mantêm familiaridade e controle. Não parece software estranho nem automação obscura.",
+      "riskAndLoss": "O risco sentido concentra-se em pagar R$ 349 e receber mensagens pouco diferentes do que eu faria sozinha. Esse receio é reduzido pelas amostras, quantidades entregues, prévia de tom, revisão humana, pagamento único, políticas acessíveis e exclusões explícitas. A ausência de prova social verificável mantém alguma cautela, mas não impede a compreensão nem torna a oferta enganosa.",
+      "belongingAdmirationLove": "A necessidade estrutural de valor relacional aparece de forma moderada: comunicar-se com respeito pode ajudar a cliente a se perceber mais profissional, segura e digna de confiança, evitando rejeição causada por insistência. A oferta não explora vergonha, solidão ou medo de exclusão, e não há evidência para tratar amor ou pertencimento como motivador principal.",
+      "rationalization": "Depois do impulso inicial, eu justificaria a compra dizendo que recebo um pacote sob medida, editável e revisado, com escopo mensurável, prévia em até 12 horas e entrega em até 48 horas após pagamento e briefing. O preço parece mais defensável pela personalização e revisão do que por promessa de resultado financeiro.",
+      "dominantDriver": "Redução do esforço e da ansiedade de decidir o que enviar depois de um orçamento, acompanhada do desejo de conduzir conversas com clareza e respeito.",
+      "evidenceBoundary": "Esta é uma simulação comportamental baseada na landing local, nos screenshots e nos contratos fornecidos. Não confirma intenção de compra, satisfação ou conversão reais. A aprovação vale somente para LOCAL_QA_NO_PUBLICATION; o checkout produtivo respondeu 403 à automação e ainda exige preflight humano pós-deploy, sem pagamento."
+    },
+    "evidence": [
+      "A primeira dobra identifica a dor, o público, a entrega personalizada, o CTA, o preço e as condições do prazo.",
+      "O escopo quantifica respostas, perguntas e follow-ups e inclui regras, guia, checklist e revisão humana.",
+      "A página declara repetidamente que não é software, bot, integração, disparo automático, assinatura nem garantia de conversão ou faturamento.",
+      "As quatro amostras aprovadas são apresentadas como ilustrativas e não clicáveis, sem serem disfarçadas de depoimento ou resultado de cliente.",
+      "O fluxo explica briefing, prévia, entrega e primeira aplicação, reduzindo incerteza operacional.",
+      "Preço de R$ 349, pagamento único e CTA permanecem coerentes com o experimento 89 em toda a página.",
+      "Os screenshots mostram execução coerente em desktop e mobile; a auditoria registra largura correta, imagens íntegras, três CTAs canônicos e ausência de links provisórios ou erros de console.",
+      "Termos, privacidade e política de reembolso estavam acessíveis com status 200 na verificação informada de 26/08/2026.",
+      "A validação do checkout produtivo não está concluída: o acesso automatizado recebeu 403; isso não bloqueia o lote local, mas impede tratar este parecer como autorização de publicação ou execução comercial."
+    ],
+    "requiredChanges": []
+  },
+  "temisReview": {
+    "decision": "APPROVED",
+    "commercialRationale": "A candidata está comercialmente coerente no escopo LOCAL_QA_NO_PUBLICATION: produto, dor, público, promessa, escopo, processo, preço de R$ 349, pagamento único, CTA, criativos, landing e checkout local representam a mesma oferta do experimento 89. A página diferencia corretamente serviço assistido de software/automação, condiciona o prazo ao pagamento e briefing completos e não promete conversão. Quality Review e Psique apresentaram evidências suficientes e independentes. Esta aprovação limita-se à prontidão para PR/deploy; não autoriza publicação, contato, gasto, pagamento ou mudança para RUNNING.",
+    "evidence": [
+      "Contrato, oferta, criativos e landing vinculam o mesmo produto, experimentId 89, experiência v2, CTA e preço.",
+      "As quatro provas aprovadas foram preservadas e identificadas como exemplos fictícios, ilustrativos e não clicáveis.",
+      "Escopo entregue e exclusões estão claros: personalização, revisão humana e uso manual, sem bot, disparo, assinatura ou garantia de resultado.",
+      "Auditoria em desktop, iPhone 15 Pro e Pixel 7 confirmou responsividade, quatro imagens íntegras, três CTAs para o destino canônico, políticas em nova aba e ausência de erros de console.",
+      "Termos, privacidade e reembolso responderam 200 na verificação apresentada.",
+      "O test double confirmou produto, fornecedor, R$ 349 e pagamento único sem permitir cobrança; 12 jornadas locais foram aprovadas.",
+      "Quality Review obteve 88/100 sem bloqueios, e Psique confirmou compreensão, percepção de valor, limites da promessa e ausência de bloqueio comportamental.",
+      "A divergência produtiva v1 anterior está explicitamente fora da candidata e possui correção v2 validada para MySQL 5.7."
+    ],
+    "requiredChanges": []
+  },
+  "gates": {
+    "quality": true,
+    "psique": true,
+    "temis": true
+  },
+  "modelUsage": {
+    "qualityReview": {
+      "input_tokens": 38063,
+      "cached_input_tokens": 0,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 354,
+      "reasoning_output_tokens": 113
+    },
+    "psique": {
+      "input_tokens": 48114,
+      "cached_input_tokens": 0,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1021,
+      "reasoning_output_tokens": 77
+    },
+    "temis": {
+      "input_tokens": 61209,
+      "cached_input_tokens": 0,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 681,
+      "reasoning_output_tokens": 289
+    }
+  }
+}

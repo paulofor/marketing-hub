@@ -77,7 +77,7 @@ public class PlaywrightQualityReviewScreenshotService implements QualityReviewSc
             List<QualityReviewScreenshotEvidence> screenshotUrls
     ) {
         try {
-            screenshotUrls.add(renderAndUpload(browser, input, viewport));
+            screenshotUrls.addAll(renderAndUpload(browser, input, viewport));
         } catch (RuntimeException error) {
             if (viewport.required() || screenshotUrls.isEmpty()) {
                 throw error;
@@ -104,8 +104,12 @@ public class PlaywrightQualityReviewScreenshotService implements QualityReviewSc
         return playwright.chromium().launch(options);
     }
 
-    /** Renderiza uma viewport específica, captura JPEG full-page sem recortar a landing e publica no storage. */
-    private QualityReviewScreenshotEvidence renderAndUpload(Browser browser, QualityReviewInput input, ViewportSpec viewport) {
+    /** Renderiza uma viewport e publica a página inteira junto da seção visual com mais provas. */
+    private List<QualityReviewScreenshotEvidence> renderAndUpload(
+            Browser browser,
+            QualityReviewInput input,
+            ViewportSpec viewport
+    ) {
         Page page = browser.newPage(new Browser.NewPageOptions()
                 .setViewportSize(viewport.width(), viewport.height())
                 .setDeviceScaleFactor(1));
@@ -114,26 +118,104 @@ public class PlaywrightQualityReviewScreenshotService implements QualityReviewSc
                     .setWaitUntil(WaitUntilState.DOMCONTENTLOADED)
                     .setTimeout(properties.screenshotTimeout().toMillis()));
             waitForNetworkIdle(page, input, viewport);
-            byte[] screenshot = page.screenshot(new Page.ScreenshotOptions()
+            List<QualityReviewScreenshotEvidence> evidence = new ArrayList<>();
+            byte[] fullPageScreenshot = page.screenshot(new Page.ScreenshotOptions()
                     .setFullPage(true)
                     .setTimeout(properties.screenshotTimeout().toMillis())
                     .setType(ScreenshotType.JPEG)
                     .setQuality(82));
-            FrameworkImageStorageClient.UploadedFrameworkImage uploaded = storageClient.upload(
-                    screenshot,
-                    buildScreenshotFilename(input, viewport));
+            evidence.add(upload(input, viewport, "full-page", fullPageScreenshot));
             log.info(
                     "Screenshot full-page do Quality Review publicado [jobId={}, experimentId={}, viewport={}, screenshotTimeoutMs={}, publicUrl={}, bytes={}]",
                     input.idJob(),
                     input.experimentId(),
                     viewport.name(),
                     properties.screenshotTimeout().toMillis(),
-                    uploaded.publicUrl(),
-                    screenshot.length);
-            return new QualityReviewScreenshotEvidence(viewport.name(), uploaded.publicUrl(), sha256Hex(screenshot), screenshot.length);
+                    evidence.getFirst().publicUrl(),
+                    fullPageScreenshot.length);
+            captureProofSection(page, input, viewport, evidence);
+            return List.copyOf(evidence);
         } finally {
             page.close();
         }
+    }
+
+    /** Captura a seção com maior concentração de imagens para preservar a legibilidade das provas. */
+    private void captureProofSection(
+            Page page,
+            QualityReviewInput input,
+            ViewportSpec viewport,
+            List<QualityReviewScreenshotEvidence> evidence
+    ) {
+        try {
+            var sections = page.locator("main section");
+            List<Integer> imageCounts = new ArrayList<>();
+            for (int index = 0; index < sections.count(); index++) {
+                imageCounts.add(sections.nth(index).locator("img").count());
+            }
+            int proofSectionIndex = selectProofSectionIndex(imageCounts);
+            if (proofSectionIndex < 0) {
+                return;
+            }
+            byte[] proofScreenshot = sections.nth(proofSectionIndex).screenshot(
+                    new com.microsoft.playwright.Locator.ScreenshotOptions()
+                            .setTimeout(properties.screenshotTimeout().toMillis())
+                            .setType(ScreenshotType.JPEG)
+                            .setQuality(88));
+            QualityReviewScreenshotEvidence uploaded = upload(
+                    input,
+                    viewport,
+                    "proof-section",
+                    proofScreenshot);
+            evidence.add(uploaded);
+            log.info(
+                    "Screenshot focado nas provas do Quality Review publicado [jobId={}, experimentId={}, viewport={}, sectionIndex={}, publicUrl={}, bytes={}]",
+                    input.idJob(),
+                    input.experimentId(),
+                    viewport.name(),
+                    proofSectionIndex,
+                    uploaded.publicUrl(),
+                    proofScreenshot.length);
+        } catch (RuntimeException error) {
+            log.warn(
+                    "Captura complementar das provas falhou; preservando screenshot full-page [jobId={}, experimentId={}, viewport={}, evidenciasDisponiveis={}]",
+                    input.idJob(),
+                    input.experimentId(),
+                    viewport.name(),
+                    evidence.size(),
+                    error);
+        }
+    }
+
+    /** Seleciona a primeira seção com a maior quantidade de imagens, exigindo ao menos duas provas. */
+    static int selectProofSectionIndex(List<Integer> imageCounts) {
+        int selectedIndex = -1;
+        int highestCount = 1;
+        for (int index = 0; index < imageCounts.size(); index++) {
+            int count = imageCounts.get(index) != null ? imageCounts.get(index) : 0;
+            if (count > highestCount) {
+                selectedIndex = index;
+                highestCount = count;
+            }
+        }
+        return selectedIndex;
+    }
+
+    /** Publica uma evidência visual com variante explícita e hash auditável. */
+    private QualityReviewScreenshotEvidence upload(
+            QualityReviewInput input,
+            ViewportSpec viewport,
+            String variant,
+            byte[] screenshot
+    ) {
+        FrameworkImageStorageClient.UploadedFrameworkImage uploaded = storageClient.upload(
+                screenshot,
+                buildScreenshotFilename(input, viewport, variant));
+        return new QualityReviewScreenshotEvidence(
+                viewport.name() + "-" + variant,
+                uploaded.publicUrl(),
+                sha256Hex(screenshot),
+                screenshot.length);
     }
 
     /** Aguarda estabilidade de rede sem bloquear a revisão quando scripts externos mantêm conexões abertas. */
@@ -148,7 +230,6 @@ public class PlaywrightQualityReviewScreenshotService implements QualityReviewSc
                     error);
         }
     }
-
 
     /** Calcula o hash SHA-256 em hexadecimal para identificar screenshots duplicados com URLs diferentes. */
     private String sha256Hex(byte[] content) {
@@ -165,10 +246,10 @@ public class PlaywrightQualityReviewScreenshotService implements QualityReviewSc
         }
     }
 
-    /** Gera nome estável para o screenshot publicado no storage. */
-    private String buildScreenshotFilename(QualityReviewInput input, ViewportSpec viewport) {
+    /** Gera nome estável para cada variante de screenshot publicada no storage. */
+    private String buildScreenshotFilename(QualityReviewInput input, ViewportSpec viewport, String variant) {
         String jobId = StringUtils.hasText(input.idJob()) ? input.idJob() : "quality-review";
-        return jobId + "-quality-review-" + viewport.name() + ".jpg";
+        return jobId + "-quality-review-" + viewport.name() + "-" + variant + ".jpg";
     }
 
     /** Responsabilidade: representar uma viewport de screenshot da landing e sua prioridade operacional. */

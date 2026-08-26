@@ -1,0 +1,65 @@
+ Network aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839_default Creating 
+ Network aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839_default Creating 
+ Volume aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839_pde-kit-validation-data Creating 
+ Volume aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839_pde-kit-validation-data Creating 
+ Volume aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839_pde-kit-validation-data Created 
+ Volume aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839_pde-kit-validation-data Created 
+ Network aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839_default Created 
+ Network aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839_default Created 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-sandbox-mail-1 Creating 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-platform-local-mysql-1 Creating 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-kit-contract-server-1 Creating 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-sandbox-mail-1 Created 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-kit-contract-server-1 Created 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-platform-local-mysql-1 Created 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-platform-backend-kit-validation-1 Creating 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-platform-backend-kit-validation-1 Created 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-platform-frontend-kit-validation-1 Creating 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-platform-frontend-kit-validation-1 Created 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-sandbox-mail-1 Starting 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-kit-contract-server-1 Starting 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-platform-local-mysql-1 Starting 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-sandbox-mail-1 Started 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-kit-contract-server-1 Started 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-platform-local-mysql-1 Started 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-sandbox-mail-1 Waiting 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-kit-contract-server-1 Waiting 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-platform-local-mysql-1 Waiting 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-sandbox-mail-1 Healthy 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-kit-contract-server-1 Healthy 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-platform-local-mysql-1 Healthy 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-platform-backend-kit-validation-1 Starting 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-platform-backend-kit-validation-1 Started 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-platform-backend-kit-validation-1 Waiting 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-platform-backend-kit-validation-1 Healthy 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-platform-frontend-kit-validation-1 Starting 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-platform-frontend-kit-validation-1 Started 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-platform-frontend-kit-validation-1 Waiting 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-sandbox-mail-1 Waiting 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-platform-backend-kit-validation-1 Waiting 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-sandbox-mail-1 Healthy 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-platform-backend-kit-validation-1 Healthy 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-platform-frontend-kit-validation-1 Healthy 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-assisted-service-e2e-run-d490da9d1476 Creating 
+ Container aihub-b3b98477-9dae-4483-b305-094906c24189-5064e5f839-pde-assisted-service-e2e-run-d490da9d1476 Created 
+
+> pde-platform-frontend@0.0.1 test:assisted-service:container
+> playwright test tests/assisted-service-local.spec.ts --config=playwright.assisted-service.container.config.ts
+
+
+Running 12 tests using 1 worker
+
+  ✓   1 [desktop-chromium] › tests/assisted-service-local.spec.ts:74:5 › conclui a jornada assistida com marcos operacionais, preserva progresso e abre materiais (9.2s)
+  ✓   2 [desktop-chromium] › tests/assisted-service-local.spec.ts:658:5 › bloqueia e orienta acesso inválido sem perder o contrato público (969ms)
+  ✓   3 [desktop-chromium] › tests/assisted-service-local.spec.ts:673:5 › publica termos, privacidade e reembolso com o fornecedor da oferta (544ms)
+  ✓   4 [desktop-chromium] › tests/assisted-service-local.spec.ts:696:5 › exige e-mail válido antes de criar acesso segregado (1.1s)
+  ✓   5 [iphone-15-pro] › tests/assisted-service-local.spec.ts:74:5 › conclui a jornada assistida com marcos operacionais, preserva progresso e abre materiais (8.2s)
+  ✓   6 [iphone-15-pro] › tests/assisted-service-local.spec.ts:658:5 › bloqueia e orienta acesso inválido sem perder o contrato público (687ms)
+  ✓   7 [iphone-15-pro] › tests/assisted-service-local.spec.ts:673:5 › publica termos, privacidade e reembolso com o fornecedor da oferta (575ms)
+  ✓   8 [iphone-15-pro] › tests/assisted-service-local.spec.ts:696:5 › exige e-mail válido antes de criar acesso segregado (697ms)
+  ✓   9 [pixel-7] › tests/assisted-service-local.spec.ts:74:5 › conclui a jornada assistida com marcos operacionais, preserva progresso e abre materiais (8.2s)
+  ✓  10 [pixel-7] › tests/assisted-service-local.spec.ts:658:5 › bloqueia e orienta acesso inválido sem perder o contrato público (703ms)
+  ✓  11 [pixel-7] › tests/assisted-service-local.spec.ts:673:5 › publica termos, privacidade e reembolso com o fornecedor da oferta (601ms)
+  ✓  12 [pixel-7] › tests/assisted-service-local.spec.ts:696:5 › exige e-mail válido antes de criar acesso segregado (655ms)
+
+  12 passed (33.7s)

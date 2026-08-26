@@ -103,6 +103,39 @@ transversal está em `docs/canonical/solucoes-prontas-ia-trabalho-canon.v1.md`.
 Conteudo de solucao deve ser usado para medir saturacao e lacuna, nao como prova direta
 da dor. A prova da dor deve vir preferencialmente da linguagem do publico.
 
+## Inspiracao atualizada para novos produtos
+
+Por decisao de 2026-08-26, cada novo ciclo de descoberta deve consultar novamente as
+colecoes vivas `pesquisas/gartner` e `pesquisas/ia-aplicada`, considerando os artigos
+disponiveis no momento da execucao, inclusive os adicionados depois da publicacao deste
+canon. O processo nao pode congelar uma lista de arquivos nem copiar o conteudo atual para
+o prompt como se fosse uma base permanente.
+
+O ciclo tambem deve consultar, pelo contrato oficial do Marketing Hub, os produtos da
+Hotmart que o proprio sistema tenha identificado com sinais de sucesso comercial. Essa
+consulta deve usar o catalogo persistido e vigente do backend ou do MOIS, sem acesso direto
+ao banco e sem transformar temperatura, posicao, score ou presenca no marketplace em venda
+comprovada.
+
+Essas tres fontes sao **inspiracao**, nao validacao automatica. Elas podem orientar temas,
+problemas emergentes, mecanismos, formatos de entrega, promessa, prova, oferta, funil e
+linguagem, mas nao autorizam copiar produto, marca, texto, criativo ou estrutura proprietaria.
+Cada hipotese inspirada ainda deve comprovar dor, escala, desatendimento e intencao de compra
+por evidencias independentes do publico.
+
+Para manter rastreabilidade, o dossie deve registrar, para cada inspiracao utilizada:
+
+- colecao e caminho do artigo ou identificador oficial do produto Hotmart;
+- data do material e data da consulta;
+- padrao comercial ou tecnologico observado;
+- hipotese de valor original derivada para o novo produto;
+- evidencia independente que confirmou ou descartou a hipotese;
+- limite de uso que evita copia e promessa sem prova.
+
+Fonte vazia, indisponivel ou sem item aderente deve ficar registrada como resultado real da
+consulta. O processo pode pesquisar mais, mas nunca preencher a lacuna com referencia
+inventada nem aprovar uma oportunidade sustentada apenas pela inspiracao.
+
 ## Caixa de sinais humanos observados
 
 O inicio do processo `Descoberta e priorizacao da oportunidade PDE` deve aceitar uma entrada simples

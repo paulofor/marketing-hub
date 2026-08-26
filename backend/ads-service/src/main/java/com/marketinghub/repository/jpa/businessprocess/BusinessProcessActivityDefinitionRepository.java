@@ -3,7 +3,10 @@ package com.marketinghub.repository.jpa.businessprocess;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /** Responsabilidade: persistir as atividades relacionais das versões de processo. */
 public interface BusinessProcessActivityDefinitionRepository
@@ -16,6 +19,10 @@ public interface BusinessProcessActivityDefinitionRepository
   Optional<BusinessProcessActivityDefinition> findByProcessDefinitionIdAndActivityId(
       Long processDefinitionId, String activityId);
 
-  /** Remove a projeção relacional de um rascunho antes de recriá-la. */
-  void deleteByProcessDefinitionId(Long processDefinitionId);
+  /** Remove imediatamente a projeção relacional antes de recriá-la com as mesmas identidades. */
+  @Modifying(flushAutomatically = true)
+  @Query(
+      "delete from BusinessProcessActivityDefinition activity "
+          + "where activity.processDefinition.id = :processDefinitionId")
+  int deleteByProcessDefinitionId(@Param("processDefinitionId") Long processDefinitionId);
 }

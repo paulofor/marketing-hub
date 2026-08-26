@@ -33,7 +33,10 @@ class GovernedLandingHtmlServiceTest {
     landingAssetService = mock(CommercialPlanLandingAssetService.class);
     service =
         new GovernedLandingHtmlService(
-            repository, publicationRepository, qualityReviewService, landingAssetService);
+            repository,
+            new LandingCheckoutContractResolver(publicationRepository),
+            qualityReviewService,
+            landingAssetService);
     experiment = mock(Experiment.class);
     when(repository.findById(88L)).thenReturn(Optional.of(experiment));
     when(experiment.getPrimaryCta()).thenReturn("Comprar o kit por R$ 67");
@@ -55,6 +58,20 @@ class GovernedLandingHtmlServiceTest {
 
     verify(experiment)
         .setHtmlGeraLanding(html(canonicalCheckout, "Comprar o kit por R$ 67").trim());
+  }
+
+  /** Permite a primeira landing quando o checkout comercial já está congelado no experimento. */
+  @Test
+  void acceptsCommercialCheckoutBeforeFirstPublication() {
+    String canonicalCheckout = "https://www.mercadopago.com.br/checkout/rigel";
+    when(experiment.getCommercialCheckoutUrl()).thenReturn(canonicalCheckout);
+    when(experiment.getHtmlGeraLanding()).thenReturn(null);
+
+    service.apply(88L, html(canonicalCheckout, "Comprar o kit por R$ 67"));
+
+    verify(experiment)
+        .setHtmlGeraLanding(html(canonicalCheckout, "Comprar o kit por R$ 67").trim());
+    verify(qualityReviewService).reviewAfterHtmlGeneration(experiment);
   }
 
   /** Aceita o CTA protegido quando um gerador válido escreve href antes de id. */

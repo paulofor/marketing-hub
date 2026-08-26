@@ -4,7 +4,6 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.qualityreview.service.BackendQualityReviewService;
 import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
-import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,18 +30,18 @@ public class GovernedLandingHtmlService {
   private static final Pattern HREF_ATTRIBUTE =
       Pattern.compile("\\bhref\\s*=\\s*[\"']([^\"']+)[\"']", Pattern.CASE_INSENSITIVE);
   private final ExperimentRepository experimentRepository;
-  private final GeraSalesPagePublicationAuditRepository publicationRepository;
+  private final LandingCheckoutContractResolver checkoutContractResolver;
   private final BackendQualityReviewService qualityReviewService;
   private final CommercialPlanLandingAssetService landingAssetService;
 
   /** Inicializa o aplicador com a fonte canônica do experimento e o revisor independente. */
   public GovernedLandingHtmlService(
       ExperimentRepository experimentRepository,
-      GeraSalesPagePublicationAuditRepository publicationRepository,
+      LandingCheckoutContractResolver checkoutContractResolver,
       BackendQualityReviewService qualityReviewService,
       CommercialPlanLandingAssetService landingAssetService) {
     this.experimentRepository = experimentRepository;
-    this.publicationRepository = publicationRepository;
+    this.checkoutContractResolver = checkoutContractResolver;
     this.qualityReviewService = qualityReviewService;
     this.landingAssetService = landingAssetService;
   }
@@ -90,12 +89,7 @@ public class GovernedLandingHtmlService {
     }
     String currentCheckout = checkoutHrefs(currentHtml).stream().findFirst().orElse(null);
     List<String> generatedCheckouts = checkoutHrefs(generatedHtml);
-    String canonicalCheckout =
-        publicationRepository
-            .findTopByExperimentIdOrderByPublishedAtDesc(experiment.getId())
-            .map(publication -> publication.getCheckoutUrl())
-            .filter(StringUtils::hasText)
-            .orElse(null);
+    String canonicalCheckout = checkoutContractResolver.resolve(experiment);
     if (generatedCheckouts.isEmpty()
         || generatedCheckouts.stream()
             .anyMatch(

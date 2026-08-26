@@ -39,6 +39,7 @@ class LandingGenerationAgentExecutionServiceTest {
   private LandingGenerationResultApplicationService resultApplicationService;
   private GeraSalesPagePublicationAuditRepository publicationRepository;
   private CommercialPlanLandingAssetService landingAssetService;
+  private LandingCommercialContextResolver commercialContextResolver;
   private LandingGenerationAgentExecutionService service;
 
   /** Prepara dependências isoladas antes de cada cenário. */
@@ -51,12 +52,15 @@ class LandingGenerationAgentExecutionServiceTest {
     resultApplicationService = mock(LandingGenerationResultApplicationService.class);
     publicationRepository = mock(GeraSalesPagePublicationAuditRepository.class);
     landingAssetService = mock(CommercialPlanLandingAssetService.class);
+    commercialContextResolver = mock(LandingCommercialContextResolver.class);
+    when(commercialContextResolver.resolve(any())).thenReturn(java.util.Map.of());
     service =
         new LandingGenerationAgentExecutionService(
             repository,
             coordinator,
             experimentRepository,
-            publicationRepository,
+            new LandingCheckoutContractResolver(publicationRepository),
+            commercialContextResolver,
             new ObjectMapper(),
             agentTaskService,
             resultApplicationService,
@@ -379,6 +383,60 @@ class LandingGenerationAgentExecutionServiceTest {
         (java.util.Map<String, Object>) result.context().get("checkoutContract");
     assertEquals("https://checkout.example/agenda-cheia?ref=88", contract.get("canonicalUrl"));
     assertTrue(contract.get("rule").toString().contains("Todo CTA"));
+  }
+
+  /** Deve entregar o checkout comercial de Rigel mesmo antes de existir publicação anterior. */
+  @Test
+  void shouldExposeCommercialCheckoutContractBeforeFirstPublication() {
+    GeraLandingStageExecution execution = execution("job-checkout-89", "INICIADO");
+    Experiment experiment = new Experiment();
+    experiment.setId(89L);
+    experiment.setCommercialCheckoutUrl("https://checkout.example/rigel");
+    when(experimentRepository.findById(89L)).thenReturn(Optional.of(experiment));
+    when(repository.findTop3ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+            "landing-generation-agent-v1", "INICIADO"))
+        .thenReturn(List.of(execution));
+    execution.setExperimentId(89L);
+
+    LandingAgentPendingResponse result = service.claimPending(1).getFirst();
+
+    @SuppressWarnings("unchecked")
+    java.util.Map<String, Object> contract =
+        (java.util.Map<String, Object>) result.context().get("checkoutContract");
+    assertEquals("https://checkout.example/rigel", contract.get("canonicalUrl"));
+  }
+
+  /** Deve congelar preço, degustação e continuidade do anúncio para proteger a oferta de Rigel. */
+  @Test
+  void shouldExposeCompleteCommercialOfferToLandingAgent() {
+    GeraLandingStageExecution execution = execution("job-offer-89", "INICIADO");
+    execution.setExperimentId(89L);
+    Experiment experiment = new Experiment();
+    experiment.setId(89L);
+    experiment.setFreeReward("Sequência demonstrativa com três follow-ups respeitosos.");
+    experiment.setUnitPrice(java.math.BigDecimal.valueOf(349));
+    experiment.setAdCopy("Orçamento enviado. Cliente sumiu?");
+    experiment.setAdImageBriefing("Conversa real e legível no WhatsApp.");
+    when(commercialContextResolver.resolve(experiment))
+        .thenReturn(
+            java.util.Map.of(
+                "targetAudience", "Prestadores de serviço que vendem por WhatsApp",
+                "productFormat", "Serviço personalizado",
+                "serviceExperienceContract",
+                    java.util.Map.of("serviceScope", java.util.List.of("10 a 20 respostas"))));
+    when(experimentRepository.findById(89L)).thenReturn(Optional.of(experiment));
+    when(repository.findTop3ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+            "landing-generation-agent-v1", "INICIADO"))
+        .thenReturn(List.of(execution));
+
+    LandingAgentPendingResponse result = service.claimPending(1).getFirst();
+
+    assertEquals(java.math.BigDecimal.valueOf(349), result.context().get("unitPriceBrl"));
+    assertTrue(result.context().get("freeReward").toString().contains("três follow-ups"));
+    assertTrue(result.context().get("adCopy").toString().contains("Cliente sumiu"));
+    assertTrue(result.context().get("adImageBriefing").toString().contains("WhatsApp"));
+    assertTrue(result.context().get("targetAudience").toString().contains("Prestadores"));
+    assertTrue(result.context().get("serviceExperienceContract").toString().contains("10 a 20"));
   }
 
   /** Deve reabrir uma única vez o timeout terminal deixado por uma versão antiga do worker. */

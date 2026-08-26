@@ -1,0 +1,98 @@
+[
+  {
+    "device": "desktop",
+    "viewportWidth": 1440,
+    "documentWidth": 1440,
+    "imageCount": 4,
+    "brokenImages": [],
+    "checkoutCount": 3,
+    "checkoutTargets": [
+      "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=133771061-472e4ef4-5d13-4122-831a-706d12435081"
+    ],
+    "primaryCheckoutIdCount": 1,
+    "analyticsCheckoutCount": 2,
+    "placeholderLinks": 0,
+    "scripts": 0,
+    "forms": 0,
+    "h1Count": 1,
+    "policyLinks": [
+      {
+        "href": "https://kit-whatsapp-pronto.digicomdigital.com.br/terms",
+        "target": "_blank"
+      },
+      {
+        "href": "https://kit-whatsapp-pronto.digicomdigital.com.br/privacy",
+        "target": "_blank"
+      },
+      {
+        "href": "https://kit-whatsapp-pronto.digicomdigital.com.br/refund-policy",
+        "target": "_blank"
+      }
+    ],
+    "consoleErrors": []
+  },
+  {
+    "device": "iphone15pro",
+    "viewportWidth": 393,
+    "documentWidth": 393,
+    "imageCount": 4,
+    "brokenImages": [],
+    "checkoutCount": 3,
+    "checkoutTargets": [
+      "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=133771061-472e4ef4-5d13-4122-831a-706d12435081"
+    ],
+    "primaryCheckoutIdCount": 1,
+    "analyticsCheckoutCount": 2,
+    "placeholderLinks": 0,
+    "scripts": 0,
+    "forms": 0,
+    "h1Count": 1,
+    "policyLinks": [
+      {
+        "href": "https://kit-whatsapp-pronto.digicomdigital.com.br/terms",
+        "target": "_blank"
+      },
+      {
+        "href": "https://kit-whatsapp-pronto.digicomdigital.com.br/privacy",
+        "target": "_blank"
+      },
+      {
+        "href": "https://kit-whatsapp-pronto.digicomdigital.com.br/refund-policy",
+        "target": "_blank"
+      }
+    ],
+    "consoleErrors": []
+  },
+  {
+    "device": "pixel7",
+    "viewportWidth": 412,
+    "documentWidth": 412,
+    "imageCount": 4,
+    "brokenImages": [],
+    "checkoutCount": 3,
+    "checkoutTargets": [
+      "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=133771061-472e4ef4-5d13-4122-831a-706d12435081"
+    ],
+    "primaryCheckoutIdCount": 1,
+    "analyticsCheckoutCount": 2,
+    "placeholderLinks": 0,
+    "scripts": 0,
+    "forms": 0,
+    "h1Count": 1,
+    "policyLinks": [
+      {
+        "href": "https://kit-whatsapp-pronto.digicomdigital.com.br/terms",
+        "target": "_blank"
+      },
+      {
+        "href": "https://kit-whatsapp-pronto.digicomdigital.com.br/privacy",
+        "target": "_blank"
+      },
+      {
+        "href": "https://kit-whatsapp-pronto.digicomdigital.com.br/refund-policy",
+        "target": "_blank"
+      }
+    ],
+    "consoleErrors": []
+  }
+]

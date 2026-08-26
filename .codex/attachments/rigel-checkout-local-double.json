@@ -1,0 +1,13 @@
+{
+  "mode": "LOCAL_TEST_DOUBLE_NO_PROVIDER_NO_PAYMENT",
+  "title": "Checkout local da Rigel",
+  "text": "HOMOLOGAÇÃO LOCAL · TEST DOUBLE · nenhum pagamento possível Kit WhatsApp Pronto Implantação personalizada e assistida do atendimento no WhatsApp. R$ 349 Pagamento único, sem recorrência. Nenhuma cobrança adicional é criada neste ambiente local. Fornecedor: PAULO ALEXANDRE LOPES FORESTIERI INFORMATICA CNPJ: 25.215.414/0001-69 Destino protegido: www.mercadopago.com.br · preferência canônica do experimento 89",
+  "forms": 0,
+  "links": 0,
+  "expected": {
+    "experimentId": 89,
+    "priceBrl": 349,
+    "billingModel": "ONE_TIME",
+    "providerHost": "www.mercadopago.com.br"
+  }
+}

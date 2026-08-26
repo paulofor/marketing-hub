@@ -1928,3 +1928,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-25-rigel-commercial-experience-v2.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-26-rigel-commercial-experience-v2-slot-repair.yaml
+      relativeToChangelogFile: true

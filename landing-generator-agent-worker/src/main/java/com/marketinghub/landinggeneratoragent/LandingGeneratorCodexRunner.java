@@ -54,7 +54,7 @@ public class LandingGeneratorCodexRunner {
     Path schema =
         materialize(
             "prompts/landing-generator/v1/remediation-schema.json", "landing-schema-", ".json");
-    Path mcp = materialize("mcp/landing-generator.mjs", "landing-mcp-", ".mjs");
+    Path mcp = requiredMcpScript();
     String request = buildPrompt(job);
     try {
       Process process =
@@ -104,8 +104,16 @@ public class LandingGeneratorCodexRunner {
       Files.deleteIfExists(output);
       Files.deleteIfExists(log);
       Files.deleteIfExists(schema);
-      Files.deleteIfExists(mcp);
     }
+  }
+
+  /** Exige o MCP instalado em caminho estável para que o Node resolva suas dependências locais. */
+  Path requiredMcpScript() {
+    Path path = Path.of(properties.getMcpScriptPath()).toAbsolutePath().normalize();
+    if (!Files.isRegularFile(path)) {
+      throw new IllegalStateException("Script MCP instalado não foi encontrado: " + path);
+    }
+    return path;
   }
 
   /** Materializa o artefato em interação dedicada quando a decisão por código vier sem HTML. */

@@ -16,9 +16,22 @@ public interface BusinessProcessChainDefinitionRepository
   List<BusinessProcessChainDefinition> findAllByStatusOrderByNameAscVersionNumberDesc(
       String status);
 
+  /** Lista as versões editáveis e publicadas sem expor o histórico aposentado no catálogo atual. */
+  @EntityGraph(attributePaths = {"items", "items.processDefinition"})
+  List<BusinessProcessChainDefinition> findAllByStatusNotOrderByNameAscVersionNumberDesc(
+      String status);
+
   /** Localiza a versão publicada mais recente de uma cadeia pelo código canônico. */
   @EntityGraph(attributePaths = {"items", "items.processDefinition"})
   List<BusinessProcessChainDefinition> findAllByChainCodeAndStatusOrderByVersionNumberDesc(
+      String chainCode, String status);
+
+  /** Lista todas as versões de um código para calcular a próxima identidade imutável. */
+  List<BusinessProcessChainDefinition> findAllByChainCodeOrderByVersionNumberDesc(String chainCode);
+
+  /** Localiza o rascunho mais recente de uma cadeia e carrega seus processos. */
+  @EntityGraph(attributePaths = {"items", "items.processDefinition"})
+  Optional<BusinessProcessChainDefinition> findFirstByChainCodeAndStatusOrderByVersionNumberDesc(
       String chainCode, String status);
 
   /** Lista as cadeias que contêm uma versão exata de processo. */

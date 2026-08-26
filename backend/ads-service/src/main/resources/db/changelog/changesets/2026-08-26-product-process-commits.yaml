@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-26-product-process-commits
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS product_process_commit (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                product_id BIGINT NOT NULL,
+                process_definition_id BIGINT NOT NULL,
+                repository_name VARCHAR(160) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+                commit_sha VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+                commit_summary VARCHAR(500) NOT NULL,
+                commit_url VARCHAR(512) NULL,
+                recorded_by VARCHAR(191) NOT NULL,
+                recorded_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_product_process_commit
+                  (product_id, process_definition_id, repository_name, commit_sha),
+                INDEX idx_product_process_commit_history
+                  (product_id, process_definition_id, recorded_at, id),
+                CONSTRAINT fk_product_process_commit_product
+                  FOREIGN KEY (product_id) REFERENCES product(id),
+                CONSTRAINT fk_product_process_commit_definition
+                  FOREIGN KEY (process_definition_id) REFERENCES business_process_definition(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE product_process_commit;

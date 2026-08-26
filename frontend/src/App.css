@@ -972,6 +972,141 @@
   overflow-wrap: anywhere;
 }
 
+.product-process-commits {
+  border-top: 1px solid #e2e8f0;
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+}
+
+.product-process-commits__heading {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.product-process-commits__heading > span {
+  align-items: center;
+  color: #334155;
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 850;
+  gap: 0.4rem;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.product-process-commits__heading button,
+.product-process-commits__form-actions button,
+.product-process-commits__identity a {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.product-process-commits__empty {
+  color: #64748b;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.product-process-commits__list {
+  display: grid;
+  gap: 0.55rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.product-process-commits__list li {
+  align-items: start;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.45rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 0.7rem;
+}
+
+.product-process-commits__list li > div {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.product-process-commits__list strong {
+  color: #1e293b;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.product-process-commits__list small {
+  color: #64748b;
+  font-size: 0.7rem;
+  overflow-wrap: anywhere;
+}
+
+.product-process-commits__identity {
+  justify-items: end;
+  text-align: right;
+}
+
+.product-process-commits__identity a,
+.product-process-commits__identity code {
+  color: var(--history-accent);
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    monospace;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.product-process-commits__form {
+  background: #f8fafc;
+  border: 1px solid #dbe3ed;
+  border-radius: 0.5rem;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 0.85rem;
+}
+
+.product-process-commits__form > div {
+  min-width: 0;
+}
+
+.product-process-commits__form label {
+  color: #475569;
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  margin-bottom: 0.3rem;
+}
+
+.product-process-commits__form label small {
+  font-weight: 600;
+}
+
+.product-process-commits__form-wide {
+  grid-column: 1 / -1;
+}
+
+.product-process-commits__form-actions {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.product-process-commits__form-actions small {
+  color: #64748b;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 900px) {
   .product-value-chain-history__summary {
     grid-template-columns: 1fr;
@@ -1011,6 +1146,31 @@
 
   .product-value-chain-history__facts > div:nth-child(n + 2) {
     border-top: 1px solid #e2e8f0;
+  }
+
+  .product-process-commits__heading,
+  .product-process-commits__list li,
+  .product-process-commits__form-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .product-process-commits__heading button,
+  .product-process-commits__form-actions button {
+    justify-content: center;
+  }
+
+  .product-process-commits__identity {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .product-process-commits__form {
+    grid-template-columns: 1fr;
+  }
+
+  .product-process-commits__form-wide {
+    grid-column: auto;
   }
 }
 

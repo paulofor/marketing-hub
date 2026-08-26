@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
@@ -330,7 +330,11 @@ export default function MainNavigation() {
             <PanelLeftOpen aria-hidden="true" size={18} />
           )}
         </button>
-        <div className="main-navigation__brand">
+        <Link
+          to="/"
+          className="main-navigation__brand"
+          aria-label="Ir para a página inicial do Marketing Hub"
+        >
           <span className="main-navigation__logo" aria-hidden="true">
             <img
               src="/favicon.ico"
@@ -341,7 +345,7 @@ export default function MainNavigation() {
             />
           </span>
           <span className="main-navigation__brand-name">Marketing Hub</span>
-        </div>
+        </Link>
       </div>
       <nav
         className="main-navigation__sections"

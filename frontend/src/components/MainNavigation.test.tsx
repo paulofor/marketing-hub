@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import MainNavigation from "./MainNavigation";
 
 vi.mock("../api/useOpsMonitor", () => ({
@@ -12,6 +12,24 @@ vi.mock("../api/useOpsMonitor", () => ({
 }));
 
 describe("MainNavigation", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("leva à tela inicial ao clicar no logo do Marketing Hub", () => {
+    render(
+      <MemoryRouter initialEntries={["/products"]}>
+        <MainNavigation />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByRole("link", {
+        name: "Ir para a página inicial do Marketing Hub",
+      }),
+    ).toHaveAttribute("href", "/");
+  });
+
   it("oferece acesso direto ao dossiê de oportunidades", () => {
     render(
       <MemoryRouter>

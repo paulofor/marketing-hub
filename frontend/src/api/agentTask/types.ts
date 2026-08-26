@@ -1,5 +1,9 @@
 export type AgentTaskStatus =
-  "PENDING" | "IN_PROGRESS" | "COMPLETED" | "BLOCKED" | "CANCELLED";
+  | "PENDING"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "BLOCKED"
+  | "CANCELLED";
 
 export interface AgentTaskFailureAudit {
   readiness: "COMPLETE" | "PARTIAL";
@@ -86,6 +90,8 @@ export type ProcessInstanceOperationalState =
 
 export interface ProcessInstanceTask {
   taskId: number;
+  activityInstanceId?: number;
+  attemptNumber: number;
   activityId?: string;
   activityName: string;
   agentKey: string;
@@ -103,11 +109,35 @@ export interface ProcessInstanceTask {
   deliveredAt?: string;
 }
 
+export interface ProcessInstanceActivity {
+  activityInstanceId?: number;
+  activityDefinitionId?: number;
+  activityId: string;
+  activityName: string;
+  objective?: string;
+  occurrenceNumber: number;
+  status: AgentTaskStatus;
+  operationalState: ProcessInstanceOperationalState;
+  stateReason: string;
+  enteredAt?: string;
+  exitedAt?: string;
+  objectiveAchieved: boolean;
+  knownCostUsd?: number;
+  costCoverage: "COMPLETE" | "PARTIAL" | "NOT_REPORTED";
+  evidenceQuality:
+    | "DIRECT"
+    | "MIXED"
+    | "BACKFILLED_FROM_TASKS"
+    | "LEGACY_DERIVED";
+  tasks: ProcessInstanceTask[];
+}
+
 export interface ProcessInstance {
   processDefinitionId: number;
   processCode: string;
   processVersionNumber: number;
   sourceReference: string;
+  activities: ProcessInstanceActivity[];
   tasks: ProcessInstanceTask[];
   supersededLegacyTasks: ProcessInstanceTask[];
 }

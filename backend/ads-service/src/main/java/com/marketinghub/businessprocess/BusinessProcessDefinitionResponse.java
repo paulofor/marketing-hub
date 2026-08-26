@@ -2,6 +2,7 @@ package com.marketinghub.businessprocess;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.time.Instant;
+import java.util.List;
 
 /** Contrato de leitura de uma versão do catálogo de processos. */
 public record BusinessProcessDefinitionResponse(
@@ -21,4 +22,5 @@ public record BusinessProcessDefinitionResponse(
     String processType,
     String parentProcessCode,
     Long parentProcessDefinitionId,
-    String parentProcessName) {}
+    String parentProcessName,
+    List<BusinessProcessActivityDefinitionResponse> activities) {}

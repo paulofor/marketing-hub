@@ -3,11 +3,14 @@ package com.marketinghub.agenttask;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agent.Agent;
+import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocessresource.BusinessProcessExecutionResource;
 import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
+import com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocessresource.BusinessProcessExecutionResourceRepository;
 import java.math.BigDecimal;
@@ -20,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -45,8 +49,10 @@ public class AgentTaskService {
           "BLOCKED:CANCELLED");
 
   private final AgentTaskRepository repository;
+  private final BusinessProcessActivityInstanceRepository activityInstanceRepository;
   private final AgentRepository agentRepository;
   private final BusinessProcessDefinitionRepository processRepository;
+  private final BusinessProcessActivityDefinitionRepository activityDefinitionRepository;
   private final BusinessProcessExecutionResourceRepository executionResourceRepository;
   private final ObjectMapper objectMapper;
   private final OpenAiPricingService pricingService;
@@ -56,15 +62,19 @@ public class AgentTaskService {
   @Autowired
   public AgentTaskService(
       AgentTaskRepository repository,
+      BusinessProcessActivityInstanceRepository activityInstanceRepository,
       AgentRepository agentRepository,
       BusinessProcessDefinitionRepository processRepository,
+      BusinessProcessActivityDefinitionRepository activityDefinitionRepository,
       BusinessProcessExecutionResourceRepository executionResourceRepository,
       ObjectMapper objectMapper,
       OpenAiPricingService pricingService) {
     this(
         repository,
+        activityInstanceRepository,
         agentRepository,
         processRepository,
+        activityDefinitionRepository,
         executionResourceRepository,
         objectMapper,
         pricingService,
@@ -78,7 +88,16 @@ public class AgentTaskService {
       BusinessProcessDefinitionRepository processRepository,
       ObjectMapper objectMapper,
       Clock clock) {
-    this(repository, agentRepository, processRepository, null, objectMapper, null, clock);
+    this(
+        repository,
+        null,
+        agentRepository,
+        processRepository,
+        null,
+        null,
+        objectMapper,
+        null,
+        clock);
   }
 
   /** Permite testes determinísticos do custo calculado pelo catálogo. */
@@ -89,7 +108,16 @@ public class AgentTaskService {
       ObjectMapper objectMapper,
       OpenAiPricingService pricingService,
       Clock clock) {
-    this(repository, agentRepository, processRepository, null, objectMapper, pricingService, clock);
+    this(
+        repository,
+        null,
+        agentRepository,
+        processRepository,
+        null,
+        null,
+        objectMapper,
+        pricingService,
+        clock);
   }
 
   /** Permite testar recursos especializados e custo com todas as fontes de verdade explícitas. */
@@ -101,9 +129,34 @@ public class AgentTaskService {
       ObjectMapper objectMapper,
       OpenAiPricingService pricingService,
       Clock clock) {
+    this(
+        repository,
+        null,
+        agentRepository,
+        processRepository,
+        null,
+        executionResourceRepository,
+        objectMapper,
+        pricingService,
+        clock);
+  }
+
+  /** Permite testar o vínculo explícito entre atividade, instância e tarefas. */
+  AgentTaskService(
+      AgentTaskRepository repository,
+      BusinessProcessActivityInstanceRepository activityInstanceRepository,
+      AgentRepository agentRepository,
+      BusinessProcessDefinitionRepository processRepository,
+      BusinessProcessActivityDefinitionRepository activityDefinitionRepository,
+      BusinessProcessExecutionResourceRepository executionResourceRepository,
+      ObjectMapper objectMapper,
+      OpenAiPricingService pricingService,
+      Clock clock) {
     this.repository = repository;
+    this.activityInstanceRepository = activityInstanceRepository;
     this.agentRepository = agentRepository;
     this.processRepository = processRepository;
+    this.activityDefinitionRepository = activityDefinitionRepository;
     this.executionResourceRepository = executionResourceRepository;
     this.objectMapper = objectMapper;
     this.pricingService = pricingService;
@@ -166,14 +219,17 @@ public class AgentTaskService {
     task.setReceivedAt(now);
     task.setDeliveredAt(now);
     task.setUpdatedAt(now);
-    return response(repository.save(task));
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, now);
+    return response(saved);
   }
 
-  /** Abre uma delegação entre agentes preservando remetente e destinatário. */
+  /** Abre uma delegação entre agentes com instância regular ou excepcionalidade explícita. */
   @Transactional
   public AgentTaskResponse createByAgent(CreateAgentTaskByAgentRequest request) {
     Agent requester = agent(request.requestedByAgentKey());
     Agent assignee = agent(request.assignedAgentKey());
+    ProcessBinding binding = validateProcessBinding(delegationBindingRequest(request), assignee);
     return save(
         assignee,
         requester,
@@ -183,7 +239,33 @@ public class AgentTaskService {
         request.description(),
         request.priority(),
         request.sourceReference(),
-        null);
+        binding);
+  }
+
+  /**
+   * Converte a delegação para o mesmo contrato governado usado pelas tarefas abertas por pessoas.
+   */
+  private CreateAgentTaskRequest delegationBindingRequest(CreateAgentTaskByAgentRequest request) {
+    boolean hasProcess =
+        request.processDefinitionId() != null || trimToNull(request.processActivityId()) != null;
+    boolean exceptional = request.exceptional() || !hasProcess;
+    String exceptionReason =
+        exceptional
+            ? Optional.ofNullable(trimToNull(request.exceptionReason()))
+                .orElse(
+                    "Delegação entre agentes sem atividade BPM informada pelo contrato de origem.")
+            : null;
+    return new CreateAgentTaskRequest(
+        request.assignedAgentKey(),
+        request.requestedByAgentKey(),
+        request.title(),
+        request.description(),
+        request.priority(),
+        request.sourceReference(),
+        request.processDefinitionId(),
+        request.processActivityId(),
+        exceptional,
+        exceptionReason);
   }
 
   /**
@@ -219,7 +301,8 @@ public class AgentTaskService {
                 task.setDeliveredAt(now);
               }
               task.setUpdatedAt(now);
-              repository.save(task);
+              AgentTask saved = repository.save(task);
+              synchronizeActivityInstance(saved, now);
             });
   }
 
@@ -234,7 +317,9 @@ public class AgentTaskService {
     task.setTaskKind("GATE_DECISION");
     task.setGateCode(gateCode.trim());
     task.setGateStatus("PENDING");
-    return response(repository.save(task));
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, Instant.now(clock));
+    return response(saved);
   }
 
   /** Persiste a decisão do gate somente quando tomada pelo agente destinatário da tarefa. */
@@ -260,7 +345,9 @@ public class AgentTaskService {
       task.setDeliveredAt(now);
     }
     task.setUpdatedAt(now);
-    return response(repository.save(task));
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, now);
+    return response(saved);
   }
 
   /** Lista exclusivamente as tarefas destinadas ao agente solicitado. */
@@ -309,26 +396,155 @@ public class AgentTaskService {
         .toList();
   }
 
-  /** Calcula uma única instância sem persistir estado derivado concorrente. */
+  /** Monta uma instância de processo preservando atividade, ocorrência e tentativa separadas. */
   private ProcessInstanceResponse processInstance(
       String sourceReference, List<AgentTask> tasks, List<AgentTask> legacy) {
     BusinessProcessDefinition process = tasks.get(0).getProcessDefinition();
-    List<ProcessInstanceTaskResponse> items =
-        tasks.stream().map(task -> processInstanceTask(task, false)).toList();
-    List<ProcessInstanceTaskResponse> superseded =
-        legacy.stream().map(task -> processInstanceTask(task, true)).toList();
+    List<ProcessInstanceTaskResponse> items = processInstanceTasks(tasks, false);
+    List<ProcessInstanceTaskResponse> superseded = processInstanceTasks(legacy, true);
     return new ProcessInstanceResponse(
         process.getId(),
         process.getProcessCode(),
         process.getVersionNumber(),
         sourceReference,
+        processInstanceActivities(tasks),
         items,
         superseded);
   }
 
+  /** Agrupa tentativas pela ocorrência persistida, com fallback legível para registros legados. */
+  private List<ProcessInstanceActivityResponse> processInstanceActivities(List<AgentTask> tasks) {
+    Map<String, List<AgentTask>> grouped = new java.util.LinkedHashMap<>();
+    for (AgentTask task : tasks) {
+      String key =
+          task.getActivityInstance() == null
+              ? "legacy:" + task.getProcessActivityId()
+              : "instance:" + task.getActivityInstance().getId();
+      grouped.computeIfAbsent(key, ignored -> new ArrayList<>()).add(task);
+    }
+    return grouped.values().stream().map(this::processInstanceActivity).toList();
+  }
+
+  /** Converte uma ocorrência e suas tentativas no contrato gerencial da tela. */
+  private ProcessInstanceActivityResponse processInstanceActivity(List<AgentTask> attempts) {
+    AgentTask representative = attempts.get(attempts.size() - 1);
+    BusinessProcessActivityInstance instance = representative.getActivityInstance();
+    String status = instance == null ? aggregateStatus(attempts) : instance.getStatus();
+    String operationalState = activityOperationalState(status, attempts);
+    String stateReason = activityStateReason(operationalState, instance);
+    BigDecimal fallbackCost =
+        attempts.stream()
+            .map(AgentTask::getEstimatedCostUsd)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO.setScale(8), BigDecimal::add);
+    boolean fallbackHasCost =
+        attempts.stream().anyMatch(task -> task.getEstimatedCostUsd() != null);
+    boolean fallbackCompleteCoverage =
+        attempts.stream()
+            .allMatch(
+                task ->
+                    "ESTIMATED".equals(task.getCostEstimationStatus())
+                        || "NOT_APPLICABLE".equals(task.getCostEstimationStatus()));
+    BusinessProcessActivityDefinition definition =
+        instance == null ? null : instance.getActivityDefinition();
+    return new ProcessInstanceActivityResponse(
+        instance == null ? null : instance.getId(),
+        definition == null ? null : definition.getId(),
+        representative.getProcessActivityId(),
+        representative.getProcessActivityName() == null
+            ? representative.getTitle()
+            : representative.getProcessActivityName(),
+        definition == null ? null : definition.getObjective(),
+        instance == null ? 1 : instance.getOccurrenceNumber(),
+        status,
+        operationalState,
+        stateReason,
+        instance == null
+            ? attempts.stream()
+                .map(AgentTask::getCreatedAt)
+                .filter(Objects::nonNull)
+                .min(Instant::compareTo)
+                .orElse(null)
+            : instance.getEnteredAt(),
+        instance == null ? null : instance.getExitedAt(),
+        instance != null && instance.isObjectiveAchieved(),
+        instance == null
+            ? (fallbackHasCost ? fallbackCost.setScale(8) : null)
+            : instance.getKnownCostUsd(),
+        instance == null
+            ? (fallbackCompleteCoverage ? "COMPLETE" : fallbackHasCost ? "PARTIAL" : "NOT_REPORTED")
+            : instance.getCostCoverage(),
+        instance == null ? "LEGACY_DERIVED" : instance.getEvidenceQuality(),
+        processInstanceTasks(attempts, false));
+  }
+
+  /** Consolida o estado das tentativas quando uma linha histórica ainda não possui instância. */
+  private String aggregateStatus(List<AgentTask> attempts) {
+    List<AgentTask> currentAttempts = currentAttemptsByAgent(attempts);
+    if (currentAttempts.stream().anyMatch(task -> "IN_PROGRESS".equals(task.getStatus()))) {
+      return "IN_PROGRESS";
+    }
+    if (currentAttempts.stream().anyMatch(task -> "BLOCKED".equals(task.getStatus()))) {
+      return "BLOCKED";
+    }
+    if (currentAttempts.stream().anyMatch(task -> "PENDING".equals(task.getStatus()))) {
+      return "PENDING";
+    }
+    if (!currentAttempts.isEmpty()
+        && currentAttempts.stream().allMatch(task -> "COMPLETED".equals(task.getStatus()))) {
+      return "COMPLETED";
+    }
+    return "CANCELLED";
+  }
+
+  /** Mantém a tentativa mais recente de cada responsável para calcular o estado funcional. */
+  private List<AgentTask> currentAttemptsByAgent(List<AgentTask> attempts) {
+    Map<String, AgentTask> latestAttemptByAgent = new java.util.LinkedHashMap<>();
+    attempts.forEach(task -> latestAttemptByAgent.put(task.getAssignedAgent().getAgentKey(), task));
+    return List.copyOf(latestAttemptByAgent.values());
+  }
+
+  /** Traduz o estado persistido da instância e a elegibilidade do grafo. */
+  private String activityOperationalState(String status, List<AgentTask> attempts) {
+    if (!"PENDING".equals(status)) return status;
+    return attempts.stream()
+            .filter(task -> "PENDING".equals(task.getStatus()))
+            .anyMatch(this::predecessorsCompleted)
+        ? "RELEASED"
+        : "WAITING_PREDECESSOR";
+  }
+
+  /** Explica a situação da ocorrência sem obrigar o usuário a interpretar as tentativas. */
+  private String activityStateReason(
+      String operationalState, BusinessProcessActivityInstance instance) {
+    return switch (operationalState) {
+      case "RELEASED" -> "Atividade liberada para consumo pelo executor responsável.";
+      case "WAITING_PREDECESSOR" ->
+          "Aguardando a conclusão das atividades predecessoras do processo.";
+      case "IN_PROGRESS" -> "Atividade com uma ou mais tentativas em execução.";
+      case "BLOCKED" ->
+          instance == null || trimToNull(instance.getBlockedReason()) == null
+              ? "Atividade bloqueada por uma tentativa ainda não resolvida."
+              : instance.getBlockedReason();
+      case "COMPLETED" -> "Objetivo da instância atingido pelas tentativas concluídas.";
+      case "CANCELLED" -> "Instância encerrada sem atingir o objetivo.";
+      default -> "Estado consolidado pelo backend.";
+    };
+  }
+
+  /** Numera as tentativas dentro de sua instância sem usar o índice como identidade. */
+  private List<ProcessInstanceTaskResponse> processInstanceTasks(
+      List<AgentTask> tasks, boolean supersededLegacy) {
+    List<ProcessInstanceTaskResponse> responses = new ArrayList<>();
+    for (int index = 0; index < tasks.size(); index++) {
+      responses.add(processInstanceTask(tasks.get(index), supersededLegacy, index + 1));
+    }
+    return List.copyOf(responses);
+  }
+
   /** Traduz o status persistido e a elegibilidade do grafo em situação legível. */
   private ProcessInstanceTaskResponse processInstanceTask(
-      AgentTask task, boolean supersededLegacy) {
+      AgentTask task, boolean supersededLegacy, int attemptNumber) {
     String state;
     String reason;
     if (supersededLegacy) {
@@ -355,6 +571,8 @@ public class AgentTaskService {
     }
     return new ProcessInstanceTaskResponse(
         task.getId(),
+        task.getActivityInstance() == null ? null : task.getActivityInstance().getId(),
+        attemptNumber,
         task.getProcessActivityId(),
         task.getProcessActivityName() == null ? task.getTitle() : task.getProcessActivityName(),
         task.getAssignedAgent().getAgentKey(),
@@ -396,7 +614,9 @@ public class AgentTaskService {
       task.setDeliveredAt(now);
     }
     task.setUpdatedAt(now);
-    return response(repository.save(task));
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, now);
+    return response(saved);
   }
 
   /**
@@ -425,6 +645,15 @@ public class AgentTaskService {
                 })
             .toList();
     repository.saveAll(changed);
+    changed.stream()
+        .filter(task -> task.getActivityInstance() != null)
+        .collect(
+            java.util.stream.Collectors.toMap(
+                task -> task.getActivityInstance().getId(),
+                task -> task,
+                (first, ignored) -> first))
+        .values()
+        .forEach(task -> synchronizeActivityInstance(task, now));
     return changed.size();
   }
 
@@ -453,13 +682,18 @@ public class AgentTaskService {
             false,
             null);
     ProcessBinding binding = validateProcessBinding(bindingRequest, task.getAssignedAgent());
+    Instant now = Instant.now(clock);
     task.setProcessDefinition(binding.definition());
     task.setProcessActivityId(binding.activityId());
     task.setProcessActivityName(binding.activityName());
+    task.setActivityInstance(
+        resolveActivityInstance(binding, task.getSourceReference(), task.getCreatedAt(), now));
     task.setExceptional(false);
     task.setExceptionReason(null);
-    task.setUpdatedAt(Instant.now(clock));
-    return response(repository.save(task));
+    task.setUpdatedAt(now);
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, now);
+    return response(saved);
   }
 
   /** Persiste a tarefa normalizada com o primeiro estado auditável. */
@@ -488,12 +722,139 @@ public class AgentTaskService {
     task.setProcessDefinition(binding == null ? null : binding.definition());
     task.setProcessActivityId(binding == null ? null : binding.activityId());
     task.setProcessActivityName(binding == null ? null : binding.activityName());
+    task.setActivityInstance(resolveActivityInstance(binding, sourceReference, now, now));
     task.setExceptional(binding != null && binding.exceptional());
     task.setExceptionReason(binding == null ? null : binding.exceptionReason());
     task.setReceivedAt(null);
     task.setCreatedAt(now);
     task.setUpdatedAt(now);
-    return response(repository.save(task));
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, now);
+    return response(saved);
+  }
+
+  /** Resolve ou abre a ocorrência que agrupa as tentativas da atividade para a mesma referência. */
+  private BusinessProcessActivityInstance resolveActivityInstance(
+      ProcessBinding binding, String sourceReference, Instant enteredAt, Instant now) {
+    if (binding == null || binding.exceptional() || binding.activityDefinition() == null)
+      return null;
+    if (activityInstanceRepository == null) return null;
+    String reference = trimToNull(sourceReference);
+    if (reference == null) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Tarefa regular exige referência operacional para criar a instância da atividade.");
+    }
+    Optional<BusinessProcessActivityInstance> latest =
+        activityInstanceRepository
+            .findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+                binding.activityDefinition().getId(), reference);
+    if (latest.isPresent() && !isTerminalActivityInstance(latest.get())) {
+      return latest.get();
+    }
+    BusinessProcessActivityInstance instance = new BusinessProcessActivityInstance();
+    instance.setActivityDefinition(binding.activityDefinition());
+    instance.setSourceReference(reference);
+    instance.setOccurrenceNumber(latest.map(value -> value.getOccurrenceNumber() + 1).orElse(1));
+    instance.setStatus("PENDING");
+    instance.setEnteredAt(enteredAt);
+    instance.setExitedAt(null);
+    instance.setObjectiveAchieved(false);
+    instance.setKnownCostUsd(null);
+    instance.setCostCoverage("NOT_REPORTED");
+    instance.setEvidenceQuality("DIRECT");
+    instance.setCreatedAt(now);
+    instance.setUpdatedAt(now);
+    return activityInstanceRepository.save(instance);
+  }
+
+  /** Preserva ocorrências encerradas e abre uma nova quando a atividade for executada novamente. */
+  private boolean isTerminalActivityInstance(BusinessProcessActivityInstance instance) {
+    return "COMPLETED".equals(instance.getStatus()) || "CANCELLED".equals(instance.getStatus());
+  }
+
+  /**
+   * Recalcula a verdade consolidada da instância a partir de todas as suas tentativas persistidas.
+   */
+  private void synchronizeActivityInstance(AgentTask changedTask, Instant now) {
+    if (changedTask == null) return;
+    BusinessProcessActivityInstance instance = changedTask.getActivityInstance();
+    if (instance == null || activityInstanceRepository == null) return;
+    List<AgentTask> persistedAttempts =
+        repository.findByActivityInstanceIdOrderByCreatedAtAscIdAsc(instance.getId());
+    List<AgentTask> attempts =
+        persistedAttempts == null || persistedAttempts.isEmpty()
+            ? List.of(changedTask)
+            : persistedAttempts;
+    List<AgentTask> currentAttempts = currentAttemptsByAgent(attempts);
+    boolean inProgress =
+        currentAttempts.stream().anyMatch(task -> "IN_PROGRESS".equals(task.getStatus()));
+    boolean blocked = currentAttempts.stream().anyMatch(task -> "BLOCKED".equals(task.getStatus()));
+    boolean pending = currentAttempts.stream().anyMatch(task -> "PENDING".equals(task.getStatus()));
+    boolean completed =
+        !currentAttempts.isEmpty()
+            && currentAttempts.stream().allMatch(task -> "COMPLETED".equals(task.getStatus()));
+    String status =
+        inProgress
+            ? "IN_PROGRESS"
+            : blocked ? "BLOCKED" : pending ? "PENDING" : completed ? "COMPLETED" : "CANCELLED";
+    instance.setStatus(status);
+    instance.setEnteredAt(
+        attempts.stream()
+            .map(AgentTask::getCreatedAt)
+            .filter(Objects::nonNull)
+            .min(Instant::compareTo)
+            .orElse(instance.getEnteredAt()));
+    if ("COMPLETED".equals(status)) {
+      instance.setObjectiveAchieved(true);
+      instance.setExitedAt(
+          currentAttempts.stream()
+              .map(
+                  task ->
+                      task.getDeliveredAt() == null ? task.getUpdatedAt() : task.getDeliveredAt())
+              .filter(Objects::nonNull)
+              .max(Instant::compareTo)
+              .orElse(now));
+      instance.setObjectiveEvidenceJson(
+          currentAttempts.stream()
+              .filter(task -> "COMPLETED".equals(task.getStatus()))
+              .map(task -> trimToNull(task.getEvidenceJson()))
+              .filter(Objects::nonNull)
+              .reduce((ignored, latest) -> latest)
+              .orElse(null));
+      instance.setBlockedReason(null);
+    } else {
+      instance.setObjectiveAchieved(false);
+      instance.setExitedAt("CANCELLED".equals(status) ? now : null);
+      instance.setObjectiveEvidenceJson(null);
+      instance.setBlockedReason(
+          currentAttempts.stream()
+              .filter(task -> "BLOCKED".equals(task.getStatus()))
+              .map(task -> trimToNull(task.getExecutionError()))
+              .filter(Objects::nonNull)
+              .reduce((ignored, latest) -> latest)
+              .orElse(null));
+    }
+    BigDecimal knownCost =
+        attempts.stream()
+            .map(AgentTask::getEstimatedCostUsd)
+            .filter(Objects::nonNull)
+            .reduce(BigDecimal.ZERO.setScale(8), BigDecimal::add);
+    boolean hasKnownCost = attempts.stream().anyMatch(task -> task.getEstimatedCostUsd() != null);
+    boolean completeCoverage =
+        attempts.stream()
+            .allMatch(
+                task ->
+                    "ESTIMATED".equals(task.getCostEstimationStatus())
+                        || "NOT_APPLICABLE".equals(task.getCostEstimationStatus()));
+    instance.setKnownCostUsd(hasKnownCost ? knownCost.setScale(8) : null);
+    instance.setCostCoverage(
+        completeCoverage ? "COMPLETE" : hasKnownCost ? "PARTIAL" : "NOT_REPORTED");
+    if ("BACKFILLED_FROM_TASKS".equals(instance.getEvidenceQuality())) {
+      instance.setEvidenceQuality("MIXED");
+    }
+    instance.setUpdatedAt(now);
+    activityInstanceRepository.save(instance);
   }
 
   /** Resolve um agente ativo no catálogo pela identidade técnica estável. */
@@ -640,7 +1001,7 @@ public class AgentTaskService {
         throw new ResponseStatusException(
             HttpStatus.BAD_REQUEST, "Tarefa excepcional não pode apontar para atividade regular.");
       }
-      return new ProcessBinding(null, null, "Atividade excepcional", true, reason);
+      return new ProcessBinding(null, null, null, "Atividade excepcional", true, reason);
     }
     if (request.processDefinitionId() == null || trimToNull(request.processActivityId()) == null) {
       throw new ResponseStatusException(
@@ -668,8 +1029,15 @@ public class AgentTaskService {
                 HttpStatus.CONFLICT, "A atividade selecionada pertence a outro responsável.");
           }
           validateExecutionResourceAssignee(node, assignee);
+          BusinessProcessActivityDefinition activityDefinition =
+              resolveActivityDefinition(definition, node.path("id").asText());
           return new ProcessBinding(
-              definition, node.path("id").asText(), node.path("label").asText(), false, null);
+              definition,
+              activityDefinition,
+              node.path("id").asText(),
+              node.path("label").asText(),
+              false,
+              null);
         }
       }
     } catch (ResponseStatusException ex) {
@@ -685,6 +1053,19 @@ public class AgentTaskService {
     }
     throw new ResponseStatusException(
         HttpStatus.BAD_REQUEST, "Atividade do processo não encontrada.");
+  }
+
+  /** Exige a identidade relacional da atividade quando a nova persistência está disponível. */
+  private BusinessProcessActivityDefinition resolveActivityDefinition(
+      BusinessProcessDefinition process, String activityId) {
+    if (activityDefinitionRepository == null) return null;
+    return activityDefinitionRepository
+        .findByProcessDefinitionIdAndActivityId(process.getId(), activityId)
+        .orElseThrow(
+            () ->
+                new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "A atividade publicada ainda não possui identidade operacional persistida."));
   }
 
   /** Reconhece o responsável do BPM pelo apelido, chave técnica ou nome funcional do agente. */
@@ -715,6 +1096,7 @@ public class AgentTaskService {
   /** Mantém os dados validados do vínculo antes da persistência da tarefa. */
   private record ProcessBinding(
       BusinessProcessDefinition definition,
+      BusinessProcessActivityDefinition activityDefinition,
       String activityId,
       String activityName,
       boolean exceptional,
@@ -751,7 +1133,8 @@ public class AgentTaskService {
       task.setStatus("IN_PROGRESS");
       if (task.getReceivedAt() == null) task.setReceivedAt(now);
       task.setUpdatedAt(now);
-      repository.save(task);
+      AgentTask saved = repository.save(task);
+      synchronizeActivityInstance(saved, now);
       return Optional.of(pendingResponse(task));
     }
     return Optional.empty();
@@ -793,10 +1176,13 @@ public class AgentTaskService {
         .findFirst()
         .map(
             task -> {
+              Instant now = Instant.now(clock);
               task.setStatus("IN_PROGRESS");
               task.setExecutionError("AUTO_RETRY_ONCE|" + task.getExecutionError());
-              task.setUpdatedAt(Instant.now(clock));
-              return repository.save(task);
+              task.setUpdatedAt(now);
+              AgentTask saved = repository.save(task);
+              synchronizeActivityInstance(saved, now);
+              return saved;
             });
   }
 
@@ -944,7 +1330,8 @@ public class AgentTaskService {
     task.setStatus("COMPLETED");
     if (task.getDeliveredAt() == null) task.setDeliveredAt(now);
     task.setUpdatedAt(now);
-    repository.save(task);
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, now);
   }
 
   /** Bloqueia trabalho reservado preservando a causa técnica completa. */
@@ -956,8 +1343,10 @@ public class AgentTaskService {
     task.setEvidenceJson(request.evidenceJson());
     applyModelUsage(task, request.modelUsages());
     task.setStatus("BLOCKED");
-    task.setUpdatedAt(Instant.now(clock));
-    repository.save(task);
+    Instant now = Instant.now(clock);
+    task.setUpdatedAt(now);
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, now);
   }
 
   /** Acumula tokens reais e custo estimado sem permitir que o executor escolha as tarifas. */

@@ -10,25 +10,217 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agent.Agent;
+import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocessresource.BusinessProcessExecutionResource;
 import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.repository.jpa.agent.AgentRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
+import com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocessresource.BusinessProcessExecutionResourceRepository;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: comprovar autoria, segregação e ciclo de vida das tarefas dos agentes. */
 class AgentTaskServiceTest {
+
+  /** Persiste atividade, instância e tentativas como níveis distintos do mesmo trabalho. */
+  @Test
+  void persistsActivityInstanceAndGroupsItsAttempts() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    BusinessProcessDefinitionRepository processes = mock(BusinessProcessDefinitionRepository.class);
+    BusinessProcessActivityDefinitionRepository activities =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    BusinessProcessDefinition process = process("PUBLISHED", "Dédalo");
+    BusinessProcessActivityDefinition activity = new BusinessProcessActivityDefinition();
+    activity.setId(401L);
+    activity.setProcessDefinition(process);
+    activity.setActivityId("html");
+    activity.setName("Montar HTML");
+    activity.setObjective("Entregar HTML funcional e responsivo.");
+    AtomicReference<AgentTask> savedTask = new AtomicReference<>();
+    AtomicReference<BusinessProcessActivityInstance> savedInstance = new AtomicReference<>();
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
+    when(processes.findById(9L)).thenReturn(Optional.of(process));
+    when(activities.findByProcessDefinitionIdAndActivityId(9L, "html"))
+        .thenReturn(Optional.of(activity));
+    when(instances.findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            401L, "experiment:88"))
+        .thenReturn(Optional.empty());
+    when(instances.save(any(BusinessProcessActivityInstance.class)))
+        .thenAnswer(
+            invocation -> {
+              BusinessProcessActivityInstance value = invocation.getArgument(0);
+              if (value.getId() == null) value.setId(501L);
+              savedInstance.set(value);
+              return value;
+            });
+    when(repository.save(any(AgentTask.class)))
+        .thenAnswer(
+            invocation -> {
+              AgentTask value = invocation.getArgument(0);
+              if (value.getId() == null) value.setId(601L);
+              savedTask.set(value);
+              return value;
+            });
+    when(repository.findById(601L)).thenAnswer(ignored -> Optional.ofNullable(savedTask.get()));
+    when(repository.findByActivityInstanceIdOrderByCreatedAtAscIdAsc(501L))
+        .thenAnswer(ignored -> savedTask.get() == null ? List.of() : List.of(savedTask.get()));
+    when(repository.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:88"))
+        .thenAnswer(ignored -> savedTask.get() == null ? List.of() : List.of(savedTask.get()));
+    Instant now = Instant.parse("2026-08-25T18:00:00Z");
+    AgentTaskService service =
+        new AgentTaskService(
+            repository,
+            instances,
+            agents,
+            processes,
+            activities,
+            null,
+            new ObjectMapper(),
+            null,
+            Clock.fixed(now, ZoneOffset.UTC));
+
+    AgentTaskResponse created =
+        service.createByHuman(
+            new CreateAgentTaskRequest(
+                "landing-generator",
+                "Operador",
+                "Montar landing",
+                "Entregar HTML responsivo.",
+                "HIGH",
+                "experiment:88",
+                9L,
+                "html",
+                false,
+                null));
+    service.updateStatus(created.id(), new UpdateAgentTaskStatusRequest("IN_PROGRESS"));
+    service.updateStatus(created.id(), new UpdateAgentTaskStatusRequest("COMPLETED"));
+
+    BusinessProcessActivityInstance instance = savedInstance.get();
+    assertThat(savedTask.get().getActivityInstance()).isSameAs(instance);
+    assertThat(instance.getStatus()).isEqualTo("COMPLETED");
+    assertThat(instance.isObjectiveAchieved()).isTrue();
+    assertThat(instance.getEnteredAt()).isEqualTo(now);
+    assertThat(instance.getExitedAt()).isEqualTo(now);
+    ProcessInstanceResponse processInstance = service.processInstances("experiment:88").getFirst();
+    assertThat(processInstance.activities()).hasSize(1);
+    assertThat(processInstance.activities().getFirst().activityName()).isEqualTo("Montar HTML");
+    assertThat(processInstance.activities().getFirst().objective())
+        .isEqualTo("Entregar HTML funcional e responsivo.");
+    assertThat(processInstance.activities().getFirst().tasks()).hasSize(1);
+    assertThat(processInstance.activities().getFirst().tasks().getFirst().attemptNumber()).isOne();
+  }
+
+  /** Substitui o bloqueio pela correção mais recente e preserva um ciclo já encerrado. */
+  @Test
+  void resolvesRetryAndOpensAnotherOccurrenceAfterCompletion() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    BusinessProcessDefinitionRepository processes = mock(BusinessProcessDefinitionRepository.class);
+    BusinessProcessActivityDefinitionRepository activities =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    BusinessProcessDefinition process = process("PUBLISHED", "Dédalo");
+    BusinessProcessActivityDefinition activity = new BusinessProcessActivityDefinition();
+    activity.setId(401L);
+    activity.setProcessDefinition(process);
+    activity.setActivityId("html");
+    activity.setName("Montar HTML");
+    List<AgentTask> savedTasks = new ArrayList<>();
+    List<BusinessProcessActivityInstance> savedInstances = new ArrayList<>();
+    AtomicLong taskSequence = new AtomicLong(600L);
+    AtomicLong instanceSequence = new AtomicLong(500L);
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
+    when(processes.findById(9L)).thenReturn(Optional.of(process));
+    when(activities.findByProcessDefinitionIdAndActivityId(9L, "html"))
+        .thenReturn(Optional.of(activity));
+    when(instances.findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            401L, "experiment:88"))
+        .thenAnswer(
+            ignored ->
+                savedInstances.isEmpty()
+                    ? Optional.empty()
+                    : Optional.of(savedInstances.getLast()));
+    when(instances.save(any(BusinessProcessActivityInstance.class)))
+        .thenAnswer(
+            invocation -> {
+              BusinessProcessActivityInstance value = invocation.getArgument(0);
+              if (value.getId() == null) {
+                value.setId(instanceSequence.incrementAndGet());
+                savedInstances.add(value);
+              }
+              return value;
+            });
+    when(repository.save(any(AgentTask.class)))
+        .thenAnswer(
+            invocation -> {
+              AgentTask value = invocation.getArgument(0);
+              if (value.getId() == null) {
+                value.setId(taskSequence.incrementAndGet());
+                savedTasks.add(value);
+              }
+              return value;
+            });
+    when(repository.findById(any(Long.class)))
+        .thenAnswer(
+            invocation ->
+                savedTasks.stream()
+                    .filter(task -> task.getId().equals(invocation.getArgument(0)))
+                    .findFirst());
+    when(repository.findByActivityInstanceIdOrderByCreatedAtAscIdAsc(any(Long.class)))
+        .thenAnswer(
+            invocation ->
+                savedTasks.stream()
+                    .filter(
+                        task ->
+                            task.getActivityInstance().getId().equals(invocation.getArgument(0)))
+                    .toList());
+    AgentTaskService service =
+        new AgentTaskService(
+            repository,
+            instances,
+            agents,
+            processes,
+            activities,
+            null,
+            new ObjectMapper(),
+            null,
+            Clock.fixed(Instant.parse("2026-08-25T18:00:00Z"), ZoneOffset.UTC));
+
+    AgentTaskResponse first = service.createByHuman(regularActivityRequest("Primeira tentativa"));
+    service.updateStatus(first.id(), new UpdateAgentTaskStatusRequest("IN_PROGRESS"));
+    service.updateStatus(first.id(), new UpdateAgentTaskStatusRequest("BLOCKED"));
+    AgentTaskResponse retry = service.createByHuman(regularActivityRequest("Correção"));
+    service.updateStatus(retry.id(), new UpdateAgentTaskStatusRequest("IN_PROGRESS"));
+    service.updateStatus(retry.id(), new UpdateAgentTaskStatusRequest("COMPLETED"));
+
+    assertThat(savedInstances).hasSize(1);
+    assertThat(savedInstances.getFirst().getStatus()).isEqualTo("COMPLETED");
+    assertThat(savedInstances.getFirst().isObjectiveAchieved()).isTrue();
+    service.createByHuman(regularActivityRequest("Novo ciclo"));
+    assertThat(savedInstances).hasSize(2);
+    assertThat(savedInstances.getFirst().getStatus()).isEqualTo("COMPLETED");
+    assertThat(savedInstances.getLast().getOccurrenceNumber()).isEqualTo(2);
+    assertThat(savedTasks.getLast().getActivityInstance()).isSameAs(savedInstances.getLast());
+  }
 
   /** Encerra tarefas reabríveis quando a entidade comercial não pode mais avançar. */
   @Test
@@ -348,6 +540,8 @@ class AgentTaskServiceTest {
     assertThat(response.assignedAgentNickname()).isEqualTo("Apolo");
     assertThat(response.requestedByName()).isEqualTo("Plutus");
     assertThat(response.requestedByType()).isEqualTo("AGENT");
+    assertThat(response.exceptional()).isTrue();
+    assertThat(response.exceptionReason()).contains("sem atividade BPM");
     assertThat(response.status()).isEqualTo("PENDING");
     assertThat(response.createdAt()).isEqualTo(now);
     assertThat(response.receivedAt()).isNull();
@@ -1347,6 +1541,21 @@ class AgentTaskServiceTest {
     value.setNickname(nickname);
     value.setName(nickname);
     return value;
+  }
+
+  /** Cria a solicitação regular reutilizada nos cenários de tentativa e nova ocorrência. */
+  private CreateAgentTaskRequest regularActivityRequest(String title) {
+    return new CreateAgentTaskRequest(
+        "landing-generator",
+        "Operador",
+        title,
+        "Entregar HTML responsivo.",
+        "HIGH",
+        "experiment:88",
+        9L,
+        "html",
+        false,
+        null);
   }
 
   /** Monta o Estúdio de Têmis com instruções entregues ao executor. */

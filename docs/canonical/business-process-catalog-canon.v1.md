@@ -39,6 +39,34 @@ consulta reversa canônica é `GET /api/business-process-chains/by-process/{proc
 
 ## Governança BPM
 
+### Modelo operacional explícito
+
+O catálogo e a execução adotam três níveis distintos e persistidos:
+
+1. **Atividade:** definição versionada do trabalho dentro de uma versão de processo. Preserva o
+   identificador estável no grafo, nome, objetivo, responsável, recurso ou subprocesso delegado e
+   critérios de conclusão. O `diagram_json` continua sendo a fonte da topologia e dos fluxos, mas
+   cada nó `TASK` também possui identidade relacional própria e não pode ser tratado apenas como
+   texto embutido no JSON.
+2. **Instância da atividade:** ocorrência da atividade para uma referência operacional, como um
+   produto, experimento ou landing. Consolida situação, entrada, saída, objetivo atingido, bloqueio,
+   custo conhecido e cobertura financeira. Uma nova tentativa da mesma execução não cria outra
+   instância; retorno funcional ou novo ciclo comprovado cria nova ocorrência auditável.
+3. **Tarefa/execução:** tentativa individual atribuída a um agente ou executor dentro da instância.
+   Preserva request, response, evidências, erro, datas, consumo e custo próprios. Uma instância pode
+   possuir zero tarefas antes de ser liberada e uma ou mais tarefas durante execução, revisão,
+   correção ou reprocessamento; cada tarefa regular pertence exatamente a uma instância.
+
+A instância, e não uma tarefa isolada, é a autoridade do estado operacional da atividade. O backend
+abre e atualiza a instância ao criar, reservar, concluir, bloquear ou refazer tarefas e deriva dela o
+histórico apresentado ao usuário. A conclusão de uma tarefa só encerra a instância quando os
+critérios funcionais da atividade forem satisfeitos; tentativas anteriores continuam auditáveis e
+compõem custo e retrabalho. Para o mesmo responsável, a tentativa mais recente substitui o estado
+operacional da anterior, sem apagar seu custo ou evidência; assim, uma correção bem-sucedida encerra
+o bloqueio anterior. Uma tarefa criada depois de a instância estar concluída ou cancelada abre nova
+ocorrência, preservando integralmente o ciclo encerrado. Tarefas excepcionais e registros históricos incompletos permanecem
+legíveis como legado até poderem ser vinculados sem fabricar dados.
+
 - Cada processo possui código estável e versões imutáveis depois de publicadas.
 - Uma versão nasce `DRAFT`; somente publicação explícita a torna `PUBLISHED`.
 - Nomes equivalentes, desconsiderando caixa, acentos, espaços e pontuação, não podem criar processos

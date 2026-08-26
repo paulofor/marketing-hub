@@ -11,4 +11,30 @@ public record CreateAgentTaskByAgentRequest(
     @NotBlank @Size(max = 160) String title,
     @NotBlank String description,
     @NotBlank @Pattern(regexp = "LOW|NORMAL|HIGH|URGENT") String priority,
-    @Size(max = 200) String sourceReference) {}
+    @Size(max = 200) String sourceReference,
+    Long processDefinitionId,
+    @Size(max = 100) String processActivityId,
+    boolean exceptional,
+    @Size(max = 500) String exceptionReason) {
+
+  /** Preserva integrações anteriores como delegações excepcionais explicitamente auditadas. */
+  public CreateAgentTaskByAgentRequest(
+      String requestedByAgentKey,
+      String assignedAgentKey,
+      String title,
+      String description,
+      String priority,
+      String sourceReference) {
+    this(
+        requestedByAgentKey,
+        assignedAgentKey,
+        title,
+        description,
+        priority,
+        sourceReference,
+        null,
+        null,
+        true,
+        "Delegação entre agentes sem atividade BPM informada pelo contrato de origem.");
+  }
+}

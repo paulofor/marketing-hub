@@ -8,5 +8,6 @@ public record ProcessInstanceResponse(
     String processCode,
     Integer processVersionNumber,
     String sourceReference,
+    List<ProcessInstanceActivityResponse> activities,
     List<ProcessInstanceTaskResponse> tasks,
     List<ProcessInstanceTaskResponse> supersededLegacyTasks) {}

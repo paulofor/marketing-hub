@@ -8,6 +8,7 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.businessprocessresource.BusinessProcessExecutionResource;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocessresource.BusinessProcessExecutionResourceRepository;
 import java.time.Clock;
@@ -15,6 +16,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -22,6 +24,48 @@ import org.springframework.web.server.ResponseStatusException;
 class BusinessProcessDefinitionServiceTest {
   private final ObjectMapper mapper = new ObjectMapper();
   private final AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+
+  /** Materializa cada nó TASK como atividade relacional sem abandonar o grafo versionado. */
+  @Test
+  void persistsExplicitActivityDefinitionFromDiagram() throws Exception {
+    BusinessProcessDefinitionRepository repository =
+        mock(BusinessProcessDefinitionRepository.class);
+    BusinessProcessActivityDefinitionRepository activities =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    AtomicReference<BusinessProcessActivityDefinition> savedActivity = new AtomicReference<>();
+    when(repository.findByProcessCodeAndVersionNumber("landing", 2)).thenReturn(Optional.empty());
+    when(repository.save(any(BusinessProcessDefinition.class)))
+        .thenAnswer(
+            invocation -> {
+              BusinessProcessDefinition value = invocation.getArgument(0);
+              value.setId(10L);
+              return value;
+            });
+    when(activities.save(any(BusinessProcessActivityDefinition.class)))
+        .thenAnswer(
+            invocation -> {
+              BusinessProcessActivityDefinition value = invocation.getArgument(0);
+              value.setId(22L);
+              savedActivity.set(value);
+              return value;
+            });
+    when(activities.findAllByProcessDefinitionIdOrderByIdAsc(10L))
+        .thenAnswer(
+            ignored -> savedActivity.get() == null ? List.of() : List.of(savedActivity.get()));
+    Instant now = Instant.parse("2026-08-25T18:30:00Z");
+    var service =
+        new BusinessProcessDefinitionService(
+            repository, activities, tasks, null, mapper, Clock.fixed(now, ZoneOffset.UTC));
+
+    BusinessProcessDefinitionResponse result = service.create(request(validDiagram()));
+
+    verify(activities).deleteByProcessDefinitionId(10L);
+    assertThat(result.activities()).hasSize(1);
+    assertThat(result.activities().getFirst().id()).isEqualTo(22L);
+    assertThat(result.activities().getFirst().activityId()).isEqualTo("task");
+    assertThat(savedActivity.get().getDefinitionJson()).contains("\"type\":\"TASK\"");
+    assertThat(savedActivity.get().getCreatedAt()).isEqualTo(now);
+  }
 
   /** Cadastra um grafo íntegro como rascunho auditável. */
   @Test

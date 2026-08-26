@@ -57,6 +57,10 @@ public class AgentTask {
   @Column(name = "process_activity_name", length = 160)
   private String processActivityName;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "activity_instance_id")
+  private BusinessProcessActivityInstance activityInstance;
+
   @Column(name = "exceptional", nullable = false)
   private boolean exceptional;
 

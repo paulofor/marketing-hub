@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Catálogo de processos de negócio
-  version: 1.4.0
+  version: 1.5.0
   description: Cadastro versionado de processos de valor, subprocessos, atividades e documentos no Marketing Hub.
 paths:
   /api/business-processes:
@@ -144,8 +144,25 @@ components:
           type: string
           readOnly: true
           nullable: true
+        activities:
+          type: array
+          readOnly: true
+          description: Identidades relacionais dos nós TASK, persistidas na mesma versão do grafo.
+          items:
+            $ref: "#/components/schemas/BusinessProcessActivityDefinition"
         diagram:
           $ref: "#/components/schemas/ProcessDiagram"
+    BusinessProcessActivityDefinition:
+      type: object
+      required: [id, activityId, name]
+      properties:
+        id: { type: integer, format: int64, nullable: true }
+        activityId: { type: string }
+        name: { type: string }
+        objective: { type: string, nullable: true }
+        ownerName: { type: string, nullable: true }
+        executionResourceCode: { type: string, nullable: true }
+        subprocessCode: { type: string, nullable: true }
     BusinessProcessComposition:
       type: object
       required: [process, subprocessCount, subprocesses]

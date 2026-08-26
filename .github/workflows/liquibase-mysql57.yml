@@ -7,7 +7,10 @@ on:
       - "backend/ads-service/src/test/resources/liquibase-mysql57/**"
       - "backend/ads-service/Dockerfile.liquibase-mysql57"
       - "backend/ads-service/Dockerfile.mysql57-product-process"
+      - "backend/ads-service/Dockerfile.mysql57-activity-instances"
       - "backend/ads-service/docker-compose.product-process-mysql57.yml"
+      - "backend/ads-service/docker-compose.activity-instances-mysql57.yml"
+      - "backend/ads-service/scripts/validate-business-process-activity-instances-mysql57.sh"
       - "scripts/validate-liquibase-mysql57.sh"
       - "scripts/validate-product-process-recovery-mysql57.sh"
       - ".github/workflows/liquibase-mysql57.yml"
@@ -50,3 +53,15 @@ jobs:
         env:
           PRODUCT_PROCESS_COMPOSE_PROJECT: liquibase-product-process-${{ github.run_id }}
         run: bash scripts/validate-product-process-recovery-mysql57.sh
+
+  validate-business-process-activity-instances:
+    name: Validar atividades, instâncias e tentativas
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Validar migração física no MySQL 5.7
+        run: bash backend/ads-service/scripts/validate-business-process-activity-instances-mysql57.sh

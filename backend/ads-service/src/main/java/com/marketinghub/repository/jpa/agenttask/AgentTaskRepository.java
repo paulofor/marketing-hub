@@ -48,6 +48,9 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
   List<AgentTask> findByProcessDefinitionIdAndSourceReferenceOrderByCreatedAtAscIdAsc(
       Long processDefinitionId, String sourceReference);
 
+  /** Lista todas as tentativas de uma instância para consolidar estado, custo e objetivo. */
+  List<AgentTask> findByActivityInstanceIdOrderByCreatedAtAscIdAsc(Long activityInstanceId);
+
   /** Lista as atividades que já produziram ao menos um documento auditável concluído. */
   @Query(
       """

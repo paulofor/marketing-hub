@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocessresource.BusinessProcessExecutionResourceRepository;
 import java.text.Normalizer;
@@ -20,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class BusinessProcessDefinitionService {
   private final BusinessProcessDefinitionRepository repository;
+  private final BusinessProcessActivityDefinitionRepository activityRepository;
   private final AgentTaskRepository agentTaskRepository;
   private final BusinessProcessExecutionResourceRepository executionResourceRepository;
   private final ObjectMapper objectMapper;
@@ -29,11 +31,13 @@ public class BusinessProcessDefinitionService {
   @Autowired
   public BusinessProcessDefinitionService(
       BusinessProcessDefinitionRepository repository,
+      BusinessProcessActivityDefinitionRepository activityRepository,
       AgentTaskRepository agentTaskRepository,
       BusinessProcessExecutionResourceRepository executionResourceRepository,
       ObjectMapper objectMapper) {
     this(
         repository,
+        activityRepository,
         agentTaskRepository,
         executionResourceRepository,
         objectMapper,
@@ -45,7 +49,7 @@ public class BusinessProcessDefinitionService {
       BusinessProcessDefinitionRepository repository,
       AgentTaskRepository agentTaskRepository,
       ObjectMapper objectMapper) {
-    this(repository, agentTaskRepository, null, objectMapper, Clock.systemUTC());
+    this(repository, null, agentTaskRepository, null, objectMapper, Clock.systemUTC());
   }
 
   /** Permite testes determinísticos do ciclo de publicação. */
@@ -54,7 +58,7 @@ public class BusinessProcessDefinitionService {
       AgentTaskRepository agentTaskRepository,
       ObjectMapper objectMapper,
       Clock clock) {
-    this(repository, agentTaskRepository, null, objectMapper, clock);
+    this(repository, null, agentTaskRepository, null, objectMapper, clock);
   }
 
   /** Permite validar recursos especializados com relógio determinístico nos testes. */
@@ -64,7 +68,19 @@ public class BusinessProcessDefinitionService {
       BusinessProcessExecutionResourceRepository executionResourceRepository,
       ObjectMapper objectMapper,
       Clock clock) {
+    this(repository, null, agentTaskRepository, executionResourceRepository, objectMapper, clock);
+  }
+
+  /** Permite testar a persistência explícita das atividades com todas as dependências. */
+  BusinessProcessDefinitionService(
+      BusinessProcessDefinitionRepository repository,
+      BusinessProcessActivityDefinitionRepository activityRepository,
+      AgentTaskRepository agentTaskRepository,
+      BusinessProcessExecutionResourceRepository executionResourceRepository,
+      ObjectMapper objectMapper,
+      Clock clock) {
     this.repository = repository;
+    this.activityRepository = activityRepository;
     this.agentTaskRepository = agentTaskRepository;
     this.executionResourceRepository = executionResourceRepository;
     this.objectMapper = objectMapper;
@@ -109,7 +125,9 @@ public class BusinessProcessDefinitionService {
     value.setParentProcessCode(trimToNull(request.parentProcessCode()));
     value.setDiagramJson(write(request.diagram()));
     value.setCreatedAt(Instant.now(clock));
-    return response(repository.save(value));
+    BusinessProcessDefinition saved = repository.save(value);
+    synchronizeActivities(saved);
+    return response(saved);
   }
 
   /** Atualiza uma versão em rascunho sem alterar versões publicadas ou aposentadas. */
@@ -131,7 +149,9 @@ public class BusinessProcessDefinitionService {
         request.processType(), request.parentProcessCode(), value.getProcessCode());
     validateDiagram(request.diagram(), value.getProcessCode());
     applyEditableFields(value, request);
-    return response(repository.save(value));
+    BusinessProcessDefinition saved = repository.save(value);
+    synchronizeActivities(saved);
+    return response(saved);
   }
 
   /** Publica uma versão válida e aposenta a versão anteriormente vigente. */
@@ -150,7 +170,9 @@ public class BusinessProcessDefinitionService {
         .forEach(item -> item.setStatus("RETIRED"));
     selected.setStatus("PUBLISHED");
     selected.setPublishedAt(now);
-    return response(repository.save(selected));
+    BusinessProcessDefinition saved = repository.save(selected);
+    synchronizeActivities(saved);
+    return response(saved);
   }
 
   /** Exclui somente rascunho sem tarefas vinculadas, preservando histórico operacional. */
@@ -165,6 +187,7 @@ public class BusinessProcessDefinitionService {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT, "O rascunho possui tarefas vinculadas e não pode ser excluído.");
     }
+    if (activityRepository != null) activityRepository.deleteByProcessDefinitionId(id);
     repository.delete(value);
   }
 
@@ -321,6 +344,67 @@ public class BusinessProcessDefinitionService {
     value.setDiagramJson(write(request.diagram()));
   }
 
+  /** Sincroniza os nós executáveis do grafo com suas identidades relacionais versionadas. */
+  private void synchronizeActivities(BusinessProcessDefinition process) {
+    if (activityRepository == null) return;
+    activityRepository.deleteByProcessDefinitionId(process.getId());
+    JsonNode nodes = read(process.getDiagramJson()).path("nodes");
+    for (JsonNode node : nodes) {
+      if (!"TASK".equals(node.path("type").asText())) continue;
+      BusinessProcessActivityDefinition activity = new BusinessProcessActivityDefinition();
+      activity.setProcessDefinition(process);
+      activity.setActivityId(node.path("id").asText().trim());
+      activity.setName(node.path("label").asText().trim());
+      activity.setObjective(trimToNull(node.path("description").asText(null)));
+      activity.setOwnerName(trimToNull(node.path("owner").asText(null)));
+      activity.setExecutionResourceCode(
+          trimToNull(node.path("executionResourceCode").asText(null)));
+      activity.setSubprocessCode(trimToNull(node.path("subprocessCode").asText(null)));
+      activity.setDefinitionJson(write(node));
+      activity.setCreatedAt(Instant.now(clock));
+      activityRepository.save(activity);
+    }
+  }
+
+  /** Lista as atividades persistidas e mantém leitura segura durante migrações de dados legados. */
+  private List<BusinessProcessActivityDefinitionResponse> activityResponses(
+      BusinessProcessDefinition process) {
+    if (activityRepository != null) {
+      List<BusinessProcessActivityDefinition> persisted =
+          activityRepository.findAllByProcessDefinitionIdOrderByIdAsc(process.getId());
+      if (!persisted.isEmpty()) {
+        return persisted.stream().map(this::activityResponse).toList();
+      }
+    }
+    List<BusinessProcessActivityDefinitionResponse> fallback = new ArrayList<>();
+    for (JsonNode node : read(process.getDiagramJson()).path("nodes")) {
+      if (!"TASK".equals(node.path("type").asText())) continue;
+      fallback.add(
+          new BusinessProcessActivityDefinitionResponse(
+              null,
+              node.path("id").asText(),
+              node.path("label").asText(),
+              trimToNull(node.path("description").asText(null)),
+              trimToNull(node.path("owner").asText(null)),
+              trimToNull(node.path("executionResourceCode").asText(null)),
+              trimToNull(node.path("subprocessCode").asText(null))));
+    }
+    return List.copyOf(fallback);
+  }
+
+  /** Converte uma atividade persistida no contrato de leitura do catálogo. */
+  private BusinessProcessActivityDefinitionResponse activityResponse(
+      BusinessProcessActivityDefinition activity) {
+    return new BusinessProcessActivityDefinitionResponse(
+        activity.getId(),
+        activity.getActivityId(),
+        activity.getName(),
+        activity.getObjective(),
+        activity.getOwnerName(),
+        activity.getExecutionResourceCode(),
+        activity.getSubprocessCode());
+  }
+
   /** Converte uma entidade no contrato oficial da tela. */
   private BusinessProcessDefinitionResponse response(BusinessProcessDefinition value) {
     BusinessProcessDefinition parent =
@@ -347,7 +431,8 @@ public class BusinessProcessDefinitionService {
         processType(value),
         value.getParentProcessCode(),
         parent == null ? null : parent.getId(),
-        parent == null ? null : parent.getName());
+        parent == null ? null : parent.getName(),
+        activityResponses(value));
   }
 
   /** Interpreta registros anteriores à classificação como processos de valor. */

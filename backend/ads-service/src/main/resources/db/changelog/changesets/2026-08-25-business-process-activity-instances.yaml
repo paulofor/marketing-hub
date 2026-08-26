@@ -1,0 +1,347 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-25-business-process-activity-instances-1-definition-table
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS business_process_activity_definition (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                process_definition_id BIGINT NOT NULL,
+                activity_id VARCHAR(100) NOT NULL,
+                name VARCHAR(160) NOT NULL,
+                objective TEXT NULL,
+                owner_name VARCHAR(160) NULL,
+                execution_resource_code VARCHAR(100) NULL,
+                subprocess_code VARCHAR(100) NULL,
+                definition_json LONGTEXT NOT NULL,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_business_process_activity_definition (process_definition_id, activity_id),
+                CONSTRAINT fk_business_process_activity_definition_process
+                  FOREIGN KEY (process_definition_id) REFERENCES business_process_definition(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE business_process_activity_definition;
+
+  - changeSet:
+      id: 2026-08-25-business-process-activity-instances-2-instance-table
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS business_process_activity_instance (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                activity_definition_id BIGINT NOT NULL,
+                source_reference VARCHAR(200) NOT NULL,
+                occurrence_number INT NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                entered_at DATETIME NOT NULL,
+                exited_at DATETIME NULL,
+                objective_achieved TINYINT(1) NOT NULL DEFAULT 0,
+                objective_evidence_json LONGTEXT NULL,
+                blocked_reason LONGTEXT NULL,
+                known_cost_usd DECIMAL(18,8) NULL,
+                cost_coverage VARCHAR(32) NOT NULL DEFAULT 'NOT_REPORTED',
+                evidence_quality VARCHAR(32) NOT NULL DEFAULT 'DIRECT',
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_business_process_activity_instance
+                  (activity_definition_id, source_reference, occurrence_number),
+                INDEX idx_business_process_activity_instance_reference (source_reference, status),
+                CONSTRAINT fk_business_process_activity_instance_definition
+                  FOREIGN KEY (activity_definition_id) REFERENCES business_process_activity_definition(id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE business_process_activity_instance;
+
+  - changeSet:
+      id: 2026-08-25-business-process-activity-instances-3-task-column
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: agent_task
+              columnName: activity_instance_id
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent_task
+                ADD COLUMN activity_instance_id BIGINT NULL AFTER process_activity_name;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE agent_task DROP COLUMN activity_instance_id;
+
+  - changeSet:
+      id: 2026-08-25-business-process-activity-instances-4-task-index
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            indexExists:
+              tableName: agent_task
+              indexName: idx_agent_task_activity_instance
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent_task
+                ADD INDEX idx_agent_task_activity_instance (activity_instance_id);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE agent_task DROP INDEX idx_agent_task_activity_instance;
+
+  - changeSet:
+      id: 2026-08-25-business-process-activity-instances-5-definition-backfill
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT IGNORE INTO business_process_activity_definition (
+                process_definition_id,
+                activity_id,
+                name,
+                objective,
+                owner_name,
+                execution_resource_code,
+                subprocess_code,
+                definition_json,
+                created_at
+              )
+              SELECT
+                process.id,
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', numbers.node_index, '].id'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', numbers.node_index, '].label'))),
+                NULLIF(JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', numbers.node_index, '].description'))), 'null'),
+                NULLIF(JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', numbers.node_index, '].owner'))), 'null'),
+                NULLIF(JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', numbers.node_index, '].executionResourceCode'))), 'null'),
+                NULLIF(JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', numbers.node_index, '].subprocessCode'))), 'null'),
+                JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', numbers.node_index, ']')),
+                process.created_at
+              FROM business_process_definition process
+              JOIN (
+                SELECT ones.value + (tens.value * 10) AS node_index
+                FROM (
+                  SELECT 0 AS value UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4
+                  UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9
+                ) ones
+                CROSS JOIN (
+                  SELECT 0 AS value UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4
+                  UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9
+                ) tens
+              ) numbers
+                ON numbers.node_index < JSON_LENGTH(process.diagram_json, '$.nodes')
+              WHERE JSON_UNQUOTE(
+                JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', numbers.node_index, '].type'))
+              ) = 'TASK';
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DELETE FROM business_process_activity_definition;
+
+  - changeSet:
+      id: 2026-08-25-business-process-activity-instances-6-instance-backfill
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT IGNORE INTO business_process_activity_instance (
+                activity_definition_id,
+                source_reference,
+                occurrence_number,
+                status,
+                entered_at,
+                exited_at,
+                objective_achieved,
+                objective_evidence_json,
+                blocked_reason,
+                known_cost_usd,
+                cost_coverage,
+                evidence_quality,
+                created_at,
+                updated_at
+              )
+              SELECT
+                activity.id,
+                task.source_reference,
+                1,
+                CASE
+                  WHEN MAX(current_state.in_progress_count) > 0 THEN 'IN_PROGRESS'
+                  WHEN MAX(current_state.blocked_count) > 0 THEN 'BLOCKED'
+                  WHEN MAX(current_state.pending_count) > 0 THEN 'PENDING'
+                  WHEN MAX(current_state.completed_count) = MAX(current_state.agent_count) THEN 'COMPLETED'
+                  ELSE 'CANCELLED'
+                END,
+                MIN(task.created_at),
+                CASE
+                  WHEN MAX(current_state.completed_count) = MAX(current_state.agent_count)
+                  THEN MAX(COALESCE(task.delivered_at, task.updated_at))
+                  ELSE NULL
+                END,
+                CASE
+                  WHEN MAX(current_state.completed_count) = MAX(current_state.agent_count)
+                  THEN 1 ELSE 0
+                END,
+                NULL,
+                CASE
+                  WHEN MAX(current_state.blocked_count) > 0
+                  THEN MAX(current_state.blocked_reason)
+                  ELSE NULL
+                END,
+                CASE
+                  WHEN SUM(task.estimated_cost_usd IS NOT NULL) > 0
+                  THEN SUM(COALESCE(task.estimated_cost_usd, 0))
+                  ELSE NULL
+                END,
+                CASE
+                  WHEN SUM(task.cost_estimation_status IN ('ESTIMATED', 'NOT_APPLICABLE')) = COUNT(*)
+                  THEN 'COMPLETE'
+                  WHEN SUM(task.estimated_cost_usd IS NOT NULL) > 0
+                  THEN 'PARTIAL'
+                  ELSE 'NOT_REPORTED'
+                END,
+                'BACKFILLED_FROM_TASKS',
+                MIN(task.created_at),
+                MAX(task.updated_at)
+              FROM agent_task task
+              JOIN business_process_activity_definition activity
+                ON activity.process_definition_id = task.process_definition_id
+               AND BINARY activity.activity_id = BINARY task.process_activity_id
+              JOIN (
+                SELECT
+                  latest_task.process_definition_id,
+                  latest_task.process_activity_id,
+                  latest_task.source_reference,
+                  COUNT(*) AS agent_count,
+                  SUM(latest_task.status = 'IN_PROGRESS') AS in_progress_count,
+                  SUM(latest_task.status = 'BLOCKED') AS blocked_count,
+                  SUM(latest_task.status = 'PENDING') AS pending_count,
+                  SUM(latest_task.status = 'COMPLETED') AS completed_count,
+                  MAX(CASE
+                    WHEN latest_task.status = 'BLOCKED' THEN latest_task.execution_error
+                    ELSE NULL
+                  END) AS blocked_reason
+                FROM agent_task latest_task
+                JOIN (
+                  SELECT
+                    process_definition_id,
+                    process_activity_id,
+                    source_reference,
+                    assigned_agent_id,
+                    MAX(id) AS latest_task_id
+                  FROM agent_task
+                  WHERE process_definition_id IS NOT NULL
+                    AND process_activity_id IS NOT NULL
+                    AND source_reference IS NOT NULL
+                  GROUP BY
+                    process_definition_id,
+                    process_activity_id,
+                    source_reference,
+                    assigned_agent_id
+                ) latest_id ON latest_id.latest_task_id = latest_task.id
+                GROUP BY
+                  latest_task.process_definition_id,
+                  latest_task.process_activity_id,
+                  latest_task.source_reference
+              ) current_state
+                ON current_state.process_definition_id = task.process_definition_id
+               AND BINARY current_state.process_activity_id = BINARY task.process_activity_id
+               AND BINARY current_state.source_reference = BINARY task.source_reference
+              WHERE task.process_definition_id IS NOT NULL
+                AND task.process_activity_id IS NOT NULL
+                AND task.source_reference IS NOT NULL
+              GROUP BY activity.id, task.source_reference;
+
+              UPDATE agent_task task
+              JOIN business_process_activity_definition activity
+                ON activity.process_definition_id = task.process_definition_id
+               AND BINARY activity.activity_id = BINARY task.process_activity_id
+              JOIN business_process_activity_instance instance
+                ON instance.activity_definition_id = activity.id
+               AND BINARY instance.source_reference = BINARY task.source_reference
+               AND instance.occurrence_number = 1
+              SET task.activity_instance_id = instance.id
+              WHERE task.activity_instance_id IS NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE agent_task SET activity_instance_id = NULL WHERE activity_instance_id IS NOT NULL;
+              DELETE FROM business_process_activity_instance;
+
+  - changeSet:
+      id: 2026-08-25-business-process-activity-instances-7-task-foreign-key
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            foreignKeyConstraintExists:
+              foreignKeyName: fk_agent_task_activity_instance
+              foreignKeyTableName: agent_task
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE agent_task
+                ADD CONSTRAINT fk_agent_task_activity_instance
+                  FOREIGN KEY (activity_instance_id) REFERENCES business_process_activity_instance(id);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: ALTER TABLE agent_task DROP FOREIGN KEY fk_agent_task_activity_instance;

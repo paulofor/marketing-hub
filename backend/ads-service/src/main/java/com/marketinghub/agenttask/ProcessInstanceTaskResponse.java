@@ -6,6 +6,8 @@ import java.time.Instant;
 /** Responsabilidade: apresentar a situação operacional de uma atividade na instância BPM. */
 public record ProcessInstanceTaskResponse(
     Long taskId,
+    Long activityInstanceId,
+    Integer attemptNumber,
     String activityId,
     String activityName,
     String agentKey,

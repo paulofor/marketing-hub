@@ -21,3 +21,9 @@ Regras:
 - preserve status da fonte, modo de coleta, quantidade de anuncios ativos, anunciantes, data da
   ultima observacao e a jornada atribuivel de impressao, clique, inicio, momento de valor e checkout;
 - preserve evidencias e riscos para revisao humana.
+- no recorte B2C/Instagram, uma pesquisa favoravel abre a Validacao do Momento de Compra, mas nao
+  aprova a priorizacao final: fontes comerciais devem ser atuais e nominais, e o prototipo privado
+  ainda precisa de duas leituras consistentes de inicio, microvalor, preferencia sobre o gratuito e
+  checkout, sem bloqueio de Psique ou Temis;
+- nunca invente eventos do prototipo, trate checkout de teste como venda ou use score para contornar
+  esse gate.

@@ -161,6 +161,74 @@ suposicao. Temperatura Hotmart, anuncio ativo, audiencia e pontuacao continuam s
 vendas. Para declarar uma nova oportunidade superior ao benchmark Rigel, a pontuacao auditavel deve
 ser **estritamente maior**, com consenso dos agentes e valor percebido minimo preservado.
 
+## Validacao obrigatoria do momento de compra
+
+Por decisao de 2026-08-26, no recorte B2C para Instagram a priorizacao final deve ser precedida por
+uma etapa independente de **Validacao do Momento de Compra**. Artigos, ofertas, anuncios, reviews,
+temperatura, ranking, score de agente e intencao declarada podem orientar a hipotese, mas nao
+autorizam compara-la com o benchmark nem aprova-la como produto.
+
+Antes dessa etapa, o processo deve qualificar as fontes comerciais. Snapshot Hotmart ou outra fonte
+com placeholder, identidade ou URL incompleta, item sem preco e sem qualquer sinal de tracao, data
+ausente quando a atualidade for necessaria, vencimento definido pelo plano, erro de coleta ou falta
+de aderencia deve ficar com status explicito e bloquear a priorizacao. O ultimo snapshot nominal
+pode permanecer como inspiracao historica, mas nao substitui uma leitura atual nem entra como
+comportamento recente.
+
+Cada candidata deve registrar uma cena de compra estruturada com:
+
+- pessoa fisica e situacao exata;
+- gatilho e prazo;
+- consequencia pratica ou financeira de nao agir;
+- tentativa frustrada e solucao atual;
+- gasto, assinatura, comparacao de preco ou outro comportamento pago observavel;
+- orcamento ou limite de gasto quando existir evidencia, sem inventar capacidade de pagamento;
+- alternativa gratuita mais forte, incluindo Google, ChatGPT, planilha, amigo ou conteudo;
+- vantagem funcional que o prototipo pretende demonstrar sobre essa alternativa.
+
+Depois da pesquisa e antes do score final, Dedalo pode materializar um prototipo privado, limitado e
+sem publicacao; Hermes define a jornada atribuivel; Psique revisa valor e esforco; Temis revisa
+promessa, seguranca e comunicacao. Os criterios de sucesso devem ser declarados antes do primeiro
+uso e preservar denominadores para, no minimo, inicio da experiencia, chegada ao microvalor,
+preferencia sobre a alternativa gratuita e inicio de checkout. O checkout do prototipo nao realiza
+pagamento e seus eventos devem usar marcador explicito de teste ou validacao privada.
+
+Somente duas leituras independentes e consistentes, ambas acima dos criterios predeclarados e sem
+bloqueio de Psique ou Temis, liberam a candidata para priorizacao final e comparacao com Rigel. Uma
+leitura favoravel isolada, media que esconda uma leitura reprovada ou nova amostragem do modelo nao
+atende o gate. O backend persiste entradas, contagens, taxas, decisoes, evidencias e motivos e e a
+unica autoridade para liberar a etapa seguinte.
+
+O contrato persistivel `purchaseMomentGate` deve expor, de forma coerente, `required`, `status`,
+`sourceQualityPassed`, `finalPrioritizationEligible`, `minimumIndependentReadings`, criterios,
+candidatas elegiveis e leituras. Em uma aprovacao, o backend nao pode confiar somente nos booleanos
+do worker: deve confirmar o vinculo nominal da candidata, a cena e o prototipo privado, recalcular
+as taxas pelas contagens, exigir IDs distintos, validar a ordem temporal e confirmar as decisoes de
+Psique e Temis. Divergencia entre resumo e fatos bloqueia a conclusao.
+
+O resultado deve seguir estas regras:
+
+- `CONTINUAR`: duas leituras aprovadas, preferencia observada e compromisso comercial mensuravel;
+- `AJUSTAR`: existe uso ou microvalor, mas algum criterio predeclarado nao foi atingido;
+- `PARAR`: a alternativa gratuita vence, a fonte e invalida ou existe risco relevante nao
+  controlavel;
+- `AGUARDAR_VALIDACAO`: o prototipo ou as duas leituras ainda nao existem.
+
+Intencao, inicio de checkout de teste e parecer de agente continuam separados de venda. Somente
+pagamento reconciliado no contrato comercial oficial pode contar como venda ou receita.
+
+## Colecao viva de momentos de compra B2C
+
+Cada ciclo B2C deve consultar novamente `pesquisas/momentos-de-compra-b2c`, incluindo todos os
+resumos datados existentes no momento da execucao. A ausencia de resumo diario deve ser registrada
+como fonte vazia e manter o gate aberto; `ini.md` define o tema e nao conta como artigo ou evidencia.
+
+O tema canonico da colecao e: **momentos de decisao B2C iminente no Brasil, com situacao pessoal,
+prazo, dinheiro ou consequencia material em jogo, tentativa frustrada e solucao paga mal atendida**.
+Cada resumo preserva cena, gatilho, prazo, custo do erro, gastos atuais, ofertas pagas, reclamacoes,
+alternativa gratuita, linguagem do consumidor, demonstracao em Reel, microvalor em ate dez minutos
+e limites de seguranca.
+
 ### Cobertura real da categoria na Meta Ads Library
 
 Por decisao de 2026-08-26, Argos deve incluir no plano dirigido de todo ciclo B2C para Instagram uma
@@ -436,7 +504,7 @@ validacao PDE atual superar os motivos historicos de baixa conversao.
 
 ## Gates de negocio
 
-O modulo deve ter pelo menos cinco gates:
+O modulo deve ter pelo menos seis gates:
 
 1. Gate de escala: bloqueia dores pequenas demais ou sem evidencias independentes.
 2. Gate de desatendimento: bloqueia dores ja bem atendidas por solucoes simples e baratas.
@@ -445,6 +513,9 @@ O modulo deve ter pelo menos cinco gates:
    exige salto mental grande demais.
 5. Gate de mecanismo: bloqueia aprovacao sem base cientifica candidata verificavel e sem
    limites de promessa coerentes com essa evidencia.
+6. Gate de momento de compra: no recorte B2C/Instagram, bloqueia priorizacao final sem fontes
+   atuais, prototipo privado, criterios predeclarados, duas leituras consistentes, vantagem
+   observada sobre o gratuito e ausencia de bloqueio de Psique ou Temis.
 
 ## Relacao com outros modulos
 

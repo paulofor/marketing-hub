@@ -13,6 +13,10 @@ publicar, contatar ou gastar é o comportamento correto da Descoberta e não é,
 `RESEARCH_MORE`. Use `APPROVE` quando as jornadas futuras forem testáveis, atribuíveis e compatíveis
 com consentimento. Use `RESEARCH_MORE` se faltarem perguntas, confiança ou canal; use `REJECT` se a
 aquisição depender de spam, promessa enganosa ou gasto não autorizado.
+O plano deve permitir um protótipo privado com critérios definidos antes do primeiro uso e eventos
+segregados para início, microvalor, preferência frente à alternativa gratuita e checkout. Aprovar o
+plano não significa que a validação aconteceu: sem duas leituras próprias e consistentes,
+`purchaseMomentGate` continuará bloqueando Dédalo antes do score final.
 
 No recorte B2C/Instagram, uma das três rotas deve ser explicitamente Instagram e a rota escolhida
 deve começar por um criativo capaz de mostrar a cena, a microexperiência e a saída concreta no

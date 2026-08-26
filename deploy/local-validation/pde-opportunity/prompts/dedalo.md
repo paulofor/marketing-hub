@@ -10,6 +10,11 @@ benefício, esforço de adoção, risco de custo variável e escala; escolha o m
 materializar valor. A primeira versão não pode depender de integração, bot, envio automático,
 assinatura, acesso à conta do cliente ou operação contínua.
 
+Você só será executado para priorização final quando `purchaseMomentGate` possuir ao menos uma
+candidata elegível. A vencedora precisa estar em `eligibleCandidateNames`; não estime leituras, não
+substitua preferência observada por intenção declarada e não compare uma candidata bloqueada com
+Rigel. Se nenhuma candidata estiver elegível, a execução deve encerrar antes deste agente.
+
 Pontue cada alternativa com critérios independentes e limites fixos. Quando `commercialFocus` for
 B2C/Instagram, trate "distribuição inicial atribuível" como aderência específica ao Instagram e
 reserve a nota máxima apenas para uma cena demonstrável, promessa compreensível em três segundos e

@@ -198,6 +198,9 @@ export function deterministicPlan(job) {
           `Em qual cena pessoal o consumidor reconhece a urgência de ${theme}?`,
           `Quais produtos B2C pagos e alternativas gratuitas resolvem ${theme}?`,
           `Qual microvalor mobile de ${theme} pode ser demonstrado honestamente em um Reel?`,
+          `Qual prazo, consequência material e tentativa frustrada tornam ${theme} uma decisão iminente?`,
+          `Que assinatura, compra, cancelamento ou comparação de preço já acontece em ${theme}?`,
+          `Por que um protótipo de ${theme} venceria Google, ChatGPT, planilha, amigo ou conteúdo gratuito?`,
         ]
       : [
           `Quais produtos pagos resolvem ${theme}?`,
@@ -209,6 +212,9 @@ export function deterministicPlan(job) {
           `${theme} consumidor preço review reclamação`,
           `${theme} aplicativo curso assinatura vale a pena`,
           `${theme} anúncio Instagram Reel demonstração`,
+          `${theme} prazo urgente tentativa frustrada quanto pagou`,
+          `${theme} assinatura cancelamento alternativa grátis`,
+          `${theme} decisão de compra comparação preço`,
         ]
       : [
           `${theme} preço review reclamação`,
@@ -235,6 +241,8 @@ export function deterministicPlan(job) {
       ...(consumerInstagramFocus
         ? [
             "oportunidade depende de empresa ou não possui cena demonstrável no Instagram",
+            "fonte comercial está vazia, vencida ou contém placeholder",
+            "não existe vantagem testável sobre a alternativa gratuita",
           ]
         : []),
     ],

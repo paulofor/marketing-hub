@@ -1,3 +1,9 @@
+import {
+  assertPurchaseMomentEligible,
+  buildPurchaseMomentGate,
+  requiresPurchaseMomentValidation,
+} from "./purchase-moment-validation.mjs";
+
 const REQUIRED_WINNER_SUPPORTS = ["RECURRENCE", "UNMETNESS", "PURCHASE_INTENT"];
 
 /** Mantém no ciclo somente fontes das três oportunidades ativas, preservando o histórico no arquivo. */
@@ -85,6 +91,8 @@ export function validateResearchInput(research) {
       throw new Error(`${candidate.name} precisa de ao menos três ofertas pagas comparáveis.`);
     }
   }
+
+  if (requiresPurchaseMomentValidation(research)) buildPurchaseMomentGate(research);
 }
 
 /** Protege o recorte comercial sem transformar qualquer tema popular em oportunidade B2C. */
@@ -120,6 +128,16 @@ function validateInspirationContract(research) {
   for (const origin of ["GARTNER", "IA_APLICADA"]) {
     if (!articles.some((article) => article.origin === origin)) {
       throw new Error(`A Descoberta v5 precisa consultar a coleção viva ${origin}.`);
+    }
+  }
+  if (research?.commercialFocus?.audienceModel === "B2C") {
+    const collections = new Set(
+      (inspirations.collections || []).map((collection) => collection.code),
+    );
+    if (!collections.has("MOMENTOS_COMPRA_B2C")) {
+      throw new Error(
+        "A Descoberta v5 B2C precisa consultar a coleção viva MOMENTOS_COMPRA_B2C.",
+      );
     }
   }
   if ((inspirations.hotmartProducts || []).length === 0) {
@@ -186,6 +204,7 @@ export function buildFinalDecision(context) {
   const scored = context.dedalo.comparison.find((item) => item.name === chosen);
   const benchmarkScore = context.research.benchmark.score;
   const reasons = [];
+  const purchaseMomentGate = buildPurchaseMomentGate(context.research);
 
   for (const [agent, decision] of Object.entries(decisions)) {
     if (decision !== "APPROVE") reasons.push(`${agent} decidiu ${decision}.`);
@@ -196,6 +215,12 @@ export function buildFinalDecision(context) {
   if (context.psique.valueScore < 75) {
     reasons.push(`Valor percebido ${context.psique.valueScore} abaixo do mínimo 75.`);
   }
+  if (
+    purchaseMomentGate.required &&
+    !purchaseMomentGate.eligibleCandidateNames.includes(chosen)
+  ) {
+    reasons.push(`${chosen} não passou pela Validação do Momento de Compra.`);
+  }
 
   const finalDecision = Object.values(decisions).includes("REJECT")
     ? "REJECT"
@@ -203,7 +228,7 @@ export function buildFinalDecision(context) {
       ? "APPROVE"
       : "RESEARCH_MORE";
 
-  return {
+  const decision = {
     decision: finalDecision,
     chosenOpportunity: chosen,
     workingProductName: context.dedalo.chosenOpportunity.workingProductName,
@@ -219,6 +244,15 @@ export function buildFinalDecision(context) {
     agentDecisions: decisions,
     reasons,
   };
+  if (purchaseMomentGate.required) {
+    decision.purchaseMomentGate = {
+      status: purchaseMomentGate.status,
+      candidateStatus:
+        purchaseMomentGate.candidates.find((candidate) => candidate.candidateName === chosen)
+          ?.status || "WAITING_VALIDATION",
+    };
+  }
+  return decision;
 }
 
 function validateArgos(research, result) {
@@ -382,6 +416,9 @@ function validateDedalo(context, result) {
       right.riskSafetyScore - left.riskSafetyScore ||
       left.name.localeCompare(right.name),
   )[0];
+  if (result.decision === "APPROVE") {
+    assertPurchaseMomentEligible(buildPurchaseMomentGate(context.research), winner.name);
+  }
   if (result.chosenOpportunity.sourceAlternativeName !== winner.name) {
     throw new Error("Dédalo escolheu alternativa diferente do maior score auditável.");
   }

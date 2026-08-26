@@ -15,6 +15,9 @@ genérico; 65–74 para benefício concreto ainda equivalente às alternativas o
 resultado imediato, baixo esforço, controle humano e vantagem compreensível; 85–100 somente com
 desejo excepcional sustentado por comportamento real. Na dúvida entre faixas, use a menor.
 `APPROVE` exige `valueScore` mínimo 75 e valor percebido maior que esforço e risco.
+Seu parecer é obrigatório, mas não substitui o comportamento observado. Não converta intenção,
+curiosidade ou simulação em preferência frente ao gratuito; preserve as duas leituras do
+`purchaseMomentGate` e bloqueie quando exposição, julgamento ou esforço dominarem o microvalor.
 
 No recorte B2C/Instagram, simule a primeira impressão no feed: a pessoa deve reconhecer a própria
 cena sem ser humilhada, compreender o valor em três segundos e conseguir experimentar o primeiro

@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { buildPurchaseMomentResearchGate } from "./purchase-moment-gate.js";
 
 const PAIN_TERMS = [
   "dificuldade",
@@ -194,6 +195,9 @@ const INSTAGRAM_B2C_TEMPLATES = [
   "{base} anúncio Instagram Reel demonstração",
   "{base} antes e depois experiência mobile",
   "{base} comentário cliente vale a pena",
+  "{base} prazo urgente tentativa frustrada quanto pagou",
+  "{base} assinatura cancelamento reclamação alternativa grátis",
+  "{base} comparar preço comprar decisão iminente",
 ];
 
 const SCIENTIFIC_SOURCE_DOMAINS = [
@@ -547,6 +551,14 @@ export function analyzeSearchResults(
           coverage.sourceStatus === "OBSERVED" &&
           Number(coverage.activeAds || 0) > 0,
       ));
+  const purchaseMomentGate = buildPurchaseMomentResearchGate(
+    job,
+    comparableMarketplaceOffers,
+    {
+      evaluatedAt: options.sourceEvaluatedAt,
+      maxSourceAgeDays: options.maxSourceAgeDays,
+    },
+  );
   const minimumComparableOffers = Number(options.minimumComparableOffers || 10);
   const marketplaceGatePassed =
     !directedMarketplaceResearch ||
@@ -574,17 +586,19 @@ export function analyzeSearchResults(
         ? "RESEARCH_MORE"
         : !instagramB2cGatePassed
           ? "RESEARCH_MORE"
-          : highRiskHits > 0
-            ? "HUMAN_REVIEW"
-            : scientificArticles.length === 0
-              ? "RESEARCH_MORE"
-              : commercialIntentHits === 0
+          : purchaseMomentGate.required && !purchaseMomentGate.finalPrioritizationEligible
+            ? "RESEARCH_MORE"
+            : highRiskHits > 0
+              ? "HUMAN_REVIEW"
+              : scientificArticles.length === 0
                 ? "RESEARCH_MORE"
-                : score >= 70 && independentDomains >= 2
-                  ? "APPROVE"
-                  : score >= 45
-                    ? "RESEARCH_MORE"
-                    : "REJECT";
+                : commercialIntentHits === 0
+                  ? "RESEARCH_MORE"
+                  : score >= 70 && independentDomains >= 2
+                    ? "APPROVE"
+                    : score >= 45
+                      ? "RESEARCH_MORE"
+                      : "REJECT";
   const mechanismEvidence =
     scientificArticles.length > 0
       ? `${scientificArticles.length} artigo(s) científico(s) candidato(s) coletado(s) para sustentar ou limitar o mecanismo.`
@@ -635,16 +649,20 @@ export function analyzeSearchResults(
     ? `Foram encontradas ${comparableMarketplaceOffers.length} de ${minimumComparableOffers} ofertas comparáveis; o dossiê deve permanecer bloqueado para enriquecimento.`
     : !instagramB2cGatePassed
       ? `A cobertura Meta/Instagram não foi comprovada (${metaCoverage.map((item) => item.sourceStatus).join(", ") || "NOT_REQUESTED"}); ausência ou indisponibilidade da fonte não significa ausência de mercado.`
-      : highRiskHits > 0
-        ? "Tema contém sinais sensíveis e exige revisão humana antes de qualquer experimento."
-        : scientificArticles.length === 0
-          ? "Sem sustentação científica candidata do mecanismo; nova pesquisa é obrigatória antes de campanha."
-          : commercialIntentHits === 0
-            ? "Não há sinal verificável de intenção de compra; pesquisar preços, concorrentes, reviews e anúncios antes de campanha."
-            : "Evitar extrapolar evidência científica para promessa absoluta e validar disposição de compra em experimento controlado.";
+      : purchaseMomentGate.required && !purchaseMomentGate.sourceQualityPassed
+        ? `As fontes comerciais não passaram pelo gate de qualidade: ${purchaseMomentGate.reasons.join(" ")}`
+        : purchaseMomentGate.required
+          ? "A pesquisa está pronta para protótipo privado, mas ainda não possui duas leituras consistentes de microvalor, preferência sobre o gratuito e avanço ao checkout."
+          : highRiskHits > 0
+            ? "Tema contém sinais sensíveis e exige revisão humana antes de qualquer experimento."
+            : scientificArticles.length === 0
+              ? "Sem sustentação científica candidata do mecanismo; nova pesquisa é obrigatória antes de campanha."
+              : commercialIntentHits === 0
+                ? "Não há sinal verificável de intenção de compra; pesquisar preços, concorrentes, reviews e anúncios antes de campanha."
+                : "Evitar extrapolar evidência científica para promessa absoluta e validar disposição de compra em experimento controlado.";
 
   return {
-    decisionSummary: `Ciclo pesquisado com ${evidence.length} evidências públicas, ${comparableMarketplaceOffers.length} ofertas comparáveis, ${metaAdEvidence.length} anúncios Meta/Instagram aderentes, cobertura ${metaCoverage.map((item) => item.sourceStatus).join(", ") || "NOT_REQUESTED"}, ${instagramPublicEvidence.length} evidências públicas auxiliares de Instagram, ${independentDomains} domínios independentes, ${scientificArticles.length} artigos científicos candidatos e ${commercialIntentHits} sinais de intenção comercial. Principal decisão: ${decision}.`,
+    decisionSummary: `Ciclo pesquisado com ${evidence.length} evidências públicas, ${comparableMarketplaceOffers.length} ofertas comparáveis, ${metaAdEvidence.length} anúncios Meta/Instagram aderentes, cobertura ${metaCoverage.map((item) => item.sourceStatus).join(", ") || "NOT_REQUESTED"}, ${instagramPublicEvidence.length} evidências públicas auxiliares de Instagram, ${independentDomains} domínios independentes, ${scientificArticles.length} artigos científicos candidatos e ${commercialIntentHits} sinais de intenção comercial. Validação do momento de compra: ${purchaseMomentGate.status}. Principal decisão: ${decision}.`,
     opportunities: opportunityBlueprints.map((blueprint, index) => ({
       ...blueprint,
       scaleEvidence: `${independentDomains} domínios independentes e ${painHits} sinais de dor recorrente foram encontrados nos resultados públicos.`,
@@ -661,6 +679,7 @@ export function analyzeSearchResults(
         instagramB2cRequired,
         instagramB2cGatePassed,
         instagramPublicEvidence,
+        purchaseMomentGate,
         scientificArticles,
         commercialIntentHits,
       }),

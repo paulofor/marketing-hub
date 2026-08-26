@@ -174,6 +174,8 @@ test("analyzeSearchResults aceita o gate de canal somente com cobertura Meta Ins
     referenceId: String(index),
     title: `Treino entrevista emprego ${index}`,
     url: `https://hotmart.com/${index}`,
+    price: "R$ 29,00",
+    collectedAt: "2026-08-25T00:00:00Z",
   }));
   const report = analyzeSearchResults(job, results, offers, {
     minimumComparableOffers: 10,
@@ -192,6 +194,7 @@ test("analyzeSearchResults aceita o gate de canal somente com cobertura Meta Ins
         advertisersObserved: 1,
       },
     ],
+    sourceEvaluatedAt: "2026-08-26T00:00:00Z",
   });
 
   const evidence = JSON.parse(report.opportunities[0].evidenceJson);
@@ -199,6 +202,9 @@ test("analyzeSearchResults aceita o gate de canal somente com cobertura Meta Ins
   assert.equal(evidence.marketplaceOffers.length, 10);
   assert.equal(evidence.metaAdEvidence.length, 1);
   assert.equal(evidence.metaCoverage[0].advertisersObserved, 1);
+  assert.equal(evidence.purchaseMomentGate.status, "WAITING_PRIVATE_PROTOTYPE");
+  assert.equal(evidence.purchaseMomentGate.finalPrioritizationEligible, false);
+  assert.equal(report.opportunities[0].decision, "RESEARCH_MORE");
 });
 
 test("analyzeSearchResults approves strong non-sensitive PDE opportunity", () => {

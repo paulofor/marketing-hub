@@ -15,3 +15,7 @@ Regras obrigatórias:
 - quando o canal for Instagram e o ciclo declarar B2C, pesquise somente cenas pessoais, desejos do
   consumidor, ofertas simples, microvalor mobile e ganchos demonstráveis;
 - nesse recorte, bloqueie B2B disfarçado, operação empresarial e curso genérico.
+- pesquise momentos de compra iminente: prazo, consequência, tentativa frustrada, gasto atual,
+  assinatura, cancelamento, comparação de preço e alternativa gratuita;
+- fonte vazia, vencida ou com placeholder deve permanecer como falha de qualidade, nunca como sinal;
+- planeje um protótipo privado mensurável, mas não invente sua execução nem seus eventos.

@@ -217,6 +217,26 @@ describe("ProductValueChainHistoryPage", () => {
     expect(
       within(timeline).getAllByRole("button", { name: "Registrar commit" }),
     ).toHaveLength(4);
+    const activityLinks = within(timeline).getAllByRole("link", {
+      name: "Detalhar atividades",
+    });
+    expect(activityLinks).toHaveLength(4);
+    expect(activityLinks[0]).toHaveAttribute(
+      "href",
+      "/business-processes?processId=38",
+    );
+    expect(activityLinks[1]).toHaveAttribute(
+      "href",
+      "/business-processes?processId=43",
+    );
+    expect(activityLinks[2]).toHaveAttribute(
+      "href",
+      "/business-processes?processId=48",
+    );
+    expect(activityLinks[3]).toHaveAttribute(
+      "href",
+      "/business-processes?processId=18",
+    );
   });
 
   it("registers and displays a commit in the exact product process", async () => {

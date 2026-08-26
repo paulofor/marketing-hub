@@ -3,6 +3,7 @@ import {
   CheckCircle2,
   Clock3,
   GitBranch,
+  ListTree,
   Workflow,
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
@@ -257,10 +258,13 @@ export default function ProductValueChainHistoryPage() {
                             ? "Processo"
                             : "Subprocesso"}
                         </span>
+                        <h3 className="h6 mb-1">{measurement.processName}</h3>
                         <Link
+                          className="product-value-chain-history__activities-link"
                           to={`/business-processes?processId=${measurement.processDefinitionId}`}
                         >
-                          {measurement.processName}
+                          <ListTree size={15} aria-hidden="true" />
+                          Detalhar atividades
                         </Link>
                       </div>
                       <span className="product-value-chain-history__status">

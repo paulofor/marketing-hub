@@ -905,6 +905,13 @@
   text-underline-offset: 0.18em;
 }
 
+.product-value-chain-history__activities-link {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.35rem;
+  width: fit-content;
+}
+
 .product-value-chain-history__stage-type {
   align-items: center;
   color: #64748b;

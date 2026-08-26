@@ -220,11 +220,24 @@
 .process-node__objective strong {
   color: var(--bs-body-color);
 }
-.process-node__documents-link {
+.process-node__documents-link,
+.process-node__executions-link {
   display: inline-flex;
   margin-top: 0.35rem;
   font-size: 0.82rem;
   font-weight: 600;
+}
+.process-node__documents-link {
+  margin-left: 0.9rem;
+}
+@media (max-width: 575.98px) {
+  .process-node__documents-link {
+    margin-left: 0;
+  }
+  .process-node__documents-link,
+  .process-node__executions-link {
+    display: flex;
+  }
 }
 .business-process-objective-documents-link {
   display: inline-flex;

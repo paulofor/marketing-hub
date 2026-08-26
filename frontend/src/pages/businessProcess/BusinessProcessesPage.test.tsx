@@ -699,6 +699,19 @@ describe("BusinessProcessesPage", () => {
       "href",
       "/business-processes/22/activities/evidence/documents",
     );
+    expect(
+      screen.getAllByRole("link", {
+        name: "Ver as 10 execuções mais recentes",
+      }),
+    ).toHaveLength(2);
+    expect(
+      screen.getAllByRole("link", {
+        name: "Ver as 10 execuções mais recentes",
+      })[0],
+    ).toHaveAttribute(
+      "href",
+      "/business-processes/22/activities/evidence/executions",
+    );
     expect(screen.getAllByText("Objetivo:")).toHaveLength(3);
     expect(
       screen.queryByRole("link", {

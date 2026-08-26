@@ -151,6 +151,27 @@ atividade, tarefa bloqueada ou execução incompleta não pode aparecer nesse hi
 O consolidado do objetivo principal usa
 `GET /api/business-processes/{processDefinitionId}/documents` e aplica o mesmo limite e segregação.
 
+## Histórico recente de execução por atividade
+
+Todo nó `TASK` do diagrama BPM oferece acesso às **dez tarefas mais recentes** da atividade. A
+consulta usa o `process_code` canônico e o identificador estável da atividade para preservar o
+histórico válido mesmo quando o usuário abriu uma versão aposentada ou quando uma nova versão do
+mesmo processo foi publicada. Cada item informa obrigatoriamente a versão exata que originou a
+tarefa; processos com código diferente nunca podem ser misturados.
+
+O histórico inclui tarefas pendentes, em andamento, concluídas, bloqueadas e canceladas. A tela
+apresenta somente dados persistidos pelo backend: criação, início, término, duração derivável desses
+marcos, responsável, status, origem, nome interno do produto quando houver vínculo canônico, prompt
+enviado, resultado/comentários, evidências, falha, modelo, esforço de raciocínio, tokens e custo
+estimado. Ausência de medição ou de auditoria legada deve aparecer como não registrada, nunca como
+zero, valor padrão ou inferência do frontend. JSON persistido pode ser explorado em árvore sem
+alterar seu conteúdo original.
+
+A API canônica é
+`GET /api/business-processes/{processDefinitionId}/activities/{activityId}/executions`. O backend
+valida que a versão selecionada existe e que `activityId` corresponde a um nó `TASK`, limita a dez
+itens no banco e ordena da tarefa mais recente para a mais antiga.
+
 ## Primeiro processo: Geração de landing page
 
 A versão 1 formaliza o ciclo:

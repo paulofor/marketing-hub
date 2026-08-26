@@ -1,4 +1,3 @@
-import { type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, FileText } from "lucide-react";
 import {
@@ -7,80 +6,12 @@ import {
 } from "../../api/businessProcess/useBusinessProcessDocuments";
 import { useBusinessProcesses } from "../../api/businessProcess/useBusinessProcesses";
 import PageTitle from "../../components/PageTitle";
+import {
+  formattedDateTime,
+  formattedDuration,
+  StructuredExecutionContent,
+} from "./BusinessProcessExecutionPresentation";
 import "./BusinessProcessesPage.css";
-
-/** Formata a data vinda do backend sem alterar sua semântica operacional. */
-function formattedDateTime(value?: string) {
-  if (!value) return "Não informado";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Não informado";
-  return date.toLocaleString("pt-BR");
-}
-
-/** Calcula uma duração legível somente quando o backend informou os dois marcos da execução. */
-function formattedDuration(startedAt?: string, finishedAt?: string) {
-  if (!startedAt || !finishedAt) return "Não informado";
-  const durationMs = new Date(finishedAt).getTime() - new Date(startedAt).getTime();
-  if (!Number.isFinite(durationMs) || durationMs < 0) return "Não informado";
-  const seconds = Math.floor(durationMs / 1000);
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const remainingSeconds = seconds % 60;
-  return [
-    hours ? `${hours}h` : null,
-    minutes ? `${minutes}min` : null,
-    `${remainingSeconds}s`,
-  ]
-    .filter(Boolean)
-    .join(" ");
-}
-
-/** Renderiza valores simples de um JSON na árvore expansível. */
-function JsonValue({ value }: { value: unknown }) {
-  if (value === null) return <span className="business-process-json-tree__value">nulo</span>;
-  if (typeof value === "string") {
-    return <span className="business-process-json-tree__value">&quot;{value}&quot;</span>;
-  }
-  return <span className="business-process-json-tree__value">{String(value)}</span>;
-}
-
-/** Exibe objetos e listas JSON de forma progressiva, sem esconder o conteúdo original. */
-function JsonTree({ value, level = 0 }: { value: unknown; level?: number }): ReactNode {
-  if (value === null || typeof value !== "object") return <JsonValue value={value} />;
-  const entries = Array.isArray(value)
-    ? value.map((item, index) => [String(index), item] as const)
-    : Object.entries(value);
-  return (
-    <details className="business-process-json-tree" open={level === 0}>
-      <summary>{Array.isArray(value) ? `Lista (${entries.length})` : `Objeto (${entries.length})`}</summary>
-      <ul>
-        {entries.map(([key, nestedValue]) => (
-          <li key={key}>
-            <strong>{key}:</strong> <JsonTree value={nestedValue} level={level + 1} />
-          </li>
-        ))}
-      </ul>
-    </details>
-  );
-}
-
-/** Mostra JSON como árvore sob demanda e preserva texto puro das execuções legadas. */
-function DocumentContent({ value }: { value?: string }) {
-  if (!value) return <span className="text-body-secondary">Não informado.</span>;
-  try {
-    const parsed = JSON.parse(value);
-    return (
-      <details className="business-process-json-viewer">
-        <summary>Visualizar JSON em árvore</summary>
-        <div className="business-process-json-viewer__tree">
-          <JsonTree value={parsed} />
-        </div>
-      </details>
-    );
-  } catch {
-    return <pre className="business-process-document__content">{value}</pre>;
-  }
-}
 
 /** Exibe os dez documentos mais recentes de uma atividade, com sua auditoria de execução. */
 export default function BusinessProcessActivityDocumentsPage() {
@@ -95,7 +26,9 @@ export default function BusinessProcessActivityDocumentsPage() {
     activityId,
   );
   const processDocuments = useBusinessProcessDocuments(
-    !activityId && Number.isSafeInteger(processDefinitionId) && processDefinitionId > 0
+    !activityId &&
+      Number.isSafeInteger(processDefinitionId) &&
+      processDefinitionId > 0
       ? processDefinitionId
       : undefined,
   );
@@ -111,7 +44,7 @@ export default function BusinessProcessActivityDocumentsPage() {
       ? `/business-processes/retired?processId=${processDefinitionId}`
       : `/business-processes?processId=${processDefinitionId}`;
   const screenTitle = `${process?.name ?? "Processo"} · ${
-    activityId ? activity?.label ?? activityId : "Objetivos documentais"
+    activityId ? (activity?.label ?? activityId) : "Objetivos documentais"
   }`;
 
   if (!Number.isSafeInteger(processDefinitionId) || processDefinitionId <= 0) {
@@ -160,8 +93,9 @@ export default function BusinessProcessActivityDocumentsPage() {
                   <span className="flex-grow-1">
                     <strong>{document.title}</strong>
                     <small className="d-block text-body-secondary mt-1">
-                      Tarefa #{document.taskId} · {document.assignedAgentNickname} ·{" "}
-                      encerrada em {formattedDateTime(document.finishedAt)}
+                      Tarefa #{document.taskId} ·{" "}
+                      {document.assignedAgentNickname} · encerrada em{" "}
+                      {formattedDateTime(document.finishedAt)}
                     </small>
                   </span>
                 </summary>
@@ -181,7 +115,12 @@ export default function BusinessProcessActivityDocumentsPage() {
                     </div>
                     <div>
                       <dt>Duração</dt>
-                      <dd>{formattedDuration(document.startedAt, document.finishedAt)}</dd>
+                      <dd>
+                        {formattedDuration(
+                          document.startedAt,
+                          document.finishedAt,
+                        )}
+                      </dd>
                     </div>
                     <div>
                       <dt>Modelo utilizado</dt>
@@ -214,13 +153,15 @@ export default function BusinessProcessActivityDocumentsPage() {
                     </div>
                   </dl>
                   <h2 className="h6">Prompt enviado ao modelo</h2>
-                  <DocumentContent value={document.promptSent} />
+                  <StructuredExecutionContent value={document.promptSent} />
                   <h2 className="h6">Documento gerado</h2>
-                  <DocumentContent value={document.resultJson} />
+                  <StructuredExecutionContent value={document.resultJson} />
                   <details className="mt-3">
                     <summary className="fw-semibold">Evidências</summary>
                     <div className="mt-2">
-                      <DocumentContent value={document.evidenceJson} />
+                      <StructuredExecutionContent
+                        value={document.evidenceJson}
+                      />
                     </div>
                   </details>
                 </div>
@@ -231,9 +172,7 @@ export default function BusinessProcessActivityDocumentsPage() {
             <div className="business-process-documents-empty">
               <FileText size={32} aria-hidden="true" />
               <strong>Nenhum documento concluído</strong>
-              <span>
-                Esta atividade ainda não possui documento concluído.
-              </span>
+              <span>Esta atividade ainda não possui documento concluído.</span>
             </div>
           ) : null}
         </section>

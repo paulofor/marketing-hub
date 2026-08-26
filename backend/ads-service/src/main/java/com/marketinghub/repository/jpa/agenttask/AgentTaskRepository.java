@@ -81,6 +81,20 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
       @Param("activityId") String activityId,
       Pageable pageable);
 
+  /** Busca as tarefas mais recentes da atividade estável em todas as versões do mesmo processo. */
+  @Query(
+      """
+      select task
+      from AgentTask task
+      where task.processDefinition.processCode = :processCode
+        and task.processActivityId = :activityId
+      order by task.createdAt desc, task.id desc
+      """)
+  List<AgentTask> findRecentActivityExecutions(
+      @Param("processCode") String processCode,
+      @Param("activityId") String activityId,
+      Pageable pageable);
+
   /** Busca os documentos mais recentes da definição inteira sem misturar outros processos. */
   @Query(
       """

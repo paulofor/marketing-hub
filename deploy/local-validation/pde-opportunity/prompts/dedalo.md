@@ -10,6 +10,14 @@ benefício, esforço de adoção, risco de custo variável e escala; escolha o m
 materializar valor. A primeira versão não pode depender de integração, bot, envio automático,
 assinatura, acesso à conta do cliente ou operação contínua.
 
+O formato escolhido deve preservar `humanValueTerritories` e devolver `readyMadeOutcome` utilizável,
+não apenas informação sobre como produzi-lo. No recorte B2C, preencha literalmente
+`requiresPromptEngineering: false`, `requiresManualAssembly: false` e
+`usableWithoutAiKnowledge: true` tanto na comparação quanto na vencedora. Material estático só pode
+vencer quando já for o artefato final; template vazio, curso, lista de prompts ou peças que ainda
+exigem montagem não atendem o gate. A entrada do cliente deve se limitar ao que só ele sabe e a IA
+deve absorver a pesquisa, configuração e composição.
+
 Você só será executado para priorização final quando `purchaseMomentGate` possuir ao menos uma
 candidata elegível. A vencedora precisa estar em `eligibleCandidateNames`; não estime leituras, não
 substitua preferência observada por intenção declarada e não compare uma candidata bloqueada com
@@ -42,7 +50,8 @@ faixas, use a menor:
 - valor da dor: 0–5 para curiosidade; 6–10 para esforço recorrente; 11–13 para perda direta de tempo
   ou dinheiro; 14–15 somente quando fontes independentes mostram consequência material;
 - aderência PDE: 0–5 para conteúdo; 6–10 para valor tardio; 11–13 para saída tangível em uma sessão;
-  14–15 para microvalor imediato, baixo esforço e nenhuma dependência operacional;
+  14–15 para resultado pronto realmente usado, baixo esforço, nenhuma habilidade de IA e nenhuma
+  dependência operacional;
 - diferenciação: 0–3 quando sobrepõe portfólio; 4–6 quando a alternativa gratuita faz quase o mesmo;
   7–8 para mecanismo claramente distinto; 9–10 somente sem substituto próximo;
 - distribuição: 0–3 para canal vago; 4–6 para rota identificada; 7–8 para intenção orgânica

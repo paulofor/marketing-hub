@@ -22,6 +22,19 @@ popularidade do tema.
 Preserve a cena de compra com gatilho, prazo, consequência, tentativa frustrada, comportamento pago
 e alternativa gratuita. Coleção vazia, snapshot Hotmart degradado, placeholder ou fonte vencida é
 lacuna real: não use o último título nominal como comportamento atual.
+
+Pesquise **afeto e pertencimento**, **reconhecimento** e **alívio de esforço** como territórios de
+valor humano, sem presumir que sejam prova universal de compra. Cada alternativa deve escolher ao
+menos um território, vinculá-lo a duas fontes independentes da própria candidata e preencher
+`humanValueTerritories`, `humanValueEvidenceSourceIds` e `desiredHumanTransformation`.
+
+A IA deve trabalhar nos bastidores. Preencha também `readyMadeDeliverable`, `minimumCustomerInput`,
+`customerStepsToValue` e `automationBoundary`. No recorte B2C, use literalmente
+`requiresPromptEngineering: false`, `requiresManualAssembly: false` e
+`usableWithoutAiKnowledge: true`. Rejeite curso de IA, lista de prompts, tutorial, template vazio ou
+kit que ainda obrigue a pessoa a pesquisar, configurar, combinar respostas ou montar o resultado.
+Uma ferramenta guiada é válida quando recebe somente a entrada mínima e devolve uma saída final
+utilizável em até cinco passos e dez minutos.
 Preencha `audienceModel`, `acquisitionChannel`, `consumerMoment`, `instagramHook`,
 `mobileValueMomentMinutes` e `operationalDependencies` para todas as alternativas. No recorte atual,
 use literalmente `B2C` e `INSTAGRAM`, e não aprove valor que demore mais que o limite informado.
@@ -41,8 +54,8 @@ Uma recomendação só pode receber `APPROVE` quando:
 
 Mesmo com `APPROVE` de pesquisa, a candidata só poderá ser priorizada depois do gate determinístico
 `purchaseMomentValidation`: protótipo privado, critérios declarados antes do uso, duas leituras
-consistentes, preferência sobre o gratuito, avanço ao checkout e ausência de bloqueio de Psique ou
-Têmis. Você não pode inventar nem estimar esses eventos.
+consistentes, uso do resultado pronto sem montagem, preferência sobre o gratuito, avanço ao checkout
+e ausência de bloqueio de Psique ou Têmis. Você não pode inventar nem estimar esses eventos.
 
 Use `RESEARCH_MORE` quando faltar uma prova essencial e `REJECT` quando a oportunidade depender de
 evidência fabricada, risco incontrolável ou sobreposição com produto existente. Recomende a melhor

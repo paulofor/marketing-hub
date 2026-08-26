@@ -29,6 +29,9 @@ test("Argos usa a contagem determinística sem promover relatos a ofertas", asyn
   assert.match(prompt, /Temperatura, score, ranking e presença na Hotmart não são vendas/);
   assert.match(prompt, /pesquisas\/momentos-de-compra-b2c/);
   assert.match(prompt, /duas leituras\s+consistentes/);
+  assert.match(prompt, /afeto e pertencimento.*reconhecimento.*alívio de esforço/s);
+  assert.match(prompt, /requiresPromptEngineering: false/);
+  assert.match(prompt, /readyMadeDeliverable/);
 });
 
 test("Dédalo usa padrões sem copiar nem pontuar inspiração", async () => {
@@ -49,10 +52,13 @@ test("agentes preservam o gate B2C e a atribuição Instagram", async () => {
   assert.match(argos, /bloqueie\s+B2B disfarçado/);
   assert.match(argos, /mobileValueMomentMinutes/);
   assert.match(hermes, /IMPRESSION.*CHECKOUT_STARTED/s);
+  assert.match(hermes, /READY_RESULT_USED/);
   assert.match(hermes, /rota escolhida.*INSTAGRAM/s);
   assert.match(psique, /canReachValueAlone/);
   assert.match(psique, /manipulationRisk.*LOW/s);
   assert.match(psique, /não substitui o comportamento observado/);
+  assert.match(psique, /readyMadeOutcomeIsUsable/);
+  assert.match(psique, /aiSkillRequired: false/);
 });
 
 test("Hermes separa plano de validação de comportamento observado", async () => {
@@ -60,6 +66,14 @@ test("Hermes separa plano de validação de comportamento observado", async () =
 
   assert.match(prompt, /Aprovar o\s+plano não significa que a validação aconteceu/);
   assert.match(prompt, /início, microvalor, preferência.*checkout/s);
+});
+
+test("Dédalo exige resultado pronto sem transferir o trabalho de IA", async () => {
+  const prompt = await readFile(new URL("./prompts/dedalo.md", import.meta.url), "utf8");
+
+  assert.match(prompt, /readyMadeOutcome/);
+  assert.match(prompt, /requiresManualAssembly: false/);
+  assert.match(prompt, /lista de prompts.*não atendem o gate/s);
 });
 
 test("Hermes não supera uma decisão de evidência não aprovada", async () => {

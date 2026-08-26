@@ -3,6 +3,11 @@ const REQUIRED_LIVE_COLLECTIONS = [
   "IA_APLICADA",
   "MOMENTOS_COMPRA_B2C",
 ];
+const HUMAN_VALUE_TERRITORIES = new Set([
+  "AFFECTION_AND_BELONGING",
+  "RECOGNITION",
+  "EFFORT_RELIEF",
+]);
 
 /** Consolida fatos observados e impede priorização B2C/Instagram antes do momento de compra. */
 export function buildPurchaseMomentGate(research) {
@@ -25,17 +30,24 @@ export function buildPurchaseMomentGate(research) {
   const validationsByCandidate = new Map(
     (contract.candidates || []).map((candidate) => [candidate.candidateName, candidate]),
   );
+  const sourceById = new Map(
+    (research?.sources || []).map((source) => [source.id, source]),
+  );
   const candidates = (research?.candidates || []).map((candidate) =>
     evaluateCandidate(
       candidate,
       validationsByCandidate.get(candidate.name),
       criteria,
       sourceQuality.passed,
+      sourceById,
     ),
   );
-  const eligibleCandidateNames = candidates
-    .filter((candidate) => candidate.eligibleForFinalPrioritization)
-    .map((candidate) => candidate.candidateName);
+  const eligibleCandidateNames =
+    sourceQuality.passed && criteria.passed
+      ? candidates
+          .filter((candidate) => candidate.eligibleForFinalPrioritization)
+          .map((candidate) => candidate.candidateName)
+      : [];
   const reasons = [...sourceQuality.reasons, ...criteria.reasons];
   if (eligibleCandidateNames.length === 0) {
     reasons.push("Nenhuma candidata possui duas leituras válidas para priorização final.");
@@ -68,7 +80,11 @@ export function buildPurchaseMomentGate(research) {
 /** Confirma que a vencedora passou pelo gate antes de qualquer comparação com benchmark. */
 export function assertPurchaseMomentEligible(gate, candidateName) {
   if (!gate.required) return;
-  if (!gate.eligibleCandidateNames.includes(candidateName)) {
+  if (
+    gate.status !== "PASS" ||
+    gate.finalPrioritizationEligible !== true ||
+    !gate.eligibleCandidateNames.includes(candidateName)
+  ) {
     throw new Error(
       `${candidateName} não possui Validação do Momento de Compra aprovada antes da priorização.`,
     );
@@ -151,6 +167,7 @@ function evaluateCriteria(criteria) {
     ),
     minimumExperienceStartRate: Number(criteria?.minimumExperienceStartRate),
     minimumValueMomentRate: Number(criteria?.minimumValueMomentRate),
+    minimumReadyResultUseRate: Number(criteria?.minimumReadyResultUseRate),
     minimumPrototypePreferenceRate: Number(criteria?.minimumPrototypePreferenceRate),
     minimumCheckoutStartRate: Number(criteria?.minimumCheckoutStartRate),
   };
@@ -164,6 +181,7 @@ function evaluateCriteria(criteria) {
   for (const key of [
     "minimumExperienceStartRate",
     "minimumValueMomentRate",
+    "minimumReadyResultUseRate",
     "minimumPrototypePreferenceRate",
     "minimumCheckoutStartRate",
   ]) {
@@ -171,10 +189,15 @@ function evaluateCriteria(criteria) {
       reasons.push(`${key} deve ficar entre 0 e 1.`);
     }
   }
+  if (normalized.minimumReadyResultUseRate <= 0) {
+    reasons.push(
+      "minimumReadyResultUseRate deve ser maior que zero para exigir uso observado.",
+    );
+  }
   return { passed: reasons.length === 0, reasons, normalized };
 }
 
-function evaluateCandidate(candidate, validation, criteria, sourcesPassed) {
+function evaluateCandidate(candidate, validation, criteria, sourcesPassed, sourceById) {
   const reasons = [];
   if (!validation) {
     return candidateResult(candidate.name, "WAITING_VALIDATION", reasons.concat(
@@ -198,6 +221,12 @@ function evaluateCandidate(candidate, validation, criteria, sourcesPassed) {
   if (!validation.freeAlternative?.prototypeAdvantage?.trim()) {
     reasons.push("Vantagem pretendida sobre o gratuito ausente.");
   }
+  const humanValueDelivery = evaluateHumanValueDelivery(
+    candidate,
+    validation.humanValueDelivery,
+    sourceById,
+  );
+  reasons.push(...humanValueDelivery.reasons);
   if (
     !validation.prototype?.prototypeId?.trim() ||
     validation.prototype.private !== true ||
@@ -239,6 +268,7 @@ function evaluateCandidate(candidate, validation, criteria, sourcesPassed) {
     eligibleForFinalPrioritization: status === "PASS",
     scene: validation.scene,
     freeAlternative: validation.freeAlternative,
+    humanValueDelivery: humanValueDelivery.normalized,
     prototype: validation.prototype,
     readings,
     reasons,
@@ -251,6 +281,9 @@ function evaluateReading(reading, criteria, declaredAt) {
   const eligibleParticipants = integer(reading?.eligibleParticipants);
   const experienceStarted = integer(reading?.experienceStarted);
   const valueMoments = integer(reading?.valueMoments);
+  const readyResultsUsedWithoutAssembly = integer(
+    reading?.readyResultsUsedWithoutAssembly,
+  );
   const prototypePreferredOverFree = integer(reading?.prototypePreferredOverFree);
   const checkoutStarted = integer(reading?.checkoutStarted);
   if (!reading?.readingId?.trim()) reasons.push("Leitura sem identificador.");
@@ -271,13 +304,21 @@ function evaluateReading(reading, criteria, declaredAt) {
     reasons.push(`${reading?.readingId || "Leitura"} não possui decisão de Têmis.`);
   }
   if (
-    [eligibleParticipants, experienceStarted, valueMoments, prototypePreferredOverFree, checkoutStarted]
+    [
+      eligibleParticipants,
+      experienceStarted,
+      valueMoments,
+      readyResultsUsedWithoutAssembly,
+      prototypePreferredOverFree,
+      checkoutStarted,
+    ]
       .some((value) => value === null)
   ) {
     reasons.push(`${reading?.readingId || "Leitura"} possui contagem inválida.`);
   } else if (
     experienceStarted > eligibleParticipants ||
     valueMoments > experienceStarted ||
+    readyResultsUsedWithoutAssembly > valueMoments ||
     prototypePreferredOverFree > eligibleParticipants ||
     checkoutStarted > experienceStarted
   ) {
@@ -286,12 +327,14 @@ function evaluateReading(reading, criteria, declaredAt) {
 
   const experienceStartRate = rate(experienceStarted, eligibleParticipants);
   const valueMomentRate = rate(valueMoments, experienceStarted);
+  const readyResultUseRate = rate(readyResultsUsedWithoutAssembly, experienceStarted);
   const prototypePreferenceRate = rate(prototypePreferredOverFree, eligibleParticipants);
   const checkoutStartRate = rate(checkoutStarted, experienceStarted);
   const thresholdsPassed =
     eligibleParticipants >= criteria.minimumEligibleParticipantsPerReading &&
     experienceStartRate >= criteria.minimumExperienceStartRate &&
     valueMomentRate >= criteria.minimumValueMomentRate &&
+    readyResultUseRate >= criteria.minimumReadyResultUseRate &&
     prototypePreferenceRate >= criteria.minimumPrototypePreferenceRate &&
     checkoutStartRate >= criteria.minimumCheckoutStartRate;
   const safetyPassed =
@@ -323,6 +366,13 @@ function evaluateReading(reading, criteria, declaredAt) {
   appendRateFailure(
     reasons,
     reading?.readingId,
+    "uso do resultado pronto sem montagem",
+    readyResultUseRate,
+    criteria.minimumReadyResultUseRate,
+  );
+  appendRateFailure(
+    reasons,
+    reading?.readingId,
     "preferência sobre o gratuito",
     prototypePreferenceRate,
     criteria.minimumPrototypePreferenceRate,
@@ -347,10 +397,12 @@ function evaluateReading(reading, criteria, declaredAt) {
     eligibleParticipants,
     experienceStarted,
     valueMoments,
+    readyResultsUsedWithoutAssembly,
     prototypePreferredOverFree,
     checkoutStarted,
     experienceStartRate,
     valueMomentRate,
+    readyResultUseRate,
     prototypePreferenceRate,
     checkoutStartRate,
     psiqueDecision: reading?.psiqueDecision || null,
@@ -360,6 +412,103 @@ function evaluateReading(reading, criteria, declaredAt) {
     passed: reasons.length === 0 && thresholdsPassed && safetyPassed,
     reasons,
   };
+}
+
+function evaluateHumanValueDelivery(candidate, contract, sourceById) {
+  const reasons = [];
+  const territories = Array.isArray(contract?.territories)
+    ? [...new Set(contract.territories)]
+    : [];
+  if (
+    territories.length === 0 ||
+    territories.some((territory) => !HUMAN_VALUE_TERRITORIES.has(territory))
+  ) {
+    reasons.push("Território humano ausente ou fora do contrato canônico.");
+  }
+  const evidenceSourceIds = Array.isArray(contract?.evidenceSourceIds)
+    ? [...new Set(contract.evidenceSourceIds)]
+    : [];
+  const evidenceSources = evidenceSourceIds.map((sourceId) => sourceById.get(sourceId));
+  if (
+    evidenceSourceIds.length < 2 ||
+    evidenceSources.some(
+      (source) => !source || source.candidateName !== candidate.name,
+    ) ||
+    new Set(evidenceSources.filter(Boolean).map((source) => source.pathway)).size < 2
+  ) {
+    reasons.push("Território humano não possui duas evidências independentes da candidata.");
+  }
+  for (const field of [
+    "desiredTransformation",
+    "readyMadeOutcome",
+    "minimumCustomerInput",
+    "automationBoundary",
+  ]) {
+    if (!contract?.[field]?.trim()) {
+      reasons.push(`Entrega de valor humano sem ${field}.`);
+    }
+  }
+  if (
+    contract?.requiresPromptEngineering !== false ||
+    contract?.requiresManualAssembly !== false ||
+    contract?.usableWithoutAiKnowledge !== true
+  ) {
+    reasons.push("A entrega transfere prompting, montagem ou conhecimento de IA ao cliente.");
+  }
+  const customerStepsToValue = integer(contract?.customerStepsToValue);
+  const timeToUsableResultMinutes = integer(contract?.timeToUsableResultMinutes);
+  if (
+    customerStepsToValue === null ||
+    customerStepsToValue < 1 ||
+    customerStepsToValue > 5
+  ) {
+    reasons.push("A entrega pronta deve chegar ao valor em um a cinco passos.");
+  }
+  if (
+    timeToUsableResultMinutes === null ||
+    timeToUsableResultMinutes < 1 ||
+    timeToUsableResultMinutes > 10
+  ) {
+    reasons.push("O resultado pronto deve ficar utilizável em até dez minutos.");
+  }
+  if (
+    Array.isArray(candidate?.humanValueTerritories) &&
+    !sameStringSet(candidate.humanValueTerritories, territories)
+  ) {
+    reasons.push("A validação alterou os territórios humanos declarados na pesquisa.");
+  }
+  if (
+    candidate?.readyMadeDeliverable?.trim() &&
+    candidate.readyMadeDeliverable.trim() !== contract?.readyMadeOutcome?.trim()
+  ) {
+    reasons.push("A validação alterou o resultado pronto declarado na pesquisa.");
+  }
+
+  return {
+    normalized: {
+      territories,
+      desiredTransformation: contract?.desiredTransformation || null,
+      evidenceSourceIds,
+      evidencePathways: [
+        ...new Set(evidenceSources.filter(Boolean).map((source) => source.pathway)),
+      ],
+      readyMadeOutcome: contract?.readyMadeOutcome || null,
+      minimumCustomerInput: contract?.minimumCustomerInput || null,
+      requiresPromptEngineering: contract?.requiresPromptEngineering,
+      requiresManualAssembly: contract?.requiresManualAssembly,
+      usableWithoutAiKnowledge: contract?.usableWithoutAiKnowledge,
+      customerStepsToValue,
+      timeToUsableResultMinutes,
+      automationBoundary: contract?.automationBoundary || null,
+    },
+    reasons,
+  };
+}
+
+function sameStringSet(left, right) {
+  const normalizedLeft = [...new Set(left)].sort();
+  const normalizedRight = [...new Set(right)].sort();
+  return JSON.stringify(normalizedLeft) === JSON.stringify(normalizedRight);
 }
 
 function appendRateFailure(reasons, readingId, metric, observed, minimum) {

@@ -18,14 +18,20 @@ segregados para início, microvalor, preferência frente à alternativa gratuita
 plano não significa que a validação aconteceu: sem duas leituras próprias e consistentes,
 `purchaseMomentGate` continuará bloqueando Dédalo antes do score final.
 
+Preserve em cada jornada `humanValueTerritories` e `readyMadeOutcome`. A comunicação vende o
+resultado humano e a saída pronta, não a tecnologia. O cliente não pode precisar escrever prompts,
+conhecer IA ou combinar peças depois da experiência. Entre `VALUE_MOMENT` e checkout, registre o
+evento literal `READY_RESULT_USED` somente quando a pessoa realmente usar a saída pronta sem
+montagem ou ferramenta externa.
+
 No recorte B2C/Instagram, uma das três rotas deve ser explicitamente Instagram e a rota escolhida
 deve começar por um criativo capaz de mostrar a cena, a microexperiência e a saída concreta no
 celular. Registre atribuição entre impressão, clique, início, momento de valor e checkout. Não use
 seguidores, alcance ou anúncio ativo como prova de compra e não explore insegurança, rejeição ou
 solidão para forçar ação.
 Classifique cada rota em `channel` e registre em `eventPath` os códigos literais `IMPRESSION`,
-`CLICK`, `EXPERIENCE_STARTED`, `VALUE_MOMENT` e `CHECKOUT_STARTED`. No recorte atual, a rota escolhida
-por `chosenInitialRouteIndex` deve ser a rota `INSTAGRAM`.
+`CLICK`, `EXPERIENCE_STARTED`, `VALUE_MOMENT`, `READY_RESULT_USED` e `CHECKOUT_STARTED`. No recorte
+atual, a rota escolhida por `chosenInitialRouteIndex` deve ser a rota `INSTAGRAM`.
 
 Sua decisão não pode superar a evidência de Argos: quando `argos.decision` for diferente de
 `APPROVE`, preserve a análise das três jornadas, mas retorne `RESEARCH_MORE` ou `REJECT`, nunca

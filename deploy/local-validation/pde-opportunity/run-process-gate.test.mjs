@@ -132,6 +132,7 @@ function makeEligible(input) {
       minimumEligibleParticipantsPerReading: 5,
       minimumExperienceStartRate: 0.7,
       minimumValueMomentRate: 0.6,
+      minimumReadyResultUseRate: 0.6,
       minimumPrototypePreferenceRate: 0.6,
       minimumCheckoutStartRate: 0.2,
     },
@@ -149,6 +150,25 @@ function makeEligible(input) {
         freeAlternative: {
           name: "Ensaio sozinho com ChatGPT",
           prototypeAdvantage: "Compara duas respostas faladas da própria pessoa",
+        },
+        humanValueDelivery: {
+          territories: ["RECOGNITION", "EFFORT_RELIEF"],
+          desiredTransformation:
+            "Sentir que consegue demonstrar a própria capacidade com menos esforço",
+          evidenceSourceIds: [
+            "interview-training-study",
+            "interview-community-blank",
+          ],
+          readyMadeOutcome:
+            "diagnóstico visual da resposta falada com lacunas priorizadas e uma versão comparável pronta para novo ensaio",
+          minimumCustomerInput: "Tipo de vaga, pergunta e uma gravação curta",
+          requiresPromptEngineering: false,
+          requiresManualAssembly: false,
+          usableWithoutAiKnowledge: true,
+          customerStepsToValue: 3,
+          timeToUsableResultMinutes: 8,
+          automationBoundary:
+            "A pessoa aprova a versão final e nenhuma experiência profissional é inventada",
         },
         prototype: {
           prototypeId: "PRIVATE-INTERVIEW-1",
@@ -174,6 +194,7 @@ function reading(readingId, observedAt) {
     eligibleParticipants: 5,
     experienceStarted: 5,
     valueMoments: 4,
+    readyResultsUsedWithoutAssembly: 4,
     prototypePreferredOverFree: 4,
     checkoutStarted: 2,
     psiqueDecision: "APPROVE",

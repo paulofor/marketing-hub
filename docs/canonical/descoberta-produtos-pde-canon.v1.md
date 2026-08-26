@@ -155,6 +155,38 @@ Nesse recorte, cada candidata deve registrar:
 - dependencia de outra pessoa, conta, integracao ou operacao humana que possa impedir a primeira
   entrega de valor.
 
+## Territorios humanos e entrega pronta
+
+Por decisao de 2026-08-26, a Descoberta PDE deve pesquisar prioritariamente oportunidades que
+ajudem a pessoa a experimentar pelo menos um destes territorios de valor: **afeto e pertencimento**,
+**reconhecimento** ou **alivio de esforco**. Esses territorios orientam a busca, mas nao constituem
+prova universal de demanda. Cada candidata ainda deve vincular o territorio escolhido a pelo menos
+duas evidencias independentes do publico e preservar a linguagem observada.
+
+No recorte B2C, a IA deve trabalhar nos bastidores. A proposta nao pode transferir ao cliente o
+trabalho de aprender prompting, pesquisar ferramentas, combinar respostas, configurar automacoes ou
+montar manualmente o resultado. A candidata deve declarar um contrato `humanValueDelivery` com:
+
+- um ou mais territorios entre `AFFECTION_AND_BELONGING`, `RECOGNITION` e `EFFORT_RELIEF`;
+- transformacao percebida e fontes independentes que sustentam sua relevancia para a cena;
+- resultado ou artefato pronto que a pessoa consegue usar;
+- entrada minima que somente o cliente pode fornecer para personalizar o resultado;
+- no maximo cinco passos do inicio ao primeiro resultado utilizavel e valor em ate dez minutos;
+- `requiresPromptEngineering: false`, `requiresManualAssembly: false` e
+  `usableWithoutAiKnowledge: true`;
+- limite de automacao que preserve controle, privacidade, autenticidade e responsabilidade humana.
+
+Template, curso, lista de prompts, tutorial de ferramenta ou conjunto de pecas ainda dependente de
+montagem nao atende entrega pronta. Uma ferramenta guiada pode atender quando recebe apenas a entrada
+minima, executa o trabalho complexo e devolve uma saida final utilizavel. Afeto nao autoriza promessa
+de controlar outra pessoa; reconhecimento nao autoriza vergonha, comparacao humilhante ou status
+falso; alivio de esforco nao autoriza esconder trabalho essencial nem prometer resultado garantido.
+
+No prototipo privado, cada leitura deve observar tambem `READY_RESULT_USED`: participante que usou o
+resultado pronto sem prompting ou montagem externa. O criterio minimo dessa taxa deve ser maior que
+zero, declarado antes do uso, calculado sobre quem iniciou a experiencia e aprovado nas duas
+leituras. Interesse, elogio ou entrega gerada sem uso nao substituem esse fato.
+
 O gate deve rejeitar B2B disfarçado de B2C, curso generico sem microexperiencia, produto que dependa
 de operacao empresarial para gerar valor e ideia cuja aquisicao no Instagram seja apenas uma
 suposicao. Temperatura Hotmart, anuncio ativo, audiencia e pontuacao continuam sendo sinais, nao
@@ -201,10 +233,11 @@ unica autoridade para liberar a etapa seguinte.
 
 O contrato persistivel `purchaseMomentGate` deve expor, de forma coerente, `required`, `status`,
 `sourceQualityPassed`, `finalPrioritizationEligible`, `minimumIndependentReadings`, criterios,
-candidatas elegiveis e leituras. Em uma aprovacao, o backend nao pode confiar somente nos booleanos
+candidatas elegiveis, `humanValueDelivery` e leituras. Em uma aprovacao, o backend nao pode confiar somente nos booleanos
 do worker: deve confirmar o vinculo nominal da candidata, a cena e o prototipo privado, recalcular
-as taxas pelas contagens, exigir IDs distintos, validar a ordem temporal e confirmar as decisoes de
-Psique e Temis. Divergencia entre resumo e fatos bloqueia a conclusao.
+as taxas de inicio, microvalor, uso do resultado pronto, preferencia e checkout pelas contagens,
+exigir IDs distintos, validar a ordem temporal e confirmar as decisoes de Psique e Temis.
+Divergencia entre resumo e fatos bloqueia a conclusao.
 
 O resultado deve seguir estas regras:
 
@@ -504,7 +537,7 @@ validacao PDE atual superar os motivos historicos de baixa conversao.
 
 ## Gates de negocio
 
-O modulo deve ter pelo menos seis gates:
+O modulo deve ter pelo menos sete gates:
 
 1. Gate de escala: bloqueia dores pequenas demais ou sem evidencias independentes.
 2. Gate de desatendimento: bloqueia dores ja bem atendidas por solucoes simples e baratas.
@@ -516,6 +549,9 @@ O modulo deve ter pelo menos seis gates:
 6. Gate de momento de compra: no recorte B2C/Instagram, bloqueia priorizacao final sem fontes
    atuais, prototipo privado, criterios predeclarados, duas leituras consistentes, vantagem
    observada sobre o gratuito e ausencia de bloqueio de Psique ou Temis.
+7. Gate de valor humano e entrega pronta: bloqueia candidata sem territorio sustentado por evidencia,
+   resultado final utilizavel, entrada minima, baixo numero de passos e uso observado sem prompting
+   ou montagem manual.
 
 ## Relacao com outros modulos
 
@@ -535,7 +571,8 @@ Uma oportunidade de produto PDE so e boa se puder ser resumida assim:
 
 ```text
 Muitas pessoas vivem [dor concreta], as solucoes atuais deixam [lacuna clara], e podemos
-entregar [microexperiencia digital] que gera [valor percebido rapido] com baixo esforco.
+entregar [resultado pronto e utilizavel] que gera [afeto, reconhecimento ou alivio de esforco]
+com entrada minima e baixo esforco.
 ```
 
 Se essa frase nao puder ser preenchida com evidencia, a oportunidade nao deve avancar.

@@ -204,6 +204,16 @@ test("analyzeSearchResults aceita o gate de canal somente com cobertura Meta Ins
   assert.equal(evidence.metaCoverage[0].advertisersObserved, 1);
   assert.equal(evidence.purchaseMomentGate.status, "WAITING_PRIVATE_PROTOTYPE");
   assert.equal(evidence.purchaseMomentGate.finalPrioritizationEligible, false);
+  assert.ok(
+    evidence.purchaseMomentGate.requiredObservedSignals.includes(
+      "READY_RESULT_USED",
+    ),
+  );
+  assert.equal(
+    evidence.purchaseMomentGate.humanValueDeliveryRequirements
+      .requiresManualAssembly,
+    false,
+  );
   assert.equal(report.opportunities[0].decision, "RESEARCH_MORE");
 });
 

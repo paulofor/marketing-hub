@@ -15,8 +15,13 @@ Cada resumo diário deve registrar:
 - gasto atual, orçamento disponível e ofertas pagas comparáveis;
 - tentativa frustrada, reclamações e linguagem literal do consumidor;
 - alternativa gratuita mais forte;
+- territorio humano observado entre afeto e pertencimento, reconhecimento e alivio de esforco,
+  com linguagem e fontes que sustentem essa leitura sem presumir que ela seja universal;
+- resultado pronto que a pessoa gostaria de receber, entrada minima inevitavel e trabalho que ela
+  rejeita fazer com IA, incluindo prompting, configuracao, pesquisa e montagem manual;
 - demonstração possível em Reel;
 - microvalor observável em até dez minutos;
+- uso observavel do resultado pronto sem montagem externa;
 - comportamento observado de comparação, assinatura, cancelamento ou compra, quando houver;
 - limites de segurança, privacidade e promessa;
 - fontes, data de consulta e distinção explícita entre sinal, intenção e venda reconciliada.

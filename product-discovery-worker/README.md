@@ -23,6 +23,11 @@ retorna status, modo de coleta, anúncios aderentes, anúncios ativos, anunciant
 atualidade. A evidência Meta fica separada das ofertas comparáveis: anúncio ativo indica
 presença e investimento aparente, nunca venda comprovada.
 
+O mesmo plano pesquisa afeto e pertencimento, reconhecimento e alívio de esforço como territórios
+de valor que precisam de evidência. A candidata deve entregar um resultado pronto com entrada
+mínima, sem transferir prompting, configuração, montagem ou conhecimento de IA ao consumidor. O
+gate privado observa `READY_RESULT_USED` antes de permitir priorização final.
+
 ## Variáveis
 
 - `BACKEND_BASE_URL`: URL do backend principal. Padrão: `http://191.252.181.168`.

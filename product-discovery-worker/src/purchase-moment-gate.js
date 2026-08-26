@@ -61,13 +61,27 @@ export function buildPurchaseMomentResearchGate(job, marketplaceOffers, options 
     requiredObservedSignals: [
       "EXPERIENCE_STARTED",
       "VALUE_MOMENT",
+      "READY_RESULT_USED",
       "PREFERRED_OVER_FREE",
       "CHECKOUT_STARTED",
     ],
+    humanValueDeliveryRequirements: {
+      allowedTerritories: [
+        "AFFECTION_AND_BELONGING",
+        "RECOGNITION",
+        "EFFORT_RELIEF",
+      ],
+      minimumIndependentEvidencePaths: 2,
+      maximumCustomerStepsToValue: 5,
+      maximumMinutesToUsableResult: 10,
+      requiresPromptEngineering: false,
+      requiresManualAssembly: false,
+      usableWithoutAiKnowledge: true,
+    },
     minimumIndependentReadings: 2,
     reasons,
     interpretation:
-      "Pesquisa e intenção não substituem duas leituras privadas com critérios predeclarados; checkout de teste não é venda.",
+      "Pesquisa e intenção não substituem duas leituras privadas com resultado pronto realmente usado e critérios predeclarados; checkout de teste não é venda.",
   };
 }
 

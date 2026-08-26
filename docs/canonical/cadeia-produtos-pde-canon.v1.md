@@ -198,6 +198,10 @@ mas não comprova sozinha uma oportunidade.
 - quando o canal informado for Instagram, comparar primeiro oportunidades B2C com cena pessoal,
   desejo reconhecível, gancho nativo para Reel/anúncio, microvalor mobile demonstrável e jornada
   atribuível até o checkout, sem aceitar B2B disfarçado nem curso genérico como produto;
+- pesquisar afeto e pertencimento, reconhecimento e alivio de esforco como territorios prioritarios,
+  exigindo duas evidencias independentes para o territorio usado por cada candidata;
+- exigir entrega pronta e utilizavel com entrada minima, sem prompting, montagem manual ou
+  conhecimento de IA pelo cliente, preservando controle humano e limites de seguranca;
 - consultar em cada ciclo a coleção viva `pesquisas/momentos-de-compra-b2c` e registrar como lacuna
   real quando ainda não houver resumo datado aderente;
 - bloquear fontes Hotmart ou comerciais com placeholder, identidade ou URL incompleta, ausência
@@ -205,8 +209,9 @@ mas não comprova sozinha uma oportunidade.
   snapshot nominal somente como inspiração histórica;
 - antes da priorização final, validar prazo, consequência, tentativa frustrada, comportamento pago e
   vantagem sobre a alternativa gratuita em protótipo privado com critérios predeclarados;
-- exigir duas leituras independentes e consistentes de início, microvalor, preferência e avanço ao
-  checkout, sem bloqueio de Psique ou Têmis; evento privado ou checkout sem pagamento não é venda;
+- exigir duas leituras independentes e consistentes de início, microvalor, uso do resultado pronto
+  sem montagem, preferência e avanço ao checkout, sem bloqueio de Psique ou Têmis; evento privado ou
+  checkout sem pagamento não é venda;
 - derivar hipóteses originais de mecanismo, formato e comunicação, preservando fonte, data, insight,
   evidência de confirmação e limite contra cópia;
 - comprovar escala e recorrência por fontes independentes;
@@ -234,7 +239,8 @@ menos dois caminhos independentes de recorrência, desatendimento e intenção d
 tendência ou produto Hotmart permanece como `INSPIRACAO` até essa confirmação e não pode aprovar a
 oportunidade sozinho. No recorte B2C/Instagram, score e comparação com benchmark também exigem duas
 leituras privadas consistentes, vantagem observada sobre a alternativa gratuita e ausência de
-bloqueio de Psique ou Têmis.
+bloqueio de Psique ou Têmis. A candidata também deve provar uso do resultado pronto sem transferir
+ao consumidor o trabalho de operar a IA.
 
 ## 2. Plano comercial e desenho da oferta PDE
 

@@ -201,6 +201,8 @@ export function deterministicPlan(job) {
           `Qual prazo, consequência material e tentativa frustrada tornam ${theme} uma decisão iminente?`,
           `Que assinatura, compra, cancelamento ou comparação de preço já acontece em ${theme}?`,
           `Por que um protótipo de ${theme} venceria Google, ChatGPT, planilha, amigo ou conteúdo gratuito?`,
+          `Qual evidência mostra busca por afeto, reconhecimento ou alívio de esforço em ${theme}?`,
+          `Que resultado pronto elimina prompting, configuração e montagem manual em ${theme}?`,
         ]
       : [
           `Quais produtos pagos resolvem ${theme}?`,
@@ -215,6 +217,9 @@ export function deterministicPlan(job) {
           `${theme} prazo urgente tentativa frustrada quanto pagou`,
           `${theme} assinatura cancelamento alternativa grátis`,
           `${theme} decisão de compra comparação preço`,
+          `${theme} sentir valorizado reconhecido pertencimento relato`,
+          `${theme} difícil trabalhoso IA prompt configurar montar reclamação`,
+          `${theme} solução pronta para usar resultado imediato`,
         ]
       : [
           `${theme} preço review reclamação`,
@@ -243,6 +248,8 @@ export function deterministicPlan(job) {
             "oportunidade depende de empresa ou não possui cena demonstrável no Instagram",
             "fonte comercial está vazia, vencida ou contém placeholder",
             "não existe vantagem testável sobre a alternativa gratuita",
+            "a proposta exige prompting, conhecimento de IA ou montagem manual do resultado",
+            "o território humano foi presumido sem duas evidências independentes",
           ]
         : []),
     ],

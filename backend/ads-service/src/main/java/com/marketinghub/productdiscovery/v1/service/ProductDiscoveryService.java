@@ -488,17 +488,22 @@ public class ProductDiscoveryService {
     int minimumParticipants = criteria.path("minimumEligibleParticipantsPerReading").asInt(0);
     double minimumExperienceStartRate = criteria.path("minimumExperienceStartRate").asDouble(-1);
     double minimumValueMomentRate = criteria.path("minimumValueMomentRate").asDouble(-1);
+    double minimumReadyResultUseRate =
+        criteria.path("minimumReadyResultUseRate").asDouble(-1);
     double minimumPrototypePreferenceRate =
         criteria.path("minimumPrototypePreferenceRate").asDouble(-1);
     double minimumCheckoutStartRate = criteria.path("minimumCheckoutStartRate").asDouble(-1);
     if (minimumParticipants < 1
         || !isValidRateThreshold(minimumExperienceStartRate)
         || !isValidRateThreshold(minimumValueMomentRate)
+        || !isValidRateThreshold(minimumReadyResultUseRate)
+        || minimumReadyResultUseRate <= 0d
         || !isValidRateThreshold(minimumPrototypePreferenceRate)
         || !isValidRateThreshold(minimumCheckoutStartRate)
         || !hasCompletePurchaseScene(candidate.path("scene"))
         || !hasText(candidate.path("freeAlternative"), "name")
         || !hasText(candidate.path("freeAlternative"), "prototypeAdvantage")
+        || !hasCanonicalHumanValueDelivery(candidate.path("humanValueDelivery"))
         || !isPrivatePurchasePrototype(candidate.path("prototype"))) {
       throw invalidPurchaseMomentGate();
     }
@@ -518,6 +523,7 @@ public class ProductDiscoveryService {
           minimumParticipants,
           minimumExperienceStartRate,
           minimumValueMomentRate,
+          minimumReadyResultUseRate,
           minimumPrototypePreferenceRate,
           minimumCheckoutStartRate);
     }
@@ -547,6 +553,7 @@ public class ProductDiscoveryService {
       int minimumParticipants,
       double minimumExperienceStartRate,
       double minimumValueMomentRate,
+      double minimumReadyResultUseRate,
       double minimumPrototypePreferenceRate,
       double minimumCheckoutStartRate) {
     String readingId = reading.path("readingId").asText("");
@@ -556,6 +563,8 @@ public class ProductDiscoveryService {
     int eligibleParticipants = nonNegativeInteger(reading.path("eligibleParticipants"));
     int experienceStarted = nonNegativeInteger(reading.path("experienceStarted"));
     int valueMoments = nonNegativeInteger(reading.path("valueMoments"));
+    int readyResultsUsedWithoutAssembly =
+        nonNegativeInteger(reading.path("readyResultsUsedWithoutAssembly"));
     int prototypePreferredOverFree = nonNegativeInteger(reading.path("prototypePreferredOverFree"));
     int checkoutStarted = nonNegativeInteger(reading.path("checkoutStarted"));
     boolean invalid =
@@ -571,14 +580,18 @@ public class ProductDiscoveryService {
             || eligibleParticipants < minimumParticipants
             || experienceStarted < 0
             || valueMoments < 0
+            || readyResultsUsedWithoutAssembly < 0
             || prototypePreferredOverFree < 0
             || checkoutStarted < 0
             || experienceStarted > eligibleParticipants
             || valueMoments > experienceStarted
+            || readyResultsUsedWithoutAssembly > valueMoments
             || prototypePreferredOverFree > eligibleParticipants
             || checkoutStarted > experienceStarted
             || rate(experienceStarted, eligibleParticipants) < minimumExperienceStartRate
             || rate(valueMoments, experienceStarted) < minimumValueMomentRate
+            || rate(readyResultsUsedWithoutAssembly, experienceStarted)
+                < minimumReadyResultUseRate
             || rate(prototypePreferredOverFree, eligibleParticipants)
                 < minimumPrototypePreferenceRate
             || rate(checkoutStarted, experienceStarted) < minimumCheckoutStartRate;
@@ -595,6 +608,54 @@ public class ProductDiscoveryService {
         && hasText(scene, "budgetEvidence")
         && hasText(scene, "failedAttempt")
         && hasText(scene, "currentPaidBehavior");
+  }
+
+  /** Confirma território humano evidenciado e saída pronta sem trabalho de IA transferido ao cliente. */
+  private boolean hasCanonicalHumanValueDelivery(JsonNode delivery) {
+    Set<String> allowedTerritories =
+        Set.of("AFFECTION_AND_BELONGING", "RECOGNITION", "EFFORT_RELIEF");
+    JsonNode territories = delivery.path("territories");
+    if (!territories.isArray() || territories.isEmpty()) {
+      return false;
+    }
+    for (JsonNode territory : territories) {
+      if (!territory.isTextual() || !allowedTerritories.contains(territory.asText())) {
+        return false;
+      }
+    }
+    int customerStepsToValue = nonNegativeInteger(delivery.path("customerStepsToValue"));
+    int timeToUsableResultMinutes =
+        nonNegativeInteger(delivery.path("timeToUsableResultMinutes"));
+    return hasAtLeastUniqueTexts(delivery.path("evidenceSourceIds"), 2)
+        && hasAtLeastUniqueTexts(delivery.path("evidencePathways"), 2)
+        && hasText(delivery, "desiredTransformation")
+        && hasText(delivery, "readyMadeOutcome")
+        && hasText(delivery, "minimumCustomerInput")
+        && hasText(delivery, "automationBoundary")
+        && delivery.has("requiresPromptEngineering")
+        && !delivery.path("requiresPromptEngineering").asBoolean(true)
+        && delivery.has("requiresManualAssembly")
+        && !delivery.path("requiresManualAssembly").asBoolean(true)
+        && delivery.path("usableWithoutAiKnowledge").asBoolean(false)
+        && customerStepsToValue >= 1
+        && customerStepsToValue <= 5
+        && timeToUsableResultMinutes >= 1
+        && timeToUsableResultMinutes <= 10;
+  }
+
+  /** Conta textos únicos de uma lista sem aceitar coerção de objetos ou valores vazios. */
+  private boolean hasAtLeastUniqueTexts(JsonNode values, int minimum) {
+    if (!values.isArray()) {
+      return false;
+    }
+    Set<String> unique = new HashSet<>();
+    for (JsonNode value : values) {
+      if (!value.isTextual() || !StringUtils.hasText(value.asText())) {
+        return false;
+      }
+      unique.add(value.asText());
+    }
+    return unique.size() >= minimum;
   }
 
   /** Confirma que o protótipo continua privado, segregado e sem mídia ou pagamento. */
@@ -668,7 +729,7 @@ public class ProductDiscoveryService {
   private ResponseStatusException invalidPurchaseMomentGate() {
     return new ResponseStatusException(
         HttpStatus.UNPROCESSABLE_ENTITY,
-        "Dossie bloqueado: a oportunidade não possui duas leituras válidas do Momento de Compra");
+        "Dossie bloqueado: a oportunidade não possui entrega pronta e duas leituras válidas do Momento de Compra");
   }
 
   /** Lê o gate persistível e preserva no log a causa de um callback inválido. */

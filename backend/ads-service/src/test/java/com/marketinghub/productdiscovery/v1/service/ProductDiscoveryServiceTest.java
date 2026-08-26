@@ -248,6 +248,7 @@ class ProductDiscoveryServiceTest {
                   "minimumEligibleParticipantsPerReading": 5,
                   "minimumExperienceStartRate": 0.7,
                   "minimumValueMomentRate": 0.6,
+                  "minimumReadyResultUseRate": 0.6,
                   "minimumPrototypePreferenceRate": 0.6,
                   "minimumCheckoutStartRate": 0.2
                 },
@@ -268,6 +269,20 @@ class ProductDiscoveryServiceTest {
                     "name": "Ensaio sozinho com ChatGPT",
                     "prototypeAdvantage": "Compara duas respostas faladas"
                   },
+                  "humanValueDelivery": {
+                    "territories": ["RECOGNITION", "EFFORT_RELIEF"],
+                    "desiredTransformation": "Demonstrar a própria capacidade com menos esforço",
+                    "evidenceSourceIds": ["study-1", "community-1"],
+                    "evidencePathways": ["STRUCTURED_TRAINING", "CURRENT_LANGUAGE"],
+                    "readyMadeOutcome": "Diagnóstico visual pronto para novo ensaio",
+                    "minimumCustomerInput": "Vaga, pergunta e gravação curta",
+                    "requiresPromptEngineering": false,
+                    "requiresManualAssembly": false,
+                    "usableWithoutAiKnowledge": true,
+                    "customerStepsToValue": 3,
+                    "timeToUsableResultMinutes": 8,
+                    "automationBoundary": "A pessoa revisa e nenhuma experiência é inventada"
+                  },
                   "prototype": {
                     "prototypeId": "PRIVATE-1",
                     "private": true,
@@ -283,6 +298,7 @@ class ProductDiscoveryServiceTest {
                       "eligibleParticipants": 5,
                       "experienceStarted": 5,
                       "valueMoments": 4,
+                      "readyResultsUsedWithoutAssembly": 4,
                       "prototypePreferredOverFree": 4,
                       "checkoutStarted": 2,
                       "psiqueDecision": "APPROVE",
@@ -297,6 +313,7 @@ class ProductDiscoveryServiceTest {
                       "eligibleParticipants": 5,
                       "experienceStarted": 4,
                       "valueMoments": 3,
+                      "readyResultsUsedWithoutAssembly": 3,
                       "prototypePreferredOverFree": 4,
                       "checkoutStarted": 1,
                       "psiqueDecision": "APPROVE",

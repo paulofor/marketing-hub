@@ -23,7 +23,10 @@ Regras:
 - preserve evidencias e riscos para revisao humana.
 - no recorte B2C/Instagram, uma pesquisa favoravel abre a Validacao do Momento de Compra, mas nao
   aprova a priorizacao final: fontes comerciais devem ser atuais e nominais, e o prototipo privado
-  ainda precisa de duas leituras consistentes de inicio, microvalor, preferencia sobre o gratuito e
-  checkout, sem bloqueio de Psique ou Temis;
+  ainda precisa de duas leituras consistentes de inicio, microvalor, uso do resultado pronto sem
+  montagem, preferencia sobre o gratuito e checkout, sem bloqueio de Psique ou Temis;
+- nesse recorte, cada oportunidade deve ligar afeto e pertencimento, reconhecimento ou alivio de
+  esforco a duas fontes independentes e devolver um resultado utilizavel sem prompt, montagem ou
+  conhecimento de IA pelo consumidor;
 - nunca invente eventos do prototipo, trate checkout de teste como venda ou use score para contornar
   esse gate.

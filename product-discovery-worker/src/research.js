@@ -198,6 +198,9 @@ const INSTAGRAM_B2C_TEMPLATES = [
   "{base} prazo urgente tentativa frustrada quanto pagou",
   "{base} assinatura cancelamento reclamação alternativa grátis",
   "{base} comparar preço comprar decisão iminente",
+  "{base} sentir valorizado reconhecido pertencimento relato",
+  "{base} cansativo trabalhoso prompt IA montar sozinho reclamação",
+  "{base} solução pronta resultado imediato sem configurar",
 ];
 
 const SCIENTIFIC_SOURCE_DOMAINS = [
@@ -652,7 +655,7 @@ export function analyzeSearchResults(
       : purchaseMomentGate.required && !purchaseMomentGate.sourceQualityPassed
         ? `As fontes comerciais não passaram pelo gate de qualidade: ${purchaseMomentGate.reasons.join(" ")}`
         : purchaseMomentGate.required
-          ? "A pesquisa está pronta para protótipo privado, mas ainda não possui duas leituras consistentes de microvalor, preferência sobre o gratuito e avanço ao checkout."
+          ? "A pesquisa está pronta para protótipo privado, mas ainda não possui duas leituras consistentes de microvalor, uso do resultado pronto sem montagem, preferência sobre o gratuito e avanço ao checkout."
           : highRiskHits > 0
             ? "Tema contém sinais sensíveis e exige revisão humana antes de qualquer experimento."
             : scientificArticles.length === 0

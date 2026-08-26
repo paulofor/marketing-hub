@@ -4,7 +4,9 @@
 
 Inserir uma etapa obrigatória entre a definição da rota de distribuição e a priorização final da
 oportunidade. Nenhuma candidata B2C/Instagram pode ser comparada com Rigel apenas por artigos,
-ofertas, anúncios, intenção declarada ou score de modelo.
+ofertas, anúncios, intenção declarada ou score de modelo. A candidata também deve transformar afeto
+e pertencimento, reconhecimento ou alívio de esforço em um resultado pronto, sem exigir que o
+cliente aprenda ou monte a solução com IA.
 
 Foram comparadas três alternativas:
 
@@ -19,14 +21,14 @@ avaliar percepção e revisar risco, mas não podem fabricar métricas nem liber
 
 ## Gargalo e critérios
 
-- **Gargalo:** oportunidades chegam ao score final sem prova observada de microvalor, preferência sobre
-  a alternativa gratuita e avanço ao checkout.
+- **Gargalo:** oportunidades chegam ao score final sem prova observada de microvalor, uso do resultado
+  pronto, preferência sobre a alternativa gratuita e avanço ao checkout.
 - **Evidência:** Entrevista sem Branco ficou em 75–78/100 por intenção de compra, diferenciação,
   distribuição e esforço percebido ainda não comprovados.
 - **Métrica esperada:** 100% das candidatas comparadas com Rigel possuem fontes atuais e nominais,
   critérios declarados antes do teste e duas leituras privadas consecutivas que os atendem.
-- **Continuar:** as duas leituras alcançam microvalor, preferência e avanço ao checkout, sem bloqueio
-  de Psique ou Têmis.
+- **Continuar:** as duas leituras alcançam microvalor, uso do resultado pronto sem montagem,
+  preferência e avanço ao checkout, sem bloqueio de Psique ou Têmis.
 - **Ajustar:** há uso, mas uma das taxas pré-declaradas não é atingida.
 - **Parar:** a alternativa gratuita vence, as fontes são inválidas ou surge risco não controlável.
 
@@ -38,12 +40,16 @@ avaliar percepção e revisar risco, mas não podem fabricar métricas nem liber
 | Qualidade das fontes | artigos e ofertas atuais, nominais e aderentes | inventário por coleção, data, status e itens inválidos | placeholder, identidade incompleta, ausência de preço e tração, vazio, indisponível ou vencido bloqueia |
 | Coleção dinâmica | novo Markdown em `pesquisas/momentos-de-compra-b2c` | arquivo descoberto na execução seguinte, com caminho, hash e data | nenhuma lista de artigos fica congelada |
 | Cena de compra | prazo, consequência, orçamento, tentativa e gasto atual | contrato estruturado por candidata | nenhum campo essencial vazio |
+| Território humano | afeto e pertencimento, reconhecimento ou alívio de esforço | território e duas fontes independentes da candidata | popularidade presumida ou desejo sem fonte bloqueia |
+| Entrega pronta | experiência devolve resultado final utilizável | artefato, entrada mínima, até cinco passos e limite de automação | prompting, conhecimento de IA ou montagem manual bloqueia |
 | Alternativa gratuita | Google, ChatGPT, planilha, amigo ou conteúdo | alternativa e vantagem específica do protótipo | preferência é observada, não inferida |
 | Protótipo privado | experiência limitada e consentida | identificador, modo privado, critérios anteriores ao teste e eventos segregados | não publica, não gasta e não usa métricas humanas de produção |
-| Leitura 1 | participantes elegíveis usam o protótipo | início, microvalor, preferência e checkout com denominadores | critérios atingidos sem bloqueio |
+| Leitura 1 | participantes elegíveis usam o protótipo | início, microvalor, `READY_RESULT_USED`, preferência e checkout com denominadores | critérios atingidos sem bloqueio |
 | Leitura 2 | nova leitura independente | mesmos eventos e critérios | segunda leitura também aprovada |
 | Inconsistência | apenas uma leitura aprova | status `ADJUST` | Dédalo não compara com Rigel |
 | Gratuito vence | preferência fica abaixo do critério | status `STOP` | candidata não avança |
+| Resultado não usado | saída é gerada, mas exige montagem, novo prompt ou ferramenta externa | taxa de uso pronto abaixo do mínimo | status `ADJUST`; Dédalo não pontua |
+| Critério nulo | taxa mínima de `READY_RESULT_USED` é zero | contrato inválido | backend bloqueia; zero uso nunca aprova |
 | Psique/Têmis | revisão detecta esforço, manipulação ou promessa indevida | decisões persistidas por leitura | qualquer bloqueio impede avanço |
 | Score | modelo tenta aprovar candidata sem gate | erro de contrato | score não contorna fatos observados |
 | Autoridade | callback tenta aprovar sem duas leituras | backend recusa a conclusão | worker não controla o avanço |
@@ -63,15 +69,20 @@ consecutivas sem falhas depois da última alteração.
 Um teste de contrato detectou inicialmente uma expressão regular frágil na leitura dos prompts. Na
 revisão posterior do diff, foi detectada também uma divergência entre os nomes do gate local e os
 campos esperados pelo callback do backend. A correção unificou o contrato e fez o backend recalcular
-as leituras, em vez de confiar somente nos booleanos enviados pelo worker. A contagem definitiva foi
-reiniciada depois dessa última correção, conforme a política acima.
+as leituras, em vez de confiar somente nos booleanos enviados pelo worker. Na ampliação para valor
+humano e entrega pronta, a checagem inicial encontrou uma diferença de formatação na classe Java e
+a revisão de causa-raiz identificou que um limiar zero ainda poderia dispensar o uso observado do
+resultado e manter o nome da candidata na lista interna de elegíveis, apesar do bloqueio global. O
+backend e o executor passaram a exigir limiar positivo, e a lista só é preenchida quando o gate
+completo está válido; depois dessa última correção, a contagem definitiva foi novamente reiniciada
+conforme a política acima.
 
-- **Rodada definitiva 1:** 45 testes do executor local, 59 testes do
+- **Rodada definitiva 1:** 50 testes do executor local, 59 testes do
   `product-discovery-worker` e 1.877 testes do backend aprovados; dois testes preexistentes do backend
-  permaneceram explicitamente ignorados. Leitura, edição e cancelamento do rascunho v5 também foram
-  aprovados em Chromium desktop, iPhone 15 Pro e Pixel 7, sem erro de página ou resposta HTTP 5xx.
-- **Rodada definitiva 2 consecutiva:** os mesmos 45 testes do executor e 59 testes completos do
-  worker foram aprovados, além dos 12 testes focados nas regras comerciais e na autoridade do
-  backend. Os três perfis de navegador repetiram o caminho sem falhas.
+  permaneceram explicitamente ignorados. O rascunho v5 com a etapa de entrega pronta foi validado em
+  Chromium desktop, iPhone 15 Pro e Pixel 7, sem erro de página ou resposta HTTP 5xx.
+- **Rodada definitiva 2 consecutiva:** os mesmos 50 testes do executor, 59 testes do worker e 1.877
+  testes do backend foram aprovados, novamente com apenas os dois testes preexistentes explicitamente
+  ignorados. Os três perfis de navegador repetiram o caminho sem falhas.
 - **Efeito comercial da homologação:** zero pagamentos, zero vendas, zero mídia e zero publicação. Os
   eventos do protótipo permanecem segregados das métricas humanas e comerciais.

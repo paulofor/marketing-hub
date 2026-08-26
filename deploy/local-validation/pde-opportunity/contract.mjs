@@ -5,6 +5,11 @@ import {
 } from "./purchase-moment-validation.mjs";
 
 const REQUIRED_WINNER_SUPPORTS = ["RECURRENCE", "UNMETNESS", "PURCHASE_INTENT"];
+const HUMAN_VALUE_TERRITORIES = new Set([
+  "AFFECTION_AND_BELONGING",
+  "RECOGNITION",
+  "EFFORT_RELIEF",
+]);
 
 /** Mantém no ciclo somente fontes das três oportunidades ativas, preservando o histórico no arquivo. */
 export function selectActiveResearch(research) {
@@ -99,6 +104,9 @@ export function validateResearchInput(research) {
 function validateCommercialFocus(research) {
   const focus = research?.commercialFocus;
   if (!focus) return;
+  const sourceById = new Map(
+    (research.sources || []).map((source) => [source.id, source]),
+  );
   if (
     focus.audienceModel !== "B2C" ||
     focus.acquisitionChannel !== "INSTAGRAM" ||
@@ -118,6 +126,45 @@ function validateCommercialFocus(research) {
     ) {
       throw new Error(`${candidate.name} não cumpre o contrato B2C/Instagram.`);
     }
+    validateHumanValueCandidate(candidate, sourceById);
+  }
+}
+
+/** Exige território humano evidenciado e resultado pronto sem trabalho de IA transferido ao cliente. */
+function validateHumanValueCandidate(candidate, sourceById) {
+  const territories = Array.isArray(candidate.humanValueTerritories)
+    ? [...new Set(candidate.humanValueTerritories)]
+    : [];
+  const evidenceSourceIds = Array.isArray(candidate.humanValueEvidenceSourceIds)
+    ? [...new Set(candidate.humanValueEvidenceSourceIds)]
+    : [];
+  const evidenceSources = evidenceSourceIds.map((sourceId) => sourceById.get(sourceId));
+  const validEvidence =
+    evidenceSourceIds.length >= 2 &&
+    evidenceSources.every(
+      (source) => source && source.candidateName === candidate.name,
+    ) &&
+    new Set(evidenceSources.map((source) => source.pathway)).size >= 2;
+  const validDelivery =
+    candidate.desiredHumanTransformation?.trim() &&
+    candidate.readyMadeDeliverable?.trim() &&
+    candidate.minimumCustomerInput?.trim() &&
+    candidate.automationBoundary?.trim() &&
+    candidate.requiresPromptEngineering === false &&
+    candidate.requiresManualAssembly === false &&
+    candidate.usableWithoutAiKnowledge === true &&
+    Number.isInteger(candidate.customerStepsToValue) &&
+    candidate.customerStepsToValue >= 1 &&
+    candidate.customerStepsToValue <= 5;
+  if (
+    territories.length === 0 ||
+    territories.some((territory) => !HUMAN_VALUE_TERRITORIES.has(territory)) ||
+    !validEvidence ||
+    !validDelivery
+  ) {
+    throw new Error(
+      `${candidate.name} não cumpre o contrato de território humano e entrega pronta.`,
+    );
   }
 }
 
@@ -296,12 +343,23 @@ function validateArgos(research, result) {
       }
     }
     if (research.commercialFocus) {
+      const researchCandidate = research.candidates.find(
+        (candidate) => candidate.name === alternative.name,
+      );
       if (
         alternative.audienceModel !== "B2C" ||
         alternative.acquisitionChannel !== "INSTAGRAM" ||
         alternative.mobileValueMomentMinutes > research.commercialFocus.maxMinutesToValue ||
         !alternative.consumerMoment?.trim() ||
-        !alternative.instagramHook?.trim()
+        !alternative.instagramHook?.trim() ||
+        !sameStringSet(
+          alternative.humanValueTerritories,
+          researchCandidate?.humanValueTerritories,
+        ) ||
+        alternative.readyMadeDeliverable !== researchCandidate?.readyMadeDeliverable ||
+        alternative.requiresPromptEngineering !== false ||
+        alternative.requiresManualAssembly !== false ||
+        alternative.usableWithoutAiKnowledge !== true
       ) {
         throw new Error(`${alternative.name} saiu de Argos sem recorte B2C/Instagram executável.`);
       }
@@ -360,10 +418,26 @@ function validateHermes(context, result) {
         throw new Error(`Hermes não escolheu Instagram como rota inicial de ${item.candidateName}.`);
       }
       const eventPath = new Set(chosenRoute.eventPath || []);
-      for (const event of ["IMPRESSION", "CLICK", "EXPERIENCE_STARTED", "VALUE_MOMENT", "CHECKOUT_STARTED"]) {
+      for (const event of [
+        "IMPRESSION",
+        "CLICK",
+        "EXPERIENCE_STARTED",
+        "VALUE_MOMENT",
+        "READY_RESULT_USED",
+        "CHECKOUT_STARTED",
+      ]) {
         if (!eventPath.has(event)) {
           throw new Error(`Hermes não tornou a rota de ${item.candidateName} atribuível até checkout.`);
         }
+      }
+      if (
+        !Array.isArray(item.humanValueTerritories) ||
+        item.humanValueTerritories.length === 0 ||
+        !item.readyMadeOutcome?.trim()
+      ) {
+        throw new Error(
+          `Hermes não preservou o território humano e o resultado pronto de ${item.candidateName}.`,
+        );
       }
     }
   }
@@ -403,7 +477,13 @@ function validateDedalo(context, result) {
         item.audienceModel !== "B2C" ||
         item.mobileValueMomentMinutes > context.research.commercialFocus.maxMinutesToValue ||
         !item.consumerMoment?.trim() ||
-        !item.instagramHook?.trim()
+        !item.instagramHook?.trim() ||
+        !Array.isArray(item.humanValueTerritories) ||
+        item.humanValueTerritories.length === 0 ||
+        !item.readyMadeOutcome?.trim() ||
+        item.requiresPromptEngineering !== false ||
+        item.requiresManualAssembly !== false ||
+        item.usableWithoutAiKnowledge !== true
       ) {
         throw new Error(`${item.name} não atingiu o gate B2C/Instagram de Dédalo.`);
       }
@@ -424,6 +504,15 @@ function validateDedalo(context, result) {
   }
   if (result.chosenOpportunity.chosenFormat !== winner.chosenFormat) {
     throw new Error("Dédalo divergiu sobre o formato da oportunidade vencedora.");
+  }
+  if (
+    context.research.commercialFocus &&
+    (result.chosenOpportunity.readyMadeOutcome !== winner.readyMadeOutcome ||
+      result.chosenOpportunity.requiresPromptEngineering !== false ||
+      result.chosenOpportunity.requiresManualAssembly !== false ||
+      result.chosenOpportunity.usableWithoutAiKnowledge !== true)
+  ) {
+    throw new Error("Dédalo alterou ou enfraqueceu o contrato de entrega pronta da vencedora.");
   }
   if (
     context.research.commercialFocus &&
@@ -474,10 +563,22 @@ function validatePsique(context, result) {
   if (
     context.research?.commercialFocus &&
     result.decision === "APPROVE" &&
-    (!result.canReachValueAlone || result.manipulationRisk !== "LOW")
+    (!result.canReachValueAlone ||
+      result.manipulationRisk !== "LOW" ||
+      !result.readyMadeOutcomeIsUsable ||
+      result.aiSkillRequired)
   ) {
-    throw new Error("Psique aprovou B2C sem valor autônomo ou com risco de manipulação.");
+    throw new Error(
+      "Psique aprovou B2C sem resultado pronto autônomo ou com risco de manipulação.",
+    );
   }
+}
+
+function sameStringSet(left, right) {
+  if (!Array.isArray(left) || !Array.isArray(right)) return false;
+  const normalizedLeft = [...new Set(left)].sort();
+  const normalizedRight = [...new Set(right)].sort();
+  return JSON.stringify(normalizedLeft) === JSON.stringify(normalizedRight);
 }
 
 function assertSameNames(expectedNames, items, message, property = "name") {

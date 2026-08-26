@@ -58,6 +58,16 @@ test("plano B2C para Instagram pesquisa cena pessoal e microvalor mobile", () =>
       /depende de empresa/i.test(condition),
     ),
   );
+  assert.ok(
+    result.plan.questions.some((question) =>
+      /afeto, reconhecimento ou alívio de esforço/i.test(question),
+    ),
+  );
+  assert.ok(
+    result.plan.stopConditions.some((condition) =>
+      /exige prompting/i.test(condition),
+    ),
+  );
 });
 
 test("planejamento envia o contexto pela entrada padrão e lê a saída estruturada", async () => {

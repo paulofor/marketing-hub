@@ -16,7 +16,12 @@ test("libera priorização somente após duas leituras consistentes", () => {
   assert.equal(gate.minimumIndependentReadings, 2);
   assert.deepEqual(gate.eligibleCandidateNames, ["Candidata A"]);
   assert.equal(gate.candidates[0].readings[0].valueMomentRate, 0.75);
+  assert.equal(gate.candidates[0].readings[0].readyResultUseRate, 0.75);
   assert.equal(gate.candidates[0].readings[0].eventSource, "FIRST_PARTY_EVENTS");
+  assert.deepEqual(gate.candidates[0].humanValueDelivery.territories, [
+    "RECOGNITION",
+    "EFFORT_RELIEF",
+  ]);
   assert.equal(gate.candidates[0].prototype.private, true);
   assert.doesNotThrow(() => assertPurchaseMomentEligible(gate, "Candidata A"));
 });
@@ -48,6 +53,53 @@ test("manda ajustar quando uma das leituras não alcança o critério predeclara
   assert.match(
     gate.candidates[0].reasons.join(" "),
     /mínimo predeclarado de checkout iniciado/,
+  );
+});
+
+test("manda ajustar quando o resultado gerado ainda exige montagem externa", () => {
+  const research = fixture();
+  research.purchaseMomentValidation.candidates[0].readings[1]
+    .readyResultsUsedWithoutAssembly = 1;
+
+  const gate = buildPurchaseMomentGate(research);
+
+  assert.equal(gate.status, "ADJUST");
+  assert.match(
+    gate.candidates[0].reasons.join(" "),
+    /uso do resultado pronto sem montagem/,
+  );
+});
+
+test("bloqueia critério nulo que permitiria aprovar sem uso do resultado pronto", () => {
+  const research = fixture();
+  research.purchaseMomentValidation.successCriteria.minimumReadyResultUseRate = 0;
+  for (const reading of research.purchaseMomentValidation.candidates[0].readings) {
+    reading.readyResultsUsedWithoutAssembly = 0;
+  }
+
+  const gate = buildPurchaseMomentGate(research);
+
+  assert.notEqual(gate.status, "PASS");
+  assert.equal(gate.finalPrioritizationEligible, false);
+  assert.deepEqual(gate.eligibleCandidateNames, []);
+  assert.match(gate.reasons.join(" "), /deve ser maior que zero/);
+  assert.throws(
+    () => assertPurchaseMomentEligible(gate, "Candidata A"),
+    /não possui Validação do Momento de Compra aprovada/,
+  );
+});
+
+test("bloqueia candidata que transfere prompting ou montagem ao consumidor", () => {
+  const research = fixture();
+  research.purchaseMomentValidation.candidates[0].humanValueDelivery
+    .requiresPromptEngineering = true;
+
+  const gate = buildPurchaseMomentGate(research);
+
+  assert.equal(gate.status, "ADJUST");
+  assert.match(
+    gate.candidates[0].reasons.join(" "),
+    /transfere prompting, montagem ou conhecimento de IA/,
   );
 });
 
@@ -121,7 +173,25 @@ function fixture() {
       audienceModel: "B2C",
       acquisitionChannel: "INSTAGRAM",
     },
-    candidates: [{ name: "Candidata A" }],
+    candidates: [
+      {
+        name: "Candidata A",
+        humanValueTerritories: ["RECOGNITION", "EFFORT_RELIEF"],
+        readyMadeDeliverable: "Resposta falada revisada e pronta para novo ensaio",
+      },
+    ],
+    sources: [
+      {
+        id: "human-value-study",
+        candidateName: "Candidata A",
+        pathway: "RECOGNITION_STUDY",
+      },
+      {
+        id: "human-value-community",
+        candidateName: "Candidata A",
+        pathway: "EFFORT_COMMUNITY",
+      },
+    ],
     inspirations: {
       collections: [
         { code: "GARTNER", status: "CURRENT" },
@@ -149,6 +219,7 @@ function fixture() {
         minimumEligibleParticipantsPerReading: 5,
         minimumExperienceStartRate: 0.7,
         minimumValueMomentRate: 0.6,
+        minimumReadyResultUseRate: 0.6,
         minimumPrototypePreferenceRate: 0.6,
         minimumCheckoutStartRate: 0.2,
       },
@@ -167,6 +238,21 @@ function fixture() {
             name: "Ensaio sozinho com ChatGPT",
             prototypeAdvantage: "Compara duas respostas faladas usando a própria evidência",
           },
+          humanValueDelivery: {
+            territories: ["RECOGNITION", "EFFORT_RELIEF"],
+            desiredTransformation:
+              "Sentir que consegue demonstrar a própria capacidade com menos esforço",
+            evidenceSourceIds: ["human-value-study", "human-value-community"],
+            readyMadeOutcome: "Resposta falada revisada e pronta para novo ensaio",
+            minimumCustomerInput: "Vaga, pergunta e uma gravação curta",
+            requiresPromptEngineering: false,
+            requiresManualAssembly: false,
+            usableWithoutAiKnowledge: true,
+            customerStepsToValue: 3,
+            timeToUsableResultMinutes: 8,
+            automationBoundary:
+              "A pessoa aprova a versão final e nenhuma experiência profissional é inventada",
+          },
           prototype: {
             prototypeId: "PRIVATE-A-1",
             private: true,
@@ -176,8 +262,8 @@ function fixture() {
             testMarker: "PRIVATE_PROTOTYPE",
           },
           readings: [
-            reading("R1", "2026-08-25T12:00:00Z", 5, 4, 3, 4, 1),
-            reading("R2", "2026-08-26T12:00:00Z", 5, 5, 4, 4, 2),
+            reading("R1", "2026-08-25T12:00:00Z", 5, 4, 3, 3, 4, 1),
+            reading("R2", "2026-08-26T12:00:00Z", 5, 5, 4, 4, 4, 2),
           ],
         },
       ],
@@ -191,6 +277,7 @@ function reading(
   eligibleParticipants,
   experienceStarted,
   valueMoments,
+  readyResultsUsedWithoutAssembly,
   prototypePreferredOverFree,
   checkoutStarted,
 ) {
@@ -200,6 +287,7 @@ function reading(
     eligibleParticipants,
     experienceStarted,
     valueMoments,
+    readyResultsUsedWithoutAssembly,
     prototypePreferredOverFree,
     checkoutStarted,
     psiqueDecision: "APPROVE",

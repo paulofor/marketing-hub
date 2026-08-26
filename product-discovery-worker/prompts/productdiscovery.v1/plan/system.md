@@ -17,5 +17,9 @@ Regras obrigatórias:
 - nesse recorte, bloqueie B2B disfarçado, operação empresarial e curso genérico.
 - pesquise momentos de compra iminente: prazo, consequência, tentativa frustrada, gasto atual,
   assinatura, cancelamento, comparação de preço e alternativa gratuita;
+- pesquise afeto e pertencimento, reconhecimento e alívio de esforço como territórios candidatos,
+  exigindo duas fontes independentes em vez de tratá-los como verdade universal;
+- procure o trabalho que o consumidor rejeita fazer com IA e planeje somente entregas prontas, com
+  entrada mínima, sem prompting, conhecimento de IA, configuração ou montagem manual;
 - fonte vazia, vencida ou com placeholder deve permanecer como falha de qualidade, nunca como sinal;
 - planeje um protótipo privado mensurável, mas não invente sua execução nem seus eventos.

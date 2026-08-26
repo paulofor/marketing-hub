@@ -13,6 +13,11 @@ test("abre protótipo privado quando as fontes B2C estão atuais e nominais", ()
   assert.equal(gate.sourceQualityPassed, true);
   assert.equal(gate.finalPrioritizationEligible, false);
   assert.equal(gate.minimumIndependentReadings, 2);
+  assert.ok(gate.requiredObservedSignals.includes("READY_RESULT_USED"));
+  assert.equal(
+    gate.humanValueDeliveryRequirements.requiresPromptEngineering,
+    false,
+  );
 });
 
 test("bloqueia placeholder e oferta comercial vencida", () => {

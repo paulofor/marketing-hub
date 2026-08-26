@@ -11,6 +11,7 @@ PDE_VALIDATION_COMPOSE=(
   -p "${PDE_VALIDATION_PROJECT}"
   -f "${PDE_VALIDATION_ROOT}/pde-platform/docker-compose.yml"
   -f "${PDE_VALIDATION_ROOT}/pde-platform/docker-compose.local-validation.yml"
+  --profile local-e2e
 )
 PDE_VALIDATION_BACKEND_CONTAINER="$("${PDE_VALIDATION_COMPOSE[@]}" ps -q pde-platform-backend)"
 test -n "${PDE_VALIDATION_BACKEND_CONTAINER}"

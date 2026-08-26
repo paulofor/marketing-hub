@@ -89,8 +89,9 @@ versionados `v5.clubemusa.com.br`, `v6.clubemusa.com.br` e `v7.clubemusa.com.br`
 sem interceptar `/api`. A validação confirma que o frontend conversa com o
 backend real pelo proxy, que cada hostname resolve sua `experienceVersion`, que o
 HLS da v6 é servido como `application/vnd.apple.mpegurl` e que eventos de vídeo entram no analytics persistido.
-Use `PDE_KEEP_LOCAL_DB=1` para manter o banco após o teste e inspecionar os
-dados gravados.
+Use `PDE_KEEP_LOCAL_DB=1` para manter temporariamente toda a topologia após o
+teste e inspecionar os dados gravados. Sem essa opção, o runner remove
+containers, rede e volumes ao final, inclusive quando alguma jornada falha.
 
 O deploy produtivo do Método MUSA também valida os subdomínios versionados. Em
 `main`, o workflow publica backend/worker da plataforma e executa smoke tests

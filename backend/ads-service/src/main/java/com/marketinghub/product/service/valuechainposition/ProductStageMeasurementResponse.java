@@ -8,6 +8,7 @@ import java.time.Instant;
  */
 public record ProductStageMeasurementResponse(
     String stageType,
+    String sequenceLabel,
     String trackingStatus,
     Long processDefinitionId,
     String processCode,

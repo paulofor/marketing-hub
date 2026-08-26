@@ -99,7 +99,10 @@ public class ProductStageMeasurementResolver {
               .toList();
       if (!matchingPeriods.isEmpty()) {
         matchingPeriods.forEach(
-            period -> measurements.add(measureProcessPeriod(period, process, context)));
+            period ->
+                measurements.add(
+                    measureProcessPeriod(
+                        period, process, String.valueOf(item.getSequenceNumber()), context)));
         continue;
       }
       List<AgentTask> matchingTasks = processTasks(context.tasks(), process);
@@ -114,7 +117,9 @@ public class ProductStageMeasurementResolver {
                 periods,
                 context));
       } else if (process.getId().equals(currentProcess.getId())) {
-        measurements.add(noEvidenceMeasurement("PROCESS", process, "CURRENT"));
+        measurements.add(
+            noEvidenceMeasurement(
+                "PROCESS", String.valueOf(item.getSequenceNumber()), process, "CURRENT"));
       }
     }
     return measurements;
@@ -125,14 +130,26 @@ public class ProductStageMeasurementResolver {
       Product product,
       List<BusinessProcessDefinition> subprocesses,
       BusinessProcessDefinition currentSubprocess) {
+    return resolveSubprocessMeasurements(product, subprocesses, currentSubprocess, null);
+  }
+
+  /** Consolida subprocessos usando a numeração hierárquica do processo pai. */
+  public List<ProductStageMeasurementResponse> resolveSubprocessMeasurements(
+      Product product,
+      List<BusinessProcessDefinition> subprocesses,
+      BusinessProcessDefinition currentSubprocess,
+      Integer parentSequenceNumber) {
     MeasurementContext context = context(product);
     List<ProductStageMeasurementResponse> measurements = new ArrayList<>();
     for (int index = 0; index < subprocesses.size(); index++) {
       BusinessProcessDefinition subprocess = subprocesses.get(index);
+      String sequenceLabel =
+          parentSequenceNumber == null ? null : parentSequenceNumber + "." + (index + 1);
       List<AgentTask> matchingTasks = subprocessTasks(context.tasks(), subprocess);
       if (matchingTasks.isEmpty()) {
         if (currentSubprocess != null && subprocess.getId().equals(currentSubprocess.getId())) {
-          measurements.add(noEvidenceMeasurement("SUBPROCESS", subprocess, "CURRENT"));
+          measurements.add(
+              noEvidenceMeasurement("SUBPROCESS", sequenceLabel, subprocess, "CURRENT"));
         }
         continue;
       }
@@ -155,6 +172,7 @@ public class ProductStageMeasurementResolver {
       measurements.add(
           measurement(
               "SUBPROCESS",
+              sequenceLabel,
               trackingStatus,
               subprocess,
               enteredAt,
@@ -229,7 +247,10 @@ public class ProductStageMeasurementResolver {
 
   /** Mede um período explícito registrado pelo backend nas transições comerciais. */
   private ProductStageMeasurementResponse measureProcessPeriod(
-      ProductProcessPeriod period, BusinessProcessDefinition process, MeasurementContext context) {
+      ProductProcessPeriod period,
+      BusinessProcessDefinition process,
+      String sequenceLabel,
+      MeasurementContext context) {
     List<AgentTask> matchingTasks = processTasks(context.tasks(), process);
     Instant enteredAt = period.getEnteredAt();
     String entryEvidence = period.getEntryEvidence();
@@ -248,6 +269,7 @@ public class ProductStageMeasurementResolver {
             .toList();
     return measurement(
         "PROCESS",
+        sequenceLabel,
         exitedAt == null ? "CURRENT" : "COMPLETED",
         process,
         enteredAt,
@@ -293,6 +315,7 @@ public class ProductStageMeasurementResolver {
     String trackingStatus = current ? "CURRENT" : exitedAt == null ? "RECORDED" : "COMPLETED";
     return measurement(
         "PROCESS",
+        String.valueOf(sequenceNumber),
         trackingStatus,
         process,
         enteredAt,
@@ -310,9 +333,10 @@ public class ProductStageMeasurementResolver {
 
   /** Monta uma medição vazia sem fabricar data ou custo quando não há evidência. */
   private ProductStageMeasurementResponse noEvidenceMeasurement(
-      String stageType, BusinessProcessDefinition process, String status) {
+      String stageType, String sequenceLabel, BusinessProcessDefinition process, String status) {
     return new ProductStageMeasurementResponse(
         stageType,
+        sequenceLabel,
         status,
         process.getId(),
         process.getProcessCode(),
@@ -332,6 +356,7 @@ public class ProductStageMeasurementResolver {
   /** Consolida datas, dias corridos e cobertura financeira da etapa. */
   private ProductStageMeasurementResponse measurement(
       String stageType,
+      String sequenceLabel,
       String trackingStatus,
       BusinessProcessDefinition process,
       Instant enteredAt,
@@ -375,6 +400,7 @@ public class ProductStageMeasurementResolver {
             : Duration.between(enteredAt, end).toDays();
     return new ProductStageMeasurementResponse(
         stageType,
+        sequenceLabel,
         trackingStatus,
         process.getId(),
         process.getProcessCode(),

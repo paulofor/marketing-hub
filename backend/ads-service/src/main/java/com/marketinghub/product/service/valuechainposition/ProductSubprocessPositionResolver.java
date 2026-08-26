@@ -65,10 +65,29 @@ public class ProductSubprocessPositionResolver {
   /** Resolve a atividade atual e os subprocessos atual e seguinte sem inferência no frontend. */
   public ProductSubprocessPositionResponse resolve(
       Product product, BusinessProcessDefinition parentProcess) {
+    return resolve(product, parentProcess, null);
+  }
+
+  /** Resolve subprocessos preservando a numeração hierárquica do processo pai. */
+  public ProductSubprocessPositionResponse resolve(
+      Product product, BusinessProcessDefinition parentProcess, Integer parentSequenceNumber) {
     List<BusinessProcessDefinition> subprocesses = orderedSubprocesses(parentProcess);
     if (subprocesses.isEmpty()) {
       return new ProductSubprocessPositionResponse(
-          "NOT_APPLICABLE", 0, null, null, null, null, null, null, null, null, null, List.of());
+          "NOT_APPLICABLE",
+          0,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          List.of());
     }
 
     List<AgentTask> tasks = productTasks(product).stream().filter(this::hasProcess).toList();
@@ -94,7 +113,8 @@ public class ProductSubprocessPositionResolver {
               : nextSubprocess(current, subprocesses);
       status = current == null ? "PLANNED" : "IN_PROGRESS";
     }
-    return response(product, status, subprocesses, activityName, current, next);
+    return response(
+        product, status, subprocesses, activityName, current, next, parentSequenceNumber);
   }
 
   /** Ordena subprocessos pela posição em que são delegados no diagrama do processo pai. */
@@ -295,23 +315,28 @@ public class ProductSubprocessPositionResolver {
       List<BusinessProcessDefinition> subprocesses,
       String activityName,
       BusinessProcessDefinition current,
-      BusinessProcessDefinition next) {
+      BusinessProcessDefinition next,
+      Integer parentSequenceNumber) {
+    Integer currentSequenceNumber = current == null ? null : subprocesses.indexOf(current) + 1;
+    Integer nextSequenceNumber = next == null ? null : subprocesses.indexOf(next) + 1;
     return new ProductSubprocessPositionResponse(
         status,
         subprocesses.size(),
         activityName,
         current == null ? null : current.getId(),
+        currentSequenceNumber,
         current == null ? null : current.getProcessCode(),
         current == null ? null : current.getName(),
         current == null ? null : current.getOutcomeDescription(),
         next == null ? null : next.getId(),
+        nextSequenceNumber,
         next == null ? null : next.getProcessCode(),
         next == null ? null : next.getName(),
         next == null ? null : next.getOutcomeDescription(),
         stageMeasurementResolver == null
             ? List.of()
             : stageMeasurementResolver.resolveSubprocessMeasurements(
-                product, subprocesses, current));
+                product, subprocesses, current, parentSequenceNumber));
   }
 
   /** Representa a posição calculada dentro do processo pai. */

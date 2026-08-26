@@ -113,7 +113,7 @@ public class ProductValueChainPositionService {
         item.getSequenceNumber(),
         orderedItems.size(),
         stageMeasurementResolver.resolveProcessMeasurements(product, orderedItems, process),
-        subprocessResolver.resolve(product, process));
+        subprocessResolver.resolve(product, process, item.getSequenceNumber()));
   }
 
   /**

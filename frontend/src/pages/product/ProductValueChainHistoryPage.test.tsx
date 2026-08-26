@@ -44,6 +44,7 @@ const position = {
   processMeasurements: [
     {
       stageType: "PROCESS",
+      sequenceLabel: "3",
       trackingStatus: "COMPLETED",
       processDefinitionId: 38,
       processCode: "pde-commercial-plan-offer",
@@ -61,6 +62,7 @@ const position = {
     },
     {
       stageType: "PROCESS",
+      sequenceLabel: "4",
       trackingStatus: "CURRENT",
       processDefinitionId: 43,
       processCode: "pde-communication-sales-journey",
@@ -93,6 +95,7 @@ const position = {
     measurements: [
       {
         stageType: "SUBPROCESS",
+        sequenceLabel: "4.1",
         trackingStatus: "CURRENT",
         processDefinitionId: 48,
         processCode: "creative-production-approval",
@@ -163,6 +166,8 @@ describe("ProductValueChainHistoryPage", () => {
       name: "Histórico dos processos e subprocessos",
     });
     expect(within(timeline).getAllByRole("listitem")).toHaveLength(3);
+    expect(within(timeline).getByText("3")).toBeTruthy();
+    expect(within(timeline).getByText("4.1")).toBeTruthy();
     expect(within(timeline).getByText("21/08/2026, 03:55 UTC")).toBeTruthy();
     expect(within(timeline).getByText("21/08/2026, 17:22 UTC")).toBeTruthy();
     expect(within(timeline).getAllByText("Menos de 1 dia")).toHaveLength(1);

@@ -52,6 +52,26 @@ function entryEvidenceLabel(value: string) {
   return "";
 }
 
+function hierarchicalLabel(
+  processSequence?: number | null,
+  subprocessSequence?: number | null,
+) {
+  if (processSequence == null || subprocessSequence == null) return null;
+  return `${processSequence}.${subprocessSequence}`;
+}
+
+function StageNumber({ value }: { value?: string | number | null }) {
+  if (value == null || value === "") return null;
+  return (
+    <span
+      className="product-value-chain__stage-number"
+      aria-label={`Etapa ${value}`}
+    >
+      {value}
+    </span>
+  );
+}
+
 function StageMeasurement({
   measurement,
   compact = false,
@@ -185,7 +205,10 @@ export default function ProductValueChainPosition({
             className="product-value-chain-position__process"
             to={`/business-processes?processId=${position.processDefinitionId}`}
           >
-            <span>{position.processName}</span>
+            <span>
+              <StageNumber value={position.sequenceNumber} />
+              {position.processName}
+            </span>
             <ArrowRight size={17} aria-hidden="true" />
           </Link>
           <small>
@@ -210,6 +233,12 @@ export default function ProductValueChainPosition({
                   <Link
                     to={`/business-processes?processId=${subprocess.currentSubprocessDefinitionId}`}
                   >
+                    <StageNumber
+                      value={hierarchicalLabel(
+                        position.sequenceNumber,
+                        subprocess.currentSubprocessSequenceNumber,
+                      )}
+                    />
                     {subprocess.currentSubprocessName}
                   </Link>
                   {subprocess.currentSubprocessObjective ? (
@@ -236,6 +265,12 @@ export default function ProductValueChainPosition({
                   <Link
                     to={`/business-processes?processId=${subprocess.nextSubprocessDefinitionId}`}
                   >
+                    <StageNumber
+                      value={hierarchicalLabel(
+                        position.sequenceNumber,
+                        subprocess.nextSubprocessSequenceNumber,
+                      )}
+                    />
                     {subprocess.nextSubprocessName}
                     <ArrowRight size={15} aria-hidden="true" />
                   </Link>
@@ -261,6 +296,9 @@ export default function ProductValueChainPosition({
                       : "Último subprocesso registrado"}
                   </span>
                   <strong>
+                    <StageNumber
+                      value={latestVisibleSubprocessMeasurement.sequenceLabel}
+                    />
                     {latestVisibleSubprocessMeasurement.processName}
                   </strong>
                   <StageMeasurement
@@ -282,6 +320,7 @@ export default function ProductValueChainPosition({
                       key={`${measurement.stageType}-${measurement.processDefinitionId}-${measurement.enteredAt || index}`}
                     >
                       <strong>
+                        <StageNumber value={measurement.sequenceLabel} />
                         {measurement.stageType === "PROCESS"
                           ? "Processo"
                           : "Subprocesso"}

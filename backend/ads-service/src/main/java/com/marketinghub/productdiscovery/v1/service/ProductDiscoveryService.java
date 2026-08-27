@@ -34,6 +34,8 @@ public class ProductDiscoveryService {
   private static final String PIPELINE_CODE = "productdiscovery.v1";
   private static final ObjectMapper JSON = new ObjectMapper();
   private static final int MINIMUM_COMPARABLE_MARKETPLACE_OFFERS = 10;
+  private static final Set<String> COMPARABLE_MARKETPLACES =
+      Set.of("hotmart", "clickbank", "public_web");
   private static final String STAGE_CODE = "research";
   private static final Duration EXECUTION_LEASE_DURATION = Duration.ofMinutes(20);
   private static final List<String> LEGACY_ARTIFICIAL_EVIDENCE_MARKERS =
@@ -401,7 +403,8 @@ public class ProductDiscoveryService {
   private void validateMarketplaceEvidenceGate(
       ProductDiscoveryCycle cycle, ProductDiscoveryResultRequest request) {
     if (!StringUtils.hasText(cycle.getResearchPlanJson())
-        || !cycle.getResearchPlanJson().contains("marketplaceRequests")) {
+        || !cycle.getResearchPlanJson().contains("marketplaceRequests")
+        || request.opportunities().isEmpty()) {
       return;
     }
     long comparableOffers =
@@ -424,9 +427,8 @@ public class ProductDiscoveryService {
                     return java.util.stream.Stream.empty();
                   }
                 })
-            .map(
-                node -> node.path("marketplace").asText() + ":" + node.path("referenceId").asText())
-            .filter(key -> !key.endsWith(":"))
+            .map(this::canonicalMarketplaceOfferKey)
+            .filter(StringUtils::hasText)
             .distinct()
             .count();
     if (comparableOffers < MINIMUM_COMPARABLE_MARKETPLACE_OFFERS) {
@@ -435,6 +437,30 @@ public class ProductDiscoveryService {
           "Dossie bloqueado: sao necessarias ao menos 10 ofertas reais comparaveis; recebidas "
               + comparableOffers);
     }
+  }
+
+  /** Consolida snapshots do mesmo produto sem inflar a prova comercial por referência legada. */
+  private String canonicalMarketplaceOfferKey(JsonNode node) {
+    String marketplace = normalizeMarketplaceOfferIdentity(node.path("marketplace").asText());
+    String title = normalizeMarketplaceOfferIdentity(node.path("title").asText());
+    String producer = normalizeMarketplaceOfferIdentity(node.path("producer").asText());
+    String referenceId = normalizeMarketplaceOfferIdentity(node.path("referenceId").asText());
+    if (!COMPARABLE_MARKETPLACES.contains(marketplace)) {
+      return "";
+    }
+    if (StringUtils.hasText(title)) {
+      return marketplace + ":title:" + title + ":producer:" + producer;
+    }
+    return StringUtils.hasText(referenceId) ? marketplace + ":reference:" + referenceId : "";
+  }
+
+  /** Normaliza a identidade comercial para eliminar variações cosméticas da mesma oferta. */
+  private String normalizeMarketplaceOfferIdentity(String value) {
+    return java.text.Normalizer.normalize(value == null ? "" : value, java.text.Normalizer.Form.NFD)
+        .replaceAll("\\p{M}", "")
+        .toLowerCase(Locale.ROOT)
+        .replaceAll("[^\\p{L}\\p{N}]+", " ")
+        .trim();
   }
 
   /** Impede aprovação B2C no Instagram sem evidência comportamental aceita pelo backend. */

@@ -451,6 +451,27 @@ Antes de implementar uma correção em tema com histórico de loop:
 - **Reabertura complementar em homologação (2026-08-20)**: o cliente reduzia o locale canônico `pt-br` para `pt`, valor que a Brave rejeita. O fallback mínimo respondia, mas perdia a localização brasileira e mascarava o defeito como uma pesquisa bem-sucedida. O cliente agora preserva `pt-br`, e a versão de health padrão de Argos acompanha a versão 2 cadastrada no backend.
 - **Prevenção**: testes de contrato impedem converter falha total do provider em zero evidências, validam a rota operacional sem expor segredo, bloqueiam consultas Brave acima de 400 caracteres ou 50 palavras, exigem `search_lang=pt-br` para a pesquisa brasileira e mantêm fallback mínimo auditável somente para falhas externas reais.
 
+## LOOP-PRODUCT-DISCOVERY-EVIDENCIA-INSUFICIENTE-VIRA-FALHA — gate comercial tratado como erro técnico
+
+- **Severidade**: ALTO.
+- **Status**: corrigido localmente em 2026-08-27; aguarda publicação.
+- **Sintoma confirmado**: os ciclos 37 e 38 coletaram sinais públicos reais, mas encontraram zero
+  ofertas comparáveis; o worker enviou três candidatos genéricos, o backend respondeu HTTP 422 e
+  os ciclos terminaram como `FAILED` em vez de pesquisa válida sem oportunidade. Na repetição
+  local, termos incidentais e referências legadas duplicadas ainda inflaram uma busca para 16
+  ofertas, incluindo cursos de unhas, concursos, salário-maternidade e oráculo.
+- **Causa-raiz confirmada**: o worker materializava candidatos sempre que existia alguma evidência
+  pública, mesmo quando o gate obrigatório de marketplace não passava. O backend, por sua vez,
+  aplicava o mínimo de dez ofertas também ao resultado canônico vazio.
+- **Correção efetiva**: pesquisa dirigida sem ofertas suficientes passa a retornar zero
+  oportunidades e `RESEARCH_MORE`; o backend aceita esse encerramento honesto e continua
+  bloqueando qualquer candidato não vazio com menos de dez ofertas comparáveis. O filtro final
+  compara palavras completas, ignora modalidade comercial genérica e consolida título e produtor;
+  o backend repete a deduplicação, normaliza variações cosméticas e rejeita anúncios antes de
+  contar o gate.
+- **Prevenção**: testes de contrato no worker e no backend protegem simultaneamente o resultado
+  vazio válido e a rejeição de candidatos artificiais ou comercialmente subcomprovados.
+
 ## LOOP-PRODUCT-DISCOVERY-ORPHANED-LEASE — pesquisa interrompida bloqueia a fila
 
 - **Severidade**: ALTO.

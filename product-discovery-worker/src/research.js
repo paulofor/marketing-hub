@@ -589,7 +589,8 @@ export function analyzeSearchResults(
         ? "RESEARCH_MORE"
         : !instagramB2cGatePassed
           ? "RESEARCH_MORE"
-          : purchaseMomentGate.required && !purchaseMomentGate.finalPrioritizationEligible
+          : purchaseMomentGate.required &&
+              !purchaseMomentGate.finalPrioritizationEligible
             ? "RESEARCH_MORE"
             : highRiskHits > 0
               ? "HUMAN_REVIEW"
@@ -608,7 +609,7 @@ export function analyzeSearchResults(
       : "Nenhum artigo científico candidato foi coletado; o mecanismo não deve ser tratado como validado antes de nova pesquisa científica.";
 
   const opportunityBlueprints =
-    evidence.length === 0
+    evidence.length === 0 || !marketplaceGatePassed
       ? []
       : [
           {

@@ -13,12 +13,12 @@ test("executa pedidos dirigidos e remove ofertas duplicadas", async () => {
       marketplaceRequests: [
         {
           marketplace: "HOTMART",
-          query: "curso vendas whatsapp",
+          query: "gerador propostas orçamentos",
           maxProducts: 10,
         },
         {
           marketplace: "CLICKBANK",
-          query: "curso vendas whatsapp",
+          query: "gerador propostas orçamentos",
           maxProducts: 10,
         },
       ],
@@ -47,14 +47,29 @@ test("executa pedidos dirigidos e remove ofertas duplicadas", async () => {
                 {
                   marketplace,
                   referenceId: "1",
-                  title: `Curso de vendas ${marketplace}`,
+                  title: `Gerador de propostas ${marketplace}`,
                   productUrl: `https://example.test/${marketplace}`,
+                  description:
+                    "Cria propostas e orçamentos comerciais prontos.",
+                  producer: "Fornecedor teste",
                   price: "97.00",
                   tractionSignal: 85,
                   rating: 4.8,
                   reviewCount: 120,
                   observations: 3,
                   previousTractionSignal: 82,
+                  evidenceConfidence: "HIGH",
+                },
+                {
+                  marketplace,
+                  referenceId: "snapshot-duplicado",
+                  title: `Gerador de propostas ${marketplace}`,
+                  productUrl: `https://example.test/${marketplace}?snapshot=2`,
+                  description:
+                    "Cria propostas e orçamentos comerciais prontos.",
+                  producer: "Fornecedor teste",
+                  price: "97.00",
+                  tractionSignal: 85,
                   evidenceConfidence: "HIGH",
                 },
               ],
@@ -162,6 +177,30 @@ test("descarta ofertas que coincidem apenas com termos genéricos do público", 
   assert.deepEqual(
     offers.map((offer) => offer.title),
     ["Gerador de proposta comercial"],
+  );
+});
+
+test("descarta curso incidental e preserva somente alternativa aderente ao problema", () => {
+  const offers = filterRelevantOffers(
+    [
+      {
+        title: "Mentoria Oráculo",
+        description:
+          "Curso com acompanhamento, cobrança de execução e suporte.",
+      },
+      {
+        title: "InstaVistoria",
+        description:
+          "Compara vistoria de entrada e saída no aluguel e entrega laudo.",
+      },
+    ],
+    "vistoria de saída aluguel cobrança danos produto curso preço",
+    "inquilinos comparando vistoria, laudo e fotos do aluguel",
+  );
+
+  assert.deepEqual(
+    offers.map((offer) => offer.title),
+    ["InstaVistoria"],
   );
 });
 

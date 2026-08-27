@@ -46,6 +46,8 @@ public class ProductDiscoveryMarketplaceEvidenceService {
           "vendas",
           "produto",
           "produtos",
+          "curso",
+          "cursos",
           "digital",
           "digitais",
           "execucao",

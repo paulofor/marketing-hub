@@ -3,6 +3,7 @@ import {
   fireEvent,
   render,
   screen,
+  act,
   waitFor,
   within,
 } from "@testing-library/react";
@@ -73,6 +74,74 @@ describe("ProductListPage", () => {
     expect(screen.getByText("PDE - Produto Digital Experiencial")).toBeTruthy();
     expect(screen.getByText("PDE")).toBeTruthy();
     expect(screen.getByText("Família interna: Opala")).toBeTruthy();
+  });
+
+  it("alternates STOP/PLAY only for the selected product", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/products/value-chain-positions") {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.resolve({
+        data: [
+          {
+            id: 1,
+            slug: "vega",
+            name: "Vega",
+            automaticExecutionEnabled: true,
+            automaticExecutionStatus: "PLAY",
+          },
+          {
+            id: 2,
+            slug: "rigel",
+            name: "Rigel",
+            automaticExecutionEnabled: false,
+            automaticExecutionStatus: "STOP",
+          },
+        ],
+      });
+    });
+    (axios.put as any).mockResolvedValue({
+      data: {
+        productId: 1,
+        automaticExecutionEnabled: false,
+        automaticExecutionStatus: "STOP",
+      },
+    });
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <BrowserRouter>
+          <ProductListPage />
+        </BrowserRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByRole("button", {
+        name: "Parar execução automática de Vega",
+      }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole("button", {
+        name: "Ativar execução automática de Rigel",
+      }),
+    ).toBeEnabled();
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: "Parar execução automática de Vega",
+        }),
+      );
+    });
+
+    await waitFor(() =>
+      expect(axios.put).toHaveBeenCalledWith(
+        "/api/products/1/automatic-execution",
+        { automaticExecutionEnabled: false },
+      ),
+    );
+    expect(axios.put).toHaveBeenCalledTimes(1);
   });
 
   it("shows and searches the internal identity without replacing the commercial name", async () => {

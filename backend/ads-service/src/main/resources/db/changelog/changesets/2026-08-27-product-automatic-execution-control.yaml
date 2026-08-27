@@ -1,0 +1,64 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-27-product-automatic-execution-control-columns
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: product
+              columnName: automatic_execution_enabled
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product
+                ADD COLUMN automatic_execution_enabled TINYINT(1) NOT NULL DEFAULT 1 AFTER commercial_status,
+                ADD COLUMN automatic_execution_changed_at DATETIME NULL AFTER automatic_execution_enabled,
+                ADD COLUMN automatic_execution_changed_by VARCHAR(100) NULL AFTER automatic_execution_changed_at;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE product
+                DROP COLUMN automatic_execution_changed_by,
+                DROP COLUMN automatic_execution_changed_at,
+                DROP COLUMN automatic_execution_enabled;
+
+  - changeSet:
+      id: 2026-08-27-product-automatic-execution-control-events
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: product_automatic_execution_control_event
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE product_automatic_execution_control_event (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                product_id BIGINT NOT NULL,
+                automatic_execution_enabled TINYINT(1) NOT NULL,
+                changed_by VARCHAR(100) NOT NULL,
+                changed_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                CONSTRAINT fk_product_automatic_execution_control_event_product
+                  FOREIGN KEY (product_id) REFERENCES product(id),
+                INDEX idx_product_automatic_execution_control_event_product (product_id, id)
+              );
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE product_automatic_execution_control_event;

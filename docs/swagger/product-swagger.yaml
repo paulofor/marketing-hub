@@ -162,6 +162,58 @@ paths:
                 $ref: "#/components/schemas/Product"
         "409":
           description: O nome interno já identifica outro produto.
+  /api/products/{id}/automatic-execution:
+    get:
+      tags:
+        - Products
+      summary: Retorna o controle operacional PLAY/STOP do produto.
+      operationId: getProductAutomaticExecution
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Estado operacional persistido no backend.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductAutomaticExecutionControl"
+        "404":
+          description: Produto não encontrado.
+    put:
+      tags:
+        - Products
+      summary: Alterna novas execuções automáticas do produto entre PLAY e STOP.
+      description: Não altera status comercial, experimento, campanha, preço ou publicação.
+      operationId: updateProductAutomaticExecution
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProductAutomaticExecutionRequest"
+      responses:
+        "200":
+          description: Estado operacional atualizado de forma auditável.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductAutomaticExecutionControl"
+        "400":
+          description: Decisão PLAY/STOP ausente.
+        "404":
+          description: Produto não encontrado.
   /api/product-types:
     get:
       tags:
@@ -969,6 +1021,19 @@ components:
             - PROPOSED
             - ACTIVE
             - RETIRED
+        automaticExecutionEnabled:
+          type: boolean
+          description: Verdade persistida que autoriza novas execuções automáticas do produto.
+        automaticExecutionStatus:
+          type: string
+          enum:
+            - PLAY
+            - STOP
+        automaticExecutionChangedAt:
+          type: string
+          format: date-time
+        automaticExecutionChangedBy:
+          type: string
         pdeExperienceJson:
           type: string
         videoSeedImageAssetId:
@@ -1028,6 +1093,39 @@ components:
           minLength: 1
           maxLength: 191
           description: Codinome interno estável e não publicado ao cliente.
+    UpdateProductAutomaticExecutionRequest:
+      type: object
+      required:
+        - automaticExecutionEnabled
+      additionalProperties: false
+      properties:
+        automaticExecutionEnabled:
+          type: boolean
+          description: Use true para PLAY e false para STOP.
+    ProductAutomaticExecutionControl:
+      type: object
+      required:
+        - productId
+        - automaticExecutionEnabled
+        - automaticExecutionStatus
+      properties:
+        productId:
+          type: integer
+          format: int64
+        automaticExecutionEnabled:
+          type: boolean
+        automaticExecutionStatus:
+          type: string
+          enum:
+            - PLAY
+            - STOP
+        changedAt:
+          type: string
+          format: date-time
+          nullable: true
+        changedBy:
+          type: string
+          nullable: true
     ProductScientificArticle:
       type: object
       properties:

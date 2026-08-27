@@ -34,6 +34,7 @@ import com.marketinghub.product.service.ProductScientificArticleService;
 import com.marketinghub.product.service.ProductService;
 import com.marketinghub.product.service.adlibrary.ProductAdLibraryItemResponse;
 import com.marketinghub.product.service.adlibrary.ProductAdLibraryResponse;
+import com.marketinghub.product.service.automaticexecution.ProductAutomaticExecutionControlResponse;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonExperimentResponse;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonFunnelStageResponse;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonResponse;
@@ -150,6 +151,37 @@ class ProductControllerTest {
             patch("/api/products/{id}/internal-name", 1L)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"internalName\":\"   \"}"))
+        .andExpect(status().isBadRequest());
+  }
+
+  /** Deve alternar STOP/PLAY pelo endpoint canônico sem exigir o contrato comercial completo. */
+  @Test
+  void updateProductAutomaticExecution() throws Exception {
+    when(service.updateAutomaticExecution(1L, false, "marketing-hub-admin"))
+        .thenReturn(
+            new ProductAutomaticExecutionControlResponse(
+                1L, false, "STOP", Instant.parse("2026-08-27T12:00:00Z"), "marketing-hub-admin"));
+
+    mockMvc
+        .perform(
+            put("/api/products/{id}/automatic-execution", 1L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"automaticExecutionEnabled\":false}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.productId").value(1L))
+        .andExpect(jsonPath("$.automaticExecutionEnabled").value(false))
+        .andExpect(jsonPath("$.automaticExecutionStatus").value("STOP"))
+        .andExpect(jsonPath("$.changedBy").value("marketing-hub-admin"));
+  }
+
+  /** Deve rejeitar comando sem a decisão obrigatória de PLAY ou STOP. */
+  @Test
+  void rejectProductAutomaticExecutionWithoutDecision() throws Exception {
+    mockMvc
+        .perform(
+            put("/api/products/{id}/automatic-execution", 1L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
         .andExpect(status().isBadRequest());
   }
 

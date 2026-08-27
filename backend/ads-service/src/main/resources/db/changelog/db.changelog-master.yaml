@@ -1943,3 +1943,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-26-mois-meta-instagram-platform.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-27-product-automatic-execution-control.yaml
+      relativeToChangelogFile: true

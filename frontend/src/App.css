@@ -616,6 +616,27 @@
   white-space: nowrap;
 }
 
+.product-catalog-card__header-controls {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.product-catalog-card__automatic-execution {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: flex-end;
+}
+
+.product-catalog-card__automatic-execution .btn {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
 .product-catalog-card__facts {
   display: grid;
   gap: 0.85rem;

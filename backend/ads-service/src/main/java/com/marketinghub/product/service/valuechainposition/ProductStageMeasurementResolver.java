@@ -145,9 +145,7 @@ public class ProductStageMeasurementResolver {
         product, subprocesses, currentSubprocess, parentSequenceNumber, false);
   }
 
-  /**
-   * Consolida subprocessos e distingue o próximo estágio pronto daquele que já possui execução.
-   */
+  /** Consolida subprocessos e distingue o próximo estágio pronto daquele que já possui execução. */
   public List<ProductStageMeasurementResponse> resolveSubprocessMeasurements(
       Product product,
       List<BusinessProcessDefinition> subprocesses,

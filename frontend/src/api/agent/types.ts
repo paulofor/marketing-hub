@@ -65,11 +65,44 @@ export interface AgentExecutionResource {
   usageInstructions: string;
 }
 
+export interface AgentHarnessItem {
+  key: string;
+  label: string;
+  value: string;
+  description: string;
+  sourceReference: string;
+}
+
+export interface AgentHarnessSection {
+  code: string;
+  title: string;
+  description: string;
+  items: AgentHarnessItem[];
+}
+
+export interface AgentHarnessArtifact {
+  artifactType: string;
+  name: string;
+  version: string;
+  path: string;
+  description: string;
+}
+
+export interface AgentHarness {
+  status: "COMPLETE" | "NOT_REGISTERED";
+  contractVersion: string;
+  sourceReference: string;
+  sensitiveValuesPolicy: string;
+  sections: AgentHarnessSection[];
+  artifacts: AgentHarnessArtifact[];
+}
+
 export interface AgentDetail extends Agent {
   automaticExecutionEnabled: boolean;
   automaticExecutionChangedAt?: string;
   automaticExecutionChangedBy?: string;
   executionResources: AgentExecutionResource[];
+  harness: AgentHarness;
 }
 
 export interface AgentPayload {

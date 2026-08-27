@@ -71,6 +71,46 @@ vi.mock("../../api/agent/useAgentDetail", () => ({
           usageInstructions: "Consumir o endpoint pending do backend.",
         },
       ],
+      harness: {
+        status: "COMPLETE",
+        contractVersion: "agent-harness-v1",
+        sourceReference:
+          "docs/canonical/premium-ai-agent-architecture-canon.v1.md",
+        sensitiveValuesPolicy:
+          "Nenhum secret, token ou conteúdo privado de raciocínio é exibido.",
+        sections: [
+          {
+            code: "runtime",
+            title: "Runtime do modelo",
+            description: "Configuração efetiva usada por Argos.",
+            items: [
+              {
+                key: "reasoning",
+                label: "Esforço de raciocínio",
+                value: "Herda a sessão Codex; o módulo não sobrescreve",
+                description: "A tela não inventa um valor.",
+                sourceReference: "product-discovery-worker/src/argos-codex.js",
+              },
+            ],
+          },
+        ],
+        artifacts: [
+          {
+            artifactType: "PROMPT",
+            name: "Sistema do planejador",
+            version: "productdiscovery.v1",
+            path: "product-discovery-worker/prompts/productdiscovery.v1/plan/system.md",
+            description: "Responsabilidade e limites do planejador.",
+          },
+          {
+            artifactType: "OUTPUT_SCHEMA",
+            name: "Schema do plano",
+            version: "productdiscovery.v1",
+            path: "product-discovery-worker/prompts/productdiscovery.v1/plan/plan-schema.json",
+            description: "Contrato estruturado do plano.",
+          },
+        ],
+      },
       createdAt: "2026-08-01T10:00:00Z",
       updatedAt: "2026-08-27T10:00:00Z",
       lastContractChangeAt: "2026-08-27T11:00:00Z",
@@ -89,7 +129,7 @@ describe("AgentDetailPage", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Detalhe do agente" }),
+      screen.getByRole("heading", { name: "Detalhe do agente — Argos" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Argos" })).toBeInTheDocument();
     expect(screen.getByText("gpt-5.6-sol")).toBeInTheDocument();
@@ -113,6 +153,20 @@ describe("AgentDetailPage", () => {
     expect(screen.getByText("Briefing comercial")).toBeInTheDocument();
     expect(screen.getByText("Relatório de demanda")).toBeInTheDocument();
     expect(screen.getByText("Pesquisa web")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Harness completo do agente" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("agent-harness-v1")).toBeInTheDocument();
+    expect(screen.getByText("Runtime do modelo")).toBeInTheDocument();
+    expect(
+      screen.getByText("Herda a sessão Codex; o módulo não sobrescreve"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Sistema do planejador")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "product-discovery-worker/prompts/productdiscovery.v1/plan/system.md",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Abrir mesa" })).toHaveAttribute(
       "href",
       "/agents/5",

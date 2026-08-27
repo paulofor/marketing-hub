@@ -34,6 +34,7 @@ public class LandingGeneratorCodexRunner {
   private final ObjectMapper objectMapper;
   private final CodexTelemetryReporter telemetry;
   private final LandingHtmlCodexGenerator htmlGenerator;
+  private final LandingPromptContextReducer promptContextReducer;
 
   /** Inicializa o runner com configuração, JSON e telemetria. */
   public LandingGeneratorCodexRunner(
@@ -45,6 +46,7 @@ public class LandingGeneratorCodexRunner {
     this.objectMapper = objectMapper;
     this.telemetry = telemetry;
     this.htmlGenerator = htmlGenerator;
+    this.promptContextReducer = new LandingPromptContextReducer(objectMapper);
   }
 
   /** Executa o agente em sandbox read-only e devolve auditoria integral. */
@@ -204,12 +206,14 @@ public class LandingGeneratorCodexRunner {
     return command;
   }
 
-  /** Resolve o prompt versionado com o snapshot congelado. */
-  private String buildPrompt(LandingAgentJob job) throws IOException {
+  /** Resolve o prompt de decisão sem transportar HTML integral nem auditoria bruta. */
+  String buildPrompt(LandingAgentJob job) throws IOException {
     return read("prompts/landing-generator/v1/remediation.md")
         .replace("{{EXECUTION_ID}}", job.executionId())
         .replace("{{EXPERIMENT_ID}}", job.experimentId().toString())
-        .replace("{{CONTEXT}}", objectMapper.writeValueAsString(job.context()));
+        .replace(
+            "{{CONTEXT}}",
+            objectMapper.writeValueAsString(promptContextReducer.forPlanning(job.context())));
   }
 
   /** Bloqueia planos vagos, abordagens indisponíveis, autoaprovação e autonomia sem controle. */

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agent.AgentInput;
 import com.marketinghub.agent.AgentInternalFunction;
@@ -44,7 +45,7 @@ class AgentDetailServiceTest {
         .thenReturn(List.of(resource()));
 
     var detail =
-        new AgentDetailService(agentRepository, versionRepository, resourceRepository)
+        new AgentDetailService(agentRepository, versionRepository, resourceRepository, catalog())
             .getDetail(5L);
 
     assertThat(detail.nickname()).isEqualTo("Argos");
@@ -57,6 +58,12 @@ class AgentDetailServiceTest {
     assertThat(detail.executionResources())
         .extracting("resourceCode")
         .containsExactly("argos-market-radar");
+    assertThat(detail.harness().status()).isEqualTo("COMPLETE");
+    assertThat(detail.harness().contractVersion()).isEqualTo("agent-harness-v1");
+    assertThat(detail.harness().sections()).extracting("code").contains("runtime", "orchestration");
+    assertThat(detail.harness().artifacts())
+        .extracting("path")
+        .contains("product-discovery-worker/prompts/productdiscovery.v1/plan/system.md");
     assertThat(detail.lastContractChangeAt()).isEqualTo(Instant.parse("2026-08-27T11:00:00Z"));
     verify(resourceRepository)
         .findAllByResponsibleAgentKeyAndActiveTrueOrderByNameAsc("market-radar");
@@ -71,7 +78,8 @@ class AgentDetailServiceTest {
         new AgentDetailService(
             agentRepository,
             mock(AgentVersionRepository.class),
-            mock(BusinessProcessExecutionResourceRepository.class));
+            mock(BusinessProcessExecutionResourceRepository.class),
+            catalog());
 
     assertThatThrownBy(() -> service.getDetail(99L))
         .isInstanceOf(ResponseStatusException.class)
@@ -142,5 +150,10 @@ class AgentDetailServiceTest {
     resource.setUsageInstructions("Consumir o endpoint pending do backend.");
     resource.setActive(true);
     return resource;
+  }
+
+  /** Carrega o manifesto real usado pelo endpoint de detalhe. */
+  private AgentHarnessCatalog catalog() {
+    return new AgentHarnessCatalog(new ObjectMapper());
   }
 }

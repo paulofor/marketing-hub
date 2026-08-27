@@ -95,9 +95,9 @@ class LandingGeneratorCodexRunnerTest {
     assertThrows(IllegalStateException.class, runner::requiredMcpScript);
   }
 
-  /** Deve versionar modelagem sem cópia e aprendizado por recompensa independente. */
+  /** Deve versionar modelagem sem cópia e retirar instruções globais abaixo do padrão aprovado. */
   @Test
-  void shouldDeclareReferenceModelingAndReinforcementContract() throws Exception {
+  void shouldDeclareReferenceModelingWithoutLowValueGlobalSections() throws Exception {
     String prompt =
         Files.readString(Path.of("src/main/resources/prompts/landing-generator/v1/remediation.md"));
     String normalizedPrompt = prompt.replaceAll("\\s+", " ");
@@ -106,11 +106,11 @@ class LandingGeneratorCodexRunnerTest {
             Path.of("src/main/resources/prompts/landing-generator/v1/remediation-schema.json"));
     String mcp = Files.readString(Path.of("src/main/resources/mcp/landing-generator.mjs"));
 
-    assertTrue(prompt.contains("aprendizado por reforço governado"));
     assertTrue(prompt.contains("Nunca copie"));
     assertTrue(schema.contains("referencePatternModels"));
-    assertTrue(schema.contains("learningHypotheses"));
-    assertTrue(prompt.contains("Agenda Cheia"));
+    assertFalse(prompt.contains("aprendizado por reforço governado"));
+    assertFalse(schema.contains("learningHypotheses"));
+    assertFalse(prompt.contains("Quando o produto for **Agenda Cheia**"));
     assertTrue(prompt.contains("três estratégias"));
     assertTrue(schema.contains("autonomousBacklog"));
     assertTrue(schema.contains("stopConditions"));
@@ -118,9 +118,9 @@ class LandingGeneratorCodexRunnerTest {
     assertTrue(schema.contains("generationApproachOptions"));
     assertTrue(schema.contains("selectedGenerationApproach"));
     assertTrue(prompt.contains("recuperar_estrategias_promovidas"));
-    assertTrue(
-        prompt.contains("não selecione essa abordagem se não puder entregar o HTML integral"));
+    assertTrue(prompt.contains("segunda interação dedicada"));
     assertTrue(prompt.contains("começando em `<!doctype html>` e terminando em `</html>`"));
+    assertTrue(schema.contains("\"generatedHtml\":{\"type\":\"null\"}"));
     assertTrue(
         normalizedPrompt.contains("nomeie explicitamente quem entrega, quem revisa e quem aplica"));
     assertTrue(normalizedPrompt.contains("Todo item de `previousAttemptBlocks`"));
@@ -128,6 +128,68 @@ class LandingGeneratorCodexRunnerTest {
     assertTrue(normalizedPrompt.contains("adCopy` ou `adImageBriefing` vazios"));
     assertTrue(mcp.contains("/api/internal/agent-learning/v1/agents/landing-generator/promoted"));
     assertFalse(mcp.contains("/promotion"));
+  }
+
+  /** Deve excluir HTML e auditoria bruta da decisão sem perder causas e score independente. */
+  @Test
+  void shouldBuildCompactPlanningPrompt() throws Exception {
+    LandingGeneratorCodexRunner runner = runner();
+    LandingAgentJob job =
+        new LandingAgentJob(
+            "job-88",
+            88L,
+            Map.of(
+                "productName",
+                "Rigel",
+                "landingHtml",
+                "<!doctype html><html><body>HTML_SENTINELA</body></html>",
+                "qualityReview",
+                Map.of(
+                    "score",
+                    90,
+                    "blockingIssues",
+                    List.of("CAUSA_SENTINELA"),
+                    "qualityReviewAudit",
+                    "AUDITORIA_BRUTA_SENTINELA")));
+
+    String prompt = runner.buildPrompt(job);
+
+    assertTrue(prompt.contains("baselineQualityReviewScore\":90"));
+    assertTrue(prompt.contains("CAUSA_SENTINELA"));
+    assertFalse(prompt.contains("HTML_SENTINELA"));
+    assertFalse(prompt.contains("AUDITORIA_BRUTA_SENTINELA"));
+  }
+
+  /** Deve limitar HTML atual à materialização e continuar removendo auditoria bruta. */
+  @Test
+  void shouldKeepCurrentHtmlOnlyInMaterializationPrompt() throws Exception {
+    LandingHtmlCodexGenerator generator =
+        new LandingHtmlCodexGenerator(
+            new LandingGeneratorAgentProperties(),
+            new ObjectMapper(),
+            mock(CodexTelemetryReporter.class));
+    LandingAgentJob job =
+        new LandingAgentJob(
+            "job-88",
+            88L,
+            Map.of(
+                "landingHtml",
+                "<!doctype html><html><body>HTML_SENTINELA</body></html>",
+                "qualityReview",
+                Map.of(
+                    "score",
+                    90,
+                    "blockingIssues",
+                    List.of("CAUSA_SENTINELA"),
+                    "qualityReviewAudit",
+                    "AUDITORIA_BRUTA_SENTINELA")));
+
+    String prompt =
+        generator.buildPrompt(job, new ObjectMapper().readTree("{\"generatedHtml\":null}"));
+
+    assertTrue(prompt.contains("HTML_SENTINELA"));
+    assertTrue(prompt.contains("CAUSA_SENTINELA"));
+    assertFalse(prompt.contains("AUDITORIA_BRUTA_SENTINELA"));
   }
 
   /** Deve impedir palavras-chave rejeitadas pelo Structured Outputs da OpenAI. */

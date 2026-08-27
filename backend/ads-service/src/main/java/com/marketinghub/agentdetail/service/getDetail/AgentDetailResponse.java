@@ -36,6 +36,7 @@ public record AgentDetailResponse(
     List<AgentDetailItemResponse> outputs,
     List<AgentDetailItemResponse> internalFunctions,
     List<AgentDetailResourceResponse> executionResources,
+    AgentHarnessResponse harness,
     Instant createdAt,
     Instant updatedAt,
     Instant lastContractChangeAt) {}

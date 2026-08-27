@@ -1,5 +1,9 @@
 import { Link, useParams } from "react-router-dom";
-import type { AgentExecutionResource, AgentItem } from "../../api/agent/types";
+import type {
+  AgentExecutionResource,
+  AgentHarness,
+  AgentItem,
+} from "../../api/agent/types";
 import { useAgentDetail } from "../../api/agent/useAgentDetail";
 import PageTitle from "../../components/PageTitle";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
@@ -112,6 +116,144 @@ function ExecutionResource({ resource }: { resource: AgentExecutionResource }) {
   );
 }
 
+function AgentHarnessView({ harness }: { harness: AgentHarness }) {
+  const complete = harness.status === "COMPLETE";
+
+  return (
+    <section className="card mb-4" aria-labelledby="agent-detail-harness">
+      <div className="card-body">
+        <div className="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+          <div>
+            <h2 id="agent-detail-harness" className="h5 mb-1">
+              Harness completo do agente
+            </h2>
+            <p className="small text-body-secondary mb-0">
+              Runtime, orquestração, memória, segurança, observabilidade e todos
+              os artefatos versionados registrados no backend.
+            </p>
+          </div>
+          <span
+            className={`badge ${complete ? "text-bg-success" : "text-bg-warning"}`}
+          >
+            {complete ? "Completo" : "Não registrado"}
+          </span>
+        </div>
+
+        <dl className="row g-3 mb-3">
+          <DetailField
+            label="Contrato do harness"
+            value={harness.contractVersion}
+          />
+          <DetailField label="Fonte canônica" value={harness.sourceReference} />
+          <DetailField
+            label="Cobertura"
+            value={`${harness.sections.length} seções · ${harness.artifacts.length} artefatos`}
+          />
+        </dl>
+
+        <div className="alert alert-secondary small" role="note">
+          {harness.sensitiveValuesPolicy}
+        </div>
+
+        {!complete ? (
+          <div className="alert alert-warning mb-0" role="alert">
+            O backend ainda não possui um manifesto de harness para este agente.
+            Nenhuma configuração foi inferida pela tela.
+          </div>
+        ) : (
+          <>
+            <div className="vstack gap-3 mb-4">
+              {harness.sections.map((section, index) => (
+                <details
+                  className="border rounded p-3"
+                  key={section.code}
+                  open={index === 0}
+                >
+                  <summary className="fw-semibold">
+                    {section.title}
+                    <span className="badge text-bg-light ms-2">
+                      {section.items.length}
+                    </span>
+                  </summary>
+                  <p className="small text-body-secondary mt-2 mb-3">
+                    {section.description}
+                  </p>
+                  <div className="row g-3">
+                    {section.items.map((item) => (
+                      <div className="col-lg-6" key={item.key}>
+                        <article className="bg-body-tertiary rounded p-3 h-100">
+                          <h3 className="h6 mb-1">{item.label}</h3>
+                          <div className="fw-semibold text-break">
+                            {item.value}
+                          </div>
+                          <p className="small text-body-secondary mt-2 mb-2">
+                            {item.description}
+                          </p>
+                          <div className="small">
+                            <span className="text-body-secondary">Fonte: </span>
+                            <code className="text-break">
+                              {item.sourceReference}
+                            </code>
+                          </div>
+                        </article>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              ))}
+            </div>
+
+            <div aria-labelledby="agent-harness-artifacts">
+              <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <div>
+                  <h3 id="agent-harness-artifacts" className="h6 mb-1">
+                    Artefatos versionados do harness
+                  </h3>
+                  <p className="small text-body-secondary mb-0">
+                    Inventário completo de prompts, schemas, MCPs, runtime e
+                    entrega do executor.
+                  </p>
+                </div>
+                <span className="badge text-bg-light">
+                  {harness.artifacts.length}
+                </span>
+              </div>
+              <div className="row g-3">
+                {harness.artifacts.map((artifact) => (
+                  <div
+                    className="col-xl-6"
+                    key={`${artifact.artifactType}-${artifact.path}`}
+                  >
+                    <article className="border rounded p-3 h-100">
+                      <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                        <h4 className="h6 mb-0">{artifact.name}</h4>
+                        <div className="d-flex flex-wrap gap-1">
+                          <span className="badge text-bg-light">
+                            {artifact.artifactType}
+                          </span>
+                          <span className="badge text-bg-light">
+                            {artifact.version}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="small text-body-secondary mt-2 mb-2">
+                        {artifact.description}
+                      </p>
+                      <code className="d-block small text-break">
+                        {artifact.path}
+                      </code>
+                    </article>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export default function AgentDetailPage() {
   const { id } = useParams();
   const detail = useAgentDetail(id);
@@ -140,7 +282,7 @@ export default function AgentDetailPage() {
     <div>
       <div className="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
         <div>
-          <PageTitle>Detalhe do agente</PageTitle>
+          <PageTitle>Detalhe do agente — {agent.nickname}</PageTitle>
           <p className="text-body-secondary mb-0">
             Contrato atual, recursos e instruções específicas de{" "}
             {agent.nickname}.
@@ -222,6 +364,8 @@ export default function AgentDetailPage() {
           ) : null}
         </div>
       </section>
+
+      <AgentHarnessView harness={agent.harness} />
 
       <section className="card mb-4" aria-labelledby="agent-detail-business">
         <div className="card-body">

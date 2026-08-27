@@ -18,6 +18,7 @@ public class LandingHtmlCodexGenerator {
   private final LandingGeneratorAgentProperties properties;
   private final ObjectMapper objectMapper;
   private final CodexTelemetryReporter telemetry;
+  private final LandingPromptContextReducer promptContextReducer;
 
   /** Inicializa a geração final com configuração, JSON e telemetria auditável. */
   public LandingHtmlCodexGenerator(
@@ -27,6 +28,7 @@ public class LandingHtmlCodexGenerator {
     this.properties = properties;
     this.objectMapper = objectMapper;
     this.telemetry = telemetry;
+    this.promptContextReducer = new LandingPromptContextReducer(objectMapper);
   }
 
   /** Executa uma interação dedicada e limitada ao documento HTML completo. */
@@ -35,10 +37,7 @@ public class LandingHtmlCodexGenerator {
     Path output = Files.createTempFile("landing-html-", ".json");
     Path log = Files.createTempFile("landing-html-process-", ".log");
     Path schema = materialize("prompts/landing-generator/v1/html-schema.json", "html-schema-");
-    String request =
-        read("prompts/landing-generator/v1/html.md")
-            .replace("{{CONTEXT}}", objectMapper.writeValueAsString(job.context()))
-            .replace("{{DECISION}}", objectMapper.writeValueAsString(decision));
+    String request = buildPrompt(job, decision);
     try {
       Process process =
           new ProcessBuilder(command(output, schema))
@@ -71,6 +70,15 @@ public class LandingHtmlCodexGenerator {
       Files.deleteIfExists(log);
       Files.deleteIfExists(schema);
     }
+  }
+
+  /** Monta a interação final com HTML atual, contratos comerciais e revisão compacta. */
+  String buildPrompt(LandingAgentJob job, JsonNode decision) throws IOException {
+    return read("prompts/landing-generator/v1/html.md")
+        .replace(
+            "{{CONTEXT}}",
+            objectMapper.writeValueAsString(promptContextReducer.forMaterialization(job.context())))
+        .replace("{{DECISION}}", objectMapper.writeValueAsString(decision));
   }
 
   /** Monta o comando estrito da interação de materialização. */

@@ -134,6 +134,21 @@ class CommercialBpmTaskConsumerTest {
         .contains("activationRecommendation", "gateChecks", "priceClarityScore");
   }
 
+  /** Mantém Têmis na coerência comercial da landing sem antecipar pagamento e acesso. */
+  @Test
+  void acceptsCanonicalCheckoutBindingAsLandingEvidence() throws Exception {
+    String prompt = read("prompts/bpm/landing-commercial-review.md");
+    String normalizedPrompt = prompt.replaceAll("\\s+", " ");
+
+    org.assertj.core.api.Assertions.assertThat(normalizedPrompt)
+        .contains(
+            "VALIDATED_FROM_PERSISTED_CANONICAL_BINDING",
+            "não exija aqui captura ou pagamento no provedor externo",
+            "Integração de canal, checkout, acesso e eventos",
+            "approvedCreativeEvidence.status",
+            "adCopy` ou `adImageBriefing`");
+  }
+
   /** Exige Flex no gate de IA para manter custo e contrato operacional auditáveis. */
   @Test
   void usesFlexServiceTier() {

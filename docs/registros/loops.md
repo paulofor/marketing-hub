@@ -24,6 +24,25 @@
 - **Prevenção:** testes de contrato exigem a criação idempotente das três atividades BPM, impedem
   que uma aprovação técnica isolada avance 4.2 e comprovam a passagem para `Integrar canal,
   checkout, acesso e eventos` somente após o objetivo persistido.
+- **Fechamento complementar em 2026-08-27:** a primeira execução BPM oficial do Rigel concluiu o
+  HTML e o Quality Review com 90/100, mas Psique bloqueou por ausência de checkout na evidência e
+  Têmis não recebeu o pacote criativo aprovado no subprocesso 4.1. O backend ainda lia os campos
+  legados `followUpActionUrl`, `adCopy` e `adImageBriefing`, embora os contratos canônicos estivessem
+  no vínculo comercial do produto e nas quatro tarefas aprovadas do pacote criativo.
+- **Causa-raiz complementar:** os artefatos aprovados não eram consolidados e transportados entre
+  subprocessos, e a chave idempotente permanente da jornada impedia nova tentativa depois de uma
+  revisão `BLOCKED`.
+- **Correção e prevenção complementares:** o backend passa a validar e expor o checkout canônico e
+  o mesmo pacote criativo aprovado por Dédalo, produção, Psique e Têmis; tentativas bloqueadas abrem
+  uma execução numerada, preservando as causas anteriores como entrada obrigatória. Testes de
+  contrato impedem uso de pacote divergente, criativo publicado ou com gasto, checkout inconsistente
+  e reabertura de jornada ainda ativa. O contexto do 4.2 deixa de exigir pagamento, acesso e eventos,
+  que pertencem ao subprocesso seguinte, evitando bloqueio por responsabilidade ainda não iniciada.
+- **Fechamento visual complementar:** a revisão local reproduziu um recorte mobile branco mesmo com
+  `naturalWidth` positivo, porque o screenshot podia ocorrer antes do término de `image.decode()`.
+  O Quality Review agora força as imagens para `eager`, aguarda carga com dimensão real e conclui a
+  decodificação dos pixels antes dos screenshots full-page e de prova; teste em Chromium protege a
+  ordem para que ausência de pixels não seja confundida com prova comercial fraca.
 
 ## LOOP-PDE-INTERFACE-SEGURA-COM-ROTA-LEGADA-INSEGURA — contrato contornado fora da tela
 

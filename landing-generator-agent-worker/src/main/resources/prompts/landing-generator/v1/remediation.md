@@ -22,6 +22,11 @@ O objeto `checkoutContract` do contexto é uma instrução operacional obrigató
 
 Quando `approvedLandingVisualAssets` estiver preenchido, ele é a fonte de verdade visual do produto. O HTML deve reutilizar literalmente ao menos `minimumApprovedLandingVisualAssets` URLs distintas da lista em elementos `img`, preservando o arquivo real sem redesenho ou reconstrução aproximada. Cenário e composição podem contextualizar a prova, mas não substituí-la. Não use placeholder, mock fictício, URL aposentada ou mídia externa como demonstração do que a cliente receberá.
 
+Quando `approvedCreativeEvidence.status` for `APPROVED`, ele é o artefato canônico do subprocesso
+anterior para continuidade entre anúncio e landing. Use `route`, `production`, `customerReview`,
+`commercialReview` e `packageEvidence`; campos legados `adCopy` ou `adImageBriefing` vazios não
+significam ausência de criativo. Nunca invente ou substitua o pacote aprovado.
+
 Trate a escolha da abordagem como hipótese aprendível. Registre baseline, motivo, evidências e métricas de resultado por abordagem. Quality Review, tempo e custo reais medem qualidade operacional; CTA, checkout e venda reais medem desempenho comercial. Explore alternativa disponível quando a abordagem atual estagnar ou houver evidência comparável suficiente, sem trocar mais de uma variável estrutural por ciclo. Preserve uma abordagem vencedora enquanto ela evoluir e não faça exploração que coloque publicação, dados reais ou orçamento em risco.
 
 Quando o produto for **Agenda Cheia** e o público for nail design, preserve a continuidade da promessa de prévia personalizada: deixe claro o que a profissional receberá, mostre transformação visual plausível sem prometer retorno garantido de clientes, use prova visual específica do trabalho de nail designer, reduza a fricção do primeiro CTA e garanta que anúncio, hero, formulário e entrega descrevam a mesma ação. Trate esta regra como especialização do produto, nunca como autorização para inventar prova, depoimento ou resultado.
@@ -29,6 +34,12 @@ Quando o produto for **Agenda Cheia** e o público for nail design, preserve a c
 Produza um plano causal executável pela abordagem selecionada. Quando selecionar `GERALANDING_PIPELINE`, escolha a etapa mais antiga que resolve a causa: `LANDING_PAGE_WIREFRAME`, `LANDING_PAGE_COPY`, `LANDING_PAGE_IMAGE_PLANNING`, `LANDING_PAGE_IMAGE_GENERATION`, `LANDING_PAGE_DESIGN_PRESET` ou `LANDING_PAGE_HTML`. Outras abordagens só podem ser selecionadas quando o snapshot declarar contrato e executor disponíveis. Imagens, em qualquer abordagem, devem ser solicitadas pelo planejamento oficial e materializadas pelo Gerador de Imagens do Marketing Hub com `gpt-image-2`; nunca invente URL ou asset.
 
 Avalie promessa, público, mecanismo, prova, objeções, CTA, formulário, continuidade com o anúncio, hierarquia visual, acessibilidade, performance e responsividade. Valide também overflow, links, âncoras, campos obrigatórios, submissão técnica isolada e presença dos eventos esperados sem gerar métricas comerciais reais. Cada correção precisa ter causa-raiz, mudança objetiva, evidência e critério verificável por dispositivo. Declare quais padrões de referência foram abstraídos, por que se aplicam ao público e como evitar cópia.
+
+Preserve também a autoria de cada ação da jornada. Quando a entrega for para uso manual, nomeie
+explicitamente quem entrega, quem revisa e quem aplica; não use palavras como “aplicado”,
+“implantado” ou “executado” sem sujeito quando elas puderem sugerir que a equipe realizará uma ação
+reservada à cliente. Todo item de `previousAttemptBlocks` é evidência obrigatória de retrabalho:
+resolva sua causa observável e mantenha intactos os contratos comerciais já validados.
 
 Trabalhe com aprendizado por reforço governado: trate cada mudança como hipótese, informe o score independente de baseline, a recompensa esperada e os sinais que confirmam ou contradizem a hipótese. A única recompensa imediata válida é o Quality Review independente posterior; clique no CTA, checkout e venda são recompensas tardias e só contam quando vierem de eventos reais segregados. Texto gerado, impacto estimado e sua própria avaliação não são recompensa. Registre aprendizagem candidata apenas quando houver evidência nova; nunca confirme sua própria memória. Não reutilize memória contradita ou retirada.
 

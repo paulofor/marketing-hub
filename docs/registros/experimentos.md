@@ -1,3 +1,23 @@
+## 2026-08-27 — Rigel: homologação do subprocesso 4.2
+
+- **Gargalo real:** a jornada oficial gerou a landing e recebeu Quality Review 90/100, mas Psique
+  bloqueou a execução porque o checkout canônico e o pacote criativo aprovado no 4.1 não chegaram à
+  evidência de revisão; Têmis permaneceu pendente e o 4.2 não foi concluído.
+- **Correção local:** o backend consolida vínculo comercial, preço, recorrência e checkout do produto,
+  exige o mesmo pacote aprovado nas quatro atividades criativas e permite nova tentativa numerada
+  após bloqueio, preservando os pareceres anteriores. Prompts de Dédalo, Psique e Têmis distinguem a
+  aplicação manual do kit pelo cliente da integração técnica do próximo subprocesso; pagamento,
+  acesso e eventos deixam de ser exigidos prematuramente no 4.2.
+- **Homologação:** duas rodadas completas e consecutivas aprovaram a landing com Quality Review
+  91/100 e 90/100, Psique e Têmis sem ressalvas e navegação em Chromium desktop, iPhone 15 Pro e
+  Pixel 7. O
+  checkout oficial de R$ 349 respondeu no preflight sem pagamento. O renderer também passa a
+  aguardar os pixels das provas antes de capturar cada screenshot, eliminando recorte mobile branco
+  causado por corrida de decodificação assíncrona.
+- **Estado comercial preservado:** experimento 89 permanece `PLANNED`; não houve publicação, compra,
+  venda, contato ou gasto. A conclusão oficial do 4.2 depende da publicação da correção pelo fluxo de
+  Pull Request e de uma nova execução pela tela.
+
 ## 2026-07-31 — PDE MUSA v7: copy corrigida pelo cockpit e diagnóstico editável
 
 - causa-raiz confirmada: o slot v7 já tinha editor/publicador de contrato no Marketing Hub para copy do PDE, mas parte do diagnóstico público ainda vinha do bundle do frontend, mantendo risco de vazamento de rótulos internos como `A v7`.

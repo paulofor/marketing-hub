@@ -17,7 +17,9 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.qualityreview.service.LandingQualityReviewedEvent;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
+import com.marketinghub.planning.service.CommercialPlanApprovedCreativeEvidenceService;
 import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
+import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
@@ -39,6 +41,7 @@ class LandingGenerationAgentExecutionServiceTest {
   private LandingGenerationResultApplicationService resultApplicationService;
   private GeraSalesPagePublicationAuditRepository publicationRepository;
   private CommercialPlanLandingAssetService landingAssetService;
+  private CommercialPlanApprovedCreativeEvidenceService approvedCreativeEvidenceService;
   private LandingCommercialContextResolver commercialContextResolver;
   private LandingGenerationAgentExecutionService service;
 
@@ -52,19 +55,25 @@ class LandingGenerationAgentExecutionServiceTest {
     resultApplicationService = mock(LandingGenerationResultApplicationService.class);
     publicationRepository = mock(GeraSalesPagePublicationAuditRepository.class);
     landingAssetService = mock(CommercialPlanLandingAssetService.class);
+    approvedCreativeEvidenceService = mock(CommercialPlanApprovedCreativeEvidenceService.class);
     commercialContextResolver = mock(LandingCommercialContextResolver.class);
     when(commercialContextResolver.resolve(any())).thenReturn(java.util.Map.of());
+    when(approvedCreativeEvidenceService.resolve(any()))
+        .thenReturn(java.util.Map.of("status", "UNAVAILABLE"));
+    ObjectMapper objectMapper = new ObjectMapper();
     service =
         new LandingGenerationAgentExecutionService(
             repository,
             coordinator,
             experimentRepository,
-            new LandingCheckoutContractResolver(publicationRepository),
+            new LandingCheckoutEvidenceResolver(
+                new LandingCheckoutContractResolver(publicationRepository), objectMapper),
             commercialContextResolver,
-            new ObjectMapper(),
+            objectMapper,
             agentTaskService,
             resultApplicationService,
-            landingAssetService);
+            landingAssetService,
+            approvedCreativeEvidenceService);
     when(experimentRepository.findById(88L)).thenReturn(Optional.empty());
     when(repository
             .findTop20ByStageCodeAndStatusAndExecutionRequestedAtBeforeOrderByExecutionRequestedAtAsc(
@@ -112,11 +121,20 @@ class LandingGenerationAgentExecutionServiceTest {
   @Test
   void shouldIncludeCommercialEvidenceWhenCompletingBpmTask() {
     Experiment experiment = new Experiment();
+    experiment.setId(88L);
     experiment.setHtmlGeraLanding("<!doctype html><html><body>Agenda Cheia</body></html>");
     experiment.setAdCopy("{\"headline\":\"Feed profissional\"}");
     experiment.setAdImageBriefing("{\"proof\":\"antes e depois\"}");
-    experiment.setFollowUpActionUrl("https://checkout.example/agenda-cheia");
+    experiment.setFollowUpActionUrl("https://delivery.example/agenda-cheia");
+    experiment.setCommercialCheckoutUrl("https://checkout.example/agenda-cheia");
     experiment.setUnitPrice(java.math.BigDecimal.valueOf(67));
+    Product product = new Product();
+    product.setId(9L);
+    product.setName("Agenda Cheia");
+    product.setSlug("agenda-cheia");
+    product.setPdeExperienceJson(
+        "{\"commercialBinding\":{\"experimentId\":88,\"priceBrl\":67,\"billingModel\":\"ONE_TIME\"}}");
+    experiment.setProduct(product);
     GeraLandingStageExecution qualityReview = execution("quality-review-88", "CONCLUIDO");
     qualityReview.setQualityReviewAudit(
         "{\"screenshots\":[{\"viewport\":\"mobile\",\"publicUrl\":\"https://evidence/mobile.jpg\"}]}");
@@ -125,6 +143,13 @@ class LandingGenerationAgentExecutionServiceTest {
             .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
                 88L, "landing-page-quality-review", "agent-task:30"))
         .thenReturn(List.of(qualityReview));
+    when(approvedCreativeEvidenceService.resolve(88L))
+        .thenReturn(
+            java.util.Map.of(
+                "status",
+                "APPROVED",
+                "creativePackageId",
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
 
     service.onQualityReviewCompleted(
         new LandingQualityReviewedEvent(
@@ -143,7 +168,16 @@ class LandingGenerationAgentExecutionServiceTest {
     assertTrue(request.getValue().evidenceJson().contains("Agenda Cheia"));
     assertTrue(request.getValue().evidenceJson().contains("mobile.jpg"));
     assertTrue(request.getValue().evidenceJson().contains("checkout.example"));
+    assertTrue(
+        request.getValue().evidenceJson().contains("VALIDATED_FROM_PERSISTED_CANONICAL_BINDING"));
+    assertFalse(request.getValue().evidenceJson().contains("delivery.example"));
     assertTrue(request.getValue().evidenceJson().contains("Feed profissional"));
+    assertTrue(request.getValue().evidenceJson().contains("approvedCreativeEvidence"));
+    assertTrue(
+        request
+            .getValue()
+            .evidenceJson()
+            .contains("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
   }
 
   /** Não deve acumular outra correção quando o mesmo ciclo já possui trabalho ativo. */
@@ -358,6 +392,10 @@ class LandingGenerationAgentExecutionServiceTest {
 
     assertEquals("MAQA-H002-E001", result.context().get("experimentName"));
     assertFalse(result.context().containsKey("landingHtml"));
+    @SuppressWarnings("unchecked")
+    java.util.Map<String, Object> checkoutContract =
+        (java.util.Map<String, Object>) result.context().get("checkoutContract");
+    assertEquals("BLOCKED", checkoutContract.get("validationStatus"));
     assertEquals("PROCESSANDO", execution.getStatus());
   }
 

@@ -209,6 +209,47 @@ class ProductStageMeasurementResolverTest {
     assertThat(resolver.objectiveAchieved(product, landing)).isTrue();
   }
 
+  /** Ignora a tentativa bloqueada quando uma repetição posterior aprova integralmente a landing. */
+  @Test
+  void recognizesApprovedLandingRetryAfterBlockedAttempt() {
+    Product product = Product.builder().id(9L).build();
+    CommercialPlan plan = CommercialPlan.builder().id(4L).build();
+    BusinessProcessDefinition landing = process(18L, "landing-page-generation", "communication");
+    AgentTask blockedHtml =
+        approvedLandingTask(1L, landing, "html", "2026-08-26T10:00:00Z");
+    AgentTask blockedCustomer =
+        task(2L, landing, "2026-08-26T10:01:00Z", "0.10000000", "BLOCKED");
+    blockedCustomer.setProcessActivityId("customer");
+    blockedCustomer.setSourceReference("commercial-plan:4@v3:journey");
+    blockedCustomer.setResultJson("{\"decision\":\"ADJUST\"}");
+    List<AgentTask> approvedRetry =
+        List.of(
+            approvedLandingTask(3L, landing, "html", "2026-08-27T10:00:00Z"),
+            approvedLandingTask(4L, landing, "customer", "2026-08-27T10:01:00Z"),
+            approvedLandingTask(5L, landing, "commercial", "2026-08-27T10:02:00Z"));
+    approvedRetry.forEach(
+        task -> task.setSourceReference("commercial-plan:4@v3:journey:attempt:2"));
+    when(plans.findByProductId(9L)).thenReturn(List.of(plan));
+    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("commercial-plan:4@"))
+        .thenReturn(
+            List.of(
+                approvedRetry.get(2),
+                approvedRetry.get(1),
+                approvedRetry.get(0),
+                blockedCustomer,
+                blockedHtml));
+    when(ledger.findByProductIdOrderByCreatedAtAsc(9L)).thenReturn(List.of());
+    when(ledger.findByCommercialPlanIdInOrderByCreatedAtAsc(List.of(4L))).thenReturn(List.of());
+
+    ProductStageMeasurementResponse result =
+        resolver.resolveSubprocessMeasurements(product, List.of(landing), null, 4).getFirst();
+
+    assertThat(result.trackingStatus()).isEqualTo("COMPLETED");
+    assertThat(result.objectiveAchieved()).isTrue();
+    assertThat(result.exitedAt()).isEqualTo(Instant.parse("2026-08-27T10:02:00Z"));
+    assertThat(resolver.objectiveAchieved(product, landing)).isTrue();
+  }
+
   /** Não confunde atualização de tarefa bloqueada com objetivo do macroprocesso atingido. */
   @Test
   void keepsHistoricalProcessRecordedWithoutDownstreamEntryEvidence() {

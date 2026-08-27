@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.qualityreview.service.LandingQualityReviewedEvent;
+import com.marketinghub.planning.service.CommercialPlanApprovedCreativeEvidenceService;
 import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
@@ -24,7 +25,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-import org.springframework.util.StringUtils;
 
 /** Responsabilidade: persistir a fila e os callbacks do Agente Gerador de Landing. */
 @Service
@@ -45,33 +45,36 @@ public class LandingGenerationAgentExecutionService {
   private final GeraLandingStageExecutionRepository repository;
   private final LandingGenerationAgentCoordinator coordinator;
   private final ExperimentRepository experimentRepository;
-  private final LandingCheckoutContractResolver checkoutContractResolver;
+  private final LandingCheckoutEvidenceResolver checkoutEvidenceResolver;
   private final LandingCommercialContextResolver commercialContextResolver;
   private final ObjectMapper objectMapper;
   private final AgentTaskService agentTaskService;
   private final LandingGenerationResultApplicationService resultApplicationService;
   private final CommercialPlanLandingAssetService landingAssetService;
+  private final CommercialPlanApprovedCreativeEvidenceService approvedCreativeEvidenceService;
 
   /** Inicializa a fila usando a persistência canônica do GeraLanding. */
   public LandingGenerationAgentExecutionService(
       GeraLandingStageExecutionRepository repository,
       LandingGenerationAgentCoordinator coordinator,
       ExperimentRepository experimentRepository,
-      LandingCheckoutContractResolver checkoutContractResolver,
+      LandingCheckoutEvidenceResolver checkoutEvidenceResolver,
       LandingCommercialContextResolver commercialContextResolver,
       ObjectMapper objectMapper,
       AgentTaskService agentTaskService,
       LandingGenerationResultApplicationService resultApplicationService,
-      CommercialPlanLandingAssetService landingAssetService) {
+      CommercialPlanLandingAssetService landingAssetService,
+      CommercialPlanApprovedCreativeEvidenceService approvedCreativeEvidenceService) {
     this.repository = repository;
     this.coordinator = coordinator;
     this.experimentRepository = experimentRepository;
-    this.checkoutContractResolver = checkoutContractResolver;
+    this.checkoutEvidenceResolver = checkoutEvidenceResolver;
     this.commercialContextResolver = commercialContextResolver;
     this.objectMapper = objectMapper;
     this.agentTaskService = agentTaskService;
     this.resultApplicationService = resultApplicationService;
     this.landingAssetService = landingAssetService;
+    this.approvedCreativeEvidenceService = approvedCreativeEvidenceService;
   }
 
   /** Converte o parecer independente em trabalho do agente ou conclui a jornada aprovada. */
@@ -125,7 +128,14 @@ public class LandingGenerationAgentExecutionService {
               evidence.put("landingHtml", experiment.getHtmlGeraLanding());
               evidence.put("adCopy", experiment.getAdCopy());
               evidence.put("adImageBriefing", experiment.getAdImageBriefing());
-              evidence.put("checkoutUrl", experiment.getFollowUpActionUrl());
+              Map<String, Object> checkoutContract = checkoutEvidenceResolver.resolve(experiment);
+              evidence.set("checkoutContract", objectMapper.valueToTree(checkoutContract));
+              evidence.set(
+                  "approvedCreativeEvidence",
+                  objectMapper.valueToTree(
+                      approvedCreativeEvidenceService.resolve(experiment.getId())));
+              Object checkoutUrl = checkoutContract.get("canonicalUrl");
+              if (checkoutUrl != null) evidence.put("checkoutUrl", checkoutUrl.toString());
               if (experiment.getUnitPrice() != null)
                 evidence.put("unitPriceBrl", experiment.getUnitPrice());
             });
@@ -627,23 +637,19 @@ public class LandingGenerationAgentExecutionService {
                     "approvedLandingVisualAssets",
                     landingAssetService.payloadForExperiment(experiment.getId()));
                 context.put(
+                    "approvedCreativeEvidence",
+                    approvedCreativeEvidenceService.resolve(experiment.getId()));
+                context.put(
                     "minimumApprovedLandingVisualAssets",
                     landingAssetService.requiredReferenceCount(experiment.getId()));
                 context.put(
                     "visualAssetRule",
                     "Reutilize os arquivos APPROVED literalmente; não redesenhe o produto. A landing deve exibir ao menos minimumApprovedLandingVisualAssets URLs distintas do catálogo.");
-                String checkoutUrl = checkoutContractResolver.resolve(experiment);
-                if (StringUtils.hasText(checkoutUrl)) {
-                  context.put("checkoutUrl", checkoutUrl);
-                  context.put(
-                      "checkoutContract",
-                      Map.of(
-                          "canonicalUrl",
-                          checkoutUrl,
-                          "requiredMarkers",
-                          List.of("checkout-cta-primary", "primary-checkout"),
-                          "rule",
-                          "Todo CTA de compra deve usar literalmente canonicalUrl; são proibidos #, placeholders e destinos alternativos."));
+                Map<String, Object> checkoutContract = checkoutEvidenceResolver.resolve(experiment);
+                context.put("checkoutContract", checkoutContract);
+                Object checkoutUrl = checkoutContract.get("canonicalUrl");
+                if (checkoutUrl != null) {
+                  context.put("checkoutUrl", checkoutUrl.toString());
                 }
               });
       return new LandingAgentPendingResponse(

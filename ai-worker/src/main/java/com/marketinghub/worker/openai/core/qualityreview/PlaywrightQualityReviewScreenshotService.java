@@ -118,6 +118,7 @@ public class PlaywrightQualityReviewScreenshotService implements QualityReviewSc
                     .setWaitUntil(WaitUntilState.DOMCONTENTLOADED)
                     .setTimeout(properties.screenshotTimeout().toMillis()));
             waitForNetworkIdle(page, input, viewport);
+            prepareImageEvidence(page);
             List<QualityReviewScreenshotEvidence> evidence = new ArrayList<>();
             byte[] fullPageScreenshot = page.screenshot(new Page.ScreenshotOptions()
                     .setFullPage(true)
@@ -229,6 +230,32 @@ public class PlaywrightQualityReviewScreenshotService implements QualityReviewSc
                     viewport.name(),
                     error);
         }
+    }
+
+    /** Força o carregamento e aguarda a decodificação dos pixels antes de registrar a prova visual. */
+    private void prepareImageEvidence(Page page) {
+        page.evaluate(forceEagerImagesScript());
+        var ready = page.waitForFunction(
+                loadedImagesExpression(),
+                null,
+                new Page.WaitForFunctionOptions().setTimeout(properties.screenshotTimeout().toMillis()));
+        ready.dispose();
+        page.evaluate(decodedImagesScript());
+    }
+
+    /** Expõe o comando determinístico que impede imagens essenciais de permanecerem lazy no recorte. */
+    static String forceEagerImagesScript() {
+        return "() => Array.from(document.images).forEach((image) => { image.loading = 'eager'; })";
+    }
+
+    /** Expõe a condição de que todo arquivo terminou de carregar com dimensão real positiva. */
+    static String loadedImagesExpression() {
+        return "() => Array.from(document.images).every((image) => image.complete && image.naturalWidth > 0)";
+    }
+
+    /** Expõe a espera pelos pixels decodificados para eliminar screenshots brancos por corrida assíncrona. */
+    static String decodedImagesScript() {
+        return "() => Promise.all(Array.from(document.images).map((image) => image.decode()))";
     }
 
     /** Calcula o hash SHA-256 em hexadecimal para identificar screenshots duplicados com URLs diferentes. */

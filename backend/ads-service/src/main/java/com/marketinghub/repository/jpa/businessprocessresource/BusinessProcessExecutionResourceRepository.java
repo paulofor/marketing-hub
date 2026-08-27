@@ -12,6 +12,10 @@ public interface BusinessProcessExecutionResourceRepository
   /** Lista somente recursos disponíveis para novas versões de processo. */
   List<BusinessProcessExecutionResource> findAllByActiveTrueOrderByNameAsc();
 
+  /** Lista os recursos ativos pertencentes ao agente informado. */
+  List<BusinessProcessExecutionResource> findAllByResponsibleAgentKeyAndActiveTrueOrderByNameAsc(
+      String responsibleAgentKey);
+
   /** Resolve um recurso ativo pelo código estável gravado na atividade. */
   Optional<BusinessProcessExecutionResource> findByResourceCodeAndActiveTrue(String resourceCode);
 }

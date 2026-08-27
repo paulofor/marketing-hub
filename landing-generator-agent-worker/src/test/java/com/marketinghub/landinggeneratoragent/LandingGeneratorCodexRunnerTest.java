@@ -77,6 +77,7 @@ class LandingGeneratorCodexRunnerTest {
   void shouldDeclareReferenceModelingAndReinforcementContract() throws Exception {
     String prompt =
         Files.readString(Path.of("src/main/resources/prompts/landing-generator/v1/remediation.md"));
+    String normalizedPrompt = prompt.replaceAll("\\s+", " ");
     String schema =
         Files.readString(
             Path.of("src/main/resources/prompts/landing-generator/v1/remediation-schema.json"));
@@ -97,6 +98,11 @@ class LandingGeneratorCodexRunnerTest {
     assertTrue(
         prompt.contains("não selecione essa abordagem se não puder entregar o HTML integral"));
     assertTrue(prompt.contains("começando em `<!doctype html>` e terminando em `</html>`"));
+    assertTrue(
+        normalizedPrompt.contains("nomeie explicitamente quem entrega, quem revisa e quem aplica"));
+    assertTrue(normalizedPrompt.contains("Todo item de `previousAttemptBlocks`"));
+    assertTrue(normalizedPrompt.contains("approvedCreativeEvidence.status"));
+    assertTrue(normalizedPrompt.contains("adCopy` ou `adImageBriefing` vazios"));
     assertTrue(mcp.contains("/api/internal/agent-learning/v1/agents/landing-generator/promoted"));
     assertFalse(mcp.contains("/promotion"));
   }

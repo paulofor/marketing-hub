@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-27-landing-quality-review-bpm-activity.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-27-landing-agent-reasoning-audit.yaml
       relativeToChangelogFile: true
   - include:

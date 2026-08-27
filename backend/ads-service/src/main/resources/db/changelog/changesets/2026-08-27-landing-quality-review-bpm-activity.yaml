@@ -1,0 +1,97 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-27-landing-quality-review-bpm-activity-1-backfill
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT IGNORE INTO business_process_activity_instance (
+                activity_definition_id,
+                source_reference,
+                occurrence_number,
+                status,
+                entered_at,
+                exited_at,
+                objective_achieved,
+                objective_evidence_json,
+                blocked_reason,
+                known_cost_usd,
+                cost_coverage,
+                evidence_quality,
+                created_at,
+                updated_at
+              )
+              SELECT
+                technical_activity.id,
+                task.source_reference,
+                1,
+                'COMPLETED',
+                quality.execution_requested_at,
+                quality.completed_at,
+                1,
+                JSON_OBJECT(
+                  'sourceExecutionReference', CONVERT(quality.id_job USING utf8mb4),
+                  'result', JSON_OBJECT(
+                    'experimentId', quality.experiment_id,
+                    'stageCode', quality.stage_code,
+                    'qualityReviewAuditReference', CONCAT(
+                      'gera_landing_stage_execution:',
+                      CONVERT(quality.id_job USING utf8mb4)
+                    ),
+                    'qualityReview', JSON_EXTRACT(quality.model_response, '$'),
+                    'backfillSource', 'landing-quality-review-bpm-activity/v1'
+                  )
+                ),
+                NULL,
+                quality.cost_usd,
+                CASE WHEN quality.cost_usd IS NULL THEN 'NOT_REPORTED' ELSE 'COMPLETE' END,
+                'DIRECT',
+                quality.execution_requested_at,
+                quality.completed_at
+              FROM gera_landing_stage_execution quality
+              JOIN agent_task task
+                ON BINARY quality.autonomous_cycle_id = BINARY CONCAT('agent-task:', task.id)
+              JOIN business_process_definition process
+                ON process.id = task.process_definition_id
+               AND process.process_code = 'landing-page-generation'
+              JOIN business_process_activity_definition technical_activity
+                ON technical_activity.process_definition_id = process.id
+               AND BINARY technical_activity.activity_id = BINARY 'technical'
+              LEFT JOIN gera_landing_stage_execution newer_quality
+                ON newer_quality.experiment_id = quality.experiment_id
+               AND newer_quality.stage_code = quality.stage_code
+               AND BINARY newer_quality.autonomous_cycle_id = BINARY quality.autonomous_cycle_id
+               AND newer_quality.status = 'CONCLUIDO'
+               AND (
+                 newer_quality.execution_requested_at > quality.execution_requested_at
+                 OR (
+                   newer_quality.execution_requested_at = quality.execution_requested_at
+                   AND newer_quality.id_job > quality.id_job
+                 )
+               )
+              WHERE quality.stage_code = 'landing-page-quality-review'
+                AND quality.status = 'CONCLUIDO'
+                AND quality.completed_at IS NOT NULL
+                AND task.source_reference IS NOT NULL
+                AND JSON_VALID(quality.model_response)
+                AND JSON_UNQUOTE(
+                  JSON_EXTRACT(quality.model_response, '$.approvalRecommendation')
+                ) = 'APPROVE_FOR_PUBLICATION'
+                AND newer_quality.id_job IS NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DELETE FROM business_process_activity_instance
+              WHERE JSON_VALID(objective_evidence_json)
+                AND JSON_UNQUOTE(
+                  JSON_EXTRACT(objective_evidence_json, '$.result.backfillSource')
+                ) = 'landing-quality-review-bpm-activity/v1';

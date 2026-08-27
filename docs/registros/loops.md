@@ -66,6 +66,13 @@
   relacional e idempotente, a tarefa real aparece em todas as atividades efetivamente cobertas sem
   duplicar custo, e prompt, parecer, modelo e duração são lidos da execução técnica correlacionada.
   Testes de repository e changelog bloqueiam inferência no frontend e cópia artificial de tarefas.
+- **Fechamento da atividade técnica em 2026-08-27:** o Quality Review 90/100 do Rigel estava
+  persistido e havia concluído a tarefa composta de Dédalo, mas o callback não materializava a
+  ocorrência automática `technical`, fazendo a visão BPM indicar que a validação não começou.
+  O callback passa a consolidar a ocorrência com datas, custo, parecer e referência da execução
+  técnica antes de concluir Dédalo. Um backfill idempotente cobre todas as aprovações históricas
+  correlacionadas por `agent-task:<id>`, sem ids específicos, e testes impedem voltar a inferir o
+  estado apenas na leitura da tela ou criar tarefa artificial para o Quality Review.
 
 ## LOOP-PDE-INTERFACE-SEGURA-COM-ROTA-LEGADA-INSEGURA — contrato contornado fora da tela
 

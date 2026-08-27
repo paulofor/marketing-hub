@@ -14,6 +14,7 @@ import NewProductPage from "./pages/product/NewProductPage";
 import EditProductPage from "./pages/product/EditProductPage";
 import ProductFinancialPage from "./pages/product/ProductFinancialPage";
 import ProductValueChainHistoryPage from "./pages/product/ProductValueChainHistoryPage";
+import ProductProcessActivityExecutionsPage from "./pages/product/ProductProcessActivityExecutionsPage";
 import ProductExperimentComparisonPage from "./pages/product/ProductExperimentComparisonPage";
 import ProductVideoImagesPage from "./pages/product/ProductVideoImagesPage";
 import ProductPdeVersionsPage from "./pages/product/ProductPdeVersionsPage";
@@ -261,6 +262,10 @@ export default function App() {
               <Route
                 path="/products/:productId/value-chain-history"
                 element={<ProductValueChainHistoryPage />}
+              />
+              <Route
+                path="/products/:productId/value-chain-history/processes/:processDefinitionId/activities"
+                element={<ProductProcessActivityExecutionsPage />}
               />
               <Route
                 path="/products/:productId/experiment-comparison"

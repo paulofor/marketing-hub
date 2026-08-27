@@ -1,6 +1,7 @@
 package com.marketinghub.businessprocess.execution.controller;
 
 import com.marketinghub.businessprocess.execution.service.BusinessProcessActivityExecutionService;
+import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionHistoryResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -9,12 +10,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Responsabilidade: expor o histórico recente de execuções de uma atividade BPM. */
+/** Responsabilidade: expor leituras auditáveis das tarefas executadas nas atividades BPM. */
 @Tag(
     name = "Processos — execuções das atividades",
-    description = "Consulta auditável das dez tarefas mais recentes de cada atividade.")
+    description =
+        "Consulta auditável das tarefas por atividade e das atividades executadas por produto.")
 @RestController
-@RequestMapping("/api/business-processes/{processDefinitionId}/activities/{activityId}/executions")
+@RequestMapping("/api/business-processes")
 public class BusinessProcessActivityExecutionController {
   private final BusinessProcessActivityExecutionService service;
 
@@ -26,9 +28,17 @@ public class BusinessProcessActivityExecutionController {
 
   /** Retorna as dez execuções mais recentes da atividade estável no processo canônico. */
   @Operation(summary = "Lista as dez execuções mais recentes da atividade")
-  @GetMapping
+  @GetMapping("/{processDefinitionId}/activities/{activityId}/executions")
   public BusinessProcessActivityExecutionHistoryResponse recentExecutions(
       @PathVariable Long processDefinitionId, @PathVariable String activityId) {
     return service.recentExecutions(processDefinitionId, activityId);
+  }
+
+  /** Retorna todas as atividades e tarefas do produto no processo canônico selecionado. */
+  @Operation(summary = "Lista atividades e tarefas de um produto no processo")
+  @GetMapping("/{processDefinitionId}/products/{productId}/activity-executions")
+  public ProductProcessActivityExecutionHistoryResponse productProcessExecutions(
+      @PathVariable Long processDefinitionId, @PathVariable Long productId) {
+    return service.productProcessExecutions(processDefinitionId, productId);
   }
 }

@@ -218,22 +218,34 @@ describe("ProductValueChainHistoryPage", () => {
       within(timeline).getAllByRole("button", { name: "Registrar commit" }),
     ).toHaveLength(4);
     const activityLinks = within(timeline).getAllByRole("link", {
-      name: "Detalhar atividades",
+      name: "Atividades e tarefas",
     });
     expect(activityLinks).toHaveLength(4);
     expect(activityLinks[0]).toHaveAttribute(
       "href",
-      "/business-processes?processId=38",
+      "/products/9/value-chain-history/processes/38/activities",
     );
     expect(activityLinks[1]).toHaveAttribute(
       "href",
-      "/business-processes?processId=43",
+      "/products/9/value-chain-history/processes/43/activities",
     );
     expect(activityLinks[2]).toHaveAttribute(
       "href",
-      "/business-processes?processId=48",
+      "/products/9/value-chain-history/processes/48/activities",
     );
     expect(activityLinks[3]).toHaveAttribute(
+      "href",
+      "/products/9/value-chain-history/processes/18/activities",
+    );
+    const bpmLinks = within(timeline).getAllByRole("link", {
+      name: "Abrir BPM",
+    });
+    expect(bpmLinks).toHaveLength(4);
+    expect(bpmLinks[0]).toHaveAttribute(
+      "href",
+      "/business-processes?processId=38",
+    );
+    expect(bpmLinks[3]).toHaveAttribute(
       "href",
       "/business-processes?processId=18",
     );

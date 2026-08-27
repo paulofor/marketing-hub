@@ -259,13 +259,22 @@ export default function ProductValueChainHistoryPage() {
                             : "Subprocesso"}
                         </span>
                         <h3 className="h6 mb-1">{measurement.processName}</h3>
-                        <Link
-                          className="product-value-chain-history__activities-link"
-                          to={`/business-processes?processId=${measurement.processDefinitionId}`}
-                        >
-                          <ListTree size={15} aria-hidden="true" />
-                          Detalhar atividades
-                        </Link>
+                        <div className="product-value-chain-history__activity-links">
+                          <Link
+                            className="product-value-chain-history__activities-link"
+                            to={`/products/${product.id}/value-chain-history/processes/${measurement.processDefinitionId}/activities`}
+                          >
+                            <ListTree size={15} aria-hidden="true" />
+                            Atividades e tarefas
+                          </Link>
+                          <Link
+                            className="product-value-chain-history__activities-link"
+                            to={`/business-processes?processId=${measurement.processDefinitionId}`}
+                          >
+                            <Workflow size={15} aria-hidden="true" />
+                            Abrir BPM
+                          </Link>
+                        </div>
                       </div>
                       <span className="product-value-chain-history__status">
                         {measurement.trackingStatus === "COMPLETED" ? (

@@ -8,6 +8,22 @@
 >
 > Uso obrigatório recomendado: antes de corrigir problema em GeraLanding, Facebook Ads, Lead Portal, OpenAI/schema, pipelines administrativos ou pipeline de hipótese, verificar se a solicitação reabre algum loop listado aqui.
 
+## LOOP-DEDALO-PROMPT-CONTEXTO-UNIVERSAL — decisão estratégica recebe artefatos e regras sem uso
+
+- **Data:** 2026-08-27.
+- **Sintoma:** a tarefa #243 do Rigel enviou ao Dédalo um prompt de 43.597 caracteres; o HTML anterior
+  e o Quality Review bruto dominavam o contexto da decisão, enquanto uma regra exclusiva de Agenda
+  Cheia e hipóteses de recompensa também eram exigidas de todos os produtos.
+- **Causa-raiz:** o mesmo snapshot era serializado integralmente tanto para decidir a estratégia
+  quanto para materializar o HTML, sem contrato de contexto específico por interação.
+- **Correção sistêmica:** a decisão recebe somente contexto comercial e resumo objetivo do Quality
+  Review, copia o score independente como baseline e sempre devolve `generatedHtml: null`. Apenas a
+  segunda interação recebe o HTML atual. Auditoria bruta, regra global de Agenda Cheia e hipóteses de
+  recompensa geradas pelo modelo deixam o prompt operacional; a avaliação posterior continua sob
+  autoridade independente do backend.
+- **Prevenção:** testes de contrato usam sentinelas para impedir HTML e auditoria bruta na decisão,
+  exigir o HTML apenas na materialização e bloquear o retorno dos blocos globais removidos.
+
 ## LOOP-GERALANDING-HOMOLOGACAO-FORA-DO-BPM — sucesso técnico não conclui o subprocesso
 
 - **Data:** 2026-08-26.

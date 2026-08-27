@@ -29,13 +29,11 @@ Quando o HTML atual contiver somente uma âncora de checkout quebrada, Dédalo d
 
 A definição da atividade registra a regra estável de preservar o checkout, mas o valor operacional deve vir sempre do `checkoutContract` congelado pelo backend para cada execução. Dédalo deve copiar literalmente `canonicalUrl` em todo CTA marcado por `checkout-cta-primary` ou `primary-checkout`. O worker valida localmente todos esses links antes do callback e bloqueia `#`, placeholders, URLs inferidas ou destinos alternativos, evitando consumir uma nova rodada do backend para descobrir a mesma divergência.
 
-Quando Dédalo selecionar implementação por código, a decisão estratégica e a materialização do artefato são interações separadas. Se a primeira resposta não contiver o documento integral, o worker executa imediatamente uma interação estruturada dedicada somente ao HTML, soma a telemetria das duas interações e valida o checkout antes do callback. Descrições de alterações nunca substituem o artefato.
+Quando Dédalo selecionar implementação por código, a decisão estratégica e a materialização do artefato são interações separadas. A primeira interação recebe contexto comercial compacto, achados objetivos e score do Quality Review, sem o HTML integral nem sua auditoria bruta, e deve devolver `generatedHtml: null`. O worker executa imediatamente uma interação estruturada dedicada ao HTML atual e aos contratos necessários, soma a telemetria das duas interações e valida o checkout antes do callback. Descrições de alterações nunca substituem o artefato.
 
 ## Autonomia orientada ao objetivo
 
 O agente deve trabalhar sem solicitar escolhas humanas de copy, layout, CTA, imagens ou responsividade quando houver contexto e evidência suficientes. Pode reconstruir livremente copy, hierarquia e HTML usando as etapas canônicas, inclusive reiniciando pelo wireframe quando uma correção localizada não resolver a causa. Imagens que sejam entregáveis aprovados do produto são exceção: o agente pode compô-las em novo contexto, mas não redesenhá-las. Em cada execução ele audita visual e funcionalmente desktop, iPhone e Android, compara ao menos três estratégias, escolhe a de melhor aderência comercial e entrega um backlog causal ordenado para execução pelo pipeline oficial. O plano deve incluir critérios por dispositivo, métricas esperadas e condições explícitas de continuar, ajustar e parar.
-
-Para **Agenda Cheia — Nail Design**, a especialização obrigatória mantém uma única promessa entre anúncio, hero, formulário e entrega: a prévia personalizada deve estar clara e ser o CTA principal. A prova visual precisa representar o trabalho real de nail designer, sem inventar depoimentos nem prometer retorno garantido de clientes. O agente decide e itera sozinho dentro desses limites; GeraLanding e Gerador de Imagens materializam as mudanças, e o Quality Review independente concede ou nega aprovação.
 
 ## Seleção aprendível da abordagem de geração
 
@@ -60,11 +58,11 @@ regeneração, as revisões automáticas e os custos herdam essa identidade até
 Revisões e custos de ciclos históricos permanecem disponíveis para aprendizado e auditoria, mas não
 consomem os limites de um novo ciclo.
 
-## Modelagem e aprendizado por reforço
+## Modelagem e aprendizado independente
 
 O agente pode pesquisar outras landings para abstrair padrões transferíveis de hierarquia, mecanismo, prova, redução de fricção e CTA. Deve preservar fonte, aplicabilidade e evidência de não cópia; é proibido reproduzir copy, marca, identidade visual, layout distintivo ou ativo de terceiros.
 
-Cada correção nasce como hipótese `CANDIDATE`, vinculada ao score independente anterior. O Quality Review posterior aplica a recompensa: aprovação ou ganho de ao menos 5 pontos confirma a hipótese; ausência de evolução a contradiz; ganho intermediário permanece inconclusivo. O agente nunca recompensa ou promove a própria memória. Clique no CTA, checkout e venda são recompensas tardias válidas somente quando provenientes de eventos reais e segregados; geração, ciclos e impacto estimado não contam como resultado.
+O prompt de decisão não solicita hipóteses de recompensa nem autoavaliação. O campo `score` copia exclusivamente o baseline do Quality Review anterior. O backend deriva qualquer memória candidata das causas persistidas e somente o Quality Review posterior aplica a avaliação independente: aprovação ou ganho de ao menos 5 pontos confirma a hipótese; ausência de evolução a contradiz; ganho intermediário permanece inconclusivo. O agente nunca recompensa ou promove a própria memória. Clique no CTA, checkout e venda são sinais tardios válidos somente quando provenientes de eventos reais e segregados; geração, ciclos e impacto estimado não contam como resultado.
 
 Memórias confirmadas podem orientar novas versões; candidatas exigem cautela; contraditas e retiradas não podem ser reutilizadas. Evidências estruturadas ficam no MySQL e artefatos grandes podem ficar no S3 privado com checksum e referência auditável.
 

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Catálogo de processos de negócio
-  version: 1.5.0
+  version: 1.6.0
   description: Cadastro versionado de processos de valor, subprocessos, atividades e documentos no Marketing Hub.
 paths:
   /api/business-processes:
@@ -109,7 +109,7 @@ paths:
           schema: { type: string }
       responses:
         "200":
-          description: Atividade selecionada e execuções de todas as versões do mesmo processo
+          description: Atividade selecionada e tarefas reais de todas as versões do mesmo processo, incluindo cobertura composta persistida sem duplicar custo
           content:
             application/json:
               schema:

@@ -3,12 +3,17 @@ package com.marketinghub.planning.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskActivityCoverage;
+import com.marketinghub.agenttask.AgentTaskResponse;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.CreateAgentTaskRequest;
+import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.dto.CommercialPlanJourneyHomologationDto;
+import com.marketinghub.repository.jpa.agenttask.AgentTaskActivityCoverageRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import java.time.Instant;
 import java.util.Comparator;
@@ -31,7 +36,9 @@ public class CommercialPlanJourneyHomologationService {
   private final CommercialPlanService commercialPlanService;
   private final CommercialPlanVersionService versionService;
   private final BusinessProcessDefinitionRepository processRepository;
+  private final BusinessProcessActivityDefinitionRepository activityDefinitionRepository;
   private final AgentTaskRepository taskRepository;
+  private final AgentTaskActivityCoverageRepository activityCoverageRepository;
   private final AgentTaskService agentTaskService;
   private final ObjectMapper objectMapper;
 
@@ -40,13 +47,17 @@ public class CommercialPlanJourneyHomologationService {
       CommercialPlanService commercialPlanService,
       CommercialPlanVersionService versionService,
       BusinessProcessDefinitionRepository processRepository,
+      BusinessProcessActivityDefinitionRepository activityDefinitionRepository,
       AgentTaskRepository taskRepository,
+      AgentTaskActivityCoverageRepository activityCoverageRepository,
       AgentTaskService agentTaskService,
       ObjectMapper objectMapper) {
     this.commercialPlanService = commercialPlanService;
     this.versionService = versionService;
     this.processRepository = processRepository;
+    this.activityDefinitionRepository = activityDefinitionRepository;
     this.taskRepository = taskRepository;
+    this.activityCoverageRepository = activityCoverageRepository;
     this.agentTaskService = agentTaskService;
     this.objectMapper = objectMapper;
   }
@@ -64,13 +75,15 @@ public class CommercialPlanJourneyHomologationService {
             "commercial-plan:" + planId + "@v" + planVersion + ":journey", process.getId());
     String sourceReference = journeyExecution.sourceReference();
     String auditBrief = buildAuditBrief(plan, experimentId, journeyExecution);
-    createTask(
-        "landing-generator",
-        "html",
-        "Experimento #" + experimentId + " · construir e homologar a landing",
-        auditBrief,
-        sourceReference,
-        process);
+    AgentTaskResponse compoundLandingTask =
+        createTask(
+            "landing-generator",
+            "html",
+            "Experimento #" + experimentId + " · construir e homologar a landing",
+            auditBrief,
+            sourceReference,
+            process);
+    coverCompoundLandingActivities(compoundLandingTask.id(), process);
     createTask(
         "customer-agent",
         "customer",
@@ -171,14 +184,14 @@ public class CommercialPlanJourneyHomologationService {
   }
 
   /** Cria cada gate uma única vez para a versão corrente do plano. */
-  private void createTask(
+  private AgentTaskResponse createTask(
       String agentKey,
       String activityId,
       String title,
       String description,
       String sourceReference,
       BusinessProcessDefinition process) {
-    agentTaskService.createByHumanIfAbsent(
+    return agentTaskService.createByHumanIfAbsent(
         new CreateAgentTaskRequest(
             agentKey,
             "Operador do Marketing Hub",
@@ -190,6 +203,35 @@ public class CommercialPlanJourneyHomologationService {
             activityId,
             false,
             null));
+  }
+
+  /**
+   * Declara as atividades de Dédalo realmente executadas pela tarefa composta sem duplicar custo,
+   * prompt ou resultado.
+   */
+  private void coverCompoundLandingActivities(Long taskId, BusinessProcessDefinition process) {
+    AgentTask task =
+        taskRepository
+            .findById(taskId)
+            .orElseThrow(
+                () -> new IllegalStateException("Tarefa composta de landing não encontrada."));
+    for (String activityId : List.of("select", "strategy", "compose")) {
+      BusinessProcessActivityDefinition activity =
+          activityDefinitionRepository
+              .findByProcessDefinitionIdAndActivityId(process.getId(), activityId)
+              .orElseThrow(
+                  () ->
+                      new IllegalStateException(
+                          "Atividade coberta pela landing não encontrada: " + activityId));
+      if (activityCoverageRepository.existsByAgentTaskIdAndActivityDefinitionId(
+          taskId, activity.getId())) continue;
+      AgentTaskActivityCoverage coverage = new AgentTaskActivityCoverage();
+      coverage.setAgentTask(task);
+      coverage.setActivityDefinition(activity);
+      coverage.setCoverageSource("COMPOUND_EXECUTION");
+      coverage.setCreatedAt(Instant.now());
+      activityCoverageRepository.save(coverage);
+    }
   }
 
   /** Monta o contexto estruturado que restringe a execução à homologação sem tráfego real. */

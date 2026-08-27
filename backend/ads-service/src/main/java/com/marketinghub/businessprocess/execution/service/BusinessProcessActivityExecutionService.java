@@ -6,9 +6,11 @@ import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionResponse;
+import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
+import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import java.time.Instant;
 import java.util.List;
@@ -37,6 +39,7 @@ public class BusinessProcessActivityExecutionService {
   private final BusinessProcessDefinitionRepository processRepository;
   private final AgentTaskRepository taskRepository;
   private final CommercialPlanRepository commercialPlanRepository;
+  private final GeraLandingStageExecutionRepository landingExecutionRepository;
   private final ObjectMapper objectMapper;
 
   /** Configura as fontes canônicas do processo, das tarefas e do produto. */
@@ -45,10 +48,12 @@ public class BusinessProcessActivityExecutionService {
       BusinessProcessDefinitionRepository processRepository,
       AgentTaskRepository taskRepository,
       CommercialPlanRepository commercialPlanRepository,
+      GeraLandingStageExecutionRepository landingExecutionRepository,
       ObjectMapper objectMapper) {
     this.processRepository = processRepository;
     this.taskRepository = taskRepository;
     this.commercialPlanRepository = commercialPlanRepository;
+    this.landingExecutionRepository = landingExecutionRepository;
     this.objectMapper = objectMapper;
   }
 
@@ -57,7 +62,16 @@ public class BusinessProcessActivityExecutionService {
       BusinessProcessDefinitionRepository processRepository,
       AgentTaskRepository taskRepository,
       ObjectMapper objectMapper) {
-    this(processRepository, taskRepository, null, objectMapper);
+    this(processRepository, taskRepository, null, null, objectMapper);
+  }
+
+  /** Permite comprovar a projeção da auditoria técnica na tarefa composta. */
+  BusinessProcessActivityExecutionService(
+      BusinessProcessDefinitionRepository processRepository,
+      AgentTaskRepository taskRepository,
+      GeraLandingStageExecutionRepository landingExecutionRepository,
+      ObjectMapper objectMapper) {
+    this(processRepository, taskRepository, null, landingExecutionRepository, objectMapper);
   }
 
   /** Retorna as dez tarefas mais recentes da atividade em todas as versões do processo canônico. */
@@ -130,6 +144,7 @@ public class BusinessProcessActivityExecutionService {
   /** Converte a tarefa em uma execução sem perder versão, estado, custo ou conteúdo auditado. */
   private BusinessProcessActivityExecutionResponse response(AgentTask task) {
     BusinessProcessDefinition process = task.getProcessDefinition();
+    Optional<GeraLandingStageExecution> technicalExecution = landingExecution(task);
     return new BusinessProcessActivityExecutionResponse(
         task.getId(),
         process.getId(),
@@ -139,7 +154,10 @@ public class BusinessProcessActivityExecutionService {
         task.getSourceReference(),
         task.getAssignedAgent().getAgentKey(),
         task.getAssignedAgent().getNickname(),
-        task.getResultJson(),
+        technicalExecution
+            .map(GeraLandingStageExecution::getModelResponse)
+            .filter(value -> !value.isBlank())
+            .orElse(task.getResultJson()),
         task.getEvidenceJson(),
         task.getExecutionError(),
         task.getInputTokens(),
@@ -148,12 +166,35 @@ public class BusinessProcessActivityExecutionService {
         task.getEstimatedCostUsd(),
         task.getCostEstimationStatus(),
         task.getCreatedAt(),
-        task.getReceivedAt(),
-        finishedAt(task),
-        executionModelCode(task),
+        technicalExecution
+            .map(GeraLandingStageExecution::getProcessingStartedAt)
+            .orElse(task.getReceivedAt()),
+        technicalExecution.map(GeraLandingStageExecution::getCompletedAt).orElse(finishedAt(task)),
+        firstPresent(
+            executionModelCode(task),
+            technicalExecution.map(GeraLandingStageExecution::getOpenAiModel).orElse(null)),
         executionReasoningEffort(task),
         productInternalName(task),
-        task.getExecutionPrompt());
+        firstPresent(
+            task.getExecutionPrompt(),
+            technicalExecution.map(GeraLandingStageExecution::getPrompt).orElse(null)));
+  }
+
+  /** Recupera a chamada real de Dédalo correlacionada à tarefa composta, quando existente. */
+  private Optional<GeraLandingStageExecution> landingExecution(AgentTask task) {
+    if (landingExecutionRepository == null
+        || task.getAssignedAgent() == null
+        || !"landing-generator".equals(task.getAssignedAgent().getAgentKey())
+        || task.getProcessDefinition() == null
+        || !"landing-page-generation".equals(task.getProcessDefinition().getProcessCode())) {
+      return Optional.empty();
+    }
+    return landingExecutionRepository
+        .findTop20ByStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
+            "landing-generation-agent-v1", "agent-task:" + task.getId())
+        .stream()
+        .filter(execution -> "CONCLUIDO".equals(execution.getStatus()))
+        .findFirst();
   }
 
   /** Usa o marco entregue ou, para tarefas terminais sem entrega, a última atualização. */

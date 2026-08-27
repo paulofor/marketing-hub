@@ -43,6 +43,13 @@
   O Quality Review agora força as imagens para `eager`, aguarda carga com dimensão real e conclui a
   decodificação dos pixels antes dos screenshots full-page e de prova; teste em Chromium protege a
   ordem para que ausência de pixels não seja confundida com prova comercial fraca.
+- **Fechamento de observabilidade em 2026-08-27:** a homologação oficial do Rigel persistiu uma
+  única tarefa composta de Dédalo no nó `html`, embora a execução também tivesse realizado seleção
+  de provas, estratégia e composição. O histórico por atividade consultava apenas o vínculo
+  primário e mostrava essas atividades como nunca executadas. A cobertura adicional passa a ser
+  relacional e idempotente, a tarefa real aparece em todas as atividades efetivamente cobertas sem
+  duplicar custo, e prompt, parecer, modelo e duração são lidos da execução técnica correlacionada.
+  Testes de repository e changelog bloqueiam inferência no frontend e cópia artificial de tarefas.
 
 ## LOOP-PDE-INTERFACE-SEGURA-COM-ROTA-LEGADA-INSEGURA — contrato contornado fora da tela
 

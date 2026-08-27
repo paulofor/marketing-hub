@@ -1,18 +1,24 @@
 package com.marketinghub.planning.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskActivityCoverage;
+import com.marketinghub.agenttask.AgentTaskResponse;
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.CreateAgentTaskRequest;
+import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.dto.CommercialPlanVersionDto;
+import com.marketinghub.repository.jpa.agenttask.AgentTaskActivityCoverageRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import java.time.Instant;
 import java.util.Optional;
@@ -28,7 +34,9 @@ class CommercialPlanJourneyHomologationServiceTest {
   @Mock private CommercialPlanService commercialPlanService;
   @Mock private CommercialPlanVersionService versionService;
   @Mock private BusinessProcessDefinitionRepository processRepository;
+  @Mock private BusinessProcessActivityDefinitionRepository activityDefinitionRepository;
   @Mock private AgentTaskRepository taskRepository;
+  @Mock private AgentTaskActivityCoverageRepository activityCoverageRepository;
   @Mock private AgentTaskService agentTaskService;
 
   /** Confirma que o experimento escolhido recebe uma homologação segregada e sem gasto. */
@@ -54,12 +62,15 @@ class CommercialPlanJourneyHomologationServiceTest {
     when(processRepository.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
             "landing-page-generation", "PUBLISHED"))
         .thenReturn(Optional.of(process));
+    stubCompoundCoverage(process);
     var service =
         new CommercialPlanJourneyHomologationService(
             commercialPlanService,
             versionService,
             processRepository,
+            activityDefinitionRepository,
             taskRepository,
+            activityCoverageRepository,
             agentTaskService,
             new ObjectMapper());
 
@@ -95,6 +106,14 @@ class CommercialPlanJourneyHomologationServiceTest {
         .contains("Psique e Têmis")
         .contains("pertencem ao subprocesso seguinte")
         .doesNotContain("pagamento de teste");
+    ArgumentCaptor<AgentTaskActivityCoverage> coverage =
+        ArgumentCaptor.forClass(AgentTaskActivityCoverage.class);
+    verify(activityCoverageRepository, times(3)).save(coverage.capture());
+    assertThat(coverage.getAllValues())
+        .extracting(item -> item.getActivityDefinition().getActivityId())
+        .containsExactly("select", "strategy", "compose");
+    assertThat(coverage.getAllValues())
+        .allSatisfy(item -> assertThat(item.getCoverageSource()).isEqualTo("COMPOUND_EXECUTION"));
   }
 
   /** Abre uma execução completa nova quando a tentativa anterior terminou bloqueada. */
@@ -123,12 +142,15 @@ class CommercialPlanJourneyHomologationServiceTest {
     when(taskRepository.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
             "commercial-plan:2@v3:journey"))
         .thenReturn(java.util.List.of(blocked));
+    stubCompoundCoverage(process);
     var service =
         new CommercialPlanJourneyHomologationService(
             commercialPlanService,
             versionService,
             processRepository,
+            activityDefinitionRepository,
             taskRepository,
+            activityCoverageRepository,
             agentTaskService,
             new ObjectMapper());
 
@@ -168,12 +190,15 @@ class CommercialPlanJourneyHomologationServiceTest {
     when(taskRepository.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
             "commercial-plan:2@v3:journey"))
         .thenReturn(java.util.List.of(active));
+    stubCompoundCoverage(process);
     var service =
         new CommercialPlanJourneyHomologationService(
             commercialPlanService,
             versionService,
             processRepository,
+            activityDefinitionRepository,
             taskRepository,
+            activityCoverageRepository,
             agentTaskService,
             new ObjectMapper());
 
@@ -186,5 +211,24 @@ class CommercialPlanJourneyHomologationServiceTest {
         .extracting(CreateAgentTaskRequest::sourceReference)
         .containsOnly("commercial-plan:2@v3:journey:attempt:2");
     assertThat(tasks.getAllValues().getFirst().description()).contains("\"journeyAttempt\":2");
+  }
+
+  /** Prepara a tarefa composta e as identidades relacionais cobertas pelo Dédalo. */
+  private void stubCompoundCoverage(BusinessProcessDefinition process) {
+    AgentTaskResponse response = org.mockito.Mockito.mock(AgentTaskResponse.class);
+    AgentTask persistedTask = org.mockito.Mockito.mock(AgentTask.class);
+    when(response.id()).thenReturn(243L);
+    when(agentTaskService.createByHumanIfAbsent(any())).thenReturn(response);
+    when(taskRepository.findById(243L)).thenReturn(Optional.of(persistedTask));
+    when(activityDefinitionRepository.findByProcessDefinitionIdAndActivityId(
+            org.mockito.ArgumentMatchers.eq(process.getId()), any()))
+        .thenAnswer(
+            invocation -> {
+              BusinessProcessActivityDefinition activity = new BusinessProcessActivityDefinition();
+              String activityId = invocation.getArgument(1);
+              activity.setId((long) activityId.hashCode() & 0x7fffffffL);
+              activity.setActivityId(activityId);
+              return Optional.of(activity);
+            });
   }
 }

@@ -172,6 +172,14 @@ A API canônica é
 valida que a versão selecionada existe e que `activityId` corresponde a um nó `TASK`, limita a dez
 itens no banco e ordena da tarefa mais recente para a mais antiga.
 
+Quando uma única tarefa técnica realmente cobrir mais de uma atividade do mesmo processo, essa
+cobertura deve ser persistida de forma relacional em `agent_task_activity_coverage`. A mesma tarefa
+real pode então aparecer no histórico de cada atividade coberta, preservando um único prompt,
+resultado, intervalo, consumo e custo. É proibido ao frontend inferir a cobertura por título, copiar
+a tarefa para fabricar execuções ou somar novamente seu custo. No GeraLanding, a homologação
+composta de Dédalo cobre seleção de provas, estratégia, composição e HTML; a chamada técnica
+correlacionada por `agent-task:<id>` é a fonte do prompt, parecer, modelo e duração exibidos.
+
 ## Primeiro processo: Geração de landing page
 
 A versão 1 formaliza o ciclo:

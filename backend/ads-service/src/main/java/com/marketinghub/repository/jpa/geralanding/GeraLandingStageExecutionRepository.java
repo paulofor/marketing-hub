@@ -88,6 +88,11 @@ public interface GeraLandingStageExecutionRepository
       findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
           Long experimentId, String stageCode, String autonomousCycleId);
 
+  /** Lista as execuções correlacionadas a uma tarefa BPM independentemente do experimento. */
+  List<GeraLandingStageExecution>
+      findTop20ByStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
+          String stageCode, String autonomousCycleId);
+
   /** Localiza a execução mais recente que já possua correlação com um ciclo autônomo. */
   Optional<GeraLandingStageExecution>
       findTopByExperimentIdAndAutonomousCycleIdIsNotNullOrderByExecutionRequestedAtDesc(

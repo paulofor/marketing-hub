@@ -9,8 +9,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
+import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -79,6 +81,51 @@ class BusinessProcessActivityExecutionServiceTest {
     assertThat(executions.get(0).finishedAt()).isEqualTo(blocked.getUpdatedAt());
     assertThat(executions.get(1).startedAt()).isNull();
     assertThat(executions.get(1).finishedAt()).isNull();
+  }
+
+  /** Projeta prompt, parecer, modelo e duração reais da execução composta de Dédalo. */
+  @Test
+  void exposesTechnicalAuditForCoveredLandingActivities() {
+    GeraLandingStageExecutionRepository landingExecutions =
+        mock(GeraLandingStageExecutionRepository.class);
+    var auditedService =
+        new BusinessProcessActivityExecutionService(
+            processes, tasks, landingExecutions, new ObjectMapper());
+    BusinessProcessDefinition selected = selectedProcess();
+    selected.setProcessCode("landing-page-generation");
+    selected.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"select\",\"type\":\"TASK\","
+            + "\"label\":\"Selecionar provas reais\",\"owner\":\"Dédalo\"}]}");
+    when(processes.findById(37L)).thenReturn(Optional.of(selected));
+    AgentTask task = executionTask(243L);
+    task.getProcessDefinition().setProcessCode("landing-page-generation");
+    task.getAssignedAgent().setAgentKey("landing-generator");
+    task.getAssignedAgent().setNickname("Dédalo");
+    task.setResultJson("{\"approvalRecommendation\":\"APPROVE_FOR_PUBLICATION\"}");
+    task.setExecutionModelCode(null);
+    task.setExecutionPrompt(null);
+    when(tasks.findRecentActivityExecutions(
+            eq("landing-page-generation"), eq("select"), any(Pageable.class)))
+        .thenReturn(List.of(task));
+    GeraLandingStageExecution technical = new GeraLandingStageExecution();
+    technical.setStageCode("landing-generation-agent-v1");
+    technical.setStatus("CONCLUIDO");
+    technical.setOpenAiModel("gpt-5.6-sol");
+    technical.setPrompt("Prompt integral de Dédalo");
+    technical.setModelResponse("{\"summary\":\"Provas selecionadas e landing construída\"}");
+    technical.setProcessingStartedAt(Instant.parse("2026-08-27T03:26:45Z"));
+    technical.setCompletedAt(Instant.parse("2026-08-27T03:35:14Z"));
+    when(landingExecutions.findTop20ByStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
+            "landing-generation-agent-v1", "agent-task:243"))
+        .thenReturn(List.of(technical));
+
+    var execution = auditedService.recentExecutions(37L, "select").executions().getFirst();
+
+    assertThat(execution.comments()).contains("Provas selecionadas");
+    assertThat(execution.promptSent()).isEqualTo("Prompt integral de Dédalo");
+    assertThat(execution.modelCode()).isEqualTo("gpt-5.6-sol");
+    assertThat(execution.startedAt()).isEqualTo("2026-08-27T03:26:45Z");
+    assertThat(execution.finishedAt()).isEqualTo("2026-08-27T03:35:14Z");
   }
 
   /** Bloqueia o uso de um gate como se ele possuísse tarefas executáveis. */

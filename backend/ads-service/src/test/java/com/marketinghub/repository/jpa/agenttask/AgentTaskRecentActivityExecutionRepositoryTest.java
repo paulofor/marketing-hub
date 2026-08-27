@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agent.AgentTheme;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskActivityCoverage;
+import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
@@ -45,6 +47,31 @@ class AgentTaskRecentActivityExecutionRepositoryTest {
         .containsExactly(4, 1);
   }
 
+  /** Encontra uma tarefa composta somente nas atividades adicionais explicitamente vinculadas. */
+  @Test
+  void findsCompoundTaskThroughPersistedActivityCoverage() {
+    Agent dedalo = agent();
+    BusinessProcessDefinition process = process("landing-page-generation", 4);
+    BusinessProcessActivityDefinition select = activity(process, "select");
+    AgentTask compound = task(dedalo, process, "html", 7, "2026-08-27T03:26:19Z");
+    AgentTaskActivityCoverage coverage = new AgentTaskActivityCoverage();
+    coverage.setAgentTask(compound);
+    coverage.setActivityDefinition(select);
+    coverage.setCoverageSource("COMPOUND_EXECUTION");
+    coverage.setCreatedAt(Instant.parse("2026-08-27T03:26:19Z"));
+    entityManager.persist(coverage);
+    task(dedalo, process, "customer", 8, "2026-08-27T03:26:20Z");
+    entityManager.flush();
+    entityManager.clear();
+
+    var result =
+        repository.findRecentActivityExecutions(
+            "landing-page-generation", "select", PageRequest.of(0, 10));
+
+    assertThat(result).extracting(AgentTask::getId).containsExactly(compound.getId());
+    assertThat(result).extracting(AgentTask::getProcessActivityId).containsExactly("html");
+  }
+
   /** Persiste a identidade mínima do Argos exigida pelas tarefas. */
   private Agent agent() {
     AgentTheme theme = new AgentTheme();
@@ -77,6 +104,18 @@ class AgentTaskRecentActivityExecutionRepositoryTest {
     process.setDiagramJson("{\"nodes\":[],\"flows\":[]}");
     process.setCreatedAt(Instant.parse("2026-08-20T09:00:00Z"));
     return entityManager.persist(process);
+  }
+
+  /** Persiste uma atividade relacional coberta pela execução composta. */
+  private BusinessProcessActivityDefinition activity(
+      BusinessProcessDefinition process, String activityId) {
+    BusinessProcessActivityDefinition activity = new BusinessProcessActivityDefinition();
+    activity.setProcessDefinition(process);
+    activity.setActivityId(activityId);
+    activity.setName(activityId);
+    activity.setDefinitionJson("{}");
+    activity.setCreatedAt(Instant.parse("2026-08-20T09:00:00Z"));
+    return entityManager.persist(activity);
   }
 
   /** Persiste uma tarefa com o instante necessário para testar a ordem recente. */

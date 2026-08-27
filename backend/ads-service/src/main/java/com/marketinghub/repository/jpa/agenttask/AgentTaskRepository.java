@@ -87,7 +87,14 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, Long> {
       select task
       from AgentTask task
       where task.processDefinition.processCode = :processCode
-        and task.processActivityId = :activityId
+        and (task.processActivityId = :activityId
+          or exists (
+            select coverage.id
+            from AgentTaskActivityCoverage coverage
+            where coverage.agentTask = task
+              and coverage.activityDefinition.processDefinition.processCode = :processCode
+              and coverage.activityDefinition.activityId = :activityId
+          ))
       order by task.createdAt desc, task.id desc
       """)
   List<AgentTask> findRecentActivityExecutions(

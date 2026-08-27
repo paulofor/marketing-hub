@@ -1,0 +1,119 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-27-agent-task-activity-coverage-table
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - sqlCheck:
+            expectedResult: 1
+            sql: |
+              SELECT CASE
+                WHEN NOT EXISTS (
+                  SELECT 1
+                  FROM information_schema.tables
+                  WHERE table_schema = DATABASE()
+                    AND table_name = 'agent_task_activity_coverage'
+                ) THEN 1
+                WHEN (
+                  SELECT COUNT(*)
+                  FROM information_schema.columns
+                  WHERE table_schema = DATABASE()
+                    AND table_name = 'agent_task_activity_coverage'
+                    AND column_name IN (
+                      'id',
+                      'agent_task_id',
+                      'activity_definition_id',
+                      'coverage_source',
+                      'created_at'
+                    )
+                ) = 5
+                AND (
+                  SELECT COUNT(*)
+                  FROM information_schema.table_constraints
+                  WHERE constraint_schema = DATABASE()
+                    AND table_name = 'agent_task_activity_coverage'
+                    AND constraint_name IN (
+                      'PRIMARY',
+                      'uk_agent_task_activity_coverage',
+                      'fk_agent_task_activity_coverage_task',
+                      'fk_agent_task_activity_coverage_definition'
+                    )
+                ) = 4 THEN 1
+                ELSE 0
+              END
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS agent_task_activity_coverage (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                agent_task_id BIGINT NOT NULL,
+                activity_definition_id BIGINT NOT NULL,
+                coverage_source VARCHAR(40) NOT NULL,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_agent_task_activity_coverage (agent_task_id, activity_definition_id),
+                KEY idx_agent_task_activity_coverage_activity (activity_definition_id, agent_task_id),
+                CONSTRAINT fk_agent_task_activity_coverage_task
+                  FOREIGN KEY (agent_task_id) REFERENCES agent_task(id),
+                CONSTRAINT fk_agent_task_activity_coverage_definition
+                  FOREIGN KEY (activity_definition_id) REFERENCES business_process_activity_definition(id)
+              );
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: DROP TABLE agent_task_activity_coverage;
+
+  - changeSet:
+      id: 2026-08-27-agent-task-activity-coverage-landing-backfill
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT IGNORE INTO agent_task_activity_coverage (
+                agent_task_id,
+                activity_definition_id,
+                coverage_source,
+                created_at
+              )
+              SELECT task.id,
+                     activity.id,
+                     'COMPOUND_EXECUTION',
+                     task.created_at
+              FROM agent_task task
+              INNER JOIN business_process_definition process
+                ON process.id = task.process_definition_id
+              INNER JOIN business_process_activity_definition activity
+                ON activity.process_definition_id = process.id
+               AND activity.activity_id IN ('select', 'strategy', 'compose')
+              WHERE process.process_code = 'landing-page-generation'
+                AND task.process_activity_id = 'html'
+                AND task.source_reference LIKE 'commercial-plan:%:journey%'
+                AND task.title LIKE '%construir e homologar a landing%';
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DELETE coverage
+              FROM agent_task_activity_coverage coverage
+              INNER JOIN agent_task task ON task.id = coverage.agent_task_id
+              INNER JOIN business_process_definition process
+                ON process.id = task.process_definition_id
+              WHERE coverage.coverage_source = 'COMPOUND_EXECUTION'
+                AND process.process_code = 'landing-page-generation'
+                AND task.process_activity_id = 'html'
+                AND task.source_reference LIKE 'commercial-plan:%:journey%'
+                AND task.title LIKE '%construir e homologar a landing%';

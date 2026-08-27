@@ -8,10 +8,14 @@ import {
   Clock3,
   ListChecks,
   Loader2,
+  PlayCircle,
   Workflow,
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
-import { useProductProcessActivityExecutions } from "../../api/businessProcess/useProductProcessActivityExecutions";
+import {
+  useProductProcessActivityExecutions,
+  useRequestProductProcessActivityExecution,
+} from "../../api/businessProcess/useProductProcessActivityExecutions";
 import type { ProductProcessActivityExecutionGroup } from "../../api/businessProcess/types";
 import PageTitle from "../../components/PageTitle";
 import BusinessProcessExecutionCard from "../businessProcess/BusinessProcessExecutionCard";
@@ -81,6 +85,10 @@ export default function ProductProcessActivityExecutionsPage() {
   const history = useProductProcessActivityExecutions(
     validProductId ? productId : undefined,
     validProcessId ? processDefinitionId : undefined,
+  );
+  const requestExecution = useRequestProductProcessActivityExecution(
+    productId,
+    processDefinitionId,
   );
   const data = history.data;
   const productLabel =
@@ -159,6 +167,20 @@ export default function ProductProcessActivityExecutionsPage() {
         <div className="alert alert-danger" role="alert">
           Não foi possível consultar as atividades e tarefas deste produto no
           processo.
+        </div>
+      ) : null}
+
+      {requestExecution.isSuccess ? (
+        <div className="alert alert-success" role="status">
+          Atividade solicitada. Todas as tarefas responsáveis foram abertas no
+          mesmo ciclo auditável.
+        </div>
+      ) : null}
+
+      {requestExecution.isError ? (
+        <div className="alert alert-danger" role="alert">
+          Não foi possível iniciar a atividade. Verifique a situação registrada
+          e tente novamente.
         </div>
       ) : null}
 
@@ -351,6 +373,31 @@ export default function ProductProcessActivityExecutionsPage() {
                       {activity.taskCount} tarefa
                       {activity.taskCount === 1 ? "" : "s"}
                     </span>
+                    {activity.executionRequestAvailable ? (
+                      <button
+                        className="btn btn-primary btn-sm"
+                        type="button"
+                        disabled={requestExecution.isPending}
+                        onClick={() =>
+                          requestExecution.mutate(activity.activityId)
+                        }
+                      >
+                        {requestExecution.isPending &&
+                        requestExecution.variables === activity.activityId ? (
+                          <Loader2
+                            className="spinner-border spinner-border-sm"
+                            size={16}
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <PlayCircle size={16} aria-hidden="true" />
+                        )}
+                        {requestExecution.isPending &&
+                        requestExecution.variables === activity.activityId
+                          ? "Iniciando..."
+                          : "Executar atividade"}
+                      </button>
+                    ) : null}
                   </div>
                 </header>
 
@@ -363,6 +410,13 @@ export default function ProductProcessActivityExecutionsPage() {
                 <p className="product-process-activity-executions__state-reason">
                   <strong>Situação:</strong> {activity.stateReason}
                 </p>
+
+                {!activity.executionRequestAvailable &&
+                activity.executionRequestReason ? (
+                  <p className="text-body-secondary small mb-3">
+                    {activity.executionRequestReason}
+                  </p>
+                ) : null}
 
                 {activity.tasks.length > 0 ? (
                   <div className="d-grid gap-3">

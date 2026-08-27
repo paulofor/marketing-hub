@@ -130,6 +130,16 @@ mais recente da própria atividade dentro da referência de execução mais rece
 soma novamente custo ou tarefa composta. Uma execução antiga concluída não pode esconder bloqueio,
 pendência ou ausência de trabalho do ciclo atual.
 
+Uma atividade que exige parecer conjunto pode declarar `responsibleAgentKeys` no nó `TASK`. O
+backend abre idempotente e atomicamente uma tarefa para cada agente, usando a mesma versão de
+processo, atividade, referência de execução e ocorrência BPM. A atividade somente conclui quando a
+tentativa vigente de todos os coautores conclui; abrir apenas um parecer é inválido e não pode
+liberar a sucessora. O comando canônico da tela do produto é
+`POST /api/business-processes/{processDefinitionId}/products/{productId}/activities/{activityId}/execution-requests`.
+Ele somente aceita versão `PUBLISHED`, produto em `PLAY`, atividade ainda não iniciada e experimento
+do próprio produto. Repetir o comando reutiliza as tarefas existentes e não duplica custo nem
+execução.
+
 ## Recursos especializados por atividade
 
 Uma atividade `TASK` pode declarar opcionalmente `executionResourceCode` quando o agente precisar de
@@ -237,6 +247,10 @@ com resultado comercial.
 # Vínculo operacional com a Mesa de Entrada
 
 Toda nova tarefa humana enviada pela Mesa de Entrada deve apontar para uma atividade `TASK` de uma versão `PUBLISHED` e para o agente responsável definido nessa atividade. O backend valida a versão, o tipo do elemento e o responsável; rascunhos não podem orientar trabalho operacional.
+
+Quando `responsibleAgentKeys` estiver presente, a validação de responsabilidade aceita somente os
+agentes listados e a orquestração considera todos os coautores obrigatórios. O texto de `owner`
+continua legível para o usuário, mas não substitui a identidade técnica versionada dos executores.
 
 Cada tarefa deve preservar dois marcos temporais canônicos: `received_at`, registrado somente quando o executor reserva a atividade pelo endpoint `pending`, e `delivered_at`, registrado uma única vez quando o callback entrega resultado e evidências. Criação, atualizações, bloqueios e cancelamentos não podem fabricar ou sobrescrever esses marcos.
 

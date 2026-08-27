@@ -17,7 +17,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-/** Repository for experiments. */
+/** Responsabilidade: persistir e consultar experimentos comerciais. */
 public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
   /** Lista experimentos administrativos com filtros aplicados diretamente no banco. */
   @EntityGraph(
@@ -51,6 +51,9 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
   Optional<Experiment> findById(Long id);
 
   List<Experiment> findByNicheId(Long nicheId);
+
+  /** Lista os experimentos do produto, priorizando a referência operacional mais recente. */
+  List<Experiment> findByProductIdOrderByUpdatedAtDescIdDesc(Long productId);
 
   boolean existsByNicheAndName(MarketNiche niche, String name);
 

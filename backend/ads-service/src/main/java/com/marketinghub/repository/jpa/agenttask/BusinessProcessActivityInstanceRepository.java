@@ -28,4 +28,9 @@ public interface BusinessProcessActivityInstanceRepository
   List<BusinessProcessActivityInstance>
       findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceStartingWithOrderByCreatedAtDescIdDesc(
           String processCode, String sourceReferencePrefix);
+
+  /** Lista ocorrências do processo estável para uma referência operacional exata. */
+  List<BusinessProcessActivityInstance>
+      findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(
+          String processCode, String sourceReference);
 }

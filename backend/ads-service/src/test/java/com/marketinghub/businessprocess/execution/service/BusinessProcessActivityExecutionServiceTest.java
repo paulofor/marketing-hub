@@ -9,9 +9,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskActivityCoverage;
+import com.marketinghub.agenttask.AgentTaskResponse;
+import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.BusinessProcessActivityInstance;
+import com.marketinghub.agenttask.CreateAgentTaskRequest;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
+import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
@@ -20,6 +24,7 @@ import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
@@ -161,6 +166,8 @@ class BusinessProcessActivityExecutionServiceTest {
             commercialPlans,
             null,
             products,
+            null,
+            null,
             new ObjectMapper());
     BusinessProcessDefinition landing = selectedProcess();
     landing.setId(18L);
@@ -292,6 +299,107 @@ class BusinessProcessActivityExecutionServiceTest {
     assertThat(result.activities().get(4).stateEvidence()).isEqualTo("DIRECT");
     assertThat(result.activities().get(0).tasks().getFirst().productInternalName())
         .isEqualTo("Rigel");
+  }
+
+  /** Abre Psique e Têmis juntas na mesma ocorrência e referência do experimento do produto. */
+  @Test
+  void requestsEveryResponsibleAgentTaskForProductActivity() {
+    BusinessProcessActivityDefinitionRepository activityDefinitions =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    CommercialPlanRepository commercialPlans = mock(CommercialPlanRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    AgentTaskService agentTasks = mock(AgentTaskService.class);
+    var executionService =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            activityDefinitions,
+            tasks,
+            coverages,
+            instances,
+            commercialPlans,
+            null,
+            products,
+            experiments,
+            agentTasks,
+            new ObjectMapper());
+    BusinessProcessDefinition process = selectedProcess();
+    process.setId(45L);
+    process.setStatus("PUBLISHED");
+    process.setProcessCode("pde-commercial-homologation-activation");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"pdeGate\",\"type\":\"TASK\","
+            + "\"label\":\"Validar fatos, controle e valor do PDE\","
+            + "\"description\":\"Comprovar o valor do PDE.\","
+            + "\"responsibleAgentKeys\":[\"customer-agent\",\"meta-ad-approver\"]}]}");
+    Product vega = new Product();
+    vega.setId(4L);
+    vega.setName("Método MUSA 7 Dias");
+    vega.setInternalName("Vega");
+    vega.setAutomaticExecutionEnabled(true);
+    Experiment experiment = new Experiment();
+    experiment.setId(90L);
+    experiment.setProduct(vega);
+    when(processes.findById(45L)).thenReturn(Optional.of(process));
+    when(products.findById(4L)).thenReturn(Optional.of(vega));
+    when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(4L)).thenReturn(List.of(experiment));
+    when(agentTasks.createByHumanIfAbsent(any(CreateAgentTaskRequest.class)))
+        .thenReturn(mock(AgentTaskResponse.class));
+
+    var result = executionService.requestProductActivityExecution(45L, 4L, "pdeGate");
+
+    assertThat(result.sourceReference()).isEqualTo("experiment:90");
+    assertThat(result.tasks()).hasSize(2);
+    ArgumentCaptor<CreateAgentTaskRequest> requests =
+        ArgumentCaptor.forClass(CreateAgentTaskRequest.class);
+    verify(agentTasks, times(2)).createByHumanIfAbsent(requests.capture());
+    assertThat(requests.getAllValues())
+        .extracting(CreateAgentTaskRequest::assignedAgentKey)
+        .containsExactly("customer-agent", "meta-ad-approver");
+    assertThat(requests.getAllValues())
+        .allSatisfy(
+            request -> {
+              assertThat(request.sourceReference()).isEqualTo("experiment:90");
+              assertThat(request.processDefinitionId()).isEqualTo(45L);
+              assertThat(request.processActivityId()).isEqualTo("pdeGate");
+              assertThat(request.title()).contains("Vega");
+            });
+  }
+
+  /** Impede novas tarefas quando o produto está administrativamente em STOP. */
+  @Test
+  void rejectsActivityRequestForStoppedProduct() {
+    ProductRepository products = mock(ProductRepository.class);
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    AgentTaskService agentTasks = mock(AgentTaskService.class);
+    var executionService =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            mock(BusinessProcessActivityDefinitionRepository.class),
+            tasks,
+            mock(AgentTaskActivityCoverageRepository.class),
+            mock(BusinessProcessActivityInstanceRepository.class),
+            mock(CommercialPlanRepository.class),
+            null,
+            products,
+            experiments,
+            agentTasks,
+            new ObjectMapper());
+    BusinessProcessDefinition process = selectedProcess();
+    process.setStatus("PUBLISHED");
+    Product stopped = new Product();
+    stopped.setId(4L);
+    stopped.setAutomaticExecutionEnabled(false);
+    when(processes.findById(37L)).thenReturn(Optional.of(process));
+    when(products.findById(4L)).thenReturn(Optional.of(stopped));
+
+    assertThatThrownBy(() -> executionService.requestProductActivityExecution(37L, 4L, "evidence"))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("produto está em STOP");
+    verifyNoInteractions(agentTasks);
   }
 
   /** Bloqueia o uso de um gate como se ele possuísse tarefas executáveis. */

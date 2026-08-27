@@ -4,13 +4,18 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskActivityCoverage;
+import com.marketinghub.agenttask.AgentTaskResponse;
+import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.BusinessProcessActivityInstance;
+import com.marketinghub.agenttask.CreateAgentTaskRequest;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionGroupResponse;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionResponse;
+import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequestResponse;
+import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
@@ -19,6 +24,7 @@ import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
 import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
@@ -46,8 +52,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Responsabilidade: consultar a situação e as tarefas BPM auditáveis por atividade, processo e
- * produto.
+ * Responsabilidade: consultar e solicitar tarefas BPM auditáveis por atividade, processo e produto.
  */
 @Service
 public class BusinessProcessActivityExecutionService {
@@ -55,6 +60,7 @@ public class BusinessProcessActivityExecutionService {
   private static final String UNLINKED_ACTIVITY_ID = "__unlinked__";
   private static final Pattern COMMERCIAL_PLAN_REFERENCE =
       Pattern.compile("^commercial-plan:(\\d+)@.*$");
+  private static final Pattern EXPERIMENT_REFERENCE = Pattern.compile("^experiment:(\\d+)$");
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BusinessProcessActivityExecutionService.class);
 
@@ -66,6 +72,8 @@ public class BusinessProcessActivityExecutionService {
   private final CommercialPlanRepository commercialPlanRepository;
   private final GeraLandingStageExecutionRepository landingExecutionRepository;
   private final ProductRepository productRepository;
+  private final ExperimentRepository experimentRepository;
+  private final AgentTaskService agentTaskService;
   private final ObjectMapper objectMapper;
 
   /** Configura as fontes canônicas do processo, das tarefas, da cobertura e do produto. */
@@ -79,6 +87,8 @@ public class BusinessProcessActivityExecutionService {
       CommercialPlanRepository commercialPlanRepository,
       GeraLandingStageExecutionRepository landingExecutionRepository,
       ProductRepository productRepository,
+      ExperimentRepository experimentRepository,
+      AgentTaskService agentTaskService,
       ObjectMapper objectMapper) {
     this.processRepository = processRepository;
     this.activityDefinitionRepository = activityDefinitionRepository;
@@ -88,6 +98,8 @@ public class BusinessProcessActivityExecutionService {
     this.commercialPlanRepository = commercialPlanRepository;
     this.landingExecutionRepository = landingExecutionRepository;
     this.productRepository = productRepository;
+    this.experimentRepository = experimentRepository;
+    this.agentTaskService = agentTaskService;
     this.objectMapper = objectMapper;
   }
 
@@ -96,7 +108,18 @@ public class BusinessProcessActivityExecutionService {
       BusinessProcessDefinitionRepository processRepository,
       AgentTaskRepository taskRepository,
       ObjectMapper objectMapper) {
-    this(processRepository, null, taskRepository, null, null, null, null, null, objectMapper);
+    this(
+        processRepository,
+        null,
+        taskRepository,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        objectMapper);
   }
 
   /** Permite comprovar a projeção da auditoria técnica na tarefa composta. */
@@ -113,6 +136,8 @@ public class BusinessProcessActivityExecutionService {
         null,
         null,
         landingExecutionRepository,
+        null,
+        null,
         null,
         objectMapper);
   }
@@ -156,9 +181,12 @@ public class BusinessProcessActivityExecutionService {
     BusinessProcessDefinition selectedProcess = requiredProcess(processDefinitionId);
     Product product = requiredProduct(productId);
     List<CommercialPlan> productPlans = commercialPlanRepository.findByProductId(productId);
-    List<AgentTask> tasks = productProcessTasks(productPlans, selectedProcess.getProcessCode());
+    List<Experiment> productExperiments = productExperiments(productId);
+    List<AgentTask> tasks =
+        productProcessTasks(productPlans, productExperiments, selectedProcess.getProcessCode());
     List<BusinessProcessActivityInstance> instances =
-        productProcessActivityInstances(productPlans, selectedProcess.getProcessCode());
+        productProcessActivityInstances(
+            productPlans, productExperiments, selectedProcess.getProcessCode());
     List<BusinessProcessActivityDefinition> selectedActivities =
         activityDefinitionRepository.findAllByProcessDefinitionIdOrderByIdAsc(processDefinitionId);
 
@@ -203,12 +231,15 @@ public class BusinessProcessActivityExecutionService {
         currentInstancesByActivityId(selectedProcess.getId(), currentExecutionReference, instances);
     List<ProductProcessActivityExecutionGroupResponse> activities =
         activityGroups(
+            selectedProcess,
             tasksByActivityId,
             selectedByActivityId,
             historicalActivityNames,
             taskResponses,
             currentExecutionReference,
-            currentInstancesByActivityId);
+            currentInstancesByActivityId,
+            !productExperiments.isEmpty(),
+            !Boolean.FALSE.equals(product.getAutomaticExecutionEnabled()));
     ProductProcessSituation situation = processSituation(activities);
     BigDecimal knownCost = knownEstimatedCost(tasks);
     return new ProductProcessActivityExecutionHistoryResponse(
@@ -239,6 +270,55 @@ public class BusinessProcessActivityExecutionService {
         activities);
   }
 
+  /** Abre atomicamente todas as tarefas responsáveis pela atividade atual do produto. */
+  @Transactional
+  public ProductProcessActivityExecutionRequestResponse requestProductActivityExecution(
+      Long processDefinitionId, Long productId, String activityId) {
+    if (agentTaskService == null || experimentRepository == null) {
+      throw new IllegalStateException("Execução de atividade não configurada neste ambiente.");
+    }
+    BusinessProcessDefinition process = requiredProcess(processDefinitionId);
+    if (!"PUBLISHED".equals(process.getStatus())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Somente a versão publicada pode iniciar uma atividade.");
+    }
+    Product product = requiredProduct(productId);
+    if (Boolean.FALSE.equals(product.getAutomaticExecutionEnabled())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "O produto está em STOP e não pode iniciar novas atividades.");
+    }
+    JsonNode activity = requireTaskActivity(process, activityId);
+    List<String> responsibleAgentKeys = responsibleAgentKeys(activity);
+    if (responsibleAgentKeys.isEmpty()) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "A atividade não possui executores automáticos configurados.");
+    }
+    Experiment experiment = latestProductExperiment(productId);
+    String sourceReference = "experiment:" + experiment.getId();
+    String normalizedActivityId = activity.path("id").asText();
+    String activityName = activity.path("label").asText(normalizedActivityId);
+    String objective = activity.path("description").asText(activityName);
+    List<AgentTaskResponse> requestedTasks =
+        responsibleAgentKeys.stream()
+            .map(
+                agentKey ->
+                    agentTaskService.createByHumanIfAbsent(
+                        new CreateAgentTaskRequest(
+                            agentKey,
+                            "Operador do Marketing Hub",
+                            activityName + " · " + productDisplayName(product),
+                            objective,
+                            "HIGH",
+                            sourceReference,
+                            process.getId(),
+                            normalizedActivityId,
+                            false,
+                            null)))
+            .toList();
+    return new ProductProcessActivityExecutionRequestResponse(
+        process.getId(), product.getId(), normalizedActivityId, sourceReference, requestedTasks);
+  }
+
   /** Exige um produto existente antes de resolver suas referências operacionais. */
   private Product requiredProduct(Long productId) {
     return productRepository
@@ -247,14 +327,107 @@ public class BusinessProcessActivityExecutionService {
             () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado."));
   }
 
-  /** Busca somente tarefas dos planos do produto e do código estável do processo selecionado. */
+  /** Lista as referências de experimento que pertencem diretamente ao produto. */
+  private List<Experiment> productExperiments(Long productId) {
+    return experimentRepository == null
+        ? List.of()
+        : experimentRepository.findByProductIdOrderByUpdatedAtDescIdDesc(productId);
+  }
+
+  /** Seleciona o experimento mais recente como referência auditável da nova execução. */
+  private Experiment latestProductExperiment(Long productId) {
+    return productExperiments(productId).stream()
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "O produto ainda não possui experimento para contextualizar a execução."));
+  }
+
+  /** Prefere o nome interno no título operacional sem expor ausência como texto vazio. */
+  private String productDisplayName(Product product) {
+    if (product.getInternalName() != null && !product.getInternalName().isBlank()) {
+      return product.getInternalName();
+    }
+    return product.getName() == null || product.getName().isBlank()
+        ? "Produto " + product.getId()
+        : product.getName();
+  }
+
+  /** Lê da definição relacional versionada todos os agentes que precisam concluir a atividade. */
+  private List<String> responsibleAgentKeys(BusinessProcessActivityDefinition definition) {
+    if (definition.getDefinitionJson() == null || definition.getDefinitionJson().isBlank()) {
+      return List.of();
+    }
+    try {
+      return responsibleAgentKeys(objectMapper.readTree(definition.getDefinitionJson()));
+    } catch (Exception ex) {
+      LOGGER.error(
+          "Falha ao ler executores da atividade BPM. activityDefinitionId={} activityId={}",
+          definition.getId(),
+          definition.getActivityId(),
+          ex);
+      return List.of();
+    }
+  }
+
+  /** Valida a lista versionada de executores sem aceitar valores vazios ou duplicados. */
+  private List<String> responsibleAgentKeys(JsonNode activity) {
+    JsonNode values = activity.path("responsibleAgentKeys");
+    if (!values.isArray()) return List.of();
+    LinkedHashSet<String> keys = new LinkedHashSet<>();
+    values.forEach(
+        value -> {
+          String key = textOrNull(value);
+          if (key != null) keys.add(key);
+        });
+    return List.copyOf(keys);
+  }
+
+  /** Explica por que a tela pode ou não solicitar a execução dessa atividade. */
+  private String executionRequestReason(
+      BusinessProcessActivityDefinition definition,
+      BusinessProcessDefinition process,
+      String operationalState,
+      List<String> responsibleAgents,
+      boolean hasProductExperiment,
+      boolean productExecutionEnabled) {
+    if (definition == null) return "Atividade histórica sem comando operacional.";
+    if (!"PUBLISHED".equals(process.getStatus())) {
+      return "Somente a versão publicada pode receber novas execuções.";
+    }
+    if (!"NOT_STARTED".equals(operationalState)) {
+      return "A atividade já possui execução registrada neste ciclo.";
+    }
+    if (responsibleAgents.isEmpty()) {
+      return "A atividade não possui executores automáticos configurados.";
+    }
+    if (!hasProductExperiment) {
+      return "O produto ainda não possui experimento para contextualizar a execução.";
+    }
+    if (!productExecutionEnabled) {
+      return "O produto está em STOP e não pode iniciar novas atividades.";
+    }
+    return "A atividade está pronta para abrir todas as tarefas responsáveis.";
+  }
+
+  /** Busca tarefas dos planos e experimentos do produto sem misturar outro processo. */
   private List<AgentTask> productProcessTasks(
-      List<CommercialPlan> productPlans, String processCode) {
+      List<CommercialPlan> productPlans, List<Experiment> productExperiments, String processCode) {
     Map<Long, AgentTask> uniqueTasks = new LinkedHashMap<>();
     for (CommercialPlan plan : productPlans) {
       taskRepository
           .findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
               "commercial-plan:" + plan.getId() + "@")
+          .stream()
+          .filter(task -> task.getProcessDefinition() != null)
+          .filter(task -> processCode.equals(task.getProcessDefinition().getProcessCode()))
+          .forEach(task -> uniqueTasks.put(task.getId(), task));
+    }
+    for (Experiment experiment : productExperiments) {
+      taskRepository
+          .findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:" + experiment.getId())
           .stream()
           .filter(task -> task.getProcessDefinition() != null)
           .filter(task -> processCode.equals(task.getProcessDefinition().getProcessCode()))
@@ -268,16 +441,20 @@ public class BusinessProcessActivityExecutionService {
         .toList();
   }
 
-  /**
-   * Busca ocorrências BPM diretamente pelo plano do produto para preservar atividades sem tarefa.
-   */
+  /** Busca ocorrências BPM pelos planos e experimentos para preservar atividades sem tarefa. */
   private List<BusinessProcessActivityInstance> productProcessActivityInstances(
-      List<CommercialPlan> productPlans, String processCode) {
+      List<CommercialPlan> productPlans, List<Experiment> productExperiments, String processCode) {
     Map<Long, BusinessProcessActivityInstance> uniqueInstances = new LinkedHashMap<>();
     for (CommercialPlan plan : productPlans) {
       activityInstanceRepository
           .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceStartingWithOrderByCreatedAtDescIdDesc(
               processCode, "commercial-plan:" + plan.getId() + "@")
+          .forEach(instance -> uniqueInstances.put(instance.getId(), instance));
+    }
+    for (Experiment experiment : productExperiments) {
+      activityInstanceRepository
+          .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(
+              processCode, "experiment:" + experiment.getId())
           .forEach(instance -> uniqueInstances.put(instance.getId(), instance));
     }
     return uniqueInstances.values().stream()
@@ -336,12 +513,15 @@ public class BusinessProcessActivityExecutionService {
 
   /** Monta grupos ordenados e mantém atividades da versão atual mesmo quando ainda estão vazias. */
   private List<ProductProcessActivityExecutionGroupResponse> activityGroups(
+      BusinessProcessDefinition selectedProcess,
       Map<String, List<AgentTask>> tasksByActivityId,
       Map<String, BusinessProcessActivityDefinition> selectedByActivityId,
       Map<String, String> historicalActivityNames,
       Map<Long, BusinessProcessActivityExecutionResponse> taskResponses,
       String currentExecutionReference,
-      Map<String, List<BusinessProcessActivityInstance>> currentInstancesByActivityId) {
+      Map<String, List<BusinessProcessActivityInstance>> currentInstancesByActivityId,
+      boolean hasProductExperiment,
+      boolean productExecutionEnabled) {
     List<ProductProcessActivityExecutionGroupResponse> groups = new java.util.ArrayList<>();
     int sequence = 1;
     for (Map.Entry<String, List<AgentTask>> entry : tasksByActivityId.entrySet()) {
@@ -360,6 +540,23 @@ public class BusinessProcessActivityExecutionService {
               entry.getKey(),
               currentExecutionTasks,
               currentInstancesByActivityId.getOrDefault(entry.getKey(), List.of()));
+      List<String> responsibleAgents =
+          definition == null ? List.of() : responsibleAgentKeys(definition);
+      boolean executionRequestAvailable =
+          definition != null
+              && "PUBLISHED".equals(selectedProcess.getStatus())
+              && "NOT_STARTED".equals(situation.operationalState())
+              && !responsibleAgents.isEmpty()
+              && hasProductExperiment
+              && productExecutionEnabled;
+      String executionRequestReason =
+          executionRequestReason(
+              definition,
+              selectedProcess,
+              situation.operationalState(),
+              responsibleAgents,
+              hasProductExperiment,
+              productExecutionEnabled);
       String activityName =
           definition != null
               ? definition.getName()
@@ -382,7 +579,9 @@ public class BusinessProcessActivityExecutionService {
               situation.activityInstanceId(),
               situation.occurrenceNumber(),
               executions.size(),
-              executions));
+              executions,
+              executionRequestAvailable,
+              executionRequestReason));
     }
     return groups;
   }
@@ -846,19 +1045,30 @@ public class BusinessProcessActivityExecutionService {
     return second != null && !second.isBlank() ? second : null;
   }
 
-  /** Resolve o produto somente quando a origem aponta para um plano comercial canônico. */
+  /** Resolve o produto quando a origem aponta para plano comercial ou experimento canônico. */
   private String productInternalName(AgentTask task) {
-    if (commercialPlanRepository == null || task.getSourceReference() == null) return null;
-    Matcher matcher = COMMERCIAL_PLAN_REFERENCE.matcher(task.getSourceReference());
-    if (!matcher.matches()) return null;
+    if (task.getSourceReference() == null) return null;
+    Matcher planMatcher = COMMERCIAL_PLAN_REFERENCE.matcher(task.getSourceReference());
+    Matcher experimentMatcher = EXPERIMENT_REFERENCE.matcher(task.getSourceReference());
     try {
-      return commercialPlanRepository
-          .findById(Long.valueOf(matcher.group(1)))
-          .flatMap(this::internalProductName)
-          .orElse(null);
+      if (planMatcher.matches() && commercialPlanRepository != null) {
+        return commercialPlanRepository
+            .findById(Long.valueOf(planMatcher.group(1)))
+            .flatMap(this::internalProductName)
+            .orElse(null);
+      }
+      if (experimentMatcher.matches() && experimentRepository != null) {
+        return experimentRepository
+            .findById(Long.valueOf(experimentMatcher.group(1)))
+            .map(Experiment::getProduct)
+            .map(Product::getInternalName)
+            .filter(value -> value != null && !value.isBlank())
+            .orElse(null);
+      }
+      return null;
     } catch (NumberFormatException ex) {
       LOGGER.warn(
-          "Referência comercial inválida ao consultar produto da tarefa {}.", task.getId(), ex);
+          "Referência operacional inválida ao consultar produto da tarefa {}.", task.getId(), ex);
       return null;
     }
   }

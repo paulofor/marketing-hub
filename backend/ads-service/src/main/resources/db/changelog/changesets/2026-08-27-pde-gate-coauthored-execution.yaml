@@ -1,0 +1,172 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-27-pde-gate-coauthored-execution-1-process-v5
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT
+                'pde-commercial-homologation-activation',
+                'Homologação e ativação comercial do PDE',
+                'Validar os riscos específicos do PDE, consumir um único preflight técnico e registrar a decisão humana de ativação.',
+                'Operação de Experimentos',
+                'PDE e jornada aprovados com fatos, controle e versões rastreáveis.',
+                'PDE autorizado para RUNNING ou bloqueado com causa e ação, sem repetir testes técnicos já executados.',
+                5,
+                'PUBLISHED',
+                'experiment-homologation-activation / pde-gate-coauthored-execution-2026-08-27',
+                'VALUE_PROCESS',
+                NULL,
+                '{"nodes":[{"id":"start","type":"START","label":"Produto e jornada aprovados","owner":"Backend","description":"As versões exatas iniciam a decisão comercial."},{"id":"pdeGate","type":"TASK","label":"Validar fatos, controle e valor do PDE","owner":"Psique e Têmis","description":"Comprova Cartão de Decisão, prova, adequação, personalização explicável e caminho neutro.","responsibleAgentKeys":["customer-agent","meta-ad-approver"]},{"id":"preflight","type":"TASK","label":"Executar preflight técnico do experimento","owner":"Backend","description":"Consome uma única homologação técnica e reutiliza suas evidências sem refazer testes.","subprocessCode":"experiment-homologation-activation"},{"id":"decision","type":"GATEWAY","label":"Valor e preflight estão aprovados?","owner":"Backend","description":"Exige gates específicos e técnicos verdes, persistindo a causa de qualquer bloqueio."},{"id":"authorization","type":"TASK","label":"Autorizar ativação e orçamento","owner":"Operador humano","description":"Autoriza explicitamente RUNNING dentro do teto; aprovação técnica isolada não libera gasto."},{"id":"end","type":"END","label":"Decisão de ativação registrada","owner":"Backend","description":"O processo termina ao autorizar ou bloquear, sem operar o experimento."}],"flows":[{"from":"start","to":"pdeGate"},{"from":"pdeGate","to":"preflight"},{"from":"preflight","to":"decision"},{"from":"decision","to":"authorization","label":"Aprovado"},{"from":"authorization","to":"end"},{"from":"decision","to":"end","label":"Bloqueado"}]}' ,
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1
+                FROM business_process_definition
+                WHERE process_code = 'pde-commercial-homologation-activation'
+                  AND version_number = 5
+              );
+
+              UPDATE business_process_definition
+              SET status = 'RETIRED'
+              WHERE process_code = 'pde-commercial-homologation-activation'
+                AND status = 'PUBLISHED'
+                AND version_number <> 5;
+
+  - changeSet:
+      id: 2026-08-27-pde-gate-coauthored-execution-2-activity-definitions
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_activity_definition
+                (process_definition_id, activity_id, name, objective, owner_name,
+                 execution_resource_code, subprocess_code, definition_json, created_at)
+              SELECT process.id, 'pdeGate', 'Validar fatos, controle e valor do PDE',
+                'Comprova Cartão de Decisão, prova, adequação, personalização explicável e caminho neutro.',
+                'Psique e Têmis', NULL, NULL,
+                '{"id":"pdeGate","type":"TASK","label":"Validar fatos, controle e valor do PDE","owner":"Psique e Têmis","description":"Comprova Cartão de Decisão, prova, adequação, personalização explicável e caminho neutro.","responsibleAgentKeys":["customer-agent","meta-ad-approver"]}',
+                process.created_at
+              FROM business_process_definition process
+              LEFT JOIN business_process_activity_definition activity
+                ON activity.process_definition_id = process.id AND activity.activity_id = 'pdeGate'
+              WHERE process.process_code = 'pde-commercial-homologation-activation'
+                AND process.version_number = 5
+                AND activity.id IS NULL;
+
+              INSERT INTO business_process_activity_definition
+                (process_definition_id, activity_id, name, objective, owner_name,
+                 execution_resource_code, subprocess_code, definition_json, created_at)
+              SELECT process.id, 'preflight', 'Executar preflight técnico do experimento',
+                'Consome uma única homologação técnica e reutiliza suas evidências sem refazer testes.',
+                'Backend', NULL, 'experiment-homologation-activation',
+                '{"id":"preflight","type":"TASK","label":"Executar preflight técnico do experimento","owner":"Backend","description":"Consome uma única homologação técnica e reutiliza suas evidências sem refazer testes.","subprocessCode":"experiment-homologation-activation"}',
+                process.created_at
+              FROM business_process_definition process
+              LEFT JOIN business_process_activity_definition activity
+                ON activity.process_definition_id = process.id AND activity.activity_id = 'preflight'
+              WHERE process.process_code = 'pde-commercial-homologation-activation'
+                AND process.version_number = 5
+                AND activity.id IS NULL;
+
+              INSERT INTO business_process_activity_definition
+                (process_definition_id, activity_id, name, objective, owner_name,
+                 execution_resource_code, subprocess_code, definition_json, created_at)
+              SELECT process.id, 'authorization', 'Autorizar ativação e orçamento',
+                'Autoriza explicitamente RUNNING dentro do teto; aprovação técnica isolada não libera gasto.',
+                'Operador humano', NULL, NULL,
+                '{"id":"authorization","type":"TASK","label":"Autorizar ativação e orçamento","owner":"Operador humano","description":"Autoriza explicitamente RUNNING dentro do teto; aprovação técnica isolada não libera gasto."}',
+                process.created_at
+              FROM business_process_definition process
+              LEFT JOIN business_process_activity_definition activity
+                ON activity.process_definition_id = process.id AND activity.activity_id = 'authorization'
+              WHERE process.process_code = 'pde-commercial-homologation-activation'
+                AND process.version_number = 5
+                AND activity.id IS NULL;
+
+  - changeSet:
+      id: 2026-08-27-pde-gate-coauthored-execution-3-chain-v6
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_chain_definition
+                (chain_code, name, purpose, outcome_description, primary_metric,
+                 version_number, status, created_at, published_at)
+              SELECT
+                'pde-value-creation-delivery',
+                'Criação e entrega de valor de Produtos Digitais Experienciais',
+                'Transformar oportunidade em produto vendido e entregue por processos de valor únicos, delegando trabalho especializado sem sobreposição.',
+                'PDE vendido e entregue com satisfação, com responsabilidades exclusivas e aprendizado auditável para escala.',
+                'Tempo até venda entregue com satisfação',
+                6,
+                'PUBLISHED',
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1
+                FROM business_process_chain_definition
+                WHERE chain_code = 'pde-value-creation-delivery' AND version_number = 6
+              );
+
+              INSERT INTO business_process_chain_item
+                (chain_definition_id, process_definition_id, sequence_number, value_contribution, created_at)
+              SELECT chain_definition.id, process_definition.id, process_item.sequence_number,
+                process_item.value_contribution, UTC_TIMESTAMP()
+              FROM business_process_chain_definition chain_definition
+              JOIN (
+                SELECT 1 AS sequence_number, 'pde-opportunity-discovery' AS process_code,
+                  'Escolhe uma oportunidade comprovada sem duplicar pesquisa em etapas posteriores.' AS value_contribution
+                UNION ALL SELECT 2, 'pde-commercial-plan-offer',
+                  'Define oferta, formato, prova, distribuição e limites antes da construção.'
+                UNION ALL SELECT 3, 'pde-construction-approval',
+                  'Constrói e aprova o produto completo como única autoridade de materialização.'
+                UNION ALL SELECT 4, 'pde-communication-sales-journey',
+                  'Orquestra criativos, destino, checkout e eventos por subprocessos especializados.'
+                UNION ALL SELECT 5, 'pde-commercial-homologation-activation',
+                  'Decide ativação uma vez, reutilizando o preflight técnico sem repetir homologação.'
+                UNION ALL SELECT 6, 'pde-sales-delivery-learning',
+                  'Consolida otimização e entrega em uma decisão única por vendas satisfatórias.'
+              ) process_item
+              JOIN business_process_definition process_definition
+                ON process_definition.process_code = process_item.process_code
+                AND process_definition.status = 'PUBLISHED'
+              LEFT JOIN business_process_chain_item existing_item
+                ON existing_item.chain_definition_id = chain_definition.id
+                AND existing_item.sequence_number = process_item.sequence_number
+              WHERE chain_definition.chain_code = 'pde-value-creation-delivery'
+                AND chain_definition.version_number = 6
+                AND existing_item.id IS NULL;
+
+              UPDATE business_process_chain_definition
+              SET status = 'RETIRED'
+              WHERE chain_code = 'pde-value-creation-delivery'
+                AND status = 'PUBLISHED'
+                AND version_number <> 6;

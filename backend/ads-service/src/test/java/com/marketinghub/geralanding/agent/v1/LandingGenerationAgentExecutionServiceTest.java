@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTaskPendingResponse;
 import com.marketinghub.agenttask.AgentTaskService;
+import com.marketinghub.agenttask.AutomaticBusinessProcessActivityService;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.qualityreview.service.LandingQualityReviewedEvent;
@@ -38,6 +39,7 @@ class LandingGenerationAgentExecutionServiceTest {
   private LandingGenerationAgentCoordinator coordinator;
   private ExperimentRepository experimentRepository;
   private AgentTaskService agentTaskService;
+  private AutomaticBusinessProcessActivityService automaticActivityService;
   private LandingGenerationResultApplicationService resultApplicationService;
   private GeraSalesPagePublicationAuditRepository publicationRepository;
   private CommercialPlanLandingAssetService landingAssetService;
@@ -52,6 +54,7 @@ class LandingGenerationAgentExecutionServiceTest {
     coordinator = mock(LandingGenerationAgentCoordinator.class);
     experimentRepository = mock(ExperimentRepository.class);
     agentTaskService = mock(AgentTaskService.class);
+    automaticActivityService = mock(AutomaticBusinessProcessActivityService.class);
     resultApplicationService = mock(LandingGenerationResultApplicationService.class);
     publicationRepository = mock(GeraSalesPagePublicationAuditRepository.class);
     landingAssetService = mock(CommercialPlanLandingAssetService.class);
@@ -71,6 +74,7 @@ class LandingGenerationAgentExecutionServiceTest {
             commercialContextResolver,
             objectMapper,
             agentTaskService,
+            automaticActivityService,
             resultApplicationService,
             landingAssetService,
             approvedCreativeEvidenceService);
@@ -101,6 +105,12 @@ class LandingGenerationAgentExecutionServiceTest {
   /** Deve manter Dédalo responsável até o Quality Review independente aprovar a candidata BPM. */
   @Test
   void shouldCompleteBpmTaskOnlyAfterIndependentQualityApproval() {
+    GeraLandingStageExecution qualityReview = approvedQualityReview("quality-review-30", 91);
+    when(repository
+            .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
+                88L, "landing-page-quality-review", "agent-task:30"))
+        .thenReturn(List.of(qualityReview));
+
     service.onQualityReviewCompleted(
         new LandingQualityReviewedEvent(
             88L,
@@ -112,7 +122,32 @@ class LandingGenerationAgentExecutionServiceTest {
             org.mockito.ArgumentMatchers.eq("landing-generator"),
             org.mockito.ArgumentMatchers.eq(30L),
             any(com.marketinghub.agenttask.CompleteAgentTaskRequest.class));
+    verify(automaticActivityService)
+        .completeFromExecution(
+            org.mockito.ArgumentMatchers.eq(30L),
+            org.mockito.ArgumentMatchers.eq("technical"),
+            org.mockito.ArgumentMatchers.eq("quality-review-30"),
+            org.mockito.ArgumentMatchers.eq(qualityReview.getExecutionRequestedAt()),
+            org.mockito.ArgumentMatchers.eq(qualityReview.getCompletedAt()),
+            org.mockito.ArgumentMatchers.eq(qualityReview.getCostUsd()),
+            org.mockito.ArgumentMatchers.contains("\"score\":91"));
     verify(coordinator, never()).continueAfterQualityReview(any(), any(), any());
+  }
+
+  /** Não deve concluir Dédalo quando a aprovação não possui execução visual correlacionada. */
+  @Test
+  void shouldBlockBpmCompletionWithoutCorrelatedQualityReviewExecution() {
+    service.onQualityReviewCompleted(
+        new LandingQualityReviewedEvent(
+            88L,
+            "agent-task:30",
+            "{\"approvalRecommendation\":\"APPROVE_FOR_PUBLICATION\",\"score\":91}"));
+
+    verify(automaticActivityService, never())
+        .completeFromExecution(any(), any(), any(), any(), any(), any(), any());
+    verify(agentTaskService, never())
+        .completeClaimedProcessTask(
+            any(), any(), any(com.marketinghub.agenttask.CompleteAgentTaskRequest.class));
   }
 
   /**
@@ -136,6 +171,11 @@ class LandingGenerationAgentExecutionServiceTest {
         "{\"commercialBinding\":{\"experimentId\":88,\"priceBrl\":67,\"billingModel\":\"ONE_TIME\"}}");
     experiment.setProduct(product);
     GeraLandingStageExecution qualityReview = execution("quality-review-88", "CONCLUIDO");
+    qualityReview.setStageCode("landing-page-quality-review");
+    qualityReview.setAutonomousCycleId("agent-task:30");
+    qualityReview.setModelResponse(
+        "{\"approvalRecommendation\":\"APPROVE_FOR_PUBLICATION\",\"score\":90}");
+    qualityReview.setCompletedAt(qualityReview.getExecutionRequestedAt().plusSeconds(1));
     qualityReview.setQualityReviewAudit(
         "{\"screenshots\":[{\"viewport\":\"mobile\",\"publicUrl\":\"https://evidence/mobile.jpg\"}]}");
     GeraLandingStageExecution technicalExecution = execution("landing-agent-88", "CONCLUIDO");
@@ -649,5 +689,17 @@ class LandingGenerationAgentExecutionServiceTest {
         .executionRequestedAt(Instant.now())
         .createdAt(Instant.now())
         .build();
+  }
+
+  /** Cria uma aprovação visual correlacionada à tarefa BPM usada pelos testes de callback. */
+  private GeraLandingStageExecution approvedQualityReview(String id, int score) {
+    GeraLandingStageExecution execution = execution(id, "CONCLUIDO");
+    execution.setStageCode("landing-page-quality-review");
+    execution.setAutonomousCycleId("agent-task:30");
+    execution.setModelResponse(
+        "{\"approvalRecommendation\":\"APPROVE_FOR_PUBLICATION\",\"score\":" + score + "}");
+    execution.setCompletedAt(execution.getExecutionRequestedAt().plusSeconds(1));
+    execution.setCostUsd(java.math.BigDecimal.valueOf(0.146645));
+    return execution;
   }
 }

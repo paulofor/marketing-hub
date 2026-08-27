@@ -1050,7 +1050,7 @@ public class AgentTaskService {
         if (request.processActivityId().trim().equals(node.path("id").asText())
             && "TASK".equals(node.path("type").asText())) {
           String owner = node.path("owner").asText("").trim();
-          if (!owner.isEmpty() && !activityOwnerMatchesAgent(owner, assignee)) {
+          if (!activityAssigneeMatches(node, owner, assignee)) {
             throw new ResponseStatusException(
                 HttpStatus.CONFLICT, "A atividade selecionada pertence a outro responsável.");
           }
@@ -1106,6 +1106,18 @@ public class AgentTaskService {
       }
     }
     return false;
+  }
+
+  /** Prioriza as identidades técnicas dos coautores e mantém o texto legado como fallback. */
+  private boolean activityAssigneeMatches(JsonNode node, String owner, Agent assignee) {
+    JsonNode responsibleAgentKeys = node.path("responsibleAgentKeys");
+    if (responsibleAgentKeys.isArray() && !responsibleAgentKeys.isEmpty()) {
+      for (JsonNode responsibleAgentKey : responsibleAgentKeys) {
+        if (assignee.getAgentKey().equals(responsibleAgentKey.asText())) return true;
+      }
+      return false;
+    }
+    return owner.isEmpty() || activityOwnerMatchesAgent(owner, assignee);
   }
 
   /** Impede vincular uma atividade especializada ao agente diferente do catálogo do recurso. */

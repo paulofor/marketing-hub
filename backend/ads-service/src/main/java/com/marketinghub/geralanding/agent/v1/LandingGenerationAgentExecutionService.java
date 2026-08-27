@@ -2,7 +2,9 @@ package com.marketinghub.geralanding.agent.v1;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.agenttask.AgentTaskService;
+import com.marketinghub.agenttask.AutomaticBusinessProcessActivityService;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.qualityreview.service.LandingQualityReviewedEvent;
 import com.marketinghub.planning.service.CommercialPlanApprovedCreativeEvidenceService;
@@ -50,6 +52,7 @@ public class LandingGenerationAgentExecutionService {
   private final LandingCommercialContextResolver commercialContextResolver;
   private final ObjectMapper objectMapper;
   private final AgentTaskService agentTaskService;
+  private final AutomaticBusinessProcessActivityService automaticActivityService;
   private final LandingGenerationResultApplicationService resultApplicationService;
   private final CommercialPlanLandingAssetService landingAssetService;
   private final CommercialPlanApprovedCreativeEvidenceService approvedCreativeEvidenceService;
@@ -63,6 +66,7 @@ public class LandingGenerationAgentExecutionService {
       LandingCommercialContextResolver commercialContextResolver,
       ObjectMapper objectMapper,
       AgentTaskService agentTaskService,
+      AutomaticBusinessProcessActivityService automaticActivityService,
       LandingGenerationResultApplicationService resultApplicationService,
       CommercialPlanLandingAssetService landingAssetService,
       CommercialPlanApprovedCreativeEvidenceService approvedCreativeEvidenceService) {
@@ -73,6 +77,7 @@ public class LandingGenerationAgentExecutionService {
     this.commercialContextResolver = commercialContextResolver;
     this.objectMapper = objectMapper;
     this.agentTaskService = agentTaskService;
+    this.automaticActivityService = automaticActivityService;
     this.resultApplicationService = resultApplicationService;
     this.landingAssetService = landingAssetService;
     this.approvedCreativeEvidenceService = approvedCreativeEvidenceService;
@@ -104,9 +109,21 @@ public class LandingGenerationAgentExecutionService {
     }
   }
 
-  /** Conclui a atividade de Dédalo somente depois do Quality Review independente aprovado. */
-  private void completeBpmTaskAfterQualityApproval(LandingQualityReviewedEvent event) {
+  /**
+   * Consolida a validação técnica no BPM e conclui Dédalo somente após o Quality Review aprovado.
+   */
+  private void completeBpmTaskAfterQualityApproval(LandingQualityReviewedEvent event)
+      throws com.fasterxml.jackson.core.JsonProcessingException {
     Long taskId = bpmTaskId(event.autonomousCycleId());
+    GeraLandingStageExecution qualityReviewExecution = approvedQualityReviewExecution(event);
+    automaticActivityService.completeFromExecution(
+        taskId,
+        "technical",
+        textId(qualityReviewExecution),
+        qualityReviewExecution.getExecutionRequestedAt(),
+        qualityReviewExecution.getCompletedAt(),
+        qualityReviewExecution.getCostUsd(),
+        technicalActivityEvidence(event, qualityReviewExecution));
     Optional<GeraLandingStageExecution> technicalExecution =
         latestCompletedBpmExecution(event.experimentId(), taskId);
     agentTaskService.completeClaimedProcessTask(
@@ -117,6 +134,35 @@ public class LandingGenerationAgentExecutionService {
             bpmEvidence(event),
             technicalExecution.map(this::modelUsage).orElseGet(List::of),
             technicalExecution.map(this::executionAudit).orElse(null)));
+  }
+
+  /** Localiza a execução aprovada exata que originou o evento antes de avançar o BPM. */
+  private GeraLandingStageExecution approvedQualityReviewExecution(
+      LandingQualityReviewedEvent event) {
+    return repository
+        .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
+            event.experimentId(), "landing-page-quality-review", event.autonomousCycleId())
+        .stream()
+        .filter(execution -> "CONCLUIDO".equals(execution.getStatus()))
+        .filter(execution -> event.reviewJson().equals(execution.getModelResponse()))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    "Quality Review aprovado sem execução técnica correlacionada."));
+  }
+
+  /** Monta a evidência funcional da atividade sem duplicar a auditoria técnica já persistida. */
+  private String technicalActivityEvidence(
+      LandingQualityReviewedEvent event, GeraLandingStageExecution execution)
+      throws com.fasterxml.jackson.core.JsonProcessingException {
+    ObjectNode evidence = objectMapper.createObjectNode();
+    evidence.put("experimentId", event.experimentId());
+    evidence.put("stageCode", execution.getStageCode());
+    evidence.put(
+        "qualityReviewAuditReference", "gera_landing_stage_execution:" + textId(execution));
+    evidence.set("qualityReview", objectMapper.readTree(event.reviewJson()));
+    return objectMapper.writeValueAsString(evidence);
   }
 
   /** Entrega à próxima atividade a candidata visual, anúncio e checkout realmente avaliados. */

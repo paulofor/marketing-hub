@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-27-landing-quality-review-bpm-activity.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-27-landing-agent-reasoning-audit.yaml
       relativeToChangelogFile: true
   - include:
@@ -1948,4 +1951,7 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changesets/2026-08-27-product-automatic-execution-control.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-27-pde-gate-coauthored-execution.yaml
       relativeToChangelogFile: true

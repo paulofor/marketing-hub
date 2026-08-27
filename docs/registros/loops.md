@@ -66,6 +66,13 @@
   relacional e idempotente, a tarefa real aparece em todas as atividades efetivamente cobertas sem
   duplicar custo, e prompt, parecer, modelo e duração são lidos da execução técnica correlacionada.
   Testes de repository e changelog bloqueiam inferência no frontend e cópia artificial de tarefas.
+- **Fechamento da atividade técnica em 2026-08-27:** o Quality Review 90/100 do Rigel estava
+  persistido e havia concluído a tarefa composta de Dédalo, mas o callback não materializava a
+  ocorrência automática `technical`, fazendo a visão BPM indicar que a validação não começou.
+  O callback passa a consolidar a ocorrência com datas, custo, parecer e referência da execução
+  técnica antes de concluir Dédalo. Um backfill idempotente cobre todas as aprovações históricas
+  correlacionadas por `agent-task:<id>`, sem ids específicos, e testes impedem voltar a inferir o
+  estado apenas na leitura da tela ou criar tarefa artificial para o Quality Review.
 
 ## LOOP-PDE-INTERFACE-SEGURA-COM-ROTA-LEGADA-INSEGURA — contrato contornado fora da tela
 
@@ -1890,6 +1897,22 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** o backend agrupa por atividade e exige a tentativa mais recente de cada coautor
   concluída; tentativas superadas continuam auditáveis, mas não bloqueiam a correção. O contexto do
   executor mantém somente o resultado concluído mais recente por agente e atividade.
+
+## LOOP-BPM-COAUTORIA-INICIO-PARCIAL — tela não consegue abrir todos os revisores da atividade
+
+- **Data:** 2026-08-27.
+- **Sintoma:** a atividade da Vega `Validar fatos, controle e valor do PDE` permanecia não iniciada;
+  a tela do produto não oferecia comando, Psique reconhecia o rótulo compartilhado e Têmis não o
+  reconhecia. Abrir só Psique criaria uma falsa execução parcial do gate.
+- **Causa-raiz confirmada:** o processo publicado descrevia o responsável apenas no texto
+  `Psique e revisão independente`, enquanto o contrato operacional validava um único apelido. Não
+  existia identidade técnica dos coautores nem comando atômico por produto.
+- **Correção sistêmica:** a nova versão do processo declara `responsibleAgentKeys` para Psique e
+  Têmis; o backend abre as duas tarefas idempotentemente na mesma referência de experimento e a tela
+  do produto expõe um único comando somente quando a atividade está apta.
+- **Prevenção:** testes exigem os dois agentes, mesma atividade, processo e referência; produto em
+  `STOP`, processo não publicado ou produto sem experimento bloqueiam o comando. Repetição ou
+  atividade já iniciada reutiliza as tarefas vigentes e nunca cria custo duplicado.
 
 ## LOOP-EXECUTOR-LOCAL-SEM-TIMEOUT — tarefa fica em andamento sem resposta do modelo
 

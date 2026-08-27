@@ -186,7 +186,7 @@ export function filterRelevantOffers(offers, query, researchContext = "") {
   if (terms.length === 0) return [];
   const minimumMatches = Math.min(2, terms.length);
   return offers.filter((offer) => {
-    const searchable = normalizeText(
+    const searchableTerms = normalizedTokenSet(
       [
         offer.title,
         offer.description,
@@ -195,15 +195,21 @@ export function filterRelevantOffers(offers, query, researchContext = "") {
         offer.producer,
       ].join(" "),
     );
-    const matches = terms.filter((term) => searchable.includes(term)).length;
+    const matches = terms.filter((term) => searchableTerms.has(term)).length;
     const contextMatches = contextTerms.filter((term) =>
-      searchable.includes(term),
+      searchableTerms.has(term),
     ).length;
     return (
       matches >= minimumMatches &&
       (contextTerms.length === 0 || contextMatches >= 1)
     );
   });
+}
+
+function normalizedTokenSet(value) {
+  return new Set(
+    normalizeText(value).split(/\s+/).filter(Boolean).map(singularTerm),
+  );
 }
 
 function relevantTerms(value) {
@@ -233,6 +239,8 @@ function relevantTerms(value) {
     "vendas",
     "produto",
     "produtos",
+    "curso",
+    "cursos",
     "digital",
     "digitais",
     "execucao",
@@ -275,12 +283,18 @@ function normalizeStringList(value) {
 }
 
 function deduplicateMarketplaceOffers(offers) {
-  return [
-    ...new Map(
-      offers.map((offer) => [
-        `${offer.marketplace}:${offer.referenceId}`,
-        offer,
-      ]),
-    ).values(),
-  ];
+  const uniqueOffers = new Map();
+  for (const offer of offers) {
+    const key = canonicalOfferKey(offer);
+    if (!uniqueOffers.has(key)) uniqueOffers.set(key, offer);
+  }
+  return [...uniqueOffers.values()];
+}
+
+function canonicalOfferKey(offer) {
+  const title = normalizeText(offer.title);
+  const producer = normalizeText(offer.producer);
+  return title
+    ? `${offer.marketplace}:title:${title}:producer:${producer}`
+    : `${offer.marketplace}:reference:${offer.referenceId}`;
 }

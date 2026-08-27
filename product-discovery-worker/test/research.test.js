@@ -789,13 +789,8 @@ test("analyzeSearchResults bloqueia dossie sem dez ofertas comparaveis", () => {
     })),
   );
   assert.match(report.decisionSummary, /9 ofertas comparáveis/);
-  assert.ok(
-    report.opportunities.every((item) => item.decision === "RESEARCH_MORE"),
-  );
-  assert.equal(
-    JSON.parse(report.opportunities[0].evidenceJson).marketplaceOffers.length,
-    9,
-  );
+  assert.equal(report.opportunities.length, 0);
+  assert.match(report.decisionSummary, /Principal decisão: RESEARCH_MORE/);
 });
 
 test("scientific and commercial queries are inside the operational query limit", () => {

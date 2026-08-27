@@ -87,6 +87,34 @@ class ProductDiscoveryServiceTest {
     assertThat(cycle.getDecisionSummary()).contains("pesquisar mais");
   }
 
+  /** Deve concluir a pesquisa dirigida sem inventar oportunidade quando faltarem ofertas reais. */
+  @Test
+  void completesDirectedResearchWithoutOpportunityWhenMarketplaceEvidenceIsInsufficient() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(23L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-23");
+    cycle.setResearchPlanJson("{\"marketplaceRequests\":[{\"marketplace\":\"HOTMART\"}]}");
+    when(cycleRepository.findById(23L)).thenReturn(Optional.of(cycle));
+    when(cycleRepository.save(cycle)).thenReturn(cycle);
+    when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(23L)).thenReturn(List.of());
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService);
+
+    ProductDiscoveryCycleDetailResponse response =
+        service.complete(
+            23L,
+            new ProductDiscoveryResultRequest(
+                "lease-23",
+                "Pesquisa dirigida sem ofertas comparáveis suficientes; pesquisar mais.",
+                List.of()));
+
+    assertThat(response.cycle().status()).isEqualTo(ProductDiscoveryCycleStatus.COMPLETED);
+    assertThat(response.opportunities()).isEmpty();
+    assertThat(cycle.getDecisionSummary()).contains("pesquisar mais");
+  }
+
   /** Deve bloquear a conclusao dirigida quando faltarem dez ofertas reais comparaveis. */
   @Test
   void blocksDirectedResearchWithoutMinimumMarketplaceEvidence() {
@@ -122,6 +150,110 @@ class ProductDiscoveryServiceTest {
                     new ProductDiscoveryResultRequest(
                         "lease-21", "Pesquisar mais", List.of(opportunity))))
         .hasMessageContaining("10 ofertas reais comparaveis");
+  }
+
+  /** Deve contar snapshots repetidos do mesmo produto como uma única oferta comparável. */
+  @Test
+  void blocksDuplicatedMarketplaceSnapshotsFromInflatingEvidence() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(25L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-25");
+    cycle.setResearchPlanJson("{\"marketplaceRequests\":[{\"marketplace\":\"HOTMART\"}]}");
+    when(cycleRepository.findById(25L)).thenReturn(Optional.of(cycle));
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService);
+    String offers =
+        java.util.stream.IntStream.range(0, 10)
+            .mapToObj(
+                index ->
+                    "{\"marketplace\":\"HOTMART\",\"referenceId\":\"snapshot-"
+                        + index
+                        + "\",\"title\":\""
+                        + (index % 2 == 0 ? "Mesmo produto" : "MESMO PRODUTO!")
+                        + "\",\"producer\":\"Mesmo produtor\"}")
+            .collect(java.util.stream.Collectors.joining(","));
+    ProductDiscoveryOpportunityResultRequest opportunity =
+        new ProductDiscoveryOpportunityResultRequest(
+            "Teste",
+            "Publico",
+            "Dor",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "{\"marketplaceOffers\":[" + offers + "]}",
+            new BigDecimal("50"),
+            ProductDiscoveryOpportunityDecision.RESEARCH_MORE);
+
+    assertThatThrownBy(
+            () ->
+                service.complete(
+                    25L,
+                    new ProductDiscoveryResultRequest(
+                        "lease-25", "Pesquisar mais", List.of(opportunity))))
+        .hasMessageContaining("recebidas 1");
+  }
+
+  /** Deve impedir que anúncios sejam contados como ofertas pagas comparáveis. */
+  @Test
+  void blocksMetaAdsFromInflatingMarketplaceEvidence() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(26L);
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-26");
+    cycle.setResearchPlanJson("{\"marketplaceRequests\":[{\"marketplace\":\"HOTMART\"}]}");
+    when(cycleRepository.findById(26L)).thenReturn(Optional.of(cycle));
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService);
+    String paidOffers =
+        java.util.stream.IntStream.range(0, 9)
+            .mapToObj(
+                index ->
+                    "{\"marketplace\":\"HOTMART\",\"referenceId\":\"paid-"
+                        + index
+                        + "\",\"title\":\"Oferta paga "
+                        + index
+                        + "\"}")
+            .collect(java.util.stream.Collectors.joining(","));
+    String ads =
+        java.util.stream.IntStream.range(0, 5)
+            .mapToObj(
+                index ->
+                    "{\"marketplace\":\"META_AD_LIBRARY\",\"referenceId\":\"ad-"
+                        + index
+                        + "\",\"title\":\"Anúncio "
+                        + index
+                        + "\"}")
+            .collect(java.util.stream.Collectors.joining(","));
+    ProductDiscoveryOpportunityResultRequest opportunity =
+        new ProductDiscoveryOpportunityResultRequest(
+            "Teste",
+            "Publico",
+            "Dor",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "{\"marketplaceOffers\":[" + paidOffers + "," + ads + "]}",
+            new BigDecimal("50"),
+            ProductDiscoveryOpportunityDecision.RESEARCH_MORE);
+
+    assertThatThrownBy(
+            () ->
+                service.complete(
+                    26L,
+                    new ProductDiscoveryResultRequest(
+                        "lease-26", "Pesquisar mais", List.of(opportunity))))
+        .hasMessageContaining("recebidas 9");
   }
 
   /** Deve impedir que o worker aprove B2C no Instagram antes das duas leituras privadas. */

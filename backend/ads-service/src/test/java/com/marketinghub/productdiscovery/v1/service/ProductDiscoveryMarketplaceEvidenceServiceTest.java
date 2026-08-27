@@ -25,6 +25,20 @@ class ProductDiscoveryMarketplaceEvidenceServiceTest {
     assertThat(jdbc.parameters).containsExactly("HOTMART", "%gerador%", "%proposta%", 2, 250);
   }
 
+  /** Deve ignorar modalidade e intenção genéricas ao buscar alternativas comparáveis. */
+  @Test
+  void ignoresGenericCourseAndPriceTermsInMarketplaceSearch() {
+    CapturingJdbcTemplate jdbc = new CapturingJdbcTemplate();
+    ProductDiscoveryMarketplaceEvidenceService service =
+        new ProductDiscoveryMarketplaceEvidenceService(jdbc);
+
+    service.search("HOTMART", "vistoria saída aluguel cobrança danos produto curso preço", 10);
+
+    assertThat(jdbc.parameters)
+        .containsExactly(
+            "HOTMART", "%vistoria%", "%saida%", "%aluguel%", "%cobranca%", "%danos%", 2, 250);
+  }
+
   /** Responsabilidade: capturar a consulta sem depender de um banco durante o teste unitário. */
   private static class CapturingJdbcTemplate extends JdbcTemplate {
     private String sql;

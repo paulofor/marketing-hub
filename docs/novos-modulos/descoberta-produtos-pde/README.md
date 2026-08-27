@@ -147,6 +147,14 @@ por páginas de busca sem resultados são arquivados pela tela, permanecem consu
 no histórico e deixam de participar do ranking comercial. Nenhum resultado deve ser
 apagado nem tratado como evidência real apenas para completar uma execução.
 
+Uma pesquisa dirigida que encontre sinais públicos, mas não alcance o mínimo de ofertas
+reais comparáveis, deve terminar como pesquisa válida com decisão `RESEARCH_MORE` e zero
+oportunidades. O worker não pode transformar sinais insuficientes em candidatos genéricos,
+e o backend deve manter o gate de dez ofertas para qualquer candidato efetivamente enviado.
+Termos comerciais genéricos, ocorrências parciais dentro de outras palavras e snapshots
+repetidos do mesmo título e produtor não contam como ofertas distintas ou aderentes.
+Anúncios permanecem sinais separados e nunca entram na contagem de ofertas pagas comparáveis.
+
 Fora da v1:
 
 - criar campanha automaticamente;

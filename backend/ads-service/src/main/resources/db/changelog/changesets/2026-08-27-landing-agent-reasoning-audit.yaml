@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-27-landing-agent-reasoning-audit
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: gera_landing_stage_execution
+                columnName: execution_reasoning_effort
+      changes:
+        - addColumn:
+            tableName: gera_landing_stage_execution
+            columns:
+              - column:
+                  name: execution_reasoning_effort
+                  type: VARCHAR(32)
+                  remarks: Esforço de raciocínio configurado para a execução do Dédalo
+      rollback:
+        - dropColumn:
+            tableName: gera_landing_stage_execution
+            columnName: execution_reasoning_effort

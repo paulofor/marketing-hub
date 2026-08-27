@@ -63,6 +63,9 @@ public class GeraLandingStageExecution {
   @Column(name = "openai_model", length = 120)
   private String openAiModel;
 
+  @Column(name = "execution_reasoning_effort", length = 32)
+  private String executionReasoningEffort;
+
   @Lob
   @Column(name = "schema_json", columnDefinition = "LONGTEXT")
   private String schemaJson;

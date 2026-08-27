@@ -18,6 +18,13 @@ public interface ProductMapper {
   @Mapping(target = "productTypeCode", source = "productTypeDefinition.code")
   @Mapping(target = "productTypeInternalName", source = "productTypeDefinition.internalName")
   @Mapping(target = "productTypeStatus", source = "productTypeDefinition.status")
+  @Mapping(
+      target = "automaticExecutionEnabled",
+      expression = "java(!Boolean.FALSE.equals(product.getAutomaticExecutionEnabled()))")
+  @Mapping(
+      target = "automaticExecutionStatus",
+      expression =
+          "java(Boolean.FALSE.equals(product.getAutomaticExecutionEnabled()) ? \"STOP\" : \"PLAY\")")
   ProductDto toDto(Product product);
 
   /** Ordena os apelidos internos para manter respostas estáveis para tela e agentes. */

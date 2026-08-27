@@ -135,3 +135,32 @@ export type BusinessProcessActivityExecutionHistory = {
   activityOwnerName?: string;
   executions: BusinessProcessActivityExecution[];
 };
+
+export type ProductProcessActivityExecutionGroup = {
+  activityDefinitionId?: number;
+  activityId: string;
+  activityName: string;
+  activityObjective?: string;
+  activityOwnerName?: string;
+  sequenceNumber: number;
+  selectedVersionActivity: boolean;
+  taskCount: number;
+  tasks: BusinessProcessActivityExecution[];
+};
+
+export type ProductProcessActivityExecutionHistory = {
+  productId: number;
+  productName?: string;
+  productInternalName?: string;
+  selectedProcessDefinitionId: number;
+  processCode: string;
+  processName: string;
+  selectedProcessVersionNumber: number;
+  selectedProcessStatus: "DRAFT" | "PUBLISHED" | "RETIRED";
+  activityCount: number;
+  activitiesWithTasksCount: number;
+  uniqueTaskCount: number;
+  knownEstimatedCostUsd: number;
+  costCoverage: "NO_EXECUTIONS" | "NOT_REPORTED" | "PARTIAL" | "COMPLETE";
+  activities: ProductProcessActivityExecutionGroup[];
+};

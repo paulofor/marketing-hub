@@ -1,15 +1,22 @@
 package com.marketinghub.repository.jpa.product;
 
 import com.marketinghub.product.Product;
+import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 /** Repositório JPA responsável pela persistência de produtos digitais. */
 public interface ProductRepository extends JpaRepository<Product, Long> {
+  /** Bloqueia o produto durante a troca atômica do estado operacional PLAY/STOP. */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("SELECT product FROM Product product WHERE product.id = :productId")
+  Optional<Product> findLockedById(@Param("productId") Long productId);
+
   /** Busca um produto pelo slug comercial público. */
   Optional<Product> findBySlug(String slug);
 

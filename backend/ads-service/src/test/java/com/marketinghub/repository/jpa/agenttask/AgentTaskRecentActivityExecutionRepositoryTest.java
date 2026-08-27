@@ -22,6 +22,7 @@ import org.springframework.test.context.TestPropertySource;
 class AgentTaskRecentActivityExecutionRepositoryTest {
   @Autowired private TestEntityManager entityManager;
   @Autowired private AgentTaskRepository repository;
+  @Autowired private AgentTaskActivityCoverageRepository coverageRepository;
 
   /** Consulta versões do mesmo processo sem misturar outra atividade ou outro processo. */
   @Test
@@ -70,6 +71,13 @@ class AgentTaskRecentActivityExecutionRepositoryTest {
 
     assertThat(result).extracting(AgentTask::getId).containsExactly(compound.getId());
     assertThat(result).extracting(AgentTask::getProcessActivityId).containsExactly("html");
+
+    var taskCoverages =
+        coverageRepository.findAllByAgentTaskIdIn(java.util.List.of(compound.getId()));
+
+    assertThat(taskCoverages)
+        .extracting(item -> item.getActivityDefinition().getActivityId())
+        .containsExactly("select");
   }
 
   /** Persiste a identidade mínima do Argos exigida pelas tarefas. */

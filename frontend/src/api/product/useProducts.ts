@@ -28,6 +28,10 @@ export interface Product {
   desireAssociationMapVersion?: string;
   desireAssociationMapJson?: string;
   commercialStatus?: string;
+  automaticExecutionEnabled?: boolean;
+  automaticExecutionStatus?: "PLAY" | "STOP";
+  automaticExecutionChangedAt?: string | null;
+  automaticExecutionChangedBy?: string | null;
   currentPriceBrl?: number;
   primaryHypothesisId?: string;
   primaryHypothesis?: string;

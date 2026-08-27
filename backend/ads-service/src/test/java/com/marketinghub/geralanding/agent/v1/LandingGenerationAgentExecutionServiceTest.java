@@ -138,11 +138,20 @@ class LandingGenerationAgentExecutionServiceTest {
     GeraLandingStageExecution qualityReview = execution("quality-review-88", "CONCLUIDO");
     qualityReview.setQualityReviewAudit(
         "{\"screenshots\":[{\"viewport\":\"mobile\",\"publicUrl\":\"https://evidence/mobile.jpg\"}]}");
+    GeraLandingStageExecution technicalExecution = execution("landing-agent-88", "CONCLUIDO");
+    technicalExecution.setAutonomousCycleId("agent-task:30");
+    technicalExecution.setOpenAiModel("gpt-5.6-sol");
+    technicalExecution.setExecutionReasoningEffort("high");
+    technicalExecution.setPrompt("Prompt integral de Dédalo");
     when(experimentRepository.findById(88L)).thenReturn(Optional.of(experiment));
     when(repository
             .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
                 88L, "landing-page-quality-review", "agent-task:30"))
         .thenReturn(List.of(qualityReview));
+    when(repository
+            .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
+                88L, "landing-generation-agent-v1", "agent-task:30"))
+        .thenReturn(List.of(technicalExecution));
     when(approvedCreativeEvidenceService.resolve(88L))
         .thenReturn(
             java.util.Map.of(
@@ -178,6 +187,8 @@ class LandingGenerationAgentExecutionServiceTest {
             .getValue()
             .evidenceJson()
             .contains("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
+    assertEquals("high", request.getValue().executionAudit().reasoningEffort());
+    assertEquals("Prompt integral de Dédalo", request.getValue().executionAudit().promptSent());
   }
 
   /** Não deve acumular outra correção quando o mesmo ciclo já possui trabalho ativo. */
@@ -318,6 +329,7 @@ class LandingGenerationAgentExecutionServiceTest {
             "request",
             "response",
             "gpt-5.6-sol",
+            "high",
             null,
             null,
             null,
@@ -325,11 +337,40 @@ class LandingGenerationAgentExecutionServiceTest {
 
     assertEquals("FALHA", execution.getStatus());
     assertTrue(execution.getErrorMessage().contains("Checkout divergente"));
+    org.mockito.ArgumentCaptor<com.marketinghub.agenttask.FailAgentTaskRequest> request =
+        org.mockito.ArgumentCaptor.forClass(com.marketinghub.agenttask.FailAgentTaskRequest.class);
     verify(agentTaskService)
         .failClaimedProcessTask(
             org.mockito.ArgumentMatchers.eq("landing-generator"),
             org.mockito.ArgumentMatchers.eq(30L),
-            any(com.marketinghub.agenttask.FailAgentTaskRequest.class));
+            request.capture());
+    assertEquals("high", request.getValue().executionAudit().reasoningEffort());
+  }
+
+  /** Deve persistir o esforço configurado junto à execução técnica antes do Quality Review. */
+  @Test
+  void shouldPersistReasoningEffortWithTechnicalExecution() {
+    GeraLandingStageExecution execution = execution("job-reasoning-effort", "PROCESSANDO");
+    when(repository.findTopByIdJobOrderByExecutionRequestedAtDesc(
+            "job-reasoning-effort".getBytes(StandardCharsets.UTF_8)))
+        .thenReturn(Optional.of(execution));
+
+    service.complete(
+        "job-reasoning-effort",
+        new LandingAgentResultRequest(
+            "{\"decision\":\"generated\"}",
+            "Prompt enviado ao Dédalo",
+            "{\"decision\":\"generated\"}",
+            "gpt-5.6-sol",
+            "high",
+            100,
+            20,
+            50,
+            java.math.BigDecimal.valueOf(0.01),
+            null));
+
+    assertEquals("high", execution.getExecutionReasoningEffort());
+    verify(repository).save(execution);
   }
 
   /** Deve abrir nova transação ao persistir a fila depois do commit do Quality Review. */
@@ -589,7 +630,8 @@ class LandingGenerationAgentExecutionServiceTest {
     when(repository.findTopByIdJobOrderByExecutionRequestedAtDesc(any()))
         .thenReturn(Optional.of(execution));
     LandingAgentResultRequest request =
-        new LandingAgentResultRequest("{}", "request", "{}", "gpt-5.6-sol", null, null, null, null);
+        new LandingAgentResultRequest(
+            "{}", "request", "{}", "gpt-5.6-sol", "high", null, null, null, null, null);
 
     service.complete("job-88", request);
 

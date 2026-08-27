@@ -13,11 +13,13 @@ import org.springframework.web.client.RestClient;
 @Component
 public class LandingGeneratorBackendClient {
   private static final Logger log = LoggerFactory.getLogger(LandingGeneratorBackendClient.class);
+  private final LandingGeneratorAgentProperties properties;
   private final RestClient client;
 
   /** Configura o backend como única porta de estado. */
   public LandingGeneratorBackendClient(
       LandingGeneratorAgentProperties properties, RestClient.Builder builder) {
+    this.properties = properties;
     client =
         builder
             .baseUrl(properties.getBackendUrl())
@@ -73,7 +75,9 @@ public class LandingGeneratorBackendClient {
             "responseJson",
             "{}",
             "model",
-            "gpt-5.6-sol",
+            properties.getModel(),
+            "reasoningEffort",
+            properties.requiredReasoningEffort(),
             "error",
             rootMessage(error)));
   }

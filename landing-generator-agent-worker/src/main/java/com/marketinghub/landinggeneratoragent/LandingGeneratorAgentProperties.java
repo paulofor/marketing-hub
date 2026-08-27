@@ -86,6 +86,15 @@ public class LandingGeneratorAgentProperties {
     reasoningEffort = value;
   }
 
+  /** Retorna o esforço de raciocínio obrigatório para auditar cada chamada do Dédalo. */
+  public String requiredReasoningEffort() {
+    if (reasoningEffort == null || reasoningEffort.isBlank()) {
+      throw new IllegalStateException(
+          "CODEX_REASONING_EFFORT é obrigatório para auditar a execução do Dédalo.");
+    }
+    return reasoningEffort.trim();
+  }
+
   /** Retorna a identidade imutável do deploy atual. */
   public String getBuildReference() {
     return buildReference;

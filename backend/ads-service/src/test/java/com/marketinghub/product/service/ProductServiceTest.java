@@ -15,6 +15,7 @@ import com.marketinghub.media.AssetStatus;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.product.Product;
+import com.marketinghub.product.ProductAutomaticExecutionControlEvent;
 import com.marketinghub.product.ProductVideoImage;
 import com.marketinghub.product.ProductVideoProviderAvatar;
 import com.marketinghub.product.ProductVideoSeedImageReviewStatus;
@@ -27,6 +28,7 @@ import com.marketinghub.producttype.ProductTypeStatus;
 import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import com.marketinghub.repository.jpa.product.ProductAutomaticExecutionControlEventRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.repository.jpa.product.ProductVideoImageRepository;
 import com.marketinghub.repository.jpa.product.ProductVideoProviderAvatarRepository;
@@ -51,6 +53,69 @@ class ProductServiceTest {
       ProductTypeDefinitionRepository productTypeDefinitionRepository) {
     return newService(
         productRepository, productTypeDefinitionRepository, mock(MarketNicheRepository.class));
+  }
+
+  /** Deve alternar somente a automação do produto e preservar a decisão em auditoria. */
+  @Test
+  void updateAutomaticExecutionPersistsStopWithoutChangingCommercialStatus() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    ProductAutomaticExecutionControlEventRepository events =
+        mock(ProductAutomaticExecutionControlEventRepository.class);
+    Product product =
+        Product.builder()
+            .id(12L)
+            .commercialStatus("VALIDACAO_COMERCIAL")
+            .automaticExecutionEnabled(true)
+            .build();
+    when(productRepository.findLockedById(12L)).thenReturn(Optional.of(product));
+    when(productRepository.save(product)).thenReturn(product);
+    ProductService service = newService(productRepository, events);
+
+    var response = service.updateAutomaticExecution(12L, false, "operador-teste");
+
+    assertThat(response.productId()).isEqualTo(12L);
+    assertThat(response.automaticExecutionEnabled()).isFalse();
+    assertThat(response.automaticExecutionStatus()).isEqualTo("STOP");
+    assertThat(product.getCommercialStatus()).isEqualTo("VALIDACAO_COMERCIAL");
+    assertThat(product.getAutomaticExecutionChangedBy()).isEqualTo("operador-teste");
+    assertThat(product.getAutomaticExecutionChangedAt()).isNotNull();
+    verify(events).save(any(ProductAutomaticExecutionControlEvent.class));
+  }
+
+  /** Deve responder de forma idempotente sem duplicar evento quando o estado já é o solicitado. */
+  @Test
+  void updateAutomaticExecutionIsIdempotent() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    ProductAutomaticExecutionControlEventRepository events =
+        mock(ProductAutomaticExecutionControlEventRepository.class);
+    Product product = Product.builder().id(12L).automaticExecutionEnabled(false).build();
+    when(productRepository.findLockedById(12L)).thenReturn(Optional.of(product));
+    ProductService service = newService(productRepository, events);
+
+    var response = service.updateAutomaticExecution(12L, false, "operador-teste");
+
+    assertThat(response.automaticExecutionStatus()).isEqualTo("STOP");
+    verify(productRepository, org.mockito.Mockito.never()).save(product);
+    verify(events, org.mockito.Mockito.never()).save(any());
+  }
+
+  /** Cria o serviço produtivo com a auditoria PLAY/STOP controlada pelo cenário. */
+  private ProductService newService(
+      ProductRepository productRepository, ProductAutomaticExecutionControlEventRepository events) {
+    return new ProductService(
+        productRepository,
+        mock(InstagramAccountRepository.class),
+        mock(MarketNicheRepository.class),
+        mock(AssetRepository.class),
+        mock(ProductVideoImageRepository.class),
+        mock(ProductVideoProviderAvatarRepository.class),
+        mock(ProductTypeDefinitionRepository.class),
+        mock(ImageGeneratorService.class),
+        mock(AssetStorageService.class),
+        objectMapper,
+        mock(JdbcTemplate.class),
+        null,
+        events);
   }
 
   /** Cria o serviço com catálogos de tipo e nicho controlados pelo cenário. */

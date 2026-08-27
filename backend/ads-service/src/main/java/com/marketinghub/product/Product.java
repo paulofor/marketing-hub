@@ -128,6 +128,19 @@ public class Product {
   @Column(name = "commercial_status", length = 64)
   private String commercialStatus;
 
+  /** Define se novas execuções automáticas podem ser iniciadas para o produto. */
+  @Builder.Default
+  @Column(name = "automatic_execution_enabled", nullable = false)
+  private Boolean automaticExecutionEnabled = true;
+
+  /** Data da última alteração administrativa do controle PLAY/STOP. */
+  @Column(name = "automatic_execution_changed_at")
+  private Instant automaticExecutionChangedAt;
+
+  /** Operador que realizou a última alteração do controle PLAY/STOP. */
+  @Column(name = "automatic_execution_changed_by", length = 100)
+  private String automaticExecutionChangedBy;
+
   /** Preço atual praticado para venda direta. */
   @Column(name = "current_price_brl", precision = 10, scale = 2)
   private java.math.BigDecimal currentPriceBrl;

@@ -8,11 +8,19 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.AgentTaskActivityCoverage;
+import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
+import com.marketinghub.planning.CommercialPlan;
+import com.marketinghub.product.Product;
+import com.marketinghub.repository.jpa.agenttask.AgentTaskActivityCoverageRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
+import com.marketinghub.repository.jpa.product.ProductRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -103,6 +111,7 @@ class BusinessProcessActivityExecutionServiceTest {
     task.getAssignedAgent().setNickname("Dédalo");
     task.setResultJson("{\"approvalRecommendation\":\"APPROVE_FOR_PUBLICATION\"}");
     task.setExecutionModelCode(null);
+    task.setExecutionReasoningEffort(null);
     task.setExecutionPrompt(null);
     when(tasks.findRecentActivityExecutions(
             eq("landing-page-generation"), eq("select"), any(Pageable.class)))
@@ -111,6 +120,7 @@ class BusinessProcessActivityExecutionServiceTest {
     technical.setStageCode("landing-generation-agent-v1");
     technical.setStatus("CONCLUIDO");
     technical.setOpenAiModel("gpt-5.6-sol");
+    technical.setExecutionReasoningEffort("high");
     technical.setPrompt("Prompt integral de Dédalo");
     technical.setModelResponse("{\"summary\":\"Provas selecionadas e landing construída\"}");
     technical.setProcessingStartedAt(Instant.parse("2026-08-27T03:26:45Z"));
@@ -124,8 +134,100 @@ class BusinessProcessActivityExecutionServiceTest {
     assertThat(execution.comments()).contains("Provas selecionadas");
     assertThat(execution.promptSent()).isEqualTo("Prompt integral de Dédalo");
     assertThat(execution.modelCode()).isEqualTo("gpt-5.6-sol");
+    assertThat(execution.reasoningEffort()).isEqualTo("high");
     assertThat(execution.startedAt()).isEqualTo("2026-08-27T03:26:45Z");
     assertThat(execution.finishedAt()).isEqualTo("2026-08-27T03:35:14Z");
+  }
+
+  /** Agrupa tarefas do produto por atividade, preserva cobertura composta e não duplica custo. */
+  @Test
+  void returnsProductActivitiesAndUniqueTasksWithoutCrossProcessLeakage() {
+    BusinessProcessActivityDefinitionRepository activityDefinitions =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
+    CommercialPlanRepository commercialPlans = mock(CommercialPlanRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    var productService =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            activityDefinitions,
+            tasks,
+            coverages,
+            commercialPlans,
+            null,
+            products,
+            new ObjectMapper());
+    BusinessProcessDefinition landing = selectedProcess();
+    landing.setId(18L);
+    landing.setProcessCode("landing-page-generation");
+    landing.setName("Geração de landing page");
+    landing.setVersionNumber(4);
+    landing.setStatus("PUBLISHED");
+    when(processes.findById(18L)).thenReturn(Optional.of(landing));
+    Product rigel = new Product();
+    rigel.setId(9L);
+    rigel.setName("Kit WhatsApp Pronto");
+    rigel.setInternalName("Rigel");
+    when(products.findById(9L)).thenReturn(Optional.of(rigel));
+    CommercialPlan plan = new CommercialPlan();
+    plan.setId(4L);
+    when(commercialPlans.findByProductId(9L)).thenReturn(List.of(plan));
+
+    BusinessProcessActivityDefinition select =
+        activity(119L, landing, "select", "Selecionar provas");
+    BusinessProcessActivityDefinition html = activity(122L, landing, "html", "Construir HTML");
+    BusinessProcessActivityDefinition customer =
+        activity(124L, landing, "customer", "Avaliar percepção da cliente");
+    BusinessProcessActivityDefinition human =
+        activity(126L, landing, "human", "Aprovação humana para publicar");
+    when(activityDefinitions.findAllByProcessDefinitionIdOrderByIdAsc(18L))
+        .thenReturn(List.of(select, html, customer, human));
+
+    AgentTask compound = executionTask(243L);
+    compound.setProcessDefinition(landing);
+    compound.setProcessActivityId("html");
+    compound.setProcessActivityName("Construir HTML");
+    compound.setSourceReference("commercial-plan:4@v3:journey");
+    compound.setEstimatedCostUsd(new BigDecimal("1.42804720"));
+    AgentTask customerReview = executionTask(244L);
+    customerReview.setProcessDefinition(landing);
+    customerReview.setProcessActivityId("customer");
+    customerReview.setProcessActivityName("Avaliar percepção da cliente");
+    customerReview.setSourceReference("commercial-plan:4@v3:journey");
+    customerReview.setEstimatedCostUsd(new BigDecimal("0.18957680"));
+    AgentTask anotherProcessTask = executionTask(245L);
+    anotherProcessTask.getProcessDefinition().setProcessCode("another-process");
+    anotherProcessTask.setSourceReference("commercial-plan:4@v3");
+    when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("commercial-plan:4@"))
+        .thenReturn(List.of(compound, customerReview, anotherProcessTask));
+    AgentTaskActivityCoverage compoundCoverage = new AgentTaskActivityCoverage();
+    compoundCoverage.setAgentTask(compound);
+    compoundCoverage.setActivityDefinition(select);
+    when(coverages.findAllByAgentTaskIdIn(List.of(244L, 243L)))
+        .thenReturn(List.of(compoundCoverage));
+
+    var result = productService.productProcessExecutions(18L, 9L);
+
+    assertThat(result.productInternalName()).isEqualTo("Rigel");
+    assertThat(result.processName()).isEqualTo("Geração de landing page");
+    assertThat(result.activityCount()).isEqualTo(4);
+    assertThat(result.activitiesWithTasksCount()).isEqualTo(3);
+    assertThat(result.uniqueTaskCount()).isEqualTo(2);
+    assertThat(result.knownEstimatedCostUsd()).isEqualByComparingTo("1.61762400");
+    assertThat(result.costCoverage()).isEqualTo("COMPLETE");
+    assertThat(result.activities().get(0).activityId()).isEqualTo("select");
+    assertThat(result.activities().get(0).tasks())
+        .extracting(execution -> execution.taskId())
+        .containsExactly(243L);
+    assertThat(result.activities().get(1).tasks())
+        .extracting(execution -> execution.taskId())
+        .containsExactly(243L);
+    assertThat(result.activities().get(2).tasks())
+        .extracting(execution -> execution.taskId())
+        .containsExactly(244L);
+    assertThat(result.activities().get(3).tasks()).isEmpty();
+    assertThat(result.activities().get(0).tasks().getFirst().productInternalName())
+        .isEqualTo("Rigel");
   }
 
   /** Bloqueia o uso de um gate como se ele possuísse tarefas executáveis. */
@@ -152,6 +254,19 @@ class BusinessProcessActivityExecutionServiceTest {
             + "\"label\":\"Comprovar dor e demanda\",\"owner\":\"Argos\"},"
             + "{\"id\":\"gate\",\"type\":\"GATEWAY\",\"label\":\"Aprovada?\"}]}");
     return process;
+  }
+
+  /** Monta uma atividade relacional da versão selecionada para o agrupamento do produto. */
+  private BusinessProcessActivityDefinition activity(
+      long id, BusinessProcessDefinition process, String activityId, String name) {
+    BusinessProcessActivityDefinition activity = new BusinessProcessActivityDefinition();
+    activity.setId(id);
+    activity.setProcessDefinition(process);
+    activity.setActivityId(activityId);
+    activity.setName(name);
+    activity.setObjective("Objetivo de " + name);
+    activity.setOwnerName("Responsável");
+    return activity;
   }
 
   /** Monta uma tarefa da v1 para comprovar a consulta histórica iniciada na v4. */

@@ -15,14 +15,17 @@ import {
   Loader2,
   Megaphone,
   Pencil,
+  Play,
   PlaySquare,
   Search,
   Video,
   Workflow,
+  Square,
 } from "lucide-react";
 import { parsePdePersuasiveJourney } from "../../api/product/pdePersuasiveJourney";
 import { useApplyDefaultPdePersuasiveJourney } from "../../api/product/useApplyDefaultPdePersuasiveJourney";
 import { useProducts } from "../../api/product/useProducts";
+import { useProductAutomaticExecution } from "../../api/product/useProductAutomaticExecution";
 import PageTitle from "../../components/PageTitle";
 import ProductValueChainPosition from "../../components/ProductValueChainPosition";
 
@@ -237,6 +240,7 @@ export default function ProductListPage() {
   const { data, isLoading, isFetching } = useProducts(deferredIdentityQuery);
   const valueChainPositions = useProductValueChainPositions();
   const applyDefaultJourney = useApplyDefaultPdePersuasiveJourney();
+  const automaticExecution = useProductAutomaticExecution();
   const products = useMemo(
     () =>
       Array.isArray(data)
@@ -328,6 +332,11 @@ export default function ProductListPage() {
           const registeredColorCount = colors.filter(
             (color) => color.source === "Cadastrada",
           ).length;
+          const isChangingAutomaticExecution =
+            automaticExecution.isPending &&
+            automaticExecution.variables?.productId === product.id;
+          const hasAutomaticExecutionState =
+            typeof product.automaticExecutionEnabled === "boolean";
           return (
             <div className="col-12" key={product.id}>
               <section
@@ -370,10 +379,65 @@ export default function ProductListPage() {
                       </div>
                     )}
                   </div>
-                  <div className="product-catalog-card__price">
-                    {product.currentPriceBrl != null
-                      ? money.format(product.currentPriceBrl)
-                      : "Preço aberto"}
+                  <div className="product-catalog-card__header-controls">
+                    <div className="product-catalog-card__price">
+                      {product.currentPriceBrl != null
+                        ? money.format(product.currentPriceBrl)
+                        : "Preço aberto"}
+                    </div>
+                    <div
+                      className="product-catalog-card__automatic-execution"
+                      aria-label={`Execução automática de ${displayName}`}
+                    >
+                      <span
+                        className={`badge ${product.automaticExecutionEnabled ? "text-bg-success" : "text-bg-secondary"}`}
+                      >
+                        {hasAutomaticExecutionState
+                          ? product.automaticExecutionStatus ||
+                            (product.automaticExecutionEnabled
+                              ? "PLAY"
+                              : "STOP")
+                          : "Não informado"}
+                      </span>
+                      <button
+                        type="button"
+                        className={`btn btn-sm ${product.automaticExecutionEnabled ? "btn-outline-danger" : "btn-outline-success"}`}
+                        disabled={
+                          !hasAutomaticExecutionState ||
+                          isChangingAutomaticExecution
+                        }
+                        aria-label={
+                          product.automaticExecutionEnabled
+                            ? `Parar execução automática de ${displayName}`
+                            : `Ativar execução automática de ${displayName}`
+                        }
+                        onClick={() =>
+                          automaticExecution.mutate({
+                            productId: product.id,
+                            automaticExecutionEnabled:
+                              !product.automaticExecutionEnabled,
+                          })
+                        }
+                      >
+                        {isChangingAutomaticExecution ? (
+                          <span
+                            className="spinner-border spinner-border-sm me-1"
+                            aria-hidden="true"
+                          />
+                        ) : product.automaticExecutionEnabled ? (
+                          <Square size={14} aria-hidden="true" />
+                        ) : (
+                          <Play size={14} aria-hidden="true" />
+                        )}
+                        {product.automaticExecutionEnabled ? "Stop" : "Play"}
+                      </button>
+                      {automaticExecution.isError &&
+                      automaticExecution.variables?.productId === product.id ? (
+                        <span className="small text-danger" role="alert">
+                          Não foi possível alterar este produto.
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
 

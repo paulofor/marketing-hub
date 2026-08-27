@@ -6,5 +6,4 @@ import jakarta.validation.constraints.Size;
 
 /** Responsabilidade: declarar um processo publicado e sua contribuição na cadeia editável. */
 public record BusinessProcessChainItemRequest(
-    @NotNull Long processDefinitionId,
-    @NotBlank @Size(max = 500) String valueContribution) {}
+    @NotNull Long processDefinitionId, @NotBlank @Size(max = 500) String valueContribution) {}

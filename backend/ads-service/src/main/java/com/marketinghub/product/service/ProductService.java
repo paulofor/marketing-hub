@@ -15,6 +15,7 @@ import com.marketinghub.media.AssetType;
 import com.marketinghub.media.MediaProvider;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.product.Product;
+import com.marketinghub.product.ProductAutomaticExecutionControlEvent;
 import com.marketinghub.product.ProductVideoImage;
 import com.marketinghub.product.ProductVideoProviderAvatar;
 import com.marketinghub.product.ProductVideoSeedImageReviewStatus;
@@ -23,6 +24,7 @@ import com.marketinghub.product.dto.ProductVideoProviderAvatarDto;
 import com.marketinghub.product.dto.RegisterProductVideoProviderAvatarRequest;
 import com.marketinghub.product.service.adlibrary.ProductAdLibraryItemResponse;
 import com.marketinghub.product.service.adlibrary.ProductAdLibraryResponse;
+import com.marketinghub.product.service.automaticexecution.ProductAutomaticExecutionControlResponse;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonExperimentResponse;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonFunnelStageResponse;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonResponse;
@@ -43,6 +45,7 @@ import com.marketinghub.producttype.ProductTypeStatus;
 import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import com.marketinghub.repository.jpa.product.ProductAutomaticExecutionControlEventRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import com.marketinghub.repository.jpa.product.ProductVideoImageRepository;
 import com.marketinghub.repository.jpa.product.ProductVideoProviderAvatarRepository;
@@ -103,6 +106,7 @@ public class ProductService {
   private final ObjectMapper objectMapper;
   private final JdbcTemplate jdbcTemplate;
   private final ProductProcessPeriodService processPeriodService;
+  private final ProductAutomaticExecutionControlEventRepository automaticExecutionEvents;
   private static final BigDecimal BRL_PER_USD = new BigDecimal("5.00");
 
   /** Inicializa o serviço com os repositórios necessários para cadastro de produtos. */
@@ -130,6 +134,7 @@ public class ProductService {
         assetStorageService,
         objectMapper,
         jdbcTemplate,
+        null,
         null);
   }
 
@@ -147,7 +152,8 @@ public class ProductService {
       AssetStorageService assetStorageService,
       ObjectMapper objectMapper,
       JdbcTemplate jdbcTemplate,
-      ProductProcessPeriodService processPeriodService) {
+      ProductProcessPeriodService processPeriodService,
+      ProductAutomaticExecutionControlEventRepository automaticExecutionEvents) {
     this.repository = repository;
     this.accountRepository = accountRepository;
     this.marketNicheRepository = marketNicheRepository;
@@ -160,6 +166,7 @@ public class ProductService {
     this.objectMapper = objectMapper;
     this.jdbcTemplate = jdbcTemplate;
     this.processPeriodService = processPeriodService;
+    this.automaticExecutionEvents = automaticExecutionEvents;
   }
 
   /** Lista personagens de vídeo cadastrados por provider para um produto. */
@@ -257,6 +264,62 @@ public class ProductService {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado.");
     }
     return getProduct(id);
+  }
+
+  /** Retorna a verdade operacional PLAY/STOP persistida para o produto. */
+  @Transactional(readOnly = true)
+  public ProductAutomaticExecutionControlResponse automaticExecution(Long id) {
+    return automaticExecutionResponse(getProduct(id));
+  }
+
+  /** Altera PLAY/STOP atomicamente sem modificar status comercial, experimento ou pipeline. */
+  @Transactional
+  public ProductAutomaticExecutionControlResponse updateAutomaticExecution(
+      Long id, boolean automaticExecutionEnabled, String changedBy) {
+    Product product =
+        repository
+            .findLockedById(id)
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado."));
+    if (automaticExecutionEnabled(product) == automaticExecutionEnabled) {
+      return automaticExecutionResponse(product);
+    }
+
+    Instant changedAt = Instant.now();
+    String operator = normalizeAutomaticExecutionOperator(changedBy);
+    product.setAutomaticExecutionEnabled(automaticExecutionEnabled);
+    product.setAutomaticExecutionChangedAt(changedAt);
+    product.setAutomaticExecutionChangedBy(operator);
+    Product saved = repository.save(product);
+    if (automaticExecutionEvents != null) {
+      automaticExecutionEvents.save(
+          new ProductAutomaticExecutionControlEvent(
+              saved, automaticExecutionEnabled, operator, changedAt));
+    }
+    return automaticExecutionResponse(saved);
+  }
+
+  /** Converte o cadastro na resposta uniforme consumida por tela e executores. */
+  private ProductAutomaticExecutionControlResponse automaticExecutionResponse(Product product) {
+    boolean enabled = automaticExecutionEnabled(product);
+    return new ProductAutomaticExecutionControlResponse(
+        product.getId(),
+        enabled,
+        enabled ? "PLAY" : "STOP",
+        product.getAutomaticExecutionChangedAt(),
+        product.getAutomaticExecutionChangedBy());
+  }
+
+  /** Mantém PLAY como compatibilidade para produtos existentes antes da migração. */
+  private boolean automaticExecutionEnabled(Product product) {
+    return !Boolean.FALSE.equals(product.getAutomaticExecutionEnabled());
+  }
+
+  /** Normaliza a autoria administrativa para a coluna auditável do produto. */
+  private String normalizeAutomaticExecutionOperator(String changedBy) {
+    String operator =
+        changedBy == null || changedBy.isBlank() ? "marketing-hub-admin" : changedBy.trim();
+    return operator.length() <= 100 ? operator : operator.substring(0, 100);
   }
 
   /** Insere a jornada persuasiva interativa padrão no contrato PDE do produto. */

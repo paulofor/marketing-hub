@@ -64,8 +64,7 @@ class BusinessProcessChainServiceTest {
   @Test
   void listsChainsByProcessDefinition() {
     BusinessProcessChainDefinition chain = chain(1, "PUBLISHED");
-    chain.setItems(
-        List.of(item(chain, process(22L, "discovery", "Descoberta PDE", 1), 1)));
+    chain.setItems(List.of(item(chain, process(22L, "discovery", "Descoberta PDE", 1), 1)));
     when(repository.findByProcessDefinitionId(22L)).thenReturn(List.of(chain));
 
     var result = service.listChainsByProcess(22L);
@@ -213,8 +212,7 @@ class BusinessProcessChainServiceTest {
   @Test
   void publishesDraftAndRetiresPreviousVersion() {
     BusinessProcessChainDefinition selected = chain(6, "DRAFT");
-    selected.setItems(
-        List.of(item(selected, process(49L, "discovery", "Descoberta PDE", 5), 1)));
+    selected.setItems(List.of(item(selected, process(49L, "discovery", "Descoberta PDE", 5), 1)));
     BusinessProcessChainDefinition previous = chain(5, "PUBLISHED");
     when(repository.findById(10L)).thenReturn(Optional.of(selected));
     when(repository.findAllByChainCodeAndStatusOrderByVersionNumberDesc(
@@ -251,8 +249,7 @@ class BusinessProcessChainServiceTest {
     chain.setVersionNumber(version);
     chain.setStatus(status);
     chain.setCreatedAt(Instant.parse("2026-08-20T10:00:00Z"));
-    chain.setPublishedAt(
-        "PUBLISHED".equals(status) ? Instant.parse("2026-08-20T10:00:00Z") : null);
+    chain.setPublishedAt("PUBLISHED".equals(status) ? Instant.parse("2026-08-20T10:00:00Z") : null);
     return chain;
   }
 

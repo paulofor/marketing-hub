@@ -86,6 +86,7 @@ public class LandingGeneratorCodexRunner {
         result.put("requestJson", request);
         result.put("responseJson", raw);
         result.put("model", properties.getModel());
+        result.put("reasoningEffort", properties.requiredReasoningEffort());
         result.put(
             "inputTokens",
             sum(usage.inputTokens(), htmlUsage == null ? null : htmlUsage.inputTokens()));
@@ -196,10 +197,9 @@ public class LandingGeneratorCodexRunner {
                     + "\",MCP_EXPERIMENT_ID=\""
                     + job.experimentId()
                     + "\",PLAYWRIGHT_BROWSERS_PATH=\"/ms-playwright\"}"));
-    if (properties.getReasoningEffort() != null && !properties.getReasoningEffort().isBlank())
-      command.addAll(
-          List.of(
-              "--config", "model_reasoning_effort=\"" + properties.getReasoningEffort() + "\""));
+    command.addAll(
+        List.of(
+            "--config", "model_reasoning_effort=\"" + properties.requiredReasoningEffort() + "\""));
     command.addAll(List.of("--model", properties.getModel()));
     return command;
   }

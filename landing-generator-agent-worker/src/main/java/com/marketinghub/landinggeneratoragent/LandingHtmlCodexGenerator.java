@@ -95,10 +95,9 @@ public class LandingHtmlCodexGenerator {
                 "--json",
                 "--config",
                 "approval_policy=\"never\""));
-    if (properties.getReasoningEffort() != null && !properties.getReasoningEffort().isBlank())
-      command.addAll(
-          List.of(
-              "--config", "model_reasoning_effort=\"" + properties.getReasoningEffort() + "\""));
+    command.addAll(
+        List.of(
+            "--config", "model_reasoning_effort=\"" + properties.requiredReasoningEffort() + "\""));
     command.addAll(List.of("--model", properties.getModel()));
     return command;
   }

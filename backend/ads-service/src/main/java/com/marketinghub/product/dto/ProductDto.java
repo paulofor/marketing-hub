@@ -34,6 +34,10 @@ public class ProductDto {
   private String desireAssociationMapVersion;
   private String desireAssociationMapJson;
   private String commercialStatus;
+  private boolean automaticExecutionEnabled;
+  private String automaticExecutionStatus;
+  private Instant automaticExecutionChangedAt;
+  private String automaticExecutionChangedBy;
   private java.math.BigDecimal currentPriceBrl;
   private java.util.UUID primaryHypothesisId;
   private String primaryHypothesis;

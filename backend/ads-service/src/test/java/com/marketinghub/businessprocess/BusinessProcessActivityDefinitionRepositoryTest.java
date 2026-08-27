@@ -10,7 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.TestPropertySource;
 
-/** Responsabilidade: comprovar a substituição ordenada das atividades versionadas de um processo. */
+/**
+ * Responsabilidade: comprovar a substituição ordenada das atividades versionadas de um processo.
+ */
 @DataJpaTest
 @TestPropertySource(properties = "spring.liquibase.enabled=false")
 class BusinessProcessActivityDefinitionRepositoryTest {

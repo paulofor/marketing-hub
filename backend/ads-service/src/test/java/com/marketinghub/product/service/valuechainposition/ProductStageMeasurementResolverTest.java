@@ -215,10 +215,8 @@ class ProductStageMeasurementResolverTest {
     Product product = Product.builder().id(9L).build();
     CommercialPlan plan = CommercialPlan.builder().id(4L).build();
     BusinessProcessDefinition landing = process(18L, "landing-page-generation", "communication");
-    AgentTask blockedHtml =
-        approvedLandingTask(1L, landing, "html", "2026-08-26T10:00:00Z");
-    AgentTask blockedCustomer =
-        task(2L, landing, "2026-08-26T10:01:00Z", "0.10000000", "BLOCKED");
+    AgentTask blockedHtml = approvedLandingTask(1L, landing, "html", "2026-08-26T10:00:00Z");
+    AgentTask blockedCustomer = task(2L, landing, "2026-08-26T10:01:00Z", "0.10000000", "BLOCKED");
     blockedCustomer.setProcessActivityId("customer");
     blockedCustomer.setSourceReference("commercial-plan:4@v3:journey");
     blockedCustomer.setResultJson("{\"decision\":\"ADJUST\"}");

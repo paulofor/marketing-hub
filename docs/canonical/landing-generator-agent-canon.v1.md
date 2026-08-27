@@ -51,9 +51,11 @@ A escolha é uma hipótese auditável. O agente registra baseline e critério de
 - navegador e evidência visual em desktop e celulares;
 - memória append-only no MySQL com `CANDIDATE`, `CONFIRMED`, `CONTRADICTED` e `RETIRED`;
 - evidências grandes opcionais no S3 privado, referenciadas por chave e checksum, sem acesso direto do worker;
-- request, resposta bruta, modelo, tokens quando conhecidos, custo, erro, tempo e telemetria persistíveis;
+- request, resposta bruta, modelo, esforço de raciocínio configurado, tokens quando conhecidos, custo, erro, tempo e telemetria persistíveis;
 - idempotência, limite de quatro revisões por ciclo autônomo, bloqueio de repetição sem progresso e revisão independente;
 - proteção contra prompt injection, exfiltração e ampliação de autoridade.
+
+Em cada callback de Dédalo, o worker deve reportar explicitamente o esforço de raciocínio que foi configurado para a execução. O backend o persiste na execução técnica e o propaga à `agent_task` depois do gate correspondente. Ausência em execução histórica permanece como **não registrada**: o sistema nunca deduz esse dado pelo modelo ou pela configuração atual. O registro é metadado de configuração, não uma cadeia de raciocínio privada.
 
 Cada início manual do Quality Review abre um ciclo autônomo identificado e auditável. As etapas de
 regeneração, as revisões automáticas e os custos herdam essa identidade até a aprovação ou o bloqueio.

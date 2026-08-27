@@ -76,8 +76,7 @@ class ProductProcessPeriodTransitionRepositoryTest {
     assertThat(periods.get(0).getExitedAt()).isEqualTo(TRANSITION_AT);
     assertThat(periods.get(0).getOpenSlot()).isNull();
     assertThat(periods.get(0).isObjectiveAchieved()).isTrue();
-    assertThat(periods.get(1).getProcessCodeSnapshot())
-        .isEqualTo("pde-sales-delivery-learning");
+    assertThat(periods.get(1).getProcessCodeSnapshot()).isEqualTo("pde-sales-delivery-learning");
     assertThat(periods.get(1).getEnteredAt()).isEqualTo(TRANSITION_AT);
     assertThat(periods.get(1).getExitedAt()).isNull();
     assertThat(periods.get(1).getOpenSlot()).isEqualTo(1);
@@ -112,9 +111,7 @@ class ProductProcessPeriodTransitionRepositoryTest {
 
   /** Monta um item da cadeia com a ordem comercial informada. */
   private BusinessProcessChainItem item(
-      BusinessProcessChainDefinition chain,
-      BusinessProcessDefinition process,
-      int sequenceNumber) {
+      BusinessProcessChainDefinition chain, BusinessProcessDefinition process, int sequenceNumber) {
     BusinessProcessChainItem item = new BusinessProcessChainItem();
     item.setChainDefinition(chain);
     item.setProcessDefinition(process);

@@ -488,8 +488,7 @@ public class ProductDiscoveryService {
     int minimumParticipants = criteria.path("minimumEligibleParticipantsPerReading").asInt(0);
     double minimumExperienceStartRate = criteria.path("minimumExperienceStartRate").asDouble(-1);
     double minimumValueMomentRate = criteria.path("minimumValueMomentRate").asDouble(-1);
-    double minimumReadyResultUseRate =
-        criteria.path("minimumReadyResultUseRate").asDouble(-1);
+    double minimumReadyResultUseRate = criteria.path("minimumReadyResultUseRate").asDouble(-1);
     double minimumPrototypePreferenceRate =
         criteria.path("minimumPrototypePreferenceRate").asDouble(-1);
     double minimumCheckoutStartRate = criteria.path("minimumCheckoutStartRate").asDouble(-1);
@@ -590,8 +589,7 @@ public class ProductDiscoveryService {
             || checkoutStarted > experienceStarted
             || rate(experienceStarted, eligibleParticipants) < minimumExperienceStartRate
             || rate(valueMoments, experienceStarted) < minimumValueMomentRate
-            || rate(readyResultsUsedWithoutAssembly, experienceStarted)
-                < minimumReadyResultUseRate
+            || rate(readyResultsUsedWithoutAssembly, experienceStarted) < minimumReadyResultUseRate
             || rate(prototypePreferredOverFree, eligibleParticipants)
                 < minimumPrototypePreferenceRate
             || rate(checkoutStarted, experienceStarted) < minimumCheckoutStartRate;
@@ -610,7 +608,10 @@ public class ProductDiscoveryService {
         && hasText(scene, "currentPaidBehavior");
   }
 
-  /** Confirma território humano evidenciado e saída pronta sem trabalho de IA transferido ao cliente. */
+  /**
+   * Confirma território humano evidenciado e saída pronta sem trabalho de IA transferido ao
+   * cliente.
+   */
   private boolean hasCanonicalHumanValueDelivery(JsonNode delivery) {
     Set<String> allowedTerritories =
         Set.of("AFFECTION_AND_BELONGING", "RECOGNITION", "EFFORT_RELIEF");
@@ -624,8 +625,7 @@ public class ProductDiscoveryService {
       }
     }
     int customerStepsToValue = nonNegativeInteger(delivery.path("customerStepsToValue"));
-    int timeToUsableResultMinutes =
-        nonNegativeInteger(delivery.path("timeToUsableResultMinutes"));
+    int timeToUsableResultMinutes = nonNegativeInteger(delivery.path("timeToUsableResultMinutes"));
     return hasAtLeastUniqueTexts(delivery.path("evidenceSourceIds"), 2)
         && hasAtLeastUniqueTexts(delivery.path("evidencePathways"), 2)
         && hasText(delivery, "desiredTransformation")

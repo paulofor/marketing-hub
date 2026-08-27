@@ -17,6 +17,8 @@ import com.marketinghub.product.mapper.ProductMapper;
 import com.marketinghub.product.service.ProductScientificArticleService;
 import com.marketinghub.product.service.ProductService;
 import com.marketinghub.product.service.adlibrary.ProductAdLibraryResponse;
+import com.marketinghub.product.service.automaticexecution.ProductAutomaticExecutionControlRequest;
+import com.marketinghub.product.service.automaticexecution.ProductAutomaticExecutionControlResponse;
 import com.marketinghub.product.service.experimentcomparison.ProductExperimentComparisonResponse;
 import com.marketinghub.product.service.financialsummary.ProductFinancialSummaryResponse;
 import com.marketinghub.product.service.organicvideoplan.ProductOrganicVideoPlanResponse;
@@ -24,6 +26,7 @@ import com.marketinghub.product.service.updateInternalName.UpdateProductInternal
 import com.marketinghub.product.service.updateVideoSeedImage.UpdateProductVideoSeedImageRequest;
 import com.marketinghub.product.service.videoimage.GenerateProductVideoImagesRequest;
 import com.marketinghub.product.service.videoimage.ProductVideoImageDto;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.stream.StreamSupport;
@@ -79,6 +82,23 @@ public class ProductController {
   public ProductDto updateInternalName(
       @PathVariable Long id, @Valid @RequestBody UpdateProductInternalNameRequest request) {
     return mapper.toDto(service.updateInternalName(id, request));
+  }
+
+  /** Retorna o controle operacional PLAY/STOP persistido para o produto. */
+  @GetMapping("/{id}/automatic-execution")
+  public ProductAutomaticExecutionControlResponse automaticExecution(@PathVariable Long id) {
+    return service.automaticExecution(id);
+  }
+
+  /** Alterna novas execuções automáticas do produto sem alterar seu status comercial. */
+  @PutMapping("/{id}/automatic-execution")
+  public ProductAutomaticExecutionControlResponse updateAutomaticExecution(
+      @PathVariable Long id,
+      @Valid @RequestBody ProductAutomaticExecutionControlRequest body,
+      HttpServletRequest request) {
+    String operator =
+        request.getRemoteUser() == null ? "marketing-hub-admin" : request.getRemoteUser();
+    return service.updateAutomaticExecution(id, body.automaticExecutionEnabled(), operator);
   }
 
   /** Retorna custos, receitas e lucro do produto para análise financeira. */

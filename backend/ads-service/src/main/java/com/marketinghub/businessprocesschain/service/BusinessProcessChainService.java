@@ -23,9 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-/**
- * Responsabilidade: governar leitura, rascunho e publicação das cadeias sem executar trabalho.
- */
+/** Responsabilidade: governar leitura, rascunho e publicação das cadeias sem executar trabalho. */
 @Service
 @RequiredArgsConstructor
 public class BusinessProcessChainService {
@@ -129,13 +127,7 @@ public class BusinessProcessChainService {
     List<BusinessProcessChainItem> items = new ArrayList<>();
     for (int index = 0; index < resolved.size(); index++) {
       ResolvedProcess process = resolved.get(index);
-      items.add(
-          item(
-              draft,
-              process.definition(),
-              index + 1,
-              process.valueContribution(),
-              now));
+      items.add(item(draft, process.definition(), index + 1, process.valueContribution(), now));
     }
     itemRepository.saveAllAndFlush(items);
     draft.setItems(items);
@@ -223,15 +215,16 @@ public class BusinessProcessChainService {
       validatePublishedValueProcess(process.getStatus(), process.getProcessType());
       if (!processCodes.add(process.getProcessCode())) {
         throw new ResponseStatusException(
-            HttpStatus.BAD_REQUEST,
-            "A cadeia não pode conter duas versões do mesmo processo.");
+            HttpStatus.BAD_REQUEST, "A cadeia não pode conter duas versões do mesmo processo.");
       }
       resolved.add(new ResolvedProcess(process, item.valueContribution().trim()));
     }
     return List.copyOf(resolved);
   }
 
-  /** Revalida processos no instante da publicação para bloquear versões aposentadas no intervalo. */
+  /**
+   * Revalida processos no instante da publicação para bloquear versões aposentadas no intervalo.
+   */
   private void validateStoredProcesses(List<BusinessProcessChainItem> items) {
     if (items.isEmpty()) {
       throw new ResponseStatusException(
@@ -243,8 +236,7 @@ public class BusinessProcessChainService {
       validatePublishedValueProcess(process.getStatus(), process.getProcessType());
       if (!processCodes.add(process.getProcessCode())) {
         throw new ResponseStatusException(
-            HttpStatus.BAD_REQUEST,
-            "A cadeia não pode conter duas versões do mesmo processo.");
+            HttpStatus.BAD_REQUEST, "A cadeia não pode conter duas versões do mesmo processo.");
       }
     }
   }

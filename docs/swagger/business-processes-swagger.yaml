@@ -115,6 +115,23 @@ paths:
               schema:
                 $ref: "#/components/schemas/BusinessProcessActivityExecutionHistory"
         "404": { description: Processo ou atividade TASK não encontrada }
+  /api/business-processes/{processDefinitionId}/products/{productId}/activity-executions:
+    get:
+      summary: Lista as atividades e tarefas do produto no processo canônico
+      parameters:
+        - $ref: "#/components/parameters/ProcessDefinitionId"
+        - name: productId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: Atividades da versão selecionada e tarefas reais do produto em todas as versões do mesmo processo, com custo único por tarefa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductProcessActivityExecutionHistory"
+        "404": { description: Processo ou produto não encontrado }
 components:
   parameters:
     ProcessDefinitionId:
@@ -297,7 +314,8 @@ components:
         processCode: { type: string }
         processName: { type: string }
         selectedProcessVersionNumber: { type: integer }
-        selectedProcessStatus: { type: string, enum: [DRAFT, PUBLISHED, RETIRED] }
+        selectedProcessStatus:
+          { type: string, enum: [DRAFT, PUBLISHED, RETIRED] }
         activityId: { type: string }
         activityName: { type: string }
         activityOwnerName: { type: string, nullable: true }
@@ -323,7 +341,11 @@ components:
         processDefinitionId: { type: integer, format: int64 }
         processVersionNumber: { type: integer }
         title: { type: string }
-        status: { type: string, enum: [PENDING, IN_PROGRESS, COMPLETED, BLOCKED, CANCELLED] }
+        status:
+          {
+            type: string,
+            enum: [PENDING, IN_PROGRESS, COMPLETED, BLOCKED, CANCELLED],
+          }
         sourceReference: { type: string, nullable: true }
         assignedAgentKey: { type: string }
         assignedAgentNickname: { type: string }
@@ -342,3 +364,63 @@ components:
         reasoningEffort: { type: string, nullable: true }
         productInternalName: { type: string, nullable: true }
         promptSent: { type: string, nullable: true }
+    ProductProcessActivityExecutionHistory:
+      type: object
+      required:
+        - productId
+        - selectedProcessDefinitionId
+        - processCode
+        - processName
+        - selectedProcessVersionNumber
+        - selectedProcessStatus
+        - activityCount
+        - activitiesWithTasksCount
+        - uniqueTaskCount
+        - knownEstimatedCostUsd
+        - costCoverage
+        - activities
+      properties:
+        productId: { type: integer, format: int64 }
+        productName: { type: string, nullable: true }
+        productInternalName: { type: string, nullable: true }
+        selectedProcessDefinitionId: { type: integer, format: int64 }
+        processCode: { type: string }
+        processName: { type: string }
+        selectedProcessVersionNumber: { type: integer }
+        selectedProcessStatus:
+          { type: string, enum: [DRAFT, PUBLISHED, RETIRED] }
+        activityCount: { type: integer, minimum: 0 }
+        activitiesWithTasksCount: { type: integer, minimum: 0 }
+        uniqueTaskCount: { type: integer, minimum: 0 }
+        knownEstimatedCostUsd: { type: number, format: decimal }
+        costCoverage:
+          {
+            type: string,
+            enum: [NO_EXECUTIONS, NOT_REPORTED, PARTIAL, COMPLETE],
+          }
+        activities:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductProcessActivityExecutionGroup"
+    ProductProcessActivityExecutionGroup:
+      type: object
+      required:
+        - activityId
+        - activityName
+        - sequenceNumber
+        - selectedVersionActivity
+        - taskCount
+        - tasks
+      properties:
+        activityDefinitionId: { type: integer, format: int64, nullable: true }
+        activityId: { type: string }
+        activityName: { type: string }
+        activityObjective: { type: string, nullable: true }
+        activityOwnerName: { type: string, nullable: true }
+        sequenceNumber: { type: integer, minimum: 1 }
+        selectedVersionActivity: { type: boolean }
+        taskCount: { type: integer, minimum: 0 }
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/BusinessProcessActivityExecution"

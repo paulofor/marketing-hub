@@ -65,8 +65,7 @@ class ProductProcessCommitRepositoryTest {
     commit.setRepositoryName("paulofor/marketing-hub");
     commit.setCommitSha("a".repeat(40));
     commit.setCommitSummary("Registra commits por produto e processo");
-    commit.setCommitUrl(
-        "https://github.com/paulofor/marketing-hub/commit/" + "a".repeat(40));
+    commit.setCommitUrl("https://github.com/paulofor/marketing-hub/commit/" + "a".repeat(40));
     commit.setRecordedBy("time@marketinghub.io");
     commit.setRecordedAt(Instant.parse("2026-08-26T12:30:00Z"));
     return commit;

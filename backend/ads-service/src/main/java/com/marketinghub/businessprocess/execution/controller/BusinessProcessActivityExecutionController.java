@@ -10,7 +10,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Responsabilidade: expor leituras auditáveis das tarefas executadas nas atividades BPM. */
+/**
+ * Responsabilidade: expor a situação e as tarefas auditáveis das atividades BPM por processo e
+ * produto.
+ */
 @Tag(
     name = "Processos — execuções das atividades",
     description =
@@ -34,8 +37,8 @@ public class BusinessProcessActivityExecutionController {
     return service.recentExecutions(processDefinitionId, activityId);
   }
 
-  /** Retorna todas as atividades e tarefas do produto no processo canônico selecionado. */
-  @Operation(summary = "Lista atividades e tarefas de um produto no processo")
+  /** Retorna a situação, todas as atividades e as tarefas do produto no processo selecionado. */
+  @Operation(summary = "Mostra a situação, as atividades e as tarefas do produto no processo")
   @GetMapping("/{processDefinitionId}/products/{productId}/activity-executions")
   public ProductProcessActivityExecutionHistoryResponse productProcessExecutions(
       @PathVariable Long processDefinitionId, @PathVariable Long productId) {

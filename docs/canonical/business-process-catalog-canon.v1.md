@@ -106,6 +106,30 @@ Os contratos canônicos são `GET /api/products/{productId}/process-commits` par
 processo ou SHA inválidos e impedir que a tela vincule silenciosamente um commit a um processo fora
 do histórico conhecido daquele produto.
 
+## Situação das atividades por produto e processo
+
+O histórico da cadeia de valor do produto deve oferecer, em cada processo ou subprocesso, acesso a
+uma visão gerencial de **Atividades e tarefas**. Essa visão precisa explicar em linguagem de negócio
+o estado geral, quantas atividades tiveram o objetivo comprovado, qual atividade exige atenção, a
+causa persistida e tudo que ainda falta para concluir a versão selecionada. A lista técnica de
+tarefas permanece disponível abaixo desse resumo, mas não pode ser a única forma de reconstruir a
+situação.
+
+O contrato canônico é
+`GET /api/business-processes/{processDefinitionId}/products/{productId}/activity-executions`. O
+backend, e não o frontend, calcula a situação de cada atividade e do processo. A instância BPM é a
+autoridade quando existir. Uma tarefa composta somente comprova outra atividade quando houver
+vínculo relacional em `agent_task_activity_coverage`; nesse caso a tela identifica explicitamente a
+cobertura. Resultado técnico embutido em comentário, prompt ou JSON não conclui outra atividade sem
+instância ou cobertura persistida. Ausência de ambos deve aparecer como atividade não iniciada, sem
+inferir sucesso a partir do estado comercial, da landing, do experimento ou de outra tarefa.
+
+Atividades de versões históricas continuam auditáveis, mas não entram no denominador de conclusão
+da versão selecionada. Retentativas anteriores permanecem visíveis; o resumo usa a ocorrência BPM
+mais recente da própria atividade dentro da referência de execução mais recente do produto e nunca
+soma novamente custo ou tarefa composta. Uma execução antiga concluída não pode esconder bloqueio,
+pendência ou ausência de trabalho do ciclo atual.
+
 ## Recursos especializados por atividade
 
 Uma atividade `TASK` pode declarar opcionalmente `executionResourceCode` quando o agente precisar de

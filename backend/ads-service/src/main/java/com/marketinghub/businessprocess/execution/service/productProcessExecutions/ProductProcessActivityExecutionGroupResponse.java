@@ -3,7 +3,9 @@ package com.marketinghub.businessprocess.execution.service.productProcessExecuti
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionResponse;
 import java.util.List;
 
-/** Responsabilidade: agrupar as tarefas reais do produto sob uma atividade estável do processo. */
+/**
+ * Responsabilidade: apresentar a situação da atividade e suas tarefas reais no processo do produto.
+ */
 public record ProductProcessActivityExecutionGroupResponse(
     Long activityDefinitionId,
     String activityId,
@@ -12,5 +14,11 @@ public record ProductProcessActivityExecutionGroupResponse(
     String activityOwnerName,
     Integer sequenceNumber,
     boolean selectedVersionActivity,
+    String operationalState,
+    String stateReason,
+    boolean objectiveAchieved,
+    String stateEvidence,
+    Long activityInstanceId,
+    Integer occurrenceNumber,
     int taskCount,
     List<BusinessProcessActivityExecutionResponse> tasks) {}

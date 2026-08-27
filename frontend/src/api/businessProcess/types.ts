@@ -144,6 +144,24 @@ export type ProductProcessActivityExecutionGroup = {
   activityOwnerName?: string;
   sequenceNumber: number;
   selectedVersionActivity: boolean;
+  operationalState:
+    | "NOT_STARTED"
+    | "PENDING"
+    | "IN_PROGRESS"
+    | "BLOCKED"
+    | "COMPLETED"
+    | "CANCELLED";
+  stateReason: string;
+  objectiveAchieved: boolean;
+  stateEvidence:
+    | "DIRECT"
+    | "MIXED"
+    | "BACKFILLED_FROM_TASKS"
+    | "LEGACY_TASK"
+    | "COMPOSITE_TASK_COVERAGE"
+    | "NOT_RECORDED";
+  activityInstanceId?: number;
+  occurrenceNumber?: number;
   taskCount: number;
   tasks: BusinessProcessActivityExecution[];
 };
@@ -157,6 +175,24 @@ export type ProductProcessActivityExecutionHistory = {
   processName: string;
   selectedProcessVersionNumber: number;
   selectedProcessStatus: "DRAFT" | "PUBLISHED" | "RETIRED";
+  currentExecutionReference?: string;
+  operationalState:
+    | "NOT_RECORDED"
+    | "NOT_STARTED"
+    | "PENDING"
+    | "IN_PROGRESS"
+    | "BLOCKED"
+    | "COMPLETED"
+    | "CANCELLED";
+  objectiveAchieved: boolean;
+  selectedActivityCount: number;
+  completedActivityCount: number;
+  remainingActivityCount: number;
+  blockedActivityCount: number;
+  currentActivityId?: string;
+  currentActivityName?: string;
+  currentActivityState?: ProductProcessActivityExecutionGroup["operationalState"];
+  currentActivityStateReason?: string;
   activityCount: number;
   activitiesWithTasksCount: number;
   uniqueTaskCount: number;

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import axios from "axios";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -44,6 +44,21 @@ const psiqueTask = {
   reasoningEffort: undefined,
 };
 
+const themisTask = {
+  ...dedaloTask,
+  taskId: 245,
+  title: "Executar revisão comercial independente",
+  status: "PENDING",
+  assignedAgentKey: "meta-ad-approver",
+  assignedAgentNickname: "Têmis",
+  comments: undefined,
+  evidenceJson: undefined,
+  estimatedCostUsd: undefined,
+  reasoningEffort: undefined,
+  startedAt: undefined,
+  finishedAt: undefined,
+};
+
 const history = {
   productId: 9,
   productName: "Kit WhatsApp Pronto",
@@ -53,9 +68,20 @@ const history = {
   processName: "Geração de landing page",
   selectedProcessVersionNumber: 4,
   selectedProcessStatus: "PUBLISHED",
-  activityCount: 4,
-  activitiesWithTasksCount: 3,
-  uniqueTaskCount: 2,
+  currentExecutionReference: "commercial-plan:4@v3:journey",
+  operationalState: "BLOCKED",
+  objectiveAchieved: false,
+  selectedActivityCount: 8,
+  completedActivityCount: 4,
+  remainingActivityCount: 4,
+  blockedActivityCount: 1,
+  currentActivityId: "customer",
+  currentActivityName: "Avaliar percepção da cliente",
+  currentActivityState: "BLOCKED",
+  currentActivityStateReason: "Checkout ausente na evidência.",
+  activityCount: 8,
+  activitiesWithTasksCount: 6,
+  uniqueTaskCount: 3,
   knownEstimatedCostUsd: 1.617624,
   costCoverage: "PARTIAL",
   activities: [
@@ -67,6 +93,43 @@ const history = {
       activityOwnerName: "Dédalo",
       sequenceNumber: 1,
       selectedVersionActivity: true,
+      operationalState: "COMPLETED",
+      stateReason:
+        "Atividade comprovadamente coberta pela tarefa composta #243.",
+      objectiveAchieved: true,
+      stateEvidence: "COMPOSITE_TASK_COVERAGE",
+      taskCount: 1,
+      tasks: [dedaloTask],
+    },
+    {
+      activityDefinitionId: 120,
+      activityId: "strategy",
+      activityName: "Definir estratégia de conversão",
+      activityObjective: "Definir a estratégia da página.",
+      activityOwnerName: "Dédalo",
+      sequenceNumber: 2,
+      selectedVersionActivity: true,
+      operationalState: "COMPLETED",
+      stateReason:
+        "Atividade comprovadamente coberta pela tarefa composta #243.",
+      objectiveAchieved: true,
+      stateEvidence: "COMPOSITE_TASK_COVERAGE",
+      taskCount: 1,
+      tasks: [dedaloTask],
+    },
+    {
+      activityDefinitionId: 121,
+      activityId: "compose",
+      activityName: "Solicitar composição ou edição visual quando necessária",
+      activityObjective: "Compor os ativos visuais aprovados.",
+      activityOwnerName: "Dédalo",
+      sequenceNumber: 3,
+      selectedVersionActivity: true,
+      operationalState: "COMPLETED",
+      stateReason:
+        "Atividade comprovadamente coberta pela tarefa composta #243.",
+      objectiveAchieved: true,
+      stateEvidence: "COMPOSITE_TASK_COVERAGE",
       taskCount: 1,
       tasks: [dedaloTask],
     },
@@ -76,10 +139,32 @@ const history = {
       activityName: "Construir HTML completo com ativos aprovados",
       activityObjective: "Entregar documento responsivo e instrumentado.",
       activityOwnerName: "Dédalo",
-      sequenceNumber: 2,
+      sequenceNumber: 4,
       selectedVersionActivity: true,
+      operationalState: "COMPLETED",
+      stateReason: "Objetivo da atividade atingido na instância BPM.",
+      objectiveAchieved: true,
+      stateEvidence: "DIRECT",
+      activityInstanceId: 128,
+      occurrenceNumber: 1,
       taskCount: 1,
       tasks: [dedaloTask],
+    },
+    {
+      activityDefinitionId: 123,
+      activityId: "technical",
+      activityName: "Validar técnica e fidelidade visual",
+      activityObjective: "Registrar a validação técnica independente.",
+      activityOwnerName: "Quality Review",
+      sequenceNumber: 5,
+      selectedVersionActivity: true,
+      operationalState: "NOT_STARTED",
+      stateReason:
+        "Nenhuma tarefa ou instância foi registrada para esta atividade.",
+      objectiveAchieved: false,
+      stateEvidence: "NOT_RECORDED",
+      taskCount: 0,
+      tasks: [],
     },
     {
       activityDefinitionId: 124,
@@ -87,10 +172,33 @@ const history = {
       activityName: "Avaliar percepção da cliente",
       activityObjective: "Validar clareza, desejo e confiança.",
       activityOwnerName: "Psique",
-      sequenceNumber: 3,
+      sequenceNumber: 6,
       selectedVersionActivity: true,
+      operationalState: "BLOCKED",
+      stateReason: "Checkout ausente na evidência.",
+      objectiveAchieved: false,
+      stateEvidence: "DIRECT",
+      activityInstanceId: 129,
+      occurrenceNumber: 1,
       taskCount: 1,
       tasks: [psiqueTask],
+    },
+    {
+      activityDefinitionId: 125,
+      activityId: "commercial",
+      activityName: "Executar revisão comercial independente",
+      activityObjective: "Obter a decisão independente de Têmis.",
+      activityOwnerName: "Têmis",
+      sequenceNumber: 7,
+      selectedVersionActivity: true,
+      operationalState: "PENDING",
+      stateReason: "Atividade aguardando execução ou liberação pelo backend.",
+      objectiveAchieved: false,
+      stateEvidence: "DIRECT",
+      activityInstanceId: 130,
+      occurrenceNumber: 1,
+      taskCount: 1,
+      tasks: [themisTask],
     },
     {
       activityDefinitionId: 126,
@@ -98,8 +206,13 @@ const history = {
       activityName: "Aprovação humana para publicar",
       activityObjective: "Autorizar publicação explícita.",
       activityOwnerName: "Operador humano",
-      sequenceNumber: 4,
+      sequenceNumber: 8,
       selectedVersionActivity: true,
+      operationalState: "NOT_STARTED",
+      stateReason:
+        "Nenhuma tarefa ou instância foi registrada para esta atividade.",
+      objectiveAchieved: false,
+      stateEvidence: "NOT_RECORDED",
       taskCount: 0,
       tasks: [],
     },
@@ -142,7 +255,29 @@ describe("ProductProcessActivityExecutionsPage", () => {
         name: "Rigel · Geração de landing page",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("3 com tarefas reais")).toBeInTheDocument();
+    const situation = screen.getByRole("region", {
+      name: "Situação do processo",
+    });
+    expect(within(situation).getByText("Bloqueado")).toBeInTheDocument();
+    expect(
+      within(situation).getByText("4 de 8 atividades concluídas"),
+    ).toBeInTheDocument();
+    expect(
+      within(situation).getAllByText("Checkout ausente na evidência."),
+    ).toHaveLength(2);
+    expect(
+      within(situation).getByRole("heading", { name: "Já concluído" }),
+    ).toBeInTheDocument();
+    expect(
+      within(situation).getByRole("heading", { name: "Falta concluir" }),
+    ).toBeInTheDocument();
+    expect(
+      within(situation).getByText("Validar técnica e fidelidade visual"),
+    ).toBeInTheDocument();
+    expect(
+      within(situation).getByText("Executar revisão comercial independente"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/6 com tarefas reais/)).toBeInTheDocument();
     expect(
       screen.getByText("Execuções sem duplicar tarefas compostas"),
     ).toBeInTheDocument();
@@ -152,12 +287,10 @@ describe("ProductProcessActivityExecutionsPage", () => {
         name: "Selecionar provas reais da entrega",
       }),
     ).toBeInTheDocument();
-    expect(screen.getAllByText(/Tarefa #243/)).toHaveLength(2);
-    expect(screen.getAllByText("gpt-5.6-sol")).toHaveLength(3);
-    expect(screen.getAllByText("Rigel")).toHaveLength(3);
+    expect(screen.getAllByText(/Tarefa #243/)).toHaveLength(4);
     expect(
-      screen.getByText("Nenhuma tarefa registrada para este produto."),
-    ).toBeInTheDocument();
+      screen.getAllByText("Nenhuma tarefa registrada para este produto."),
+    ).toHaveLength(2);
     expect(
       screen.getByRole("link", { name: "Voltar ao histórico" }),
     ).toHaveAttribute("href", "/products/9/value-chain-history");
@@ -168,6 +301,86 @@ describe("ProductProcessActivityExecutionsPage", () => {
     expect(axios.get).toHaveBeenCalledWith(
       "/api/business-processes/18/products/9/activity-executions",
     );
+  });
+
+  it("makes a process with every objective achieved explicitly complete", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        ...history,
+        operationalState: "COMPLETED",
+        objectiveAchieved: true,
+        completedActivityCount: 8,
+        remainingActivityCount: 0,
+        blockedActivityCount: 0,
+        currentActivityId: undefined,
+        currentActivityName: undefined,
+        currentActivityState: undefined,
+        currentActivityStateReason: undefined,
+        activities: history.activities.map((activity) => ({
+          ...activity,
+          operationalState: "COMPLETED",
+          objectiveAchieved: true,
+          stateReason: "Objetivo da atividade atingido na instância BPM.",
+        })),
+      },
+    });
+
+    renderPage();
+
+    const situation = await screen.findByRole("region", {
+      name: "Situação do processo",
+    });
+    expect(within(situation).getByText("Concluído")).toBeInTheDocument();
+    expect(
+      within(situation).getByText("8 de 8 atividades concluídas"),
+    ).toBeInTheDocument();
+    expect(
+      within(situation).getByText("Nenhuma atividade pendente."),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps a process without current execution visibly not started", async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: {
+        ...history,
+        currentExecutionReference: undefined,
+        operationalState: "NOT_STARTED",
+        objectiveAchieved: false,
+        completedActivityCount: 0,
+        remainingActivityCount: 8,
+        blockedActivityCount: 0,
+        currentActivityId: "select",
+        currentActivityName: "Selecionar provas reais da entrega",
+        currentActivityState: "NOT_STARTED",
+        currentActivityStateReason:
+          "Nenhuma tarefa ou instância foi registrada para esta atividade.",
+        activities: history.activities.map((activity) => ({
+          ...activity,
+          operationalState: "NOT_STARTED",
+          objectiveAchieved: false,
+          stateEvidence: "NOT_RECORDED",
+          stateReason:
+            "Nenhuma tarefa ou instância foi registrada para esta atividade.",
+          taskCount: 0,
+          tasks: [],
+        })),
+      },
+    });
+
+    renderPage();
+
+    const situation = await screen.findByRole("region", {
+      name: "Situação do processo",
+    });
+    expect(within(situation).getByText("Não iniciado")).toBeInTheDocument();
+    expect(
+      within(situation).getByText("0 de 8 atividades concluídas"),
+    ).toBeInTheDocument();
+    expect(
+      within(situation).getByText(
+        "Nenhuma atividade possui conclusão comprovada.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("makes a backend failure explicit", async () => {

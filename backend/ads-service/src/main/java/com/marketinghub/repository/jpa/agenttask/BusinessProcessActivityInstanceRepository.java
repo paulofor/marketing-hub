@@ -20,4 +20,12 @@ public interface BusinessProcessActivityInstanceRepository
   List<BusinessProcessActivityInstance>
       findAllByActivityDefinitionProcessDefinitionIdAndSourceReferenceOrderByActivityDefinitionIdAscOccurrenceNumberAsc(
           Long processDefinitionId, String sourceReference);
+
+  /**
+   * Lista ocorrências do processo estável vinculadas a um plano comercial do produto, inclusive
+   * quando ainda não existe tarefa de agente.
+   */
+  List<BusinessProcessActivityInstance>
+      findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceStartingWithOrderByCreatedAtDescIdDesc(
+          String processCode, String sourceReferencePrefix);
 }

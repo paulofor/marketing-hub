@@ -115,6 +115,12 @@ class BusinessProcessActivityExecutionControllerTest {
             "Dédalo",
             1,
             true,
+            "COMPLETED",
+            "Atividade comprovadamente coberta pela tarefa composta #243.",
+            true,
+            "COMPOSITE_TASK_COVERAGE",
+            null,
+            null,
             1,
             List.of(execution));
     when(service.productProcessExecutions(18L, 9L))
@@ -128,6 +134,17 @@ class BusinessProcessActivityExecutionControllerTest {
                 "Geração de landing page",
                 4,
                 "PUBLISHED",
+                "commercial-plan:4@v3:journey",
+                "BLOCKED",
+                false,
+                8,
+                4,
+                4,
+                1,
+                "customer",
+                "Avaliar percepção da cliente",
+                "BLOCKED",
+                "Checkout canônico ausente.",
                 8,
                 6,
                 3,
@@ -143,8 +160,12 @@ class BusinessProcessActivityExecutionControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.productInternalName").value("Rigel"))
         .andExpect(jsonPath("$.processName").value("Geração de landing page"))
+        .andExpect(jsonPath("$.operationalState").value("BLOCKED"))
+        .andExpect(jsonPath("$.completedActivityCount").value(4))
+        .andExpect(jsonPath("$.currentActivityId").value("customer"))
         .andExpect(jsonPath("$.uniqueTaskCount").value(3))
         .andExpect(jsonPath("$.activities[0].activityId").value("select"))
+        .andExpect(jsonPath("$.activities[0].operationalState").value("COMPLETED"))
         .andExpect(jsonPath("$.activities[0].tasks[0].taskId").value(243));
   }
 }

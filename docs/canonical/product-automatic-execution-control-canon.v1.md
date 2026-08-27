@@ -15,6 +15,15 @@ alterar status comercial, experimentos, qualidade, preço, publicação ou hist�
 - Toda mudança registra produto, decisão, operador e data em trilha append-only.
 - A tela sempre mostra a verdade persistida pelo backend e não altera o estado por inferência local.
 
+## Leituras operacionais
+
+- A visão operacional de produtos deve consultar o backend com `playOnly=true` e receber somente
+  produtos em `PLAY`; o frontend não pode filtrar ou deduzir esse estado localmente.
+- O catálogo administrativo geral permanece disponível sem esse parâmetro para auditoria e para a
+  gestão de produtos em `STOP`.
+- A pesquisa por nome, nome interno, apelido ou slug com `playOnly=true` continua restrita a
+  produtos em `PLAY`.
+
 O controle é independente do status comercial. Em especial, `STOP` não pausa campanha, não cancela
 experimento, não retira página do ar e não transforma produto em descontinuado. Essas ações exigem os
 contratos e autorizações próprios.

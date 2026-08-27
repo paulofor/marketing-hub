@@ -27,38 +27,54 @@ describe("HomePage", () => {
     cleanup();
   });
 
-  it("shows active product cards from products endpoint", async () => {
-    (axios.get as any).mockResolvedValue({
-      data: [
-        {
-          id: 1,
-          slug: "metodo-musa-7-dias",
-          name: "Metodo MUSA",
-          internalName: "Vega",
-          productTypeInternalName: "Opala",
-          commercialStatus: "VALIDACAO_COMERCIAL",
-          currentPriceBrl: 27,
-          targetAudience: "Mulheres que querem melhorar a presença visual",
-          primaryHypothesis:
-            "Diagnóstico de presença elegante em poucos minutos",
-          primaryCta: "Começar diagnóstico",
-          colorPalette: "#7a2444, #d6a75c",
-          updatedAt: "2026-07-28T01:00:00Z",
-        },
-        {
-          id: 2,
-          slug: "produto-pausado",
-          name: "Produto Pausado",
-          commercialStatus: "PAUSED",
-          updatedAt: "2026-07-28T02:00:00Z",
-        },
-      ],
-    });
+  it("shows only cards returned by the backend PLAY view", async () => {
+    (axios.get as any).mockImplementation(
+      (url: string, config?: { params?: { playOnly?: boolean } }) => {
+        if (url === "/api/products/value-chain-positions") {
+          return Promise.resolve({ data: [] });
+        }
+        return Promise.resolve({
+          data: config?.params?.playOnly
+            ? [
+                {
+                  id: 1,
+                  slug: "metodo-musa-7-dias",
+                  name: "Metodo MUSA",
+                  internalName: "Vega",
+                  productTypeInternalName: "Opala",
+                  automaticExecutionEnabled: true,
+                  automaticExecutionStatus: "PLAY",
+                  commercialStatus: "VALIDACAO_COMERCIAL",
+                  currentPriceBrl: 27,
+                  targetAudience:
+                    "Mulheres que querem melhorar a presença visual",
+                  primaryHypothesis:
+                    "Diagnóstico de presença elegante em poucos minutos",
+                  primaryCta: "Começar diagnóstico",
+                  colorPalette: "#7a2444, #d6a75c",
+                  updatedAt: "2026-07-28T01:00:00Z",
+                },
+              ]
+            : [
+                {
+                  id: 2,
+                  slug: "produto-pausado",
+                  name: "Produto Pausado",
+                  automaticExecutionEnabled: false,
+                  automaticExecutionStatus: "STOP",
+                },
+              ],
+        });
+      },
+    );
 
     renderHome();
 
     expect(await screen.findByText("Metodo MUSA")).toBeTruthy();
     expect(screen.queryByText("Produto Pausado")).toBeNull();
+    expect(axios.get).toHaveBeenCalledWith("/api/products", {
+      params: { playOnly: true },
+    });
     expect(screen.getByText("R$ 27,00")).toBeTruthy();
     expect(screen.getByText("Vega")).toBeTruthy();
     expect(screen.getByText("Opala")).toBeTruthy();
@@ -143,15 +159,13 @@ describe("HomePage", () => {
     expect(screen.getByText("Status: Comunicação e jornada")).toBeTruthy();
   });
 
-  it("shows empty state when there are no active products", async () => {
-    (axios.get as any).mockResolvedValue({
-      data: [{ id: 1, name: "Produto Inativo", commercialStatus: "INATIVO" }],
-    });
+  it("shows empty state when the backend has no products in PLAY", async () => {
+    (axios.get as any).mockResolvedValue({ data: [] });
 
     renderHome();
 
     expect(
-      await screen.findByText(/Nenhum produto ativo encontrado/i),
+      await screen.findByText(/Nenhum produto em PLAY encontrado/i),
     ).toBeTruthy();
   });
 });

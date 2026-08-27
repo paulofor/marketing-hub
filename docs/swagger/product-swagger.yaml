@@ -56,9 +56,16 @@ paths:
             type: string
             maxLength: 191
           example: MUSA v7
+        - name: playOnly
+          in: query
+          required: false
+          description: Quando verdadeiro, retorna somente produtos com execução automática em PLAY.
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
-          description: Produtos encontrados no catálogo administrativo.
+          description: Produtos encontrados no catálogo administrativo ou na visão operacional em PLAY.
           content:
             application/json:
               schema:

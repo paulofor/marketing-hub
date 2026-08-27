@@ -77,4 +77,31 @@ class ProductRepositoryTest {
     assertThat(updated.getName()).isEqualTo("Nexo — Clareza, Sentido e Ação");
     assertThat(updated.getCommercialNotes()).isEqualTo("Contrato preservado");
   }
+
+  /** Deve retornar somente produtos em PLAY nas consultas operacionais. */
+  @Test
+  void findOnlyProductsInPlayState() {
+    Product productInPlay =
+        repository.saveAndFlush(
+            Product.builder()
+                .name("Produto em PLAY")
+                .internalName("Produto operacional")
+                .automaticExecutionEnabled(true)
+                .build());
+    Product productStopped =
+        repository.saveAndFlush(
+            Product.builder()
+                .name("Produto em STOP")
+                .internalName("Produto interrompido")
+                .automaticExecutionEnabled(false)
+                .build());
+
+    assertThat(repository.findAllInPlayState())
+        .extracting(Product::getId)
+        .contains(productInPlay.getId())
+        .doesNotContain(productStopped.getId());
+    assertThat(repository.searchByIdentityInPlayState("Produto"))
+        .extracting(Product::getId)
+        .containsExactly(productInPlay.getId());
+  }
 }

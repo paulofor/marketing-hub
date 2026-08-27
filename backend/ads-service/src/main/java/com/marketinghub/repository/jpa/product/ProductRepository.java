@@ -46,6 +46,33 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
       """)
   List<Product> searchByIdentity(@Param("identityQuery") String identityQuery);
 
+  /** Lista produtos em PLAY, incluindo legados sem decisão persistida que equivalem a PLAY. */
+  @Query(
+      """
+      SELECT product
+      FROM Product product
+      WHERE product.automaticExecutionEnabled IS NULL OR product.automaticExecutionEnabled = TRUE
+      ORDER BY product.updatedAt DESC, product.id DESC
+      """)
+  List<Product> findAllInPlayState();
+
+  /** Pesquisa produtos em PLAY sem expor itens em STOP na visão operacional. */
+  @Query(
+      """
+      SELECT DISTINCT product
+      FROM Product product
+      LEFT JOIN product.aliases alias
+      WHERE (product.automaticExecutionEnabled IS NULL OR product.automaticExecutionEnabled = TRUE)
+        AND (
+          LOWER(COALESCE(product.name, '')) LIKE LOWER(CONCAT('%', :identityQuery, '%'))
+          OR LOWER(COALESCE(product.internalName, '')) LIKE LOWER(CONCAT('%', :identityQuery, '%'))
+          OR LOWER(COALESCE(product.slug, '')) LIKE LOWER(CONCAT('%', :identityQuery, '%'))
+          OR LOWER(COALESCE(alias, '')) LIKE LOWER(CONCAT('%', :identityQuery, '%'))
+        )
+      ORDER BY product.updatedAt DESC, product.id DESC
+      """)
+  List<Product> searchByIdentityInPlayState(@Param("identityQuery") String identityQuery);
+
   /** Conta conflitos exatos de identidade em outro produto do catálogo. */
   @Query(
       """

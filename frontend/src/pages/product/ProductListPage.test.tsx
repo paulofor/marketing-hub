@@ -76,7 +76,7 @@ describe("ProductListPage", () => {
     expect(screen.getByText("Família interna: Opala")).toBeTruthy();
   });
 
-  it("alternates STOP/PLAY only for the selected product", async () => {
+  it("stops the selected product returned by the PLAY view", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url === "/api/products/value-chain-positions") {
         return Promise.resolve({ data: [] });
@@ -89,13 +89,6 @@ describe("ProductListPage", () => {
             name: "Vega",
             automaticExecutionEnabled: true,
             automaticExecutionStatus: "PLAY",
-          },
-          {
-            id: 2,
-            slug: "rigel",
-            name: "Rigel",
-            automaticExecutionEnabled: false,
-            automaticExecutionStatus: "STOP",
           },
         ],
       });
@@ -121,11 +114,9 @@ describe("ProductListPage", () => {
         name: "Parar execução automática de Vega",
       }),
     ).toBeEnabled();
-    expect(
-      screen.getByRole("button", {
-        name: "Ativar execução automática de Rigel",
-      }),
-    ).toBeEnabled();
+    expect(axios.get).toHaveBeenCalledWith("/api/products", {
+      params: { playOnly: true },
+    });
 
     await act(async () => {
       fireEvent.click(
@@ -195,7 +186,7 @@ describe("ProductListPage", () => {
 
     await waitFor(() =>
       expect(axios.get).toHaveBeenCalledWith("/api/products", {
-        params: { query: "MUSA v7" },
+        params: { query: "MUSA v7", playOnly: true },
       }),
     );
   });
@@ -311,7 +302,7 @@ describe("ProductListPage", () => {
     );
   });
 
-  it("shows empty state when there are no products", async () => {
+  it("shows empty state when there are no products in PLAY", async () => {
     (axios.get as any).mockResolvedValue({ data: [] });
     const client = new QueryClient();
     render(
@@ -323,52 +314,38 @@ describe("ProductListPage", () => {
     );
 
     expect(
-      await screen.findByText(/Nenhum produto comercial cadastrado/i),
+      await screen.findByText(/Nenhum produto em PLAY cadastrado/i),
     ).toBeTruthy();
   });
 
-  it("prioritizes products in PLAY before commercial activity", async () => {
-    (axios.get as any).mockResolvedValue({
-      data: [
-        {
-          id: 1,
-          slug: "validacao-em-stop",
-          name: "Validação em STOP",
-          automaticExecutionEnabled: false,
-          automaticExecutionStatus: "STOP",
-          commercialStatus: "VALIDACAO_COMERCIAL",
-          associatedExperiments: "Experimento 10; Experimento 11",
-          updatedAt: "2026-07-28T04:00:00Z",
-        },
-        {
-          id: 2,
-          slug: "produto-em-play",
-          name: "Produto em PLAY",
-          automaticExecutionEnabled: true,
-          automaticExecutionStatus: "PLAY",
-          commercialStatus: "ESCALA",
-          updatedAt: "2026-07-24T04:00:00Z",
-        },
-        {
-          id: 3,
-          slug: "validacao-em-play",
-          name: "Validação em PLAY",
-          automaticExecutionEnabled: true,
-          automaticExecutionStatus: "PLAY",
-          commercialStatus: "VALIDACAO_COMERCIAL",
-          associatedExperiments: "Experimento 12",
-          updatedAt: "2026-07-26T03:00:00Z",
-        },
-        {
-          id: 4,
-          slug: "produto-em-stop",
-          name: "Produto em STOP",
-          automaticExecutionEnabled: false,
-          automaticExecutionStatus: "STOP",
-          commercialStatus: "ESCALA",
-          updatedAt: "2026-07-29T04:00:00Z",
-        },
-      ],
+  it("keeps the commercial priority inside the backend PLAY view", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/products/value-chain-positions") {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.resolve({
+        data: [
+          {
+            id: 2,
+            slug: "produto-em-play",
+            name: "Produto em PLAY",
+            automaticExecutionEnabled: true,
+            automaticExecutionStatus: "PLAY",
+            commercialStatus: "ESCALA",
+            updatedAt: "2026-07-24T04:00:00Z",
+          },
+          {
+            id: 3,
+            slug: "validacao-em-play",
+            name: "Validação em PLAY",
+            automaticExecutionEnabled: true,
+            automaticExecutionStatus: "PLAY",
+            commercialStatus: "VALIDACAO_COMERCIAL",
+            associatedExperiments: "Experimento 12",
+            updatedAt: "2026-07-26T03:00:00Z",
+          },
+        ],
+      });
     });
     const client = new QueryClient();
     render(
@@ -383,9 +360,10 @@ describe("ProductListPage", () => {
     expect(cards.map((card) => card.textContent)).toEqual([
       "Validação em PLAY",
       "Produto em PLAY",
-      "Validação em STOP",
-      "Produto em STOP",
     ]);
+    expect(axios.get).toHaveBeenCalledWith("/api/products", {
+      params: { playOnly: true },
+    });
   });
 
   it("shows marketing definition links for listed product", async () => {

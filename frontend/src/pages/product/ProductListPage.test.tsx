@@ -327,31 +327,46 @@ describe("ProductListPage", () => {
     ).toBeTruthy();
   });
 
-  it("prioritizes products in commercial validation by recent activity", async () => {
+  it("prioritizes products in PLAY before commercial activity", async () => {
     (axios.get as any).mockResolvedValue({
       data: [
         {
           id: 1,
-          slug: "produto-estavel",
-          name: "Produto Estável",
-          commercialStatus: "ESCALA",
-          updatedAt: "2026-07-26T04:00:00Z",
+          slug: "validacao-em-stop",
+          name: "Validação em STOP",
+          automaticExecutionEnabled: false,
+          automaticExecutionStatus: "STOP",
+          commercialStatus: "VALIDACAO_COMERCIAL",
+          associatedExperiments: "Experimento 10; Experimento 11",
+          updatedAt: "2026-07-28T04:00:00Z",
         },
         {
           id: 2,
-          slug: "validacao-antiga",
-          name: "Validação Antiga",
-          commercialStatus: "VALIDACAO_COMERCIAL",
-          associatedExperiments: "Experimento 10",
+          slug: "produto-em-play",
+          name: "Produto em PLAY",
+          automaticExecutionEnabled: true,
+          automaticExecutionStatus: "PLAY",
+          commercialStatus: "ESCALA",
           updatedAt: "2026-07-24T04:00:00Z",
         },
         {
           id: 3,
-          slug: "validacao-ativa",
-          name: "Validação Ativa",
+          slug: "validacao-em-play",
+          name: "Validação em PLAY",
+          automaticExecutionEnabled: true,
+          automaticExecutionStatus: "PLAY",
           commercialStatus: "VALIDACAO_COMERCIAL",
-          associatedExperiments: "Experimento 11; Experimento 12",
+          associatedExperiments: "Experimento 12",
           updatedAt: "2026-07-26T03:00:00Z",
+        },
+        {
+          id: 4,
+          slug: "produto-em-stop",
+          name: "Produto em STOP",
+          automaticExecutionEnabled: false,
+          automaticExecutionStatus: "STOP",
+          commercialStatus: "ESCALA",
+          updatedAt: "2026-07-29T04:00:00Z",
         },
       ],
     });
@@ -366,9 +381,10 @@ describe("ProductListPage", () => {
 
     const cards = await screen.findAllByRole("heading", { level: 2 });
     expect(cards.map((card) => card.textContent)).toEqual([
-      "Validação Ativa",
-      "Validação Antiga",
-      "Produto Estável",
+      "Validação em PLAY",
+      "Produto em PLAY",
+      "Validação em STOP",
+      "Produto em STOP",
     ]);
   });
 

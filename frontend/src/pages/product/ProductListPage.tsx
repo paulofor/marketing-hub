@@ -73,7 +73,22 @@ function getAssociatedExperimentCount(
   return splitText(product.associatedExperiments).length;
 }
 
-function compareProductsByCommercialActivity(a: Product, b: Product) {
+function isProductInPlay(
+  product: Pick<
+    Product,
+    "automaticExecutionEnabled" | "automaticExecutionStatus"
+  >,
+) {
+  if (product.automaticExecutionStatus) {
+    return product.automaticExecutionStatus === "PLAY";
+  }
+  return product.automaticExecutionEnabled === true;
+}
+
+function compareProductsByOperationalPriority(a: Product, b: Product) {
+  const playDelta = Number(isProductInPlay(b)) - Number(isProductInPlay(a));
+  if (playDelta !== 0) return playDelta;
+
   const validationDelta =
     Number(isCommercialValidationProduct(b)) -
     Number(isCommercialValidationProduct(a));
@@ -244,7 +259,7 @@ export default function ProductListPage() {
   const products = useMemo(
     () =>
       Array.isArray(data)
-        ? [...data].sort(compareProductsByCommercialActivity)
+        ? [...data].sort(compareProductsByOperationalPriority)
         : [],
     [data],
   );

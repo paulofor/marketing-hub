@@ -147,6 +147,97 @@ class AgentTaskServiceTest {
     assertThat(processInstance.activities().getFirst().tasks().getFirst().attemptNumber()).isOne();
   }
 
+  /** Conclui a ocorrência conjunta somente depois dos pareceres de Psique e Têmis. */
+  @Test
+  void completesCoauthoredActivityOnlyAfterEveryAgentFinishes() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    BusinessProcessDefinitionRepository processes = mock(BusinessProcessDefinitionRepository.class);
+    BusinessProcessActivityDefinitionRepository activities =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    Agent psique = agent(2L, "customer-agent", "Psique");
+    Agent themis = agent(6L, "meta-ad-approver", "Têmis");
+    BusinessProcessDefinition process = process("PUBLISHED", "Psique e Têmis");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"html\",\"type\":\"TASK\",\"label\":\"Validar PDE\","
+            + "\"owner\":\"Psique e Têmis\",\"responsibleAgentKeys\":[\"customer-agent\","
+            + "\"meta-ad-approver\"]}]}");
+    BusinessProcessActivityDefinition activity = new BusinessProcessActivityDefinition();
+    activity.setId(401L);
+    activity.setProcessDefinition(process);
+    activity.setActivityId("html");
+    activity.setName("Validar PDE");
+    activity.setObjective("Comprovar fatos, controle e valor.");
+    List<AgentTask> savedTasks = new ArrayList<>();
+    AtomicReference<BusinessProcessActivityInstance> savedInstance = new AtomicReference<>();
+    AtomicLong taskSequence = new AtomicLong(600L);
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(agents.findByAgentKey("meta-ad-approver")).thenReturn(Optional.of(themis));
+    when(processes.findById(9L)).thenReturn(Optional.of(process));
+    when(activities.findByProcessDefinitionIdAndActivityId(9L, "html"))
+        .thenReturn(Optional.of(activity));
+    when(instances.findTopByActivityDefinitionIdAndSourceReferenceOrderByOccurrenceNumberDesc(
+            401L, "experiment:90"))
+        .thenAnswer(ignored -> Optional.ofNullable(savedInstance.get()));
+    when(instances.save(any(BusinessProcessActivityInstance.class)))
+        .thenAnswer(
+            invocation -> {
+              BusinessProcessActivityInstance value = invocation.getArgument(0);
+              if (value.getId() == null) value.setId(501L);
+              savedInstance.set(value);
+              return value;
+            });
+    when(repository.save(any(AgentTask.class)))
+        .thenAnswer(
+            invocation -> {
+              AgentTask task = invocation.getArgument(0);
+              if (task.getId() == null) {
+                task.setId(taskSequence.incrementAndGet());
+                savedTasks.add(task);
+              }
+              return task;
+            });
+    when(repository.findById(any(Long.class)))
+        .thenAnswer(
+            invocation ->
+                savedTasks.stream()
+                    .filter(task -> task.getId().equals(invocation.getArgument(0)))
+                    .findFirst());
+    when(repository.findByActivityInstanceIdOrderByCreatedAtAscIdAsc(501L))
+        .thenAnswer(ignored -> List.copyOf(savedTasks));
+    Instant now = Instant.parse("2026-08-27T22:00:00Z");
+    AgentTaskService service =
+        new AgentTaskService(
+            repository,
+            instances,
+            agents,
+            processes,
+            activities,
+            null,
+            new ObjectMapper(),
+            null,
+            Clock.fixed(now, ZoneOffset.UTC));
+
+    AgentTaskResponse psiqueTask = service.createByHuman(coauthorRequest("customer-agent"));
+    AgentTaskResponse themisTask = service.createByHuman(coauthorRequest("meta-ad-approver"));
+    service.updateStatus(psiqueTask.id(), new UpdateAgentTaskStatusRequest("IN_PROGRESS"));
+    service.updateStatus(psiqueTask.id(), new UpdateAgentTaskStatusRequest("COMPLETED"));
+
+    assertThat(savedInstance.get().getStatus()).isEqualTo("PENDING");
+    assertThat(savedInstance.get().isObjectiveAchieved()).isFalse();
+
+    service.updateStatus(themisTask.id(), new UpdateAgentTaskStatusRequest("IN_PROGRESS"));
+    service.updateStatus(themisTask.id(), new UpdateAgentTaskStatusRequest("COMPLETED"));
+
+    assertThat(savedInstance.get().getStatus()).isEqualTo("COMPLETED");
+    assertThat(savedInstance.get().isObjectiveAchieved()).isTrue();
+    assertThat(savedTasks)
+        .extracting(task -> task.getAssignedAgent().getAgentKey())
+        .containsExactly("customer-agent", "meta-ad-approver");
+  }
+
   /** Substitui o bloqueio pela correção mais recente e preserva um ciclo já encerrado. */
   @Test
   void resolvesRetryAndOpensAnotherOccurrenceAfterCompletion() {
@@ -357,6 +448,45 @@ class AgentTaskServiceTest {
     assertThat(response.assignedAgentKey()).isEqualTo("growth-operator");
     assertThat(response.sourceReference()).isEqualTo("experiment:88");
     assertThat(response.processActivityName()).isEqualTo("Montar HTML");
+  }
+
+  /** Aceita somente as identidades técnicas declaradas para uma atividade de coautoria. */
+  @Test
+  void validatesEveryDeclaredCoauthorByAgentKey() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    BusinessProcessDefinitionRepository processes = mock(BusinessProcessDefinitionRepository.class);
+    Agent psique = agent(2L, "customer-agent", "Psique");
+    Agent themis = agent(6L, "meta-ad-approver", "Têmis");
+    Agent dedalo = agent(7L, "landing-generator", "Dédalo");
+    BusinessProcessDefinition process = process("PUBLISHED", "Psique e Têmis");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"html\",\"type\":\"TASK\",\"label\":\"Validar PDE\","
+            + "\"owner\":\"Revisão conjunta\",\"responsibleAgentKeys\":[\"customer-agent\","
+            + "\"meta-ad-approver\"]}]}");
+    when(agents.findByAgentKey("customer-agent")).thenReturn(Optional.of(psique));
+    when(agents.findByAgentKey("meta-ad-approver")).thenReturn(Optional.of(themis));
+    when(agents.findByAgentKey("landing-generator")).thenReturn(Optional.of(dedalo));
+    when(processes.findById(9L)).thenReturn(Optional.of(process));
+    AtomicLong sequence = new AtomicLong(80L);
+    when(repository.save(any(AgentTask.class)))
+        .thenAnswer(
+            invocation -> {
+              AgentTask task = invocation.getArgument(0);
+              task.setId(sequence.incrementAndGet());
+              return task;
+            });
+    AgentTaskService service =
+        new AgentTaskService(repository, agents, processes, new ObjectMapper(), Clock.systemUTC());
+
+    AgentTaskResponse psiqueTask = service.createByHuman(coauthorRequest("customer-agent"));
+    AgentTaskResponse themisTask = service.createByHuman(coauthorRequest("meta-ad-approver"));
+
+    assertThat(psiqueTask.assignedAgentKey()).isEqualTo("customer-agent");
+    assertThat(themisTask.assignedAgentKey()).isEqualTo("meta-ad-approver");
+    assertThatThrownBy(() -> service.createByHuman(coauthorRequest("landing-generator")))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("outro responsável");
   }
 
   /** Importa um parecer real já concluído com evidência e consumo no vínculo BPM publicado. */
@@ -1602,6 +1732,21 @@ class AgentTaskServiceTest {
         "Entregar HTML responsivo.",
         "HIGH",
         "experiment:88",
+        9L,
+        "html",
+        false,
+        null);
+  }
+
+  /** Cria a solicitação usada para validar um dos coautores técnicos da atividade. */
+  private CreateAgentTaskRequest coauthorRequest(String agentKey) {
+    return new CreateAgentTaskRequest(
+        agentKey,
+        "Operador",
+        "Validar PDE",
+        "Comprovar fatos, controle e valor.",
+        "HIGH",
+        "experiment:90",
         9L,
         "html",
         false,

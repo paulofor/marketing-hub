@@ -8,6 +8,7 @@ export type ProcessNode = {
   description?: string;
   executionResourceCode?: string;
   subprocessCode?: string;
+  responsibleAgentKeys?: string[];
   documentOutput?: {
     label: string;
   };
@@ -164,6 +165,16 @@ export type ProductProcessActivityExecutionGroup = {
   occurrenceNumber?: number;
   taskCount: number;
   tasks: BusinessProcessActivityExecution[];
+  executionRequestAvailable: boolean;
+  executionRequestReason: string;
+};
+
+export type ProductProcessActivityExecutionRequest = {
+  processDefinitionId: number;
+  productId: number;
+  activityId: string;
+  sourceReference: string;
+  tasks: unknown[];
 };
 
 export type ProductProcessActivityExecutionHistory = {

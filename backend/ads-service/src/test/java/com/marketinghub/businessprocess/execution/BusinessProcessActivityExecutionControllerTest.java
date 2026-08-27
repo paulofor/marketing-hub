@@ -3,6 +3,7 @@ package com.marketinghub.businessprocess.execution;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -12,6 +13,7 @@ import com.marketinghub.businessprocess.execution.service.productProcessExecutio
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionHistoryResponse;
 import com.marketinghub.businessprocess.execution.service.recentExecutions.BusinessProcessActivityExecutionResponse;
+import com.marketinghub.businessprocess.execution.service.requestProductProcessActivityExecution.ProductProcessActivityExecutionRequestResponse;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -167,5 +169,27 @@ class BusinessProcessActivityExecutionControllerTest {
         .andExpect(jsonPath("$.activities[0].activityId").value("select"))
         .andExpect(jsonPath("$.activities[0].operationalState").value("COMPLETED"))
         .andExpect(jsonPath("$.activities[0].tasks[0].taskId").value(243));
+  }
+
+  /** Expõe o comando atômico que abre todos os revisores da atividade do produto. */
+  @Test
+  void requestsProductProcessActivityExecution() throws Exception {
+    var service = mock(BusinessProcessActivityExecutionService.class);
+    when(service.requestProductActivityExecution(45L, 4L, "pdeGate"))
+        .thenReturn(
+            new ProductProcessActivityExecutionRequestResponse(
+                45L, 4L, "pdeGate", "experiment:90", List.of()));
+    var mockMvc =
+        MockMvcBuilders.standaloneSetup(new BusinessProcessActivityExecutionController(service))
+            .build();
+
+    mockMvc
+        .perform(
+            post("/api/business-processes/45/products/4/activities/pdeGate/execution-requests"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.processDefinitionId").value(45))
+        .andExpect(jsonPath("$.productId").value(4))
+        .andExpect(jsonPath("$.activityId").value("pdeGate"))
+        .andExpect(jsonPath("$.sourceReference").value("experiment:90"));
   }
 }

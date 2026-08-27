@@ -21,4 +21,44 @@ public record ProductProcessActivityExecutionGroupResponse(
     Long activityInstanceId,
     Integer occurrenceNumber,
     int taskCount,
-    List<BusinessProcessActivityExecutionResponse> tasks) {}
+    List<BusinessProcessActivityExecutionResponse> tasks,
+    boolean executionRequestAvailable,
+    String executionRequestReason) {
+
+  /** Mantém compatibilidade com projeções que ainda não oferecem início pela tela do produto. */
+  public ProductProcessActivityExecutionGroupResponse(
+      Long activityDefinitionId,
+      String activityId,
+      String activityName,
+      String activityObjective,
+      String activityOwnerName,
+      Integer sequenceNumber,
+      boolean selectedVersionActivity,
+      String operationalState,
+      String stateReason,
+      boolean objectiveAchieved,
+      String stateEvidence,
+      Long activityInstanceId,
+      Integer occurrenceNumber,
+      int taskCount,
+      List<BusinessProcessActivityExecutionResponse> tasks) {
+    this(
+        activityDefinitionId,
+        activityId,
+        activityName,
+        activityObjective,
+        activityOwnerName,
+        sequenceNumber,
+        selectedVersionActivity,
+        operationalState,
+        stateReason,
+        objectiveAchieved,
+        stateEvidence,
+        activityInstanceId,
+        occurrenceNumber,
+        taskCount,
+        tasks,
+        false,
+        "Esta atividade não possui comando de execução configurado.");
+  }
+}

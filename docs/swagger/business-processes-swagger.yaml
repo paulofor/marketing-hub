@@ -132,6 +132,28 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProductProcessActivityExecutionHistory"
         "404": { description: Processo ou produto não encontrado }
+  /api/business-processes/{processDefinitionId}/products/{productId}/activities/{activityId}/execution-requests:
+    post:
+      summary: Abre atomicamente todas as tarefas responsáveis pela atividade do produto
+      parameters:
+        - $ref: "#/components/parameters/ProcessDefinitionId"
+        - name: productId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+        - name: activityId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Tarefas criadas ou reutilizadas na mesma referência de experimento
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductProcessActivityExecutionRequest"
+        "404": { description: Processo, produto ou atividade não encontrada }
+        "409": { description: Processo, produto, atividade ou contexto sem condição de execução }
 components:
   parameters:
     ProcessDefinitionId:
@@ -268,6 +290,12 @@ components:
           type: string
           nullable: true
           description: Código de subprocesso publicado, exclusivo em relação ao recurso especializado.
+        responsibleAgentKeys:
+          type: array
+          nullable: true
+          uniqueItems: true
+          description: Identidades técnicas dos coautores obrigatórios da atividade.
+          items: { type: string }
         documentOutput:
           type: object
           nullable: true
@@ -411,6 +439,8 @@ components:
         - selectedVersionActivity
         - taskCount
         - tasks
+        - executionRequestAvailable
+        - executionRequestReason
       properties:
         activityDefinitionId: { type: integer, format: int64, nullable: true }
         activityId: { type: string }
@@ -424,3 +454,21 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/BusinessProcessActivityExecution"
+        executionRequestAvailable: { type: boolean }
+        executionRequestReason: { type: string }
+    ProductProcessActivityExecutionRequest:
+      type: object
+      required:
+        - processDefinitionId
+        - productId
+        - activityId
+        - sourceReference
+        - tasks
+      properties:
+        processDefinitionId: { type: integer, format: int64 }
+        productId: { type: integer, format: int64 }
+        activityId: { type: string }
+        sourceReference: { type: string }
+        tasks:
+          type: array
+          items: { type: object }

@@ -1,6 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import type { ProductProcessActivityExecutionHistory } from "./types";
+import type {
+  ProductProcessActivityExecutionHistory,
+  ProductProcessActivityExecutionRequest,
+} from "./types";
 
 /** Consulta as atividades e tarefas auditáveis de um produto no processo selecionado. */
 export function useProductProcessActivityExecutions(
@@ -22,5 +25,32 @@ export function useProductProcessActivityExecutions(
           `/api/business-processes/${processDefinitionId}/products/${productId}/activity-executions`,
         )
       ).data,
+  });
+}
+
+/** Solicita ao backend todas as tarefas responsáveis pela atividade do produto. */
+export function useRequestProductProcessActivityExecution(
+  productId: number,
+  processDefinitionId: number,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (activityId: string) =>
+      (
+        await axios.post<ProductProcessActivityExecutionRequest>(
+          `/api/business-processes/${processDefinitionId}/products/${productId}/activities/${activityId}/execution-requests`,
+        )
+      ).data,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: [
+          "products",
+          productId,
+          "business-processes",
+          processDefinitionId,
+          "activity-executions",
+        ],
+      });
+    },
   });
 }

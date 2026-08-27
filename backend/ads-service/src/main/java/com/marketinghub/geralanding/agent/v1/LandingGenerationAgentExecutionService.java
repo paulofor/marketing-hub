@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -106,13 +107,16 @@ public class LandingGenerationAgentExecutionService {
   /** Conclui a atividade de Dédalo somente depois do Quality Review independente aprovado. */
   private void completeBpmTaskAfterQualityApproval(LandingQualityReviewedEvent event) {
     Long taskId = bpmTaskId(event.autonomousCycleId());
+    Optional<GeraLandingStageExecution> technicalExecution =
+        latestCompletedBpmExecution(event.experimentId(), taskId);
     agentTaskService.completeClaimedProcessTask(
         "landing-generator",
         taskId,
         new com.marketinghub.agenttask.CompleteAgentTaskRequest(
             event.reviewJson(),
             bpmEvidence(event),
-            latestBpmModelUsage(event.experimentId(), taskId)));
+            technicalExecution.map(this::modelUsage).orElseGet(List::of),
+            technicalExecution.map(this::executionAudit).orElse(null)));
   }
 
   /** Entrega à próxima atividade a candidata visual, anúncio e checkout realmente avaliados. */
@@ -445,6 +449,7 @@ public class LandingGenerationAgentExecutionService {
     execution.setPrompt(request.requestJson());
     execution.setOpenAiRequestBody(request.requestJson());
     execution.setOpenAiModel(request.model());
+    execution.setExecutionReasoningEffort(request.reasoningEffort().trim());
     execution.setModelResponse(request.responseJson());
     execution.setInputTokens(request.inputTokens());
     execution.setCachedInputTokens(request.cachedInputTokens());
@@ -486,7 +491,8 @@ public class LandingGenerationAgentExecutionService {
                 "Dédalo produziu a candidata, mas o backend não conseguiu aplicá-la: " + cause,
                 null,
                 null,
-                modelUsage(execution)));
+                modelUsage(execution),
+                executionAudit(execution)));
       }
     }
   }
@@ -525,13 +531,14 @@ public class LandingGenerationAgentExecutionService {
                     .put("executionId", textId(execution))
                     .put("experimentId", execution.getExperimentId())
                     .toString(),
-                modelUsage(execution)));
+                modelUsage(execution),
+                executionAudit(execution)));
       } else {
         agentTaskService.failClaimedProcessTask(
             "landing-generator",
             taskId,
             new com.marketinghub.agenttask.FailAgentTaskRequest(
-                request.error(), null, null, modelUsage(execution)));
+                request.error(), null, null, modelUsage(execution), executionAudit(execution)));
       }
       return;
     }
@@ -539,19 +546,15 @@ public class LandingGenerationAgentExecutionService {
         "landing-generator", reference, request.error() == null);
   }
 
-  /**
-   * Recupera somente a execução aprovada mais recente para não duplicar tentativas já reportadas.
-   */
-  private List<com.marketinghub.agenttask.AgentTaskModelUsageRequest> latestBpmModelUsage(
+  /** Recupera a última execução técnica aprovada para propagar sua auditoria à tarefa BPM. */
+  private Optional<GeraLandingStageExecution> latestCompletedBpmExecution(
       Long experimentId, Long taskId) {
     return repository
         .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
             experimentId, STAGE, BPM_TASK_PREFIX + taskId)
         .stream()
         .filter(execution -> "CONCLUIDO".equals(execution.getStatus()))
-        .findFirst()
-        .map(this::modelUsage)
-        .orElseGet(List::of);
+        .findFirst();
   }
 
   /** Converte a medição persistida da execução técnica no contrato econômico da tarefa. */
@@ -568,6 +571,23 @@ public class LandingGenerationAgentExecutionService {
     return List.of(
         new com.marketinghub.agenttask.AgentTaskModelUsageRequest(
             execution.getOpenAiModel(), "STANDARD", input, cached, output));
+  }
+
+  /** Converte a auditoria técnica completa em metadados imutáveis da tarefa BPM. */
+  private com.marketinghub.agenttask.AgentTaskExecutionAuditRequest executionAudit(
+      GeraLandingStageExecution execution) {
+    String model = textOrNull(execution.getOpenAiModel());
+    String reasoningEffort = textOrNull(execution.getExecutionReasoningEffort());
+    String prompt = textOrNull(execution.getPrompt());
+    if (model == null || reasoningEffort == null || prompt == null) return null;
+    return new com.marketinghub.agenttask.AgentTaskExecutionAuditRequest(
+        model, reasoningEffort, prompt);
+  }
+
+  /** Normaliza texto de auditoria sem inventar valores ausentes em execuções históricas. */
+  private String textOrNull(String value) {
+    if (value == null || value.isBlank()) return null;
+    return value.trim();
   }
 
   /** Recupera o snapshot congelado usado pelo MCP exclusivo. */

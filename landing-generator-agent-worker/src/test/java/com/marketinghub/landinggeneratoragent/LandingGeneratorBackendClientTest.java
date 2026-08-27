@@ -31,6 +31,7 @@ class LandingGeneratorBackendClientTest {
         .andExpect(method(HttpMethod.POST))
         .andExpect(jsonPath("$.decisionJson").value("{\"decision\":\"generated\"}"))
         .andExpect(jsonPath("$.model").value("gpt-5.6-sol"))
+        .andExpect(jsonPath("$.reasoningEffort").value("high"))
         .andRespond(withSuccess());
 
     new LandingGeneratorBackendClient(properties, builder)
@@ -40,7 +41,32 @@ class LandingGeneratorBackendClientTest {
                 "decisionJson", "{\"decision\":\"generated\"}",
                 "requestJson", "briefing",
                 "responseJson", "{\"decision\":\"generated\"}",
-                "model", "gpt-5.6-sol"));
+                "model", "gpt-5.6-sol",
+                "reasoningEffort", "high"));
+
+    server.verify();
+  }
+
+  /** Deve preservar o esforço configurado também quando Dédalo reportar uma falha técnica. */
+  @Test
+  void shouldReportReasoningEffortWhenExecutionFails() {
+    RestClient.Builder builder = RestClient.builder();
+    MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+    LandingGeneratorAgentProperties properties = new LandingGeneratorAgentProperties();
+    properties.setBackendUrl("http://backend.test");
+    LandingAgentJob job = new LandingAgentJob("job-89", 89L, Map.of());
+    server
+        .expect(
+            requestTo(
+                "http://backend.test/api/internal/geralanding/agent/v1/stage-executions/job-89/result"))
+        .andExpect(method(HttpMethod.POST))
+        .andExpect(jsonPath("$.model").value("gpt-5.6-sol"))
+        .andExpect(jsonPath("$.reasoningEffort").value("high"))
+        .andExpect(jsonPath("$.error").value("falha simulada"))
+        .andRespond(withSuccess());
+
+    new LandingGeneratorBackendClient(properties, builder)
+        .fail(job, new IllegalStateException("falha simulada"));
 
     server.verify();
   }

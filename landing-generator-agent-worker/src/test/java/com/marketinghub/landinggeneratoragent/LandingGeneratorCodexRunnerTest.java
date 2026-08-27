@@ -38,7 +38,30 @@ class LandingGeneratorCodexRunnerTest {
     assertTrue(command.contains("--json"));
     assertTrue(command.contains("read-only"));
     assertTrue(command.contains("gpt-5.6-sol"));
+    assertTrue(command.contains("model_reasoning_effort=\"high\""));
     assertTrue(command.stream().anyMatch(value -> value.contains("mcp_servers.landing_generator")));
+  }
+
+  /** Deve bloquear uma configuração sem esforço antes de iniciar qualquer chamada do Codex. */
+  @Test
+  void shouldRejectMissingReasoningEffortBeforeCodexExecution() {
+    LandingGeneratorAgentProperties properties = new LandingGeneratorAgentProperties();
+    properties.setReasoningEffort("  ");
+    LandingGeneratorCodexRunner runner =
+        new LandingGeneratorCodexRunner(
+            properties,
+            new ObjectMapper(),
+            mock(CodexTelemetryReporter.class),
+            mock(LandingHtmlCodexGenerator.class));
+
+    assertThrows(
+        IllegalStateException.class,
+        () ->
+            runner.command(
+                Path.of("/tmp/out"),
+                Path.of("/tmp/schema"),
+                Path.of("/tmp/mcp"),
+                new LandingAgentJob("job-88", 88L, Map.of())));
   }
 
   /** Deve executar o MCP no caminho instalado sem copiá-lo para fora do node_modules da imagem. */
@@ -138,10 +161,9 @@ class LandingGeneratorCodexRunnerTest {
     assertTrue(prompt.contains("checkoutContract.canonicalUrl"));
     assertTrue(schema.contains("\"required\":[\"generatedHtml\"]"));
     assertFalse(schema.contains("null"));
-    assertTrue(
-        generator
-            .command(Path.of("/tmp/html-out"), Path.of("/tmp/html-schema"))
-            .contains("read-only"));
+    List<String> command = generator.command(Path.of("/tmp/html-out"), Path.of("/tmp/html-schema"));
+    assertTrue(command.contains("read-only"));
+    assertTrue(command.contains("model_reasoning_effort=\"high\""));
   }
 
   /** Deve materializar automaticamente o HTML quando a decisão por código vier sem artefato. */

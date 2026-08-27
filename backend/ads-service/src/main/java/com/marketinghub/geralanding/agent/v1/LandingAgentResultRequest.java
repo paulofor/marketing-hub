@@ -1,6 +1,7 @@
 package com.marketinghub.geralanding.agent.v1;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
 /** Contrato auditável devolvido pelo executor independente do Agente de Landing. */
@@ -9,6 +10,7 @@ public record LandingAgentResultRequest(
     @NotBlank String requestJson,
     @NotBlank String responseJson,
     @NotBlank String model,
+    @NotBlank @Size(max = 32) String reasoningEffort,
     Integer inputTokens,
     Integer cachedInputTokens,
     Integer outputTokens,
@@ -21,6 +23,7 @@ public record LandingAgentResultRequest(
       String requestJson,
       String responseJson,
       String model,
+      String reasoningEffort,
       Integer inputTokens,
       Integer outputTokens,
       BigDecimal costUsd,
@@ -30,6 +33,7 @@ public record LandingAgentResultRequest(
         requestJson,
         responseJson,
         model,
+        reasoningEffort,
         inputTokens,
         null,
         outputTokens,

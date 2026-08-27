@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-27-landing-agent-reasoning-audit.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-27-agent-task-activity-coverage.yaml
       relativeToChangelogFile: true
   - include:

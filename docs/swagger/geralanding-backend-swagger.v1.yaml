@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub Backend - GeraLanding API
-  version: v1.3.0
+  version: v1.4.0
   description: |
     Contrato canônico dos endpoints HTTP implementados no backend `ads-service`
     para o módulo GeraLanding.
@@ -15,6 +15,7 @@ info:
     - `backend/ads-service/src/main/java/com/marketinghub/geralanding/qualityreview/controller/BackendQualityReviewController.java`
     - `backend/ads-service/src/main/java/com/marketinghub/geralanding/deliverables/web/GeraLandingDeliverablesController.java`
     - `backend/ads-service/src/main/java/com/marketinghub/geralanding/publiclanding/web/BackendPublicLandingController.java`
+    - `backend/ads-service/src/main/java/com/marketinghub/geralanding/agent/v1/LandingGenerationAgentController.java`
 
     Este arquivo é o Swagger/OpenAPI canônico do GeraLanding. Arquivos operacionais
     duplicados fora de `docs/canonical` devem ser considerados obsoletos quando divergirem
@@ -41,6 +42,8 @@ tags:
     description: Etapa de empacotamento dos entregáveis da landing.
   - name: landing-page-publication
     description: Aprovação e publicação da landing final.
+  - name: landing-generator-agent
+    description: Executor independente Dédalo para rascunhos premium de landing.
 paths:
   /api/experiments/{experimentId}/geralanding/wireframe/start:
     post:
@@ -887,6 +890,33 @@ paths:
       responses:
         '410':
           description: Landing pública não recebe resposta de IA.
+  /api/internal/geralanding/agent/v1/stage-executions/{executionId}/result:
+    post:
+      tags: [landing-generator-agent]
+      summary: Recebe o resultado auditável do Dédalo sem conceder autoridade de publicação.
+      operationId: receiveLandingGeneratorAgentResult
+      parameters:
+        - name: executionId
+          in: path
+          required: true
+          description: Identificador da execução reservada ao Dédalo.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LandingAgentResultRequest'
+      responses:
+        '204':
+          description: Resultado técnico auditável persistido para revisão independente.
+        '400':
+          description: Resultado ou auditoria inválidos.
+        '404':
+          description: Execução do Dédalo não encontrada.
+        '409':
+          description: Execução não está reservada ao executor atual.
 components:
   parameters:
     ExperimentId:
@@ -979,6 +1009,51 @@ components:
           schema:
             $ref: '#/components/schemas/PublicLandingPublicationResponse'
   schemas:
+    LandingAgentResultRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - decisionJson
+        - requestJson
+        - responseJson
+        - model
+        - reasoningEffort
+      properties:
+        decisionJson:
+          type: string
+          minLength: 1
+        requestJson:
+          type: string
+          minLength: 1
+        responseJson:
+          type: string
+          minLength: 1
+        model:
+          type: string
+          minLength: 1
+        reasoningEffort:
+          type: string
+          minLength: 1
+          maxLength: 32
+          description: Esforço configurado da execução; metadado de configuração, não cadeia de raciocínio privada.
+        inputTokens:
+          type: integer
+          format: int32
+          nullable: true
+        cachedInputTokens:
+          type: integer
+          format: int32
+          nullable: true
+        outputTokens:
+          type: integer
+          format: int32
+          nullable: true
+        costUsd:
+          type: number
+          nullable: true
+        error:
+          type: string
+          nullable: true
     StageStartResponse:
       type: object
       additionalProperties: false

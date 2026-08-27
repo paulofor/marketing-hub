@@ -111,6 +111,7 @@ class BusinessProcessActivityExecutionServiceTest {
     task.getAssignedAgent().setNickname("Dédalo");
     task.setResultJson("{\"approvalRecommendation\":\"APPROVE_FOR_PUBLICATION\"}");
     task.setExecutionModelCode(null);
+    task.setExecutionReasoningEffort(null);
     task.setExecutionPrompt(null);
     when(tasks.findRecentActivityExecutions(
             eq("landing-page-generation"), eq("select"), any(Pageable.class)))
@@ -119,6 +120,7 @@ class BusinessProcessActivityExecutionServiceTest {
     technical.setStageCode("landing-generation-agent-v1");
     technical.setStatus("CONCLUIDO");
     technical.setOpenAiModel("gpt-5.6-sol");
+    technical.setExecutionReasoningEffort("high");
     technical.setPrompt("Prompt integral de Dédalo");
     technical.setModelResponse("{\"summary\":\"Provas selecionadas e landing construída\"}");
     technical.setProcessingStartedAt(Instant.parse("2026-08-27T03:26:45Z"));
@@ -132,6 +134,7 @@ class BusinessProcessActivityExecutionServiceTest {
     assertThat(execution.comments()).contains("Provas selecionadas");
     assertThat(execution.promptSent()).isEqualTo("Prompt integral de Dédalo");
     assertThat(execution.modelCode()).isEqualTo("gpt-5.6-sol");
+    assertThat(execution.reasoningEffort()).isEqualTo("high");
     assertThat(execution.startedAt()).isEqualTo("2026-08-27T03:26:45Z");
     assertThat(execution.finishedAt()).isEqualTo("2026-08-27T03:35:14Z");
   }

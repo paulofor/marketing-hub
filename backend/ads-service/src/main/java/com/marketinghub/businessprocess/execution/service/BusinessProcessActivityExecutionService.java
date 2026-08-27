@@ -411,7 +411,7 @@ public class BusinessProcessActivityExecutionService {
         firstPresent(
             executionModelCode(task),
             technicalExecution.map(GeraLandingStageExecution::getOpenAiModel).orElse(null)),
-        executionReasoningEffort(task),
+        executionReasoningEffort(task, technicalExecution.orElse(null)),
         knownProductInternalName,
         firstPresent(
             task.getExecutionPrompt(),
@@ -446,11 +446,14 @@ public class BusinessProcessActivityExecutionService {
     return firstPresent(task.getExecutionModelCode(), evidenceText(task, "modelCode", "model"));
   }
 
-  /** Recupera o esforço registrado sem deduzi-lo a partir do modelo. */
-  private String executionReasoningEffort(AgentTask task) {
+  /** Recupera o esforço auditado sem deduzi-lo a partir do modelo ou da configuração atual. */
+  private String executionReasoningEffort(
+      AgentTask task, GeraLandingStageExecution technicalExecution) {
     return firstPresent(
         task.getExecutionReasoningEffort(),
-        evidenceText(task, "reasoningEffort", "modelReasoningEffort"));
+        firstPresent(
+            technicalExecution == null ? null : technicalExecution.getExecutionReasoningEffort(),
+            evidenceText(task, "reasoningEffort", "modelReasoningEffort")));
   }
 
   /** Lê somente atributos textuais conhecidos do JSON legado de evidência. */

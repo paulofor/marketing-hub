@@ -212,9 +212,7 @@ export default function AgentListPage() {
                               aria-hidden="true"
                             />
                           ) : null}
-                          {item.automaticExecutionEnabled
-                            ? "■ Stop"
-                            : "▶ Play"}
+                          {item.automaticExecutionEnabled ? "■ Stop" : "▶ Play"}
                         </button>
                       </div>
                     </td>
@@ -498,7 +496,7 @@ export default function AgentListPage() {
                         className="btn btn-sm btn-outline-secondary"
                         to={`/agents/${agent.id}/details`}
                       >
-                        Detalhes
+                        Detalhe do agente
                       </Link>
                       <button
                         className="btn btn-sm btn-primary"

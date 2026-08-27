@@ -204,10 +204,9 @@ describe("AgentListPage", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("link", { name: "Detalhes" })).toHaveAttribute(
-      "href",
-      "/agents/7/details",
-    );
+    expect(
+      screen.getByRole("link", { name: "Detalhe do agente" }),
+    ).toHaveAttribute("href", "/agents/7/details");
   });
 
   it("exibe o apelido e preserva o nome formal no quadro de maturidade", () => {

@@ -68,6 +68,19 @@ incrementa a versão e preserva uma fotografia auditável. As regras do Orquestr
 acionamento, pré-condições, prioridade, bloqueios e encaminhamento humano; a execução continua
 determinística no backend e os módulos executores apenas consomem pendências e reportam resultados.
 
+Cada agente da listagem deve possuir um link explícito para `Detalhe do agente`. Essa tela é a visão
+canônica e somente leitura do harness efetivo: identidade e versão, executor, runtime do modelo,
+orquestração, prompts e schemas versionados, MCP e ferramentas, capacidades, memória, segurança,
+observabilidade, entradas, saídas e recursos vinculados. O frontend não descobre arquivos nem infere
+configurações; o backend entrega um manifesto versionado e estruturado, com a referência de origem de
+cada item. O manifesto deve catalogar todos os artefatos operacionais do agente e um teste de contrato
+deve impedir referências a arquivos inexistentes ou agentes operacionais sem as seções obrigatórias.
+
+O detalhe nunca expõe valores de secrets, credenciais, tokens, conteúdo privado de raciocínio ou
+diretórios mutáveis de autenticação. Pode mostrar somente o nome do mecanismo seguro e sua referência
+versionada. Ausência de um componente deve aparecer como harness incompleto, nunca ser preenchida por
+suposição do frontend.
+
 ### Controle operacional PLAY/STOP
 
 Por decisão de 2026-08-20, cada agente possui na tela `Gestão de agentes` um controle operacional

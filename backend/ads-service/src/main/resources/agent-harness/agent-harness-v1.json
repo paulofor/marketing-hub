@@ -1,0 +1,726 @@
+{
+  "contractVersion": "agent-harness-v1",
+  "sourceReference": "docs/canonical/premium-ai-agent-architecture-canon.v1.md",
+  "sensitiveValuesPolicy": "O catálogo mostra configuração, contratos e nomes dos mecanismos seguros, mas nunca valores de secrets, tokens, credenciais, sessão de autenticação ou conteúdo privado de raciocínio.",
+  "agents": [
+    {
+      "agentKey": "growth-operator",
+      "sections": [
+        {
+          "code": "executor",
+          "title": "Executor e implantação",
+          "description": "Unidade responsável por executar Hermes de forma independente.",
+          "items": [
+            {
+              "key": "module",
+              "label": "Módulo executor",
+              "value": "growth-operator-worker",
+              "description": "Worker Spring Boot exclusivo do Operador de Crescimento.",
+              "sourceReference": "growth-operator-worker"
+            },
+            {
+              "key": "deployment",
+              "label": "Empacotamento e entrega",
+              "value": "Dockerfile, Compose e workflow próprios",
+              "description": "A imagem é reproduzida pelo fluxo versionado do repositório.",
+              "sourceReference": ".github/workflows/growth-operator-worker-ci.yml"
+            }
+          ]
+        },
+        {
+          "code": "runtime",
+          "title": "Runtime do modelo",
+          "description": "Configuração efetiva usada para executar o Codex.",
+          "items": [
+            {
+              "key": "engine",
+              "label": "Motor",
+              "value": "Codex ChatGPT",
+              "description": "Sessão Codex individual do agente; não usa chave OpenAI no prompt.",
+              "sourceReference": "growth-operator-worker/src/main/java/com/marketinghub/growthoperatorworker/CodexReadOnlyRunner.java"
+            },
+            {
+              "key": "reasoning",
+              "label": "Esforço de raciocínio",
+              "value": "high",
+              "description": "Valor padrão configurável por CODEX_REASONING_EFFORT.",
+              "sourceReference": "growth-operator-worker/src/main/resources/application.yml"
+            },
+            {
+              "key": "limits",
+              "label": "Sandbox e timeout",
+              "value": "read-only · PT40M",
+              "description": "Filesystem somente leitura e limite total por execução.",
+              "sourceReference": "growth-operator-worker/src/main/resources/application.yml"
+            }
+          ]
+        },
+        {
+          "code": "orchestration",
+          "title": "Fila e callbacks",
+          "description": "Contratos oficiais usados para reservar e concluir trabalho.",
+          "items": [
+            {
+              "key": "pending",
+              "label": "Ponto inicial",
+              "value": "/api/growth-operator/v1/internal/executions/pending/claim",
+              "description": "Reserva atômica de uma execução pendente.",
+              "sourceReference": "growth-operator-worker/src/main/java/com/marketinghub/growthoperatorworker/GrowthOperatorBackendClient.java"
+            },
+            {
+              "key": "callbacks",
+              "label": "Callbacks",
+              "value": "/executions/{id}/complete · /executions/{id}/fail",
+              "description": "O backend persiste resultado e falha e continua dono do avanço.",
+              "sourceReference": "growth-operator-worker/src/main/java/com/marketinghub/growthoperatorworker/GrowthOperatorBackendClient.java"
+            },
+            {
+              "key": "polling",
+              "label": "Consumo",
+              "value": "60 segundos e tarefas BPM a cada minuto",
+              "description": "Rotina operacional controlada exclusivamente pelo worker.",
+              "sourceReference": "growth-operator-worker/src/main/java/com/marketinghub/growthoperatorworker/GrowthOperatorScheduler.java"
+            }
+          ]
+        },
+        {
+          "code": "memory",
+          "title": "Contexto e memória",
+          "description": "Como o agente recebe contexto e preserva aprendizado governado.",
+          "items": [
+            {
+              "key": "memory",
+              "label": "Memória premium",
+              "value": "MySQL textual + evidências S3 por referência",
+              "description": "Recuperação limitada e candidatos sem autopromoção.",
+              "sourceReference": "docs/canonical/premium-ai-agent-architecture-canon.v1.md"
+            },
+            {
+              "key": "tools",
+              "label": "Ferramentas de memória",
+              "value": "recuperar_memoria_especializada · registrar_aprendizado_candidato",
+              "description": "O agentKey é fixado no MCP e não pode ser escolhido pelo modelo.",
+              "sourceReference": "growth-operator-worker/src/main/resources/mcp/marketing-hub-readonly.mjs"
+            }
+          ]
+        },
+        {
+          "code": "security",
+          "title": "Segurança e autoridade",
+          "description": "Limites que o harness aplica antes de qualquer ação externa.",
+          "items": [
+            {
+              "key": "authority",
+              "label": "Nível de autonomia",
+              "value": "ADVISE · revisão humana obrigatória · sem efeito externo",
+              "description": "Não publica, gasta, altera preço ou registra estimativa como venda.",
+              "sourceReference": "config/agents/premium-agent-compliance.json"
+            },
+            {
+              "key": "network",
+              "label": "Rede e fontes",
+              "value": "Internet liberada para pesquisa; conteúdo externo não confiável",
+              "description": "Fontes permanecem auditáveis e não ampliam autoridade.",
+              "sourceReference": "docs/canonical/premium-ai-agent-architecture-canon.v1.md"
+            }
+          ]
+        },
+        {
+          "code": "observability",
+          "title": "Observabilidade e saúde",
+          "description": "Sinais que permitem provar prontidão e auditar cada execução.",
+          "items": [
+            {
+              "key": "health",
+              "label": "Health do executor",
+              "value": "heartbeat até 60s · backend · versão · codex login status",
+              "description": "READY exige todos os sinais recentes e coerentes.",
+              "sourceReference": "config/agents/codex-agent-health-compliance.json"
+            },
+            {
+              "key": "telemetry",
+              "label": "Telemetria",
+              "value": "prompt resolvido, resposta, tokens, custo, duração, fontes, erro e decisão",
+              "description": "Dados correlacionados por execução e persistidos no backend.",
+              "sourceReference": "docs/canonical/premium-ai-agent-architecture-canon.v1.md"
+            }
+          ]
+        }
+      ],
+      "artifacts": [
+        { "artifactType": "MCP_SERVER", "name": "MCP do Operador de Crescimento", "version": "v1", "path": "growth-operator-worker/src/main/resources/mcp/marketing-hub-readonly.mjs", "description": "Ferramentas oficiais de leitura, memória e callbacks permitidos." },
+        { "artifactType": "PROMPT", "name": "Diagnóstico comercial", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/growth-operator/v1/diagnosis.md", "description": "Prompt operacional principal." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema do diagnóstico comercial", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/growth-operator/v1/diagnosis-schema.json", "description": "Contrato estruturado de saída." },
+        { "artifactType": "PROMPT", "name": "Revisão de oportunidade", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/opportunity-review/v1/review.md", "description": "Revisão comercial independente de uma oportunidade." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão de oportunidade", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/opportunity-review/v1/review-schema.json", "description": "Contrato estruturado da revisão." },
+        { "artifactType": "PROMPT", "name": "Otimização de experimento BPM", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v1/experiment-optimization.md", "description": "Diagnóstico e próxima ação do experimento." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema de otimização de experimento", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v1/experiment-optimization-schema.json", "description": "Contrato estruturado da otimização." },
+        { "artifactType": "PROMPT", "name": "Contrato de comunicação PDE", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v1/pde-communication-contract.md", "description": "Contrato comercial de comunicação do PDE." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema do contrato de comunicação PDE", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v1/pde-communication-contract-schema.json", "description": "Saída estruturada do contrato." },
+        { "artifactType": "PROMPT", "name": "Controle de distribuição comercial", "version": "v4", "path": "growth-operator-worker/src/main/resources/prompts/pde-commercial-plan/v4/distribution-control.md", "description": "Gate de distribuição do plano comercial." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema do controle de distribuição", "version": "v4", "path": "growth-operator-worker/src/main/resources/prompts/pde-commercial-plan/v4/distribution-control-schema.json", "description": "Contrato do gate de distribuição." },
+        { "artifactType": "RUNTIME_CONFIG", "name": "Configuração do worker", "version": "v1", "path": "growth-operator-worker/src/main/resources/application.yml", "description": "Modelo, raciocínio, timeout e observabilidade." },
+        { "artifactType": "DEPLOYMENT", "name": "Container do worker", "version": "v1", "path": "growth-operator-worker/Dockerfile", "description": "Imagem reproduzível e isolada." },
+        { "artifactType": "WORKFLOW", "name": "CI/CD do worker", "version": "v1", "path": ".github/workflows/growth-operator-worker-ci.yml", "description": "Testes, build e publicação versionados." }
+      ]
+    },
+    {
+      "agentKey": "customer-agent",
+      "sections": [
+        {
+          "code": "executor",
+          "title": "Executor e implantação",
+          "description": "Unidade responsável por executar Psique de forma independente.",
+          "items": [
+            { "key": "module", "label": "Módulo executor", "value": "customer-agent-worker", "description": "Worker Spring Boot do Agente Cliente.", "sourceReference": "customer-agent-worker" },
+            { "key": "deployment", "label": "Empacotamento e entrega", "value": "Dockerfile, Compose e workflow próprios", "description": "Imagem reproduzível com navegador quando a jornada exigir.", "sourceReference": ".github/workflows/customer-agent-worker-ci.yml" }
+          ]
+        },
+        {
+          "code": "runtime",
+          "title": "Runtime do modelo",
+          "description": "Configuração do Codex e da inspeção comportamental.",
+          "items": [
+            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · gpt-5.6-sol", "description": "Modelo canônico configurável por CUSTOMER_AGENT_MODEL.", "sourceReference": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/CustomerEvaluationCodexRunner.java" },
+            { "key": "reasoning", "label": "Esforço de raciocínio", "value": "Herda a sessão Codex; o módulo não sobrescreve", "description": "A tela não presume um esforço que o executor não fixou.", "sourceReference": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/CustomerEvaluationCodexRunner.java" },
+            { "key": "limits", "label": "Sandbox e timeout", "value": "read-only · 40 minutos", "description": "Inclui evidência visual temporária e limpeza ao final.", "sourceReference": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/CustomerEvaluationCodexRunner.java" }
+          ]
+        },
+        {
+          "code": "orchestration",
+          "title": "Fila e callbacks",
+          "description": "Contratos oficiais das avaliações de cliente.",
+          "items": [
+            { "key": "pending", "label": "Ponto inicial", "value": "/api/customer-agent/v1/internal/evaluations/pending/claim", "description": "Reserva uma avaliação pendente no backend.", "sourceReference": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/CustomerAgentScheduler.java" },
+            { "key": "callbacks", "label": "Callbacks", "value": "/evaluations/{id}/complete · /{resource}/{id}/fail", "description": "Persiste avaliação ou falha sem avançar o fluxo pelo worker.", "sourceReference": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/CustomerAgentScheduler.java" },
+            { "key": "polling", "label": "Consumo", "value": "60 segundos", "description": "Avaliações, observações e tarefas BPM usam polling próprio do executor.", "sourceReference": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/CustomerAgentScheduler.java" }
+          ]
+        },
+        {
+          "code": "memory",
+          "title": "Contexto e memória",
+          "description": "Memória comportamental segregada e evidências de jornada.",
+          "items": [
+            { "key": "memory", "label": "Memória premium", "value": "MySQL textual + evidências S3 por referência", "description": "Conhecimento só é promovido após confirmação externa.", "sourceReference": "docs/canonical/premium-ai-agent-architecture-canon.v1.md" },
+            { "key": "tools", "label": "Ferramentas", "value": "contexto do cliente · memória especializada · observação mobile", "description": "Browser e MCP usam contexto congelado do backend.", "sourceReference": "customer-agent-worker/src/main/resources/mcp/customer-agent.mjs" }
+          ]
+        },
+        {
+          "code": "security",
+          "title": "Segurança e autoridade",
+          "description": "Proteções de dados e de decisão independente.",
+          "items": [
+            { "key": "authority", "label": "Nível de autonomia", "value": "ADVISE · revisão humana obrigatória · sem efeito externo", "description": "Psique avalia percepção, mas não publica nem altera oferta.", "sourceReference": "config/agents/premium-agent-compliance.json" },
+            { "key": "segregation", "label": "Segregação", "value": "tenant · produto · experimento · execução", "description": "Nenhuma ferramenta escolhe ou troca identificadores durante o ciclo.", "sourceReference": "docs/canonical/premium-ai-agent-architecture-canon.v1.md" }
+          ]
+        },
+        {
+          "code": "observability",
+          "title": "Observabilidade e saúde",
+          "description": "Prontidão, auditoria de modelo e evidências visuais.",
+          "items": [
+            { "key": "health", "label": "Health do executor", "value": "heartbeat até 60s · backend · versão · codex login status", "description": "Heartbeat vencido não pode aparecer como READY.", "sourceReference": "config/agents/codex-agent-health-compliance.json" },
+            { "key": "telemetry", "label": "Telemetria", "value": "prompt, resposta, modelo, tokens, custo, duração, screenshots, fontes e erro", "description": "Auditoria correlacionada à avaliação e à tarefa BPM.", "sourceReference": "customer-agent-worker/src/main/java/com/marketinghub/customeragentworker/CodexTelemetryReporter.java" }
+          ]
+        }
+      ],
+      "artifacts": [
+        { "artifactType": "MCP_SERVER", "name": "MCP do Agente Cliente", "version": "v1", "path": "customer-agent-worker/src/main/resources/mcp/customer-agent.mjs", "description": "Contexto e memória limitados ao domínio de Psique." },
+        { "artifactType": "PROMPT", "name": "Núcleo comportamental", "version": "v2", "path": "customer-agent-worker/src/main/resources/prompts/psique/behavioral-core-v2.md", "description": "Princípios comportamentais compartilhados." },
+        { "artifactType": "PROMPT", "name": "Avaliação do cliente", "version": "v1", "path": "customer-agent-worker/src/main/resources/prompts/customer-agent/v1/evaluation.md", "description": "Avaliação principal." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da avaliação do cliente", "version": "v1", "path": "customer-agent-worker/src/main/resources/prompts/customer-agent/v1/evaluation-schema.json", "description": "Contrato estruturado da avaliação." },
+        { "artifactType": "PROMPT", "name": "Observação digital", "version": "v1", "path": "customer-agent-worker/src/main/resources/prompts/customer-agent/v1/digital-observation.md", "description": "Observação da jornada digital." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da observação digital", "version": "v1", "path": "customer-agent-worker/src/main/resources/prompts/customer-agent/v1/digital-observation-schema.json", "description": "Contrato estruturado da observação." },
+        { "artifactType": "PROMPT", "name": "Avaliação comportamental", "version": "behavioral-v1", "path": "customer-agent-worker/src/main/resources/prompts/customer-agent/behavioral-v1/evaluation.md", "description": "Simulação comportamental v1." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema comportamental", "version": "behavioral-v1", "path": "customer-agent-worker/src/main/resources/prompts/customer-agent/behavioral-v1/evaluation-schema.json", "description": "Contrato estruturado v1." },
+        { "artifactType": "PROMPT", "name": "Avaliação comportamental", "version": "behavioral-v2", "path": "customer-agent-worker/src/main/resources/prompts/customer-agent/behavioral-v2/evaluation.md", "description": "Simulação comportamental v2." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema comportamental", "version": "behavioral-v2", "path": "customer-agent-worker/src/main/resources/prompts/customer-agent/behavioral-v2/evaluation-schema.json", "description": "Contrato estruturado v2." },
+        { "artifactType": "PROMPT", "name": "Revisão de oportunidade", "version": "v1", "path": "customer-agent-worker/src/main/resources/prompts/opportunity-review/v1/review.md", "description": "Leitura da oportunidade pela cliente." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão de oportunidade", "version": "v1", "path": "customer-agent-worker/src/main/resources/prompts/opportunity-review/v1/review-schema.json", "description": "Contrato da revisão." },
+        { "artifactType": "PROMPT", "name": "Revisão de criativo", "version": "bpm-v1", "path": "customer-agent-worker/src/main/resources/prompts/bpm/creative-customer-review.md", "description": "Percepção da cliente sobre o criativo." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão de criativo", "version": "bpm-v1", "path": "customer-agent-worker/src/main/resources/prompts/bpm/creative-customer-review-schema.json", "description": "Contrato da revisão." },
+        { "artifactType": "PROMPT", "name": "Revisão de landing", "version": "bpm-v1", "path": "customer-agent-worker/src/main/resources/prompts/bpm/landing-customer-review.md", "description": "Percepção da cliente sobre a landing." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão de landing", "version": "bpm-v1", "path": "customer-agent-worker/src/main/resources/prompts/bpm/landing-customer-review-schema.json", "description": "Contrato da revisão." },
+        { "artifactType": "PROMPT", "name": "Homologação comercial PDE", "version": "bpm-v1", "path": "customer-agent-worker/src/main/resources/prompts/bpm/pde-commercial-homologation-customer-review.md", "description": "Revisão da jornada comercial pelo cliente." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da homologação PDE", "version": "bpm-v1", "path": "customer-agent-worker/src/main/resources/prompts/bpm/pde-commercial-homologation-customer-review-schema.json", "description": "Contrato da homologação." },
+        { "artifactType": "PROMPT", "name": "Revisão da experiência PDE", "version": "bpm-v1", "path": "customer-agent-worker/src/main/resources/prompts/bpm/pde-experience-review.md", "description": "Revisão funcional da experiência." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da experiência PDE", "version": "bpm-v1", "path": "customer-agent-worker/src/main/resources/prompts/bpm/pde-experience-review-schema.json", "description": "Contrato da revisão da experiência." },
+        { "artifactType": "PROMPT", "name": "Revisão do plano comercial", "version": "v4", "path": "customer-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/customer-review.md", "description": "Avaliação do plano comercial pela cliente." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão do plano comercial", "version": "v4", "path": "customer-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/customer-review-schema.json", "description": "Contrato da revisão." },
+        { "artifactType": "PROMPT", "name": "Revisão de construção PDE", "version": "v2", "path": "customer-agent-worker/src/main/resources/prompts/pde-construction/v2/customer-review.md", "description": "Avaliação do produto construído." },
+        { "artifactType": "RUNTIME_CONFIG", "name": "Configuração do worker", "version": "v1", "path": "customer-agent-worker/src/main/resources/application.yml", "description": "Aplicação e observabilidade." },
+        { "artifactType": "DEPLOYMENT", "name": "Container do worker", "version": "v1", "path": "customer-agent-worker/Dockerfile", "description": "Imagem reproduzível e isolada." },
+        { "artifactType": "WORKFLOW", "name": "CI/CD do worker", "version": "v1", "path": ".github/workflows/customer-agent-worker-ci.yml", "description": "Testes, build e publicação versionados." }
+      ]
+    },
+    {
+      "agentKey": "financial-agent",
+      "sections": [
+        {
+          "code": "executor",
+          "title": "Executor e implantação",
+          "description": "Unidade responsável por executar Plutus.",
+          "items": [
+            { "key": "module", "label": "Módulo executor", "value": "financial-agent-worker", "description": "Worker Spring Boot financeiro independente.", "sourceReference": "financial-agent-worker" },
+            { "key": "deployment", "label": "Empacotamento e entrega", "value": "Dockerfile, Compose e workflow próprios", "description": "Sem browser; recebe snapshots financeiros congelados.", "sourceReference": ".github/workflows/financial-agent-worker-ci.yml" }
+          ]
+        },
+        {
+          "code": "runtime",
+          "title": "Runtime do modelo",
+          "description": "Configuração do Codex financeiro.",
+          "items": [
+            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · gpt-5.6-sol", "description": "Modelo canônico configurável por CODEX_MODEL.", "sourceReference": "financial-agent-worker/src/main/resources/application.yml" },
+            { "key": "reasoning", "label": "Esforço de raciocínio", "value": "Herda a sessão Codex; o módulo não sobrescreve", "description": "Nenhum valor é inferido na tela.", "sourceReference": "financial-agent-worker/src/main/java/com/marketinghub/financialagentworker/FinancialCodexRunner.java" },
+            { "key": "limits", "label": "Sandbox e timeout", "value": "read-only · PT40M", "description": "Execução limitada ao snapshot persistido.", "sourceReference": "financial-agent-worker/src/main/resources/application.yml" }
+          ]
+        },
+        {
+          "code": "orchestration",
+          "title": "Fila e callbacks",
+          "description": "Contratos oficiais das análises financeiras.",
+          "items": [
+            { "key": "pending", "label": "Ponto inicial", "value": "/api/financial-agent/v1/internal/executions/pending/claim", "description": "Reserva execução financeira pendente.", "sourceReference": "financial-agent-worker/src/main/java/com/marketinghub/financialagentworker/FinancialAgentBackendClient.java" },
+            { "key": "callbacks", "label": "Callbacks", "value": "/executions/{id}/complete · /executions/{id}/fail", "description": "Registra resultado ou falha no backend.", "sourceReference": "financial-agent-worker/src/main/java/com/marketinghub/financialagentworker/FinancialAgentBackendClient.java" },
+            { "key": "polling", "label": "Consumo", "value": "60 segundos · preços às 07 minutos de cada hora", "description": "Inclui ciclos de vídeo e pesquisa de preços de provedores.", "sourceReference": "financial-agent-worker/src/main/java/com/marketinghub/financialagentworker/FinancialAgentScheduler.java" }
+          ]
+        },
+        {
+          "code": "memory",
+          "title": "Contexto e memória",
+          "description": "Snapshots financeiros congelados e memória segregada.",
+          "items": [
+            { "key": "memory", "label": "Memória premium", "value": "MySQL textual + evidências S3 por referência", "description": "Aprendizados permanecem candidatos até confirmação.", "sourceReference": "docs/canonical/premium-ai-agent-architecture-canon.v1.md" },
+            { "key": "tools", "label": "Ferramentas", "value": "execução financeira · memória especializada", "description": "MCP exclusivo, sem acesso direto ao banco.", "sourceReference": "financial-agent-worker/src/main/resources/mcp/financial-agent.mjs" }
+          ]
+        },
+        {
+          "code": "security",
+          "title": "Segurança e autoridade",
+          "description": "Limites financeiros determinísticos.",
+          "items": [
+            { "key": "authority", "label": "Nível de autonomia", "value": "ADVISE · revisão humana obrigatória · sem efeito externo", "description": "Plutus não contrata, compra, gasta ou altera orçamento.", "sourceReference": "config/agents/premium-agent-compliance.json" },
+            { "key": "browser", "label": "Browser", "value": "Não instalado", "description": "O agente trabalha sobre snapshots oficiais, reduzindo superfície de risco.", "sourceReference": "docs/canonical/premium-ai-agent-architecture-canon.v1.md" }
+          ]
+        },
+        {
+          "code": "observability",
+          "title": "Observabilidade e saúde",
+          "description": "Prontidão e auditoria financeira.",
+          "items": [
+            { "key": "health", "label": "Health do executor", "value": "heartbeat até 60s · backend · versão · codex login status", "description": "READY exige prova recente.", "sourceReference": "config/agents/codex-agent-health-compliance.json" },
+            { "key": "telemetry", "label": "Telemetria", "value": "request, response, tokens, custo, duração, fontes, erro e decisão", "description": "Valores calculados continuam separados de receita ou venda real.", "sourceReference": "docs/canonical/premium-ai-agent-architecture-canon.v1.md" }
+          ]
+        }
+      ],
+      "artifacts": [
+        { "artifactType": "MCP_SERVER", "name": "MCP do Agente Financeiro", "version": "v1", "path": "financial-agent-worker/src/main/resources/mcp/financial-agent.mjs", "description": "Snapshots e memória do domínio financeiro." },
+        { "artifactType": "PROMPT", "name": "Relatório financeiro", "version": "v1", "path": "financial-agent-worker/src/main/resources/prompts/financial-agent/v1/report.md", "description": "Relatório operacional principal." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema do relatório financeiro", "version": "v1", "path": "financial-agent-worker/src/main/resources/prompts/financial-agent/v1/report-schema.json", "description": "Contrato estruturado do relatório." },
+        { "artifactType": "PROMPT", "name": "Premissas comerciais", "version": "v1", "path": "financial-agent-worker/src/main/resources/prompts/financial-agent/v1/commercial-assumptions.md", "description": "Proposta de premissas sem confundir estimativa com fato." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema das premissas comerciais", "version": "v1", "path": "financial-agent-worker/src/main/resources/prompts/financial-agent/v1/commercial-assumptions-schema.json", "description": "Contrato estruturado das premissas." },
+        { "artifactType": "PROMPT", "name": "Preços de provedores", "version": "v1", "path": "financial-agent-worker/src/main/resources/prompts/financial-agent/v1/provider-pricing.md", "description": "Pesquisa de preço e custo de provedores." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema de preços de provedores", "version": "v1", "path": "financial-agent-worker/src/main/resources/prompts/financial-agent/v1/provider-pricing-schema.json", "description": "Contrato estruturado de preços." },
+        { "artifactType": "PROMPT", "name": "Projeção de receita", "version": "v1", "path": "financial-agent-worker/src/main/resources/prompts/financial-agent/v1/revenue-projection.md", "description": "Projeção separada dos resultados reconciliados." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da projeção de receita", "version": "v1", "path": "financial-agent-worker/src/main/resources/prompts/financial-agent/v1/revenue-projection-schema.json", "description": "Contrato estruturado da projeção." },
+        { "artifactType": "PROMPT", "name": "Revisão de ciclo de vídeo", "version": "v1", "path": "financial-agent-worker/src/main/resources/prompts/financial-agent/v1/video-cycle-review.md", "description": "Revisão econômica da produção audiovisual." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão de vídeo", "version": "v1", "path": "financial-agent-worker/src/main/resources/prompts/financial-agent/v1/video-cycle-review-schema.json", "description": "Contrato estruturado da revisão." },
+        { "artifactType": "PROMPT", "name": "Revisão de oportunidade", "version": "v1", "path": "financial-agent-worker/src/main/resources/prompts/opportunity-review/v1/review.md", "description": "Leitura financeira da oportunidade." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão de oportunidade", "version": "v1", "path": "financial-agent-worker/src/main/resources/prompts/opportunity-review/v1/review-schema.json", "description": "Contrato da revisão." },
+        { "artifactType": "PROMPT", "name": "Economia do plano comercial", "version": "v4", "path": "financial-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/economics.md", "description": "Gate econômico do plano comercial." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema econômico do plano", "version": "v4", "path": "financial-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/economics-schema.json", "description": "Contrato do gate econômico." },
+        { "artifactType": "RUNTIME_CONFIG", "name": "Configuração do worker", "version": "v1", "path": "financial-agent-worker/src/main/resources/application.yml", "description": "Modelo, timeout e observabilidade." },
+        { "artifactType": "DEPLOYMENT", "name": "Container do worker", "version": "v1", "path": "financial-agent-worker/Dockerfile", "description": "Imagem reproduzível e isolada." },
+        { "artifactType": "WORKFLOW", "name": "CI/CD do worker", "version": "v1", "path": ".github/workflows/financial-agent-worker-ci.yml", "description": "Testes, build e publicação versionados." }
+      ]
+    },
+    {
+      "agentKey": "experiment-strategist",
+      "sections": [
+        {
+          "code": "executor",
+          "title": "Executor e implantação",
+          "description": "Unidade responsável por executar Atena.",
+          "items": [
+            { "key": "module", "label": "Módulo executor", "value": "experiment-strategist-worker", "description": "Worker Spring Boot do Estrategista de Experimentos.", "sourceReference": "experiment-strategist-worker" },
+            { "key": "deployment", "label": "Empacotamento e entrega", "value": "Dockerfile, Compose e workflow próprios", "description": "Inclui pesquisa pública e integração opcional com Clarity.", "sourceReference": ".github/workflows/experiment-strategist-worker-ci.yml" }
+          ]
+        },
+        {
+          "code": "runtime",
+          "title": "Runtime do modelo",
+          "description": "Configuração do Codex estrategista.",
+          "items": [
+            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · modelo do contrato do agente", "description": "A pesquisa web é habilitada explicitamente no comando.", "sourceReference": "experiment-strategist-worker/src/main/java/com/marketinghub/experimentstrategistworker/CodexStrategistRunner.java" },
+            { "key": "reasoning", "label": "Esforço de raciocínio", "value": "Herda a sessão Codex; o módulo não sobrescreve", "description": "Nenhum valor é inventado pelo painel.", "sourceReference": "experiment-strategist-worker/src/main/java/com/marketinghub/experimentstrategistworker/CodexStrategistRunner.java" },
+            { "key": "limits", "label": "Sandbox e timeout", "value": "read-only · PT40M", "description": "Possui também limite de inatividade durante a execução.", "sourceReference": "experiment-strategist-worker/src/main/resources/application.yml" }
+          ]
+        },
+        {
+          "code": "orchestration",
+          "title": "Fila e callbacks",
+          "description": "Contratos oficiais das decisões estratégicas.",
+          "items": [
+            { "key": "pending", "label": "Ponto inicial", "value": "/api/experiment-strategist/v1/internal/executions/pending/claim", "description": "Reserva uma execução estratégica.", "sourceReference": "experiment-strategist-worker/src/main/java/com/marketinghub/experimentstrategistworker/StrategistBackendClient.java" },
+            { "key": "callbacks", "label": "Callbacks", "value": "/executions/{id}/complete · /executions/{id}/fail", "description": "Resultado e falha retornam ao backend.", "sourceReference": "experiment-strategist-worker/src/main/java/com/marketinghub/experimentstrategistworker/StrategistBackendClient.java" },
+            { "key": "polling", "label": "Consumo", "value": "60 segundos", "description": "Execução periódica permanece no worker.", "sourceReference": "experiment-strategist-worker/src/main/java/com/marketinghub/experimentstrategistworker/StrategistScheduler.java" }
+          ]
+        },
+        {
+          "code": "memory",
+          "title": "Contexto e memória",
+          "description": "Memória estratégica, pesquisa pública e sinais agregados.",
+          "items": [
+            { "key": "memory", "label": "Memória premium", "value": "MySQL textual + evidências S3 por referência", "description": "Recuperação curta e aprendizado candidato.", "sourceReference": "docs/canonical/premium-ai-agent-architecture-canon.v1.md" },
+            { "key": "tools", "label": "MCPs", "value": "experiment-strategist · clarity-aggregate opcional", "description": "Atena consulta contexto congelado e métricas agregadas autorizadas.", "sourceReference": "experiment-strategist-worker/src/main/resources/mcp" }
+          ]
+        },
+        {
+          "code": "security",
+          "title": "Segurança e autoridade",
+          "description": "Limites da estratégia antes de qualquer ativação.",
+          "items": [
+            { "key": "authority", "label": "Nível de autonomia", "value": "ADVISE · revisão humana obrigatória · sem efeito externo", "description": "Atena propõe experimento, mas não publica nem gasta.", "sourceReference": "config/agents/premium-agent-compliance.json" },
+            { "key": "external-data", "label": "Conteúdo externo", "value": "Não confiável e sempre citado", "description": "Pesquisa amplia evidência sem ampliar autoridade.", "sourceReference": "docs/canonical/premium-ai-agent-architecture-canon.v1.md" }
+          ]
+        },
+        {
+          "code": "observability",
+          "title": "Observabilidade e saúde",
+          "description": "Prontidão, fontes e decisões estratégicas auditáveis.",
+          "items": [
+            { "key": "health", "label": "Health do executor", "value": "heartbeat até 60s · backend · versão · codex login status", "description": "READY exige prova recente.", "sourceReference": "config/agents/codex-agent-health-compliance.json" },
+            { "key": "telemetry", "label": "Telemetria", "value": "prompt, resposta, ferramentas, fontes, tokens, custo, duração, erro e decisão", "description": "Correlacionada à execução do dossiê ou experimento.", "sourceReference": "docs/canonical/premium-ai-agent-architecture-canon.v1.md" }
+          ]
+        }
+      ],
+      "artifacts": [
+        { "artifactType": "MCP_SERVER", "name": "MCP do Estrategista", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/mcp/experiment-strategist.mjs", "description": "Contexto e memória da estratégia." },
+        { "artifactType": "MCP_SERVER", "name": "MCP agregado do Clarity", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/mcp/clarity-aggregate.mjs", "description": "Métricas agregadas opcionais, sem dados crus desnecessários." },
+        { "artifactType": "PROMPT", "name": "Pesquisa estratégica", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v1/research.md", "description": "Prompt operacional principal." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da pesquisa estratégica", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v1/research-schema.json", "description": "Contrato da pesquisa." },
+        { "artifactType": "PROMPT", "name": "Premissas comerciais", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v1/commercial-assumptions.md", "description": "Proposta auditável de premissas." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema das premissas comerciais", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v1/commercial-assumptions-schema.json", "description": "Contrato das premissas." },
+        { "artifactType": "PROMPT", "name": "Revisão de oportunidade", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/prompts/opportunity-review/v1/review.md", "description": "Revisão estratégica de oportunidade." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão de oportunidade", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/prompts/opportunity-review/v1/review-schema.json", "description": "Contrato da revisão." },
+        { "artifactType": "RUNTIME_CONFIG", "name": "Configuração do worker", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/application.yml", "description": "Modelo, timeout, Clarity e observabilidade." },
+        { "artifactType": "DEPLOYMENT", "name": "Container do worker", "version": "v1", "path": "experiment-strategist-worker/Dockerfile", "description": "Imagem reproduzível e isolada." },
+        { "artifactType": "WORKFLOW", "name": "CI/CD do worker", "version": "v1", "path": ".github/workflows/experiment-strategist-worker-ci.yml", "description": "Testes, build e publicação versionados." }
+      ]
+    },
+    {
+      "agentKey": "meta-ad-approver",
+      "sections": [
+        {
+          "code": "executor",
+          "title": "Executor e implantação",
+          "description": "Unidades responsáveis pela revisão independente e pelo estúdio visual de Têmis.",
+          "items": [
+            { "key": "module", "label": "Módulo executor", "value": "meta-ad-approver-worker", "description": "Worker de revisão; o Estúdio de Imagens permanece função separada.", "sourceReference": "meta-ad-approver-worker" },
+            { "key": "deployment", "label": "Empacotamento e entrega", "value": "Dockerfile, Compose e workflow próprios", "description": "Browser, visão e produção de imagem ficam segregados por papel.", "sourceReference": ".github/workflows/meta-ad-approver-worker-ci.yml" }
+          ]
+        },
+        {
+          "code": "runtime",
+          "title": "Runtime do modelo",
+          "description": "Perfis de revisão Codex e produção visual.",
+          "items": [
+            { "key": "review-engine", "label": "Revisor", "value": "Codex ChatGPT · gpt-5.6-sol · high", "description": "Revisão comercial independente em sandbox somente leitura.", "sourceReference": "meta-ad-approver-worker/src/main/resources/application.yml" },
+            { "key": "image-engine", "label": "Estúdio visual", "value": "OpenAI · gpt-image-2", "description": "Somente o papel de estúdio pode produzir imagem; o revisor não se autoaprova.", "sourceReference": "meta-ad-approver-worker/src/main/resources/application.yml" },
+            { "key": "limits", "label": "Timeouts", "value": "Codex PT40M · imagem PT3M", "description": "Limites independentes para revisão e geração.", "sourceReference": "meta-ad-approver-worker/src/main/resources/application.yml" }
+          ]
+        },
+        {
+          "code": "orchestration",
+          "title": "Fila e callbacks",
+          "description": "Filas canônicas de revisão e estúdio.",
+          "items": [
+            { "key": "pending", "label": "Revisão de criativo", "value": "/api/internal/creatives/agent-review/stage-executions/pending", "description": "Reserva no máximo o limite configurado de revisões.", "sourceReference": "meta-ad-approver-worker/src/main/java/com/marketinghub/metaadapproverworker/MetaAdApproverBackendClient.java" },
+            { "key": "callback", "label": "Callback de revisão", "value": "/api/internal/creatives/{id}/agent-review/result", "description": "Resultado volta ao backend para decisão de gate.", "sourceReference": "meta-ad-approver-worker/src/main/java/com/marketinghub/metaadapproverworker/MetaAdApproverBackendClient.java" },
+            { "key": "studio", "label": "Estúdio de imagem", "value": "/api/internal/planning/image-studio/v1/stage-executions/pending", "description": "Produção visual separada da revisão independente.", "sourceReference": "meta-ad-approver-worker/src/main/java/com/marketinghub/metaadapproverworker/TemisImageStudioBackendClient.java" }
+          ]
+        },
+        {
+          "code": "memory",
+          "title": "Contexto e memória",
+          "description": "Memória visual governada e evidência multimodal.",
+          "items": [
+            { "key": "memory", "label": "Memória premium", "value": "MySQL textual + evidências S3 por referência", "description": "Estratégias visuais só são promovidas após replay e holdout.", "sourceReference": "docs/canonical/premium-ai-agent-architecture-canon.v1.md" },
+            { "key": "capabilities", "label": "Capacidades", "value": "browser · visão · imagem original · frames de vídeo · desktop/mobile", "description": "Inspeção visual completa no papel revisor.", "sourceReference": "config/agents/premium-agent-compliance.json" }
+          ]
+        },
+        {
+          "code": "security",
+          "title": "Segurança e autoridade",
+          "description": "Separação entre produzir, revisar e autorizar.",
+          "items": [
+            { "key": "authority", "label": "Nível de autonomia", "value": "ADVISE · revisão humana obrigatória · sem efeito externo", "description": "Não publica, gasta ou aprova humanamente.", "sourceReference": "config/agents/premium-agent-compliance.json" },
+            { "key": "separation", "label": "Separação de funções", "value": "Revisor Codex ≠ Estúdio GPT Image 2", "description": "O segredo visual não entra no processo revisor.", "sourceReference": "docs/canonical/premium-ai-agent-architecture-canon.v1.md" }
+          ]
+        },
+        {
+          "code": "observability",
+          "title": "Observabilidade e saúde",
+          "description": "Prontidão, evidências e qualidade visual auditáveis.",
+          "items": [
+            { "key": "health", "label": "Health do executor", "value": "heartbeat até 60s · backend · versão · codex login status", "description": "A prova é exigida somente para o papel revisor Codex.", "sourceReference": "config/agents/codex-agent-health-compliance.json" },
+            { "key": "telemetry", "label": "Telemetria", "value": "request, response, modelo, tokens/custo, screenshots, frames, erros e decisão", "description": "Produção e revisão mantêm correlações separadas.", "sourceReference": "docs/canonical/premium-ai-agent-architecture-canon.v1.md" }
+          ]
+        }
+      ],
+      "artifacts": [
+        { "artifactType": "MCP_SERVER", "name": "MCP do Aprovador Meta", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/mcp/meta-ad-approver.mjs", "description": "Contexto, memória e inspeção do criativo." },
+        { "artifactType": "MCP_SERVER", "name": "MCP de revisão da biblioteca", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/mcp/temis-library-review.mjs", "description": "Revisão de imagens da biblioteca audiovisual." },
+        { "artifactType": "PROMPT", "name": "Revisão Meta", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/meta-ad-approver/v1/review.md", "description": "Prompt principal do revisor." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão Meta", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/meta-ad-approver/v1/review-schema.json", "description": "Contrato da revisão." },
+        { "artifactType": "PROMPT", "name": "Revisão comercial de criativo", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/creative-commercial-review.md", "description": "Gate comercial do criativo." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão de criativo", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/creative-commercial-review-schema.json", "description": "Contrato do gate." },
+        { "artifactType": "PROMPT", "name": "Revisão comercial de landing", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/landing-commercial-review.md", "description": "Gate comercial da landing." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão de landing", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/landing-commercial-review-schema.json", "description": "Contrato do gate." },
+        { "artifactType": "PROMPT", "name": "Homologação comercial independente PDE", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-commercial-homologation-independent-review.md", "description": "Revisão independente da ativação comercial." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da homologação independente", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-commercial-homologation-independent-review-schema.json", "description": "Contrato da homologação." },
+        { "artifactType": "PROMPT", "name": "Revisão da comunicação PDE", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-communication-review.md", "description": "Revisão ética e comercial da comunicação." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da comunicação PDE", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-communication-review-schema.json", "description": "Contrato da revisão." },
+        { "artifactType": "PROMPT", "name": "Revisão de entregáveis PDE", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-deliverables-review.md", "description": "Revisão do produto entregue." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema dos entregáveis PDE", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-deliverables-review-schema.json", "description": "Contrato da revisão." },
+        { "artifactType": "PROMPT", "name": "Produção do estúdio de imagens", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/production.md", "description": "Instrução do papel produtor." },
+        { "artifactType": "PROMPT", "name": "Revisão do estúdio de imagens", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/review.md", "description": "Revisão separada do asset visual." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão do estúdio", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/review-schema.json", "description": "Contrato da revisão visual." },
+        { "artifactType": "PROMPT", "name": "Revisão do plano comercial", "version": "v4", "path": "meta-ad-approver-worker/src/main/resources/prompts/pde-commercial-plan/v4/commercial-review.md", "description": "Gate comercial do plano." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão comercial", "version": "v4", "path": "meta-ad-approver-worker/src/main/resources/prompts/pde-commercial-plan/v4/commercial-review-schema.json", "description": "Contrato do gate." },
+        { "artifactType": "PROMPT", "name": "Quality Review da construção", "version": "v2", "path": "meta-ad-approver-worker/src/main/resources/prompts/pde-construction/v2/quality-review.md", "description": "Qualidade do produto construído." },
+        { "artifactType": "PROMPT", "name": "Consolidação de aprendizado visual", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/visual-learning/v1/consolidate.md", "description": "Aprendizado governado por replay." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema do aprendizado visual", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/visual-learning/v1/consolidate-schema.json", "description": "Contrato da consolidação." },
+        { "artifactType": "RUNTIME_CONFIG", "name": "Configuração do worker", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/application.yml", "description": "Papéis, modelos, limites e observabilidade." },
+        { "artifactType": "DEPLOYMENT", "name": "Container do worker", "version": "v1", "path": "meta-ad-approver-worker/Dockerfile", "description": "Imagem reproduzível e isolada." },
+        { "artifactType": "WORKFLOW", "name": "CI/CD do worker", "version": "v1", "path": ".github/workflows/meta-ad-approver-worker-ci.yml", "description": "Testes, build e publicação versionados." }
+      ]
+    },
+    {
+      "agentKey": "landing-generator",
+      "sections": [
+        {
+          "code": "executor",
+          "title": "Executor e implantação",
+          "description": "Unidade responsável por executar Dédalo.",
+          "items": [
+            { "key": "module", "label": "Módulo executor", "value": "landing-generator-agent-worker", "description": "Worker Spring Boot exclusivo do Gerador de Landing.", "sourceReference": "landing-generator-agent-worker" },
+            { "key": "deployment", "label": "Empacotamento e entrega", "value": "Dockerfile, Compose e workflow próprios", "description": "Sessão Codex, browser e MCP exclusivos.", "sourceReference": ".github/workflows/landing-generator-agent-worker-ci.yml" }
+          ]
+        },
+        {
+          "code": "runtime",
+          "title": "Runtime do modelo",
+          "description": "Configuração efetiva da geração de landing.",
+          "items": [
+            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · gpt-5.6-sol", "description": "Modelo canônico do Dédalo.", "sourceReference": "landing-generator-agent-worker/src/main/resources/application.yml" },
+            { "key": "reasoning", "label": "Esforço de raciocínio", "value": "high", "description": "Valor padrão configurável por CODEX_REASONING_EFFORT.", "sourceReference": "landing-generator-agent-worker/src/main/resources/application.yml" },
+            { "key": "limits", "label": "Sandbox e timeout", "value": "read-only · PT40M", "description": "Browser é usado para verificar, não para publicar.", "sourceReference": "landing-generator-agent-worker/src/main/resources/application.yml" }
+          ]
+        },
+        {
+          "code": "orchestration",
+          "title": "Fila e callbacks",
+          "description": "Contratos oficiais do pipeline GeraLanding e das tarefas BPM.",
+          "items": [
+            { "key": "pending", "label": "Ponto inicial", "value": "/api/internal/geralanding/agent/v1/stage-executions/pending?limit=1", "description": "Reserva uma execução da landing.", "sourceReference": "landing-generator-agent-worker/src/main/java/com/marketinghub/landinggeneratoragent/LandingGeneratorBackendClient.java" },
+            { "key": "callbacks", "label": "Callback", "value": "/api/internal/geralanding/agent/v1/stage-executions/{id}/result", "description": "Retorna saída e auditoria; o backend decide o próximo passo.", "sourceReference": "landing-generator-agent-worker/src/main/java/com/marketinghub/landinggeneratoragent/LandingGeneratorBackendClient.java" },
+            { "key": "polling", "label": "Consumo", "value": "a cada minuto", "description": "Inclui fila principal e atividades BPM de construção PDE.", "sourceReference": "landing-generator-agent-worker/src/main/java/com/marketinghub/landinggeneratoragent/LandingGeneratorAgentScheduler.java" }
+          ]
+        },
+        {
+          "code": "memory",
+          "title": "Contexto e memória",
+          "description": "Contexto comercial, assets aprovados e aprendizado governado.",
+          "items": [
+            { "key": "memory", "label": "Memória premium", "value": "MySQL textual + evidências S3 por referência", "description": "Dédalo consulta somente estratégias promovidas e contexto segregado.", "sourceReference": "docs/canonical/premium-ai-agent-architecture-canon.v1.md" },
+            { "key": "capabilities", "label": "Capacidades", "value": "MCP próprio · browser · visão desktop/iPhone/Android · Gerador de Imagens oficial", "description": "Assets finais vêm de ferramentas oficiais e permanecem auditáveis.", "sourceReference": "config/agents/premium-agent-compliance.json" }
+          ]
+        },
+        {
+          "code": "security",
+          "title": "Segurança e autoridade",
+          "description": "Proteções contra publicação, gasto e autopromoção.",
+          "items": [
+            { "key": "authority", "label": "Nível de autonomia", "value": "ADVISE · revisão humana obrigatória · sem efeito externo", "description": "Dédalo altera rascunhos, mas não aprova nem publica o próprio trabalho.", "sourceReference": "config/agents/premium-agent-compliance.json" },
+            { "key": "artifacts", "label": "Artefato final", "value": "HTML funcional separado de auditoria e metadados técnicos", "description": "Evita contaminar a landing com debug ou marcadores internos.", "sourceReference": "AGENTS.md" }
+          ]
+        },
+        {
+          "code": "observability",
+          "title": "Observabilidade e saúde",
+          "description": "Prontidão, custo e qualidade visual por execução.",
+          "items": [
+            { "key": "health", "label": "Health do executor", "value": "heartbeat até 60s · backend · versão · codex login status", "description": "READY exige sessão válida e versão atual.", "sourceReference": "config/agents/codex-agent-health-compliance.json" },
+            { "key": "telemetry", "label": "Telemetria", "value": "prompt, resposta bruta, modelo, raciocínio, tokens, custo, duração, screenshots, erros e decisão", "description": "Dados correlacionados à execução técnica e à tarefa BPM.", "sourceReference": "landing-generator-agent-worker/src/main/java/com/marketinghub/landinggeneratoragent/CodexTelemetryReporter.java" }
+          ]
+        }
+      ],
+      "artifacts": [
+        { "artifactType": "MCP_SERVER", "name": "MCP do Gerador de Landing", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/mcp/landing-generator.mjs", "description": "Contexto, assets, memória e inspeção visual." },
+        { "artifactType": "PROMPT", "name": "Geração de HTML", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/prompts/landing-generator/v1/html.md", "description": "Construção inicial do HTML." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da geração de HTML", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/prompts/landing-generator/v1/html-schema.json", "description": "Contrato da construção inicial." },
+        { "artifactType": "PROMPT", "name": "Remediação da landing", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/prompts/landing-generator/v1/remediation.md", "description": "Correção autônoma governada por evidências." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da remediação", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/prompts/landing-generator/v1/remediation-schema.json", "description": "Contrato da remediação." },
+        { "artifactType": "PROMPT", "name": "Design da oferta comercial", "version": "v4", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/offer-design.md", "description": "Estrutura da oferta do PDE." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema do design da oferta", "version": "v4", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/offer-design-schema.json", "description": "Contrato da oferta." },
+        { "artifactType": "PROMPT", "name": "Jornada do produto PDE", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v1/journey.md", "description": "Jornada funcional do produto." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da jornada PDE", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v1/journey-schema.json", "description": "Contrato da jornada." },
+        { "artifactType": "PROMPT", "name": "Entregáveis do produto PDE", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v1/deliverables.md", "description": "Materiais reais da entrega." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema dos entregáveis PDE", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v1/deliverables-schema.json", "description": "Contrato dos entregáveis." },
+        { "artifactType": "PROMPT", "name": "Acesso ao produto PDE", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v1/access.md", "description": "Acesso, onboarding e continuidade." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema de acesso PDE", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v1/access-schema.json", "description": "Contrato de acesso." },
+        { "artifactType": "PROMPT", "name": "Revisão de construção PDE", "version": "v2", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v2/construction-review.md", "description": "Revisão consolidada da construção." },
+        { "artifactType": "RUNTIME_CONFIG", "name": "Configuração do worker", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/application.yml", "description": "Modelo, raciocínio, timeout, MCP e observabilidade." },
+        { "artifactType": "DEPLOYMENT", "name": "Container do worker", "version": "v1", "path": "landing-generator-agent-worker/Dockerfile", "description": "Imagem reproduzível e isolada." },
+        { "artifactType": "WORKFLOW", "name": "CI/CD do worker", "version": "v1", "path": ".github/workflows/landing-generator-agent-worker-ci.yml", "description": "Testes, build e publicação versionados." }
+      ]
+    },
+    {
+      "agentKey": "market-radar",
+      "sections": [
+        {
+          "code": "executor",
+          "title": "Executor e implantação",
+          "description": "Unidade responsável por executar Argos e coletar sinais de mercado.",
+          "items": [
+            { "key": "module", "label": "Módulo executor", "value": "product-discovery-worker", "description": "Worker Node.js do radar de descoberta de produtos.", "sourceReference": "product-discovery-worker" },
+            { "key": "deployment", "label": "Empacotamento e entrega", "value": "Dockerfile, Compose e workflow próprios", "description": "Pesquisa, planejamento Codex e callbacks são versionados.", "sourceReference": ".github/workflows/product-discovery-worker-ci.yml" }
+          ]
+        },
+        {
+          "code": "runtime",
+          "title": "Runtime do modelo",
+          "description": "Configuração do planejamento de pesquisa de Argos.",
+          "items": [
+            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · modelo configurado por ARGOS_CODEX_MODEL", "description": "Sem modelo explícito, o executor registra codex-default.", "sourceReference": "product-discovery-worker/src/argos-codex.js" },
+            { "key": "reasoning", "label": "Esforço de raciocínio", "value": "Herda a sessão Codex; o módulo não sobrescreve", "description": "A tela preserva a ausência de configuração explícita.", "sourceReference": "product-discovery-worker/src/argos-codex.js" },
+            { "key": "limits", "label": "Sandbox e timeout", "value": "read-only · 600000 ms · saída máxima 10 MiB", "description": "O planejamento fecha por timeout ou excesso de saída.", "sourceReference": "product-discovery-worker/src/argos-codex.js" }
+          ]
+        },
+        {
+          "code": "orchestration",
+          "title": "Fila e callbacks",
+          "description": "Pipeline versionado productdiscovery.v1.",
+          "items": [
+            { "key": "pending", "label": "Ponto inicial", "value": "/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/pending", "description": "Busca execuções de pesquisa pendentes.", "sourceReference": "product-discovery-worker/src/worker.js" },
+            { "key": "plan", "label": "Registro do plano", "value": "/stage-executions/{cycleId}/plan", "description": "Persiste o plano antes da coleta das evidências.", "sourceReference": "product-discovery-worker/src/worker.js" },
+            { "key": "callbacks", "label": "Callbacks", "value": "/stage-executions/{cycleId}/complete · /fail", "description": "Retorna pesquisa estruturada ou falha ao backend.", "sourceReference": "product-discovery-worker/src/worker.js" }
+          ]
+        },
+        {
+          "code": "memory",
+          "title": "Contexto e memória",
+          "description": "Fontes dinâmicas e evidências segregadas por ciclo.",
+          "items": [
+            { "key": "sources", "label": "Fontes", "value": "web · Gartner · IA aplicada · momentos de compra B2C · Hotmart · radar Meta", "description": "Fonte indisponível não é tratada como ausência de mercado.", "sourceReference": "product-discovery-worker/src/research.js" },
+            { "key": "memory", "label": "Persistência", "value": "Plano, request bruto, fontes e resultado auditável no backend", "description": "O worker não consulta banco diretamente.", "sourceReference": "product-discovery-worker/src/worker.js" }
+          ]
+        },
+        {
+          "code": "security",
+          "title": "Segurança e autoridade",
+          "description": "Limites da pesquisa e da coleta externa.",
+          "items": [
+            { "key": "authority", "label": "Nível de autonomia", "value": "Pesquisa e recomendação · sem publicação, gasto ou criação automática de produto", "description": "Sinais de anúncios e ofertas não contam como venda.", "sourceReference": "docs/canonical/agent-governance-canon.v1.md" },
+            { "key": "secrets", "label": "Credenciais", "value": "Somente no processo coletor; nunca entram no prompt ou no relatório", "description": "A tela mostra o mecanismo, não o valor da credencial.", "sourceReference": "product-discovery-worker/src/research.js" }
+          ]
+        },
+        {
+          "code": "observability",
+          "title": "Observabilidade e saúde",
+          "description": "Prontidão, fontes e custo da pesquisa.",
+          "items": [
+            { "key": "health", "label": "Health do executor", "value": "heartbeat até 60s · backend · versão · codex login status", "description": "Reporter Node.js dedicado.", "sourceReference": "config/agents/codex-agent-health-compliance.json" },
+            { "key": "telemetry", "label": "Telemetria", "value": "queries, URLs, provedor, falhas, plano, resposta, tokens, custo e duração", "description": "Credenciais são sanitizadas dos eventos e logs.", "sourceReference": "product-discovery-worker/src/worker.js" }
+          ]
+        }
+      ],
+      "artifacts": [
+        { "artifactType": "PROMPT", "name": "Sistema do planejador", "version": "productdiscovery.v1", "path": "product-discovery-worker/prompts/productdiscovery.v1/plan/system.md", "description": "Responsabilidade e limites do planejador." },
+        { "artifactType": "PROMPT", "name": "Entrada do planejador", "version": "productdiscovery.v1", "path": "product-discovery-worker/prompts/productdiscovery.v1/plan/user.md", "description": "Template de contexto da oportunidade." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema do plano de pesquisa", "version": "productdiscovery.v1", "path": "product-discovery-worker/prompts/productdiscovery.v1/plan/plan-schema.json", "description": "Contrato estruturado do plano." },
+        { "artifactType": "PROMPT", "name": "Sistema da pesquisa", "version": "productdiscovery.v1", "path": "product-discovery-worker/prompts/productdiscovery.v1/research/system.md", "description": "Regras de coleta, evidência e segurança." },
+        { "artifactType": "PROMPT", "name": "Entrada da pesquisa", "version": "productdiscovery.v1", "path": "product-discovery-worker/prompts/productdiscovery.v1/research/user.md", "description": "Template do ciclo dirigido." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da resposta de pesquisa", "version": "productdiscovery.v1", "path": "product-discovery-worker/prompts/productdiscovery.v1/research/response-schema.json", "description": "Contrato estruturado das evidências." },
+        { "artifactType": "RUNTIME_CONFIG", "name": "Executor Codex de Argos", "version": "v1", "path": "product-discovery-worker/src/argos-codex.js", "description": "Modelo, sandbox, timeout, schema e telemetria." },
+        { "artifactType": "DEPLOYMENT", "name": "Container do worker", "version": "v1", "path": "product-discovery-worker/Dockerfile", "description": "Imagem reproduzível e isolada." },
+        { "artifactType": "WORKFLOW", "name": "CI/CD do worker", "version": "v1", "path": ".github/workflows/product-discovery-worker-ci.yml", "description": "Testes, build e publicação versionados." }
+      ]
+    },
+    {
+      "agentKey": "videomaker",
+      "sections": [
+        {
+          "code": "executor",
+          "title": "Executor e implantação",
+          "description": "Unidade responsável pelo planejamento, análise e produção audiovisual de Apolo.",
+          "items": [
+            { "key": "module", "label": "Módulo executor", "value": "video-management-service", "description": "Serviço Java com pipeline de vídeo e provedores isolados.", "sourceReference": "video-management-service" },
+            { "key": "deployment", "label": "Empacotamento e entrega", "value": "Dockerfile próprio · deploy transacional do aplicativo", "description": "A imagem é construída pelo fluxo do repositório.", "sourceReference": ".github/workflows/deploy-containers.yml" }
+          ]
+        },
+        {
+          "code": "runtime",
+          "title": "Runtime do modelo e mídia",
+          "description": "Modelos de planejamento, shadow e provedores de renderização.",
+          "items": [
+            { "key": "planner", "label": "Planejador", "value": "OpenAI Responses · gpt-5.6 · service_tier flex", "description": "Planejamento estruturado antes de qualquer renderização.", "sourceReference": "video-management-service/src/main/java/com/marketinghub/videomanagement/config/VideoManagementProperties.java" },
+            { "key": "shadow", "label": "Shadow Codex", "value": "gpt-5.6-sol · high · read-only · PT10M", "description": "Avaliação em sombra sem chamar provedor ou autorizar gasto.", "sourceReference": "video-management-service/src/main/resources/application.yml" },
+            { "key": "providers", "label": "Provedores de mídia", "value": "Veo · Luma · Kling · Runway · HeyGen · pós-produção", "description": "Cada integração possui limites, polling e auditoria próprios.", "sourceReference": "video-management-service/src/main/resources/application.yml" }
+          ]
+        },
+        {
+          "code": "orchestration",
+          "title": "Fila e callbacks",
+          "description": "Contratos de jobs e análise de referências.",
+          "items": [
+            { "key": "jobs", "label": "Jobs de vídeo", "value": "polling PT30S · lote 10 · reconciliação canônica", "description": "O backend permanece fonte do job e dos gates de gasto/publicação.", "sourceReference": "video-management-service/src/main/resources/application.yml" },
+            { "key": "reference", "label": "Análise de referência", "value": "/api/internal/sales-videos/reference-analysis/v1/analyze/stage-executions/pending", "description": "Pipeline v1 com complete e fail idempotentes.", "sourceReference": "video-management-service/src/main/java/com/marketinghub/videomanagement/referenceanalysisv1/pipeline/analyze/ReferenceAnalysisBackendClient.java" },
+            { "key": "reconciliation", "label": "Reconciliação", "value": "/api/internal/sales-videos/autonomy/v1/apollo/reconcile", "description": "Estado final retorna ao backend, sem avanço autônomo pelo serviço.", "sourceReference": "video-management-service/src/main/java/com/marketinghub/videomanagement/client/BackendVideoClient.java" }
+          ]
+        },
+        {
+          "code": "memory",
+          "title": "Contexto e aprendizado",
+          "description": "Referências audiovisuais, skills candidatas e replay governado.",
+          "items": [
+            { "key": "references", "label": "Evidência multimodal", "value": "vídeo original · ffprobe · frames · áudio · storyboard", "description": "Artefatos são preservados com correlação e checksum quando aplicável.", "sourceReference": "video-management-service/src/main/java/com/marketinghub/videomanagement/referenceanalysisv1" },
+            { "key": "learning", "label": "Aprendizado", "value": "observações candidatas · shadow replay · promoção externa", "description": "Apolo não promove sozinho uma skill nem altera o runtime.", "sourceReference": "video-management-service/src/main/java/com/marketinghub/videomanagement/service/ApolloGovernedLearningReporter.java" }
+          ]
+        },
+        {
+          "code": "security",
+          "title": "Segurança e autoridade",
+          "description": "Gates de gasto, publicação e conteúdo audiovisual.",
+          "items": [
+            { "key": "authority", "label": "Autoridade", "value": "Planeja e executa jobs autorizados · não autoriza gasto nem publicação", "description": "Shadow Codex proíbe chamada a provedor e gasto.", "sourceReference": "video-management-service/src/main/java/com/marketinghub/videomanagement/service/ApolloHybridShadowReplay.java" },
+            { "key": "secrets", "label": "Credenciais", "value": "Arquivos/variáveis por provedor · valores nunca expostos", "description": "O harness mostra apenas integrações e mecanismos seguros.", "sourceReference": "docs/canonical/secrets-deploy-canon.v1.md" }
+          ]
+        },
+        {
+          "code": "observability",
+          "title": "Observabilidade e saúde",
+          "description": "Prontidão, mídia e custos por provedor.",
+          "items": [
+            { "key": "health", "label": "Health do executor", "value": "heartbeat a cada minuto · backend · versão · codex login status", "description": "Reporter Java dedicado para a identidade videomaker.", "sourceReference": "video-management-service/src/main/java/com/marketinghub/videomanagement/service/ApolloExecutorHealthReporter.java" },
+            { "key": "telemetry", "label": "Telemetria", "value": "job, provider, modelo, request/response, custo, latência, frames, erro e decisão", "description": "Métricas por provedor e código de falha.", "sourceReference": "video-management-service/src/main/java/com/marketinghub/videomanagement/service/VideoJobObservabilityService.java" }
+          ]
+        }
+      ],
+      "artifacts": [
+        { "artifactType": "PROMPT", "name": "Missão de produção", "version": "apollo-v2", "path": "video-management-service/src/main/resources/prompts/apollo/v2/production-mission.md", "description": "Contrato operacional da produção de vídeo." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da missão de produção", "version": "apollo-v2", "path": "video-management-service/src/main/resources/prompts/apollo/v2/production-mission-schema.json", "description": "Contrato estruturado da missão." },
+        { "artifactType": "PROMPT", "name": "Planejador de storyboard", "version": "apollo-v2", "path": "video-management-service/src/main/resources/prompts/apollo/v2/storyboard-planner.md", "description": "Planejamento estruturado das cenas." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema do storyboard", "version": "apollo-v2", "path": "video-management-service/src/main/resources/prompts/apollo/v2/storyboard-planner-schema.json", "description": "Contrato estruturado do storyboard." },
+        { "artifactType": "PROMPT", "name": "Storyboard shadow Codex", "version": "apollo-v2", "path": "video-management-service/src/main/resources/prompts/apollo/v2/codex-shadow-storyboard.md", "description": "Comparativo em sombra sem efeito externo." },
+        { "artifactType": "PROMPT", "name": "Análise de referência audiovisual", "version": "v1", "path": "video-management-service/src/main/resources/prompts/apollo/reference-analysis/v1/analyze.md", "description": "Análise multimodal de referência." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da análise de referência", "version": "v1", "path": "video-management-service/src/main/resources/prompts/apollo/reference-analysis/v1/analyze-schema.json", "description": "Contrato estruturado da análise." },
+        { "artifactType": "PROMPT", "name": "Imagem de referência para vídeo", "version": "v1", "path": "video-management-service/src/main/resources/prompts/sales-video/openai-reference-image.md", "description": "Geração governada da imagem de referência." },
+        { "artifactType": "RUNTIME_CONFIG", "name": "Configuração do serviço de vídeo", "version": "v1", "path": "video-management-service/src/main/resources/application.yml", "description": "Modelos, provedores, limites, polling e observabilidade." },
+        { "artifactType": "DEPLOYMENT", "name": "Container do serviço", "version": "v1", "path": "video-management-service/Dockerfile", "description": "Imagem reproduzível do executor." },
+        { "artifactType": "WORKFLOW", "name": "Deploy do serviço", "version": "v1", "path": ".github/workflows/deploy-containers.yml", "description": "Build e publicação transacional do módulo." }
+      ]
+    }
+  ]
+}

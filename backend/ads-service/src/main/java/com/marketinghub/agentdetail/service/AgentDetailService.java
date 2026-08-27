@@ -24,15 +24,18 @@ public class AgentDetailService {
   private final AgentRepository agentRepository;
   private final AgentVersionRepository agentVersionRepository;
   private final BusinessProcessExecutionResourceRepository executionResourceRepository;
+  private final AgentHarnessCatalog harnessCatalog;
 
-  /** Configura as fontes de verdade do cadastro, versão e recursos do agente. */
+  /** Configura as fontes de verdade do cadastro, versão, recursos e harness do agente. */
   public AgentDetailService(
       AgentRepository agentRepository,
       AgentVersionRepository agentVersionRepository,
-      BusinessProcessExecutionResourceRepository executionResourceRepository) {
+      BusinessProcessExecutionResourceRepository executionResourceRepository,
+      AgentHarnessCatalog harnessCatalog) {
     this.agentRepository = agentRepository;
     this.agentVersionRepository = agentVersionRepository;
     this.executionResourceRepository = executionResourceRepository;
+    this.harnessCatalog = harnessCatalog;
   }
 
   /** Recupera o contrato atual completo do agente sem inferências no frontend. */
@@ -78,6 +81,7 @@ public class AgentDetailService {
         mapOutputs(agent.getOutputs()),
         mapInternalFunctions(agent.getInternalFunctions()),
         resources,
+        harnessCatalog.getByAgentKey(agent.getAgentKey()),
         agent.getCreatedAt(),
         agent.getUpdatedAt(),
         lastContractChangeAt);

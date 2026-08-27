@@ -55,6 +55,23 @@ export interface Agent {
   workflowUrl?: string;
 }
 
+export interface AgentExecutionResource {
+  id: number;
+  resourceCode: string;
+  name: string;
+  description: string;
+  resourceType: string;
+  executorReference: string;
+  usageInstructions: string;
+}
+
+export interface AgentDetail extends Agent {
+  automaticExecutionEnabled: boolean;
+  automaticExecutionChangedAt?: string;
+  automaticExecutionChangedBy?: string;
+  executionResources: AgentExecutionResource[];
+}
+
 export interface AgentPayload {
   name: string;
   nickname: string;

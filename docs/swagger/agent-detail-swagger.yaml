@@ -1,0 +1,120 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub - Detalhe do agente
+  version: 1.0.0
+  description: Visão consolidada e somente leitura do contrato atual e dos recursos de um agente.
+paths:
+  /api/agents/{agentId}/details:
+    get:
+      summary: Recupera todos os dados específicos do agente
+      operationId: getAgentDetail
+      parameters:
+        - in: path
+          name: agentId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Contrato atual, referências de prompt e schema, itens e recursos ativos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentDetail"
+        "404":
+          description: Agente não encontrado.
+components:
+  schemas:
+    AgentDetailItem:
+      type: object
+      required: [id, name, orderIndex]
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        type: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        orderIndex: { type: integer }
+    AgentDetailResource:
+      type: object
+      required:
+        - id
+        - resourceCode
+        - name
+        - description
+        - resourceType
+        - executorReference
+        - usageInstructions
+      properties:
+        id: { type: integer, format: int64 }
+        resourceCode: { type: string }
+        name: { type: string }
+        description: { type: string }
+        resourceType: { type: string }
+        executorReference: { type: string }
+        usageInstructions: { type: string }
+    AgentDetail:
+      type: object
+      required:
+        - id
+        - name
+        - nickname
+        - status
+        - currentVersion
+        - executionMode
+        - automaticExecutionEnabled
+        - inputs
+        - outputs
+        - internalFunctions
+        - executionResources
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        nickname: { type: string }
+        portraitAssetId: { type: integer, format: int64, nullable: true }
+        portraitUrl: { type: string, nullable: true }
+        agentKey: { type: string, nullable: true }
+        status: { type: string }
+        currentVersion: { type: integer }
+        themeId: { type: integer, format: int64, nullable: true }
+        themeName: { type: string, nullable: true }
+        ownerName: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        businessObjective: { type: string, nullable: true }
+        successMetrics: { type: string, nullable: true }
+        modelName: { type: string, nullable: true }
+        executionMode: { type: string }
+        automaticExecutionEnabled: { type: boolean }
+        automaticExecutionChangedAt:
+          { type: string, format: date-time, nullable: true }
+        automaticExecutionChangedBy: { type: string, nullable: true }
+        triggerPolicy: { type: string, nullable: true }
+        responsibilityContract: { type: string, nullable: true }
+        orchestratorPolicy: { type: string, nullable: true }
+        analysisPolicy: { type: string, nullable: true }
+        offeringPolicy: { type: string, nullable: true }
+        authorityPolicy: { type: string, nullable: true }
+        promptContractPath:
+          type: string
+          nullable: true
+          description: Referência canônica do prompt versionado no módulo executor.
+        schemaContractPath:
+          type: string
+          nullable: true
+          description: Referência canônica do schema versionado no módulo executor.
+        inputs:
+          type: array
+          items: { $ref: "#/components/schemas/AgentDetailItem" }
+        outputs:
+          type: array
+          items: { $ref: "#/components/schemas/AgentDetailItem" }
+        internalFunctions:
+          type: array
+          items: { $ref: "#/components/schemas/AgentDetailItem" }
+        executionResources:
+          type: array
+          items: { $ref: "#/components/schemas/AgentDetailResource" }
+        createdAt: { type: string, format: date-time, nullable: true }
+        updatedAt: { type: string, format: date-time, nullable: true }
+        lastContractChangeAt:
+          { type: string, format: date-time, nullable: true }

@@ -197,6 +197,19 @@ describe("AgentListPage", () => {
     vi.useRealTimers();
   });
 
+  it("oferece um link explícito para o detalhe do agente", () => {
+    render(
+      <MemoryRouter>
+        <AgentListPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: "Detalhes" })).toHaveAttribute(
+      "href",
+      "/agents/7/details",
+    );
+  });
+
   it("exibe o apelido e preserva o nome formal no quadro de maturidade", () => {
     render(
       <MemoryRouter>

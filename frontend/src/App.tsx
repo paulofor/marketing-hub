@@ -95,6 +95,7 @@ import PersonaLibraryPage from "./pages/agent/PersonaLibraryPage";
 import NewAgentPage from "./pages/agent/NewAgentPage";
 import EditAgentPage from "./pages/agent/EditAgentPage";
 import AgentWorkspacePage from "./pages/agent/AgentWorkspacePage";
+import AgentDetailPage from "./pages/agent/AgentDetailPage";
 import ActiveAgentTasksPage from "./pages/agent/ActiveAgentTasksPage";
 import AgentThemePage from "./pages/agent/AgentThemePage";
 import SystemImprovementsPage from "./pages/systemImprovement/SystemImprovementsPage";
@@ -465,6 +466,7 @@ export default function App() {
               <Route path="/agents/personas" element={<PersonaLibraryPage />} />
               <Route path="/agents/new" element={<NewAgentPage />} />
               <Route path="/agents/:id" element={<AgentWorkspacePage />} />
+              <Route path="/agents/:id/details" element={<AgentDetailPage />} />
               <Route path="/agents/:id/edit" element={<EditAgentPage />} />
               <Route
                 path="/system-improvements"

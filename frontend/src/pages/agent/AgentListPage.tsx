@@ -212,7 +212,9 @@ export default function AgentListPage() {
                               aria-hidden="true"
                             />
                           ) : null}
-                          {item.automaticExecutionEnabled ? "■ Stop" : "▶ Play"}
+                          {item.automaticExecutionEnabled
+                            ? "■ Stop"
+                            : "▶ Play"}
                         </button>
                       </div>
                     </td>
@@ -492,6 +494,12 @@ export default function AgentListPage() {
                   <td>{agent.internalFunctions?.length ?? 0}</td>
                   <td className="text-end">
                     <div className="d-flex justify-content-end gap-2">
+                      <Link
+                        className="btn btn-sm btn-outline-secondary"
+                        to={`/agents/${agent.id}/details`}
+                      >
+                        Detalhes
+                      </Link>
                       <button
                         className="btn btn-sm btn-primary"
                         onClick={() => navigate(`/agents/${agent.id}`)}

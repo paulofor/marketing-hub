@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -97,6 +98,22 @@ class ProductServiceTest {
     assertThat(response.automaticExecutionStatus()).isEqualTo("STOP");
     verify(productRepository, org.mockito.Mockito.never()).save(product);
     verify(events, org.mockito.Mockito.never()).save(any());
+  }
+
+  /** Deve consultar somente o estado PLAY sem transformar legados nulos em STOP. */
+  @Test
+  void listProductsInPlayUsesTheBackendOperationalFilter() {
+    ProductRepository productRepository = mock(ProductRepository.class);
+    Product activeProduct = Product.builder().id(12L).automaticExecutionEnabled(true).build();
+    Product legacyProduct = Product.builder().id(13L).automaticExecutionEnabled(null).build();
+    when(productRepository.findAllInPlayState()).thenReturn(List.of(activeProduct, legacyProduct));
+    ProductService service = newService(productRepository, mock(ProductTypeDefinitionRepository.class));
+
+    Iterable<Product> products = service.listProducts(null, true);
+
+    assertThat(products).containsExactly(activeProduct, legacyProduct);
+    verify(productRepository).findAllInPlayState();
+    verify(productRepository, never()).findAll();
   }
 
   /** Cria o serviço produtivo com a auditoria PLAY/STOP controlada pelo cenário. */

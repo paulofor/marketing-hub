@@ -67,14 +67,16 @@ export interface Product {
   updatedAt?: string;
 }
 
-export function useProducts(query?: string) {
+export function useProducts(query?: string, playOnly = false) {
   return useQuery({
-    queryKey: ["products", query ?? ""],
+    queryKey: ["products", query ?? "", playOnly],
     queryFn: async () => {
-      const { data } = query?.trim()
-        ? await axios.get<Product[]>("/api/products", {
-            params: { query: query.trim() },
-          })
+      const params = {
+        ...(query?.trim() ? { query: query.trim() } : {}),
+        ...(playOnly ? { playOnly: true } : {}),
+      };
+      const { data } = Object.keys(params).length
+        ? await axios.get<Product[]>("/api/products", { params })
         : await axios.get<Product[]>("/api/products");
       return data;
     },

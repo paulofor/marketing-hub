@@ -1827,12 +1827,23 @@ public class ProductService {
 
   /** Lista todos os produtos cadastrados para uso operacional no Marketing Hub. */
   public Iterable<Product> listProducts() {
-    return repository.findAll();
+    return listProducts(null, false);
   }
 
   /** Pesquisa produtos pela identidade comercial ou interna informada por pessoa ou agente. */
   public Iterable<Product> listProducts(String identityQuery) {
+    return listProducts(identityQuery, false);
+  }
+
+  /** Lista produtos e restringe a operação a PLAY quando a tela solicitar a visão ativa. */
+  @Transactional(readOnly = true)
+  public Iterable<Product> listProducts(String identityQuery, boolean playOnly) {
     String normalizedQuery = normalizeOptional(identityQuery);
+    if (playOnly) {
+      return normalizedQuery == null
+          ? repository.findAllInPlayState()
+          : repository.searchByIdentityInPlayState(normalizedQuery);
+    }
     return normalizedQuery == null
         ? repository.findAll()
         : repository.searchByIdentity(normalizedQuery);

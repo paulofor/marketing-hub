@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agent.Agent;
 import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskActivityCoverage;
+import com.marketinghub.agenttask.BusinessProcessActivityInstance;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
@@ -16,6 +17,7 @@ import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskActivityCoverageRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
@@ -145,6 +147,8 @@ class BusinessProcessActivityExecutionServiceTest {
     BusinessProcessActivityDefinitionRepository activityDefinitions =
         mock(BusinessProcessActivityDefinitionRepository.class);
     AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
     CommercialPlanRepository commercialPlans = mock(CommercialPlanRepository.class);
     ProductRepository products = mock(ProductRepository.class);
     var productService =
@@ -153,6 +157,7 @@ class BusinessProcessActivityExecutionServiceTest {
             activityDefinitions,
             tasks,
             coverages,
+            instances,
             commercialPlans,
             null,
             products,
@@ -178,10 +183,12 @@ class BusinessProcessActivityExecutionServiceTest {
     BusinessProcessActivityDefinition html = activity(122L, landing, "html", "Construir HTML");
     BusinessProcessActivityDefinition customer =
         activity(124L, landing, "customer", "Avaliar percepção da cliente");
+    BusinessProcessActivityDefinition technical =
+        activity(123L, landing, "technical", "Validar técnica e fidelidade visual");
     BusinessProcessActivityDefinition human =
         activity(126L, landing, "human", "Aprovação humana para publicar");
     when(activityDefinitions.findAllByProcessDefinitionIdOrderByIdAsc(18L))
-        .thenReturn(List.of(select, html, customer, human));
+        .thenReturn(List.of(select, html, technical, customer, human));
 
     AgentTask compound = executionTask(243L);
     compound.setProcessDefinition(landing);
@@ -189,43 +196,100 @@ class BusinessProcessActivityExecutionServiceTest {
     compound.setProcessActivityName("Construir HTML");
     compound.setSourceReference("commercial-plan:4@v3:journey");
     compound.setEstimatedCostUsd(new BigDecimal("1.42804720"));
+    compound.setActivityInstance(
+        activityInstance(128L, html, "COMPLETED", true, null, compound.getUpdatedAt()));
     AgentTask customerReview = executionTask(244L);
     customerReview.setProcessDefinition(landing);
     customerReview.setProcessActivityId("customer");
     customerReview.setProcessActivityName("Avaliar percepção da cliente");
     customerReview.setSourceReference("commercial-plan:4@v3:journey");
     customerReview.setEstimatedCostUsd(new BigDecimal("0.18957680"));
+    customerReview.setStatus("BLOCKED");
+    customerReview.setExecutionError("Checkout canônico ausente na evidência de Psique.");
+    customerReview.setActivityInstance(
+        activityInstance(
+            129L,
+            customer,
+            "BLOCKED",
+            false,
+            "Checkout canônico ausente na evidência de Psique.",
+            customerReview.getUpdatedAt()));
+    AgentTask oldTechnicalReview = executionTask(242L);
+    oldTechnicalReview.setProcessDefinition(landing);
+    oldTechnicalReview.setProcessActivityId("technical");
+    oldTechnicalReview.setProcessActivityName("Validar técnica e fidelidade visual");
+    oldTechnicalReview.setSourceReference("commercial-plan:4@v2:journey");
+    oldTechnicalReview.setEstimatedCostUsd(BigDecimal.ZERO.setScale(8));
+    oldTechnicalReview.setCostEstimationStatus("NOT_APPLICABLE");
     AgentTask anotherProcessTask = executionTask(245L);
     anotherProcessTask.getProcessDefinition().setProcessCode("another-process");
     anotherProcessTask.setSourceReference("commercial-plan:4@v3");
     when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("commercial-plan:4@"))
-        .thenReturn(List.of(compound, customerReview, anotherProcessTask));
+        .thenReturn(List.of(compound, customerReview, oldTechnicalReview, anotherProcessTask));
+    BusinessProcessActivityInstance humanPending =
+        activityInstance(
+            130L, human, "PENDING", false, null, Instant.parse("2026-08-20T21:42:00Z"));
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceStartingWithOrderByCreatedAtDescIdDesc(
+                "landing-page-generation", "commercial-plan:4@"))
+        .thenReturn(
+            List.of(
+                compound.getActivityInstance(),
+                customerReview.getActivityInstance(),
+                humanPending));
     AgentTaskActivityCoverage compoundCoverage = new AgentTaskActivityCoverage();
     compoundCoverage.setAgentTask(compound);
     compoundCoverage.setActivityDefinition(select);
-    when(coverages.findAllByAgentTaskIdIn(List.of(244L, 243L)))
+    when(coverages.findAllByAgentTaskIdIn(List.of(244L, 243L, 242L)))
         .thenReturn(List.of(compoundCoverage));
 
     var result = productService.productProcessExecutions(18L, 9L);
 
     assertThat(result.productInternalName()).isEqualTo("Rigel");
     assertThat(result.processName()).isEqualTo("Geração de landing page");
-    assertThat(result.activityCount()).isEqualTo(4);
-    assertThat(result.activitiesWithTasksCount()).isEqualTo(3);
-    assertThat(result.uniqueTaskCount()).isEqualTo(2);
+    assertThat(result.currentExecutionReference()).isEqualTo("commercial-plan:4@v3:journey");
+    assertThat(result.operationalState()).isEqualTo("BLOCKED");
+    assertThat(result.objectiveAchieved()).isFalse();
+    assertThat(result.selectedActivityCount()).isEqualTo(5);
+    assertThat(result.completedActivityCount()).isEqualTo(2);
+    assertThat(result.remainingActivityCount()).isEqualTo(3);
+    assertThat(result.blockedActivityCount()).isOne();
+    assertThat(result.currentActivityId()).isEqualTo("customer");
+    assertThat(result.currentActivityName()).isEqualTo("Avaliar percepção da cliente");
+    assertThat(result.currentActivityState()).isEqualTo("BLOCKED");
+    assertThat(result.currentActivityStateReason()).contains("Checkout canônico ausente");
+    assertThat(result.activityCount()).isEqualTo(5);
+    assertThat(result.activitiesWithTasksCount()).isEqualTo(4);
+    assertThat(result.uniqueTaskCount()).isEqualTo(3);
     assertThat(result.knownEstimatedCostUsd()).isEqualByComparingTo("1.61762400");
     assertThat(result.costCoverage()).isEqualTo("COMPLETE");
     assertThat(result.activities().get(0).activityId()).isEqualTo("select");
+    assertThat(result.activities().get(0).operationalState()).isEqualTo("COMPLETED");
+    assertThat(result.activities().get(0).objectiveAchieved()).isTrue();
+    assertThat(result.activities().get(0).stateEvidence()).isEqualTo("COMPOSITE_TASK_COVERAGE");
+    assertThat(result.activities().get(0).stateReason()).contains("tarefa composta #243");
     assertThat(result.activities().get(0).tasks())
         .extracting(execution -> execution.taskId())
         .containsExactly(243L);
     assertThat(result.activities().get(1).tasks())
         .extracting(execution -> execution.taskId())
         .containsExactly(243L);
+    assertThat(result.activities().get(1).activityInstanceId()).isEqualTo(128L);
+    assertThat(result.activities().get(1).stateEvidence()).isEqualTo("DIRECT");
     assertThat(result.activities().get(2).tasks())
         .extracting(execution -> execution.taskId())
+        .containsExactly(242L);
+    assertThat(result.activities().get(2).operationalState()).isEqualTo("NOT_STARTED");
+    assertThat(result.activities().get(2).stateEvidence()).isEqualTo("NOT_RECORDED");
+    assertThat(result.activities().get(3).tasks())
+        .extracting(execution -> execution.taskId())
         .containsExactly(244L);
-    assertThat(result.activities().get(3).tasks()).isEmpty();
+    assertThat(result.activities().get(3).operationalState()).isEqualTo("BLOCKED");
+    assertThat(result.activities().get(3).activityInstanceId()).isEqualTo(129L);
+    assertThat(result.activities().get(4).tasks()).isEmpty();
+    assertThat(result.activities().get(4).operationalState()).isEqualTo("PENDING");
+    assertThat(result.activities().get(4).activityInstanceId()).isEqualTo(130L);
+    assertThat(result.activities().get(4).stateEvidence()).isEqualTo("DIRECT");
     assertThat(result.activities().get(0).tasks().getFirst().productInternalName())
         .isEqualTo("Rigel");
   }
@@ -299,5 +363,29 @@ class BusinessProcessActivityExecutionServiceTest {
     task.setExecutionReasoningEffort("high");
     task.setExecutionPrompt("Comprove a dor com fontes independentes.");
     return task;
+  }
+
+  /** Monta a ocorrência canônica usada para comprovar autoridade e causa persistida do estado. */
+  private BusinessProcessActivityInstance activityInstance(
+      long id,
+      BusinessProcessActivityDefinition activity,
+      String status,
+      boolean objectiveAchieved,
+      String blockedReason,
+      Instant updatedAt) {
+    BusinessProcessActivityInstance instance = new BusinessProcessActivityInstance();
+    instance.setId(id);
+    instance.setActivityDefinition(activity);
+    instance.setSourceReference("commercial-plan:4@v3:journey");
+    instance.setOccurrenceNumber(1);
+    instance.setStatus(status);
+    instance.setEnteredAt(Instant.parse("2026-08-27T03:26:19Z"));
+    instance.setObjectiveAchieved(objectiveAchieved);
+    instance.setBlockedReason(blockedReason);
+    instance.setCostCoverage("COMPLETE");
+    instance.setEvidenceQuality("DIRECT");
+    instance.setCreatedAt(Instant.parse("2026-08-27T03:26:19Z"));
+    instance.setUpdatedAt(updatedAt);
+    return instance;
   }
 }

@@ -3,6 +3,7 @@ package com.marketinghub.product.web;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -185,9 +186,9 @@ class ProductControllerTest {
         .andExpect(status().isBadRequest());
   }
 
-  /** Deve encaminhar a pesquisa por apelido ao serviço canônico de produtos. */
+  /** Deve encaminhar pesquisa em PLAY ao serviço canônico de produtos. */
   @Test
-  void listProductsByInternalAlias() throws Exception {
+  void listProductsByInternalAliasInPlay() throws Exception {
     Product product =
         Product.builder()
             .id(4L)
@@ -200,15 +201,19 @@ class ProductControllerTest {
     response.setName("Método MUSA");
     response.setInternalName("MUSA desejo v7");
     response.setAliases(List.of("MUSA v7"));
-    when(service.listProducts("MUSA v7")).thenReturn(List.of(product));
+    when(service.listProducts("MUSA v7", true)).thenReturn(List.of(product));
     when(mapper.toDto(product)).thenReturn(response);
 
     mockMvc
-        .perform(get("/api/products").queryParam("query", "MUSA v7"))
+        .perform(
+            get("/api/products")
+                .queryParam("query", "MUSA v7")
+                .queryParam("playOnly", "true"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].id").value(4L))
         .andExpect(jsonPath("$[0].internalName").value("MUSA desejo v7"))
         .andExpect(jsonPath("$[0].aliases[0]").value("MUSA v7"));
+    verify(service).listProducts("MUSA v7", true);
   }
 
   /** Deve rejeitar campos maiores que a coluna antes de chegar ao banco. */

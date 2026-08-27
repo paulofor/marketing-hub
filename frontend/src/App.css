@@ -951,6 +951,208 @@
   gap: 0.4rem;
 }
 
+.product-process-situation {
+  background: #ffffff;
+  border: 1px solid #dbe3ed;
+  border-left: 0.3rem solid #64748b;
+  border-radius: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+.product-process-situation--blocked {
+  background: #fffafa;
+  border-left-color: #b42318;
+}
+
+.product-process-situation--completed {
+  background: #f7fcf9;
+  border-left-color: #16734b;
+}
+
+.product-process-situation--in_progress,
+.product-process-situation--pending {
+  background: #f8fbff;
+  border-left-color: #2563eb;
+}
+
+.product-process-situation__header {
+  align-items: flex-start;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+}
+
+.product-process-situation__header h2 {
+  color: #1e293b;
+  font-size: 1.15rem;
+  margin: 0.2rem 0 0;
+}
+
+.product-process-situation__eyebrow {
+  color: #7a2444;
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.product-process-situation__process-state,
+.product-process-situation__activity-state {
+  align-items: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  color: #475569;
+  display: inline-flex;
+  flex: none;
+  font-size: 0.72rem;
+  font-weight: 800;
+  gap: 0.35rem;
+  padding: 0.35rem 0.6rem;
+  width: fit-content;
+}
+
+.product-process-situation__process-state--blocked,
+.product-process-situation__activity-state--blocked {
+  background: #fff1f0;
+  border-color: #f1a7a0;
+  color: #8f1d14;
+}
+
+.product-process-situation__process-state--completed,
+.product-process-situation__activity-state--completed {
+  background: #ebf8f1;
+  border-color: #9ad6b8;
+  color: #12613e;
+}
+
+.product-process-situation__process-state--in_progress,
+.product-process-situation__activity-state--in_progress {
+  background: #eef5ff;
+  border-color: #a8c8f5;
+  color: #174f9b;
+}
+
+.product-process-situation__process-state--pending,
+.product-process-situation__activity-state--pending,
+.product-process-situation__activity-state--not_started {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.product-process-situation__process-state--cancelled,
+.product-process-situation__activity-state--cancelled {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #64748b;
+}
+
+.product-process-situation__overview,
+.product-process-situation__columns {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.product-process-situation__overview {
+  margin-bottom: 1rem;
+}
+
+.product-process-situation__overview article,
+.product-process-situation__columns > section {
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid #dbe3ed;
+  border-radius: 0.65rem;
+  min-width: 0;
+  padding: 0.9rem;
+}
+
+.product-process-situation__overview article {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.product-process-situation__overview article > span {
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.product-process-situation__overview strong {
+  color: #1e293b;
+  overflow-wrap: anywhere;
+}
+
+.product-process-situation__overview small,
+.product-process-situation__columns small,
+.product-process-situation__columns p {
+  color: #64748b;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.product-process-situation__progress {
+  background: #e2e8f0;
+  border-radius: 999px;
+  height: 0.5rem;
+  overflow: hidden;
+}
+
+.product-process-situation__progress span {
+  background: #16734b;
+  display: block;
+  height: 100%;
+}
+
+.product-process-situation__columns h3 {
+  align-items: center;
+  color: #1e293b;
+  display: flex;
+  font-size: 0.92rem;
+  gap: 0.4rem;
+  margin: 0 0 0.75rem;
+}
+
+.product-process-situation__columns ol {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.product-process-situation__columns li {
+  border-top: 1px solid #e2e8f0;
+  display: grid;
+  gap: 0.25rem;
+  padding-top: 0.75rem;
+}
+
+.product-process-situation__columns li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.product-process-situation__columns li > div {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.product-process-situation__columns li strong {
+  color: #334155;
+  font-size: 0.86rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
 .product-process-activity-executions__summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1020,6 +1222,13 @@
   color: #64748b;
 }
 
+.product-process-activity-executions__activity-statuses {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
 .product-process-activity-executions__eyebrow {
   color: #7a2444;
   font-size: 0.7rem;
@@ -1034,6 +1243,17 @@
   border-left: 0.2rem solid #7a2444;
   background: #fff9fb;
   color: #475569;
+}
+
+.product-process-activity-executions__state-reason {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.55rem;
+  color: #475569;
+  font-size: 0.86rem;
+  margin: 0 0 1rem;
+  overflow-wrap: anywhere;
+  padding: 0.7rem 0.8rem;
 }
 
 .product-process-activity-executions__empty {
@@ -1271,14 +1491,30 @@
   .product-process-activity-executions__summary {
     grid-template-columns: 1fr;
   }
+
+  .product-process-situation__overview,
+  .product-process-situation__columns {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 600px) {
   .product-value-chain-history__panel-heading,
   .product-value-chain-history__item-heading,
-  .product-process-activity-executions__activity-header {
+  .product-process-activity-executions__activity-header,
+  .product-process-situation__header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .product-process-situation__columns li > div {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .product-process-activity-executions__activity-statuses {
+    align-items: flex-start;
   }
 
   .product-process-activity-executions__actions,

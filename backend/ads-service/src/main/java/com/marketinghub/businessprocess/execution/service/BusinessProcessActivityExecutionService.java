@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTask;
 import com.marketinghub.agenttask.AgentTaskActivityCoverage;
+import com.marketinghub.agenttask.BusinessProcessActivityInstance;
 import com.marketinghub.businessprocess.BusinessProcessActivityDefinition;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.businessprocess.execution.service.productProcessExecutions.ProductProcessActivityExecutionGroupResponse;
@@ -15,6 +16,7 @@ import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskActivityCoverageRepository;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.agenttask.BusinessProcessActivityInstanceRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessActivityDefinitionRepository;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
@@ -28,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -42,7 +45,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-/** Responsabilidade: consultar tarefas BPM auditáveis por atividade, processo e produto. */
+/**
+ * Responsabilidade: consultar a situação e as tarefas BPM auditáveis por atividade, processo e
+ * produto.
+ */
 @Service
 public class BusinessProcessActivityExecutionService {
   private static final int RECENT_EXECUTION_LIMIT = 10;
@@ -56,6 +62,7 @@ public class BusinessProcessActivityExecutionService {
   private final BusinessProcessActivityDefinitionRepository activityDefinitionRepository;
   private final AgentTaskRepository taskRepository;
   private final AgentTaskActivityCoverageRepository activityCoverageRepository;
+  private final BusinessProcessActivityInstanceRepository activityInstanceRepository;
   private final CommercialPlanRepository commercialPlanRepository;
   private final GeraLandingStageExecutionRepository landingExecutionRepository;
   private final ProductRepository productRepository;
@@ -68,6 +75,7 @@ public class BusinessProcessActivityExecutionService {
       BusinessProcessActivityDefinitionRepository activityDefinitionRepository,
       AgentTaskRepository taskRepository,
       AgentTaskActivityCoverageRepository activityCoverageRepository,
+      BusinessProcessActivityInstanceRepository activityInstanceRepository,
       CommercialPlanRepository commercialPlanRepository,
       GeraLandingStageExecutionRepository landingExecutionRepository,
       ProductRepository productRepository,
@@ -76,6 +84,7 @@ public class BusinessProcessActivityExecutionService {
     this.activityDefinitionRepository = activityDefinitionRepository;
     this.taskRepository = taskRepository;
     this.activityCoverageRepository = activityCoverageRepository;
+    this.activityInstanceRepository = activityInstanceRepository;
     this.commercialPlanRepository = commercialPlanRepository;
     this.landingExecutionRepository = landingExecutionRepository;
     this.productRepository = productRepository;
@@ -87,7 +96,7 @@ public class BusinessProcessActivityExecutionService {
       BusinessProcessDefinitionRepository processRepository,
       AgentTaskRepository taskRepository,
       ObjectMapper objectMapper) {
-    this(processRepository, null, taskRepository, null, null, null, null, objectMapper);
+    this(processRepository, null, taskRepository, null, null, null, null, null, objectMapper);
   }
 
   /** Permite comprovar a projeção da auditoria técnica na tarefa composta. */
@@ -100,6 +109,7 @@ public class BusinessProcessActivityExecutionService {
         processRepository,
         null,
         taskRepository,
+        null,
         null,
         null,
         landingExecutionRepository,
@@ -137,15 +147,18 @@ public class BusinessProcessActivityExecutionService {
   }
 
   /**
-   * Consolida as atividades da versão selecionada e todas as tarefas do produto no mesmo processo
-   * canônico, preservando atividades históricas e cobertura composta.
+   * Consolida a situação das atividades da versão selecionada e todas as tarefas do produto no
+   * mesmo processo canônico, preservando atividades históricas e cobertura composta.
    */
   @Transactional(readOnly = true)
   public ProductProcessActivityExecutionHistoryResponse productProcessExecutions(
       Long processDefinitionId, Long productId) {
     BusinessProcessDefinition selectedProcess = requiredProcess(processDefinitionId);
     Product product = requiredProduct(productId);
-    List<AgentTask> tasks = productProcessTasks(productId, selectedProcess.getProcessCode());
+    List<CommercialPlan> productPlans = commercialPlanRepository.findByProductId(productId);
+    List<AgentTask> tasks = productProcessTasks(productPlans, selectedProcess.getProcessCode());
+    List<BusinessProcessActivityInstance> instances =
+        productProcessActivityInstances(productPlans, selectedProcess.getProcessCode());
     List<BusinessProcessActivityDefinition> selectedActivities =
         activityDefinitionRepository.findAllByProcessDefinitionIdOrderByIdAsc(processDefinitionId);
 
@@ -185,9 +198,18 @@ public class BusinessProcessActivityExecutionService {
     Map<Long, BusinessProcessActivityExecutionResponse> taskResponses = new LinkedHashMap<>();
     tasks.forEach(
         task -> taskResponses.put(task.getId(), response(task, product.getInternalName())));
+    String currentExecutionReference = currentExecutionReference(tasks, instances);
+    Map<String, List<BusinessProcessActivityInstance>> currentInstancesByActivityId =
+        currentInstancesByActivityId(selectedProcess.getId(), currentExecutionReference, instances);
     List<ProductProcessActivityExecutionGroupResponse> activities =
         activityGroups(
-            tasksByActivityId, selectedByActivityId, historicalActivityNames, taskResponses);
+            tasksByActivityId,
+            selectedByActivityId,
+            historicalActivityNames,
+            taskResponses,
+            currentExecutionReference,
+            currentInstancesByActivityId);
+    ProductProcessSituation situation = processSituation(activities);
     BigDecimal knownCost = knownEstimatedCost(tasks);
     return new ProductProcessActivityExecutionHistoryResponse(
         product.getId(),
@@ -198,6 +220,17 @@ public class BusinessProcessActivityExecutionService {
         selectedProcess.getName(),
         selectedProcess.getVersionNumber(),
         selectedProcess.getStatus(),
+        currentExecutionReference,
+        situation.operationalState(),
+        situation.objectiveAchieved(),
+        situation.selectedActivityCount(),
+        situation.completedActivityCount(),
+        situation.remainingActivityCount(),
+        situation.blockedActivityCount(),
+        situation.currentActivity() == null ? null : situation.currentActivity().activityId(),
+        situation.currentActivity() == null ? null : situation.currentActivity().activityName(),
+        situation.currentActivity() == null ? null : situation.currentActivity().operationalState(),
+        situation.currentActivity() == null ? null : situation.currentActivity().stateReason(),
         activities.size(),
         (int) activities.stream().filter(activity -> activity.taskCount() > 0).count(),
         tasks.size(),
@@ -215,9 +248,10 @@ public class BusinessProcessActivityExecutionService {
   }
 
   /** Busca somente tarefas dos planos do produto e do código estável do processo selecionado. */
-  private List<AgentTask> productProcessTasks(Long productId, String processCode) {
+  private List<AgentTask> productProcessTasks(
+      List<CommercialPlan> productPlans, String processCode) {
     Map<Long, AgentTask> uniqueTasks = new LinkedHashMap<>();
-    for (CommercialPlan plan : commercialPlanRepository.findByProductId(productId)) {
+    for (CommercialPlan plan : productPlans) {
       taskRepository
           .findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
               "commercial-plan:" + plan.getId() + "@")
@@ -231,6 +265,29 @@ public class BusinessProcessActivityExecutionService {
             Comparator.comparing(
                     AgentTask::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing(AgentTask::getId, Comparator.nullsLast(Comparator.reverseOrder())))
+        .toList();
+  }
+
+  /**
+   * Busca ocorrências BPM diretamente pelo plano do produto para preservar atividades sem tarefa.
+   */
+  private List<BusinessProcessActivityInstance> productProcessActivityInstances(
+      List<CommercialPlan> productPlans, String processCode) {
+    Map<Long, BusinessProcessActivityInstance> uniqueInstances = new LinkedHashMap<>();
+    for (CommercialPlan plan : productPlans) {
+      activityInstanceRepository
+          .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceStartingWithOrderByCreatedAtDescIdDesc(
+              processCode, "commercial-plan:" + plan.getId() + "@")
+          .forEach(instance -> uniqueInstances.put(instance.getId(), instance));
+    }
+    return uniqueInstances.values().stream()
+        .sorted(
+            Comparator.comparing(
+                    BusinessProcessActivityInstance::getCreatedAt,
+                    Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(
+                    BusinessProcessActivityInstance::getId,
+                    Comparator.nullsLast(Comparator.reverseOrder())))
         .toList();
   }
 
@@ -282,13 +339,27 @@ public class BusinessProcessActivityExecutionService {
       Map<String, List<AgentTask>> tasksByActivityId,
       Map<String, BusinessProcessActivityDefinition> selectedByActivityId,
       Map<String, String> historicalActivityNames,
-      Map<Long, BusinessProcessActivityExecutionResponse> taskResponses) {
+      Map<Long, BusinessProcessActivityExecutionResponse> taskResponses,
+      String currentExecutionReference,
+      Map<String, List<BusinessProcessActivityInstance>> currentInstancesByActivityId) {
     List<ProductProcessActivityExecutionGroupResponse> groups = new java.util.ArrayList<>();
     int sequence = 1;
     for (Map.Entry<String, List<AgentTask>> entry : tasksByActivityId.entrySet()) {
       BusinessProcessActivityDefinition definition = selectedByActivityId.get(entry.getKey());
       List<BusinessProcessActivityExecutionResponse> executions =
           entry.getValue().stream().map(task -> taskResponses.get(task.getId())).toList();
+      List<AgentTask> currentExecutionTasks =
+          entry.getValue().stream()
+              .filter(
+                  task ->
+                      currentExecutionReference == null
+                          || currentExecutionReference.equals(task.getSourceReference()))
+              .toList();
+      ActivitySituation situation =
+          activitySituation(
+              entry.getKey(),
+              currentExecutionTasks,
+              currentInstancesByActivityId.getOrDefault(entry.getKey(), List.of()));
       String activityName =
           definition != null
               ? definition.getName()
@@ -304,11 +375,303 @@ public class BusinessProcessActivityExecutionService {
               definition == null ? null : definition.getOwnerName(),
               sequence++,
               definition != null,
+              situation.operationalState(),
+              situation.stateReason(),
+              situation.objectiveAchieved(),
+              situation.stateEvidence(),
+              situation.activityInstanceId(),
+              situation.occurrenceNumber(),
               executions.size(),
               executions));
     }
     return groups;
   }
+
+  /**
+   * Identifica a execução mais recente do processo para impedir que um ciclo antigo masque a
+   * situação atual do produto.
+   */
+  private String currentExecutionReference(
+      List<AgentTask> tasks, List<BusinessProcessActivityInstance> instances) {
+    return java.util.stream.Stream.concat(
+            tasks.stream()
+                .map(
+                    task ->
+                        new ExecutionReferenceCandidate(
+                            task.getSourceReference(), task.getCreatedAt(), task.getId())),
+            instances.stream()
+                .map(
+                    instance ->
+                        new ExecutionReferenceCandidate(
+                            instance.getSourceReference(),
+                            instance.getCreatedAt(),
+                            instance.getId())))
+        .filter(candidate -> candidate.sourceReference() != null)
+        .filter(candidate -> !candidate.sourceReference().isBlank())
+        .sorted(
+            Comparator.comparing(
+                    ExecutionReferenceCandidate::createdAt,
+                    Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(
+                    ExecutionReferenceCandidate::id,
+                    Comparator.nullsLast(Comparator.reverseOrder())))
+        .map(ExecutionReferenceCandidate::sourceReference)
+        .findFirst()
+        .orElse(null);
+  }
+
+  /** Agrupa as ocorrências da versão selecionada que pertencem ao ciclo operacional atual. */
+  private Map<String, List<BusinessProcessActivityInstance>> currentInstancesByActivityId(
+      Long processDefinitionId,
+      String currentExecutionReference,
+      List<BusinessProcessActivityInstance> instances) {
+    Map<String, List<BusinessProcessActivityInstance>> byActivityId = new LinkedHashMap<>();
+    if (currentExecutionReference == null) return byActivityId;
+    instances.stream()
+        .filter(instance -> currentExecutionReference.equals(instance.getSourceReference()))
+        .filter(instance -> instance.getActivityDefinition() != null)
+        .filter(instance -> instance.getActivityDefinition().getProcessDefinition() != null)
+        .filter(
+            instance ->
+                processDefinitionId.equals(
+                    instance.getActivityDefinition().getProcessDefinition().getId()))
+        .forEach(
+            instance ->
+                byActivityId
+                    .computeIfAbsent(
+                        instance.getActivityDefinition().getActivityId(),
+                        ignored -> new java.util.ArrayList<>())
+                    .add(instance));
+    return byActivityId;
+  }
+
+  /** Usa primeiro a instância BPM da própria atividade e mantém fallback explícito para legados. */
+  private ActivitySituation activitySituation(
+      String activityId,
+      List<AgentTask> activityTasks,
+      List<BusinessProcessActivityInstance> activityInstances) {
+    Optional<BusinessProcessActivityInstance> latestInstance =
+        latestMatchingActivityInstance(activityId, activityTasks, activityInstances);
+    if (latestInstance.isPresent()) {
+      BusinessProcessActivityInstance instance = latestInstance.get();
+      return new ActivitySituation(
+          instance.getStatus(),
+          activityInstanceStateReason(instance),
+          instance.isObjectiveAchieved(),
+          instance.getEvidenceQuality(),
+          instance.getId(),
+          instance.getOccurrenceNumber());
+    }
+    if (activityTasks.isEmpty()) {
+      return new ActivitySituation(
+          "NOT_STARTED",
+          "Nenhuma tarefa ou instância foi registrada para esta atividade.",
+          false,
+          "NOT_RECORDED",
+          null,
+          null);
+    }
+
+    List<AgentTask> currentAttempts = currentTaskAttempts(activityTasks);
+    String operationalState = aggregateTaskStatus(currentAttempts);
+    AgentTask latestTask = activityTasks.getFirst();
+    boolean directLegacyTask = activityId.equals(latestTask.getProcessActivityId());
+    String evidence = directLegacyTask ? "LEGACY_TASK" : "COMPOSITE_TASK_COVERAGE";
+    return new ActivitySituation(
+        operationalState,
+        taskStateReason(operationalState, evidence, currentAttempts, latestTask),
+        "COMPLETED".equals(operationalState),
+        evidence,
+        null,
+        null);
+  }
+
+  /** Seleciona somente a ocorrência mais recente vinculada diretamente à atividade consultada. */
+  private Optional<BusinessProcessActivityInstance> latestMatchingActivityInstance(
+      String activityId,
+      List<AgentTask> activityTasks,
+      List<BusinessProcessActivityInstance> activityInstances) {
+    return java.util.stream.Stream.concat(
+            activityInstances.stream(),
+            activityTasks.stream().map(AgentTask::getActivityInstance).filter(Objects::nonNull))
+        .filter(Objects::nonNull)
+        .filter(instance -> instance.getActivityDefinition() != null)
+        .filter(instance -> activityId.equals(instance.getActivityDefinition().getActivityId()))
+        .max(
+            Comparator.comparing(
+                    BusinessProcessActivityInstance::getUpdatedAt,
+                    Comparator.nullsFirst(Comparator.naturalOrder()))
+                .thenComparing(
+                    BusinessProcessActivityInstance::getId,
+                    Comparator.nullsFirst(Comparator.naturalOrder())));
+  }
+
+  /**
+   * Mantém a tentativa mais recente de cada responsável ao projetar tarefas legadas ou compostas.
+   */
+  private List<AgentTask> currentTaskAttempts(List<AgentTask> activityTasks) {
+    Map<String, AgentTask> latestByAgent = new LinkedHashMap<>();
+    activityTasks.forEach(
+        task -> latestByAgent.putIfAbsent(task.getAssignedAgent().getAgentKey(), task));
+    return List.copyOf(latestByAgent.values());
+  }
+
+  /** Consolida os estados persistidos das tentativas quando não existe instância da atividade. */
+  private String aggregateTaskStatus(List<AgentTask> attempts) {
+    if (attempts.stream().anyMatch(task -> "IN_PROGRESS".equals(task.getStatus()))) {
+      return "IN_PROGRESS";
+    }
+    if (attempts.stream().anyMatch(task -> "BLOCKED".equals(task.getStatus()))) {
+      return "BLOCKED";
+    }
+    if (attempts.stream().anyMatch(task -> "PENDING".equals(task.getStatus()))) {
+      return "PENDING";
+    }
+    if (!attempts.isEmpty()
+        && attempts.stream().allMatch(task -> "COMPLETED".equals(task.getStatus()))) {
+      return "COMPLETED";
+    }
+    return "CANCELLED";
+  }
+
+  /** Explica o estado consolidado pela instância sem substituir a causa persistida de bloqueio. */
+  private String activityInstanceStateReason(BusinessProcessActivityInstance instance) {
+    return switch (instance.getStatus()) {
+      case "COMPLETED" -> "Objetivo da atividade atingido na instância BPM.";
+      case "BLOCKED" ->
+          firstPresent(
+              instance.getBlockedReason(),
+              "Atividade bloqueada por uma tentativa ainda não resolvida.");
+      case "IN_PROGRESS" -> "Atividade em execução pelo responsável.";
+      case "PENDING" -> "Atividade aguardando execução ou liberação pelo backend.";
+      case "CANCELLED" -> "Atividade encerrada sem atingir o objetivo.";
+      default -> "Estado operacional registrado na instância BPM.";
+    };
+  }
+
+  /**
+   * Explica o fallback auditável usado para tarefas compostas e registros anteriores à instância.
+   */
+  private String taskStateReason(
+      String operationalState,
+      String evidence,
+      List<AgentTask> currentAttempts,
+      AgentTask latestTask) {
+    return switch (operationalState) {
+      case "COMPLETED" ->
+          "COMPOSITE_TASK_COVERAGE".equals(evidence)
+              ? "Atividade comprovadamente coberta pela tarefa composta #"
+                  + latestTask.getId()
+                  + "."
+              : "Atividade concluída em tarefa legada, sem instância BPM vinculada.";
+      case "BLOCKED" ->
+          currentAttempts.stream()
+              .filter(task -> "BLOCKED".equals(task.getStatus()))
+              .map(AgentTask::getExecutionError)
+              .filter(Objects::nonNull)
+              .filter(value -> !value.isBlank())
+              .findFirst()
+              .orElse("Atividade bloqueada por uma tarefa ainda não resolvida.");
+      case "IN_PROGRESS" -> "Atividade em execução pelo responsável.";
+      case "PENDING" -> "Atividade aguardando execução ou liberação pelo backend.";
+      case "CANCELLED" -> "Atividade encerrada sem atingir o objetivo.";
+      default -> "Estado consolidado pelas tarefas persistidas.";
+    };
+  }
+
+  /** Resume o progresso da versão selecionada e aponta a atividade que exige atenção primeiro. */
+  private ProductProcessSituation processSituation(
+      List<ProductProcessActivityExecutionGroupResponse> activities) {
+    List<ProductProcessActivityExecutionGroupResponse> selectedActivities =
+        activities.stream()
+            .filter(ProductProcessActivityExecutionGroupResponse::selectedVersionActivity)
+            .toList();
+    int completed =
+        (int)
+            selectedActivities.stream()
+                .filter(ProductProcessActivityExecutionGroupResponse::objectiveAchieved)
+                .count();
+    int blocked =
+        (int)
+            selectedActivities.stream()
+                .filter(activity -> "BLOCKED".equals(activity.operationalState()))
+                .count();
+    int remaining = selectedActivities.size() - completed;
+    boolean objectiveAchieved = !selectedActivities.isEmpty() && remaining == 0;
+    String operationalState =
+        processOperationalState(selectedActivities, objectiveAchieved, completed, blocked);
+    ProductProcessActivityExecutionGroupResponse currentActivity =
+        objectiveAchieved ? null : currentActivity(selectedActivities);
+    return new ProductProcessSituation(
+        operationalState,
+        objectiveAchieved,
+        selectedActivities.size(),
+        completed,
+        remaining,
+        blocked,
+        currentActivity);
+  }
+
+  /** Classifica a situação geral sem transformar atividade técnica em objetivo de processo. */
+  private String processOperationalState(
+      List<ProductProcessActivityExecutionGroupResponse> activities,
+      boolean objectiveAchieved,
+      int completed,
+      int blocked) {
+    if (activities.isEmpty()) return "NOT_RECORDED";
+    if (objectiveAchieved) return "COMPLETED";
+    if (blocked > 0) return "BLOCKED";
+    if (activities.stream()
+        .anyMatch(activity -> "IN_PROGRESS".equals(activity.operationalState()))) {
+      return "IN_PROGRESS";
+    }
+    if (completed > 0) return "IN_PROGRESS";
+    if (activities.stream().anyMatch(activity -> "PENDING".equals(activity.operationalState()))) {
+      return "PENDING";
+    }
+    if (activities.stream().allMatch(activity -> "CANCELLED".equals(activity.operationalState()))) {
+      return "CANCELLED";
+    }
+    return "NOT_STARTED";
+  }
+
+  /** Prioriza bloqueio, execução e pendência antes das atividades ainda sem registro. */
+  private ProductProcessActivityExecutionGroupResponse currentActivity(
+      List<ProductProcessActivityExecutionGroupResponse> activities) {
+    for (String state : List.of("BLOCKED", "IN_PROGRESS", "PENDING", "NOT_STARTED", "CANCELLED")) {
+      Optional<ProductProcessActivityExecutionGroupResponse> matching =
+          activities.stream()
+              .filter(activity -> state.equals(activity.operationalState()))
+              .findFirst();
+      if (matching.isPresent()) return matching.get();
+    }
+    return activities.stream()
+        .filter(activity -> !activity.objectiveAchieved())
+        .findFirst()
+        .orElse(null);
+  }
+
+  /** Representa a situação auditável de uma atividade antes de montar o contrato público. */
+  private record ActivitySituation(
+      String operationalState,
+      String stateReason,
+      boolean objectiveAchieved,
+      String stateEvidence,
+      Long activityInstanceId,
+      Integer occurrenceNumber) {}
+
+  /** Representa o resumo gerencial da versão de processo vinculada ao produto. */
+  private record ProductProcessSituation(
+      String operationalState,
+      boolean objectiveAchieved,
+      int selectedActivityCount,
+      int completedActivityCount,
+      int remainingActivityCount,
+      int blockedActivityCount,
+      ProductProcessActivityExecutionGroupResponse currentActivity) {}
+
+  /** Representa uma referência operacional candidata com sua ordem de criação auditável. */
+  private record ExecutionReferenceCandidate(String sourceReference, Instant createdAt, Long id) {}
 
   /** Soma custo estimado uma única vez por tarefa, mesmo quando ela cobre várias atividades. */
   private BigDecimal knownEstimatedCost(List<AgentTask> tasks) {

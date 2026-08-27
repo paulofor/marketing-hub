@@ -73,7 +73,7 @@ function getAssociatedExperimentCount(
   return splitText(product.associatedExperiments).length;
 }
 
-function compareProductsByCommercialActivity(a: Product, b: Product) {
+function compareProductsByOperationalPriority(a: Product, b: Product) {
   const validationDelta =
     Number(isCommercialValidationProduct(b)) -
     Number(isCommercialValidationProduct(a));
@@ -237,14 +237,17 @@ function getJourneyTrackedSections(step: {
 export default function ProductListPage() {
   const [identityQuery, setIdentityQuery] = useState("");
   const deferredIdentityQuery = useDeferredValue(identityQuery.trim());
-  const { data, isLoading, isFetching } = useProducts(deferredIdentityQuery);
+  const { data, isLoading, isFetching } = useProducts(
+    deferredIdentityQuery,
+    true,
+  );
   const valueChainPositions = useProductValueChainPositions();
   const applyDefaultJourney = useApplyDefaultPdePersuasiveJourney();
   const automaticExecution = useProductAutomaticExecution();
   const products = useMemo(
     () =>
       Array.isArray(data)
-        ? [...data].sort(compareProductsByCommercialActivity)
+        ? [...data].sort(compareProductsByOperationalPriority)
         : [],
     [data],
   );
@@ -263,10 +266,10 @@ export default function ProductListPage() {
     <div>
       <div className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
         <div>
-          <PageTitle>Cadastro de Produtos</PageTitle>
+          <PageTitle>Produtos em PLAY</PageTitle>
           <p className="text-muted mb-0">
-            Fonte comercial dos produtos que o Marketing Hub vende, entrega e
-            escala.
+            Produtos liberados para operação, campanha, vídeo e melhoria de
+            conversão.
           </p>
         </div>
         <div className="d-flex flex-wrap gap-2">
@@ -299,7 +302,7 @@ export default function ProductListPage() {
         <div className="form-text" aria-live="polite">
           {isFetching
             ? "Buscando no catálogo..."
-            : `${products.length} produto${products.length === 1 ? "" : "s"} encontrado${products.length === 1 ? "" : "s"}.`}
+            : `${products.length} produto${products.length === 1 ? "" : "s"} em PLAY encontrado${products.length === 1 ? "" : "s"}.`}
         </div>
       </div>
 
@@ -308,8 +311,8 @@ export default function ProductListPage() {
           <div className="col-12">
             <p className="text-muted mb-0">
               {deferredIdentityQuery
-                ? "Nenhum produto corresponde a esse nome ou apelido."
-                : "Nenhum produto comercial cadastrado."}
+                ? "Nenhum produto em PLAY corresponde a esse nome ou apelido."
+                : "Nenhum produto em PLAY cadastrado."}
             </p>
           </div>
         )}

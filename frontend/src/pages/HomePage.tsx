@@ -20,28 +20,6 @@ const money = new Intl.NumberFormat("pt-BR", {
   currency: "BRL",
 });
 
-function normalizeStatus(value?: string) {
-  return (value ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim()
-    .toUpperCase();
-}
-
-function isActiveProduct(product: Product) {
-  const status = normalizeStatus(product.commercialStatus);
-  return ![
-    "ARQUIVADO",
-    "ARCHIVED",
-    "INATIVO",
-    "INACTIVE",
-    "PAUSADO",
-    "PAUSED",
-    "ENCERRADO",
-    "REJECTED",
-  ].includes(status);
-}
-
 function getProductName(product: Product) {
   return product.name || product.niche || `Produto ${product.id}`;
 }
@@ -60,20 +38,11 @@ function getProductPrimaryColor(product: Product) {
   return color || "#7a2444";
 }
 
-function sortByRecentActivity(a: Product, b: Product) {
-  const aTime = Date.parse(a.updatedAt || a.createdAt || "");
-  const bTime = Date.parse(b.updatedAt || b.createdAt || "");
-  return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
-}
-
 export default function HomePage() {
-  const { data, isLoading } = useProducts();
+  const { data, isLoading } = useProducts(undefined, true);
   const valueChainPositions = useProductValueChainPositions();
-  const activeProducts = useMemo(
-    () =>
-      Array.isArray(data)
-        ? data.filter(isActiveProduct).sort(sortByRecentActivity)
-        : [],
+  const productsInPlay = useMemo(
+    () => (Array.isArray(data) ? data : []),
     [data],
   );
   const valueChainPositionByProductId = useMemo(
@@ -93,7 +62,7 @@ export default function HomePage() {
         <div>
           <PageTitle>Início</PageTitle>
           <p className="text-muted mb-0">
-            Produtos ativos prontos para operação, campanha, vídeo e melhoria de
+            Produtos em PLAY prontos para operação, campanha, vídeo e melhoria de
             conversão.
           </p>
         </div>
@@ -103,21 +72,21 @@ export default function HomePage() {
       </div>
 
       {isLoading ? (
-        <p className="text-muted">Carregando produtos ativos...</p>
-      ) : activeProducts.length === 0 ? (
+        <p className="text-muted">Carregando produtos em PLAY...</p>
+      ) : productsInPlay.length === 0 ? (
         <section className="home-products-empty">
           <Package size={24} aria-hidden="true" />
           <div>
-            <h2 className="h5 mb-1">Nenhum produto ativo encontrado</h2>
+            <h2 className="h5 mb-1">Nenhum produto em PLAY encontrado</h2>
             <p className="text-muted mb-0">
-              Cadastre ou reative um produto para priorizar campanhas e produção
+              Retome um produto no catálogo para priorizar campanhas e produção
               comercial.
             </p>
           </div>
         </section>
       ) : (
-        <section className="home-products-grid" aria-label="Produtos ativos">
-          {activeProducts.map((product) => {
+        <section className="home-products-grid" aria-label="Produtos em PLAY">
+          {productsInPlay.map((product) => {
             const primaryColor = getProductPrimaryColor(product);
             return (
               <article

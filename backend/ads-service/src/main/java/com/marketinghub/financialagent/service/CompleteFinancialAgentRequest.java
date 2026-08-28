@@ -8,4 +8,12 @@ public record CompleteFinancialAgentRequest(
     String dailyReport,
     String rawModelResponse,
     String model,
-    BigDecimal estimatedCost) {}
+    BigDecimal estimatedCost,
+    String promptSent,
+    String reasoningEffort,
+    String requestedServiceTier,
+    String effectiveServiceTier,
+    String serviceTierExceptionReason,
+    Long inputTokens,
+    Long cachedInputTokens,
+    Long outputTokens) {}

@@ -1,0 +1,117 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-28-financial-agent-task-audit-reconciliation-1
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: financial_agent_execution
+        - tableExists:
+            tableName: agent_task
+        - columnExists:
+            tableName: financial_agent_execution
+            columnName: agent_task_id
+        - columnExists:
+            tableName: agent_task
+            columnName: evidence_json
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE agent_task task
+              JOIN financial_agent_execution execution
+                ON execution.agent_task_id = task.id
+              SET task.received_at = COALESCE(task.received_at, execution.started_at),
+                  task.delivered_at = COALESCE(
+                    task.delivered_at,
+                    CASE
+                      WHEN execution.status = 'COMPLETED' THEN execution.finished_at
+                      ELSE NULL
+                    END
+                  ),
+                  task.result_json = COALESCE(
+                    task.result_json,
+                    CASE
+                      WHEN execution.status = 'COMPLETED'
+                       AND JSON_VALID(execution.reconciliation_json)
+                        THEN execution.reconciliation_json
+                      WHEN execution.status = 'FAILED'
+                        THEN JSON_OBJECT(
+                          'status', 'FAILED',
+                          'executionId', execution.id,
+                          'authorityMode', execution.authority_mode,
+                          'error', execution.error_message
+                        )
+                      ELSE NULL
+                    END
+                  ),
+                  task.evidence_json = COALESCE(
+                    task.evidence_json,
+                    JSON_OBJECT(
+                      'backfillSource', 'financial-agent-task-audit/v1',
+                      'artifactType', 'FINANCIAL_AGENT_EXECUTION',
+                      'executionId', execution.id,
+                      'authorityMode', execution.authority_mode,
+                      'commercialPlanId', execution.commercial_plan_id,
+                      'commercialPlanVersion', execution.commercial_plan_version,
+                      'financialSnapshotSha256', SHA2(execution.financial_snapshot, 256),
+                      'dailyReport', execution.daily_report,
+                      'model', execution.model,
+                      'telemetryCoverage', 'HISTORICAL_FIELDS_ONLY',
+                      'rawModelResponsePresent', execution.raw_model_response IS NOT NULL,
+                      'rawModelResponseReference', CASE
+                        WHEN execution.raw_model_response IS NOT NULL
+                          THEN CONCAT(
+                            'financial_agent_execution:',
+                            execution.id,
+                            ':raw_model_response'
+                          )
+                        ELSE NULL
+                      END,
+                      'rawModelResponseSha256', CASE
+                        WHEN execution.raw_model_response IS NOT NULL
+                          THEN SHA2(execution.raw_model_response, 256)
+                        ELSE NULL
+                      END,
+                      'externalSideEffects', JSON_EXTRACT('false', '$'),
+                      'publicationPerformed', JSON_EXTRACT('false', '$'),
+                      'spendAuthorized', JSON_EXTRACT('false', '$'),
+                      'finishedAt', execution.finished_at
+                    )
+                  ),
+                  task.execution_error = COALESCE(
+                    task.execution_error,
+                    CASE WHEN execution.status = 'FAILED' THEN execution.error_message ELSE NULL END
+                  ),
+                  task.estimated_cost_usd = COALESCE(
+                    task.estimated_cost_usd,
+                    execution.estimated_cost
+                  ),
+                  task.cost_estimation_status = CASE
+                    WHEN task.cost_estimation_status = 'NOT_REPORTED'
+                     AND execution.estimated_cost IS NOT NULL
+                      THEN 'ESTIMATED'
+                    ELSE task.cost_estimation_status
+                  END,
+                  task.model_usage_updated_at = CASE
+                    WHEN task.model_usage_updated_at IS NULL
+                     AND execution.estimated_cost IS NOT NULL
+                      THEN execution.finished_at
+                    ELSE task.model_usage_updated_at
+                  END,
+                  task.execution_model_code = COALESCE(
+                    task.execution_model_code,
+                    execution.model
+                  ),
+                  task.updated_at = GREATEST(task.updated_at, execution.updated_at)
+              WHERE task.received_at IS NULL
+                 OR (execution.status = 'COMPLETED' AND task.delivered_at IS NULL)
+                 OR task.result_json IS NULL
+                 OR task.evidence_json IS NULL
+                 OR (execution.status = 'FAILED' AND task.execution_error IS NULL)
+                 OR (execution.estimated_cost IS NOT NULL AND task.estimated_cost_usd IS NULL)
+                 OR (execution.model IS NOT NULL AND task.execution_model_code IS NULL);

@@ -63,6 +63,14 @@ origem, atividade, hash estratégico preservado, exatamente três alternativas a
 escolhida, artefato estruturado, lacunas, próximo handoff, guardrails e critérios de continuar,
 ajustar e parar.
 
+O parecer econômico aceito na entrada deve vir de uma `financial_agent_execution` concluída por
+Plutus para a versão comercial vigente, com autoridade `READ_ONLY_REVENUE_PROJECTION` e resposta
+estruturada preservada. Tarefa genérica, execução de versão anterior ou relatório sem resultado não
+substituem essa evidência. A consulta da atividade no frontend, o endpoint que cria a tarefa e o
+worker de Íris usam o mesmo gate; uma lacuna deve aparecer antes de consumir modelo. Depois que o
+predecessor for concluído, o backend permite nova tentativa e preserva a tentativa bloqueada no
+histórico.
+
 Íris produz os contratos funcionais `COMMUNICATION_PACKAGE`, `NON_AUDIOVISUAL_PACKAGE`,
 `LANDING_EVIDENCE`, `LANDING_STRATEGY`, `LANDING_COMPOSITION` e `LANDING_HTML`. Vídeo necessário é
 somente `audiovisualBrief`; o binário final pertence a Apolo. Uma saída inválida, incompleta, com

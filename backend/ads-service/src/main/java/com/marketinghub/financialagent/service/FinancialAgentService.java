@@ -1,10 +1,15 @@
 package com.marketinghub.financialagent.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agenttask.AgentTaskExecutionAuditRequest;
+import com.marketinghub.agenttask.AgentTaskModelUsageRequest;
 import com.marketinghub.agenttask.AgentTaskResponse;
 import com.marketinghub.agenttask.AgentTaskService;
+import com.marketinghub.agenttask.CompleteAgentTaskRequest;
 import com.marketinghub.agenttask.CreateAgentTaskRequest;
+import com.marketinghub.agenttask.FailAgentTaskRequest;
 import com.marketinghub.agenttask.UpdateAgentTaskStatusRequest;
 import com.marketinghub.financialagent.FinancialAgentExecution;
 import com.marketinghub.financialagent.FinancialAgentExecutionStatus;
@@ -13,12 +18,18 @@ import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.planning.service.CommercialPlanVersionService;
 import com.marketinghub.repository.jpa.financialagent.FinancialAgentExecutionRepository;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -29,6 +40,7 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: congelar fontes financeiras e auditar conciliacoes somente leitura. */
 @Service
 public class FinancialAgentService {
+  private static final Logger log = LoggerFactory.getLogger(FinancialAgentService.class);
   private static final String READ_ONLY = "READ_ONLY_FINANCIAL_RECONCILIATION";
   private static final String REVENUE_PROJECTION = "READ_ONLY_REVENUE_PROJECTION";
   private static final String ASSUMPTION_DEFINITION = "COMMERCIAL_ASSUMPTIONS_VALIDATION";
@@ -197,6 +209,7 @@ public class FinancialAgentService {
     try {
       return objectMapper.readValue(buildSnapshot(plan), Map.class);
     } catch (JsonProcessingException ex) {
+      log.error("Falha ao desserializar snapshot financeiro. planId={}", planId, ex);
       throw new IllegalStateException("Snapshot financeiro invalido.", ex);
     }
   }
@@ -256,6 +269,7 @@ public class FinancialAgentService {
         || !hasText(request.reconciliationJson())) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Conciliacao incompleta.");
     }
+    validateResultJson(id, request.reconciliationJson());
     execution.setReconciliationJson(request.reconciliationJson());
     execution.setDailyReport(request.dailyReport());
     execution.setRawModelResponse(request.rawModelResponse());
@@ -267,25 +281,182 @@ public class FinancialAgentService {
       commercialPlanService.applyAgentAssumptions(
           execution.getCommercialPlan().getId(), request.reconciliationJson());
     }
+    FinancialAgentExecution saved = repository.save(execution);
     if (execution.getAgentTaskId() != null) {
-      taskService.updateStatus(
-          execution.getAgentTaskId(), new UpdateAgentTaskStatusRequest("COMPLETED"));
+      taskService.completeClaimedProcessTask(
+          "financial-agent", execution.getAgentTaskId(), taskCompletion(saved, request));
     }
-    return toResponse(repository.save(execution));
+    return toResponse(saved);
   }
 
   /** Registra falha tecnica preservando o snapshot que a originou. */
   @Transactional
   public FinancialAgentExecutionResponse fail(Long id, FailFinancialAgentRequest request) {
     FinancialAgentExecution execution = findRunning(id);
+    String error =
+        request == null || !hasText(request.errorMessage())
+            ? "Falha nao informada."
+            : request.errorMessage().trim();
     execution.setStatus(FinancialAgentExecutionStatus.FAILED);
-    execution.setErrorMessage(request == null ? "Falha nao informada." : request.errorMessage());
+    execution.setErrorMessage(error);
     execution.setFinishedAt(Instant.now());
+    FinancialAgentExecution saved = repository.save(execution);
     if (execution.getAgentTaskId() != null) {
-      taskService.updateStatus(
-          execution.getAgentTaskId(), new UpdateAgentTaskStatusRequest("BLOCKED"));
+      taskService.failClaimedProcessTask(
+          "financial-agent",
+          execution.getAgentTaskId(),
+          new FailAgentTaskRequest(
+              error, failureResult(saved, error), failureEvidence(saved, error)));
     }
-    return toResponse(repository.save(execution));
+    return toResponse(saved);
+  }
+
+  /** Monta o callback completo da tarefa sem transformar ausência de telemetria em zero. */
+  private CompleteAgentTaskRequest taskCompletion(
+      FinancialAgentExecution execution, CompleteFinancialAgentRequest request) {
+    return new CompleteAgentTaskRequest(
+        request.reconciliationJson(),
+        completionEvidence(execution, request),
+        modelUsages(request),
+        executionAudit(request));
+  }
+
+  /** Registra a execução financeira como artefato auditável, separado do resultado funcional. */
+  private String completionEvidence(
+      FinancialAgentExecution execution, CompleteFinancialAgentRequest request) {
+    LinkedHashMap<String, Object> evidence = baseTaskEvidence(execution);
+    evidence.put("dailyReport", request.dailyReport());
+    evidence.put("model", trimToNull(request.model()));
+    evidence.put("reasoningEffort", trimToNull(request.reasoningEffort()));
+    evidence.put("requestedServiceTier", trimToNull(request.requestedServiceTier()));
+    evidence.put("effectiveServiceTier", trimToNull(request.effectiveServiceTier()));
+    evidence.put("serviceTierExceptionReason", trimToNull(request.serviceTierExceptionReason()));
+    evidence.put("rawModelResponsePresent", hasText(request.rawModelResponse()));
+    evidence.put(
+        "rawModelResponseReference",
+        hasText(request.rawModelResponse())
+            ? "financial_agent_execution:" + execution.getId() + ":raw_model_response"
+            : null);
+    evidence.put(
+        "rawModelResponseSha256",
+        hasText(request.rawModelResponse()) ? sha256(request.rawModelResponse()) : null);
+    evidence.put("completedAt", execution.getFinishedAt());
+    return writeEvidence(execution.getId(), evidence);
+  }
+
+  /** Monta evidência mínima da falha técnica sem inventar resposta ou uso de modelo. */
+  private String failureEvidence(FinancialAgentExecution execution, String error) {
+    LinkedHashMap<String, Object> evidence = baseTaskEvidence(execution);
+    evidence.put("status", "FAILED");
+    evidence.put("error", error);
+    evidence.put("finishedAt", execution.getFinishedAt());
+    return writeEvidence(execution.getId(), evidence);
+  }
+
+  /** Monta o resultado funcional de falha separado da evidência técnica. */
+  private String failureResult(FinancialAgentExecution execution, String error) {
+    LinkedHashMap<String, Object> result = new LinkedHashMap<>();
+    result.put("status", "FAILED");
+    result.put("executionId", execution.getId());
+    result.put("authorityMode", execution.getAuthorityMode());
+    result.put("error", error);
+    return writeEvidence(execution.getId(), result);
+  }
+
+  /** Reúne a identidade imutável da execução e confirma que não houve efeito comercial externo. */
+  private LinkedHashMap<String, Object> baseTaskEvidence(FinancialAgentExecution execution) {
+    LinkedHashMap<String, Object> evidence = new LinkedHashMap<>();
+    evidence.put("artifactType", "FINANCIAL_AGENT_EXECUTION");
+    evidence.put("executionId", execution.getId());
+    evidence.put("authorityMode", execution.getAuthorityMode());
+    evidence.put("commercialPlanId", execution.getCommercialPlan().getId());
+    evidence.put("commercialPlanVersion", execution.getCommercialPlanVersion());
+    evidence.put("financialSnapshotSha256", sha256(execution.getFinancialSnapshot()));
+    evidence.put("externalSideEffects", false);
+    evidence.put("publicationPerformed", false);
+    evidence.put("spendAuthorized", false);
+    return evidence;
+  }
+
+  /** Converte somente contadores completos em consumo de modelo estimável pelo catálogo. */
+  private List<AgentTaskModelUsageRequest> modelUsages(CompleteFinancialAgentRequest request) {
+    boolean anyToken =
+        request.inputTokens() != null
+            || request.cachedInputTokens() != null
+            || request.outputTokens() != null;
+    if (!anyToken) return null;
+    if (request.inputTokens() == null
+        || request.cachedInputTokens() == null
+        || request.outputTokens() == null
+        || !hasText(request.model())
+        || !hasText(request.effectiveServiceTier())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Telemetria financeira de modelo incompleta.");
+    }
+    return List.of(
+        new AgentTaskModelUsageRequest(
+            request.model().trim(),
+            normalizedServiceTier(request.effectiveServiceTier()),
+            request.inputTokens(),
+            request.cachedInputTokens(),
+            request.outputTokens()));
+  }
+
+  /** Preserva modelo, esforço e prompt somente quando o trio foi realmente informado. */
+  private AgentTaskExecutionAuditRequest executionAudit(CompleteFinancialAgentRequest request) {
+    if (!hasText(request.model())
+        || !hasText(request.reasoningEffort())
+        || !hasText(request.promptSent())) {
+      return null;
+    }
+    return new AgentTaskExecutionAuditRequest(
+        request.model().trim(), request.reasoningEffort().trim(), request.promptSent());
+  }
+
+  /** Normaliza o tier efetivo para o vocabulário de precificação do backend. */
+  private String normalizedServiceTier(String tier) {
+    String normalized = tier == null ? "" : tier.trim().toUpperCase();
+    if ("DEFAULT".equals(normalized)) return "STANDARD";
+    if (List.of("STANDARD", "FLEX", "BATCH").contains(normalized)) return normalized;
+    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tier financeiro inválido.");
+  }
+
+  /** Rejeita resultado que não seja um objeto JSON funcional. */
+  private void validateResultJson(Long executionId, String resultJson) {
+    try {
+      JsonNode result = objectMapper.readTree(resultJson);
+      if (result == null || !result.isObject()) {
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST, "Resultado financeiro deve ser um objeto JSON.");
+      }
+    } catch (JsonProcessingException ex) {
+      log.error("Falha ao validar resultado financeiro. executionId={}", executionId, ex);
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Resultado financeiro não contém JSON válido.", ex);
+    }
+  }
+
+  /** Serializa evidência estruturada com correlação explícita da execução. */
+  private String writeEvidence(Long executionId, Map<String, Object> evidence) {
+    try {
+      return objectMapper.writeValueAsString(evidence);
+    } catch (JsonProcessingException ex) {
+      log.error("Falha ao serializar evidência financeira. executionId={}", executionId, ex);
+      throw new IllegalStateException("Não foi possível persistir a evidência financeira.", ex);
+    }
+  }
+
+  /** Calcula a assinatura SHA-256 sem expor o conteúdo sensível no histórico. */
+  private String sha256(String value) {
+    try {
+      return HexFormat.of()
+          .formatHex(
+              MessageDigest.getInstance("SHA-256")
+                  .digest((value == null ? "" : value).getBytes(StandardCharsets.UTF_8)));
+    } catch (NoSuchAlgorithmException ex) {
+      log.error("SHA-256 indisponível ao auditar execução financeira.", ex);
+      throw new IllegalStateException("Não foi possível assinar a evidência financeira.", ex);
+    }
   }
 
   /** Consolida planejamento, campanha, IA, demais provedores, receita e cobertura das fontes. */
@@ -345,6 +516,7 @@ public class FinancialAgentService {
     try {
       return objectMapper.writeValueAsString(snapshot);
     } catch (JsonProcessingException ex) {
+      log.error("Falha ao congelar snapshot financeiro. planId={}", plan.getId(), ex);
       throw new IllegalStateException("Nao foi possivel congelar o snapshot financeiro.", ex);
     }
   }

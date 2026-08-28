@@ -1,0 +1,73 @@
+openapi: 3.0.3
+info:
+  title: PDE Platform API
+  version: 1.0.0
+  description: Contratos públicos usados para entregar e homologar Produtos Digitais Experienciais.
+paths:
+  /api/pde/products/{productSlug}/integration-contract:
+    get:
+      summary: Consulta o contrato preparado da jornada comercial PDE
+      operationId: getProductJourneyIntegrationContract
+      parameters:
+        - name: productSlug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Rotas, eventos e correlações implementados para a versão vigente do produto.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductJourneyIntegrationContract"
+        "404":
+          description: Produto PDE não encontrado.
+components:
+  schemas:
+    ProductJourneyIntegrationContract:
+      type: object
+      required:
+        - productSlug
+        - experienceVersion
+        - contractVersion
+        - eventsPath
+        - analyticsSummaryPath
+        - loginPath
+        - workspacePathTemplate
+        - missionCompletionPathTemplate
+        - requiredEventTypes
+        - correlationKeys
+        - sourceOfTruth
+        - testTrafficPolicy
+      properties:
+        productSlug:
+          type: string
+        experienceVersion:
+          type: string
+        contractVersion:
+          type: string
+          example: PDE_COMMERCIAL_JOURNEY_EVENTS_V1
+        eventsPath:
+          type: string
+        analyticsSummaryPath:
+          type: string
+        loginPath:
+          type: string
+        workspacePathTemplate:
+          type: string
+        missionCompletionPathTemplate:
+          type: string
+        requiredEventTypes:
+          type: array
+          items:
+            type: string
+        correlationKeys:
+          type: array
+          items:
+            type: string
+        sourceOfTruth:
+          type: string
+          example: pde_funnel_event
+        testTrafficPolicy:
+          type: string

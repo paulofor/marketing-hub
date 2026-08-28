@@ -18,6 +18,7 @@ fi
 for required_contract in \
   'PROXY_CONTAINERS=' \
   'docker network connect ${PDE_PLATFORM_NETWORK}' \
+  'docker start \"\${proxy_container}\"' \
   'docker kill -s HUP' \
   'Nenhum container de proxy HTTPS' \
   'run-targeted-production-smokes.sh "${PDE_DEPLOY_FRONTEND_VERSION}"'; do
@@ -26,6 +27,19 @@ for required_contract in \
     exit 1
   fi
 done
+
+if ! awk '
+  /if docker inspect .*proxy_container/ { start_seen = 0 }
+  /docker start .*proxy_container/ { start_seen = 1; start_count++ }
+  /docker network connect .*proxy_container/ {
+    network_count++
+    if (!start_seen) invalid_order = 1
+  }
+  END { exit !(start_count >= 2 && network_count >= 2 && !invalid_order) }
+' "${workflow}"; then
+  echo '[ARQUITETURA] O deploy PDE deve iniciar o proxy parado antes de conectá-lo à rede e recarregá-lo.' >&2
+  exit 1
+fi
 
 bash "${script_dir}/test-targeted-production-smokes.sh"
 bash "${script_dir}/test-public-health-commercial-source.sh"

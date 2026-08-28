@@ -3,12 +3,15 @@ package com.marketinghub.communication.v1;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.CommunicationMaterializationContextProvider;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.financialagent.FinancialAgentExecution;
+import com.marketinghub.financialagent.FinancialAgentExecutionStatus;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.planning.dto.CommercialPlanVersionDto;
 import com.marketinghub.planning.service.CommercialPlanLandingAssetService;
 import com.marketinghub.planning.service.CommercialPlanVersionService;
 import com.marketinghub.product.Product;
 import com.marketinghub.repository.jpa.agenttask.AgentTaskRepository;
+import com.marketinghub.repository.jpa.financialagent.FinancialAgentExecutionRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -33,10 +36,12 @@ public class IrisCommunicationMaterializationContextProvider
   private static final Pattern PLAN_REFERENCE =
       Pattern.compile("commercial-plan:([1-9][0-9]*)(?:@v([1-9][0-9]*))?(?::[A-Za-z0-9_-]+)*");
   private static final Pattern EXPERIMENT_REFERENCE = Pattern.compile("experiment:([1-9][0-9]*)");
+  private static final String REVENUE_PROJECTION = "READ_ONLY_REVENUE_PROJECTION";
   private final CommercialPlanRepository plans;
   private final CommercialPlanVersionService versions;
   private final CommercialPlanLandingAssetService landingAssets;
   private final AgentTaskRepository tasks;
+  private final FinancialAgentExecutionRepository financialExecutions;
   private final ObjectMapper objectMapper;
 
   /** Configura as fontes canônicas de plano, produto e provas aprovadas. */
@@ -45,11 +50,13 @@ public class IrisCommunicationMaterializationContextProvider
       CommercialPlanVersionService versions,
       CommercialPlanLandingAssetService landingAssets,
       AgentTaskRepository tasks,
+      FinancialAgentExecutionRepository financialExecutions,
       ObjectMapper objectMapper) {
     this.plans = plans;
     this.versions = versions;
     this.landingAssets = landingAssets;
     this.tasks = tasks;
+    this.financialExecutions = financialExecutions;
     this.objectMapper = objectMapper;
   }
 
@@ -146,10 +153,7 @@ public class IrisCommunicationMaterializationContextProvider
         .filter(
             task ->
                 java.util.Set.of(
-                        "experiment-strategist",
-                        "financial-agent",
-                        "landing-generator",
-                        "communication-director")
+                        "experiment-strategist", "landing-generator", "communication-director")
                     .contains(task.getAssignedAgent().getAgentKey()))
         .forEach(
             task ->
@@ -160,37 +164,88 @@ public class IrisCommunicationMaterializationContextProvider
                     task,
                     (current, replacement) ->
                         replacement.getId() > current.getId() ? replacement : current));
-    return latest.values().stream()
-        .map(
-            task -> {
-              try {
-                Map<String, Object> artifact = new LinkedHashMap<>();
-                artifact.put("taskId", task.getId());
-                artifact.put("agentKey", task.getAssignedAgent().getAgentKey());
-                artifact.put("processCode", task.getProcessDefinition().getProcessCode());
-                artifact.put("activityId", task.getProcessActivityId());
-                artifact.put(
-                    "result",
-                    task.getResultJson() == null
-                        ? null
-                        : objectMapper.readTree(task.getResultJson()));
-                artifact.put(
-                    "evidence",
-                    task.getEvidenceJson() == null
-                        ? null
-                        : objectMapper.readTree(task.getEvidenceJson()));
-                return java.util.Collections.unmodifiableMap(artifact);
-              } catch (Exception ex) {
-                log.error(
-                    "Artefato predecessor de Íris contém JSON inválido. taskId={} sourceReference={}",
-                    task.getId(),
-                    "commercial-plan:" + planId + "@v" + planVersion,
-                    ex);
-                throw new IllegalArgumentException(
-                    "Artefato predecessor da comunicação contém JSON inválido.", ex);
-              }
-            })
-        .toList();
+    java.util.List<Map<String, Object>> artifacts =
+        new java.util.ArrayList<>(
+            latest.values().stream()
+                .map(
+                    task -> {
+                      try {
+                        Map<String, Object> artifact = new LinkedHashMap<>();
+                        artifact.put("taskId", task.getId());
+                        artifact.put("agentKey", task.getAssignedAgent().getAgentKey());
+                        artifact.put("processCode", task.getProcessDefinition().getProcessCode());
+                        artifact.put("activityId", task.getProcessActivityId());
+                        artifact.put(
+                            "result",
+                            task.getResultJson() == null
+                                ? null
+                                : objectMapper.readTree(task.getResultJson()));
+                        artifact.put(
+                            "evidence",
+                            task.getEvidenceJson() == null
+                                ? null
+                                : objectMapper.readTree(task.getEvidenceJson()));
+                        return java.util.Collections.unmodifiableMap(artifact);
+                      } catch (Exception ex) {
+                        log.error(
+                            "Artefato predecessor de Íris contém JSON inválido. taskId={} sourceReference={}",
+                            task.getId(),
+                            "commercial-plan:" + planId + "@v" + planVersion,
+                            ex);
+                        throw new IllegalArgumentException(
+                            "Artefato predecessor da comunicação contém JSON inválido.", ex);
+                      }
+                    })
+                .toList());
+    financialArtifact(planId, planVersion).ifPresent(artifacts::add);
+    return java.util.List.copyOf(artifacts);
+  }
+
+  /**
+   * Resolve o parecer econômico canônico de Plutus sem aceitar tarefa genérica ou versão antiga.
+   */
+  private Optional<Map<String, Object>> financialArtifact(Long planId, Integer planVersion) {
+    return financialExecutions.findByCommercialPlanIdOrderByCreatedAtDesc(planId).stream()
+        .filter(execution -> execution.getStatus() == FinancialAgentExecutionStatus.COMPLETED)
+        .filter(execution -> planVersion.equals(execution.getCommercialPlanVersion()))
+        .filter(execution -> REVENUE_PROJECTION.equals(execution.getAuthorityMode()))
+        .filter(
+            execution ->
+                execution.getReconciliationJson() != null
+                    && !execution.getReconciliationJson().isBlank())
+        .findFirst()
+        .flatMap(this::financialArtifact);
+  }
+
+  /** Transforma a execução financeira persistida em evidência estruturada e auditável. */
+  private Optional<Map<String, Object>> financialArtifact(FinancialAgentExecution execution) {
+    try {
+      Map<String, Object> artifact = new LinkedHashMap<>();
+      artifact.put("artifactType", "FINANCIAL_AGENT_EXECUTION");
+      artifact.put("executionId", execution.getId());
+      artifact.put("agentKey", "financial-agent");
+      artifact.put("authorityMode", execution.getAuthorityMode());
+      artifact.put("commercialPlanVersion", execution.getCommercialPlanVersion());
+      artifact.put(
+          "financialSnapshotHash",
+          execution.getFinancialSnapshot() == null
+              ? null
+              : sha256(execution.getFinancialSnapshot()));
+      artifact.put("result", objectMapper.readTree(execution.getReconciliationJson()));
+      artifact.put("dailyReport", execution.getDailyReport());
+      artifact.put("model", execution.getModel());
+      artifact.put("estimatedCostUsd", execution.getEstimatedCost());
+      artifact.put("finishedAt", execution.getFinishedAt());
+      return Optional.of(java.util.Collections.unmodifiableMap(artifact));
+    } catch (Exception ex) {
+      log.error(
+          "Parecer econômico de Íris contém JSON inválido. financialExecutionId={} commercialPlanId={} commercialPlanVersion={}",
+          execution.getId(),
+          execution.getCommercialPlan().getId(),
+          execution.getCommercialPlanVersion(),
+          ex);
+      return Optional.empty();
+    }
   }
 
   /** Reduz o experimento aos contratos comerciais que a comunicação deve preservar. */

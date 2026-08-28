@@ -74,6 +74,9 @@ jobs:
                    MARKETING_HUB_REPOSITORY_PATH='${REPOSITORY_DIR}' \
                    COMMERCIAL_PLAN_ID=2 \
                    CODEX_MODEL=gpt-5.6-sol \
+                   CODEX_REASONING_EFFORT=high \
+                   CODEX_SERVICE_TIER=default \
+                   AGENT_BUILD_REFERENCE='${GITHUB_SHA}' \
             && cd '${REPOSITORY_DIR}/financial-agent-worker' \
             && docker compose up -d --build --remove-orphans \
             && for attempt in \$(seq 1 12); do \

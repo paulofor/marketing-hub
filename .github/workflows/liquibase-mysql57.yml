@@ -9,16 +9,19 @@ on:
       - "backend/ads-service/Dockerfile.mysql57-product-process"
       - "backend/ads-service/Dockerfile.mysql57-activity-instances"
       - "backend/ads-service/Dockerfile.mysql57-product-discovery-bpm-audit"
+      - "backend/ads-service/Dockerfile.mysql57-financial-agent-task-audit"
       - "backend/ads-service/Dockerfile.mysql57-agent-responsibility-boundaries"
       - "backend/ads-service/Dockerfile.mysql57-rigel-commercial-slot"
       - "backend/ads-service/.dockerignore"
       - "backend/ads-service/docker-compose.product-process-mysql57.yml"
       - "backend/ads-service/docker-compose.activity-instances-mysql57.yml"
       - "backend/ads-service/docker-compose.product-discovery-bpm-audit-mysql57.yml"
+      - "backend/ads-service/docker-compose.financial-agent-task-audit-mysql57.yml"
       - "backend/ads-service/docker-compose.agent-responsibility-boundaries-mysql57.yml"
       - "backend/ads-service/docker-compose.rigel-commercial-slot-mysql57.yml"
       - "backend/ads-service/scripts/validate-business-process-activity-instances-mysql57.sh"
       - "backend/ads-service/scripts/validate-product-discovery-bpm-audit-mysql57.sh"
+      - "backend/ads-service/scripts/validate-financial-agent-task-audit-mysql57.sh"
       - "backend/ads-service/scripts/validate-agent-responsibility-boundaries-mysql57.sh"
       - "scripts/validate-liquibase-mysql57.sh"
       - "scripts/validate-product-process-recovery-mysql57.sh"
@@ -89,6 +92,20 @@ jobs:
         env:
           PRODUCT_DISCOVERY_BPM_COMPOSE_PROJECT: liquibase-product-discovery-bpm-${{ github.run_id }}
         run: bash backend/ads-service/scripts/validate-product-discovery-bpm-audit-mysql57.sh
+
+  validate-financial-agent-task-audit:
+    name: Validar auditoria da tarefa financeira
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Validar migração física no MySQL 5.7
+        env:
+          FINANCIAL_AGENT_TASK_AUDIT_COMPOSE_PROJECT: liquibase-financial-agent-task-audit-${{ github.run_id }}
+        run: bash backend/ads-service/scripts/validate-financial-agent-task-audit-mysql57.sh
 
   validate-agent-responsibility-boundaries:
     name: Validar fronteiras de responsabilidade dos agentes

@@ -48,6 +48,18 @@ public class PdeProductionSlotService {
   private static final String VALIDATION_OK = "OK";
   private static final String VALIDATION_FAILED = "FAILED";
   private static final String DEFAULT_LAYOUT_KEY = "video-explicativo";
+  private static final String JOURNEY_EVENT_CONTRACT_VERSION = "PDE_COMMERCIAL_JOURNEY_EVENTS_V1";
+  private static final Set<String> REQUIRED_JOURNEY_EVENTS =
+      Set.of(
+          "PAGE_VIEW",
+          "VALUE_MOMENT",
+          "CTA_VIEWED",
+          "CHECKOUT_STARTED",
+          "PURCHASE_COMPLETED",
+          "ACCESS_RELEASED",
+          "MISSION_COMPLETED",
+          "FIRST_USE",
+          "REFUND_CONFIRMED");
   private static final Pattern SCRIPT_SRC_PATTERN =
       Pattern.compile("<script[^>]+src=[\"']([^\"']+)[\"']", Pattern.CASE_INSENSITIVE);
 
@@ -527,6 +539,7 @@ public class PdeProductionSlotService {
           null);
     }
     String commercialOfferPath = text(contract, "commercialOfferPath");
+    String integrationContractPath = text(contract, "integrationContractPath");
     if (!DEFAULT_PDE_PRODUCT_SLUG.equals(slot.getProductSlug())
         && !StringUtils.hasText(commercialOfferPath)) {
       return ValidationResult.failed(
@@ -537,11 +550,28 @@ public class PdeProductionSlotService {
           healthPath,
           null);
     }
+    if (StringUtils.hasText(commercialOfferPath) && !StringUtils.hasText(integrationContractPath)) {
+      return ValidationResult.failed(
+          contractResponse.statusCode(),
+          "Contrato público não declara integração da jornada",
+          "integrationContractPath ausente para produto PDE comercial",
+          contractSlug,
+          healthPath,
+          null);
+    }
     if (StringUtils.hasText(commercialOfferPath)) {
       Optional<ValidationResult> commercialOfferFailure =
           validateCommercialOffer(slot, contractSlug, healthPath, commercialOfferPath);
       if (commercialOfferFailure.isPresent()) {
         return commercialOfferFailure.get();
+      }
+    }
+    if (StringUtils.hasText(integrationContractPath)) {
+      Optional<ValidationResult> integrationFailure =
+          validateJourneyIntegrationContract(
+              slot, contractSlug, healthPath, integrationContractPath);
+      if (integrationFailure.isPresent()) {
+        return integrationFailure.get();
       }
     }
 
@@ -592,7 +622,7 @@ public class PdeProductionSlotService {
     return ValidationResult.ok(
         page.statusCode(),
         "URL produtiva validada",
-        "Health, contrato público, oferta comercial, entrada do funil, copy pública e HLS versionado responderam.",
+        "Health, contrato público, oferta comercial, integração da jornada, entrada do funil, copy pública e HLS versionado responderam.",
         contractSlug,
         healthPath,
         resolvedUrl);
@@ -649,6 +679,64 @@ public class PdeProductionSlotService {
               contractSlug,
               healthPath,
               offerUrl));
+    }
+    return Optional.empty();
+  }
+
+  /** Confirma rotas, correlações e eventos preparados antes de enviar a jornada ao preflight. */
+  private Optional<ValidationResult> validateJourneyIntegrationContract(
+      PdeProductionSlot slot,
+      String contractSlug,
+      String healthPath,
+      String integrationContractPath)
+      throws IOException, InterruptedException {
+    String integrationUrl = resolveUrl(slot.getPublicUrl(), integrationContractPath);
+    HttpResponse<String> response = get(integrationUrl);
+    if (!isSuccess(response)) {
+      return Optional.of(
+          ValidationResult.failed(
+              response.statusCode(),
+              "Contrato de integração da jornada não respondeu com sucesso",
+              "Resposta " + integrationUrl + ": HTTP " + response.statusCode(),
+              contractSlug,
+              healthPath,
+              integrationUrl));
+    }
+    JsonNode integration = objectMapper.readTree(response.body());
+    Set<String> requiredEvents = textualValues(integration.path("requiredEventTypes"));
+    Set<String> correlationKeys = textualValues(integration.path("correlationKeys"));
+    boolean validIdentity =
+        slot.getProductSlug().equals(text(integration, "productSlug"))
+            && Objects.equals(slot.getExperienceVersion(), text(integration, "experienceVersion"))
+            && JOURNEY_EVENT_CONTRACT_VERSION.equals(text(integration, "contractVersion"));
+    boolean validRoutes =
+        "/api/pde/access/events".equals(text(integration, "eventsPath"))
+            && StringUtils.hasText(text(integration, "analyticsSummaryPath"))
+            && "/api/pde/access/login-link".equals(text(integration, "loginPath"))
+            && StringUtils.hasText(text(integration, "workspacePathTemplate"))
+            && StringUtils.hasText(text(integration, "missionCompletionPathTemplate"));
+    boolean validEvents = requiredEvents.containsAll(REQUIRED_JOURNEY_EVENTS);
+    boolean validCorrelation =
+        correlationKeys.containsAll(
+            Set.of(
+                "eventId",
+                "productSlug",
+                "experienceVersion",
+                "sessionId",
+                "visitorId",
+                "accessToken"));
+    boolean validAudit =
+        "pde_funnel_event".equals(text(integration, "sourceOfTruth"))
+            && StringUtils.hasText(text(integration, "testTrafficPolicy"));
+    if (!validIdentity || !validRoutes || !validEvents || !validCorrelation || !validAudit) {
+      return Optional.of(
+          ValidationResult.failed(
+              response.statusCode(),
+              "Contrato de integração da jornada está incompleto",
+              "Produto, versão, rotas de acesso, eventos comerciais, chaves de correlação, fonte de verdade e segregação de QA são obrigatórios.",
+              contractSlug,
+              healthPath,
+              integrationUrl));
     }
     return Optional.empty();
   }
@@ -830,6 +918,21 @@ public class PdeProductionSlotService {
     return value != null && value.isArray() && value.size() > 0;
   }
 
+  /** Extrai valores textuais não vazios de uma lista JSON para validação de contrato. */
+  private Set<String> textualValues(JsonNode values) {
+    if (values == null || !values.isArray()) {
+      return Set.of();
+    }
+    Set<String> result = new LinkedHashSet<>();
+    values.forEach(
+        value -> {
+          if (value.isTextual() && StringUtils.hasText(value.asText())) {
+            result.add(value.asText().trim());
+          }
+        });
+    return Set.copyOf(result);
+  }
+
   /** Resolve a URL de entrada do funil declarada pelo contrato público. */
   private String resolveUrl(String publicUrl, String healthPath) {
     String normalizedPublicUrl = publicUrl.replaceAll("/+$", "");
@@ -887,6 +990,11 @@ public class PdeProductionSlotService {
       }
       return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(parsed);
     } catch (IOException ex) {
+      log.warn(
+          "Falha ao normalizar contrato JSON da experiência PDE; experienceVersion={}, layoutKey={}",
+          experienceVersion,
+          layoutKey,
+          ex);
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message, ex);
     }
   }

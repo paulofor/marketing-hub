@@ -12,6 +12,10 @@ public class FinancialAgentProperties {
   private String repositoryPath;
   private String codexCommand;
   private String model;
+  private String reasoningEffort = "high";
+  private String serviceTier = "default";
+  private String serviceTierExceptionReason =
+      "O catálogo do Codex OAuth não anuncia Flex para os modelos disponíveis ao harness.";
   private Long commercialPlanId;
   private Duration codexTimeout = Duration.ofMinutes(40);
 
@@ -53,6 +57,36 @@ public class FinancialAgentProperties {
   /** Configura o modelo do agente. */
   public void setModel(String model) {
     this.model = model;
+  }
+
+  /** Retorna o esforço de raciocínio auditado. */
+  public String getReasoningEffort() {
+    return reasoningEffort;
+  }
+
+  /** Configura o esforço de raciocínio auditado. */
+  public void setReasoningEffort(String reasoningEffort) {
+    this.reasoningEffort = reasoningEffort;
+  }
+
+  /** Retorna o tier solicitado ao runtime Codex. */
+  public String getServiceTier() {
+    return serviceTier;
+  }
+
+  /** Configura o tier somente quando suportado pelo catálogo do Codex OAuth. */
+  public void setServiceTier(String serviceTier) {
+    this.serviceTier = serviceTier;
+  }
+
+  /** Retorna a justificativa auditável para a exceção ao modo Flex. */
+  public String getServiceTierExceptionReason() {
+    return serviceTierExceptionReason;
+  }
+
+  /** Configura a justificativa auditável para a exceção ao modo Flex. */
+  public void setServiceTierExceptionReason(String serviceTierExceptionReason) {
+    this.serviceTierExceptionReason = serviceTierExceptionReason;
   }
 
   /** Retorna o planejamento acompanhado diariamente. */

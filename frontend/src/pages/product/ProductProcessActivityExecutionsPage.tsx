@@ -215,9 +215,12 @@ export default function ProductProcessActivityExecutionsPage() {
       ) : null}
 
       {requestExecution.isSuccess ? (
-        <div className="alert alert-success" role="status">
-          Atividade solicitada. Todas as tarefas responsáveis foram abertas no
-          mesmo ciclo auditável.
+        <div
+          className={`alert ${requestExecution.data.objectiveAchieved ? "alert-success" : requestExecution.data.operationalState === "BLOCKED" ? "alert-warning" : "alert-success"}`}
+          role="status"
+        >
+          {requestExecution.data.message ||
+            "Atividade solicitada. Todas as tarefas responsáveis foram abertas no mesmo ciclo auditável."}
         </div>
       ) : null}
 
@@ -447,8 +450,16 @@ export default function ProductProcessActivityExecutionsPage() {
                         )}
                         {requestExecution.isPending &&
                         requestExecution.variables === activity.activityId
-                          ? "Iniciando..."
-                          : "Executar atividade"}
+                          ? activity.activityId === "integration"
+                            ? "Validando..."
+                            : "Iniciando..."
+                          : activity.activityId === "integration"
+                            ? activity.operationalState === "BLOCKED"
+                              ? "Revalidar integração"
+                              : "Validar integração"
+                            : activity.operationalState === "BLOCKED"
+                              ? "Tentar novamente"
+                              : "Executar atividade"}
                       </button>
                     ) : null}
                   </div>

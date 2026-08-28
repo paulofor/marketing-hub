@@ -103,7 +103,7 @@ class CommunicationAgentCodexRunnerTest {
     assertThatThrownBy(() -> CommunicationAgentCodexRunner.validateInput(missingStrategy))
         .hasMessageContaining("Contrato Estratégico");
     assertThatThrownBy(() -> CommunicationAgentCodexRunner.validateInput(missingProduct))
-        .hasMessageContaining("economia, PDE e provas");
+        .hasMessageContaining("Parecer econômico concluído de Plutus");
   }
 
   /** Exige prova visual aprovada antes de qualquer atividade da landing. */
@@ -240,6 +240,7 @@ class CommunicationAgentCodexRunnerTest {
           "communicationMaterializationContext":{
             "availability":"AVAILABLE",
             "inputReadiness":"%s",
+            "missingRequiredPredecessors":["Parecer econômico concluído de Plutus"],
             "approvedLandingAssets":%s
           }
         }

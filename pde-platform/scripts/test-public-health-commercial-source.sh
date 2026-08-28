@@ -18,6 +18,7 @@ MUSA_RUNTIME_CONFIG_FILE="${temporary_dir}/runtime-config.js" \
 jq -e '
   .slug == "kit-whatsapp-pronto"
   and .commercialOfferPath == "/api/pde/products/kit-whatsapp-pronto/commercial-offer"
+  and .integrationContractPath == "/api/pde/products/kit-whatsapp-pronto/integration-contract"
   and .requiredTexts == ["Implantação personalizada"]
 ' "${temporary_dir}/pde-health-contract.json" >/dev/null
 

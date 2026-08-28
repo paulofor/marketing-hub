@@ -136,6 +136,7 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
   } | null>(null);
   const [tastingError, setTastingError] = useState("");
   const tastingStarted = useRef(false);
+  const checkoutCtaViewed = useRef(false);
 
   /** Carrega o produto e restaura a área da cliente quando existe token local. */
   useEffect(() => {
@@ -199,6 +200,45 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
       active = false;
     };
   }, [accessToken, productSlug]);
+
+  /** Registra a primeira CTA de checkout realmente visível sem inflar a métrica por repetição. */
+  useEffect(() => {
+    if (!product || !commercialOffer || checkoutCtaViewed.current) return;
+    const ctas = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-checkout-cta]"),
+    );
+    if (ctas.length === 0) return;
+    const recordViewedCta = (placement: string) => {
+      if (checkoutCtaViewed.current) return;
+      checkoutCtaViewed.current = true;
+      void trackEvent("CTA_VIEWED", product, {
+        metadata: {
+          experimentId: commercialOffer.experimentId,
+          placement,
+        },
+      });
+    };
+    if (!("IntersectionObserver" in window)) {
+      recordViewedCta(ctas[0].dataset.checkoutPlacement ?? "unknown");
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.find(
+          (entry) => entry.isIntersecting && entry.intersectionRatio >= 0.5,
+        );
+        if (!visible) return;
+        const placement =
+          (visible.target as HTMLElement).dataset.checkoutPlacement ??
+          "unknown";
+        recordViewedCta(placement);
+        observer.disconnect();
+      },
+      { threshold: 0.5 },
+    );
+    ctas.forEach((cta) => observer.observe(cta));
+    return () => observer.disconnect();
+  }, [commercialOffer, product]);
 
   const completed = useMemo(
     () => new Set(workspace?.completedMissionIds ?? []),
@@ -582,6 +622,8 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
               </strong>
               <a
                 className="assisted-pde-checkout-cta"
+                data-checkout-cta
+                data-checkout-placement="hero-offer"
                 href={commercialOffer.checkoutUrl}
                 target="_blank"
                 rel="noreferrer"
@@ -724,6 +766,8 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
                 </p>
                 <a
                   className="assisted-pde-checkout-cta"
+                  data-checkout-cta
+                  data-checkout-placement="tasting-result"
                   href={commercialOffer.checkoutUrl}
                   target="_blank"
                   rel="noreferrer"
@@ -880,6 +924,8 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
                 </p>
                 <a
                   className="assisted-pde-checkout-cta"
+                  data-checkout-cta
+                  data-checkout-placement="product-proof"
                   href={commercialOffer.checkoutUrl}
                   target="_blank"
                   rel="noreferrer"
@@ -940,6 +986,8 @@ export function AssistedServiceApp({ productSlug }: AssistedServiceAppProps) {
               </strong>
               <a
                 className="assisted-pde-checkout-cta"
+                data-checkout-cta
+                data-checkout-placement="closing-offer"
                 href={commercialOffer.checkoutUrl}
                 target="_blank"
                 rel="noreferrer"

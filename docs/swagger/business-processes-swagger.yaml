@@ -134,7 +134,7 @@ paths:
         "404": { description: Processo ou produto não encontrado }
   /api/business-processes/{processDefinitionId}/products/{productId}/activities/{activityId}/execution-requests:
     post:
-      summary: Abre atomicamente todas as tarefas responsáveis pela atividade do produto
+      summary: Executa a atividade backend ou abre atomicamente suas tarefas responsáveis
       parameters:
         - $ref: "#/components/parameters/ProcessDefinitionId"
         - name: productId
@@ -147,7 +147,7 @@ paths:
           schema: { type: string }
       responses:
         "200":
-          description: Tarefas criadas ou reutilizadas na mesma referência de experimento
+          description: Resultado operacional persistido ou tarefas criadas na referência corrente
           content:
             application/json:
               schema:
@@ -464,6 +464,9 @@ components:
         - activityId
         - sourceReference
         - tasks
+        - operationalState
+        - objectiveAchieved
+        - message
       properties:
         processDefinitionId: { type: integer, format: int64 }
         productId: { type: integer, format: int64 }
@@ -472,3 +475,8 @@ components:
         tasks:
           type: array
           items: { type: object }
+        operationalState:
+          type: string
+          enum: [PENDING, IN_PROGRESS, BLOCKED, COMPLETED]
+        objectiveAchieved: { type: boolean }
+        message: { type: string }

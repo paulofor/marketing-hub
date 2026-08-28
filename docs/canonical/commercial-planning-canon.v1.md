@@ -56,6 +56,11 @@ Quando essas premissas estiverem ausentes, o plano pode solicitar uma definiçã
 
 Projeção nunca é receita realizada, não altera orçamento e não autoriza gasto. O aprendizado de Plutus deve comparar posteriormente previsão e resultado real; conclusões novas permanecem candidatas e só podem ser promovidas pelo fluxo governado após evidência fora da amostra.
 
+Quando uma etapa de comunicação exigir economia aprovada como predecessor, somente a projeção
+concluída para a versão vigente do plano pode compor o contrato de entrada. A evidência vem da
+execução financeira canônica, não apenas da tarefa correlacionada na mesa. Parecer antigo permanece
+no histórico e não libera Íris depois de mudança de versão comercial.
+
 Tarefas, gates e execuções devem registrar `planId` e número da versão consumida, ou uma referência equivalente `commercial-plan:<id>@v<numero>`, para que decisões antigas não sejam reinterpretadas com contexto novo. O monitor deve apresentar esse vínculo quando existir.
 
 Versões novas não autorizam gasto, publicação, mudança de preço ou campanha. Esses atos continuam sujeitos aos gates próprios. Planos de produtos distintos não podem compartilhar orçamento ou resultados; MUSA e Agenda Cheia permanecem segregados.

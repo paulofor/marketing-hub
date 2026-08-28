@@ -333,6 +333,7 @@ class AgentTaskServiceTest {
 
     BusinessProcessActivityInstance instance = savedInstance.get();
     assertThat(savedTask.get().getActivityInstance()).isSameAs(instance);
+    assertThat(savedTask.get().getReceivedAt()).isEqualTo(now);
     assertThat(instance.getStatus()).isEqualTo("COMPLETED");
     assertThat(instance.isObjectiveAchieved()).isTrue();
     assertThat(instance.getEnteredAt()).isEqualTo(now);

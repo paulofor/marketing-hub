@@ -171,13 +171,13 @@ public class CommercialPlanVisualAssetService {
                 .APPROVED) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
-          "A imagem produzida por Têmis exige revisão independente antes da aprovação.");
+          "A imagem materializada por Dédalo exige revisão independente antes da aprovação.");
     }
     asset.setStatus(status);
     return dto(asset);
   }
 
-  /** Produz o manifesto de referências aprovadas entregue a Têmis e ao AI Worker. */
+  /** Produz o manifesto de referências aprovadas entregue aos produtores e revisores. */
   @Transactional(readOnly = true)
   public List<CommercialPlanVisualAssetDto> approved(Long planId) {
     return repository
@@ -316,9 +316,9 @@ public class CommercialPlanVisualAssetService {
     String evidence = reviewEvidence(approvedPackage, imported);
     agentTaskService.recordImportedCompletedTask(
         importedTask(
-            "meta-ad-approver",
-            "Têmis",
-            "route",
+            "landing-generator",
+            "Dédalo",
+            "nonAudiovisual",
             approvedPackage.direction(),
             approvedPackage.directionExecution(),
             sourceReference,
@@ -328,7 +328,7 @@ public class CommercialPlanVisualAssetService {
         importedTask(
             "videomaker",
             "Apolo",
-            "produce",
+            "audiovisual",
             approvedPackage.apollo(),
             approvedPackage.apolloExecution(),
             sourceReference,

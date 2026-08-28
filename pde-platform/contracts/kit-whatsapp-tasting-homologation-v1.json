@@ -2,14 +2,14 @@
   "evidenceVersion": "kit-whatsapp-tasting-homologation-v1",
   "productSlug": "kit-whatsapp-pronto",
   "experimentId": 89,
-  "verifiedAt": "2026-08-26T05:43:17Z",
+  "verifiedAt": "2026-08-28T05:59:27Z",
   "status": "PASSED",
-  "revalidationReason": "Revisão aprovada após preservar o contexto de QA e preview em toda a jornada pública, inclusive políticas e o smoke automatizado do deploy.",
+  "revalidationReason": "Revisão aprovada após retirar nome empresarial completo e endereço da superfície pública, preservar o fornecedor exibido e revalidar integralmente jornada, políticas, analytics e fronteira de checkout.",
   "scope": "Degustação determinística, privacidade, eventos, segregação de QA no build público, fronteira paga, checkout e experiência responsiva.",
   "implementationEvidence": [
     {
       "path": "pde-platform/frontend/src/AssistedServiceApp.tsx",
-      "sha256": "9d361f7d0ca02ad266f2a700ded96066f288ee968b6f9f9d6e7f01d488d7bfa5"
+      "sha256": "d2c13adfc45e2b47fd846082356e8e6278e30340245a052ed9ae08ede50621b1"
     },
     {
       "path": "pde-platform/frontend/src/assistedServiceTastingContracts.ts",
@@ -23,7 +23,7 @@
   "executableEvidence": [
     {
       "path": "pde-platform/frontend/tests/assisted-service-local.spec.ts",
-      "sha256": "2f54cdf453e33718445a9fda10b123b22b3622faedea8b2ce37d1e42f2b7f57b",
+      "sha256": "896337c5c03263eebaab099e80511d70d10aed321eb1272c3c01ef2c42dfe7a2",
       "proves": [
         "as seis combinações de duas situações por três tons materializam respostas distintas",
         "cada combinação entrega uma resposta, uma pergunta e três follow-ups",
@@ -38,7 +38,7 @@
     },
     {
       "path": "pde-platform/frontend/tests/assisted-service-public-analytics.spec.ts",
-      "sha256": "f8d7d5c01377e193eed5ac696b6372ec328f08d5053fec0a5651244dca1e0a9d",
+      "sha256": "f5c248779298c248aaf40229fccd46656557d4cb21b0a2ddf26b820edbd42156",
       "proves": [
         "mh_test usa source mh_test mesmo quando VITE_PDE_ENABLE_DEV_ACCESS está desativado",
         "mh_preview com pde_analytics=off não envia telemetria",
@@ -76,10 +76,10 @@
     {
       "round": 1,
       "result": "PASSED",
-      "metaAdApproverUnitTests": 55,
-      "growthOperatorUnitTests": 23,
-      "pdeBackendUnitTests": 110,
-      "publicBuildAnalyticsTests": 3,
+      "metaAdApproverUnitTests": 65,
+      "growthOperatorUnitTests": 30,
+      "pdeBackendUnitTests": 117,
+      "publicBuildAnalyticsTests": 5,
       "assistedJourneyTests": 12,
       "browsers": ["Desktop Chrome", "iPhone 15 Pro", "Pixel 7"],
       "infrastructure": [
@@ -91,10 +91,10 @@
     {
       "round": 2,
       "result": "PASSED",
-      "metaAdApproverUnitTests": 55,
-      "growthOperatorUnitTests": 23,
-      "pdeBackendUnitTests": 110,
-      "publicBuildAnalyticsTests": 3,
+      "metaAdApproverUnitTests": 65,
+      "growthOperatorUnitTests": 30,
+      "pdeBackendUnitTests": 117,
+      "publicBuildAnalyticsTests": 5,
       "assistedJourneyTests": 12,
       "browsers": ["Desktop Chrome", "iPhone 15 Pro", "Pixel 7"],
       "infrastructure": [

@@ -19,7 +19,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-/** Responsabilidade: validar reserva segregada e conclusão auditável dos pareceres. */
+/** Responsabilidade: validar reserva exclusiva e conclusão auditável da estratégia de Atena. */
 @ExtendWith(MockitoExtension.class)
 class OpportunityReviewExecutionServiceTest {
   @Mock OpportunityAgentReviewRepository reviews;
@@ -51,14 +51,14 @@ class OpportunityReviewExecutionServiceTest {
     assertThat(review.getExecutionStatus()).isEqualTo(OpportunityReviewExecutionStatus.RUNNING);
   }
 
-  /** Persiste auditoria e usa a governança canônica para concluir o parecer. */
+  /** Persiste auditoria e usa a governança canônica para concluir a estratégia de Atena. */
   @Test
   void completesThroughDossierGovernance() {
-    OpportunityAgentReview review = review("PLUTUS", OpportunityReviewExecutionStatus.RUNNING);
+    OpportunityAgentReview review = review("ATENA", OpportunityReviewExecutionStatus.RUNNING);
     when(reviews.findById(20L)).thenReturn(Optional.of(review));
 
     service.complete(
-        "PLUTUS",
+        "ATENA",
         20L,
         new CompleteOpportunityReviewRequest(
             OpportunityReviewDecision.ADJUST,
@@ -69,7 +69,7 @@ class OpportunityReviewExecutionServiceTest {
             "codex"));
 
     assertThat(review.getExecutionStatus()).isEqualTo(OpportunityReviewExecutionStatus.COMPLETED);
-    verify(dossiers).submitReview(eq(10L), eq("PLUTUS"), any());
+    verify(dossiers).submitReview(eq(10L), eq("ATENA"), any());
   }
 
   /** Reenfileira a execução falha de Atena no registro realmente consumido pelo worker. */
@@ -103,10 +103,10 @@ class OpportunityReviewExecutionServiceTest {
     verify(reviews, never()).save(any());
   }
 
-  /** Retoma uma lease órfã para qualquer parecerista após indisponibilidade do backend. */
-  @ParameterizedTest
-  @ValueSource(strings = {"ATENA", "PSIQUE", "PLUTUS", "HERMES"})
-  void recoversExpiredLeaseForEveryReviewer(String agent) {
+  /** Retoma uma lease órfã de Atena após indisponibilidade do backend. */
+  @Test
+  void recoversExpiredLeaseForAtena() {
+    String agent = "ATENA";
     OpportunityAgentReview expired = review(agent, OpportunityReviewExecutionStatus.RUNNING);
     expired.setStartedAt(Instant.now().minusSeconds(3000));
     expired.setUpdatedAt(Instant.now().minusSeconds(3000));
@@ -123,6 +123,18 @@ class OpportunityReviewExecutionServiceTest {
     assertThat(expired.getExecutionStatus()).isEqualTo(OpportunityReviewExecutionStatus.PENDING);
     assertThat(expired.getErrorMessage()).isEqualTo("LEASE_RECOVERED_ONCE");
     assertThat(expired.getRetryCount()).isEqualTo(1);
+  }
+
+  /** Rejeita consumo estratégico por agentes com responsabilidade posterior no fluxo. */
+  @ParameterizedTest
+  @ValueSource(strings = {"PSIQUE", "PLUTUS", "HERMES"})
+  void rejectsLegacyOpportunityReviewers(String agent) {
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.claim(agent))
+        .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+        .hasMessageContaining("Somente Atena");
+
+    verify(reviews, never())
+        .findByAgentKeyAndExecutionStatusOrderByRequestedAtAsc(any(), any(), any());
   }
 
   /** Cria um parecer operacional vinculado a um dossiê em avaliação. */

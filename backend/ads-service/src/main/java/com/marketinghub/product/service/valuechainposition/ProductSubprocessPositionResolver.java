@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,8 +92,8 @@ public class ProductSubprocessPositionResolver {
     }
 
     List<AgentTask> tasks = productTasks(product).stream().filter(this::hasProcess).toList();
-    AgentTask activeChildTask = latestChildTask(tasks, subprocesses, true);
-    AgentTask latestChildTask = latestChildTask(tasks, subprocesses, false);
+    AgentTask latestChildTask = latestChildTask(tasks, subprocesses);
+    AgentTask activeChildTask = latestActiveChildTask(tasks, subprocesses, latestChildTask);
     BusinessProcessDefinition current = childDefinition(activeChildTask, subprocesses);
     BusinessProcessDefinition lastRecorded = childDefinition(latestChildTask, subprocesses);
     BusinessProcessDefinition next =
@@ -192,18 +193,49 @@ public class ProductSubprocessPositionResolver {
     return tasks;
   }
 
-  /** Seleciona a atividade mais recente de um subprocesso, opcionalmente apenas se ainda ativa. */
+  /** Seleciona a tarefa mais recente registrada em qualquer subprocesso da composição atual. */
   private AgentTask latestChildTask(
-      List<AgentTask> tasks, List<BusinessProcessDefinition> subprocesses, boolean activeOnly) {
+      List<AgentTask> tasks, List<BusinessProcessDefinition> subprocesses) {
     Set<Long> childIds =
         subprocesses.stream()
             .map(BusinessProcessDefinition::getId)
             .collect(java.util.stream.Collectors.toSet());
     return tasks.stream()
         .filter(task -> childIds.contains(task.getProcessDefinition().getId()))
-        .filter(task -> !activeOnly || ACTIVE_TASK_STATUSES.contains(task.getStatus()))
         .max(Comparator.comparing(AgentTask::getUpdatedAt).thenComparing(AgentTask::getId))
         .orElse(null);
+  }
+
+  /**
+   * Seleciona trabalho ativo somente na execução mais recente e usa a instância BPM como
+   * autoridade.
+   */
+  private AgentTask latestActiveChildTask(
+      List<AgentTask> tasks,
+      List<BusinessProcessDefinition> subprocesses,
+      AgentTask latestRecordedTask) {
+    if (latestRecordedTask == null) return null;
+    Set<Long> childIds =
+        subprocesses.stream()
+            .map(BusinessProcessDefinition::getId)
+            .collect(java.util.stream.Collectors.toSet());
+    return tasks.stream()
+        .filter(task -> childIds.contains(task.getProcessDefinition().getId()))
+        .filter(
+            task ->
+                Objects.equals(latestRecordedTask.getSourceReference(), task.getSourceReference()))
+        .filter(this::isOperationallyActive)
+        .max(Comparator.comparing(AgentTask::getUpdatedAt).thenComparing(AgentTask::getId))
+        .orElse(null);
+  }
+
+  /** Faz o estado consolidado da instância BPM prevalecer sobre tentativas antigas da tarefa. */
+  private boolean isOperationallyActive(AgentTask task) {
+    String status =
+        task.getActivityInstance() == null
+            ? task.getStatus()
+            : task.getActivityInstance().getStatus();
+    return ACTIVE_TASK_STATUSES.contains(status);
   }
 
   /** Calcula a posição interna do processo pai a partir da última tarefa auditada. */

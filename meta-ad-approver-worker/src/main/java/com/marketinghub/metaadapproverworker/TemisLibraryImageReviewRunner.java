@@ -16,7 +16,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
-/** Responsabilidade: executar o gate independente dos entregáveis visuais produzidos por Têmis. */
+/** Responsabilidade: executar o gate independente de Têmis sobre entregáveis de Dédalo. */
 @Component
 @ConditionalOnProperty(
     name = "meta-ad-approver.execution-role",

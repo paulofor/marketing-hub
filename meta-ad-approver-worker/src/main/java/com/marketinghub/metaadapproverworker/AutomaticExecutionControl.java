@@ -7,12 +7,14 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
-/** Responsabilidade: bloquear rotinas automáticas de Têmis quando o backend determinar STOP. */
+/**
+ * Responsabilidade: bloquear cada papel automático quando seu agente proprietário estiver em STOP.
+ */
 @Component
 public class AutomaticExecutionControl {
   private static final Logger log = LoggerFactory.getLogger(AutomaticExecutionControl.class);
-  private static final String AGENT_KEY = "meta-ad-approver";
   private final RestClient backend;
+  private final String agentKey;
 
   /** Configura uma leitura curta independente das filas de produção e revisão. */
   public AutomaticExecutionControl(MetaAdApproverProperties properties) {
@@ -21,6 +23,7 @@ public class AutomaticExecutionControl {
     requests.setReadTimeout(Duration.ofSeconds(3));
     backend =
         RestClient.builder().baseUrl(properties.getBackendUrl()).requestFactory(requests).build();
+    agentKey = ownerAgentKey(properties.getExecutionRole());
   }
 
   /** Permite novo trabalho somente quando o backend comprovar PLAY. */
@@ -29,14 +32,19 @@ public class AutomaticExecutionControl {
       ControlState state =
           backend
               .get()
-              .uri("/api/internal/agents/executor-health/{agentKey}/automatic-execution", AGENT_KEY)
+              .uri("/api/internal/agents/executor-health/{agentKey}/automatic-execution", agentKey)
               .retrieve()
               .body(ControlState.class);
       return state != null && state.automaticExecutionEnabled();
     } catch (RuntimeException ex) {
-      log.error("Falha ao comprovar PLAY; Têmis permanecerá parada. agentKey={}", AGENT_KEY, ex);
+      log.error("Falha ao comprovar PLAY; o papel permanecerá parado. agentKey={}", agentKey, ex);
       return false;
     }
+  }
+
+  /** Resolve o proprietário funcional sem atribuir o recurso técnico de imagem a Têmis. */
+  static String ownerAgentKey(String executionRole) {
+    return "image-studio".equals(executionRole) ? "landing-generator" : "meta-ad-approver";
   }
 
   /** Representa somente o campo necessário para controlar a rotina local. */

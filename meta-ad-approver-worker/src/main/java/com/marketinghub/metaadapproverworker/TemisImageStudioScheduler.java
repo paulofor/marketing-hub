@@ -8,7 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/** Responsabilidade: iniciar exclusivamente as filas produtivas do Estúdio Visual de Têmis. */
+/** Responsabilidade: iniciar as filas do recurso visual legado governado por Dédalo. */
 @Component
 @ConditionalOnProperty(name = "meta-ad-approver.execution-role", havingValue = "image-studio")
 public class TemisImageStudioScheduler {
@@ -31,7 +31,7 @@ public class TemisImageStudioScheduler {
     if (automaticExecution != null && !automaticExecution.allowsAutomaticExecution()) return;
     runSafely("estúdio de imagens", imageStudio::processPending);
     runSafely("retrabalho de criativos", creativeImprovement::processPending);
-    log.debug("Ciclo produtivo do Estúdio Visual de Têmis concluído");
+    log.debug("Ciclo produtivo do recurso visual de Dédalo concluído");
   }
 
   /** Preserva a outra fila produtiva quando uma integração falha. */
@@ -39,12 +39,13 @@ public class TemisImageStudioScheduler {
     try {
       action.run();
     } catch (RuntimeException ex) {
-      log.error("Falha no ciclo produtivo do Estúdio Visual de Têmis. operation={}", operation, ex);
+      log.error(
+          "Falha no ciclo produtivo do recurso visual de Dédalo. operation={}", operation, ex);
     }
   }
 }
 
-/** Responsabilidade: executar a fila de criação e edição de imagens atribuída a Têmis. */
+/** Responsabilidade: executar a fila técnica de criação e edição atribuída a Dédalo. */
 @Component
 @ConditionalOnProperty(name = "meta-ad-approver.execution-role", havingValue = "image-studio")
 class TemisImageStudioProcessor {
@@ -67,7 +68,7 @@ class TemisImageStudioProcessor {
   public void processPending() {
     List<TemisImageStudioJob> jobs = backend.claimPending(properties.getImageStudioPendingLimit());
     jobs.forEach(this::process);
-    log.debug("Ciclo do Estúdio de Imagens de Têmis concluído");
+    log.debug("Ciclo do recurso de imagens de Dédalo concluído");
   }
 
   /** Executa uma única produção e envia o arquivo somente após resposta válida. */
@@ -78,12 +79,12 @@ class TemisImageStudioProcessor {
       requestJson = result.requestJson();
       backend.complete(job, result);
       log.info(
-          "Produção visual de Têmis concluída. jobId={} commercialPlanId={}",
+          "Produção visual de Dédalo concluída. jobId={} commercialPlanId={}",
           job.jobId(),
           job.commercialPlanId());
     } catch (RuntimeException ex) {
       log.error(
-          "Falha na produção visual de Têmis. jobId={} commercialPlanId={}",
+          "Falha na produção visual de Dédalo. jobId={} commercialPlanId={}",
           job.jobId(),
           job.commercialPlanId(),
           ex);

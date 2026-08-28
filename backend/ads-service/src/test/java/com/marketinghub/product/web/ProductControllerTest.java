@@ -205,10 +205,7 @@ class ProductControllerTest {
     when(mapper.toDto(product)).thenReturn(response);
 
     mockMvc
-        .perform(
-            get("/api/products")
-                .queryParam("query", "MUSA v7")
-                .queryParam("playOnly", "true"))
+        .perform(get("/api/products").queryParam("query", "MUSA v7").queryParam("playOnly", "true"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].id").value(4L))
         .andExpect(jsonPath("$[0].internalName").value("MUSA desejo v7"))

@@ -1,8 +1,12 @@
-# Matriz de homologação — Têmis criadora e aprovadora v1
+# Matriz histórica — Têmis criadora e aprovadora v1
+
+> SUPERADA em 2026-08-28. Têmis permanece somente revisora; Dédalo materializa peças não
+> audiovisuais e Apolo produz audiovisual. Este arquivo não autoriza novas execuções.
 
 ## Objetivo
 
-Comprovar localmente que Têmis cria propostas completas de anúncios e mantém a aprovação técnica em uma execução independente, sem abrir gates de publicação ou gasto.
+Preservar a homologação histórica do desenho que atribuía criação e aprovação a Têmis, hoje retirado
+por violar autoria única.
 
 | Área | Caminho feliz | Validação e falha | Evidência esperada |
 | --- | --- | --- | --- |

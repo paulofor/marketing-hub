@@ -35,9 +35,8 @@ test("captura prova real da degustacao e da oferta de Rigel", async ({
           deliveryMode: "ASSISTIDA_MANUAL",
           valueUnit:
             "Respostas, perguntas e follow-ups prontos para revisar e usar",
-          supplierLegalName: "Fornecedor de Homologacao Ltda.",
+          supplierDisplayName: "Digicom Digital",
           supplierRegistrationNumber: "00.000.000/0001-00",
-          supplierAddress: "Endereco de homologacao, 100",
           supportEmail: "teste@sandbox.local",
           termsUrl: "/terms?mh_test=1",
           privacyUrl: "/privacy?mh_test=1",

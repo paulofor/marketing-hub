@@ -58,18 +58,19 @@ class CommercialBpmTaskConsumerTest {
         .doesNotContain("demonstra inequivocamente o kit digital");
   }
 
-  /** Mantém o polling de Têmis alinhado aos identificadores publicados no processo v6. */
+  /** Mantém o polling de Têmis restrito ao gate comercial publicado no processo v7. */
   @Test
   void supportsPublishedCreativeProductionActivities() {
     org.assertj.core.api.Assertions.assertThat(
             CommercialBpmTaskConsumer.supportsContract("creative-production-approval", "route"))
-        .isTrue();
+        .isFalse();
     org.assertj.core.api.Assertions.assertThat(
             CommercialBpmTaskConsumer.supportsContract("creative-production-approval", "produce"))
-        .isTrue();
-    org.assertj.core.api.Assertions.assertThat(
-            CommercialBpmTaskConsumer.supportsContract("creative-production-approval", "generate"))
         .isFalse();
+    org.assertj.core.api.Assertions.assertThat(
+            CommercialBpmTaskConsumer.supportsContract(
+                "creative-production-approval", "commercial"))
+        .isTrue();
   }
 
   /** Seleciona o contrato independente de revisão dos entregáveis do PDE. */
@@ -83,30 +84,16 @@ class CommercialBpmTaskConsumerTest {
         .isEqualTo("prompts/bpm/pde-deliverables-review-schema.json");
   }
 
-  /** Seleciona a revisão independente de comunicação sem reutilizar prompt de landing. */
+  /** Impede que Têmis consuma novamente a atividade histórica de autoria da comunicação. */
   @Test
-  void selectsVersionedPdeCommunicationContract() throws Exception {
+  void rejectsRetiredPdeCommunicationContract() throws Exception {
     org.assertj.core.api.Assertions.assertThat(
-            CommercialBpmTaskConsumer.promptResourceFor("pde-communication-sales-journey"))
-        .isEqualTo("prompts/bpm/pde-communication-review.md");
+            CommercialBpmTaskConsumer.supportsContract(
+                "pde-communication-sales-journey", "contract"))
+        .isFalse();
     org.assertj.core.api.Assertions.assertThat(
-            CommercialBpmTaskConsumer.schemaResourceFor("pde-communication-sales-journey"))
-        .isEqualTo("prompts/bpm/pde-communication-review-schema.json");
-
-    String prompt = read("prompts/bpm/pde-communication-review.md");
-    String schema = read("prompts/bpm/pde-communication-review-schema.json");
-    org.assertj.core.api.Assertions.assertThat(prompt)
-        .contains(
-            "preço compreensível",
-            "tráfego de teste segregado",
-            "autorize mídia",
-            "compra, acesso, entrega, primeiro uso/aplicação e reembolso",
-            "Não crie subagente, worktree ou ambiente auxiliar",
-            "Não repita o preflight técnico do processo posterior",
-            "80–100",
-            "não reduz automaticamente");
-    org.assertj.core.api.Assertions.assertThat(schema)
-        .contains("priceClarityScore", "commercialRationale", "requiredChanges");
+            read("prompts/bpm/pde-communication-translation-v2.md"))
+        .contains("HISTÓRICO DESATIVADO", "nenhum processo novo pode carregar este prompt");
   }
 
   /** Seleciona o gate independente que antecede o preflight e a autorização humana. */

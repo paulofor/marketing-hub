@@ -80,9 +80,6 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 @Slf4j
 public class CreativeService {
-  private static final int META_PRIMARY_TEXT_RECOMMENDED_MAX_LENGTH = 125;
-  private static final int META_HEADLINE_RECOMMENDED_MAX_LENGTH = 40;
-  private static final int META_DESCRIPTION_RECOMMENDED_MAX_LENGTH = 25;
   private static final int META_CALL_TO_ACTION_MAX_LENGTH = 32;
   private static final String DEFAULT_META_CALL_TO_ACTION = "LEARN_MORE";
   private static final int MAX_AGENT_IMPROVEMENT_ATTEMPTS = 8;
@@ -534,7 +531,7 @@ public class CreativeService {
     validateScore(request.credibilityScore());
     validateScore(request.actionScore());
     validateSpecialistApprovalContract(request, decision);
-    validateMetaCorrectionCopy(request, decision);
+    validateReviewerDidNotCreateReplacement(request);
     creative.setAgentReviewStatus(decision);
     creative.setAgentReviewJson(toAgentReviewJson(request));
     creative.setAgentReviewRequestJson(request.requestJson());
@@ -555,26 +552,17 @@ public class CreativeService {
     return saved;
   }
 
-  /** Impede que uma correção automática ultrapasse os limites de exibição definidos para Meta. */
-  private void validateMetaCorrectionCopy(
-      CreativeAgentReviewResultRequest request, CreativeAgentReviewStatus decision) {
-    if (decision != CreativeAgentReviewStatus.ADJUST
-        && decision != CreativeAgentReviewStatus.REJECTED) {
-      return;
-    }
-    validateMetaCopyLength(
-        "texto principal", request.revisedPrimaryText(), META_PRIMARY_TEXT_RECOMMENDED_MAX_LENGTH);
-    validateMetaCopyLength(
-        "headline", request.revisedHeadline(), META_HEADLINE_RECOMMENDED_MAX_LENGTH);
-    validateMetaCopyLength(
-        "descrição", request.revisedDescription(), META_DESCRIPTION_RECOMMENDED_MAX_LENGTH);
-  }
-
-  /** Rejeita copy acima do limite sem truncar ou perder a intenção comercial. */
-  private void validateMetaCopyLength(String field, String value, int maxLength) {
-    if (value != null && value.codePointCount(0, value.length()) > maxLength) {
+  /** Impede que a execução revisora de Têmis entregue copy, CTA ou prompt substitutos. */
+  private void validateReviewerDidNotCreateReplacement(CreativeAgentReviewResultRequest request) {
+    if (java.util.stream.Stream.of(
+            request.revisedHeadline(),
+            request.revisedPrimaryText(),
+            request.revisedDescription(),
+            request.revisedCta(),
+            request.revisedImagePrompt())
+        .anyMatch(StringUtils::hasText)) {
       throw new IllegalArgumentException(
-          "Correção do anúncio excede o limite Meta para " + field + ": " + maxLength);
+          "Têmis deve informar causa e critério de aceite, sem criar conteúdo substituto.");
     }
   }
 
@@ -745,7 +733,7 @@ public class CreativeService {
     return repository.save(revision);
   }
 
-  /** Recebe a arte produzida pelo agente, armazena-a e conclui a melhoria pela fila canônica. */
+  /** Recebe a arte materializada pelo recurso de Dédalo e abre sua revisão independente. */
   @Transactional
   public Creative uploadAgentImprovementArtifact(
       Long id,
@@ -766,14 +754,14 @@ public class CreativeService {
                     new IllegalStateException(
                         "Retrabalho visual exige plano comercial vinculado ao experimento"));
     if (!StringUtils.hasText(producerExecutionId)) {
-      throw new IllegalArgumentException("Retrabalho visual exige execução produtora de Têmis");
+      throw new IllegalArgumentException("Retrabalho visual exige execução produtora de Dédalo");
     }
     AssetUploadResponse asset =
         uploadImage(
             file,
             model,
             requestJson,
-            "Arte produzida autonomamente por Têmis para a correção do criativo #" + id,
+            "Arte materializada pelo recurso técnico de Dédalo para a correção do criativo #" + id,
             AssetUploadCategory.EXPERIMENT_CREATIVE,
             source.getExperiment().getId(),
             null,
@@ -794,7 +782,7 @@ public class CreativeService {
     visual.setLabel("Entregável premium para o criativo #" + id);
     visual.setPurpose("DELIVERY");
     visual.setPurposesJson("[\"DELIVERY\",\"LANDING\",\"ADS\",\"SOCIAL\"]");
-    visual.setOrigin("Têmis / GPT Image 2");
+    visual.setOrigin("Dédalo / recurso técnico GPT Image 2");
     visual.setRightsStatement("Gerado para uso comercial e entrega deste produto");
     visual.setVersionNumber(
         visual.getSourceVisualAsset() == null
@@ -812,7 +800,7 @@ public class CreativeService {
     job.setOperation(CommercialPlanImageStudioOperation.EDIT);
     job.setStatus(CommercialPlanImageStudioStatus.COMPLETED);
     job.setLabel(visual.getLabel());
-    job.setPrompt(requestJson == null ? "Retrabalho visual de Têmis" : requestJson);
+    job.setPrompt(requestJson == null ? "Retrabalho visual de Dédalo" : requestJson);
     job.setPurposesJson(visual.getPurposesJson());
     job.setReferenceAssetIdsJson("[]");
     String improvementSize =
@@ -912,7 +900,7 @@ public class CreativeService {
     try {
       Map<String, Object> audit = new LinkedHashMap<>();
       audit.put("correction", correction);
-      audit.put("executor", "TEMIS");
+      audit.put("executor", "DEDALO_TECHNICAL_RESOURCE");
       audit.put("status", status);
       audit.put("requestJson", Objects.toString(result.requestJson(), ""));
       audit.put("responseJson", Objects.toString(result.responseJson(), ""));
@@ -921,8 +909,8 @@ public class CreativeService {
       audit.put("reviewSummary", Objects.toString(reviewSummary, ""));
       return objectMapper.writeValueAsString(audit);
     } catch (JsonProcessingException ex) {
-      log.error("Falha ao auditar melhoria visual de Têmis. status={}", status, ex);
-      throw new IllegalStateException("Falha ao auditar melhoria visual de Têmis", ex);
+      log.error("Falha ao auditar melhoria visual de Dédalo. status={}", status, ex);
+      throw new IllegalStateException("Falha ao auditar melhoria visual de Dédalo", ex);
     }
   }
 
@@ -947,9 +935,9 @@ public class CreativeService {
       creative.setAgentImprovementError("Limite seguro de oito correções automáticas atingido");
       return;
     }
-    if (!StringUtils.hasText(request.revisedImagePrompt())) {
-      creative.setAgentImprovementStatus(CreativeImprovementStatus.FAILED);
-      creative.setAgentImprovementError("Agente não forneceu prompt visual corrigido");
+    if (!hasCorrectionTarget(request, "CREATIVE_MEDIA")) {
+      creative.setAgentImprovementStatus(CreativeImprovementStatus.DELEGATED);
+      creative.setAgentImprovementError(null);
       return;
     }
     if (normalizedItems(request.mandatoryVisualRequirements()).isEmpty()
@@ -959,31 +947,66 @@ public class CreativeService {
           "Agente não forneceu requisitos e critérios visuais verificáveis");
       return;
     }
-    creative.setAgentImprovementJson(toImprovementJson(request));
+    creative.setAgentImprovementJson(toImprovementJson(creative, request));
     creative.setAgentImprovementStatus(CreativeImprovementStatus.PENDING);
     creative.setAgentImprovementError(null);
   }
 
-  /** Serializa o contrato funcional da correção separadamente do parecer técnico. */
-  private String toImprovementJson(CreativeAgentReviewResultRequest request) {
+  /** Serializa o briefing de Dédalo sem converter o parecer de Têmis em conteúdo substituto. */
+  private String toImprovementJson(Creative creative, CreativeAgentReviewResultRequest request) {
     try {
       Map<String, Object> correction = new LinkedHashMap<>();
-      correction.put("headline", Objects.requireNonNullElse(request.revisedHeadline(), ""));
-      correction.put("primaryText", Objects.requireNonNullElse(request.revisedPrimaryText(), ""));
-      correction.put("description", Objects.requireNonNullElse(request.revisedDescription(), ""));
+      correction.put("headline", Objects.requireNonNullElse(creative.getHeadline(), ""));
+      correction.put("primaryText", Objects.requireNonNullElse(creative.getPrimaryText(), ""));
+      correction.put("description", Objects.requireNonNullElse(creative.getDescription(), ""));
       correction.put(
-          "cta", Objects.requireNonNullElse(request.revisedCta(), DEFAULT_META_CALL_TO_ACTION));
-      correction.put("imagePrompt", Objects.requireNonNullElse(request.revisedImagePrompt(), ""));
+          "cta", Objects.requireNonNullElse(creative.getCta(), DEFAULT_META_CALL_TO_ACTION));
+      correction.put("imagePrompt", dedaloImageBrief(request));
       correction.put(
           "mandatoryVisualRequirements", normalizedItems(request.mandatoryVisualRequirements()));
       correction.put("forbiddenVisualElements", normalizedItems(request.forbiddenVisualElements()));
       correction.put(
           "visualAcceptanceCriteria", normalizedItems(request.visualAcceptanceCriteria()));
+      correction.put("correctionTargets", correctionTargets(request));
       return objectMapper.writeValueAsString(correction);
     } catch (JsonProcessingException ex) {
       log.error("Falha ao serializar correção do agente. creativeId desconhecido", ex);
       throw new IllegalStateException("Correção do agente inválida", ex);
     }
+  }
+
+  /** Confirma que o parecer realmente delegou a materialização visual a Dédalo. */
+  private boolean hasCorrectionTarget(CreativeAgentReviewResultRequest request, String target) {
+    return correctionTargets(request).stream()
+        .filter(Objects::nonNull)
+        .anyMatch(item -> target.equals(item.target()));
+  }
+
+  /** Converte requisitos de integridade em briefing técnico sem inventar a solução criativa. */
+  private String dedaloImageBrief(CreativeAgentReviewResultRequest request) {
+    StringBuilder brief =
+        new StringBuilder(
+            "Materialize uma nova imagem do criativo sob o contrato PDE_CONSTRUCTION. "
+                + "Escolha a solução visual sem alterar estratégia, oferta, preço ou prova.");
+    correctionTargets(request).stream()
+        .filter(Objects::nonNull)
+        .filter(item -> "CREATIVE_MEDIA".equals(item.target()))
+        .forEach(
+            item ->
+                brief
+                    .append("\n\nFalha ")
+                    .append(item.issueCode())
+                    .append(": ")
+                    .append(item.requirement())
+                    .append(" Critério de aceite: ")
+                    .append(item.acceptanceCriterion()));
+    return brief.toString();
+  }
+
+  /** Preserva o tipo dos alvos ao normalizar contratos legados sem a lista de correções. */
+  private List<CreativeAgentReviewResultRequest.ConvergenceCorrectionTarget> correctionTargets(
+      CreativeAgentReviewResultRequest request) {
+    return request.correctionTargets() == null ? List.of() : request.correctionTargets();
   }
 
   /** Normaliza listas do contrato para impedir instruções vazias ou duplicadas. */

@@ -100,6 +100,30 @@ class OpportunityDossierServiceTest {
     verify(productDiscovery).createCycle(any());
   }
 
+  /** Impede cadastrar a pesquisa factual sob a identidade decisória de outro agente. */
+  @Test
+  void rejectsOpportunityOwnedByAnotherAgent() {
+    var request =
+        new com.marketinghub.opportunitydossier.service.create.CreateOpportunityDossierRequest(
+            "Produto IA",
+            "HERMES",
+            "Profissionais",
+            "Esforço",
+            "Produto validado",
+            "Automação",
+            "Oferta",
+            null,
+            null,
+            null,
+            null);
+
+    assertThatThrownBy(() -> service.create(request))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("ARGOS");
+
+    verify(productDiscovery, never()).createCycle(any());
+  }
+
   /** Impede iniciar pareceres sem evidência verificável. */
   @Test
   void blocksReviewWithoutEvidence() {
@@ -116,20 +140,33 @@ class OpportunityDossierServiceTest {
         .hasMessageContaining("evidência");
   }
 
-  /** Libera a decisão humana somente depois dos quatro pareceres concluídos. */
+  /** Abre somente a decisão estratégica de Atena depois da pesquisa factual de Argos. */
   @Test
-  void completesReviewStageAfterAllAgentsRespond() {
+  void requestsOnlyAtenaAfterResearch() {
+    OpportunityDossier dossier = dossier(OpportunityDossierStatus.RESEARCHING);
+    when(dossiers.findById(1L)).thenReturn(Optional.of(dossier));
+    when(evidence.findByDossierIdOrderByCreatedAtAsc(1L))
+        .thenReturn(List.of(OpportunityEvidence.builder().id(8L).build()));
+    when(reviews.findByDossierIdAndAgentKey(1L, "ATENA")).thenReturn(Optional.empty());
+    when(reviews.findByDossierIdOrderByAgentKeyAsc(1L)).thenReturn(List.of());
+
+    service.updateStatus(
+        1L, new UpdateOpportunityStatusRequest(OpportunityDossierStatus.UNDER_REVIEW, "USER"));
+
+    verify(reviews).findByDossierIdAndAgentKey(1L, "ATENA");
+    verify(reviews, never()).findByDossierIdAndAgentKey(1L, "PSIQUE");
+    verify(reviews, never()).findByDossierIdAndAgentKey(1L, "PLUTUS");
+    verify(reviews, never()).findByDossierIdAndAgentKey(1L, "HERMES");
+  }
+
+  /** Libera a decisão humana quando Atena conclui a estratégia do dossiê. */
+  @Test
+  void completesReviewStageAfterAtenaResponds() {
     OpportunityDossier dossier = dossier(OpportunityDossierStatus.UNDER_REVIEW);
     OpportunityAgentReview target = review("ATENA", null);
     when(dossiers.findById(1L)).thenReturn(Optional.of(dossier));
     when(reviews.findByDossierIdAndAgentKey(1L, "ATENA")).thenReturn(Optional.of(target));
-    when(reviews.findByDossierIdOrderByAgentKeyAsc(1L))
-        .thenReturn(
-            List.of(
-                target,
-                review("PSIQUE", Instant.now()),
-                review("PLUTUS", Instant.now()),
-                review("HERMES", Instant.now())));
+    when(reviews.findByDossierIdOrderByAgentKeyAsc(1L)).thenReturn(List.of(target));
     when(evidence.findByDossierIdOrderByCreatedAtAsc(1L)).thenReturn(List.of());
     var response =
         service.submitReview(
@@ -141,6 +178,28 @@ class OpportunityDossierServiceTest {
                 "Risco controlável",
                 "Testar"));
     assertThat(response.status()).isEqualTo(OpportunityDossierStatus.READY_FOR_TEST);
+  }
+
+  /** Impede que Hermes ou outro agente substitua a decisão estratégica de Atena. */
+  @Test
+  void rejectsStrategicReviewFromAnotherAgent() {
+    OpportunityDossier dossier = dossier(OpportunityDossierStatus.UNDER_REVIEW);
+    when(dossiers.findById(1L)).thenReturn(Optional.of(dossier));
+
+    assertThatThrownBy(
+            () ->
+                service.submitReview(
+                    1L,
+                    "HERMES",
+                    new SubmitOpportunityReviewRequest(
+                        OpportunityReviewDecision.SUPPORT,
+                        "Operação plausível",
+                        "Sem eventos",
+                        "Executar")))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("Somente Atena");
+
+    verify(reviews, never()).findByDossierIdAndAgentKey(any(), any());
   }
 
   /** Converte uma vez sem copiar orçamento ou resultado de outro plano. */

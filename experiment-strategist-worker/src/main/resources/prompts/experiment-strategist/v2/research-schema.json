@@ -1,0 +1,229 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "diagnosis",
+    "behavioralAssessment",
+    "marketIntelligence",
+    "sources",
+    "portfolioAssessment",
+    "alternatives",
+    "recommendation",
+    "marketStrategicContract"
+  ],
+  "properties": {
+    "diagnosis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bottleneck", "evidence", "competingExplanations", "causalConfidence"],
+      "properties": {
+        "bottleneck": {"type": "string", "minLength": 3},
+        "evidence": {"type": "array", "items": {"type": "string"}},
+        "competingExplanations": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "causalConfidence": {"type": "string", "enum": ["LOW", "MEDIUM", "HIGH"]}
+      }
+    },
+    "behavioralAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "observedSignals", "hypotheses", "evidenceGaps", "privacyBoundary"],
+      "properties": {
+        "status": {"type": "string", "enum": ["AVAILABLE", "INSUFFICIENT_SAMPLE", "NOT_CONFIGURED", "FAILED", "NOT_APPLICABLE"]},
+        "observedSignals": {"type": "array", "items": {"type": "string"}},
+        "hypotheses": {"type": "array", "items": {"type": "string"}},
+        "evidenceGaps": {"type": "array", "items": {"type": "string"}},
+        "privacyBoundary": {"type": "string", "const": "AGGREGATE_ONLY_NO_INDIVIDUAL_PROFILING"}
+      }
+    },
+    "marketIntelligence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["customerLanguage", "competitors", "competitiveGap", "evidenceSynthesis"],
+      "properties": {
+        "customerLanguage": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["quote", "sourceUrl", "context"],
+            "properties": {
+              "quote": {"type": "string"},
+              "sourceUrl": {"type": "string"},
+              "context": {"type": "string"}
+            }
+          }
+        },
+        "competitors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "url", "promise", "mechanism", "delivery", "visiblePrice", "proof", "customerEffort"],
+            "properties": {
+              "name": {"type": "string"},
+              "url": {"type": "string"},
+              "promise": {"type": "string"},
+              "mechanism": {"type": "string"},
+              "delivery": {"type": "string"},
+              "visiblePrice": {"type": "string"},
+              "proof": {"type": "string"},
+              "customerEffort": {"type": "string"}
+            }
+          }
+        },
+        "competitiveGap": {"type": "string", "minLength": 10},
+        "evidenceSynthesis": {"type": "string", "minLength": 20}
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["url", "title", "accessedAt", "sourceType", "collectionMethod", "evidenceClass", "learning"],
+        "properties": {
+          "url": {"type": "string"},
+          "title": {"type": "string"},
+          "accessedAt": {"type": "string"},
+          "sourceType": {"type": "string"},
+          "collectionMethod": {"type": "string"},
+          "evidenceClass": {"type": "string"},
+          "learning": {"type": "string"}
+        }
+      }
+    },
+    "portfolioAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observedFacts", "evidenceGaps", "confidence", "winnerProductId", "nextTest", "operatorBoundary"],
+      "properties": {
+        "observedFacts": {"type": "array", "items": {"type": "string"}},
+        "evidenceGaps": {"type": "array", "items": {"type": "string"}},
+        "confidence": {"type": "string", "enum": ["LOW", "MEDIUM", "HIGH"]},
+        "winnerProductId": {"type": ["integer", "null"]},
+        "nextTest": {"type": "string"},
+        "operatorBoundary": {"type": "string", "const": "STRATEGIST_RECOMMENDS_OPERATOR_EXECUTES"}
+      }
+    },
+    "alternatives": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "buyer", "verifiablePromise", "mechanism", "delivery", "evidenceReferences", "benefit", "risk", "effort", "fit"],
+        "properties": {
+          "name": {"type": "string"},
+          "buyer": {"type": "string"},
+          "verifiablePromise": {"type": "string"},
+          "mechanism": {"type": "string"},
+          "delivery": {"type": "string"},
+          "evidenceReferences": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+          "benefit": {"type": "string"},
+          "risk": {"type": "string"},
+          "effort": {"type": "string"},
+          "fit": {"type": "string"}
+        }
+      }
+    },
+    "recommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selectedAlternative", "rationale", "changeDecisionIf", "requiresHumanApproval"],
+      "properties": {
+        "selectedAlternative": {"type": "string"},
+        "rationale": {"type": "string", "minLength": 20},
+        "changeDecisionIf": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "requiresHumanApproval": {"type": "boolean", "const": true}
+      }
+    },
+    "marketStrategicContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractVersion",
+        "status",
+        "segment",
+        "buyer",
+        "problem",
+        "desiredOutcome",
+        "customerDesires",
+        "behavioralDrivers",
+        "competitiveAlternatives",
+        "competitiveGap",
+        "positioning",
+        "offerThesis",
+        "causalHypothesis",
+        "primaryMetric",
+        "continueCriteria",
+        "adjustCriteria",
+        "stopCriteria",
+        "evidenceReferences",
+        "revisionTriggers",
+        "operatorBoundary"
+      ],
+      "properties": {
+        "contractVersion": {"type": "string", "const": "MARKET_STRATEGY_V2"},
+        "status": {"type": "string", "enum": ["READY_FOR_OPERATION", "INSUFFICIENT_EVIDENCE"]},
+        "segment": {"type": "string", "minLength": 3},
+        "buyer": {"type": "string", "minLength": 3},
+        "problem": {"type": "string", "minLength": 5},
+        "desiredOutcome": {"type": "string", "minLength": 5},
+        "customerDesires": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "behavioralDrivers": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "competitiveAlternatives": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "category", "strength", "residualEffort", "evidenceReference"],
+            "properties": {
+              "name": {"type": "string"},
+              "category": {"type": "string"},
+              "strength": {"type": "string"},
+              "residualEffort": {"type": "string"},
+              "evidenceReference": {"type": "string"}
+            }
+          }
+        },
+        "competitiveGap": {"type": "string", "minLength": 10},
+        "positioning": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["categoryFrame", "valueProposition", "differentiation", "reasonsToBelieve", "expectationBoundary"],
+          "properties": {
+            "categoryFrame": {"type": "string"},
+            "valueProposition": {"type": "string"},
+            "differentiation": {"type": "string"},
+            "reasonsToBelieve": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+            "expectationBoundary": {"type": "string"}
+          }
+        },
+        "offerThesis": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["offer", "valueMechanism", "included", "excluded", "priceAuthority"],
+          "properties": {
+            "offer": {"type": "string"},
+            "valueMechanism": {"type": "string"},
+            "included": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+            "excluded": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+            "priceAuthority": {"type": "string", "const": "PLUTUS_OR_HUMAN_APPROVED_PLAN"}
+          }
+        },
+        "causalHypothesis": {"type": "string", "minLength": 10},
+        "primaryMetric": {"type": "string", "minLength": 3},
+        "continueCriteria": {"type": "string", "minLength": 3},
+        "adjustCriteria": {"type": "string", "minLength": 3},
+        "stopCriteria": {"type": "string", "minLength": 3},
+        "evidenceReferences": {"type": "array", "minItems": 2, "items": {"type": "string"}},
+        "revisionTriggers": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "operatorBoundary": {"type": "string", "const": "ATENA_DEFINES_STRATEGY_HERMES_OPERATES_GROWTH"}
+      }
+    }
+  }
+}

@@ -15,7 +15,8 @@ venda.
 | Área | Caminho feliz | Validações e falhas | Evidência local |
 | --- | --- | --- | --- |
 | Contrato | produto, versão, layout, experimento, CTA e R$ 349 coincidem | checkout bloqueado diante de qualquer divergência | testes dos dois backends e do frontend |
-| Oferta | pagamento único, escopo e prazo aparecem antes do checkout | sem oferta quando fornecedor, checkout HTTPS ou binding falhar | contrato HTTP e jornada Playwright |
+| Oferta | pagamento único, escopo e prazo aparecem antes do checkout | sem oferta quando marca, CNPJ, suporte, checkout HTTPS ou binding falhar | contrato HTTP e jornada Playwright |
+| Privacidade pública | rodapé apresenta Digicom Digital, CNPJ, suporte e políticas | razão social completa e endereço não existem no JSON, no contexto do agente nem no DOM | testes de serialização, gate do slot e Playwright nos três dispositivos |
 | Degustação | uma resposta, uma pergunta e três follow-ups sem chamada externa | serviço vazio, combinação inválida e PII não avançam | eventos segregados e resultado determinístico |
 | Prova | quatro provas fiéis e aprovadas aparecem sem depoimento ou automação inventada | ausência de prova não desliga o gate | contrato v2, gate de asset e tela |
 | Processo | briefing, microvalor, entrega e primeira aplicação são compreensíveis | prazo não inicia sem pagamento e briefing completos | conteúdo versionado e jornada visual |

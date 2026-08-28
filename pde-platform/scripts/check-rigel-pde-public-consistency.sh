@@ -33,6 +33,11 @@ jq -e '
   and .primaryCta == "Quero meu atendimento sob medida"
   and .priceBrl == 349
   and (.checkoutUrl | startswith("https://"))
+  and .supplierDisplayName == "Digicom Digital"
+  and (.supplierRegistrationNumber | length) > 0
+  and (.supportEmail | contains("@"))
+  and (has("supplierLegalName") | not)
+  and (has("supplierAddress") | not)
 ' "${temporary_dir}/offer.json" >/dev/null
 
 product_promise="$(jq -r '.promise' "${temporary_dir}/product.json")"

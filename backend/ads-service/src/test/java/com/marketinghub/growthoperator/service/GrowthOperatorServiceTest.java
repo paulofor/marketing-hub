@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.agenttask.MarketStrategicContextProvider;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.funnel.ExperimentFunnelService;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDetailedEventDto;
@@ -89,7 +90,7 @@ class GrowthOperatorServiceTest {
     verify(planService, never()).synchronizeAvailableRunningExperiments(3L);
   }
 
-  /** Confirma que o Operador recebe o contrato estrategico congelado do experimento. */
+  /** Separa a estratégia de Atena dos parâmetros operacionais congelados do experimento. */
   @Test
   void shouldFreezeExperimentStrategicContractInEvidenceSnapshot() throws Exception {
     GrowthOperatorExecutionRepository repository = mock(GrowthOperatorExecutionRepository.class);
@@ -118,6 +119,22 @@ class GrowthOperatorServiceTest {
     ExperimentFunnelService funnelService = mock(ExperimentFunnelService.class);
     when(funnelService.buildDetailedAnalyticsEvidence(82L, 2000))
         .thenReturn(mock(ExperimentLandingAnalyticsEvidenceDto.class));
+    MarketStrategicContextProvider strategicContext =
+        sourceReference ->
+            java.util.Optional.of(
+                Map.of(
+                    "availability",
+                    "AVAILABLE",
+                    "sourceAgent",
+                    "ATENA",
+                    "strategistExecutionId",
+                    41L,
+                    "contractVersion",
+                    "MARKET_STRATEGY_V2",
+                    "contentHash",
+                    "a".repeat(64),
+                    "contract",
+                    Map.of("status", "READY_FOR_OPERATION", "buyer", "Profissionais locais")));
     GrowthOperatorService service =
         new GrowthOperatorService(
             repository,
@@ -128,25 +145,33 @@ class GrowthOperatorServiceTest {
             mock(VideoProjectRepository.class),
             mock(ExperimentVideoPerformanceDashboardService.class),
             mock(com.marketinghub.experiment.service.ExperimentService.class),
-            new ObjectMapper().findAndRegisterModules());
+            new ObjectMapper().findAndRegisterModules(),
+            strategicContext);
 
     service.start(2L, new StartGrowthOperatorRequest(1, null));
 
     ArgumentCaptor<GrowthOperatorExecution> captor =
         ArgumentCaptor.forClass(GrowthOperatorExecution.class);
     verify(repository).save(captor.capture());
-    JsonNode contract =
+    JsonNode snapshot =
         new ObjectMapper()
             .findAndRegisterModules()
-            .readTree(captor.getValue().getEvidenceSnapshot())
-            .path("experimentStrategicContract");
-    assertThat(contract.path("source").asText()).isEqualTo("EXPERIMENT");
-    assertThat(contract.path("experimentId").asLong()).isEqualTo(82L);
-    assertThat(contract.path("objectiveHypothesisMetricsAndDecisionCriteria").asText())
+            .readTree(captor.getValue().getEvidenceSnapshot());
+    JsonNode strategy = snapshot.path("marketStrategicContract");
+    JsonNode executionContract = snapshot.path("experimentExecutionContract");
+    assertThat(strategy.path("sourceAgent").asText()).isEqualTo("ATENA");
+    assertThat(strategy.path("strategistExecutionId").asLong()).isEqualTo(41L);
+    assertThat(strategy.path("contentHash").asText()).hasSize(64);
+    assertThat(executionContract.path("source").asText()).isEqualTo("EXPERIMENT");
+    assertThat(executionContract.path("experimentId").asLong()).isEqualTo(82L);
+    assertThat(executionContract.path("objectiveHypothesisMetricsAndDecisionCriteria").asText())
         .contains("Continuar com 10%", "ajustar", "parar");
-    assertThat(contract.path("primaryMetric").asText()).isEqualTo("briefing_conversion_rate");
-    assertThat(contract.path("targetConversionRate").decimalValue()).isEqualByComparingTo("10.00");
-    assertThat(contract.path("complete").asBoolean()).isTrue();
+    assertThat(executionContract.path("primaryMetric").asText())
+        .isEqualTo("briefing_conversion_rate");
+    assertThat(executionContract.path("targetConversionRate").decimalValue())
+        .isEqualByComparingTo("10.00");
+    assertThat(executionContract.path("complete").asBoolean()).isTrue();
+    assertThat(snapshot.has("experimentStrategicContract")).isFalse();
   }
 
   /** Confirma que o catalogo publico reflete todas as ferramentas MCP autorizadas. */

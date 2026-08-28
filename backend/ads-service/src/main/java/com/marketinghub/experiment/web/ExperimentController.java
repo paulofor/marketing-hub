@@ -20,6 +20,7 @@ import com.marketinghub.experiment.funnel.dto.ExperimentPdeCockpitDiagnosticsDto
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
 import com.marketinghub.experiment.salespageab.service.ExperimentSalesPageAbTestService;
+import com.marketinghub.experiment.service.DedaloCreativeTaskOrchestrationService;
 import com.marketinghub.experiment.service.ExperimentCampaignDestinationPolicy;
 import com.marketinghub.experiment.service.ExperimentCockpitService;
 import com.marketinghub.experiment.service.ExperimentConstructionService;
@@ -29,7 +30,6 @@ import com.marketinghub.experiment.service.ExperimentDiagnosticsService;
 import com.marketinghub.experiment.service.ExperimentPromiseGenerationService;
 import com.marketinghub.experiment.service.ExperimentReadinessService;
 import com.marketinghub.experiment.service.ExperimentService;
-import com.marketinghub.experiment.service.TemisCreativeTaskOrchestrationService;
 import com.marketinghub.experiment.service.cockpit.ExperimentCockpitDto;
 import com.marketinghub.experiment.service.construction.ExperimentConstructionDto;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsRequest;
@@ -64,7 +64,7 @@ public class ExperimentController {
   private final ExperimentConstructionService constructionService;
   private final ExperimentCostReconciliationService costReconciliationService;
   private final ExperimentCockpitService cockpitService;
-  private final TemisCreativeTaskOrchestrationService temisCreativeTaskOrchestrationService;
+  private final DedaloCreativeTaskOrchestrationService dedaloCreativeTaskOrchestrationService;
   private final ExperimentTerminalReconciliationService terminalReconciliationService;
 
   /**
@@ -84,7 +84,7 @@ public class ExperimentController {
       ExperimentConstructionService constructionService,
       ExperimentCostReconciliationService costReconciliationService,
       ExperimentCockpitService cockpitService,
-      TemisCreativeTaskOrchestrationService temisCreativeTaskOrchestrationService,
+      DedaloCreativeTaskOrchestrationService dedaloCreativeTaskOrchestrationService,
       ExperimentTerminalReconciliationService terminalReconciliationService) {
     this.service = service;
     this.mapper = mapper;
@@ -98,7 +98,7 @@ public class ExperimentController {
     this.constructionService = constructionService;
     this.costReconciliationService = costReconciliationService;
     this.cockpitService = cockpitService;
-    this.temisCreativeTaskOrchestrationService = temisCreativeTaskOrchestrationService;
+    this.dedaloCreativeTaskOrchestrationService = dedaloCreativeTaskOrchestrationService;
     this.terminalReconciliationService = terminalReconciliationService;
   }
 
@@ -294,7 +294,7 @@ public class ExperimentController {
   @GetMapping("/creatives/stage-executions/pending")
   public List<ExperimentDto> pendingCreativeGeneration(
       @RequestParam(defaultValue = "10") int limit) {
-    temisCreativeTaskOrchestrationService.reconcilePendingTasks();
+    dedaloCreativeTaskOrchestrationService.reconcilePendingTasks();
     return service.listPendingCreativeGeneration(limit).stream().map(mapper::toDto).toList();
   }
 
@@ -307,7 +307,9 @@ public class ExperimentController {
   /** Marca a geração de criativos como concluída pelo AI Worker. */
   @PostMapping("/{id}/creatives/stage-execution/complete")
   public ExperimentDto completeCreativeGeneration(@PathVariable Long id) {
-    return mapper.toDto(service.markCreativeGenerationCompleted(id));
+    ExperimentDto result = mapper.toDto(service.markCreativeGenerationCompleted(id));
+    dedaloCreativeTaskOrchestrationService.completeForExperiment(id);
+    return result;
   }
 
   /** Marca a geração de criativos como falha pelo AI Worker. */
@@ -317,7 +319,7 @@ public class ExperimentController {
     ExperimentDto result =
         mapper.toDto(
             service.markCreativeGenerationFailed(id, request != null ? request.error() : null));
-    temisCreativeTaskOrchestrationService.blockForExperiment(id);
+    dedaloCreativeTaskOrchestrationService.blockForExperiment(id);
     return result;
   }
 

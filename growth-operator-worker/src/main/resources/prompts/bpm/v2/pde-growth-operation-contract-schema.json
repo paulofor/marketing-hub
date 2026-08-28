@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "executionStatus",
+    "activityOutcome",
+    "observedFacts",
+    "inferences",
+    "contradictoryEvidence",
+    "evidenceGaps",
+    "strategicContractReference",
+    "alternatives",
+    "selectedAlternative",
+    "growthOperationContract",
+    "expectedMetric",
+    "continueCriteria",
+    "adjustCriteria",
+    "stopCriteria",
+    "recommendedAction"
+  ],
+  "properties": {
+    "executionStatus": {"type": "string", "enum": ["COMPLETED", "BLOCKED"]},
+    "activityOutcome": {"type": "string", "minLength": 10},
+    "observedFacts": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "inferences": {"type": "array", "items": {"type": "string"}},
+    "contradictoryEvidence": {"type": "array", "items": {"type": "string"}},
+    "evidenceGaps": {"type": "array", "items": {"type": "string"}},
+    "strategicContractReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategistExecutionId", "contractVersion", "contentHash", "strategyPreserved", "revisionRequired", "revisionReason"],
+      "properties": {
+        "strategistExecutionId": {"type": "integer"},
+        "contractVersion": {"type": "string", "const": "MARKET_STRATEGY_V2"},
+        "contentHash": {"type": "string", "minLength": 64, "maxLength": 64},
+        "strategyPreserved": {"type": "boolean", "const": true},
+        "revisionRequired": {"type": "boolean"},
+        "revisionReason": {"type": ["string", "null"]}
+      }
+    },
+    "alternatives": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "benefit", "risk", "effort", "fit"],
+        "properties": {
+          "name": {"type": "string"},
+          "benefit": {"type": "string"},
+          "risk": {"type": "string"},
+          "effort": {"type": "string"},
+          "fit": {"type": "string"}
+        }
+      }
+    },
+    "selectedAlternative": {"type": "string", "minLength": 1},
+    "growthOperationContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "selectedDistributionRoute",
+        "channelExecutionBoundary",
+        "funnelStages",
+        "attributionPlan",
+        "eventContracts",
+        "instrumentationGate",
+        "checkoutAndAccessVerification",
+        "samplePlan",
+        "testTrafficSegregation",
+        "refundGuardrail",
+        "consentAndPrivacy",
+        "humanApprovalGates"
+      ],
+      "properties": {
+        "selectedDistributionRoute": {"type": "string", "minLength": 3},
+        "channelExecutionBoundary": {"type": "string", "minLength": 5},
+        "funnelStages": {"type": "array", "minItems": 3, "items": {"type": "string"}},
+        "attributionPlan": {"type": "string", "minLength": 10},
+        "eventContracts": {
+          "type": "array",
+          "minItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["eventName", "trigger", "requiredMetadata", "correlationKeys", "authoritativeSource", "commercialMeaning"],
+            "properties": {
+              "eventName": {"type": "string", "minLength": 3},
+              "trigger": {"type": "string", "minLength": 5},
+              "requiredMetadata": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+              "correlationKeys": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+              "authoritativeSource": {"type": "string", "minLength": 3},
+              "commercialMeaning": {"type": "string", "minLength": 5}
+            }
+          }
+        },
+        "instrumentationGate": {"type": "string", "minLength": 10},
+        "checkoutAndAccessVerification": {"type": "string", "minLength": 10},
+        "samplePlan": {"type": "string", "minLength": 10},
+        "testTrafficSegregation": {"type": "string", "minLength": 5},
+        "refundGuardrail": {"type": "string", "minLength": 10},
+        "consentAndPrivacy": {"type": "string", "minLength": 10},
+        "humanApprovalGates": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+      }
+    },
+    "expectedMetric": {"type": "string", "minLength": 3},
+    "continueCriteria": {"type": "string", "minLength": 3},
+    "adjustCriteria": {"type": "string", "minLength": 3},
+    "stopCriteria": {"type": "string", "minLength": 3},
+    "recommendedAction": {"type": "string", "minLength": 3}
+  }
+}

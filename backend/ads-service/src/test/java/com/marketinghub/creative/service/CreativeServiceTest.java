@@ -138,9 +138,9 @@ class CreativeServiceTest {
     assertThat(saved.getPayload()).contains("EXPERIMENT_CREATIVE");
   }
 
-  /** Garante que retrabalho de Têmis vira entregável revisado antes de originar novo criativo. */
+  /** Garante que retrabalho de Dédalo vira entregável revisado antes de originar novo criativo. */
   @Test
-  void routesTemisImprovementThroughCommercialPlanLibrary() throws Exception {
+  void routesDedaloImprovementThroughCommercialPlanLibrary() throws Exception {
     MarketNiche niche = fixtures.createAndSaveNiche();
     Experiment experiment = fixtures.createAndSaveExperiment(niche);
     Creative source = fixtures.createAndSaveCreative(experiment);
@@ -593,6 +593,9 @@ class CreativeServiceTest {
     assertThat(pending.getFirst().forbiddenVisualElements()).containsExactly("Texto simulado");
     assertThat(pending.getFirst().visualAcceptanceCriteria())
         .containsExactly("Headline legível em mobile");
+    assertThat(pending.getFirst().revisedImagePrompt())
+        .contains("PDE_CONSTRUCTION", "PRODUCT_DEMONSTRATION")
+        .doesNotContain("Crie uma arte premium");
     assertThat(pending.getFirst().referenceImageUrls())
         .containsExactly(
             "https://cdn.test/product-proof.png", "https://cdn.test/story-product-proof.png");
@@ -652,9 +655,9 @@ class CreativeServiceTest {
             ConvergenceTaskStatus.REPEATED);
   }
 
-  /** Bloqueia copy corrigida que seria truncada nos placements Meta. */
+  /** Bloqueia qualquer conteúdo substituto produzido pela execução revisora de Têmis. */
   @Test
-  void rejectsAgentCorrectionAboveMetaDisplayLimits() {
+  void rejectsReplacementCopyFromCommercialReviewer() {
     MarketNiche niche = fixtures.createAndSaveNiche();
     Experiment exp = fixtures.createAndSaveExperiment(niche);
     CreateCreativeRequest create = new CreateCreativeRequest();
@@ -688,7 +691,7 @@ class CreativeServiceTest {
             valid.costUsd(),
             valid.error(),
             valid.revisedHeadline(),
-            "x".repeat(126),
+            "Copy substituta indevida",
             valid.revisedDescription(),
             valid.revisedCta(),
             valid.revisedImagePrompt(),
@@ -699,7 +702,7 @@ class CreativeServiceTest {
 
     assertThatThrownBy(() -> service.applyAgentReview(creative.getId(), oversized))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("texto principal: 125");
+        .hasMessageContaining("sem criar conteúdo substituto");
   }
 
   /** Monta um parecer de ajuste completo para os testes do contrato de correção. */
@@ -727,11 +730,11 @@ class CreativeServiceTest {
         10,
         java.math.BigDecimal.ZERO,
         null,
-        "Agenda Cheia",
-        "Preencha sua agenda",
-        "Método prático",
-        "LEARN_MORE",
-        "Crie uma arte premium para manicures.",
+        "",
+        "",
+        "",
+        "",
+        "",
         mandatory,
         forbidden,
         acceptance,
@@ -767,10 +770,10 @@ class CreativeServiceTest {
             10,
             java.math.BigDecimal.ZERO,
             null,
-            "Peça pronta para revisão humana.",
-            "Texto aprovado.",
-            "Descrição aprovada.",
-            "LEARN_MORE",
+            "",
+            "",
+            "",
+            "",
             "",
             java.util.List.of(),
             java.util.List.of(),

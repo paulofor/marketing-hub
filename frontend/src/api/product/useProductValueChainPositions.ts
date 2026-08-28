@@ -36,7 +36,8 @@ export type ProductValueChainPosition = {
   processCount?: number | null;
   processMeasurements?: ProductStageMeasurement[];
   subprocessPosition?: {
-    trackingStatus: "NOT_APPLICABLE" | "PLANNED" | "IN_PROGRESS" | "RECORDED";
+    trackingStatus:
+      "NOT_APPLICABLE" | "PLANNED" | "IN_PROGRESS" | "RECORDED" | "COMPLETED";
     subprocessCount: number;
     currentActivityName?: string | null;
     currentSubprocessDefinitionId?: number | null;

@@ -107,7 +107,8 @@ class ProductServiceTest {
     Product activeProduct = Product.builder().id(12L).automaticExecutionEnabled(true).build();
     Product legacyProduct = Product.builder().id(13L).automaticExecutionEnabled(null).build();
     when(productRepository.findAllInPlayState()).thenReturn(List.of(activeProduct, legacyProduct));
-    ProductService service = newService(productRepository, mock(ProductTypeDefinitionRepository.class));
+    ProductService service =
+        newService(productRepository, mock(ProductTypeDefinitionRepository.class));
 
     Iterable<Product> products = service.listProducts(null, true);
 

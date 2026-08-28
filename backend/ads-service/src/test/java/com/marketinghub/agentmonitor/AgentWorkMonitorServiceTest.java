@@ -26,7 +26,6 @@ import com.marketinghub.salesvideo.VideoProductionCycle;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -90,9 +89,9 @@ class AgentWorkMonitorServiceTest {
     assertThat(result.executorHealth().status()).isEqualTo("READY");
   }
 
-  /** Alerta qualquer especialista cujo parecer canônico permaneça pendente sem início. */
+  /** Alerta Atena quando a decisão estratégica permanece pendente sem início. */
   @Test
-  void shouldExposePendingWithoutStartForEveryOpportunityReviewer() {
+  void shouldExposePendingWithoutStartForAtena() {
     AgentRepository agents = mock(AgentRepository.class);
     AgentTaskRepository tasks = mock(AgentTaskRepository.class);
     GeraLandingStageExecutionRepository landings = mock(GeraLandingStageExecutionRepository.class);
@@ -102,25 +101,14 @@ class AgentWorkMonitorServiceTest {
     CreativeRepository creatives = mock(CreativeRepository.class);
     AgentExecutorHealthService health = mock(AgentExecutorHealthService.class);
     OpportunityAgentReviewRepository reviews = mock(OpportunityAgentReviewRepository.class);
-    List<Agent> reviewers =
-        List.of(
-            reviewer(1L, "experiment-strategist", "Atena"),
-            reviewer(2L, "customer-agent", "Psique"),
-            reviewer(3L, "financial-agent", "Plutus"),
-            reviewer(4L, "growth-operator", "Hermes"));
+    List<Agent> reviewers = List.of(reviewer(1L, "experiment-strategist", "Atena"));
     when(agents.findAllByOrderByNicknameAsc()).thenReturn(reviewers);
-    Map<String, String> canonicalKeys =
-        Map.of(
-            "experiment-strategist", "ATENA",
-            "customer-agent", "PSIQUE",
-            "financial-agent", "PLUTUS",
-            "growth-operator", "HERMES");
     for (Agent reviewer : reviewers) {
       OpportunityAgentReview review =
           OpportunityAgentReview.builder()
               .id(reviewer.getId() + 10)
               .dossier(OpportunityDossier.builder().id(6L).build())
-              .agentKey(canonicalKeys.get(reviewer.getAgentKey()))
+              .agentKey("ATENA")
               .executionStatus(OpportunityReviewExecutionStatus.PENDING)
               .requestedAt(Instant.now().minusSeconds(240))
               .updatedAt(Instant.now().minusSeconds(240))
@@ -392,7 +380,7 @@ class AgentWorkMonitorServiceTest {
             .id(9L)
             .agentKey("meta-ad-approver")
             .nickname("Têmis")
-            .name("Criadora de anúncios")
+            .name("Revisora de integridade comercial")
             .build();
     when(agents.findAllByOrderByNicknameAsc()).thenReturn(List.of(temis));
     when(telemetry.sumTokensByAgentTypeBetween(
@@ -463,9 +451,9 @@ class AgentWorkMonitorServiceTest {
     assertThat(result.executionActivity().stale()).isFalse();
   }
 
-  /** Mostra a execução criativa real de Têmis em vez do bloqueio antigo da tarefa agregadora. */
+  /** Mostra a revisão real de Têmis em vez do bloqueio antigo da tarefa agregadora. */
   @Test
-  void shouldExposeCurrentTemisCreativeExecutionAndTaskIdentifiers() {
+  void shouldExposeCurrentTemisReviewAndTaskIdentifiers() {
     AgentRepository agents = mock(AgentRepository.class);
     AgentTaskRepository tasks = mock(AgentTaskRepository.class);
     GeraLandingStageExecutionRepository landings = mock(GeraLandingStageExecutionRepository.class);
@@ -478,7 +466,7 @@ class AgentWorkMonitorServiceTest {
             .id(9L)
             .agentKey("meta-ad-approver")
             .nickname("Têmis")
-            .name("Criadora de anúncios")
+            .name("Revisora de integridade comercial")
             .build();
     AgentTask task = new AgentTask();
     task.setId(14L);
@@ -497,7 +485,7 @@ class AgentWorkMonitorServiceTest {
     when(agents.findAllByOrderByNicknameAsc()).thenReturn(List.of(temis));
     when(tasks.findByAssignedAgentAgentKeyOrderByCreatedAtDescIdDesc("meta-ad-approver"))
         .thenReturn(List.of(task));
-    when(creatives.findTemisOpenExecutions(88L)).thenReturn(List.of(creative));
+    when(creatives.findTemisOpenReviews(88L)).thenReturn(List.of(creative));
 
     AgentWorkMonitorResponse result =
         new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry, creatives)
@@ -510,5 +498,45 @@ class AgentWorkMonitorServiceTest {
     assertThat(result.taskId()).isEqualTo(14L);
     assertThat(result.executionId()).isEqualTo(326L);
     assertThat(result.difficulty()).isNull();
+  }
+
+  /** Atribui materialização visual aberta a Dédalo sem contaminar o perfil de Têmis. */
+  @Test
+  void shouldExposeCurrentVisualMaterializationForDedalo() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentTaskRepository tasks = mock(AgentTaskRepository.class);
+    GeraLandingStageExecutionRepository landings = mock(GeraLandingStageExecutionRepository.class);
+    VideoProductionCycleRepository cycles = mock(VideoProductionCycleRepository.class);
+    CodexAgentExecutionTelemetryRepository telemetry =
+        mock(CodexAgentExecutionTelemetryRepository.class);
+    CreativeRepository creatives = mock(CreativeRepository.class);
+    Agent dedalo =
+        Agent.builder()
+            .id(7L)
+            .agentKey("landing-generator")
+            .nickname("Dédalo")
+            .name("Construtor de PDE")
+            .build();
+    Creative creative =
+        Creative.builder()
+            .id(326L)
+            .experiment(Experiment.builder().id(88L).build())
+            .agentReviewedAt(Instant.parse("2026-08-28T10:00:00Z"))
+            .agentImprovementStatus(CreativeImprovementStatus.PROCESSING)
+            .build();
+    when(agents.findAllByOrderByNicknameAsc()).thenReturn(List.of(dedalo));
+    when(creatives.findDedaloOpenMaterializations()).thenReturn(List.of(creative));
+
+    AgentWorkMonitorResponse result =
+        new AgentWorkMonitorService(agents, tasks, landings, cycles, telemetry, creatives)
+            .list()
+            .getFirst();
+
+    assertThat(result.agentKey()).isEqualTo("landing-generator");
+    assertThat(result.workStatus()).isEqualTo("WORKING");
+    assertThat(result.currentWork()).contains("Materialização visual", "#326");
+    assertThat(result.progressDetail()).contains("Produzindo");
+    assertThat(result.sourceReference()).isEqualTo("experiment:88");
+    assertThat(result.executionId()).isEqualTo(326L);
   }
 }

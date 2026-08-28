@@ -35,9 +35,8 @@ public class PublicProductCommercialOfferService {
   private final ProductRepository productRepository;
   private final PdeProductionSlotRepository slotRepository;
   private final ExperimentRepository experimentRepository;
-  private final String supplierLegalName;
+  private final String supplierDisplayName;
   private final String supplierRegistrationNumber;
-  private final String supplierAddress;
   private final String supplierSupportEmail;
 
   /** Inicializa a leitura comercial sem duplicar dados no frontend PDE. */
@@ -45,16 +44,14 @@ public class PublicProductCommercialOfferService {
       ProductRepository productRepository,
       PdeProductionSlotRepository slotRepository,
       ExperimentRepository experimentRepository,
-      @Value("${commerce.supplier.legal-name:}") String supplierLegalName,
+      @Value("${commerce.supplier.display-name:}") String supplierDisplayName,
       @Value("${commerce.supplier.registration-number:}") String supplierRegistrationNumber,
-      @Value("${commerce.supplier.address:}") String supplierAddress,
       @Value("${commerce.supplier.support-email:}") String supplierSupportEmail) {
     this.productRepository = productRepository;
     this.slotRepository = slotRepository;
     this.experimentRepository = experimentRepository;
-    this.supplierLegalName = supplierLegalName;
+    this.supplierDisplayName = supplierDisplayName;
     this.supplierRegistrationNumber = supplierRegistrationNumber;
-    this.supplierAddress = supplierAddress;
     this.supplierSupportEmail = supplierSupportEmail;
   }
 
@@ -76,10 +73,9 @@ public class PublicProductCommercialOfferService {
                         HttpStatus.PRECONDITION_FAILED,
                         "Slot PDE sem experimento comercial disponível."));
     validateExperiment(product, experiment);
-    String legalName = normalizeRequired(supplierLegalName, "Fornecedor sem razão social.");
+    String displayName = normalizeRequired(supplierDisplayName, "Fornecedor sem marca pública.");
     String registrationNumber =
         normalizeRequired(supplierRegistrationNumber, "Fornecedor sem registro fiscal.");
-    String address = normalizeRequired(supplierAddress, "Fornecedor sem endereço comercial.");
     String supportEmail =
         normalizeRequired(supplierSupportEmail, "Fornecedor sem contato de suporte.");
     if (!supportEmail.contains("@")) {
@@ -108,9 +104,8 @@ public class PublicProductCommercialOfferService {
         product.getProductFormat(),
         product.getDeliveryMode(),
         product.getValueUnit(),
-        legalName,
+        displayName,
         registrationNumber,
-        address,
         supportEmail,
         salesPageUrl + "/terms",
         salesPageUrl + "/privacy",

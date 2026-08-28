@@ -5,6 +5,7 @@ public enum CreativeImprovementStatus {
   PENDING,
   PROCESSING,
   COMPLETED,
+  DELEGATED,
   FAILED,
   LIMIT_REACHED
 }

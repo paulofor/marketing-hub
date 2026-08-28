@@ -105,6 +105,12 @@ geração de landing e criação de criativos, permanecem reutilizáveis dentro 
 
 ## Fronteiras obrigatórias de responsabilidade
 
+Os direitos de decisão dos agentes seguem obrigatoriamente
+`matriz-responsabilidades-agentes-canon.v1.md`. O handoff comercial é
+`Argos → Atena → Plutus → Dédalo/Apolo → Psique → Têmis → autorização humana → Hermes`.
+Atividade de agente possui um único dono; gates humanos e de integridade têm identificadores
+separados e nenhum agente pode criar e aprovar o mesmo artefato.
+
 O catálogo distingue `VALUE_PROCESS` de `SUBPROCESS`. Um processo de valor possui resultado de
 negócio e gate de avanço da cadeia; um subprocesso executa uma capacidade especializada, possui um
 único processo de valor pai e não pode decidir sozinho o avanço, ativar mídia ou repetir o resultado
@@ -112,15 +118,15 @@ do pai.
 
 Cada trabalho tem uma única autoridade:
 
-| Trabalho | Autoridade única | Limite dos demais processos |
-| --- | --- | --- |
-| Construir e aprovar o PDE completo | `pde-construction-approval` | `product-manufacturing-approval` fica aposentado; ativos e entregáveis são atividades da construção canônica |
-| Produzir e aprovar criativos | `creative-production-approval` | comunicação apenas delega e integra o resultado aprovado |
-| Produzir e aprovar landing | `landing-page-generation` | comunicação não recria copy, HTML, imagens ou revisão da landing |
-| Materializar e governar degustação pré-compra | `pde-tasting-proof-of-value` | construção fornece produto e prova aprovados; comunicação decide quando delegar e apenas integra a experiência aprovada |
-| Executar preflight técnico | `experiment-homologation-activation` | homologação comercial do PDE valida riscos próprios, consome as evidências e decide ativação |
-| Operar e otimizar experimento | `operacao-otimizacao-experimento` | processo final apenas consolida o resultado, sem executar outra otimização |
-| Conciliar venda, entregar e medir satisfação | `venda-entrega-satisfacao-cliente` | processo final não reentrega, reprocessa ou solicita satisfação novamente |
+| Trabalho                                      | Autoridade única                     | Limite dos demais processos                                                                                             |
+| --------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| Construir e aprovar o PDE completo            | `pde-construction-approval`          | `product-manufacturing-approval` fica aposentado; ativos e entregáveis são atividades da construção canônica            |
+| Produzir e aprovar criativos                  | `creative-production-approval`       | comunicação apenas delega e integra o resultado aprovado                                                                |
+| Produzir e aprovar landing                    | `landing-page-generation`            | comunicação não recria copy, HTML, imagens ou revisão da landing                                                        |
+| Materializar e governar degustação pré-compra | `pde-tasting-proof-of-value`         | construção fornece produto e prova aprovados; comunicação decide quando delegar e apenas integra a experiência aprovada |
+| Executar preflight técnico                    | `experiment-homologation-activation` | homologação comercial do PDE valida riscos próprios, consome as evidências e decide ativação                            |
+| Operar e otimizar experimento                 | `operacao-otimizacao-experimento`    | processo final apenas consolida o resultado, sem executar outra otimização                                              |
+| Conciliar venda, entregar e medir satisfação  | `venda-entrega-satisfacao-cliente`   | processo final não reentrega, reprocessa ou solicita satisfação novamente                                               |
 
 Uma atividade que delega trabalho deve declarar `subprocessCode`. Ela não pode possuir ao mesmo tempo
 um executor especializado, pois isso criaria duas autoridades para a mesma execução. A tela deve
@@ -371,10 +377,17 @@ valor, oferta, compra e acesso, usando o produto real como fonte da comunicaçã
   causa-raiz. Reembolso causado por promessa, entrega, privacidade ou margem bloqueia a continuidade;
   a taxa percentual isolada só passa a orientar decisão com amostra compatível.
 - para uma superfície que recebe aquisição, renderizar antes da compra a oferta canônica do
-  experimento, incluindo dor, promessa, prova, CTA, preço, fornecedor, contato, políticas e checkout;
+  experimento, incluindo dor, promessa, prova, CTA, preço, marca pública, registro fiscal, contato,
+  políticas e checkout;
   uma área de acesso pós-compra isolada não pode ser homologada como landing comercial;
 - validar a oferta pública por contrato executável: produto e experimento atribuídos, preço positivo,
-  checkout HTTPS, identidade do fornecedor e políticas precisam responder pela mesma URL produtiva.
+  checkout HTTPS, identidade comercial mínima e políticas precisam responder pela mesma URL
+  produtiva;
+- minimizar a identidade no contrato público pré-compra: expor somente marca comercial, registro
+  fiscal, suporte e links de políticas. Razão social completa, endereço residencial/comercial e
+  outros dados pessoais não podem integrar o JSON público nem o contexto enviado aos agentes de
+  geração; quando necessários para obrigação interna ou documento jurídico específico, devem ficar
+  em fonte segregada e de acesso compatível com essa finalidade.
 
 **Saída final:** kit comercial aprovado com criativos, destino de campanha, jornada de venda,
 checkout, acesso e eventos preparados, sem ativação automática de mídia.
@@ -570,6 +583,12 @@ persistida: processo ou subprocesso, data e hora de entrada e saída, permanênc
 evidência temporal, custo estimado conhecido e cobertura financeira. Ausência de data, execução ou
 custo deve permanecer explícita; a tela não pode inferir conclusão, preencher lacunas ou somar
 processo e subprocesso quando houver risco de dupla contagem.
+
+O histórico nunca termina visualmente em um estágio concluído quando a composição publicada possui
+continuação. O backend deve anexar o próximo subprocesso ainda não iniciado ou expor a próxima
+atividade do processo pai; a tela apresenta esse item como próximo passo, sem convertê-lo em
+execução. No fim de um macroprocesso, o próximo macroprocesso só passa a atual depois da transição
+persistida, preservando os gates intermediários e impedindo que uma prévia visual avance a cadeia.
 
 ## Métricas da cadeia
 

@@ -43,9 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-/**
- * Responsabilidade: orquestrar criação, edição, persistência e revisão de ativos visuais por Têmis.
- */
+/** Responsabilidade: orquestrar materialização visual de Dédalo e revisão independente de Têmis. */
 @Service
 public class CommercialPlanImageStudioService {
   private static final Logger log = LoggerFactory.getLogger(CommercialPlanImageStudioService.class);
@@ -138,7 +136,7 @@ public class CommercialPlanImageStudioService {
     return jobRepository.findSummariesByCommercialPlanId(planId).stream().map(this::dto).toList();
   }
 
-  /** Reserva jobs para Têmis e entrega apenas referências autorizadas do próprio plano. */
+  /** Reserva jobs para o recurso de Dédalo e entrega referências autorizadas do próprio plano. */
   @Transactional
   public List<CommercialPlanImageStudioPendingDto> claimPending(int limit) {
     return jobRepository
@@ -203,7 +201,7 @@ public class CommercialPlanImageStudioService {
     List<String> purposes = readStrings(job.getPurposesJson());
     visual.setPurpose(purposes.getFirst());
     visual.setPurposesJson(job.getPurposesJson());
-    visual.setOrigin("Têmis / GPT Image 2");
+    visual.setOrigin("Dédalo / recurso técnico GPT Image 2");
     visual.setRightsStatement(
         purposes.contains("DELIVERY")
             ? "Gerado para uso comercial e entrega deste produto"
@@ -322,7 +320,7 @@ public class CommercialPlanImageStudioService {
     }
   }
 
-  /** Converte um job reservado em contrato executável do módulo Têmis. */
+  /** Converte um job reservado em contrato executável pelo recurso técnico de Dédalo. */
   private CommercialPlanImageStudioPendingDto claim(CommercialPlanImageStudioJob job) {
     List<String> references = referenceUrls(job);
     TemisVisualPlaybookDto playbook = resolveFrozenPlaybook(job);
@@ -476,7 +474,7 @@ public class CommercialPlanImageStudioService {
                 .toList();
     if (normalized.isEmpty() || normalized.stream().anyMatch(value -> !PURPOSES.contains(value))) {
       throw new IllegalArgumentException(
-          "Ativos de Têmis exigem ao menos uma finalidade entre DELIVERY, LANDING, ADS e SOCIAL");
+          "Ativos de Dédalo exigem ao menos uma finalidade entre DELIVERY, LANDING, ADS e SOCIAL");
     }
     return normalized;
   }

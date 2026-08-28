@@ -7,6 +7,16 @@
       "agentKey": "growth-operator",
       "sections": [
         {
+          "code": "responsibility-boundary",
+          "title": "Responsabilidade exclusiva",
+          "description": "Hermes opera crescimento sem criar ou reescrever estratégia.",
+          "items": [
+            { "key": "owns", "label": "Hermes decide", "value": "distribuição · instrumentação · atribuição · funil · gargalo · otimização", "description": "Opera a estratégia vigente e decide continuar, ajustar, parar ou aguardar aprovação.", "sourceReference": "docs/canonical/growth-operator-canon.v1.md" },
+            { "key": "input", "label": "Entrada obrigatória", "value": "Contrato Estratégico de Mercado v2 de Atena · versão · SHA-256", "description": "Contrato ausente ou insuficiente bloqueia antes do modelo.", "sourceReference": "backend/ads-service/src/main/java/com/marketinghub/experimentstrategist/service/ExperimentStrategistMarketContractProvider.java" },
+            { "key": "forbidden", "label": "Hermes não decide", "value": "mercado · público · desejo · posicionamento · tese de oferta · preço", "description": "Contradição por eventos reais retorna para nova análise de Atena.", "sourceReference": "growth-operator-worker/src/main/resources/prompts/growth-operator/v2/diagnosis.md" }
+          ]
+        },
+        {
           "code": "executor",
           "title": "Executor e implantação",
           "description": "Unidade responsável por executar Hermes de forma independente.",
@@ -149,14 +159,20 @@
       ],
       "artifacts": [
         { "artifactType": "MCP_SERVER", "name": "MCP do Operador de Crescimento", "version": "v1", "path": "growth-operator-worker/src/main/resources/mcp/marketing-hub-readonly.mjs", "description": "Ferramentas oficiais de leitura, memória e callbacks permitidos." },
-        { "artifactType": "PROMPT", "name": "Diagnóstico comercial", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/growth-operator/v1/diagnosis.md", "description": "Prompt operacional principal." },
-        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema do diagnóstico comercial", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/growth-operator/v1/diagnosis-schema.json", "description": "Contrato estruturado de saída." },
-        { "artifactType": "PROMPT", "name": "Revisão de oportunidade", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/opportunity-review/v1/review.md", "description": "Revisão comercial independente de uma oportunidade." },
-        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão de oportunidade", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/opportunity-review/v1/review-schema.json", "description": "Contrato estruturado da revisão." },
-        { "artifactType": "PROMPT", "name": "Otimização de experimento BPM", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v1/experiment-optimization.md", "description": "Diagnóstico e próxima ação do experimento." },
-        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema de otimização de experimento", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v1/experiment-optimization-schema.json", "description": "Contrato estruturado da otimização." },
-        { "artifactType": "PROMPT", "name": "Contrato de comunicação PDE", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v1/pde-communication-contract.md", "description": "Contrato comercial de comunicação do PDE." },
-        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema do contrato de comunicação PDE", "version": "v1", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v1/pde-communication-contract-schema.json", "description": "Saída estruturada do contrato." },
+        { "artifactType": "PROMPT", "name": "Diagnóstico comercial histórico", "version": "v1-historical", "path": "growth-operator-worker/src/main/resources/prompts/growth-operator/v1/diagnosis.md", "description": "Versão histórica anterior à fronteira formal com Atena." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema histórico do diagnóstico", "version": "v1-historical", "path": "growth-operator-worker/src/main/resources/prompts/growth-operator/v1/diagnosis-schema.json", "description": "Contrato histórico preservado para auditoria." },
+        { "artifactType": "PROMPT", "name": "Diagnóstico operacional", "version": "v2", "path": "growth-operator-worker/src/main/resources/prompts/growth-operator/v2/diagnosis.md", "description": "Prompt ativo que preserva a estratégia de Atena." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema do diagnóstico operacional", "version": "v2", "path": "growth-operator-worker/src/main/resources/prompts/growth-operator/v2/diagnosis-schema.json", "description": "Exige avaliação da versão e hash estratégicos." },
+        { "artifactType": "PROMPT", "name": "Revisão histórica de oportunidade", "version": "v1-historical", "path": "growth-operator-worker/src/main/resources/prompts/opportunity-review/v1/review.md", "description": "Contrato retirado da execução; Hermes agora começa após autorização e com eventos reais." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema histórico da revisão de oportunidade", "version": "v1-historical", "path": "growth-operator-worker/src/main/resources/prompts/opportunity-review/v1/review-schema.json", "description": "Contrato preservado somente para auditoria histórica." },
+        { "artifactType": "PROMPT", "name": "Otimização de experimento histórica", "version": "v1-historical", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v1/experiment-optimization.md", "description": "Versão histórica sem referência estratégica formal." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema histórico de otimização", "version": "v1-historical", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v1/experiment-optimization-schema.json", "description": "Contrato histórico preservado." },
+        { "artifactType": "PROMPT", "name": "Otimização de experimento", "version": "v2", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v2/experiment-optimization.md", "description": "Opera o experimento sem redefinir estratégia." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema de otimização de experimento", "version": "v2", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v2/experiment-optimization-schema.json", "description": "Exige referência imutável ao contrato de Atena." },
+        { "artifactType": "PROMPT", "name": "Contrato de comunicação histórico", "version": "v1-historical", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v1/pde-communication-contract.md", "description": "Versão histórica que acumulava decisões estratégicas." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema de comunicação histórico", "version": "v1-historical", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v1/pde-communication-contract-schema.json", "description": "Contrato histórico preservado." },
+        { "artifactType": "PROMPT", "name": "Contrato operacional de crescimento PDE", "version": "v2", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v2/pde-growth-operation-contract.md", "description": "Distribuição, atribuição, eventos e gates sem autoria estratégica." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema operacional de crescimento PDE", "version": "v2", "path": "growth-operator-worker/src/main/resources/prompts/bpm/v2/pde-growth-operation-contract-schema.json", "description": "Bloqueia campos estratégicos na saída de Hermes." },
         { "artifactType": "PROMPT", "name": "Controle de distribuição comercial", "version": "v4", "path": "growth-operator-worker/src/main/resources/prompts/pde-commercial-plan/v4/distribution-control.md", "description": "Gate de distribuição do plano comercial." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema do controle de distribuição", "version": "v4", "path": "growth-operator-worker/src/main/resources/prompts/pde-commercial-plan/v4/distribution-control-schema.json", "description": "Contrato do gate de distribuição." },
         { "artifactType": "RUNTIME_CONFIG", "name": "Configuração do worker", "version": "v1", "path": "growth-operator-worker/src/main/resources/application.yml", "description": "Modelo, raciocínio, timeout e observabilidade." },
@@ -167,6 +183,16 @@
     {
       "agentKey": "customer-agent",
       "sections": [
+        {
+          "code": "responsibility-boundary",
+          "title": "Responsabilidade exclusiva",
+          "description": "Psique avalia a experiência humana sem criar estratégia, produto ou comunicação.",
+          "items": [
+            { "key": "owns", "label": "Psique decide", "value": "compreensão · reação afetiva e sensorial · prazer · desejo · esforço · confiança · objeções", "description": "Avalia como uma pessoa provavelmente percebe o material real e separa evidência de hipótese.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" },
+            { "key": "input", "label": "Entrada obrigatória", "value": "artefato real · contexto de público · evidências disponíveis", "description": "Modalidade ausente é registrada como evidência ausente, nunca inventada.", "sourceReference": "customer-agent-worker/src/main/resources/prompts/psique/behavioral-core-v3.md" },
+            { "key": "forbidden", "label": "Psique não decide", "value": "fatos de mercado · posicionamento · preço · construção · compliance · distribuição", "description": "Cada lacuna retorna ao agente proprietário do domínio.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" }
+          ]
+        },
         {
           "code": "behavioral-constitution",
           "title": "Constituição humana e sensorial",
@@ -256,8 +282,8 @@
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema comportamental", "version": "behavioral-v2", "path": "customer-agent-worker/src/main/resources/prompts/customer-agent/behavioral-v2/evaluation-schema.json", "description": "Contrato histórico v2 preservado para rastreabilidade." },
         { "artifactType": "PROMPT", "name": "Avaliação comportamental e sensorial", "version": "behavioral-v3", "path": "customer-agent-worker/src/main/resources/prompts/customer-agent/behavioral-v3/evaluation.md", "description": "Simulação afetiva, social e sensorial atual." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema comportamental e sensorial", "version": "behavioral-v3", "path": "customer-agent-worker/src/main/resources/prompts/customer-agent/behavioral-v3/evaluation-schema.json", "description": "Contrato estruturado v3." },
-        { "artifactType": "PROMPT", "name": "Revisão sensorial de oportunidade", "version": "v2", "path": "customer-agent-worker/src/main/resources/prompts/opportunity-review/v2/review.md", "description": "Leitura da oportunidade pela cliente com limite sensorial explícito." },
-        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão sensorial de oportunidade", "version": "v2", "path": "customer-agent-worker/src/main/resources/prompts/opportunity-review/v2/review-schema.json", "description": "Contrato sensorial da revisão." },
+        { "artifactType": "PROMPT", "name": "Revisão sensorial histórica de oportunidade", "version": "v2-historical", "path": "customer-agent-worker/src/main/resources/prompts/opportunity-review/v2/review.md", "description": "Contrato retirado da execução; Psique agora revisa apenas produto ou artefato real." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema histórico da revisão sensorial de oportunidade", "version": "v2-historical", "path": "customer-agent-worker/src/main/resources/prompts/opportunity-review/v2/review-schema.json", "description": "Contrato preservado somente para auditoria histórica." },
         { "artifactType": "PROMPT", "name": "Revisão histórica de oportunidade", "version": "v1", "path": "customer-agent-worker/src/main/resources/prompts/opportunity-review/v1/review.md", "description": "Prompt histórico preservado; novas revisões usam o contrato sensorial v2." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema histórico da revisão de oportunidade", "version": "v1", "path": "customer-agent-worker/src/main/resources/prompts/opportunity-review/v1/review-schema.json", "description": "Contrato histórico preservado para rastreabilidade da revisão v1." },
         { "artifactType": "PROMPT", "name": "Revisão sensorial de criativo", "version": "bpm-v2", "path": "customer-agent-worker/src/main/resources/prompts/bpm/v2/creative-customer-review.md", "description": "Percepção visual e sensorial da cliente sobre o criativo." },
@@ -287,6 +313,16 @@
     {
       "agentKey": "financial-agent",
       "sections": [
+        {
+          "code": "responsibility-boundary",
+          "title": "Responsabilidade exclusiva",
+          "description": "Plutus valida a viabilidade econômica sem criar estratégia, produto ou campanha.",
+          "items": [
+            { "key": "owns", "label": "Plutus decide", "value": "preço como hipótese · margem · CAC · orçamento · custos · receita · risco financeiro", "description": "Classifica premissas, valores reconciliados e limites econômicos de forma auditável.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" },
+            { "key": "input", "label": "Entrada obrigatória", "value": "estratégia vigente · custos oficiais · eventos e ledger reconciliados", "description": "Estimativa nunca é registrada como venda ou receita real.", "sourceReference": "financial-agent-worker/src/main/resources/prompts/financial-agent/v1/report.md" },
+            { "key": "forbidden", "label": "Plutus não decide", "value": "posicionamento · copy · construção · publicação · contratação · gasto", "description": "Recomenda limites e bloqueios; a autorização financeira continua humana.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" }
+          ]
+        },
         {
           "code": "executor",
           "title": "Executor e implantação",
@@ -356,8 +392,8 @@
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da projeção de receita", "version": "v1", "path": "financial-agent-worker/src/main/resources/prompts/financial-agent/v1/revenue-projection-schema.json", "description": "Contrato estruturado da projeção." },
         { "artifactType": "PROMPT", "name": "Revisão de ciclo de vídeo", "version": "v1", "path": "financial-agent-worker/src/main/resources/prompts/financial-agent/v1/video-cycle-review.md", "description": "Revisão econômica da produção audiovisual." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão de vídeo", "version": "v1", "path": "financial-agent-worker/src/main/resources/prompts/financial-agent/v1/video-cycle-review-schema.json", "description": "Contrato estruturado da revisão." },
-        { "artifactType": "PROMPT", "name": "Revisão de oportunidade", "version": "v1", "path": "financial-agent-worker/src/main/resources/prompts/opportunity-review/v1/review.md", "description": "Leitura financeira da oportunidade." },
-        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão de oportunidade", "version": "v1", "path": "financial-agent-worker/src/main/resources/prompts/opportunity-review/v1/review-schema.json", "description": "Contrato da revisão." },
+        { "artifactType": "PROMPT", "name": "Revisão histórica de oportunidade", "version": "v1-historical", "path": "financial-agent-worker/src/main/resources/prompts/opportunity-review/v1/review.md", "description": "Contrato retirado da execução; Plutus agora entra depois da estratégia, no gate econômico." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema histórico da revisão de oportunidade", "version": "v1-historical", "path": "financial-agent-worker/src/main/resources/prompts/opportunity-review/v1/review-schema.json", "description": "Contrato preservado somente para auditoria histórica." },
         { "artifactType": "PROMPT", "name": "Economia do plano comercial", "version": "v4", "path": "financial-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/economics.md", "description": "Gate econômico do plano comercial." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema econômico do plano", "version": "v4", "path": "financial-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/economics-schema.json", "description": "Contrato do gate econômico." },
         { "artifactType": "RUNTIME_CONFIG", "name": "Configuração do worker", "version": "v1", "path": "financial-agent-worker/src/main/resources/application.yml", "description": "Modelo, timeout e observabilidade." },
@@ -368,6 +404,16 @@
     {
       "agentKey": "experiment-strategist",
       "sections": [
+        {
+          "code": "responsibility-boundary",
+          "title": "Responsabilidade exclusiva",
+          "description": "Atena é a única autora da estratégia geral de mercado.",
+          "items": [
+            { "key": "owns", "label": "Atena decide", "value": "mercado · desejos · comportamento · concorrência · posicionamento · oferta · portfólio · hipóteses", "description": "Decide o que vender, para quem, por que será desejado e como posicionar.", "sourceReference": "docs/canonical/agente-estrategista-experimentos-v1.md" },
+            { "key": "output", "label": "Saída canônica", "value": "Contrato Estratégico de Mercado v2", "description": "Artefato imutável com execução autora, versão, evidências e SHA-256.", "sourceReference": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v2/research-schema.json" },
+            { "key": "forbidden", "label": "Atena não opera", "value": "distribuição · instrumentação · campanha · avanço · publicação · gasto", "description": "A execução operacional pertence a Hermes e aos gates do backend.", "sourceReference": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v2/research.md" }
+          ]
+        },
         {
           "code": "executor",
           "title": "Executor e implantação",
@@ -429,8 +475,12 @@
         { "artifactType": "MCP_SERVER", "name": "MCP do Estrategista", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/mcp/experiment-strategist.mjs", "description": "Contexto e memória da estratégia." },
         { "artifactType": "MCP_SERVER", "name": "MCP agregado do Clarity", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/mcp/clarity-aggregate.mjs", "description": "Métricas agregadas opcionais, sem dados crus desnecessários." },
         { "artifactType": "BEHAVIOR_LIBRARY", "name": "Biblioteca de ciência comportamental", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/behavioral-science/v1/library.md", "description": "Princípios comportamentais injetados nas decisões estratégicas de Atena." },
-        { "artifactType": "PROMPT", "name": "Pesquisa estratégica", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v1/research.md", "description": "Prompt operacional principal." },
-        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da pesquisa estratégica", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v1/research-schema.json", "description": "Contrato da pesquisa." },
+        { "artifactType": "PROMPT", "name": "Pesquisa estratégica histórica", "version": "v1-historical", "path": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v1/research.md", "description": "Versão histórica sem Contrato Estratégico de Mercado formal." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema estratégico histórico", "version": "v1-historical", "path": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v1/research-schema.json", "description": "Contrato histórico preservado." },
+        { "artifactType": "PROMPT", "name": "Estratégia geral de mercado", "version": "v2", "path": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v2/research.md", "description": "Prompt ativo da Estrategista-Chefe de Mercado." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Contrato Estratégico de Mercado", "version": "v2", "path": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v2/research-schema.json", "description": "Congela a estratégia consumida pelos demais agentes." },
+        { "artifactType": "PROMPT", "name": "Estratégia do Plano Comercial", "version": "v5", "path": "experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v5/market-strategy.md", "description": "Torna Atena a única autora da estratégia no plano comercial." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema estratégico do Plano Comercial", "version": "v5", "path": "experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v5/market-strategy-schema.json", "description": "Contrato estrito da decisão estratégica antes da economia e construção." },
         { "artifactType": "PROMPT", "name": "Premissas comerciais", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v1/commercial-assumptions.md", "description": "Proposta auditável de premissas." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema das premissas comerciais", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v1/commercial-assumptions-schema.json", "description": "Contrato das premissas." },
         { "artifactType": "PROMPT", "name": "Revisão de oportunidade", "version": "v1", "path": "experiment-strategist-worker/src/main/resources/prompts/opportunity-review/v1/review.md", "description": "Revisão estratégica de oportunidade." },
@@ -443,6 +493,16 @@
     {
       "agentKey": "meta-ad-approver",
       "sections": [
+        {
+          "code": "responsibility-boundary",
+          "title": "Responsabilidade exclusiva",
+          "description": "Têmis revisa integridade comercial e nunca cria o material que aprova.",
+          "items": [
+            { "key": "owns", "label": "Têmis decide", "value": "verdade · prova · fidelidade · direitos · compliance · segurança da comunicação", "description": "Aprova, bloqueia ou pede correção com evidência e sem ampliar a promessa aprovada.", "sourceReference": "docs/canonical/meta-ad-approver-agent-canon.v1.md" },
+            { "key": "input", "label": "Entrada obrigatória", "value": "estratégia aprovada · ativo real · evidências de prova · relatório técnico", "description": "A revisão usa o artefato final, não descrição abstrata ou saída produtora do próprio agente.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" },
+            { "key": "forbidden", "label": "Têmis não decide", "value": "copy · imagem · vídeo · landing · produto · estratégia · preço · distribuição", "description": "Criação retorna para Dédalo ou Apolo; estratégia para Atena; operação para Hermes.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" }
+          ]
+        },
         {
           "code": "executor",
           "title": "Executor e implantação",
@@ -503,21 +563,25 @@
       "artifacts": [
         { "artifactType": "MCP_SERVER", "name": "MCP do Aprovador Meta", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/mcp/meta-ad-approver.mjs", "description": "Contexto, memória e inspeção do criativo." },
         { "artifactType": "MCP_SERVER", "name": "MCP de revisão da biblioteca", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/mcp/temis-library-review.mjs", "description": "Revisão de imagens da biblioteca audiovisual." },
-        { "artifactType": "PROMPT", "name": "Revisão Meta", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/meta-ad-approver/v1/review.md", "description": "Prompt principal do revisor." },
-        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão Meta", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/meta-ad-approver/v1/review-schema.json", "description": "Contrato da revisão." },
+        { "artifactType": "PROMPT", "name": "Revisão Meta histórica", "version": "v1-historical", "path": "meta-ad-approver-worker/src/main/resources/prompts/meta-ad-approver/v1/review.md", "description": "Versão histórica retirada por permitir conteúdo substituto no parecer." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema histórico da revisão Meta", "version": "v1-historical", "path": "meta-ad-approver-worker/src/main/resources/prompts/meta-ad-approver/v1/review-schema.json", "description": "Contrato histórico preservado apenas para auditoria." },
+        { "artifactType": "PROMPT", "name": "Integridade comercial sem criação", "version": "v2", "path": "meta-ad-approver-worker/src/main/resources/prompts/meta-ad-approver/v2/review.md", "description": "Têmis informa causa, risco e aceite sem criar a alternativa." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da integridade comercial", "version": "v2", "path": "meta-ad-approver-worker/src/main/resources/prompts/meta-ad-approver/v2/review-schema.json", "description": "Força campos substitutos vazios e delegações com um único responsável." },
         { "artifactType": "PROMPT", "name": "Revisão comercial de criativo", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/creative-commercial-review.md", "description": "Gate comercial do criativo." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão de criativo", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/creative-commercial-review-schema.json", "description": "Contrato do gate." },
         { "artifactType": "PROMPT", "name": "Revisão comercial de landing", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/landing-commercial-review.md", "description": "Gate comercial da landing." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão de landing", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/landing-commercial-review-schema.json", "description": "Contrato do gate." },
         { "artifactType": "PROMPT", "name": "Homologação comercial independente PDE", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-commercial-homologation-independent-review.md", "description": "Revisão independente da ativação comercial." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da homologação independente", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-commercial-homologation-independent-review-schema.json", "description": "Contrato da homologação." },
-        { "artifactType": "PROMPT", "name": "Revisão da comunicação PDE", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-communication-review.md", "description": "Revisão ética e comercial da comunicação." },
-        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da comunicação PDE", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-communication-review-schema.json", "description": "Contrato da revisão." },
+        { "artifactType": "PROMPT", "name": "Revisão da comunicação histórica", "version": "bpm-v1-historical", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-communication-review.md", "description": "Versão histórica somente revisora." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema histórico da comunicação", "version": "bpm-v1-historical", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-communication-review-schema.json", "description": "Contrato histórico preservado." },
+        { "artifactType": "PROMPT", "name": "Tradução estratégica em comunicação retirada", "version": "bpm-v2-historical", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-communication-translation-v2.md", "description": "Versão histórica desativada por misturar criação e revisão em Têmis." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema histórico da tradução", "version": "bpm-v2-historical", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-communication-translation-v2-schema.json", "description": "Contrato histórico preservado apenas para auditoria de execuções antigas." },
         { "artifactType": "PROMPT", "name": "Revisão de entregáveis PDE", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-deliverables-review.md", "description": "Revisão do produto entregue." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema dos entregáveis PDE", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-deliverables-review-schema.json", "description": "Contrato da revisão." },
-        { "artifactType": "PROMPT", "name": "Produção do estúdio de imagens", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/production.md", "description": "Instrução do papel produtor." },
-        { "artifactType": "PROMPT", "name": "Revisão do estúdio de imagens", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/review.md", "description": "Revisão separada do asset visual." },
-        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão do estúdio", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/review-schema.json", "description": "Contrato da revisão visual." },
+        { "artifactType": "PROMPT", "name": "Recurso técnico legado de imagem", "version": "v1-technical", "path": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/production.md", "description": "Recurso técnico de materialização governado pelo contrato de Dédalo; não concede autoria a Têmis." },
+        { "artifactType": "PROMPT", "name": "Revisão técnica legada do estúdio", "version": "v1-technical", "path": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/review.md", "description": "Validação técnica do recurso; o gate de integridade comercial permanece separado." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema técnico legado do estúdio", "version": "v1-technical", "path": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/review-schema.json", "description": "Contrato técnico sem direito de decisão comercial." },
         { "artifactType": "PROMPT", "name": "Revisão do plano comercial", "version": "v4", "path": "meta-ad-approver-worker/src/main/resources/prompts/pde-commercial-plan/v4/commercial-review.md", "description": "Gate comercial do plano." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão comercial", "version": "v4", "path": "meta-ad-approver-worker/src/main/resources/prompts/pde-commercial-plan/v4/commercial-review-schema.json", "description": "Contrato do gate." },
         { "artifactType": "PROMPT", "name": "Quality Review da construção", "version": "v2", "path": "meta-ad-approver-worker/src/main/resources/prompts/pde-construction/v2/quality-review.md", "description": "Qualidade do produto construído." },
@@ -531,6 +595,16 @@
     {
       "agentKey": "landing-generator",
       "sections": [
+        {
+          "code": "responsibility-boundary",
+          "title": "Responsabilidade exclusiva",
+          "description": "Dédalo materializa o PDE e os artefatos não audiovisuais a partir da estratégia aprovada.",
+          "items": [
+            { "key": "owns", "label": "Dédalo decide", "value": "arquitetura do PDE · jornada · entregáveis · acesso · landing · materialização não audiovisual", "description": "Converte contratos aprovados em produto utilizável e comunicação implementada.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" },
+            { "key": "input", "label": "Entrada obrigatória", "value": "Contrato Estratégico de Mercado de Atena · gate econômico de Plutus", "description": "Dédalo implementa posicionamento, oferta e limites sem redefini-los.", "sourceReference": "docs/canonical/cadeia-produtos-pde-canon.v1.md" },
+            { "key": "forbidden", "label": "Dédalo não decide", "value": "mercado · posicionamento · preço · aprovação do próprio trabalho · aquisição", "description": "Revisões humanas e comerciais são independentes; audiovisual pertence a Apolo.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" }
+          ]
+        },
         {
           "code": "executor",
           "title": "Executor e implantação",
@@ -594,8 +668,10 @@
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da geração de HTML", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/prompts/landing-generator/v1/html-schema.json", "description": "Contrato da construção inicial." },
         { "artifactType": "PROMPT", "name": "Remediação da landing", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/prompts/landing-generator/v1/remediation.md", "description": "Correção autônoma governada por evidências." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da remediação", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/prompts/landing-generator/v1/remediation-schema.json", "description": "Contrato da remediação." },
-        { "artifactType": "PROMPT", "name": "Design da oferta comercial", "version": "v4", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/offer-design.md", "description": "Estrutura da oferta do PDE." },
-        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema do design da oferta", "version": "v4", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/offer-design-schema.json", "description": "Contrato da oferta." },
+        { "artifactType": "PROMPT", "name": "Design estratégico de oferta retirado", "version": "v4-historical", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/offer-design.md", "description": "Versão histórica desativada por atribuir decisões estratégicas a Dédalo." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema histórico do design de oferta", "version": "v4-historical", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/offer-design-schema.json", "description": "Contrato histórico preservado apenas para auditoria." },
+        { "artifactType": "PROMPT", "name": "Arquitetura de materialização do Plano Comercial", "version": "v5", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v5/product-architecture.md", "description": "Dédalo materializa a estratégia e a economia aprovadas sem redefini-las." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da arquitetura de materialização", "version": "v5", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v5/product-architecture-schema.json", "description": "Contrato estrito de jornada, entregáveis, acesso e superfícies." },
         { "artifactType": "PROMPT", "name": "Jornada do produto PDE", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v1/journey.md", "description": "Jornada funcional do produto." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da jornada PDE", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v1/journey-schema.json", "description": "Contrato da jornada." },
         { "artifactType": "PROMPT", "name": "Entregáveis do produto PDE", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v1/deliverables.md", "description": "Materiais reais da entrega." },
@@ -611,6 +687,16 @@
     {
       "agentKey": "market-radar",
       "sections": [
+        {
+          "code": "responsibility-boundary",
+          "title": "Responsabilidade exclusiva",
+          "description": "Argos reúne inteligência factual de mercado sem escolher a estratégia.",
+          "items": [
+            { "key": "owns", "label": "Argos entrega", "value": "demanda · concorrentes · linguagem pública · ofertas observadas · fontes", "description": "Produz dossiê factual rastreável e marca claramente fatos, inferências e lacunas.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" },
+            { "key": "output", "label": "Saída canônica", "value": "dossiê de evidências de mercado", "description": "Atena consome as evidências para tomar decisões estratégicas.", "sourceReference": "product-discovery-worker/prompts/productdiscovery.v1/research/response-schema.json" },
+            { "key": "forbidden", "label": "Argos não decide", "value": "posicionamento · tese de oferta · formato do PDE · preço · canal", "description": "Recomendação estratégica pertence exclusivamente a Atena.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" }
+          ]
+        },
         {
           "code": "executor",
           "title": "Executor e implantação",
@@ -683,6 +769,16 @@
     {
       "agentKey": "videomaker",
       "sections": [
+        {
+          "code": "responsibility-boundary",
+          "title": "Responsabilidade exclusiva",
+          "description": "Apolo produz os artefatos audiovisuais sem definir estratégia ou aprovar a própria comunicação.",
+          "items": [
+            { "key": "owns", "label": "Apolo decide", "value": "roteiro técnico · cenas · áudio · montagem · legendas · entrega audiovisual", "description": "Materializa o briefing aprovado em jobs auditáveis e reprodutíveis.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" },
+            { "key": "input", "label": "Entrada obrigatória", "value": "estratégia aprovada · briefing de Dédalo · provas autorizadas", "description": "Alterações substantivas voltam para o agente proprietário antes da renderização.", "sourceReference": "video-management-service/src/main/resources/prompts/apollo/v2/production-mission.md" },
+            { "key": "forbidden", "label": "Apolo não decide", "value": "mercado · posicionamento · preço · landing · integridade · publicação", "description": "Têmis revisa integridade e a autorização de gasto/publicação permanece humana.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" }
+          ]
+        },
         {
           "code": "executor",
           "title": "Executor e implantação",

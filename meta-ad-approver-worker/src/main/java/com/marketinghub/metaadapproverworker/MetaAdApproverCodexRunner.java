@@ -45,7 +45,7 @@ public class MetaAdApproverCodexRunner {
     Path processOutput = Files.createTempFile("meta-ad-approver-process-", ".log");
     Path mcpServer = materializeMcp();
     Path schema =
-        materialize("prompts/meta-ad-approver/v1/review-schema.json", "meta-ad-schema-", ".json");
+        materialize("prompts/meta-ad-approver/v2/review-schema.json", "meta-ad-schema-", ".json");
     try {
       ProcessBuilder builder =
           new ProcessBuilder(buildCommand(output, schema, mcpServer, job))
@@ -151,7 +151,7 @@ public class MetaAdApproverCodexRunner {
 
   /** Resolve o prompt versionado com o snapshot congelado pelo backend. */
   private String buildPrompt(MetaAdReviewJob job) throws IOException {
-    return read("prompts/meta-ad-approver/v1/review.md")
+    return read("prompts/meta-ad-approver/v2/review.md")
         .replace("{{CREATIVE_ID}}", job.creativeId().toString())
         .replace("{{EXPERIMENT_ID}}", job.experimentId().toString())
         .replace("{{CONTEXT}}", objectMapper.writeValueAsString(job.context()));
@@ -180,6 +180,17 @@ public class MetaAdApproverCodexRunner {
     if (decision.isBlank() || value.path("summary").asText().isBlank()) {
       throw new IllegalArgumentException("Parecer Codex incompleto");
     }
+    for (String replacement :
+        List.of(
+            "revisedHeadline",
+            "revisedPrimaryText",
+            "revisedDescription",
+            "revisedCta",
+            "revisedImagePrompt")) {
+      if (!value.path(replacement).asText("").isBlank()) {
+        throw new IllegalArgumentException("Têmis não pode criar conteúdo substituto");
+      }
+    }
     if ("APPROVED".equals(decision)) {
       if (!value.path("correctionTargets").isEmpty()) {
         throw new IllegalArgumentException("Aprovação não pode solicitar correções");
@@ -193,11 +204,20 @@ public class MetaAdApproverCodexRunner {
     } else if (value.path("correctionTargets").isEmpty()) {
       throw new IllegalArgumentException(
           "Ajuste ou reprovação sem correções verificáveis e responsáveis definidos");
-    } else if (value.path("revisedImagePrompt").asText().isBlank()
-        || value.path("mandatoryVisualRequirements").isEmpty()
-        || value.path("visualAcceptanceCriteria").isEmpty()) {
+    } else if (hasTarget(value.path("correctionTargets"), "CREATIVE_MEDIA")
+        && (value.path("mandatoryVisualRequirements").isEmpty()
+            || value.path("visualAcceptanceCriteria").isEmpty())) {
       throw new IllegalArgumentException("Correção sem contrato visual completo");
     }
+  }
+
+  /** Identifica se o parecer delegou uma correção ao domínio informado. */
+  private boolean hasTarget(JsonNode targets, String expected) {
+    if (!targets.isArray()) return false;
+    for (JsonNode target : targets) {
+      if (expected.equals(target.path("target").asText())) return true;
+    }
+    return false;
   }
 
   /** Materializa recurso somente em diretório temporário gravável. */

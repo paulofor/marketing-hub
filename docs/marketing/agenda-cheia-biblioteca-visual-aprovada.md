@@ -8,13 +8,13 @@
 
 O Agenda Cheia Nail Design usa duas camadas persistentes e aprovadas antes da venda: fotografias
 premium reutilizáveis, sem texto, e amostras completas do entregável fabricadas no Estúdio Visual de
-Têmis. O pedido não improvisa fotografias enquanto a compradora espera; ele usa o acervo aprovado e
-aplica a personalização contratada. Têmis pode criar ou editar novas versões fora da jornada da
-compradora, sempre com revisão independente antes de promovê-las.
+Dédalo. O pedido não improvisa fotografias enquanto a compradora espera; ele usa o acervo aprovado e
+aplica a personalização contratada. Dédalo pode criar ou editar novas versões fora da jornada da
+compradora, sempre com revisão independente de Têmis antes de promovê-las.
 
 ## Fluxo comercial
 
-`Estúdio de Têmis → revisão independente → biblioteca aprovada → briefing → seleção de fotos → personalização → gate → ZIP → e-mail`
+`Recurso visual de Dédalo → revisão independente de Têmis → biblioteca aprovada → briefing → seleção de fotos → personalização → gate → ZIP → e-mail`
 
 São personalizados por compra: nome profissional, região, WhatsApp, serviços, cores, objetivo, textos, legendas, mensagens e composição. As fotografias podem ser reutilizadas em combinações diferentes porque a promessa comercial é personalização do kit, não exclusividade fotográfica.
 

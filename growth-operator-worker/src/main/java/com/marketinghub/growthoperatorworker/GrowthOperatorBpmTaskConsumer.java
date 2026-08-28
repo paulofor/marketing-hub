@@ -17,7 +17,6 @@ public class GrowthOperatorBpmTaskConsumer {
   private static final Logger log = LoggerFactory.getLogger(GrowthOperatorBpmTaskConsumer.class);
   private static final List<BpmContract> CONTRACTS =
       List.of(
-          new BpmContract("pde-communication-sales-journey", "contract"),
           new BpmContract("operacao-otimizacao-experimento", "task-1"),
           new BpmContract("operacao-otimizacao-experimento", "task-2"),
           new BpmContract("operacao-otimizacao-experimento", "task-3"),
@@ -50,6 +49,7 @@ public class GrowthOperatorBpmTaskConsumer {
     try {
       task = claimNext();
       if (task == null) return;
+      task = requireMarketStrategicContract(task);
       execution = runner.run(task);
       if ("COMPLETED".equals(execution.result().path("executionStatus").asText())) {
         backend.completeBpmTask(taskId(task), payload(task, execution));
@@ -96,6 +96,36 @@ public class GrowthOperatorBpmTaskConsumer {
     return null;
   }
 
+  /** Confirma que Hermes consome somente atividades operacionais posteriores à autorização. */
+  static boolean supportsContract(String processCode, String activityId) {
+    return CONTRACTS.stream()
+        .anyMatch(
+            contract ->
+                contract.processCode().equals(processCode)
+                    && contract.activityId().equals(activityId));
+  }
+
+  /** Bloqueia antes do modelo quando Atena ainda não entregou uma estratégia operável. */
+  Map<String, Object> requireMarketStrategicContract(Map<String, Object> task) throws Exception {
+    JsonNode processContext =
+        json.readTree(String.valueOf(task.getOrDefault("processContextJson", "{}")));
+    JsonNode wrapper = processContext.path("marketStrategicContract");
+    JsonNode contract = wrapper.path("contract");
+    if (!"AVAILABLE".equals(wrapper.path("availability").asText())
+        || !"MARKET_STRATEGY_V2".equals(wrapper.path("contractVersion").asText())
+        || !wrapper.path("contentHash").asText().matches("[0-9a-f]{64}")
+        || !"MARKET_STRATEGY_V2".equals(contract.path("contractVersion").asText())
+        || !"READY_FOR_OPERATION".equals(contract.path("status").asText())
+        || !"ATENA_DEFINES_STRATEGY_HERMES_OPERATES_GROWTH"
+            .equals(contract.path("operatorBoundary").asText())) {
+      throw new IllegalStateException(
+          "Atena precisa produzir um Contrato Estratégico de Mercado v2 pronto antes de Hermes operar crescimento.");
+    }
+    Map<String, Object> enriched = new HashMap<>(task);
+    enriched.put("marketStrategicContract", json.convertValue(wrapper, Object.class));
+    return enriched;
+  }
+
   /** Monta o callback de sucesso com parecer, fontes consultadas e tokens medidos. */
   private Map<String, Object> payload(
       Map<String, Object> task, GrowthOperatorBpmRunner.BpmExecution execution) throws Exception {
@@ -137,22 +167,27 @@ public class GrowthOperatorBpmTaskConsumer {
 
   /** Serializa a evidência operacional sem misturá-la com o resultado funcional. */
   private String evidence(Map<String, Object> task, List<JsonNode> toolUsage) throws Exception {
-    return json.writeValueAsString(
-        Map.of(
-            "agent",
-            "Hermes",
-            "model",
-            modelCode(),
-            "sourceReference",
-            String.valueOf(task.get("sourceReference")),
-            "activityId",
-            String.valueOf(task.get("activityId")),
-            "accessMode",
-            "READ_ONLY",
-            "externalSideEffects",
-            false,
-            "toolUsage",
-            toolUsage));
+    Map<String, Object> evidence = new HashMap<>();
+    evidence.put("agent", "Hermes");
+    evidence.put("model", modelCode());
+    evidence.put("sourceReference", String.valueOf(task.get("sourceReference")));
+    evidence.put("activityId", String.valueOf(task.get("activityId")));
+    evidence.put("accessMode", "READ_ONLY");
+    evidence.put("externalSideEffects", false);
+    evidence.put("toolUsage", toolUsage);
+    if (task.containsKey("marketStrategicContract")) {
+      JsonNode contract = json.valueToTree(task.get("marketStrategicContract"));
+      evidence.put(
+          "marketStrategicContractReference",
+          Map.of(
+              "strategistExecutionId",
+              contract.path("strategistExecutionId").asLong(),
+              "contractVersion",
+              contract.path("contractVersion").asText(),
+              "contentHash",
+              contract.path("contentHash").asText()));
+    }
+    return json.writeValueAsString(evidence);
   }
 
   /** Acrescenta ao callback somente contadores realmente informados pelo Codex. */

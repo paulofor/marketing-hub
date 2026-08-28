@@ -35,6 +35,38 @@ class ProductDiscoveryServiceTest {
 
   @Mock private OpportunityDossierResearchSyncService dossierResearchSyncService;
 
+  @Mock private ProductDiscoveryBpmAuditService bpmAuditService;
+
+  /** Deve abrir imediatamente a execução BPM ao criar um novo ciclo de descoberta. */
+  @Test
+  void opensBpmExecutionWhenCycleIsCreated() {
+    when(cycleRepository.save(any(ProductDiscoveryCycle.class)))
+        .thenAnswer(
+            invocation -> {
+              ProductDiscoveryCycle cycle = invocation.getArgument(0);
+              cycle.setId(37L);
+              return cycle;
+            });
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
+
+    ProductDiscoveryCycleResponse response =
+        service.createCycle(
+            new CreateProductDiscoveryCycleRequest(
+                "Auditoria de saída de imóvel",
+                "Locatários",
+                "BR",
+                "pt-BR",
+                "Instagram",
+                "B2C",
+                null,
+                "Descobrir oportunidade PDE comparável ao Rigel."));
+
+    assertThat(response.id()).isEqualTo(37L);
+    verify(bpmAuditService).open(any(ProductDiscoveryCycle.class));
+  }
+
   /** Deve preservar plano, resposta bruta e modelo sem credenciais de marketplace. */
   @Test
   void registerDirectedResearchPlan() {
@@ -46,7 +78,7 @@ class ProductDiscoveryServiceTest {
     when(cycleRepository.save(cycle)).thenReturn(cycle);
     ProductDiscoveryService service =
         new ProductDiscoveryService(
-            cycleRepository, opportunityRepository, dossierResearchSyncService);
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
 
     ProductDiscoveryResearchPlanResponse response =
         service.registerResearchPlan(
@@ -60,6 +92,7 @@ class ProductDiscoveryServiceTest {
     assertThat(response.cycleId()).isEqualTo(20L);
     assertThat(response.model()).isEqualTo("gpt-5.6-sol");
     assertThat(cycle.getResearchPlanRawResponse()).contains("Quais produtos vendem?");
+    verify(bpmAuditService).recordPlan(eq(cycle), any(ProductDiscoveryResearchPlanRequest.class));
   }
 
   /** Deve concluir sem oportunidade quando a busca real não trouxer evidência suficiente. */
@@ -74,7 +107,7 @@ class ProductDiscoveryServiceTest {
     when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(20L)).thenReturn(List.of());
     ProductDiscoveryService service =
         new ProductDiscoveryService(
-            cycleRepository, opportunityRepository, dossierResearchSyncService);
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
 
     ProductDiscoveryCycleDetailResponse response =
         service.complete(
@@ -85,6 +118,7 @@ class ProductDiscoveryServiceTest {
     assertThat(response.cycle().status()).isEqualTo(ProductDiscoveryCycleStatus.COMPLETED);
     assertThat(response.opportunities()).isEmpty();
     assertThat(cycle.getDecisionSummary()).contains("pesquisar mais");
+    verify(bpmAuditService).complete(cycle, List.of());
   }
 
   /** Deve concluir a pesquisa dirigida sem inventar oportunidade quando faltarem ofertas reais. */
@@ -100,7 +134,7 @@ class ProductDiscoveryServiceTest {
     when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(23L)).thenReturn(List.of());
     ProductDiscoveryService service =
         new ProductDiscoveryService(
-            cycleRepository, opportunityRepository, dossierResearchSyncService);
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
 
     ProductDiscoveryCycleDetailResponse response =
         service.complete(
@@ -126,7 +160,7 @@ class ProductDiscoveryServiceTest {
     when(cycleRepository.findById(21L)).thenReturn(Optional.of(cycle));
     ProductDiscoveryService service =
         new ProductDiscoveryService(
-            cycleRepository, opportunityRepository, dossierResearchSyncService);
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
     ProductDiscoveryOpportunityResultRequest opportunity =
         new ProductDiscoveryOpportunityResultRequest(
             "Teste",
@@ -163,7 +197,7 @@ class ProductDiscoveryServiceTest {
     when(cycleRepository.findById(25L)).thenReturn(Optional.of(cycle));
     ProductDiscoveryService service =
         new ProductDiscoveryService(
-            cycleRepository, opportunityRepository, dossierResearchSyncService);
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
     String offers =
         java.util.stream.IntStream.range(0, 10)
             .mapToObj(
@@ -210,7 +244,7 @@ class ProductDiscoveryServiceTest {
     when(cycleRepository.findById(26L)).thenReturn(Optional.of(cycle));
     ProductDiscoveryService service =
         new ProductDiscoveryService(
-            cycleRepository, opportunityRepository, dossierResearchSyncService);
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
     String paidOffers =
         java.util.stream.IntStream.range(0, 9)
             .mapToObj(
@@ -268,7 +302,7 @@ class ProductDiscoveryServiceTest {
     when(cycleRepository.findById(24L)).thenReturn(Optional.of(cycle));
     ProductDiscoveryService service =
         new ProductDiscoveryService(
-            cycleRepository, opportunityRepository, dossierResearchSyncService);
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
     ProductDiscoveryOpportunityResultRequest opportunity =
         new ProductDiscoveryOpportunityResultRequest(
             "Ensaio profissional",
@@ -306,7 +340,7 @@ class ProductDiscoveryServiceTest {
     when(cycleRepository.findById(25L)).thenReturn(Optional.of(cycle));
     ProductDiscoveryService service =
         new ProductDiscoveryService(
-            cycleRepository, opportunityRepository, dossierResearchSyncService);
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
     ProductDiscoveryOpportunityResultRequest opportunity =
         new ProductDiscoveryOpportunityResultRequest(
             "Ensaio profissional",
@@ -348,7 +382,7 @@ class ProductDiscoveryServiceTest {
     when(opportunityRepository.findAllByCycleIdOrderByScoreDesc(26L)).thenReturn(List.of());
     ProductDiscoveryService service =
         new ProductDiscoveryService(
-            cycleRepository, opportunityRepository, dossierResearchSyncService);
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
     ProductDiscoveryOpportunityResultRequest opportunity =
         new ProductDiscoveryOpportunityResultRequest(
             "Ensaio profissional",
@@ -492,7 +526,7 @@ class ProductDiscoveryServiceTest {
     when(cycleRepository.save(cycle)).thenReturn(cycle);
     ProductDiscoveryService service =
         new ProductDiscoveryService(
-            cycleRepository, opportunityRepository, dossierResearchSyncService);
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
 
     List<ProductDiscoveryPendingResponse> pending = service.pending();
 
@@ -502,6 +536,34 @@ class ProductDiscoveryServiceTest {
     assertThat(cycle.getLeaseExpiresAt()).isAfter(Instant.now());
     assertThat(page.getValue().getPageSize()).isEqualTo(1);
     verify(dossierResearchSyncService).start(22L);
+    verify(bpmAuditService).start(cycle);
+  }
+
+  /** Deve refletir no BPM a mesma falha aceita pelo contrato do ciclo de descoberta. */
+  @Test
+  void blocksBpmExecutionWhenWorkerFails() {
+    ProductDiscoveryCycle cycle = new ProductDiscoveryCycle();
+    cycle.setId(24L);
+    cycle.setTheme("Sinistro automotivo travado");
+    cycle.setCountry("BR");
+    cycle.setLanguage("pt-BR");
+    cycle.setStageCode("research");
+    cycle.setStatus(ProductDiscoveryCycleStatus.RESEARCHING);
+    cycle.setExecutionLeaseId("lease-24");
+    when(cycleRepository.findById(24L)).thenReturn(Optional.of(cycle));
+    when(cycleRepository.save(cycle)).thenReturn(cycle);
+    ProductDiscoveryService service =
+        new ProductDiscoveryService(
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
+
+    ProductDiscoveryCycleResponse response =
+        service.fail(
+            24L,
+            new ProductDiscoveryFailureRequest(
+                "lease-24", "Backend rejeitou a conclusão com status 422."));
+
+    assertThat(response.status()).isEqualTo(ProductDiscoveryCycleStatus.FAILED);
+    verify(bpmAuditService).fail(cycle);
   }
 
   /** Deve rejeitar callback atrasado depois que outra tentativa assumiu o ciclo. */
@@ -514,7 +576,7 @@ class ProductDiscoveryServiceTest {
     when(cycleRepository.findById(23L)).thenReturn(Optional.of(cycle));
     ProductDiscoveryService service =
         new ProductDiscoveryService(
-            cycleRepository, opportunityRepository, dossierResearchSyncService);
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
 
     assertThatThrownBy(
             () ->
@@ -531,7 +593,7 @@ class ProductDiscoveryServiceTest {
         .thenReturn(List.of());
     ProductDiscoveryService service =
         new ProductDiscoveryService(
-            cycleRepository, opportunityRepository, dossierResearchSyncService);
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
 
     ProductDiscoveryMaturityRankingResponse ranking = service.getMaturityRanking();
 
@@ -563,7 +625,7 @@ class ProductDiscoveryServiceTest {
         .thenReturn(List.of(opportunity));
     ProductDiscoveryService service =
         new ProductDiscoveryService(
-            cycleRepository, opportunityRepository, dossierResearchSyncService);
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
 
     ProductDiscoveryMaturityRankingResponse ranking = service.getMaturityRanking();
 
@@ -587,7 +649,7 @@ class ProductDiscoveryServiceTest {
         .thenReturn(List.of(opportunity));
     ProductDiscoveryService service =
         new ProductDiscoveryService(
-            cycleRepository, opportunityRepository, dossierResearchSyncService);
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
 
     ProductDiscoveryLegacyCleanupResponse response = service.archiveArtificialLegacyEvidence();
 
@@ -613,7 +675,7 @@ class ProductDiscoveryServiceTest {
         .thenReturn(List.of(opportunity));
     ProductDiscoveryService service =
         new ProductDiscoveryService(
-            cycleRepository, opportunityRepository, dossierResearchSyncService);
+            cycleRepository, opportunityRepository, dossierResearchSyncService, bpmAuditService);
 
     ProductDiscoveryLegacyCleanupResponse response = service.archiveArtificialLegacyEvidence();
 

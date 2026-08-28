@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
@@ -51,8 +52,24 @@ class PublicProductCommercialOfferServiceTest {
     assertThat(offer.primaryCta()).isEqualTo("Quero meu atendimento sob medida");
     assertThat(offer.checkoutUrl()).isEqualTo("https://pay.example/kit-whatsapp");
     assertThat(offer.salesPageUrl()).isEqualTo("https://kit-whatsapp-pronto.digicomdigital.com.br");
-    assertThat(offer.supplierLegalName()).isEqualTo("Fornecedor de Homologação Ltda.");
+    assertThat(offer.supplierDisplayName()).isEqualTo("Digicom Digital");
     assertThat(offer.termsUrl()).endsWith("/terms");
+  }
+
+  /** Impede que a resposta pública volte a expor razão social ou endereço do fornecedor. */
+  @Test
+  void minimizesPublicSupplierIdentity() throws Exception {
+    Product product = product();
+    when(productRepository.findBySlug("kit-whatsapp-pronto")).thenReturn(Optional.of(product));
+    when(slotRepository.findByProductSlugOrderBySlotCodeAsc("kit-whatsapp-pronto"))
+        .thenReturn(List.of(slot()));
+    when(experimentRepository.findById(89L)).thenReturn(Optional.of(experiment(product)));
+
+    String json = new ObjectMapper().writeValueAsString(service().getOffer("kit-whatsapp-pronto"));
+
+    assertThat(json)
+        .contains("\"supplierDisplayName\":\"Digicom Digital\"")
+        .doesNotContain("supplierLegalName", "supplierAddress");
   }
 
   /** Bloqueia a oferta quando o checkout deixa de ser seguro ou atribuível. */
@@ -111,9 +128,8 @@ class PublicProductCommercialOfferServiceTest {
         productRepository,
         slotRepository,
         experimentRepository,
-        "Fornecedor de Homologação Ltda.",
+        "Digicom Digital",
         "00.000.000/0001-00",
-        "Endereço de homologação, 100",
         "teste@sandbox.local");
   }
 

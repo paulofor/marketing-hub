@@ -135,9 +135,19 @@ export default function ProductValueChainHistoryPage() {
   const subprocessPosition = position.subprocessPosition;
   const currentSubprocess = subprocessPosition?.currentSubprocessName;
   const nextSubprocess = position.subprocessPosition?.nextSubprocessName;
+  const currentParentActivity = currentSubprocess
+    ? null
+    : subprocessPosition?.currentActivityName;
   const subprocessAwaitingFirstExecution =
     subprocessPosition?.trackingStatus === "PLANNED" &&
     Boolean(currentSubprocess);
+  const completedSubprocessNextActivity =
+    subprocessPosition?.trackingStatus === "COMPLETED"
+      ? currentParentActivity
+      : null;
+  const nextMilestone = subprocessAwaitingFirstExecution
+    ? currentSubprocess
+    : currentParentActivity || nextSubprocess || "Conclusão do processo atual";
 
   return (
     <div className="product-value-chain-history">
@@ -198,18 +208,20 @@ export default function ProductValueChainHistoryPage() {
                 <Clock3 size={16} aria-hidden="true" />
                 {subprocessAwaitingFirstExecution
                   ? "Subprocesso atual"
-                  : "Próximo marco"}
+                  : currentParentActivity
+                    ? subprocessPosition?.trackingStatus === "COMPLETED"
+                      ? "Próxima atividade"
+                      : "Atividade atual"
+                    : "Próximo marco"}
               </span>
-              <strong>
-                {subprocessAwaitingFirstExecution
-                  ? currentSubprocess
-                  : nextSubprocess || "Conclusão do processo atual"}
-              </strong>
+              <strong>{nextMilestone}</strong>
               <small>
                 {subprocessAwaitingFirstExecution
                   ? "Subprocesso atual preparado; ainda aguarda a primeira execução."
-                  : position.subprocessPosition?.nextSubprocessObjective ||
-                    "O próximo objetivo será definido pela cadeia publicada."}
+                  : currentParentActivity
+                    ? "Continuação enviada pelo backend dentro do processo atual."
+                    : position.subprocessPosition?.nextSubprocessObjective ||
+                      "O próximo objetivo será definido pela cadeia publicada."}
               </small>
             </article>
           </section>
@@ -340,6 +352,31 @@ export default function ProductValueChainHistoryPage() {
                 ))}
               </ol>
             )}
+            {completedSubprocessNextActivity && position.processDefinitionId ? (
+              <section
+                className="product-value-chain-history__next-step"
+                aria-label="Próximo passo do processo"
+              >
+                <div>
+                  <span>
+                    <GitBranch size={16} aria-hidden="true" /> Próximo passo
+                  </span>
+                  <h2 className="h6 mb-1">{completedSubprocessNextActivity}</h2>
+                  <p className="text-muted mb-0">
+                    O subprocesso anterior atingiu o objetivo. Esta atividade é
+                    a continuação oficial enviada pelo backend e ainda não conta
+                    como iniciada.
+                  </p>
+                </div>
+                <Link
+                  className="btn btn-primary"
+                  to={`/products/${product.id}/value-chain-history/processes/${position.processDefinitionId}/activities`}
+                >
+                  <ListTree size={16} aria-hidden="true" />
+                  Abrir próximo passo
+                </Link>
+              </section>
+            ) : null}
             {commitsQuery.isError ? (
               <div className="alert alert-warning mt-3 mb-0" role="alert">
                 O histórico de commits está temporariamente indisponível. As

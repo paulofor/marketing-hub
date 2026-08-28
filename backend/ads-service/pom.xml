@@ -131,9 +131,9 @@
         <directory>${project.basedir}/src/main/resources</directory>
       </resource>
       <resource>
-        <directory>${project.basedir}/../..</directory>
         <targetPath>agent-behavior-files</targetPath>
         <filtering>false</filtering>
+        <directory>${project.basedir}/../..</directory>
         <includes>
           <include>growth-operator-worker/src/main/resources/prompts/**/*.md</include>
           <include>growth-operator-worker/src/main/resources/prompts/**/*.json</include>

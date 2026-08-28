@@ -43,14 +43,14 @@ public class CommercialPlanImageStudioController {
     return service.list(planId);
   }
 
-  /** Entrega a Têmis a fila canônica de criação e edição. */
+  /** Entrega ao recurso técnico de Dédalo a fila canônica de criação e edição. */
   @GetMapping("/api/internal/planning/image-studio/v1/stage-executions/pending")
   public List<CommercialPlanImageStudioPendingDto> pending(
       @RequestParam(defaultValue = "2") int limit) {
     return service.claimPending(limit);
   }
 
-  /** Recebe o arquivo produzido por Têmis e abre o gate independente. */
+  /** Recebe o arquivo materializado por Dédalo e abre o gate independente de Têmis. */
   @PostMapping(
       value = "/api/internal/planning/image-studio/v1/stage-executions/{jobId}/artifact",
       consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -80,7 +80,7 @@ public class CommercialPlanImageStudioController {
         request.responseJson());
   }
 
-  /** Entrega a outra execução de Têmis os itens que aguardam revisão. */
+  /** Entrega a uma execução independente de Têmis os itens que aguardam revisão. */
   @GetMapping("/api/internal/planning/image-studio/v1/reviews/pending")
   public List<CommercialPlanVisualAssetReviewPendingDto> pendingReviews(
       @RequestParam(defaultValue = "2") int limit) {
@@ -102,7 +102,7 @@ public class CommercialPlanImageStudioController {
     service.review(assetId, request);
   }
 
-  /** Responsabilidade: transportar uma falha técnica auditável de Têmis. */
+  /** Responsabilidade: transportar uma falha técnica auditável do recurso de Dédalo. */
   public record ImageStudioFailureRequest(
       String producerExecutionId, String error, String requestJson, String responseJson) {}
 }

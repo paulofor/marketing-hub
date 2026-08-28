@@ -227,16 +227,10 @@ políticas. O validador de slot deixa de aprovar apenas HTML e passa a exigir es
 real. R$ 349 permanece válido somente para a implantação personalizada com revisão humana em até
 48 horas.
 
-A identidade comercial foi reconciliada com a fonte institucional já versionada no repositório e
-com consultas cadastrais recentes: PAULO ALEXANDRE LOPES FORESTIERI INFORMATICA, CNPJ
-25.215.414/0001-69, situação ativa, endereço cadastral no Rio de Janeiro e suporte em
-`contato@digicomdigital.com.br`. A configuração aceita override operacional, mas mantém esses dados
-como padrão coerente com a marca Digicom Digital. O endpoint continua falhando fechado quando razão
-social, registro fiscal, endereço ou contato estiverem ausentes ou inválidos.
-
-Fontes de conferência cadastral em 2026-08-23:
-[Casa dos Dados](https://casadosdados.com.br/solucao/cnpj/paulo-alexandre-lopes-forestieri-informatica-25215414000169)
-e [CNPJ.biz](https://cnpj.biz/25215414000169).
+A identidade pública da oferta foi minimizada para **Digicom Digital**, CNPJ e canal de suporte. A
+razão social completa e o endereço cadastral permanecem segregados fora do contrato público, do
+contexto dos agentes e da landing. A configuração aceita override operacional, e o endpoint falha
+fechado quando marca, registro fiscal ou contato estiverem ausentes ou inválidos.
 
 ## Fechamento local de Comunicação e jornada
 
@@ -381,3 +375,28 @@ Nenhum artefato foi publicado e não houve contato, gasto, evento comercial ou v
 publicação do lote versionado, a execução oficial deve ser iniciada pela tela, persistir as mesmas
 evidências e concluir `4.2`; a atividade seguinte é `Integrar canal, checkout, acesso e eventos`,
 ainda dentro do processo 4, antes da Homologação e ativação comercial.
+
+## Minimização da identidade pública da oferta
+
+Em 2026-08-28, a revisão da página identificou que razão social completa e endereço eram exibidos
+porque faziam parte do próprio contrato público da oferta. A correção não ficou limitada ao rodapé:
+o backend deixou de publicar esses campos, o proxy PDE adotou `supplierDisplayName`, o contexto do
+GeraLanding passou a receber somente marca, CNPJ e suporte, e o gate do slot foi alinhado ao mesmo
+contrato mínimo.
+
+A superfície continua exibindo **Digicom Digital**, CNPJ, e-mail de suporte, termos, privacidade e
+política de cancelamento. Testes de serialização e Playwright impedem que nome legal ou endereço
+voltem ao JSON ou ao DOM. Esta correção permanece local até PR e deploy; o processo de landing não
+deve receber a aprovação humana final nem avançar para `Integrar canal, checkout, acesso e eventos`
+antes de a versão publicada passar pelo mesmo gate.
+
+## Continuidade do histórico após o 4.2
+
+Em 2026-08-28, o banco comprovou que a ocorrência BPM da Psique estava `COMPLETED` após a repetição
+#248, enquanto a tarefa #244 permanecia `BLOCKED` somente como histórico. O resolvedor da cadeia
+considerava a tarefa antiga antes da ocorrência consolidada e mantinha o 4.2 como posição atual,
+apesar de a medição já informar objetivo atingido.
+
+A correção faz a ocorrência BPM prevalecer, preserva a tentativa bloqueada para auditoria e mostra
+`Integrar canal, checkout, acesso e eventos` logo depois do 4.2. O item é exibido como próximo passo
+do processo 4, sem registrar início, autorizar publicação, antecipar o processo 5 ou gerar gasto.

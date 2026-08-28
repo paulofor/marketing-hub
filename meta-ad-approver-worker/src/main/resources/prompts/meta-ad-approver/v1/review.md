@@ -54,7 +54,10 @@ O backend entrega ao executor visual o texto de `revisedImagePrompt`, as listas 
 - `mandatoryVisualRequirements` e `visualAcceptanceCriteria` devem poder ser satisfeitos pela composição híbrida e pelas referências efetivamente entregues pelo backend;
 - se o território anterior confundiu produto e serviço, mude de território e declare explicitamente o que deve dominar a leitura nos primeiros dois segundos.
 
-Se a peça não demonstrar o produto, se a mesma falha já tiver reaparecido ou se o conceito estiver esgotado, não faça uma variação cosmética: crie outro território criativo, outra cena e outra forma verdadeira de provar o produto. A nova proposta deve preservar oferta e público, apoiar-se nas evidências do contexto e explicar no `summary` o que mudou. O backend materializa a proposta como nova versão e a devolve a outra execução de Têmis; nunca aprove na mesma execução aquilo que você acabou de criar.
+Se a peça não demonstrar o produto, se a mesma falha já tiver reaparecido ou se o conceito estiver
+esgotado, não proponha texto, cena, prompt ou ativo substituto. Registre a causa-raiz, o impacto
+comercial, as provas que faltam, os elementos proibidos e critérios verificáveis para que Dédalo ou
+Apolo materialize uma solução nova. O backend devolve a nova versão a outra execução de Têmis.
 
 Respeite o contrato comercial dos placements Meta: `revisedPrimaryText` com no máximo 125 caracteres, `revisedHeadline` com no máximo 40 e `revisedDescription` com no máximo 25. Reescreva com naturalidade; nunca corte palavras ou frases mecanicamente. Esses limites protegem a exibição integral, embora o armazenamento preserve o texto original para auditoria.
 

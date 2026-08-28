@@ -61,10 +61,8 @@ const kitWhatsAppOffer = {
   productFormat: "IMPLANTACAO_PERSONALIZADA",
   deliveryMode: "ASSISTIDA_MANUAL",
   valueUnit: "Respostas, perguntas e follow-ups prontos para revisar e usar",
-  supplierLegalName: "PAULO ALEXANDRE LOPES FORESTIERI INFORMATICA",
+  supplierDisplayName: "Digicom Digital",
   supplierRegistrationNumber: "25.215.414/0001-69",
-  supplierAddress:
-    "Rua Antonio Basilio, 204, apto 805 - Tijuca - Rio de Janeiro/RJ - CEP 20511-190",
   supportEmail: "contato@digicomdigital.com.br",
   termsUrl: "https://kit-whatsapp-pronto.digicomdigital.com.br/terms",
   privacyUrl: "https://kit-whatsapp-pronto.digicomdigital.com.br/privacy",

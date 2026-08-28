@@ -5,14 +5,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
-/** Responsabilidade: proteger o contrato versionado do parecer de Plutus. */
+/** Responsabilidade: preservar o contrato histórico dos antigos pareceres de oportunidade. */
 class OpportunityReviewContractTest {
-  /** Confirma cenários financeiros e saída estruturada obrigatórios. */
+  /** Confirma que o contrato histórico permanece auditável e explicitamente retirado. */
   @Test
   void keepsVersionedReviewContract() throws Exception {
     String prompt = resource("prompts/opportunity-review/v1/review.md");
     String schema = resource("prompts/opportunity-review/v1/review-schema.json");
-    assertThat(prompt).contains("{{DOSSIER_CONTEXT}}", "três cenários", "Não autorize");
+    assertThat(prompt)
+        .contains("{{DOSSIER_CONTEXT}}", "três cenários", "Não autorize", "retirado da execução");
     assertThat(schema).contains("decision", "rationale", "risks", "recommendation");
   }
 

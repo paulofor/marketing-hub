@@ -25,7 +25,7 @@ public class CommercialPlanApprovedCreativeEvidenceService {
       LoggerFactory.getLogger(CommercialPlanApprovedCreativeEvidenceService.class);
   private static final String PROCESS_CODE = "creative-production-approval";
   private static final Set<String> REQUIRED_ACTIVITIES =
-      Set.of("route", "produce", "customer", "commercial");
+      Set.of("nonAudiovisual", "audiovisual", "customer", "commercial");
   private final CommercialPlanRepository planRepository;
   private final CommercialPlanVersionService versionService;
   private final AgentTaskRepository taskRepository;
@@ -43,7 +43,7 @@ public class CommercialPlanApprovedCreativeEvidenceService {
     this.objectMapper = objectMapper;
   }
 
-  /** Consolida rota, produção e pareceres do pacote sem confundir aprovação com publicação. */
+  /** Consolida materializações e pareceres do pacote sem confundir aprovação com publicação. */
   @Transactional(readOnly = true)
   public Map<String, Object> resolve(Long experimentId) {
     if (experimentId == null) return unavailable("Experimento não informado.");
@@ -62,8 +62,8 @@ public class CommercialPlanApprovedCreativeEvidenceService {
       return unavailable("Pacote criativo sem todos os gates concluídos.");
     }
     try {
-      JsonNode route = result(latestByActivity.get("route"));
-      JsonNode production = result(latestByActivity.get("produce"));
+      JsonNode nonAudiovisual = result(latestByActivity.get("nonAudiovisual"));
+      JsonNode audiovisual = result(latestByActivity.get("audiovisual"));
       JsonNode customer = result(latestByActivity.get("customer"));
       JsonNode commercial = result(latestByActivity.get("commercial"));
       Map<String, JsonNode> evidenceByActivity = new LinkedHashMap<>();
@@ -78,11 +78,11 @@ public class CommercialPlanApprovedCreativeEvidenceService {
         packageIds.add(packageId);
       }
       JsonNode packageEvidence = evidenceByActivity.get("commercial");
-      if (!"SELECTED".equals(route.path("decision").asText())
+      if (!"SELECTED".equals(nonAudiovisual.path("decision").asText())
           || !"APPROVED".equals(customer.path("decision").asText())
           || !"APPROVED".equals(commercial.path("decision").asText())
-          || !production.isObject()
-          || production.isEmpty()
+          || !audiovisual.isObject()
+          || audiovisual.isEmpty()
           || packageIds.size() != 1) {
         return unavailable("Pacote criativo sem aprovação independente ou segregação local.");
       }
@@ -92,8 +92,8 @@ public class CommercialPlanApprovedCreativeEvidenceService {
       payload.put("commercialPlanId", plan.getId());
       payload.put("planVersion", version);
       payload.put("creativePackageId", packageIds.iterator().next());
-      payload.put("route", route);
-      payload.put("production", production);
+      payload.put("nonAudiovisualMaterialization", nonAudiovisual);
+      payload.put("audiovisualMaterialization", audiovisual);
       payload.put("customerReview", customer);
       payload.put("commercialReview", commercial);
       payload.put("packageEvidence", packageEvidence);

@@ -16,9 +16,12 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
@@ -32,6 +35,8 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @Service
 public class ExperimentStrategistExecutionService {
+  private static final Logger log =
+      LoggerFactory.getLogger(ExperimentStrategistExecutionService.class);
   private static final long STALE_EXECUTION_SECONDS = 120L;
   private static final String LEASE_RECOVERED = "LEASE_RECOVERED_ONCE";
   private static final String CLARITY_PROVIDER = "MICROSOFT_CLARITY_MCP";
@@ -246,6 +251,7 @@ public class ExperimentStrategistExecutionService {
         || blank(request.publicSourcesJson())
         || blank(request.rawModelResponse()))
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Parecer estrategico incompleto.");
+    validateMarketStrategicContract(value, request);
     value.setAlternativesJson(request.alternativesJson());
     value.setRecommendationJson(request.recommendationJson());
     value.setPublicSourcesJson(request.publicSourcesJson());
@@ -261,6 +267,48 @@ public class ExperimentStrategistExecutionService {
               saved.getCommercialPlan().getId(), saved.getId(), saved.getRecommendationJson()));
     }
     return response(saved);
+  }
+
+  /** Impede concluir pesquisa v2 sem autoria, evidências e fronteira estratégica verificáveis. */
+  private void validateMarketStrategicContract(
+      ExperimentStrategistExecution execution, CompleteRequest request) {
+    if (!"READ_ONLY_RESEARCH".equals(execution.getAuthorityMode())) return;
+    try {
+      var alternatives = json.readTree(request.alternativesJson());
+      var sources = json.readTree(request.publicSourcesJson());
+      var recommendation = json.readTree(request.recommendationJson());
+      var contract = recommendation.path("marketStrategicContract");
+      var evidenceClasses = new HashSet<String>();
+      if (sources.isArray()) {
+        sources.forEach(
+            source -> {
+              String evidenceClass = source.path("evidenceClass").asText();
+              if (!evidenceClass.isBlank()) evidenceClasses.add(evidenceClass);
+            });
+      }
+      if (!alternatives.isArray()
+          || alternatives.size() != 3
+          || !sources.isArray()
+          || sources.size() < 2
+          || evidenceClasses.size() < 2
+          || !"MARKET_STRATEGY_V2".equals(contract.path("contractVersion").asText())
+          || !List.of("READY_FOR_OPERATION", "INSUFFICIENT_EVIDENCE")
+              .contains(contract.path("status").asText())
+          || contract.path("evidenceReferences").size() < 2
+          || !"ATENA_DEFINES_STRATEGY_HERMES_OPERATES_GROWTH"
+              .equals(contract.path("operatorBoundary").asText())) {
+        throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST, "Contrato Estratégico de Mercado v2 inválido.");
+      }
+    } catch (JsonProcessingException ex) {
+      log.error(
+          "Falha ao validar contrato estratégico concluído por Atena. executionId={} planId={}",
+          execution.getId(),
+          execution.getCommercialPlan().getId(),
+          ex);
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Contrato Estratégico de Mercado deve ser JSON válido.", ex);
+    }
   }
 
   /** Persiste a causa completa de uma falha tecnica. */

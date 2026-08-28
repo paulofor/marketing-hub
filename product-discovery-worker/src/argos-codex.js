@@ -68,6 +68,7 @@ export async function planDirectedResearch(job, options = {}) {
       rawResponse,
       model: model || "codex-default",
       mode: "CODEX",
+      prompt,
       usage: parseCodexUsage(execution?.stdout),
     };
   } finally {
@@ -259,6 +260,8 @@ export function deterministicPlan(job) {
     rawResponse: JSON.stringify(plan),
     model: "deterministic-fallback-v1",
     mode: "DETERMINISTIC",
+    prompt: null,
+    usage: null,
   };
 }
 

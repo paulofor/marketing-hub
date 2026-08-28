@@ -37,15 +37,10 @@ public class CommercialBpmTaskConsumer {
       "O catálogo do Codex não anuncia Flex para gpt-5.6-sol; a CLI omite o tier solicitado e usa o tier padrão.";
   private static final List<BpmContract> CONTRACTS =
       List.of(
-          new BpmContract("pde-communication-sales-journey", "contract"),
-          new BpmContract("pde-commercial-homologation-activation", "pdeGate"),
-          new BpmContract("creative-production-approval", "route"),
-          new BpmContract("creative-production-approval", "library"),
-          new BpmContract("creative-production-approval", "brief"),
-          new BpmContract("creative-production-approval", "produce"),
+          new BpmContract("pde-commercial-homologation-activation", "commercialIntegrityReview"),
           new BpmContract("creative-production-approval", "commercial"),
           new BpmContract("landing-page-generation", "commercial"),
-          new BpmContract("pde-construction-approval", "deliverables"));
+          new BpmContract("pde-construction-approval", "commercialIntegrityReview"));
   private final RestClient backend;
   private final ObjectMapper json;
   private final String codex;
@@ -94,7 +89,7 @@ public class CommercialBpmTaskConsumer {
     }
   }
 
-  /** Reserva primeiro criativos e depois landings sem cruzar gates independentes. */
+  /** Reserva somente gates independentes de integridade comercial em ordem explícita. */
   private Map<String, Object> claimNext() {
     for (BpmContract contract : CONTRACTS) {
       List<Map<String, Object>> pending =
@@ -127,6 +122,7 @@ public class CommercialBpmTaskConsumer {
     Path processLog = Files.createTempFile("temis-bpm-process-", ".log");
     Path schema = materialize(schemaResourceFor(processCode(task)), ".json");
     try {
+      String resolvedPrompt = prompt(task);
       List<String> command =
           new ArrayList<>(
               List.of(
@@ -154,7 +150,7 @@ public class CommercialBpmTaskConsumer {
               .redirectErrorStream(true)
               .redirectOutput(processLog.toFile())
               .start();
-      process.getOutputStream().write(prompt(task).getBytes(StandardCharsets.UTF_8));
+      process.getOutputStream().write(resolvedPrompt.getBytes(StandardCharsets.UTF_8));
       process.getOutputStream().close();
       if (!process.waitFor(40, TimeUnit.MINUTES)) {
         process.destroyForcibly();
@@ -245,9 +241,6 @@ public class CommercialBpmTaskConsumer {
     Map<String, Object> promptContext = new HashMap<>(task);
     if ("pde-construction-approval".equals(processCode(task))) {
       promptContext.put("versionedArtifactEvidence", pdeArtifactLoader.load());
-    } else if ("pde-communication-sales-journey".equals(processCode(task))) {
-      promptContext.put(
-          "versionedArtifactEvidence", pdeArtifactLoader.loadCommunicationContracts());
     } else if ("pde-commercial-homologation-activation".equals(processCode(task))) {
       promptContext.put(
           "versionedCommercialHomologationEvidence",
@@ -260,7 +253,6 @@ public class CommercialBpmTaskConsumer {
   /** Seleciona o prompt versionado específico do gate avaliado. */
   static String promptResourceFor(String processCode) {
     return switch (processCode) {
-      case "pde-communication-sales-journey" -> "prompts/bpm/pde-communication-review.md";
       case "pde-commercial-homologation-activation" ->
           "prompts/bpm/pde-commercial-homologation-independent-review.md";
       case "creative-production-approval" -> "prompts/bpm/creative-commercial-review.md";
@@ -272,7 +264,6 @@ public class CommercialBpmTaskConsumer {
   /** Seleciona o schema versionado específico do gate avaliado. */
   static String schemaResourceFor(String processCode) {
     return switch (processCode) {
-      case "pde-communication-sales-journey" -> "prompts/bpm/pde-communication-review-schema.json";
       case "pde-commercial-homologation-activation" ->
           "prompts/bpm/pde-commercial-homologation-independent-review-schema.json";
       case "creative-production-approval" -> "prompts/bpm/creative-commercial-review-schema.json";

@@ -15,10 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Responsabilidade: ligar tarefas criativas da Têmis à fila canônica de geração de anúncios. */
+/** Responsabilidade: ligar tarefas criativas de Dédalo à fila canônica de materialização. */
 @Service
-public class TemisCreativeTaskOrchestrationService {
-  private static final String TEMIS_AGENT_KEY = "meta-ad-approver";
+public class DedaloCreativeTaskOrchestrationService {
+  private static final String DEDALO_AGENT_KEY = "landing-generator";
   private static final Pattern EXPERIMENT_REFERENCE = Pattern.compile("^experiment:(\\d+)$");
   private final AgentTaskRepository taskRepository;
   private final ExperimentRepository experimentRepository;
@@ -26,25 +26,25 @@ public class TemisCreativeTaskOrchestrationService {
 
   /** Configura a orquestração com as fontes de verdade de tarefas e experimentos. */
   @Autowired
-  public TemisCreativeTaskOrchestrationService(
+  public DedaloCreativeTaskOrchestrationService(
       AgentTaskRepository taskRepository, ExperimentRepository experimentRepository) {
     this(taskRepository, experimentRepository, Clock.systemUTC());
   }
 
   /** Permite validar transições temporais de forma determinística. */
-  TemisCreativeTaskOrchestrationService(
+  DedaloCreativeTaskOrchestrationService(
       AgentTaskRepository taskRepository, ExperimentRepository experimentRepository, Clock clock) {
     this.taskRepository = taskRepository;
     this.experimentRepository = experimentRepository;
     this.clock = clock;
   }
 
-  /** Converte tarefas pendentes da Têmis em solicitações idempotentes na fila do AI Worker. */
+  /** Converte tarefas pendentes de Dédalo em solicitações idempotentes na fila do AI Worker. */
   @Transactional
   public void reconcilePendingTasks() {
     List<AgentTask> tasks =
         taskRepository.findByAssignedAgentAgentKeyAndTaskKindAndStatusInOrderByCreatedAtAscIdAsc(
-            TEMIS_AGENT_KEY, "WORK", List.of("PENDING", "IN_PROGRESS"));
+            DEDALO_AGENT_KEY, "WORK", List.of("PENDING", "IN_PROGRESS"));
     for (AgentTask task : tasks) {
       Long experimentId = experimentId(task.getSourceReference());
       if (experimentId == null) {
@@ -77,7 +77,7 @@ public class TemisCreativeTaskOrchestrationService {
         && status != CreativeGenerationStatus.PROCESSING;
   }
 
-  /** Encerra a tarefa da Têmis somente após o worker materializar o anúncio solicitado. */
+  /** Conclui a tarefa de Dédalo somente após o callback de materialização do executor. */
   @Transactional
   public void completeForExperiment(Long experimentId) {
     updateTask(experimentId, "COMPLETED");
@@ -107,7 +107,7 @@ public class TemisCreativeTaskOrchestrationService {
         .findTopBySourceReferenceOrderByUpdatedAtDescIdDesc(reference)
         .ifPresent(
             task -> {
-              if (TEMIS_AGENT_KEY.equals(task.getAssignedAgent().getAgentKey())
+              if (DEDALO_AGENT_KEY.equals(task.getAssignedAgent().getAgentKey())
                   && "IN_PROGRESS".equals(task.getStatus())) {
                 task.setStatus(status);
                 task.setUpdatedAt(Instant.now(clock));

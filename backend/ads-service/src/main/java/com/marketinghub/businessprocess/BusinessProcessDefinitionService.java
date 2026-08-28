@@ -11,6 +11,8 @@ import java.text.Normalizer;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: governar cadastro, validação, versionamento e publicação de processos. */
 @Service
 public class BusinessProcessDefinitionService {
+  private static final Logger log = LoggerFactory.getLogger(BusinessProcessDefinitionService.class);
   private final BusinessProcessDefinitionRepository repository;
   private final BusinessProcessActivityDefinitionRepository activityRepository;
   private final AgentTaskRepository agentTaskRepository;
@@ -261,6 +264,7 @@ public class BusinessProcessDefinitionService {
       if (!Set.of("START", "TASK", "GATEWAY", "END").contains(type)) {
         throw invalid("Todo elemento deve possuir um tipo BPM reconhecido.");
       }
+      validateAgentResponsibility(node, type);
       validateExecutionResource(node, type);
       validateDocumentOutput(node, type);
       validateSubprocessReference(node, type, processCode);
@@ -275,7 +279,22 @@ public class BusinessProcessDefinitionService {
     }
   }
 
-  /** Valida o recurso opcional somente em atividades e contra o catálogo ativo do backend. */
+  /** Aplica a matriz canônica que impede coautoria e domínio incompatível entre agentes. */
+  private void validateAgentResponsibility(JsonNode node, String nodeType) {
+    try {
+      AgentResponsibilityMatrix.validate(node, nodeType);
+    } catch (IllegalArgumentException ex) {
+      log.warn(
+          "Falha ao validar responsabilidade de agente no processo. operacao=publicar-processo activityId={} nodeType={} owner={}",
+          node.path("id").asText(""),
+          nodeType,
+          node.path("owner").asText(""),
+          ex);
+      throw invalid(ex.getMessage());
+    }
+  }
+
+  /** Valida o recurso opcional e exige que ele pertença ao único agente da atividade. */
   private void validateExecutionResource(JsonNode node, String nodeType) {
     String resourceCode = node.path("executionResourceCode").asText("").trim();
     if (resourceCode.isEmpty()) return;
@@ -285,9 +304,20 @@ public class BusinessProcessDefinitionService {
     if (resourceCode.length() > 100 || !resourceCode.matches("[a-z0-9]+(?:-[a-z0-9]+)*")) {
       throw invalid("O código do recurso especializado é inválido.");
     }
-    if (executionResourceRepository == null
-        || executionResourceRepository.findByResourceCodeAndActiveTrue(resourceCode).isEmpty()) {
+    if (executionResourceRepository == null) {
       throw invalid("O recurso especializado informado não está disponível.");
+    }
+    var resource =
+        executionResourceRepository
+            .findByResourceCodeAndActiveTrue(resourceCode)
+            .orElseThrow(() -> invalid("O recurso especializado informado não está disponível."));
+    JsonNode responsibleAgentKeys = node.path("responsibleAgentKeys");
+    if (!responsibleAgentKeys.isArray() || responsibleAgentKeys.size() != 1) {
+      throw invalid("Recurso especializado exige um único agente responsável na atividade.");
+    }
+    String responsibleAgentKey = responsibleAgentKeys.get(0).asText("").trim();
+    if (!resource.getResponsibleAgentKey().equals(responsibleAgentKey)) {
+      throw invalid("O recurso especializado pertence a outro agente responsável.");
     }
   }
 

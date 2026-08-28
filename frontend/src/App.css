@@ -830,6 +830,38 @@
   padding-bottom: 1rem;
 }
 
+.product-value-chain-history__next-step {
+  align-items: center;
+  background: #f4fbf7;
+  border: 1px solid #b9d8ca;
+  border-left: 4px solid #198754;
+  border-radius: 0.75rem;
+  display: flex;
+  gap: 1.25rem;
+  justify-content: space-between;
+  margin-top: 1.25rem;
+  padding: 1rem 1.125rem;
+}
+
+.product-value-chain-history__next-step > div > span {
+  align-items: center;
+  color: #146c43;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 800;
+  gap: 0.4rem;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+}
+
+.product-value-chain-history__next-step .btn {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 0.4rem;
+}
+
 .product-value-chain-history__timeline {
   display: grid;
   gap: 1rem;
@@ -1532,10 +1564,16 @@
 @media (max-width: 600px) {
   .product-value-chain-history__panel-heading,
   .product-value-chain-history__item-heading,
+  .product-value-chain-history__next-step,
   .product-process-activity-executions__activity-header,
   .product-process-situation__header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .product-value-chain-history__next-step .btn {
+    justify-content: center;
+    width: 100%;
   }
 
   .product-process-situation__columns li > div {

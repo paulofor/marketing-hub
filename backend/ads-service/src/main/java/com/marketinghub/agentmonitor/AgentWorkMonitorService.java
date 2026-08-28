@@ -42,11 +42,7 @@ public class AgentWorkMonitorService {
   private static final String PLUTUS = "financial-agent";
   private static final String TEMIS = "meta-ad-approver";
   private static final Map<String, String> OPPORTUNITY_REVIEW_AGENT_BY_EXECUTOR =
-      Map.of(
-          "experiment-strategist", "ATENA",
-          "customer-agent", "PSIQUE",
-          "financial-agent", "PLUTUS",
-          "growth-operator", "HERMES");
+      Map.of("experiment-strategist", "ATENA");
   private static final ZoneId BUSINESS_ZONE = ZoneId.of("America/Sao_Paulo");
   private static final Map<String, String> TELEMETRY_TYPE_BY_AGENT_KEY =
       Map.of(
@@ -162,7 +158,7 @@ public class AgentWorkMonitorService {
     return task(agent, tokens);
   }
 
-  /** Prioriza pareceres canônicos ativos dos quatro especialistas sobre tarefas auxiliares. */
+  /** Prioriza a decisão estratégica ativa de Atena sobre tarefas auxiliares. */
   private AgentWorkMonitorResponse opportunityReview(Agent agent, DailyTokenSnapshot tokens) {
     if (opportunityReviews == null) return null;
     String reviewAgent = OPPORTUNITY_REVIEW_AGENT_BY_EXECUTOR.get(agent.getAgentKey());
@@ -209,12 +205,53 @@ public class AgentWorkMonitorService {
         tokens);
   }
 
-  /** Consolida a execução autônoma mais recente de Dédalo. */
+  /** Consolida primeiro a materialização visual e depois a landing mais recente de Dédalo. */
   private AgentWorkMonitorResponse dedalo(Agent agent, DailyTokenSnapshot tokens) {
+    AgentWorkMonitorResponse materialization = dedaloMaterialization(agent, tokens);
+    if (materialization != null) return materialization;
     return landingRepository
         .findTopByStageCodeOrderByExecutionRequestedAtDesc("landing-generation-agent-v1")
         .map(execution -> landing(agent, execution, tokens))
         .orElseGet(() -> task(agent, tokens));
+  }
+
+  /** Expõe a correção visual como trabalho de Dédalo, nunca da revisora Têmis. */
+  private AgentWorkMonitorResponse dedaloMaterialization(Agent agent, DailyTokenSnapshot tokens) {
+    return creativeRepository.findDedaloOpenMaterializations().stream()
+        .findFirst()
+        .map(creative -> dedaloMaterialization(agent, creative, tokens))
+        .orElse(null);
+  }
+
+  /** Traduz o estado persistido da materialização visual para o monitor de Dédalo. */
+  private AgentWorkMonitorResponse dedaloMaterialization(
+      Agent agent, Creative creative, DailyTokenSnapshot tokens) {
+    CreativeImprovementStatus status = creative.getAgentImprovementStatus();
+    boolean blocked =
+        status == CreativeImprovementStatus.FAILED
+            || status == CreativeImprovementStatus.LIMIT_REACHED;
+    return response(
+        agent,
+        blocked ? "BLOCKED" : "WORKING",
+        "Materialização visual do criativo #" + creative.getId(),
+        status == CreativeImprovementStatus.PENDING
+            ? "Aguardando o recurso técnico de imagem"
+            : status == CreativeImprovementStatus.PROCESSING
+                ? "Produzindo e enviando uma nova imagem"
+                : "Correção visual bloqueada",
+        blocked
+            ? operationalBlocker(
+                agent,
+                creative.getAgentImprovementError(),
+                "A materialização visual está bloqueada.")
+            : null,
+        false,
+        null,
+        "experiment:" + creative.getExperiment().getId(),
+        null,
+        creative.getId(),
+        creative.getAgentReviewedAt(),
+        tokens);
   }
 
   /** Traduz o estado persistido do GeraLanding sem inferir sucesso comercial. */
@@ -326,7 +363,7 @@ public class AgentWorkMonitorService {
   /** Traduz uma solicitação da caixa de entrada para o monitor. */
   private AgentWorkMonitorResponse task(Agent agent, AgentTask task, DailyTokenSnapshot tokens) {
     if (TEMIS.equals(agent.getAgentKey())) {
-      AgentWorkMonitorResponse creativeWork = temisCreativeWork(agent, task, tokens);
+      AgentWorkMonitorResponse creativeWork = temisReviewWork(agent, task, tokens);
       if (creativeWork != null) return creativeWork;
     }
     boolean blocked = "BLOCKED".equals(task.getStatus());
@@ -348,45 +385,34 @@ public class AgentWorkMonitorService {
         tokens);
   }
 
-  /** Prioriza a execução criativa real da Têmis sobre o status histórico da tarefa agregadora. */
-  private AgentWorkMonitorResponse temisCreativeWork(
+  /** Prioriza a revisão real de Têmis sobre o status histórico da tarefa agregadora. */
+  private AgentWorkMonitorResponse temisReviewWork(
       Agent agent, AgentTask task, DailyTokenSnapshot tokens) {
     Long experimentId = experimentId(task.getSourceReference());
     if (experimentId == null) return null;
-    return creativeRepository.findTemisOpenExecutions(experimentId).stream()
+    return creativeRepository.findTemisOpenReviews(experimentId).stream()
         .findFirst()
-        .map(creative -> temisCreativeWork(agent, task, creative, tokens))
+        .map(creative -> temisReviewWork(agent, task, creative, tokens))
         .orElse(null);
   }
 
-  /**
-   * Traduz revisão e materialização da imagem mais recente em tarefa, execução e bloqueio atuais.
-   */
-  private AgentWorkMonitorResponse temisCreativeWork(
+  /** Traduz somente a revisão comercial mais recente em tarefa, execução e bloqueio atuais. */
+  private AgentWorkMonitorResponse temisReviewWork(
       Agent agent, AgentTask task, Creative creative, DailyTokenSnapshot tokens) {
     CreativeAgentReviewStatus review = creative.getAgentReviewStatus();
-    CreativeImprovementStatus improvement = creative.getAgentImprovementStatus();
-    boolean improving =
-        improvement == CreativeImprovementStatus.PENDING
-            || improvement == CreativeImprovementStatus.PROCESSING;
     boolean reviewing =
         review == CreativeAgentReviewStatus.PENDING
             || review == CreativeAgentReviewStatus.PROCESSING;
     boolean blocked =
-        improvement == CreativeImprovementStatus.FAILED
-            || improvement == CreativeImprovementStatus.LIMIT_REACHED
-            || review == CreativeAgentReviewStatus.ADJUST
+        review == CreativeAgentReviewStatus.ADJUST
             || review == CreativeAgentReviewStatus.REJECTED
             || review == CreativeAgentReviewStatus.FAILED;
-    if (!improving && !reviewing && !blocked && !"BLOCKED".equals(task.getStatus())) return null;
-    String phase =
-        improving
-            ? "Produzindo e enviando uma imagem melhor"
-            : reviewing ? "Revisando o anúncio" : "Correção visual bloqueada";
+    if (!reviewing && !blocked && !"BLOCKED".equals(task.getStatus())) return null;
+    String phase = reviewing ? "Revisando a integridade comercial" : "Revisão comercial bloqueada";
     String difficulty =
         blocked
             ? operationalBlocker(
-                agent, temisBlockReason(creative), "A correção do criativo está bloqueada.")
+                agent, temisBlockReason(creative), "A revisão comercial está bloqueada.")
             : null;
     return response(
         agent,
@@ -403,18 +429,12 @@ public class AgentWorkMonitorService {
         tokens);
   }
 
-  /** Expõe a causa persistida mais específica sem substituir por uma mensagem genérica. */
+  /** Expõe a causa persistida mais específica da revisão sem misturar produção. */
   private String temisBlockReason(Creative creative) {
-    if (creative.getAgentImprovementError() != null
-        && !creative.getAgentImprovementError().isBlank()) {
-      return creative.getAgentImprovementError();
-    }
     if (creative.getRejectionReason() != null && !creative.getRejectionReason().isBlank()) {
       return creative.getRejectionReason();
     }
-    return "O criativo #"
-        + creative.getId()
-        + " aguarda uma nova imagem que cumpra o parecer visual.";
+    return "O criativo #" + creative.getId() + " não passou no gate de integridade comercial.";
   }
 
   /** Extrai o experimento apenas da referência canônica usada pela tarefa. */

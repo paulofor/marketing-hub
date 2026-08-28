@@ -24,6 +24,9 @@ test("plano seguro direciona Hotmart e ClickBank sem credenciais", () => {
   assert.equal(result.plan.metaAdRequests[0].country, "BR");
   assert.equal(result.plan.metaAdRequests[0].publisherPlatform, "INSTAGRAM");
   assert.doesNotMatch(result.rawResponse, /password|senha|token|cookie/i);
+  assert.equal(result.mode, "DETERMINISTIC");
+  assert.equal(result.prompt, null);
+  assert.equal(result.usage, null);
 });
 
 test("plano bloqueia marketplace e volume não autorizados", () => {
@@ -105,6 +108,8 @@ test("planejamento envia o contexto pela entrada padrão e lê a saída estrutur
   assert.ok(receivedSchema.required.includes("minimumComparableOffers"));
   assert.deepEqual(result.plan, expected);
   assert.equal(result.model, "modelo-teste");
+  assert.equal(result.mode, "CODEX");
+  assert.equal(result.prompt, receivedInput);
 });
 
 test("executor fecha explicitamente a entrada padrão do Codex", async () => {

@@ -14,7 +14,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
-/** Responsabilidade: materializar em Têmis as correções visuais de criativos reprovados. */
+/** Responsabilidade: materializar pelo recurso de Dédalo as correções visuais requeridas. */
 @Component
 @ConditionalOnProperty(name = "meta-ad-approver.execution-role", havingValue = "image-studio")
 class TemisCreativeImprovementProcessor {
@@ -54,9 +54,12 @@ class TemisCreativeImprovementProcessor {
       TemisImageStudioJob job = toImageJob(correction, creativeId);
       TemisImageStudioOpenAiClient.Result result = openAi.execute(job);
       upload(creativeId, job.producerExecutionId(), result);
-      log.info("Correção visual materializada por Têmis. creativeId={}", creativeId);
+      log.info("Correção visual materializada pelo recurso de Dédalo. creativeId={}", creativeId);
     } catch (RuntimeException ex) {
-      log.error("Falha na correção visual materializada por Têmis. creativeId={}", creativeId, ex);
+      log.error(
+          "Falha na correção visual materializada pelo recurso de Dédalo. creativeId={}",
+          creativeId,
+          ex);
       backend
           .post()
           .uri("/api/internal/creatives/{id}/agent-improvement/result", creativeId)
@@ -97,7 +100,7 @@ class TemisCreativeImprovementProcessor {
         playbook);
   }
 
-  /** Envia o binário ao endpoint canônico já preparado para Têmis. */
+  /** Envia o binário ao endpoint canônico de materialização de Dédalo. */
   private void upload(
       Long creativeId, String producerExecutionId, TemisImageStudioOpenAiClient.Result result) {
     MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
@@ -116,7 +119,7 @@ class TemisCreativeImprovementProcessor {
         new ByteArrayResource(result.imageBytes()) {
           @Override
           public String getFilename() {
-            return "temis-creative-improvement-" + creativeId + ".png";
+            return "dedalo-creative-improvement-" + creativeId + ".png";
           }
         });
     backend

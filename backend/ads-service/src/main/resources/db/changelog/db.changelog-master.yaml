@@ -1,5 +1,11 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-08-28-agent-responsibility-boundaries-v2.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-28-agent-responsibility-matrix-v3.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-27-landing-quality-review-bpm-activity.yaml
       relativeToChangelogFile: true
   - include:
@@ -1954,4 +1960,7 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changesets/2026-08-27-pde-gate-coauthored-execution.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-28-product-discovery-bpm-audit.yaml
       relativeToChangelogFile: true

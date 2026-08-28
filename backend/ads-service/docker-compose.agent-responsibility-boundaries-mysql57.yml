@@ -1,0 +1,53 @@
+services:
+  mysql57-agent-responsibility-boundaries:
+    build:
+      context: .
+      dockerfile: Dockerfile.mysql57-agent-responsibility-boundaries
+    image: marketing-hub/mysql57-agent-responsibility-boundaries:validation
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: marketinghub_local
+      MYSQL_USER: marketinghub
+      MYSQL_PASSWORD: marketinghub-local
+      MYSQL_ROOT_PASSWORD: marketinghub-root-local
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "127.0.0.1",
+          "-u",
+          "marketinghub",
+          "-pmarketinghub-local",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+
+  liquibase-agent-responsibility-boundaries:
+    build:
+      context: .
+      dockerfile: Dockerfile.liquibase-mysql57
+    environment:
+      ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-agent-responsibility-boundaries:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      ADS_LIQUIBASE_USERNAME: marketinghub
+      ADS_LIQUIBASE_PASSWORD: marketinghub-local
+      ADS_LIQUIBASE_CHANGELOG_FILE: db/changelog/changesets/2026-08-28-agent-responsibility-boundaries-v2.yaml
+    depends_on:
+      mysql57-agent-responsibility-boundaries:
+        condition: service_healthy
+
+  liquibase-agent-responsibility-matrix:
+    build:
+      context: .
+      dockerfile: Dockerfile.liquibase-mysql57
+    environment:
+      ADS_LIQUIBASE_URL: jdbc:mysql://mysql57-agent-responsibility-boundaries:3306/marketinghub_local?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      ADS_LIQUIBASE_USERNAME: marketinghub
+      ADS_LIQUIBASE_PASSWORD: marketinghub-local
+      ADS_LIQUIBASE_CHANGELOG_FILE: db/changelog/changesets/2026-08-28-agent-responsibility-matrix-v3.yaml
+    depends_on:
+      mysql57-agent-responsibility-boundaries:
+        condition: service_healthy

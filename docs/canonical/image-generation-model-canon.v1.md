@@ -33,9 +33,15 @@ Usar o modelo de ponta não substitui revisão. Imagens destinadas a produção 
 
 Para bibliotecas reutilizadas em entregas comerciais, uma revisão visual independente da execução produtora deve acontecer antes da promoção do asset ao acervo de produção. Aprovação humana adicional continua possível quando o risco comercial ou os direitos de uso exigirem.
 
-## Estúdio visual de Têmis
+## Recurso visual de Dédalo
 
-Por decisão de 2026-08-16, imagens que constituem entregáveis do plano comercial são criadas ou editadas por Têmis com `gpt-image-2` e qualidade `high`. A produção roda no container isolado `themis-image-studio`, sem identidade Codex nem responsabilidade de revisão. O backend publica a fila `pending`, entrega referências autorizadas do mesmo plano, recebe o binário e persiste request, response, usage, custo, modelo e linhagem. O AI Worker não materializa imagens nesse fluxo.
+Por decisão revisada em 2026-08-28, imagens que constituem entregáveis do plano comercial são
+materializadas sob a responsabilidade de construção de Dédalo com `gpt-image-2` e qualidade `high`.
+A produção roda no container técnico isolado `themis-image-studio`, nome legado preservado por
+compatibilidade, sem identidade Codex nem responsabilidade de revisão. Têmis recebe somente a versão
+persistida para o gate independente de integridade. O backend publica a fila `pending`, entrega
+referências autorizadas do mesmo plano, recebe o binário e persiste request, response, usage, custo,
+modelo e linhagem. O AI Worker não materializa imagens nesse fluxo.
 
 O binário retornado em `b64_json` deve ser decodificado e persistido uma única vez como artefato. A auditoria da resposta preserva metadados, usage, tamanho e SHA-256, substituindo o base64 por marcador explícito. É proibido duplicar o mesmo PNG no multipart, no JSON de auditoria e no payload persistido, pois isso amplia custo de memória e pode indisponibilizar o backend durante lotes visuais.
 

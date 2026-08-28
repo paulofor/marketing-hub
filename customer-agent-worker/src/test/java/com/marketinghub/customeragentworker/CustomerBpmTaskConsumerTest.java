@@ -107,6 +107,13 @@ class CustomerBpmTaskConsumerTest {
     org.assertj.core.api.Assertions.assertThat(
             CustomerBpmTaskConsumer.schemaResourceFor("pde-construction-approval"))
         .isEqualTo("prompts/bpm/v2/pde-experience-review-schema.json");
+    org.assertj.core.api.Assertions.assertThat(
+            CustomerBpmTaskConsumer.supportsContract(
+                "pde-construction-approval", "humanExperienceReview"))
+        .isTrue();
+    org.assertj.core.api.Assertions.assertThat(
+            CustomerBpmTaskConsumer.supportsContract("pde-construction-approval", "review"))
+        .isFalse();
   }
 
   /** Seleciona o gate específico da cliente para homologação comercial do PDE. */
@@ -127,6 +134,14 @@ class CustomerBpmTaskConsumerTest {
             "fronteira externa esperada",
             "Use `ADJUST` somente para defeito corrigível na candidata local",
             "todos os itens de `gateChecks` em `PASS`");
+    org.assertj.core.api.Assertions.assertThat(
+            CustomerBpmTaskConsumer.supportsContract(
+                "pde-commercial-homologation-activation", "humanExperienceReview"))
+        .isTrue();
+    org.assertj.core.api.Assertions.assertThat(
+            CustomerBpmTaskConsumer.supportsContract(
+                "pde-commercial-homologation-activation", "pdeGate"))
+        .isFalse();
   }
 
   /** Mantém Psique no escopo da landing sem antecipar o preflight do subprocesso seguinte. */

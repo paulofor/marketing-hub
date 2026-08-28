@@ -4,6 +4,11 @@
 
 O Operador de Crescimento transforma meta, gargalo e evidencias persistidas do planejamento comercial em diagnostico auditavel. A v1 opera continuamente em modo `READ_ONLY_DIAGNOSIS`, seguindo o ciclo de sandbox do exemplo `/exemplos/aih6`.
 
+Por decisão de 2026-08-28, a versão comportamental v2 especializa Hermes como operador: ele decide
+como distribuir, instrumentar, medir e otimizar, mas não decide mercado, público, problema, desejo,
+posicionamento, tese de oferta ou preço. Essas decisões pertencem ao Contrato Estratégico de Mercado
+produzido por Atena.
+
 Ao reconciliar o experimento em execucao, a compatibilidade usa a hipotese ou o nicho do plano. Para planos legados sem esses campos, usa obrigatoriamente o contexto do experimento ja vinculado, sem selecionar experimento apenas por estar `RUNNING`.
 
 ## Autoridade
@@ -31,13 +36,18 @@ que mudariam a decisao e confianca. A cadeia de pensamento privada nao deve ser 
 exibida; persiste-se apenas o resumo verificavel em `decisionAudit`. Mais tempo de raciocinio ou
 consenso entre respostas do modelo nunca substitui evento humano, fonte independente ou venda.
 
-Quando houver experimento vinculado, o backend deve congelar no snapshot o
-`experimentStrategicContract`, cuja fonte de verdade e o proprio experimento. O contrato inclui o
-objetivo comercial com hipotese, metrica esperada e criterios de continuar, ajustar e parar, alem
-da funcao operacional, variavel primaria, metrica/meta, amostra, baseline, conversao-alvo, MDE,
-orcamento e prazo quando informados. O Operador compara eventos reais com esse contrato e deve
-retornar `ADJUST` quando objetivo ou metrica estiverem incompletos, sem duplicar manualmente essas
-regras no planejamento.
+Cada snapshot deve congelar `marketStrategicContract`, cuja única fonte de verdade é a última
+execução concluída `READ_ONLY_RESEARCH` de Atena com contrato v2. O artefato inclui execução autora,
+versão, SHA-256 e conteúdo. Os parâmetros de execução do teste permanecem separados em
+`experimentExecutionContract`; campos do experimento não podem ser usados para reconstruir ou
+substituir estratégia ausente.
+
+Sem contrato `AVAILABLE` e `READY_FOR_OPERATION`, Hermes bloqueia antes de consumir modelo nas
+tarefas BPM. Em diagnósticos contínuos, retorna `ADJUST` e solicita Atena. Quando comportamento
+humano posterior contradisser segmento, desejo, posicionamento ou tese de oferta, Hermes registra
+`revisionRequired=true` e solicita nova análise; sua saída não pode conter campos que redefinam a
+estratégia. O Contrato Operacional de Crescimento contém somente rota de distribuição, atribuição,
+funil, eventos, segregação, amostra, consentimento, checkout/acesso a verificar e gates humanos.
 
 O fingerprint exclui a memoria acumulada e inclui apenas evidencias operacionais atuais. Assim, o proprio relatorio anterior nao cria artificialmente uma mudanca. Cada execucao tambem persiste as chamadas MCP realmente observadas, permitindo auditar quais ferramentas fundamentaram a conclusao.
 

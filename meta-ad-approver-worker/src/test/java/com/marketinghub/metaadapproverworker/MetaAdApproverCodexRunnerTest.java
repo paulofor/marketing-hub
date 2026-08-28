@@ -95,7 +95,6 @@ class MetaAdApproverCodexRunnerTest {
             .readTree(
                 """
         {"decision":"ADJUST","summary":"Parecer completo",
-        "revisedImagePrompt":"Gerar imagem premium do produto",
         "mandatoryVisualRequirements":["Mostrar o produto"],
         "visualAcceptanceCriteria":["Produto legível em mobile"],
         "correctionTargets":[]}
@@ -133,7 +132,7 @@ class MetaAdApproverCodexRunnerTest {
   /** Mantém o schema aceito pelo Structured Outputs e delega a condição ao gate local. */
   @Test
   void keepsConditionalTargetsOutOfStrictSchema() throws Exception {
-    String schema = resource("prompts/meta-ad-approver/v1/review-schema.json");
+    String schema = resource("prompts/meta-ad-approver/v2/review-schema.json");
 
     assertThat(schema)
         .contains("\"additionalProperties\": false", "\"correctionTargets\":")
@@ -143,7 +142,7 @@ class MetaAdApproverCodexRunnerTest {
   /** Confirma que o prompt exige mídia, landing e segregação pelo MCP. */
   @Test
   void requiresAllVisualEvidenceThroughMcp() throws Exception {
-    String prompt = resource("prompts/meta-ad-approver/v1/review.md");
+    String prompt = resource("prompts/meta-ad-approver/v2/review.md");
     String mcp = resource("mcp/meta-ad-approver.mjs");
 
     assertThat(prompt)
@@ -174,43 +173,65 @@ class MetaAdApproverCodexRunnerTest {
   /** Garante que baixa qualidade visual bloqueie e anteceda otimizações secundárias. */
   @Test
   void prioritizesBlockingVisualQualityGate() throws Exception {
-    String prompt = resource("prompts/meta-ad-approver/v1/review.md");
+    String prompt = resource("prompts/meta-ad-approver/v2/review.md");
 
     assertThat(prompt)
         .contains(
-            "Gate visual prioritário",
-            "Antes de diagnosticar copy, CTA, público, oferta ou continuidade",
-            "Esse gate é bloqueante e tem precedência sobre todas as demais otimizações",
+            "Gate de integridade",
+            "Compare alegação, prova, produto real, landing, checkout e direitos",
             "CREATIVE_MEDIA",
             "LANDING",
-            "não proponha ajustes secundários de copy, CTA ou segmentação",
-            "Não confunda imagem tecnicamente carregada com imagem comercialmente aceitável");
+            "responsável correto",
+            "critério de aceite observável");
   }
 
-  /** Garante que Têmis crie uma alternativa completa e não aprove a própria proposta. */
+  /** Garante que Têmis devolva critérios sem criar a alternativa que será revisada. */
   @Test
-  void requiresCreativeProposalAndIndependentReview() throws Exception {
-    String prompt = resource("prompts/meta-ad-approver/v1/review.md");
+  void requiresReviewOnlyAndIndependentMaterialization() throws Exception {
+    String prompt = resource("prompts/meta-ad-approver/v2/review.md");
 
     assertThat(prompt)
         .contains(
-            "execução independente responsável por revisar tecnicamente anúncios Meta",
-            "proposta completa de anúncio pronta para materialização",
-            "outro território criativo, outra cena e outra forma verdadeira de provar o produto",
-            "nunca aprove na mesma execução aquilo que você acabou de criar");
+            "revisora independente de integridade comercial",
+            "Você não cria copy, CTA, conceito, imagem, vídeo, landing ou produto",
+            "Não escreva a solução substituta",
+            "devem ser sempre strings vazias");
   }
 
-  /** Garante que Têmis preserve os entregáveis reais na composição híbrida executável. */
+  /** Garante que Têmis delegue requisitos visuais sem assumir a produção de Dédalo ou Apolo. */
   @Test
   void declaresExecutableMediaCapabilities() throws Exception {
-    String prompt = resource("prompts/meta-ad-approver/v1/review.md");
+    String prompt = resource("prompts/meta-ad-approver/v2/review.md");
 
     assertThat(prompt)
         .contains(
-            "até três imagens aprovadas da Biblioteca Audiovisual",
-            "preservadas sem redesenho",
-            "preserve somente o texto já existente nos entregáveis",
-            "composição híbrida e pelas referências efetivamente entregues pelo backend");
+            "Dédalo materializa mídia estática ou Apolo materializa audiovisual",
+            "Requisitos visuais obrigatórios",
+            "descrever uma peça pronta",
+            "escolher livremente a solução");
+  }
+
+  /** Bloqueia resposta que tente devolver copy pronta sob o disfarce de parecer. */
+  @Test
+  void rejectsReplacementContentFromReviewer() throws Exception {
+    MetaAdApproverCodexRunner runner =
+        new MetaAdApproverCodexRunner(new MetaAdApproverProperties(), new ObjectMapper());
+    Method validate =
+        MetaAdApproverCodexRunner.class.getDeclaredMethod(
+            "validate", com.fasterxml.jackson.databind.JsonNode.class);
+    validate.setAccessible(true);
+    var value =
+        new ObjectMapper()
+            .readTree(
+                """
+        {"decision":"ADJUST","summary":"Parecer completo","revisedHeadline":"Compre agora",
+        "correctionTargets":[{"target":"CREATIVE_COPY","issueCode":"PROOF_MISMATCH",
+        "requirement":"Alinhar a alegação à prova real disponível",
+        "acceptanceCriterion":"Cada alegação aponta para evidência rastreável"}]}
+        """);
+
+    assertThatThrownBy(() -> validate.invoke(runner, value))
+        .hasRootCauseMessage("Têmis não pode criar conteúdo substituto");
   }
 
   /** Confirma que o job preserva o snapshot e os identificadores do experimento. */

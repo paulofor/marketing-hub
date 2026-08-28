@@ -12,7 +12,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
-/** Responsabilidade: consumir e concluir filas visuais de Têmis exclusivamente pelo backend. */
+/** Responsabilidade: consumir e concluir filas visuais de Dédalo exclusivamente pelo backend. */
 @Component
 public class TemisImageStudioBackendClient {
   private static final Logger log = LoggerFactory.getLogger(TemisImageStudioBackendClient.class);
@@ -76,7 +76,7 @@ public class TemisImageStudioBackendClient {
         new ByteArrayResource(result.imageBytes()) {
           @Override
           public String getFilename() {
-            return "temis-image-studio-" + job.jobId() + ".png";
+            return "dedalo-image-studio-" + job.jobId() + ".png";
           }
         });
     client
@@ -93,7 +93,7 @@ public class TemisImageStudioBackendClient {
   public void fail(
       TemisImageStudioJob job, RuntimeException ex, String requestJson, String responseJson) {
     log.error(
-        "Falha no Estúdio de Imagens de Têmis. jobId={} commercialPlanId={}",
+        "Falha no recurso de imagens de Dédalo. jobId={} commercialPlanId={}",
         job.jobId(),
         job.commercialPlanId(),
         ex);

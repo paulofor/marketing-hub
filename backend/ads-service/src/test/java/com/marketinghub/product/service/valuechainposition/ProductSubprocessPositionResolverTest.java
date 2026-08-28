@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.agenttask.AgentTask;
+import com.marketinghub.agenttask.BusinessProcessActivityInstance;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.planning.CommercialPlan;
 import com.marketinghub.product.Product;
@@ -153,6 +154,147 @@ class ProductSubprocessPositionResolverTest {
     assertThat(result.nextSubprocessDefinitionId()).isNull();
   }
 
+  /**
+   * Faz a instância BPM concluída prevalecer sobre a tentativa bloqueada preservada no histórico.
+   */
+  @Test
+  void exposesNextActivityAfterCompletedRetrySupersedesBlockedTask() {
+    Product product = Product.builder().id(9L).build();
+    BusinessProcessDefinition parent = parentProcess();
+    List<BusinessProcessDefinition> children = children();
+    CommercialPlan plan = CommercialPlan.builder().id(31L).build();
+    BusinessProcessActivityInstance completedInstance = new BusinessProcessActivityInstance();
+    completedInstance.setId(129L);
+    completedInstance.setStatus("COMPLETED");
+
+    AgentTask blockedAttempt = new AgentTask();
+    blockedAttempt.setId(244L);
+    blockedAttempt.setProcessDefinition(children.get(1));
+    blockedAttempt.setProcessActivityId("customer");
+    blockedAttempt.setProcessActivityName("Avaliar percepção da cliente");
+    blockedAttempt.setSourceReference("commercial-plan:4@v3:journey");
+    blockedAttempt.setStatus("BLOCKED");
+    blockedAttempt.setActivityInstance(completedInstance);
+    blockedAttempt.setUpdatedAt(Instant.parse("2026-08-27T03:38:19Z"));
+
+    AgentTask approvedRetry = new AgentTask();
+    approvedRetry.setId(248L);
+    approvedRetry.setProcessDefinition(children.get(1));
+    approvedRetry.setProcessActivityId("customer");
+    approvedRetry.setProcessActivityName("Avaliar percepção da cliente");
+    approvedRetry.setSourceReference("commercial-plan:4@v3:journey");
+    approvedRetry.setStatus("COMPLETED");
+    approvedRetry.setActivityInstance(completedInstance);
+    approvedRetry.setUpdatedAt(Instant.parse("2026-08-28T03:08:17Z"));
+
+    when(processRepository.findAllByParentProcessCodeAndStatusOrderByNameAscVersionNumberDesc(
+            parent.getProcessCode(), "PUBLISHED"))
+        .thenReturn(children);
+    when(planRepository.findByProductId(9L)).thenReturn(List.of(plan));
+    when(taskRepository.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
+            "commercial-plan:31@"))
+        .thenReturn(List.of(approvedRetry, blockedAttempt));
+    ProductStageMeasurementResolver measurements = mock(ProductStageMeasurementResolver.class);
+    ProductSubprocessPositionResolver completedResolver =
+        new ProductSubprocessPositionResolver(
+            processRepository, planRepository, taskRepository, new ObjectMapper(), measurements);
+    when(measurements.objectiveAchieved(product, children.get(1))).thenReturn(true);
+    when(measurements.resolveSubprocessMeasurements(product, children, null, null))
+        .thenReturn(List.of());
+
+    var result = completedResolver.resolve(product, parent);
+
+    assertThat(result.trackingStatus()).isEqualTo("COMPLETED");
+    assertThat(result.currentSubprocessDefinitionId()).isNull();
+    assertThat(result.currentActivityName())
+        .isEqualTo("Integrar canal, checkout, acesso e eventos");
+  }
+
+  /** Ignora bloqueio de uma execução anterior quando a tentativa vigente já concluiu o objetivo. */
+  @Test
+  void ignoresBlockedTaskFromPreviousExecutionReference() {
+    Product product = Product.builder().id(9L).build();
+    BusinessProcessDefinition parent = parentProcess();
+    List<BusinessProcessDefinition> children = children();
+    CommercialPlan plan = CommercialPlan.builder().id(31L).build();
+    AgentTask blockedAttempt =
+        subprocessTask(
+            244L,
+            children.get(1),
+            "BLOCKED",
+            "commercial-plan:4@v3:journey:attempt:1",
+            "2026-08-27T03:38:19Z");
+    AgentTask approvedRetry =
+        subprocessTask(
+            248L,
+            children.get(1),
+            "COMPLETED",
+            "commercial-plan:4@v3:journey:attempt:2",
+            "2026-08-28T03:08:17Z");
+    ProductStageMeasurementResolver measurements = mock(ProductStageMeasurementResolver.class);
+    ProductSubprocessPositionResolver completedResolver =
+        new ProductSubprocessPositionResolver(
+            processRepository, planRepository, taskRepository, new ObjectMapper(), measurements);
+    when(processRepository.findAllByParentProcessCodeAndStatusOrderByNameAscVersionNumberDesc(
+            parent.getProcessCode(), "PUBLISHED"))
+        .thenReturn(children);
+    when(planRepository.findByProductId(9L)).thenReturn(List.of(plan));
+    when(taskRepository.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
+            "commercial-plan:31@"))
+        .thenReturn(List.of(approvedRetry, blockedAttempt));
+    when(measurements.objectiveAchieved(product, children.get(1))).thenReturn(true);
+    when(measurements.resolveSubprocessMeasurements(product, children, null, null))
+        .thenReturn(List.of());
+
+    var result = completedResolver.resolve(product, parent);
+
+    assertThat(result.trackingStatus()).isEqualTo("COMPLETED");
+    assertThat(result.currentActivityName())
+        .isEqualTo("Integrar canal, checkout, acesso e eventos");
+  }
+
+  /** Não fabrica continuação quando a composição publicada termina no próprio subprocesso. */
+  @Test
+  void doesNotFabricateNextActivityAtEndOfComposition() {
+    Product product = Product.builder().id(9L).build();
+    BusinessProcessDefinition parent = parentProcess();
+    parent.setDiagramJson(
+        """
+        {"nodes":[
+          {"id":"start","type":"START","label":"Início"},
+          {"id":"destination","type":"TASK","label":"Criar destino","subprocessCode":"landing-page-generation"},
+          {"id":"end","type":"END","label":"Fim"}
+        ],"flows":[
+          {"from":"start","to":"destination"},{"from":"destination","to":"end"}
+        ]}
+        """);
+    BusinessProcessDefinition landing = children().get(1);
+    CommercialPlan plan = CommercialPlan.builder().id(31L).build();
+    AgentTask completed =
+        subprocessTask(
+            248L, landing, "COMPLETED", "commercial-plan:4@v3:journey", "2026-08-28T03:08:17Z");
+    ProductStageMeasurementResolver measurements = mock(ProductStageMeasurementResolver.class);
+    ProductSubprocessPositionResolver completedResolver =
+        new ProductSubprocessPositionResolver(
+            processRepository, planRepository, taskRepository, new ObjectMapper(), measurements);
+    when(processRepository.findAllByParentProcessCodeAndStatusOrderByNameAscVersionNumberDesc(
+            parent.getProcessCode(), "PUBLISHED"))
+        .thenReturn(List.of(landing));
+    when(planRepository.findByProductId(9L)).thenReturn(List.of(plan));
+    when(taskRepository.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc(
+            "commercial-plan:31@"))
+        .thenReturn(List.of(completed));
+    when(measurements.objectiveAchieved(product, landing)).thenReturn(true);
+    when(measurements.resolveSubprocessMeasurements(product, List.of(landing), null, null))
+        .thenReturn(List.of());
+
+    var result = completedResolver.resolve(product, parent);
+
+    assertThat(result.trackingStatus()).isEqualTo("COMPLETED");
+    assertThat(result.currentActivityName()).isNull();
+    assertThat(result.nextSubprocessDefinitionId()).isNull();
+  }
+
   /** Não cria informação de subprocesso em processo que não possui composição especializada. */
   @Test
   void reportsNotApplicableForProcessWithoutSubprocesses() {
@@ -213,5 +355,23 @@ class ProductSubprocessPositionResolverTest {
     process.setName(name);
     process.setOutcomeDescription(objective);
     return process;
+  }
+
+  /** Monta uma tentativa de subprocesso com referência e ordem temporal explícitas. */
+  private AgentTask subprocessTask(
+      Long id,
+      BusinessProcessDefinition process,
+      String status,
+      String sourceReference,
+      String updatedAt) {
+    AgentTask task = new AgentTask();
+    task.setId(id);
+    task.setProcessDefinition(process);
+    task.setProcessActivityId("customer");
+    task.setProcessActivityName("Avaliar percepção da cliente");
+    task.setStatus(status);
+    task.setSourceReference(sourceReference);
+    task.setUpdatedAt(Instant.parse(updatedAt));
+    return task;
   }
 }

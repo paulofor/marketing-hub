@@ -47,7 +47,7 @@ public class CodexStrategistRunner {
         materialize(
             assumptions
                 ? "prompts/experiment-strategist/v1/commercial-assumptions-schema.json"
-                : "prompts/experiment-strategist/v1/research-schema.json",
+                : "prompts/experiment-strategist/v2/research-schema.json",
             ".json");
     Path mcp = materialize("mcp/experiment-strategist.mjs", ".mjs");
     Path clarityMcp = materialize("mcp/clarity-aggregate.mjs", ".mjs");
@@ -91,6 +91,8 @@ public class CodexStrategistRunner {
         recommendation.put(
             assumptions ? "evidenceQuality" : "portfolioAssessment",
             assumptions ? result.get("evidenceQuality") : result.get("portfolioAssessment"));
+        if (!assumptions)
+          recommendation.put("marketStrategicContract", result.get("marketStrategicContract"));
         recommendation.put("recommendation", result.get("recommendation"));
         payload.put("recommendationJson", json.writeValueAsString(recommendation));
         payload.put("publicSourcesJson", json.writeValueAsString(result.get("sources")));
@@ -182,7 +184,7 @@ public class CodexStrategistRunner {
     boolean assumptions = "COMMERCIAL_ASSUMPTIONS_PROPOSAL".equals(job.authorityMode());
     return read(assumptions
             ? "prompts/experiment-strategist/v1/commercial-assumptions.md"
-            : "prompts/experiment-strategist/v1/research.md")
+            : "prompts/experiment-strategist/v2/research.md")
         .replace("{{EVIDENCE_SNAPSHOT}}", text(job.evidenceSnapshot()))
         .replace("{{BEHAVIORAL_MEMORY}}", "Incluida no snapshot de evidencias.")
         .replace("{{BEHAVIORAL_SCIENCE_LIBRARY}}", read("behavioral-science/v1/library.md"))
@@ -223,9 +225,14 @@ public class CodexStrategistRunner {
         || !result.hasNonNull("marketIntelligence")
         || !result.hasNonNull("behavioralAssessment")
         || !result.hasNonNull("portfolioAssessment")
+        || !result.hasNonNull("marketStrategicContract")
+        || !"MARKET_STRATEGY_V2"
+            .equals(result.path("marketStrategicContract").path("contractVersion").asText())
+        || !"ATENA_DEFINES_STRATEGY_HERMES_OPERATES_GROWTH"
+            .equals(result.path("marketStrategicContract").path("operatorBoundary").asText())
         || !result.hasNonNull("recommendation")
         || !result.hasNonNull("diagnosis"))
-      throw new IllegalArgumentException("Resposta Codex fora do contrato estrategico v1.");
+      throw new IllegalArgumentException("Resposta Codex fora do contrato estratégico v2.");
   }
 
   /** Materializa um recurso do classpath em arquivo temporario. */

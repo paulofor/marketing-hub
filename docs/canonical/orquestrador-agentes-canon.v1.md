@@ -2,8 +2,8 @@
 
 ## Objetivo
 
-O Orquestrador coordena os pareceres do Estrategista de Experimentos, do Operador de Crescimento e
-do Especialista em Aprovação de Anúncios. Ele é um mecanismo determinístico do backend, não um
+O Orquestrador coordena os contratos e pareceres dos oito agentes definidos em
+`matriz-responsabilidades-agentes-canon.v1.md`. Ele é um mecanismo determinístico do backend, não um
 agente opinativo, e não substitui a fonte de verdade de cada domínio.
 
 Para planos de primeiras vendas, a experiência canônica é um fluxo único:
@@ -32,11 +32,20 @@ gates concluídos, o estado final é `READY_FOR_HUMAN_DECISION`.
 
 ## Divisão de responsabilidade
 
-- Estrategista: compara formatos e recomenda o próximo aprendizado de portfólio.
-- Operador: diagnostica o experimento corrente a partir de eventos reais.
-- Especialista em Anúncios: avalia criativo, copy, oferta, público, CTA e destino.
-- Orquestrador: verifica identidade, dependências, conflitos e prontidão.
+- Argos: entrega evidência factual, sem escolher estratégia.
+- Atena: decide mercado, desejo, posicionamento, tese de oferta, portfólio e hipótese.
+- Plutus: valida preço como hipótese econômica, margem, CAC, orçamento e risco.
+- Dédalo: materializa PDE, landing e comunicação não audiovisual conforme a estratégia aprovada.
+- Apolo: materializa roteiro, vídeo, áudio, montagem e legendas.
+- Psique: avalia compreensão, desejo, prazer sensorial, esforço, confiança e objeções.
+- Têmis: revisa verdade, prova, fidelidade, direitos, compliance e segurança comercial.
+- Hermes: opera distribuição, instrumentação, funil e otimização a partir de eventos reais.
+- Orquestrador: verifica identidade única, domínio, dependências, gates e prontidão.
 - Humano: autoriza gasto, publicação, preço e decisões comerciais sensíveis.
+
+Uma atividade de agente possui exatamente uma `responsibleAgentKey` e um
+`responsibilityDomain` compatível. Revisões de Psique e Têmis nunca são coautoradas: o backend exige
+as duas atividades independentes quando ambas forem aplicáveis.
 
 ## Estados consolidados
 

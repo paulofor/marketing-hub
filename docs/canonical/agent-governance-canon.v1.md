@@ -149,16 +149,40 @@ elas não são memória promovida, não alteram código automaticamente e não a
 agente. Implementação, publicação, gasto ou mudança comercial continuam sujeitos aos gates e às
 aprovações já definidos neste cânone.
 
+## Fronteiras dos oito agentes
+
+Por decisão de 2026-08-28, agentes não podem compartilhar autoria sobre a mesma decisão comercial.
+A matriz completa e bloqueante está em
+`docs/canonical/matriz-responsabilidades-agentes-canon.v1.md`:
+
+- Argos reúne fatos de mercado; Atena é a única autora da estratégia;
+- Plutus valida economia e risco; Dédalo constrói o PDE, a landing e materiais não audiovisuais;
+- Apolo produz vídeo e áudio; Psique revisa a experiência humana;
+- Têmis somente revisa integridade comercial, prova, fidelidade, direitos e compliance;
+- Hermes opera distribuição, instrumentação, funil e otimização, sem redefinir estratégia.
+
+O fluxo canônico é `Argos → Atena → Plutus → Dédalo/Apolo → Psique → Têmis → autorização humana
+→ Hermes`. Psique e Têmis usam atividades e identificadores diferentes. Têmis não cria copy, imagem,
+vídeo, landing ou produto sob a identidade que decide o gate. O Estúdio de Imagens é recurso técnico
+de produção sob o contrato de construção de Dédalo, mesmo enquanto o código legado conservar o nome
+`themis-image-studio` por compatibilidade.
+
+O contexto de qualquer tarefa desses fluxos deve carregar a execução, versão e SHA-256 do Contrato
+Estratégico de Mercado. Ausência ou evidência insuficiente bloqueia antes de consumo desnecessário do
+modelo. Campos do experimento não servem como fallback de autoria estratégica. Eventos que
+invalidem estratégia geram solicitação auditável de nova análise da Atena.
+
 ## Migração do Operador de Crescimento
 
-O Operador usa a chave `growth-operator`, versão inicial `1`, modelo `gpt-5.6-sol` e execução
-orientada a eventos. Toda nova execução deve apontar para a `agent_version` ativa no momento em
-que foi criada, preservando qual contrato fundamentou a decisão.
+O Operador usa a chave `growth-operator`, contrato comportamental v2, modelo `gpt-5.6-sol` e
+execução orientada a eventos. A migração cria a próxima `agent_version` disponível, sem reutilizar
+números históricos. Toda nova execução deve apontar para a versão ativa no momento em que foi criada,
+preservando qual contrato fundamentou a decisão.
 
 O prompt e o schema canônicos são:
 
-- `growth-operator-worker/src/main/resources/prompts/growth-operator/v1/diagnosis.md`
-- `growth-operator-worker/src/main/resources/prompts/growth-operator/v1/diagnosis-schema.json`
+- `growth-operator-worker/src/main/resources/prompts/growth-operator/v2/diagnosis.md`
+- `growth-operator-worker/src/main/resources/prompts/growth-operator/v2/diagnosis-schema.json`
 
 ## Arquitetura obrigatória dos agentes
 

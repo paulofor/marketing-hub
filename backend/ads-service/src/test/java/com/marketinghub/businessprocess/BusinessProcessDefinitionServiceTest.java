@@ -149,6 +149,27 @@ class BusinessProcessDefinitionServiceTest {
     verify(repository, never()).save(any());
   }
 
+  /** Rejeita recurso ativo cujo proprietário não corresponde ao agente único da atividade. */
+  @Test
+  void rejectsExecutionResourceOwnedByAnotherAgent() throws Exception {
+    var repository = mock(BusinessProcessDefinitionRepository.class);
+    var resources = mock(BusinessProcessExecutionResourceRepository.class);
+    when(repository.findByProcessCodeAndVersionNumber("landing", 2)).thenReturn(Optional.empty());
+    BusinessProcessExecutionResource resource = studio();
+    resource.setResponsibleAgentKey("meta-ad-approver");
+    when(resources.findByResourceCodeAndActiveTrue("themis-image-studio"))
+        .thenReturn(Optional.of(resource));
+    var service =
+        new BusinessProcessDefinitionService(
+            repository, tasks, resources, mapper, Clock.systemUTC());
+
+    assertThatThrownBy(
+            () -> service.create(request(diagramWithResource("TASK", "themis-image-studio"))))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("outro agente responsável");
+    verify(repository, never()).save(any());
+  }
+
   /** Rejeita recurso em evento ou gate porque somente atividades possuem executor. */
   @Test
   void rejectsExecutionResourceOutsideTask() throws Exception {
@@ -463,18 +484,20 @@ class BusinessProcessDefinitionServiceTest {
         "{\"nodes\":[{\"id\":\"start\",\"type\":\"START\",\"label\":\"Início\"},"
             + "{\"id\":\"task\",\"type\":\""
             + type
-            + "\",\"label\":\"Fazer\",\"executionResourceCode\":\""
+            + "\",\"label\":\"Fazer\",\"owner\":\"Dédalo\","
+            + "\"responsibleAgentKeys\":[\"landing-generator\"],"
+            + "\"responsibilityDomain\":\"PDE_CONSTRUCTION\",\"executionResourceCode\":\""
             + resourceCode
             + "\"},{\"id\":\"end\",\"type\":\"END\",\"label\":\"Fim\"}],"
             + "\"flows\":[{\"from\":\"start\",\"to\":\"task\"},{\"from\":\"task\",\"to\":\"end\"}]}");
   }
 
-  /** Monta o recurso ativo usado nas atividades visuais de Têmis. */
+  /** Monta o recurso técnico legado sob responsabilidade funcional de Dédalo. */
   private BusinessProcessExecutionResource studio() {
     BusinessProcessExecutionResource resource = new BusinessProcessExecutionResource();
     resource.setResourceCode("themis-image-studio");
-    resource.setName("Estúdio de Imagens de Têmis");
-    resource.setResponsibleAgentKey("meta-ad-approver");
+    resource.setName("Materializador visual técnico de Dédalo");
+    resource.setResponsibleAgentKey("landing-generator");
     resource.setActive(true);
     return resource;
   }

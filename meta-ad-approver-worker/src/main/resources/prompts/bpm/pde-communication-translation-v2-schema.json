@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision",
+    "commercialRationale",
+    "strategicContractReference",
+    "communicationAlternatives",
+    "selectedAlternative",
+    "communicationContract",
+    "priceClarityScore",
+    "evidence",
+    "risks",
+    "requiredChanges"
+  ],
+  "properties": {
+    "decision": {"type": "string", "enum": ["APPROVED", "ADJUST", "BLOCKED"]},
+    "commercialRationale": {"type": "string", "minLength": 10},
+    "strategicContractReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategistExecutionId", "contractVersion", "contentHash", "strategyPreserved", "revisionRequired", "revisionReason"],
+      "properties": {
+        "strategistExecutionId": {"type": "integer"},
+        "contractVersion": {"type": "string", "const": "MARKET_STRATEGY_V2"},
+        "contentHash": {"type": "string", "minLength": 64, "maxLength": 64},
+        "strategyPreserved": {"type": "boolean", "const": true},
+        "revisionRequired": {"type": "boolean"},
+        "revisionReason": {"type": ["string", "null"]}
+      }
+    },
+    "communicationAlternatives": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "messageAngle", "benefit", "risk", "effort", "fit"],
+        "properties": {
+          "name": {"type": "string"},
+          "messageAngle": {"type": "string"},
+          "benefit": {"type": "string"},
+          "risk": {"type": "string"},
+          "effort": {"type": "string"},
+          "fit": {"type": "string"}
+        }
+      }
+    },
+    "selectedAlternative": {"type": "string", "minLength": 1},
+    "communicationContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "buyerLanguage",
+        "problemExpression",
+        "desiredOutcomeExpression",
+        "mechanismExplanation",
+        "valuePropositionExpression",
+        "offerPresentation",
+        "includedItems",
+        "excludedItems",
+        "proofAllowed",
+        "limitations",
+        "creativeBrief",
+        "destinationBrief",
+        "primaryCta",
+        "pricePresentation",
+        "checkoutAndAccessMessage",
+        "messageMatchRule"
+      ],
+      "properties": {
+        "buyerLanguage": {"type": "string", "minLength": 5},
+        "problemExpression": {"type": "string", "minLength": 5},
+        "desiredOutcomeExpression": {"type": "string", "minLength": 5},
+        "mechanismExplanation": {"type": "string", "minLength": 5},
+        "valuePropositionExpression": {"type": "string", "minLength": 5},
+        "offerPresentation": {"type": "string", "minLength": 5},
+        "includedItems": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "excludedItems": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "proofAllowed": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "limitations": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "creativeBrief": {"type": "string", "minLength": 10},
+        "destinationBrief": {"type": "string", "minLength": 10},
+        "primaryCta": {"type": "string", "minLength": 3},
+        "pricePresentation": {"type": "string", "minLength": 10},
+        "checkoutAndAccessMessage": {"type": "string", "minLength": 10},
+        "messageMatchRule": {"type": "string", "minLength": 10}
+      }
+    },
+    "priceClarityScore": {"type": "integer", "minimum": 0, "maximum": 100},
+    "evidence": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "risks": {"type": "array", "items": {"type": "string"}},
+    "requiredChanges": {"type": "array", "items": {"type": "string"}}
+  }
+}

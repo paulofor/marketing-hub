@@ -18,7 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: validar o contexto comercial confiável entregue ao gerador de landing. */
 class LandingCommercialContextResolverTest {
 
-  /** Deve expor escopo estruturado, fornecedor e políticas da oferta do mesmo experimento. */
+  /** Deve expor escopo, identidade comercial mínima e políticas do mesmo experimento. */
   @Test
   void shouldExposeStructuredServiceAndTrustContract() {
     PublicProductCommercialOfferService offers = mock(PublicProductCommercialOfferService.class);
@@ -34,7 +34,8 @@ class LandingCommercialContextResolverTest {
     assertThat(context.get("serviceExperienceContract").toString())
         .contains("10 a 20 respostas", "Briefing guiado");
     assertThat(context.get("commercialTrustContract").toString())
-        .contains("AVAILABLE", "Fornecedor Teste", "/privacy");
+        .contains("AVAILABLE", "Digicom Digital", "/privacy")
+        .doesNotContain("legalName", "address");
   }
 
   /** Deve tornar indisponível a confiança pública sem impedir a criação do primeiro rascunho. */
@@ -113,9 +114,8 @@ class LandingCommercialContextResolverTest {
         "Serviço personalizado",
         "Assistida",
         "Um atendimento implantado",
-        "Fornecedor Teste",
+        "Digicom Digital",
         "00.000.000/0001-00",
-        "Rua Teste, 1",
         "teste@sandbox.local",
         "https://kit.example/terms",
         "https://kit.example/privacy",

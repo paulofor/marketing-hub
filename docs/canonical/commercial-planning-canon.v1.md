@@ -1,12 +1,25 @@
 # Planejamento Comercial Canonico v1
 
+## Fronteira estratégica e operacional dos agentes
+
+Por decisão de 2026-08-28, Atena define mercado, desejo, comportamento, concorrência,
+posicionamento, tese de oferta, portfólio e hipóteses no Contrato Estratégico de Mercado v2. Dédalo
+materializa produto, landing, copy e peças não audiovisuais sem alterar essa substância; Apolo
+materializa vídeo e áudio. Psique revisa a experiência humana e Têmis revisa a integridade comercial
+em gates separados. Hermes recebe a mesma versão/hash e define somente distribuição,
+instrumentação, atribuição, funil e otimização. Plutus governa a economia.
+
+Nenhuma etapa posterior pode reconstruir estratégia a partir de campos operacionais. Evidência real
+que invalide a tese retorna para nova execução de Atena; não autoriza qualquer etapa posterior a
+reescrevê-la.
+
 ## Objetivo
 
 O planejamento comercial do Marketing Hub deve transformar objetivos de venda em metas mensais e semanais mensuraveis, conectando produto, experimento, campanha, funil, custo e receita.
 
 ## Fonte comum versionada para agentes
 
-O Dossiê de Oportunidade é a etapa canônica anterior ao Plano Comercial. Ele deve permanecer em um portfólio segregado enquanto Argos registra evidências e Atena, Psique, Plutus e Hermes emitem pareceres independentes. Somente um dossiê aprovado por decisão humana pode ser convertido, uma única vez, em novo Plano Comercial. A conversão copia uma fotografia auditável do contexto validado e mantém o vínculo permanente com o dossiê de origem; não herda orçamento, custos, receita ou métricas de planos existentes.
+O Dossiê de Oportunidade é a etapa canônica anterior ao Plano Comercial. Ele deve permanecer em um portfólio segregado enquanto Argos registra evidências factuais e Atena decide a estratégia de mercado. Plutus só entra depois dessa estratégia, no gate econômico do Plano Comercial; Psique só recebe produto ou artefato real; Hermes só recebe operação autorizada e eventos. Somente um dossiê aprovado por decisão humana pode ser convertido, uma única vez, em novo Plano Comercial. A conversão copia uma fotografia auditável do contexto validado e mantém o vínculo permanente com o dossiê de origem; não herda orçamento, custos, receita ou métricas de planos existentes.
 
 Cada novo dossiê abre no backend um ciclo `productdiscovery.v1/research` e uma tarefa vinculada na mesa de Argos (`market-radar`). O executor consome exclusivamente o endpoint `pending` canônico da descoberta; ao concluir, as evidências reais são incorporadas ao dossiê e a tarefa é concluída. Resultado vazio permanece auditável sem evidência artificial, e falha operacional bloqueia a tarefa com visibilidade no monitor. Dossiês legados em pesquisa recebem o mesmo vínculo por migração idempotente.
 
@@ -18,9 +31,9 @@ Na ClickBank, Gravity deve ser preservada como tração observada, com identidad
 
 Os estados canônicos do dossiê são `RESEARCHING`, `UNDER_REVIEW`, `READY_FOR_TEST`, `APPROVED`, `DISCARDED` e `CONVERTED_TO_PLAN`. Evidências devem registrar fonte e data; pareceres devem registrar agente, decisão, justificativa, riscos, recomendação e data. Dossiês e pareceres não autorizam gastos, publicação, preço ou campanhas.
 
-Ao entrar em `UNDER_REVIEW`, cada parecer deve nascer como execução consumível na fila exclusiva do agente responsável. Atena, Psique, Plutus e Hermes reservam trabalho pelo endpoint `pending`, recebem o contexto persistido completo, executam prompt e schema versionados em seus próprios workers e reportam conclusão ou falha ao backend. As filas são independentes para permitir paralelismo real; uma lease inativa admite uma única retomada e a reincidência termina bloqueada. O frontend deve mostrar aguardando, trabalhando, bloqueado ou concluído a partir do estado persistido, nunca por inferência de logs.
+Ao entrar em `UNDER_REVIEW`, a decisão estratégica deve nascer como execução consumível na fila exclusiva de Atena. Atena recebe o contexto factual persistido completo, executa prompt e schema versionados em seu worker e reporta conclusão ou falha ao backend. Uma lease inativa admite uma única retomada e a reincidência termina bloqueada. O frontend deve mostrar aguardando, trabalhando, bloqueado ou concluído a partir do estado persistido, nunca por inferência de logs.
 
-O monitor operacional deve tratar `opportunity_agent_review` como a execução canônica dos quatro pareceristas. Parecer `PENDING` sem `started_at` por mais de três minutos deve aparecer como alerta, mesmo quando o executor estiver `READY`. Após indisponibilidade transitória do backend, o worker volta a consultar a mesma fila idempotente; uma lease `RUNNING` órfã é retomada automaticamente uma única vez para Atena, Psique, Plutus ou Hermes, sem criar outro parecer nem perder o vínculo com o dossiê.
+O monitor operacional deve tratar `opportunity_agent_review` como a execução canônica da decisão de Atena. Decisão `PENDING` sem `started_at` por mais de três minutos deve aparecer como alerta, mesmo quando o executor estiver `READY`. Após indisponibilidade transitória do backend, o worker volta a consultar a mesma fila idempotente; uma lease `RUNNING` órfã é retomada automaticamente uma única vez para Atena, sem criar outro parecer nem perder o vínculo com o dossiê. Registros antigos de Psique, Plutus e Hermes permanecem apenas como histórico e nunca voltam à fila.
 
 Pesquisa externa indisponível não é resultado de mercado. Se todas as consultas de Argos falharem por provider, credencial, rede ou contrato HTTP, o ciclo deve falhar e bloquear a tarefa com provider, quantidade de tentativas e status auditáveis. Somente consultas executadas com sucesso e sem resultados podem concluir com zero evidências. O MCP deve expor health e logfile do executor no host operacional real.
 
@@ -192,9 +205,21 @@ A homologacao deve usar dados segregados (`mh_test=1`), cobrir landing, eventos,
 
 Todo plano comercial pode manter imagens e vídeos reutilizáveis do produto sem duplicar o arquivo no JSON do plano. Cada vínculo registra URL persistida, tipo (`IMAGE` ou `VIDEO`), descrição, finalidade (`ADS`, `LANDING`, `SOCIAL`, `DELIVERY` ou `PRODUCT_PROOF`), origem, direitos de uso, versão e estado (`DRAFT`, `APPROVED` ou `RETIRED`). `PRODUCT_PROOF` identifica captura, exportação ou evidência fiel de um produto que não é visual por natureza; não é sinônimo de criativo e não pode ser inventado por modelo generativo.
 
-Têmis dirige e materializa imagens do produto com o modelo visual canônico, por ferramentas versionadas no próprio módulo e executadas no container isolado `themis-image-studio`. A capacidade inclui criação do zero, edição não destrutiva e composição híbrida com até quatro referências da biblioteca. O backend permanece como autoridade da fila, segregação por plano, storage, orçamento, auditoria e avanço; o AI Worker não gera nem edita imagens desse fluxo.
+Dédalo dirige a materialização não audiovisual do produto e da comunicação. A produção de imagens
+usa ferramentas versionadas e o container isolado ainda identificado tecnicamente como
+`themis-image-studio` por compatibilidade. Esse executor é um recurso técnico sob o contrato de
+Dédalo, não uma identidade decisória, e inclui criação do zero, edição não destrutiva e composição
+híbrida com até quatro referências da biblioteca. O backend permanece como autoridade da fila,
+segregação por plano, storage, orçamento, auditoria e avanço; o AI Worker não gera nem edita imagens
+desse fluxo.
 
-Quando a própria imagem faz parte do que a cliente recebe, toda imagem produzida por Têmis nasce com `DELIVERY` e pode acumular `LANDING`, `ADS` e `SOCIAL` no mesmo vínculo. Quando o produto é serviço, software, texto, método ou outra entrega não visual, a captura fiel entra separadamente como `PRODUCT_PROOF`; a peça produzida por Têmis recebe apenas a finalidade comercial necessária e deve referenciar `PRODUCT_PROOF` ou `DELIVERY` aprovado. Edição sempre cria nova versão e preserva a origem. Com referências, Têmis pode alterar cenário, enquadramento e contexto, mas não pode redesenhar o produto nem inventar conteúdo, texto, tela, resultado, depoimento ou recurso inexistente.
+Quando a própria imagem faz parte do que a cliente recebe, toda imagem materializada pelo recurso
+técnico nasce com `DELIVERY` e pode acumular `LANDING`, `ADS` e `SOCIAL` no mesmo vínculo. Quando o
+produto é serviço, software, texto, método ou outra entrega não visual, a captura fiel entra
+separadamente como `PRODUCT_PROOF`; a peça materializada recebe apenas a finalidade comercial
+necessária e deve referenciar `PRODUCT_PROOF` ou `DELIVERY` aprovado. Edição sempre cria nova versão
+e preserva a origem. Com referências, Dédalo pode orientar cenário, enquadramento e contexto, mas não
+pode redefinir a estratégia nem inventar conteúdo, tela, resultado, depoimento ou recurso inexistente.
 
 Em produto personalizado, o conteúdo `DELIVERY` promove o negócio da cliente final e não deve ser forçado a vender o próprio produto digital, repetir o preço da oferta ou funcionar isoladamente como anúncio do Marketing Hub. O reuso em `LANDING`, `ADS` e `SOCIAL` significa exibir o arquivo real e íntegro como prova enquadrada do que o comprador recebe. Persona, marca e contato sintéticos são aceitos apenas em homologação segregada explicitamente identificada; nunca podem ser apresentados como cliente ou depoimento real.
 
@@ -202,7 +227,13 @@ Entregável que declare formato Story deve ser produzido e aprovado em proporç�
 
 A execução produtora nunca aprova o próprio arquivo. Depois da persistência em `DRAFT`, o backend abre uma revisão visual para uma nova execução independente de Têmis, que inspeciona o arquivo real em alta definição e somente promove para `APPROVED` quando qualidade, fidelidade à entrega e reuso comercial atingem os mínimos canônicos. Falhas ou lease vencida voltam ao fluxo auditável sem publicação automática.
 
-Criativos, landing e social reutilizam apenas itens `APPROVED`. A geração de copy pode continuar em executor próprio, mas nenhuma etapa pode reconstruir uma imagem do produto no AI Worker nem consumir referência de outro plano. Criação comercial sem `PRODUCT_PROOF` ou `DELIVERY` aprovado deve bloquear antes de consumir tentativa. O subprocesso de criativos escolhe formatos pelo canal: imagem é responsabilidade de Têmis; vídeo usa Apolo e o Estúdio Áudio Vídeo somente quando sua comparação de valor, custo e risco justificar essa rota. Aprovação nunca autoriza publicação, gasto ou mudança do experimento para `RUNNING`.
+Criativos, landing e social reutilizam apenas itens `APPROVED`. A geração de copy pode continuar em
+executor próprio sob responsabilidade de Dédalo, mas nenhuma etapa pode reconstruir imagem do produto
+no AI Worker nem consumir referência de outro plano. Criação comercial sem `PRODUCT_PROOF` ou
+`DELIVERY` aprovado bloqueia antes de consumir tentativa. O subprocesso de criativos escolhe formatos
+pelo canal: imagem e copy pertencem à materialização de Dédalo; vídeo usa Apolo e o Estúdio Áudio
+Vídeo quando valor, custo e risco justificarem essa rota. Têmis revisa o ativo final e nunca o produz.
+Aprovação nunca autoriza publicação, gasto ou mudança do experimento para `RUNNING`.
 
 ## Objetivo e resultado final dos processos comerciais
 
@@ -210,4 +241,10 @@ Por decisão de 2026-08-16, toda definição BPM comercial deve declarar separad
 
 As versões vigentes dos processos de fabricação do produto, criação de criativos, geração de landing, homologação do experimento, otimização e venda/entrega devem terminar com critérios auditáveis ligados a produto íntegro, ativo visual aprovado, checkout canônico, instrumentação válida, receita, entrega ou satisfação, conforme o domínio. O nó final não pode esconder pendência, `DRAFT`, falha de entrega, aprovação própria ou impacto apenas estimado.
 
-Quando houver imagem, Têmis atua em execuções e containers segregados: `themis-image-studio` cria ou edita e persiste a nova versão como `DRAFT`; `meta-ad-approver-worker` inspeciona o arquivo real e decide o gate em uma execução revisora independente. Somente o container produtor recebe a credencial do provedor visual; somente o revisor recebe identidade Codex e ferramentas de inspeção. O backend continua sendo a única autoridade de fila, persistência e avanço. Fabricação, criativo, landing, homologação, otimização e entrega devem preservar essa segregação e a linhagem até o ativo-fonte da Biblioteca Audiovisual.
+Quando houver imagem, os papéis são segregados: o recurso técnico `themis-image-studio`, orientado
+pelo contrato de construção de Dédalo, cria ou edita e persiste a nova versão como `DRAFT`;
+`meta-ad-approver-worker` executa Têmis somente para inspecionar o arquivo real e decidir o gate
+independente. Somente o container produtor recebe a credencial do provedor visual; somente o revisor
+recebe identidade Codex e ferramentas de inspeção. O backend continua sendo a única autoridade de
+fila, persistência e avanço. Fabricação, criativo, landing, homologação, otimização e entrega devem
+preservar essa segregação e a linhagem até o ativo-fonte da Biblioteca Audiovisual.

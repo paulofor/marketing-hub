@@ -18,6 +18,7 @@ export type ProductStageMeasurement = {
   costCoverage: "COMPLETE" | "PARTIAL" | "NOT_REPORTED" | "NO_EXECUTIONS";
   costedExecutionCount: number;
   uncostedExecutionCount: number;
+  commitRegistrationAllowed: boolean;
 };
 
 export type ProductValueChainPosition = {
@@ -53,6 +54,37 @@ export type ProductValueChainPosition = {
     measurements?: ProductStageMeasurement[];
   } | null;
 };
+
+export function sortProductStageMeasurements(
+  first: ProductStageMeasurement,
+  second: ProductStageMeasurement,
+) {
+  const firstSequence = first.sequenceLabel
+    ?.split(".")
+    .map((part) => Number(part));
+  const secondSequence = second.sequenceLabel
+    ?.split(".")
+    .map((part) => Number(part));
+  if (
+    firstSequence?.every(Number.isFinite) &&
+    secondSequence?.every(Number.isFinite)
+  ) {
+    const parts = Math.max(firstSequence.length, secondSequence.length);
+    for (let index = 0; index < parts; index += 1) {
+      if (firstSequence[index] == null) return -1;
+      if (secondSequence[index] == null) return 1;
+      if (firstSequence[index] !== secondSequence[index]) {
+        return firstSequence[index] - secondSequence[index];
+      }
+    }
+  }
+  if (first.enteredAt && second.enteredAt) {
+    return Date.parse(first.enteredAt) - Date.parse(second.enteredAt);
+  }
+  if (first.enteredAt) return -1;
+  if (second.enteredAt) return 1;
+  return first.processDefinitionId - second.processDefinitionId;
+}
 
 export function useProductValueChainPositions() {
   return useQuery({

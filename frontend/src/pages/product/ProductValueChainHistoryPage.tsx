@@ -11,6 +11,7 @@ import { formatCommercialStatus } from "../../api/product/productStatus";
 import { useProduct } from "../../api/product/useProduct";
 import { useProductProcessCommits } from "../../api/product/useProductProcessCommits";
 import {
+  sortProductStageMeasurements,
   type ProductStageMeasurement,
   useProductValueChainPosition,
 } from "../../api/product/useProductValueChainPositions";
@@ -66,9 +67,14 @@ function formatEvidence(value?: string | null) {
   return evidenceLabels[value] ?? value.replace(/_/g, " ").toLowerCase();
 }
 
-function statusLabel(status: ProductStageMeasurement["trackingStatus"]) {
+function statusLabel(measurement: ProductStageMeasurement) {
+  const status = measurement.trackingStatus;
   if (status === "COMPLETED") return "Objetivo atingido";
-  if (status === "PLANNED") return "Pronto para iniciar";
+  if (status === "PLANNED") {
+    return measurement.stageType === "PROCESS"
+      ? "Previsto na cadeia"
+      : "Pronto para iniciar";
+  }
   if (status === "RECORDED") return "Registrado sem saída comprovada";
   return "Em andamento";
 }
@@ -87,18 +93,6 @@ function costLabel(measurement: ProductStageMeasurement) {
   return `${usdFormatter.format(measurement.knownEstimatedCostUsd)}${coverage}`;
 }
 
-function sortMeasurements(
-  first: ProductStageMeasurement,
-  second: ProductStageMeasurement,
-) {
-  if (!first.enteredAt && !second.enteredAt) {
-    return first.stageType.localeCompare(second.stageType);
-  }
-  if (!first.enteredAt) return 1;
-  if (!second.enteredAt) return -1;
-  return Date.parse(first.enteredAt) - Date.parse(second.enteredAt);
-}
-
 export default function ProductValueChainHistoryPage() {
   const { productId } = useParams();
   const productQuery = useProduct(productId);
@@ -109,7 +103,7 @@ export default function ProductValueChainHistoryPage() {
   const measurements = [
     ...(position?.processMeasurements ?? []),
     ...(position?.subprocessPosition?.measurements ?? []),
-  ].sort(sortMeasurements);
+  ].sort(sortProductStageMeasurements);
 
   if (productQuery.isLoading || positionQuery.isLoading) {
     return <p className="text-muted">Carregando histórico da cadeia...</p>;
@@ -238,8 +232,8 @@ export default function ProductValueChainHistoryPage() {
                 </p>
               </div>
               <span className="badge text-bg-light border">
-                {measurements.length} registro
-                {measurements.length === 1 ? "" : "s"}
+                {measurements.length} etapa
+                {measurements.length === 1 ? "" : "s"} na cadeia
               </span>
             </div>
 
@@ -294,7 +288,7 @@ export default function ProductValueChainHistoryPage() {
                         ) : (
                           <Clock3 size={15} aria-hidden="true" />
                         )}
-                        {statusLabel(measurement.trackingStatus)}
+                        {statusLabel(measurement)}
                       </span>
                     </div>
 
@@ -338,16 +332,18 @@ export default function ProductValueChainHistoryPage() {
                         </small>
                       </div>
                     </dl>
-                    <ProductProcessCommitLedger
-                      productId={product.id}
-                      processDefinitionId={measurement.processDefinitionId}
-                      processName={measurement.processName}
-                      commits={(commitsQuery.data ?? []).filter(
-                        (commit) =>
-                          commit.processDefinitionId ===
-                          measurement.processDefinitionId,
-                      )}
-                    />
+                    {measurement.commitRegistrationAllowed ? (
+                      <ProductProcessCommitLedger
+                        productId={product.id}
+                        processDefinitionId={measurement.processDefinitionId}
+                        processName={measurement.processName}
+                        commits={(commitsQuery.data ?? []).filter(
+                          (commit) =>
+                            commit.processDefinitionId ===
+                            measurement.processDefinitionId,
+                        )}
+                      />
+                    ) : null}
                   </li>
                 ))}
               </ol>

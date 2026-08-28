@@ -45,6 +45,44 @@ const position = {
   processMeasurements: [
     {
       stageType: "PROCESS",
+      sequenceLabel: "1",
+      trackingStatus: "PLANNED",
+      processDefinitionId: 31,
+      processCode: "pde-opportunity-discovery",
+      processName: "Descoberta factual da oportunidade PDE",
+      enteredAt: null,
+      entryEvidence: "NOT_RECORDED",
+      exitedAt: null,
+      exitEvidence: null,
+      objectiveAchieved: false,
+      elapsedDays: null,
+      knownEstimatedCostUsd: 0,
+      costCoverage: "NO_EXECUTIONS",
+      costedExecutionCount: 0,
+      uncostedExecutionCount: 0,
+      commitRegistrationAllowed: false,
+    },
+    {
+      stageType: "PROCESS",
+      sequenceLabel: "2",
+      trackingStatus: "PLANNED",
+      processDefinitionId: 37,
+      processCode: "pde-commercial-plan-offer-v1",
+      processName: "Estratégia comercial anterior sem histórico migrado",
+      enteredAt: null,
+      entryEvidence: "NOT_RECORDED",
+      exitedAt: null,
+      exitEvidence: null,
+      objectiveAchieved: false,
+      elapsedDays: null,
+      knownEstimatedCostUsd: 0,
+      costCoverage: "NO_EXECUTIONS",
+      costedExecutionCount: 0,
+      uncostedExecutionCount: 0,
+      commitRegistrationAllowed: false,
+    },
+    {
+      stageType: "PROCESS",
       sequenceLabel: "3",
       trackingStatus: "COMPLETED",
       processDefinitionId: 38,
@@ -60,6 +98,7 @@ const position = {
       costCoverage: "COMPLETE",
       costedExecutionCount: 37,
       uncostedExecutionCount: 0,
+      commitRegistrationAllowed: true,
     },
     {
       stageType: "PROCESS",
@@ -78,6 +117,45 @@ const position = {
       costCoverage: "PARTIAL",
       costedExecutionCount: 12,
       uncostedExecutionCount: 2,
+      commitRegistrationAllowed: true,
+    },
+    {
+      stageType: "PROCESS",
+      sequenceLabel: "5",
+      trackingStatus: "PLANNED",
+      processDefinitionId: 45,
+      processCode: "pde-commercial-homologation-activation",
+      processName: "Homologação e ativação comercial do PDE",
+      enteredAt: null,
+      entryEvidence: "NOT_RECORDED",
+      exitedAt: null,
+      exitEvidence: null,
+      objectiveAchieved: false,
+      elapsedDays: null,
+      knownEstimatedCostUsd: 0,
+      costCoverage: "NO_EXECUTIONS",
+      costedExecutionCount: 0,
+      uncostedExecutionCount: 0,
+      commitRegistrationAllowed: false,
+    },
+    {
+      stageType: "PROCESS",
+      sequenceLabel: "6",
+      trackingStatus: "PLANNED",
+      processDefinitionId: 46,
+      processCode: "pde-sales-delivery-learning",
+      processName: "Venda, entrega e aprendizado do PDE",
+      enteredAt: null,
+      entryEvidence: "NOT_RECORDED",
+      exitedAt: null,
+      exitEvidence: null,
+      objectiveAchieved: false,
+      elapsedDays: null,
+      knownEstimatedCostUsd: 0,
+      costCoverage: "NO_EXECUTIONS",
+      costedExecutionCount: 0,
+      uncostedExecutionCount: 0,
+      commitRegistrationAllowed: false,
     },
   ],
   subprocessPosition: {
@@ -112,6 +190,7 @@ const position = {
         costCoverage: "COMPLETE",
         costedExecutionCount: 4,
         uncostedExecutionCount: 0,
+        commitRegistrationAllowed: true,
       },
       {
         stageType: "SUBPROCESS",
@@ -130,6 +209,7 @@ const position = {
         costCoverage: "NO_EXECUTIONS",
         costedExecutionCount: 0,
         uncostedExecutionCount: 0,
+        commitRegistrationAllowed: true,
       },
     ],
   },
@@ -220,11 +300,30 @@ describe("ProductValueChainHistoryPage", () => {
     const timeline = screen.getByRole("list", {
       name: "Histórico dos processos e subprocessos",
     });
-    expect(within(timeline).getAllByRole("listitem")).toHaveLength(4);
+    expect(within(timeline).getAllByRole("listitem")).toHaveLength(8);
+    expect(
+      within(timeline)
+        .getAllByRole("heading", { level: 3 })
+        .map((heading) => heading.textContent),
+    ).toEqual([
+      "Descoberta factual da oportunidade PDE",
+      "Estratégia comercial anterior sem histórico migrado",
+      "Plano Comercial e desenho da oferta PDE",
+      "Comunicação e jornada de venda do PDE",
+      "Criação e Aprovação de Criativos",
+      "Geração de landing page",
+      "Homologação e ativação comercial do PDE",
+      "Venda, entrega e aprendizado do PDE",
+    ]);
+    expect(within(timeline).getByText("1")).toBeTruthy();
+    expect(within(timeline).getByText("2")).toBeTruthy();
     expect(within(timeline).getByText("3")).toBeTruthy();
     expect(within(timeline).getByText("4.1")).toBeTruthy();
     expect(within(timeline).getByText("4.2")).toBeTruthy();
+    expect(within(timeline).getByText("5")).toBeTruthy();
+    expect(within(timeline).getByText("6")).toBeTruthy();
     expect(within(timeline).getByText("Pronto para iniciar")).toBeTruthy();
+    expect(within(timeline).getAllByText("Previsto na cadeia")).toHaveLength(4);
     expect(within(timeline).getByText("21/08/2026, 03:55 UTC")).toBeTruthy();
     expect(within(timeline).getByText("21/08/2026, 17:22 UTC")).toBeTruthy();
     expect(within(timeline).getAllByText("Menos de 1 dia")).toHaveLength(2);
@@ -233,49 +332,53 @@ describe("ProductValueChainHistoryPage", () => {
       within(timeline).getByText(/US\$\s*3,5888.*cobertura parcial/i),
     ).toBeTruthy();
     expect(
-      within(timeline).getByText("Data e hora ainda não registradas"),
-    ).toBeTruthy();
+      within(timeline).getAllByText("Data e hora ainda não registradas"),
+    ).toHaveLength(5);
     expect(
-      within(timeline).getByText("Data ainda não registrada"),
-    ).toBeTruthy();
+      within(timeline).getAllByText("Data ainda não registrada"),
+    ).toHaveLength(5);
     expect(
       within(timeline).getAllByText("Objetivo ainda sem saída comprovada"),
     ).toHaveLength(1);
     expect(
-      within(timeline).getByText("Aguardando a primeira execução"),
-    ).toBeTruthy();
+      within(timeline).getAllByText("Aguardando a primeira execução"),
+    ).toHaveLength(5);
     expect(
       within(timeline).getAllByRole("button", { name: "Registrar commit" }),
     ).toHaveLength(4);
     const activityLinks = within(timeline).getAllByRole("link", {
       name: "Atividades e tarefas",
     });
-    expect(activityLinks).toHaveLength(4);
+    expect(activityLinks).toHaveLength(8);
     expect(activityLinks[0]).toHaveAttribute(
       "href",
-      "/products/9/value-chain-history/processes/38/activities",
+      "/products/9/value-chain-history/processes/31/activities",
     );
     expect(activityLinks[1]).toHaveAttribute(
       "href",
-      "/products/9/value-chain-history/processes/43/activities",
+      "/products/9/value-chain-history/processes/37/activities",
     );
     expect(activityLinks[2]).toHaveAttribute(
       "href",
-      "/products/9/value-chain-history/processes/48/activities",
+      "/products/9/value-chain-history/processes/38/activities",
     );
     expect(activityLinks[3]).toHaveAttribute(
+      "href",
+      "/products/9/value-chain-history/processes/43/activities",
+    );
+    expect(activityLinks[5]).toHaveAttribute(
       "href",
       "/products/9/value-chain-history/processes/18/activities",
     );
     const bpmLinks = within(timeline).getAllByRole("link", {
       name: "Abrir BPM",
     });
-    expect(bpmLinks).toHaveLength(4);
+    expect(bpmLinks).toHaveLength(8);
     expect(bpmLinks[0]).toHaveAttribute(
       "href",
-      "/business-processes?processId=38",
+      "/business-processes?processId=31",
     );
-    expect(bpmLinks[3]).toHaveAttribute(
+    expect(bpmLinks[5]).toHaveAttribute(
       "href",
       "/business-processes?processId=18",
     );

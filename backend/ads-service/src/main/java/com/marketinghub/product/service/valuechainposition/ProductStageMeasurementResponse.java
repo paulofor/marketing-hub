@@ -22,4 +22,5 @@ public record ProductStageMeasurementResponse(
     BigDecimal knownEstimatedCostUsd,
     String costCoverage,
     Integer costedExecutionCount,
-    Integer uncostedExecutionCount) {}
+    Integer uncostedExecutionCount,
+    boolean commitRegistrationAllowed) {}

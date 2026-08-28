@@ -11,12 +11,14 @@ import static org.mockito.Mockito.when;
 import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.product.Product;
 import com.marketinghub.product.ProductProcessCommit;
+import com.marketinghub.product.service.valuechainposition.ProductStageMeasurementResponse;
 import com.marketinghub.product.service.valuechainposition.ProductValueChainPositionResponse;
 import com.marketinghub.product.service.valuechainposition.ProductValueChainPositionService;
 import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.product.ProductProcessCommitRepository;
 import com.marketinghub.repository.jpa.product.ProductRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -117,6 +119,17 @@ class ProductProcessCommitServiceTest {
     verify(commitRepository, never()).saveAndFlush(any());
   }
 
+  /** Rejeita commit em processo futuro exibido apenas para completar a cadeia visual. */
+  @Test
+  void rejectsCommitForPlannedFutureProcess() {
+    when(positionService.getPosition(9L)).thenReturn(positionWithPlannedProcess(99L, 43L));
+
+    assertThatThrownBy(() -> service.register(9L, request(SHA)))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("não pertence ao histórico conhecido");
+    verify(commitRepository, never()).saveAndFlush(any());
+  }
+
   /** Não lista commits de uma identidade de produto inexistente. */
   @Test
   void rejectsMissingProductOnList() {
@@ -169,6 +182,47 @@ class ProductProcessCommitServiceTest {
         4,
         6,
         List.of(),
+        null);
+  }
+
+  /** Monta uma posição cuja cadeia contém outro processo ainda sem execução autorizada. */
+  private ProductValueChainPositionResponse positionWithPlannedProcess(
+      Long currentProcessDefinitionId, Long plannedProcessDefinitionId) {
+    ProductStageMeasurementResponse planned =
+        new ProductStageMeasurementResponse(
+            "PROCESS",
+            "5",
+            "PLANNED",
+            plannedProcessDefinitionId,
+            "planned-process",
+            "Processo futuro",
+            null,
+            "NOT_RECORDED",
+            null,
+            null,
+            false,
+            null,
+            BigDecimal.ZERO,
+            "NO_EXECUTIONS",
+            0,
+            0,
+            false);
+    ProductValueChainPositionResponse current = position(currentProcessDefinitionId);
+    return new ProductValueChainPositionResponse(
+        current.productId(),
+        current.commercialStatus(),
+        current.resolutionStatus(),
+        current.resolutionMessage(),
+        current.chainDefinitionId(),
+        current.chainName(),
+        current.chainVersion(),
+        current.processDefinitionId(),
+        current.processCode(),
+        current.processName(),
+        current.processVersion(),
+        current.sequenceNumber(),
+        current.processCount(),
+        List.of(planned),
         null);
   }
 }

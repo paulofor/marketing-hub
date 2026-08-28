@@ -67,6 +67,18 @@ o bloqueio anterior. Uma tarefa criada depois de a instância estar concluída o
 ocorrência, preservando integralmente o ciclo encerrado. Tarefas excepcionais e registros históricos incompletos permanecem
 legíveis como legado até poderem ser vinculados sem fabricar dados.
 
+Todo fluxo especializado que persista uma execução em tabela própria deve também materializar e
+sincronizar a instância e a tarefa BPM reais no momento em que o backend abre, entrega, conclui ou
+bloqueia o trabalho. A referência de origem deve ser estável e vincular a entidade técnica à versão
+de processo e à atividade vigentes. A tabela especializada pode preservar detalhes adicionais, mas
+não substitui `business_process_activity_instance` e `agent_task`; o frontend não pode reconstruir
+nem sintetizar tarefas a partir dela. O histórico por atividade deve representar a execução
+persistida, inclusive falhas, modelo, prompt, consumo disponível, datas, resultado e evidências, sem
+converter atividade técnica em sucesso funcional.
+Se uma versão nova for publicada durante uma execução já aberta, seus callbacks devem continuar na
+tarefa da versão original. Renomeações de atividade entre versões só podem ser correlacionadas por
+aliases explícitos do fluxo, preservando uma única execução para a mesma referência de origem.
+
 - Cada processo possui código estável e versões imutáveis depois de publicadas.
 - Uma versão nasce `DRAFT`; somente publicação explícita a torna `PUBLISHED`.
 - Nomes equivalentes, desconsiderando caixa, acentos, espaços e pontuação, não podem criar processos

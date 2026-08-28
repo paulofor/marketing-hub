@@ -388,6 +388,16 @@ devem repetir o lease vigente; callback de uma tentativa substituída é rejeita
 `RESEARCHING` cujo lease expirou deve voltar à fila automaticamente com nova tentativa
 auditável, evitando bloqueio permanente após queda ou interrupção do worker.
 
+Cada `ProductDiscoveryCycle` deve possuir a referência estável
+`product-discovery-cycle:<cycleId>` na atividade inicial de Argos da versão de processo vigente. O
+backend abre a tarefa como `PENDING`, registra `IN_PROGRESS` quando entrega o ciclo pelo endpoint
+`pending`, persiste plano, resposta bruta, modelo, prompt e tokens efetivamente disponíveis e fecha
+a mesma tarefa como `COMPLETED` ou `BLOCKED` junto com o callback funcional. A instância BPM e a
+tarefa são obrigatórias para o histórico por atividade; a linha em `product_discovery_cycle`
+continua sendo a fonte detalhada do domínio, mas não pode existir como execução invisível ao
+processo. Retroativos devem preservar status e erro reais, identificar a origem do backfill e manter
+como ausentes horários, prompt, tokens ou custos que não tenham sido registrados na execução.
+
 Um ciclo dirigido não pode concluir nem marcar a tarefa do dossiê como concluída com menos
 de dez ofertas únicas comparáveis, vindas dos marketplaces autorizados ou de páginas
 comerciais públicas aderentes ao problema quando o formato pesquisado não for coberto pelos

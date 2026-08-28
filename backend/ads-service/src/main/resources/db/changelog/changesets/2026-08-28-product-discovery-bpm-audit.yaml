@@ -1,0 +1,299 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-28-product-discovery-bpm-audit-1-backfill
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: product_discovery_cycle
+        - tableExists:
+            tableName: product_discovery_opportunity
+        - tableExists:
+            tableName: business_process_definition
+        - tableExists:
+            tableName: business_process_activity_definition
+        - tableExists:
+            tableName: business_process_activity_instance
+        - tableExists:
+            tableName: agent
+        - tableExists:
+            tableName: agent_task
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT IGNORE INTO business_process_activity_instance (
+                activity_definition_id,
+                source_reference,
+                occurrence_number,
+                status,
+                entered_at,
+                exited_at,
+                objective_achieved,
+                objective_evidence_json,
+                blocked_reason,
+                known_cost_usd,
+                cost_coverage,
+                evidence_quality,
+                created_at,
+                updated_at
+              )
+              SELECT
+                activity.id,
+                CONCAT('product-discovery-cycle:', cycle.id),
+                1,
+                CASE cycle.status
+                  WHEN 'DRAFT' THEN 'PENDING'
+                  WHEN 'READY_FOR_RESEARCH' THEN 'PENDING'
+                  WHEN 'RESEARCHING' THEN 'IN_PROGRESS'
+                  WHEN 'COMPLETED' THEN 'COMPLETED'
+                  WHEN 'FAILED' THEN 'BLOCKED'
+                  WHEN 'ARCHIVED' THEN 'CANCELLED'
+                END,
+                cycle.created_at,
+                CASE
+                  WHEN cycle.status IN ('COMPLETED', 'ARCHIVED') THEN cycle.updated_at
+                  ELSE NULL
+                END,
+                CASE WHEN cycle.status = 'COMPLETED' THEN 1 ELSE 0 END,
+                CASE
+                  WHEN cycle.status = 'COMPLETED' THEN JSON_OBJECT(
+                    'backfillSource', 'product-discovery-bpm-audit/v1',
+                    'cycleId', cycle.id,
+                    'decisionSummary', cycle.decision_summary,
+                    'opportunityCount', COALESCE(opportunities.opportunity_count, 0)
+                  )
+                  ELSE NULL
+                END,
+                CASE WHEN cycle.status = 'FAILED' THEN cycle.error_message ELSE NULL END,
+                NULL,
+                'NOT_REPORTED',
+                'BACKFILLED_FROM_CYCLE',
+                cycle.created_at,
+                cycle.updated_at
+              FROM product_discovery_cycle cycle
+              JOIN business_process_definition process
+                ON process.process_code = 'pde-opportunity-discovery'
+               AND process.status IN ('PUBLISHED', 'RETIRED')
+               AND COALESCE(process.published_at, process.created_at) <= cycle.created_at
+              JOIN business_process_activity_definition activity
+                ON activity.process_definition_id = process.id
+               AND BINARY activity.activity_id = BINARY 'inspiration'
+              LEFT JOIN (
+                SELECT
+                  newer_process.version_number,
+                  COALESCE(newer_process.published_at, newer_process.created_at) AS effective_at
+                FROM business_process_definition newer_process
+                JOIN business_process_activity_definition newer_activity
+                  ON newer_activity.process_definition_id = newer_process.id
+                 AND BINARY newer_activity.activity_id = BINARY 'inspiration'
+                WHERE newer_process.process_code = 'pde-opportunity-discovery'
+                  AND newer_process.status IN ('PUBLISHED', 'RETIRED')
+              ) newer
+                ON newer.version_number > process.version_number
+               AND newer.effective_at <= cycle.created_at
+              LEFT JOIN (
+                SELECT cycle_id, COUNT(*) AS opportunity_count
+                FROM product_discovery_opportunity
+                GROUP BY cycle_id
+              ) opportunities ON opportunities.cycle_id = cycle.id
+              WHERE newer.version_number IS NULL;
+
+              INSERT INTO agent_task (
+                assigned_agent_id,
+                requested_by_agent_id,
+                requested_by_type,
+                requested_by_name,
+                title,
+                description,
+                priority,
+                status,
+                source_reference,
+                process_definition_id,
+                process_activity_id,
+                process_activity_name,
+                activity_instance_id,
+                exceptional,
+                exception_reason,
+                task_kind,
+                gate_code,
+                gate_status,
+                gate_decision_reason,
+                gate_decided_at,
+                received_at,
+                delivered_at,
+                result_json,
+                evidence_json,
+                execution_error,
+                input_tokens,
+                cached_input_tokens,
+                output_tokens,
+                estimated_cost_usd,
+                cost_estimation_status,
+                model_usage_updated_at,
+                execution_model_code,
+                execution_reasoning_effort,
+                execution_prompt,
+                created_at,
+                updated_at
+              )
+              SELECT
+                assigned_agent.id,
+                NULL,
+                'HUMAN',
+                'Marketing Hub',
+                LEFT(
+                  CONCAT('Pesquisar oportunidade PDE #', cycle.id, ' · ', cycle.theme),
+                  160
+                ),
+                COALESCE(
+                  NULLIF(TRIM(cycle.objective), ''),
+                  CONCAT('Qualificar fontes e pesquisar evidências auditáveis para ', cycle.theme, '.')
+                ),
+                'HIGH',
+                CASE cycle.status
+                  WHEN 'DRAFT' THEN 'PENDING'
+                  WHEN 'READY_FOR_RESEARCH' THEN 'PENDING'
+                  WHEN 'RESEARCHING' THEN 'IN_PROGRESS'
+                  WHEN 'COMPLETED' THEN 'COMPLETED'
+                  WHEN 'FAILED' THEN 'BLOCKED'
+                  WHEN 'ARCHIVED' THEN 'CANCELLED'
+                END,
+                CONCAT('product-discovery-cycle:', cycle.id),
+                process.id,
+                activity.activity_id,
+                activity.name,
+                instance.id,
+                0,
+                NULL,
+                'WORK',
+                NULL,
+                NULL,
+                NULL,
+                NULL,
+                NULL,
+                CASE WHEN cycle.status = 'COMPLETED' THEN cycle.updated_at ELSE NULL END,
+                CASE cycle.status
+                  WHEN 'COMPLETED' THEN JSON_OBJECT(
+                    'cycleId', cycle.id,
+                    'status', cycle.status,
+                    'stageCode', cycle.stage_code,
+                    'decisionSummary', cycle.decision_summary,
+                    'opportunityCount', COALESCE(opportunities.opportunity_count, 0)
+                  )
+                  WHEN 'FAILED' THEN JSON_OBJECT(
+                    'cycleId', cycle.id,
+                    'status', cycle.status,
+                    'stageCode', cycle.stage_code,
+                    'error', cycle.error_message
+                  )
+                  WHEN 'ARCHIVED' THEN JSON_OBJECT(
+                    'cycleId', cycle.id,
+                    'status', cycle.status,
+                    'stageCode', cycle.stage_code
+                  )
+                  ELSE NULL
+                END,
+                CASE
+                  WHEN JSON_VALID(cycle.research_plan_json)
+                    AND JSON_VALID(cycle.research_plan_raw_response)
+                  THEN JSON_OBJECT(
+                    'backfillSource', 'product-discovery-bpm-audit/v1',
+                    'cycleId', cycle.id,
+                    'sourceReference', CONCAT('product-discovery-cycle:', cycle.id),
+                    'executionAttempt', cycle.execution_attempt,
+                    'researchPlanRecorded', TRUE,
+                    'researchPlan', JSON_EXTRACT(cycle.research_plan_json, '$'),
+                    'researchPlanRawResponse', JSON_EXTRACT(
+                      cycle.research_plan_raw_response,
+                      '$'
+                    )
+                  )
+                  WHEN JSON_VALID(cycle.research_plan_json)
+                  THEN JSON_OBJECT(
+                    'backfillSource', 'product-discovery-bpm-audit/v1',
+                    'cycleId', cycle.id,
+                    'sourceReference', CONCAT('product-discovery-cycle:', cycle.id),
+                    'executionAttempt', cycle.execution_attempt,
+                    'researchPlanRecorded', TRUE,
+                    'researchPlan', JSON_EXTRACT(cycle.research_plan_json, '$')
+                  )
+                  ELSE JSON_OBJECT(
+                    'backfillSource', 'product-discovery-bpm-audit/v1',
+                    'cycleId', cycle.id,
+                    'sourceReference', CONCAT('product-discovery-cycle:', cycle.id),
+                    'executionAttempt', cycle.execution_attempt,
+                    'researchPlanRecorded', FALSE
+                  )
+                END,
+                CASE WHEN cycle.status = 'FAILED' THEN cycle.error_message ELSE NULL END,
+                NULL,
+                NULL,
+                NULL,
+                NULL,
+                'NOT_REPORTED',
+                NULL,
+                cycle.research_plan_model,
+                NULL,
+                NULL,
+                cycle.created_at,
+                cycle.updated_at
+              FROM product_discovery_cycle cycle
+              JOIN business_process_activity_instance instance
+                ON BINARY instance.source_reference = BINARY CONCAT(
+                  'product-discovery-cycle:',
+                  cycle.id
+                )
+               AND instance.occurrence_number = 1
+               AND instance.evidence_quality = 'BACKFILLED_FROM_CYCLE'
+              JOIN business_process_activity_definition activity
+                ON activity.id = instance.activity_definition_id
+               AND BINARY activity.activity_id = BINARY 'inspiration'
+              JOIN business_process_definition process
+                ON process.id = activity.process_definition_id
+               AND process.process_code = 'pde-opportunity-discovery'
+              JOIN agent assigned_agent
+                ON BINARY assigned_agent.agent_key = BINARY 'market-radar'
+              LEFT JOIN (
+                SELECT cycle_id, COUNT(*) AS opportunity_count
+                FROM product_discovery_opportunity
+                GROUP BY cycle_id
+              ) opportunities ON opportunities.cycle_id = cycle.id
+              LEFT JOIN agent_task existing_task
+                ON existing_task.process_definition_id = process.id
+               AND BINARY existing_task.process_activity_id = BINARY activity.activity_id
+               AND BINARY existing_task.source_reference = BINARY instance.source_reference
+               AND existing_task.assigned_agent_id = assigned_agent.id
+              WHERE existing_task.id IS NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DELETE task
+              FROM agent_task task
+              JOIN business_process_activity_instance instance
+                ON instance.id = task.activity_instance_id
+              JOIN business_process_activity_definition activity
+                ON activity.id = instance.activity_definition_id
+              JOIN business_process_definition process
+                ON process.id = activity.process_definition_id
+              WHERE process.process_code = 'pde-opportunity-discovery'
+                AND BINARY activity.activity_id = BINARY 'inspiration'
+                AND JSON_VALID(task.evidence_json)
+                AND JSON_UNQUOTE(JSON_EXTRACT(task.evidence_json, '$.backfillSource'))
+                  = 'product-discovery-bpm-audit/v1';
+
+              DELETE instance
+              FROM business_process_activity_instance instance
+              JOIN business_process_activity_definition activity
+                ON activity.id = instance.activity_definition_id
+              JOIN business_process_definition process
+                ON process.id = activity.process_definition_id
+              WHERE process.process_code = 'pde-opportunity-discovery'
+                AND BINARY activity.activity_id = BINARY 'inspiration'
+                AND instance.evidence_quality = 'BACKFILLED_FROM_CYCLE';

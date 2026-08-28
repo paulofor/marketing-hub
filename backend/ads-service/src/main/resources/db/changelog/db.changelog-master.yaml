@@ -1955,3 +1955,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-08-27-pde-gate-coauthored-execution.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-08-28-product-discovery-bpm-audit.yaml
+      relativeToChangelogFile: true

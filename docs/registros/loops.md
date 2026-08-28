@@ -8,6 +8,26 @@
 >
 > Uso obrigatório recomendado: antes de corrigir problema em GeraLanding, Facebook Ads, Lead Portal, OpenAI/schema, pipelines administrativos ou pipeline de hipótese, verificar se a solicitação reabre algum loop listado aqui.
 
+## LOOP-PDE-DESCOBERTA-FORA-DO-HISTORICO-BPM — ciclos reais aparecem como atividade não executada
+
+- **Data:** 2026-08-28.
+- **Sintoma:** a atividade `Qualificar fontes e inspirações atualizadas` informava nenhuma execução,
+  embora os ciclos PDE #37–#39 tivessem sido reservados, pesquisados e encerrados com falha.
+- **Causa-raiz confirmada:** o fluxo persistia exclusivamente `product_discovery_cycle` e suas
+  oportunidades. Nenhum ponto de criação, reserva, plano, conclusão ou falha materializava
+  `agent_task` e `business_process_activity_instance`; o endpoint BPM consultava corretamente apenas
+  tarefas reais e, por isso, retornava vazio.
+- **Correção sistêmica:** o backend cria uma tarefa de Argos na atividade inicial e sincroniza todo o
+  ciclo técnico por referência estável. Modelo, prompt e tokens disponíveis entram na auditoria; a
+  conclusão preserva saída e evidências e a falha preserva a causa. Um retroativo idempotente leva
+  ciclos posteriores à criação de `inspiration` para a versão histórica correta sem fabricar datas,
+  consumo ou sucesso.
+- **Prevenção:** testes de serviço exigem os cinco pontos do ciclo de vida, teste do worker exige a
+  propagação da auditoria disponível e teste de changelog protege status, idempotência, include
+  relativo e compatibilidade com MySQL 5.7. A correlação também reutiliza a tarefa original pelos
+  aliases `evidence` e `inspiration` quando uma versão nova do processo é publicada durante o ciclo.
+  A tela continua proibida de inferir tarefas da tabela de domínio.
+
 ## LOOP-DEDALO-PROMPT-CONTEXTO-UNIVERSAL — decisão estratégica recebe artefatos e regras sem uso
 
 - **Data:** 2026-08-27.

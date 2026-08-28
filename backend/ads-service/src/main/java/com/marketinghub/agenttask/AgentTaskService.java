@@ -203,6 +203,55 @@ public class AgentTaskService {
         .orElseGet(() -> createByHuman(request));
   }
 
+  /**
+   * Reutiliza a mesma execução em versões anteriores do processo quando as atividades são aliases
+   * compatíveis.
+   */
+  @Transactional
+  public AgentTaskResponse createByHumanIfAbsentAcrossProcessVersions(
+      CreateAgentTaskRequest request, List<String> compatibleActivityIds) {
+    String sourceReference = trimToNull(request.sourceReference());
+    if (sourceReference == null) {
+      throw new IllegalArgumentException("Tarefa idempotente exige referência de origem.");
+    }
+    Agent assignee = agent(request.assignedAgentKey());
+    ProcessBinding binding = validateProcessBinding(request, assignee);
+    Set<String> normalizedActivityIds =
+        compatibleActivityIds == null
+            ? Set.of()
+            : compatibleActivityIds.stream()
+                .map(this::trimToNull)
+                .filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+    if (binding.definition() == null || !normalizedActivityIds.contains(binding.activityId())) {
+      throw new IllegalArgumentException(
+          "Tarefa entre versões exige uma atividade regular incluída nos aliases compatíveis.");
+    }
+    String processCode = binding.definition().getProcessCode();
+    return repository.findBySourceReferenceOrderByCreatedAtAscIdAsc(sourceReference).stream()
+        .filter(task -> task.getAssignedAgent().getAgentKey().equals(assignee.getAgentKey()))
+        .filter(
+            task ->
+                task.getProcessDefinition() != null
+                    && processCode.equals(task.getProcessDefinition().getProcessCode()))
+        .filter(task -> normalizedActivityIds.contains(task.getProcessActivityId()))
+        .filter(task -> !"CANCELLED".equals(task.getStatus()))
+        .findFirst()
+        .map(this::response)
+        .orElseGet(
+            () ->
+                save(
+                    assignee,
+                    null,
+                    "HUMAN",
+                    request.requestedByName(),
+                    request.title(),
+                    request.description(),
+                    request.priority(),
+                    request.sourceReference(),
+                    binding));
+  }
+
   /** Abre nova tentativa após bloqueio e atualiza o contexto de trabalho ainda não reservado. */
   @Transactional
   public AgentTaskResponse retryBlockedByHumanOrRefreshPending(CreateAgentTaskRequest request) {
@@ -1214,6 +1263,107 @@ public class AgentTaskService {
       return Optional.of(pendingResponse(task));
     }
     return Optional.empty();
+  }
+
+  /** Reserva idempotentemente a tarefa exata já correlacionada por outro contrato do backend. */
+  @Transactional
+  public AgentTaskPendingResponse claimLinkedProcessTask(String agentKey, Long taskId) {
+    agent(agentKey);
+    AgentTask linkedTask = task(taskId);
+    if (!linkedTask.getAssignedAgent().getAgentKey().equals(agentKey.trim())) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tarefa pertence a outro agente.");
+    }
+    if (linkedTask.getProcessDefinition() == null) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Tarefa correlacionada não pertence a um processo publicado.");
+    }
+    if ("IN_PROGRESS".equals(linkedTask.getStatus())) {
+      if (linkedTask.getReceivedAt() == null) {
+        Instant now = Instant.now(clock);
+        linkedTask.setReceivedAt(now);
+        linkedTask.setUpdatedAt(now);
+        AgentTask saved = repository.save(linkedTask);
+        synchronizeActivityInstance(saved, now);
+        return pendingResponse(saved);
+      }
+      return pendingResponse(linkedTask);
+    }
+    if (!"PENDING".equals(linkedTask.getStatus())) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "Tarefa correlacionada não está disponível para reserva.");
+    }
+    if (!predecessorsCompleted(linkedTask)) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "As atividades predecessoras ainda não foram concluídas.");
+    }
+    Instant now = Instant.now(clock);
+    linkedTask.setStatus("IN_PROGRESS");
+    if (linkedTask.getReceivedAt() == null) linkedTask.setReceivedAt(now);
+    linkedTask.setUpdatedAt(now);
+    AgentTask saved = repository.save(linkedTask);
+    synchronizeActivityInstance(saved, now);
+    return pendingResponse(saved);
+  }
+
+  /**
+   * Persiste a auditoria disponível de uma execução correlacionada sem inventar tier, custo ou
+   * raciocínio ausente.
+   */
+  @Transactional
+  public void recordClaimedProcessTaskExecutionAudit(
+      String agentKey,
+      Long taskId,
+      String modelCode,
+      String reasoningEffort,
+      String promptSent,
+      Long inputTokens,
+      Long cachedInputTokens,
+      Long outputTokens,
+      Boolean modelInvocation) {
+    AgentTask task = claimedBy(agentKey, taskId);
+    String normalizedModel = trimToNull(modelCode);
+    String normalizedReasoning = trimToNull(reasoningEffort);
+    String normalizedPrompt = trimToNull(promptSent);
+    if (normalizedModel != null) task.setExecutionModelCode(normalizedModel);
+    if (normalizedReasoning != null) task.setExecutionReasoningEffort(normalizedReasoning);
+    if (normalizedPrompt != null) task.setExecutionPrompt(normalizedPrompt);
+
+    boolean anyTokenReported =
+        inputTokens != null || cachedInputTokens != null || outputTokens != null;
+    boolean everyTokenReported =
+        inputTokens != null && cachedInputTokens != null && outputTokens != null;
+    if (anyTokenReported && !everyTokenReported) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "A auditoria exige todos os contadores de tokens.");
+    }
+    if (everyTokenReported
+        && (inputTokens < 0
+            || cachedInputTokens < 0
+            || outputTokens < 0
+            || cachedInputTokens > inputTokens)) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Contadores de tokens inválidos na execução correlacionada.");
+    }
+
+    Instant now = Instant.now(clock);
+    if (Boolean.FALSE.equals(modelInvocation)) {
+      task.setInputTokens(0L);
+      task.setCachedInputTokens(0L);
+      task.setOutputTokens(0L);
+      task.setEstimatedCostUsd(BigDecimal.ZERO.setScale(8));
+      task.setCostEstimationStatus("NOT_APPLICABLE");
+      task.setModelUsageUpdatedAt(now);
+    } else if (everyTokenReported) {
+      task.setInputTokens(inputTokens);
+      task.setCachedInputTokens(cachedInputTokens);
+      task.setOutputTokens(outputTokens);
+      task.setEstimatedCostUsd(null);
+      task.setCostEstimationStatus("PRICING_UNAVAILABLE");
+      task.setModelUsageUpdatedAt(now);
+    }
+    task.setUpdatedAt(now);
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, now);
   }
 
   /** Impede que um prompt especializado reserve atividade de outro processo ou responsabilidade. */

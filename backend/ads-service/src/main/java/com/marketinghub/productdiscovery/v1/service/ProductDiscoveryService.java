@@ -48,15 +48,18 @@ public class ProductDiscoveryService {
   private final ProductDiscoveryCycleRepository cycleRepository;
   private final ProductDiscoveryOpportunityRepository opportunityRepository;
   private final OpportunityDossierResearchSyncService dossierResearchSyncService;
+  private final ProductDiscoveryBpmAuditService bpmAuditService;
 
   /** Inicializa o serviço com repositórios canônicos do módulo. */
   public ProductDiscoveryService(
       ProductDiscoveryCycleRepository cycleRepository,
       ProductDiscoveryOpportunityRepository opportunityRepository,
-      OpportunityDossierResearchSyncService dossierResearchSyncService) {
+      OpportunityDossierResearchSyncService dossierResearchSyncService,
+      ProductDiscoveryBpmAuditService bpmAuditService) {
     this.cycleRepository = cycleRepository;
     this.opportunityRepository = opportunityRepository;
     this.dossierResearchSyncService = dossierResearchSyncService;
+    this.bpmAuditService = bpmAuditService;
   }
 
   /** Cria um ciclo pronto para o worker pesquisar dores e lacunas na internet. */
@@ -73,7 +76,9 @@ public class ProductDiscoveryService {
     cycle.setObjective(optionalText(request.objective()));
     cycle.setStatus(ProductDiscoveryCycleStatus.READY_FOR_RESEARCH);
     cycle.setStageCode(STAGE_CODE);
-    return toCycleResponse(cycleRepository.save(cycle));
+    ProductDiscoveryCycle saved = cycleRepository.save(cycle);
+    bpmAuditService.open(saved);
+    return toCycleResponse(saved);
   }
 
   /** Lista ciclos recentes para acompanhamento administrativo. */
@@ -110,6 +115,7 @@ public class ProductDiscoveryService {
     cycle.setResearchPlanModel(requiredText(request.model(), "model"));
     cycle.setLeaseExpiresAt(Instant.now().plus(EXECUTION_LEASE_DURATION));
     ProductDiscoveryCycle saved = cycleRepository.save(cycle);
+    bpmAuditService.recordPlan(saved, request);
     return new ProductDiscoveryResearchPlanResponse(
         saved.getId(),
         saved.getResearchPlanJson(),
@@ -356,7 +362,9 @@ public class ProductDiscoveryService {
               cycle.setLeaseExpiresAt(now.plus(EXECUTION_LEASE_DURATION));
               cycle.setExecutionAttempt(cycle.getExecutionAttempt() + 1);
               dossierResearchSyncService.start(cycle.getId());
-              return toPendingResponse(cycleRepository.save(cycle));
+              ProductDiscoveryCycle saved = cycleRepository.save(cycle);
+              bpmAuditService.start(saved);
+              return toPendingResponse(saved);
             })
         .toList();
   }
@@ -393,9 +401,11 @@ public class ProductDiscoveryService {
     cycle.setStageCode("opportunity-gate");
     cycle.setErrorMessage(null);
     clearExecutionLease(cycle);
-    cycleRepository.save(cycle);
-    dossierResearchSyncService.synchronize(
-        cycleId, opportunityRepository.findAllByCycleIdOrderByScoreDesc(cycleId));
+    ProductDiscoveryCycle saved = cycleRepository.save(cycle);
+    List<ProductDiscoveryOpportunity> savedOpportunities =
+        opportunityRepository.findAllByCycleIdOrderByScoreDesc(cycleId);
+    bpmAuditService.complete(saved, savedOpportunities);
+    dossierResearchSyncService.synchronize(cycleId, savedOpportunities);
     return getCycle(cycleId);
   }
 
@@ -852,7 +862,9 @@ public class ProductDiscoveryService {
     cycle.setErrorMessage(requiredText(request.errorMessage(), "errorMessage"));
     clearExecutionLease(cycle);
     dossierResearchSyncService.fail(cycleId);
-    return toCycleResponse(cycleRepository.save(cycle));
+    ProductDiscoveryCycle saved = cycleRepository.save(cycle);
+    bpmAuditService.fail(saved);
+    return toCycleResponse(saved);
   }
 
   /** Converte entidade de ciclo para resposta. */

@@ -55,6 +55,100 @@ class AgentTaskServiceTest {
     verify(repository, never()).save(any());
   }
 
+  /** Preserva a tarefa do ciclo quando uma versão nova renomeia sua atividade equivalente. */
+  @Test
+  void reusesCompatibleActivityFromPreviousProcessVersion() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    BusinessProcessDefinitionRepository processes = mock(BusinessProcessDefinitionRepository.class);
+    Agent argos = agent(8L, "market-radar", "Argos");
+    BusinessProcessDefinition previous = process("RETIRED", "Argos");
+    previous.setId(48L);
+    previous.setProcessCode("pde-opportunity-discovery");
+    AgentTask existing = processTask(901L, argos, previous, "evidence", "PENDING");
+    existing.setSourceReference("product-discovery-cycle:37");
+    BusinessProcessDefinition current = process("PUBLISHED", "Argos");
+    current.setId(49L);
+    current.setProcessCode("pde-opportunity-discovery");
+    current.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"inspiration\",\"type\":\"TASK\","
+            + "\"label\":\"Qualificar fontes\",\"owner\":\"Argos\"}],\"edges\":[]}");
+    when(agents.findByAgentKey("market-radar")).thenReturn(Optional.of(argos));
+    when(processes.findById(49L)).thenReturn(Optional.of(current));
+    when(repository.findBySourceReferenceOrderByCreatedAtAscIdAsc("product-discovery-cycle:37"))
+        .thenReturn(List.of(existing));
+    AgentTaskService service =
+        new AgentTaskService(repository, agents, processes, new ObjectMapper(), Clock.systemUTC());
+
+    AgentTaskResponse result =
+        service.createByHumanIfAbsentAcrossProcessVersions(
+            new CreateAgentTaskRequest(
+                "market-radar",
+                "Marketing Hub",
+                "Pesquisar oportunidade PDE #37",
+                "Qualificar fontes.",
+                "HIGH",
+                "product-discovery-cycle:37",
+                49L,
+                "inspiration",
+                false,
+                null),
+            List.of("inspiration", "evidence"));
+
+    assertThat(result.id()).isEqualTo(901L);
+    assertThat(result.processDefinitionId()).isEqualTo(48L);
+    assertThat(result.processActivityId()).isEqualTo("evidence");
+    verify(repository, never()).save(any());
+  }
+
+  /** Cria a primeira tarefa na versão atual quando o ciclo ainda não possui correlação. */
+  @Test
+  void createsTaskInCurrentVersionWhenProcessHistoryIsEmpty() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    BusinessProcessDefinitionRepository processes = mock(BusinessProcessDefinitionRepository.class);
+    Agent argos = agent(8L, "market-radar", "Argos");
+    BusinessProcessDefinition current = process("PUBLISHED", "Argos");
+    current.setId(49L);
+    current.setProcessCode("pde-opportunity-discovery");
+    current.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"inspiration\",\"type\":\"TASK\","
+            + "\"label\":\"Qualificar fontes\",\"owner\":\"Argos\"}],\"edges\":[]}");
+    when(agents.findByAgentKey("market-radar")).thenReturn(Optional.of(argos));
+    when(processes.findById(49L)).thenReturn(Optional.of(current));
+    when(repository.findBySourceReferenceOrderByCreatedAtAscIdAsc("product-discovery-cycle:43"))
+        .thenReturn(List.of());
+    when(repository.save(any(AgentTask.class)))
+        .thenAnswer(
+            invocation -> {
+              AgentTask task = invocation.getArgument(0);
+              task.setId(902L);
+              return task;
+            });
+    AgentTaskService service =
+        new AgentTaskService(repository, agents, processes, new ObjectMapper(), Clock.systemUTC());
+
+    AgentTaskResponse result =
+        service.createByHumanIfAbsentAcrossProcessVersions(
+            new CreateAgentTaskRequest(
+                "market-radar",
+                "Marketing Hub",
+                "Pesquisar oportunidade PDE #43",
+                "Qualificar fontes.",
+                "HIGH",
+                "product-discovery-cycle:43",
+                49L,
+                "inspiration",
+                false,
+                null),
+            List.of("inspiration", "evidence"));
+
+    assertThat(result.id()).isEqualTo(902L);
+    assertThat(result.processDefinitionId()).isEqualTo(49L);
+    assertThat(result.processActivityId()).isEqualTo("inspiration");
+    verify(repository).save(any(AgentTask.class));
+  }
+
   /** Cria nova tentativa para o revisor bloqueado sem duplicar outra tarefa ainda pendente. */
   @Test
   void retriesBlockedHumanReviewAndRefreshesPendingContext() {
@@ -1073,6 +1167,111 @@ class AgentTaskServiceTest {
     assertThat(pending.taskId()).isEqualTo(30L);
     assertThat(pending.receivedAt()).isEqualTo(received);
     assertThat(task.getStatus()).isEqualTo("IN_PROGRESS");
+  }
+
+  /** Reserva idempotentemente a tarefa exata correlacionada por um ciclo técnico do backend. */
+  @Test
+  void claimsExactLinkedProcessTask() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent argos = agent(8L, "market-radar", "Argos");
+    AgentTask task =
+        processTask(37L, argos, process("PUBLISHED", "Argos e Dédalo"), "inspiration", "PENDING");
+    when(agents.findByAgentKey("market-radar")).thenReturn(Optional.of(argos));
+    when(repository.findById(37L)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    Instant received = Instant.parse("2026-08-28T01:00:00Z");
+    AgentTaskService service = service(repository, agents, Clock.fixed(received, ZoneOffset.UTC));
+
+    AgentTaskPendingResponse first = service.claimLinkedProcessTask("market-radar", 37L);
+    AgentTaskPendingResponse repeated = service.claimLinkedProcessTask("market-radar", 37L);
+
+    assertThat(first.taskId()).isEqualTo(37L);
+    assertThat(repeated.taskId()).isEqualTo(37L);
+    assertThat(task.getStatus()).isEqualTo("IN_PROGRESS");
+    assertThat(task.getReceivedAt()).isEqualTo(received);
+    verify(repository).save(task);
+  }
+
+  /** Registra o primeiro recebimento comprovável ao retomar uma tarefa retroativa em andamento. */
+  @Test
+  void restoresReceiptForBackfilledInProgressTask() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentRepository agents = mock(AgentRepository.class);
+    Agent argos = agent(8L, "market-radar", "Argos");
+    AgentTask task =
+        processTask(
+            37L, argos, process("PUBLISHED", "Argos e Dédalo"), "inspiration", "IN_PROGRESS");
+    task.setReceivedAt(null);
+    when(agents.findByAgentKey("market-radar")).thenReturn(Optional.of(argos));
+    when(repository.findById(37L)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    Instant resumed = Instant.parse("2026-08-28T01:10:00Z");
+
+    AgentTaskPendingResponse pending =
+        service(repository, agents, Clock.fixed(resumed, ZoneOffset.UTC))
+            .claimLinkedProcessTask("market-radar", 37L);
+
+    assertThat(pending.receivedAt()).isEqualTo(resumed);
+    assertThat(task.getReceivedAt()).isEqualTo(resumed);
+    verify(repository).save(task);
+  }
+
+  /** Registra fallback determinístico como custo não aplicável sem inventar uso de modelo. */
+  @Test
+  void recordsDeterministicExecutionAuditWithoutModelTokens() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    Agent argos = agent(8L, "market-radar", "Argos");
+    AgentTask task =
+        processTask(
+            37L, argos, process("PUBLISHED", "Argos e Dédalo"), "inspiration", "IN_PROGRESS");
+    when(repository.findById(37L)).thenReturn(Optional.of(task));
+    when(repository.save(task)).thenReturn(task);
+    Instant audited = Instant.parse("2026-08-28T01:05:00Z");
+    AgentTaskService service =
+        service(repository, mock(AgentRepository.class), Clock.fixed(audited, ZoneOffset.UTC));
+
+    service.recordClaimedProcessTaskExecutionAudit(
+        "market-radar", 37L, "deterministic-fallback-v1", null, null, null, null, null, false);
+
+    assertThat(task.getInputTokens()).isZero();
+    assertThat(task.getCachedInputTokens()).isZero();
+    assertThat(task.getOutputTokens()).isZero();
+    assertThat(task.getEstimatedCostUsd()).isEqualByComparingTo("0.00000000");
+    assertThat(task.getCostEstimationStatus()).isEqualTo("NOT_APPLICABLE");
+    assertThat(task.getExecutionModelCode()).isEqualTo("deterministic-fallback-v1");
+    assertThat(task.getModelUsageUpdatedAt()).isEqualTo(audited);
+  }
+
+  /** Rejeita auditoria parcial para não persistir consumo impossível de interpretar. */
+  @Test
+  void rejectsIncompleteLinkedExecutionTokenAudit() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    AgentTask task =
+        processTask(
+            37L,
+            agent(8L, "market-radar", "Argos"),
+            process("PUBLISHED", "Argos e Dédalo"),
+            "inspiration",
+            "IN_PROGRESS");
+    when(repository.findById(37L)).thenReturn(Optional.of(task));
+    AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+
+    assertThatThrownBy(
+            () ->
+                service.recordClaimedProcessTaskExecutionAudit(
+                    "market-radar",
+                    37L,
+                    "gpt-5.6-sol",
+                    null,
+                    "Prompt real.",
+                    100L,
+                    null,
+                    10L,
+                    true))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("todos os contadores");
+    verify(repository, never()).save(any());
   }
 
   /** Não reoferece uma lease ativa a outro polling sem identidade da execução original. */

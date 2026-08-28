@@ -111,11 +111,7 @@ async function processJob(job) {
     );
     await postJson(
       `${backendBaseUrl}/api/internal/product-discovery/productdiscovery/v1/research/stage-executions/${job.cycleId}/plan`,
-      withExecutionLease(job, {
-        planJson: JSON.stringify(directed.plan),
-        rawResponse: directed.rawResponse,
-        model: directed.model,
-      }),
+      withExecutionLease(job, researchPlanCallbackPayload(directed)),
     );
     const results = await searchInternet(
       { ...job, directedQueries: directed.plan.publicQueries },
@@ -172,6 +168,20 @@ async function processJob(job) {
 /** Vincula cada callback ao lease entregue pelo backend sem alterar o resultado funcional. */
 export function withExecutionLease(job, payload) {
   return { executionLeaseId: job.executionLeaseId, ...payload };
+}
+
+/** Monta a auditoria disponível do plano sem inventar consumo ou configuração ausente. */
+export function researchPlanCallbackPayload(directed) {
+  return {
+    planJson: JSON.stringify(directed.plan),
+    rawResponse: directed.rawResponse,
+    model: directed.model,
+    executionMode: directed.mode,
+    promptSent: directed.prompt,
+    inputTokens: directed.usage?.inputTokens,
+    cachedInputTokens: directed.usage?.cachedInputTokens,
+    outputTokens: directed.usage?.outputTokens,
+  };
 }
 
 /** Impede polls sobrepostos sem deslocar a decisão de fila para o executor. */

@@ -274,6 +274,39 @@ class ProductStageMeasurementResolverTest {
     assertThat(result.objectiveAchieved()).isFalse();
   }
 
+  /** Mantém os seis estágios publicados visíveis sem fabricar passagem pelos não executados. */
+  @Test
+  void exposesEntirePublishedChainWithPlannedStagesWithoutEvidence() {
+    Product product = Product.builder().id(9L).build();
+    BusinessProcessDefinition discovery = process(10L, "discovery", null);
+    BusinessProcessDefinition communication = process(43L, "communication", null);
+    BusinessProcessDefinition homologation = process(56L, "homologation", null);
+    when(plans.findByProductId(9L)).thenReturn(List.of());
+    when(periods.findByProductIdOrderByEnteredAtAscIdAsc(9L)).thenReturn(List.of());
+    when(ledger.findByProductIdOrderByCreatedAtAsc(9L)).thenReturn(List.of());
+
+    List<ProductStageMeasurementResponse> result =
+        resolver.resolveProcessMeasurements(
+            product,
+            List.of(item(discovery, 1), item(communication, 4), item(homologation, 5)),
+            communication);
+
+    assertThat(result).hasSize(3);
+    assertThat(result)
+        .extracting(ProductStageMeasurementResponse::sequenceLabel)
+        .containsExactly("1", "4", "5");
+    assertThat(result)
+        .extracting(ProductStageMeasurementResponse::trackingStatus)
+        .containsExactly("PLANNED", "CURRENT", "PLANNED");
+    assertThat(result)
+        .extracting(ProductStageMeasurementResponse::entryEvidence)
+        .containsOnly("NOT_RECORDED");
+    assertThat(result).extracting(ProductStageMeasurementResponse::enteredAt).containsOnlyNulls();
+    assertThat(result)
+        .extracting(ProductStageMeasurementResponse::commitRegistrationAllowed)
+        .containsExactly(false, true, false);
+  }
+
   /** Monta uma tarefa operacional com datas e custo previsíveis. */
   private AgentTask task(
       Long id, BusinessProcessDefinition process, String createdAt, String costUsd, String status) {

@@ -879,7 +879,7 @@ components:
           nullable: true
         processMeasurements:
           type: array
-          description: Histórico auditável de entrada, saída, permanência e custo conhecido dos macroprocessos do produto.
+          description: Cadeia completa de macroprocessos publicada, com histórico auditável quando existir e estágios sem execução explicitamente planejados.
           items:
             $ref: "#/components/schemas/ProductStageMeasurement"
         subprocessPosition:
@@ -960,6 +960,7 @@ components:
         - costCoverage
         - costedExecutionCount
         - uncostedExecutionCount
+        - commitRegistrationAllowed
       properties:
         stageType:
           type: string
@@ -1008,6 +1009,9 @@ components:
           type: number
           format: double
           minimum: 0
+        commitRegistrationAllowed:
+          type: boolean
+          description: Indica se o estágio já pertence ao escopo operacional do produto e aceita registro de commit.
         costCoverage:
           type: string
           enum:

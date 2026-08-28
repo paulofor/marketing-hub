@@ -121,6 +121,7 @@ public class ProductProcessCommitService {
       knownProcessIds.add(position.processDefinitionId());
     }
     position.processMeasurements().stream()
+        .filter(ProductStageMeasurementResponse::commitRegistrationAllowed)
         .map(ProductStageMeasurementResponse::processDefinitionId)
         .forEach(knownProcessIds::add);
     if (position.subprocessPosition() != null) {
@@ -128,6 +129,7 @@ public class ProductProcessCommitService {
         knownProcessIds.add(position.subprocessPosition().currentSubprocessDefinitionId());
       }
       position.subprocessPosition().measurements().stream()
+          .filter(ProductStageMeasurementResponse::commitRegistrationAllowed)
           .map(ProductStageMeasurementResponse::processDefinitionId)
           .forEach(knownProcessIds::add);
     }

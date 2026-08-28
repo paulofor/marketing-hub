@@ -1,5 +1,6 @@
 import { ArrowRight, History, Workflow } from "lucide-react";
 import { Link } from "react-router-dom";
+import { sortProductStageMeasurements } from "../api/product/useProductValueChainPositions";
 import type {
   ProductStageMeasurement,
   ProductValueChainPosition as Position,
@@ -150,6 +151,10 @@ export default function ProductValueChainPosition({
       measurement.processCode === position?.processCode,
   );
   const subprocessMeasurements = subprocess?.measurements ?? [];
+  const orderedMeasurements = [
+    ...processMeasurements,
+    ...subprocessMeasurements,
+  ].sort(sortProductStageMeasurements);
   const currentSubprocessMeasurement = subprocessMeasurements.find(
     (measurement) =>
       measurement.processCode === subprocess?.currentSubprocessCode &&
@@ -315,24 +320,22 @@ export default function ProductValueChainPosition({
           {processMeasurements.length > 1 ||
           subprocessMeasurements.length > 1 ? (
             <details className="product-value-chain-position__history">
-              <summary>Histórico de tempo e custo</summary>
+              <summary>Cadeia, tempo e custo</summary>
               <div>
-                {[...processMeasurements, ...subprocessMeasurements].map(
-                  (measurement, index) => (
-                    <section
-                      key={`${measurement.stageType}-${measurement.processDefinitionId}-${measurement.enteredAt || index}`}
-                    >
-                      <strong>
-                        <StageNumber value={measurement.sequenceLabel} />
-                        {measurement.stageType === "PROCESS"
-                          ? "Processo"
-                          : "Subprocesso"}
-                        : {measurement.processName}
-                      </strong>
-                      <StageMeasurement measurement={measurement} compact />
-                    </section>
-                  ),
-                )}
+                {orderedMeasurements.map((measurement, index) => (
+                  <section
+                    key={`${measurement.stageType}-${measurement.processDefinitionId}-${measurement.enteredAt || index}`}
+                  >
+                    <strong>
+                      <StageNumber value={measurement.sequenceLabel} />
+                      {measurement.stageType === "PROCESS"
+                        ? "Processo"
+                        : "Subprocesso"}
+                      : {measurement.processName}
+                    </strong>
+                    <StageMeasurement measurement={measurement} compact />
+                  </section>
+                ))}
               </div>
             </details>
           ) : null}

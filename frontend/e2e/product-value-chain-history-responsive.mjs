@@ -33,6 +33,31 @@ const product = {
   aiCost: 0,
 };
 
+const plannedProcess = (
+  sequenceLabel,
+  processDefinitionId,
+  processCode,
+  processName,
+) => ({
+  stageType: "PROCESS",
+  sequenceLabel,
+  trackingStatus: "PLANNED",
+  processDefinitionId,
+  processCode,
+  processName,
+  enteredAt: null,
+  entryEvidence: "NOT_RECORDED",
+  exitedAt: null,
+  exitEvidence: null,
+  objectiveAchieved: false,
+  elapsedDays: null,
+  knownEstimatedCostUsd: 0,
+  costCoverage: "NO_EXECUTIONS",
+  costedExecutionCount: 0,
+  uncostedExecutionCount: 0,
+  commitRegistrationAllowed: false,
+});
+
 const position = {
   productId: 9,
   commercialStatus: "COMUNICACAO_E_JORNADA",
@@ -48,8 +73,21 @@ const position = {
   sequenceNumber: 4,
   processCount: 6,
   processMeasurements: [
+    plannedProcess(
+      "1",
+      31,
+      "pde-opportunity-discovery",
+      "Descoberta factual da oportunidade PDE",
+    ),
+    plannedProcess(
+      "2",
+      37,
+      "pde-commercial-plan-offer-v1",
+      "Estratégia comercial anterior sem histórico migrado",
+    ),
     {
       stageType: "PROCESS",
+      sequenceLabel: "3",
       trackingStatus: "COMPLETED",
       processDefinitionId: 38,
       processCode: "pde-commercial-plan-offer",
@@ -64,9 +102,11 @@ const position = {
       costCoverage: "COMPLETE",
       costedExecutionCount: 37,
       uncostedExecutionCount: 0,
+      commitRegistrationAllowed: true,
     },
     {
       stageType: "PROCESS",
+      sequenceLabel: "4",
       trackingStatus: "CURRENT",
       processDefinitionId: 43,
       processCode: "pde-communication-sales-journey",
@@ -81,7 +121,20 @@ const position = {
       costCoverage: "PARTIAL",
       costedExecutionCount: 12,
       uncostedExecutionCount: 2,
+      commitRegistrationAllowed: true,
     },
+    plannedProcess(
+      "5",
+      45,
+      "pde-commercial-homologation-activation",
+      "Homologação e ativação comercial do PDE",
+    ),
+    plannedProcess(
+      "6",
+      46,
+      "pde-sales-delivery-learning",
+      "Venda, entrega e aprendizado do PDE",
+    ),
   ],
   subprocessPosition: {
     trackingStatus: "COMPLETED",
@@ -114,6 +167,7 @@ const position = {
         costCoverage: "COMPLETE",
         costedExecutionCount: 4,
         uncostedExecutionCount: 0,
+        commitRegistrationAllowed: true,
       },
       {
         stageType: "SUBPROCESS",
@@ -132,6 +186,7 @@ const position = {
         costCoverage: "COMPLETE",
         costedExecutionCount: 4,
         uncostedExecutionCount: 0,
+        commitRegistrationAllowed: true,
       },
     ],
   },
@@ -193,6 +248,17 @@ try {
     );
     await expect(page.getByText("Objetivo atingido").last()).toBeVisible();
     await expect(page.getByText("4.2", { exact: true })).toBeVisible();
+    await expect(page.getByText("Previsto na cadeia")).toHaveCount(4);
+    await expect(
+      page.getByRole("heading", {
+        name: "Homologação e ativação comercial do PDE",
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: "Venda, entrega e aprendizado do PDE",
+      }),
+    ).toBeVisible();
     await expect(page.getByText("21/08/2026, 03:55 UTC")).toBeVisible();
     await expect(page.getByText(/cobertura parcial/i)).toBeVisible();
     await expect(page.getByText("28/08/2026, 03:09 UTC")).toBeVisible();

@@ -601,6 +601,13 @@ evidência temporal, custo estimado conhecido e cobertura financeira. Ausência 
 custo deve permanecer explícita; a tela não pode inferir conclusão, preencher lacunas ou somar
 processo e subprocesso quando houver risco de dupla contagem.
 
+Essa tela deve mostrar sempre os seis macroprocessos da versão publicada, na ordem canônica,
+incluindo processos anteriores sem histórico migrado e processos futuros ainda não iniciados. O
+backend devolve esses estágios sem evidência como `PLANNED`, com datas e custos ausentes, objetivo
+não atingido e registro de commit desabilitado; a interface não completa a cadeia por inferência nem
+confunde composição planejada com execução real. Subprocessos do processo atual aparecem na posição
+hierárquica correspondente, sem deslocar os macroprocessos seguintes para fora da visão.
+
 O histórico nunca termina visualmente em um estágio concluído quando a composição publicada possui
 continuação. O backend deve anexar o próximo subprocesso ainda não iniciado ou expor a próxima
 atividade do processo pai; a tela apresenta esse item como próximo passo, sem convertê-lo em

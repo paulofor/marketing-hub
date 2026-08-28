@@ -227,6 +227,120 @@ Regras obrigatórias:
 - o frontend deve exibir a orientação como cartão de produto, não como conversa livre;
 - toda solicitação deve ser mensurável no funil e associada ao token, produto e missão.
 
+### SDK de agentes PDE sobre Codex App Server
+
+Decisão canônica de 2026-08-28: todo novo PDE baseado em agentes deve usar o **PDE Harness SDK**
+como camada de domínio sobre o `codex app-server`. O SDK não pode chamar diretamente a OpenAI
+API, o Responses API ou o OpenAI Agents SDK. Seu papel é transformar o protocolo do Codex App
+Server em uma experiência PDE personalizada, sensorial, auditável e segura, sem reimplementar o
+loop agentic do Codex.
+
+Arquitetura obrigatória da primeira versão:
+
+- o backend PDE cria a pendência, entrega somente o contexto autorizado e continua sendo a fonte
+  de verdade de acesso, memória funcional, estado, gates, auditoria e próxima etapa;
+- o worker PDE consome exclusivamente o endpoint `pending` e usa o PDE Harness SDK para iniciar ou
+  retomar uma execução no Codex App Server;
+- o PDE Harness SDK deve ser implementado em **Java 21** como biblioteca independente e cliente
+  tipado do protocolo, mantendo o mesmo ecossistema do backend transacional e dos principais
+  executores do Marketing Hub;
+- o worker inicia o `codex app-server` localmente e comunica-se por `stdio` com JSONL. O App Server
+  não pode ser exposto ao frontend, ao backend PDE ou à internet, e o transporte WebSocket remoto
+  não faz parte da v1;
+- cada sessão de cliente usa `threadId`, workspace e contexto segregados por produto, versão,
+  cliente e missão. A memória canônica permanece no backend; histórico local do Codex nunca pode
+  ser a única fonte de contexto;
+- a memória conversacional segue arquitetura híbrida. Foram avaliados thread permanente, memória
+  resumida sem continuidade de thread e memória canônica com thread curta vinculada; a terceira
+  opção é obrigatória porque preserva nuances recentes sem transformar o histórico local do Codex
+  em fonte de verdade ou fronteira de autorização;
+- a memória durável pertence ao relacionamento `tenant + produto + cliente`, podendo sobreviver a
+  nova versão ou nova conversa do mesmo produto. A thread pertence ao escopo mais estreito
+  `tenant + produto + versão + cliente + conversa`; missão e interação são correlatores de
+  execução, não chaves que permitam compartilhar memória entre clientes;
+- toda pendência deve entregar ao worker um snapshot de memória autorizado, estruturado,
+  versionado e limitado, com revisão otimista, procedência, instante de observação, validade e
+  somente os itens relevantes à missão atual. O SDK deve apresentar esse snapshot ao modelo como
+  dado não confiável, nunca como instrução, usando template versionado e auditável. Cada fato deve
+  carregar o próprio escopo e o SDK deve rejeitar um snapshot que contenha item de outro
+  relacionamento, mesmo quando o envelope do snapshot aparentar pertencer ao cliente correto;
+- toda interação deve ser persistida pelo backend no escopo exato antes de qualquer promoção para
+  memória durável. A seleção de memória deve restringir `tenant + produto + cliente` na consulta de
+  origem antes de resumo, ranking semântico ou reranking; é proibido pesquisar um índice global e
+  filtrar o cliente somente depois, mesmo quando o identificador estiver presente nos metadados;
+- apenas fatos duráveis e úteis podem ser promovidos. Declaração atual e explícita do cliente
+  prevalece sobre inferência e sobre declaração antiga conflitante; inferência deve conservar essa
+  procedência, confiança e validade, nunca virar fato confirmado silenciosamente. Credenciais,
+  segredos, dados sensíveis desnecessários e instruções encontradas no conteúdo não podem ser
+  promovidos;
+- é proibido retomar conversa usando apenas um `threadId` cru. O backend deve persistir um vínculo
+  de thread com fingerprint do escopo, revisão mínima de memória, datas e contador de turnos; o SDK
+  deve recusar o vínculo quando tenant, produto, versão, cliente ou conversa divergirem, quando a
+  memória regredir de revisão ou quando outra execução da mesma conversa já estiver ativa;
+- identificadores de thread, vínculos e fingerprints são contratos internos entre backend e worker
+  e nunca podem ser aceitos do frontend ou do canal do cliente. O backend deve recuperar o vínculo
+  pela mesma chave composta da conversa e impedir que um identificador fornecido pelo usuário
+  altere essa seleção;
+- o workspace deve ser calculado deterministicamente pelo SDK a partir do fingerprint da conversa
+  e da interação, sem identificadores pessoais no caminho e sem aceitar caminho arbitrário do
+  chamador. Conversas diferentes nunca podem reutilizar o mesmo workspace;
+- o backend deve aplicar lease por conversa e atualização otimista de memória para proteger
+  múltiplas réplicas. O bloqueio local do SDK é defesa adicional e não substitui a exclusão mútua
+  persistida;
+- cada resultado deve devolver vínculo de thread atualizado e auditoria da memória efetivamente
+  entregue, incluindo revisão, quantidade, hash do snapshot e versão/hash do template, sem expor o
+  conteúdo da memória em logs técnicos;
+- threads podem ser renovadas para limitar contexto, retenção e custo sem apagar a memória
+  canônica. Solicitação de esquecimento deve remover a memória e o vínculo no backend e excluir a
+  thread local pelo contrato oficial do App Server; credenciais, tokens e segredos nunca podem ser
+  promovidos a memória;
+- a sequência mínima é `initialize`/`initialized`, `thread/start` ou `thread/resume` e
+  `turn/start`; eventos de thread, turno, item, ferramenta, aprovação, conclusão e falha devem ser
+  correlacionados e reportados ao backend;
+- o bundle JSON Schema do protocolo deve ser gerado pela mesma versão fixada do Codex usada em
+  produção. O SDK deve expor uma fachada Java tipada com `record`s para o ciclo estável e validar a
+  integridade do bundle por versão e SHA-256. Atualizar Codex exige regenerar o contrato, adaptar a
+  fachada quando necessário e aprovar testes de compatibilidade antes do deploy;
+- a autenticação deve usar sessão ChatGPT gerenciada pelo Codex em `CODEX_HOME` exclusivo do
+  executor. Token, cookie, `auth.json` e demais segredos não podem transitar pelo frontend ou pelo
+  backend PDE;
+- é proibido incluir `OPENAI_API_KEY`, chamar `api.openai.com` ou manter fallback direto para API
+  no PDE Harness SDK. App Server indisponível, incompatível ou sem autenticação deve produzir
+  `BLOCKED` auditável, sem trocar silenciosamente o runtime;
+- prompts, schemas de saída, tools, skills, MCPs, limites de autoridade e contratos sensoriais
+  continuam versionados no módulo executor e identificados por versão e hash;
+- o SDK deve validar localmente que o schema é estrito, não resolve referências externas e que a
+  resposta final contém um único JSON aderente ao contrato. JSON inválido ou divergente nunca pode
+  ser reportado como sucesso funcional;
+- o backend deve persistir, sem expor raciocínio interno, os identificadores de thread e turno,
+  versão do Codex e do SDK, modelo, prompt/schema efetivos, eventos estruturados, chamadas de
+  ferramenta, aprovações, entrada, saída, artefatos, erro, tokens e custo quando informados. A
+  gravação da interação e a atualização da revisão de memória devem ser atômicas ou usar outbox e
+  idempotência equivalentes, para que um contato concluído não desapareça da memória futura;
+- App Server, SDK e worker não decidem o avanço do pipeline, não publicam, não gastam e não
+  executam ação externa sensível sem gate do backend e autorização humana quando aplicável.
+
+O `pde-ai-worker` atual, que ainda chama a OpenAI API diretamente, é uma integração legada e não
+pode servir como base do novo SDK. Sua eventual migração deve ser versionada, manter compatibilidade
+com as execuções existentes e passar por homologação própria. Até essa migração, nenhum PDE novo
+baseado em agentes pode copiar essa integração direta.
+
+Enquanto a distribuição oficial do Codex identificar o App Server como experimental, sua adoção
+deve permanecer atrás de uma porta interna substituível e começar em piloto sem publicação ou gasto.
+A homologação precisa provar caminho feliz, retomada após reinício, autenticação, isolamento entre
+clientes, backpressure, timeout, aprovações, telemetria, compatibilidade de versão e descarte de
+dados. Somente depois desses gates um PDE pago pode depender desse runtime. Falha no piloto exige
+ajuste ou bloqueio; não autoriza retorno direto à API.
+
+Decisão de linguagem atualizada em 2026-08-28: Java 21 substitui a escolha inicial de TypeScript.
+Foram considerados JSON cru em Java, geração integral de classes e fachada tipada sobre o bundle
+oficial. A fachada tipada é a opção canônica porque combina legibilidade para a equipe, baixo ruído
+de atualização e verificação objetiva do protocolo experimental. O SDK deve usar `ProcessBuilder`
+para o processo local, Jackson para JSONL, concorrência segura para respostas e eventos e pacotes
+versionados sob `com.marketinghub.pde.harness.v1`. O núcleo não depende de Spring, não acessa banco
+e não controla polling ou avanço de pipeline; workers Java usam a biblioteca e continuam reportando
+ao backend pelos contratos oficiais.
+
 Para o Método MUSA, a Consultora MUSA deve atuar nos 7 dias como orientação guiada por missão: a cliente preenche três sinais ou respostas práticas do dia e recebe um cartão curto, aplicável e coerente com o histórico da jornada. O Dia 1 pode ser usado como amostra gratuita de valor; os Dias 2 a 7 permanecem como parte do acesso completo quando o funil estiver em modo de paywall interno.
 
 Para o Método MUSA, a Consultora MUSA deve usar o `musa-evidence-pack-v1` como bastidor científico. O pacote apoia microações sobre roupa, cor, acabamento, postura, coerência visual e peça-sinal, mas a resposta visível não deve virar citação acadêmica recorrente nem promessa absoluta. A linguagem deve preservar o desejo de presença elegante acessível e evitar afirmações como garantia de elegância, mudança universal de percepção externa ou transformação de personalidade.

@@ -84,7 +84,7 @@ public class ProductStageMeasurementResolver {
     this.clock = clock;
   }
 
-  /** Consolida o histórico conhecido dos macroprocessos até a posição comercial atual. */
+  /** Consolida toda a cadeia publicada, distinguindo execução real de estágios ainda planejados. */
   public List<ProductStageMeasurementResponse> resolveProcessMeasurements(
       Product product,
       List<BusinessProcessChainItem> orderedItems,
@@ -118,10 +118,15 @@ public class ProductStageMeasurementResolver {
                 orderedItems,
                 periods,
                 context));
-      } else if (process.getId().equals(currentProcess.getId())) {
+      } else {
+        boolean current = process.getId().equals(currentProcess.getId());
         measurements.add(
             noEvidenceMeasurement(
-                "PROCESS", String.valueOf(item.getSequenceNumber()), process, "CURRENT"));
+                "PROCESS",
+                String.valueOf(item.getSequenceNumber()),
+                process,
+                current ? "CURRENT" : "PLANNED",
+                current));
       }
     }
     return measurements;
@@ -166,7 +171,8 @@ public class ProductStageMeasurementResolver {
                   "SUBPROCESS",
                   sequenceLabel,
                   subprocess,
-                  currentSubprocessAwaitingFirstExecution ? "PLANNED" : "CURRENT"));
+                  currentSubprocessAwaitingFirstExecution ? "PLANNED" : "CURRENT",
+                  true));
         }
         continue;
       }
@@ -434,9 +440,13 @@ public class ProductStageMeasurementResolver {
         ledgerWithin(context.ledger(), enteredAt, exitedAt));
   }
 
-  /** Monta uma medição vazia sem fabricar data ou custo quando não há evidência. */
+  /** Monta uma medição vazia sem fabricar data, custo ou disponibilidade operacional. */
   private ProductStageMeasurementResponse noEvidenceMeasurement(
-      String stageType, String sequenceLabel, BusinessProcessDefinition process, String status) {
+      String stageType,
+      String sequenceLabel,
+      BusinessProcessDefinition process,
+      String status,
+      boolean commitRegistrationAllowed) {
     return new ProductStageMeasurementResponse(
         stageType,
         sequenceLabel,
@@ -453,7 +463,8 @@ public class ProductStageMeasurementResolver {
         BigDecimal.ZERO.setScale(8),
         "NO_EXECUTIONS",
         0,
-        0);
+        0,
+        commitRegistrationAllowed);
   }
 
   /** Consolida datas, dias corridos e cobertura financeira da etapa. */
@@ -517,7 +528,8 @@ public class ProductStageMeasurementResolver {
         knownCost.setScale(8, RoundingMode.HALF_UP),
         coverage,
         costedExecutions,
-        uncostedExecutions);
+        uncostedExecutions,
+        true);
   }
 
   /** Classifica se o subtotal conhecido cobre todas as execuções da etapa. */

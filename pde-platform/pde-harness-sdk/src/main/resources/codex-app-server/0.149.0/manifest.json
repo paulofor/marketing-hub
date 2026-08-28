@@ -1,0 +1,9 @@
+{
+  "codexVersion": "0.149.0",
+  "protocolVersion": "v2",
+  "schemaResource": "/codex-app-server/0.149.0/codex_app_server_protocol.schemas.json",
+  "schemaSha256": "02a4c63a638fdae4a5f6c3ad32a41a377b642c66f3abc84f6fc47c7f3d6074df",
+  "generatedAt": "2026-08-28",
+  "source": "https://developers.openai.com/codex/app-server/",
+  "transport": "stdio-jsonl"
+}

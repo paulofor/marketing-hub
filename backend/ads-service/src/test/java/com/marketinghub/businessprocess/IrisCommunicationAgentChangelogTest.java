@@ -102,7 +102,7 @@ class IrisCommunicationAgentChangelogTest {
             "version_number = 9");
   }
 
-  /** Exige que a nova agente seja aplicada, consultada e reaplicada no MySQL 5.7 físico. */
+  /** Exige aplicação física idempotente e versão lida do contrato canônico dos agentes. */
   @Test
   void shouldKeepDedicatedMysql57PhysicalValidation() throws Exception {
     Path moduleRoot = Path.of("").toAbsolutePath();
@@ -118,6 +118,19 @@ class IrisCommunicationAgentChangelogTest {
             moduleRoot.resolve("scripts/validate-agent-responsibility-boundaries-mysql57.sh"));
     String workflow =
         Files.readString(moduleRoot.resolve("../../.github/workflows/liquibase-mysql57.yml"));
+    JsonNode healthContract =
+        json.readTree(
+            Files.readString(
+                moduleRoot.resolve("../../config/agents/codex-agent-health-compliance.json")));
+    List<JsonNode> irisHealthContracts = new ArrayList<>();
+    healthContract
+        .path("agents")
+        .forEach(
+            agent -> {
+              if ("communication-director".equals(agent.path("key").asText())) {
+                irisHealthContracts.add(agent);
+              }
+            });
 
     assertThat(baseline)
         .contains(
@@ -128,10 +141,19 @@ class IrisCommunicationAgentChangelogTest {
     assertThat(runner)
         .contains(
             "compose run --rm --build liquibase-iris-communication-agent",
-            "communication-director:1",
+            "HEALTH_CONTRACT=${REPOSITORY_DIR}/config/agents/codex-agent-health-compliance.json",
+            "agent['key']}:{agent['expectedVersion']}",
+            "as versões implantadas dos nove agentes divergem dos contratos persistidos",
             "matriz dos nove agentes",
             "a reaplicação da Íris duplicou atividades");
-    assertThat(workflow).contains("validate-agent-responsibility-boundaries-mysql57.sh");
+    assertThat(irisHealthContracts)
+        .singleElement()
+        .satisfies(contract -> assertThat(contract.path("expectedVersion").asInt()).isPositive());
+    assertThat(workflow)
+        .contains(
+            "backend/ads-service/src/test/java/com/marketinghub/businessprocess/IrisCommunicationAgentChangelogTest.java",
+            "mvn -B -q -Dtest=IrisCommunicationAgentChangelogTest test",
+            "validate-agent-responsibility-boundaries-mysql57.sh");
   }
 
   /** Valida o risco 1093 dentro de cada comando sem misturar SQLs independentes do changelog. */

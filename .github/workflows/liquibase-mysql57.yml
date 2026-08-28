@@ -23,6 +23,7 @@ on:
       - "backend/ads-service/scripts/validate-product-discovery-bpm-audit-mysql57.sh"
       - "backend/ads-service/scripts/validate-financial-agent-task-audit-mysql57.sh"
       - "backend/ads-service/scripts/validate-agent-responsibility-boundaries-mysql57.sh"
+      - "backend/ads-service/src/test/java/com/marketinghub/businessprocess/IrisCommunicationAgentChangelogTest.java"
       - "config/agents/codex-agent-health-compliance.json"
       - "scripts/test-codex-agent-health-standard.mjs"
       - "scripts/validate-liquibase-mysql57.sh"
@@ -117,6 +118,17 @@ jobs:
     steps:
       - name: Baixar repositório
         uses: actions/checkout@v4
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Validar contrato Java da fronteira de agentes
+        working-directory: backend/ads-service
+        run: mvn -B -q -Dtest=IrisCommunicationAgentChangelogTest test
 
       - name: Validar migração física no MySQL 5.7
         run: bash backend/ads-service/scripts/validate-agent-responsibility-boundaries-mysql57.sh

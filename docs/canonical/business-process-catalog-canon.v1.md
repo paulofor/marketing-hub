@@ -130,6 +130,12 @@ causa persistida e tudo que ainda falta para concluir a versão selecionada. A l
 tarefas permanece disponível abaixo desse resumo, mas não pode ser a única forma de reconstruir a
 situação.
 
+O histórico principal mostra toda a cadeia publicada em ordem hierárquica, mesmo quando um processo
+ainda não possui execução. Processos sem evidência aparecem como planejados, sem datas, custo,
+objetivo atingido ou permissão para registrar commit; somente o backend decide essa disponibilidade.
+Assim, uma etapa concluída nunca encerra visualmente a cadeia enquanto houver processos canônicos
+seguintes.
+
 O contrato canônico é
 `GET /api/business-processes/{processDefinitionId}/products/{productId}/activity-executions`. O
 backend, e não o frontend, calcula a situação de cada atividade e do processo. A instância BPM é a

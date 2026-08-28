@@ -63,11 +63,11 @@ class ApprovedCreativePackageArchiveTest {
         .hasMessageContaining("outro plano");
   }
 
-  /** Rejeita pacote novo que ainda atribua a materialização criativa à Têmis. */
+  /** Rejeita pacote novo que ainda atribua a materialização criativa a Dédalo. */
   @Test
-  void rejectsLegacyTemisDirectionAsCurrentMaterialization() throws Exception {
+  void rejectsLegacyDedaloDirectionAsCurrentMaterialization() throws Exception {
     Map<String, byte[]> entries = entries();
-    entries.put("metadata/temis-direction.json", entries.remove("metadata/dedalo-direction.json"));
+    entries.put("metadata/dedalo-direction.json", entries.remove("metadata/iris-direction.json"));
 
     assertThatThrownBy(
             () -> new ApprovedCreativePackageArchive(new ObjectMapper()).validate(zip(entries), 4L))
@@ -135,7 +135,7 @@ class ApprovedCreativePackageArchiveTest {
             """
                 .formatted(sha256(PROOF), sha256(ASSET), sha256(FRAME), sha256(PREVIEW))));
     entries.put(
-        "metadata/dedalo-direction.json",
+        "metadata/iris-direction.json",
         bytes("{\"decision\":\"SELECTED\",\"chosenRoute\":\"STATIC\"}"));
     entries.put("metadata/apollo-storyboard.json", bytes("{\"cuts\":[{}]}"));
     entries.put(
@@ -158,7 +158,7 @@ class ApprovedCreativePackageArchiveTest {
         """;
     String hash = sha256(AUDIT);
     return "["
-        + executionJson(template, "direction-execution", "DEDALO", hash)
+        + executionJson(template, "direction-execution", "IRIS", hash)
         + ","
         + executionJson(template, "apollo-execution", "APOLLO", hash)
         + ","

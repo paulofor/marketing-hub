@@ -31,6 +31,7 @@ public class AgentMemoryService {
           "financial-agent",
           "growth-operator",
           "experiment-strategist",
+          "communication-director",
           "landing-generator",
           "meta-ad-approver",
           "apollo");

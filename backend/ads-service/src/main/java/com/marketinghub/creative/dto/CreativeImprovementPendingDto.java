@@ -4,7 +4,7 @@ import com.marketinghub.planning.imagestudio.v1.service.TemisVisualPlaybookDto;
 import java.util.List;
 
 /**
- * Responsabilidade: transportar uma correção de anúncio decidida pelo backend ao recurso de Dédalo.
+ * Responsabilidade: transportar uma correção de anúncio decidida pelo backend ao recurso de Íris.
  */
 public record CreativeImprovementPendingDto(
     Long creativeId,

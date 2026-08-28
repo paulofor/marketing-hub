@@ -1,0 +1,114 @@
+name: Communication Agent Worker CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - communication-agent-worker/**
+      - .github/workflows/communication-agent-worker-ci.yml
+      - scripts/validate-premium-agents.sh
+      - scripts/test-isolated-agent-codex-auth.sh
+      - scripts/codex-app-server-device-login.mjs
+      - scripts/codex-oauth-session-safe.sh
+  pull_request:
+    paths:
+      - communication-agent-worker/**
+      - docs/canonical/**
+      - .github/workflows/communication-agent-worker-ci.yml
+      - scripts/validate-premium-agents.sh
+      - scripts/test-isolated-agent-codex-auth.sh
+      - scripts/codex-app-server-device-login.mjs
+      - scripts/codex-oauth-session-safe.sh
+  workflow_dispatch:
+
+concurrency:
+  group: communication-agent-worker-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  VPS_IP: 163.245.202.80
+  VPS_USER: root
+  REPOSITORY_DIR: /opt/marketing-hub/repo
+
+jobs:
+  test:
+    name: Test worker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate premium agent architecture
+        run: bash scripts/validate-premium-agents.sh
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+          cache-dependency-path: communication-agent-worker/pom.xml
+
+      - name: Run unit tests
+        working-directory: communication-agent-worker
+        run: mvn -B test
+
+      - name: Validate container build
+        run: docker build -t marketing-hub/communication-agent-worker:${{ github.sha }} communication-agent-worker
+
+  deploy:
+    name: Deploy worker
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add Communication Agent VPS SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.GROWTH_OPERATOR_VPS_SSH_KEY }}
+
+      - name: Trust Communication Agent VPS
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          ssh-keyscan -T 30 -4 -p 22 -t rsa,ecdsa,ed25519 -H "${VPS_IP}" >> ~/.ssh/known_hosts
+
+      - name: Synchronize versioned repository
+        run: |
+          set -euo pipefail
+          ssh "${VPS_USER}@${VPS_IP}" "mkdir -p '${REPOSITORY_DIR}/communication-agent-worker' '${REPOSITORY_DIR}/scripts'"
+          rsync -az --delete communication-agent-worker/ "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/communication-agent-worker/"
+          rsync -az scripts/codex-app-server-device-login.mjs scripts/codex-oauth-session-safe.sh "${VPS_USER}@${VPS_IP}:${REPOSITORY_DIR}/scripts/"
+
+      - name: Rebuild and restart worker
+        run: |
+          set -euo pipefail
+          ssh "${VPS_USER}@${VPS_IP}" "\
+            install -d -o 10001 -g 10001 /opt/growth-operator/agents/communication-director/codex-home \
+            && export COMMUNICATION_AGENT_CODEX_HOME=/opt/growth-operator/agents/communication-director/codex-home \
+                   BACKEND_URL=http://191.252.181.168 \
+                   MARKETING_HUB_REPOSITORY_HOST='${REPOSITORY_DIR}' \
+                   CODEX_MODEL=gpt-5.6-sol \
+                   CODEX_SERVICE_TIER=default \
+                   COMMUNICATION_AGENT_IMAGE=marketing-hub/communication-agent-worker:${GITHUB_SHA} \
+            && cd '${REPOSITORY_DIR}/communication-agent-worker' \
+            && docker compose up -d --build --remove-orphans \
+            && for attempt in \$(seq 1 12); do \
+                 status=\$(docker inspect --format '{{.State.Status}}' communication-agent-worker-communication-agent-worker-1 2>/dev/null || true); \
+                 [ \"\${status}\" = running ] \
+                   && curl -fsS http://127.0.0.1:8101/ops-communication-agent-observability-v1/health | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' \
+                   && curl -fsS http://127.0.0.1:8101/ops-communication-agent-observability-v1/logfile >/dev/null \
+                   && docker exec communication-agent-worker-communication-agent-worker-1 node /app/agent-health-report.mjs \
+                   && exit 0; \
+                 sleep 5; \
+               done; \
+            docker compose logs --tail=150 communication-agent-worker; \
+            exit 1"
+
+      - name: Report deployed revision
+        run: |
+          deployed_image="$(ssh "${VPS_USER}@${VPS_IP}" "docker inspect communication-agent-worker-communication-agent-worker-1 --format '{{.Config.Image}}'")"
+          test "${deployed_image}" = "marketing-hub/communication-agent-worker:${GITHUB_SHA}"

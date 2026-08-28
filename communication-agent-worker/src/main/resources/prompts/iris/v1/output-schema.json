@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "executionStatus",
+    "sourceReference",
+    "activityId",
+    "outputType",
+    "strategicContractReference",
+    "alternatives",
+    "chosenAlternative",
+    "functionalOutput",
+    "evidenceGaps",
+    "nextHandoff",
+    "guardrails",
+    "expectedMetric",
+    "continueCriteria",
+    "adjustCriteria",
+    "stopCriteria"
+  ],
+  "properties": {
+    "contractVersion": { "type": "string", "const": "IRIS_COMMUNICATION_V1" },
+    "executionStatus": { "type": "string", "enum": ["COMPLETED", "BLOCKED"] },
+    "sourceReference": { "type": "string", "minLength": 1 },
+    "activityId": { "type": "string", "minLength": 1 },
+    "outputType": {
+      "type": "string",
+      "enum": [
+        "COMMUNICATION_PACKAGE",
+        "NON_AUDIOVISUAL_PACKAGE",
+        "LANDING_EVIDENCE",
+        "LANDING_STRATEGY",
+        "LANDING_COMPOSITION",
+        "LANDING_HTML"
+      ]
+    },
+    "strategicContractReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contractVersion", "contentHash", "preserved"],
+      "properties": {
+        "contractVersion": { "type": "string", "minLength": 1 },
+        "contentHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "preserved": { "type": "boolean" }
+      }
+    },
+    "alternatives": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "benefit", "risk", "effort", "adherence"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "benefit": { "type": "string", "minLength": 1 },
+          "risk": { "type": "string", "minLength": 1 },
+          "effort": { "type": "string", "minLength": 1 },
+          "adherence": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "chosenAlternative": { "type": "string", "minLength": 1 },
+    "functionalOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "messageStrategy",
+        "copy",
+        "channelBriefings",
+        "staticAssets",
+        "emailSequence",
+        "evidenceSelection",
+        "conversionArchitecture",
+        "visualComposition",
+        "landingHtml",
+        "audiovisualBrief"
+      ],
+      "properties": {
+        "messageStrategy": { "type": "string" },
+        "copy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["primaryText", "headline", "description", "ctaText"],
+          "properties": {
+            "primaryText": { "type": "string" },
+            "headline": { "type": "string" },
+            "description": { "type": "string" },
+            "ctaText": { "type": "string" }
+          }
+        },
+        "channelBriefings": { "type": "array", "items": { "type": "string" } },
+        "staticAssets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "format", "content", "proofReference"],
+            "properties": {
+              "type": { "type": "string", "minLength": 1 },
+              "format": { "type": "string", "minLength": 1 },
+              "content": { "type": "string", "minLength": 1 },
+              "proofReference": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "emailSequence": { "type": "array", "items": { "type": "string" } },
+        "evidenceSelection": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["reference", "version", "purpose"],
+            "properties": {
+              "reference": { "type": "string", "minLength": 1 },
+              "version": { "type": "string", "minLength": 1 },
+              "purpose": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "conversionArchitecture": { "type": "string" },
+        "visualComposition": { "type": "string" },
+        "landingHtml": { "type": ["string", "null"] },
+        "audiovisualBrief": { "type": ["string", "null"] }
+      }
+    },
+    "evidenceGaps": { "type": "array", "items": { "type": "string" } },
+    "nextHandoff": {
+      "type": "string",
+      "enum": ["BACKEND", "APOLO", "PSIQUE", "TEMIS", "BLOCKED"]
+    },
+    "guardrails": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "strategyPreserved",
+        "productPreserved",
+        "pricePreserved",
+        "noFabricatedProof",
+        "noPublication",
+        "noExternalSpend"
+      ],
+      "properties": {
+        "strategyPreserved": { "type": "boolean" },
+        "productPreserved": { "type": "boolean" },
+        "pricePreserved": { "type": "boolean" },
+        "noFabricatedProof": { "type": "boolean" },
+        "noPublication": { "type": "boolean" },
+        "noExternalSpend": { "type": "boolean" }
+      }
+    },
+    "expectedMetric": { "type": "string", "minLength": 1 },
+    "continueCriteria": { "type": "string", "minLength": 1 },
+    "adjustCriteria": { "type": "string", "minLength": 1 },
+    "stopCriteria": { "type": "string", "minLength": 1 }
+  }
+}

@@ -30,7 +30,7 @@ public class CommercialPlanImageStudioController {
     this.service = service;
   }
 
-  /** Solicita pela tela uma criação ou edição de entregável visual. */
+  /** Solicita pela tela uma criação ou edição de peça visual comercial. */
   @PostMapping("/api/planning/commercial-plans/{planId}/image-studio/jobs")
   public CommercialPlanImageStudioJobDto create(
       @PathVariable Long planId, @RequestBody CreateCommercialPlanImageStudioJobRequest request) {
@@ -43,14 +43,14 @@ public class CommercialPlanImageStudioController {
     return service.list(planId);
   }
 
-  /** Entrega ao recurso técnico de Dédalo a fila canônica de criação e edição. */
+  /** Entrega ao recurso técnico de Íris a fila canônica de criação e edição. */
   @GetMapping("/api/internal/planning/image-studio/v1/stage-executions/pending")
   public List<CommercialPlanImageStudioPendingDto> pending(
       @RequestParam(defaultValue = "2") int limit) {
     return service.claimPending(limit);
   }
 
-  /** Recebe o arquivo materializado por Dédalo e abre o gate independente de Têmis. */
+  /** Recebe o arquivo materializado por Íris e abre o gate independente de Têmis. */
   @PostMapping(
       value = "/api/internal/planning/image-studio/v1/stage-executions/{jobId}/artifact",
       consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -87,7 +87,7 @@ public class CommercialPlanImageStudioController {
     return service.claimReviews(limit);
   }
 
-  /** Expõe ao MCP o snapshot efetivo do entregável reservado. */
+  /** Expõe ao MCP o snapshot efetivo da peça reservada. */
   @GetMapping("/api/internal/planning/image-studio/v1/reviews/{assetId}/context")
   public CommercialPlanVisualAssetReviewPendingDto reviewContext(
       @PathVariable Long assetId, @RequestParam Long planId) {
@@ -102,7 +102,7 @@ public class CommercialPlanImageStudioController {
     service.review(assetId, request);
   }
 
-  /** Responsabilidade: transportar uma falha técnica auditável do recurso de Dédalo. */
+  /** Responsabilidade: transportar uma falha técnica auditável do recurso de Íris. */
   public record ImageStudioFailureRequest(
       String producerExecutionId, String error, String requestJson, String responseJson) {}
 }

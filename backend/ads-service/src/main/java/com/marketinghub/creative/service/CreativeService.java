@@ -733,7 +733,7 @@ public class CreativeService {
     return repository.save(revision);
   }
 
-  /** Recebe a arte materializada pelo recurso de Dédalo e abre sua revisão independente. */
+  /** Recebe a arte materializada pelo recurso de Íris e abre sua revisão independente. */
   @Transactional
   public Creative uploadAgentImprovementArtifact(
       Long id,
@@ -754,14 +754,14 @@ public class CreativeService {
                     new IllegalStateException(
                         "Retrabalho visual exige plano comercial vinculado ao experimento"));
     if (!StringUtils.hasText(producerExecutionId)) {
-      throw new IllegalArgumentException("Retrabalho visual exige execução produtora de Dédalo");
+      throw new IllegalArgumentException("Retrabalho visual exige execução produtora de Íris");
     }
     AssetUploadResponse asset =
         uploadImage(
             file,
             model,
             requestJson,
-            "Arte materializada pelo recurso técnico de Dédalo para a correção do criativo #" + id,
+            "Arte materializada pelo recurso técnico de Íris para a correção do criativo #" + id,
             AssetUploadCategory.EXPERIMENT_CREATIVE,
             source.getExperiment().getId(),
             null,
@@ -779,11 +779,12 @@ public class CreativeService {
     visual.setSourceVisualAsset(findLibrarySource(plan.getId(), source.getImageUrl()));
     visual.setAssetUrl(asset.url());
     visual.setMediaType("IMAGE");
-    visual.setLabel("Entregável premium para o criativo #" + id);
-    visual.setPurpose("DELIVERY");
-    visual.setPurposesJson("[\"DELIVERY\",\"LANDING\",\"ADS\",\"SOCIAL\"]");
-    visual.setOrigin("Dédalo / recurso técnico GPT Image 2");
-    visual.setRightsStatement("Gerado para uso comercial e entrega deste produto");
+    visual.setLabel("Peça comercial premium para o criativo #" + id);
+    visual.setPurpose("ADS");
+    visual.setPurposesJson("[\"ADS\",\"LANDING\",\"SOCIAL\"]");
+    visual.setOrigin("Íris / recurso técnico GPT Image 2");
+    visual.setRightsStatement(
+        "Gerado por Íris para comunicação comercial a partir de prova aprovada do produto");
     visual.setVersionNumber(
         visual.getSourceVisualAsset() == null
             ? 1
@@ -800,7 +801,7 @@ public class CreativeService {
     job.setOperation(CommercialPlanImageStudioOperation.EDIT);
     job.setStatus(CommercialPlanImageStudioStatus.COMPLETED);
     job.setLabel(visual.getLabel());
-    job.setPrompt(requestJson == null ? "Retrabalho visual de Dédalo" : requestJson);
+    job.setPrompt(requestJson == null ? "Retrabalho visual de Íris" : requestJson);
     job.setPurposesJson(visual.getPurposesJson());
     job.setReferenceAssetIdsJson("[]");
     String improvementSize =
@@ -900,7 +901,7 @@ public class CreativeService {
     try {
       Map<String, Object> audit = new LinkedHashMap<>();
       audit.put("correction", correction);
-      audit.put("executor", "DEDALO_TECHNICAL_RESOURCE");
+      audit.put("executor", "IRIS_TECHNICAL_RESOURCE");
       audit.put("status", status);
       audit.put("requestJson", Objects.toString(result.requestJson(), ""));
       audit.put("responseJson", Objects.toString(result.responseJson(), ""));
@@ -909,8 +910,8 @@ public class CreativeService {
       audit.put("reviewSummary", Objects.toString(reviewSummary, ""));
       return objectMapper.writeValueAsString(audit);
     } catch (JsonProcessingException ex) {
-      log.error("Falha ao auditar melhoria visual de Dédalo. status={}", status, ex);
-      throw new IllegalStateException("Falha ao auditar melhoria visual de Dédalo", ex);
+      log.error("Falha ao auditar melhoria visual de Íris. status={}", status, ex);
+      throw new IllegalStateException("Falha ao auditar melhoria visual de Íris", ex);
     }
   }
 
@@ -952,7 +953,7 @@ public class CreativeService {
     creative.setAgentImprovementError(null);
   }
 
-  /** Serializa o briefing de Dédalo sem converter o parecer de Têmis em conteúdo substituto. */
+  /** Serializa o briefing de Íris sem converter o parecer de Têmis em conteúdo substituto. */
   private String toImprovementJson(Creative creative, CreativeAgentReviewResultRequest request) {
     try {
       Map<String, Object> correction = new LinkedHashMap<>();
@@ -961,7 +962,7 @@ public class CreativeService {
       correction.put("description", Objects.requireNonNullElse(creative.getDescription(), ""));
       correction.put(
           "cta", Objects.requireNonNullElse(creative.getCta(), DEFAULT_META_CALL_TO_ACTION));
-      correction.put("imagePrompt", dedaloImageBrief(request));
+      correction.put("imagePrompt", irisImageBrief(request));
       correction.put(
           "mandatoryVisualRequirements", normalizedItems(request.mandatoryVisualRequirements()));
       correction.put("forbiddenVisualElements", normalizedItems(request.forbiddenVisualElements()));
@@ -975,7 +976,7 @@ public class CreativeService {
     }
   }
 
-  /** Confirma que o parecer realmente delegou a materialização visual a Dédalo. */
+  /** Confirma que o parecer realmente delegou a materialização visual a Íris. */
   private boolean hasCorrectionTarget(CreativeAgentReviewResultRequest request, String target) {
     return correctionTargets(request).stream()
         .filter(Objects::nonNull)
@@ -983,10 +984,10 @@ public class CreativeService {
   }
 
   /** Converte requisitos de integridade em briefing técnico sem inventar a solução criativa. */
-  private String dedaloImageBrief(CreativeAgentReviewResultRequest request) {
+  private String irisImageBrief(CreativeAgentReviewResultRequest request) {
     StringBuilder brief =
         new StringBuilder(
-            "Materialize uma nova imagem do criativo sob o contrato PDE_CONSTRUCTION. "
+            "Materialize uma nova imagem do criativo sob o contrato COMMUNICATION_MATERIALIZATION. "
                 + "Escolha a solução visual sem alterar estratégia, oferta, preço ou prova.");
     correctionTargets(request).stream()
         .filter(Objects::nonNull)

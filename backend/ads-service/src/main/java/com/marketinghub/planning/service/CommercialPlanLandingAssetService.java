@@ -56,7 +56,7 @@ public class CommercialPlanLandingAssetService implements ApprovedLandingProduct
         .orElseGet(List::of);
   }
 
-  /** Monta o contrato simples que Dédalo e GeraSalesPage recebem antes de produzir o HTML. */
+  /** Monta o contrato de provas que Íris e os renderizadores recebem antes de produzir o HTML. */
   @Transactional(readOnly = true)
   public List<Map<String, Object>> payloadForExperiment(Long experimentId) {
     return referencesForExperiment(experimentId).stream()

@@ -59,6 +59,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.multipart.MultipartFile;
 
+/** Responsabilidade: validar criação, revisão, versionamento e publicação segura de criativos. */
 @SpringBootTest(classes = AdsServiceApplication.class)
 @TestPropertySource(
     properties = {
@@ -92,6 +93,7 @@ class CreativeServiceTest {
 
   @MockBean AssetStorageService assetStorageService;
 
+  /** Limpa os artefatos persistidos que isolam cada cenário de criativo. */
   @BeforeEach
   void setup() {
     experimentVideoAssetRepository.deleteAll();
@@ -101,6 +103,7 @@ class CreativeServiceTest {
     commercialPlanRepository.deleteAll();
   }
 
+  /** Garante que uma imagem enviada seja armazenada e auditada com seus metadados. */
   @Test
   void uploadImageReturnsPath() throws Exception {
     MultipartFile file =
@@ -138,9 +141,9 @@ class CreativeServiceTest {
     assertThat(saved.getPayload()).contains("EXPERIMENT_CREATIVE");
   }
 
-  /** Garante que retrabalho de Dédalo vira entregável revisado antes de originar novo criativo. */
+  /** Garante que retrabalho de Íris vira peça revisada antes de originar novo criativo. */
   @Test
-  void routesDedaloImprovementThroughCommercialPlanLibrary() throws Exception {
+  void routesIrisImprovementThroughCommercialPlanLibrary() throws Exception {
     MarketNiche niche = fixtures.createAndSaveNiche();
     Experiment experiment = fixtures.createAndSaveExperiment(niche);
     Creative source = fixtures.createAndSaveCreative(experiment);
@@ -188,7 +191,10 @@ class CreativeServiceTest {
     assertThat(repository.count()).isEqualTo(creativeCountBeforeArtifact);
     CommercialPlanVisualAsset draft = commercialPlanVisualAssetRepository.findAll().getFirst();
     assertThat(draft.getStatus()).isEqualTo(CommercialPlanVisualAssetStatus.DRAFT);
-    assertThat(draft.getPurposesJson()).contains("DELIVERY", "LANDING", "ADS", "SOCIAL");
+    assertThat(draft.getPurposesJson())
+        .contains("ADS", "LANDING", "SOCIAL")
+        .doesNotContain("DELIVERY");
+    assertThat(draft.getOrigin()).contains("Íris");
     var job = commercialPlanImageStudioJobRepository.findAll().getFirst();
     assertThat(job.getSourceCreative().getId()).isEqualTo(source.getId());
     assertThat(job.getProducerExecutionId()).isEqualTo("producer-88");
@@ -252,6 +258,7 @@ class CreativeServiceTest {
     assertThat(failed.getAgentReviewedAt()).isNotNull();
   }
 
+  /** Garante que a prévia interprete o HTML retornado pela integração Meta. */
   @Test
   void previewParsesHtml() throws Exception {
     MarketNiche niche = fixtures.createAndSaveNiche();
@@ -270,6 +277,7 @@ class CreativeServiceTest {
     }
   }
 
+  /** Garante que a aprovação integral do criativo libere o experimento. */
   @Test
   void approvingCreativeMarksExperimentAsReady() {
     MarketNiche niche = fixtures.createAndSaveNiche();
@@ -493,6 +501,7 @@ class CreativeServiceTest {
     assertThat(creative.getCta()).isEqualTo("LEARN_MORE");
   }
 
+  /** Garante que excluir o último criativo aprovado volte a bloquear o experimento. */
   @Test
   void deletingLastApprovedCreativeResetsFlag() {
     MarketNiche niche = fixtures.createAndSaveNiche();
@@ -594,7 +603,7 @@ class CreativeServiceTest {
     assertThat(pending.getFirst().visualAcceptanceCriteria())
         .containsExactly("Headline legível em mobile");
     assertThat(pending.getFirst().revisedImagePrompt())
-        .contains("PDE_CONSTRUCTION", "PRODUCT_DEMONSTRATION")
+        .contains("COMMUNICATION_MATERIALIZATION", "PRODUCT_DEMONSTRATION")
         .doesNotContain("Crie uma arte premium");
     assertThat(pending.getFirst().referenceImageUrls())
         .containsExactly(

@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/** Responsabilidade: validar a autoria única das atividades contra os oito domínios dos agentes. */
+/** Responsabilidade: validar a autoria única das atividades contra os nove domínios dos agentes. */
 final class AgentResponsibilityMatrix {
   private static final Map<String, Responsibility> RESPONSIBILITIES = responsibilities();
 
@@ -105,6 +105,13 @@ final class AgentResponsibilityMatrix {
         "Dédalo",
         "Agente Gerador de Landing",
         "Gerador de Landing");
+    add(
+        values,
+        "communication-director",
+        "COMMUNICATION_MATERIALIZATION",
+        "Íris",
+        "Diretora de Comunicação",
+        "Diretora e Materializadora de Comunicação");
     add(values, "videomaker", "AUDIOVISUAL_PRODUCTION", "Apolo", "Agente Videomaker");
     add(values, "customer-agent", "HUMAN_EXPERIENCE_REVIEW", "Psique", "Agente Cliente");
     add(

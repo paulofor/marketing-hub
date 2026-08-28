@@ -26,6 +26,7 @@ class AgentHarnessCatalogTest {
           "experiment-strategist",
           "meta-ad-approver",
           "landing-generator",
+          "communication-director",
           "market-radar",
           "videomaker");
   private static final Map<String, List<String>> BEHAVIOR_SOURCE_ROOTS =
@@ -44,10 +45,19 @@ class AgentHarnessCatalogTest {
           List.of("meta-ad-approver-worker/src/main/resources/prompts"),
           "landing-generator",
           List.of("landing-generator-agent-worker/src/main/resources/prompts"),
+          "communication-director",
+          List.of(
+              "communication-agent-worker/src/main/resources/prompts",
+              "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/production.md"),
           "market-radar",
           List.of("product-discovery-worker/prompts"),
           "videomaker",
           List.of("video-management-service/src/main/resources/prompts"));
+  private static final Map<String, Set<String>> FILES_OWNED_BY_ANOTHER_AGENT =
+      Map.of(
+          "meta-ad-approver",
+          Set.of(
+              "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/production.md"));
 
   /**
    * Exige harness completo para todos os agentes atualmente cadastrados no catálogo operacional.
@@ -81,10 +91,11 @@ class AgentHarnessCatalogTest {
     BEHAVIOR_SOURCE_ROOTS.forEach(
         (agentKey, sourceRoots) -> {
           try {
+            Set<String> expected = repositoryBehaviorFiles(repositoryRoot, sourceRoots);
+            expected.removeAll(FILES_OWNED_BY_ANOTHER_AGENT.getOrDefault(agentKey, Set.of()));
             assertThat(declaredByAgent.get(agentKey))
                 .as("Cobertura comportamental do agente %s", agentKey)
-                .containsExactlyInAnyOrderElementsOf(
-                    repositoryBehaviorFiles(repositoryRoot, sourceRoots));
+                .containsExactlyInAnyOrderElementsOf(expected);
           } catch (IOException ex) {
             throw new IllegalStateException(
                 "Não foi possível inspecionar as fontes comportamentais de " + agentKey + ".", ex);

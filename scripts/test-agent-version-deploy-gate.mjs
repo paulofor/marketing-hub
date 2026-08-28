@@ -13,6 +13,7 @@ const reporters = [
   "financial-agent-worker/agent-health-report.mjs",
   "meta-ad-approver-worker/agent-health-report.mjs",
   "landing-generator-agent-worker/agent-health-report.mjs",
+  "communication-agent-worker/agent-health-report.mjs",
 ];
 const temporary = await mkdtemp(path.join(tmpdir(), "agent-version-gate-"));
 const codex = path.join(temporary, "codex");

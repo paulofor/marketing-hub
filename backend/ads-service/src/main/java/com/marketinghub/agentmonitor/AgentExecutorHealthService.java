@@ -22,6 +22,7 @@ public class AgentExecutorHealthService {
           "financial-agent",
           "growth-operator",
           "experiment-strategist",
+          "communication-director",
           "meta-ad-approver",
           "landing-generator",
           "videomaker",

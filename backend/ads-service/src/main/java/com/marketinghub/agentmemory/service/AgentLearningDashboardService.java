@@ -20,6 +20,7 @@ public class AgentLearningDashboardService {
           "financial-agent", "Plutus",
           "growth-operator", "Operador de Crescimento",
           "experiment-strategist", "Estrategista de Experimentos",
+          "communication-director", "Íris",
           "landing-generator", "Dédalo",
           "meta-ad-approver", "Têmis",
           "apollo", "Apolo");

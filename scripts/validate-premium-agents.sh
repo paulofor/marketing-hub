@@ -12,6 +12,7 @@ workflow_by_agent = {
     'experiment-strategist': root/'.github/workflows/experiment-strategist-worker-ci.yml',
     'meta-ad-approver': root/'.github/workflows/meta-ad-approver-worker-ci.yml',
     'landing-generator': root/'.github/workflows/landing-generator-agent-worker-ci.yml',
+    'communication-director': root/'.github/workflows/communication-agent-worker-ci.yml',
 }
 codex_home_by_agent = {
     'customer-agent': 'CUSTOMER_AGENT_CODEX_HOME',
@@ -20,6 +21,7 @@ codex_home_by_agent = {
     'experiment-strategist': 'EXPERIMENT_STRATEGIST_CODEX_HOME',
     'meta-ad-approver': 'META_AD_APPROVER_CODEX_HOME',
     'landing-generator': 'LANDING_GENERATOR_CODEX_HOME',
+    'communication-director': 'COMMUNICATION_AGENT_CODEX_HOME',
 }
 mcp_backend_contracts = {
     'customer-agent': (

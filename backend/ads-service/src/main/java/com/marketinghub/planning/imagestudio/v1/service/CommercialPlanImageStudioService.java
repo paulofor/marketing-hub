@@ -43,11 +43,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-/** Responsabilidade: orquestrar materialização visual de Dédalo e revisão independente de Têmis. */
+/** Responsabilidade: orquestrar materialização visual comercial de Íris e revisão de Têmis. */
 @Service
 public class CommercialPlanImageStudioService {
   private static final Logger log = LoggerFactory.getLogger(CommercialPlanImageStudioService.class);
-  private static final Set<String> PURPOSES = Set.of("DELIVERY", "LANDING", "ADS", "SOCIAL");
+  private static final Set<String> PURPOSES = Set.of("LANDING", "ADS", "SOCIAL");
   private static final Set<String> SIZES =
       Set.of("1024x1024", "1024x1536", "1536x1024", "2048x2048", "2048x1152", "1152x2048");
   private static final Set<String> QUALITIES = Set.of("medium", "high");
@@ -136,7 +136,9 @@ public class CommercialPlanImageStudioService {
     return jobRepository.findSummariesByCommercialPlanId(planId).stream().map(this::dto).toList();
   }
 
-  /** Reserva jobs para o recurso de Dédalo e entrega referências autorizadas do próprio plano. */
+  /**
+   * Reserva jobs para o recurso visual de Íris e entrega referências aprovadas do próprio plano.
+   */
   @Transactional
   public List<CommercialPlanImageStudioPendingDto> claimPending(int limit) {
     return jobRepository
@@ -171,9 +173,7 @@ public class CommercialPlanImageStudioService {
         assetStorageService.store(
             file,
             new AssetUploadContext(
-                readStrings(job.getPurposesJson()).contains("DELIVERY")
-                    ? AssetUploadCategory.COMMERCIAL_PLAN_DELIVERABLE
-                    : AssetUploadCategory.COMMERCIAL_PLAN_VISUAL_ASSET,
+                AssetUploadCategory.COMMERCIAL_PLAN_VISUAL_ASSET,
                 job.getCommercialPlan().getExperiment() != null
                     ? job.getCommercialPlan().getExperiment().getId()
                     : null,
@@ -201,11 +201,9 @@ public class CommercialPlanImageStudioService {
     List<String> purposes = readStrings(job.getPurposesJson());
     visual.setPurpose(purposes.getFirst());
     visual.setPurposesJson(job.getPurposesJson());
-    visual.setOrigin("Dédalo / recurso técnico GPT Image 2");
+    visual.setOrigin("Íris / recurso técnico GPT Image 2");
     visual.setRightsStatement(
-        purposes.contains("DELIVERY")
-            ? "Gerado para uso comercial e entrega deste produto"
-            : "Gerado para uso comercial deste produto a partir de prova aprovada");
+        "Gerado por Íris para comunicação comercial a partir de prova aprovada do produto");
     visual.setVersionNumber(nextVersion(job));
     visual.setStatus(CommercialPlanVisualAssetStatus.DRAFT);
     visual.setAgentReviewStatus(CommercialPlanVisualAssetReviewStatus.PENDING);
@@ -320,7 +318,7 @@ public class CommercialPlanImageStudioService {
     }
   }
 
-  /** Converte um job reservado em contrato executável pelo recurso técnico de Dédalo. */
+  /** Converte um job reservado em contrato executável pelo recurso técnico de Íris. */
   private CommercialPlanImageStudioPendingDto claim(CommercialPlanImageStudioJob job) {
     List<String> references = referenceUrls(job);
     TemisVisualPlaybookDto playbook = resolveFrozenPlaybook(job);
@@ -474,7 +472,7 @@ public class CommercialPlanImageStudioService {
                 .toList();
     if (normalized.isEmpty() || normalized.stream().anyMatch(value -> !PURPOSES.contains(value))) {
       throw new IllegalArgumentException(
-          "Ativos de Dédalo exigem ao menos uma finalidade entre DELIVERY, LANDING, ADS e SOCIAL");
+          "Ativos de Íris exigem ao menos uma finalidade entre LANDING, ADS e SOCIAL");
     }
     return normalized;
   }
@@ -484,10 +482,7 @@ public class CommercialPlanImageStudioService {
    */
   private void validateCommercialReferences(
       CommercialPlanImageStudioOperation operation, List<String> purposes, List<Long> references) {
-    boolean commercialOnly =
-        !purposes.contains("DELIVERY")
-            && purposes.stream().anyMatch(Set.of("LANDING", "ADS", "SOCIAL")::contains);
-    if (!commercialOnly || operation == CommercialPlanImageStudioOperation.EDIT) {
+    if (operation == CommercialPlanImageStudioOperation.EDIT) {
       return;
     }
     boolean hasProductEvidence =

@@ -21,7 +21,7 @@ Servidor MCP (Model Context Protocol) do Marketing Hub para execução de ferram
 - `pde_db_list_tables`: lista as tabelas do schema efetivo do PDE em produção.
 - `pde_db_read_table`: lê dados de uma tabela do schema efetivo do PDE com paginação (`table`, `limit`, `offset`).
 - `pde_db_query`: executa SQL de leitura (`SELECT`/`WITH`) no schema efetivo do PDE.
-- `java_module_logs`: retorna logs operacionais com filtros opcionais por texto/intervalo e paginação (`lines`, `contains`, `from`, `to`, `offset`, `cursor`), incluindo `meta-ad-approver-worker`, `themis-image-studio`, `landing-generator-agent-worker`, `product-discovery-worker` e `growth-operator-worker`.
+- `java_module_logs`: retorna logs operacionais com filtros opcionais por texto/intervalo e paginação (`lines`, `contains`, `from`, `to`, `offset`, `cursor`), incluindo `meta-ad-approver-worker`, `iris-image-studio`, `landing-generator-agent-worker`, `communication-agent-worker`, `product-discovery-worker` e `growth-operator-worker`. O alias histórico `themis-image-studio` continua aceito para rastrear execuções anteriores.
 - `studio_ledger_coverage`: compara todas as tentativas conhecidas de vídeo, áudio e imagem do Estúdio com o ledger financeiro, agrupadas por origem, tipo e provedor; evidencia entradas ausentes, custos desconhecidos e custos sem plano, sem interpretá-los como zero.
 - `codex_agent_execution_telemetry`: consulta heartbeat, processo ativo, eventos, bytes de saída e tokens realmente informados de uma execução dos agentes Cliente, Financeiro, Operador, Estrategista ou Aprovador Meta.
 - `meta_ad_approver_execution_telemetry`: recebe `creativeId` e cruza o parecer canônico de Têmis com heartbeat, processo, atividade, bloqueio e contagens separadas de memórias confirmadas e candidatas do experimento.
@@ -82,7 +82,8 @@ O tool `java_module_logs` lê logs do Spring Boot a partir de arquivo local **ou
 - `MCP_LOG_FINANCIAL_AGENT_WORKER_PATH` (default `http://163.245.202.80:8095/ops-financial-agent-observability-v1/financial-agent-worker-log`);
 - `MCP_LOG_EXPERIMENT_STRATEGIST_WORKER_PATH` (default `http://163.245.202.80:8096/ops-experiment-strategist-observability-v1/logfile`);
 - `MCP_LOG_META_AD_APPROVER_WORKER_PATH` (default `http://163.245.202.80:8097/ops-meta-ad-approver-observability-v1/logfile`);
-- `MCP_LOG_THEMIS_IMAGE_STUDIO_PATH` (default `http://163.245.202.80:8098/ops-meta-ad-approver-observability-v1/logfile`);
+- `MCP_LOG_IRIS_IMAGE_STUDIO_PATH` (default `http://163.245.202.80:8098/ops-meta-ad-approver-observability-v1/logfile`; aceita `MCP_LOG_THEMIS_IMAGE_STUDIO_PATH` como fallback histórico);
+- `MCP_LOG_COMMUNICATION_AGENT_WORKER_PATH` (default `http://163.245.202.80:8101/ops-communication-agent-observability-v1/logfile`);
 - `MCP_LOG_FETCH_TIMEOUT_SECONDS` (default `45`);
 - `MCP_LOG_FETCH_ATTEMPTS` (default `3`), número de tentativas para leitura HTTP de logs;
 - `MCP_LOG_FETCH_RETRY_DELAY_MILLIS` (default `400`), intervalo entre tentativas de leitura HTTP;

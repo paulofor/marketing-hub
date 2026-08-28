@@ -149,11 +149,14 @@ sem alterar antes este cânone e os testes de contrato.
 | Financeiro | `financial-agent-worker` | `financial-agent.mjs` | obrigatórios | snapshots financeiros congelados; browser dispensado |
 | Estrategista | `experiment-strategist-worker` | `experiment-strategist.mjs` | obrigatórios | browser e pesquisa de mercado auditável |
 | Integridade Comercial | `meta-ad-approver-worker` | `meta-ad-approver.mjs` | obrigatórios | Têmis usa Chromium/Playwright, visão, imagem original, frames de vídeo e landing desktop/mobile somente para revisão independente |
-| Gerador de Landing | `landing-generator-agent-worker` | `landing-generator.mjs` | obrigatórios | Codex `gpt-5.6-sol`, Chromium/Playwright, visão desktop/iPhone/Android, memória premium e solicitação de imagens pelo fluxo oficial `gpt-image-2` |
+| Construção PDE / Gerador de Landing histórico | `landing-generator-agent-worker` | `landing-generator.mjs` | obrigatórios | Dédalo constrói o PDE e preserva execuções históricas de landing; Codex `gpt-5.6-sol` e browser ficam restritos ao produto e à prova real |
+| Comunicação | `communication-agent-worker` + `iris-image-studio` | `communication-agent.mjs` | obrigatórios | Íris usa Codex `gpt-5.6-sol` para contratos, copy e landing e `gpt-image-2` isolado para `LANDING`, `ADS` e `SOCIAL` com prova aprovada |
 
-O executor técnico legado `themis-image-studio` continua isolado para produção visual, sem identidade
-de agente nem poder de aprovação, e atende ao contrato de construção de Dédalo. O nome técnico não
-atribui a produção a Têmis.
+O executor técnico visual passa a se chamar `iris-image-studio`. Os códigos persistidos
+`themis-image-studio` e `pde-visual-materialization` são aliases de compatibilidade, sem identidade de
+agente nem poder de aprovação. O container atende ao contrato de Íris, bloqueia `DELIVERY` e
+`PRODUCT_PROOF` e não atribui produção a Têmis. Revisão, produção visual e comunicação Codex mantêm
+runtimes, credenciais e correlações independentes.
 
 O Agente Radar permanece `BLOCKED` até possuir executor, identidade Codex, sandbox, MCP,
 prompt/schema, telemetria, CI/CD, memória e contratos completos. Cadastro e histórico isolados não
@@ -217,7 +220,7 @@ próprio prompt, schema, ferramentas, autoridade, modelo ou critério de aprova�
 
 ## Aprendizado governado por replay
 
-Dédalo e Têmis usam a primeira versão governada de aprendizado do sistema. Toda mudança nasce como
+Dédalo, Íris e Têmis usam aprendizado governado pelo próprio domínio. Toda mudança nasce como
 memória `CANDIDATE` e congela, antes do teste, versão baseline, versão candidata, replay de falhas
 históricas e holdout fora da amostra. Baseline e candidata executam os mesmos casos na sandbox local.
 A promoção exige no mínimo dez casos de replay, cinco de holdout, ganho mínimo declarado, custo dentro

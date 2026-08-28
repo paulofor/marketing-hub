@@ -132,6 +132,29 @@ class AgentExecutorHealthServiceTest {
     assertThat(response.agentKey()).isEqualTo("market-radar");
   }
 
+  /** Permite que Íris use sessão Codex exclusiva como os demais executores premium. */
+  @Test
+  void shouldAllowIrisCodexReconnect() {
+    AgentRepository agents = mock(AgentRepository.class);
+    AgentExecutorHealthCheckRepository checks = mock(AgentExecutorHealthCheckRepository.class);
+    CodexAuthReconnectRepository reconnects = mock(CodexAuthReconnectRepository.class);
+    Agent iris =
+        Agent.builder().id(12L).agentKey("communication-director").nickname("Íris").build();
+    when(agents.findById(12L)).thenReturn(Optional.of(iris));
+    when(reconnects.existsByAgentIdAndStatusIn(
+            org.mockito.ArgumentMatchers.eq(12L), org.mockito.ArgumentMatchers.anyList()))
+        .thenReturn(false);
+    when(reconnects.save(org.mockito.ArgumentMatchers.any()))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    CodexAuthReconnectResponse response =
+        new AgentExecutorHealthService(agents, checks, reconnects)
+            .requestReconnect(12L, "operador");
+
+    assertThat(response.agentKey()).isEqualTo("communication-director");
+    assertThat(response.status()).isEqualTo("REQUESTED");
+  }
+
   /** Aprova somente quando versão, backend e autenticação estão comprovados. */
   @Test
   void shouldReportReadyOnlyWithAllThreeSignals() {

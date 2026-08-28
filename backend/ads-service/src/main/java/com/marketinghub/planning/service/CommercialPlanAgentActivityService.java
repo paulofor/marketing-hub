@@ -31,7 +31,10 @@ import org.springframework.transaction.annotation.Transactional;
 /** Responsabilidade: consolidar a prestação de contas dos agentes por plano comercial. */
 @Service
 public class CommercialPlanAgentActivityService {
-  private static final Set<String> JOURNEY_ACTIVITY_IDS = Set.of("html", "customer", "commercial");
+  private static final Set<String> IRIS_JOURNEY_ACTIVITY_IDS =
+      Set.of("select", "strategy", "compose", "html", "customer", "commercial");
+  private static final Set<String> LEGACY_JOURNEY_ACTIVITY_IDS =
+      Set.of("html", "customer", "commercial");
   private final AgentTaskRepository taskRepository;
   private final VideoProductionCycleRepository videoCycleRepository;
   private final GeraLandingStageExecutionRepository landingRepository;
@@ -158,14 +161,14 @@ public class CommercialPlanAgentActivityService {
         task.getUpdatedAt());
   }
 
-  /** Consolida os três gates oficiais da landing sem confundir conclusão técnica isolada. */
+  /** Consolida a cadeia oficial da landing sem confundir conclusão técnica isolada. */
   private Optional<Entry> journeyHomologationEntry(List<AgentTask> tasks) {
     Map<String, List<AgentTask>> byExecution = new LinkedHashMap<>();
     tasks.stream()
         .filter(task -> task.getProcessDefinition() != null)
         .filter(
             task -> "landing-page-generation".equals(task.getProcessDefinition().getProcessCode()))
-        .filter(task -> JOURNEY_ACTIVITY_IDS.contains(task.getProcessActivityId()))
+        .filter(task -> IRIS_JOURNEY_ACTIVITY_IDS.contains(task.getProcessActivityId()))
         .filter(task -> task.getSourceReference() != null)
         .forEach(
             task ->
@@ -186,8 +189,15 @@ public class CommercialPlanAgentActivityService {
                     AgentTask::getUpdatedAt, Comparator.nullsFirst(Comparator.naturalOrder()))
                 .thenComparing(AgentTask::getId, Comparator.nullsFirst(Comparator.naturalOrder())))
         .forEach(task -> latestByActivity.put(task.getProcessActivityId(), task));
+    boolean irisExecution =
+        tasks.stream()
+            .filter(task -> task.getAssignedAgent() != null)
+            .anyMatch(
+                task -> "communication-director".equals(task.getAssignedAgent().getAgentKey()));
+    Set<String> requiredActivities =
+        irisExecution ? IRIS_JOURNEY_ACTIVITY_IDS : LEGACY_JOURNEY_ACTIVITY_IDS;
     boolean complete =
-        JOURNEY_ACTIVITY_IDS.stream()
+        requiredActivities.stream()
             .allMatch(
                 activityId ->
                     latestByActivity.containsKey(activityId)
@@ -204,7 +214,7 @@ public class CommercialPlanAgentActivityService {
             .filter(java.util.Objects::nonNull)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     String detail =
-        JOURNEY_ACTIVITY_IDS.stream()
+        requiredActivities.stream()
             .sorted()
             .map(
                 activityId ->
@@ -223,8 +233,8 @@ public class CommercialPlanAgentActivityService {
             .orElse(null);
     return new Entry(
         "JOURNEY_HOMOLOGATION",
-        "landing-generator",
-        "Dédalo",
+        irisExecution ? "communication-director" : "landing-generator",
+        irisExecution ? "Íris" : "Dédalo",
         "Homologação oficial da landing",
         status,
         detail,

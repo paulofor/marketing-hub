@@ -167,10 +167,12 @@ um recurso ativo do catálogo persistido `business_process_execution_resource`, 
 em `GET /api/business-process-execution-resources`.
 
 Cada recurso informa código estável, nome, tipo, agente responsável, referência do executor e
-instruções de uso. `pde-visual-materialization` pertence funcionalmente a Dédalo e usa o
-`executor_reference` legado `themis-image-studio`; o nome técnico do container não atribui autoria a
-Têmis. `video-management-service` pertence a Apolo. O código histórico `themis-image-studio` também
-fica associado a Dédalo apenas para compatibilidade de filas já persistidas. Atividades sem recurso
+instruções de uso. `iris-communication-worker` é o executor comum de Íris e materializa contratos,
+copy, peças estruturadas e landing. `pde-visual-materialization` e o código técnico legado
+`themis-image-studio` são aliases históricos cuja propriedade vigente é Íris e cujo executor é
+`iris-image-studio`; aceitam somente imagem comercial apoiada em prova real aprovada. O nome legado
+não atribui autoria a Têmis, e esses recursos não podem criar `DELIVERY` nem `PRODUCT_PROOF`.
+`video-management-service` pertence a Apolo. Atividades sem recurso
 especializado seguem o executor normal do agente.
 
 O backend valida o recurso ao salvar e publicar a definição e exige desde esse momento que o único
@@ -232,29 +234,41 @@ Quando uma única tarefa técnica realmente cobrir mais de uma atividade do mesm
 cobertura deve ser persistida de forma relacional em `agent_task_activity_coverage`. A mesma tarefa
 real pode então aparecer no histórico de cada atividade coberta, preservando um único prompt,
 resultado, intervalo, consumo e custo. É proibido ao frontend inferir a cobertura por título, copiar
-a tarefa para fabricar execuções ou somar novamente seu custo. No GeraLanding, a homologação
-composta de Dédalo cobre seleção de provas, estratégia, composição e HTML; a chamada técnica
-correlacionada por `agent-task:<id>` é a fonte do prompt, parecer, modelo e duração exibidos.
+a tarefa para fabricar execuções ou somar novamente seu custo. Nas versões históricas do GeraLanding,
+a homologação composta de Dédalo cobre seleção de provas, estratégia, composição e HTML; a chamada
+técnica correlacionada por `agent-task:<id>` é a fonte do prompt, parecer, modelo e duração exibidos.
+Nas versões novas, as quatro atividades pertencem a Íris e cada tarefa preserva seu próprio contrato;
+o HTML aguarda Quality Review antes de concluir a atividade final.
 
 ## Primeiro processo: Geração de landing page
 
-A versão 1 formaliza o ciclo:
+A versão histórica 1 formaliza o ciclo:
 
 `briefing → Dédalo → validação técnica → Psique → Têmis → aprovação humana`.
 
-Na execução operacional, o worker de Dédalo deve reservar primeiro a atividade liberada pelo
+A versão vigente formaliza:
+
+`produto e provas de Dédalo → Íris → validação técnica → Psique → Têmis → aprovação humana`.
+
+Na execução operacional da versão histórica, o worker de Dédalo deve reservar primeiro a atividade liberada pelo
 endpoint BPM canônico e materializá-la, de forma idempotente, na fila técnica do GeraLanding. Uma
 lease `IN_PROGRESS` sem resultado deve ser reoferecida ao mesmo executor após reinício. A conclusão
 ou falha técnica atualiza a própria tarefa BPM antes de qualquer sucessora ficar elegível; é proibido
 liberar Psique ou Têmis apenas pelo recebimento da tarefa de Dédalo.
+
+Na versão vigente, o `communication-agent-worker` reserva cada atividade de Íris diretamente no
+endpoint BPM `pending`; o callback de HTML abre o Quality Review da mesma versão e deixa a tarefa em
+andamento. Aprovação técnica conclui a tarefa de Íris; reprovação a bloqueia com causa persistida.
+Somente o backend libera Psique, Têmis ou uma retentativa.
 
 Os executores de Psique e Têmis devem consumir as atividades liberadas pela fila BPM canônica,
 produzir parecer estruturado e reportar resultado e evidências na própria tarefa. Psique não pode
 liberar Têmis, e Têmis não pode alterar o experimento ou publicar ativos; somente o backend calcula
 as predecessoras concluídas e libera a próxima atividade.
 
-Reprovações técnicas, de percepção da cliente ou comerciais retornam a Dédalo com causa persistida e
-geram nova versão. O backend do experimento continua sendo a autoridade das transições operacionais.
+Reprovações de comunicação retornam a Íris; reprovações do produto ou de sua prova funcional
+retornam a Dédalo, sempre com causa persistida e nova versão. O backend do experimento continua sendo
+a autoridade das transições operacionais.
 A aprovação humana continua obrigatória antes da publicação. A referência técnica vigente é o bloco
 GeraLanding do `experiment-pipeline`, definido em
 `docs/canonical/procedimento-experimento-canon.v1.md`.

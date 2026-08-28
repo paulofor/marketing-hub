@@ -20,6 +20,7 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -33,7 +34,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
-/** Responsabilidade: criar e editar imagens premium como recurso técnico de Dédalo. */
+/** Responsabilidade: criar e editar imagens comerciais premium como recurso técnico de Íris. */
 @Component
 @ConditionalOnProperty(name = "meta-ad-approver.execution-role", havingValue = "image-studio")
 public class TemisImageStudioOpenAiClient {
@@ -45,6 +46,7 @@ public class TemisImageStudioOpenAiClient {
   private static final BigDecimal TEXT_INPUT_USD_PER_MILLION = BigDecimal.valueOf(5);
   private static final BigDecimal IMAGE_OUTPUT_USD_PER_MILLION = BigDecimal.valueOf(30);
   private static final BigDecimal TEXT_OUTPUT_USD_PER_MILLION = BigDecimal.valueOf(10);
+  private static final Set<String> COMMERCIAL_PURPOSES = Set.of("LANDING", "ADS", "SOCIAL");
   private final MetaAdApproverProperties properties;
   private final ObjectMapper objectMapper;
   private final HttpClient downloadClient;
@@ -72,12 +74,13 @@ public class TemisImageStudioOpenAiClient {
 
   /** Gera do zero ou edita referências, preservando request, response e usage brutos. */
   public Result execute(TemisImageStudioJob job) {
+    validateCommercialPurposes(job);
     String model = canonicalModel(properties.getImageModel());
     List<ReferenceImage> references = downloadReferences(job.referenceImageUrls());
     String requestJson = requestAudit(job, model, references);
     String endpoint = references.isEmpty() ? "/images/generations" : "/images/edits";
     log.info(
-        "Dédalo enviando request de imagem. jobId={} operation={} url={} model={} references={} request={}",
+        "Íris enviando request de imagem. jobId={} operation={} url={} model={} references={} request={}",
         job.jobId(),
         job.operation(),
         normalizeBaseUrl(properties.getOpenAiBaseUrl()) + endpoint,
@@ -96,7 +99,7 @@ public class TemisImageStudioOpenAiClient {
       BigDecimal costUsd = calculateCost(response.path("usage"));
       String responseAudit = responseAudit(response, image);
       log.info(
-          "Dédalo recebeu response de imagem. jobId={} url={} responseBytes={} response={}",
+          "Íris recebeu response de imagem. jobId={} url={} responseBytes={} response={}",
           job.jobId(),
           normalizeBaseUrl(properties.getOpenAiBaseUrl()) + endpoint,
           raw.getBytes(StandardCharsets.UTF_8).length,
@@ -138,6 +141,7 @@ public class TemisImageStudioOpenAiClient {
       body.add(
           "image[]",
           new ByteArrayResource(reference.bytes()) {
+            /** Define o nome sequencial da referência enviada à edição visual. */
             @Override
             public String getFilename() {
               return "reference-" + number + "." + reference.extension();
@@ -182,13 +186,25 @@ public class TemisImageStudioOpenAiClient {
     }
   }
 
-  /** Diferencia entregável real de peça comercial sem permitir prova inventada do produto. */
+  /** Define o papel comercial sem permitir prova inventada do produto. */
   private String assetRoleContract(TemisImageStudioJob job) {
-    if (job.purposes().contains("DELIVERY")) {
-      return "- Este arquivo é um entregável real do produto e deve ser útil para a cliente final.";
-    }
     return "- Este arquivo é uma peça comercial, não um entregável. Demonstre somente o produto "
         + "comprovado nas referências aprovadas, sem inventar tela, resultado, depoimento ou recurso.";
+  }
+
+  /** Bloqueia no executor qualquer finalidade de produto que tenha escapado da API canônica. */
+  private void validateCommercialPurposes(TemisImageStudioJob job) {
+    if (job.purposes() == null
+        || job.purposes().isEmpty()
+        || job.purposes().stream().anyMatch(purpose -> !COMMERCIAL_PURPOSES.contains(purpose))) {
+      throw new IllegalArgumentException(
+          "O recurso visual de Íris aceita somente LANDING, ADS e SOCIAL");
+    }
+    if ("CREATE".equalsIgnoreCase(job.operation())
+        && (job.referenceImageUrls() == null || job.referenceImageUrls().isEmpty())) {
+      throw new IllegalArgumentException(
+          "A criação visual de Íris exige prova real aprovada fornecida pelo backend");
+    }
   }
 
   /** Baixa referências autorizadas e bloqueia payloads fora do contrato de imagem. */
@@ -299,17 +315,16 @@ public class TemisImageStudioOpenAiClient {
             "Falha ao ler o arquivo seguro da chave OpenAI. path={}",
             value.getOpenAiApiKeyFile(),
             ex);
-        throw new IllegalStateException(
-            "Chave da OpenAI indisponível para o recurso de Dédalo", ex);
+        throw new IllegalStateException("Chave da OpenAI indisponível para o recurso de Íris", ex);
       }
     }
-    throw new IllegalStateException("Chave da OpenAI indisponível para o recurso de Dédalo");
+    throw new IllegalStateException("Chave da OpenAI indisponível para o recurso de Íris");
   }
 
   /** Impede downgrade silencioso do modelo visual aprovado. */
   private String canonicalModel(String value) {
     if (!"gpt-image-2".equals(StringUtils.hasText(value) ? value.trim() : "")) {
-      throw new IllegalArgumentException("O recurso visual de Dédalo exige o modelo gpt-image-2");
+      throw new IllegalArgumentException("O recurso visual de Íris exige o modelo gpt-image-2");
     }
     return "gpt-image-2";
   }

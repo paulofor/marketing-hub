@@ -3,7 +3,7 @@ package com.marketinghub.metaadapproverworker;
 import java.util.List;
 import java.util.Map;
 
-/** Responsabilidade: representar uma criação ou edição visual atribuída a Dédalo. */
+/** Responsabilidade: representar uma criação ou edição visual comercial atribuída a Íris. */
 public record TemisImageStudioJob(
     Long jobId,
     Long commercialPlanId,

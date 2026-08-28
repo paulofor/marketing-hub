@@ -500,36 +500,34 @@
           "items": [
             { "key": "owns", "label": "Têmis decide", "value": "verdade · prova · fidelidade · direitos · compliance · segurança da comunicação", "description": "Aprova, bloqueia ou pede correção com evidência e sem ampliar a promessa aprovada.", "sourceReference": "docs/canonical/meta-ad-approver-agent-canon.v1.md" },
             { "key": "input", "label": "Entrada obrigatória", "value": "estratégia aprovada · ativo real · evidências de prova · relatório técnico", "description": "A revisão usa o artefato final, não descrição abstrata ou saída produtora do próprio agente.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" },
-            { "key": "forbidden", "label": "Têmis não decide", "value": "copy · imagem · vídeo · landing · produto · estratégia · preço · distribuição", "description": "Criação retorna para Dédalo ou Apolo; estratégia para Atena; operação para Hermes.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" }
+            { "key": "forbidden", "label": "Têmis não decide", "value": "copy · imagem · vídeo · landing · produto · estratégia · preço · distribuição", "description": "Comunicação retorna para Íris, audiovisual para Apolo, produto para Dédalo, estratégia para Atena e operação para Hermes.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" }
           ]
         },
         {
           "code": "executor",
           "title": "Executor e implantação",
-          "description": "Unidades responsáveis pela revisão independente e pelo estúdio visual de Têmis.",
+          "description": "Unidade independente responsável exclusivamente pelas revisões de Têmis.",
           "items": [
-            { "key": "module", "label": "Módulo executor", "value": "meta-ad-approver-worker", "description": "Worker de revisão; o Estúdio de Imagens permanece função separada.", "sourceReference": "meta-ad-approver-worker" },
-            { "key": "deployment", "label": "Empacotamento e entrega", "value": "Dockerfile, Compose e workflow próprios", "description": "Browser, visão e produção de imagem ficam segregados por papel.", "sourceReference": ".github/workflows/meta-ad-approver-worker-ci.yml" }
+            { "key": "module", "label": "Módulo executor", "value": "meta-ad-approver-worker", "description": "Worker de revisão sem autoridade nem segredo para produzir imagens.", "sourceReference": "meta-ad-approver-worker" },
+            { "key": "deployment", "label": "Empacotamento e entrega", "value": "Dockerfile, Compose e workflow próprios", "description": "Browser e visão ficam isolados da produção comercial de Íris.", "sourceReference": ".github/workflows/meta-ad-approver-worker-ci.yml" }
           ]
         },
         {
           "code": "runtime",
           "title": "Runtime do modelo",
-          "description": "Perfis de revisão Codex e produção visual.",
+          "description": "Configuração efetiva da revisão comercial independente.",
           "items": [
             { "key": "review-engine", "label": "Revisor", "value": "Codex ChatGPT · gpt-5.6-sol · high", "description": "Revisão comercial independente em sandbox somente leitura.", "sourceReference": "meta-ad-approver-worker/src/main/resources/application.yml" },
-            { "key": "image-engine", "label": "Estúdio visual", "value": "OpenAI · gpt-image-2", "description": "Somente o papel de estúdio pode produzir imagem; o revisor não se autoaprova.", "sourceReference": "meta-ad-approver-worker/src/main/resources/application.yml" },
-            { "key": "limits", "label": "Timeouts", "value": "Codex PT40M · imagem PT3M", "description": "Limites independentes para revisão e geração.", "sourceReference": "meta-ad-approver-worker/src/main/resources/application.yml" }
+            { "key": "limits", "label": "Timeout", "value": "Codex PT40M", "description": "A revisão não compartilha runtime nem segredo com o estúdio visual de Íris.", "sourceReference": "meta-ad-approver-worker/src/main/resources/application.yml" }
           ]
         },
         {
           "code": "orchestration",
           "title": "Fila e callbacks",
-          "description": "Filas canônicas de revisão e estúdio.",
+          "description": "Filas canônicas exclusivas de revisão.",
           "items": [
             { "key": "pending", "label": "Revisão de criativo", "value": "/api/internal/creatives/agent-review/stage-executions/pending", "description": "Reserva no máximo o limite configurado de revisões.", "sourceReference": "meta-ad-approver-worker/src/main/java/com/marketinghub/metaadapproverworker/MetaAdApproverBackendClient.java" },
-            { "key": "callback", "label": "Callback de revisão", "value": "/api/internal/creatives/{id}/agent-review/result", "description": "Resultado volta ao backend para decisão de gate.", "sourceReference": "meta-ad-approver-worker/src/main/java/com/marketinghub/metaadapproverworker/MetaAdApproverBackendClient.java" },
-            { "key": "studio", "label": "Estúdio de imagem", "value": "/api/internal/planning/image-studio/v1/stage-executions/pending", "description": "Produção visual separada da revisão independente.", "sourceReference": "meta-ad-approver-worker/src/main/java/com/marketinghub/metaadapproverworker/TemisImageStudioBackendClient.java" }
+            { "key": "callback", "label": "Callback de revisão", "value": "/api/internal/creatives/{id}/agent-review/result", "description": "Resultado volta ao backend para decisão de gate.", "sourceReference": "meta-ad-approver-worker/src/main/java/com/marketinghub/metaadapproverworker/MetaAdApproverBackendClient.java" }
           ]
         },
         {
@@ -547,7 +545,7 @@
           "description": "Separação entre produzir, revisar e autorizar.",
           "items": [
             { "key": "authority", "label": "Nível de autonomia", "value": "ADVISE · revisão humana obrigatória · sem efeito externo", "description": "Não publica, gasta ou aprova humanamente.", "sourceReference": "config/agents/premium-agent-compliance.json" },
-            { "key": "separation", "label": "Separação de funções", "value": "Revisor Codex ≠ Estúdio GPT Image 2", "description": "O segredo visual não entra no processo revisor.", "sourceReference": "docs/canonical/premium-ai-agent-architecture-canon.v1.md" }
+            { "key": "separation", "label": "Separação de funções", "value": "Têmis revisa · Íris produz", "description": "O segredo visual e o código produtor não entram no processo revisor.", "sourceReference": "docs/canonical/premium-ai-agent-architecture-canon.v1.md" }
           ]
         },
         {
@@ -579,9 +577,8 @@
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema histórico da tradução", "version": "bpm-v2-historical", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-communication-translation-v2-schema.json", "description": "Contrato histórico preservado apenas para auditoria de execuções antigas." },
         { "artifactType": "PROMPT", "name": "Revisão de entregáveis PDE", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-deliverables-review.md", "description": "Revisão do produto entregue." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema dos entregáveis PDE", "version": "bpm-v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/bpm/pde-deliverables-review-schema.json", "description": "Contrato da revisão." },
-        { "artifactType": "PROMPT", "name": "Recurso técnico legado de imagem", "version": "v1-technical", "path": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/production.md", "description": "Recurso técnico de materialização governado pelo contrato de Dédalo; não concede autoria a Têmis." },
-        { "artifactType": "PROMPT", "name": "Revisão técnica legada do estúdio", "version": "v1-technical", "path": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/review.md", "description": "Validação técnica do recurso; o gate de integridade comercial permanece separado." },
-        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema técnico legado do estúdio", "version": "v1-technical", "path": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/review-schema.json", "description": "Contrato técnico sem direito de decisão comercial." },
+        { "artifactType": "PROMPT", "name": "Revisão independente da comunicação visual", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/review.md", "description": "Gate de Têmis sobre imagens comerciais produzidas por Íris." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão visual", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/review-schema.json", "description": "Contrato técnico sem direito de criação ou decisão de publicação." },
         { "artifactType": "PROMPT", "name": "Revisão do plano comercial", "version": "v4", "path": "meta-ad-approver-worker/src/main/resources/prompts/pde-commercial-plan/v4/commercial-review.md", "description": "Gate comercial do plano." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da revisão comercial", "version": "v4", "path": "meta-ad-approver-worker/src/main/resources/prompts/pde-commercial-plan/v4/commercial-review-schema.json", "description": "Contrato do gate." },
         { "artifactType": "PROMPT", "name": "Quality Review da construção", "version": "v2", "path": "meta-ad-approver-worker/src/main/resources/prompts/pde-construction/v2/quality-review.md", "description": "Qualidade do produto construído." },
@@ -598,11 +595,11 @@
         {
           "code": "responsibility-boundary",
           "title": "Responsabilidade exclusiva",
-          "description": "Dédalo materializa o PDE e os artefatos não audiovisuais a partir da estratégia aprovada.",
+          "description": "Dédalo materializa exclusivamente a experiência PDE usada depois da compra.",
           "items": [
-            { "key": "owns", "label": "Dédalo decide", "value": "arquitetura do PDE · jornada · entregáveis · acesso · landing · materialização não audiovisual", "description": "Converte contratos aprovados em produto utilizável e comunicação implementada.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" },
+            { "key": "owns", "label": "Dédalo decide", "value": "arquitetura do PDE · jornada · entregáveis · personalização · acesso · prova real", "description": "Converte contratos aprovados na experiência que a cliente usa após a compra.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" },
             { "key": "input", "label": "Entrada obrigatória", "value": "Contrato Estratégico de Mercado de Atena · gate econômico de Plutus", "description": "Dédalo implementa posicionamento, oferta e limites sem redefini-los.", "sourceReference": "docs/canonical/cadeia-produtos-pde-canon.v1.md" },
-            { "key": "forbidden", "label": "Dédalo não decide", "value": "mercado · posicionamento · preço · aprovação do próprio trabalho · aquisição", "description": "Revisões humanas e comerciais são independentes; audiovisual pertence a Apolo.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" }
+            { "key": "forbidden", "label": "Dédalo não decide", "value": "mercado · posicionamento · preço · copy · landing · anúncio · e-mail · aquisição", "description": "Comunicação pré-compra pertence a Íris; audiovisual pertence a Apolo.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" }
           ]
         },
         {
@@ -610,14 +607,14 @@
           "title": "Executor e implantação",
           "description": "Unidade responsável por executar Dédalo.",
           "items": [
-            { "key": "module", "label": "Módulo executor", "value": "landing-generator-agent-worker", "description": "Worker Spring Boot exclusivo do Gerador de Landing.", "sourceReference": "landing-generator-agent-worker" },
+            { "key": "module", "label": "Módulo executor", "value": "landing-generator-agent-worker", "description": "Worker Spring Boot histórico, agora restrito às atividades de construção PDE.", "sourceReference": "landing-generator-agent-worker" },
             { "key": "deployment", "label": "Empacotamento e entrega", "value": "Dockerfile, Compose e workflow próprios", "description": "Sessão Codex, browser e MCP exclusivos.", "sourceReference": ".github/workflows/landing-generator-agent-worker-ci.yml" }
           ]
         },
         {
           "code": "runtime",
           "title": "Runtime do modelo",
-          "description": "Configuração efetiva da geração de landing.",
+          "description": "Configuração efetiva da construção PDE.",
           "items": [
             { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · gpt-5.6-sol", "description": "Modelo canônico do Dédalo.", "sourceReference": "landing-generator-agent-worker/src/main/resources/application.yml" },
             { "key": "reasoning", "label": "Esforço de raciocínio", "value": "high", "description": "Valor padrão configurável por CODEX_REASONING_EFFORT.", "sourceReference": "landing-generator-agent-worker/src/main/resources/application.yml" },
@@ -627,11 +624,11 @@
         {
           "code": "orchestration",
           "title": "Fila e callbacks",
-          "description": "Contratos oficiais do pipeline GeraLanding e das tarefas BPM.",
+          "description": "Contratos oficiais das tarefas BPM de construção PDE.",
           "items": [
-            { "key": "pending", "label": "Ponto inicial", "value": "/api/internal/geralanding/agent/v1/stage-executions/pending?limit=1", "description": "Reserva uma execução da landing.", "sourceReference": "landing-generator-agent-worker/src/main/java/com/marketinghub/landinggeneratoragent/LandingGeneratorBackendClient.java" },
-            { "key": "callbacks", "label": "Callback", "value": "/api/internal/geralanding/agent/v1/stage-executions/{id}/result", "description": "Retorna saída e auditoria; o backend decide o próximo passo.", "sourceReference": "landing-generator-agent-worker/src/main/java/com/marketinghub/landinggeneratoragent/LandingGeneratorBackendClient.java" },
-            { "key": "polling", "label": "Consumo", "value": "a cada minuto", "description": "Inclui fila principal e atividades BPM de construção PDE.", "sourceReference": "landing-generator-agent-worker/src/main/java/com/marketinghub/landinggeneratoragent/LandingGeneratorAgentScheduler.java" }
+            { "key": "pending", "label": "Ponto inicial", "value": "/api/internal/agent-tasks/landing-generator/stage-executions/pending", "description": "Reserva somente jornada, entregáveis e acesso pertencentes a Dédalo.", "sourceReference": "landing-generator-agent-worker/src/main/java/com/marketinghub/landinggeneratoragent/PdeConstructionBpmTaskConsumer.java" },
+            { "key": "callbacks", "label": "Callbacks", "value": "/result · /failure", "description": "Retorna produto e auditoria; o backend decide o próximo passo.", "sourceReference": "landing-generator-agent-worker/src/main/java/com/marketinghub/landinggeneratoragent/PdeConstructionBpmTaskConsumer.java" },
+            { "key": "polling", "label": "Consumo", "value": "a cada minuto", "description": "Novas execuções de landing não pertencem mais a Dédalo.", "sourceReference": "landing-generator-agent-worker/src/main/java/com/marketinghub/landinggeneratoragent/PdeConstructionBpmTaskConsumer.java" }
           ]
         },
         {
@@ -649,7 +646,7 @@
           "description": "Proteções contra publicação, gasto e autopromoção.",
           "items": [
             { "key": "authority", "label": "Nível de autonomia", "value": "ADVISE · revisão humana obrigatória · sem efeito externo", "description": "Dédalo altera rascunhos, mas não aprova nem publica o próprio trabalho.", "sourceReference": "config/agents/premium-agent-compliance.json" },
-            { "key": "artifacts", "label": "Artefato final", "value": "HTML funcional separado de auditoria e metadados técnicos", "description": "Evita contaminar a landing com debug ou marcadores internos.", "sourceReference": "AGENTS.md" }
+            { "key": "artifacts", "label": "Artefato final", "value": "PDE e entregáveis separados de auditoria e metadados técnicos", "description": "Evita contaminar a experiência entregue com debug ou marcadores internos.", "sourceReference": "AGENTS.md" }
           ]
         },
         {
@@ -664,10 +661,10 @@
       ],
       "artifacts": [
         { "artifactType": "MCP_SERVER", "name": "MCP do Gerador de Landing", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/mcp/landing-generator.mjs", "description": "Contexto, assets, memória e inspeção visual." },
-        { "artifactType": "PROMPT", "name": "Geração de HTML", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/prompts/landing-generator/v1/html.md", "description": "Construção inicial do HTML." },
-        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da geração de HTML", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/prompts/landing-generator/v1/html-schema.json", "description": "Contrato da construção inicial." },
-        { "artifactType": "PROMPT", "name": "Remediação da landing", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/prompts/landing-generator/v1/remediation.md", "description": "Correção autônoma governada por evidências." },
-        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema da remediação", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/prompts/landing-generator/v1/remediation-schema.json", "description": "Contrato da remediação." },
+        { "artifactType": "PROMPT", "name": "Geração de HTML histórica", "version": "v1-historical", "path": "landing-generator-agent-worker/src/main/resources/prompts/landing-generator/v1/html.md", "description": "Contrato histórico anterior à criação de Íris." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema histórico da geração de HTML", "version": "v1-historical", "path": "landing-generator-agent-worker/src/main/resources/prompts/landing-generator/v1/html-schema.json", "description": "Contrato preservado apenas para auditoria." },
+        { "artifactType": "PROMPT", "name": "Remediação histórica da landing", "version": "v1-historical", "path": "landing-generator-agent-worker/src/main/resources/prompts/landing-generator/v1/remediation.md", "description": "Contrato histórico anterior à criação de Íris." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema histórico da remediação", "version": "v1-historical", "path": "landing-generator-agent-worker/src/main/resources/prompts/landing-generator/v1/remediation-schema.json", "description": "Contrato preservado apenas para auditoria." },
         { "artifactType": "PROMPT", "name": "Design estratégico de oferta retirado", "version": "v4-historical", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/offer-design.md", "description": "Versão histórica desativada por atribuir decisões estratégicas a Dédalo." },
         { "artifactType": "OUTPUT_SCHEMA", "name": "Schema histórico do design de oferta", "version": "v4-historical", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/offer-design-schema.json", "description": "Contrato histórico preservado apenas para auditoria." },
         { "artifactType": "PROMPT", "name": "Arquitetura de materialização do Plano Comercial", "version": "v5", "path": "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v5/product-architecture.md", "description": "Dédalo materializa a estratégia e a economia aprovadas sem redefini-las." },
@@ -682,6 +679,96 @@
         { "artifactType": "RUNTIME_CONFIG", "name": "Configuração do worker", "version": "v1", "path": "landing-generator-agent-worker/src/main/resources/application.yml", "description": "Modelo, raciocínio, timeout, MCP e observabilidade." },
         { "artifactType": "DEPLOYMENT", "name": "Container do worker", "version": "v1", "path": "landing-generator-agent-worker/Dockerfile", "description": "Imagem reproduzível e isolada." },
         { "artifactType": "WORKFLOW", "name": "CI/CD do worker", "version": "v1", "path": ".github/workflows/landing-generator-agent-worker-ci.yml", "description": "Testes, build e publicação versionados." }
+      ]
+    },
+    {
+      "agentKey": "communication-director",
+      "sections": [
+        {
+          "code": "responsibility-boundary",
+          "title": "Responsabilidade exclusiva",
+          "description": "Íris materializa a comunicação que convence antes da compra sem alterar estratégia ou produto.",
+          "items": [
+            { "key": "owns", "label": "Íris decide", "value": "mensagem · copy · landing · peças estáticas · e-mails · briefings por canal", "description": "Traduz contratos aprovados em comunicação sensorial, persuasiva e fiel ao PDE real.", "sourceReference": "docs/canonical/iris-communication-agent-canon.v1.md" },
+            { "key": "input", "label": "Entradas obrigatórias", "value": "Atena · Plutus · Dédalo · canal e objetivo aprovados", "description": "Versões, hashes, preço, PDE e provas reais chegam congelados pelo backend.", "sourceReference": "backend/ads-service/src/main/java/com/marketinghub/communication/v1/IrisCommunicationMaterializationContextProvider.java" },
+            { "key": "forbidden", "label": "Íris não decide", "value": "mercado · posicionamento · oferta · preço · produto · integridade · distribuição · publicação", "description": "Apolo produz audiovisual, Psique e Têmis revisam e Hermes opera.", "sourceReference": "docs/canonical/matriz-responsabilidades-agentes-canon.v1.md" }
+          ]
+        },
+        {
+          "code": "executor",
+          "title": "Executor e implantação",
+          "description": "Unidades independentes responsáveis por comunicação e imagem comercial de Íris.",
+          "items": [
+            { "key": "module", "label": "Módulo executor", "value": "communication-agent-worker", "description": "Worker Spring Boot exclusivo da Diretora de Comunicação.", "sourceReference": "communication-agent-worker" },
+            { "key": "image-module", "label": "Estúdio comercial", "value": "iris-image-studio", "description": "Executor GPT Image 2 isolado; o caminho Java histórico permanece no módulo de Têmis apenas por compatibilidade de código.", "sourceReference": "meta-ad-approver-worker/docker-compose.yml" },
+            { "key": "deployment", "label": "Empacotamento e entrega", "value": "Dockerfile, Compose e workflow próprios", "description": "Imagem e sessão Codex são reproduzíveis e isoladas.", "sourceReference": ".github/workflows/communication-agent-worker-ci.yml" }
+          ]
+        },
+        {
+          "code": "runtime",
+          "title": "Runtime do modelo",
+          "description": "Configuração efetiva da materialização de comunicação.",
+          "items": [
+            { "key": "engine", "label": "Motor", "value": "Codex ChatGPT · gpt-5.6-sol", "description": "Sessão individual de Íris sem chave OpenAI no prompt.", "sourceReference": "communication-agent-worker/src/main/resources/application.yml" },
+            { "key": "image-engine", "label": "Motor visual", "value": "OpenAI · gpt-image-2", "description": "Produz somente LANDING, ADS e SOCIAL apoiados em prova real aprovada.", "sourceReference": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/production.md" },
+            { "key": "reasoning", "label": "Esforço de raciocínio", "value": "high", "description": "Valor padrão configurável e auditado por execução.", "sourceReference": "communication-agent-worker/src/main/resources/application.yml" },
+            { "key": "limits", "label": "Sandbox e timeout", "value": "read-only · PT40M", "description": "A agente devolve artefatos pelo callback e não escreve no repositório.", "sourceReference": "communication-agent-worker/src/main/java/com/marketinghub/communicationagentworker/CommunicationAgentCodexRunner.java" }
+          ]
+        },
+        {
+          "code": "orchestration",
+          "title": "Fila e callbacks",
+          "description": "Contratos oficiais das atividades de comunicação.",
+          "items": [
+            { "key": "pending", "label": "Ponto inicial", "value": "/api/internal/agent-tasks/communication-director/stage-executions/pending", "description": "Reserva somente recurso e atividade pertencentes a Íris.", "sourceReference": "communication-agent-worker/src/main/java/com/marketinghub/communicationagentworker/CommunicationAgentBackendClient.java" },
+            { "key": "image-pending", "label": "Fila visual", "value": "/api/internal/planning/image-studio/v1/stage-executions/pending", "description": "Reserva peças comerciais com referência aprovada; DELIVERY é bloqueado.", "sourceReference": "meta-ad-approver-worker/src/main/java/com/marketinghub/metaadapproverworker/TemisImageStudioBackendClient.java" },
+            { "key": "callbacks", "label": "Callbacks", "value": "/result · /failure", "description": "O backend persiste a resposta e continua dono do avanço.", "sourceReference": "communication-agent-worker/src/main/java/com/marketinghub/communicationagentworker/CommunicationAgentBackendClient.java" },
+            { "key": "polling", "label": "Consumo", "value": "60 segundos · uma tarefa por ciclo", "description": "PLAY/STOP é comprovado antes de toda reserva.", "sourceReference": "communication-agent-worker/src/main/java/com/marketinghub/communicationagentworker/CommunicationAgentTaskConsumer.java" }
+          ]
+        },
+        {
+          "code": "memory",
+          "title": "Contexto e memória",
+          "description": "Contratos congelados e artefatos predecessores segregados por plano.",
+          "items": [
+            { "key": "context", "label": "Contexto funcional", "value": "estratégia + economia + PDE + provas + resultados predecessores", "description": "O backend consolida o contexto; Íris não acessa banco nem recompõe estratégia.", "sourceReference": "backend/ads-service/src/main/java/com/marketinghub/communication/v1/IrisCommunicationMaterializationContextProvider.java" },
+            { "key": "lineage", "label": "Linhagem", "value": "sourceReference · taskId · versões · SHA-256 · assets aprovados", "description": "Prova ausente bloqueia em vez de gerar placeholder.", "sourceReference": "communication-agent-worker/src/main/resources/prompts/iris/v1/behavioral-core.md" }
+          ]
+        },
+        {
+          "code": "security",
+          "title": "Segurança e autoridade",
+          "description": "Proteções contra promessa inventada, dados privados e efeito externo.",
+          "items": [
+            { "key": "authority", "label": "Nível de autonomia", "value": "ADVISE · revisão humana obrigatória · sem efeito externo", "description": "Não publica, envia mensagem, altera preço, ativa campanha ou gasta.", "sourceReference": "config/agents/premium-agent-compliance.json" },
+            { "key": "review", "label": "Revisão independente", "value": "Quality Review · Psique · Têmis · autorização humana", "description": "Íris nunca aprova o próprio pacote.", "sourceReference": "docs/canonical/iris-communication-agent-canon.v1.md" }
+          ]
+        },
+        {
+          "code": "observability",
+          "title": "Observabilidade e saúde",
+          "description": "Prontidão, custo e qualidade por pacote de comunicação.",
+          "items": [
+            { "key": "health", "label": "Health do executor", "value": "heartbeat até 60s · backend · versão · codex login status", "description": "READY exige PLAY, sessão individual e versão vigente.", "sourceReference": "config/agents/codex-agent-health-compliance.json" },
+            { "key": "telemetry", "label": "Telemetria", "value": "prompt, resposta bruta, modelo, raciocínio, tokens, custo, duração, erro, fontes e decisão", "description": "Saída funcional permanece separada da auditoria.", "sourceReference": "communication-agent-worker/src/main/java/com/marketinghub/communicationagentworker/CommunicationAgentTaskConsumer.java" }
+          ]
+        }
+      ],
+      "artifacts": [
+        { "artifactType": "MCP_SERVER", "name": "MCP de Íris", "version": "v1", "path": "communication-agent-worker/src/main/resources/mcp/communication-agent.mjs", "description": "Contexto da tarefa e memória especializada com identidade fixa." },
+        { "artifactType": "PROMPT", "name": "Constituição de comunicação", "version": "v1", "path": "communication-agent-worker/src/main/resources/prompts/iris/v1/behavioral-core.md", "description": "Identidade, fronteiras e princípios sensoriais de Íris." },
+        { "artifactType": "PROMPT", "name": "Contrato de comunicação", "version": "v1", "path": "communication-agent-worker/src/main/resources/prompts/iris/v1/communication-package.md", "description": "Mensagem e briefings que governam os ativos." },
+        { "artifactType": "PROMPT", "name": "Pacote não audiovisual", "version": "v1", "path": "communication-agent-worker/src/main/resources/prompts/iris/v1/non-audiovisual-package.md", "description": "Copy, peças estáticas, e-mails e briefing de Apolo." },
+        { "artifactType": "PROMPT", "name": "Provas da landing", "version": "v1", "path": "communication-agent-worker/src/main/resources/prompts/iris/v1/landing-evidence.md", "description": "Seleção de demonstrações e assets reais." },
+        { "artifactType": "PROMPT", "name": "Estratégia da landing", "version": "v1", "path": "communication-agent-worker/src/main/resources/prompts/iris/v1/landing-strategy.md", "description": "Arquitetura de conversão sem redefinir oferta." },
+        { "artifactType": "PROMPT", "name": "Composição da landing", "version": "v1", "path": "communication-agent-worker/src/main/resources/prompts/iris/v1/landing-composition.md", "description": "Direção visual e sensorial executável." },
+        { "artifactType": "PROMPT", "name": "HTML da landing", "version": "v1", "path": "communication-agent-worker/src/main/resources/prompts/iris/v1/landing-html.md", "description": "Documento integral responsivo e acessível." },
+        { "artifactType": "PROMPT", "name": "Produção visual comercial", "version": "v1", "path": "meta-ad-approver-worker/src/main/resources/prompts/image-studio/v1/production.md", "description": "Contrato técnico de Íris para LANDING, ADS e SOCIAL com prova real aprovada." },
+        { "artifactType": "OUTPUT_SCHEMA", "name": "Schema de comunicação", "version": "v1", "path": "communication-agent-worker/src/main/resources/prompts/iris/v1/output-schema.json", "description": "Contrato estrito compartilhado pelas atividades de Íris." },
+        { "artifactType": "RUNTIME_CONFIG", "name": "Configuração do worker", "version": "v1", "path": "communication-agent-worker/src/main/resources/application.yml", "description": "Modelo, raciocínio, timeout e observabilidade." },
+        { "artifactType": "DEPLOYMENT", "name": "Container do worker", "version": "v1", "path": "communication-agent-worker/Dockerfile", "description": "Imagem reproduzível e isolada." },
+        { "artifactType": "DEPLOYMENT", "name": "Container do estúdio visual", "version": "v1", "path": "meta-ad-approver-worker/Dockerfile.image-studio", "description": "Imagem técnica sem Codex nem responsabilidade de revisão." },
+        { "artifactType": "WORKFLOW", "name": "CI/CD do worker", "version": "v1", "path": ".github/workflows/communication-agent-worker-ci.yml", "description": "Testes, build e publicação versionados." }
       ]
     },
     {

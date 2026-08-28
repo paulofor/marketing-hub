@@ -71,7 +71,7 @@ jobs:
       - name: Validate container build
         run: |
           docker build -t marketing-hub/meta-ad-approver-worker:${{ github.sha }} meta-ad-approver-worker
-          docker build -f meta-ad-approver-worker/Dockerfile.image-studio -t marketing-hub/themis-image-studio:${{ github.sha }} meta-ad-approver-worker
+          docker build -f meta-ad-approver-worker/Dockerfile.image-studio -t marketing-hub/iris-image-studio:${{ github.sha }} meta-ad-approver-worker
           touch /tmp/openai_api_key
           mkdir -p /tmp/codex-home
           META_AD_APPROVER_CODEX_HOME=/tmp/codex-home OPENAI_API_KEY_HOST_FILE=/tmp/openai_api_key docker compose -f meta-ad-approver-worker/docker-compose.yml config --quiet
@@ -94,7 +94,7 @@ jobs:
           set -euo pipefail
           mkdir -p ~/.ssh
           ssh-keyscan -T 30 -4 -p 22 -t rsa,ecdsa,ed25519 -H "${VPS_IP}" >> ~/.ssh/known_hosts
-      - name: Provision OpenAI credential for Têmis
+      - name: Provision OpenAI credential for Íris
         run: |
           set -euo pipefail
           test "${#OPENAI_API_KEY}" -ge 20
@@ -145,16 +145,16 @@ jobs:
                    OPENAI_API_KEY_HOST_FILE=/root/infra/openai-token/openai_api_key \
                    OPENAI_IMAGE_MODEL=gpt-image-2 \
                    META_AD_APPROVER_IMAGE=marketing-hub/meta-ad-approver-worker:${GITHUB_SHA} \
-                   THEMIS_IMAGE_STUDIO_IMAGE=marketing-hub/themis-image-studio:${GITHUB_SHA} \
+                   IRIS_IMAGE_STUDIO_IMAGE=marketing-hub/iris-image-studio:${GITHUB_SHA} \
             && cd '${REPOSITORY_DIR}/meta-ad-approver-worker' \
             && docker compose up -d --build --remove-orphans \
             && for attempt in \$(seq 1 24); do \
                  running=\$(docker compose ps --status running --services); \
                  printf '%s\n' \"\${running}\" | grep -Fxq meta-ad-approver-worker \
-                   && printf '%s\n' \"\${running}\" | grep -Fxq themis-image-studio \
+                   && printf '%s\n' \"\${running}\" | grep -Fxq iris-image-studio \
                    && curl -fsS http://127.0.0.1:8097/ops-meta-ad-approver-observability-v1/health | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' \
                    && curl -fsS http://127.0.0.1:8098/ops-meta-ad-approver-observability-v1/health | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"' \
-                   && docker compose exec -T themis-image-studio sh -c 'test -f /run/secrets/openai_api_key && test -r /run/secrets/openai_api_key && test -s /run/secrets/openai_api_key' \
+                   && docker compose exec -T iris-image-studio sh -c 'test -f /run/secrets/openai_api_key && test -r /run/secrets/openai_api_key && test -s /run/secrets/openai_api_key' \
                    && docker compose exec -T meta-ad-approver-worker sh -c 'test ! -e /run/secrets/openai_api_key' \
                    && docker compose exec -T meta-ad-approver-worker sh -c 'test -x /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh' \
                    && docker compose exec -T meta-ad-approver-worker sh -c 'test -s /workspace/marketing-hub/pde-platform/contracts/kit-whatsapp-pronto-v1.json && test -s /workspace/marketing-hub/pde-platform/contracts/commercial-journey-event-contract-v1.json && test -s /workspace/marketing-hub/pde-platform/frontend/public/materials/kit-whatsapp-v1/01-comece-aqui.md' \
@@ -162,4 +162,4 @@ jobs:
                    && exit 0; \
                  sleep 5; \
                done; \
-            docker compose logs --tail=150 meta-ad-approver-worker themis-image-studio; exit 1"
+            docker compose logs --tail=150 meta-ad-approver-worker iris-image-studio; exit 1"

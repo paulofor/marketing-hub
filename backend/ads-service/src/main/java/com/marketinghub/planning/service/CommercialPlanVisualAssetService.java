@@ -171,7 +171,7 @@ public class CommercialPlanVisualAssetService {
                 .APPROVED) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
-          "A imagem materializada por Dédalo exige revisão independente antes da aprovação.");
+          "A imagem materializada por Íris exige revisão independente antes da aprovação.");
     }
     asset.setStatus(status);
     return dto(asset);
@@ -316,8 +316,8 @@ public class CommercialPlanVisualAssetService {
     String evidence = reviewEvidence(approvedPackage, imported);
     agentTaskService.recordImportedCompletedTask(
         importedTask(
-            "landing-generator",
-            "Dédalo",
+            "communication-director",
+            "Íris",
             "nonAudiovisual",
             approvedPackage.direction(),
             approvedPackage.directionExecution(),

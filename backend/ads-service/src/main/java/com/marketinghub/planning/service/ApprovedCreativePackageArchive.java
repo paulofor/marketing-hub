@@ -32,7 +32,7 @@ final class ApprovedCreativePackageArchive {
       Set.of(
           "metadata/contract.json",
           "metadata/manifest.json",
-          "metadata/dedalo-direction.json",
+          "metadata/iris-direction.json",
           "metadata/apollo-storyboard.json",
           "metadata/psique-review.json",
           "metadata/temis-review.json",
@@ -59,7 +59,7 @@ final class ApprovedCreativePackageArchive {
       }
       JsonNode contract = json(entries, "metadata/contract.json");
       JsonNode manifest = json(entries, "metadata/manifest.json");
-      JsonNode direction = json(entries, "metadata/dedalo-direction.json");
+      JsonNode direction = json(entries, "metadata/iris-direction.json");
       JsonNode apollo = json(entries, "metadata/apollo-storyboard.json");
       JsonNode psique = json(entries, "metadata/psique-review.json");
       JsonNode temis = json(entries, "metadata/temis-review.json");
@@ -77,13 +77,13 @@ final class ApprovedCreativePackageArchive {
           "Contrato e manifesto usam versões diferentes.");
       require(
           "SELECTED".equals(direction.path("decision").asText()),
-          "Dédalo não materializou a rota criativa aprovada.");
+          "Íris não materializou a rota criativa aprovada.");
       require(
           direction
               .path("chosenRoute")
               .asText("")
               .equals(contract.path("routeDecision").path("selected").asText()),
-          "A rota materializada por Dédalo diverge do contrato.");
+          "A rota materializada por Íris diverge do contrato.");
       require(
           apollo.path("cuts").isArray() && !apollo.path("cuts").isEmpty(),
           "Apolo não entregou a decupagem obrigatória.");
@@ -98,7 +98,7 @@ final class ApprovedCreativePackageArchive {
           "O pacote declarou provider ou gasto externo de mídia.");
       requireContractFiles(contract, manifest);
 
-      AgentExecution directionExecution = execution(executions, "DEDALO");
+      AgentExecution directionExecution = execution(executions, "IRIS");
       AgentExecution apolloExecution = execution(executions, "APOLLO");
       AgentExecution psiqueExecution = execution(executions, "PSIQUE");
       AgentExecution temisExecution = execution(executions, "TEMIS_INDEPENDENT");
@@ -149,7 +149,7 @@ final class ApprovedCreativePackageArchive {
             Set.of("IMAGE", "VIDEO").contains(mediaType),
             "Um ativo final declarou tipo de mídia inválido.");
         require(
-            purposes.stream().allMatch(Set.of("ADS", "LANDING", "SOCIAL", "DELIVERY")::contains),
+            purposes.stream().allMatch(Set.of("ADS", "LANDING", "SOCIAL")::contains),
             "Um ativo final declarou finalidade desconhecida.");
         require(
             contentHashes.add(asset.path("sha256").asText()),

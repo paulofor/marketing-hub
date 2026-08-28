@@ -111,6 +111,20 @@ paths:
               schema:
                 type: array
                 items: {$ref: '#/components/schemas/PendingTaskResponse'}
+  /api/internal/agent-tasks/{agentKey}/stage-executions/{taskId}:
+    get:
+      summary: Reexpõe o snapshot da atividade já reservada ao mesmo executor
+      parameters:
+        - $ref: '#/components/parameters/AgentKey'
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: Atividade ativa com contexto, recurso e predecessores congelados
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PendingTaskResponse'}
+        '404': {description: Tarefa não encontrada}
+        '409': {description: Tarefa não está reservada pelo agente informado}
   /api/internal/agent-tasks/v1/{taskId}/gate-decision:
     post:
       summary: Registra a decisão do gate pelo agente destinatário

@@ -1,0 +1,36 @@
+services:
+  communication-agent-worker:
+    image: ${COMMUNICATION_AGENT_IMAGE:-marketing-hub/communication-agent-worker:local}
+    restart: unless-stopped
+    build:
+      context: .
+      args:
+        CODEX_VERSION: "0.146.0"
+    environment:
+      BACKEND_URL: ${BACKEND_URL:-http://backend:8000}
+      MARKETING_HUB_REPOSITORY: /workspace/marketing-hub
+      CODEX_MODEL: ${CODEX_MODEL:-gpt-5.6-sol}
+      CODEX_REASONING_EFFORT: ${CODEX_REASONING_EFFORT:-high}
+      CODEX_SERVICE_TIER: ${CODEX_SERVICE_TIER:-default}
+      COMMUNICATION_AGENT_CODEX_TIMEOUT: ${COMMUNICATION_AGENT_CODEX_TIMEOUT:-PT40M}
+      AGENT_HEALTH_KEY: communication-director
+      AGENT_HEALTH_VERSION: "1"
+      AGENT_BUILD_REFERENCE: ${AGENT_BUILD_REFERENCE:-local}
+      CODEX_HOME: /home/operator/.codex
+      CODEX_COMMAND: /workspace/marketing-hub/scripts/codex-oauth-session-safe.sh
+    ports:
+      - "8101:8101"
+    volumes:
+      - ${MARKETING_HUB_REPOSITORY_HOST:-..}:/workspace/marketing-hub:ro
+      - ${COMMUNICATION_AGENT_CODEX_HOME:?Defina a sessão Codex individual da Íris}:/home/operator/.codex
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "node", "/app/agent-health-report.mjs"]
+      interval: 1m
+      timeout: 20s
+      retries: 2
+      start_period: 30s

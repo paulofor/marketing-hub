@@ -60,9 +60,10 @@ mcp:
     financial-agent-worker-path: ${MCP_LOG_FINANCIAL_AGENT_WORKER_PATH:http://163.245.202.80:8095/ops-financial-agent-observability-v1/financial-agent-worker-log}
     experiment-strategist-worker-path: ${MCP_LOG_EXPERIMENT_STRATEGIST_WORKER_PATH:http://163.245.202.80:8096/ops-experiment-strategist-observability-v1/logfile}
     meta-ad-approver-worker-path: ${MCP_LOG_META_AD_APPROVER_WORKER_PATH:http://163.245.202.80:8097/ops-meta-ad-approver-observability-v1/logfile}
-    themis-image-studio-path: ${MCP_LOG_THEMIS_IMAGE_STUDIO_PATH:http://163.245.202.80:8098/ops-meta-ad-approver-observability-v1/logfile}
+    themis-image-studio-path: ${MCP_LOG_IRIS_IMAGE_STUDIO_PATH:${MCP_LOG_THEMIS_IMAGE_STUDIO_PATH:http://163.245.202.80:8098/ops-meta-ad-approver-observability-v1/logfile}}
     product-discovery-worker-path: ${MCP_LOG_PRODUCT_DISCOVERY_WORKER_PATH:http://191.252.120.96:18081/ops-product-discovery-observability-v1/logfile}
     growth-operator-worker-path: ${MCP_LOG_GROWTH_OPERATOR_WORKER_PATH:http://163.245.202.80:8094/ops-growth-operator-observability-v1/logfile}
+    communication-agent-worker-path: ${MCP_LOG_COMMUNICATION_AGENT_WORKER_PATH:http://163.245.202.80:8101/ops-communication-agent-observability-v1/logfile}
     fetch-timeout-seconds: ${MCP_LOG_FETCH_TIMEOUT_SECONDS:45}
     fetch-attempts: ${MCP_LOG_FETCH_ATTEMPTS:3}
     fetch-retry-delay-millis: ${MCP_LOG_FETCH_RETRY_DELAY_MILLIS:400}

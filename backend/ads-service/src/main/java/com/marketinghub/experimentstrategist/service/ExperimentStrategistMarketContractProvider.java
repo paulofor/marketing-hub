@@ -29,7 +29,7 @@ public class ExperimentStrategistMarketContractProvider implements MarketStrateg
       LoggerFactory.getLogger(ExperimentStrategistMarketContractProvider.class);
   private static final String AUTHORITY_MODE = "READ_ONLY_RESEARCH";
   private static final Pattern PLAN_REFERENCE =
-      Pattern.compile("commercial-plan:([1-9][0-9]*)(?:@v[1-9][0-9]*)?");
+      Pattern.compile("commercial-plan:([1-9][0-9]*)(?:@v[1-9][0-9]*)?(?::[A-Za-z0-9_-]+)*");
   private static final Pattern EXPERIMENT_REFERENCE = Pattern.compile("experiment:([1-9][0-9]*)");
   private final ExperimentStrategistExecutionRepository executions;
   private final CommercialPlanRepository plans;

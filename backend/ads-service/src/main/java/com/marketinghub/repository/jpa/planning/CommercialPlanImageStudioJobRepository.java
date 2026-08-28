@@ -12,7 +12,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-/** Responsabilidade: persistir e consultar a fila do Estúdio de Imagens de Têmis. */
+/** Responsabilidade: persistir e consultar a fila do Estúdio de Imagens de Íris. */
 public interface CommercialPlanImageStudioJobRepository
     extends JpaRepository<CommercialPlanImageStudioJob, Long> {
   /** Lista jobs sem carregar request, response ou auditoria bruta armazenados em LONGTEXT. */
@@ -70,7 +70,7 @@ public interface CommercialPlanImageStudioJobRepository
   /** Informa se o asset foi materializado por uma execução governada do estúdio. */
   boolean existsByResultVisualAssetId(Long assetId);
 
-  /** Localiza o job produtor pelo entregável resultante. */
+  /** Localiza o job produtor pela peça comercial resultante. */
   Optional<CommercialPlanImageStudioJob> findByResultVisualAssetId(Long assetId);
 
   /** Lista histórico revisado sem carregar payloads base64 de produção armazenados em LONGTEXT. */

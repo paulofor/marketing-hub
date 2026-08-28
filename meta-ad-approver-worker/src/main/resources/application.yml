@@ -16,7 +16,7 @@ logging:
   file:
     name: ${LOG_FILE_NAME:/tmp/meta-ad-approver-worker.log}
 meta-ad-approver:
-  execution-role: ${TEMIS_EXECUTION_ROLE:review}
+  execution-role: ${IRIS_EXECUTION_ROLE:${TEMIS_EXECUTION_ROLE:review}}
   backend-url: ${BACKEND_URL:http://backend:8000}
   marketing-hub-url: ${MARKETING_HUB_URL:http://backend:8000}
   repository-path: ${MARKETING_HUB_REPOSITORY:/workspace/marketing-hub}
@@ -26,11 +26,11 @@ meta-ad-approver:
   codex-timeout: ${META_AD_APPROVER_CODEX_TIMEOUT:PT40M}
   backend-connect-timeout: ${META_AD_APPROVER_BACKEND_CONNECT_TIMEOUT:PT10S}
   backend-read-timeout: ${META_AD_APPROVER_BACKEND_READ_TIMEOUT:PT30S}
-  image-studio-backend-read-timeout: ${TEMIS_IMAGE_BACKEND_READ_TIMEOUT:PT5M}
+  image-studio-backend-read-timeout: ${IRIS_IMAGE_BACKEND_READ_TIMEOUT:${TEMIS_IMAGE_BACKEND_READ_TIMEOUT:PT5M}}
   pending-limit: ${META_AD_APPROVER_PENDING_LIMIT:3}
   open-ai-base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
   open-ai-api-key: ${OPENAI_API_KEY:}
   open-ai-api-key-file: ${OPENAI_API_KEY_FILE:/run/secrets/openai_api_key}
   image-model: ${OPENAI_IMAGE_MODEL:gpt-image-2}
-  image-timeout: ${TEMIS_IMAGE_TIMEOUT:PT3M}
-  image-studio-pending-limit: ${TEMIS_IMAGE_STUDIO_PENDING_LIMIT:1}
+  image-timeout: ${IRIS_IMAGE_TIMEOUT:${TEMIS_IMAGE_TIMEOUT:PT3M}}
+  image-studio-pending-limit: ${IRIS_IMAGE_STUDIO_PENDING_LIMIT:${TEMIS_IMAGE_STUDIO_PENDING_LIMIT:1}}

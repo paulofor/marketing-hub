@@ -86,7 +86,7 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
     referenceAssetIds: [],
     prompt: "",
     label: "",
-    purposes: ["DELIVERY"],
+    purposes: ["ADS"],
     size: "1024x1536",
     quality: "high",
   });
@@ -143,11 +143,7 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
         : [...current.referenceAssetIds, assetId].slice(0, 4),
     }));
   };
-  const requiresProductEvidence =
-    !studioDraft.purposes.includes("DELIVERY") &&
-    studioDraft.purposes.some((purpose) =>
-      ["LANDING", "ADS", "SOCIAL"].includes(purpose),
-    );
+  const requiresProductEvidence = studioDraft.operation === "CREATE";
   const hasProductEvidence = studioDraft.referenceAssetIds.some((assetId) => {
     const asset = imageAssets.find((candidate) => candidate.id === assetId);
     const purposes = asset?.purposes?.length
@@ -165,8 +161,8 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
             Biblioteca de Imagens e Vídeos
           </h2>
           <p className="text-body-secondary mb-0">
-            Mídias aprovadas do produto orientam Têmis e os executores em
-            anúncios, landing, social e entrega.
+            Provas reais do produto orientam Íris na comunicação; Psique e
+            Têmis fazem revisões independentes antes do uso.
           </p>
         </div>
         <div className="border rounded p-3 bg-body-tertiary">
@@ -240,19 +236,19 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
           )}
         </div>
         <div className="border rounded p-3 bg-body-tertiary">
-          <h3 className="h6">Estúdio de Imagens de Têmis</h3>
+          <h3 className="h6">Estúdio de Imagens de Íris</h3>
           <p className="small text-body-secondary">
-            Crie entregáveis ou peças comerciais com GPT Image 2. Peça comercial
-            exige uma prova real aprovada; todo resultado entra como rascunho e
-            só é aprovado por uma execução independente.
+            Materialize peças comerciais com GPT Image 2 a partir de uma prova
+            real aprovada. O resultado entra como rascunho e só pode ser usado
+            depois de revisões independentes.
           </p>
           <form className="row g-2" onSubmit={submitStudio}>
             <div className="col-md-2">
-              <label className="form-label" htmlFor="temis-image-operation">
+              <label className="form-label" htmlFor="iris-image-operation">
                 Operação *
               </label>
               <select
-                id="temis-image-operation"
+                id="iris-image-operation"
                 className="form-select"
                 value={studioDraft.operation}
                 onChange={(event) =>
@@ -269,11 +265,11 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
             </div>
             {studioDraft.operation === "EDIT" && (
               <div className="col-md-4">
-                <label className="form-label" htmlFor="temis-image-source">
+                <label className="form-label" htmlFor="iris-image-source">
                   Imagem de origem *
                 </label>
                 <select
-                  id="temis-image-source"
+                  id="iris-image-source"
                   className="form-select"
                   required
                   value={studioDraft.sourceAssetId}
@@ -294,11 +290,11 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
               </div>
             )}
             <div className="col-md-4">
-              <label className="form-label" htmlFor="temis-image-label">
+              <label className="form-label" htmlFor="iris-image-label">
                 Nome do ativo visual *
               </label>
               <input
-                id="temis-image-label"
+                id="iris-image-label"
                 className="form-control"
                 required
                 value={studioDraft.label}
@@ -308,11 +304,11 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
               />
             </div>
             <div className="col-md-2">
-              <label className="form-label" htmlFor="temis-image-size">
+              <label className="form-label" htmlFor="iris-image-size">
                 Formato *
               </label>
               <select
-                id="temis-image-size"
+                id="iris-image-size"
                 className="form-select"
                 value={studioDraft.size}
                 onChange={(event) =>
@@ -328,11 +324,11 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
               </select>
             </div>
             <div className="col-12">
-              <label className="form-label" htmlFor="temis-image-prompt">
+              <label className="form-label" htmlFor="iris-image-prompt">
                 Orientação de criação/edição *
               </label>
               <textarea
-                id="temis-image-prompt"
+                id="iris-image-prompt"
                 className="form-control"
                 rows={3}
                 required
@@ -344,7 +340,7 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
             </div>
             <fieldset className="col-md-6">
               <legend className="form-label mb-1">Finalidades *</legend>
-              {["DELIVERY", "LANDING", "ADS", "SOCIAL"].map((purpose) => (
+              {["LANDING", "ADS", "SOCIAL"].map((purpose) => (
                 <label className="form-check form-check-inline" key={purpose}>
                   <input
                     className="form-check-input"
@@ -361,8 +357,8 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
               <div className="d-flex flex-wrap gap-2">
                 {imageAssets.length === 0 && (
                   <small className="text-body-secondary">
-                    Nenhuma imagem disponível. Entregáveis podem ser criados;
-                    peças comerciais aguardam uma prova real do produto.
+                    Nenhuma imagem disponível. Cadastre uma prova real do
+                    produto antes de pedir a peça comercial.
                   </small>
                 )}
                 {imageAssets.map((asset) => (
@@ -400,7 +396,7 @@ function CommercialPlanVisualKit({ planId }: { planId: number }) {
                 {createImageStudioJob.isPending ? (
                   <>
                     <span className="spinner-border spinner-border-sm me-2" />
-                    Enviando a Têmis...
+                    Enviando a Íris...
                   </>
                 ) : studioDraft.operation === "EDIT" ? (
                   "Solicitar edição"

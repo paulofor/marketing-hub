@@ -91,6 +91,14 @@ public class LandingGenerationAgentExecutionService {
       coordinator.learnFromIndependentQualityReview(event.experimentId(), event.reviewJson());
       Map<String, Object> review =
           objectMapper.readValue(event.reviewJson(), new TypeReference<>() {});
+      if (isBpmTask(event.autonomousCycleId()) && isIrisTask(event.autonomousCycleId())) {
+        if ("APPROVE_FOR_PUBLICATION".equals(review.get("approvalRecommendation"))) {
+          completeIrisLandingAfterQualityApproval(event);
+        } else {
+          failIrisLandingAfterQualityReview(event);
+        }
+        return;
+      }
       if ("APPROVE_FOR_PUBLICATION".equals(review.get("approvalRecommendation"))) {
         if (isBpmTask(event.autonomousCycleId())) {
           completeBpmTaskAfterQualityApproval(event);
@@ -134,6 +142,56 @@ public class LandingGenerationAgentExecutionService {
             bpmEvidence(event),
             technicalExecution.map(this::modelUsage).orElseGet(List::of),
             technicalExecution.map(this::executionAudit).orElse(null)));
+  }
+
+  /** Conclui a materialização de Íris somente depois do Quality Review independente. */
+  private void completeIrisLandingAfterQualityApproval(LandingQualityReviewedEvent event)
+      throws com.fasterxml.jackson.core.JsonProcessingException {
+    Long taskId = bpmTaskId(event.autonomousCycleId());
+    GeraLandingStageExecution qualityReviewExecution = approvedQualityReviewExecution(event);
+    automaticActivityService.completeFromExecution(
+        taskId,
+        "technical",
+        textId(qualityReviewExecution),
+        qualityReviewExecution.getExecutionRequestedAt(),
+        qualityReviewExecution.getCompletedAt(),
+        qualityReviewExecution.getCostUsd(),
+        technicalActivityEvidence(event, qualityReviewExecution));
+    agentTaskService.completeDeferredProcessTask(
+        "communication-director", taskId, bpmEvidence(event));
+  }
+
+  /** Bloqueia a candidata de Íris sem criar correção sob a identidade histórica de Dédalo. */
+  private void failIrisLandingAfterQualityReview(LandingQualityReviewedEvent event) {
+    Long taskId = bpmTaskId(event.autonomousCycleId());
+    agentTaskService.failDeferredProcessTask(
+        "communication-director",
+        taskId,
+        "Quality Review reprovou a landing materializada por Íris.",
+        objectMapper
+            .createObjectNode()
+            .put("experimentId", event.experimentId())
+            .put("stageCode", "landing-page-quality-review")
+            .set("qualityReview", readTree(event.reviewJson()))
+            .toString());
+  }
+
+  /** Verifica a identidade persistida antes de aplicar a regra de transição da nova agente. */
+  private boolean isIrisTask(String reference) {
+    return "communication-director".equals(agentTaskService.assignedAgentKey(bpmTaskId(reference)));
+  }
+
+  /** Converte JSON de gate já persistido em árvore sem esconder erro de contrato. */
+  private com.fasterxml.jackson.databind.JsonNode readTree(String json) {
+    try {
+      return objectMapper.readTree(json);
+    } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+      log.error(
+          "Quality Review de Íris contém JSON inválido. reviewLength={}",
+          json == null ? 0 : json.length(),
+          ex);
+      throw new IllegalArgumentException("Quality Review de Íris inválido.", ex);
+    }
   }
 
   /** Localiza a execução aprovada exata que originou o evento antes de avançar o BPM. */

@@ -47,6 +47,13 @@ const agents = [
     "Aprovador de Anúncios Meta",
     "2026-08-10T21:27:37Z",
   ],
+  [
+    9,
+    "communication-director",
+    "Íris",
+    "Diretora e Materializadora de Comunicação",
+    "2026-08-28T10:00:00Z",
+  ],
 ];
 
 for (const [profileName, contextOptions] of profiles) {
@@ -95,7 +102,7 @@ for (const [profileName, contextOptions] of profiles) {
   });
 
   await page.goto("http://127.0.0.1:15174/agents");
-  await expect(page.locator("[data-agent-contract-recency]")).toHaveCount(8);
+  await expect(page.locator("[data-agent-contract-recency]")).toHaveCount(9);
   await expect(page.locator('[data-agent-contract-recency="1"]')).toBeVisible();
   await expect(page.getByText("20/08/2026")).toBeVisible();
   await expect(page.getByText("5 dias sem alteração")).toBeVisible();

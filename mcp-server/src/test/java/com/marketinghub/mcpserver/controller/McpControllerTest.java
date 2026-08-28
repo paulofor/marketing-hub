@@ -88,7 +88,7 @@ class McpControllerTest {
         registry.add("mcp.logs.meta-ad-approver-worker-path",
                 () -> TEST_LOG_DIR.resolve("meta-ad-approver-worker.log").toString());
         registry.add("mcp.logs.themis-image-studio-path",
-                () -> TEST_LOG_DIR.resolve("themis-image-studio.log").toString());
+                () -> TEST_LOG_DIR.resolve("iris-image-studio.log").toString());
         registry.add("mcp.logs.max-lines", () -> "500");
         registry.add("mcp.chat-logs.enabled", () -> "true");
         registry.add("mcp.chat-logs.allowed-containers", () -> "marketinghub-fashion-chat,product-discovery-worker");
@@ -250,7 +250,7 @@ class McpControllerTest {
         Files.writeString(TEST_LOG_DIR.resolve("meta-ad-approver-worker.log"),
                 "experimentId=88 creativeId=278 status=PROCESSING\nexperimentId=88 creativeId=278 codex=timeout\n",
                 StandardCharsets.UTF_8);
-        Files.writeString(TEST_LOG_DIR.resolve("themis-image-studio.log"),
+        Files.writeString(TEST_LOG_DIR.resolve("iris-image-studio.log"),
                 "jobId=21 commercialPlanId=2 status=PROCESSING\njobId=21 commercialPlanId=2 status=COMPLETED\n",
                 StandardCharsets.UTF_8);
         Path fakeDocker = TEST_LOG_DIR.resolve("docker-fake.sh");
@@ -685,16 +685,16 @@ class McpControllerTest {
      * Garante que o MCP exponha os logs produtivos sem misturá-los ao revisor comercial.
      */
     @Test
-    void shouldReadThemisImageStudioLogs() throws Exception {
+    void shouldReadIrisImageStudioLogs() throws Exception {
         mockMvc.perform(post("/mcp")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"jsonrpc":"2.0","id":34,"method":"tools/call","params":{"name":"java_module_logs","arguments":{"module":"themis-image-studio","lines":2,"contains":"jobId=21"}}}
+                                {"jsonrpc":"2.0","id":34,"method":"tools/call","params":{"name":"java_module_logs","arguments":{"module":"iris-image-studio","lines":2,"contains":"jobId=21"}}}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.structuredContent.module").value("themis-image-studio"))
+                .andExpect(jsonPath("$.result.structuredContent.module").value("iris-image-studio"))
                 .andExpect(jsonPath("$.result.structuredContent.path")
-                        .value(TEST_LOG_DIR.resolve("themis-image-studio.log").toString()))
+                        .value(TEST_LOG_DIR.resolve("iris-image-studio.log").toString()))
                 .andExpect(jsonPath("$.result.structuredContent.lines.length()").value(2));
     }
 
@@ -711,7 +711,7 @@ class McpControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error.code").value(-32602))
                 .andExpect(jsonPath("$.error.message")
-                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, pde-platform-backend, video-management-service, customer-agent-worker, financial-agent-worker, experiment-strategist-worker, meta-ad-approver-worker, themis-image-studio, landing-generator-agent-worker, product-discovery-worker, growth-operator-worker"));
+                        .value("module must be one of: backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, pde-platform-backend, video-management-service, customer-agent-worker, financial-agent-worker, experiment-strategist-worker, meta-ad-approver-worker, iris-image-studio, themis-image-studio, landing-generator-agent-worker, product-discovery-worker, growth-operator-worker, communication-agent-worker"));
     }
 
     /**

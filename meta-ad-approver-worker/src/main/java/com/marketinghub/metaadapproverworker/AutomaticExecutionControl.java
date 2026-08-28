@@ -44,7 +44,7 @@ public class AutomaticExecutionControl {
 
   /** Resolve o proprietário funcional sem atribuir o recurso técnico de imagem a Têmis. */
   static String ownerAgentKey(String executionRole) {
-    return "image-studio".equals(executionRole) ? "landing-generator" : "meta-ad-approver";
+    return "image-studio".equals(executionRole) ? "communication-director" : "meta-ad-approver";
   }
 
   /** Representa somente o campo necessário para controlar a rotina local. */

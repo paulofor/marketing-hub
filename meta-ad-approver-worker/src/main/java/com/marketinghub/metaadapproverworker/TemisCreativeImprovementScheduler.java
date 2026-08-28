@@ -14,7 +14,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
-/** Responsabilidade: materializar pelo recurso de Dédalo as correções visuais requeridas. */
+/** Responsabilidade: materializar pelo recurso de Íris as correções visuais requeridas. */
 @Component
 @ConditionalOnProperty(name = "meta-ad-approver.execution-role", havingValue = "image-studio")
 class TemisCreativeImprovementProcessor {
@@ -47,17 +47,17 @@ class TemisCreativeImprovementProcessor {
     jobs.forEach(this::process);
   }
 
-  /** Edita o produto real, envia a nova versão e nunca aprova o próprio resultado. */
+  /** Edita a peça comercial, envia a nova versão e nunca aprova o próprio resultado. */
   private void process(Map<String, Object> correction) {
     Long creativeId = number(correction.get("creativeId"));
     try {
       TemisImageStudioJob job = toImageJob(correction, creativeId);
       TemisImageStudioOpenAiClient.Result result = openAi.execute(job);
       upload(creativeId, job.producerExecutionId(), result);
-      log.info("Correção visual materializada pelo recurso de Dédalo. creativeId={}", creativeId);
+      log.info("Correção visual materializada pelo recurso de Íris. creativeId={}", creativeId);
     } catch (RuntimeException ex) {
       log.error(
-          "Falha na correção visual materializada pelo recurso de Dédalo. creativeId={}",
+          "Falha na correção visual materializada pelo recurso de Íris. creativeId={}",
           creativeId,
           ex);
       backend
@@ -92,7 +92,7 @@ class TemisCreativeImprovementProcessor {
         references.isEmpty() ? "CREATE" : "EDIT",
         prompt,
         "Correção " + (format.isBlank() ? "" : format + " ") + "do criativo #" + creativeId,
-        List.of("DELIVERY", "LANDING", "ADS", "SOCIAL"),
+        List.of("ADS", "LANDING", "SOCIAL"),
         size,
         "high",
         references.stream().limit(4).toList(),
@@ -100,7 +100,7 @@ class TemisCreativeImprovementProcessor {
         playbook);
   }
 
-  /** Envia o binário ao endpoint canônico de materialização de Dédalo. */
+  /** Envia o binário ao endpoint canônico de materialização de Íris. */
   private void upload(
       Long creativeId, String producerExecutionId, TemisImageStudioOpenAiClient.Result result) {
     MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
@@ -117,9 +117,10 @@ class TemisCreativeImprovementProcessor {
     body.add(
         "file",
         new ByteArrayResource(result.imageBytes()) {
+          /** Define um nome auditável que identifica a correção comercial produzida por Íris. */
           @Override
           public String getFilename() {
-            return "dedalo-creative-improvement-" + creativeId + ".png";
+            return "iris-creative-improvement-" + creativeId + ".png";
           }
         });
     backend

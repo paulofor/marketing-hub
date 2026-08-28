@@ -51,7 +51,8 @@ public class AgentWorkMonitorService {
           "growth-operator", "GROWTH_OPERATOR",
           "experiment-strategist", "EXPERIMENT_STRATEGIST",
           "meta-ad-approver", "META_AD_APPROVER",
-          "landing-generator", "LANDING_GENERATOR");
+          "landing-generator", "LANDING_GENERATOR",
+          "communication-director", "COMMUNICATION_DIRECTOR");
   private final AgentRepository agentRepository;
   private final AgentTaskRepository taskRepository;
   private final GeraLandingStageExecutionRepository landingRepository;

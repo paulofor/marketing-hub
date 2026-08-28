@@ -1,0 +1,390 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-28-iris-communication-agent-v1-1-contracts
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO agent (
+                theme_id, name, nickname, agent_key, status, current_version, execution_mode,
+                description, owner_name, business_objective, success_metrics, model_name,
+                trigger_policy, authority_policy, responsibility_contract, orchestrator_policy,
+                analysis_policy, offering_policy, prompt_contract_path, schema_contract_path,
+                automatic_execution_enabled
+              )
+              SELECT at.id,
+                'Diretora e Materializadora de Comunicação', 'Íris',
+                'communication-director', 'TEST', 1, 'EVENT_DRIVEN',
+                'Transforma estratégia, economia e PDE aprovados em comunicação pré-compra clara, sedutora, sensorial e fiel ao produto real.',
+                'Marketing Hub',
+                'Converter o valor real dos PDEs em mensagem, copy, landing, peças estáticas, e-mails e briefings que aumentem desejo e ação sem ampliar a promessa.',
+                'Aprovação na primeira tentativa, menor retrabalho, menor tempo e custo por pacote aprovado, correspondência produto-promessa e conversão medida por eventos reais.',
+                'gpt-5.6-sol',
+                'Atividade BPM pending após estratégia, economia e experiência do PDE estarem versionadas.',
+                'Pode materializar somente rascunhos pré-compra. Não redefine mercado, oferta, preço ou produto; não aprova, publica, envia mensagens, ativa campanha ou gasta.',
+                'Domínio COMMUNICATION_MATERIALIZATION. O que convence antes da compra pertence a Íris; o que a cliente usa depois da compra pertence a Dédalo.',
+                'Consome contratos aprovados, entrega artefato ao backend e aguarda gates independentes de Psique e Têmis. Vídeo e áudio finais seguem para Apolo.',
+                'Compara exatamente três alternativas por benefício, risco, esforço e aderência; preserva hashes e bloqueia na ausência de prova real.',
+                'Pacote de comunicação versionado com saída funcional separada de request, response, tokens, custo, erro, fontes e decisões técnicas.',
+                'communication-agent-worker/src/main/resources/prompts/iris/v1/behavioral-core.md',
+                'communication-agent-worker/src/main/resources/prompts/iris/v1/output-schema.json',
+                1
+              FROM agent_theme at
+              WHERE at.name = 'Operacoes Autonomas'
+                AND NOT EXISTS (
+                  SELECT 1 FROM agent WHERE agent_key = 'communication-director'
+                );
+
+              UPDATE agent
+              SET current_version = current_version + 1,
+                  name = 'Agente de Construção PDE',
+                  description = 'Materializa a experiência usada depois da compra: jornada, entregáveis, personalização, acesso e prova real do PDE.',
+                  business_objective = 'Transformar estratégia e economia aprovadas em uma experiência PDE útil, personalizada, acessível e satisfatória no cotidiano.',
+                  success_metrics = 'Tempo até primeiro valor, entrega concluída, satisfação, uso, qualidade da personalização e retrabalho do produto.',
+                  responsibility_contract = 'Domínio PDE_CONSTRUCTION. Constrói produto e experiência pós-compra; não cria copy, landing, anúncio, e-mail ou comunicação pré-compra.',
+                  orchestrator_policy = 'Entrega produto e provas reais versionadas para Íris comunicar; corrige apenas defeitos do PDE identificados pelos gates.',
+                  analysis_policy = 'Compara três formas de materializar a experiência sem redefinir mercado, posicionamento, preço ou comunicação.',
+                  offering_policy = 'PDE, jornada, entregáveis, acesso, personalização e prova real separados da auditoria técnica.',
+                  prompt_contract_path = 'landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v1/journey.md',
+                  schema_contract_path = 'landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v1/journey-schema.json',
+                  updated_at = UTC_TIMESTAMP()
+              WHERE agent_key = 'landing-generator';
+
+              INSERT INTO agent_version (agent_id, version_number, contract_snapshot, created_at)
+              SELECT a.id, a.current_version,
+                JSON_OBJECT(
+                  'agentKey', a.agent_key,
+                  'nickname', a.nickname,
+                  'version', a.current_version,
+                  'status', a.status,
+                  'model', COALESCE(a.model_name, ''),
+                  'responsibilityDomain', CASE a.agent_key
+                    WHEN 'communication-director' THEN 'COMMUNICATION_MATERIALIZATION'
+                    WHEN 'landing-generator' THEN 'PDE_CONSTRUCTION'
+                  END,
+                  'prompt', a.prompt_contract_path,
+                  'schema', a.schema_contract_path,
+                  'matrixVersion', 'AGENT_RESPONSIBILITY_MATRIX_V2'
+                ),
+                UTC_TIMESTAMP()
+              FROM agent a
+              LEFT JOIN agent_version av
+                ON av.agent_id = a.id AND av.version_number = a.current_version
+              WHERE a.agent_key IN ('communication-director', 'landing-generator')
+                AND av.id IS NULL;
+
+              INSERT INTO agent_input (agent_id, name, input_type, description, order_index)
+              SELECT a.id, item.name, item.input_type, item.description, item.order_index
+              FROM agent a
+              JOIN (
+                SELECT 'Contrato Estratégico de Mercado' AS name, 'MARKET_STRATEGY_V2' AS input_type,
+                  'Versão e SHA-256 produzidos por Atena, sem reconstrução pela comunicação.' AS description, 1 AS order_index
+                UNION ALL SELECT 'Limites econômicos', 'FINANCIAL_CONTRACT',
+                  'Preço, margem, orçamento, risco e critérios aprovados por Plutus.', 2
+                UNION ALL SELECT 'PDE e provas reais', 'PDE_PRODUCT_EVIDENCE',
+                  'Experiência, entregáveis, demonstrações e screenshots materializados por Dédalo.', 3
+                UNION ALL SELECT 'Canal e objetivo aprovados', 'COMMUNICATION_SCOPE',
+                  'Formato, destino, CTA e métrica já decididos nos contratos predecessores.', 4
+              ) item
+              WHERE a.agent_key = 'communication-director'
+                AND NOT EXISTS (
+                  SELECT 1 FROM agent_input existing
+                  WHERE existing.agent_id = a.id AND existing.name = item.name
+                );
+
+              INSERT INTO agent_output (agent_id, name, output_type, description, order_index)
+              SELECT a.id, item.name, item.output_type, item.description, item.order_index
+              FROM agent a
+              JOIN (
+                SELECT 'Contrato de comunicação' AS name, 'IRIS_COMMUNICATION_V1' AS output_type,
+                  'Mensagem, benefícios, tom, CTA, identidade sensorial e briefings por canal.' AS description, 1 AS order_index
+                UNION ALL SELECT 'Pacote não audiovisual', 'NON_AUDIOVISUAL_PACKAGE',
+                  'Copy, peças estáticas e e-mails versionados, sem publicação.', 2
+                UNION ALL SELECT 'Landing materializada', 'LANDING_PACKAGE',
+                  'Provas, arquitetura, composição e HTML integral sujeitos a gates independentes.', 3
+              ) item
+              WHERE a.agent_key = 'communication-director'
+                AND NOT EXISTS (
+                  SELECT 1 FROM agent_output existing
+                  WHERE existing.agent_id = a.id AND existing.name = item.name
+                );
+
+              INSERT INTO agent_internal_function
+                (agent_id, name, function_type, description, order_index)
+              SELECT a.id, item.name, item.function_type, item.description, item.order_index
+              FROM agent a
+              JOIN (
+                SELECT 'Arquitetura de mensagem' AS name, 'COMMUNICATION_STRATEGY_TRANSLATION' AS function_type,
+                  'Traduz estratégia aprovada em mensagem sem alterar seu conteúdo decisório.' AS description, 1 AS order_index
+                UNION ALL SELECT 'Materialização de copy', 'COPY_MATERIALIZATION',
+                  'Produz textos publicáveis dentro dos contratos do canal.', 2
+                UNION ALL SELECT 'Direção sensorial', 'SENSORY_DIRECTION',
+                  'Orienta visual, ritmo, movimento e fluidez sem sobrecarga ou manipulação.', 3
+                UNION ALL SELECT 'Construção de landing', 'LANDING_MATERIALIZATION',
+                  'Entrega HTML responsivo preservando checkout, prova e instrumentação.', 4
+                UNION ALL SELECT 'Briefing audiovisual', 'AUDIOVISUAL_BRIEF',
+                  'Entrega a Apolo um contrato de produção sem fabricar vídeo ou áudio final.', 5
+              ) item
+              WHERE a.agent_key = 'communication-director'
+                AND NOT EXISTS (
+                  SELECT 1 FROM agent_internal_function existing
+                  WHERE existing.agent_id = a.id AND existing.name = item.name
+                );
+
+  - changeSet:
+      id: 2026-08-28-iris-communication-agent-v1-2-resources
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_execution_resource
+                (resource_code, name, description, resource_type, responsible_agent_key,
+                 executor_reference, usage_instructions, active, created_at, updated_at)
+              SELECT 'iris-communication-worker',
+                'Executor de comunicação de Íris',
+                'Materializa contratos, copy, peças não audiovisuais e landing sob entradas congeladas.',
+                'CONTAINER', 'communication-director', 'communication-agent-worker',
+                'Consuma somente o pending canônico de communication-director, preserve request, response, versão, hash, tokens e custo e nunca avance a próxima etapa localmente.',
+                1, UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_execution_resource
+                WHERE resource_code = 'iris-communication-worker'
+              );
+
+              UPDATE business_process_execution_resource
+              SET name = 'Estúdio visual comercial de Íris',
+                  description = 'Executor técnico isolado para imagens comerciais de landing, anúncios e social; não produz entregáveis nem prova de produto.',
+                  responsible_agent_key = 'communication-director',
+                  executor_reference = 'iris-image-studio',
+                  usage_instructions = 'Consuma somente o pending canônico do backend, aceite LANDING, ADS e SOCIAL com prova real aprovada e entregue DRAFT para revisões independentes de Psique e Têmis.',
+                  updated_at = UTC_TIMESTAMP()
+              WHERE resource_code = 'themis-image-studio';
+
+              UPDATE business_process_execution_resource
+              SET name = 'Materialização visual comercial de Íris',
+                  description = 'Recurso compatível para peças estáticas pré-compra de Íris; Dédalo permanece proprietário do PDE, de seus entregáveis e das provas reais.',
+                  responsible_agent_key = 'communication-director',
+                  executor_reference = 'iris-image-studio',
+                  usage_instructions = 'Use somente para comunicação comercial apoiada em PRODUCT_PROOF ou DELIVERY aprovado; não crie produto, entrega ou prova sintética.',
+                  updated_at = UTC_TIMESTAMP()
+              WHERE resource_code = 'pde-visual-materialization';
+
+  - changeSet:
+      id: 2026-08-28-iris-communication-agent-v1-3-processes
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT 'pde-communication-sales-journey', 'Comunicação e jornada de venda do PDE',
+                'Materializar comunicação pré-compra com um contrato próprio antes de integrar a jornada.',
+                'Backend de Experiências PDE', 'Produto, estratégia, economia e provas reais aprovados.',
+                'Pacote de comunicação, criativos e destino aprovados e integrados sem publicação.',
+                7, 'PUBLISHED', 'iris-communication-agent-v1 / communication-journey',
+                'CORE', NULL,
+                '{"nodes":[{"id":"start","type":"START","label":"Produto e contratos aprovados","owner":"Backend","description":"Estratégia, economia, PDE e provas chegam versionados."},{"id":"communicationContract","type":"TASK","label":"Materializar contrato de comunicação","owner":"Íris","description":"Transforma estratégia e produto real em mensagem, copy, identidade sensorial e briefings sem redefinir oferta.","responsibleAgentKeys":["communication-director"],"responsibilityDomain":"COMMUNICATION_MATERIALIZATION","executionResourceCode":"iris-communication-worker"},{"id":"creatives","type":"TASK","label":"Executar produção e aprovação de criativos","owner":"Backend","description":"Delega peças e gates independentes ao subprocesso canônico.","subprocessCode":"creative-production-approval"},{"id":"destination","type":"TASK","label":"Executar geração e aprovação do destino","owner":"Backend","description":"Delega landing ao subprocesso canônico quando esse for o destino aprovado.","subprocessCode":"landing-page-generation"},{"id":"integration","type":"TASK","label":"Integrar canal, checkout, acesso e eventos","owner":"Backend","description":"Conecta somente versões aprovadas e preserva atribuição até venda, entrega e primeiro uso."},{"id":"gate","type":"GATEWAY","label":"Jornada integrada sem lacunas?","owner":"Backend","description":"Exige message match, checkout, acesso, eventos e segregação de testes."},{"id":"end","type":"END","label":"Jornada pronta para homologação","owner":"Backend","description":"O processo termina sem publicação, contato ou gasto."}],"flows":[{"from":"start","to":"communicationContract"},{"from":"communicationContract","to":"creatives"},{"from":"creatives","to":"destination"},{"from":"destination","to":"integration"},{"from":"integration","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'pde-communication-sales-journey' AND version_number = 7
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT 'creative-production-approval', 'Produção e aprovação independente de criativos',
+                'Separar materialização de comunicação, produção audiovisual e revisões independentes.',
+                'Backend de Experiências PDE', 'Contrato de comunicação de Íris aprovado.',
+                'Pacote criativo materializado, revisado e selecionado sem autoaprovação.',
+                8, 'PUBLISHED', 'iris-communication-agent-v1 / creative-production',
+                'SUBPROCESS', 'pde-communication-sales-journey',
+                '{"nodes":[{"id":"start","type":"START","label":"Contrato de comunicação congelado","owner":"Backend","description":"Mensagem, produto, prova, canal, destino e CTA chegam versionados."},{"id":"route","type":"TASK","label":"Resolver formatos técnicos previstos","owner":"Backend","description":"Aplica os formatos aprovados sem redefinir estratégia, canal ou hipótese."},{"id":"nonAudiovisual","type":"TASK","label":"Materializar peças não audiovisuais","owner":"Íris","description":"Produz copy, composição, peças estáticas e e-mails sob o contrato aprovado.","responsibleAgentKeys":["communication-director"],"responsibilityDomain":"COMMUNICATION_MATERIALIZATION","executionResourceCode":"iris-communication-worker"},{"id":"audiovisual","type":"TASK","label":"Materializar peças audiovisuais quando previstas","owner":"Apolo","description":"Produz roteiro técnico, cenas, áudio, montagem e legendas sob o briefing de Íris.","responsibleAgentKeys":["videomaker"],"responsibilityDomain":"AUDIOVISUAL_PRODUCTION","executionResourceCode":"video-management-service"},{"id":"customer","type":"TASK","label":"Avaliar experiência humana do criativo","owner":"Psique","description":"Inspeciona cada formato real e registra reação, clareza, desejo, confiança e esforço.","responsibleAgentKeys":["customer-agent"],"responsibilityDomain":"HUMAN_EXPERIENCE_REVIEW"},{"id":"commercial","type":"TASK","label":"Revisar integridade comercial do criativo","owner":"Têmis","description":"Valida verdade, prova, fidelidade, direitos, compliance e segurança sem criar correção.","responsibleAgentKeys":["meta-ad-approver"],"responsibilityDomain":"COMMERCIAL_INTEGRITY_REVIEW"},{"id":"gate","type":"GATEWAY","label":"Formatos aprovados nos dois gates?","owner":"Backend","description":"Exige prova vigente e zero bloqueio crítico."},{"id":"human","type":"TASK","label":"Registrar decisão humana de uso","owner":"Operador humano","description":"Seleciona peças elegíveis sem publicar ou gastar."},{"id":"end","type":"END","label":"Pacote criativo aprovado","owner":"Backend","description":"Peças e pareceres ficam prontos para integração."}],"flows":[{"from":"start","to":"route"},{"from":"route","to":"nonAudiovisual"},{"from":"nonAudiovisual","to":"audiovisual"},{"from":"audiovisual","to":"customer"},{"from":"customer","to":"commercial"},{"from":"commercial","to":"gate"},{"from":"gate","to":"human"},{"from":"human","to":"end"}]}',
+                UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'creative-production-approval' AND version_number = 8
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT 'landing-page-generation', 'Geração e aprovação independente de landing',
+                'Materializar persuasão pré-compra com Íris e manter três gates independentes.',
+                'Backend de Experiências PDE', 'Contrato de comunicação, produto, prova e checkout aprovados.',
+                'Landing técnica, humana e comercialmente aprovada, sem publicação automática.',
+                6, 'PUBLISHED', 'iris-communication-agent-v1 / landing-materialization',
+                'SUBPROCESS', 'pde-communication-sales-journey',
+                '{"nodes":[{"id":"start","type":"START","label":"Comunicação e produto aprovados","owner":"Backend","description":"Mensagem, oferta, prova, checkout e objetivo chegam congelados."},{"id":"select","type":"TASK","label":"Selecionar provas reais","owner":"Íris","description":"Seleciona ativos de Dédalo com linhagem e bloqueia reconstrução fictícia.","responsibleAgentKeys":["communication-director"],"responsibilityDomain":"COMMUNICATION_MATERIALIZATION","executionResourceCode":"iris-communication-worker"},{"id":"strategy","type":"TASK","label":"Definir arquitetura de conversão da página","owner":"Íris","description":"Materializa hierarquia, narrativa e copy sem redefinir posicionamento, oferta ou preço.","responsibleAgentKeys":["communication-director"],"responsibilityDomain":"COMMUNICATION_MATERIALIZATION","executionResourceCode":"iris-communication-worker"},{"id":"compose","type":"TASK","label":"Materializar composição visual","owner":"Íris","description":"Define composição sensorial e usa somente provas aprovadas sem autoaprovação.","responsibleAgentKeys":["communication-director"],"responsibilityDomain":"COMMUNICATION_MATERIALIZATION","executionResourceCode":"iris-communication-worker"},{"id":"html","type":"TASK","label":"Construir HTML completo","owner":"Íris","description":"Entrega HTML responsivo e acessível com ativos, checkout e instrumentação canônicos.","responsibleAgentKeys":["communication-director"],"responsibilityDomain":"COMMUNICATION_MATERIALIZATION","executionResourceCode":"iris-communication-worker"},{"id":"technical","type":"TASK","label":"Validar técnica e fidelidade","owner":"Quality Review","description":"Valida desktop, mobile, links, tracking, desempenho e correspondência dos ativos."},{"id":"customer","type":"TASK","label":"Avaliar experiência humana da landing","owner":"Psique","description":"Avalia clareza, desejo, confiança, prazer sensorial, objeções e esforço.","responsibleAgentKeys":["customer-agent"],"responsibilityDomain":"HUMAN_EXPERIENCE_REVIEW"},{"id":"commercial","type":"TASK","label":"Revisar integridade comercial da landing","owner":"Têmis","description":"Verifica verdade, prova, fidelidade, direitos e compliance sem criar a correção.","responsibleAgentKeys":["meta-ad-approver"],"responsibilityDomain":"COMMERCIAL_INTEGRITY_REVIEW"},{"id":"gate","type":"GATEWAY","label":"Landing aprovada nos três gates?","owner":"Backend","description":"Exige técnica, experiência e integridade aprovadas."},{"id":"human","type":"TASK","label":"Autorizar publicação da versão","owner":"Operador humano","description":"Autoriza explicitamente a publicação e preserva rollback."},{"id":"end","type":"END","label":"Landing pronta para publicação","owner":"Backend","description":"Nenhuma publicação ou campanha é feita pelo subprocesso."}],"flows":[{"from":"start","to":"select"},{"from":"select","to":"strategy"},{"from":"strategy","to":"compose"},{"from":"compose","to":"html"},{"from":"html","to":"technical"},{"from":"technical","to":"customer"},{"from":"customer","to":"commercial"},{"from":"commercial","to":"gate"},{"from":"gate","to":"human"},{"from":"human","to":"end"}]}',
+                UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'landing-page-generation' AND version_number = 6
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT 'operacao-otimizacao-experimento', 'Operação e otimização de experimento',
+                'Operar crescimento e devolver cada correção ao agente proprietário da variável.',
+                'Hermes', 'Experimento RUNNING após autorização humana.',
+                'Teste controlado decidido por eventos, vendas e entrega reais.',
+                5, 'PUBLISHED', 'iris-communication-agent-v1 / growth-operation',
+                'SUBPROCESS', 'pde-sales-delivery-learning',
+                '{"nodes":[{"id":"start","type":"START","label":"Operação autorizada","owner":"Backend","description":"Estratégia, orçamento e regras de parada estão vigentes."},{"id":"task-1","type":"TASK","label":"Verificar integridade dos eventos","owner":"Hermes","description":"Confirma funil e deduplicação antes de otimizar.","responsibleAgentKeys":["growth-operator"],"responsibilityDomain":"GROWTH_OPERATION"},{"id":"task-2","type":"TASK","label":"Acumular amostra mínima","owner":"Hermes","description":"Aguarda volume e janela definidos sem fabricar resultado.","responsibleAgentKeys":["growth-operator"],"responsibilityDomain":"GROWTH_OPERATION"},{"id":"task-3","type":"TASK","label":"Identificar gargalo real","owner":"Hermes","description":"Localiza a primeira perda mensurável do funil.","responsibleAgentKeys":["growth-operator"],"responsibilityDomain":"GROWTH_OPERATION"},{"id":"task-4","type":"TASK","label":"Propor ajuste operacional de uma variável","owner":"Hermes","description":"Mantém estratégia, preço e produto imutáveis; contradição estratégica volta para Atena.","responsibleAgentKeys":["growth-operator"],"responsibilityDomain":"GROWTH_OPERATION"},{"id":"task-5","type":"TASK","label":"Revisar experiência humana da variante","owner":"Psique","description":"Avalia a variante real sem substituir dados do funil ou materializar correção.","responsibleAgentKeys":["customer-agent"],"responsibilityDomain":"HUMAN_EXPERIENCE_REVIEW"},{"id":"task-6","type":"TASK","label":"Revisar integridade comercial da variante","owner":"Têmis","description":"Avalia prova, fidelidade, direitos e compliance sem criar a variante.","responsibleAgentKeys":["meta-ad-approver"],"responsibilityDomain":"COMMERCIAL_INTEGRITY_REVIEW"},{"id":"task-7","type":"TASK","label":"Validar limite financeiro da variante","owner":"Plutus","description":"Confirma teto, custo, CAC e risco sem autorizar gasto.","responsibleAgentKeys":["financial-agent"],"responsibilityDomain":"FINANCIAL_VALIDATION"},{"id":"task-8","type":"TASK","label":"Autorizar mudança material quando necessária","owner":"Operador humano","description":"Autoriza gasto, publicação ou mudança comercial material."},{"id":"task-9","type":"TASK","label":"Rotear materialização autorizada","owner":"Backend","description":"Abre job de Íris para comunicação, Apolo para audiovisual ou Dédalo para produto conforme a variável aprovada."},{"id":"task-10","type":"TASK","label":"Executar teste e medir efeito","owner":"Hermes","description":"Compara variante aprovada com baseline, vendas, entrega, custo e reembolso.","responsibleAgentKeys":["growth-operator"],"responsibilityDomain":"GROWTH_OPERATION"},{"id":"gate","type":"GATEWAY","label":"Continuar, ajustar ou parar?","owner":"Backend","description":"Decide somente com evidência comercial real."},{"id":"end","type":"END","label":"Otimização decidida","owner":"Backend","description":"Resultado e próximo movimento ficam auditáveis."}],"flows":[{"from":"start","to":"task-1"},{"from":"task-1","to":"task-2"},{"from":"task-2","to":"task-3"},{"from":"task-3","to":"task-4"},{"from":"task-4","to":"task-5"},{"from":"task-5","to":"task-6"},{"from":"task-6","to":"task-7"},{"from":"task-7","to":"task-8"},{"from":"task-8","to":"task-9"},{"from":"task-9","to":"task-10"},{"from":"task-10","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'operacao-otimizacao-experimento' AND version_number = 5
+              );
+
+              UPDATE business_process_definition
+              SET status = 'RETIRED'
+              WHERE process_code IN (
+                  'pde-communication-sales-journey', 'creative-production-approval',
+                  'landing-page-generation', 'operacao-otimizacao-experimento'
+                )
+                AND status = 'PUBLISHED'
+                AND (
+                  technical_reference IS NULL
+                  OR technical_reference NOT LIKE 'iris-communication-agent-v1%'
+                );
+
+  - changeSet:
+      id: 2026-08-28-iris-communication-agent-v1-4-activity-definitions
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_activity_definition
+                (process_definition_id, activity_id, name, objective, owner_name,
+                 execution_resource_code, subprocess_code, definition_json, created_at)
+              SELECT process.id,
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].id'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].label'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].description'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].owner'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].executionResourceCode'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].subprocessCode'))),
+                CAST(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, ']')) AS CHAR),
+                process.created_at
+              FROM business_process_definition process
+              JOIN (
+                SELECT 0 AS number UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3
+                UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7
+                UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10 UNION ALL SELECT 11
+                UNION ALL SELECT 12 UNION ALL SELECT 13 UNION ALL SELECT 14 UNION ALL SELECT 15
+              ) sequence
+                ON sequence.number < JSON_LENGTH(JSON_EXTRACT(process.diagram_json, '$.nodes'))
+              LEFT JOIN business_process_activity_definition existing
+                ON existing.process_definition_id = process.id
+               AND BINARY existing.activity_id = BINARY JSON_UNQUOTE(
+                 JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].id'))
+               )
+              WHERE process.technical_reference LIKE 'iris-communication-agent-v1%'
+                AND JSON_UNQUOTE(
+                  JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].type'))
+                ) = 'TASK'
+                AND existing.id IS NULL;
+
+  - changeSet:
+      id: 2026-08-28-iris-communication-agent-v1-5-chain-v9
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_chain_definition
+                (chain_code, name, purpose, outcome_description, primary_metric,
+                 version_number, status, created_at, published_at)
+              SELECT 'pde-value-creation-delivery',
+                'Criação e entrega de valor de Produtos Digitais Experienciais',
+                'Transformar evidência em produto, comunicação, venda e entrega com um domínio exclusivo por agente.',
+                'PDE vendido e entregue com satisfação, comunicação eficaz e aprendizado para escala.',
+                'Tempo até venda entregue com satisfação',
+                9, 'PUBLISHED', UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_chain_definition
+                WHERE chain_code = 'pde-value-creation-delivery' AND version_number = 9
+              );
+
+              INSERT INTO business_process_chain_item
+                (chain_definition_id, process_definition_id, sequence_number,
+                 value_contribution, created_at)
+              SELECT chain.id, process.id, item.sequence_number, item.value_contribution,
+                UTC_TIMESTAMP()
+              FROM business_process_chain_definition chain
+              JOIN (
+                SELECT 1 AS sequence_number, 'pde-opportunity-discovery' AS process_code,
+                  'Argos entrega inteligência factual sem escolher estratégia.' AS value_contribution
+                UNION ALL SELECT 2, 'pde-commercial-plan-offer',
+                  'Atena decide estratégia, Plutus valida economia e Dédalo recebe o contrato de produto.'
+                UNION ALL SELECT 3, 'pde-construction-approval',
+                  'Dédalo materializa o PDE e os gates aprovam a experiência usada depois da compra.'
+                UNION ALL SELECT 4, 'pde-communication-sales-journey',
+                  'Íris materializa persuasão pré-compra; Apolo produz audiovisual; Psique e Têmis revisam.'
+                UNION ALL SELECT 5, 'pde-commercial-homologation-activation',
+                  'Preflight e autorização humana decidem ativação separadamente.'
+                UNION ALL SELECT 6, 'pde-sales-delivery-learning',
+                  'Após autorização, Hermes opera e o sistema decide por venda entregue com satisfação.'
+              ) item
+              JOIN business_process_definition process
+                ON process.process_code = item.process_code
+               AND process.status = 'PUBLISHED'
+              LEFT JOIN business_process_chain_item existing
+                ON existing.chain_definition_id = chain.id
+               AND existing.sequence_number = item.sequence_number
+              WHERE chain.chain_code = 'pde-value-creation-delivery'
+                AND chain.version_number = 9
+                AND existing.id IS NULL;
+
+              UPDATE business_process_chain_definition
+              SET status = 'RETIRED'
+              WHERE chain_code = 'pde-value-creation-delivery'
+                AND status = 'PUBLISHED'
+                AND version_number <> 9;

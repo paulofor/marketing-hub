@@ -15,20 +15,19 @@ class TemisContainerIsolationContractTest {
     String compose = Files.readString(Path.of("docker-compose.yml"));
     String reviewer =
         compose.substring(
-            compose.indexOf("  meta-ad-approver-worker:"),
-            compose.indexOf("  themis-image-studio:"));
-    String studio = compose.substring(compose.indexOf("  themis-image-studio:"));
+            compose.indexOf("  meta-ad-approver-worker:"), compose.indexOf("  iris-image-studio:"));
+    String studio = compose.substring(compose.indexOf("  iris-image-studio:"));
 
     assertThat(reviewer)
         .contains("TEMIS_EXECUTION_ROLE: review", "META_AD_APPROVER_CODEX_HOME")
         .doesNotContain("OPENAI_API_KEY", "/run/secrets/openai_api_key");
     assertThat(studio)
         .contains(
-            "TEMIS_EXECUTION_ROLE: image-studio",
+            "IRIS_EXECUTION_ROLE: image-studio",
             "Dockerfile.image-studio",
             "OPENAI_API_KEY_FILE",
-            "TEMIS_IMAGE_BACKEND_READ_TIMEOUT",
-            "TEMIS_IMAGE_STUDIO_PENDING_LIMIT: ${TEMIS_IMAGE_STUDIO_PENDING_LIMIT:-1}",
+            "IRIS_IMAGE_BACKEND_READ_TIMEOUT",
+            "IRIS_IMAGE_STUDIO_PENDING_LIMIT: ${IRIS_IMAGE_STUDIO_PENDING_LIMIT:-1}",
             "mem_limit: 2g",
             "cpus: 2.0")
         .doesNotContain("CODEX_HOME", "MARKETING_HUB_REPOSITORY");
@@ -66,7 +65,7 @@ class TemisContainerIsolationContractTest {
             "Dockerfile.image-studio",
             "http://127.0.0.1:8097/ops-meta-ad-approver-observability-v1/health",
             "http://127.0.0.1:8098/ops-meta-ad-approver-observability-v1/health",
-            "docker compose exec -T themis-image-studio",
+            "docker compose exec -T iris-image-studio",
             "test ! -e /run/secrets/openai_api_key");
   }
 
@@ -87,18 +86,18 @@ class TemisContainerIsolationContractTest {
         .contains("não redesenhe o produto");
   }
 
-  /** Impede que o gate confunda o conteúdo entregue com a publicidade que vende o kit. */
+  /** Impede que o gate confunda a comunicação de Íris com um entregável de Dédalo. */
   @Test
-  void reviewsPersonalizedDeliverablesInTheirRealCustomerContext() throws Exception {
+  void reviewsIrisCommercialAssetsAgainstRealProductProof() throws Exception {
     String prompt =
         Files.readString(Path.of("src/main/resources/prompts/image-studio/v1/review.md"));
 
     assertThat(prompt)
         .contains(
-            "não exija que esse arquivo venda o kit Agenda Cheia",
-            "demonstração enquadrada do que o comprador recebe",
+            "saída deve declarar somente `LANDING`, `ADS` ou `SOCIAL`",
+            "referência aprovada `PRODUCT_PROOF` ou `DELIVERY` de Dédalo",
             "`PRODUCT_PROOF` é captura",
-            "peça como comunicação comercial",
+            "peça de Íris nunca se torna parte da entrega",
             "homologação sintética",
             "proporção nativa `9:16`",
             "campo `issues` deve ser obrigatoriamente um array vazio",

@@ -34,7 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-/** Responsabilidade: proteger a produção visual governada entre backend e Têmis. */
+/** Responsabilidade: proteger a produção de Íris e a revisão independente de Têmis. */
 class CommercialPlanImageStudioServiceTest {
   private CommercialPlanService planService;
   private CommercialPlanImageStudioJobRepository jobRepository;
@@ -57,7 +57,7 @@ class CommercialPlanImageStudioServiceTest {
         .thenReturn(
             new TemisVisualPlaybookDto(
                 "temis-visual-playbook-v1",
-                "n=none|p=unknown|u=delivery|pl=feed|f=1024x1536",
+                "n=none|p=unknown|u=communication|pl=feed|f=1024x1536",
                 "CANONICAL_BASELINE",
                 List.of("Preservar o produto real"),
                 List.of("Não redesenhar o entregável"),
@@ -136,6 +136,28 @@ class CommercialPlanImageStudioServiceTest {
         .hasMessageContaining("PRODUCT_PROOF");
   }
 
+  /** Bloqueia a finalidade pós-compra que pertence exclusivamente a Dédalo. */
+  @Test
+  void rejectsDeliveryPurposeOwnedByDedalo() {
+    when(planService.getPlan(2L)).thenReturn(plan(2L));
+
+    assertThatThrownBy(
+            () ->
+                service.create(
+                    2L,
+                    new CreateCommercialPlanImageStudioJobRequest(
+                        CommercialPlanImageStudioOperation.CREATE,
+                        null,
+                        List.of(),
+                        "Produzir entrega",
+                        "Entrega",
+                        List.of("DELIVERY"),
+                        "1024x1536",
+                        "high")))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("LANDING, ADS e SOCIAL");
+  }
+
   /** Aceita peça comercial apoiada em prova aprovada sem classificá-la como entrega ao cliente. */
   @Test
   void createsCommercialAssetFromApprovedProductProof() {
@@ -184,14 +206,14 @@ class CommercialPlanImageStudioServiceTest {
                 List.of(10L),
                 "Ajustar contraste sem redesenhar o produto",
                 "Post principal premium",
-                List.of("DELIVERY", "LANDING", "ADS", "SOCIAL"),
+                List.of("LANDING", "ADS", "SOCIAL"),
                 "1152x2048",
                 "high"));
 
     assertThat(result.operation()).isEqualTo(CommercialPlanImageStudioOperation.EDIT);
     assertThat(result.sourceAssetId()).isEqualTo(10L);
     assertThat(result.size()).isEqualTo("1152x2048");
-    assertThat(result.purposes()).containsExactly("DELIVERY", "LANDING", "ADS", "SOCIAL");
+    assertThat(result.purposes()).containsExactly("LANDING", "ADS", "SOCIAL");
     ArgumentCaptor<CommercialPlanImageStudioJob> captor =
         ArgumentCaptor.forClass(CommercialPlanImageStudioJob.class);
     verify(jobRepository).save(captor.capture());
@@ -214,7 +236,7 @@ class CommercialPlanImageStudioServiceTest {
             CommercialPlanImageStudioStatus.PENDING,
             "Story premium",
             "Preservar produto real",
-            "[\"DELIVERY\",\"LANDING\"]",
+            "[\"LANDING\",\"ADS\"]",
             "1152x2048",
             "high",
             null,
@@ -246,7 +268,7 @@ class CommercialPlanImageStudioServiceTest {
                 List.of(),
                 "Preservar produto real",
                 "Story premium",
-                List.of("DELIVERY", "LANDING"),
+                List.of("LANDING", "ADS"),
                 "1152x2048",
                 "high"));
 
@@ -272,7 +294,7 @@ class CommercialPlanImageStudioServiceTest {
                         List.of(11L),
                         "Compor material premium",
                         "Post premium",
-                        List.of("DELIVERY", "ADS"),
+                        List.of("ADS"),
                         "1024x1536",
                         "high")))
         .isInstanceOf(IllegalArgumentException.class)
@@ -316,7 +338,7 @@ class CommercialPlanImageStudioServiceTest {
   void requiresIndependentReviewExecution() {
     CommercialPlan plan = plan(2L);
     CommercialPlanVisualAsset asset = asset(31L, plan, "/assets/result.png");
-    asset.setPurposesJson("[\"DELIVERY\",\"ADS\"]");
+    asset.setPurposesJson("[\"ADS\",\"SOCIAL\"]");
     asset.setAgentReviewStatus(CommercialPlanVisualAssetReviewStatus.PROCESSING);
     CommercialPlanImageStudioJob job = job(41L, plan, "producer-1");
     job.setResultVisualAsset(asset);
@@ -356,7 +378,7 @@ class CommercialPlanImageStudioServiceTest {
   void requeuesCreativeAfterIndependentAdjustment() {
     CommercialPlan plan = plan(2L);
     CommercialPlanVisualAsset asset = asset(32L, plan, "/assets/result-adjust.png");
-    asset.setPurposesJson("[\"DELIVERY\",\"ADS\"]");
+    asset.setPurposesJson("[\"ADS\",\"SOCIAL\"]");
     asset.setAgentReviewStatus(CommercialPlanVisualAssetReviewStatus.PROCESSING);
     CommercialPlanImageStudioJob job = job(42L, plan, "producer-1");
     Creative creative = new Creative();
@@ -435,9 +457,9 @@ class CommercialPlanImageStudioServiceTest {
     job.setCommercialPlan(plan);
     job.setOperation(CommercialPlanImageStudioOperation.CREATE);
     job.setStatus(CommercialPlanImageStudioStatus.PROCESSING);
-    job.setPrompt("Produzir entrega premium");
-    job.setLabel("Entrega premium");
-    job.setPurposesJson("[\"DELIVERY\"]");
+    job.setPrompt("Produzir peça comercial premium");
+    job.setLabel("Peça comercial premium");
+    job.setPurposesJson("[\"ADS\"]");
     job.setReferenceAssetIdsJson("[]");
     job.setSize("1024x1536");
     job.setQuality("high");

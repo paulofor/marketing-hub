@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 /** Responsabilidade: validar a simplificação do plano sem remover gates comerciais essenciais. */
 class CommercialPlanOperationalFlowServiceTest {
 
-  /** Mantém publicação bloqueada enquanto Dédalo não comprovar a homologação da jornada. */
+  /** Mantém publicação bloqueada enquanto Íris não concluir a homologação da jornada. */
   @Test
   void blocksPublicationUntilJourneyIsHomologated() {
     CommercialPlanAgentActivityService activities = mock(CommercialPlanAgentActivityService.class);
@@ -55,11 +55,11 @@ class CommercialPlanOperationalFlowServiceTest {
             .targetAudience("Prestadores de serviço")
             .experiment(experiment)
             .build();
-    Entry dedalo =
+    Entry iris =
         new Entry(
             "JOURNEY_HOMOLOGATION",
-            "landing-generator",
-            "Dédalo",
+            "communication-director",
+            "Íris",
             "Homologação",
             "COMPLETED",
             null,
@@ -72,13 +72,16 @@ class CommercialPlanOperationalFlowServiceTest {
             null,
             null,
             Instant.now());
-    when(activities.activity(plan)).thenReturn(activity(List.of(dedalo)));
+    when(activities.activity(plan)).thenReturn(activity(List.of(iris)));
 
     var result = service.view(plan);
 
     assertThat(result.currentStage()).isEqualTo("PUBLISH_TEST");
     assertThat(result.status()).isEqualTo("APROVADO");
     assertThat(result.nextAction()).contains("aprovação humana");
+    assertThat(result.specialistDecisions())
+        .extracting(decision -> decision.specialist())
+        .contains("Dédalo", "Íris");
   }
 
   /** Cria uma atividade mínima para os cenários do fluxo. */

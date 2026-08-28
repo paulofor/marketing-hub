@@ -149,23 +149,25 @@ elas não são memória promovida, não alteram código automaticamente e não a
 agente. Implementação, publicação, gasto ou mudança comercial continuam sujeitos aos gates e às
 aprovações já definidos neste cânone.
 
-## Fronteiras dos oito agentes
+## Fronteiras dos nove agentes
 
 Por decisão de 2026-08-28, agentes não podem compartilhar autoria sobre a mesma decisão comercial.
 A matriz completa e bloqueante está em
 `docs/canonical/matriz-responsabilidades-agentes-canon.v1.md`:
 
 - Argos reúne fatos de mercado; Atena é a única autora da estratégia;
-- Plutus valida economia e risco; Dédalo constrói o PDE, a landing e materiais não audiovisuais;
-- Apolo produz vídeo e áudio; Psique revisa a experiência humana;
+- Plutus valida economia e risco; Dédalo constrói o PDE e suas provas reais;
+- Íris materializa mensagem, copy, landing, peças estáticas, e-mails e briefings por canal;
+- Apolo produz vídeo e áudio a partir do briefing; Psique revisa a experiência humana;
 - Têmis somente revisa integridade comercial, prova, fidelidade, direitos e compliance;
 - Hermes opera distribuição, instrumentação, funil e otimização, sem redefinir estratégia.
 
-O fluxo canônico é `Argos → Atena → Plutus → Dédalo/Apolo → Psique → Têmis → autorização humana
-→ Hermes`. Psique e Têmis usam atividades e identificadores diferentes. Têmis não cria copy, imagem,
-vídeo, landing ou produto sob a identidade que decide o gate. O Estúdio de Imagens é recurso técnico
-de produção sob o contrato de construção de Dédalo, mesmo enquanto o código legado conservar o nome
-`themis-image-studio` por compatibilidade.
+O fluxo canônico é `Argos → Atena → Plutus → Dédalo → Íris/Apolo → Psique → Têmis → autorização
+humana → Hermes`. Psique e Têmis usam atividades e identificadores diferentes. Têmis não cria copy,
+imagem, vídeo, landing ou produto sob a identidade que decide o gate. O Estúdio de Imagens legado
+foi transferido para Íris como `iris-image-studio` e só produz `LANDING`, `ADS` e `SOCIAL` com prova
+real aprovada; seu código histórico não atribui autoria a Têmis. O que a cliente usa depois da compra
+pertence a Dédalo; o que a convence antes da compra pertence a Íris.
 
 O contexto de qualquer tarefa desses fluxos deve carregar a execução, versão e SHA-256 do Contrato
 Estratégico de Mercado. Ausência ou evidência insuficiente bloqueia antes de consumo desnecessário do
@@ -247,7 +249,8 @@ de um desses efeitos invalida a avaliação. A candidata somente fica elegível 
 baseline no holdout, passar regressão e validação local e respeitar o limite de custo. Promoção
 continua explícita e externa ao executor avaliado.
 
-Na v1, os agentes homologados são `landing-generator`, `meta-ad-approver` e `apollo`. Apolo usa o
+Na v1, os agentes homologados são `communication-director`, `landing-generator`,
+`meta-ad-approver` e `apollo`. Íris usa replay de pacotes de comunicação e landing; Apolo usa o
 replay de storyboard para comparar qualidade narrativa, diversidade, cobertura comercial,
 reaproveitamento e orçamento, sem chamar OpenAI ou providers de vídeo.
 

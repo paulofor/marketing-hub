@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 /** Responsabilidade: proteger a publicação segura dos logs operacionais do Aprovador Meta. */
 class WorkerObservabilityContractTest {
 
-  /** Garante que health e logfile tenham rota dedicada e arquivo conhecido. */
+  /** Garante observabilidade dedicada e credencial visual isolada no executor de Íris. */
   @Test
   void shouldExposeDedicatedReadOnlyObservabilityEndpoints() throws Exception {
     String application = Files.readString(Path.of("src/main/resources/application.yml"));
@@ -23,7 +23,7 @@ class WorkerObservabilityContractTest {
     assertThat(application).contains("name: ${LOG_FILE_NAME:/tmp/meta-ad-approver-worker.log}");
     assertThat(workflow)
         .contains("http://127.0.0.1:8097/ops-meta-ad-approver-observability-v1/health");
-    assertThat(workflow).contains("Provision OpenAI credential for Têmis");
+    assertThat(workflow).contains("Provision OpenAI credential for Íris");
     assertThat(workflow).contains("test -f /run/secrets/openai_api_key");
     assertThat(workflow).contains("test -r /run/secrets/openai_api_key");
     assertThat(workflow).contains("test -s /run/secrets/openai_api_key");

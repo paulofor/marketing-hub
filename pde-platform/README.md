@@ -142,6 +142,12 @@ A Consultora MUSA atua nos 7 dias como orientação guiada por missão: a client
 preenche 3 sinais ou respostas práticas e recebe um cartão curto, acionável e
 coerente com o histórico da jornada.
 
+Para novos PDEs baseados em agentes, a integração canônica fica no módulo
+`pde-harness-sdk`: uma biblioteca Java 21 que acessa somente o Codex App Server
+local por `stdio`, usando a sessão ChatGPT gerenciada pelo Codex. Ela não chama a
+OpenAI API, não controla o pipeline e não possui fallback silencioso. O worker
+continua consumindo `pending` e reportando resultado ao backend.
+
 ## Produto inicial
 
 - Slug: `metodo-musa-7-dias`

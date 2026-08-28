@@ -353,7 +353,8 @@ Este tipo usa o conceito operacional do exemplo `/exemplos/aih6`: uma solicitaca
 O runtime canônico deste tipo é o PDE Harness SDK sobre o Codex App Server, conforme
 `docs/canonical/pde-platform-canon.v1.md`. PDE novo baseado em agentes não pode chamar diretamente
 a OpenAI API nem usar o OpenAI Agents SDK como runtime; deve acessar o App Server local ao worker
-por `stdio`, com sessão ChatGPT gerenciada pelo Codex, contratos tipados e isolamento por cliente.
+por `stdio` usando o PDE Harness SDK em Java 21, com sessão ChatGPT gerenciada pelo Codex, contratos
+tipados e isolamento por cliente.
 Indisponibilidade do App Server bloqueia a execução e nunca autoriza fallback silencioso para API.
 
 Fluxo canonico inicial:

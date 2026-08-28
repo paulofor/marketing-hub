@@ -241,8 +241,9 @@ Arquitetura obrigatória da primeira versão:
   de verdade de acesso, memória funcional, estado, gates, auditoria e próxima etapa;
 - o worker PDE consome exclusivamente o endpoint `pending` e usa o PDE Harness SDK para iniciar ou
   retomar uma execução no Codex App Server;
-- o PDE Harness SDK deve ser implementado em TypeScript como cliente tipado do protocolo, enquanto
-  o backend transacional permanece em Java;
+- o PDE Harness SDK deve ser implementado em **Java 21** como biblioteca independente e cliente
+  tipado do protocolo, mantendo o mesmo ecossistema do backend transacional e dos principais
+  executores do Marketing Hub;
 - o worker inicia o `codex app-server` localmente e comunica-se por `stdio` com JSONL. O App Server
   não pode ser exposto ao frontend, ao backend PDE ou à internet, e o transporte WebSocket remoto
   não faz parte da v1;
@@ -252,9 +253,10 @@ Arquitetura obrigatória da primeira versão:
 - a sequência mínima é `initialize`/`initialized`, `thread/start` ou `thread/resume` e
   `turn/start`; eventos de thread, turno, item, ferramenta, aprovação, conclusão e falha devem ser
   correlacionados e reportados ao backend;
-- os bindings TypeScript e JSON Schemas do protocolo devem ser gerados pela mesma versão fixada do
-  Codex usada em produção. Atualizar Codex exige regenerar contratos e aprovar testes de
-  compatibilidade antes do deploy;
+- o bundle JSON Schema do protocolo deve ser gerado pela mesma versão fixada do Codex usada em
+  produção. O SDK deve expor uma fachada Java tipada com `record`s para o ciclo estável e validar a
+  integridade do bundle por versão e SHA-256. Atualizar Codex exige regenerar o contrato, adaptar a
+  fachada quando necessário e aprovar testes de compatibilidade antes do deploy;
 - a autenticação deve usar sessão ChatGPT gerenciada pelo Codex em `CODEX_HOME` exclusivo do
   executor. Token, cookie, `auth.json` e demais segredos não podem transitar pelo frontend ou pelo
   backend PDE;
@@ -263,6 +265,9 @@ Arquitetura obrigatória da primeira versão:
   `BLOCKED` auditável, sem trocar silenciosamente o runtime;
 - prompts, schemas de saída, tools, skills, MCPs, limites de autoridade e contratos sensoriais
   continuam versionados no módulo executor e identificados por versão e hash;
+- o SDK deve validar localmente que o schema é estrito, não resolve referências externas e que a
+  resposta final contém um único JSON aderente ao contrato. JSON inválido ou divergente nunca pode
+  ser reportado como sucesso funcional;
 - o backend deve persistir, sem expor raciocínio interno, os identificadores de thread e turno,
   versão do Codex e do SDK, modelo, prompt/schema efetivos, eventos estruturados, chamadas de
   ferramenta, aprovações, entrada, saída, artefatos, erro, tokens e custo quando informados;
@@ -280,6 +285,15 @@ A homologação precisa provar caminho feliz, retomada após reinício, autentic
 clientes, backpressure, timeout, aprovações, telemetria, compatibilidade de versão e descarte de
 dados. Somente depois desses gates um PDE pago pode depender desse runtime. Falha no piloto exige
 ajuste ou bloqueio; não autoriza retorno direto à API.
+
+Decisão de linguagem atualizada em 2026-08-28: Java 21 substitui a escolha inicial de TypeScript.
+Foram considerados JSON cru em Java, geração integral de classes e fachada tipada sobre o bundle
+oficial. A fachada tipada é a opção canônica porque combina legibilidade para a equipe, baixo ruído
+de atualização e verificação objetiva do protocolo experimental. O SDK deve usar `ProcessBuilder`
+para o processo local, Jackson para JSONL, concorrência segura para respostas e eventos e pacotes
+versionados sob `com.marketinghub.pde.harness.v1`. O núcleo não depende de Spring, não acessa banco
+e não controla polling ou avanço de pipeline; workers Java usam a biblioteca e continuam reportando
+ao backend pelos contratos oficiais.
 
 Para o Método MUSA, a Consultora MUSA deve atuar nos 7 dias como orientação guiada por missão: a cliente preenche três sinais ou respostas práticas do dia e recebe um cartão curto, aplicável e coerente com o histórico da jornada. O Dia 1 pode ser usado como amostra gratuita de valor; os Dias 2 a 7 permanecem como parte do acesso completo quando o funil estiver em modo de paywall interno.
 

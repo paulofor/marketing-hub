@@ -879,6 +879,14 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - em 2026-08-06, o workflow ainda rejeitou 23 respostas saudáveis `{"status":"UP"}` porque as aspas do regex foram consumidas pela camada de quoting do comando SSH. A verificação passou a buscar os marcadores estáveis `status` e `UP`, sem depender das aspas literais do JSON no shell remoto.
   - em 2026-08-09, o Aprovador Meta iniciou saudável e autenticado, mas o deploy falhou porque a observabilidade dedicada moveu o health check para `/ops-meta-ad-approver-observability-v1/health` enquanto o workflow continuou consultando `/actuator/health`. Um teste de contrato agora exige que a rota de prontidão do workflow acompanhe o `base-path` versionado do agente.
   - no mesmo ciclo, a correção comercial do criativo 280 falhou no callback porque `creative.primary_text` ainda era `VARCHAR(255)`, menor que a copy válida produzida pelo fluxo. O contrato canônico passou a preservar o texto integral em `LONGTEXT`, alinhado explicitamente na entidade JPA e no changelog MySQL 5.7.
+  - em 2026-08-28, o núcleo v2 de Psique mencionava prazer genericamente, mas não possuía
+    dimensões sensoriais no schema e o detalhe do agente mostrava somente referências de arquivos.
+    O `BEHAVIORAL_V3` passa a versionar evidência disponível, modalidades, prazer por modalidade,
+    fluidez, congruência, sobrecarga, antecipação corporal e fronteira da prova em avaliações,
+    observações, oportunidades e BPM. Um validador determinístico rejeita notas sem estímulo,
+    modalidades duplicadas e contratos incompletos; testes percorrem todos os schemas sensoriais,
+    exigem objetos estritos e proíbem `oneOf`, `anyOf`, `allOf` e `uniqueItems`. O harness apresenta
+    os princípios de forma legível e preserva v2 somente para histórico.
 
 ## LOOP-GL-ARCHITECTURE-STAGES — Arquitetura por etapas do GeraLanding
 

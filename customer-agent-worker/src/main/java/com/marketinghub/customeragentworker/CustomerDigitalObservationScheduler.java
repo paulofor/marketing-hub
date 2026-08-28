@@ -1,6 +1,7 @@
 package com.marketinghub.customeragentworker;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -73,14 +74,14 @@ public class CustomerDigitalObservationScheduler {
               String.valueOf(job.get("authorizedSourcesJson")), workDirectory);
       String template =
           Files.readString(
-              Path.of("/app/prompts/customer-agent/v1/digital-observation.md"),
+              Path.of("/app/prompts/customer-agent/v2/digital-observation.md"),
               StandardCharsets.UTF_8);
       String prompt =
           template
               .replace(
-                  "{{PSIQUE_BEHAVIORAL_CORE_V2}}",
+                  "{{PSIQUE_BEHAVIORAL_CORE_V3}}",
                   Files.readString(
-                      Path.of("/app/prompts/psique/behavioral-core-v2.md"), StandardCharsets.UTF_8))
+                      Path.of("/app/prompts/psique/behavioral-core-v3.md"), StandardCharsets.UTF_8))
               .replace("{{PERSONA_JSON}}", String.valueOf(job.get("persona")))
               .replace("{{OBJECTIVE}}", String.valueOf(job.get("objective")))
               .replace(
@@ -90,6 +91,7 @@ public class CustomerDigitalObservationScheduler {
                   mapper.writeValueAsString(browserObservation.facts()));
       String raw = observationAnalyzer.analyze(prompt, workDirectory);
       Map<String, Object> result = mapper.readValue(raw, new TypeReference<>() {});
+      validateSensoryExperience(result, mapper);
       long personaId = ((Number) ((Map<?, ?>) job.get("persona")).get("id")).longValue();
       uploadScreenshots(personaId, id, browserObservation);
       backend
@@ -115,6 +117,12 @@ public class CustomerDigitalObservationScheduler {
     } finally {
       deleteWorkDirectory(workDirectory, id);
     }
+  }
+
+  /** Rejeita observação que omita a experiência sensorial ou atribua notas sem evidência. */
+  static void validateSensoryExperience(Map<String, Object> result, ObjectMapper mapper) {
+    JsonNode simulatedReaction = mapper.valueToTree(result.get("simulatedReaction"));
+    PsiqueSensoryContract.validate(simulatedReaction.path("sensoryExperience"));
   }
 
   /** Envia screenshots ao armazenamento governado, vinculados à persona e observação. */

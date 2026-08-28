@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 public class CustomerEvaluationCodexRunner {
   private static final String BEHAVIORAL_V1 = "BEHAVIORAL_V1";
   private static final String BEHAVIORAL_V2 = "BEHAVIORAL_V2";
+  private static final String BEHAVIORAL_V3 = "BEHAVIORAL_V3";
   private static final Pattern PUBLIC_URL =
       Pattern.compile("https?://[^\\s]+", Pattern.CASE_INSENSITIVE);
   private static final int MAX_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -68,15 +69,14 @@ public class CustomerEvaluationCodexRunner {
               null,
               visualEvidence);
       String simulationVersion = String.valueOf(job.get("simulationVersion"));
-      if (!BEHAVIORAL_V1.equals(simulationVersion) && !BEHAVIORAL_V2.equals(simulationVersion)) {
+      if (!BEHAVIORAL_V1.equals(simulationVersion)
+          && !BEHAVIORAL_V2.equals(simulationVersion)
+          && !BEHAVIORAL_V3.equals(simulationVersion)) {
         return baselinePayload(baseline, baselinePrompt);
       }
 
       String behavioralPrompt = buildBehavioralPrompt(job, baseline, simulationVersion);
-      String behavioralSchema =
-          BEHAVIORAL_V2.equals(simulationVersion)
-              ? "prompts/customer-agent/behavioral-v2/evaluation-schema.json"
-              : "prompts/customer-agent/behavioral-v1/evaluation-schema.json";
+      String behavioralSchema = schemaResource(simulationVersion);
       JsonNode behavioral =
           execute(
               evaluationId, behavioralPrompt, behavioralSchema, simulationVersion, visualEvidence);
@@ -272,21 +272,44 @@ public class CustomerEvaluationCodexRunner {
   /** Resolve o prompt comportamental versionado com o mesmo contexto e baseline congelado. */
   private String buildBehavioralPrompt(Map<?, ?> job, JsonNode baseline, String simulationVersion)
       throws IOException {
-    String resource =
-        BEHAVIORAL_V2.equals(simulationVersion)
-            ? "prompts/customer-agent/behavioral-v2/evaluation.md"
-            : "prompts/customer-agent/behavioral-v1/evaluation.md";
-    return read(resource)
-        .replace("{{PSIQUE_BEHAVIORAL_CORE_V2}}", behavioralCoreV2())
-        .replace("{{PERSONA_JSON}}", String.valueOf(job.get("persona")))
-        .replace("{{ASSET_TYPE}}", String.valueOf(job.get("assetType")))
-        .replace("{{ASSET_REFERENCE}}", String.valueOf(job.get("assetReference")))
-        .replace("{{BASELINE_JSON}}", objectMapper.writeValueAsString(baseline));
+    String resource = promptResource(simulationVersion);
+    String prompt =
+        read(resource)
+            .replace("{{PERSONA_JSON}}", String.valueOf(job.get("persona")))
+            .replace("{{ASSET_TYPE}}", String.valueOf(job.get("assetType")))
+            .replace("{{ASSET_REFERENCE}}", String.valueOf(job.get("assetReference")))
+            .replace("{{BASELINE_JSON}}", objectMapper.writeValueAsString(baseline));
+    return BEHAVIORAL_V3.equals(simulationVersion)
+        ? prompt.replace("{{PSIQUE_BEHAVIORAL_CORE_V3}}", behavioralCoreV3())
+        : prompt.replace("{{PSIQUE_BEHAVIORAL_CORE_V2}}", behavioralCoreV2());
+  }
+
+  /** Seleciona o prompt imutável correspondente à versão solicitada. */
+  private String promptResource(String simulationVersion) {
+    if (BEHAVIORAL_V3.equals(simulationVersion))
+      return "prompts/customer-agent/behavioral-v3/evaluation.md";
+    if (BEHAVIORAL_V2.equals(simulationVersion))
+      return "prompts/customer-agent/behavioral-v2/evaluation.md";
+    return "prompts/customer-agent/behavioral-v1/evaluation.md";
+  }
+
+  /** Seleciona o schema estrito correspondente à versão solicitada. */
+  private String schemaResource(String simulationVersion) {
+    if (BEHAVIORAL_V3.equals(simulationVersion))
+      return "prompts/customer-agent/behavioral-v3/evaluation-schema.json";
+    if (BEHAVIORAL_V2.equals(simulationVersion))
+      return "prompts/customer-agent/behavioral-v2/evaluation-schema.json";
+    return "prompts/customer-agent/behavioral-v1/evaluation-schema.json";
   }
 
   /** Lê o núcleo científico único compartilhado pelas execuções de Psique v2. */
   private String behavioralCoreV2() throws IOException {
     return read("prompts/psique/behavioral-core-v2.md");
+  }
+
+  /** Lê o núcleo sensorial compartilhado pelas novas execuções de Psique v3. */
+  private String behavioralCoreV3() throws IOException {
+    return read("prompts/psique/behavioral-core-v3.md");
   }
 
   /** Materializa um recurso do classpath para consumo seguro pelo processo Codex. */
@@ -320,7 +343,7 @@ public class CustomerEvaluationCodexRunner {
     validateBehavioral(result, BEHAVIORAL_V1);
   }
 
-  /** Rejeita uma simulação v2 que omita os motores afetivos e sociais obrigatórios. */
+  /** Rejeita simulações v2/v3 que omitam seus motores humanos obrigatórios. */
   void validateBehavioral(JsonNode result, String simulationVersion) {
     validateBaseline(result);
     if (!result.has("initialState")
@@ -331,7 +354,7 @@ public class CustomerEvaluationCodexRunner {
         || !result.has("baselineComparison")) {
       throw new IllegalArgumentException("Resposta fora do contrato comportamental v1.");
     }
-    if (BEHAVIORAL_V2.equals(simulationVersion)
+    if ((BEHAVIORAL_V2.equals(simulationVersion) || BEHAVIORAL_V3.equals(simulationVersion))
         && (!result.has("affectiveImpulse")
             || !result.has("motivationalDynamics")
             || !result.has("noveltyFamiliarity")
@@ -341,6 +364,9 @@ public class CustomerEvaluationCodexRunner {
             || !"FOUNDATIONAL"
                 .equals(result.path("relationalValue").path("foundationalNeed").asText()))) {
       throw new IllegalArgumentException("Resposta fora do contrato comportamental v2 de Psique.");
+    }
+    if (BEHAVIORAL_V3.equals(simulationVersion)) {
+      PsiqueSensoryContract.validate(result.path("sensoryExperience"));
     }
     int total = 0;
     var probabilities = result.get("actionProbabilities").fields();

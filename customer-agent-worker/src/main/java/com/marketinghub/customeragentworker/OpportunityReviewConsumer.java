@@ -73,7 +73,7 @@ public class OpportunityReviewConsumer {
   /** Executa o prompt versionado em sandbox e valida o resultado. */
   private JsonNode execute(Map<?, ?> job) throws IOException, InterruptedException {
     Path answer = Files.createTempFile("psique-opportunity-review-", ".json");
-    Path schema = materialize("prompts/opportunity-review/v1/review-schema.json", ".json");
+    Path schema = materialize("prompts/opportunity-review/v2/review-schema.json", ".json");
     Path processLog = Files.createTempFile("psique-opportunity-process-", ".log");
     try {
       List<String> command =
@@ -165,8 +165,8 @@ public class OpportunityReviewConsumer {
 
   /** Resolve o prompt com o contexto persistido pelo backend. */
   private String prompt(Map<?, ?> job) throws IOException {
-    return read("prompts/opportunity-review/v1/review.md")
-        .replace("{{PSIQUE_BEHAVIORAL_CORE_V2}}", read("prompts/psique/behavioral-core-v2.md"))
+    return read("prompts/opportunity-review/v2/review.md")
+        .replace("{{PSIQUE_BEHAVIORAL_CORE_V3}}", read("prompts/psique/behavioral-core-v3.md"))
         .replace("{{DOSSIER_CONTEXT}}", json.writeValueAsString(job));
   }
 
@@ -184,8 +184,8 @@ public class OpportunityReviewConsumer {
     }
   }
 
-  /** Rejeita respostas sem decisão ou sem leitura afetiva e social auditável. */
-  private void validate(JsonNode result) {
+  /** Rejeita respostas sem decisão ou sem leitura afetiva, social e sensorial auditável. */
+  static void validate(JsonNode result) {
     if (!result.hasNonNull("decision")
         || !result.hasNonNull("rationale")
         || !result.hasNonNull("risks")
@@ -194,6 +194,7 @@ public class OpportunityReviewConsumer {
         || result.path("behavioralResponse").path("firstImpulse").asText().isBlank()
         || result.path("behavioralResponse").path("belongingAdmirationLove").asText().isBlank())
       throw new IllegalArgumentException("Parecer de oportunidade incompleto.");
+    PsiqueSensoryContract.validate(result.path("behavioralResponse").path("sensoryExperience"));
   }
 
   /** Extrai o identificador para auditoria. */

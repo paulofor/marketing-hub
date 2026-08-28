@@ -24,7 +24,7 @@ public class CodexObservationAnalyzer {
       @Value("${CUSTOMER_AGENT_CODEX_EXECUTABLE:codex}") String executable,
       @Value("${CUSTOMER_AGENT_MODEL:gpt-5.6-sol}") String model,
       @Value(
-              "${CUSTOMER_AGENT_OBSERVATION_SCHEMA:/app/prompts/customer-agent/v1/digital-observation-schema.json}")
+              "${CUSTOMER_AGENT_OBSERVATION_SCHEMA:/app/prompts/customer-agent/v2/digital-observation-schema.json}")
           String schemaPath,
       @Value("${CUSTOMER_AGENT_MODEL_TIMEOUT:PT40M}") Duration timeout) {
     this.executable = executable;

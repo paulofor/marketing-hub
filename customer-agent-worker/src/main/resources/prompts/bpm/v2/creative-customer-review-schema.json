@@ -1,0 +1,42 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "customerPerspective", "behavioralResponse", "evidence", "requiredChanges"],
+  "properties": {
+    "decision": {"type": "string", "enum": ["APPROVED", "ADJUST", "BLOCKED"]},
+    "customerPerspective": {"type": "string", "minLength": 1},
+    "behavioralResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["firstImpulse", "pleasureAndEffort", "noveltyAndFamiliarity", "riskAndLoss", "belongingAdmirationLove", "sensoryExperience", "rationalization", "dominantDriver", "evidenceBoundary"],
+      "properties": {
+        "firstImpulse": {"type": "string"},
+        "pleasureAndEffort": {"type": "string"},
+        "noveltyAndFamiliarity": {"type": "string"},
+        "riskAndLoss": {"type": "string"},
+        "belongingAdmirationLove": {"type": "string"},
+        "sensoryExperience": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["evidenceAvailable", "availableModalities", "pleasureByModality", "processingFluency", "sensoryCongruence", "overloadRisk", "embodiedAnticipation", "dominantCue", "evidenceBoundary"],
+          "properties": {
+            "evidenceAvailable": {"type": "boolean"},
+            "availableModalities": {"type": "array", "items": {"type": "string", "enum": ["VISUAL", "AUDIO", "MOTION", "TACTILE_IMAGERY"]}},
+            "pleasureByModality": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["modality", "pleasureScore", "evidence"], "properties": {"modality": {"type": "string", "enum": ["VISUAL", "AUDIO", "MOTION", "TACTILE_IMAGERY"]}, "pleasureScore": {"type": "integer", "minimum": 0, "maximum": 5}, "evidence": {"type": "string"}}}},
+            "processingFluency": {"type": "integer", "minimum": 0, "maximum": 5},
+            "sensoryCongruence": {"type": "integer", "minimum": 0, "maximum": 5},
+            "overloadRisk": {"type": "integer", "minimum": 0, "maximum": 5},
+            "embodiedAnticipation": {"type": "string"},
+            "dominantCue": {"type": "string"},
+            "evidenceBoundary": {"type": "string"}
+          }
+        },
+        "rationalization": {"type": "string"},
+        "dominantDriver": {"type": "string"},
+        "evidenceBoundary": {"type": "string"}
+      }
+    },
+    "evidence": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "requiredChanges": {"type": "array", "items": {"type": "string"}}
+  }
+}

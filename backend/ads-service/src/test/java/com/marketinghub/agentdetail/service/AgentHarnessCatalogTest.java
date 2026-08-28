@@ -72,6 +72,37 @@ class AgentHarnessCatalogTest {
     assertThat(serializedDocument).doesNotContainPattern("(?i)(sk-|ghp_|Bearer\\s+[A-Za-z0-9])");
   }
 
+  /**
+   * Torna os princípios afetivos e sensoriais de Psique visíveis sem abrir arquivos no frontend.
+   */
+  @Test
+  void exposesPsiqueBehavioralAndSensoryConstitution() {
+    var harness = new AgentHarnessCatalog(new ObjectMapper()).getByAgentKey("customer-agent");
+
+    var constitution =
+        harness.sections().stream()
+            .filter(section -> "behavioral-constitution".equals(section.code()))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(constitution.title()).isEqualTo("Constituição humana e sensorial");
+    assertThat(constitution.items())
+        .extracting("key")
+        .contains(
+            "fundamental-drive",
+            "affective-first",
+            "sensory-modalities",
+            "sensory-dimensions",
+            "sensory-scale",
+            "evidence-boundary",
+            "ethical-boundary");
+    assertThat(harness.artifacts())
+        .extracting("path")
+        .contains(
+            "customer-agent-worker/src/main/resources/prompts/psique/behavioral-core-v3.md",
+            "customer-agent-worker/src/main/resources/prompts/customer-agent/behavioral-v3/evaluation-schema.json");
+  }
+
   /** Mantém explícita a ausência de manifesto para agentes futuros ainda não catalogados. */
   @Test
   void reportsUnknownHarnessWithoutInference() {

@@ -10,11 +10,16 @@ class OpportunityReviewContractTest {
   /** Confirma contexto do cliente e saída estruturada obrigatórios. */
   @Test
   void keepsVersionedReviewContract() throws Exception {
-    String prompt = resource("prompts/opportunity-review/v1/review.md");
-    String schema = resource("prompts/opportunity-review/v1/review-schema.json");
+    String prompt = resource("prompts/opportunity-review/v2/review.md");
+    String schema = resource("prompts/opportunity-review/v2/review-schema.json");
     assertThat(prompt)
         .contains(
-            "{{DOSSIER_CONTEXT}}", "{{PSIQUE_BEHAVIORAL_CORE_V2}}", "objeções", "SUPPORT", "amada");
+            "{{DOSSIER_CONTEXT}}",
+            "{{PSIQUE_BEHAVIORAL_CORE_V3}}",
+            "objeções",
+            "SUPPORT",
+            "amada",
+            "sensoryExperience");
     assertThat(schema)
         .contains(
             "decision",
@@ -22,7 +27,8 @@ class OpportunityReviewContractTest {
             "risks",
             "recommendation",
             "behavioralResponse",
-            "belongingAdmirationLove");
+            "belongingAdmirationLove",
+            "sensoryExperience");
   }
 
   /** Lê o recurso empacotado exatamente como o worker o receberá. */

@@ -233,34 +233,34 @@ public class CustomerBpmTaskConsumer {
           pdeExperienceEvidenceLoader.loadCommercialHomologationEvidence());
     }
     return read(promptResourceFor(processCode(task)))
-        .replace("{{PSIQUE_BEHAVIORAL_CORE_V2}}", behavioralCoreV2())
+        .replace("{{PSIQUE_BEHAVIORAL_CORE_V3}}", behavioralCoreV3())
         .replace("{{TASK_CONTEXT}}", json.writeValueAsString(promptContext));
   }
 
-  /** Lê a mesma constituição comportamental usada por todas as atividades de Psique. */
-  private String behavioralCoreV2() throws IOException {
-    return read("prompts/psique/behavioral-core-v2.md");
+  /** Lê a constituição comportamental e sensorial usada pelas atividades atuais de Psique. */
+  private String behavioralCoreV3() throws IOException {
+    return read("prompts/psique/behavioral-core-v3.md");
   }
 
   /** Seleciona o prompt versionado específico da entidade avaliada. */
   static String promptResourceFor(String processCode) {
     return switch (processCode) {
-      case "creative-production-approval" -> "prompts/bpm/creative-customer-review.md";
+      case "creative-production-approval" -> "prompts/bpm/v2/creative-customer-review.md";
       case "pde-commercial-homologation-activation" ->
-          "prompts/bpm/pde-commercial-homologation-customer-review.md";
-      case "pde-construction-approval" -> "prompts/bpm/pde-experience-review.md";
-      default -> "prompts/bpm/landing-customer-review.md";
+          "prompts/bpm/v2/pde-commercial-homologation-customer-review.md";
+      case "pde-construction-approval" -> "prompts/bpm/v2/pde-experience-review.md";
+      default -> "prompts/bpm/v2/landing-customer-review.md";
     };
   }
 
   /** Seleciona o schema versionado específico da entidade avaliada. */
   static String schemaResourceFor(String processCode) {
     return switch (processCode) {
-      case "creative-production-approval" -> "prompts/bpm/creative-customer-review-schema.json";
+      case "creative-production-approval" -> "prompts/bpm/v2/creative-customer-review-schema.json";
       case "pde-commercial-homologation-activation" ->
-          "prompts/bpm/pde-commercial-homologation-customer-review-schema.json";
-      case "pde-construction-approval" -> "prompts/bpm/pde-experience-review-schema.json";
-      default -> "prompts/bpm/landing-customer-review-schema.json";
+          "prompts/bpm/v2/pde-commercial-homologation-customer-review-schema.json";
+      case "pde-construction-approval" -> "prompts/bpm/v2/pde-experience-review-schema.json";
+      default -> "prompts/bpm/v2/landing-customer-review-schema.json";
     };
   }
 
@@ -283,6 +283,7 @@ public class CustomerBpmTaskConsumer {
         || result.path("requiredChanges").isMissingNode()) {
       throw new IllegalArgumentException("Parecer de Psique sem evidências suficientes");
     }
+    PsiqueSensoryContract.validate(result.path("behavioralResponse").path("sensoryExperience"));
     if ("APPROVED".equals(result.path("decision").asText())
         && result.path("gateChecks").isArray()) {
       for (JsonNode gate : result.path("gateChecks")) {

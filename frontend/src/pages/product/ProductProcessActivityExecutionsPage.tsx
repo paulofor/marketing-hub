@@ -1,6 +1,5 @@
 import {
   AlertTriangle,
-  ArrowLeft,
   Bot,
   CheckCircle2,
   CircleDollarSign,
@@ -8,6 +7,7 @@ import {
   ClipboardList,
   Clock3,
   ListChecks,
+  ListTree,
   Loader2,
   PlayCircle,
   Target,
@@ -178,15 +178,15 @@ export default function ProductProcessActivityExecutionsPage() {
               title={data.commercialPlanName || "Plano comercial do produto"}
             >
               <Target size={17} aria-hidden="true" />
-              Abrir plano comercial
+              Plano comercial
             </Link>
           ) : null}
           <Link
             className="btn btn-outline-secondary"
             to={`/products/${productId}/value-chain-history`}
           >
-            <ArrowLeft size={17} aria-hidden="true" />
-            Voltar ao histórico
+            <ListTree size={17} aria-hidden="true" />
+            Histórico de atividades
           </Link>
           <Link
             className="btn btn-outline-primary"

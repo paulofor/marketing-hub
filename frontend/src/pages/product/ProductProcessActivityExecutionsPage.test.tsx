@@ -320,10 +320,10 @@ describe("ProductProcessActivityExecutionsPage", () => {
       screen.getAllByText("Nenhuma tarefa registrada para este produto."),
     ).toHaveLength(2);
     expect(
-      screen.getByRole("link", { name: "Voltar ao histórico" }),
+      screen.getByRole("link", { name: "Histórico de atividades" }),
     ).toHaveAttribute("href", "/products/9/value-chain-history");
     expect(
-      screen.getByRole("link", { name: "Abrir plano comercial" }),
+      screen.getByRole("link", { name: "Plano comercial" }),
     ).toHaveAttribute("href", "/planning/4");
     expect(screen.getByRole("link", { name: "Abrir BPM" })).toHaveAttribute(
       "href",

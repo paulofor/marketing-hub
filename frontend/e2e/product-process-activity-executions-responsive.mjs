@@ -251,8 +251,11 @@ try {
       page.getByRole("heading", { name: "Rigel · Geração de landing page" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("link", { name: "Abrir plano comercial" }),
+      page.getByRole("link", { name: "Plano comercial" }),
     ).toHaveAttribute("href", "/planning/4");
+    await expect(
+      page.getByRole("link", { name: "Histórico de atividades" }),
+    ).toHaveAttribute("href", "/products/9/value-chain-history");
     const processNames = page.locator(".product-process-entity-name--process");
     await expect(processNames).toHaveCount(1);
     await expect(processNames.locator(".lucide-workflow")).toBeVisible();

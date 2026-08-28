@@ -56,6 +56,21 @@ type NavSection = {
 
 const NAV_SECTIONS: NavSection[] = [
   {
+    title: "Gestão",
+    items: [
+      {
+        to: "/products",
+        label: "Gestão de Produto",
+        icon: Package,
+      },
+      {
+        to: "/agents",
+        label: "Gestão de Agentes",
+        icon: Bot,
+      },
+    ],
+  },
+  {
     title: "Contas",
     items: [
       {
@@ -105,7 +120,6 @@ const NAV_SECTIONS: NavSection[] = [
         icon: Search,
       },
       { to: "/market-radar", label: "Radar de oportunidades", icon: Search },
-      { to: "/products", label: "Produtos", icon: Package },
       { to: "/niches", label: "Nichos", icon: nicheIcon },
       { to: "/hypotheses", label: "Hipóteses", icon: hypothesisIcon },
     ],
@@ -226,11 +240,6 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "Configurações",
     items: [
-      {
-        to: "/agents",
-        label: "Gestão de agentes",
-        icon: Bot,
-      },
       {
         to: "/agent-tasks",
         label: "Tarefas dos agentes",

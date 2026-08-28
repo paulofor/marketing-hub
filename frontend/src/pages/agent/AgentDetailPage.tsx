@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import type {
+  AgentBehaviorFile,
   AgentExecutionResource,
   AgentHarness,
   AgentItem,
 } from "../../api/agent/types";
 import { useAgentDetail } from "../../api/agent/useAgentDetail";
+import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
 import PageTitle from "../../components/PageTitle";
 import { resolveAssetUrl } from "../../utils/resolveAssetUrl";
 
@@ -116,8 +119,103 @@ function ExecutionResource({ resource }: { resource: AgentExecutionResource }) {
   );
 }
 
+const behaviorTypeLabels: Record<AgentBehaviorFile["behaviorType"], string> = {
+  PROMPT: "Prompt ou instrução",
+  OUTPUT_SCHEMA: "Schema de saída",
+  BEHAVIOR_LIBRARY: "Biblioteca comportamental",
+};
+
+function BehaviorFile({ file }: { file: AgentBehaviorFile }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <details
+      className="border rounded p-3"
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
+      <summary
+        className="d-flex flex-wrap align-items-center justify-content-between gap-2"
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span className="fw-semibold">{file.name}</span>
+        <span className="d-flex flex-wrap gap-1">
+          <span
+            className={`badge ${open ? "text-bg-secondary" : "text-bg-primary"}`}
+          >
+            {open ? "Fechar arquivo" : "Abrir arquivo"}
+          </span>
+          <span className="badge text-bg-light">
+            {behaviorTypeLabels[file.behaviorType]}
+          </span>
+          <span className="badge text-bg-light">{file.version}</span>
+        </span>
+      </summary>
+      {open ? (
+        <>
+          <p className="small text-body-secondary mt-3 mb-2">
+            {file.description}
+          </p>
+          <dl className="small mb-3">
+            <dt className="text-body-secondary fw-normal">Arquivo de origem</dt>
+            <dd>
+              <code className="text-break">{file.path}</code>
+            </dd>
+            <dt className="text-body-secondary fw-normal">SHA-256</dt>
+            <dd className="mb-0">
+              <code className="text-break">{file.sha256}</code>
+            </dd>
+          </dl>
+          <h4 className="h6">Conteúdo integral</h4>
+          <CollapsibleJsonViewer
+            content={file.content}
+            parseAsJson={file.mediaType === "application/json"}
+            initiallyCollapsed
+            plainTextVariant="reading"
+            maxHeight="36rem"
+          />
+        </>
+      ) : null}
+    </details>
+  );
+}
+
+function BehaviorFiles({ files }: { files: AgentBehaviorFile[] }) {
+  return (
+    <div className="mb-4" aria-labelledby="agent-harness-behavior-files">
+      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+          <h3 id="agent-harness-behavior-files" className="h6 mb-1">
+            Arquivos que definem o comportamento
+          </h3>
+          <p className="small text-body-secondary mb-0">
+            Prompts, núcleos, bibliotecas e schemas entregues diretamente pelos
+            módulos executores. Abra um arquivo para ler seu conteúdo integral.
+          </p>
+        </div>
+        <span className="badge text-bg-light">{files.length}</span>
+      </div>
+      {files.length === 0 ? (
+        <div className="alert alert-warning mb-0" role="alert">
+          Nenhum arquivo de comportamento foi registrado pelo backend para este
+          agente.
+        </div>
+      ) : (
+        <div className="vstack gap-3">
+          {files.map((file) => (
+            <BehaviorFile
+              key={`${file.behaviorType}-${file.path}`}
+              file={file}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AgentHarnessView({ harness }: { harness: AgentHarness }) {
   const complete = harness.status === "COMPLETE";
+  const behaviorFiles = harness.behaviorFiles ?? [];
 
   return (
     <section className="card mb-4" aria-labelledby="agent-detail-harness">
@@ -147,7 +245,7 @@ function AgentHarnessView({ harness }: { harness: AgentHarness }) {
           <DetailField label="Fonte canônica" value={harness.sourceReference} />
           <DetailField
             label="Cobertura"
-            value={`${harness.sections.length} seções · ${harness.artifacts.length} artefatos`}
+            value={`${harness.sections.length} seções · ${behaviorFiles.length} arquivos de comportamento · ${harness.artifacts.length} artefatos`}
           />
         </dl>
 
@@ -162,6 +260,8 @@ function AgentHarnessView({ harness }: { harness: AgentHarness }) {
           </div>
         ) : (
           <>
+            <BehaviorFiles files={behaviorFiles} />
+
             <div className="vstack gap-3 mb-4">
               {harness.sections.map((section, index) => (
                 <details

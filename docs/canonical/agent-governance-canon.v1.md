@@ -81,6 +81,15 @@ diretórios mutáveis de autenticação. Pode mostrar somente o nome do mecanism
 versionada. Ausência de um componente deve aparecer como harness incompleto, nunca ser preenchida por
 suposição do frontend.
 
+Todo arquivo versionado que defina ou restrinja o comportamento funcional do agente deve aparecer no
+harness com nome, tipo, versão, caminho de origem, conteúdo integral em modo somente leitura e hash
+SHA-256. A cobertura inclui prompts e núcleos de instrução em Markdown, bibliotecas comportamentais
+injetadas no prompt e schemas JSON de saída. Arquivos históricos preservados no módulo também devem
+ser identificados como históricos, sem serem apresentados como versão ativa. O backend empacota essas
+fontes diretamente dos módulos executores; o frontend não lê o repositório, não recompõe conteúdo e não
+consulta o banco para inferi-las. Um teste de contrato deve comparar os diretórios comportamentais
+registrados com o manifesto e impedir a omissão de qualquer arquivo elegível.
+
 ### Controle operacional PLAY/STOP
 
 Por decisão de 2026-08-20, cada agente possui na tela `Gestão de agentes` um controle operacional

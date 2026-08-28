@@ -1,4 +1,8 @@
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
 const { chromium, devices, expect } = require("@playwright/test");
@@ -8,6 +12,42 @@ const profiles = [
   ["iphone-15-pro", devices["iPhone 15 Pro"]],
   ["pixel-7", devices["Pixel 7"]],
 ];
+
+const repositoryRoot = fileURLToPath(new URL("../..", import.meta.url));
+const harnessManifest = JSON.parse(
+  readFileSync(
+    new URL(
+      "../../backend/ads-service/src/main/resources/agent-harness/agent-harness-v2.json",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
+const landingHarness = harnessManifest.agents.find(
+  ({ agentKey }) => agentKey === "landing-generator",
+);
+const behaviorFiles = landingHarness.artifacts
+  .filter(({ artifactType }) =>
+    ["PROMPT", "OUTPUT_SCHEMA", "BEHAVIOR_LIBRARY"].includes(artifactType),
+  )
+  .map((artifact) => {
+    const content = readFileSync(
+      resolve(repositoryRoot, artifact.path),
+      "utf8",
+    );
+    return {
+      behaviorType: artifact.artifactType,
+      name: artifact.name,
+      version: artifact.version,
+      path: artifact.path,
+      description: artifact.description,
+      mediaType: artifact.path.endsWith(".json")
+        ? "application/json"
+        : "text/markdown",
+      sha256: createHash("sha256").update(content).digest("hex"),
+      content,
+    };
+  });
 
 const agent = {
   id: 7,
@@ -41,7 +81,7 @@ const agent = {
   executionResources: [],
   harness: {
     status: "COMPLETE",
-    contractVersion: "agent-harness-v1",
+    contractVersion: harnessManifest.contractVersion,
     sourceReference: "docs/canonical/premium-ai-agent-architecture-canon.v1.md",
     sensitiveValuesPolicy:
       "Nenhum valor de secret, token, credencial ou conteúdo privado de raciocínio é exibido.",
@@ -123,6 +163,7 @@ const agent = {
         description: "Contrato estruturado da saída.",
       },
     ],
+    behaviorFiles,
   },
 };
 
@@ -177,7 +218,35 @@ for (const [profileName, contextOptions] of profiles) {
     page.getByRole("heading", { name: "Harness completo do agente" }),
   ).toBeVisible();
   await expect(page.getByText("Completo", { exact: true })).toBeVisible();
-  await expect(page.getByText("6 seções · 3 artefatos")).toBeVisible();
+  await expect(
+    page.getByText("6 seções · 13 arquivos de comportamento · 3 artefatos"),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      name: "Arquivos que definem o comportamento",
+    }),
+  ).toBeVisible();
+  const remediationFile = page
+    .locator("summary")
+    .filter({ hasText: "Remediação da landing" });
+  await remediationFile.click();
+  await expect(
+    page.getByText(
+      "Você é o especialista autônomo em criar e corrigir rascunhos premium de landing pages do Marketing Hub.",
+    ),
+  ).toBeVisible();
+  await expect(remediationFile.getByText("Fechar arquivo")).toBeVisible();
+  const schemaFile = page
+    .locator("summary")
+    .filter({ hasText: "Schema da remediação" });
+  await schemaFile.click();
+  await expect(schemaFile.getByText("Fechar arquivo")).toBeVisible();
+  await expect(
+    schemaFile
+      .locator("..")
+      .getByText(/campo\(s\)/)
+      .first(),
+  ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Módulo executor" }),
   ).toBeVisible();
@@ -186,8 +255,8 @@ for (const [profileName, contextOptions] of profiles) {
     .filter({ hasText: "Runtime do modelo" })
     .click();
   await expect(page.getByText("Esforço de raciocínio")).toBeVisible();
-  await expect(page.getByText("Remediação da landing")).toBeVisible();
-  await expect(page.getByText("Schema da remediação")).toBeVisible();
+  await expect(page.getByText("Remediação da landing").first()).toBeVisible();
+  await expect(page.getByText("Schema da remediação").first()).toBeVisible();
   await expect(page.getByText(/Nenhum valor de secret/)).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Voltar aos agentes" }),

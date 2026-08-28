@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Detalhe do agente
-  version: 1.1.0
+  version: 1.2.0
   description: Visão consolidada e somente leitura do contrato atual, recursos e harness completo de um agente.
 paths:
   /api/agents/{agentId}/details:
@@ -80,11 +80,50 @@ components:
       properties:
         artifactType:
           type: string
-          enum: [PROMPT, OUTPUT_SCHEMA, MCP_SERVER, RUNTIME_CONFIG, DEPLOYMENT, WORKFLOW]
+          enum:
+            [
+              PROMPT,
+              OUTPUT_SCHEMA,
+              BEHAVIOR_LIBRARY,
+              MCP_SERVER,
+              RUNTIME_CONFIG,
+              DEPLOYMENT,
+              WORKFLOW,
+            ]
         name: { type: string }
         version: { type: string }
         path: { type: string }
         description: { type: string }
+    AgentBehaviorFile:
+      type: object
+      required:
+        [
+          behaviorType,
+          name,
+          version,
+          path,
+          description,
+          mediaType,
+          sha256,
+          content,
+        ]
+      properties:
+        behaviorType:
+          type: string
+          enum: [PROMPT, OUTPUT_SCHEMA, BEHAVIOR_LIBRARY]
+        name: { type: string }
+        version: { type: string }
+        path: { type: string }
+        description: { type: string }
+        mediaType:
+          type: string
+          enum: [text/markdown, application/json]
+        sha256:
+          type: string
+          pattern: "^[a-f0-9]{64}$"
+        content:
+          type: string
+          description: Conteúdo integral e somente leitura empacotado do módulo executor.
     AgentHarness:
       type: object
       required:
@@ -94,6 +133,7 @@ components:
         - sensitiveValuesPolicy
         - sections
         - artifacts
+        - behaviorFiles
       properties:
         status:
           type: string
@@ -107,6 +147,10 @@ components:
         artifacts:
           type: array
           items: { $ref: "#/components/schemas/AgentHarnessArtifact" }
+        behaviorFiles:
+          type: array
+          description: Todas as fontes que definem ou restringem o comportamento funcional do agente.
+          items: { $ref: "#/components/schemas/AgentBehaviorFile" }
     AgentDetail:
       type: object
       required:

@@ -126,6 +126,35 @@
 
   <build>
     <finalName>app</finalName>
+    <resources>
+      <resource>
+        <directory>${project.basedir}/src/main/resources</directory>
+      </resource>
+      <resource>
+        <directory>${project.basedir}/../..</directory>
+        <targetPath>agent-behavior-files</targetPath>
+        <filtering>false</filtering>
+        <includes>
+          <include>growth-operator-worker/src/main/resources/prompts/**/*.md</include>
+          <include>growth-operator-worker/src/main/resources/prompts/**/*.json</include>
+          <include>customer-agent-worker/src/main/resources/prompts/**/*.md</include>
+          <include>customer-agent-worker/src/main/resources/prompts/**/*.json</include>
+          <include>financial-agent-worker/src/main/resources/prompts/**/*.md</include>
+          <include>financial-agent-worker/src/main/resources/prompts/**/*.json</include>
+          <include>experiment-strategist-worker/src/main/resources/prompts/**/*.md</include>
+          <include>experiment-strategist-worker/src/main/resources/prompts/**/*.json</include>
+          <include>experiment-strategist-worker/src/main/resources/behavioral-science/**/*.md</include>
+          <include>meta-ad-approver-worker/src/main/resources/prompts/**/*.md</include>
+          <include>meta-ad-approver-worker/src/main/resources/prompts/**/*.json</include>
+          <include>landing-generator-agent-worker/src/main/resources/prompts/**/*.md</include>
+          <include>landing-generator-agent-worker/src/main/resources/prompts/**/*.json</include>
+          <include>product-discovery-worker/prompts/**/*.md</include>
+          <include>product-discovery-worker/prompts/**/*.json</include>
+          <include>video-management-service/src/main/resources/prompts/**/*.md</include>
+          <include>video-management-service/src/main/resources/prompts/**/*.json</include>
+        </includes>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>

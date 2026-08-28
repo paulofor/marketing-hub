@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import AgentDetailPage from "./AgentDetailPage";
@@ -73,7 +73,7 @@ vi.mock("../../api/agent/useAgentDetail", () => ({
       ],
       harness: {
         status: "COMPLETE",
-        contractVersion: "agent-harness-v1",
+        contractVersion: "agent-harness-v2",
         sourceReference:
           "docs/canonical/premium-ai-agent-architecture-canon.v1.md",
         sensitiveValuesPolicy:
@@ -108,6 +108,30 @@ vi.mock("../../api/agent/useAgentDetail", () => ({
             version: "productdiscovery.v1",
             path: "product-discovery-worker/prompts/productdiscovery.v1/plan/plan-schema.json",
             description: "Contrato estruturado do plano.",
+          },
+        ],
+        behaviorFiles: [
+          {
+            behaviorType: "PROMPT",
+            name: "Sistema do planejador",
+            version: "productdiscovery.v1",
+            path: "product-discovery-worker/prompts/productdiscovery.v1/plan/system.md",
+            description: "Responsabilidade e limites do planejador.",
+            mediaType: "text/markdown",
+            sha256:
+              "8af0a4aa5da78de1a0ec1467e72bc90bf9854292390fcbc89330eb6a22f53b91",
+            content: "Você é Argos. Comprove dor e demanda com evidências.",
+          },
+          {
+            behaviorType: "OUTPUT_SCHEMA",
+            name: "Schema do plano",
+            version: "productdiscovery.v1",
+            path: "product-discovery-worker/prompts/productdiscovery.v1/plan/plan-schema.json",
+            description: "Contrato estruturado do plano.",
+            mediaType: "application/json",
+            sha256:
+              "284bb8f7db3cf9423ef252ce6f60a5efb7d6f0312a7bb6edc68610d5513e2326",
+            content: '{"type":"object","required":["queries"]}',
           },
         ],
       },
@@ -156,17 +180,47 @@ describe("AgentDetailPage", () => {
     expect(
       screen.getByRole("heading", { name: "Harness completo do agente" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("agent-harness-v1")).toBeInTheDocument();
+    expect(screen.getByText("agent-harness-v2")).toBeInTheDocument();
     expect(screen.getByText("Runtime do modelo")).toBeInTheDocument();
     expect(
       screen.getByText("Herda a sessão Codex; o módulo não sobrescreve"),
     ).toBeInTheDocument();
-    expect(screen.getByText("Sistema do planejador")).toBeInTheDocument();
+    expect(screen.getAllByText("Sistema do planejador")).toHaveLength(2);
     expect(
-      screen.getByText(
+      screen.getAllByText(
         "product-discovery-worker/prompts/productdiscovery.v1/plan/system.md",
       ),
+    ).toHaveLength(1);
+    expect(
+      screen.getByRole("heading", {
+        name: "Arquivos que definem o comportamento",
+      }),
     ).toBeInTheDocument();
+    expect(screen.getByText("Prompt ou instrução")).toBeInTheDocument();
+    expect(screen.getAllByText("Schema de saída")).toHaveLength(2);
+    expect(screen.getAllByText("Abrir arquivo")).toHaveLength(2);
+    const promptSummary = screen
+      .getAllByText("Sistema do planejador")
+      .map((element) => element.closest("summary"))
+      .find(Boolean);
+    expect(promptSummary).not.toBeNull();
+    fireEvent.click(promptSummary!);
+    expect(screen.getByText("Fechar arquivo")).toBeInTheDocument();
+    expect(
+      screen.getAllByText(
+        "product-discovery-worker/prompts/productdiscovery.v1/plan/system.md",
+      ),
+    ).toHaveLength(2);
+    expect(
+      screen.getByText("Você é Argos. Comprove dor e demanda com evidências."),
+    ).toBeInTheDocument();
+    const schemaSummary = screen
+      .getAllByText("Schema do plano")
+      .map((element) => element.closest("summary"))
+      .find(Boolean);
+    expect(schemaSummary).not.toBeNull();
+    fireEvent.click(schemaSummary!);
+    expect(screen.getByText("2 campo(s)")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Abrir mesa" })).toHaveAttribute(
       "href",
       "/agents/5",

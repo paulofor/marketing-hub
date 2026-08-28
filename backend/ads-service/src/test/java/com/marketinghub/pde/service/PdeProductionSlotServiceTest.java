@@ -376,7 +376,7 @@ class PdeProductionSlotServiceTest {
     HttpResponse<String> offerResponse =
         response(
             200,
-            "{\"productSlug\":\"kit-whatsapp-pronto\",\"experimentId\":89,\"priceBrl\":349,\"promise\":\"Implantação personalizada em até 48 horas\",\"primaryCta\":\"Quero meu atendimento sob medida\",\"checkoutUrl\":\"https://pay.example/kit\",\"supplierLegalName\":\"Fornecedor de Homologação Ltda.\",\"supplierRegistrationNumber\":\"00.000.000/0001-00\",\"supplierAddress\":\"Endereço de homologação, 100\",\"supportEmail\":\"teste@sandbox.local\",\"termsUrl\":\"https://kit-whatsapp-pronto.digicomdigital.com.br/terms\",\"privacyUrl\":\"https://kit-whatsapp-pronto.digicomdigital.com.br/privacy\",\"refundPolicyUrl\":\"https://kit-whatsapp-pronto.digicomdigital.com.br/refund-policy\"}");
+            "{\"productSlug\":\"kit-whatsapp-pronto\",\"experimentId\":89,\"priceBrl\":349,\"promise\":\"Implantação personalizada em até 48 horas\",\"primaryCta\":\"Quero meu atendimento sob medida\",\"checkoutUrl\":\"https://pay.example/kit\",\"supplierDisplayName\":\"Digicom Digital\",\"supplierRegistrationNumber\":\"00.000.000/0001-00\",\"supportEmail\":\"teste@sandbox.local\",\"termsUrl\":\"https://kit-whatsapp-pronto.digicomdigital.com.br/terms\",\"privacyUrl\":\"https://kit-whatsapp-pronto.digicomdigital.com.br/privacy\",\"refundPolicyUrl\":\"https://kit-whatsapp-pronto.digicomdigital.com.br/refund-policy\"}");
     HttpResponse<String> pageResponse =
         response(
             200,

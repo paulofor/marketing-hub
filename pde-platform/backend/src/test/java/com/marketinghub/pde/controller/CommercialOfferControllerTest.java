@@ -27,7 +27,10 @@ class CommercialOfferControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.productSlug").value("kit-whatsapp-pronto"))
                 .andExpect(jsonPath("$.experimentId").value(89))
-                .andExpect(jsonPath("$.priceBrl").value(349));
+                .andExpect(jsonPath("$.priceBrl").value(349))
+                .andExpect(jsonPath("$.supplierDisplayName").value("Digicom Digital"))
+                .andExpect(jsonPath("$.supplierLegalName").doesNotExist())
+                .andExpect(jsonPath("$.supplierAddress").doesNotExist());
     }
 
     /** Monta uma oferta completa de homologação sem depender de integrações externas. */
@@ -50,9 +53,8 @@ class CommercialOfferControllerTest {
                 "Implantação personalizada",
                 "Serviço assistido",
                 "Atendimento pronto",
-                "Fornecedor de Homologação Ltda.",
+                "Digicom Digital",
                 "00.000.000/0001-00",
-                "Endereço de homologação, 100",
                 "teste@sandbox.local",
                 "https://kit-whatsapp-pronto.digicomdigital.com.br/terms",
                 "https://kit-whatsapp-pronto.digicomdigital.com.br/privacy",

@@ -37,9 +37,8 @@ test.beforeEach(async ({ context, page, request }) => {
           deliveryMode: "ASSISTIDA_MANUAL",
           valueUnit:
             "Respostas, perguntas e follow-ups prontos para revisar e usar",
-          supplierLegalName: "Fornecedor de Homologação Ltda.",
+          supplierDisplayName: "Digicom Digital",
           supplierRegistrationNumber: "00.000.000/0001-00",
-          supplierAddress: "Endereço de homologação, 100",
           supportEmail: "teste@sandbox.local",
           termsUrl: "http://127.0.0.1:57182/terms",
           privacyUrl: "http://127.0.0.1:57182/privacy",
@@ -58,7 +57,7 @@ test.beforeEach(async ({ context, page, request }) => {
           <h1>Checkout de homologação — Kit WhatsApp Pronto</h1>
           <p>R$ 349</p>
           <p>Pagamento único, sem recorrência</p>
-          <p>PAULO ALEXANDRE LOPES FORESTIERI INFORMATICA</p>
+          <p>Digicom Digital</p>
           <p>Nenhuma cobrança adicional será criada neste ambiente local.</p>
         </body></html>`,
     });
@@ -98,7 +97,10 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
     experimentId: 89,
     acquisitionChannel: "DIRECT_ONE_TO_ONE",
     priceBrl: 349,
+    supplierDisplayName: "Digicom Digital",
   });
+  expect(canonicalOffer).not.toHaveProperty("supplierLegalName");
+  expect(canonicalOffer).not.toHaveProperty("supplierAddress");
 
   await expect(
     page.getByRole("heading", {
@@ -164,7 +166,15 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
       name: "Retome conversas no WhatsApp sem improvisar a próxima mensagem",
     }),
   ).toBeVisible();
-  await expect(page.getByText("Fornecedor de Homologação Ltda.")).toBeVisible();
+  await expect(page.getByTestId("commercial-legal")).toContainText(
+    "Digicom Digital",
+  );
+  await expect(page.getByTestId("commercial-legal")).toContainText(
+    "CNPJ 00.000.000/0001-00",
+  );
+  await expect(page.getByTestId("commercial-legal")).not.toContainText(
+    "Endereço de homologação",
+  );
   await expect(page.getByRole("link", { name: "Termos" })).toHaveCount(2);
   const tasting = page.getByTestId("assisted-tasting");
   await expect(tasting).toContainText(
@@ -255,9 +265,7 @@ test("conclui a jornada assistida com marcos operacionais, preserva progresso e 
   await expect(
     checkoutPage.getByText("Pagamento único, sem recorrência"),
   ).toBeVisible();
-  await expect(
-    checkoutPage.getByText("PAULO ALEXANDRE LOPES FORESTIERI INFORMATICA"),
-  ).toBeVisible();
+  await expect(checkoutPage.getByText("Digicom Digital")).toBeVisible();
   await expect(
     checkoutPage.getByText(
       "Nenhuma cobrança adicional será criada neste ambiente local.",
@@ -682,9 +690,8 @@ test("publica termos, privacidade e reembolso com o fornecedor da oferta", async
   for (const [path, heading] of policies) {
     await page.goto(path);
     await expect(page.getByRole("heading", { name: heading })).toBeVisible();
-    await expect(
-      page.getByText("Fornecedor de Homologação Ltda."),
-    ).toBeVisible();
+    await expect(page.getByText("Digicom Digital").first()).toBeVisible();
+    await expect(page.getByText("CNPJ 00.000.000/0001-00")).toBeVisible();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth + 1,

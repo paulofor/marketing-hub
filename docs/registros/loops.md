@@ -8,6 +8,21 @@
 >
 > Uso obrigatório recomendado: antes de corrigir problema em GeraLanding, Facebook Ads, Lead Portal, OpenAI/schema, pipelines administrativos ou pipeline de hipótese, verificar se a solicitação reabre algum loop listado aqui.
 
+## LOOP-PDE-IDENTIDADE-PRIVADA-NO-CONTRATO-PUBLICO — dados desnecessários reaparecem na landing
+
+- **Data:** 2026-08-28.
+- **Sintoma:** a página de venda do Rigel exibia razão social completa e endereço porque o rodapé
+  recebia esses campos diretamente da oferta comercial pública.
+- **Causa-raiz confirmada:** o backend tratava razão social e endereço como requisitos de confiança
+  do contrato pré-compra; o mesmo payload seguia pelo proxy PDE e pelo contexto do GeraLanding, de
+  modo que ocultar apenas o HTML não eliminaria a exposição nem impediria recorrência.
+- **Correção sistêmica:** a oferta pública passa a transportar somente `supplierDisplayName`, CNPJ,
+  suporte e políticas. O frontend renderiza a marca Digicom Digital; o validador do slot e o contexto
+  do agente usam a mesma identidade mínima, sem nome legal ou endereço.
+- **Prevenção:** testes de serialização proíbem os campos antigos, o E2E verifica JSON e DOM, o smoke
+  produtivo exige o contrato minimizado e a matriz do Rigel inclui privacidade pública nos três
+  dispositivos.
+
 ## LOOP-PDE-DESCOBERTA-FORA-DO-HISTORICO-BPM — ciclos reais aparecem como atividade não executada
 
 - **Data:** 2026-08-28.

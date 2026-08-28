@@ -598,7 +598,7 @@ public class PdeProductionSlotService {
         resolvedUrl);
   }
 
-  /** Confirma preço, checkout, copy e atribuição reais antes de aprovar um slot comercial. */
+  /** Confirma preço, checkout, copy, atribuição e identidade pública mínima antes da aprovação. */
   private Optional<ValidationResult> validateCommercialOffer(
       PdeProductionSlot slot, String contractSlug, String healthPath, String commercialOfferPath)
       throws IOException, InterruptedException {
@@ -627,9 +627,8 @@ public class PdeProductionSlotService {
         StringUtils.hasText(text(offer, "promise"))
             && StringUtils.hasText(text(offer, "primaryCta"));
     boolean validSupplier =
-        StringUtils.hasText(text(offer, "supplierLegalName"))
+        StringUtils.hasText(text(offer, "supplierDisplayName"))
             && StringUtils.hasText(text(offer, "supplierRegistrationNumber"))
-            && StringUtils.hasText(text(offer, "supplierAddress"))
             && text(offer, "supportEmail").contains("@");
     boolean validPolicies =
         isHttpsUrl(text(offer, "termsUrl"))
@@ -646,7 +645,7 @@ public class PdeProductionSlotService {
           ValidationResult.failed(
               response.statusCode(),
               "Oferta comercial pública está incompleta",
-              "Produto, experimento, preço, promessa, CTA, fornecedor, políticas e checkout HTTPS são obrigatórios.",
+              "Produto, experimento, preço, promessa, CTA, marca pública, registro fiscal, suporte, políticas e checkout HTTPS são obrigatórios.",
               contractSlug,
               healthPath,
               offerUrl));

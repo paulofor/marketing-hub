@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Products
-  version: 1.0.0
+  version: 1.1.0
   description: Endpoints públicos e administrativos do cadastro comercial de produtos.
 paths:
   /api/products/value-chain-positions:
@@ -667,6 +667,31 @@ paths:
                 $ref: "#/components/schemas/Product"
         "404":
           description: Produto não encontrado.
+  /api/products/public/{productSlug}/commercial-offer:
+    get:
+      tags:
+        - Products
+      summary: Retorna a oferta comercial pública minimizada de um produto PDE.
+      description: Expõe marca comercial, CNPJ, suporte e políticas sem publicar razão social completa ou endereço.
+      operationId: getPublicProductCommercialOffer
+      parameters:
+        - name: productSlug
+          in: path
+          required: true
+          schema:
+            type: string
+          example: kit-whatsapp-pronto
+      responses:
+        "200":
+          description: Oferta vendável vinculada ao produto, experimento e slot ativos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicProductCommercialOffer"
+        "404":
+          description: Produto não encontrado.
+        "412":
+          description: Produto, slot, checkout ou identidade comercial mínima estão incompletos.
   /api/products/public/{productCode}/marketing-definition.md:
     get:
       tags:
@@ -735,6 +760,89 @@ paths:
           description: Produto não encontrado.
 components:
   schemas:
+    PublicProductCommercialOffer:
+      type: object
+      additionalProperties: false
+      required:
+        - productSlug
+        - experienceVersion
+        - layoutKey
+        - experimentId
+        - experimentStatus
+        - pain
+        - proof
+        - promise
+        - primaryCta
+        - priceBrl
+        - checkoutUrl
+        - salesPageUrl
+        - supplierDisplayName
+        - supplierRegistrationNumber
+        - supportEmail
+        - termsUrl
+        - privacyUrl
+        - refundPolicyUrl
+      properties:
+        productSlug:
+          type: string
+        experienceVersion:
+          type: string
+        layoutKey:
+          type: string
+        experimentId:
+          type: integer
+          format: int64
+        experimentStatus:
+          type: string
+        acquisitionChannel:
+          type: string
+          nullable: true
+        pain:
+          type: string
+        proof:
+          type: string
+        promise:
+          type: string
+        primaryCta:
+          type: string
+        priceBrl:
+          type: number
+          minimum: 0.01
+        checkoutUrl:
+          type: string
+          format: uri
+        salesPageUrl:
+          type: string
+          format: uri
+        targetAudience:
+          type: string
+          nullable: true
+        productFormat:
+          type: string
+          nullable: true
+        deliveryMode:
+          type: string
+          nullable: true
+        valueUnit:
+          type: string
+          nullable: true
+        supplierDisplayName:
+          type: string
+          example: Digicom Digital
+        supplierRegistrationNumber:
+          type: string
+        supportEmail:
+          type: string
+          format: email
+        termsUrl:
+          type: string
+          format: uri
+        privacyUrl:
+          type: string
+          format: uri
+        refundPolicyUrl:
+          type: string
+          format: uri
     ProductValueChainPosition:
       type: object
       required:

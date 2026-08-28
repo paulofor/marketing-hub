@@ -73,7 +73,7 @@ public class LandingCommercialContextResolver {
     }
   }
 
-  /** Acrescenta fornecedor e políticas somente quando pertencem ao mesmo experimento. */
+  /** Acrescenta a identidade pública mínima e as políticas do mesmo experimento. */
   private void addPublicTrustContract(
       Map<String, Object> context, Experiment experiment, Product product) {
     if (!StringUtils.hasText(product.getSlug())) {
@@ -103,9 +103,8 @@ public class LandingCommercialContextResolver {
               offer.salesPageUrl(),
               "supplier",
               Map.of(
-                  "legalName", offer.supplierLegalName(),
+                  "displayName", offer.supplierDisplayName(),
                   "registrationNumber", offer.supplierRegistrationNumber(),
-                  "address", offer.supplierAddress(),
                   "supportEmail", offer.supportEmail()),
               "policies",
               Map.of(

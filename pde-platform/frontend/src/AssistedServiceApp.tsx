@@ -77,9 +77,8 @@ type CommercialOffer = {
   productFormat?: string;
   deliveryMode?: string;
   valueUnit?: string;
-  supplierLegalName: string;
+  supplierDisplayName: string;
   supplierRegistrationNumber: string;
-  supplierAddress: string;
   supportEmail: string;
   termsUrl: string;
   privacyUrl: string;
@@ -1469,14 +1468,13 @@ function CommercialPolicyPage({
   );
 }
 
-/** Mostra fornecedor e contato de forma visível antes da decisão de compra. */
+/** Mostra marca, registro fiscal e contato sem expor dados pessoais desnecessários. */
 function CommercialLegalFooter({ offer }: { offer: CommercialOffer }) {
   return (
-    <footer className="assisted-pde-legal">
+    <footer className="assisted-pde-legal" data-testid="commercial-legal">
       <div>
-        <strong>{offer.supplierLegalName}</strong>
-        <span>{offer.supplierRegistrationNumber}</span>
-        <span>{offer.supplierAddress}</span>
+        <strong>{offer.supplierDisplayName}</strong>
+        <span>CNPJ {offer.supplierRegistrationNumber}</span>
         <a
           href={`mailto:${offer.supportEmail}`}
           target="_blank"

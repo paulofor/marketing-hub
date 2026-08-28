@@ -41,9 +41,8 @@ class CommercialOfferServiceTest {
                           "productFormat": "IMPLANTACAO_PERSONALIZADA",
                           "deliveryMode": "ASSISTIDA_MANUAL",
                           "valueUnit": "Atendimento pronto para usar",
-                          "supplierLegalName": "Fornecedor de Homologação Ltda.",
+                          "supplierDisplayName": "Digicom Digital",
                           "supplierRegistrationNumber": "00.000.000/0001-00",
-                          "supplierAddress": "Endereço de homologação, 100",
                           "supportEmail": "teste@sandbox.local",
                           "termsUrl": "https://kit-whatsapp-pronto.digicomdigital.com.br/terms",
                           "privacyUrl": "https://kit-whatsapp-pronto.digicomdigital.com.br/privacy",
@@ -58,6 +57,7 @@ class CommercialOfferServiceTest {
         assertThat(offer.experienceVersion()).isEqualTo("kit-whatsapp-pronto-pde-v2");
         assertThat(offer.priceBrl()).isEqualByComparingTo(new BigDecimal("349"));
         assertThat(offer.checkoutUrl()).isEqualTo("https://pay.example/kit");
+        assertThat(offer.supplierDisplayName()).isEqualTo("Digicom Digital");
         assertThat(offer.supplierRegistrationNumber()).isEqualTo("00.000.000/0001-00");
         server.verify();
     }

@@ -371,10 +371,17 @@ valor, oferta, compra e acesso, usando o produto real como fonte da comunicaçã
   causa-raiz. Reembolso causado por promessa, entrega, privacidade ou margem bloqueia a continuidade;
   a taxa percentual isolada só passa a orientar decisão com amostra compatível.
 - para uma superfície que recebe aquisição, renderizar antes da compra a oferta canônica do
-  experimento, incluindo dor, promessa, prova, CTA, preço, fornecedor, contato, políticas e checkout;
+  experimento, incluindo dor, promessa, prova, CTA, preço, marca pública, registro fiscal, contato,
+  políticas e checkout;
   uma área de acesso pós-compra isolada não pode ser homologada como landing comercial;
 - validar a oferta pública por contrato executável: produto e experimento atribuídos, preço positivo,
-  checkout HTTPS, identidade do fornecedor e políticas precisam responder pela mesma URL produtiva.
+  checkout HTTPS, identidade comercial mínima e políticas precisam responder pela mesma URL
+  produtiva;
+- minimizar a identidade no contrato público pré-compra: expor somente marca comercial, registro
+  fiscal, suporte e links de políticas. Razão social completa, endereço residencial/comercial e
+  outros dados pessoais não podem integrar o JSON público nem o contexto enviado aos agentes de
+  geração; quando necessários para obrigação interna ou documento jurídico específico, devem ficar
+  em fonte segregada e de acesso compatível com essa finalidade.
 
 **Saída final:** kit comercial aprovado com criativos, destino de campanha, jornada de venda,
 checkout, acesso e eventos preparados, sem ativação automática de mídia.

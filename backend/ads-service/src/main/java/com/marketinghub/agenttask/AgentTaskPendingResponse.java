@@ -15,6 +15,7 @@ public record AgentTaskPendingResponse(
     String sourceReference,
     Instant receivedAt,
     AgentTaskExecutionResourceResponse executionResource,
+    AgentTaskTargetResponse taskTarget,
     String processContextJson) {
 
   /** Preserva integrações internas anteriores ao recurso opcional da atividade. */
@@ -41,6 +42,7 @@ public record AgentTaskPendingResponse(
         description,
         sourceReference,
         receivedAt,
+        null,
         null,
         processContextJson);
   }

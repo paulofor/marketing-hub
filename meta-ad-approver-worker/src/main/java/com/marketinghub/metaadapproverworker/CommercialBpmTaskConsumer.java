@@ -55,12 +55,17 @@ public class CommercialBpmTaskConsumer {
       @Value("${CODEX_COMMAND:codex}") String codex,
       @Value("${CODEX_MODEL:gpt-5.6-sol}") String model,
       @Value("${MARKETING_HUB_REPOSITORY:/workspace/marketing-hub}") String repositoryPath,
+      @Value("${TEMIS_COMMERCIAL_EVIDENCE_PATH:}") String commercialEvidencePath,
       ObjectMapper json) {
     this.backend = BackendRestClientFactory.create(properties);
     this.codex = codex;
     this.model = model;
     this.repositoryPath = repositoryPath;
-    this.pdeArtifactLoader = new PdeReviewArtifactLoader(repositoryPath);
+    this.pdeArtifactLoader =
+        new PdeReviewArtifactLoader(
+            commercialEvidencePath == null || commercialEvidencePath.isBlank()
+                ? repositoryPath
+                : commercialEvidencePath);
     this.json = json;
   }
 
@@ -244,7 +249,7 @@ public class CommercialBpmTaskConsumer {
     } else if ("pde-commercial-homologation-activation".equals(processCode(task))) {
       promptContext.put(
           "versionedCommercialHomologationEvidence",
-          pdeArtifactLoader.loadCommercialHomologationEvidence());
+          pdeArtifactLoader.loadCommercialHomologationEvidence(task.get("taskTarget")));
     }
     return read(promptResourceFor(processCode(task)))
         .replace("{{TASK_CONTEXT}}", json.writeValueAsString(promptContext));
@@ -359,17 +364,18 @@ public class CommercialBpmTaskConsumer {
   /** Monta os campos mínimos, inclusive a exceção de tier, para reconstruir a mesma tarefa. */
   static Map<String, Object> evidenceFields(
       String reviewer, String model, Map<String, Object> task) {
-    return Map.ofEntries(
-        Map.entry("reviewer", reviewer),
-        Map.entry("model", model),
-        Map.entry("sourceReference", String.valueOf(task.get("sourceReference"))),
-        Map.entry("activityId", String.valueOf(task.get("activityId"))),
-        Map.entry("accessMode", "READ_ONLY"),
-        Map.entry("externalSideEffects", false),
-        Map.entry(
-            "requestedServiceTier", REQUESTED_SERVICE_TIER.toUpperCase(java.util.Locale.ROOT)),
-        Map.entry("effectiveServiceTier", EFFECTIVE_SERVICE_TIER),
-        Map.entry("serviceTierException", SERVICE_TIER_EXCEPTION));
+    Map<String, Object> evidence = new java.util.LinkedHashMap<>();
+    evidence.put("reviewer", reviewer);
+    evidence.put("model", model);
+    evidence.put("sourceReference", String.valueOf(task.get("sourceReference")));
+    evidence.put("activityId", String.valueOf(task.get("activityId")));
+    evidence.put("accessMode", "READ_ONLY");
+    evidence.put("externalSideEffects", false);
+    evidence.put("requestedServiceTier", REQUESTED_SERVICE_TIER.toUpperCase(java.util.Locale.ROOT));
+    evidence.put("effectiveServiceTier", EFFECTIVE_SERVICE_TIER);
+    evidence.put("serviceTierException", SERVICE_TIER_EXCEPTION);
+    if (task.get("taskTarget") != null) evidence.put("taskTarget", task.get("taskTarget"));
+    return java.util.Collections.unmodifiableMap(evidence);
   }
 
   /** Acrescenta ao callback somente uma medição real informada pelo Codex. */

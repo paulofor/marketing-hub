@@ -20,5 +20,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm git 
     && useradd --create-home --uid 10001 --gid approver approver
 COPY --from=build /build/target/app.jar /app/app.jar
 COPY agent-health-report.mjs /app/agent-health-report.mjs
+COPY review-evidence /app/commercial-evidence
 USER approver
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

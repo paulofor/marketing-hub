@@ -122,9 +122,16 @@ for agent in agents:
         if module_sync not in workflow_text:
             errors.append(f"{agent['key']}: workflow não sincroniza somente o próprio módulo")
         if agent['key'] == 'meta-ad-approver':
+            artifact_trigger_alternatives = (
+                ('- pde-platform/contracts/**', '- pde-platform/**'),
+                ('- pde-platform/frontend/public/materials/**', '- pde-platform/**'),
+            )
+            for alternatives in artifact_trigger_alternatives:
+                if not any(marker in workflow_text for marker in alternatives):
+                    errors.append(
+                        f"{agent['key']}: workflow não reage à evidência PDE versionada ({' ou '.join(alternatives)})"
+                    )
             artifact_markers = (
-                '- pde-platform/contracts/**',
-                '- pde-platform/frontend/public/materials/**',
                 'rsync -az --delete pde-platform/contracts/',
                 'rsync -az --delete pde-platform/frontend/public/materials/',
                 'rsync -az scripts/codex-oauth-session-safe.sh',

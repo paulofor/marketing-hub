@@ -58,6 +58,7 @@ public class AgentTaskService {
   private final OpenAiPricingService pricingService;
   private final Clock clock;
   private final MarketStrategicContextProvider marketStrategicContextProvider;
+  private final AgentTaskTargetContextProvider taskTargetContextProvider;
 
   @Autowired(required = false)
   private CommunicationMaterializationContextProvider communicationMaterializationContextProvider =
@@ -77,7 +78,8 @@ public class AgentTaskService {
       BusinessProcessExecutionResourceRepository executionResourceRepository,
       ObjectMapper objectMapper,
       OpenAiPricingService pricingService,
-      MarketStrategicContextProvider marketStrategicContextProvider) {
+      MarketStrategicContextProvider marketStrategicContextProvider,
+      AgentTaskTargetContextProvider taskTargetContextProvider) {
     this(
         repository,
         activityInstanceRepository,
@@ -88,7 +90,8 @@ public class AgentTaskService {
         objectMapper,
         pricingService,
         Clock.systemUTC(),
-        marketStrategicContextProvider);
+        marketStrategicContextProvider,
+        taskTargetContextProvider);
   }
 
   /** Permite testes determinísticos do histórico temporal. */
@@ -190,6 +193,33 @@ public class AgentTaskService {
       OpenAiPricingService pricingService,
       Clock clock,
       MarketStrategicContextProvider marketStrategicContextProvider) {
+    this(
+        repository,
+        activityInstanceRepository,
+        agentRepository,
+        processRepository,
+        activityDefinitionRepository,
+        executionResourceRepository,
+        objectMapper,
+        pricingService,
+        clock,
+        marketStrategicContextProvider,
+        AgentTaskTargetContextProvider.empty());
+  }
+
+  /** Permite testar contexto estratégico e alvo comercial com fontes controladas. */
+  AgentTaskService(
+      AgentTaskRepository repository,
+      BusinessProcessActivityInstanceRepository activityInstanceRepository,
+      AgentRepository agentRepository,
+      BusinessProcessDefinitionRepository processRepository,
+      BusinessProcessActivityDefinitionRepository activityDefinitionRepository,
+      BusinessProcessExecutionResourceRepository executionResourceRepository,
+      ObjectMapper objectMapper,
+      OpenAiPricingService pricingService,
+      Clock clock,
+      MarketStrategicContextProvider marketStrategicContextProvider,
+      AgentTaskTargetContextProvider taskTargetContextProvider) {
     this.repository = repository;
     this.activityInstanceRepository = activityInstanceRepository;
     this.agentRepository = agentRepository;
@@ -200,6 +230,7 @@ public class AgentTaskService {
     this.pricingService = pricingService;
     this.clock = clock;
     this.marketStrategicContextProvider = marketStrategicContextProvider;
+    this.taskTargetContextProvider = taskTargetContextProvider;
   }
 
   /** Abre uma solicitação humana na caixa do agente informado. */
@@ -1499,6 +1530,7 @@ public class AgentTaskService {
         task.getSourceReference(),
         task.getReceivedAt(),
         executionResource(task),
+        taskTargetContextProvider.resolve(task.getSourceReference()).orElse(null),
         processContext(task));
   }
 

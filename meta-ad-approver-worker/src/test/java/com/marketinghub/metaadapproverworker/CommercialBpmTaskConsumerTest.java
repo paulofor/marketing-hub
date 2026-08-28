@@ -111,7 +111,8 @@ class CommercialBpmTaskConsumerTest {
     org.assertj.core.api.Assertions.assertThat(prompt)
         .contains(
             "READY_FOR_PREFLIGHT",
-            "SHA-256",
+            "taskTarget",
+            "UPDATED_CANDIDATE",
             "não autoriza `RUNNING`",
             "canal efetivo proposto",
             "QA excluído",
@@ -179,7 +180,13 @@ class CommercialBpmTaskConsumerTest {
         CommercialBpmTaskConsumer.evidenceFields(
             "Têmis",
             "gpt-5.6-sol",
-            Map.of("sourceReference", "experiment:88", "activityId", "commercial"));
+            Map.of(
+                "sourceReference",
+                "experiment:88",
+                "activityId",
+                "commercial",
+                "taskTarget",
+                Map.of("productId", 9L, "productSlug", "produto-a")));
 
     org.assertj.core.api.Assertions.assertThat(evidence)
         .containsEntry("sourceReference", "experiment:88")
@@ -188,6 +195,7 @@ class CommercialBpmTaskConsumerTest {
         .containsEntry("externalSideEffects", false)
         .containsEntry("requestedServiceTier", "FLEX")
         .containsEntry("effectiveServiceTier", "STANDARD")
+        .containsEntry("taskTarget", Map.of("productId", 9L, "productSlug", "produto-a"))
         .containsKey("serviceTierException");
   }
 }

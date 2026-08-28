@@ -11,9 +11,11 @@ grep -Fq 'ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright' "${dockerfile}"
 grep -Fq 'npx playwright-core install --with-deps chromium' "${dockerfile}"
 grep -Fq 'chmod -R a+rX /ms-playwright' "${dockerfile}"
 grep -Fq 'COPY --from=build /build/src/main/resources/browser /app/browser' "${dockerfile}"
+grep -Fq 'COPY review-evidence /app/commercial-evidence' "${dockerfile}"
 
 compose="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/docker-compose.yml"
 grep -Fq 'PLAYWRIGHT_BROWSERS_PATH: /ms-playwright' "${compose}"
+grep -Fq 'CUSTOMER_AGENT_COMMERCIAL_EVIDENCE_PATH: /app/commercial-evidence' "${compose}"
 if grep -Fq 'CHROMIUM_BIN: /usr/bin/chromium' "${compose}"; then
   echo "[ARQUITETURA] O worker não pode apontar para um Chromium ausente da imagem." >&2
   exit 1

@@ -169,6 +169,27 @@ vi.mock("../../api/agent/useAgentWorkMonitor", () => ({
           codexAuthenticated: false,
         },
       },
+      {
+        agentId: 12,
+        nickname: "Íris",
+        agentName: "Diretora e Materializadora de Comunicação",
+        agentKey: "communication-director",
+        automaticExecutionEnabled: true,
+        automaticExecutionStatus: "PLAY",
+        workStatus: "IDLE",
+        currentWork: "Aguardando contrato de comunicação",
+        progressDetail: "Sem tarefa elegível",
+        externalDecisionRequired: false,
+        dailyTokens: 0,
+        executorHealth: {
+          status: "BLOCKED",
+          expectedVersion: 1,
+          deployedVersion: 1,
+          versionCurrent: true,
+          backendAccessible: true,
+          codexAuthenticated: false,
+        },
+      },
     ],
   }),
 }));
@@ -296,7 +317,7 @@ describe("AgentListPage", () => {
 
     expect(
       screen.getAllByRole("button", { name: "Reconectar Codex" }),
-    ).toHaveLength(5);
+    ).toHaveLength(6);
   });
 
   it("conduz as sessões em sequência usando o estado informado pelo backend", async () => {
@@ -312,7 +333,7 @@ describe("AgentListPage", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Preparar 5 agentes Codex" }),
+      screen.getByRole("heading", { name: "Preparar 6 agentes Codex" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Criar sessão de Apolo" }),
@@ -328,7 +349,7 @@ describe("AgentListPage", () => {
     );
 
     expect(screen.getByText("STOP")).toBeInTheDocument();
-    expect(screen.getAllByText("PLAY")).toHaveLength(4);
+    expect(screen.getAllByText("PLAY")).toHaveLength(5);
     await user.click(
       screen.getByRole("button", {
         name: "Ativar execução automática de Apolo",

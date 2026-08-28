@@ -55,7 +55,7 @@ public class CommercialPlanOperationalFlowService {
       status = homologating ? "EM_ANDAMENTO" : "BLOQUEADO";
       nextAction =
           homologating
-              ? "Aguardar Dédalo concluir a homologação técnica."
+              ? "Aguardar Íris materializar a landing e concluir a homologação técnica."
               : "Solicitar a homologação de tracking, pagamento e entrega.";
       blocker = homologating ? null : "Jornada essencial ainda não homologada.";
     } else if (!published) {
@@ -93,7 +93,8 @@ public class CommercialPlanOperationalFlowService {
         List.of(
             decision(activity.entries(), "Atena", "Oferta, público e criativos"),
             decision(activity.entries(), "Plutus", "Orçamento, margem e limite de perda"),
-            decision(activity.entries(), "Dédalo", "Implementação e homologação técnica"),
+            decision(activity.entries(), "Dédalo", "PDE, jornada pós-compra e provas reais"),
+            decision(activity.entries(), "Íris", "Comunicação, landing e homologação técnica"),
             decision(activity.entries(), "Hermes", "Resultados e aprendizados")));
   }
 

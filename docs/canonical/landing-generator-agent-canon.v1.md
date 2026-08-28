@@ -1,8 +1,20 @@
 # Agente Gerador de Landing — cânone v1
 
+> **Fronteira vigente desde 2026-08-28:** este documento preserva o contrato histórico do executor
+> `landing-generator-agent-worker` e das execuções já iniciadas sob Dédalo. Em processos novos,
+> Dédalo constrói exclusivamente o PDE pós-compra e suas provas reais; Íris, identidade
+> `communication-director`, materializa landing e demais superfícies pré-compra pelo
+> `communication-agent-worker`. Retentativas da mesma linhagem histórica permanecem com o executor
+> original para não reescrever autoria. O contrato vigente de comunicação está em
+> `docs/canonical/iris-communication-agent-canon.v1.md`.
+
 ## Objetivo
 
 Convergir rascunhos de landing para qualidade comercial premium, reduzindo a distância entre promessa do anúncio, experiência da página e próxima ação do visitante.
+
+Para versões publicadas após a criação de Íris, essa responsabilidade pertence a Íris. Dédalo
+fornece produto, experiência, entregáveis e provas reais como entradas imutáveis; a agente de
+comunicação pode apresentá-las, mas não redesenhá-las como prova.
 
 ## Executor e modelo
 
@@ -14,16 +26,20 @@ O worker usa a porta exclusiva `8100`, grava log em arquivo e expõe leitura ope
 
 O Quality Review independente produz a reprovação e o backend cria uma execução em `/api/internal/geralanding/agent/v1/stage-executions/pending`. O agente consulta apenas o snapshot segregado pelo MCP, inspeciona a landing em desktop, iPhone e Android e devolve causas, abordagem de geração, etapas e critérios de aceite. O backend inicia somente uma abordagem com executor registrado; a nova versão sempre retorna ao Quality Review e ao Aprovador de Anúncios.
 
-Uma reprovação de anúncio cujo responsável seja `LANDING` também abre automaticamente uma tarefa
-auditável de Têmis para Dédalo e uma execução nessa mesma fila. O briefing preserva código da causa,
+Nas versões históricas, uma reprovação de anúncio cujo responsável seja `LANDING` também abre
+automaticamente uma tarefa auditável de Têmis para Dédalo e uma execução nessa mesma fila. O briefing preserva código da causa,
 mudança necessária e critério de aceite. A tarefa termina ou bloqueia pelo callback real de Dédalo,
 sem depender de atualização manual e sem duplicação em callbacks repetidos.
 
 O agente pode corrigir somente rascunhos. Ele não aprova o próprio trabalho, publica, compra, gasta, muda preço, ativa campanha, avança pipeline ou altera seus contratos. Publicação e campanha permanecem sujeitas aos gates e à autorização humana.
 
-Quando Têmis apontar `LANDING_PAGE_HTML`, Dédalo pode selecionar `CODEX_CODE_IMPLEMENTATION` e devolver um documento HTML completo, autocontido e responsivo, em vez de ficar limitado à composição estrutural produzida pelo preset. O backend valida o documento e preserva CTA principal e destino de checkout; scripts, handlers executáveis, publicação direta e alteração silenciosa do contrato comercial são bloqueados. Mudanças de promessa ou imagem continuam pertencendo às respectivas causas. Toda versão retorna obrigatoriamente ao Quality Review independente e continua sujeita aos limites de convergência, custo e idempotência.
+Em processos novos, a regra acima é aplicada a Íris. Falhas de comunicação retornam a Íris; falhas
+do produto ou da prova funcional retornam a Dédalo. O backend decide a causa e abre a pendência
+correspondente, sem chamada direta entre executores.
 
-Quando o plano comercial possuir materiais da entrega com status `APPROVED`, revisão independente `APPROVED` e finalidade `LANDING`, esses arquivos passam a ser a prova visual canônica do produto. O backend deve congelar no snapshot as URLs exatas, suas versões e o mínimo obrigatório de arquivos distintos; Dédalo pode criar cenário, hierarquia e contexto, mas deve reutilizar literalmente os arquivos aprovados, sem redesenhá-los, reinterpretá-los ou substituí-los por imagens semelhantes. HTML, publicação, readiness e criação de campanha devem bloquear quando a quantidade mínima de referências exatas não estiver presente. Uma nota alta de Quality Review não substitui essa prova determinística de linhagem.
+Em uma linhagem histórica, quando Têmis apontar `LANDING_PAGE_HTML`, Dédalo pode selecionar `CODEX_CODE_IMPLEMENTATION` e devolver um documento HTML completo, autocontido e responsivo, em vez de ficar limitado à composição estrutural produzida pelo preset. O backend valida o documento e preserva CTA principal e destino de checkout; scripts, handlers executáveis, publicação direta e alteração silenciosa do contrato comercial são bloqueados. Em processos vigentes, a mesma causa abre `select`, `strategy`, `compose` e `html` para Íris. Mudanças no produto ou na prova real continuam pertencendo a Dédalo. Toda versão retorna obrigatoriamente ao Quality Review independente e continua sujeita aos limites de convergência, custo e idempotência.
+
+Quando o plano comercial possuir materiais da entrega com status `APPROVED`, revisão independente `APPROVED` e finalidade `LANDING`, esses arquivos passam a ser a prova visual canônica do produto. O backend deve congelar no snapshot as URLs exatas, suas versões e o mínimo obrigatório de arquivos distintos; Íris pode criar cenário, hierarquia e contexto de comunicação, mas deve reutilizar literalmente os arquivos aprovados de Dédalo, sem redesenhá-los, reinterpretá-los ou substituí-los por imagens semelhantes. HTML, publicação, readiness e criação de campanha devem bloquear quando a quantidade mínima de referências exatas não estiver presente. Uma nota alta de Quality Review não substitui essa prova determinística de linhagem.
 
 Quando o HTML atual contiver somente uma âncora de checkout quebrada, Dédalo deve receber no snapshot a URL de checkout da publicação canônica mais recente. O gate pode substituir a âncora exclusivamente por essa URL persistida; qualquer outro destino continua bloqueado. Assim, preservar o contrato comercial não significa preservar um defeito que impeça a compra.
 

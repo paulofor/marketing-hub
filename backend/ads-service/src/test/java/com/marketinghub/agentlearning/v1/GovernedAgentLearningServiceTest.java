@@ -104,6 +104,28 @@ class GovernedAgentLearningServiceTest {
     assertEquals("apollo", response.agentKey());
   }
 
+  /** Deve aceitar Íris somente no replay local governado de comunicação. */
+  @Test
+  void shouldFreezeIrisReplayWithoutGrantingPublicationAuthority() {
+    CreateLearningExperimentRequest request = createRequest();
+    LearningExperimentResponse response =
+        service.create(
+            new CreateLearningExperimentRequest(
+                "communication-director",
+                request.scopeType(),
+                request.scopeId(),
+                request.memoryId(),
+                request.candidateVersion(),
+                request.baselineVersion(),
+                request.frozenReplaySetJson(),
+                request.holdoutReplaySetJson(),
+                request.minimumGain(),
+                request.maximumCostIncreaseRatio()));
+
+    assertEquals("FROZEN", response.status());
+    assertEquals("communication-director", response.agentKey());
+  }
+
   /** Deve rejeitar qualquer avaliação sombra que tenha produzido efeito externo. */
   @Test
   void shouldRejectShadowEvaluationWithExternalEffect() {

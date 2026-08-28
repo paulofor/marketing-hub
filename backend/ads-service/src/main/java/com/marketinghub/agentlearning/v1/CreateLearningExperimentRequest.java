@@ -5,7 +5,8 @@ import java.math.BigDecimal;
 
 /** Contrato para congelar uma hipótese e seus conjuntos de replay antes da avaliação. */
 public record CreateLearningExperimentRequest(
-    @NotBlank @Pattern(regexp = "landing-generator|meta-ad-approver|apollo") String agentKey,
+    @NotBlank @Pattern(regexp = "communication-director|landing-generator|meta-ad-approver|apollo")
+        String agentKey,
     @NotBlank @Size(max = 60) String scopeType,
     @NotBlank @Size(max = 120) String scopeId,
     @NotNull @Positive Long memoryId,

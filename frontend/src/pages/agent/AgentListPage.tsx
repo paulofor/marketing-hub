@@ -69,6 +69,7 @@ const CODEX_EXECUTORS = new Set([
   "experiment-strategist",
   "meta-ad-approver",
   "landing-generator",
+  "communication-director",
   "videomaker",
   "market-radar",
 ]);

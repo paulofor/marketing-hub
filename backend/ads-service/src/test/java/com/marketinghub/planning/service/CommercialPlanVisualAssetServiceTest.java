@@ -194,6 +194,7 @@ class CommercialPlanVisualAssetServiceTest {
         .containsExactly("nonAudiovisual", "audiovisual", "customer", "commercial");
     assertThat(taskCaptor.getAllValues())
         .extracting(ImportedCompletedAgentTask::assignedAgentKey)
-        .containsExactly("landing-generator", "videomaker", "customer-agent", "meta-ad-approver");
+        .containsExactly(
+            "communication-director", "videomaker", "customer-agent", "meta-ad-approver");
   }
 }

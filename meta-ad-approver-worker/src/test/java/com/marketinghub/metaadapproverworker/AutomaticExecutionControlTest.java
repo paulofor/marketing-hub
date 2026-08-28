@@ -13,10 +13,10 @@ class AutomaticExecutionControlTest {
     assertThat(AutomaticExecutionControl.ownerAgentKey("review")).isEqualTo("meta-ad-approver");
   }
 
-  /** Coloca a materialização visual sob o controle PLAY/STOP de Dédalo. */
+  /** Coloca a materialização visual sob o controle PLAY/STOP de Íris. */
   @Test
-  void imageStudioRoleUsesDedaloControl() {
+  void imageStudioRoleUsesIrisControl() {
     assertThat(AutomaticExecutionControl.ownerAgentKey("image-studio"))
-        .isEqualTo("landing-generator");
+        .isEqualTo("communication-director");
   }
 }

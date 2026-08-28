@@ -185,7 +185,7 @@ public class CreativeController {
     return mapper.toDto(service.completeAgentImprovement(id, request));
   }
 
-  /** Permite que o recurso técnico de Dédalo envie a nova imagem sem URL externa manual. */
+  /** Permite que o recurso técnico de Íris envie a nova imagem sem URL externa manual. */
   @PostMapping(
       value = "/api/internal/creatives/{id}/agent-improvement/artifact",
       consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)

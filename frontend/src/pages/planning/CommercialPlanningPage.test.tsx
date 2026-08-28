@@ -673,7 +673,7 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getByText("Detalhe abaixo do custo mensal")).toBeTruthy();
     expect(screen.getByText("Vídeos e criativos")).toBeTruthy();
     expect(
-      screen.getByRole("heading", { name: "Estúdio de Imagens de Têmis" }),
+      screen.getByRole("heading", { name: "Estúdio de Imagens de Íris" }),
     ).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "Solicitar criação" }),
@@ -717,8 +717,6 @@ describe("CommercialPlanningPage", () => {
     ];
     renderPage();
 
-    await user.click(screen.getByRole("checkbox", { name: "DELIVERY" }));
-    await user.click(screen.getByRole("checkbox", { name: "ADS" }));
     expect(screen.getByText(/Selecione uma referência APPROVED/i)).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "Solicitar criação" }),

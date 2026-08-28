@@ -1571,9 +1571,9 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Sintoma:** no experimento #88, Têmis pedia que o anúncio demonstrasse posts e stories finalizados, mas cada nova versão voltava a mostrar somente fotografias de unhas em dispositivos.
 - **Causa-raiz:** a geração inicial `PIPELINE_ADS` recebia a Biblioteca Audiovisual aprovada do plano comercial, enquanto a fila posterior de `agent-improvement` enviava apenas o prompt textual da revisão. O GPT Image 2 não recebia as provas reais já aprovadas e reconstruía o mesmo território genérico.
 - **Correção inicial:** o backend passou a incluir no contrato de retrabalho até três imagens `APPROVED` com finalidade `ADS` do plano que governa o experimento.
-- **Correção sistêmica em 2026-08-16:** a materialização visual saiu do AI Worker e passou ao Estúdio de Imagens de Têmis. Têmis cria ou edita com GPT Image 2, referências reais e composição híbrida; o backend persiste a nova versão como entregável `DRAFT`; uma execução separada inspeciona e aprova. O AI Worker limita-se à copy e ao reuso de arquivos já aprovados.
+- **Correção sistêmica histórica em 2026-08-16:** a materialização visual saiu do AI Worker e passou ao então Estúdio de Imagens de Têmis. Essa autoria foi superada em 2026-08-28 pelo `LOOP-DEDALO-PRODUTO-E-COMUNICACAO-SOBREPOSTOS`: Íris passou a criar ou editar comunicação comercial com GPT Image 2, referências reais e composição híbrida; Têmis apenas inspeciona o `DRAFT` persistido.
 - **Recorrência fechada em 2026-08-16:** o Estúdio enviava simultaneamente o PNG no multipart e novamente dentro do `responseJson` como `b64_json`. Em dois jobs paralelos, as cópias do binário esgotaram o heap do backend durante a persistência. O executor agora remove o base64 do JSON auditável, registra hash e tamanho, usa callback visual com timeout dedicado e serializa as filas produtivas com lote padrão 1. Testes de contrato bloqueiam a volta da duplicação e da concorrência de uploads grandes.
-- **Prevenção:** testes de contrato exigem que criação e edição ocorram em Têmis, que o AI Worker nunca chame seu cliente de imagem para criativos, que `DELIVERY` seja finalidade obrigatória, que referências pertençam ao plano e que produtor e revisor tenham execuções diferentes.
+- **Prevenção vigente:** testes de contrato exigem que criação e edição comerciais ocorram sob Íris, que o AI Worker nunca chame seu cliente de imagem para criativos, que `PRODUCT_PROOF` ou `DELIVERY` aprovado seja a referência, que a saída aceite somente `LANDING`, `ADS` ou `SOCIAL`, que os ativos pertençam ao plano e que produtor e revisor tenham execuções diferentes.
 
 ## LOOP-TEMIS-IMAGE-STUDIO-MULTIPLE-SCHEDULERS — filas visuais concorrentes sem entrada única
 
@@ -2136,8 +2136,36 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** a matriz e o empacotamento exigem `technical-verification.json`; o validador final
   rejeita relatório incompleto, hash divergente ou MP4 fora do contrato antes de aceitar o parecer.
 - **Fechamento sistêmico em 2026-08-28:** produção e revisão também foram separadas por identidade.
-  Dédalo e Apolo materializam, o recurso visual legado atua sem identidade decisória e Têmis recebe
-  somente o artefato e a verificação técnica para decidir integridade comercial.
+  Dédalo materializa produto e prova, Íris materializa comunicação, Apolo produz audiovisual, o
+  recurso visual legado atua sem identidade decisória e Têmis recebe somente o artefato e a
+  verificação técnica para decidir integridade comercial.
+
+## LOOP-DEDALO-PRODUTO-E-COMUNICACAO-SOBREPOSTOS — um agente otimiza pós e pré-compra
+
+- **Data:** 2026-08-28.
+- **Sintoma:** Dédalo acumulava jornada, entregáveis, acesso e prova do PDE com oferta, copy, landing
+  e peças comerciais. Reprovações de produto e de persuasão voltavam à mesma identidade, misturavam
+  aprendizagem e impediam localizar qual hipótese realmente precisava ser corrigida.
+- **Causa-raiz confirmada:** a matriz separou estratégia, economia e revisão, mas manteve construção
+  e comunicação no domínio amplo `PDE_CONSTRUCTION` por disponibilidade do executor histórico. A
+  fronteira estava descrita em texto, porém não existia identidade, recurso, contrato e teste que a
+  tornassem operacional.
+- **Correção sistêmica:** Íris nasce como `communication-director`, domínio
+  `COMMUNICATION_MATERIALIZATION`, executor `communication-agent-worker`, prompt/schema/MCP próprios
+  e processos publicados em versões novas. Dédalo passa a produzir somente experiência pós-compra e
+  provas reais. Íris produz mensagem, copy, peças estruturadas, e-mails, landing e briefing de Apolo;
+  Psique e Têmis continuam gates independentes e o backend controla todo avanço.
+- **Prevenção:** a matriz de responsabilidades bloqueia domínio incompatível e coautoria; testes de
+  changelog exigem exatamente um dono por atividade e impedem Dédalo em comunicação nova ou Têmis em
+  criação. Harness, request, resposta, hashes, custo, evidências e tarefas ficam auditáveis. Nos três
+  próximos PDEs serão acompanhados aprovação inicial, retrabalho, tempo, custo e divergência entre
+  produto e promessa; geração ou impacto estimado não será contado como venda.
+- **Fechamento adicional em 2026-08-28:** a investigação ponta a ponta encontrou o Estúdio de
+  Imagens ainda aceitando `DELIVERY`, `LANDING`, `ADS` e `SOCIAL` sob a identidade histórica de
+  Dédalo/Têmis. O runtime foi transferido para `iris-image-studio`, o PLAY/STOP passou a
+  `communication-director`, novas produções aceitam apenas `LANDING`, `ADS` e `SOCIAL` com prova
+  aprovada e Têmis ficou sem segredo de produção. Testes no backend e no executor bloqueiam
+  `DELIVERY` antes de qualquer request externo.
 
 ## LOOP-PDE-ATIVACAO-DIRETA-ESTADOS-DIVERGENTES — preflight aprovado sem avanço comercial
 

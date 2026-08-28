@@ -30,7 +30,7 @@ public class MetaAdApproverProperties {
     return executionRole;
   }
 
-  /** Define se o container executa revisão de Têmis ou materialização técnica de Dédalo. */
+  /** Define se o container executa revisão de Têmis ou materialização técnica de Íris. */
   public void setExecutionRole(String value) {
     executionRole = value;
   }

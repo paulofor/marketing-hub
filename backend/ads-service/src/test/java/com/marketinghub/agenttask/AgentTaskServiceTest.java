@@ -56,6 +56,40 @@ class AgentTaskServiceTest {
     verify(repository, never()).save(any());
   }
 
+  /** Distingue etapas do mesmo agente e da mesma convergência ao aplicar idempotência. */
+  @Test
+  void reusesOnlyTheMatchingOperationalActivity() {
+    AgentTaskRepository repository = mock(AgentTaskRepository.class);
+    Agent iris = agent(12L, "communication-director", "Íris");
+    BusinessProcessDefinition landingProcess = process("PUBLISHED", "Íris");
+    AgentTask select = processTask(701L, iris, landingProcess, "select", "PENDING");
+    AgentTask html = processTask(704L, iris, landingProcess, "html", "PENDING");
+    select.setSourceReference("commercial-plan:4@v3:convergence:14");
+    html.setSourceReference("commercial-plan:4@v3:convergence:14");
+    when(repository.findBySourceReferenceOrderByCreatedAtAscIdAsc(
+            "commercial-plan:4@v3:convergence:14"))
+        .thenReturn(List.of(select, html));
+    AgentTaskService service = service(repository, mock(AgentRepository.class), Clock.systemUTC());
+
+    AgentTaskResponse result =
+        service.createOperationalDelegationIfAbsent(
+            new CreateAgentTaskByAgentRequest(
+                "meta-ad-approver",
+                "communication-director",
+                "Materializar correção",
+                "Aplicar somente a correção aprovada.",
+                "HIGH",
+                "commercial-plan:4@v3:convergence:14",
+                9L,
+                "html",
+                false,
+                null));
+
+    assertThat(result.id()).isEqualTo(704L);
+    assertThat(result.processActivityId()).isEqualTo("html");
+    verify(repository, never()).save(any());
+  }
+
   /** Preserva a tarefa do ciclo quando uma versão nova renomeia sua atividade equivalente. */
   @Test
   void reusesCompatibleActivityFromPreviousProcessVersion() {

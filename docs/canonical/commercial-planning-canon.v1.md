@@ -4,9 +4,10 @@
 
 Por decisão de 2026-08-28, Atena define mercado, desejo, comportamento, concorrência,
 posicionamento, tese de oferta, portfólio e hipóteses no Contrato Estratégico de Mercado v2. Dédalo
-materializa produto, landing, copy e peças não audiovisuais sem alterar essa substância; Apolo
-materializa vídeo e áudio. Psique revisa a experiência humana e Têmis revisa a integridade comercial
-em gates separados. Hermes recebe a mesma versão/hash e define somente distribuição,
+materializa produto, experiência pós-compra, entregáveis e provas reais. Íris materializa mensagem,
+landing, copy, e-mails, peças não audiovisuais estruturadas e briefings; Apolo materializa vídeo e
+áudio. Psique revisa a experiência humana e Têmis revisa a integridade comercial em gates separados.
+Hermes recebe a mesma versão/hash e define somente distribuição,
 instrumentação, atribuição, funil e otimização. Plutus governa a economia.
 
 Nenhuma etapa posterior pode reconstruir estratégia a partir de campos operacionais. Evidência real
@@ -205,21 +206,17 @@ A homologacao deve usar dados segregados (`mh_test=1`), cobrir landing, eventos,
 
 Todo plano comercial pode manter imagens e vídeos reutilizáveis do produto sem duplicar o arquivo no JSON do plano. Cada vínculo registra URL persistida, tipo (`IMAGE` ou `VIDEO`), descrição, finalidade (`ADS`, `LANDING`, `SOCIAL`, `DELIVERY` ou `PRODUCT_PROOF`), origem, direitos de uso, versão e estado (`DRAFT`, `APPROVED` ou `RETIRED`). `PRODUCT_PROOF` identifica captura, exportação ou evidência fiel de um produto que não é visual por natureza; não é sinônimo de criativo e não pode ser inventado por modelo generativo.
 
-Dédalo dirige a materialização não audiovisual do produto e da comunicação. A produção de imagens
-usa ferramentas versionadas e o container isolado ainda identificado tecnicamente como
-`themis-image-studio` por compatibilidade. Esse executor é um recurso técnico sob o contrato de
-Dédalo, não uma identidade decisória, e inclui criação do zero, edição não destrutiva e composição
-híbrida com até quatro referências da biblioteca. O backend permanece como autoridade da fila,
-segregação por plano, storage, orçamento, auditoria e avanço; o AI Worker não gera nem edita imagens
-desse fluxo.
+Dédalo dirige o produto, seus entregáveis e suas provas reais pelo fluxo versionado do PDE. O Estúdio
+de Imagens do plano materializa somente comunicação pré-compra de Íris no container
+`iris-image-studio`. Os códigos persistidos `themis-image-studio` e `pde-visual-materialization`
+permanecem apenas como aliases históricos. O backend continua autoridade da fila, segregação por
+plano, storage, orçamento, auditoria e avanço; o AI Worker não gera nem edita imagens desse fluxo.
 
-Quando a própria imagem faz parte do que a cliente recebe, toda imagem materializada pelo recurso
-técnico nasce com `DELIVERY` e pode acumular `LANDING`, `ADS` e `SOCIAL` no mesmo vínculo. Quando o
-produto é serviço, software, texto, método ou outra entrega não visual, a captura fiel entra
-separadamente como `PRODUCT_PROOF`; a peça materializada recebe apenas a finalidade comercial
-necessária e deve referenciar `PRODUCT_PROOF` ou `DELIVERY` aprovado. Edição sempre cria nova versão
-e preserva a origem. Com referências, Dédalo pode orientar cenário, enquadramento e contexto, mas não
-pode redefinir a estratégia nem inventar conteúdo, tela, resultado, depoimento ou recurso inexistente.
+Quando a própria imagem faz parte do que a cliente recebe, ela nasce no fluxo de Dédalo com
+`DELIVERY`, separada da comunicação. Quando o produto é serviço, software, texto, método ou outra
+entrega não visual, a captura fiel entra como `PRODUCT_PROOF`. Íris cria somente `LANDING`, `ADS` e
+`SOCIAL` e deve referenciar `PRODUCT_PROOF` ou `DELIVERY` aprovado. É proibido misturar finalidade
+pós-compra e comercial no mesmo novo job. Edição sempre cria nova versão e preserva a origem.
 
 Em produto personalizado, o conteúdo `DELIVERY` promove o negócio da cliente final e não deve ser forçado a vender o próprio produto digital, repetir o preço da oferta ou funcionar isoladamente como anúncio do Marketing Hub. O reuso em `LANDING`, `ADS` e `SOCIAL` significa exibir o arquivo real e íntegro como prova enquadrada do que o comprador recebe. Persona, marca e contato sintéticos são aceitos apenas em homologação segregada explicitamente identificada; nunca podem ser apresentados como cliente ou depoimento real.
 
@@ -227,12 +224,13 @@ Entregável que declare formato Story deve ser produzido e aprovado em proporç�
 
 A execução produtora nunca aprova o próprio arquivo. Depois da persistência em `DRAFT`, o backend abre uma revisão visual para uma nova execução independente de Têmis, que inspeciona o arquivo real em alta definição e somente promove para `APPROVED` quando qualidade, fidelidade à entrega e reuso comercial atingem os mínimos canônicos. Falhas ou lease vencida voltam ao fluxo auditável sem publicação automática.
 
-Criativos, landing e social reutilizam apenas itens `APPROVED`. A geração de copy pode continuar em
-executor próprio sob responsabilidade de Dédalo, mas nenhuma etapa pode reconstruir imagem do produto
-no AI Worker nem consumir referência de outro plano. Criação comercial sem `PRODUCT_PROOF` ou
-`DELIVERY` aprovado bloqueia antes de consumir tentativa. O subprocesso de criativos escolhe formatos
-pelo canal: imagem e copy pertencem à materialização de Dédalo; vídeo usa Apolo e o Estúdio Áudio
-Vídeo quando valor, custo e risco justificarem essa rota. Têmis revisa o ativo final e nunca o produz.
+A comunicação de Íris, incluindo criativos, landing e social, reutiliza apenas itens `APPROVED` de
+Dédalo. Íris materializa copy, hierarquia, composição, peças estruturadas e bitmap comercial, mas
+nenhuma etapa pode reconstruir o produto nem consumir referência de outro plano. Criação comercial
+sem `PRODUCT_PROOF` ou `DELIVERY` aprovado bloqueia antes de consumir tentativa. O subprocesso de
+criativos escolhe formatos pelo canal: comunicação não audiovisual pertence a Íris; vídeo usa Apolo
+e o Estúdio Áudio Vídeo quando valor, custo e risco justificarem essa rota. Têmis revisa o ativo final
+e nunca o produz.
 Aprovação nunca autoriza publicação, gasto ou mudança do experimento para `RUNNING`.
 
 ## Objetivo e resultado final dos processos comerciais
@@ -241,10 +239,11 @@ Por decisão de 2026-08-16, toda definição BPM comercial deve declarar separad
 
 As versões vigentes dos processos de fabricação do produto, criação de criativos, geração de landing, homologação do experimento, otimização e venda/entrega devem terminar com critérios auditáveis ligados a produto íntegro, ativo visual aprovado, checkout canônico, instrumentação válida, receita, entrega ou satisfação, conforme o domínio. O nó final não pode esconder pendência, `DRAFT`, falha de entrega, aprovação própria ou impacto apenas estimado.
 
-Quando houver imagem, os papéis são segregados: o recurso técnico `themis-image-studio`, orientado
-pelo contrato de construção de Dédalo, cria ou edita e persiste a nova versão como `DRAFT`;
+Quando houver imagem comercial, os papéis são segregados: `iris-image-studio`, orientado pelo
+contrato de comunicação de Íris, cria ou edita e persiste a nova versão como `DRAFT`;
 `meta-ad-approver-worker` executa Têmis somente para inspecionar o arquivo real e decidir o gate
 independente. Somente o container produtor recebe a credencial do provedor visual; somente o revisor
 recebe identidade Codex e ferramentas de inspeção. O backend continua sendo a única autoridade de
 fila, persistência e avanço. Fabricação, criativo, landing, homologação, otimização e entrega devem
-preservar essa segregação e a linhagem até o ativo-fonte da Biblioteca Audiovisual.
+preservar essa segregação e a linhagem até o ativo-fonte da Biblioteca Audiovisual. Íris é autora da
+peça comercial, mas não do entregável nem da prova real de Dédalo.

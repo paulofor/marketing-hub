@@ -134,6 +134,61 @@ class LandingGenerationAgentExecutionServiceTest {
     verify(coordinator, never()).continueAfterQualityReview(any(), any(), any());
   }
 
+  /** Deve concluir Íris pelo callback diferido somente após a aprovação técnica correlacionada. */
+  @Test
+  void shouldCompleteDeferredIrisTaskAfterIndependentQualityApproval() {
+    GeraLandingStageExecution qualityReview = approvedQualityReview("quality-review-30", 91);
+    when(agentTaskService.assignedAgentKey(30L)).thenReturn("communication-director");
+    when(repository
+            .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
+                88L, "landing-page-quality-review", "agent-task:30"))
+        .thenReturn(List.of(qualityReview));
+
+    service.onQualityReviewCompleted(
+        new LandingQualityReviewedEvent(
+            88L,
+            "agent-task:30",
+            "{\"approvalRecommendation\":\"APPROVE_FOR_PUBLICATION\",\"score\":91}"));
+
+    verify(agentTaskService)
+        .completeDeferredProcessTask(
+            org.mockito.ArgumentMatchers.eq("communication-director"),
+            org.mockito.ArgumentMatchers.eq(30L),
+            org.mockito.ArgumentMatchers.contains("APPROVE_FOR_PUBLICATION"));
+    verify(agentTaskService, never())
+        .completeClaimedProcessTask(
+            any(), any(), any(com.marketinghub.agenttask.CompleteAgentTaskRequest.class));
+    verify(automaticActivityService)
+        .completeFromExecution(
+            org.mockito.ArgumentMatchers.eq(30L),
+            org.mockito.ArgumentMatchers.eq("technical"),
+            org.mockito.ArgumentMatchers.eq("quality-review-30"),
+            org.mockito.ArgumentMatchers.eq(qualityReview.getExecutionRequestedAt()),
+            org.mockito.ArgumentMatchers.eq(qualityReview.getCompletedAt()),
+            org.mockito.ArgumentMatchers.eq(qualityReview.getCostUsd()),
+            org.mockito.ArgumentMatchers.contains("\"score\":91"));
+  }
+
+  /** Deve devolver a reprovação técnica para Íris sem criar uma correção sob Dédalo. */
+  @Test
+  void shouldBlockIrisTaskWithoutEnqueueingDedaloCorrection() {
+    when(agentTaskService.assignedAgentKey(30L)).thenReturn("communication-director");
+
+    service.onQualityReviewCompleted(
+        new LandingQualityReviewedEvent(
+            88L,
+            "agent-task:30",
+            "{\"approvalRecommendation\":\"REGENERATE_BEFORE_PUBLICATION\",\"score\":70}"));
+
+    verify(agentTaskService)
+        .failDeferredProcessTask(
+            org.mockito.ArgumentMatchers.eq("communication-director"),
+            org.mockito.ArgumentMatchers.eq(30L),
+            org.mockito.ArgumentMatchers.contains("reprovou"),
+            org.mockito.ArgumentMatchers.contains("REGENERATE_BEFORE_PUBLICATION"));
+    verify(repository, never()).save(any(GeraLandingStageExecution.class));
+  }
+
   /** Não deve concluir Dédalo quando a aprovação não possui execução visual correlacionada. */
   @Test
   void shouldBlockBpmCompletionWithoutCorrelatedQualityReviewExecution() {

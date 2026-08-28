@@ -36,25 +36,25 @@ services:
       retries: 2
       start_period: 30s
 
-  themis-image-studio:
-    image: ${THEMIS_IMAGE_STUDIO_IMAGE:-marketing-hub/themis-image-studio:local}
+  iris-image-studio:
+    image: ${IRIS_IMAGE_STUDIO_IMAGE:-marketing-hub/iris-image-studio:local}
     restart: unless-stopped
     build:
       context: .
       dockerfile: Dockerfile.image-studio
     environment:
       BACKEND_URL: ${BACKEND_URL:-http://backend:8000}
-      TEMIS_EXECUTION_ROLE: image-studio
-      SPRING_APPLICATION_NAME: themis-image-studio
+      IRIS_EXECUTION_ROLE: image-studio
+      SPRING_APPLICATION_NAME: iris-image-studio
       SERVER_PORT: "8098"
-      LOG_FILE_NAME: /tmp/themis-image-studio.log
+      LOG_FILE_NAME: /tmp/iris-image-studio.log
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_API_KEY_FILE: ${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
       OPENAI_IMAGE_MODEL: ${OPENAI_IMAGE_MODEL:-gpt-image-2}
-      TEMIS_IMAGE_TIMEOUT: ${TEMIS_IMAGE_TIMEOUT:-PT3M}
-      TEMIS_IMAGE_BACKEND_READ_TIMEOUT: ${TEMIS_IMAGE_BACKEND_READ_TIMEOUT:-PT5M}
-      TEMIS_IMAGE_STUDIO_PENDING_LIMIT: ${TEMIS_IMAGE_STUDIO_PENDING_LIMIT:-1}
+      IRIS_IMAGE_TIMEOUT: ${IRIS_IMAGE_TIMEOUT:-PT3M}
+      IRIS_IMAGE_BACKEND_READ_TIMEOUT: ${IRIS_IMAGE_BACKEND_READ_TIMEOUT:-PT5M}
+      IRIS_IMAGE_STUDIO_PENDING_LIMIT: ${IRIS_IMAGE_STUDIO_PENDING_LIMIT:-1}
     ports:
       - "8098:8098"
     volumes:

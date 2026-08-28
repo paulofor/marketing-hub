@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -28,7 +29,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Responsabilidade: comprovar quando uma landing aprovada pode ser reutilizada na retomada dos
- * revisores, sem nova execução do Dédalo.
+ * revisores, sem nova materialização da comunicação.
  */
 @Service
 public class CommercialPlanLandingReviewResumeService {
@@ -68,7 +69,7 @@ public class CommercialPlanLandingReviewResumeService {
       int attemptNumber,
       List<Map<String, Object>> previousAttemptBlocks,
       List<AgentTask> currentTasks) {
-    Optional<AgentTask> landing = task(currentTasks, "landing-generator", "html", "COMPLETED");
+    Optional<AgentTask> landing = landingTask(currentTasks);
     Optional<AgentTask> customer = task(currentTasks, "customer-agent", "customer", "BLOCKED");
     if (landing.isEmpty()
         || customer.isEmpty()
@@ -122,6 +123,25 @@ public class CommercialPlanLandingReviewResumeService {
         .filter(task -> activityId.equals(task.getProcessActivityId()))
         .filter(task -> status.equals(task.getStatus()))
         .max(java.util.Comparator.comparing(AgentTask::getId));
+  }
+
+  /** Prioriza a landing atual da Íris e aceita Dédalo somente para tentativas históricas. */
+  private Optional<AgentTask> landingTask(List<AgentTask> tasks) {
+    return tasks.stream()
+        .filter(task -> task.getAssignedAgent() != null)
+        .filter(
+            task ->
+                Set.of("communication-director", "landing-generator")
+                    .contains(task.getAssignedAgent().getAgentKey()))
+        .filter(task -> "html".equals(task.getProcessActivityId()))
+        .filter(task -> "COMPLETED".equals(task.getStatus()))
+        .max(
+            java.util.Comparator.comparing(
+                    (AgentTask task) ->
+                        "communication-director".equals(task.getAssignedAgent().getAgentKey())
+                            ? 1
+                            : 0)
+                .thenComparing(AgentTask::getId, java.util.Comparator.nullsFirst(Long::compareTo)));
   }
 
   /** Distingue falta de transporte de evidência de defeitos reais na landing ou no contrato. */
@@ -181,7 +201,7 @@ public class CommercialPlanLandingReviewResumeService {
                 || normalized.contains("audit")));
   }
 
-  /** Seleciona somente a aprovação técnica ligada à mesma tarefa de Dédalo. */
+  /** Seleciona somente a aprovação técnica ligada à mesma tarefa materializadora. */
   private Optional<GeraLandingStageExecution> approvedQualityReview(
       Long experimentId, Long landingTaskId) {
     return landingExecutionRepository

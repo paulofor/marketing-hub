@@ -9,12 +9,15 @@ declare -A homes=(
   [experiment-strategist]=EXPERIMENT_STRATEGIST_CODEX_HOME
   [meta-ad-approver]=META_AD_APPROVER_CODEX_HOME
   [landing-generator]=LANDING_GENERATOR_CODEX_HOME
+  [communication-director]=COMMUNICATION_AGENT_CODEX_HOME
 )
 
 for agent in "${!homes[@]}"; do
   workflow="$repo_root/.github/workflows/${agent}-worker-ci.yml"
   if [[ "$agent" == landing-generator ]]; then
     workflow="$repo_root/.github/workflows/landing-generator-agent-worker-ci.yml"
+  elif [[ "$agent" == communication-director ]]; then
+    workflow="$repo_root/.github/workflows/communication-agent-worker-ci.yml"
   fi
   expected_home="/opt/growth-operator/agents/$agent/codex-home"
   grep -q "${homes[$agent]}=$expected_home" "$workflow"
@@ -39,5 +42,5 @@ if grep -q 'group: shared-growth-agents-repository-deploy' \
 fi
 
 unique_count=$(printf '%s\n' "${!homes[@]}" | sed 's#^#/opt/growth-operator/agents/#; s#$#/codex-home#' | sort -u | wc -l)
-[[ "$unique_count" -eq 6 ]]
-printf '%s\n' '[ARQUITETURA] Seis sessões Codex isoladas, sem reconciliação ou cópia de refresh token.'
+[[ "$unique_count" -eq 7 ]]
+printf '%s\n' '[ARQUITETURA] Sete sessões Codex isoladas, sem reconciliação ou cópia de refresh token.'

@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-O Orquestrador coordena os contratos e pareceres dos oito agentes definidos em
+O Orquestrador coordena os contratos e pareceres dos nove agentes definidos em
 `matriz-responsabilidades-agentes-canon.v1.md`. Ele é um mecanismo determinístico do backend, não um
 agente opinativo, e não substitui a fonte de verdade de cada domínio.
 
@@ -35,8 +35,11 @@ gates concluídos, o estado final é `READY_FOR_HUMAN_DECISION`.
 - Argos: entrega evidência factual, sem escolher estratégia.
 - Atena: decide mercado, desejo, posicionamento, tese de oferta, portfólio e hipótese.
 - Plutus: valida preço como hipótese econômica, margem, CAC, orçamento e risco.
-- Dédalo: materializa PDE, landing e comunicação não audiovisual conforme a estratégia aprovada.
-- Apolo: materializa roteiro, vídeo, áudio, montagem e legendas.
+- Dédalo: materializa a experiência funcional do PDE, jornada pós-compra, entregáveis, acesso e
+  provas reais conforme a estratégia aprovada.
+- Íris: transforma estratégia, economia e produto real em mensagem, copy, landing, peças estáticas,
+  e-mails e briefings por canal.
+- Apolo: materializa roteiro, vídeo, áudio, montagem e legendas a partir do briefing.
 - Psique: avalia compreensão, desejo, prazer sensorial, esforço, confiança e objeções.
 - Têmis: revisa verdade, prova, fidelidade, direitos, compliance e segurança comercial.
 - Hermes: opera distribuição, instrumentação, funil e otimização a partir de eventos reais.

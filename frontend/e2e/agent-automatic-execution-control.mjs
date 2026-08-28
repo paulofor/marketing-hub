@@ -18,6 +18,7 @@ const agents = [
   [6, "financial-agent", "Plutus", "Agente Financeiro", 3],
   [7, "customer-agent", "Psique", "Agente Cliente", 3],
   [8, "meta-ad-approver", "Têmis", "Aprovador de Anúncios Meta", 2],
+  [9, "communication-director", "Íris", "Diretora e Materializadora de Comunicação", 1],
 ];
 
 for (const [profileName, contextOptions] of profiles) {
@@ -106,7 +107,7 @@ for (const [profileName, contextOptions] of profiles) {
   );
 
   await page.goto("http://127.0.0.1:15174/agents");
-  await expect(page.getByText("PLAY", { exact: true })).toHaveCount(8);
+  await expect(page.getByText("PLAY", { exact: true })).toHaveCount(9);
   const stop = page.getByRole("button", {
     name: "Parar execução automática de Apolo",
   });

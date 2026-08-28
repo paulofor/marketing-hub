@@ -59,6 +59,13 @@ public class AgentTaskService {
   private final Clock clock;
   private final MarketStrategicContextProvider marketStrategicContextProvider;
 
+  @Autowired(required = false)
+  private CommunicationMaterializationContextProvider communicationMaterializationContextProvider =
+      CommunicationMaterializationContextProvider.empty();
+
+  @Autowired(required = false)
+  private List<AgentTaskCompletionHook> completionHooks = List.of();
+
   /** Configura persistência, catálogo e relógio operacional. */
   @Autowired
   public AgentTaskService(
@@ -420,9 +427,23 @@ public class AgentTaskService {
     if (sourceReference == null) {
       throw new IllegalArgumentException("Delegação operacional exige referência de origem.");
     }
-    return repository
-        .findTopByAssignedAgentAgentKeyAndSourceReferenceOrderByUpdatedAtDescIdDesc(
-            request.assignedAgentKey().trim(), sourceReference)
+    Long requestedProcessId = request.processDefinitionId();
+    String requestedActivityId = trimToNull(request.processActivityId());
+    return repository.findBySourceReferenceOrderByCreatedAtAscIdAsc(sourceReference).stream()
+        .filter(
+            task -> request.assignedAgentKey().trim().equals(task.getAssignedAgent().getAgentKey()))
+        .filter(
+            task ->
+                Objects.equals(
+                    requestedProcessId,
+                    task.getProcessDefinition() == null
+                        ? null
+                        : task.getProcessDefinition().getId()))
+        .filter(task -> Objects.equals(requestedActivityId, task.getProcessActivityId()))
+        .filter(task -> !"CANCELLED".equals(task.getStatus()))
+        .max(
+            java.util.Comparator.comparing(
+                AgentTask::getId, java.util.Comparator.nullsFirst(Long::compareTo)))
         .map(this::response)
         .orElseGet(() -> createByAgent(request));
   }
@@ -1569,6 +1590,11 @@ public class AgentTaskService {
       marketStrategicContextProvider
           .resolve(task.getSourceReference())
           .ifPresent(contract -> context.put("marketStrategicContract", contract));
+      if ("communication-director".equals(task.getAssignedAgent().getAgentKey())) {
+        communicationMaterializationContextProvider
+            .resolve(task.getSourceReference())
+            .ifPresent(contract -> context.put("communicationMaterializationContext", contract));
+      }
       return objectMapper.writeValueAsString(context);
     } catch (Exception ex) {
       log.error(
@@ -1592,11 +1618,94 @@ public class AgentTaskService {
     applyModelUsage(task, request.modelUsages());
     applyExecutionAudit(task, request.executionAudit());
     task.setExecutionError(null);
+    AgentTaskCompletionHook.CompletionDisposition disposition = applyCompletionHooks(task, request);
+    if (AgentTaskCompletionHook.CompletionDisposition.DEFERRED.equals(disposition)) {
+      task.setUpdatedAt(now);
+      AgentTask saved = repository.save(task);
+      synchronizeActivityInstance(saved, now);
+      return;
+    }
     task.setStatus("COMPLETED");
     if (task.getDeliveredAt() == null) task.setDeliveredAt(now);
     task.setUpdatedAt(now);
     AgentTask saved = repository.save(task);
     synchronizeActivityInstance(saved, now);
+  }
+
+  /** Executa no máximo um efeito especializado antes da mudança final de status. */
+  private AgentTaskCompletionHook.CompletionDisposition applyCompletionHooks(
+      AgentTask task, CompleteAgentTaskRequest request) {
+    List<AgentTaskCompletionHook> matched =
+        completionHooks.stream().filter(hook -> hook.supports(task)).toList();
+    if (matched.size() > 1) {
+      throw new IllegalStateException("Mais de um handler governa a conclusão da mesma tarefa.");
+    }
+    return matched.isEmpty()
+        ? AgentTaskCompletionHook.CompletionDisposition.COMPLETE
+        : matched.getFirst().apply(task, request);
+  }
+
+  /** Retorna a identidade persistida do responsável por uma tarefa BPM. */
+  @Transactional(readOnly = true)
+  public String assignedAgentKey(Long taskId) {
+    return repository
+        .findById(taskId)
+        .map(task -> task.getAssignedAgent().getAgentKey())
+        .orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tarefa não encontrada"));
+  }
+
+  /** Conclui uma materialização cuja aprovação técnica assíncrona foi persistida. */
+  @Transactional
+  public void completeDeferredProcessTask(
+      String agentKey, Long taskId, String technicalEvidenceJson) {
+    AgentTask task = claimedBy(agentKey, taskId);
+    Instant now = Instant.now(clock);
+    task.setEvidenceJson(mergeEvidence(task.getEvidenceJson(), technicalEvidenceJson));
+    task.setExecutionError(null);
+    task.setStatus("COMPLETED");
+    task.setDeliveredAt(now);
+    task.setUpdatedAt(now);
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, now);
+  }
+
+  /** Bloqueia uma materialização quando o gate técnico assíncrono rejeita o artefato. */
+  @Transactional
+  public void failDeferredProcessTask(
+      String agentKey, Long taskId, String error, String technicalEvidenceJson) {
+    AgentTask task = claimedBy(agentKey, taskId);
+    Instant now = Instant.now(clock);
+    task.setEvidenceJson(mergeEvidence(task.getEvidenceJson(), technicalEvidenceJson));
+    task.setExecutionError(error);
+    task.setStatus("BLOCKED");
+    task.setUpdatedAt(now);
+    AgentTask saved = repository.save(task);
+    synchronizeActivityInstance(saved, now);
+  }
+
+  /** Separa a evidência de materialização do parecer técnico posterior. */
+  private String mergeEvidence(String materializationEvidenceJson, String technicalEvidenceJson) {
+    try {
+      Map<String, Object> evidence = new java.util.LinkedHashMap<>();
+      evidence.put(
+          "materialization",
+          materializationEvidenceJson == null
+              ? null
+              : objectMapper.readTree(materializationEvidenceJson));
+      evidence.put(
+          "technicalGate",
+          technicalEvidenceJson == null ? null : objectMapper.readTree(technicalEvidenceJson));
+      return objectMapper.writeValueAsString(evidence);
+    } catch (Exception ex) {
+      log.error(
+          "Falha ao consolidar evidências de gate assíncrono. taskEvidencePresent={} technicalEvidencePresent={}",
+          materializationEvidenceJson != null,
+          technicalEvidenceJson != null,
+          ex);
+      throw new IllegalArgumentException(
+          "Evidência do gate assíncrono não contém JSON válido.", ex);
+    }
   }
 
   /** Bloqueia trabalho reservado preservando a causa técnica completa. */

@@ -519,7 +519,7 @@ export function useUpdateCommercialPlanVisualAssetStatus(
   });
 }
 
-/** Consulta a fila auditável de criação e edição executada por Dédalo. */
+/** Consulta a fila auditável de criação e edição comercial executada por Íris. */
 export function useCommercialPlanImageStudioJobs(planId?: number | null) {
   return useQuery({
     queryKey: ["commercial-plan-image-studio-jobs", planId],

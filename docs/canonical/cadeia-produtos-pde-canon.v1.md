@@ -107,7 +107,14 @@ geração de landing e criação de criativos, permanecem reutilizáveis dentro 
 
 Os direitos de decisão dos agentes seguem obrigatoriamente
 `matriz-responsabilidades-agentes-canon.v1.md`. O handoff comercial é
-`Argos → Atena → Plutus → Dédalo/Apolo → Psique → Têmis → autorização humana → Hermes`.
+`Argos → Atena → Plutus → Dédalo → Íris/Apolo → Psique → Têmis → autorização humana → Hermes`.
+
+Dédalo materializa o valor funcional usado depois da compra: experiência, jornada, entregáveis,
+personalização, acesso e provas reais. Íris materializa o que convence antes da compra: mensagem,
+copy, landing, peças estáticas, e-mails e briefings por canal. Apolo produz o audiovisual final.
+Íris apresenta provas originadas no produto de Dédalo, mas não pode fabricá-las nem alterar produto,
+estratégia ou economia. O contrato completo está em
+`docs/canonical/iris-communication-agent-canon.v1.md`.
 Atividade de agente possui um único dono; gates humanos e de integridade têm identificadores
 separados e nenhum agente pode criar e aprovar o mesmo artefato.
 

@@ -148,4 +148,66 @@ assert_equals \
   "$(query "SELECT COUNT(*) FROM opportunity_agent_review WHERE error_message LIKE 'SUPERSEDED_BY_AGENT_RESPONSIBILITY_MATRIX_V1:%'")" \
   "a reaplicação alterou o encerramento auditável dos pareceres legados"
 
-printf 'Homologação física da matriz dos oito agentes aprovada no MySQL 5.7.\n'
+compose run --rm --build liquibase-iris-communication-agent
+
+assert_equals \
+  $'communication-director:1\ncustomer-agent:4\nexperiment-strategist:5\nfinancial-agent:4\ngrowth-operator:6\nlanding-generator:4\nmarket-radar:3\nmeta-ad-approver:4\nvideomaker:3' \
+  "$(query "SELECT CONCAT(agent_key, ':', current_version) FROM agent ORDER BY agent_key")" \
+  "Íris não foi criada ou Dédalo não recebeu o contrato pós-compra"
+assert_equals \
+  "21" \
+  "$(query "SELECT COUNT(*) FROM agent_version")" \
+  "as versões auditáveis da Íris e do novo Dédalo não foram criadas"
+assert_equals \
+  $'4:5:3' \
+  "$(query "SELECT CONCAT((SELECT COUNT(*) FROM agent_input i WHERE i.agent_id=a.id), ':', (SELECT COUNT(*) FROM agent_internal_function f WHERE f.agent_id=a.id), ':', (SELECT COUNT(*) FROM agent_output o WHERE o.agent_id=a.id)) FROM agent a WHERE a.agent_key='communication-director'")" \
+  "os contratos de entrada, funções e saída de Íris estão incompletos"
+assert_equals \
+  "communication-director:communication-agent-worker" \
+  "$(query "SELECT CONCAT(responsible_agent_key, ':', executor_reference) FROM business_process_execution_resource WHERE resource_code='iris-communication-worker'")" \
+  "o recurso executor de Íris está incorreto"
+assert_equals \
+  $'pde-visual-materialization:communication-director:iris-image-studio\nthemis-image-studio:communication-director:iris-image-studio' \
+  "$(query "SELECT CONCAT(resource_code, ':', responsible_agent_key, ':', executor_reference) FROM business_process_execution_resource WHERE resource_code IN ('pde-visual-materialization','themis-image-studio') ORDER BY resource_code")" \
+  "os recursos visuais comerciais legados não foram transferidos para Íris"
+assert_equals \
+  $'creative-production-approval:8\nlanding-page-generation:6\noperacao-otimizacao-experimento:5\npde-communication-sales-journey:7' \
+  "$(query "SELECT CONCAT(process_code, ':', version_number) FROM business_process_definition WHERE status='PUBLISHED' AND technical_reference LIKE 'iris-communication-agent-v1%' ORDER BY process_code")" \
+  "os quatro processos da Íris não foram publicados nas versões esperadas"
+assert_equals \
+  "28" \
+  "$(query "SELECT COUNT(*) FROM business_process_activity_definition activity JOIN business_process_definition process ON process.id=activity.process_definition_id WHERE process.technical_reference LIKE 'iris-communication-agent-v1%'")" \
+  "as atividades dos processos da Íris não foram materializadas"
+assert_equals \
+  "6" \
+  "$(query "SELECT COUNT(*) FROM business_process_activity_definition activity JOIN business_process_definition process ON process.id=activity.process_definition_id WHERE process.technical_reference LIKE 'iris-communication-agent-v1%' AND JSON_UNQUOTE(JSON_EXTRACT(activity.definition_json, '$.responsibleAgentKeys[0]'))='communication-director'")" \
+  "Íris não recebeu exatamente as seis atividades de comunicação"
+assert_equals \
+  "0" \
+  "$(query "SELECT COUNT(*) FROM business_process_activity_definition activity JOIN business_process_definition process ON process.id=activity.process_definition_id WHERE process.technical_reference LIKE 'iris-communication-agent-v1%' AND JSON_EXTRACT(activity.definition_json, '$.responsibleAgentKeys') IS NOT NULL AND JSON_LENGTH(JSON_EXTRACT(activity.definition_json, '$.responsibleAgentKeys')) <> 1")" \
+  "uma atividade da Íris ainda possui coautoria"
+assert_equals \
+  "0" \
+  "$(query "SELECT COUNT(*) FROM business_process_activity_definition activity JOIN business_process_definition process ON process.id=activity.process_definition_id JOIN business_process_execution_resource resource ON resource.resource_code=activity.execution_resource_code WHERE process.technical_reference LIKE 'iris-communication-agent-v1%' AND JSON_UNQUOTE(JSON_EXTRACT(activity.definition_json, '$.responsibleAgentKeys[0]')) <> resource.responsible_agent_key")" \
+  "uma atividade publicada usa executor pertencente a outro agente"
+assert_equals \
+  "6" \
+  "$(query "SELECT COUNT(*) FROM business_process_chain_item item JOIN business_process_chain_definition chain_definition ON chain_definition.id=item.chain_definition_id WHERE chain_definition.chain_code='pde-value-creation-delivery' AND chain_definition.version_number=9")" \
+  "a cadeia v9 não contém os seis processos esperados"
+
+compose run --rm liquibase-iris-communication-agent
+
+assert_equals \
+  "21" \
+  "$(query "SELECT COUNT(*) FROM agent_version")" \
+  "a reaplicação da Íris duplicou versões"
+assert_equals \
+  "28" \
+  "$(query "SELECT COUNT(*) FROM business_process_activity_definition activity JOIN business_process_definition process ON process.id=activity.process_definition_id WHERE process.technical_reference LIKE 'iris-communication-agent-v1%'")" \
+  "a reaplicação da Íris duplicou atividades"
+assert_equals \
+  "6" \
+  "$(query "SELECT COUNT(*) FROM business_process_chain_item item JOIN business_process_chain_definition chain_definition ON chain_definition.id=item.chain_definition_id WHERE chain_definition.chain_code='pde-value-creation-delivery' AND chain_definition.version_number=9")" \
+  "a reaplicação da Íris duplicou itens da cadeia"
+
+printf 'Homologação física da matriz dos nove agentes aprovada no MySQL 5.7.\n'

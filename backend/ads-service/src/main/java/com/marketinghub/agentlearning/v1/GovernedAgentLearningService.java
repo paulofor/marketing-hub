@@ -22,7 +22,7 @@ public class GovernedAgentLearningService {
   private static final int MINIMUM_REPLAY_CASES = 10;
   private static final int MINIMUM_HOLDOUT_CASES = 5;
   private static final Set<String> GOVERNED_AGENTS =
-      Set.of("landing-generator", "meta-ad-approver", "apollo");
+      Set.of("communication-director", "landing-generator", "meta-ad-approver", "apollo");
   private final GovernedAgentLearningExperimentRepository repository;
   private final AgentMemoryService memoryService;
   private final ObjectMapper objectMapper;

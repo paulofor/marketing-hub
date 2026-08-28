@@ -29,6 +29,13 @@ public class InternalAgentTaskExecutionController {
         .orElseGet(List::of);
   }
 
+  /** Reexpõe o snapshot da lease ativa ao executor que já reservou a tarefa. */
+  @GetMapping("/{taskId}")
+  public AgentTaskPendingResponse claimed(
+      @PathVariable String agentKey, @PathVariable Long taskId) {
+    return service.claimedProcessTask(agentKey, taskId);
+  }
+
   /** Recebe resultado e evidências antes de liberar a atividade seguinte. */
   @PostMapping("/{taskId}/result")
   public ResponseEntity<Void> complete(

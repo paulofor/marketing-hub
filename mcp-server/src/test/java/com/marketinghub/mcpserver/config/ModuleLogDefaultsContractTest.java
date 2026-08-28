@@ -25,6 +25,8 @@ class ModuleLogDefaultsContractTest {
             "http://163.245.202.80:8096/ops-experiment-strategist-observability-v1/logfile";
     private static final String META_AD_APPROVER_WORKER_LOG_URL =
             "http://163.245.202.80:8097/ops-meta-ad-approver-observability-v1/logfile";
+    private static final String IRIS_IMAGE_STUDIO_LOG_URL =
+            "http://163.245.202.80:8098/ops-meta-ad-approver-observability-v1/logfile";
     private static final String PRODUCT_DISCOVERY_WORKER_LOG_URL =
             "http://191.252.120.96:18081/ops-product-discovery-observability-v1/logfile";
     private static final String PRODUCT_DISCOVERY_WORKER_HEALTH_URL =
@@ -33,6 +35,8 @@ class ModuleLogDefaultsContractTest {
             "http://163.245.202.80:8094/ops-growth-operator-observability-v1/logfile";
     private static final String GROWTH_OPERATOR_WORKER_HEALTH_URL =
             "http://163.245.202.80:8094/ops-growth-operator-observability-v1/health";
+    private static final String COMMUNICATION_AGENT_WORKER_LOG_URL =
+            "http://163.245.202.80:8101/ops-communication-agent-observability-v1/logfile";
 
     /**
      * Garante que a configuração Spring não direcione o alias backend ao log do AI Worker.
@@ -59,6 +63,24 @@ class ModuleLogDefaultsContractTest {
         assertTrue(localCompose.contains("MCP_GROWTH_OPERATOR_WORKER_HEALTH_URL:-" + GROWTH_OPERATOR_WORKER_HEALTH_URL));
         assertTrue(deploymentCompose.contains("MCP_LOG_GROWTH_OPERATOR_WORKER_PATH:-" + GROWTH_OPERATOR_WORKER_LOG_URL));
         assertTrue(deploymentCompose.contains("MCP_GROWTH_OPERATOR_WORKER_HEALTH_URL:-" + GROWTH_OPERATOR_WORKER_HEALTH_URL));
+    }
+
+    /** Garante que os três descritores publiquem a origem operacional exclusiva de Íris. */
+    @Test
+    void shouldPublishCommunicationAgentWorkerLogEndpoint() throws IOException {
+        String configuration = Files.readString(Path.of("src/main/resources/application.yml"));
+        String localCompose = Files.readString(Path.of("docker-compose.yml"));
+        String deploymentCompose = Files.readString(Path.of("../deploy/docker-compose.mcp.yml"));
+        String combinedDeploymentCompose = Files.readString(Path.of("../deploy/docker-compose.yml"));
+
+        assertTrue(configuration.contains(
+                "MCP_LOG_COMMUNICATION_AGENT_WORKER_PATH:" + COMMUNICATION_AGENT_WORKER_LOG_URL));
+        assertTrue(localCompose.contains(
+                "MCP_LOG_COMMUNICATION_AGENT_WORKER_PATH:-" + COMMUNICATION_AGENT_WORKER_LOG_URL));
+        assertTrue(deploymentCompose.contains(
+                "MCP_LOG_COMMUNICATION_AGENT_WORKER_PATH:-" + COMMUNICATION_AGENT_WORKER_LOG_URL));
+        assertTrue(combinedDeploymentCompose.contains(
+                "MCP_LOG_COMMUNICATION_AGENT_WORKER_PATH:-" + COMMUNICATION_AGENT_WORKER_LOG_URL));
     }
 
     /**
@@ -156,6 +178,21 @@ class ModuleLogDefaultsContractTest {
         assertTrue(configuration.contains("MCP_LOG_META_AD_APPROVER_WORKER_PATH:" + META_AD_APPROVER_WORKER_LOG_URL));
         assertTrue(localCompose.contains("MCP_LOG_META_AD_APPROVER_WORKER_PATH:-" + META_AD_APPROVER_WORKER_LOG_URL));
         assertTrue(deploymentCompose.contains("MCP_LOG_META_AD_APPROVER_WORKER_PATH:-" + META_AD_APPROVER_WORKER_LOG_URL));
+    }
+
+    /** Garante que os descritores exponham o estúdio visual sob a identidade operacional de Íris. */
+    @Test
+    void shouldPublishIrisImageStudioLogEndpoint() throws IOException {
+        String configuration = Files.readString(Path.of("src/main/resources/application.yml"));
+        String localCompose = Files.readString(Path.of("docker-compose.yml"));
+        String deploymentCompose = Files.readString(Path.of("../deploy/docker-compose.mcp.yml"));
+
+        assertTrue(configuration.contains("MCP_LOG_IRIS_IMAGE_STUDIO_PATH"));
+        assertTrue(configuration.contains(IRIS_IMAGE_STUDIO_LOG_URL));
+        assertTrue(localCompose.contains(
+                "MCP_LOG_IRIS_IMAGE_STUDIO_PATH:-" + IRIS_IMAGE_STUDIO_LOG_URL));
+        assertTrue(deploymentCompose.contains(
+                "MCP_LOG_IRIS_IMAGE_STUDIO_PATH:-" + IRIS_IMAGE_STUDIO_LOG_URL));
     }
 
     /**

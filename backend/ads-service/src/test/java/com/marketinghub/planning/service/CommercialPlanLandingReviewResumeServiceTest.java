@@ -37,7 +37,7 @@ class CommercialPlanLandingReviewResumeServiceTest {
   /** Reutiliza o HTML idêntico e entrega contratos canônicos atualizados aos dois revisores. */
   @Test
   void buildsReviewSnapshotWhenOnlyEvidenceTransportWasBlocked() throws Exception {
-    AgentTask landing = task(243L, "landing-generator", "html", "COMPLETED");
+    AgentTask landing = task(243L, "communication-director", "html", "COMPLETED");
     landing.setEvidenceJson("{\"checkoutUrl\":null}");
     AgentTask customer = task(244L, "customer-agent", "customer", "BLOCKED");
     customer.setResultJson(
@@ -81,7 +81,40 @@ class CommercialPlanLandingReviewResumeServiceTest {
             "\"score\":90");
   }
 
-  /** Exige nova execução do Dédalo quando a Psique apontou defeito real de conteúdo. */
+  /** Preserva a retomada de landings históricas aprovadas antes da criação da Íris. */
+  @Test
+  void supportsLegacyDedaloLandingWithoutReconstruction() throws Exception {
+    AgentTask landing = task(243L, "landing-generator", "html", "COMPLETED");
+    landing.setEvidenceJson("{\"checkoutUrl\":null}");
+    AgentTask customer = task(244L, "customer-agent", "customer", "BLOCKED");
+    customer.setResultJson(
+        "{\"decision\":\"BLOCKED\",\"remediationTarget\":\"EVIDENCE_TRANSPORT\","
+            + "\"requiredChanges\":[\"Persistir checkoutUrl\"]}");
+    Experiment experiment =
+        Experiment.builder().id(89L).htmlGeraLanding("<html>Rigel</html>").build();
+    when(experimentRepository.findById(89L)).thenReturn(Optional.of(experiment));
+    when(landingExecutionRepository
+            .findTop20ByExperimentIdAndStageCodeAndAutonomousCycleIdOrderByExecutionRequestedAtDesc(
+                89L, "landing-page-quality-review", "agent-task:243"))
+        .thenReturn(List.of(qualityReview("<html>Rigel</html>")));
+    when(checkoutEvidenceResolver.resolve(experiment))
+        .thenReturn(
+            Map.of(
+                "validationStatus",
+                "VALIDATED_FROM_PERSISTED_CANONICAL_BINDING",
+                "canonicalUrl",
+                "https://checkout.example/rigel"));
+    when(approvedCreativeEvidenceService.resolve(89L))
+        .thenReturn(Map.of("status", "APPROVED", "creativePackageId", "package-89"));
+
+    Optional<String> brief =
+        service().buildResumeBrief(4L, 89L, 1, List.of(), List.of(landing, customer));
+
+    assertThat(brief).isPresent();
+    assertThat(brief.orElseThrow()).contains("\"sourceLandingTaskId\":243");
+  }
+
+  /** Exige nova materialização da Íris quando a Psique apontou defeito real de conteúdo. */
   @Test
   void rejectsReuseForLandingContentBlock() {
     AgentTask landing = task(243L, "landing-generator", "html", "COMPLETED");

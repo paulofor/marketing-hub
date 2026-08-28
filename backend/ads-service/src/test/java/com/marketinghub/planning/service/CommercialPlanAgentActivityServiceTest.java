@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 /** Responsabilidade: validar a segregação e a prestação de contas dos agentes no plano. */
 class CommercialPlanAgentActivityServiceTest {
 
-  /** Consolida a landing somente depois dos três gates da mesma execução oficial. */
+  /** Consolida a landing somente depois da materialização e dos dois pareceres independentes. */
   @Test
   void consolidatesOfficialLandingJourneyFromBpmGates() {
     AgentTaskRepository tasks = mock(AgentTaskRepository.class);
@@ -46,11 +46,17 @@ class CommercialPlanAgentActivityServiceTest {
     CommercialPlan plan = CommercialPlan.builder().id(4L).build();
     List<AgentTask> journey =
         List.of(
-            journeyTask(1L, "landing-generator", "Dédalo", "html", "COMPLETED", now),
+            journeyTask(1L, "communication-director", "Íris", "select", "COMPLETED", now),
             journeyTask(
-                2L, "customer-agent", "Psique", "customer", "COMPLETED", now.plusSeconds(1)),
+                2L, "communication-director", "Íris", "strategy", "COMPLETED", now.plusSeconds(1)),
             journeyTask(
-                3L, "meta-ad-approver", "Têmis", "commercial", "COMPLETED", now.plusSeconds(2)));
+                3L, "communication-director", "Íris", "compose", "COMPLETED", now.plusSeconds(2)),
+            journeyTask(
+                4L, "communication-director", "Íris", "html", "COMPLETED", now.plusSeconds(3)),
+            journeyTask(
+                5L, "customer-agent", "Psique", "customer", "COMPLETED", now.plusSeconds(4)),
+            journeyTask(
+                6L, "meta-ad-approver", "Têmis", "commercial", "COMPLETED", now.plusSeconds(5)));
     when(tasks.findBySourceReferenceStartingWithOrderByUpdatedAtDescIdDesc("commercial-plan:4@v"))
         .thenReturn(journey.reversed());
     when(cycles.findByCommercialPlanIdOrderByUpdatedAtDesc(4L)).thenReturn(List.of());
@@ -69,7 +75,15 @@ class CommercialPlanAgentActivityServiceTest {
             entry -> {
               assertThat(entry.status()).isEqualTo("COMPLETED");
               assertThat(entry.detail())
-                  .contains("html=COMPLETED", "customer=COMPLETED", "commercial=COMPLETED");
+                  .contains(
+                      "select=COMPLETED",
+                      "strategy=COMPLETED",
+                      "compose=COMPLETED",
+                      "html=COMPLETED",
+                      "customer=COMPLETED",
+                      "commercial=COMPLETED");
+              assertThat(entry.agentKey()).isEqualTo("communication-director");
+              assertThat(entry.agentNickname()).isEqualTo("Íris");
               assertThat(entry.sourceReference())
                   .isEqualTo("commercial-plan-journey-homologation:commercial-plan:4@v3:journey");
             });

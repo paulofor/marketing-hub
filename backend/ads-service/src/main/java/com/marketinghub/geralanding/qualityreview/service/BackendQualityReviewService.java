@@ -80,9 +80,19 @@ public class BackendQualityReviewService {
   /** Agenda automaticamente o Quality Gate visual após a montagem do HTML final do GeraLanding. */
   @Transactional
   public String reviewAfterHtmlGeneration(Experiment experiment) {
+    return reviewAfterHtmlGeneration(experiment, null);
+  }
+
+  /** Agenda o Quality Gate preservando a correlação informada pelo pipeline de origem. */
+  @Transactional
+  public String reviewAfterHtmlGeneration(Experiment experiment, String autonomousCycleId) {
     GeraLandingStageExecution execution =
         createExecution(
-            experiment, "auto/html-geralanding", resolveCurrentCycle(experiment.getId()));
+            experiment,
+            "auto/html-geralanding",
+            StringUtils.hasText(autonomousCycleId)
+                ? autonomousCycleId
+                : resolveCurrentCycle(experiment.getId()));
     return fromDatabaseIdJob(execution.getIdJob());
   }
 

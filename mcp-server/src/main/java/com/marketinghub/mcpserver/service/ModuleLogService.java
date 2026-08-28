@@ -420,13 +420,16 @@ public class ModuleLogService {
                     "MCP_LOG_PRODUCT_DISCOVERY_WORKER_PATH",
                     "http://191.252.120.96:18081/ops-product-discovery-observability-v1/logfile");
             case "meta-ad-approver-worker" -> properties.logs().metaAdApproverWorkerPath();
-            case "themis-image-studio" -> properties.logs().themisImageStudioPath();
+            case "iris-image-studio", "themis-image-studio" -> properties.logs().themisImageStudioPath();
             case "growth-operator-worker" -> System.getenv().getOrDefault(
                     "MCP_LOG_GROWTH_OPERATOR_WORKER_PATH",
                     "http://163.245.202.80:8094/ops-growth-operator-observability-v1/logfile");
             case "landing-generator-agent-worker" -> System.getenv().getOrDefault(
                     "MCP_LOG_LANDING_GENERATOR_AGENT_WORKER_PATH",
                     "http://163.245.202.80:8100/ops-landing-generator-observability-v1/logfile");
+            case "communication-agent-worker" -> System.getenv().getOrDefault(
+                    "MCP_LOG_COMMUNICATION_AGENT_WORKER_PATH",
+                    "http://163.245.202.80:8101/ops-communication-agent-observability-v1/logfile");
             default -> throw new IllegalArgumentException("Unknown module: " + module);
         };
     }
@@ -444,15 +447,18 @@ public class ModuleLogService {
                     "mds", "mois", "mois-sales-library-worker", "mois-hotmart", "clickbank-coletor-mois",
                     "oprm-coletor-receita", "ops-monitor-worker", "pde-platform-backend",
                     "video-management-service", "customer-agent-worker", "financial-agent-worker",
-                    "experiment-strategist-worker", "meta-ad-approver-worker", "themis-image-studio",
-                    "landing-generator-agent-worker", "product-discovery-worker", "growth-operator-worker" -> normalized;
+                    "experiment-strategist-worker", "meta-ad-approver-worker", "iris-image-studio",
+                    "themis-image-studio",
+                    "landing-generator-agent-worker", "product-discovery-worker", "growth-operator-worker",
+                    "communication-agent-worker" -> normalized;
             default -> throw new IllegalArgumentException("module must be one of: backend, ai-worker, lead-portal, "
                     + "facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, "
                     + "mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker, "
                     + "pde-platform-backend, video-management-service, customer-agent-worker, financial-agent-worker, "
-                    + "experiment-strategist-worker, meta-ad-approver-worker, themis-image-studio, "
+                    + "experiment-strategist-worker, meta-ad-approver-worker, iris-image-studio, "
+                    + "themis-image-studio, "
                     + "landing-generator-agent-worker, "
-                    + "product-discovery-worker, growth-operator-worker");
+                    + "product-discovery-worker, growth-operator-worker, communication-agent-worker");
         };
     }
 

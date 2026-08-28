@@ -1,21 +1,83 @@
+CREATE TABLE agent_theme (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL,
+  description TEXT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_fixture_agent_theme_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO agent_theme (id, name, description)
+VALUES (1, 'Operacoes Autonomas', 'Agentes governados por metas, evidencias e limites de autoridade.');
+
 CREATE TABLE agent (
   id BIGINT NOT NULL AUTO_INCREMENT,
+  theme_id BIGINT NULL,
   agent_key VARCHAR(100) NOT NULL,
   name VARCHAR(160) NOT NULL,
+  nickname VARCHAR(60) NULL,
   current_version INT NOT NULL,
   status VARCHAR(30) NOT NULL,
+  execution_mode VARCHAR(50) NULL,
+  automatic_execution_enabled TINYINT(1) NOT NULL DEFAULT 1,
   model_name VARCHAR(100) NULL,
   description TEXT NULL,
+  owner_name VARCHAR(255) NULL,
   business_objective TEXT NULL,
   success_metrics TEXT NULL,
+  trigger_policy TEXT NULL,
+  authority_policy LONGTEXT NULL,
   responsibility_contract TEXT NULL,
   orchestrator_policy TEXT NULL,
   analysis_policy TEXT NULL,
   offering_policy TEXT NULL,
   prompt_contract_path VARCHAR(500) NULL,
   schema_contract_path VARCHAR(500) NULL,
+  updated_at DATETIME NULL,
   PRIMARY KEY (id),
-  UNIQUE KEY uk_fixture_agent_key (agent_key)
+  UNIQUE KEY uk_fixture_agent_key (agent_key),
+  UNIQUE KEY uk_fixture_agent_nickname (nickname),
+  CONSTRAINT fk_fixture_agent_theme FOREIGN KEY (theme_id) REFERENCES agent_theme(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE agent_input (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  agent_id BIGINT NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  input_type VARCHAR(100) NULL,
+  description LONGTEXT NULL,
+  order_index INT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  CONSTRAINT fk_fixture_agent_input_agent FOREIGN KEY (agent_id) REFERENCES agent(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE agent_output (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  agent_id BIGINT NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  output_type VARCHAR(100) NULL,
+  description LONGTEXT NULL,
+  order_index INT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  CONSTRAINT fk_fixture_agent_output_agent FOREIGN KEY (agent_id) REFERENCES agent(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE agent_internal_function (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  agent_id BIGINT NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  function_type VARCHAR(100) NULL,
+  description LONGTEXT NULL,
+  order_index INT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  CONSTRAINT fk_fixture_agent_function_agent FOREIGN KEY (agent_id) REFERENCES agent(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE agent_version (

@@ -7,10 +7,10 @@ artefatos de produto. Avalia verdade, prova, fidelidade ao Contrato Estratégico
 compliance, segurança da comunicação e continuidade entre anúncio, destino, checkout e entrega.
 
 Têmis não cria copy, conceito, imagem, vídeo, landing ou produto e nunca redefine mercado,
-posicionamento, tese de oferta, preço ou distribuição. Dédalo materializa comunicação não
-audiovisual; Apolo produz audiovisual; o recurso técnico de imagem executa o contrato de Dédalo. O
-resultado materializado retorna para atividades separadas de Psique e Têmis antes da aprovação
-humana.
+posicionamento, tese de oferta, preço ou distribuição. Íris materializa comunicação não audiovisual;
+Apolo produz audiovisual. Dédalo fornece o produto e as provas reais usadas na comunicação, inclusive
+entregáveis visuais produzidos no próprio fluxo do PDE. O resultado materializado por Íris retorna para
+atividades separadas de Psique e Têmis antes da aprovação humana.
 
 ## Responsabilidade de revisão
 
@@ -25,26 +25,26 @@ pós-produção. O prompt de imagem não deve solicitar palavras, preço, CTA, l
 copy permanece nos campos próprios do anúncio. A mídia deve demonstrar visualmente a natureza do
 produto em uma única cena autossuficiente e não pode confundir o produto anunciado com outro serviço.
 Requisitos e critérios de aceite precisam ser executáveis somente com as entradas efetivamente
-entregues pelo backend ao recurso visual de Dédalo.
+entregues pelo backend ao produtor correspondente.
 
 O backend continua sendo a autoridade exclusiva para criar a nova versão, publicar a pendência,
-controlar custo e tentativas e devolver a peça ao gate. O Estúdio Visual legado é um recurso técnico
-de materialização governado pelo contrato de Dédalo e pode editar a imagem com `gpt-image-2` em
-qualidade `high`; o nome técnico do pacote não concede autoria a Têmis. Têmis recebe somente o ativo
-materializado e sua evidência para revisão independente.
+controlar custo e tentativas e devolver a peça ao gate. O estúdio `iris-image-studio` materializa
+somente imagens comerciais de Íris com `gpt-image-2` em qualidade `high`; os códigos legados do
+recurso não concedem autoria a Têmis. Têmis recebe somente o ativo materializado e sua evidência para
+revisão independente.
 
-Dédalo pode solicitar ao recurso técnico uma imagem nova quando o artefato visual não cumprir os
-critérios. A interface não pode exigir que uma pessoa hospede a mídia ou informe uma URL: o contrato
-interno aceita arquivo binário, modelo, prompt e custo, armazena o asset na categoria do experimento,
-cria a versão e a entrega a uma nova execução revisora de Têmis. A autonomia do recurso termina nos
-gates persistidos de custo, progresso e qualidade; não inclui decisão comercial ou publicação.
+Quando a prova visual do produto não cumprir os critérios, o backend devolve a causa a Dédalo. Quando
+copy, composição, landing ou outra superfície pré-compra falhar, devolve a causa a Íris. Nenhum dos
+agentes chama diretamente o recurso ou o outro agente. A interface não pode exigir que uma pessoa
+hospede mídia ou informe URL quando existir um contrato técnico oficial; a autonomia de qualquer
+recurso termina nos gates persistidos de custo, progresso e qualidade e não inclui decisão comercial
+ou publicação.
 
-Uma tarefa operacional `WORK` atribuída a `landing-generator` e vinculada pela referência canônica
-`experiment:<id>` deve ser reconciliada pelo backend com a fila de materialização de criativos. O backend
-muda a tarefa de `PENDING` para `IN_PROGRESS`, solicita uma única alternativa sem apagar o histórico
-e conclui a tarefa no callback técnico do executor. A revisão posterior pertence a outra atividade,
-atribuída a `meta-ad-approver`, e nunca altera retrospectivamente a autoria de Dédalo. Falha do
-executor bloqueia a tarefa; polling repetido não pode duplicar a solicitação.
+Uma tarefa operacional atribuída a `communication-director` deve iniciar no `pending` BPM canônico
+de Íris. O backend muda a tarefa de `PENDING` para `IN_PROGRESS`, congela os predecessores e conclui
+ou bloqueia somente pelo callback do executor. A revisão posterior pertence a outra atividade,
+atribuída a `meta-ad-approver`, e nunca altera retrospectivamente a autoria de Íris. Falha do executor
+bloqueia a tarefa; polling repetido não pode duplicar a solicitação.
 
 ## Contrato de copy para Meta
 
@@ -52,11 +52,11 @@ O armazenamento deve preservar a copy integral e o histórico em campo textual a
 Têmis recebe o contrato completo dos campos publicáveis: `primaryText` com até 125 caracteres,
 `headline` com até 40, `description` com até 25 e `ctaText` canônico com até 32. A contagem considera
 caracteres Unicode completos, inclusive espaços, pontuação, emojis e quebras de linha. Excesso ou
-incoerência gera bloqueio com causa e critério de aceite; Dédalo materializa a correção sem truncamento
+incoerência gera bloqueio com causa e critério de aceite; Íris materializa a correção sem truncamento
 automático. O backend valida a nova versão e o Facebook Ads Worker repete a validação antes de chamada
 externa.
 
-Esse contrato deve estar explícito e testado nos três executores envolvidos: Dédalo materializa a
+Esse contrato deve estar explícito e testado nos três executores envolvidos: Íris materializa a
 copy dentro dos limites; Têmis bloqueia qualquer excesso e devolve critérios de aceite sem reescrever
 o campo; e o Facebook Ads Worker bloqueia deterministicamente o payload antes da Graph API. Nenhum
 deles pode depender apenas do conhecimento implícito do modelo nem truncar conteúdo para fazê-lo
@@ -67,9 +67,10 @@ caber.
 O executor canônico de revisão é `meta-ad-approver-worker`. Para revisão, ele consome somente
 `/api/internal/creatives/agent-review/stage-executions/pending`, executa `gpt-5.6-sol` pelo Codex
 ChatGPT em sandbox própria `read-only` e envia o parecer exclusivamente pelo callback do backend.
-Para criação, edição e retrabalho de imagens, o recurso isolado `themis-image-studio`, sob controle
-PLAY/STOP de Dédalo, consome as filas versionadas do backend, usa `gpt-image-2` e devolve o binário e
-a auditoria ao backend. Os dois
+Para criação, edição e retrabalho de imagens comerciais, o recurso isolado `iris-image-studio`, sob
+controle PLAY/STOP de Íris, consome as filas versionadas do backend, exige prova aprovada, usa
+`gpt-image-2` e devolve o binário e a auditoria ao backend. Íris usa também o executor independente
+`communication-agent-worker` para contratos, copy, peças estruturadas e landing. Os três
 containers são construídos pelo mesmo módulo e workflow, mas ativam papéis Spring mutuamente
 exclusivos: o revisor não recebe a chave OpenAI e o Estúdio não recebe Codex, repositório, browser ou
 ferramentas de aprovação. Cada container possui usuário sem privilégios, filesystem somente leitura,
@@ -85,8 +86,8 @@ Logs vivos e telemetria são evidências complementares; nenhum deles substitui 
 O MCP central também deve expor uma leitura consolidada pelo `creativeId`, cruzando o parecer
 canônico, heartbeat, processo vivo, atividade, detecção de bloqueio e memória vigente de Têmis. A
 consulta deve distinguir memórias confirmadas de candidatas: candidatas orientam a investigação,
-mas somente feedback posterior e independente pode confirmá-las. Dédalo e Têmis devem recuperar
-suas memórias governadas antes de decidir; nenhum dos dois pode usar a própria memória como prova de
+mas somente feedback posterior e independente pode confirmá-las. Íris, Dédalo e Têmis devem recuperar
+suas memórias governadas quando o próprio domínio estiver envolvido; nenhum deles pode usar a própria memória como prova de
 aprovação nem promover sozinho um aprendizado. O consenso é comprovado pelo novo artefato e pelo
 parecer persistido, nunca pela concordância textual entre memórias.
 
@@ -126,7 +127,7 @@ O agente avalia separadamente atenção, clareza, desejo, credibilidade e ação
 Em `ADJUST` ou `REJECTED`, a execução revisora entrega a causa, requisitos obrigatórios, elementos
 proibidos e critérios verificáveis, mas nunca texto, conceito, prompt visual ou ativo substituto. O
 backend controla tentativas pelos gates de progresso, repetição, custo e iteração do ciclo de
-convergência, preservando versões, requests, responses e evidências. Dédalo ou Apolo materializa a
+convergência, preservando versões, requests, responses e evidências. Íris ou Apolo materializa a
 correção conforme a mídia, e outra execução independente de Têmis decide o gate.
 
 O upload canônico da mídia produzida é `POST /api/internal/creatives/{id}/agent-improvement/artifact` em `multipart/form-data`. O arquivo é obrigatório; `model`, `prompt` e `costUsd` preservam a auditoria. O frontend e o monitor devem exibir o identificador da tarefa, o identificador da execução criativa e a causa persistida atual, priorizando a execução ativa sobre um bloqueio histórico da tarefa agregadora.
@@ -157,8 +158,8 @@ O backend é o coordenador exclusivo da convergência anúncio → landing. Cada
 Aprovador deve declarar um código estável, requisito, critério de aceite e exatamente um responsável:
 `CREATIVE_COPY`, `CREATIVE_MEDIA` ou `LANDING`. O backend persiste ciclo, versão, score, custo,
 evidência e tarefa. Quando o alvo for `LANDING`, o backend cria de forma idempotente uma delegação
-Têmis → Dédalo, envia o mesmo briefing à fila autônoma oficial de Dédalo e sincroniza o estado da
-tarefa com o callback do executor. Dédalo escolhe a reconstrução causal por etapas canônicas; não
+Têmis → Íris, envia o mesmo briefing à fila autônoma oficial de Íris e sincroniza o estado da
+tarefa com o callback do executor. Íris escolhe a reconstrução causal por etapas canônicas; não
 recebe autoridade para alterar oferta, preço, checkout, tracking ou publicar. Nenhum executor chama
 outro executor nem decide a próxima etapa.
 

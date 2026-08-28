@@ -6,15 +6,15 @@
 
 ## Decisão
 
-O Agenda Cheia Nail Design usa duas camadas persistentes e aprovadas antes da venda: fotografias
-premium reutilizáveis, sem texto, e amostras completas do entregável fabricadas no Estúdio Visual de
-Dédalo. O pedido não improvisa fotografias enquanto a compradora espera; ele usa o acervo aprovado e
-aplica a personalização contratada. Dédalo pode criar ou editar novas versões fora da jornada da
-compradora, sempre com revisão independente de Têmis antes de promovê-las.
+O Agenda Cheia Nail Design usa duas camadas persistentes: provas e entregáveis reais do PDE,
+produzidos no fluxo versionado de Dédalo, e peças comerciais de Íris derivadas dessas fontes. O
+pedido não improvisa fotografias enquanto a compradora espera; ele usa o acervo do produto aprovado
+e aplica a personalização contratada. Novas versões do produto permanecem sob Dédalo e passam por
+revisão independente de Têmis antes de serem promovidas.
 
 ## Fluxo comercial
 
-`Recurso visual de Dédalo → revisão independente de Têmis → biblioteca aprovada → briefing → seleção de fotos → personalização → gate → ZIP → e-mail`
+`Recurso real de Dédalo → revisão independente de Têmis → biblioteca aprovada → briefing → seleção de fotos → personalização → gate → ZIP → e-mail`
 
 São personalizados por compra: nome profissional, região, WhatsApp, serviços, cores, objetivo, textos, legendas, mensagens e composição. As fotografias podem ser reutilizadas em combinações diferentes porque a promessa comercial é personalização do kit, não exclusividade fotográfica.
 
@@ -49,15 +49,17 @@ promoção do acervo fotográfico sem texto usado pelo compositor:
 telefone, cidade, marca ou CTA de uma cliente. Esses dados são aplicados somente pelo compositor
 depois da seleção.
 
-## Operação versionada dos entregáveis visuais
+## Operação versionada dos entregáveis e da comunicação visual
 
-O container `themis-image-studio` é o único produtor de imagens completas na Biblioteca Audiovisual
-do plano comercial. Ele consome a fila `pending` do backend, cria ou edita a imagem, registra modelo,
-prompt, custo, hash, dimensões e linhagem e devolve o arquivo como `DRAFT`. Outra execução de Têmis,
-sem credencial do provedor visual, inspeciona o arquivo real e decide `APPROVED` ou `RETIRED`.
+Entregáveis visuais e capturas fiéis do produto nascem no fluxo de Dédalo e entram na Biblioteca
+Audiovisual como `DELIVERY` ou `PRODUCT_PROOF`. O Estúdio comercial de Íris não os fabrica. A partir
+de uma dessas referências já aprovada, o container `iris-image-studio` cria ou edita somente peças
+`LANDING`, `ADS` ou `SOCIAL`, registra request, response, modelo, custo, hash, dimensões e linhagem e
+devolve o arquivo como `DRAFT`. Uma execução independente de Têmis, sem a credencial produtora,
+inspeciona o arquivo persistido e decide `APPROVED` ou `RETIRED`.
 
-Uma imagem completa aprovada pode acumular `DELIVERY`, `LANDING`, `ADS` e `SOCIAL`; os consumidores
-devem reutilizar o arquivo íntegro em vez de redesenharem o produto. Para personalização por compra,
+Produto e comunicação preservam finalidades separadas; os consumidores devem reutilizar a prova
+real em vez de redesenharem o PDE. Para personalização por compra,
 o compositor combina a fotografia aprovada com os dados do briefing. Novas artes-modelo entram em
 lote segregado de homologação e nunca substituem silenciosamente a coleção canônica.
 

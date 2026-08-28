@@ -24,6 +24,7 @@ Manter os seguintes endpoints como defaults de origem de logs no módulo `mcp-se
 - Meta Ad Approver Worker: `http://163.245.202.80:8097/ops-meta-ad-approver-observability-v1/logfile`
 - Estúdio Visual de Têmis: `http://163.245.202.80:8098/ops-meta-ad-approver-observability-v1/logfile`
 - Landing Generator Agent Worker: `http://163.245.202.80:8100/ops-landing-generator-observability-v1/logfile`
+- Communication Agent Worker: `http://163.245.202.80:8101/ops-communication-agent-observability-v1/logfile`
 - Product Discovery Worker: `http://191.252.120.96:18081/ops-product-discovery-observability-v1/logfile`
 
 Sempre que houver alteração desses endpoints, atualizar em conjunto:

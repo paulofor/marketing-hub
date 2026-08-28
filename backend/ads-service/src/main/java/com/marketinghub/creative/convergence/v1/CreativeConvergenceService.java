@@ -2,12 +2,16 @@ package com.marketinghub.creative.convergence.v1;
 
 import com.marketinghub.agenttask.AgentTaskService;
 import com.marketinghub.agenttask.CreateAgentTaskByAgentRequest;
+import com.marketinghub.businessprocess.BusinessProcessDefinition;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeAgentReviewStatus;
 import com.marketinghub.creative.dto.CreativeAgentReviewResultRequest;
-import com.marketinghub.geralanding.agent.v1.LandingGenerationAgentExecutionService;
+import com.marketinghub.planning.CommercialPlan;
+import com.marketinghub.planning.service.CommercialPlanVersionService;
+import com.marketinghub.repository.jpa.businessprocess.BusinessProcessDefinitionRepository;
 import com.marketinghub.repository.jpa.creative.convergence.CreativeConvergenceCycleRepository;
 import com.marketinghub.repository.jpa.creative.convergence.CreativeConvergenceTaskRepository;
+import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -23,18 +27,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-/** Responsabilidade: coordenar a convergência entre Aprovador, mídia e GeraLanding. */
+/** Responsabilidade: coordenar a convergência entre revisão, comunicação e mídia. */
 @Service
 @RequiredArgsConstructor
 public class CreativeConvergenceService {
   private static final int MAX_ITERATIONS = 8;
   private static final int MAX_REPEATED_ISSUES = 2;
   private static final BigDecimal MAX_CYCLE_COST_USD = new BigDecimal("5.00");
+  private static final String LANDING_PROCESS_CODE = "landing-page-generation";
 
   private final CreativeConvergenceCycleRepository cycleRepository;
   private final CreativeConvergenceTaskRepository taskRepository;
   private final AgentTaskService agentTaskService;
-  private final LandingGenerationAgentExecutionService landingAgentExecutionService;
+  private final BusinessProcessDefinitionRepository processRepository;
+  private final CommercialPlanRepository commercialPlanRepository;
+  private final CommercialPlanVersionService commercialPlanVersionService;
 
   /** Registra o parecer, distribui correções e encerra ciclos sem progresso ou acima do custo. */
   @Transactional
@@ -123,27 +130,69 @@ public class CreativeConvergenceService {
     cycleRepository.save(cycle);
   }
 
-  /** Delega a causa da landing para Dédalo e abre sua execução autônoma sem permitir publicação. */
+  /** Delega a causa da landing para as etapas canônicas de Íris sem permitir publicação. */
   private void dispatchLandingCorrection(
       Creative creative,
       CreativeConvergenceCycle cycle,
       CreativeAgentReviewResultRequest.ConvergenceCorrectionTarget target) {
-    String sourceReference = "creative-convergence:" + cycle.getId() + ":landing";
+    Long experimentId = creative.getExperiment().getId();
+    CommercialPlan plan =
+        commercialPlanRepository.findByExperimentReference(experimentId).stream()
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "Correção de comunicação exige plano comercial vinculado ao experimento."));
+    int planVersion = commercialPlanVersionService.current(plan.getId()).versionNumber();
+    BusinessProcessDefinition process =
+        processRepository
+            .findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
+                LANDING_PROCESS_CODE, "PUBLISHED")
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "O subprocesso publicado de landing não está disponível para Íris."));
+    String sourceReference =
+        "commercial-plan:" + plan.getId() + "@v" + planVersion + ":convergence:" + cycle.getId();
     String brief = correctionBrief(target);
-    agentTaskService.createOperationalDelegationIfAbsent(
-        new CreateAgentTaskByAgentRequest(
-            "meta-ad-approver",
-            "landing-generator",
-            "Corrigir landing do experimento #" + creative.getExperiment().getId(),
-            brief,
-            "HIGH",
-            sourceReference));
-    landingAgentExecutionService.enqueueCreativeConvergenceCorrection(
-        creative.getExperiment().getId(),
-        sourceReference,
-        target.issueCode(),
-        brief,
-        target.acceptanceCriterion());
+    for (String activityId : List.of("select", "strategy", "compose", "html")) {
+      agentTaskService.createOperationalDelegationIfAbsent(
+          new CreateAgentTaskByAgentRequest(
+              "meta-ad-approver",
+              "communication-director",
+              correctionTitle(experimentId, activityId),
+              correctionActivityBrief(activityId, brief),
+              "HIGH",
+              sourceReference,
+              process.getId(),
+              activityId,
+              false,
+              null));
+    }
+  }
+
+  /** Nomeia cada etapa de correção para a atividade permanecer legível na mesa da Íris. */
+  private String correctionTitle(Long experimentId, String activityId) {
+    return switch (activityId) {
+      case "select" -> "Revalidar provas da landing do experimento #" + experimentId;
+      case "strategy" -> "Corrigir estratégia da landing do experimento #" + experimentId;
+      case "compose" -> "Corrigir composição da landing do experimento #" + experimentId;
+      case "html" -> "Materializar correção da landing do experimento #" + experimentId;
+      default -> throw new IllegalArgumentException("Atividade de comunicação desconhecida.");
+    };
+  }
+
+  /** Restringe cada etapa ao parecer persistido sem transferir autoria da revisão para Íris. */
+  private String correctionActivityBrief(String activityId, String brief) {
+    return switch (activityId) {
+      case "select" -> brief + " Revalidar somente provas reais de Dédalo com linhagem auditável.";
+      case "strategy" ->
+          brief + " Ajustar narrativa e copy sem alterar oferta, preço, público ou produto.";
+      case "compose" ->
+          brief + " Ajustar composição visual responsiva sem fabricar prova ou resultado.";
+      case "html" -> brief + " Entregar HTML integral para novo Quality Review independente.";
+      default -> throw new IllegalArgumentException("Atividade de comunicação desconhecida.");
+    };
   }
 
   /** Retorna o relatório persistido mais recente da linhagem sem depender de logs. */

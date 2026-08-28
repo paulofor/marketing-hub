@@ -14,10 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-/**
- * Responsabilidade: aplicar HTML integral criado por Dédalo sem permitir alterar contratos
- * comerciais protegidos.
- */
+/** Responsabilidade: aplicar HTML integral criado pelo agente responsável sem alterar contratos. */
 @Service
 public class GovernedLandingHtmlService {
   private static final Pattern ANCHOR_TAG =
@@ -46,9 +43,15 @@ public class GovernedLandingHtmlService {
     this.landingAssetService = landingAssetService;
   }
 
-  /** Valida, persiste como rascunho e envia o documento integral para Têmis. */
+  /** Valida, persiste como rascunho e envia o documento integral ao Quality Review. */
   @Transactional
   public void apply(Long experimentId, String generatedHtml) {
+    apply(experimentId, generatedHtml, null);
+  }
+
+  /** Valida e persiste o documento vinculando o Quality Review ao ciclo informado. */
+  @Transactional
+  public void apply(Long experimentId, String generatedHtml, String autonomousCycleId) {
     Experiment experiment =
         experimentRepository
             .findById(experimentId)
@@ -60,7 +63,11 @@ public class GovernedLandingHtmlService {
     landingAssetService.validateApprovedAssetReferences(experimentId, generatedHtml);
     experiment.setHtmlGeraLanding(generatedHtml.trim());
     experimentRepository.save(experiment);
-    qualityReviewService.reviewAfterHtmlGeneration(experiment);
+    if (StringUtils.hasText(autonomousCycleId)) {
+      qualityReviewService.reviewAfterHtmlGeneration(experiment, autonomousCycleId);
+    } else {
+      qualityReviewService.reviewAfterHtmlGeneration(experiment);
+    }
   }
 
   /** Bloqueia documento incompleto ou capacidade executável não autorizada. */
@@ -70,7 +77,7 @@ public class GovernedLandingHtmlService {
         || html.length() > 200_000
         || !html.toLowerCase(Locale.ROOT).contains("<html")
         || !html.toLowerCase(Locale.ROOT).contains("</html>")) {
-      throw new IllegalArgumentException("HTML integral de Dédalo está incompleto");
+      throw new IllegalArgumentException("HTML integral do agente responsável está incompleto");
     }
     String normalized = html.toLowerCase(Locale.ROOT);
     if (normalized.contains("<script")

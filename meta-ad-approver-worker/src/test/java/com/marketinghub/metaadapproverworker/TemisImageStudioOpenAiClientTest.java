@@ -1,6 +1,7 @@
 package com.marketinghub.metaadapproverworker;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
@@ -15,7 +16,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Responsabilidade: homologar os contratos HTTP de criação e edição visual de Têmis. */
+/** Responsabilidade: homologar os contratos HTTP de criação e edição visual de Íris. */
 class TemisImageStudioOpenAiClientTest {
   private HttpServer server;
   private MetaAdApproverProperties properties;
@@ -42,21 +43,23 @@ class TemisImageStudioOpenAiClientTest {
     server.stop(0);
   }
 
-  /** Confirma criação direta, modelo canônico e auditoria da entrega. */
+  /** Confirma criação orientada por prova, modelo canônico e auditoria da peça. */
   @Test
-  void createsPremiumDeliverableWithGptImage2() {
-    TemisImageStudioOpenAiClient.Result result = client().execute(job(List.of(), "CREATE"));
+  void createsPremiumCommercialAssetWithGptImage2() {
+    String referenceUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/reference.png";
+    TemisImageStudioOpenAiClient.Result result =
+        client().execute(job(List.of(referenceUrl), "CREATE"));
 
     assertThat(result.imageBytes()).isEqualTo("premium-image".getBytes(StandardCharsets.UTF_8));
     assertThat(result.model()).isEqualTo("gpt-image-2");
-    assertThat(result.requestJson()).contains("DELIVERY", "gpt-image-2", "produza");
+    assertThat(result.requestJson()).contains("ADS", "gpt-image-2", "produza");
     assertThat(result.responseJson())
         .contains("BINÁRIO PERSISTIDO SEPARADAMENTE", "image_sha256", "image_bytes")
         .doesNotContain(Base64.getEncoder().encodeToString(result.imageBytes()));
     assertThat(result.costUsd()).isEqualByComparingTo("0.00034000");
     assertThat(result.usageJson()).contains("input_tokens");
-    assertThat(requestContentType.get()).startsWith("application/json");
-    assertThat(requestBody.get()).contains("\"model\":\"gpt-image-2\"");
+    assertThat(requestContentType.get()).startsWith("multipart/form-data");
+    assertThat(requestBody.get()).contains("gpt-image-2");
   }
 
   /** Diferencia uma peça comercial de um entregável e proíbe prova visual inventada. */
@@ -125,7 +128,7 @@ class TemisImageStudioOpenAiClientTest {
             "EDIT",
             "preserve o conteúdo útil",
             "Agenda Cheia - story-05",
-            List.of("DELIVERY", "LANDING", "ADS", "SOCIAL"),
+            List.of("LANDING", "ADS", "SOCIAL"),
             "1152x2048",
             "high",
             List.of(referenceUrl),
@@ -137,6 +140,39 @@ class TemisImageStudioOpenAiClientTest {
     assertThat(result.requestJson())
         .contains("componha todo o quadro nativo 9:16")
         .contains("nunca acrescente barras, áreas vazias ou preenchimento artificial");
+  }
+
+  /** Bloqueia finalidade pós-compra antes de qualquer request externo. */
+  @Test
+  void rejectsDeliveryPurposeOwnedByDedalo() {
+    String referenceUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/reference.png";
+    TemisImageStudioJob invalid =
+        new TemisImageStudioJob(
+            24L,
+            2L,
+            "CREATE",
+            "produza",
+            "Entrega",
+            List.of("DELIVERY"),
+            "1024x1536",
+            "high",
+            List.of(referenceUrl),
+            "producer-24",
+            playbook());
+
+    assertThatThrownBy(() -> client().execute(invalid))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("LANDING, ADS e SOCIAL");
+    assertThat(requestBody.get()).isNull();
+  }
+
+  /** Bloqueia criação comercial livre sem prova real antes de chamar a API externa. */
+  @Test
+  void rejectsCommercialCreationWithoutProductEvidence() {
+    assertThatThrownBy(() -> client().execute(job(List.of(), "CREATE")))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("prova real aprovada");
+    assertThat(requestBody.get()).isNull();
   }
 
   /** Cria o cliente exercitado contra a API de homologação. */
@@ -152,7 +188,7 @@ class TemisImageStudioOpenAiClientTest {
         operation,
         "produza uma peça premium do Agenda Cheia",
         "Post premium",
-        List.of("DELIVERY", "LANDING", "ADS", "SOCIAL"),
+        List.of("LANDING", "ADS", "SOCIAL"),
         "1024x1536",
         "high",
         references,

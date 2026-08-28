@@ -39,6 +39,14 @@ class AgentLearningDashboardServiceTest {
               assertThat(agent.agentName()).isEqualTo("Apolo");
               assertThat(agent.totalRetrievals()).isEqualTo(5);
             });
+    assertThat(response.agents())
+        .filteredOn(agent -> agent.agentKey().equals("communication-director"))
+        .singleElement()
+        .satisfies(
+            agent -> {
+              assertThat(agent.agentName()).isEqualTo("Íris");
+              assertThat(agent.totalMemories()).isZero();
+            });
   }
 
   /** Cria uma memória completa para testar somente a consolidação. */

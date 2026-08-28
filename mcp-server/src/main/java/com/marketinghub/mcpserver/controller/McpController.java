@@ -47,9 +47,10 @@ public class McpController {
             "email-service", "lead-portal-payment", "mds", "mois", "mois-sales-library-worker",
             "mois-hotmart", "clickbank-coletor-mois", "oprm-coletor-receita", "ops-monitor-worker",
             "pde-platform-backend", "video-management-service", "customer-agent-worker", "financial-agent-worker",
-            "experiment-strategist-worker", "meta-ad-approver-worker", "themis-image-studio",
+            "experiment-strategist-worker", "meta-ad-approver-worker", "iris-image-studio",
+            "themis-image-studio",
             "landing-generator-agent-worker",
-            "product-discovery-worker", "growth-operator-worker");
+            "product-discovery-worker", "growth-operator-worker", "communication-agent-worker");
 
     private final McpProperties properties;
     private final DatabaseDiagnosticsService databaseDiagnosticsService;

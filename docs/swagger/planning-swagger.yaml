@@ -12,9 +12,9 @@ paths:
           required: true
           schema: { type: integer, format: int64 }
       responses:
-        '200': { description: Histórico do Estúdio de Imagens de Têmis }
+        '200': { description: Histórico do Estúdio de Imagens comerciais de Íris }
     post:
-      summary: Solicita a Têmis criação ou edição de um entregável visual
+      summary: Solicita a Íris criação ou edição de uma peça visual comercial
       parameters:
         - in: path
           name: id
@@ -39,7 +39,7 @@ paths:
                 purposes:
                   type: array
                   minItems: 1
-                  items: { type: string, enum: [DELIVERY, LANDING, ADS, SOCIAL] }
+                  items: { type: string, enum: [LANDING, ADS, SOCIAL] }
                 size: { type: string, enum: [1024x1024, 1024x1536, 1536x1024, 2048x2048, 2048x1152, 1152x2048] }
                 quality: { type: string, enum: [medium, high], default: high }
       responses:
@@ -47,12 +47,12 @@ paths:
         '400': { description: Contrato, referência ou finalidade inválida }
   /api/internal/planning/image-studio/v1/stage-executions/pending:
     get:
-      summary: Reserva para Têmis produções pendentes ou com lease vencida
+      summary: Reserva para o recurso técnico de Íris produções pendentes ou com lease vencida
       responses:
         '200': { description: Jobs segregados por plano com referências autorizadas }
   /api/internal/planning/image-studio/v1/stage-executions/{jobId}/artifact:
     post:
-      summary: Recebe de Têmis o binário e a auditoria integral da produção
+      summary: Recebe do recurso técnico de Íris o binário e a auditoria integral da produção
       parameters:
         - in: path
           name: jobId
@@ -74,12 +74,12 @@ paths:
                 usageJson: { type: string, nullable: true }
                 costUsd: { type: number, nullable: true }
       responses:
-        '200': { description: Entregável persistido como DRAFT e revisão aberta }
+        '200': { description: Peça comercial persistida como DRAFT e revisão aberta }
   /api/internal/planning/image-studio/v1/reviews/pending:
     get:
-      summary: Reserva entregáveis DRAFT para uma execução independente de Têmis
+      summary: Reserva peças comerciais DRAFT para uma execução independente de Têmis
       responses:
-        '200': { description: Entregáveis que aguardam inspeção premium }
+        '200': { description: Peças comerciais que aguardam inspeção premium }
   /api/internal/planning/image-studio/v1/reviews/{assetId}/result:
     post:
       summary: Recebe o parecer de uma execução independente de Têmis

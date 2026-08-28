@@ -1380,7 +1380,7 @@ public class ExperimentService {
     if (!hasCompletedLandingReference(exp.getLandingPageImageAssets())) {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST,
-          "Dédalo precisa concluir ao menos um exemplo visual real da landing antes de materializar o criativo.");
+          "Íris precisa concluir ao menos um exemplo visual real da landing antes de materializar o criativo.");
     }
   }
 

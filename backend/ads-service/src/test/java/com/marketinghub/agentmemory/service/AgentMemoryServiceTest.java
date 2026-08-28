@@ -53,6 +53,24 @@ class AgentMemoryServiceTest {
                     "apollo".equals(value.getAgentKey()) && "CANDIDATE".equals(value.getStatus())));
   }
 
+  /** Confirma que Íris aprende de comunicação sem promover a própria hipótese. */
+  @Test
+  void registersIrisLearningOnlyAsCandidate() {
+    when(repository.findByAgentKeyAndTenantKeyAndScopeTypeAndScopeIdAndContentSha256(
+            any(), any(), any(), any(), any()))
+        .thenReturn(Optional.empty());
+    when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+    assertThat(service.register("communication-director", request()).status())
+        .isEqualTo("CANDIDATE");
+    verify(repository)
+        .save(
+            argThat(
+                value ->
+                    "communication-director".equals(value.getAgentKey())
+                        && "CANDIDATE".equals(value.getStatus())));
+  }
+
   /** Confirma que recuperacao fixa agente, escopo e teto de doze itens. */
   @Test
   void retrievesOnlyBoundedScopedMemory() {

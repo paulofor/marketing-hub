@@ -7,18 +7,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/** Responsabilidade: comprovar as fronteiras exclusivas dos oito agentes no catálogo BPM. */
+/** Responsabilidade: comprovar as fronteiras exclusivas dos nove agentes no catálogo BPM. */
 class AgentResponsibilityMatrixTest {
   private final ObjectMapper mapper = new ObjectMapper();
 
   /** Aceita cada agente somente no seu domínio canônico e com uma única identidade. */
   @Test
-  void acceptsTheEightCanonicalResponsibilities() {
+  void acceptsTheNineCanonicalResponsibilities() {
     List.of(
             assignment("market-radar", "MARKET_EVIDENCE", "Argos"),
             assignment("experiment-strategist", "MARKET_STRATEGY", "Atena"),
             assignment("financial-agent", "FINANCIAL_VALIDATION", "Plutus"),
             assignment("landing-generator", "PDE_CONSTRUCTION", "Dédalo"),
+            assignment("communication-director", "COMMUNICATION_MATERIALIZATION", "Íris"),
             assignment("videomaker", "AUDIOVISUAL_PRODUCTION", "Apolo"),
             assignment("customer-agent", "HUMAN_EXPERIENCE_REVIEW", "Psique"),
             assignment(

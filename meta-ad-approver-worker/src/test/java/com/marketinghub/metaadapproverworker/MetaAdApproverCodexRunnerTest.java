@@ -198,14 +198,14 @@ class MetaAdApproverCodexRunnerTest {
             "devem ser sempre strings vazias");
   }
 
-  /** Garante que Têmis delegue requisitos visuais sem assumir a produção de Dédalo ou Apolo. */
+  /** Garante que Têmis delegue requisitos visuais sem assumir a produção de Íris ou Apolo. */
   @Test
   void declaresExecutableMediaCapabilities() throws Exception {
     String prompt = resource("prompts/meta-ad-approver/v2/review.md");
 
     assertThat(prompt)
         .contains(
-            "Dédalo materializa mídia estática ou Apolo materializa audiovisual",
+            "Íris materializa mídia estática ou Apolo materializa audiovisual",
             "Requisitos visuais obrigatórios",
             "descrever uma peça pronta",
             "escolher livremente a solução");

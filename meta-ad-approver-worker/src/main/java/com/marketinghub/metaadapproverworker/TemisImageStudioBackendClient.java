@@ -12,7 +12,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
-/** Responsabilidade: consumir e concluir filas visuais de Dédalo exclusivamente pelo backend. */
+/** Responsabilidade: consumir e concluir filas visuais de Íris exclusivamente pelo backend. */
 @Component
 public class TemisImageStudioBackendClient {
   private static final Logger log = LoggerFactory.getLogger(TemisImageStudioBackendClient.class);
@@ -74,9 +74,10 @@ public class TemisImageStudioBackendClient {
     body.add(
         "file",
         new ByteArrayResource(result.imageBytes()) {
+          /** Define um nome auditável que correlaciona a peça ao job visual de Íris. */
           @Override
           public String getFilename() {
-            return "dedalo-image-studio-" + job.jobId() + ".png";
+            return "iris-image-studio-" + job.jobId() + ".png";
           }
         });
     client
@@ -93,7 +94,7 @@ public class TemisImageStudioBackendClient {
   public void fail(
       TemisImageStudioJob job, RuntimeException ex, String requestJson, String responseJson) {
     log.error(
-        "Falha no recurso de imagens de Dédalo. jobId={} commercialPlanId={}",
+        "Falha no recurso de imagens de Íris. jobId={} commercialPlanId={}",
         job.jobId(),
         job.commercialPlanId(),
         ex);

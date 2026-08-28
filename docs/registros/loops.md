@@ -17,7 +17,7 @@
   operacional. Contrato ausente bloqueia antes do modelo e contradição real volta para Atena.
 - **Prevenção:** schemas proíbem sobreposição, validators rejeitam campos estratégicos na saída do
   Hermes e testes ponta a ponta comprovam autoria, consumo, revisão e segregação por plano.
->
+
 > Fonte inicial: análise do histórico `docs/registros/experimentos.md` em 2026-06-17.
 >
 > Uso obrigatório recomendado: antes de corrigir problema em GeraLanding, Facebook Ads, Lead Portal, OpenAI/schema, pipelines administrativos ou pipeline de hipótese, verificar se a solicitação reabre algum loop listado aqui.
@@ -87,8 +87,8 @@
   preservado e decisões `APPROVED` de Psique e Têmis; publicação e mídia permanecem em gate humano
   separado.
 - **Prevenção:** testes de contrato exigem a criação idempotente das três atividades BPM, impedem
-  que uma aprovação técnica isolada avance 4.2 e comprovam a passagem para `Integrar canal,
-  checkout, acesso e eventos` somente após o objetivo persistido.
+  que uma aprovação técnica isolada avance 4.2 e comprovam, somente após o objetivo persistido, a
+  passagem para a atividade `Integrar canal, checkout, acesso e eventos`.
 - **Fechamento complementar em 2026-08-27:** a primeira execução BPM oficial do Rigel concluiu o
   HTML e o Quality Review com 90/100, mas Psique bloqueou por ausência de checkout na evidência e
   Têmis não recebeu o pacote criativo aprovado no subprocesso 4.1. O backend ainda lia os campos
@@ -108,6 +108,13 @@
   O Quality Review agora força as imagens para `eager`, aguarda carga com dimensão real e conclui a
   decodificação dos pixels antes dos screenshots full-page e de prova; teste em Chromium protege a
   ordem para que ausência de pixels não seja confundida com prova comercial fraca.
+- **Fechamento de continuidade em 2026-08-28:** depois da repetição aprovada da Psique, a instância
+  BPM de `customer` estava `COMPLETED`, mas a tarefa histórica bloqueada continuava sendo tratada
+  como atividade atual no histórico do produto. O resolvedor agora limita trabalho ativo à execução
+  mais recente e faz o estado consolidado da instância prevalecer. Ao concluir o último subprocesso,
+  a tela mostra `Integrar canal, checkout, acesso e eventos` como próximo passo oficial, sem iniciar
+  a atividade nem antecipar o processo 5. Testes backend e frontend protegem a precedência e a
+  continuidade visual.
 - **Fechamento de observabilidade em 2026-08-27:** a homologação oficial do Rigel persistiu uma
   única tarefa composta de Dédalo no nó `html`, embora a execução também tivesse realizado seleção
   de provas, estratégia e composição. O histórico por atividade consultava apenas o vínculo
@@ -577,7 +584,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 | `LOOP-DEPLOY-COMPOSE-CROSS-SERVICE-SECRETS`         | ALTO       | Fechado em 2026-08-04            | Deploy por serviço                                    | descritor Compose isolado por destino + teste sem secrets alheios                            |
 | `LOOP-DEPLOY-STALE-IMAGE`                           | ALTO       | Fechado em 2026-08-04            | Detecção de mudanças do deploy                        | alteração de publicador/workflow força rebuild e teste do artefato                           |
 | `LOOP-DEPLOY-GLOBAL-TIMEOUT`                        | ALTO       | Fechado em 2026-08-06            | Deploy backend/frontend                               | limites próprios por operação + saúde obrigatória do backend                                 |
-| `LOOP-TEMIS-PDE-ARTIFACT-DEPLOY-DRIFT`              | ALTO       | Fechado localmente em 2026-08-23 | Evidência versionada de Têmis                         | sincronização allowlist + gatilho por artefato + readiness dentro do container                |
+| `LOOP-TEMIS-PDE-ARTIFACT-DEPLOY-DRIFT`              | ALTO       | Fechado localmente em 2026-08-23 | Evidência versionada de Têmis                         | sincronização allowlist + gatilho por artefato + readiness dentro do container               |
 | `LOOP-CUSTOMER-AGENT-OBSERVABILITY`                 | ALTO       | Fechado em 2026-08-06            | Agente Cliente                                        | logfile canônico do worker + alias MCP + teste ponta a ponta                                 |
 | `LOOP-CUSTOMER-AGENT-EVALUATION-TIMEOUT`            | ALTO       | Fechado em 2026-08-06            | Agente Cliente                                        | timeout adequado + erro persistido e integralmente visível no frontend + retry controlado    |
 | `LOOP-FINANCIAL-AGENT-OBSERVABILITY`                | ALTO       | Fechado em 2026-08-06            | Agente Financeiro                                     | logfile canônico do worker + alias MCP + teste ponta a ponta                                 |

@@ -1833,8 +1833,7 @@ class AgentTaskServiceTest {
     Agent hermes = agent(3L, "growth-operator", "Hermes");
     BusinessProcessDefinition process = process("PUBLISHED", "Hermes");
     process.setProcessCode("pde-communication-sales-journey");
-    process.setDiagramJson(
-        "{\"nodes\":[{\"id\":\"contract\",\"type\":\"TASK\"}],\"flows\":[]}");
+    process.setDiagramJson("{\"nodes\":[{\"id\":\"contract\",\"type\":\"TASK\"}],\"flows\":[]}");
     AgentTask task = processTask(34L, hermes, process, "contract", "PENDING");
     when(agents.findByAgentKey("growth-operator")).thenReturn(Optional.of(hermes));
     when(repository.findByAssignedAgentAgentKeyAndTaskKindAndStatusOrderByCreatedAtAscIdAsc(

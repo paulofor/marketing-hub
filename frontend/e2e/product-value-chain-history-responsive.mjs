@@ -38,9 +38,9 @@ const position = {
   commercialStatus: "COMUNICACAO_E_JORNADA",
   resolutionStatus: "IDENTIFIED",
   resolutionMessage: "Posição identificada.",
-  chainDefinitionId: 5,
+  chainDefinitionId: 6,
   chainName: "Criação e entrega de valor de Produtos Digitais Experienciais",
-  chainVersion: 5,
+  chainVersion: 6,
   processDefinitionId: 43,
   processCode: "pde-communication-sales-journey",
   processName: "Comunicação e jornada de venda do PDE",
@@ -84,15 +84,14 @@ const position = {
     },
   ],
   subprocessPosition: {
-    trackingStatus: "PLANNED",
+    trackingStatus: "COMPLETED",
     subprocessCount: 2,
-    currentActivityName: null,
-    currentSubprocessDefinitionId: 18,
-    currentSubprocessSequenceNumber: 2,
-    currentSubprocessCode: "landing-page-generation",
-    currentSubprocessName: "Geração de landing page",
-    currentSubprocessObjective:
-      "Landing aprovada e pronta para publicação humana.",
+    currentActivityName: "Integrar canal, checkout, acesso e eventos",
+    currentSubprocessDefinitionId: null,
+    currentSubprocessSequenceNumber: null,
+    currentSubprocessCode: null,
+    currentSubprocessName: null,
+    currentSubprocessObjective: null,
     nextSubprocessDefinitionId: null,
     nextSubprocessCode: null,
     nextSubprocessName: null,
@@ -119,19 +118,19 @@ const position = {
       {
         stageType: "SUBPROCESS",
         sequenceLabel: "4.2",
-        trackingStatus: "PLANNED",
+        trackingStatus: "COMPLETED",
         processDefinitionId: 18,
         processCode: "landing-page-generation",
         processName: "Geração de landing page",
-        enteredAt: null,
-        entryEvidence: "NOT_RECORDED",
-        exitedAt: null,
-        exitEvidence: null,
-        objectiveAchieved: false,
-        elapsedDays: null,
-        knownEstimatedCostUsd: 0,
-        costCoverage: "NO_EXECUTIONS",
-        costedExecutionCount: 0,
+        enteredAt: "2026-08-27T03:26:19Z",
+        entryEvidence: "FIRST_SUBPROCESS_TASK",
+        exitedAt: "2026-08-28T03:09:30Z",
+        exitEvidence: "SUBPROCESS_OBJECTIVE_ACHIEVED",
+        objectiveAchieved: true,
+        elapsedDays: 0,
+        knownEstimatedCostUsd: 1.994548,
+        costCoverage: "COMPLETE",
+        costedExecutionCount: 4,
         uncostedExecutionCount: 0,
       },
     ],
@@ -155,6 +154,8 @@ try {
         await route.fulfill({ json: [position] });
       } else if (pathname === "/api/products/9") {
         await route.fulfill({ json: product });
+      } else if (pathname === "/api/products/9/process-commits") {
+        await route.fulfill({ json: [] });
       } else if (pathname === "/api/products") {
         await route.fulfill({ json: [product] });
       } else {
@@ -172,15 +173,29 @@ try {
     ).toBeVisible();
     await expect(page.getByText("Etapa 4 de 6")).toBeVisible();
     await expect(
-      page.getByText("Subprocesso atual", { exact: true }),
+      page.getByText("Próxima atividade", { exact: true }),
     ).toBeVisible();
-    await expect(page.getByText("Pronto para iniciar")).toBeVisible();
+    const nextStep = page.getByRole("region", {
+      name: "Próximo passo do processo",
+    });
+    await expect(nextStep).toBeVisible();
+    await expect(
+      nextStep.getByRole("heading", {
+        name: "Integrar canal, checkout, acesso e eventos",
+      }),
+    ).toBeVisible();
+    const nextStepLink = nextStep.getByRole("link", {
+      name: "Abrir próximo passo",
+    });
+    await expect(nextStepLink).toHaveAttribute(
+      "href",
+      "/products/9/value-chain-history/processes/43/activities",
+    );
+    await expect(page.getByText("Objetivo atingido").last()).toBeVisible();
     await expect(page.getByText("4.2", { exact: true })).toBeVisible();
     await expect(page.getByText("21/08/2026, 03:55 UTC")).toBeVisible();
     await expect(page.getByText(/cobertura parcial/i)).toBeVisible();
-    await expect(
-      page.getByText("Data e hora ainda não registradas"),
-    ).toBeVisible();
+    await expect(page.getByText("28/08/2026, 03:09 UTC")).toBeVisible();
     assert.deepEqual(pageErrors, [], `${profileName}: erros JavaScript`);
     const sizes = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
@@ -194,6 +209,10 @@ try {
       path: `/tmp/product-value-chain-history-${profileName.replaceAll(" ", "-")}.png`,
       fullPage: true,
     });
+    await nextStepLink.click();
+    await expect(page).toHaveURL(
+      /\/products\/9\/value-chain-history\/processes\/43\/activities$/,
+    );
     await context.close();
   }
 } finally {

@@ -672,7 +672,9 @@ public class GrowthOperatorService {
     }
   }
 
-  /** Congela os parâmetros operacionais do experimento sem transformá-los em autoria estratégica. */
+  /**
+   * Congela os parâmetros operacionais do experimento sem transformá-los em autoria estratégica.
+   */
   private Map<String, Object> buildExperimentExecutionContract(Experiment experiment) {
     LinkedHashMap<String, Object> contract = new LinkedHashMap<>();
     contract.put("source", "EXPERIMENT");

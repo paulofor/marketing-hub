@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - Products
-  version: 1.1.0
+  version: 1.2.0
   description: Endpoints públicos e administrativos do cadastro comercial de produtos.
 paths:
   /api/products/value-chain-positions:
@@ -899,6 +899,7 @@ components:
             - PLANNED
             - IN_PROGRESS
             - RECORDED
+            - COMPLETED
         subprocessCount:
           type: integer
           minimum: 0
@@ -974,6 +975,7 @@ components:
             - CURRENT
             - COMPLETED
             - RECORDED
+            - PLANNED
         processDefinitionId:
           type: integer
           format: int64

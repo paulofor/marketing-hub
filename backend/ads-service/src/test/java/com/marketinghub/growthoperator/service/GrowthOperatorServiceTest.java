@@ -164,8 +164,7 @@ class GrowthOperatorServiceTest {
     assertThat(strategy.path("contentHash").asText()).hasSize(64);
     assertThat(executionContract.path("source").asText()).isEqualTo("EXPERIMENT");
     assertThat(executionContract.path("experimentId").asLong()).isEqualTo(82L);
-    assertThat(
-            executionContract.path("objectiveHypothesisMetricsAndDecisionCriteria").asText())
+    assertThat(executionContract.path("objectiveHypothesisMetricsAndDecisionCriteria").asText())
         .contains("Continuar com 10%", "ajustar", "parar");
     assertThat(executionContract.path("primaryMetric").asText())
         .isEqualTo("briefing_conversion_rate");

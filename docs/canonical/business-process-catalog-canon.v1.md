@@ -136,6 +136,12 @@ cobertura. Resultado técnico embutido em comentário, prompt ou JSON não concl
 instância ou cobertura persistida. Ausência de ambos deve aparecer como atividade não iniciada, sem
 inferir sucesso a partir do estado comercial, da landing, do experimento ou de outra tarefa.
 
+Quando uma atividade ou um subprocesso atingir o objetivo, a mesma resposta do backend deve expor
+o próximo passo oficial da composição publicada. Se o subprocesso concluído retornar ao processo
+pai, a próxima atividade do pai deve aparecer como continuação prevista, sem fabricar entrada,
+execução ou conclusão. Uma instância BPM concluída prevalece sobre tarefas bloqueadas de tentativas
+anteriores preservadas apenas para auditoria; o frontend não pode reconstruir essa precedência.
+
 Atividades de versões históricas continuam auditáveis, mas não entram no denominador de conclusão
 da versão selecionada. Retentativas anteriores permanecem visíveis; o resumo usa a ocorrência BPM
 mais recente da própria atividade dentro da referência de execução mais recente do produto e nunca

@@ -25,9 +25,8 @@ class ExperimentStrategistMarketContractProviderTest {
     CommercialPlan plan = new CommercialPlan();
     plan.setId(4L);
     ExperimentStrategistExecution execution = execution(plan);
-    when(executions
-            .findFirstByCommercialPlanIdAndStatusAndAuthorityModeOrderByFinishedAtDescIdDesc(
-                4L, ExperimentStrategistExecutionStatus.COMPLETED, "READ_ONLY_RESEARCH"))
+    when(executions.findFirstByCommercialPlanIdAndStatusAndAuthorityModeOrderByFinishedAtDescIdDesc(
+            4L, ExperimentStrategistExecutionStatus.COMPLETED, "READ_ONLY_RESEARCH"))
         .thenReturn(Optional.of(execution));
     ExperimentStrategistMarketContractProvider provider =
         new ExperimentStrategistMarketContractProvider(
@@ -52,9 +51,8 @@ class ExperimentStrategistMarketContractProviderTest {
     CommercialPlan plan = new CommercialPlan();
     plan.setId(4L);
     when(plans.findByExperimentReference(89L)).thenReturn(List.of(plan));
-    when(executions
-            .findFirstByCommercialPlanIdAndStatusAndAuthorityModeOrderByFinishedAtDescIdDesc(
-                4L, ExperimentStrategistExecutionStatus.COMPLETED, "READ_ONLY_RESEARCH"))
+    when(executions.findFirstByCommercialPlanIdAndStatusAndAuthorityModeOrderByFinishedAtDescIdDesc(
+            4L, ExperimentStrategistExecutionStatus.COMPLETED, "READ_ONLY_RESEARCH"))
         .thenReturn(Optional.of(execution(plan)));
     ExperimentStrategistMarketContractProvider provider =
         new ExperimentStrategistMarketContractProvider(executions, plans, new ObjectMapper());
@@ -73,9 +71,8 @@ class ExperimentStrategistMarketContractProviderTest {
     plan.setId(4L);
     ExperimentStrategistExecution execution = execution(plan);
     execution.setRecommendationJson("{\"recommendation\":{\"selectedAlternative\":\"A\"}}");
-    when(executions
-            .findFirstByCommercialPlanIdAndStatusAndAuthorityModeOrderByFinishedAtDescIdDesc(
-                4L, ExperimentStrategistExecutionStatus.COMPLETED, "READ_ONLY_RESEARCH"))
+    when(executions.findFirstByCommercialPlanIdAndStatusAndAuthorityModeOrderByFinishedAtDescIdDesc(
+            4L, ExperimentStrategistExecutionStatus.COMPLETED, "READ_ONLY_RESEARCH"))
         .thenReturn(Optional.of(execution));
     ExperimentStrategistMarketContractProvider provider =
         new ExperimentStrategistMarketContractProvider(

@@ -389,3 +389,14 @@ política de cancelamento. Testes de serialização e Playwright impedem que nom
 voltem ao JSON ou ao DOM. Esta correção permanece local até PR e deploy; o processo de landing não
 deve receber a aprovação humana final nem avançar para `Integrar canal, checkout, acesso e eventos`
 antes de a versão publicada passar pelo mesmo gate.
+
+## Continuidade do histórico após o 4.2
+
+Em 2026-08-28, o banco comprovou que a ocorrência BPM da Psique estava `COMPLETED` após a repetição
+#248, enquanto a tarefa #244 permanecia `BLOCKED` somente como histórico. O resolvedor da cadeia
+considerava a tarefa antiga antes da ocorrência consolidada e mantinha o 4.2 como posição atual,
+apesar de a medição já informar objetivo atingido.
+
+A correção faz a ocorrência BPM prevalecer, preserva a tentativa bloqueada para auditoria e mostra
+`Integrar canal, checkout, acesso e eventos` logo depois do 4.2. O item é exibido como próximo passo
+do processo 4, sem registrar início, autorizar publicação, antecipar o processo 5 ou gerar gasto.

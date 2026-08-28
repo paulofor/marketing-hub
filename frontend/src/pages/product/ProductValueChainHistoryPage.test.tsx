@@ -135,6 +135,36 @@ const position = {
   },
 };
 
+const completedLandingPosition = {
+  ...position,
+  subprocessPosition: {
+    ...position.subprocessPosition,
+    trackingStatus: "COMPLETED",
+    currentActivityName: "Integrar canal, checkout, acesso e eventos",
+    currentSubprocessDefinitionId: null,
+    currentSubprocessSequenceNumber: null,
+    currentSubprocessCode: null,
+    currentSubprocessName: null,
+    currentSubprocessObjective: null,
+    measurements: position.subprocessPosition.measurements.map((measurement) =>
+      measurement.processDefinitionId === 18
+        ? {
+            ...measurement,
+            trackingStatus: "COMPLETED",
+            enteredAt: "2026-08-27T03:26:19Z",
+            exitedAt: "2026-08-28T03:09:30Z",
+            exitEvidence: "SUBPROCESS_OBJECTIVE_ACHIEVED",
+            objectiveAchieved: true,
+            elapsedDays: 0,
+            knownEstimatedCostUsd: 1.994548,
+            costCoverage: "COMPLETE",
+            costedExecutionCount: 4,
+          }
+        : measurement,
+    ),
+  },
+};
+
 function renderPage() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -249,6 +279,72 @@ describe("ProductValueChainHistoryPage", () => {
       "href",
       "/business-processes?processId=18",
     );
+  });
+
+  it("shows the backend successor after the final subprocess is completed", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/products/9") return Promise.resolve({ data: product });
+      if (url === "/api/products/value-chain-positions/9") {
+        return Promise.resolve({ data: completedLandingPosition });
+      }
+      if (url === "/api/products/9/process-commits") {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.reject(new Error(`Unexpected URL: ${url}`));
+    });
+
+    renderPage();
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Histórico da cadeia de valor",
+      }),
+    ).toBeTruthy();
+    expect(screen.getByText("Próxima atividade")).toBeTruthy();
+    const nextStep = screen.getByRole("region", {
+      name: "Próximo passo do processo",
+    });
+    expect(
+      within(nextStep).getByRole("heading", {
+        name: "Integrar canal, checkout, acesso e eventos",
+      }),
+    ).toBeTruthy();
+    expect(
+      within(nextStep).getByRole("link", { name: "Abrir próximo passo" }),
+    ).toHaveAttribute(
+      "href",
+      "/products/9/value-chain-history/processes/43/activities",
+    );
+    expect(
+      screen.queryByText("Conclusão do processo atual"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not fabricate a successor when the backend does not provide one", async () => {
+    const terminalPosition = {
+      ...completedLandingPosition,
+      subprocessPosition: {
+        ...completedLandingPosition.subprocessPosition,
+        currentActivityName: null,
+      },
+    };
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/products/9") return Promise.resolve({ data: product });
+      if (url === "/api/products/value-chain-positions/9") {
+        return Promise.resolve({ data: terminalPosition });
+      }
+      if (url === "/api/products/9/process-commits") {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.reject(new Error(`Unexpected URL: ${url}`));
+    });
+
+    renderPage();
+
+    expect(await screen.findByText("Conclusão do processo atual")).toBeTruthy();
+    expect(
+      screen.queryByRole("region", { name: "Próximo passo do processo" }),
+    ).not.toBeInTheDocument();
   });
 
   it("registers and displays a commit in the exact product process", async () => {

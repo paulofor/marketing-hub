@@ -24,15 +24,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 /** Responsabilidade: publicar o último contrato estratégico imutável produzido por Atena. */
 @Service
-public class ExperimentStrategistMarketContractProvider
-    implements MarketStrategicContextProvider {
+public class ExperimentStrategistMarketContractProvider implements MarketStrategicContextProvider {
   private static final Logger log =
       LoggerFactory.getLogger(ExperimentStrategistMarketContractProvider.class);
   private static final String AUTHORITY_MODE = "READ_ONLY_RESEARCH";
   private static final Pattern PLAN_REFERENCE =
       Pattern.compile("commercial-plan:([1-9][0-9]*)(?:@v[1-9][0-9]*)?");
-  private static final Pattern EXPERIMENT_REFERENCE =
-      Pattern.compile("experiment:([1-9][0-9]*)");
+  private static final Pattern EXPERIMENT_REFERENCE = Pattern.compile("experiment:([1-9][0-9]*)");
   private final ExperimentStrategistExecutionRepository executions;
   private final CommercialPlanRepository plans;
   private final ObjectMapper objectMapper;
@@ -60,11 +58,11 @@ public class ExperimentStrategistMarketContractProvider
   @Transactional(readOnly = true)
   public Map<String, Object> resolveForPlan(Long planId) {
     Optional<ExperimentStrategistExecution> execution =
-        executions
-            .findFirstByCommercialPlanIdAndStatusAndAuthorityModeOrderByFinishedAtDescIdDesc(
-                planId, ExperimentStrategistExecutionStatus.COMPLETED, AUTHORITY_MODE);
+        executions.findFirstByCommercialPlanIdAndStatusAndAuthorityModeOrderByFinishedAtDescIdDesc(
+            planId, ExperimentStrategistExecutionStatus.COMPLETED, AUTHORITY_MODE);
     if (execution.isEmpty()) {
-      return unavailable(planId, "Atena ainda não concluiu uma estratégia de mercado para o plano.");
+      return unavailable(
+          planId, "Atena ainda não concluiu uma estratégia de mercado para o plano.");
     }
     return contract(execution.get());
   }

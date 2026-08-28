@@ -6,7 +6,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
-/** Responsabilidade: proteger o versionamento e as fronteiras persistidas de Atena, Hermes e Têmis. */
+/**
+ * Responsabilidade: proteger o versionamento e as fronteiras persistidas de Atena, Hermes e Têmis.
+ */
 class AgentResponsibilityBoundariesChangelogTest {
   private static final Path CHANGELOG_ROOT = Path.of("src/main/resources/db/changelog");
   private static final String CHANGELOG =

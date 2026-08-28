@@ -227,6 +227,60 @@ Regras obrigatórias:
 - o frontend deve exibir a orientação como cartão de produto, não como conversa livre;
 - toda solicitação deve ser mensurável no funil e associada ao token, produto e missão.
 
+### SDK de agentes PDE sobre Codex App Server
+
+Decisão canônica de 2026-08-28: todo novo PDE baseado em agentes deve usar o **PDE Harness SDK**
+como camada de domínio sobre o `codex app-server`. O SDK não pode chamar diretamente a OpenAI
+API, o Responses API ou o OpenAI Agents SDK. Seu papel é transformar o protocolo do Codex App
+Server em uma experiência PDE personalizada, sensorial, auditável e segura, sem reimplementar o
+loop agentic do Codex.
+
+Arquitetura obrigatória da primeira versão:
+
+- o backend PDE cria a pendência, entrega somente o contexto autorizado e continua sendo a fonte
+  de verdade de acesso, memória funcional, estado, gates, auditoria e próxima etapa;
+- o worker PDE consome exclusivamente o endpoint `pending` e usa o PDE Harness SDK para iniciar ou
+  retomar uma execução no Codex App Server;
+- o PDE Harness SDK deve ser implementado em TypeScript como cliente tipado do protocolo, enquanto
+  o backend transacional permanece em Java;
+- o worker inicia o `codex app-server` localmente e comunica-se por `stdio` com JSONL. O App Server
+  não pode ser exposto ao frontend, ao backend PDE ou à internet, e o transporte WebSocket remoto
+  não faz parte da v1;
+- cada sessão de cliente usa `threadId`, workspace e contexto segregados por produto, versão,
+  cliente e missão. A memória canônica permanece no backend; histórico local do Codex nunca pode
+  ser a única fonte de contexto;
+- a sequência mínima é `initialize`/`initialized`, `thread/start` ou `thread/resume` e
+  `turn/start`; eventos de thread, turno, item, ferramenta, aprovação, conclusão e falha devem ser
+  correlacionados e reportados ao backend;
+- os bindings TypeScript e JSON Schemas do protocolo devem ser gerados pela mesma versão fixada do
+  Codex usada em produção. Atualizar Codex exige regenerar contratos e aprovar testes de
+  compatibilidade antes do deploy;
+- a autenticação deve usar sessão ChatGPT gerenciada pelo Codex em `CODEX_HOME` exclusivo do
+  executor. Token, cookie, `auth.json` e demais segredos não podem transitar pelo frontend ou pelo
+  backend PDE;
+- é proibido incluir `OPENAI_API_KEY`, chamar `api.openai.com` ou manter fallback direto para API
+  no PDE Harness SDK. App Server indisponível, incompatível ou sem autenticação deve produzir
+  `BLOCKED` auditável, sem trocar silenciosamente o runtime;
+- prompts, schemas de saída, tools, skills, MCPs, limites de autoridade e contratos sensoriais
+  continuam versionados no módulo executor e identificados por versão e hash;
+- o backend deve persistir, sem expor raciocínio interno, os identificadores de thread e turno,
+  versão do Codex e do SDK, modelo, prompt/schema efetivos, eventos estruturados, chamadas de
+  ferramenta, aprovações, entrada, saída, artefatos, erro, tokens e custo quando informados;
+- App Server, SDK e worker não decidem o avanço do pipeline, não publicam, não gastam e não
+  executam ação externa sensível sem gate do backend e autorização humana quando aplicável.
+
+O `pde-ai-worker` atual, que ainda chama a OpenAI API diretamente, é uma integração legada e não
+pode servir como base do novo SDK. Sua eventual migração deve ser versionada, manter compatibilidade
+com as execuções existentes e passar por homologação própria. Até essa migração, nenhum PDE novo
+baseado em agentes pode copiar essa integração direta.
+
+Enquanto a distribuição oficial do Codex identificar o App Server como experimental, sua adoção
+deve permanecer atrás de uma porta interna substituível e começar em piloto sem publicação ou gasto.
+A homologação precisa provar caminho feliz, retomada após reinício, autenticação, isolamento entre
+clientes, backpressure, timeout, aprovações, telemetria, compatibilidade de versão e descarte de
+dados. Somente depois desses gates um PDE pago pode depender desse runtime. Falha no piloto exige
+ajuste ou bloqueio; não autoriza retorno direto à API.
+
 Para o Método MUSA, a Consultora MUSA deve atuar nos 7 dias como orientação guiada por missão: a cliente preenche três sinais ou respostas práticas do dia e recebe um cartão curto, aplicável e coerente com o histórico da jornada. O Dia 1 pode ser usado como amostra gratuita de valor; os Dias 2 a 7 permanecem como parte do acesso completo quando o funil estiver em modo de paywall interno.
 
 Para o Método MUSA, a Consultora MUSA deve usar o `musa-evidence-pack-v1` como bastidor científico. O pacote apoia microações sobre roupa, cor, acabamento, postura, coerência visual e peça-sinal, mas a resposta visível não deve virar citação acadêmica recorrente nem promessa absoluta. A linguagem deve preservar o desejo de presença elegante acessível e evitar afirmações como garantia de elegância, mudança universal de percepção externa ou transformação de personalidade.

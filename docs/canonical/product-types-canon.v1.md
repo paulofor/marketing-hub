@@ -350,6 +350,12 @@ Produto IA de atendimento personalizado por sandbox e um produto conversacional 
 
 Este tipo usa o conceito operacional do exemplo `/exemplos/aih6`: uma solicitacao entra pelo front/backend, o backend cria uma execucao isolada, o Codex App Server disponibiliza uma sandbox para o modelo trabalhar, o modelo usa ferramentas e contexto dentro dessa sandbox, devolve um resultado auditavel e a execucao e encerrada. A diferenca canonica e que, neste produto, a sandbox nao baixa um repositorio para gerar codigo; ela baixa ou recebe os dados de relacionamento daquele cliente, materiais autorizados e fontes complementares necessarias para produzir uma resposta comercial ou operacional personalizada.
 
+O runtime canônico deste tipo é o PDE Harness SDK sobre o Codex App Server, conforme
+`docs/canonical/pde-platform-canon.v1.md`. PDE novo baseado em agentes não pode chamar diretamente
+a OpenAI API nem usar o OpenAI Agents SDK como runtime; deve acessar o App Server local ao worker
+por `stdio`, com sessão ChatGPT gerenciada pelo Codex, contratos tipados e isolamento por cliente.
+Indisponibilidade do App Server bloqueia a execução e nunca autoriza fallback silencioso para API.
+
 Fluxo canonico inicial:
 
 ```text

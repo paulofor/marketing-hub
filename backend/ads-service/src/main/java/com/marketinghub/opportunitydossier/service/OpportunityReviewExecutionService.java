@@ -17,7 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @Service
 public class OpportunityReviewExecutionService {
-  private static final Set<String> AGENTS = Set.of("ATENA", "PSIQUE", "PLUTUS", "HERMES");
+  private static final Set<String> AGENTS = Set.of("ATENA");
   private static final long LEASE_SECONDS = 2700;
   private final OpportunityAgentReviewRepository reviews;
   private final OpportunityEvidenceRepository evidence;
@@ -165,7 +165,7 @@ public class OpportunityReviewExecutionService {
         review.getId(),
         dossier.getId(),
         review.getAgentKey(),
-        "READ_ONLY_OPPORTUNITY_REVIEW",
+        "MARKET_STRATEGY",
         dossier.getTitle(),
         dossier.getTargetAudience(),
         dossier.getMainPain(),
@@ -182,7 +182,8 @@ public class OpportunityReviewExecutionService {
   private String supported(String agentKey) {
     String agent = agentKey == null ? "" : agentKey.trim().toUpperCase();
     if (!AGENTS.contains(agent))
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Agente de parecer inválido");
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "Somente Atena possui a decisão estratégica do dossiê");
     return agent;
   }
 

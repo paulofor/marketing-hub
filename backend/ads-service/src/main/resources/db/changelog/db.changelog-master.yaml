@@ -3,6 +3,9 @@ databaseChangeLog:
       file: changesets/2026-08-28-agent-responsibility-boundaries-v2.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-08-28-agent-responsibility-matrix-v3.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-08-27-landing-quality-review-bpm-activity.yaml
       relativeToChangelogFile: true
   - include:

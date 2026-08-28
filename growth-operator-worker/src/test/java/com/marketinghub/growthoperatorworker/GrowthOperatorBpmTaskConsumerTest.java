@@ -86,32 +86,17 @@ class GrowthOperatorBpmTaskConsumerTest {
     verify(backend).completeBpmTask(eq(90L), any());
   }
 
-  /** Prioriza e conclui o contrato da jornada do PDE com referência do plano preservada. */
+  /** Impede Hermes de operar antes dos gates e da autorização humana. */
   @Test
-  void shouldCompletePdeCommunicationContract() throws Exception {
-    GrowthOperatorBackendClient backend = mock(GrowthOperatorBackendClient.class);
-    GrowthOperatorBpmRunner runner = mock(GrowthOperatorBpmRunner.class);
-    Map<String, Object> task =
-        Map.of(
-            "taskId", 91L,
-            "activityId", "contract",
-            "sourceReference", "commercial-plan:4@v2",
-            "processCode", "pde-communication-sales-journey",
-            "processContextJson", marketContext());
-    when(backend.claimBpmTask("pde-communication-sales-journey", "contract")).thenReturn(task);
-    when(runner.run(any()))
-        .thenReturn(
-            new GrowthOperatorBpmRunner.BpmExecution(
-                result("COMPLETED"), GrowthOperatorBpmRunner.TokenUsage.empty(), List.of()));
-
-    new GrowthOperatorBpmTaskConsumer(backend, runner, properties(), json).processOne();
-
-    @SuppressWarnings("unchecked")
-    ArgumentCaptor<Map<String, Object>> payload = ArgumentCaptor.forClass(Map.class);
-    verify(backend).completeBpmTask(eq(91L), payload.capture());
-    assertThat(payload.getValue().get("evidenceJson").toString())
-        .contains(
-            "commercial-plan:4@v2", "externalSideEffects", "MARKET_STRATEGY_V2", "contentHash");
+  void shouldNotConsumePreAuthorizationCommunicationTask() {
+    assertThat(
+            GrowthOperatorBpmTaskConsumer.supportsContract(
+                "pde-communication-sales-journey", "growthOperation"))
+        .isFalse();
+    assertThat(
+            GrowthOperatorBpmTaskConsumer.supportsContract(
+                "operacao-otimizacao-experimento", "task-1"))
+        .isTrue();
   }
 
   /** Bloqueia sem custo de modelo quando Atena ainda não entregou estratégia operável. */
@@ -122,11 +107,11 @@ class GrowthOperatorBpmTaskConsumerTest {
     Map<String, Object> task =
         Map.of(
             "taskId", 92L,
-            "activityId", "contract",
-            "sourceReference", "commercial-plan:4@v2",
-            "processCode", "pde-communication-sales-journey",
+            "activityId", "task-1",
+            "sourceReference", "experiment:92",
+            "processCode", "operacao-otimizacao-experimento",
             "processContextJson", "{\"marketStrategicContract\":{\"availability\":\"MISSING\"}}");
-    when(backend.claimBpmTask("pde-communication-sales-journey", "contract")).thenReturn(task);
+    when(backend.claimBpmTask("operacao-otimizacao-experimento", "task-1")).thenReturn(task);
 
     new GrowthOperatorBpmTaskConsumer(backend, runner, properties(), json).processOne();
 
@@ -146,11 +131,11 @@ class GrowthOperatorBpmTaskConsumerTest {
     Map<String, Object> task =
         Map.of(
             "taskId", 93L,
-            "activityId", "contract",
-            "sourceReference", "commercial-plan:4@v2",
-            "processCode", "pde-communication-sales-journey",
+            "activityId", "task-1",
+            "sourceReference", "experiment:93",
+            "processCode", "operacao-otimizacao-experimento",
             "processContextJson", marketContext().replace("a".repeat(64), "z".repeat(64)));
-    when(backend.claimBpmTask("pde-communication-sales-journey", "contract")).thenReturn(task);
+    when(backend.claimBpmTask("operacao-otimizacao-experimento", "task-1")).thenReturn(task);
 
     new GrowthOperatorBpmTaskConsumer(backend, runner, properties(), json).processOne();
 

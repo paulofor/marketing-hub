@@ -13,10 +13,12 @@
   campos do experimento eram tratados como estratégia e o schema do Hermes exigia nova autoria dos
   mesmos elementos.
 - **Correção sistêmica:** Atena v2 produz Contrato Estratégico de Mercado com execução, versão e hash;
-  o backend injeta o artefato nas tarefas; Têmis traduz comunicação e Hermes retorna somente contrato
-  operacional. Contrato ausente bloqueia antes do modelo e contradição real volta para Atena.
-- **Prevenção:** schemas proíbem sobreposição, validators rejeitam campos estratégicos na saída do
-  Hermes e testes ponta a ponta comprovam autoria, consumo, revisão e segregação por plano.
+  Dédalo materializa produto, landing, copy e peças não audiovisuais, Apolo produz vídeo e áudio,
+  Psique e Têmis revisam em gates separados e Hermes retorna somente contrato operacional depois da
+  autorização humana. Contrato ausente bloqueia antes do modelo e contradição real volta para Atena.
+- **Prevenção:** a matriz canônica fixa um domínio por agente; schemas e validadores rejeitam campos
+  estratégicos na saída de Hermes, coautoria e domínio incompatível; testes ponta a ponta comprovam
+  autoria, consumo, revisão e segregação por plano.
 
 > Fonte inicial: análise do histórico `docs/registros/experimentos.md` em 2026-06-17.
 >
@@ -1991,6 +1993,10 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** o backend agrupa por atividade e exige a tentativa mais recente de cada coautor
   concluída; tentativas superadas continuam auditáveis, mas não bloqueiam a correção. O contexto do
   executor mantém somente o resultado concluído mais recente por agente e atividade.
+- **Fechamento sistêmico em 2026-08-28:** versões novas deixaram de criar atividades coautoradas.
+  Cada decisão possui um único `responsibleAgentKeys`, domínio e `activityId`; Psique e Têmis agora
+  ocupam gates sucessivos e independentes. O validador do catálogo impede a recorrência antes da
+  publicação, preservando as versões antigas apenas como histórico.
 
 ## LOOP-BPM-COAUTORIA-INICIO-PARCIAL — tela não consegue abrir todos os revisores da atividade
 
@@ -2007,6 +2013,10 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes exigem os dois agentes, mesma atividade, processo e referência; produto em
   `STOP`, processo não publicado ou produto sem experimento bloqueiam o comando. Repetição ou
   atividade já iniciada reutiliza as tarefas vigentes e nunca cria custo duplicado.
+- **Fechamento sistêmico em 2026-08-28:** a solução de coautoria foi substituída por atividades
+  independentes. O backend exige exatamente um agente e um domínio compatível por atividade; os
+  testes de contrato e a homologação física MySQL 5.7 rejeitam qualquer retorno ao rótulo ou array
+  compartilhado.
 
 ## LOOP-EXECUTOR-LOCAL-SEM-TIMEOUT — tarefa fica em andamento sem resposta do modelo
 
@@ -2045,6 +2055,10 @@ Use este checklist quando o problema estiver em algum loop acima:
 - **Prevenção:** testes alteram propositalmente a contagem, promovem relato a oferta, tentam aprovar
   a jusante e misturam `REJECT` com `RESEARCH_MORE`. Qualquer divergência encerra a execução com
   artefato de erro, sem correção silenciosa e sem avançar o gate.
+- **Fechamento sistêmico em 2026-08-28:** Argos passou a encerrar sua atividade no dossiê factual e
+  Atena tornou-se a única autora da estratégia. Pareceres antigos de Psique, Plutus e Hermes no
+  dossiê permanecem auditáveis, mas suas filas foram retiradas; esses agentes entram somente nos
+  gates posteriores definidos pela matriz.
 
 ## LOOP-EXPERIMENTO-META-CONVERSAO-INACESSIVEL — preflight exige dado que a tela não coleta
 
@@ -2121,6 +2135,9 @@ Use este checklist quando o problema estiver em algum loop acima:
   sem depender de shell dentro da execução read-only.
 - **Prevenção:** a matriz e o empacotamento exigem `technical-verification.json`; o validador final
   rejeita relatório incompleto, hash divergente ou MP4 fora do contrato antes de aceitar o parecer.
+- **Fechamento sistêmico em 2026-08-28:** produção e revisão também foram separadas por identidade.
+  Dédalo e Apolo materializam, o recurso visual legado atua sem identidade decisória e Têmis recebe
+  somente o artefato e a verificação técnica para decidir integridade comercial.
 
 ## LOOP-PDE-ATIVACAO-DIRETA-ESTADOS-DIVERGENTES — preflight aprovado sem avanço comercial
 

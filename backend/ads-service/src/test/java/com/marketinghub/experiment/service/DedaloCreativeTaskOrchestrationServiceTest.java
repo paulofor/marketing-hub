@@ -18,24 +18,24 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
-/** Responsabilidade: comprovar a ponte entre tarefas da Têmis e a fila de criativos. */
-class TemisCreativeTaskOrchestrationServiceTest {
+/** Responsabilidade: comprovar a ponte entre tarefas de Dédalo e a fila de criativos. */
+class DedaloCreativeTaskOrchestrationServiceTest {
 
   /** Enfileira a tarefa real no experimento e a inicia sem duplicar alternativas. */
   @Test
-  void reconcilesPendingTemisTaskIntoCreativeQueue() {
+  void reconcilesPendingDedaloTaskIntoCreativeQueue() {
     AgentTaskRepository tasks = mock(AgentTaskRepository.class);
     ExperimentRepository experiments = mock(ExperimentRepository.class);
     AgentTask task = task("PENDING", "experiment:88");
     Experiment experiment = new Experiment();
     experiment.setId(88L);
     when(tasks.findByAssignedAgentAgentKeyAndTaskKindAndStatusInOrderByCreatedAtAscIdAsc(
-            "meta-ad-approver", "WORK", List.of("PENDING", "IN_PROGRESS")))
+            "landing-generator", "WORK", List.of("PENDING", "IN_PROGRESS")))
         .thenReturn(List.of(task));
     when(experiments.findById(88L)).thenReturn(Optional.of(experiment));
     Instant now = Instant.parse("2026-08-12T17:00:00Z");
-    TemisCreativeTaskOrchestrationService service =
-        new TemisCreativeTaskOrchestrationService(
+    DedaloCreativeTaskOrchestrationService service =
+        new DedaloCreativeTaskOrchestrationService(
             tasks, experiments, Clock.fixed(now, ZoneOffset.UTC));
 
     service.reconcilePendingTasks();
@@ -52,7 +52,7 @@ class TemisCreativeTaskOrchestrationServiceTest {
 
   /** Reenfileira uma tarefa retomada depois de falha sem duplicar trabalho ainda ativo. */
   @Test
-  void retriesResumedTemisTaskAfterCreativeGenerationFailure() {
+  void retriesResumedDedaloTaskAfterCreativeGenerationFailure() {
     AgentTaskRepository tasks = mock(AgentTaskRepository.class);
     ExperimentRepository experiments = mock(ExperimentRepository.class);
     AgentTask task = task("IN_PROGRESS", "experiment:88");
@@ -61,11 +61,11 @@ class TemisCreativeTaskOrchestrationServiceTest {
     experiment.setCreativesToGenerate(0);
     experiment.setCreativeGenerationStatus(CreativeGenerationStatus.FAILED);
     when(tasks.findByAssignedAgentAgentKeyAndTaskKindAndStatusInOrderByCreatedAtAscIdAsc(
-            "meta-ad-approver", "WORK", List.of("PENDING", "IN_PROGRESS")))
+            "landing-generator", "WORK", List.of("PENDING", "IN_PROGRESS")))
         .thenReturn(List.of(task));
     when(experiments.findById(88L)).thenReturn(Optional.of(experiment));
-    TemisCreativeTaskOrchestrationService service =
-        new TemisCreativeTaskOrchestrationService(
+    DedaloCreativeTaskOrchestrationService service =
+        new DedaloCreativeTaskOrchestrationService(
             tasks, experiments, Clock.fixed(Instant.parse("2026-08-12T18:40:00Z"), ZoneOffset.UTC));
 
     service.reconcilePendingTasks();
@@ -75,15 +75,15 @@ class TemisCreativeTaskOrchestrationServiceTest {
         .isEqualTo(CreativeGenerationStatus.REQUESTED);
   }
 
-  /** Conclui a tarefa somente depois do callback de aprovação independente. */
+  /** Conclui a tarefa no callback técnico, antes da revisão independente de Têmis. */
   @Test
   void completesTaskAfterCreativeMaterializationCallback() {
     AgentTaskRepository tasks = mock(AgentTaskRepository.class);
     AgentTask task = task("IN_PROGRESS", "experiment:88");
     when(tasks.findTopBySourceReferenceOrderByUpdatedAtDescIdDesc("experiment:88"))
         .thenReturn(Optional.of(task));
-    TemisCreativeTaskOrchestrationService service =
-        new TemisCreativeTaskOrchestrationService(
+    DedaloCreativeTaskOrchestrationService service =
+        new DedaloCreativeTaskOrchestrationService(
             tasks,
             mock(ExperimentRepository.class),
             Clock.fixed(Instant.parse("2026-08-12T17:05:00Z"), ZoneOffset.UTC));
@@ -93,12 +93,12 @@ class TemisCreativeTaskOrchestrationServiceTest {
     assertThat(task.getStatus()).isEqualTo("COMPLETED");
   }
 
-  /** Cria tarefa mínima com identidade técnica da Têmis. */
+  /** Cria tarefa mínima com a identidade canônica de Dédalo. */
   private AgentTask task(String status, String reference) {
-    Agent temis = new Agent();
-    temis.setAgentKey("meta-ad-approver");
+    Agent dedalo = new Agent();
+    dedalo.setAgentKey("landing-generator");
     AgentTask task = new AgentTask();
-    task.setAssignedAgent(temis);
+    task.setAssignedAgent(dedalo);
     task.setTaskKind("WORK");
     task.setStatus(status);
     task.setSourceReference(reference);

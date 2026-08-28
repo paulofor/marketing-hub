@@ -148,11 +148,12 @@ mais recente da própria atividade dentro da referência de execução mais rece
 soma novamente custo ou tarefa composta. Uma execução antiga concluída não pode esconder bloqueio,
 pendência ou ausência de trabalho do ciclo atual.
 
-Uma atividade que exige parecer conjunto pode declarar `responsibleAgentKeys` no nó `TASK`. O
-backend abre idempotente e atomicamente uma tarefa para cada agente, usando a mesma versão de
-processo, atividade, referência de execução e ocorrência BPM. A atividade somente conclui quando a
-tentativa vigente de todos os coautores conclui; abrir apenas um parecer é inválido e não pode
-liberar a sucessora. O comando canônico da tela do produto é
+Cada atividade nova de agente deve declarar exatamente uma chave em `responsibleAgentKeys` e o
+`responsibilityDomain` compatível com a matriz canônica. Pareceres diferentes sobre o mesmo artefato
+devem ser atividades separadas, com identificadores, resultados, evidências e critérios próprios;
+Psique e Têmis nunca são coautoras da mesma atividade. Definições históricas com múltiplas chaves
+continuam legíveis e executáveis somente para preservar auditoria, mas não podem ser republicadas ou
+usadas como modelo de nova versão. O comando canônico da tela do produto é
 `POST /api/business-processes/{processDefinitionId}/products/{productId}/activities/{activityId}/execution-requests`.
 Ele somente aceita versão `PUBLISHED`, produto em `PLAY`, atividade ainda não iniciada e experimento
 do próprio produto. Repetir o comando reutiliza as tarefas existentes e não duplica custo nem
@@ -166,12 +167,15 @@ um recurso ativo do catálogo persistido `business_process_execution_resource`, 
 em `GET /api/business-process-execution-resources`.
 
 Cada recurso informa código estável, nome, tipo, agente responsável, referência do executor e
-instruções de uso. A primeira capacidade oficial é `themis-image-studio`, executada no container
-isolado homônimo para criar e editar imagens. Atividades sem essa necessidade permanecem sem recurso
-e seguem o executor normal do agente.
+instruções de uso. `pde-visual-materialization` pertence funcionalmente a Dédalo e usa o
+`executor_reference` legado `themis-image-studio`; o nome técnico do container não atribui autoria a
+Têmis. `video-management-service` pertence a Apolo. O código histórico `themis-image-studio` também
+fica associado a Dédalo apenas para compatibilidade de filas já persistidas. Atividades sem recurso
+especializado seguem o executor normal do agente.
 
-O backend valida o recurso ao salvar e publicar a definição. Quando uma tarefa é vinculada, também
-confirma que o agente responsável é o mesmo do recurso. O contrato `pending` entrega ao executor o
+O backend valida o recurso ao salvar e publicar a definição e exige desde esse momento que o único
+agente da atividade seja o proprietário do recurso. Quando uma tarefa é vinculada, repete a mesma
+confirmação. O contrato `pending` entrega ao executor o
 objeto `executionResource` completo. Um executor comum consulta a fila sem código de recurso e não
 pode reservar atividade especializada; o executor próprio deve informar `executionResourceCode` e
 só recebe atividades com correspondência exata. Recurso ausente, inativo ou atribuído a outro agente

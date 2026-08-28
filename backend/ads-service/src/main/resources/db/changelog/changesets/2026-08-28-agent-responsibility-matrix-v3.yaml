@@ -1,0 +1,590 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-28-agent-responsibility-matrix-v3-1-agent-contracts
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE agent
+              SET current_version = current_version + 1,
+                  name = CASE agent_key
+                    WHEN 'market-radar' THEN 'Agente de Inteligência Factual de Mercado'
+                    WHEN 'experiment-strategist' THEN 'Estrategista-Chefe de Mercado'
+                    WHEN 'financial-agent' THEN 'Agente de Validação Financeira'
+                    WHEN 'landing-generator' THEN 'Agente de Construção PDE'
+                    WHEN 'videomaker' THEN 'Agente de Produção Audiovisual'
+                    WHEN 'customer-agent' THEN 'Agente de Experiência Humana'
+                    WHEN 'meta-ad-approver' THEN 'Agente de Integridade Comercial'
+                    WHEN 'growth-operator' THEN 'Operador de Crescimento'
+                    ELSE name
+                  END,
+                  description = CASE agent_key
+                    WHEN 'market-radar' THEN 'Reúne fatos de demanda, concorrentes, linguagem pública, ofertas e fontes sem escolher estratégia.'
+                    WHEN 'experiment-strategist' THEN 'Define mercado, desejo, diferenciação, posicionamento, portfólio, tese de oferta e hipótese prioritária.'
+                    WHEN 'financial-agent' THEN 'Valida preço como hipótese, margem, CAC, orçamento, custos, receita e risco financeiro.'
+                    WHEN 'landing-generator' THEN 'Materializa arquitetura, jornada, entregáveis, acesso, landing e artefatos não audiovisuais do PDE.'
+                    WHEN 'videomaker' THEN 'Materializa roteiro técnico, cenas, áudio, montagem, legendas e entrega audiovisual.'
+                    WHEN 'customer-agent' THEN 'Avalia compreensão, reação afetiva e sensorial, prazer, desejo, esforço, confiança e objeções.'
+                    WHEN 'meta-ad-approver' THEN 'Revisa verdade, prova, fidelidade, direitos, compliance e segurança sem criar o ativo avaliado.'
+                    WHEN 'growth-operator' THEN 'Opera distribuição, instrumentação, atribuição, funil, gargalo e otimização sem reescrever estratégia.'
+                    ELSE description
+                  END,
+                  business_objective = CASE agent_key
+                    WHEN 'market-radar' THEN 'Entregar a Atena um dossiê factual rastreável e atual para reduzir decisões comerciais sem evidência.'
+                    WHEN 'experiment-strategist' THEN 'Escolher o que vender, para quem, por que será desejado e como posicionar para gerar vendas com valor.'
+                    WHEN 'financial-agent' THEN 'Proteger margem e caixa com limites econômicos auditáveis antes de gasto e escala.'
+                    WHEN 'landing-generator' THEN 'Transformar estratégia e economia aprovadas em PDE e superfícies úteis, fáceis e vendáveis.'
+                    WHEN 'videomaker' THEN 'Entregar audiovisual tecnicamente íntegro e aderente ao briefing aprovado.'
+                    WHEN 'customer-agent' THEN 'Comprovar se uma pessoa entende, deseja e percebe valor no material real.'
+                    WHEN 'meta-ad-approver' THEN 'Impedir promessa falsa, prova insuficiente, direito violado ou comunicação comercial insegura.'
+                    WHEN 'growth-operator' THEN 'Levar ativos aprovados ao mercado, medir eventos reais e resolver o primeiro gargalo do funil.'
+                    ELSE business_objective
+                  END,
+                  success_metrics = CASE agent_key
+                    WHEN 'market-radar' THEN 'Cobertura, atualidade, independência e rastreabilidade das fontes aceitas por Atena.'
+                    WHEN 'experiment-strategist' THEN 'Estratégias operáveis que originam vendas entregues, sem contar recomendação como resultado.'
+                    WHEN 'financial-agent' THEN 'Margem protegida, limites respeitados, CAC e receita reconciliados e zero gasto não autorizado.'
+                    WHEN 'landing-generator' THEN 'Artefatos aprovados na primeira tentativa, menor retrabalho e jornada funcional até valor percebido.'
+                    WHEN 'videomaker' THEN 'Pacotes audiovisuais aprovados, íntegros, dentro do teto e sem retrabalho recorrente.'
+                    WHEN 'customer-agent' THEN 'Gates humanos baseados em evidência, com defeitos de compreensão, desejo e esforço localizados.'
+                    WHEN 'meta-ad-approver' THEN 'Zero autoaprovação, prova rastreável e bloqueios comerciais com causa e critério de aceite.'
+                    WHEN 'growth-operator' THEN 'Instrumentação íntegra, gargalo resolvido e decisões baseadas em venda, entrega e satisfação reais.'
+                    ELSE success_metrics
+                  END,
+                  responsibility_contract = CASE agent_key
+                    WHEN 'market-radar' THEN 'Domínio MARKET_EVIDENCE. Entrega fatos e lacunas; não decide público prioritário, posicionamento, oferta, formato ou canal.'
+                    WHEN 'experiment-strategist' THEN 'Domínio MARKET_STRATEGY. Produz Contrato Estratégico de Mercado versionado; não coleta em paralelo sem causa nem opera distribuição.'
+                    WHEN 'financial-agent' THEN 'Domínio FINANCIAL_VALIDATION. Valida economia e limites; não cria posicionamento, comunicação, produto, campanha ou movimentação financeira.'
+                    WHEN 'landing-generator' THEN 'Domínio PDE_CONSTRUCTION. Materializa estratégia e economia aprovadas; não redefine mercado, preço nem aprova o próprio trabalho.'
+                    WHEN 'videomaker' THEN 'Domínio AUDIOVISUAL_PRODUCTION. Produz audiovisual aprovado; não redefine estratégia, landing, integridade ou publicação.'
+                    WHEN 'customer-agent' THEN 'Domínio HUMAN_EXPERIENCE_REVIEW. Avalia artefato real; não inventa fatos, decide compliance, altera preço ou materializa correção.'
+                    WHEN 'meta-ad-approver' THEN 'Domínio COMMERCIAL_INTEGRITY_REVIEW. Revisa ativo real; não cria copy, conceito, imagem, vídeo, landing ou produto.'
+                    WHEN 'growth-operator' THEN 'Domínio GROWTH_OPERATION. Opera estratégia imutável; contradição de mercado retorna para nova execução de Atena.'
+                    ELSE responsibility_contract
+                  END,
+                  orchestrator_policy = CASE agent_key
+                    WHEN 'market-radar' THEN 'Entrega o dossiê factual a Atena e encerra sem selecionar estratégia.'
+                    WHEN 'experiment-strategist' THEN 'É a única autora da estratégia e publica versão e SHA-256 para os consumidores.'
+                    WHEN 'financial-agent' THEN 'Bloqueia inviabilidade financeira sem alterar estratégia ou autorizar gasto.'
+                    WHEN 'landing-generator' THEN 'Consome contratos aprovados e envia artefatos reais para Psique e Têmis em atividades separadas.'
+                    WHEN 'videomaker' THEN 'Executa somente jobs autorizados e entrega o candidato para gates independentes.'
+                    WHEN 'customer-agent' THEN 'Decide somente experiência humana e nunca substitui o artefato reprovado.'
+                    WHEN 'meta-ad-approver' THEN 'Decide somente integridade comercial e devolve causa e critério, nunca uma peça substituta.'
+                    WHEN 'growth-operator' THEN 'Só opera após gates e autorização aplicáveis; mudança estratégica abre nova análise de Atena.'
+                    ELSE orchestrator_policy
+                  END,
+                  analysis_policy = CASE agent_key
+                    WHEN 'market-radar' THEN 'Separar fato, inferência, hipótese, lacuna e qualidade da fonte.'
+                    WHEN 'experiment-strategist' THEN 'Comparar três estratégias, tentar refutar a escolhida e preservar as evidências de Argos.'
+                    WHEN 'financial-agent' THEN 'Separar valores reconciliados de cenários e estimativas; comparar três envelopes.'
+                    WHEN 'landing-generator' THEN 'Comparar três formas de materializar sem trocar silenciosamente os contratos predecessores.'
+                    WHEN 'videomaker' THEN 'Escolher solução técnica por cena dentro do briefing, teto e critérios de QA.'
+                    WHEN 'customer-agent' THEN 'Registrar primeiro impulso, evidência sensorial disponível, compreensão, esforço, confiança e objeções.'
+                    WHEN 'meta-ad-approver' THEN 'Comparar promessa, prova, ativo e direitos; bloquear criação disfarçada de revisão.'
+                    WHEN 'growth-operator' THEN 'Confirmar o primeiro gargalo no histórico e comparar três ações operacionais sem trocar estratégia.'
+                    ELSE analysis_policy
+                  END,
+                  offering_policy = CASE agent_key
+                    WHEN 'market-radar' THEN 'Dossiê factual com fontes e lacunas, sem recomendação estratégica final.'
+                    WHEN 'experiment-strategist' THEN 'Contrato Estratégico de Mercado imutável com hipótese, métrica e critérios.'
+                    WHEN 'financial-agent' THEN 'Parecer econômico com cenários, teto, margem, CAC máximo e risco.'
+                    WHEN 'landing-generator' THEN 'Produto, landing e artefatos não audiovisuais versionados e separados da auditoria.'
+                    WHEN 'videomaker' THEN 'Pacote audiovisual versionado com jobs, custos, mídia e QA.'
+                    WHEN 'customer-agent' THEN 'Parecer humano estruturado com evidência e mudanças requeridas, sem ativo substituto.'
+                    WHEN 'meta-ad-approver' THEN 'Gate de integridade com causa, impacto e critério de aceite, sem conteúdo substituto.'
+                    WHEN 'growth-operator' THEN 'Contrato operacional e diagnóstico com eventos reais e decisão continuar, ajustar ou parar.'
+                    ELSE offering_policy
+                  END,
+                  prompt_contract_path = CASE agent_key
+                    WHEN 'market-radar' THEN 'product-discovery-worker/prompts/productdiscovery.v1/research/system.md'
+                    WHEN 'experiment-strategist' THEN 'experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v2/research.md'
+                    WHEN 'financial-agent' THEN 'financial-agent-worker/src/main/resources/prompts/financial-agent/v1/report.md'
+                    WHEN 'landing-generator' THEN 'landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v1/journey.md'
+                    WHEN 'videomaker' THEN 'video-management-service/src/main/resources/prompts/apollo/v2/production-mission.md'
+                    WHEN 'customer-agent' THEN 'customer-agent-worker/src/main/resources/prompts/psique/behavioral-core-v3.md'
+                    WHEN 'meta-ad-approver' THEN 'meta-ad-approver-worker/src/main/resources/prompts/meta-ad-approver/v2/review.md'
+                    WHEN 'growth-operator' THEN 'growth-operator-worker/src/main/resources/prompts/growth-operator/v2/diagnosis.md'
+                    ELSE prompt_contract_path
+                  END,
+                  schema_contract_path = CASE agent_key
+                    WHEN 'market-radar' THEN 'product-discovery-worker/prompts/productdiscovery.v1/research/response-schema.json'
+                    WHEN 'experiment-strategist' THEN 'experiment-strategist-worker/src/main/resources/prompts/experiment-strategist/v2/research-schema.json'
+                    WHEN 'financial-agent' THEN 'financial-agent-worker/src/main/resources/prompts/financial-agent/v1/report-schema.json'
+                    WHEN 'landing-generator' THEN 'landing-generator-agent-worker/src/main/resources/prompts/pde-construction/v1/journey-schema.json'
+                    WHEN 'videomaker' THEN 'video-management-service/src/main/resources/prompts/apollo/v2/production-mission-schema.json'
+                    WHEN 'customer-agent' THEN 'customer-agent-worker/src/main/resources/prompts/customer-agent/behavioral-v3/evaluation-schema.json'
+                    WHEN 'meta-ad-approver' THEN 'meta-ad-approver-worker/src/main/resources/prompts/meta-ad-approver/v2/review-schema.json'
+                    WHEN 'growth-operator' THEN 'growth-operator-worker/src/main/resources/prompts/growth-operator/v2/diagnosis-schema.json'
+                    ELSE schema_contract_path
+                  END
+              WHERE agent_key IN (
+                'market-radar', 'experiment-strategist', 'financial-agent', 'landing-generator',
+                'videomaker', 'customer-agent', 'meta-ad-approver', 'growth-operator'
+              );
+
+              INSERT INTO agent_version (agent_id, version_number, contract_snapshot, created_at)
+              SELECT a.id, a.current_version,
+                JSON_OBJECT(
+                  'agentKey', a.agent_key,
+                  'version', a.current_version,
+                  'status', a.status,
+                  'model', COALESCE(a.model_name, ''),
+                  'responsibilityDomain', CASE a.agent_key
+                    WHEN 'market-radar' THEN 'MARKET_EVIDENCE'
+                    WHEN 'experiment-strategist' THEN 'MARKET_STRATEGY'
+                    WHEN 'financial-agent' THEN 'FINANCIAL_VALIDATION'
+                    WHEN 'landing-generator' THEN 'PDE_CONSTRUCTION'
+                    WHEN 'videomaker' THEN 'AUDIOVISUAL_PRODUCTION'
+                    WHEN 'customer-agent' THEN 'HUMAN_EXPERIENCE_REVIEW'
+                    WHEN 'meta-ad-approver' THEN 'COMMERCIAL_INTEGRITY_REVIEW'
+                    WHEN 'growth-operator' THEN 'GROWTH_OPERATION'
+                  END,
+                  'prompt', a.prompt_contract_path,
+                  'schema', a.schema_contract_path,
+                  'matrixVersion', 'AGENT_RESPONSIBILITY_MATRIX_V1'
+                ),
+                UTC_TIMESTAMP()
+              FROM agent a
+              LEFT JOIN agent_version av
+                ON av.agent_id = a.id AND av.version_number = a.current_version
+              WHERE a.agent_key IN (
+                  'market-radar', 'experiment-strategist', 'financial-agent', 'landing-generator',
+                  'videomaker', 'customer-agent', 'meta-ad-approver', 'growth-operator'
+                )
+                AND av.id IS NULL;
+
+  - changeSet:
+      id: 2026-08-28-agent-responsibility-matrix-v3-2-execution-resources
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE business_process_execution_resource
+              SET name = 'Materializador visual técnico de Dédalo',
+                  description = 'Cria, edita e compõe imagens sob o contrato de construção PDE, preservando entregáveis reais e sua linhagem.',
+                  responsible_agent_key = 'landing-generator',
+                  usage_instructions = 'Execute a produção visual no container técnico themis-image-studio pelo contrato pending do backend. O código do executor é legado; a autoria funcional pertence a Dédalo e o resultado exige revisões independentes de Psique e Têmis.',
+                  active = 1,
+                  updated_at = UTC_TIMESTAMP()
+              WHERE resource_code = 'themis-image-studio';
+
+              INSERT INTO business_process_execution_resource
+                (resource_code, name, description, resource_type, responsible_agent_key,
+                 executor_reference, usage_instructions, active, created_at, updated_at)
+              SELECT 'pde-visual-materialization',
+                'Materializador visual de Dédalo',
+                'Cria, edita e compõe imagens e peças estáticas sob o contrato de construção PDE.',
+                'CONTAINER',
+                'landing-generator',
+                'themis-image-studio',
+                'Consuma a fila pending canônica de materialização visual. O executor_reference preserva o nome técnico legado; autoria, contexto e tarefa pertencem a Dédalo e o resultado exige gates independentes.',
+                1,
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_execution_resource
+                WHERE resource_code = 'pde-visual-materialization'
+              );
+
+              INSERT INTO business_process_execution_resource
+                (resource_code, name, description, resource_type, responsible_agent_key,
+                 executor_reference, usage_instructions, active, created_at, updated_at)
+              SELECT 'video-management-service',
+                'Materializador audiovisual de Apolo',
+                'Produz roteiro técnico, cenas, áudio, montagem, legendas e mídia sob briefing aprovado.',
+                'CONTAINER',
+                'videomaker',
+                'video-management-service',
+                'Consuma somente a fila pending canônica de Apolo, preserve jobs, custos e artefatos e devolva o candidato ao backend sem publicar nem aprovar.',
+                1,
+                UTC_TIMESTAMP(),
+                UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_execution_resource
+                WHERE resource_code = 'video-management-service'
+              );
+
+  - changeSet:
+      id: 2026-08-28-agent-responsibility-matrix-v3-2-processes
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT 'pde-opportunity-discovery', 'Descoberta factual da oportunidade PDE',
+                'Reunir evidências factuais de mercado antes de qualquer decisão estratégica.',
+                'Argos', 'Novo ciclo de pesquisa ou sinal real de mercado.',
+                'Dossiê factual rastreável pronto para a decisão estratégica de Atena.',
+                6, 'PUBLISHED', 'agent-responsibility-matrix-v3 / MARKET_EVIDENCE',
+                'VALUE_PROCESS', NULL,
+                '{"nodes":[{"id":"start","type":"START","label":"Pergunta de mercado recebida","owner":"Backend","description":"O recorte e a origem da pesquisa ficam congelados."},{"id":"marketEvidence","type":"TASK","label":"Reunir evidências factuais de mercado","owner":"Argos","description":"Documenta demanda, concorrentes, linguagem pública, ofertas, preços visíveis, fontes, lacunas e qualidade sem escolher posicionamento, formato ou canal.","responsibleAgentKeys":["market-radar"],"responsibilityDomain":"MARKET_EVIDENCE"},{"id":"gate","type":"GATEWAY","label":"Dossiê factual suficiente?","owner":"Backend","description":"Bloqueia fonte vazia, vencida, artificial ou sem rastreabilidade."},{"id":"end","type":"END","label":"Dossiê entregue a Atena","owner":"Backend","description":"A pesquisa termina sem selecionar estratégia nem fabricar venda."}],"flows":[{"from":"start","to":"marketEvidence"},{"from":"marketEvidence","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'pde-opportunity-discovery' AND version_number = 6
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT 'pde-commercial-plan-offer', 'Estratégia, economia e arquitetura comercial do PDE',
+                'Transformar o dossiê factual em estratégia, limite econômico e arquitetura de produto com um único dono por decisão.',
+                'Backend de Planejamento Comercial',
+                'Dossiê factual de Argos aprovado.',
+                'Plano comercial versionado sem coautoria, pronto para construção.',
+                5, 'PUBLISHED', 'agent-responsibility-matrix-v3 / MARKET_STRATEGY / FINANCIAL_VALIDATION / PDE_CONSTRUCTION',
+                'VALUE_PROCESS', NULL,
+                '{"nodes":[{"id":"start","type":"START","label":"Dossiê factual aprovado","owner":"Backend","description":"A versão factual de Argos inicia o plano."},{"id":"marketStrategy","type":"TASK","label":"Definir estratégia geral de mercado","owner":"Atena","description":"Define público prioritário, desejo, diferenciação, posicionamento, tese de oferta, portfólio e hipótese; não escolhe preço nem operação.","responsibleAgentKeys":["experiment-strategist"],"responsibilityDomain":"MARKET_STRATEGY"},{"id":"economics","type":"TASK","label":"Validar economia e limites","owner":"Plutus","description":"Valida preço como hipótese, margem, CAC, orçamento, custos, receita e risco sem reescrever a estratégia.","responsibleAgentKeys":["financial-agent"],"responsibilityDomain":"FINANCIAL_VALIDATION"},{"id":"productArchitecture","type":"TASK","label":"Definir arquitetura de materialização","owner":"Dédalo","description":"Converte estratégia e economia aprovadas em arquitetura do PDE, jornada, entregáveis, acesso e superfícies sem redefinir mercado ou preço.","responsibleAgentKeys":["landing-generator"],"responsibilityDomain":"PDE_CONSTRUCTION"},{"id":"gate","type":"GATEWAY","label":"Contratos completos e coerentes?","owner":"Backend","description":"Exige versões, hashes, entradas, saídas e critérios de bloqueio dos três domínios."},{"id":"end","type":"END","label":"Plano comercial vigente","owner":"Backend","description":"O plano orienta materialização sem autorizar publicação ou gasto."}],"flows":[{"from":"start","to":"marketStrategy"},{"from":"marketStrategy","to":"economics"},{"from":"economics","to":"productArchitecture"},{"from":"productArchitecture","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'pde-commercial-plan-offer' AND version_number = 5
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT 'pde-construction-approval', 'Construção e aprovação independente do PDE',
+                'Materializar o PDE e submetê-lo a experiência humana e integridade comercial em gates separados.',
+                'Backend de Construção PDE',
+                'Estratégia, economia e arquitetura comercial aprovadas.',
+                'Produto funcional aprovado em experiência e integridade, sem autoaprovação.',
+                5, 'PUBLISHED', 'agent-responsibility-matrix-v3 / construction-independent-gates',
+                'VALUE_PROCESS', NULL,
+                '{"nodes":[{"id":"start","type":"START","label":"Contratos aprovados","owner":"Backend","description":"Estratégia, economia e arquitetura chegam congeladas."},{"id":"journey","type":"TASK","label":"Construir jornada de valor","owner":"Dédalo","description":"Materializa entrada, ações, estado e primeiro resultado útil sem mudar a estratégia.","responsibleAgentKeys":["landing-generator"],"responsibilityDomain":"PDE_CONSTRUCTION"},{"id":"deliverables","type":"TASK","label":"Produzir entregáveis do PDE","owner":"Dédalo","description":"Produz componentes não audiovisuais reais, versionados e separados da auditoria.","responsibleAgentKeys":["landing-generator"],"responsibilityDomain":"PDE_CONSTRUCTION"},{"id":"audiovisual","type":"TASK","label":"Executar produção audiovisual quando prevista","owner":"Apolo","description":"Produz roteiro, cenas, áudio, montagem e legendas em jobs versionados quando a arquitetura exigir vídeo ou áudio.","responsibleAgentKeys":["videomaker"],"responsibilityDomain":"AUDIOVISUAL_PRODUCTION","executionResourceCode":"video-management-service"},{"id":"access","type":"TASK","label":"Implementar acesso e continuidade","owner":"Dédalo","description":"Garante entrada, retomada, segregação, preferências, erros e suporte.","responsibleAgentKeys":["landing-generator"],"responsibilityDomain":"PDE_CONSTRUCTION"},{"id":"humanExperienceReview","type":"TASK","label":"Revisar experiência humana","owner":"Psique","description":"Avalia compreensão, reação afetiva e sensorial, prazer, desejo, esforço, confiança e objeções no produto real.","responsibleAgentKeys":["customer-agent"],"responsibilityDomain":"HUMAN_EXPERIENCE_REVIEW"},{"id":"commercialIntegrityReview","type":"TASK","label":"Revisar integridade comercial","owner":"Têmis","description":"Avalia verdade, prova, fidelidade, direitos, compliance e segurança sem produzir correção.","responsibleAgentKeys":["meta-ad-approver"],"responsibilityDomain":"COMMERCIAL_INTEGRITY_REVIEW"},{"id":"readiness","type":"GATEWAY","label":"Produto aprovado nos dois gates?","owner":"Backend","description":"Exige pareceres independentes e zero bloqueio crítico."},{"id":"end","type":"END","label":"PDE canônico pronto","owner":"Backend","description":"Versão aprovada fica pronta para comunicação, sem publicação."}],"flows":[{"from":"start","to":"journey"},{"from":"journey","to":"deliverables"},{"from":"deliverables","to":"audiovisual"},{"from":"audiovisual","to":"access"},{"from":"access","to":"humanExperienceReview"},{"from":"humanExperienceReview","to":"commercialIntegrityReview"},{"from":"commercialIntegrityReview","to":"readiness"},{"from":"readiness","to":"end"}]}',
+                UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'pde-construction-approval' AND version_number = 5
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT 'pde-communication-sales-journey', 'Comunicação e jornada de venda do PDE',
+                'Orquestrar materialização, revisão e integração sem atribuir autoria de comunicação a Têmis ou estratégia a Hermes.',
+                'Backend de Experimentos', 'PDE aprovado e Plano Comercial vigente.',
+                'Jornada integrada e rastreável pronta para homologação, sem ativar mídia.',
+                6, 'PUBLISHED', 'agent-responsibility-matrix-v3 / materialize-review-integrate',
+                'VALUE_PROCESS', NULL,
+                '{"nodes":[{"id":"start","type":"START","label":"Produto e plano aprovados","owner":"Backend","description":"Versões aprovadas iniciam a materialização comercial."},{"id":"creatives","type":"TASK","label":"Executar produção e aprovação de criativos","owner":"Backend","description":"Delega materialização e gates independentes ao subprocesso canônico.","subprocessCode":"creative-production-approval"},{"id":"destination","type":"TASK","label":"Executar geração e aprovação do destino","owner":"Backend","description":"Delega landing ao subprocesso canônico quando esse for o destino aprovado.","subprocessCode":"landing-page-generation"},{"id":"integration","type":"TASK","label":"Integrar canal, checkout, acesso e eventos","owner":"Backend","description":"Conecta somente versões aprovadas e preserva atribuição até venda, entrega e primeiro uso."},{"id":"gate","type":"GATEWAY","label":"Jornada integrada sem lacunas?","owner":"Backend","description":"Exige message match, checkout, acesso, eventos e segregação de testes."},{"id":"end","type":"END","label":"Jornada pronta para homologação","owner":"Backend","description":"O processo termina sem publicação, contato ou gasto."}],"flows":[{"from":"start","to":"creatives"},{"from":"creatives","to":"destination"},{"from":"destination","to":"integration"},{"from":"integration","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'pde-communication-sales-journey' AND version_number = 6
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT 'pde-commercial-homologation-activation', 'Homologação e ativação comercial do PDE',
+                'Executar experiência humana, integridade comercial, preflight e autorização em decisões separadas.',
+                'Backend de Experimentos', 'Produto e jornada aprovados com versões exatas.',
+                'Ativação autorizada ou bloqueada com causa, sem coautoria de gates.',
+                6, 'PUBLISHED', 'agent-responsibility-matrix-v3 / independent-commercial-gates',
+                'VALUE_PROCESS', NULL,
+                '{"nodes":[{"id":"start","type":"START","label":"Produto e jornada aprovados","owner":"Backend","description":"As versões exatas iniciam a homologação."},{"id":"humanExperienceReview","type":"TASK","label":"Validar experiência humana da jornada","owner":"Psique","description":"Decide se a pessoa entende, deseja, confia e percebe valor com esforço aceitável.","responsibleAgentKeys":["customer-agent"],"responsibilityDomain":"HUMAN_EXPERIENCE_REVIEW"},{"id":"commercialIntegrityReview","type":"TASK","label":"Validar integridade comercial da jornada","owner":"Têmis","description":"Decide se promessas, provas, direitos e comunicação são verdadeiros e seguros.","responsibleAgentKeys":["meta-ad-approver"],"responsibilityDomain":"COMMERCIAL_INTEGRITY_REVIEW"},{"id":"preflight","type":"TASK","label":"Executar preflight técnico","owner":"Backend","description":"Consome uma única homologação técnica e reutiliza evidências.","subprocessCode":"experiment-homologation-activation"},{"id":"decision","type":"GATEWAY","label":"Todos os gates estão aprovados?","owner":"Backend","description":"Bloqueia qualquer lacuna com causa e ação persistidas."},{"id":"authorization","type":"TASK","label":"Autorizar ativação e orçamento","owner":"Operador humano","description":"Autoriza explicitamente RUNNING dentro do teto; nenhum gate técnico libera gasto."},{"id":"end","type":"END","label":"Decisão de ativação registrada","owner":"Backend","description":"Somente a autorização permite a operação posterior de Hermes."}],"flows":[{"from":"start","to":"humanExperienceReview"},{"from":"humanExperienceReview","to":"commercialIntegrityReview"},{"from":"commercialIntegrityReview","to":"preflight"},{"from":"preflight","to":"decision"},{"from":"decision","to":"authorization","label":"Aprovado"},{"from":"authorization","to":"end"},{"from":"decision","to":"end","label":"Bloqueado"}]}',
+                UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'pde-commercial-homologation-activation' AND version_number = 6
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT 'creative-production-approval', 'Produção e aprovação independente de criativos',
+                'Materializar peças por recursos especializados e revisar experiência e integridade sem autoaprovação.',
+                'Backend de Produção Comercial',
+                'Produto, estratégia, prova, canal, CTA e destino aprovados.',
+                'Pacote criativo versionado e aprovado por Psique, Têmis e decisão humana.',
+                7, 'PUBLISHED', 'agent-responsibility-matrix-v3 / creative-separation',
+                'SUBPROCESS', 'pde-communication-sales-journey',
+                '{"nodes":[{"id":"start","type":"START","label":"Contrato comercial congelado","owner":"Backend","description":"Produto, estratégia, prova, canal, destino e CTA chegam versionados."},{"id":"route","type":"TASK","label":"Resolver formatos técnicos previstos","owner":"Backend","description":"Aplica os formatos já aprovados sem redefinir estratégia, canal ou hipótese."},{"id":"nonAudiovisual","type":"TASK","label":"Materializar peças não audiovisuais","owner":"Dédalo","description":"Produz copy, composição e peças estáticas sob a estratégia aprovada sem receber identidade de Têmis.","responsibleAgentKeys":["landing-generator"],"responsibilityDomain":"PDE_CONSTRUCTION","executionResourceCode":"pde-visual-materialization"},{"id":"audiovisual","type":"TASK","label":"Materializar peças audiovisuais quando previstas","owner":"Apolo","description":"Produz roteiro, cenas, áudio, montagem e legendas quando o formato aprovado exigir vídeo ou áudio.","responsibleAgentKeys":["videomaker"],"responsibilityDomain":"AUDIOVISUAL_PRODUCTION","executionResourceCode":"video-management-service"},{"id":"customer","type":"TASK","label":"Avaliar experiência humana do criativo","owner":"Psique","description":"Inspeciona cada formato real e registra reação, clareza, desejo, confiança e esforço.","responsibleAgentKeys":["customer-agent"],"responsibilityDomain":"HUMAN_EXPERIENCE_REVIEW"},{"id":"commercial","type":"TASK","label":"Revisar integridade comercial do criativo","owner":"Têmis","description":"Execução revisora valida verdade, prova, fidelidade, direitos, compliance e segurança sem criar correção.","responsibleAgentKeys":["meta-ad-approver"],"responsibilityDomain":"COMMERCIAL_INTEGRITY_REVIEW"},{"id":"gate","type":"GATEWAY","label":"Formatos aprovados nos dois gates?","owner":"Backend","description":"Exige prova vigente e zero bloqueio crítico."},{"id":"human","type":"TASK","label":"Registrar decisão humana de uso","owner":"Operador humano","description":"Seleciona peças elegíveis sem publicar ou gastar."},{"id":"end","type":"END","label":"Pacote criativo aprovado","owner":"Backend","description":"Peças e pareceres ficam prontos para integração."}],"flows":[{"from":"start","to":"route"},{"from":"route","to":"nonAudiovisual"},{"from":"nonAudiovisual","to":"audiovisual"},{"from":"audiovisual","to":"customer"},{"from":"customer","to":"commercial"},{"from":"commercial","to":"gate"},{"from":"gate","to":"human"},{"from":"human","to":"end"}]}',
+                UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'creative-production-approval' AND version_number = 7
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT 'experiment-homologation-activation', 'Homologação técnica de experimento',
+                'Comprovar superfícies, transação, eventos e limites sem misturar operação de Hermes com decisão financeira de Plutus.',
+                'Backend de Experimentos', 'Experimento planejado com ativos e limites aprovados.',
+                'Preflight técnico persistido, sem decidir ativação.',
+                5, 'PUBLISHED', 'agent-responsibility-matrix-v3 / technical-preflight',
+                'SUBPROCESS', 'pde-commercial-homologation-activation',
+                '{"nodes":[{"id":"start","type":"START","label":"Experimento pronto para preflight","owner":"Backend","description":"Versões candidatas e limites estão congelados."},{"id":"surfaces","type":"TASK","label":"Validar superfícies candidatas","owner":"Quality Review","description":"Comprova versão, mobile, desempenho, links, ativos e correspondência."},{"id":"transaction","type":"TASK","label":"Testar compra, acesso e entrega","owner":"Backend","description":"Executa transação segregada sem registrar venda real."},{"id":"measurement","type":"TASK","label":"Validar eventos e deduplicação","owner":"Backend","description":"Confere contratos operacionais de Hermes sem operar tráfego."},{"id":"financialGuardrails","type":"TASK","label":"Validar limites financeiros persistidos","owner":"Backend","description":"Confere teto e regras aprovados por Plutus sem recalcular ou autorizar gasto."},{"id":"gate","type":"GATEWAY","label":"Preflight técnico aprovado?","owner":"Backend","description":"Persiste evidências e causa de qualquer bloqueio."},{"id":"end","type":"END","label":"Preflight entregue ao processo pai","owner":"Backend","description":"O subprocesso termina sem autorizar RUNNING."}],"flows":[{"from":"start","to":"surfaces"},{"from":"surfaces","to":"transaction"},{"from":"transaction","to":"measurement"},{"from":"measurement","to":"financialGuardrails"},{"from":"financialGuardrails","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'experiment-homologation-activation' AND version_number = 5
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT 'landing-page-generation', 'Geração e aprovação independente de landing',
+                'Materializar a landing por Dédalo e exigir técnica, experiência humana, integridade comercial e decisão humana separadas.',
+                'Backend de Geração de Landing', 'Briefing, produto, prova e checkout aprovados.',
+                'Landing fiel, versionada e pronta para autorização humana de publicação.',
+                5, 'PUBLISHED', 'agent-responsibility-matrix-v3 / landing-independent-gates',
+                'SUBPROCESS', 'pde-communication-sales-journey',
+                '{"nodes":[{"id":"start","type":"START","label":"Briefing e produto aprovados","owner":"Backend","description":"Oferta, estratégia, prova, checkout e objetivo chegam congelados."},{"id":"select","type":"TASK","label":"Selecionar provas reais","owner":"Dédalo","description":"Seleciona ativos aprovados com linhagem e bloqueia reconstrução fictícia.","responsibleAgentKeys":["landing-generator"],"responsibilityDomain":"PDE_CONSTRUCTION"},{"id":"strategy","type":"TASK","label":"Definir arquitetura de conversão da página","owner":"Dédalo","description":"Materializa hierarquia, narrativa e copy sem redefinir posicionamento, oferta ou preço.","responsibleAgentKeys":["landing-generator"],"responsibilityDomain":"PDE_CONSTRUCTION"},{"id":"compose","type":"TASK","label":"Executar composição visual técnica quando necessária","owner":"Dédalo","description":"Dirige o recurso técnico de imagem e registra linhagem, custo e versão sem autoaprovação.","responsibleAgentKeys":["landing-generator"],"responsibilityDomain":"PDE_CONSTRUCTION","executionResourceCode":"pde-visual-materialization"},{"id":"html","type":"TASK","label":"Construir HTML completo","owner":"Dédalo","description":"Entrega HTML responsivo e acessível com ativos, checkout e instrumentação canônicos.","responsibleAgentKeys":["landing-generator"],"responsibilityDomain":"PDE_CONSTRUCTION"},{"id":"technical","type":"TASK","label":"Validar técnica e fidelidade","owner":"Quality Review","description":"Valida desktop, mobile, links, tracking, desempenho e correspondência dos ativos."},{"id":"customer","type":"TASK","label":"Avaliar experiência humana da landing","owner":"Psique","description":"Avalia clareza, desejo, confiança, prazer sensorial, objeções e esforço.","responsibleAgentKeys":["customer-agent"],"responsibilityDomain":"HUMAN_EXPERIENCE_REVIEW"},{"id":"commercial","type":"TASK","label":"Revisar integridade comercial da landing","owner":"Têmis","description":"Verifica verdade, prova, fidelidade, direitos e compliance sem criar a correção.","responsibleAgentKeys":["meta-ad-approver"],"responsibilityDomain":"COMMERCIAL_INTEGRITY_REVIEW"},{"id":"gate","type":"GATEWAY","label":"Landing aprovada nos três gates?","owner":"Backend","description":"Exige técnica, experiência e integridade aprovadas."},{"id":"human","type":"TASK","label":"Autorizar publicação da versão","owner":"Operador humano","description":"Autoriza explicitamente a publicação e preserva rollback."},{"id":"end","type":"END","label":"Landing pronta para publicação","owner":"Backend","description":"Nenhuma publicação ou campanha é feita pelo subprocesso."}],"flows":[{"from":"start","to":"select"},{"from":"select","to":"strategy"},{"from":"strategy","to":"compose"},{"from":"compose","to":"html"},{"from":"html","to":"technical"},{"from":"technical","to":"customer"},{"from":"customer","to":"commercial"},{"from":"commercial","to":"gate"},{"from":"gate","to":"human"},{"from":"human","to":"end"}]}',
+                UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'landing-page-generation' AND version_number = 5
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT 'operacao-otimizacao-experimento', 'Operação e otimização de experimento',
+                'Operar crescimento e consultar revisores independentes sem transferir criação ou estratégia para eles.',
+                'Hermes', 'Experimento RUNNING após autorização humana.',
+                'Teste controlado decidido por eventos, vendas e entrega reais.',
+                4, 'PUBLISHED', 'agent-responsibility-matrix-v3 / growth-operation',
+                'SUBPROCESS', 'pde-sales-delivery-learning',
+                '{"nodes":[{"id":"start","type":"START","label":"Operação autorizada","owner":"Backend","description":"Estratégia, orçamento e regras de parada estão vigentes."},{"id":"task-1","type":"TASK","label":"Verificar integridade dos eventos","owner":"Hermes","description":"Confirma funil e deduplicação antes de otimizar.","responsibleAgentKeys":["growth-operator"],"responsibilityDomain":"GROWTH_OPERATION"},{"id":"task-2","type":"TASK","label":"Acumular amostra mínima","owner":"Hermes","description":"Aguarda volume e janela definidos sem fabricar resultado.","responsibleAgentKeys":["growth-operator"],"responsibilityDomain":"GROWTH_OPERATION"},{"id":"task-3","type":"TASK","label":"Identificar gargalo real","owner":"Hermes","description":"Localiza a primeira perda mensurável do funil.","responsibleAgentKeys":["growth-operator"],"responsibilityDomain":"GROWTH_OPERATION"},{"id":"task-4","type":"TASK","label":"Propor ajuste operacional de uma variável","owner":"Hermes","description":"Mantém estratégia, preço e produto imutáveis; contradição estratégica volta para Atena.","responsibleAgentKeys":["growth-operator"],"responsibilityDomain":"GROWTH_OPERATION"},{"id":"task-5","type":"TASK","label":"Revisar experiência humana da variante","owner":"Psique","description":"Avalia a variante real sem substituir dados do funil ou materializar correção.","responsibleAgentKeys":["customer-agent"],"responsibilityDomain":"HUMAN_EXPERIENCE_REVIEW"},{"id":"task-6","type":"TASK","label":"Revisar integridade comercial da variante","owner":"Têmis","description":"Avalia prova, fidelidade, direitos e compliance sem criar a variante.","responsibleAgentKeys":["meta-ad-approver"],"responsibilityDomain":"COMMERCIAL_INTEGRITY_REVIEW"},{"id":"task-7","type":"TASK","label":"Validar limite financeiro da variante","owner":"Plutus","description":"Confirma teto, custo, CAC e risco sem autorizar gasto.","responsibleAgentKeys":["financial-agent"],"responsibilityDomain":"FINANCIAL_VALIDATION"},{"id":"task-8","type":"TASK","label":"Autorizar mudança material quando necessária","owner":"Operador humano","description":"Autoriza gasto, publicação ou mudança comercial material."},{"id":"task-9","type":"TASK","label":"Roteirizar materialização autorizada","owner":"Backend","description":"Abre o job exclusivo de Dédalo ou Apolo conforme a modalidade aprovada."},{"id":"task-10","type":"TASK","label":"Executar teste e medir efeito","owner":"Hermes","description":"Compara variante aprovada com baseline, vendas, entrega, custo e reembolso.","responsibleAgentKeys":["growth-operator"],"responsibilityDomain":"GROWTH_OPERATION"},{"id":"gate","type":"GATEWAY","label":"Continuar, ajustar ou parar?","owner":"Backend","description":"Decide somente com evidência comercial real."},{"id":"end","type":"END","label":"Otimização decidida","owner":"Backend","description":"Resultado e próximo movimento ficam auditáveis."}],"flows":[{"from":"start","to":"task-1"},{"from":"task-1","to":"task-2"},{"from":"task-2","to":"task-3"},{"from":"task-3","to":"task-4"},{"from":"task-4","to":"task-5"},{"from":"task-5","to":"task-6"},{"from":"task-6","to":"task-7"},{"from":"task-7","to":"task-8"},{"from":"task-8","to":"task-9"},{"from":"task-9","to":"task-10"},{"from":"task-10","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'operacao-otimizacao-experimento' AND version_number = 4
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT 'pde-tasting-proof-of-value', 'Degustação e prova de valor do PDE',
+                'Validar hipótese, economia, materialização, experiência e integridade em decisões separadas.',
+                'Backend de Experiências PDE',
+                'Produto, estratégia, prova e limites aprovados.',
+                'Degustação aprovada ou bloqueada sem canibalização, gasto ou venda falsa.',
+                2, 'PUBLISHED', 'agent-responsibility-matrix-v3 / tasting-independent-decisions',
+                'SUBPROCESS', NULL,
+                '{"nodes":[{"id":"start","type":"START","label":"Produto e contratos aprovados","owner":"Backend","description":"Recebe somente versões vigentes."},{"id":"strategy","type":"TASK","label":"Definir hipótese estratégica da degustação","owner":"Atena","description":"Define público, desejo, diferencial e hipótese sem operar canal.","responsibleAgentKeys":["experiment-strategist"],"responsibilityDomain":"MARKET_STRATEGY"},{"id":"economics","type":"TASK","label":"Validar fronteira econômica","owner":"Plutus","description":"Define limite de custo, risco de canibalização e continuidade paga sem autorizar gasto.","responsibleAgentKeys":["financial-agent"],"responsibilityDomain":"FINANCIAL_VALIDATION"},{"id":"materialization","type":"TASK","label":"Materializar microexperiência","owner":"Dédalo","description":"Constrói valor real porém limitado a partir do PDE aprovado.","responsibleAgentKeys":["landing-generator"],"responsibilityDomain":"PDE_CONSTRUCTION"},{"id":"humanExperienceReview","type":"TASK","label":"Revisar experiência humana","owner":"Psique","description":"Avalia compreensão, prazer, valor, esforço e continuidade desejada.","responsibleAgentKeys":["customer-agent"],"responsibilityDomain":"HUMAN_EXPERIENCE_REVIEW"},{"id":"commercialIntegrityReview","type":"TASK","label":"Revisar integridade comercial","owner":"Têmis","description":"Valida prova, limites, privacidade, direitos e coerência da fronteira paga.","responsibleAgentKeys":["meta-ad-approver"],"responsibilityDomain":"COMMERCIAL_INTEGRITY_REVIEW"},{"id":"integration","type":"TASK","label":"Integrar eventos e continuidade paga","owner":"Backend","description":"Conecta expiração, abuso, checkout, compra e segregação de teste."},{"id":"gate","type":"GATEWAY","label":"Degustação prova valor com segurança?","owner":"Backend","description":"Exige todos os contratos e gates aprovados."},{"id":"end","type":"END","label":"Decisão de degustação registrada","owner":"Backend","description":"Uso gratuito ou checkout não são tratados como venda."}],"flows":[{"from":"start","to":"strategy"},{"from":"strategy","to":"economics"},{"from":"economics","to":"materialization"},{"from":"materialization","to":"humanExperienceReview"},{"from":"humanExperienceReview","to":"commercialIntegrityReview"},{"from":"commercialIntegrityReview","to":"integration"},{"from":"integration","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'pde-tasting-proof-of-value' AND version_number = 2
+              );
+
+              INSERT INTO business_process_definition
+                (process_code, name, purpose, owner_name, trigger_description, outcome_description,
+                 version_number, status, technical_reference, process_type, parent_process_code,
+                 diagram_json, created_at, published_at)
+              SELECT 'venda-entrega-satisfacao-cliente', 'Venda, entrega e satisfação da cliente',
+                'Entregar a versão comprada e aprender com integridade sem atribuir produção e revisão ao mesmo agente.',
+                'Backend de Entrega', 'Pagamento aprovado e reconciliado.',
+                'Venda entregue com satisfação ou falha bloqueada e tratada pela causa-raiz.',
+                4, 'PUBLISHED', 'agent-responsibility-matrix-v3 / delivery-independent-responsibilities',
+                'SUBPROCESS', 'pde-sales-delivery-learning',
+                '{"nodes":[{"id":"start","type":"START","label":"Pagamento aprovado","owner":"Backend","description":"Evento oficial chega segregado de testes."},{"id":"reconcile","type":"TASK","label":"Conciliar venda e versão contratada","owner":"Backend","description":"Confirma valor, produto e versão antes da entrega."},{"id":"materialization","type":"TASK","label":"Materializar personalização quando contratada","owner":"Dédalo","description":"Produz somente a personalização não audiovisual prevista sem mudar oferta ou preço.","responsibleAgentKeys":["landing-generator"],"responsibilityDomain":"PDE_CONSTRUCTION"},{"id":"integrity","type":"TASK","label":"Revisar integridade da entrega","owner":"Têmis","description":"Comprova fidelidade, direitos e segurança sem produzir os arquivos.","responsibleAgentKeys":["meta-ad-approver"],"responsibilityDomain":"COMMERCIAL_INTEGRITY_REVIEW"},{"id":"delivery","type":"TASK","label":"Entregar e confirmar acesso","owner":"Backend","description":"Comprova canal, recebimento, links, arquivos e prazo."},{"id":"satisfaction","type":"TASK","label":"Avaliar satisfação e utilidade","owner":"Psique","description":"Registra uso, valor percebido, dificuldade e satisfação sem inventar comportamento.","responsibleAgentKeys":["customer-agent"],"responsibilityDomain":"HUMAN_EXPERIENCE_REVIEW"},{"id":"financial","type":"TASK","label":"Conciliar receita, reembolso e risco","owner":"Plutus","description":"Relaciona pagamento, custo, reembolso e margem sem movimentar recursos.","responsibleAgentKeys":["financial-agent"],"responsibilityDomain":"FINANCIAL_VALIDATION"},{"id":"learning","type":"TASK","label":"Registrar aprendizado candidato","owner":"Backend","description":"Preserva procedência; prova só é reutilizada com consentimento e aprovação."},{"id":"gate","type":"GATEWAY","label":"Venda terminou com entrega satisfatória?","owner":"Backend","description":"Atraso ou falha bloqueia nova aquisição até correção."},{"id":"end","type":"END","label":"Venda entregue e reconciliada","owner":"Backend","description":"Receita e satisfação ficam auditáveis."}],"flows":[{"from":"start","to":"reconcile"},{"from":"reconcile","to":"materialization"},{"from":"materialization","to":"integrity"},{"from":"integrity","to":"delivery"},{"from":"delivery","to":"satisfaction"},{"from":"satisfaction","to":"financial"},{"from":"financial","to":"learning"},{"from":"learning","to":"gate"},{"from":"gate","to":"end"}]}',
+                UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_definition
+                WHERE process_code = 'venda-entrega-satisfacao-cliente' AND version_number = 4
+              );
+
+              UPDATE business_process_definition
+              SET status = 'RETIRED'
+              WHERE process_code IN (
+                  'pde-opportunity-discovery', 'pde-commercial-plan-offer',
+                  'pde-construction-approval', 'pde-communication-sales-journey',
+                  'pde-commercial-homologation-activation', 'creative-production-approval',
+                  'experiment-homologation-activation', 'landing-page-generation',
+                  'operacao-otimizacao-experimento', 'pde-tasting-proof-of-value',
+                  'venda-entrega-satisfacao-cliente'
+                )
+                AND status = 'PUBLISHED'
+                AND (
+                  technical_reference IS NULL
+                  OR technical_reference NOT LIKE 'agent-responsibility-matrix-v3%'
+                );
+
+  - changeSet:
+      id: 2026-08-28-agent-responsibility-matrix-v3-3-activity-definitions
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_activity_definition
+                (process_definition_id, activity_id, name, objective, owner_name,
+                 execution_resource_code, subprocess_code, definition_json, created_at)
+              SELECT process.id,
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].id'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].label'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].description'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].owner'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].executionResourceCode'))),
+                JSON_UNQUOTE(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].subprocessCode'))),
+                CAST(JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, ']')) AS CHAR),
+                process.created_at
+              FROM business_process_definition process
+              JOIN (
+                SELECT 0 AS number UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3
+                UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7
+                UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10 UNION ALL SELECT 11
+                UNION ALL SELECT 12 UNION ALL SELECT 13 UNION ALL SELECT 14 UNION ALL SELECT 15
+              ) sequence
+                ON sequence.number < JSON_LENGTH(JSON_EXTRACT(process.diagram_json, '$.nodes'))
+              LEFT JOIN business_process_activity_definition existing
+                ON existing.process_definition_id = process.id
+               AND BINARY existing.activity_id = BINARY JSON_UNQUOTE(
+                 JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].id'))
+               )
+              WHERE process.technical_reference LIKE 'agent-responsibility-matrix-v3%'
+                AND JSON_UNQUOTE(
+                  JSON_EXTRACT(process.diagram_json, CONCAT('$.nodes[', sequence.number, '].type'))
+                ) = 'TASK'
+                AND existing.id IS NULL;
+
+  - changeSet:
+      id: 2026-08-28-agent-responsibility-matrix-v3-4-chain-v8
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO business_process_chain_definition
+                (chain_code, name, purpose, outcome_description, primary_metric,
+                 version_number, status, created_at, published_at)
+              SELECT 'pde-value-creation-delivery',
+                'Criação e entrega de valor de Produtos Digitais Experienciais',
+                'Transformar evidência em produto vendido e entregue com um domínio exclusivo por agente.',
+                'PDE vendido e entregue com satisfação, responsabilidades rastreáveis e aprendizado para escala.',
+                'Tempo até venda entregue com satisfação',
+                8, 'PUBLISHED', UTC_TIMESTAMP(), UTC_TIMESTAMP()
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM business_process_chain_definition
+                WHERE chain_code = 'pde-value-creation-delivery' AND version_number = 8
+              );
+
+              INSERT INTO business_process_chain_item
+                (chain_definition_id, process_definition_id, sequence_number,
+                 value_contribution, created_at)
+              SELECT chain.id, process.id, item.sequence_number, item.value_contribution,
+                UTC_TIMESTAMP()
+              FROM business_process_chain_definition chain
+              JOIN (
+                SELECT 1 AS sequence_number, 'pde-opportunity-discovery' AS process_code,
+                  'Argos entrega inteligência factual sem escolher estratégia.' AS value_contribution
+                UNION ALL SELECT 2, 'pde-commercial-plan-offer',
+                  'Atena decide estratégia, Plutus valida economia e Dédalo define a arquitetura de materialização.'
+                UNION ALL SELECT 3, 'pde-construction-approval',
+                  'Dédalo materializa e os gates independentes de Psique e Têmis aprovam o produto real.'
+                UNION ALL SELECT 4, 'pde-communication-sales-journey',
+                  'Subprocessos materializam e revisam criativos e destino antes da integração.'
+                UNION ALL SELECT 5, 'pde-commercial-homologation-activation',
+                  'Psique, Têmis, preflight e autorização humana decidem ativação separadamente.'
+                UNION ALL SELECT 6, 'pde-sales-delivery-learning',
+                  'Após autorização, Hermes opera e o sistema decide por venda entregue com satisfação.'
+              ) item
+              JOIN business_process_definition process
+                ON process.process_code = item.process_code
+               AND process.status = 'PUBLISHED'
+              LEFT JOIN business_process_chain_item existing
+                ON existing.chain_definition_id = chain.id
+               AND existing.sequence_number = item.sequence_number
+              WHERE chain.chain_code = 'pde-value-creation-delivery'
+                AND chain.version_number = 8
+                AND existing.id IS NULL;
+
+              UPDATE business_process_chain_definition
+              SET status = 'RETIRED'
+              WHERE chain_code = 'pde-value-creation-delivery'
+                AND status = 'PUBLISHED'
+                AND version_number <> 8;
+
+  - changeSet:
+      id: 2026-08-28-agent-responsibility-matrix-v3-5-opportunity-strategy-owner
+      author: codex
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE opportunity_agent_review
+              SET execution_status = 'FAILED',
+                  error_message = 'SUPERSEDED_BY_AGENT_RESPONSIBILITY_MATRIX_V1: a decisão estratégica pertence exclusivamente a Atena.',
+                  updated_at = UTC_TIMESTAMP()
+              WHERE agent_key IN ('PSIQUE', 'PLUTUS', 'HERMES')
+                AND execution_status IN ('PENDING', 'RUNNING')
+                AND completed_at IS NULL;
+
+              UPDATE opportunity_dossier dossier
+              JOIN opportunity_agent_review atena
+                ON atena.dossier_id = dossier.id
+               AND atena.agent_key = 'ATENA'
+               AND atena.completed_at IS NOT NULL
+              SET dossier.status = 'READY_FOR_TEST',
+                  dossier.updated_at = UTC_TIMESTAMP()
+              WHERE dossier.status = 'UNDER_REVIEW';

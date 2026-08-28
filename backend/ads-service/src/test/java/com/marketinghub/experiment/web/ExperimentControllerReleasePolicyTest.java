@@ -83,7 +83,7 @@ class ExperimentControllerReleasePolicyTest {
         mock(ExperimentConstructionService.class),
         mock(ExperimentCostReconciliationService.class),
         mock(ExperimentCockpitService.class),
-        mock(com.marketinghub.experiment.service.TemisCreativeTaskOrchestrationService.class),
+        mock(com.marketinghub.experiment.service.DedaloCreativeTaskOrchestrationService.class),
         reconciliationService);
   }
 }

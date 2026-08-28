@@ -26,10 +26,10 @@ class BusinessProcessExecutionResourceControllerTest {
                 new BusinessProcessExecutionResourceResponse(
                     1L,
                     "themis-image-studio",
-                    "Estúdio de Imagens de Têmis",
+                    "Materializador visual técnico de Dédalo",
                     "Cria e edita imagens.",
                     "CONTAINER",
-                    "meta-ad-approver",
+                    "landing-generator",
                     "themis-image-studio",
                     "Use o pending do backend.")));
     var mockMvc =
@@ -40,7 +40,7 @@ class BusinessProcessExecutionResourceControllerTest {
         .perform(get("/api/business-process-execution-resources"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].resourceCode").value("themis-image-studio"))
-        .andExpect(jsonPath("$[0].responsibleAgentKey").value("meta-ad-approver"))
+        .andExpect(jsonPath("$[0].responsibleAgentKey").value("landing-generator"))
         .andExpect(jsonPath("$[0].executorReference").value("themis-image-studio"));
   }
 }

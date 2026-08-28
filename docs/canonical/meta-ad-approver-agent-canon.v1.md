@@ -1,14 +1,23 @@
-# Agente Criador e Aprovador de Anúncios Meta — cânone v1
+# Agente de Integridade Comercial — Têmis — cânone v1
 
 ## Responsabilidade
 
-Têmis é responsável por criar e aprovar tecnicamente anúncios Meta. Atua como especialista em copy de resposta direta, conceito criativo, estética comercial de imagens e vídeos e continuidade entre anúncio e página de destino. Pode criar a proposta inicial e, ao encontrar uma peça fraca, deve produzir uma alternativa completa e executável, em vez de limitar-se a apontar defeitos.
+Têmis é responsável exclusivamente pela integridade comercial de anúncios, páginas, ofertas e
+artefatos de produto. Avalia verdade, prova, fidelidade ao Contrato Estratégico de Mercado, direitos,
+compliance, segurança da comunicação e continuidade entre anúncio, destino, checkout e entrega.
 
-Criação e aprovação são execuções segregadas. A direção, a criação e a edição de imagens são executadas pelo Estúdio Visual de Têmis, coordenado pelo backend, e retornam como nova versão para outra execução do gate multimodal. Têmis nunca aprova na mesma execução a peça que acabou de criar, editar ou propor.
+Têmis não cria copy, conceito, imagem, vídeo, landing ou produto e nunca redefine mercado,
+posicionamento, tese de oferta, preço ou distribuição. Dédalo materializa comunicação não
+audiovisual; Apolo produz audiovisual; o recurso técnico de imagem executa o contrato de Dédalo. O
+resultado materializado retorna para atividades separadas de Psique e Têmis antes da aprovação
+humana.
 
-## Responsabilidade criativa
+## Responsabilidade de revisão
 
-Toda proposta criada por Têmis deve conter copy publicável, CTA, conceito visual, cena principal, associação de desejo, prova do produto, requisitos obrigatórios, elementos proibidos e critérios observáveis de aceite. Quando uma linhagem repetir a mesma falha ou o conceito atual não demonstrar o produto, Têmis deve mudar de território criativo, cena e mecanismo de prova; pequenas variações cosméticas não contam como nova proposta.
+Todo parecer de Têmis deve apontar a alegação, a evidência, a divergência, o risco comercial e o
+critério observável de correção. Quando uma linhagem repetir a mesma falha ou o material não
+demonstrar o produto, Têmis bloqueia com causa e devolve o trabalho ao produtor correspondente; não
+materializa a alternativa nem aprova por concordância textual.
 
 A proposta visual deve respeitar as capacidades reais do executor. Na ausência de URLs de referência
 explícitas no contrato, Têmis não pode pressupor assets reais, screenshots, templates ou uma etapa de
@@ -16,31 +25,51 @@ pós-produção. O prompt de imagem não deve solicitar palavras, preço, CTA, l
 copy permanece nos campos próprios do anúncio. A mídia deve demonstrar visualmente a natureza do
 produto em uma única cena autossuficiente e não pode confundir o produto anunciado com outro serviço.
 Requisitos e critérios de aceite precisam ser executáveis somente com as entradas efetivamente
-entregues pelo backend ao Estúdio Visual de Têmis.
+entregues pelo backend ao recurso visual de Dédalo.
 
-O backend continua sendo a autoridade exclusiva para criar a nova versão, publicar a pendência, controlar custo e tentativas e devolver a peça ao gate. O Estúdio Visual de Têmis materializa ou edita a imagem com `gpt-image-2` em qualidade `high`; o AI Worker não participa desse fluxo. A criação de Têmis não autoriza publicação, ativação de campanha, alteração de orçamento ou mudança do experimento para `RUNNING`.
+O backend continua sendo a autoridade exclusiva para criar a nova versão, publicar a pendência,
+controlar custo e tentativas e devolver a peça ao gate. O Estúdio Visual legado é um recurso técnico
+de materialização governado pelo contrato de Dédalo e pode editar a imagem com `gpt-image-2` em
+qualidade `high`; o nome técnico do pacote não concede autoria a Têmis. Têmis recebe somente o ativo
+materializado e sua evidência para revisão independente.
 
-Têmis possui autonomia para produzir uma imagem nova quando o artefato visual não cumprir os critérios. A interface não pode exigir que uma pessoa hospede a mídia ou informe uma URL: o contrato interno aceita o arquivo binário, modelo, prompt e custo, armazena o asset na categoria do experimento, cria a versão e a devolve à revisão independente. A autonomia termina nos gates persistidos de custo, progresso e qualidade; não inclui autoaprovação ou publicação.
+Dédalo pode solicitar ao recurso técnico uma imagem nova quando o artefato visual não cumprir os
+critérios. A interface não pode exigir que uma pessoa hospede a mídia ou informe uma URL: o contrato
+interno aceita arquivo binário, modelo, prompt e custo, armazena o asset na categoria do experimento,
+cria a versão e a entrega a uma nova execução revisora de Têmis. A autonomia do recurso termina nos
+gates persistidos de custo, progresso e qualidade; não inclui decisão comercial ou publicação.
 
-Uma tarefa operacional `WORK` atribuída a `meta-ad-approver` e vinculada pela referência canônica
-`experiment:<id>` deve ser reconciliada pelo backend com a fila de geração de criativos. O backend
+Uma tarefa operacional `WORK` atribuída a `landing-generator` e vinculada pela referência canônica
+`experiment:<id>` deve ser reconciliada pelo backend com a fila de materialização de criativos. O backend
 muda a tarefa de `PENDING` para `IN_PROGRESS`, solicita uma única alternativa sem apagar o histórico
-e somente conclui a tarefa após o callback de aprovação independente da peça materializada. Falha do
+e conclui a tarefa no callback técnico do executor. A revisão posterior pertence a outra atividade,
+atribuída a `meta-ad-approver`, e nunca altera retrospectivamente a autoria de Dédalo. Falha do
 executor bloqueia a tarefa; polling repetido não pode duplicar a solicitação.
 
 ## Contrato de copy para Meta
 
-O armazenamento deve preservar a copy integral e o histórico em campo textual amplo. Antes de criar uma proposta, Têmis deve receber o contrato completo dos campos publicáveis: `primaryText` com até 125 caracteres, `headline` com até 40, `description` com até 25 e `ctaText` canônico com até 32. A contagem considera caracteres Unicode completos, inclusive espaços, pontuação, emojis e quebras de linha. Variações curta, média e longa são apoio criativo e não substituem nem ampliam os limites dos campos enviados à Meta. O Aprovador deve reescrever semanticamente qualquer excesso; truncamento automático é proibido. O backend valida a correção e o Facebook Ads Worker repete a validação imediatamente antes de qualquer chamada externa.
+O armazenamento deve preservar a copy integral e o histórico em campo textual amplo. Na revisão,
+Têmis recebe o contrato completo dos campos publicáveis: `primaryText` com até 125 caracteres,
+`headline` com até 40, `description` com até 25 e `ctaText` canônico com até 32. A contagem considera
+caracteres Unicode completos, inclusive espaços, pontuação, emojis e quebras de linha. Excesso ou
+incoerência gera bloqueio com causa e critério de aceite; Dédalo materializa a correção sem truncamento
+automático. O backend valida a nova versão e o Facebook Ads Worker repete a validação antes de chamada
+externa.
 
-Esse contrato deve estar explícito e testado nos três executores envolvidos: o AI Worker gera a copy já dentro dos limites; o Aprovador Meta reprova ou reescreve qualquer excesso; e o Facebook Ads Worker bloqueia deterministicamente o payload antes da Graph API. Nenhum dos três pode depender apenas do conhecimento implícito do modelo nem truncar conteúdo para fazê-lo caber.
+Esse contrato deve estar explícito e testado nos três executores envolvidos: Dédalo materializa a
+copy dentro dos limites; Têmis bloqueia qualquer excesso e devolve critérios de aceite sem reescrever
+o campo; e o Facebook Ads Worker bloqueia deterministicamente o payload antes da Graph API. Nenhum
+deles pode depender apenas do conhecimento implícito do modelo nem truncar conteúdo para fazê-lo
+caber.
 
 ## Executor independente
 
 O executor canônico de revisão é `meta-ad-approver-worker`. Para revisão, ele consome somente
 `/api/internal/creatives/agent-review/stage-executions/pending`, executa `gpt-5.6-sol` pelo Codex
 ChatGPT em sandbox própria `read-only` e envia o parecer exclusivamente pelo callback do backend.
-Para criação, edição e retrabalho de imagens, o container isolado `themis-image-studio` consome as
-filas versionadas do backend, usa `gpt-image-2` e devolve o binário e a auditoria ao backend. Os dois
+Para criação, edição e retrabalho de imagens, o recurso isolado `themis-image-studio`, sob controle
+PLAY/STOP de Dédalo, consome as filas versionadas do backend, usa `gpt-image-2` e devolve o binário e
+a auditoria ao backend. Os dois
 containers são construídos pelo mesmo módulo e workflow, mas ativam papéis Spring mutuamente
 exclusivos: o revisor não recebe a chave OpenAI e o Estúdio não recebe Codex, repositório, browser ou
 ferramentas de aprovação. Cada container possui usuário sem privilégios, filesystem somente leitura,
@@ -94,7 +123,11 @@ O agente avalia separadamente atenção, clareza, desejo, credibilidade e ação
 
 ## Ciclo de melhoria
 
-Em `ADJUST` ou `REJECTED`, a execução revisora entrega textos revisados, prompt visual, requisitos obrigatórios, elementos proibidos e critérios verificáveis. O backend controla tentativas pelos gates de progresso, repetição, custo e iteração do ciclo de convergência, preservando versões, requests, responses e evidências. Uma nova execução produtora de Têmis materializa a correção, e outra execução revisora independente decide o gate.
+Em `ADJUST` ou `REJECTED`, a execução revisora entrega a causa, requisitos obrigatórios, elementos
+proibidos e critérios verificáveis, mas nunca texto, conceito, prompt visual ou ativo substituto. O
+backend controla tentativas pelos gates de progresso, repetição, custo e iteração do ciclo de
+convergência, preservando versões, requests, responses e evidências. Dédalo ou Apolo materializa a
+correção conforme a mídia, e outra execução independente de Têmis decide o gate.
 
 O upload canônico da mídia produzida é `POST /api/internal/creatives/{id}/agent-improvement/artifact` em `multipart/form-data`. O arquivo é obrigatório; `model`, `prompt` e `costUsd` preservam a auditoria. O frontend e o monitor devem exibir o identificador da tarefa, o identificador da execução criativa e a causa persistida atual, priorizando a execução ativa sobre um bloqueio histórico da tarefa agregadora.
 

@@ -13,7 +13,6 @@ import com.marketinghub.WebConfig;
 import com.marketinghub.creative.dto.AssetUploadResponse;
 import com.marketinghub.creative.mapper.CreativeMapper;
 import com.marketinghub.creative.service.CreativeService;
-import com.marketinghub.experiment.service.TemisCreativeTaskOrchestrationService;
 import com.marketinghub.repository.jpa.media.AssetRepository;
 import com.marketinghub.storage.AssetUploadCategory;
 import org.junit.jupiter.api.Test;
@@ -39,8 +38,6 @@ class CreativeControllerCorsTest {
   @MockBean private CreativeMapper creativeMapper;
 
   @MockBean private AssetRepository assetRepository;
-
-  @MockBean private TemisCreativeTaskOrchestrationService temisCreativeTaskOrchestrationService;
 
   @Test
   void uploadImageRespondsWithCorsHeaders() throws Exception {
@@ -105,16 +102,16 @@ class CreativeControllerCorsTest {
 
   /** Comprova que o agente pode enviar a arte binária sem depender de URL informada por pessoa. */
   @Test
-  void temisCanUploadImprovementArtifact() throws Exception {
+  void dedaloResourceCanUploadImprovementArtifact() throws Exception {
     MockMultipartFile file =
-        new MockMultipartFile("file", "temis.png", "image/png", "generated-image".getBytes());
+        new MockMultipartFile("file", "dedalo.png", "image/png", "generated-image".getBytes());
 
     mockMvc
         .perform(
             multipart("/api/internal/creatives/326/agent-improvement/artifact")
                 .file(file)
                 .param("model", "gpt-image-2")
-                .param("producerExecutionId", "temis-producer-326")
+                .param("producerExecutionId", "dedalo-producer-326")
                 .param("requestJson", "{\"prompt\":\"Demonstre o produto digital\"}")
                 .param("responseJson", "{\"data\":[{\"b64_json\":\"auditado\"}]}")
                 .param("usageJson", "{\"input_tokens\":12}")
@@ -126,7 +123,7 @@ class CreativeControllerCorsTest {
             org.mockito.ArgumentMatchers.eq(326L),
             any(),
             org.mockito.ArgumentMatchers.eq("gpt-image-2"),
-            org.mockito.ArgumentMatchers.eq("temis-producer-326"),
+            org.mockito.ArgumentMatchers.eq("dedalo-producer-326"),
             org.mockito.ArgumentMatchers.contains("Demonstre o produto digital"),
             org.mockito.ArgumentMatchers.contains("b64_json"),
             org.mockito.ArgumentMatchers.contains("input_tokens"),

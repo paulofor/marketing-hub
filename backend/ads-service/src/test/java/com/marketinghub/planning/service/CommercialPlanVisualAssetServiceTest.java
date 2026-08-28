@@ -191,9 +191,9 @@ class CommercialPlanVisualAssetServiceTest {
     verify(tasks, times(4)).recordImportedCompletedTask(taskCaptor.capture());
     assertThat(taskCaptor.getAllValues())
         .extracting(ImportedCompletedAgentTask::processActivityId)
-        .containsExactly("route", "produce", "customer", "commercial");
+        .containsExactly("nonAudiovisual", "audiovisual", "customer", "commercial");
     assertThat(taskCaptor.getAllValues())
         .extracting(ImportedCompletedAgentTask::assignedAgentKey)
-        .containsExactly("meta-ad-approver", "videomaker", "customer-agent", "meta-ad-approver");
+        .containsExactly("landing-generator", "videomaker", "customer-agent", "meta-ad-approver");
   }
 }

@@ -18,8 +18,11 @@ test("protege o executor contra timeout ausente ou inválido", () => {
 });
 
 test("segrega atividades por agente", () => {
-  assert.equal(resolveContract("landing-generator", "format").activities.length, 4);
+  assert.equal(resolveContract("experiment-strategist", "marketStrategy").activities.length, 1);
+  assert.equal(resolveContract("landing-generator", "productArchitecture").activities.length, 1);
   assert.throws(() => resolveContract("financial-agent", "review"), /não suportado/);
+  assert.throws(() => resolveContract("meta-ad-approver", "marketStrategy"), /não suportado/);
+  assert.throws(() => resolveContract("growth-operator", "marketStrategy"), /não suportado/);
 });
 
 test("preserva a última telemetria cumulativa", () => {
@@ -60,10 +63,10 @@ test("atualiza contexto somente com predecessores concluídos da mesma instânci
   const context = JSON.parse(
     refreshedProcessContext(
       [[
-        { id: 2, assignedAgentKey: "landing-generator", sourceReference: "commercial-plan:5@v2", processCode: "pde-commercial-plan-offer", status: "COMPLETED", processActivityId: "format", resultJson: "{}" },
+        { id: 2, assignedAgentKey: "landing-generator", sourceReference: "commercial-plan:5@v2", processCode: "pde-commercial-plan-offer", status: "COMPLETED", processActivityId: "productArchitecture", resultJson: "{}" },
         { id: 3, sourceReference: "commercial-plan:5@v2", processCode: "pde-commercial-plan-offer", status: "BLOCKED", processActivityId: "review", resultJson: "{}" },
-        { id: 4, sourceReference: "commercial-plan:4@v2", processCode: "pde-commercial-plan-offer", status: "COMPLETED", processActivityId: "format", resultJson: "{}" },
-        { id: 5, assignedAgentKey: "landing-generator", sourceReference: "commercial-plan:5@v2", processCode: "pde-commercial-plan-offer", status: "COMPLETED", processActivityId: "format", resultJson: "{\"latest\":true}" }
+        { id: 4, sourceReference: "commercial-plan:4@v2", processCode: "pde-commercial-plan-offer", status: "COMPLETED", processActivityId: "productArchitecture", resultJson: "{}" },
+        { id: 5, assignedAgentKey: "landing-generator", sourceReference: "commercial-plan:5@v2", processCode: "pde-commercial-plan-offer", status: "COMPLETED", processActivityId: "productArchitecture", resultJson: "{\"latest\":true}" }
       ]],
       "commercial-plan:5@v2"
     )
@@ -71,16 +74,25 @@ test("atualiza contexto somente com predecessores concluídos da mesma instânci
   assert.deepEqual(context.completedActivities.map(item => item.taskId), [5]);
 });
 
-test("preserva a fronteira do cartão de decisão na revisão de Têmis", async () => {
-  const prompt = await readFile(
+test("atribui estratégia somente a Atena e arquitetura somente a Dédalo", async () => {
+  const strategyPrompt = await readFile(
     new URL(
-      "../meta-ad-approver-worker/src/main/resources/prompts/pde-commercial-plan/v4/commercial-review.md",
+      "../experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v5/market-strategy.md",
       import.meta.url
     ),
     "utf8"
   );
-  assert.match(prompt, /Não exija que essa atividade antecipe as decisões de `distribution`/);
-  assert.match(prompt, /Cada atividade\s+seguinte continua responsável por aprovar ou bloquear/);
+  const architecturePrompt = await readFile(
+    new URL(
+      "../landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v5/product-architecture.md",
+      import.meta.url
+    ),
+    "utf8"
+  );
+  assert.match(strategyPrompt, /única autora da estratégia/);
+  assert.match(strategyPrompt, /Não calcule preço/);
+  assert.match(architecturePrompt, /não redefina público, desejo, posicionamento/);
+  assert.match(architecturePrompt, /Audiovisual pertence a Apolo/);
 });
 
 test("permite aprovar economia hipotética com envelope e travas futuras", async () => {

@@ -12,30 +12,20 @@ const PROCESS_CODE = "pde-commercial-plan-offer";
 const MODEL = "gpt-5.6-sol";
 
 export const CONTRACTS = Object.freeze({
-  "landing-generator": {
-    activities: ["positioning", "format", "decisionCard", "experience"],
-    prompt: "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/offer-design.md",
-    schema: "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/offer-design-schema.json"
-  },
-  "meta-ad-approver": {
-    activities: ["decisionCard", "proof", "control", "review"],
-    prompt: "meta-ad-approver-worker/src/main/resources/prompts/pde-commercial-plan/v4/commercial-review.md",
-    schema: "meta-ad-approver-worker/src/main/resources/prompts/pde-commercial-plan/v4/commercial-review-schema.json"
-  },
-  "growth-operator": {
-    activities: ["distribution", "control"],
-    prompt: "growth-operator-worker/src/main/resources/prompts/pde-commercial-plan/v4/distribution-control.md",
-    schema: "growth-operator-worker/src/main/resources/prompts/pde-commercial-plan/v4/distribution-control-schema.json"
+  "experiment-strategist": {
+    activities: ["marketStrategy"],
+    prompt: "experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v5/market-strategy.md",
+    schema: "experiment-strategist-worker/src/main/resources/prompts/pde-commercial-plan/v5/market-strategy-schema.json"
   },
   "financial-agent": {
     activities: ["economics"],
     prompt: "financial-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/economics.md",
     schema: "financial-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/economics-schema.json"
   },
-  "customer-agent": {
-    activities: ["review"],
-    prompt: "customer-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/customer-review.md",
-    schema: "customer-agent-worker/src/main/resources/prompts/pde-commercial-plan/v4/customer-review-schema.json"
+  "landing-generator": {
+    activities: ["productArchitecture"],
+    prompt: "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v5/product-architecture.md",
+    schema: "landing-generator-agent-worker/src/main/resources/prompts/pde-commercial-plan/v5/product-architecture-schema.json"
   }
 });
 

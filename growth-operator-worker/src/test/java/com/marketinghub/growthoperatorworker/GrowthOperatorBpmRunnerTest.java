@@ -250,7 +250,7 @@ class GrowthOperatorBpmRunnerTest {
               .run(
                   Map.of(
                       "taskId", 2,
-                      "activityId", "contract",
+                      "activityId", "growthOperation",
                       "processCode", "pde-communication-sales-journey",
                       "sourceReference", "commercial-plan:4@v2",
                       "marketStrategicContract",

@@ -10,7 +10,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-/** Responsabilidade: impedir que Têmis pareça saudável sem credencial e modelo visual válidos. */
+/** Responsabilidade: impedir que o recurso visual de Dédalo pareça saudável sem configuração. */
 @Component("temisImageStudio")
 @ConditionalOnProperty(name = "meta-ad-approver.execution-role", havingValue = "image-studio")
 public class TemisImageStudioHealthIndicator implements HealthIndicator {

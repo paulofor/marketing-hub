@@ -17,7 +17,6 @@ public class GrowthOperatorBpmTaskConsumer {
   private static final Logger log = LoggerFactory.getLogger(GrowthOperatorBpmTaskConsumer.class);
   private static final List<BpmContract> CONTRACTS =
       List.of(
-          new BpmContract("pde-communication-sales-journey", "contract"),
           new BpmContract("operacao-otimizacao-experimento", "task-1"),
           new BpmContract("operacao-otimizacao-experimento", "task-2"),
           new BpmContract("operacao-otimizacao-experimento", "task-3"),
@@ -95,6 +94,15 @@ public class GrowthOperatorBpmTaskConsumer {
       if (task != null && !task.isEmpty()) return task;
     }
     return null;
+  }
+
+  /** Confirma que Hermes consome somente atividades operacionais posteriores à autorização. */
+  static boolean supportsContract(String processCode, String activityId) {
+    return CONTRACTS.stream()
+        .anyMatch(
+            contract ->
+                contract.processCode().equals(processCode)
+                    && contract.activityId().equals(activityId));
   }
 
   /** Bloqueia antes do modelo quando Atena ainda não entregou uma estratégia operável. */

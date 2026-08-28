@@ -27,10 +27,11 @@ class CommercialPlanApprovedCreativeEvidenceServiceTest {
     when(fixture.tasks().findBySourceReferenceOrderByCreatedAtAscIdAsc("commercial-plan:4@v3"))
         .thenReturn(
             List.of(
-                task(fixture.process(), "route", "{\"decision\":\"SELECTED\"}", PACKAGE_ID),
+                task(
+                    fixture.process(), "nonAudiovisual", "{\"decision\":\"SELECTED\"}", PACKAGE_ID),
                 task(
                     fixture.process(),
-                    "produce",
+                    "audiovisual",
                     "{\"deliverables\":[\"carousel\",\"vertical-demo\"]}",
                     PACKAGE_ID),
                 task(fixture.process(), "customer", "{\"decision\":\"APPROVED\"}", PACKAGE_ID),
@@ -55,8 +56,13 @@ class CommercialPlanApprovedCreativeEvidenceServiceTest {
     when(fixture.tasks().findBySourceReferenceOrderByCreatedAtAscIdAsc("commercial-plan:4@v3"))
         .thenReturn(
             List.of(
-                task(fixture.process(), "route", "{\"decision\":\"SELECTED\"}", PACKAGE_ID),
-                task(fixture.process(), "produce", "{\"deliverables\":[\"carousel\"]}", PACKAGE_ID),
+                task(
+                    fixture.process(), "nonAudiovisual", "{\"decision\":\"SELECTED\"}", PACKAGE_ID),
+                task(
+                    fixture.process(),
+                    "audiovisual",
+                    "{\"deliverables\":[\"carousel\"]}",
+                    PACKAGE_ID),
                 task(fixture.process(), "customer", "{\"decision\":\"APPROVED\"}", PACKAGE_ID),
                 task(
                     fixture.process(),
@@ -77,8 +83,13 @@ class CommercialPlanApprovedCreativeEvidenceServiceTest {
     when(fixture.tasks().findBySourceReferenceOrderByCreatedAtAscIdAsc("commercial-plan:4@v3"))
         .thenReturn(
             List.of(
-                task(fixture.process(), "route", "{\"decision\":\"SELECTED\"}", PACKAGE_ID),
-                task(fixture.process(), "produce", "{\"deliverables\":[\"carousel\"]}", PACKAGE_ID),
+                task(
+                    fixture.process(), "nonAudiovisual", "{\"decision\":\"SELECTED\"}", PACKAGE_ID),
+                task(
+                    fixture.process(),
+                    "audiovisual",
+                    "{\"deliverables\":[\"carousel\"]}",
+                    PACKAGE_ID),
                 task(fixture.process(), "customer", "{\"decision\":\"APPROVED\"}", PACKAGE_ID),
                 task(
                     fixture.process(),
@@ -102,8 +113,13 @@ class CommercialPlanApprovedCreativeEvidenceServiceTest {
     when(fixture.tasks().findBySourceReferenceOrderByCreatedAtAscIdAsc("commercial-plan:4@v3"))
         .thenReturn(
             List.of(
-                task(fixture.process(), "route", "{\"decision\":\"SELECTED\"}", PACKAGE_ID),
-                task(fixture.process(), "produce", "{\"deliverables\":[\"carousel\"]}", PACKAGE_ID),
+                task(
+                    fixture.process(), "nonAudiovisual", "{\"decision\":\"SELECTED\"}", PACKAGE_ID),
+                task(
+                    fixture.process(),
+                    "audiovisual",
+                    "{\"deliverables\":[\"carousel\"]}",
+                    PACKAGE_ID),
                 task(fixture.process(), "customer", "{\"decision\":\"APPROVED\"}", PACKAGE_ID),
                 task(
                     fixture.process(),

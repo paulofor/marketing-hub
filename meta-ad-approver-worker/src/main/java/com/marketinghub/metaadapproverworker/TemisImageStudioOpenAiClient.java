@@ -33,7 +33,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
-/** Responsabilidade: criar e editar imagens premium com GPT Image 2 dentro de Têmis. */
+/** Responsabilidade: criar e editar imagens premium como recurso técnico de Dédalo. */
 @Component
 @ConditionalOnProperty(name = "meta-ad-approver.execution-role", havingValue = "image-studio")
 public class TemisImageStudioOpenAiClient {
@@ -77,7 +77,7 @@ public class TemisImageStudioOpenAiClient {
     String requestJson = requestAudit(job, model, references);
     String endpoint = references.isEmpty() ? "/images/generations" : "/images/edits";
     log.info(
-        "Têmis enviando request de imagem. jobId={} operation={} url={} model={} references={} request={}",
+        "Dédalo enviando request de imagem. jobId={} operation={} url={} model={} references={} request={}",
         job.jobId(),
         job.operation(),
         normalizeBaseUrl(properties.getOpenAiBaseUrl()) + endpoint,
@@ -96,7 +96,7 @@ public class TemisImageStudioOpenAiClient {
       BigDecimal costUsd = calculateCost(response.path("usage"));
       String responseAudit = responseAudit(response, image);
       log.info(
-          "Têmis recebeu response de imagem. jobId={} url={} responseBytes={} response={}",
+          "Dédalo recebeu response de imagem. jobId={} url={} responseBytes={} response={}",
           job.jobId(),
           normalizeBaseUrl(properties.getOpenAiBaseUrl()) + endpoint,
           raw.getBytes(StandardCharsets.UTF_8).length,
@@ -299,16 +299,17 @@ public class TemisImageStudioOpenAiClient {
             "Falha ao ler o arquivo seguro da chave OpenAI. path={}",
             value.getOpenAiApiKeyFile(),
             ex);
-        throw new IllegalStateException("Chave da OpenAI indisponível para Têmis", ex);
+        throw new IllegalStateException(
+            "Chave da OpenAI indisponível para o recurso de Dédalo", ex);
       }
     }
-    throw new IllegalStateException("Chave da OpenAI indisponível para Têmis");
+    throw new IllegalStateException("Chave da OpenAI indisponível para o recurso de Dédalo");
   }
 
   /** Impede downgrade silencioso do modelo visual aprovado. */
   private String canonicalModel(String value) {
     if (!"gpt-image-2".equals(StringUtils.hasText(value) ? value.trim() : "")) {
-      throw new IllegalArgumentException("Têmis exige o modelo visual gpt-image-2");
+      throw new IllegalArgumentException("O recurso visual de Dédalo exige o modelo gpt-image-2");
     }
     return "gpt-image-2";
   }

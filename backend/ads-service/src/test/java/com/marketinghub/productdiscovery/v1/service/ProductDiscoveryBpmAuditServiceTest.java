@@ -45,11 +45,13 @@ class ProductDiscoveryBpmAuditServiceTest {
     BusinessProcessDefinition process = new BusinessProcessDefinition();
     process.setId(49L);
     process.setProcessCode("pde-opportunity-discovery");
-    process.setVersionNumber(5);
+    process.setVersionNumber(6);
     process.setStatus("PUBLISHED");
     process.setDiagramJson(
-        "{\"nodes\":[{\"id\":\"inspiration\",\"type\":\"TASK\","
-            + "\"label\":\"Qualificar fontes\",\"owner\":\"Argos e Dédalo\"}]}");
+        "{\"nodes\":[{\"id\":\"marketEvidence\",\"type\":\"TASK\","
+            + "\"label\":\"Reunir evidências factuais\",\"owner\":\"Argos\","
+            + "\"responsibleAgentKeys\":[\"market-radar\"],"
+            + "\"responsibilityDomain\":\"MARKET_EVIDENCE\"}]}");
     when(processRepository.findFirstByProcessCodeAndStatusOrderByVersionNumberDesc(
             "pde-opportunity-discovery", "PUBLISHED"))
         .thenReturn(Optional.of(process));
@@ -71,12 +73,13 @@ class ProductDiscoveryBpmAuditServiceTest {
         ArgumentCaptor.forClass(CreateAgentTaskRequest.class);
     verify(agentTaskService)
         .createByHumanIfAbsentAcrossProcessVersions(
-            request.capture(), org.mockito.ArgumentMatchers.eq(List.of("inspiration", "evidence")));
+            request.capture(),
+            org.mockito.ArgumentMatchers.eq(List.of("marketEvidence", "inspiration", "evidence")));
     assertThat(response.id()).isEqualTo(901L);
     assertThat(request.getValue().assignedAgentKey()).isEqualTo("market-radar");
     assertThat(request.getValue().sourceReference()).isEqualTo("product-discovery-cycle:37");
     assertThat(request.getValue().processDefinitionId()).isEqualTo(49L);
-    assertThat(request.getValue().processActivityId()).isEqualTo("inspiration");
+    assertThat(request.getValue().processActivityId()).isEqualTo("marketEvidence");
   }
 
   /** Deve registrar reserva, prompt e consumo do plano na mesma tarefa do ciclo. */

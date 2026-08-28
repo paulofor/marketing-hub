@@ -58,18 +58,19 @@ class CommercialBpmTaskConsumerTest {
         .doesNotContain("demonstra inequivocamente o kit digital");
   }
 
-  /** Mantém o polling de Têmis alinhado aos identificadores publicados no processo v6. */
+  /** Mantém o polling de Têmis restrito ao gate comercial publicado no processo v7. */
   @Test
   void supportsPublishedCreativeProductionActivities() {
     org.assertj.core.api.Assertions.assertThat(
             CommercialBpmTaskConsumer.supportsContract("creative-production-approval", "route"))
-        .isTrue();
+        .isFalse();
     org.assertj.core.api.Assertions.assertThat(
             CommercialBpmTaskConsumer.supportsContract("creative-production-approval", "produce"))
-        .isTrue();
-    org.assertj.core.api.Assertions.assertThat(
-            CommercialBpmTaskConsumer.supportsContract("creative-production-approval", "generate"))
         .isFalse();
+    org.assertj.core.api.Assertions.assertThat(
+            CommercialBpmTaskConsumer.supportsContract(
+                "creative-production-approval", "commercial"))
+        .isTrue();
   }
 
   /** Seleciona o contrato independente de revisão dos entregáveis do PDE. */
@@ -83,117 +84,16 @@ class CommercialBpmTaskConsumerTest {
         .isEqualTo("prompts/bpm/pde-deliverables-review-schema.json");
   }
 
-  /** Seleciona a tradução estratégica em comunicação sem reutilizar prompt de landing. */
+  /** Impede que Têmis consuma novamente a atividade histórica de autoria da comunicação. */
   @Test
-  void selectsVersionedPdeCommunicationContract() throws Exception {
+  void rejectsRetiredPdeCommunicationContract() throws Exception {
     org.assertj.core.api.Assertions.assertThat(
-            CommercialBpmTaskConsumer.promptResourceFor("pde-communication-sales-journey"))
-        .isEqualTo("prompts/bpm/pde-communication-translation-v2.md");
-    org.assertj.core.api.Assertions.assertThat(
-            CommercialBpmTaskConsumer.schemaResourceFor("pde-communication-sales-journey"))
-        .isEqualTo("prompts/bpm/pde-communication-translation-v2-schema.json");
-
-    String prompt = read("prompts/bpm/pde-communication-translation-v2.md");
-    String schema = read("prompts/bpm/pde-communication-translation-v2-schema.json");
-    org.assertj.core.api.Assertions.assertThat(prompt)
-        .contains(
-            "transformar a estratégia aprovada de Atena",
-            "não redefine mercado",
-            "exatamente três traduções",
-            "Hermes produz separadamente distribuição",
-            "não altera preço",
-            "80–100");
-    org.assertj.core.api.Assertions.assertThat(schema)
-        .contains(
-            "strategicContractReference",
-            "communicationAlternatives",
-            "communicationContract",
-            "priceClarityScore",
-            "commercialRationale",
-            "requiredChanges");
-  }
-
-  /** Rejeita aprovação que indique necessidade de mudar a estratégia de Atena. */
-  @Test
-  void rejectsCommunicationApprovalThatRequiresStrategicRevision() throws Exception {
-    var result =
-        json.readTree(
-            """
-            {
-              "decision":"APPROVED",
-              "commercialRationale":"Mensagem aparentemente pronta.",
-              "strategicContractReference":{"contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","strategyPreserved":true,"revisionRequired":true},
-              "communicationAlternatives":[{},{},{}],
-              "communicationContract":{"creativeBrief":"Briefing completo para o criativo."},
-              "priceClarityScore":90,
-              "evidence":["Contrato consultado"],
-              "requiredChanges":[]
-            }
-            """);
-
-    assertThatThrownBy(
-            () ->
-                CommercialBpmTaskConsumer.validate(
-                    result,
-                    "pde-communication-sales-journey",
-                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"))
-        .hasMessageContaining("não preserva a estratégia");
-  }
-
-  /** Rejeita tradução que devolva identidade diferente da estratégia recebida. */
-  @Test
-  void rejectsDifferentAtenaContractHash() throws Exception {
-    var result =
-        json.readTree(
-            """
-            {
-              "decision":"ADJUST",
-              "commercialRationale":"Mensagem precisa de ajuste.",
-              "strategicContractReference":{"contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","strategyPreserved":true,"revisionRequired":false},
-              "communicationAlternatives":[{},{},{}],
-              "communicationContract":{"creativeBrief":"Briefing completo para o criativo."},
-              "priceClarityScore":90,
-              "evidence":["Contrato consultado"],
-              "requiredChanges":["Ajustar prova"]
-            }
-            """);
-
-    assertThatThrownBy(
-            () ->
-                CommercialBpmTaskConsumer.validate(
-                    result,
-                    "pde-communication-sales-journey",
-                    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
-        .hasMessageContaining("não preserva a estratégia");
-  }
-
-  /** Exige contrato íntegro antes de Têmis consumir o modelo para traduzir a estratégia. */
-  @Test
-  void validatesMarketStrategyBeforeCommunicationModel() throws Exception {
-    var valid =
-        json.readTree(
-            """
-            {
-              "availability":"AVAILABLE",
-              "contractVersion":"MARKET_STRATEGY_V2",
-              "contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-              "contract":{
-                "contractVersion":"MARKET_STRATEGY_V2",
-                "status":"READY_FOR_OPERATION",
-                "operatorBoundary":"ATENA_DEFINES_STRATEGY_HERMES_OPERATES_GROWTH"
-              }
-            }
-            """);
-    var malformedHash = valid.deepCopy();
-    ((com.fasterxml.jackson.databind.node.ObjectNode) malformedHash)
-        .put("contentHash", "z".repeat(64));
-
-    org.assertj.core.api.Assertions.assertThat(
-            CommercialBpmTaskConsumer.isReadyMarketStrategicContract(valid))
-        .isTrue();
-    org.assertj.core.api.Assertions.assertThat(
-            CommercialBpmTaskConsumer.isReadyMarketStrategicContract(malformedHash))
+            CommercialBpmTaskConsumer.supportsContract(
+                "pde-communication-sales-journey", "contract"))
         .isFalse();
+    org.assertj.core.api.Assertions.assertThat(
+            read("prompts/bpm/pde-communication-translation-v2.md"))
+        .contains("HISTÓRICO DESATIVADO", "nenhum processo novo pode carregar este prompt");
   }
 
   /** Seleciona o gate independente que antecede o preflight e a autorização humana. */

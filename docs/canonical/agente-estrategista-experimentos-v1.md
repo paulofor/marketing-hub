@@ -20,7 +20,9 @@ tarefas posteriores como contexto persistido; parecer histórico v1 sem esse art
 `MISSING`, nunca completado a partir dos campos do experimento. `READY_FOR_OPERATION` exige ao menos
 duas classes independentes de evidência; caso contrário, o status é `INSUFFICIENT_EVIDENCE`.
 
-Plutus ou o plano humano aprovado governam preço e economia. Têmis traduz a estratégia em mensagem.
+Plutus ou o plano humano aprovado governam preço e economia. Dédalo materializa a estratégia em
+produto, landing e artefatos não audiovisuais; Apolo materializa o audiovisual; Têmis apenas revisa
+a integridade comercial do resultado real.
 Dédalo materializa o produto e as superfícies. Psique valida a resposta humana. Hermes mede e opera o
 crescimento. Se eventos posteriores contradisserem uma decisão estratégica, Hermes bloqueia a
 operação e solicita uma nova execução de Atena em vez de reescrever o contrato.

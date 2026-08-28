@@ -122,8 +122,8 @@ class ProductStageMeasurementResolverTest {
     BusinessProcessDefinition landing = process(18L, "landing-page-generation", "communication");
     List<AgentTask> approvedTasks =
         List.of(
-            approvedCreativeTask(1L, creative, "route"),
-            approvedCreativeTask(2L, creative, "produce"),
+            approvedCreativeTask(1L, creative, "nonAudiovisual"),
+            approvedCreativeTask(2L, creative, "audiovisual"),
             approvedCreativeTask(3L, creative, "customer"),
             approvedCreativeTask(4L, creative, "commercial"));
     when(plans.findByProductId(9L)).thenReturn(List.of(plan));
@@ -153,8 +153,8 @@ class ProductStageMeasurementResolverTest {
     BusinessProcessDefinition landing = process(18L, "landing-page-generation", "communication");
     List<AgentTask> approvedTasks =
         List.of(
-            approvedCreativeTask(1L, creative, "route"),
-            approvedCreativeTask(2L, creative, "produce"),
+            approvedCreativeTask(1L, creative, "nonAudiovisual"),
+            approvedCreativeTask(2L, creative, "audiovisual"),
             approvedCreativeTask(3L, creative, "customer"),
             approvedCreativeTask(4L, creative, "commercial"));
     when(plans.findByProductId(9L)).thenReturn(List.of(plan));

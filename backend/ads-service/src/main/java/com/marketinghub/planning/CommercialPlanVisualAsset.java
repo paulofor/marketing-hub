@@ -79,7 +79,7 @@ public class CommercialPlanVisualAsset {
   @JoinColumn(name = "source_visual_asset_id")
   private CommercialPlanVisualAsset sourceVisualAsset;
 
-  /** Estado da revisão independente obrigatória para imagens produzidas por Têmis. */
+  /** Estado da revisão independente obrigatória para imagens produzidas por Dédalo. */
   @Enumerated(EnumType.STRING)
   @Column(name = "agent_review_status", length = 24)
   private CommercialPlanVisualAssetReviewStatus agentReviewStatus;

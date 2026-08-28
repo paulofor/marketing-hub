@@ -1,4 +1,7 @@
-# Matriz de homologação — separação Atena, Têmis e Hermes v2
+# Matriz histórica de homologação — separação Atena, Têmis e Hermes v2
+
+> SUPERADA em 2026-08-28 pela matriz dos oito agentes. Este registro preserva a evidência da rodada
+> anterior, mas a criação de comunicação atribuída a Têmis não é contrato vigente.
 
 ## Decisão
 
@@ -17,7 +20,7 @@ permite saber se uma falha veio da estratégia, da comunicação ou da operaçã
 | --- | --- | --- | --- |
 | Estratégia | Atena v2 pesquisa e persiste `MARKET_STRATEGY_V2` | Menos de três alternativas, fontes insuficientes ou fronteira errada são rejeitadas | execução, resposta bruta, fontes, versão e hash |
 | Contexto | backend resolve plano e experimento para o mesmo contrato | referência desconhecida fica sem enriquecimento; parecer v1 vira `MISSING` | `processContextJson.marketStrategicContract` |
-| Comunicação | Têmis cria três traduções e um contrato fiel | contrato ausente/insuficiente ou alteração estratégica bloqueia antes da execução | referência da estratégia e contrato de comunicação |
+| Comunicação histórica | Têmis criava três traduções e um contrato fiel | contrato desativado pela sobreposição entre criação e revisão | referência histórica da estratégia e contrato retirado |
 | Operação | Hermes cria rota, atribuição, eventos e gates | qualquer campo estratégico, hash ausente ou revisão necessária com sucesso é rejeitado | contrato operacional e auditoria de ferramentas |
 | Diagnóstico | Hermes compara eventos com a estratégia imutável | contradição solicita Atena; não gera nova tese | `strategicContractAssessment` |
 | Observabilidade | request, response, modelo, tokens/custo, fontes, erro e decisão permanecem correlacionados | falha de parse preserva stack trace e tarefa bloqueada | execução e tarefa persistidas |

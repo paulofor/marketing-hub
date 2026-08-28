@@ -105,6 +105,12 @@ geração de landing e criação de criativos, permanecem reutilizáveis dentro 
 
 ## Fronteiras obrigatórias de responsabilidade
 
+Os direitos de decisão dos agentes seguem obrigatoriamente
+`matriz-responsabilidades-agentes-canon.v1.md`. O handoff comercial é
+`Argos → Atena → Plutus → Dédalo/Apolo → Psique → Têmis → autorização humana → Hermes`.
+Atividade de agente possui um único dono; gates humanos e de integridade têm identificadores
+separados e nenhum agente pode criar e aprovar o mesmo artefato.
+
 O catálogo distingue `VALUE_PROCESS` de `SUBPROCESS`. Um processo de valor possui resultado de
 negócio e gate de avanço da cadeia; um subprocesso executa uma capacidade especializada, possui um
 único processo de valor pai e não pode decidir sozinho o avanço, ativar mídia ou repetir o resultado

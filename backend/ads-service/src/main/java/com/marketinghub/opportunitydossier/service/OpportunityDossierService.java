@@ -27,8 +27,7 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: governar pesquisa, pareceres e conversão de oportunidades em planos. */
 @Service
 public class OpportunityDossierService {
-  private static final Set<String> REQUIRED_REVIEWERS =
-      Set.of("ATENA", "PSIQUE", "PLUTUS", "HERMES");
+  private static final Set<String> REQUIRED_REVIEWERS = Set.of("ATENA");
   private final OpportunityDossierRepository dossierRepository;
   private final OpportunityEvidenceRepository evidenceRepository;
   private final OpportunityAgentReviewRepository reviewRepository;
@@ -55,7 +54,7 @@ public class OpportunityDossierService {
     this.agentTaskService = agentTaskService;
   }
 
-  /** Cadastra uma oportunidade sob responsabilidade de Argos ou agente informado. */
+  /** Cadastra uma oportunidade factual exclusivamente sob responsabilidade de Argos. */
   @Transactional
   public OpportunityDossierResponse create(CreateOpportunityDossierRequest request) {
     require(request.title(), "title");
@@ -64,6 +63,9 @@ public class OpportunityDossierService {
     require(request.mainPain(), "mainPain");
     require(request.referenceProduct(), "referenceProduct");
     require(request.aiAdvantage(), "aiAdvantage");
+    if (!"ARGOS".equals(request.ownerAgentKey().trim().toUpperCase())) {
+      bad("ownerAgentKey deve identificar ARGOS na pesquisa factual");
+    }
     if (request.preliminaryPrice() != null && request.preliminaryPrice().signum() < 0)
       bad("preliminaryPrice não pode ser negativo");
     OpportunityDossier saved =
@@ -140,7 +142,7 @@ public class OpportunityDossierService {
     return response(dossier);
   }
 
-  /** Move o dossiê entre estados permitidos e abre os pareceres obrigatórios. */
+  /** Move o dossiê entre estados permitidos e abre a decisão estratégica de Atena. */
   @Transactional
   public OpportunityDossierResponse updateStatus(Long id, UpdateOpportunityStatusRequest request) {
     OpportunityDossier dossier = find(id);
@@ -179,16 +181,21 @@ public class OpportunityDossierService {
     return response(dossierRepository.save(dossier));
   }
 
-  /** Registra o parecer do agente solicitado e libera o teste quando todos concluírem. */
+  /** Registra a decisão estratégica solicitada e libera o teste quando Atena concluir. */
   @Transactional
   public OpportunityDossierResponse submitReview(
       Long id, String agentKey, SubmitOpportunityReviewRequest request) {
     OpportunityDossier dossier = find(id);
     if (dossier.getStatus() != OpportunityDossierStatus.UNDER_REVIEW)
       conflict("Dossiê não está recebendo pareceres");
+    String normalizedAgentKey = agentKey == null ? "" : agentKey.trim().toUpperCase();
+    if (!REQUIRED_REVIEWERS.contains(normalizedAgentKey)) {
+      throw new ResponseStatusException(
+          HttpStatus.FORBIDDEN, "Somente Atena decide a estratégia do dossiê");
+    }
     OpportunityAgentReview review =
         reviewRepository
-            .findByDossierIdAndAgentKey(id, agentKey.toUpperCase())
+            .findByDossierIdAndAgentKey(id, normalizedAgentKey)
             .orElseThrow(
                 () ->
                     new ResponseStatusException(
@@ -204,6 +211,7 @@ public class OpportunityDossierService {
     review.setCompletedAt(Instant.now());
     reviewRepository.save(review);
     if (reviewRepository.findByDossierIdOrderByAgentKeyAsc(id).stream()
+        .filter(item -> REQUIRED_REVIEWERS.contains(item.getAgentKey()))
         .allMatch(item -> item.getCompletedAt() != null)) {
       dossier.setStatus(OpportunityDossierStatus.READY_FOR_TEST);
       dossierRepository.save(dossier);

@@ -40,7 +40,7 @@ public class ProductStageMeasurementResolver {
   private static final Set<String> ACTIVE_TASK_STATUSES =
       Set.of("PENDING", "IN_PROGRESS", "BLOCKED");
   private static final Set<String> CREATIVE_APPROVAL_ACTIVITIES =
-      Set.of("route", "produce", "customer", "commercial");
+      Set.of("nonAudiovisual", "audiovisual", "customer", "commercial");
   private static final Set<String> LANDING_APPROVAL_ACTIVITIES =
       Set.of("html", "customer", "commercial");
 

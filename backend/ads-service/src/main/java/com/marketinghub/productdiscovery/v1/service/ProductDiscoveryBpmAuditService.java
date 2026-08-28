@@ -27,8 +27,9 @@ public class ProductDiscoveryBpmAuditService {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ProductDiscoveryBpmAuditService.class);
   private static final String PROCESS_CODE = "pde-opportunity-discovery";
-  private static final String PRIMARY_ACTIVITY_ID = "inspiration";
-  private static final String LEGACY_ACTIVITY_ID = "evidence";
+  private static final String PRIMARY_ACTIVITY_ID = "marketEvidence";
+  private static final String LEGACY_ACTIVITY_ID = "inspiration";
+  private static final String OLDER_LEGACY_ACTIVITY_ID = "evidence";
   private static final String AGENT_KEY = "market-radar";
   private static final String EXECUTION_SOURCE_PREFIX = "product-discovery-cycle:";
   private final BusinessProcessDefinitionRepository processRepository;
@@ -62,7 +63,7 @@ public class ProductDiscoveryBpmAuditService {
             activityId,
             false,
             null),
-        List.of(PRIMARY_ACTIVITY_ID, LEGACY_ACTIVITY_ID));
+        List.of(PRIMARY_ACTIVITY_ID, LEGACY_ACTIVITY_ID, OLDER_LEGACY_ACTIVITY_ID));
   }
 
   /** Marca o recebimento real da execução quando o backend entrega o ciclo ao worker. */
@@ -130,7 +131,8 @@ public class ProductDiscoveryBpmAuditService {
   private String resolveInitialActivityId(BusinessProcessDefinition process) {
     try {
       JsonNode nodes = objectMapper.readTree(process.getDiagramJson()).path("nodes");
-      for (String candidate : List.of(PRIMARY_ACTIVITY_ID, LEGACY_ACTIVITY_ID)) {
+      for (String candidate :
+          List.of(PRIMARY_ACTIVITY_ID, LEGACY_ACTIVITY_ID, OLDER_LEGACY_ACTIVITY_ID)) {
         for (JsonNode node : nodes) {
           if (candidate.equals(node.path("id").asText())
               && "TASK".equals(node.path("type").asText())) {

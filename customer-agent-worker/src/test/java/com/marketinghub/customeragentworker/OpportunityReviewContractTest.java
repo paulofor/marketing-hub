@@ -5,9 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
-/** Responsabilidade: proteger o contrato versionado do parecer de Psique. */
+/** Responsabilidade: preservar o contrato histórico dos antigos pareceres de oportunidade. */
 class OpportunityReviewContractTest {
-  /** Confirma contexto do cliente e saída estruturada obrigatórios. */
+  /** Confirma que o contrato histórico permanece auditável e explicitamente retirado. */
   @Test
   void keepsVersionedReviewContract() throws Exception {
     String prompt = resource("prompts/opportunity-review/v2/review.md");
@@ -16,6 +16,7 @@ class OpportunityReviewContractTest {
         .contains(
             "{{DOSSIER_CONTEXT}}",
             "{{PSIQUE_BEHAVIORAL_CORE_V3}}",
+            "retirado da execução",
             "objeções",
             "SUPPORT",
             "amada",

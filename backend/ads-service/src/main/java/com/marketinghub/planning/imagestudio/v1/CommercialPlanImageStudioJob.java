@@ -22,7 +22,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-/** Responsabilidade: persistir uma criação ou edição de imagem executada por Têmis. */
+/** Responsabilidade: persistir uma criação ou edição de imagem materializada por Dédalo. */
 @Entity
 @Table(name = "commercial_plan_image_studio_job")
 @Getter

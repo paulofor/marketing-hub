@@ -37,15 +37,10 @@ public class CommercialBpmTaskConsumer {
       "O catálogo do Codex não anuncia Flex para gpt-5.6-sol; a CLI omite o tier solicitado e usa o tier padrão.";
   private static final List<BpmContract> CONTRACTS =
       List.of(
-          new BpmContract("pde-communication-sales-journey", "contract"),
-          new BpmContract("pde-commercial-homologation-activation", "pdeGate"),
-          new BpmContract("creative-production-approval", "route"),
-          new BpmContract("creative-production-approval", "library"),
-          new BpmContract("creative-production-approval", "brief"),
-          new BpmContract("creative-production-approval", "produce"),
+          new BpmContract("pde-commercial-homologation-activation", "commercialIntegrityReview"),
           new BpmContract("creative-production-approval", "commercial"),
           new BpmContract("landing-page-generation", "commercial"),
-          new BpmContract("pde-construction-approval", "deliverables"));
+          new BpmContract("pde-construction-approval", "commercialIntegrityReview"));
   private final RestClient backend;
   private final ObjectMapper json;
   private final String codex;
@@ -80,7 +75,7 @@ public class CommercialBpmTaskConsumer {
       if (task == null) return;
       execution = execute(task);
       JsonNode result = execution.result();
-      validate(result, processCode(task), strategicContractHash(task));
+      validate(result);
       if ("APPROVED".equals(result.path("decision").asText()))
         report(task, result, execution.usage());
       else block(task, result, execution.usage());
@@ -94,7 +89,7 @@ public class CommercialBpmTaskConsumer {
     }
   }
 
-  /** Reserva primeiro criativos e depois landings sem cruzar gates independentes. */
+  /** Reserva somente gates independentes de integridade comercial em ordem explícita. */
   private Map<String, Object> claimNext() {
     for (BpmContract contract : CONTRACTS) {
       List<Map<String, Object>> pending =
@@ -246,17 +241,6 @@ public class CommercialBpmTaskConsumer {
     Map<String, Object> promptContext = new HashMap<>(task);
     if ("pde-construction-approval".equals(processCode(task))) {
       promptContext.put("versionedArtifactEvidence", pdeArtifactLoader.load());
-    } else if ("pde-communication-sales-journey".equals(processCode(task))) {
-      JsonNode processContext =
-          json.readTree(String.valueOf(task.getOrDefault("processContextJson", "{}")));
-      JsonNode marketContract = processContext.path("marketStrategicContract");
-      if (!isReadyMarketStrategicContract(marketContract)) {
-        throw new IllegalStateException(
-            "Atena precisa produzir um Contrato Estratégico de Mercado v2 pronto antes de Têmis criar a comunicação.");
-      }
-      promptContext.put("marketStrategicContract", json.convertValue(marketContract, Object.class));
-      promptContext.put(
-          "versionedArtifactEvidence", pdeArtifactLoader.loadCommunicationContracts());
     } else if ("pde-commercial-homologation-activation".equals(processCode(task))) {
       promptContext.put(
           "versionedCommercialHomologationEvidence",
@@ -266,22 +250,9 @@ public class CommercialBpmTaskConsumer {
         .replace("{{TASK_CONTEXT}}", json.writeValueAsString(promptContext));
   }
 
-  /** Valida versão, estado, fronteira e SHA-256 antes de qualquer chamada ao modelo de Têmis. */
-  static boolean isReadyMarketStrategicContract(JsonNode marketContract) {
-    return "AVAILABLE".equals(marketContract.path("availability").asText())
-        && "MARKET_STRATEGY_V2".equals(marketContract.path("contractVersion").asText())
-        && marketContract.path("contentHash").asText().matches("[0-9a-f]{64}")
-        && "MARKET_STRATEGY_V2"
-            .equals(marketContract.path("contract").path("contractVersion").asText())
-        && "READY_FOR_OPERATION".equals(marketContract.path("contract").path("status").asText())
-        && "ATENA_DEFINES_STRATEGY_HERMES_OPERATES_GROWTH"
-            .equals(marketContract.path("contract").path("operatorBoundary").asText());
-  }
-
   /** Seleciona o prompt versionado específico do gate avaliado. */
   static String promptResourceFor(String processCode) {
     return switch (processCode) {
-      case "pde-communication-sales-journey" -> "prompts/bpm/pde-communication-translation-v2.md";
       case "pde-commercial-homologation-activation" ->
           "prompts/bpm/pde-commercial-homologation-independent-review.md";
       case "creative-production-approval" -> "prompts/bpm/creative-commercial-review.md";
@@ -293,8 +264,6 @@ public class CommercialBpmTaskConsumer {
   /** Seleciona o schema versionado específico do gate avaliado. */
   static String schemaResourceFor(String processCode) {
     return switch (processCode) {
-      case "pde-communication-sales-journey" ->
-          "prompts/bpm/pde-communication-translation-v2-schema.json";
       case "pde-commercial-homologation-activation" ->
           "prompts/bpm/pde-commercial-homologation-independent-review-schema.json";
       case "creative-production-approval" -> "prompts/bpm/creative-commercial-review-schema.json";
@@ -309,25 +278,8 @@ public class CommercialBpmTaskConsumer {
     return value == null ? "" : value.toString();
   }
 
-  /** Recupera o hash recebido por Têmis para validar a mesma identidade na resposta. */
-  private String strategicContractHash(Map<String, Object> task) throws IOException {
-    if (!"pde-communication-sales-journey".equals(processCode(task))) return null;
-    JsonNode processContext =
-        json.readTree(String.valueOf(task.getOrDefault("processContextJson", "{}")));
-    String hash = processContext.path("marketStrategicContract").path("contentHash").asText();
-    if (!hash.matches("[0-9a-f]{64}")) {
-      throw new IllegalArgumentException("Tarefa de Têmis sem hash estratégico íntegro de Atena.");
-    }
-    return hash;
-  }
-
   /** Exige decisão, evidências e nota de preço coerente quando o contrato a declarar. */
   static void validate(JsonNode result) {
-    validate(result, null, null);
-  }
-
-  /** Exige que a tradução devolva a mesma identidade estratégica recebida da Atena. */
-  static void validate(JsonNode result, String processCode, String expectedStrategicHash) {
     if (!List.of("APPROVED", "ADJUST", "BLOCKED").contains(result.path("decision").asText())) {
       throw new IllegalArgumentException("Gate de Têmis sem decisão válida");
     }
@@ -340,22 +292,6 @@ public class CommercialBpmTaskConsumer {
         && result.has("priceClarityScore")
         && result.path("priceClarityScore").asInt() < 80) {
       throw new IllegalArgumentException("Gate de Têmis aprovou preço com nota inferior a 80/100");
-    }
-    if ("pde-communication-sales-journey".equals(processCode)
-        && (result.path("strategicContractReference").isMissingNode()
-            || result.path("strategicContractReference").path("contentHash").asText().length() != 64
-            || !result
-                .path("strategicContractReference")
-                .path("contentHash")
-                .asText()
-                .equals(expectedStrategicHash)
-            || !result.path("strategicContractReference").path("strategyPreserved").asBoolean()
-            || result.path("communicationAlternatives").size() != 3
-            || result.path("communicationContract").path("creativeBrief").asText().isBlank()
-            || (result.path("strategicContractReference").path("revisionRequired").asBoolean()
-                && "APPROVED".equals(result.path("decision").asText())))) {
-      throw new IllegalArgumentException(
-          "Contrato de comunicação de Têmis não preserva a estratégia de Atena");
     }
   }
 

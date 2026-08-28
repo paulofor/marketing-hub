@@ -34,8 +34,8 @@ public class CustomerBpmTaskConsumer {
       List.of(
           new BpmContract("creative-production-approval", "customer"),
           new BpmContract("landing-page-generation", "customer"),
-          new BpmContract("pde-commercial-homologation-activation", "pdeGate"),
-          new BpmContract("pde-construction-approval", "review"));
+          new BpmContract("pde-commercial-homologation-activation", "humanExperienceReview"),
+          new BpmContract("pde-construction-approval", "humanExperienceReview"));
   private final RestClient backend;
   private final ObjectMapper json;
   private final String codex;
@@ -100,6 +100,15 @@ public class CustomerBpmTaskConsumer {
       if (pending != null && !pending.isEmpty()) return pending.get(0);
     }
     return null;
+  }
+
+  /** Confirma que o polling conhece apenas uma atividade publicada de experiência humana. */
+  static boolean supportsContract(String processCode, String activityId) {
+    return CONTRACTS.stream()
+        .anyMatch(
+            contract ->
+                contract.processCode().equals(processCode)
+                    && contract.activityId().equals(activityId));
   }
 
   /** Executa o prompt versionado e exige um parecer estruturado sobre a experiência da cliente. */

@@ -25,5 +25,5 @@ paths:
 components:
   parameters:
     id: {name: id, in: path, required: true, schema: {type: integer, format: int64}}
-    agentKey: {name: agentKey, in: path, required: true, schema: {type: string, enum: [ATENA, PSIQUE, PLUTUS, HERMES]}}
+    agentKey: {name: agentKey, in: path, required: true, schema: {type: string, enum: [ATENA]}}
     reviewId: {name: reviewId, in: path, required: true, schema: {type: integer, format: int64}}

@@ -71,5 +71,7 @@ Foram comparadas três materializações:
 A construção só avança quando o caminho público e pago passa em desktop e mobile, a degustação não
 entra na fila de IA, o dia 2 fica bloqueado sem compra, a versão e expiração persistem, não há texto
 livre na v7, o conteúdo não usa alegações científicas como garantia, pagamento e conteúdo pago não
-podem ser forjados por rota pública, direitos de dados são exercíveis e Dédalo, Têmis e Psique aprovam
-as mesmas evidências. Venda, satisfação e transformação real continuam não comprovadas até clientes reais.
+podem ser forjados por rota pública, direitos de dados são exercíveis e a construção e os gates
+independentes examinam as mesmas evidências. Dédalo materializa; Psique
+avalia a experiência humana; Têmis revisa a integridade comercial. Venda, satisfação e transformação
+real continuam não comprovadas até clientes reais.

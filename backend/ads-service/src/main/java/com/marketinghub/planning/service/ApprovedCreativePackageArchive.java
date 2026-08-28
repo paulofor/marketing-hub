@@ -32,7 +32,7 @@ final class ApprovedCreativePackageArchive {
       Set.of(
           "metadata/contract.json",
           "metadata/manifest.json",
-          "metadata/temis-direction.json",
+          "metadata/dedalo-direction.json",
           "metadata/apollo-storyboard.json",
           "metadata/psique-review.json",
           "metadata/temis-review.json",
@@ -59,7 +59,7 @@ final class ApprovedCreativePackageArchive {
       }
       JsonNode contract = json(entries, "metadata/contract.json");
       JsonNode manifest = json(entries, "metadata/manifest.json");
-      JsonNode direction = json(entries, "metadata/temis-direction.json");
+      JsonNode direction = json(entries, "metadata/dedalo-direction.json");
       JsonNode apollo = json(entries, "metadata/apollo-storyboard.json");
       JsonNode psique = json(entries, "metadata/psique-review.json");
       JsonNode temis = json(entries, "metadata/temis-review.json");
@@ -77,13 +77,13 @@ final class ApprovedCreativePackageArchive {
           "Contrato e manifesto usam versões diferentes.");
       require(
           "SELECTED".equals(direction.path("decision").asText()),
-          "Têmis não selecionou a rota criativa.");
+          "Dédalo não materializou a rota criativa aprovada.");
       require(
           direction
               .path("chosenRoute")
               .asText("")
               .equals(contract.path("routeDecision").path("selected").asText()),
-          "A rota aprovada por Têmis diverge do contrato.");
+          "A rota materializada por Dédalo diverge do contrato.");
       require(
           apollo.path("cuts").isArray() && !apollo.path("cuts").isEmpty(),
           "Apolo não entregou a decupagem obrigatória.");
@@ -98,7 +98,7 @@ final class ApprovedCreativePackageArchive {
           "O pacote declarou provider ou gasto externo de mídia.");
       requireContractFiles(contract, manifest);
 
-      AgentExecution directionExecution = execution(executions, "TEMIS_DIRECTION");
+      AgentExecution directionExecution = execution(executions, "DEDALO");
       AgentExecution apolloExecution = execution(executions, "APOLLO");
       AgentExecution psiqueExecution = execution(executions, "PSIQUE");
       AgentExecution temisExecution = execution(executions, "TEMIS_INDEPENDENT");
@@ -111,7 +111,7 @@ final class ApprovedCreativePackageArchive {
                           temisExecution.executionId()))
                   .size()
               == 4,
-          "Planejamento, percepção e revisão precisam usar execuções independentes.");
+          "Materialização, audiovisual, percepção e integridade precisam usar execuções independentes.");
       require(
           !manifest.path("producerExecutionId").asText("").equals(temisExecution.executionId()),
           "A produção e a revisão independente de Têmis não podem ser a mesma execução.");

@@ -32,10 +32,10 @@ class BusinessProcessExecutionResourceServiceTest {
     BusinessProcessExecutionResource resource = new BusinessProcessExecutionResource();
     resource.setId(1L);
     resource.setResourceCode("themis-image-studio");
-    resource.setName("Estúdio de Imagens de Têmis");
+    resource.setName("Materializador visual técnico de Dédalo");
     resource.setDescription("Cria e edita imagens.");
     resource.setResourceType("CONTAINER");
-    resource.setResponsibleAgentKey("meta-ad-approver");
+    resource.setResponsibleAgentKey("landing-generator");
     resource.setExecutorReference("themis-image-studio");
     resource.setUsageInstructions("Consumir o endpoint pending do backend.");
     resource.setActive(true);

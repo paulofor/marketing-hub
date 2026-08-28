@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /** Responsabilidade: reunir limites e endereços operacionais do módulo aprovador. */
 @ConfigurationProperties("meta-ad-approver")
 public class MetaAdApproverProperties {
+  private String executionRole = "review";
   private String backendUrl = "http://backend:8000";
   private String marketingHubUrl = "http://backend:8000";
   private String repositoryPath = "/workspace/marketing-hub";
@@ -23,6 +24,16 @@ public class MetaAdApproverProperties {
   private String imageModel = "gpt-image-2";
   private Duration imageTimeout = Duration.ofMinutes(3);
   private int imageStudioPendingLimit = 1;
+
+  /** Retorna o papel isolado executado pelo container atual. */
+  public String getExecutionRole() {
+    return executionRole;
+  }
+
+  /** Define se o container executa revisão de Têmis ou materialização técnica de Dédalo. */
+  public void setExecutionRole(String value) {
+    executionRole = value;
+  }
 
   /** Retorna a URL do backend. */
   public String getBackendUrl() {

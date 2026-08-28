@@ -265,14 +265,14 @@ describe("ProductProcessActivityExecutionsPage", () => {
       }),
     ).toBeInTheDocument();
     const processNames = document.querySelectorAll(
-      ".product-process-entity-name--process",
+      ".business-process-entity-name--process",
     );
     expect(processNames).toHaveLength(1);
     expect(
       processNames[0].querySelector(".lucide-workflow"),
     ).toBeInTheDocument();
     const activityNames = document.querySelectorAll(
-      ".product-process-entity-name--activity",
+      ".business-process-entity-name--activity",
     );
     expect(activityNames).toHaveLength(17);
     activityNames.forEach((activityName) => {

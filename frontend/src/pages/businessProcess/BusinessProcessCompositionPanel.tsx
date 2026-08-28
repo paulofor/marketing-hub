@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { BusinessProcessComposition } from "../../api/businessProcess/types";
+import BusinessProcessEntityName from "../../components/BusinessProcessEntityName";
 import "./BusinessProcessesPage.css";
 
 export default function BusinessProcessCompositionPanel({
@@ -59,7 +60,13 @@ export default function BusinessProcessCompositionPanel({
               to={`/business-processes?processId=${composition.parentProcess.id}`}
             >
               <span>Processo de valor pai</span>
-              <strong>{composition.parentProcess.name}</strong>
+              <strong>
+                <BusinessProcessEntityName
+                  kind="process"
+                  name={composition.parentProcess.name}
+                  iconSize={17}
+                />
+              </strong>
               <small>v{composition.parentProcess.versionNumber}</small>
             </Link>
             <span className="business-process-composition__arrow" aria-hidden>
@@ -67,7 +74,13 @@ export default function BusinessProcessCompositionPanel({
             </span>
             <div className="business-process-composition__current">
               <span>Subprocesso atual</span>
-              <strong>{composition.process.name}</strong>
+              <strong>
+                <BusinessProcessEntityName
+                  kind="process"
+                  name={composition.process.name}
+                  iconSize={17}
+                />
+              </strong>
               <small>v{composition.process.versionNumber}</small>
             </div>
           </div>
@@ -115,7 +128,13 @@ export default function BusinessProcessCompositionPanel({
               <span className="business-process-composition__child-type">
                 Subprocesso especializado
               </span>
-              <strong>{subprocess.name}</strong>
+              <strong>
+                <BusinessProcessEntityName
+                  kind="process"
+                  name={subprocess.name}
+                  iconSize={17}
+                />
+              </strong>
               <span>{subprocess.purpose}</span>
               <small>
                 Responsável: {subprocess.ownerName} · v

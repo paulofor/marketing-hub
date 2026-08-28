@@ -16,6 +16,7 @@ import type {
   ProcessDiagram,
 } from "../../api/businessProcess/types";
 import { useBusinessProcessChainsByProcess } from "../../api/businessProcessChain/useBusinessProcessChains";
+import BusinessProcessEntityName from "../../components/BusinessProcessEntityName";
 import PageTitle from "../../components/PageTitle";
 import BusinessProcessCompositionPanel from "./BusinessProcessCompositionPanel";
 import BusinessProcessDiagram from "./BusinessProcessDiagram";
@@ -467,7 +468,11 @@ export default function BusinessProcessesPage({
                             Processo de valor
                           </span>
                           <span className="d-block fw-semibold">
-                            {item.name}
+                            <BusinessProcessEntityName
+                              kind="process"
+                              name={item.name}
+                              iconSize={17}
+                            />
                           </span>
                           <span className="small">
                             v{item.versionNumber} · {item.status}
@@ -489,7 +494,11 @@ export default function BusinessProcessesPage({
                                 onClick={() => selectProcess(subprocess.id)}
                               >
                                 <span className="d-block fw-semibold">
-                                  {subprocess.name}
+                                  <BusinessProcessEntityName
+                                    kind="process"
+                                    name={subprocess.name}
+                                    iconSize={16}
+                                  />
                                 </span>
                                 <span className="small">
                                   v{subprocess.versionNumber} ·{" "}
@@ -542,7 +551,11 @@ export default function BusinessProcessesPage({
                           onClick={() => selectProcess(item.id)}
                         >
                           <span className="d-block fw-semibold">
-                            {item.name}
+                            <BusinessProcessEntityName
+                              kind="process"
+                              name={item.name}
+                              iconSize={17}
+                            />
                           </span>
                           <span className="small">
                             v{item.versionNumber} · {item.status}
@@ -569,7 +582,13 @@ export default function BusinessProcessesPage({
                     className={`list-group-item list-group-item-action ${selected?.id === item.id ? "active" : ""}`}
                     onClick={() => selectProcess(item.id)}
                   >
-                    <span className="d-block fw-semibold">{item.name}</span>
+                    <span className="d-block fw-semibold">
+                      <BusinessProcessEntityName
+                        kind="process"
+                        name={item.name}
+                        iconSize={17}
+                      />
+                    </span>
                     <span className="small">
                       v{item.versionNumber} · {item.status}
                     </span>
@@ -624,8 +643,11 @@ export default function BusinessProcessesPage({
                           ? "SUBPROCESSO"
                           : "PROCESSO DE VALOR"}
                       </span>
-                      <h2 className="h4 mt-2 mb-1">
-                        {selected.name} · v{selected.versionNumber}
+                      <h2 className="h4 mt-2 mb-1 business-process-detail-title">
+                        <BusinessProcessEntityName
+                          kind="process"
+                          name={`${selected.name} · v${selected.versionNumber}`}
+                        />
                       </h2>
                       <p className="mb-2">
                         <strong>Objetivo:</strong> {selected.purpose}
@@ -753,7 +775,13 @@ export default function BusinessProcessesPage({
                   unavailable={compositionQuery.isError}
                 />
                 <section className="card card-body">
-                  <h2 className="h5">Diagrama BPM</h2>
+                  <h2 className="h5 business-process-diagram-title">
+                    <BusinessProcessEntityName
+                      kind="process"
+                      name="Diagrama BPM"
+                      iconSize={18}
+                    />
+                  </h2>
                   {executionResourcesQuery.isError ? (
                     <div className="alert alert-warning" role="alert">
                       O catálogo de recursos especializados está indisponível.

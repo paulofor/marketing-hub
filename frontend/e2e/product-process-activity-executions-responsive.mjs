@@ -256,11 +256,11 @@ try {
     await expect(
       page.getByRole("link", { name: "Histórico de atividades" }),
     ).toHaveAttribute("href", "/products/9/value-chain-history");
-    const processNames = page.locator(".product-process-entity-name--process");
+    const processNames = page.locator(".business-process-entity-name--process");
     await expect(processNames).toHaveCount(1);
     await expect(processNames.locator(".lucide-workflow")).toBeVisible();
     const activityNames = page.locator(
-      ".product-process-entity-name--activity",
+      ".business-process-entity-name--activity",
     );
     await expect(activityNames).toHaveCount(17);
     await expect(activityNames.locator(".lucide-clipboard-list")).toHaveCount(

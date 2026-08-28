@@ -4,7 +4,6 @@ import {
   CheckCircle2,
   CircleDollarSign,
   CircleOff,
-  ClipboardList,
   Clock3,
   ListChecks,
   ListTree,
@@ -19,6 +18,7 @@ import {
   useRequestProductProcessActivityExecution,
 } from "../../api/businessProcess/useProductProcessActivityExecutions";
 import type { ProductProcessActivityExecutionGroup } from "../../api/businessProcess/types";
+import BusinessProcessEntityName from "../../components/BusinessProcessEntityName";
 import PageTitle from "../../components/PageTitle";
 import BusinessProcessExecutionCard from "../businessProcess/BusinessProcessExecutionCard";
 import "../businessProcess/BusinessProcessesPage.css";
@@ -58,32 +58,6 @@ const processStateLabels = {
   COMPLETED: "Concluído",
   CANCELLED: "Cancelado",
 } as const;
-
-/** Identifica visualmente um nome de processo com o ícone canônico desta tela. */
-function ProcessName({ name }: { name: string }) {
-  return (
-    <span
-      className="product-process-entity-name product-process-entity-name--process"
-      title="Processo"
-    >
-      <Workflow size={20} aria-hidden="true" />
-      <span>{name}</span>
-    </span>
-  );
-}
-
-/** Identifica visualmente um nome de atividade com o ícone canônico desta tela. */
-function ActivityName({ name }: { name: string }) {
-  return (
-    <span
-      className="product-process-entity-name product-process-entity-name--activity"
-      title="Atividade"
-    >
-      <ClipboardList size={18} aria-hidden="true" />
-      <span>{name}</span>
-    </span>
-  );
-}
 
 /** Escolhe o ícone semântico do estado já calculado pelo backend. */
 function ActivityStateIcon({ state }: { state: ActivityOperationalState }) {
@@ -158,7 +132,10 @@ export default function ProductProcessActivityExecutionsPage() {
               <span className="product-process-activity-executions__title">
                 <span>{productLabel}</span>
                 <span>·</span>
-                <ProcessName name={data.processName} />
+                <BusinessProcessEntityName
+                  kind="process"
+                  name={data.processName}
+                />
               </span>
             ) : (
               "Atividades e tarefas do produto"
@@ -291,7 +268,10 @@ export default function ProductProcessActivityExecutionsPage() {
                 </span>
                 <strong>
                   {data.currentActivityName ? (
-                    <ActivityName name={data.currentActivityName} />
+                    <BusinessProcessEntityName
+                      kind="activity"
+                      name={data.currentActivityName}
+                    />
                   ) : data.objectiveAchieved ? (
                     "Todas as atividades foram concluídas"
                   ) : (
@@ -317,7 +297,10 @@ export default function ProductProcessActivityExecutionsPage() {
                     {completedActivities.map((activity) => (
                       <li key={`completed-${activity.activityId}`}>
                         <strong>
-                          <ActivityName name={activity.activityName} />
+                          <BusinessProcessEntityName
+                            kind="activity"
+                            name={activity.activityName}
+                          />
                         </strong>
                         <small>{activity.stateReason}</small>
                       </li>
@@ -337,7 +320,10 @@ export default function ProductProcessActivityExecutionsPage() {
                       <li key={`remaining-${activity.activityId}`}>
                         <div>
                           <strong>
-                            <ActivityName name={activity.activityName} />
+                            <BusinessProcessEntityName
+                              kind="activity"
+                              name={activity.activityName}
+                            />
                           </strong>
                           <span
                             className={`product-process-situation__activity-state product-process-situation__activity-state--${activity.operationalState.toLowerCase()}`}
@@ -412,7 +398,10 @@ export default function ProductProcessActivityExecutionsPage() {
                         : ""}
                     </span>
                     <h2>
-                      <ActivityName name={activity.activityName} />
+                      <BusinessProcessEntityName
+                        kind="activity"
+                        name={activity.activityName}
+                      />
                     </h2>
                     {activity.activityOwnerName ? (
                       <small>Responsável: {activity.activityOwnerName}</small>

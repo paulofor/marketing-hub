@@ -480,7 +480,7 @@ describe("ProductProcessActivityExecutionsPage", () => {
     );
   });
 
-  it("offers an explicit retry after the missing predecessor is completed", async () => {
+  it("restarts a blocked task while preserving its audited attempt", async () => {
     vi.mocked(axios.get).mockResolvedValue({
       data: {
         ...history,
@@ -535,8 +535,9 @@ describe("ProductProcessActivityExecutionsPage", () => {
     renderPage("/products/9/value-chain-history/processes/63/activities");
 
     const button = await screen.findByRole("button", {
-      name: "Tentar novamente",
+      name: "Reiniciar tarefa",
     });
+    expect(button.querySelector(".lucide-rotate-ccw")).toBeInTheDocument();
     fireEvent.click(button);
 
     await waitFor(() =>

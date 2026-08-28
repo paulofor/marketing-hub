@@ -1,55 +1,85 @@
-const { chromium, devices } = require("@playwright/test");
+const { chromium, devices, expect } = require("@playwright/test");
 
 const pageUrl =
-  "http://127.0.0.1:4173/products/4/value-chain-history/processes/45/activities";
+  "http://127.0.0.1:4173/products/9/value-chain-history/processes/56/activities";
 const executionPath =
-  "/api/business-processes/45/products/4/activities/pdeGate/execution-requests";
+  "/api/business-processes/56/products/9/activities/humanExperienceReview/execution-requests";
+
+const blockedTask = {
+  taskId: 254,
+  processDefinitionId: 56,
+  processVersionNumber: 6,
+  title: "Validar experiência humana da jornada · Rigel",
+  status: "BLOCKED",
+  sourceReference: "experiment:89",
+  assignedAgentKey: "customer-agent",
+  assignedAgentNickname: "Psique",
+  comments: null,
+  evidenceJson: JSON.stringify({ reviewer: "Psique" }),
+  executionError:
+    "java.io.IOException: SHA-256 divergente para a prova comercial: pde-platform/frontend/src/App.tsx",
+  inputTokens: null,
+  cachedInputTokens: null,
+  outputTokens: null,
+  estimatedCostUsd: null,
+  costEstimationStatus: "NOT_REPORTED",
+  createdAt: "2026-08-28T19:14:48Z",
+  startedAt: "2026-08-28T19:15:48Z",
+  finishedAt: "2026-08-28T19:15:48Z",
+  modelCode: "gpt-5.6-sol",
+  reasoningEffort: null,
+  productInternalName: "Rigel",
+  promptSent: null,
+};
 
 const history = {
-  productId: 4,
-  productName: "Método MUSA 7 Dias",
-  productInternalName: "Vega",
-  selectedProcessDefinitionId: 45,
+  productId: 9,
+  productName: "Kit WhatsApp Pronto",
+  productInternalName: "Rigel",
+  commercialPlanId: 4,
+  commercialPlanName: "Plano Comercial · Kit WhatsApp Pronto v1",
+  selectedProcessDefinitionId: 56,
   processCode: "pde-commercial-homologation-activation",
   processName: "Homologação e ativação comercial do PDE",
-  selectedProcessVersionNumber: 5,
+  selectedProcessVersionNumber: 6,
   selectedProcessStatus: "PUBLISHED",
-  operationalState: "NOT_STARTED",
+  currentExecutionReference: "experiment:89",
+  operationalState: "BLOCKED",
   objectiveAchieved: false,
   selectedActivityCount: 1,
   completedActivityCount: 0,
   remainingActivityCount: 1,
-  blockedActivityCount: 0,
-  currentActivityId: "pdeGate",
-  currentActivityName: "Validar fatos, controle e valor do PDE",
-  currentActivityState: "NOT_STARTED",
-  currentActivityStateReason:
-    "Nenhuma tarefa ou instância foi registrada para esta atividade.",
+  blockedActivityCount: 1,
+  currentActivityId: "humanExperienceReview",
+  currentActivityName: "Validar experiência humana da jornada",
+  currentActivityState: "BLOCKED",
+  currentActivityStateReason: blockedTask.executionError,
   activityCount: 1,
-  activitiesWithTasksCount: 0,
-  uniqueTaskCount: 0,
+  activitiesWithTasksCount: 1,
+  uniqueTaskCount: 1,
   knownEstimatedCostUsd: 0,
-  costCoverage: "NO_EXECUTIONS",
+  costCoverage: "NOT_REPORTED",
   activities: [
     {
-      activityDefinitionId: 301,
-      activityId: "pdeGate",
-      activityName: "Validar fatos, controle e valor do PDE",
+      activityDefinitionId: 587,
+      activityId: "humanExperienceReview",
+      activityName: "Validar experiência humana da jornada",
       activityObjective:
-        "Comprova Cartão de Decisão, prova, adequação, personalização explicável e caminho neutro.",
-      activityOwnerName: "Psique e Têmis",
+        "Decide se a pessoa entende, deseja, confia e percebe valor com esforço aceitável.",
+      activityOwnerName: "Psique",
       sequenceNumber: 1,
       selectedVersionActivity: true,
-      operationalState: "NOT_STARTED",
-      stateReason:
-        "Nenhuma tarefa ou instância foi registrada para esta atividade.",
+      operationalState: "BLOCKED",
+      stateReason: blockedTask.executionError,
       objectiveAchieved: false,
-      stateEvidence: "NOT_RECORDED",
-      taskCount: 0,
-      tasks: [],
+      stateEvidence: "DIRECT",
+      activityInstanceId: 139,
+      occurrenceNumber: 1,
+      taskCount: 1,
+      tasks: [blockedTask],
       executionRequestAvailable: true,
       executionRequestReason:
-        "A atividade está pronta para abrir todas as tarefas responsáveis.",
+        "A tentativa bloqueada será preservada e uma nova tarefa será aberta.",
     },
   ],
 };
@@ -58,13 +88,21 @@ async function validateDevice(browser, name, device) {
   const context = await browser.newContext(device);
   const page = await context.newPage();
   let executionRequests = 0;
+  let markRequestStarted;
+  let releaseRequest;
+  const requestStarted = new Promise((resolve) => {
+    markRequestStarted = resolve;
+  });
+  const responseGate = new Promise((resolve) => {
+    releaseRequest = resolve;
+  });
   await page.route("**/api/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     if (
       request.method() === "GET" &&
       url.pathname ===
-        "/api/business-processes/45/products/4/activity-executions"
+        "/api/business-processes/56/products/9/activity-executions"
     ) {
       await route.fulfill({
         status: 200,
@@ -75,15 +113,21 @@ async function validateDevice(browser, name, device) {
     }
     if (request.method() === "POST" && url.pathname === executionPath) {
       executionRequests += 1;
+      markRequestStarted();
+      await responseGate;
       await route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          processDefinitionId: 45,
-          productId: 4,
-          activityId: "pdeGate",
-          sourceReference: "experiment:90",
-          tasks: [{ id: 301 }, { id: 302 }],
+          processDefinitionId: 56,
+          productId: 9,
+          activityId: "humanExperienceReview",
+          sourceReference: "experiment:89",
+          tasks: [{ id: 257 }],
+          operationalState: "PENDING",
+          objectiveAchieved: false,
+          message:
+            "Nova tentativa aberta; a tarefa bloqueada permanece no histórico.",
         }),
       });
       return;
@@ -98,20 +142,37 @@ async function validateDevice(browser, name, device) {
   await page.goto(pageUrl, { waitUntil: "networkidle" });
   await page
     .getByRole("heading", {
-      name: /Vega · Homologação e ativação comercial do PDE/,
+      name: /Rigel · Homologação e ativação comercial do PDE/,
     })
     .waitFor();
-  await page.getByRole("button", { name: "Executar atividade" }).click();
-  await page.getByRole("status").waitFor();
+  await expect(page.getByText(/Tarefa #254/)).toBeVisible();
+  const restart = page.getByRole("button", { name: "Reiniciar tarefa" });
+  await expect(restart).toBeVisible();
+  await expect(restart.locator(".lucide-rotate-ccw")).toBeVisible();
+
+  await restart.click();
+  await requestStarted;
+  const restarting = page.getByRole("button", { name: "Reiniciando..." });
+  await expect(restarting).toBeDisabled();
+  await expect(restarting).toContainText("Reiniciando...");
+  releaseRequest();
+  await expect(page.getByRole("status")).toContainText(
+    "Nova tentativa aberta; a tarefa bloqueada permanece no histórico.",
+  );
   if (executionRequests !== 1) {
     throw new Error(
-      `${name}: esperado um POST, recebido ${executionRequests}.`,
+      `${name}: esperado um POST de reinício, recebido ${executionRequests}.`,
     );
   }
+  await expect(page.getByText(/Tarefa #254/)).toBeVisible();
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > window.innerWidth + 1,
   );
   if (overflow) throw new Error(`${name}: a tela possui overflow horizontal.`);
+  await page.screenshot({
+    path: `/tmp/reinicio-tarefa-${name.toLowerCase().replaceAll(" ", "-")}.png`,
+    fullPage: true,
+  });
   await context.close();
 }
 
@@ -127,7 +188,7 @@ async function validateDevice(browser, name, device) {
     await validateDevice(browser, "iPhone 15 Pro", devices["iPhone 15 Pro"]);
     await validateDevice(browser, "Pixel 7", devices["Pixel 7"]);
     console.log(
-      "Tela de execução da atividade aprovada em desktop, iPhone 15 Pro e Pixel 7.",
+      "Reinício auditável aprovado em desktop, iPhone 15 Pro e Pixel 7.",
     );
   } finally {
     await browser.close();

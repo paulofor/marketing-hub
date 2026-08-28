@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Catálogo de processos de negócio
-  version: 1.6.0
+  version: 1.7.0
   description: Cadastro versionado de processos de valor, subprocessos, atividades e documentos no Marketing Hub.
 paths:
   /api/business-processes:
@@ -153,7 +153,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProductProcessActivityExecutionRequest"
         "404": { description: Processo, produto ou atividade não encontrada }
-        "409": { description: Processo, produto, atividade ou contexto sem condição de execução }
+        "409": { description: Processo, produto, atividade, estado atual ou contexto sem condição de execução }
 components:
   parameters:
     ProcessDefinitionId:
@@ -454,8 +454,12 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/BusinessProcessActivityExecution"
-        executionRequestAvailable: { type: boolean }
-        executionRequestReason: { type: string }
+        executionRequestAvailable:
+          type: boolean
+          description: Informa se a atividade inédita ou bloqueada pode iniciar uma tentativa auditável.
+        executionRequestReason:
+          type: string
+          description: Explica a disponibilidade, a preservação da tentativa anterior ou o bloqueio do comando.
     ProductProcessActivityExecutionRequest:
       type: object
       required:

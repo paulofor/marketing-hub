@@ -4,6 +4,21 @@
 >
 > Objetivo: registrar pontos em que o Marketing Hub entrou ou pode entrar em ciclos repetidos de correção, retrabalho ou diagnóstico incompleto.
 
+## LOOP-BPM-TAREFA-BLOQUEADA-SEM-RETENTATIVA-VISIVEL — falha auditada sem saída operacional
+
+- **Data:** 2026-08-28.
+- **Sintoma:** as tarefas #254 do Rigel e #256 do Vega estavam corretamente `BLOCKED`, mas a tela de
+  atividades escondia o comando de nova tentativa e encerrava a orientação em “já possui execução”.
+- **Causa-raiz confirmada no endpoint e no banco:** o contrato público só permitia reiniciar uma
+  atividade de agente bloqueada quando existia um provedor de prontidão especializado. Psique não
+  precisava desse provedor e o endpoint de comando já possuía a retentativa idempotente capaz de
+  preservar a tarefa anterior.
+- **Correção sistêmica:** toda atividade de agente bloqueada e ainda pronta segundo os validadores
+  existentes expõe **Reiniciar tarefa**. O backend abre uma nova tentativa na mesma instância e
+  referência, preserva a tentativa bloqueada e recusa estados ativos ou concluídos.
+- **Prevenção:** testes de contrato no backend e no frontend protegem disponibilidade, rótulo,
+  endpoint, idempotência e ausência do comando em estados inelegíveis.
+
 ## LOOP-PLUTUS-HEALTH-VERSION-DRIFT — worker vigente permanece bloqueado após o rebuild
 
 - **Data:** 2026-08-28.

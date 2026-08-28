@@ -9,6 +9,7 @@ import {
   ListTree,
   Loader2,
   PlayCircle,
+  RotateCcw,
   Target,
   Workflow,
 } from "lucide-react";
@@ -434,6 +435,8 @@ export default function ProductProcessActivityExecutionsPage() {
                             size={16}
                             aria-hidden="true"
                           />
+                        ) : activity.operationalState === "BLOCKED" ? (
+                          <RotateCcw size={16} aria-hidden="true" />
                         ) : (
                           <PlayCircle size={16} aria-hidden="true" />
                         )}
@@ -441,13 +444,15 @@ export default function ProductProcessActivityExecutionsPage() {
                         requestExecution.variables === activity.activityId
                           ? activity.activityId === "integration"
                             ? "Validando..."
-                            : "Iniciando..."
+                            : activity.operationalState === "BLOCKED"
+                              ? "Reiniciando..."
+                              : "Iniciando..."
                           : activity.activityId === "integration"
                             ? activity.operationalState === "BLOCKED"
                               ? "Revalidar integração"
                               : "Validar integração"
                             : activity.operationalState === "BLOCKED"
-                              ? "Tentar novamente"
+                              ? "Reiniciar tarefa"
                               : "Executar atividade"}
                       </button>
                     ) : null}

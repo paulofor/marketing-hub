@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   CircleDollarSign,
   CircleOff,
+  ClipboardList,
   Clock3,
   ListChecks,
   Loader2,
@@ -56,6 +57,32 @@ const processStateLabels = {
   COMPLETED: "Concluído",
   CANCELLED: "Cancelado",
 } as const;
+
+/** Identifica visualmente um nome de processo com o ícone canônico desta tela. */
+function ProcessName({ name }: { name: string }) {
+  return (
+    <span
+      className="product-process-entity-name product-process-entity-name--process"
+      title="Processo"
+    >
+      <Workflow size={20} aria-hidden="true" />
+      <span>{name}</span>
+    </span>
+  );
+}
+
+/** Identifica visualmente um nome de atividade com o ícone canônico desta tela. */
+function ActivityName({ name }: { name: string }) {
+  return (
+    <span
+      className="product-process-entity-name product-process-entity-name--activity"
+      title="Atividade"
+    >
+      <ClipboardList size={18} aria-hidden="true" />
+      <span>{name}</span>
+    </span>
+  );
+}
 
 /** Escolhe o ícone semântico do estado já calculado pelo backend. */
 function ActivityStateIcon({ state }: { state: ActivityOperationalState }) {
@@ -126,9 +153,15 @@ export default function ProductProcessActivityExecutionsPage() {
       <header className="business-process-documents-toolbar mb-4">
         <div>
           <PageTitle>
-            {data
-              ? `${productLabel} · ${data.processName}`
-              : "Atividades e tarefas do produto"}
+            {data ? (
+              <span className="product-process-activity-executions__title">
+                <span>{productLabel}</span>
+                <span>·</span>
+                <ProcessName name={data.processName} />
+              </span>
+            ) : (
+              "Atividades e tarefas do produto"
+            )}
           </PageTitle>
           <p className="text-body-secondary mb-0">
             {data
@@ -243,10 +276,13 @@ export default function ProductProcessActivityExecutionsPage() {
                       : "Atividade atual"}
                 </span>
                 <strong>
-                  {data.currentActivityName ||
-                    (data.objectiveAchieved
-                      ? "Todas as atividades foram concluídas"
-                      : "Atividade atual ainda não registrada")}
+                  {data.currentActivityName ? (
+                    <ActivityName name={data.currentActivityName} />
+                  ) : data.objectiveAchieved ? (
+                    "Todas as atividades foram concluídas"
+                  ) : (
+                    "Atividade atual ainda não registrada"
+                  )}
                 </strong>
                 <small>
                   {data.currentActivityStateReason ||
@@ -266,7 +302,9 @@ export default function ProductProcessActivityExecutionsPage() {
                   <ol>
                     {completedActivities.map((activity) => (
                       <li key={`completed-${activity.activityId}`}>
-                        <strong>{activity.activityName}</strong>
+                        <strong>
+                          <ActivityName name={activity.activityName} />
+                        </strong>
                         <small>{activity.stateReason}</small>
                       </li>
                     ))}
@@ -284,7 +322,9 @@ export default function ProductProcessActivityExecutionsPage() {
                     {remainingActivities.map((activity) => (
                       <li key={`remaining-${activity.activityId}`}>
                         <div>
-                          <strong>{activity.activityName}</strong>
+                          <strong>
+                            <ActivityName name={activity.activityName} />
+                          </strong>
                           <span
                             className={`product-process-situation__activity-state product-process-situation__activity-state--${activity.operationalState.toLowerCase()}`}
                           >
@@ -357,7 +397,9 @@ export default function ProductProcessActivityExecutionsPage() {
                         ? " · versão histórica"
                         : ""}
                     </span>
-                    <h2>{activity.activityName}</h2>
+                    <h2>
+                      <ActivityName name={activity.activityName} />
+                    </h2>
                     {activity.activityOwnerName ? (
                       <small>Responsável: {activity.activityOwnerName}</small>
                     ) : null}

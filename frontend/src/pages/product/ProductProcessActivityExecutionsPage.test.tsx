@@ -262,6 +262,25 @@ describe("ProductProcessActivityExecutionsPage", () => {
         name: "Rigel · Geração de landing page",
       }),
     ).toBeInTheDocument();
+    const processNames = document.querySelectorAll(
+      ".product-process-entity-name--process",
+    );
+    expect(processNames).toHaveLength(1);
+    expect(
+      processNames[0].querySelector(".lucide-workflow"),
+    ).toBeInTheDocument();
+    const activityNames = document.querySelectorAll(
+      ".product-process-entity-name--activity",
+    );
+    expect(activityNames).toHaveLength(17);
+    activityNames.forEach((activityName) => {
+      expect(
+        activityName.querySelector(".lucide-clipboard-list"),
+      ).toBeInTheDocument();
+      expect(
+        activityName.querySelector(".lucide-workflow"),
+      ).not.toBeInTheDocument();
+    });
     const situation = screen.getByRole("region", {
       name: "Situação do processo",
     });

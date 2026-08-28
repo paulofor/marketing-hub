@@ -159,6 +159,16 @@ const history = {
   processName: "Geração de landing page",
   selectedProcessVersionNumber: 4,
   selectedProcessStatus: "PUBLISHED",
+  operationalState: "BLOCKED",
+  objectiveAchieved: false,
+  selectedActivityCount: 8,
+  completedActivityCount: 4,
+  remainingActivityCount: 4,
+  blockedActivityCount: 1,
+  currentActivityId: "customer",
+  currentActivityName: "Avaliar percepção da cliente",
+  currentActivityState: "BLOCKED",
+  currentActivityStateReason: "Checkout ausente na evidência original.",
   activityCount: 8,
   activitiesWithTasksCount: 6,
   uniqueTaskCount: 3,
@@ -173,6 +183,22 @@ const history = {
       activityOwnerName,
       sequenceNumber: index + 1,
       selectedVersionActivity: true,
+      operationalState:
+        index < 4
+          ? "COMPLETED"
+          : index === 5
+            ? "BLOCKED"
+            : index === 6
+              ? "PENDING"
+              : "NOT_STARTED",
+      stateReason:
+        index < 4
+          ? "Objetivo da atividade atingido na instância BPM."
+          : index === 5
+            ? "Checkout ausente na evidência original."
+            : "Atividade aguardando execução ou liberação pelo backend.",
+      objectiveAchieved: index < 4,
+      stateEvidence: index < 4 || index === 5 ? "DIRECT" : "NOT_RECORDED",
       taskCount: tasks.length,
       tasks,
     }),
@@ -222,6 +248,17 @@ try {
     await expect(
       page.getByRole("heading", { name: "Rigel · Geração de landing page" }),
     ).toBeVisible();
+    const processNames = page.locator(".product-process-entity-name--process");
+    await expect(processNames).toHaveCount(1);
+    await expect(processNames.locator(".lucide-workflow")).toBeVisible();
+    const activityNames = page.locator(
+      ".product-process-entity-name--activity",
+    );
+    await expect(activityNames).toHaveCount(17);
+    await expect(activityNames.locator(".lucide-clipboard-list")).toHaveCount(
+      17,
+    );
+    await expect(activityNames.locator(".lucide-workflow")).toHaveCount(0);
     await expect(page.getByText("6 com tarefas reais")).toBeVisible();
     await expect(page.getByText("Cobertura parcial")).toBeVisible();
     await expect(page.getByText(/Tarefa #243/).first()).toBeVisible();

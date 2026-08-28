@@ -580,6 +580,118 @@ class BusinessProcessActivityExecutionServiceTest {
     verify(agentTasks).retryBlockedByHumanOrRefreshPending(any(CreateAgentTaskRequest.class));
   }
 
+  /**
+   * Libera reinício de tarefa bloqueada sem exigir um gate especializado e preserva a tentativa.
+   */
+  @Test
+  void exposesGenericBlockedTaskRestartAndUsesAuditableRetry() {
+    BusinessProcessActivityDefinitionRepository activityDefinitions =
+        mock(BusinessProcessActivityDefinitionRepository.class);
+    AgentTaskActivityCoverageRepository coverages = mock(AgentTaskActivityCoverageRepository.class);
+    BusinessProcessActivityInstanceRepository instances =
+        mock(BusinessProcessActivityInstanceRepository.class);
+    CommercialPlanRepository commercialPlans = mock(CommercialPlanRepository.class);
+    ProductRepository products = mock(ProductRepository.class);
+    ExperimentRepository experiments = mock(ExperimentRepository.class);
+    AgentTaskService agentTasks = mock(AgentTaskService.class);
+    var executionService =
+        new BusinessProcessActivityExecutionService(
+            processes,
+            activityDefinitions,
+            tasks,
+            coverages,
+            instances,
+            commercialPlans,
+            null,
+            products,
+            experiments,
+            agentTasks,
+            new ObjectMapper());
+    BusinessProcessDefinition process = selectedProcess();
+    process.setId(56L);
+    process.setStatus("PUBLISHED");
+    process.setProcessCode("pde-commercial-homologation-activation");
+    process.setDiagramJson(
+        "{\"nodes\":[{\"id\":\"humanExperienceReview\",\"type\":\"TASK\","
+            + "\"label\":\"Validar experiência humana da jornada\","
+            + "\"description\":\"Validar clareza, desejo e confiança.\","
+            + "\"responsibleAgentKeys\":[\"customer-agent\"]}]}");
+    BusinessProcessActivityDefinition activity =
+        activity(587L, process, "humanExperienceReview", "Validar experiência humana da jornada");
+    activity.setDefinitionJson("{\"responsibleAgentKeys\":[\"customer-agent\"]}");
+    Product rigel = Product.builder().id(9L).internalName("Rigel").build();
+    rigel.setAutomaticExecutionEnabled(true);
+    Experiment experiment = new Experiment();
+    experiment.setId(89L);
+    experiment.setProduct(rigel);
+    AgentTask blockedTask = executionTask(254L);
+    blockedTask.setProcessDefinition(process);
+    blockedTask.setProcessActivityId("humanExperienceReview");
+    blockedTask.setProcessActivityName("Validar experiência humana da jornada");
+    blockedTask.setSourceReference("experiment:89");
+    blockedTask.setStatus("BLOCKED");
+    blockedTask.setAssignedAgent(
+        Agent.builder().agentKey("customer-agent").nickname("Psique").build());
+    BusinessProcessActivityInstance blockedInstance =
+        activityInstance(
+            139L,
+            activity,
+            "BLOCKED",
+            false,
+            "SHA-256 divergente para a prova comercial.",
+            blockedTask.getUpdatedAt());
+    blockedInstance.setSourceReference("experiment:89");
+    blockedTask.setActivityInstance(blockedInstance);
+    when(processes.findById(56L)).thenReturn(Optional.of(process));
+    when(products.findById(9L)).thenReturn(Optional.of(rigel));
+    when(experiments.findByProductIdOrderByUpdatedAtDescIdDesc(9L)).thenReturn(List.of(experiment));
+    when(commercialPlans.findByProductId(9L)).thenReturn(List.of());
+    when(activityDefinitions.findAllByProcessDefinitionIdOrderByIdAsc(56L))
+        .thenReturn(List.of(activity));
+    when(activityDefinitions.findByProcessDefinitionIdAndActivityId(56L, "humanExperienceReview"))
+        .thenReturn(Optional.of(activity));
+    when(tasks.findBySourceReferenceOrderByCreatedAtAscIdAsc("experiment:89"))
+        .thenReturn(List.of(blockedTask));
+    when(instances
+            .findAllByActivityDefinitionProcessDefinitionProcessCodeAndSourceReferenceOrderByCreatedAtDescIdDesc(
+                "pde-commercial-homologation-activation", "experiment:89"))
+        .thenReturn(List.of(blockedInstance));
+    when(agentTasks.retryBlockedByHumanOrRefreshPending(any(CreateAgentTaskRequest.class)))
+        .thenReturn(mock(AgentTaskResponse.class));
+
+    var history = executionService.productProcessExecutions(56L, 9L);
+    var request =
+        executionService.requestProductActivityExecution(56L, 9L, "humanExperienceReview");
+
+    assertThat(history.activities().getFirst().executionRequestAvailable()).isTrue();
+    assertThat(history.activities().getFirst().executionRequestReason())
+        .contains("tentativa bloqueada será preservada");
+    assertThat(request.tasks()).hasSize(1);
+    ArgumentCaptor<CreateAgentTaskRequest> retryRequest =
+        ArgumentCaptor.forClass(CreateAgentTaskRequest.class);
+    verify(agentTasks).retryBlockedByHumanOrRefreshPending(retryRequest.capture());
+    assertThat(retryRequest.getValue().sourceReference()).isEqualTo("experiment:89");
+    assertThat(retryRequest.getValue().processActivityId()).isEqualTo("humanExperienceReview");
+
+    blockedTask.setStatus("PENDING");
+    blockedInstance.setStatus("PENDING");
+    assertThatThrownBy(
+            () ->
+                executionService.requestProductActivityExecution(56L, 9L, "humanExperienceReview"))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("execução ativa");
+
+    blockedTask.setStatus("COMPLETED");
+    blockedInstance.setStatus("COMPLETED");
+    blockedInstance.setObjectiveAchieved(true);
+    assertThatThrownBy(
+            () ->
+                executionService.requestProductActivityExecution(56L, 9L, "humanExperienceReview"))
+        .isInstanceOf(ResponseStatusException.class)
+        .hasMessageContaining("objetivo da atividade já foi atingido");
+    verifyNoMoreInteractions(agentTasks);
+  }
+
   /** Impede novas tarefas quando o produto está administrativamente em STOP. */
   @Test
   void rejectsActivityRequestForStoppedProduct() {

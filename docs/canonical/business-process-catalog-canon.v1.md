@@ -164,9 +164,14 @@ Psique e Têmis nunca são coautoras da mesma atividade. Definições histórica
 continuam legíveis e executáveis somente para preservar auditoria, mas não podem ser republicadas ou
 usadas como modelo de nova versão. O comando canônico da tela do produto é
 `POST /api/business-processes/{processDefinitionId}/products/{productId}/activities/{activityId}/execution-requests`.
-Ele somente aceita versão `PUBLISHED`, produto em `PLAY`, atividade ainda não iniciada e experimento
-do próprio produto. Repetir o comando reutiliza as tarefas existentes e não duplica custo nem
-execução.
+Ele somente aceita versão `PUBLISHED`, produto em `PLAY`, atividade ainda não iniciada ou
+`BLOCKED` e experimento do próprio produto. Uma atividade `BLOCKED` deve expor na tela o comando explícito
+**Reiniciar tarefa**, desde que seus validadores de prontidão atuais permitam a nova tentativa. O
+reinício cria uma tentativa `PENDING` na mesma instância e referência operacional, preserva a tarefa
+bloqueada, seu erro, evidências, consumo e custo, e não reabre atividade concluída nem trabalho ainda
+`PENDING` ou `IN_PROGRESS`. Repetir o comando enquanto a nova tentativa estiver ativa reutiliza a
+tarefa existente e não duplica custo nem execução. O backend expõe a disponibilidade e o motivo; o
+frontend apenas apresenta essa verdade e nunca transforma bloqueio em permissão por inferência.
 
 ## Recursos especializados por atividade
 

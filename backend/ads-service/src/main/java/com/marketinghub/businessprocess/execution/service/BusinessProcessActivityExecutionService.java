@@ -341,7 +341,7 @@ public class BusinessProcessActivityExecutionService {
     return productPlans.stream().findFirst().orElse(null);
   }
 
-  /** Abre atomicamente todas as tarefas responsáveis pela atividade atual do produto. */
+  /** Inicia a atividade ou abre nova tentativa auditável quando a execução anterior bloqueou. */
   @Transactional
   public ProductProcessActivityExecutionRequestResponse requestProductActivityExecution(
       Long processDefinitionId, Long productId, String activityId) {
@@ -387,6 +387,16 @@ public class BusinessProcessActivityExecutionService {
         currentSourceReference == null
             ? "experiment:" + experiment.getId()
             : currentSourceReference;
+    ActivitySituation currentSituation =
+        activitySituation(
+            normalizedActivityId,
+            processTasks.stream()
+                .filter(task -> sourceReference.equals(task.getSourceReference()))
+                .filter(task -> normalizedActivityId.equals(task.getProcessActivityId()))
+                .toList(),
+            currentInstancesByActivityId(process.getId(), sourceReference, processInstances)
+                .getOrDefault(normalizedActivityId, List.of()));
+    requireRequestableActivityState(currentSituation.operationalState());
     if (backendExecutor.isPresent()) {
       BackendProductProcessActivityReadiness readiness =
           backendExecutor.get().readiness(process, activityDefinition, product, sourceReference);
@@ -437,6 +447,17 @@ public class BusinessProcessActivityExecutionService {
             .toList();
     return new ProductProcessActivityExecutionRequestResponse(
         process.getId(), product.getId(), normalizedActivityId, sourceReference, requestedTasks);
+  }
+
+  /** Aceita somente atividade inédita ou bloqueada, impedindo reinício de trabalho ainda ativo. */
+  private void requireRequestableActivityState(String operationalState) {
+    if ("NOT_STARTED".equals(operationalState) || "BLOCKED".equals(operationalState)) return;
+    if ("COMPLETED".equals(operationalState)) {
+      throw new ResponseStatusException(
+          HttpStatus.CONFLICT, "O objetivo da atividade já foi atingido neste ciclo.");
+    }
+    throw new ResponseStatusException(
+        HttpStatus.CONFLICT, "A atividade já possui execução ativa neste ciclo.");
   }
 
   /** Exige um produto existente antes de resolver suas referências operacionais. */
@@ -531,7 +552,7 @@ public class BusinessProcessActivityExecutionService {
     }
     if (!hasBackendExecutor
         && !"NOT_STARTED".equals(operationalState)
-        && !(hasAgentReadinessProvider && "BLOCKED".equals(operationalState))) {
+        && !"BLOCKED".equals(operationalState)) {
       return "A atividade já possui execução registrada neste ciclo.";
     }
     if (!hasProductExperiment) {
@@ -540,15 +561,20 @@ public class BusinessProcessActivityExecutionService {
     if (!productExecutionEnabled) {
       return "O produto está em STOP e não pode iniciar novas atividades.";
     }
-    if (hasBackendExecutor && backendReadiness != null) {
+    if (hasBackendExecutor && backendReadiness != null && !backendReadiness.ready()) {
       return backendReadiness.reason();
     }
-    if (hasAgentReadinessProvider && agentReadiness != null) {
+    if (hasAgentReadinessProvider && agentReadiness != null && !agentReadiness.ready()) {
       return agentReadiness.reason();
     }
-    if (responsibleAgents.isEmpty()) {
+    if (responsibleAgents.isEmpty() && !hasBackendExecutor) {
       return "A atividade não possui executores automáticos configurados.";
     }
+    if ("BLOCKED".equals(operationalState)) {
+      return "A tentativa bloqueada será preservada e uma nova tarefa será aberta.";
+    }
+    if (hasBackendExecutor && backendReadiness != null) return backendReadiness.reason();
+    if (hasAgentReadinessProvider && agentReadiness != null) return agentReadiness.reason();
     return "A atividade está pronta para abrir todas as tarefas responsáveis.";
   }
 
@@ -747,8 +773,7 @@ public class BusinessProcessActivityExecutionService {
               || "BLOCKED".equals(situation.operationalState());
       boolean agentStateAllowsRequest =
           "NOT_STARTED".equals(situation.operationalState())
-              || (agentReadinessProvider.isPresent()
-                  && "BLOCKED".equals(situation.operationalState()));
+              || "BLOCKED".equals(situation.operationalState());
       boolean executionRequestAvailable =
           definition != null
               && "PUBLISHED".equals(selectedProcess.getStatus())
